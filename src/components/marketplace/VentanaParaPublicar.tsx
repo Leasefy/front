@@ -115,7 +115,7 @@ export function VentanaParaPublicar({
               <button
                 type="button"
                 onClick={() => setPaso({ que: 'perfil' })}
-                className="mb-5 inline-flex h-8 items-center gap-2 rounded-full bg-surface-muted pl-2.5 pr-3.5 text-[13px] text-fg-muted transition-colors duration-fast ease-standard hover:bg-surface-hover hover:text-fg active:scale-[0.97]"
+                className="mb-5 inline-flex h-8 items-center gap-2 rounded-[11px] bg-surface-muted pl-2.5 pr-[13px] text-[13px] text-fg-muted transition-colors duration-fast ease-standard hover:bg-surface-hover hover:text-fg active:scale-[0.97]"
                 data-testid="cambiar-quien-publica"
               >
                 <ArrowLeft size={14} weight="bold" aria-hidden="true" />
@@ -140,7 +140,7 @@ export function VentanaParaPublicar({
             <button
               type="button"
               onClick={() => setPaso({ que: 'perfil' })}
-              className="mb-5 inline-flex h-8 items-center gap-2 rounded-full bg-surface-muted pl-2.5 pr-3.5 text-[13px] text-fg-muted transition-colors duration-fast ease-standard hover:bg-surface-hover hover:text-fg active:scale-[0.97]"
+              className="mb-5 inline-flex h-8 items-center gap-2 rounded-[11px] bg-surface-muted pl-2.5 pr-[13px] text-[13px] text-fg-muted transition-colors duration-fast ease-standard hover:bg-surface-hover hover:text-fg active:scale-[0.97]"
               data-testid="volver-a-quien-publica"
             >
               <ArrowLeft size={14} weight="bold" aria-hidden="true" />
@@ -180,18 +180,18 @@ function EleccionDeQuienPublica({
 }) {
   return (
     <div data-testid="quien-publica">
-      <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-fg-subtle">
+      <p className="flex items-center gap-2.5 font-mono text-[12px] uppercase leading-[1.3] tracking-[0.08em] text-fg-subtle">
         <i className="inline-block size-2 rounded-[2px] bg-primary" aria-hidden="true" />
         Publica gratis
       </p>
-      <h2 className="mt-4 text-[26px] font-medium leading-[1.1] tracking-[-0.03em] text-fg sm:text-[28px] md:pr-10">
+      <h2 className="mt-3.5 text-[clamp(24px,2.6vw,29px)] font-[420] leading-[1.12] tracking-[-0.03em] text-fg md:pr-7">
         ¿Quién va a publicar?
       </h2>
-      <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
+      <p className="mt-2 text-[14.5px] leading-relaxed text-fg-muted">
         Elige una opción y crea tu cuenta. Es gratis.
       </p>
 
-      <div className="mt-7 space-y-3">
+      <div className="mt-6 space-y-3">
         {(Object.keys(PERFILES) as PerfilQuePublica[]).map((perfil) => {
           const { titulo, detalle, Icono } = PERFILES[perfil];
           return (
@@ -200,19 +200,20 @@ function EleccionDeQuienPublica({
               type="button"
               onClick={() => alElegir(perfil)}
               className={cn(
-                'group flex w-full items-center gap-4 rounded-lg border border-border bg-surface p-4 text-left',
-                'transition-[transform,border-color,box-shadow] duration-fast ease-standard',
-                'hover:-translate-y-px hover:border-primary/60 hover:shadow-[0_10px_28px_-14px_rgba(26,64,255,0.45)]',
+                // Ronda 30 (diseño nuevo): esquina de 20 px, borde de piedra que se pinta de voltaje; sin sombra.
+                'group flex w-full items-center gap-4 rounded-[20px] border border-border bg-surface p-4 text-left',
+                'transition-[transform,border-color] duration-fast ease-standard',
+                'hover:-translate-y-px hover:border-primary',
                 'active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
               )}
               data-testid={`publica-${perfil === 'agency' ? 'inmobiliaria' : 'propietario'}`}
             >
               <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary transition-colors duration-fast group-hover:bg-primary group-hover:text-primary-fg">
-                <Icono size={24} weight="duotone" aria-hidden="true" />
+                <Icono size={24} aria-hidden="true" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[16px] font-medium text-fg">{titulo}</span>
-                <span className="mt-0.5 block text-[13.5px] leading-snug text-fg-subtle">{detalle}</span>
+                <span className="mt-0.5 block text-[13.5px] leading-snug text-fg-muted">{detalle}</span>
               </span>
               <ArrowRight
                 size={18}
@@ -225,7 +226,7 @@ function EleccionDeQuienPublica({
         })}
       </div>
 
-      <p className="mt-8 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
+      <p className="mt-7 border-t border-border-faint pt-[18px] text-[13.5px] text-fg-muted">
         ¿Ya tienes cuenta?{' '}
         <button
           type="button"

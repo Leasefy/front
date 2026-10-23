@@ -104,9 +104,6 @@ export function PropertyCard({
     typeof src === 'string' && src.trim().length > 0;
   const gallery = (images ?? []).filter(isNonEmpty);
   const sinFotos = gallery.length === 0 && !isNonEmpty(thumbnailUrl);
-  // Las etiquetas de vidrio son blancas sobre la foto; sin foto, el fondo es claro: van oscuras.
-  // Sobre una foto clara el blanco translúcido no se leía (QA, 10-10-2026): fondo oscuro.
-  const vidrio = sinFotos ? 'text-fg-muted bg-white/70 border-white/60' : 'text-white bg-black/40 border-white/15';
   const allImages =
     gallery.length > 0
       ? gallery
@@ -149,8 +146,13 @@ export function PropertyCard({
     onHoverEnd?.();
   };
 
-  const chip =
-    'inline-flex items-center gap-1.5 whitespace-nowrap text-[13px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums';
+  // Ronda 30 (diseño nuevo del marketplace): lo que se sabe del inmueble va en UNA línea en mono
+  // («2 hab · 1 baño · 60 m²»), como la tarjeta de la galería; antes eran tres pastillas con ícono.
+  const caracteristicas = [
+    areaConocida(area) ? formatArea(area) : null,
+    (bedrooms ?? 0) > 0 ? `${bedrooms} hab` : null,
+    (bathrooms ?? 0) > 0 ? `${bathrooms} baño${bathrooms !== 1 ? 's' : ''}` : null,
+  ].filter(Boolean);
 
   const typeLabels: Record<string, string> = {
     apartment: 'Apartamento',
@@ -165,19 +167,28 @@ export function PropertyCard({
     land: 'Lote',
   };
 
+  // Ronda 30 (diseño nuevo): las marcas sobre la foto son papel blanco con letra en mono, sin vidrio
+  // ni velo; la primera lleva el cuadrito de voltaje. Se leen igual sobre una foto clara u oscura.
+  const marca =
+    'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-sm bg-white px-[9px] font-mono text-[11px] uppercase tracking-[0.08em] text-[#121110]';
+
   return (
     <Link
       href={linkQuery ? `${basePath}/${id}?${linkQuery}` : `${basePath}/${id}`}
       className={cn(
-        'group block rounded-xl transition-shadow duration-slow ease-enter',
-        isHighlighted && 'ring-2 ring-primary ring-offset-2',
+        'group block min-w-0 rounded-lg transition-transform duration-base ease-enter hover:-translate-y-0.5 active:scale-[0.99] motion-reduce:hover:translate-y-0',
         className
       )}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Image container */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+      {/* La foto: esquina de 22 px con superelipse, sin velo encima. */}
+      <div
+        className={cn(
+          'relative aspect-[4/3] overflow-hidden rounded-lg bg-surface-muted',
+          isHighlighted && 'outline outline-2 outline-offset-[3px] outline-primary'
+        )}
+      >
         {/* All images stacked with opacity crossfade */}
         {allImages.map((src, i) => (
           <Image
@@ -187,9 +198,9 @@ export function PropertyCard({
             alt={`${title} - ${i + 1}`}
             fill
             className={cn(
-              'object-cover transition-[opacity,transform] duration-reveal ease-enter',
+              'object-cover transition-[opacity,transform] duration-[700ms] ease-enter',
               i === activeImage ? 'opacity-100' : 'opacity-0',
-              isHovered && i === activeImage && 'scale-105'
+              isHovered && i === activeImage && 'scale-[1.04]'
             )}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             priority={i === 0}
@@ -198,10 +209,7 @@ export function PropertyCard({
 
         {sinFotos && <PortadaSinFotos tipo={type} semilla={id} />}
 
-        {/* Subtle bottom gradient for depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-reveal" />
-
-        {/* Compass arrows — visible on hover when multiple images */}
+        {/* Las flechas: círculos blancos que entran al pasar el mouse. */}
         {allImages.length > 1 && (
           <>
             <IconButton
@@ -211,12 +219,11 @@ export function PropertyCard({
               onClick={handlePrev}
               aria-label="Imagen anterior"
               className={cn(
-                'absolute left-2 top-1/2 -translate-y-1/2 z-20',
-                'h-8 w-8 rounded-full',
-                'bg-white/80 hover:bg-white text-foreground/70 hover:text-foreground',
-                'backdrop-blur-sm',
-                'transition-[opacity,transform,background-color,color] duration-slow ease-enter',
-                isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'
+                'absolute left-2.5 top-1/2 -translate-y-1/2 z-20',
+                'h-[34px] w-[34px] rounded-full',
+                'bg-white text-[#121110] hover:bg-white',
+                'transition-[opacity,transform] duration-slow ease-enter',
+                isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-1.5 pointer-events-none'
               )}
             />
             <IconButton
@@ -226,37 +233,32 @@ export function PropertyCard({
               onClick={handleNext}
               aria-label="Imagen siguiente"
               className={cn(
-                'absolute right-2 top-1/2 -translate-y-1/2 z-20',
-                'h-8 w-8 rounded-full',
-                'bg-white/80 hover:bg-white text-foreground/70 hover:text-foreground',
-                'backdrop-blur-sm',
-                'transition-[opacity,transform,background-color,color] duration-slow ease-enter',
-                isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'
+                'absolute right-2.5 top-1/2 -translate-y-1/2 z-20',
+                'h-[34px] w-[34px] rounded-full',
+                'bg-white text-[#121110] hover:bg-white',
+                'transition-[opacity,transform] duration-slow ease-enter',
+                isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-1.5 pointer-events-none'
               )}
             />
           </>
         )}
 
-        {/* Dot indicators — bottom center, visible on hover */}
+        {/* Los puntos: cuadritos de 7 px, abajo al centro, al pasar el mouse. */}
         {allImages.length > 1 && (
           <div
             className={cn(
               'absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5',
               'transition-[opacity,transform] duration-slow ease-enter',
-              isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+              isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1.5 pointer-events-none'
             )}
           >
             {allImages.map((_, i) => (
               <button
                 key={i}
                 onClick={(e) => handleDotClick(e, i)}
-                // El punto activo CRECE con `scale` (8 px), no con `width`/`height`:
-                // el tamaño animado recalculaba el layout de la fila en cada cuadro.
                 className={cn(
-                  'w-2 h-2 rounded-full transition-[transform,background-color] duration-slow ease-enter',
-                  i === activeImage
-                    ? 'scale-100 bg-white'
-                    : 'scale-75 bg-white/50 hover:bg-white/80'
+                  'h-[7px] w-[7px] rounded-[2px] transition-colors duration-slow ease-enter',
+                  i === activeImage ? 'bg-white' : 'bg-white/55 hover:bg-white/80'
                 )}
                 aria-label={`Ver imagen ${i + 1}`}
               />
@@ -264,108 +266,89 @@ export function PropertyCard({
           </div>
         )}
 
-        {/* Glass badges — top left */}
-        <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
-          <div className="flex gap-1.5">
-            <span className={cn('inline-flex items-center text-[11px] font-mono font-normal uppercase backdrop-blur-xl border rounded-full px-2.5 py-1', vidrio)}>
+        {/* Las marcas — arriba a la izquierda */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5 pointer-events-none">
+          <div className="flex flex-wrap gap-1.5">
+            <span className={marca}>
+              <span className="h-1.5 w-1.5 rounded-[2px] bg-[#1A40FF]" aria-hidden />
               {isSaleListing ? 'En venta' : 'En arriendo'}
             </span>
-            <span className={cn('inline-flex items-center text-[11px] font-mono font-normal uppercase backdrop-blur-xl border rounded-full px-2.5 py-1', vidrio)}>
-              {typeLabels[type] || type}
-            </span>
+            <span className={marca}>{typeLabels[type] || type}</span>
           </div>
           {video && (
-            <span
-              data-testid="tiene-video"
-              className="inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-medium text-white backdrop-blur-sm"
-            >
+            <span data-testid="tiene-video" className={marca}>
               <Play className="h-3 w-3" weight="fill" aria-hidden />
               Video en {NOMBRE_DE_LA_RED[video.red]}
             </span>
           )}
         </div>
 
-        {/* Wishlist button — top right, glass */}
+        {/* Guardar — arriba a la derecha, círculo blanco; guardado, en voltaje. */}
         {onWishlistToggle && (
           <IconButton
             variant="ghost"
             size="sm"
-            icon={<Heart className={cn('h-4 w-4', isWishlisted && 'fill-current')} />}
+            icon={<Heart className="h-[18px] w-[18px]" weight={isWishlisted ? 'fill' : 'regular'} />}
             onClick={handleWishlistClick}
             aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
             className={cn(
-              'absolute right-3 top-3 rounded-full p-2 z-10',
-              'backdrop-blur-xl border',
-              sinFotos ? 'bg-white/70 border-white/60 hover:bg-white/90' : 'bg-white/15 border-white/20 hover:bg-white/30',
-              'transition-[background-color,color] duration-slow',
-              isWishlisted ? 'text-danger' : sinFotos ? 'text-fg-muted' : 'text-white/80'
+              'absolute right-3 top-3 z-10 h-[38px] w-[38px] rounded-full bg-white hover:bg-white',
+              'transition-[color,transform] duration-base active:scale-[0.94]',
+              isWishlisted ? 'text-primary' : 'text-[#121110]'
             )}
           />
         )}
 
-        {/* Status overlay - only for rented properties */}
+        {/* Arrendado: la foto se apaga y lo dice una marca blanca (sin vidrio). */}
         {status === 'rented' && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-30">
-            <span className="text-white text-sm font-medium bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-4 py-2">
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50">
+            <span className="rounded-sm bg-white px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.08em] text-[#121110]">
               Arrendado
             </span>
           </div>
         )}
 
-        {/* Qualification badge */}
+        {/* ¿Califica? — abajo a la derecha, marca blanca con su punto. */}
         {qualification && (
-          <div
-            className={cn(
-              'absolute bottom-3 right-3 z-10 text-[11px] font-medium rounded-full px-2.5 py-1 border backdrop-blur-xl',
-              qualification.qualifies
-                ? 'bg-[hsl(var(--success-500)/0.2)] text-white border-[hsl(var(--success-500)/0.3)]'
-                : 'bg-[hsl(var(--warning-500)/0.2)] text-white border-[hsl(var(--warning-500)/0.3)]'
-            )}
-          >
+          <div className={cn(marca, 'absolute bottom-3 right-3 z-10 normal-case tracking-normal font-sans text-[12px]')}>
+            <span
+              className={cn('h-1.5 w-1.5 rounded-[2px]', qualification.qualifies ? 'bg-success' : 'bg-warning')}
+              aria-hidden
+            />
             {qualification.qualifies ? 'Califica' : 'Fuera de presupuesto'}
-          </div>
-        )}
-
-        {/* Price overlay — bottom left, shows on hover (hidden when dots visible to avoid overlap) */}
-        {allImages.length <= 1 && (
-          <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-[opacity,transform] duration-reveal ease-enter translate-y-1 group-hover:translate-y-0">
-            <span className="text-[13px] font-medium text-white bg-black/40 backdrop-blur-xl rounded-full px-3 py-1.5 font-mono tabular-nums">
-              {displayPrice != null ? formatCurrency(displayPrice) : 'Sin dato'}
-              {!isSaleListing && <span className="text-white/50 font-normal font-sans">/mes</span>}
-            </span>
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="pt-4 pb-1.5">
-        {/* Location — small, above title */}
-        <div className="flex items-center gap-1.5 mb-1">
-          <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" strokeWidth={1.5} />
-          <p className="text-[13px] text-muted-foreground truncate">
+      {/* El texto */}
+      <div className="px-0.5 pb-0.5 pt-3.5">
+        {/* El lugar, pequeño, arriba del título */}
+        <div className="flex min-w-0 items-center gap-1.5">
+          <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-primary" strokeWidth={1.5} />
+          <p className="truncate text-[13px] text-fg-muted">
             {barrioYCiudad(neighborhood, city)}
           </p>
         </div>
 
         {/* Title */}
-        <h3 className="text-[16px] font-heading font-medium text-foreground tracking-[-0.02em] leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors duration-base">
+        <h3 className="mt-[3px] truncate text-[16.5px] font-[450] leading-[1.3] tracking-[-0.015em] text-fg transition-colors duration-base group-hover:text-primary">
           {title}
         </h3>
 
         {/* Quién lo administra, con su logo: Leasefy u otra inmobiliaria. */}
         {agencyName && (
           <AdministradoPor
-            className="mt-1.5"
+            className="mt-[7px]"
             administrador={{ agencyId: agencyId ?? null, nombre: agencyName, logoUrl: agencyLogoUrl ?? null }}
           />
         )}
         {agencyName && debajoDeQuienLoOfrece && <div className="mt-1">{debajoDeQuienLoOfrece}</div>}
 
-        {/* Price — prominent */}
-        <p className="text-[22px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em] leading-none mt-3">
+        {/* El precio, en mono y sin negrilla */}
+        <p className="mt-3 font-mono text-[21px] font-normal leading-none tracking-[-0.02em] tabular-nums text-fg">
           {displayPrice != null ? formatCurrency(displayPrice) : 'Sin dato'}
           {!isSaleListing && (
-            <span className="text-[13px] font-normal text-muted-foreground ml-1 font-sans">/mes</span>
+            <span className="ml-[3px] font-sans text-[13px] tracking-normal text-fg-subtle">/mes</span>
           )}
         </p>
         {/* Lo que se paga de verdad: canon + administración. Sólo si la hay. */}
@@ -376,50 +359,27 @@ export function PropertyCard({
           </p>
         )}
 
-        {/* Features — clean chips. Sólo lo que se sabe (antes «— hab» en un local)
-            y sin partirse en dos líneas en una tarjeta angosta (QA, 10-10-2026). */}
-        {(areaConocida(area) || (bedrooms ?? 0) > 0 || (bathrooms ?? 0) > 0) && (
-          <div className="flex flex-wrap items-center gap-2 mt-4" aria-label="Características del inmueble">
-            {areaConocida(area) && (
-              <span className={chip}>
-                <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                  <rect x="3" y="3" width="18" height="18" rx="1" />
-                  <path d="M3 9h18M9 21V9" />
-                </svg>
-                {formatArea(area)}
-              </span>
-            )}
-            {(bedrooms ?? 0) > 0 && (
-              <span className={chip}>
-                <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                  <path d="M3 12h18M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6M3 12V8a4 4 0 014-4h1a3 3 0 013 3v5" />
-                </svg>
-                {bedrooms} hab
-              </span>
-            )}
-            {(bathrooms ?? 0) > 0 && (
-              <span className={chip}>
-                <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                  <path d="M4 12h16a2 2 0 012 2v2a4 4 0 01-4 4H6a4 4 0 01-4-4v-2a2 2 0 012-2z" />
-                  <path d="M6 12V5a2 2 0 012-2h8a2 2 0 012 2v7" />
-                </svg>
-                {bathrooms} baño{bathrooms !== 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
+        {/* Lo que se sabe: sólo lo conocido (antes «— hab» en un local; QA, 10-10-2026). */}
+        {caracteristicas.length > 0 && (
+          <p
+            className="mt-2 truncate font-mono text-[13px] tabular-nums text-fg-muted"
+            aria-label="Características del inmueble"
+          >
+            {caracteristicas.join(' · ')}
+          </p>
         )}
 
         {/* Lo que pesa al decidir: sin depósito (ley) y por qué sale en la lista. */}
         {(vivienda || (explicacion && (explicacion.cumple.length > 0 || (explicacion.noCumple?.length ?? 0) > 0))) && (
-          <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-[13px] leading-snug">
+          <div className="mt-3 space-y-1.5 border-t border-border-faint pt-3 text-[13px] leading-[1.4]">
             {vivienda && (
-              <p className="flex items-start gap-1.5 text-fg-muted" data-testid="sin-deposito">
+              <p className="flex items-start gap-[7px] text-fg-muted" data-testid="sin-deposito">
                 <ShieldCheck className="mt-[1px] h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
                 <span>Sin depósito: en vivienda la ley no permite pedirlo</span>
               </p>
             )}
             {explicacion && explicacion.cumple.length > 0 && (
-              <p className="flex items-start gap-1.5 text-fg-muted" data-testid="por-que-sale">
+              <p className="flex items-start gap-[7px] text-fg-muted" data-testid="por-que-sale">
                 <Check className="mt-[1px] h-3.5 w-3.5 shrink-0 text-primary" weight="bold" aria-hidden />
                 <span className="line-clamp-2">
                   Cumple: {explicacion.cumple.join(' · ')}
@@ -431,7 +391,7 @@ export function PropertyCard({
             )}
             {/* «Los más cercanos»: lo que pediste y éste no tiene, dicho sin rodeos. */}
             {explicacion && (explicacion.noCumple?.length ?? 0) > 0 && (
-              <p className="flex items-start gap-1.5 text-fg-muted" data-testid="no-cumple">
+              <p className="flex items-start gap-[7px] text-fg-muted" data-testid="no-cumple">
                 <Info className="mt-[1px] h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
                 <span className="line-clamp-2">
                   No cumple: {explicacion.noCumple!.join(' · ')}

@@ -45,6 +45,7 @@ import {
   PaperPlaneTilt,
   ShieldCheck,
   UsersThree,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -67,6 +68,10 @@ import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { antiguedadDeLaCola, diasEnPalabras } from '@/lib/cobranza/antiguedad-de-la-cola'
+import { Input } from '@/components/ui/input'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 
@@ -189,14 +194,16 @@ function ReporteRow({
         onClick={onSelect}
         aria-pressed={selected}
         className={[
-          'relative isolate w-full text-left rounded-lg border border-border bg-card p-4 transition-colors',
-          'hover:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+          // Revisora r27 (UI): la fila vive DENTRO de la tarjeta de las pestañas
+          // (antes una tarjeta suelta por reporte, fuera de la lista).
+          'relative isolate w-full text-left px-4 py-3 transition-colors border-l-2 border-l-transparent',
+          'hover:bg-surface-muted/60 focus:outline-none focus-visible:bg-surface-muted',
         ].join(' ')}
       >
         {selected && (
           <MotionIndicator
             layoutId="reportes-propietarios-elegido"
-            className="-inset-px -z-10 rounded-lg border border-primary ring-1 ring-primary/30"
+            className="inset-y-0 -left-0.5 right-0 -z-10 bg-surface-muted border-l-2 border-l-primary"
           />
         )}
         <div className="flex items-start justify-between gap-3">
@@ -446,12 +453,22 @@ function ReportesPropietariosContent() {
   // pide al back sólo ese estado, así que se recuerdan los de la última vez
   // que se vio todo (null mientras no se sepa).
   const [conteos, setConteos] = useState<Record<ReporteEstado, number> | null>(null)
+  // Desde cuándo espera cada reporte por aprobar (revisora r27, K1 y K2).
+  const [fechasPorAprobar, setFechasPorAprobar] = useState<string[]>([])
   useEffect(() => {
     if (estadoFilter !== 'todos' || isLoading) return
     const n: Record<ReporteEstado, number> = { borrador: 0, pendiente: 0, enviado: 0 }
     for (const r of realReportes) n[r.estado] += 1
     setConteos(n)
+    setFechasPorAprobar(
+      realReportes.filter((r) => r.estado === 'pendiente').map((r) => r.raw?.createdAt ?? null).filter((f): f is string => f !== null),
+    )
   }, [estadoFilter, isLoading, realReportes])
+  const colaPorAprobar = useMemo(
+    () => antiguedadDeLaCola(fechasPorAprobar, { es: true, testid: 'reportes-por-aprobar' }),
+    [fechasPorAprobar],
+  )
+  const [busqueda, setBusqueda] = useState('')
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -460,10 +477,22 @@ function ReportesPropietariosContent() {
   // Feedback de aprobación / generación (T-323).
   const [actionMsg, setActionMsg] = useState<string | null>(null)
 
-  const visibles =
+  const delEstado =
     estadoFilter === 'todos'
       ? fuente
       : fuente.filter((r) => r.estado === estadoFilter)
+  // Revisora r27 (K3): buscador por propietario o inmueble, y la paginación.
+  const visibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return delEstado
+    return delEstado.filter((r) =>
+      `${r.propietario} ${r.inmueble}`.toLocaleLowerCase('es').includes(q),
+    )
+  }, [delEstado, busqueda])
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(
+    visibles,
+    { resetKey: `${estadoFilter}|${busqueda}` },
+  )
 
   /**
    * Selección segura: si el id elegido ya no está en la fuente, caemos al
@@ -658,14 +687,10 @@ function ReportesPropietariosContent() {
             <div className="border-b border-border px-4 py-4">
               <CifraHeroe
                 data-testid="reportes-por-aprobar"
-                rotulo="Por aprobar"
+                rotulo="El reporte más viejo por aprobar espera"
                 tamano="mediana"
-                cifra={String(conteos?.pendiente ?? 0)}
-                contexto={
-                  conteos
-                    ? `de ${conteos.borrador + conteos.pendiente + conteos.enviado} ${conteos.borrador + conteos.pendiente + conteos.enviado === 1 ? 'reporte' : 'reportes'}`
-                    : undefined
-                }
+                cifra={colaPorAprobar.masVieja === null ? '—' : diasEnPalabras(colaPorAprobar.masVieja, true)}
+                tramos={colaPorAprobar.tramos}
                 esCero={conteos !== null && conteos.pendiente === 0}
                 cuandoEsCero="Ningún reporte espera tu aprobación."
               />
@@ -690,11 +715,24 @@ function ReportesPropietariosContent() {
                 }))}
               />
             </div>
-          </div>
+            <div className="border-t border-border px-4 py-3">
+              <div className="relative w-full">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+                <Input
+                  type="search"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar propietario o inmueble"
+                  aria-label="Buscar reportes por propietario o inmueble"
+                  className="pl-9"
+                  data-testid="reportes-buscar"
+                />
+              </div>
+            </div>
 
           {visibles.length > 0 ? (
-            <Stagger as="ul" className="space-y-3">
-              {visibles.map((reporte) => (
+            <Stagger as="ul" className="divide-y divide-border border-t border-border">
+              {pageItems.map((reporte) => (
                 <ReporteRow
                   key={reporte.id}
                   reporte={reporte}
@@ -708,12 +746,32 @@ function ReportesPropietariosContent() {
               ))}
             </Stagger>
           ) : (
-            <EmptyState
-              icon={CheckCircle}
-              title="Sin reportes en este estado"
-              description="No hay reportes que coincidan con el filtro seleccionado."
-            />
+            <div className="border-t border-border">
+              <EmptyState
+                icon={busqueda.trim() ? MagnifyingGlass : CheckCircle}
+                title={busqueda.trim() ? 'Ningún reporte coincide con la búsqueda' : 'Sin reportes en este estado'}
+                description={
+                  busqueda.trim()
+                    ? 'Revisa el nombre del propietario o del inmueble, o borra la búsqueda.'
+                    : 'No hay reportes que coincidan con el filtro seleccionado.'
+                }
+                primaryCta={busqueda.trim() ? { label: 'Borrar la búsqueda', onClick: () => setBusqueda('') } : undefined}
+              />
+            </div>
           )}
+          {shouldPaginate ? (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          ) : null}
+          </div>
         </section>
 
         {/* Columna derecha — reporte seleccionado + acciones */}
@@ -728,7 +786,7 @@ function ReportesPropietariosContent() {
               La acción principal (Enviar) requiere aprobación humana — T-323. */}
           <Card>
             <CardContent className="p-5 space-y-3">
-              <h3 className="text-base font-medium text-fg">Acciones</h3>
+              <h3 className="text-body-sm font-medium text-fg">Acciones</h3>
 
               <div className="flex flex-wrap gap-2">
                 {/* Acción principal — Aprobar / Enviar (POST approve, T-323) */}

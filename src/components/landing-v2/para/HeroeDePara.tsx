@@ -40,8 +40,10 @@ export function HeroeDePara({
   semilla = 7,
 }: HeroeDeParaProps) {
   const quieto = useReducedMotion();
+  // El texto del héroe se pinta desde el servidor, visible (es lo primero que
+  // se lee y lo que mide el LCP); sólo la foto y las cifras entran con movimiento.
   const sube = (retraso: number) =>
-    quieto
+    quieto || retraso < 0.2
       ? {}
       : {
           initial: { opacity: 0, y: 22 },

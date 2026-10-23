@@ -28,6 +28,7 @@
  * contesta, este bloque no se renderiza y la pantalla del ERP se basta sola.
  */
 
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { toast } from '@/components/ui/toast';
 import {
@@ -132,18 +133,9 @@ function fmtCop(val: number): string {
   }).format(val);
 }
 
-/** Format ISO date string to DD/MM/YYYY */
+/** Ronda 30: la fecha corta de la casa («16 oct 2026»; antes DD/MM/AAAA). */
 function fmtDate(iso: string | null): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('es-CO', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
+  return fechaCorta(iso);
 }
 
 // ── Reject dialog ───────────────────────────────────────────────────────────
@@ -731,13 +723,13 @@ export function ConciliacionDelAgente() {
             disabled={uploading}
             aria-label={t(k('uploadTitle'))}
             data-testid="conciliacion-agente-cargar"
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface-muted/50 p-6 text-center transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60"
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface-muted/50 p-6 text-center transition-colors hover:border-border-strong hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60"
           >
-            <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-md bg-primary-soft">
+            <div className="mb-1 flex h-10 w-10 items-center justify-center">
               {uploading ? (
                 <Spinner size="md" variant="default" />
               ) : (
-                <UploadSimple className="h-5 w-5 text-primary" weight="duotone" aria-hidden="true" />
+                <UploadSimple className="h-6 w-6 text-fg-muted" aria-hidden="true" />
               )}
             </div>
             <p className="text-body-sm font-medium text-fg">

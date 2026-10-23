@@ -1,5 +1,6 @@
 'use client';
 
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -84,8 +85,10 @@ export default function ArriendoPage() {
     0
   );
 
+  // Ronda 30: la fecha corta de la casa («16 oct 2026»; es-CO daba «16 de oct de 2026»).
   const formatDate = (dateString: string) => {
-    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    if (locale === 'es') return fechaCorta(String(dateString).slice(0, 10));
+    return diaDelArriendo(dateString).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -93,7 +96,8 @@ export default function ArriendoPage() {
   };
 
   const formatShortDate = (dateString: string) => {
-    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    if (locale === 'es') return fechaCorta(String(dateString).slice(0, 10)).replace(/ \d{4}$/, '');
+    return diaDelArriendo(dateString).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
     });

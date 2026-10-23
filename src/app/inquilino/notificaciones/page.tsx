@@ -1,5 +1,6 @@
 'use client';
 
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -100,7 +101,8 @@ const formatRelativeTime = (dateString: string, locale: string): string => {
     if (diffHours < 24) return `hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
     if (diffDays < 7) return `hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
     if (diffDays < 30) return `hace ${Math.floor(diffDays / 7)} ${Math.floor(diffDays / 7) === 1 ? 'semana' : 'semanas'}`;
-    return date.toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'short' });
+    // Ronda 30: la fecha corta de la casa («16 oct 2026»; es-CO daba «16 de oct de 2026»).
+    return fechaCorta(diaEnColombia(date.toISOString())).replace(/ \d{4}$/, '');
   } else {
     if (diffMins < 1) return 'now';
     if (diffMins < 60) return `${diffMins} min ago`;

@@ -60,7 +60,8 @@ export function CrucesDelMovimiento({
               key={c.contractId}
               className={cn(
                 'space-y-2 rounded-md border p-3',
-                c.seguro ? 'border-primary bg-primary-soft' : 'border-border bg-surface',
+                // Ronda 30: lo seguro en verde, como en Movimientos (el azul es la acción de la pantalla).
+                c.seguro ? 'border-success/40 bg-success-soft' : 'border-border bg-surface',
               )}
               data-testid={`cruce-${m.id}-${c.contractId}`}
               data-seguro={c.seguro}

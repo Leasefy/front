@@ -1,5 +1,6 @@
 'use client';
 
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { plataQueLlega } from '@/lib/plata/plata-que-llega';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -162,7 +163,9 @@ export default function LeaseDetailPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    // Ronda 30: la fecha corta de la casa («16 oct 2026»; es-CO daba «16 de oct de 2026»).
+    if (locale === 'es') return fechaCorta(String(dateString).slice(0, 10));
+    return diaDelArriendo(dateString).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',

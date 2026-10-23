@@ -126,7 +126,7 @@ describe('<EquipoDeAgentes />', () => {
     escribir('conciliacion')
     expect(porId('equipo-fila-conciliacion')).toBeTruthy()
     expect(porId('equipo-fila-prospectos')).toBeNull()
-    escribir('link de pago')
+    escribir('enlace de pago')
     expect(porId('equipo-fila-pagos')).toBeTruthy()
     // «Análisis de fotos» es una herramienta de Fixi, no una frase de «Hace»
     // (MANOS-1, 04-10-2026: Vidi ya no lista la firma; agenda e inventario).

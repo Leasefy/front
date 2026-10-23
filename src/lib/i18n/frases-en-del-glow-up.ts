@@ -339,6 +339,7 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   // Revisora r24, Inmuebles (filtros y tarjeta)
   "Código, dirección o propietario": "Code, address or owner",
   "Buscar inmueble": "Search properties",
+  "Agentes IA": "AI agents",
   "Comisión sin definir": "Commission not set",
   "{comision} de comisión": "{comision} commission",
   // Revisora r24, Pendientes de aplicar (la cifra de arriba)

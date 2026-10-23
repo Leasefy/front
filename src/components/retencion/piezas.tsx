@@ -21,7 +21,8 @@ import { cn } from '@/lib/utils'
 import { useTr } from '@/lib/i18n/use-tr'
 
 /** El Eyebrow de las tres pantallas: dónde estás, en una línea. */
-export const EYEBROW_DE_VINCI = 'Agentes IA · Vinci'
+// Revisora r25: el sobretítulo es la sección del menú; el nombre del agente va en el cuerpo.
+export const EYEBROW_DE_VINCI = 'Agentes IA'
 
 export function CabeceraDeVinci({
   titulo,

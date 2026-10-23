@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP } from '@/lib/admin/format'
@@ -16,6 +17,9 @@ import { Card, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
 import { SealCheck } from '@phosphor-icons/react'
 import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha'
 import { metodoDelAvaluo } from '@/lib/admin/textos-del-admin'
+import { Buscador } from '@/components/admin/screen/Filtros'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 
 // Left-border urgency by confidence: low confidence needs the most eyes.
 
@@ -104,6 +108,14 @@ export default function AvaluosPage() {
   )
 
   const items = data?.items ?? []
+  // Ronda 30 (revisora r27): la cola (hasta 50) con buscador por inmobiliaria o propietario y su paginación.
+  const [busqueda, setBusqueda] = useState('')
+  const filtrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase()
+    if (!q) return items
+    return items.filter((i) => [i.agencyName, i.ownerName].some((v) => (v ?? '').toLowerCase().includes(q)))
+  }, [items, busqueda])
+  const pag = useTablePagination(filtrados, { resetKey: busqueda })
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -135,13 +147,37 @@ export default function AvaluosPage() {
                 icono={<SealCheck weight="duotone" />}
               />
             ) : (
-              <Stagger className="space-y-2">
-                {items.map((item) => (
-                  <StaggerItem key={item.id}>
-                    <AvaluoCard item={item} />
-                  </StaggerItem>
-                ))}
-              </Stagger>
+              <div className="space-y-3">
+                <Buscador
+                  id="buscar-avaluo"
+                  value={busqueda}
+                  onChange={setBusqueda}
+                  placeholder="Buscar por inmobiliaria o propietario…"
+                  aria-label="Buscar avalúo por inmobiliaria o propietario"
+                  className="md:max-w-sm"
+                />
+                {filtrados.length === 0 ? (
+                  <EmptyBlock title="Ningún avalúo con ese nombre" hint="Busca otra inmobiliaria u otro propietario." />
+                ) : (
+                  <>
+                    <Stagger className="space-y-2">
+                      {pag.pageItems.map((item) => (
+                        <StaggerItem key={item.id}>
+                          <AvaluoCard item={item} />
+                        </StaggerItem>
+                      ))}
+                    </Stagger>
+                    <TablePagination
+                      total={pag.total}
+                      page={pag.page}
+                      pageSize={pag.pageSize}
+                      pageSizeOptions={PAGE_SIZE_OPTIONS}
+                      onPageChange={pag.setPage}
+                      onPageSizeChange={pag.setPageSize}
+                    />
+                  </>
+                )}
+              </div>
             ),
           },
           {

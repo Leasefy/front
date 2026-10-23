@@ -128,7 +128,10 @@ export const SOLICITUDES_DEL_INDEPENDIENTE: SeccionDelPropietario = {
   pestanas: [
     // Revisora r25: «Novedades» salió del menú del independiente (las manda una inmobiliaria); «Por decidir» también
     // cae aquí, para que se marque su pestaña.
-    { href: '/panel/solicitudes', es: 'Mis solicitudes', en: 'My requests', icon: Lifebuoy, tambienEn: ['/panel/aprobaciones', '/panel/novedades', '/panel/por-decidir'] },
+    // Ronda 30 (revisora r27 CE): «Por decidir» es real también para el independiente y lleva su propia pestaña
+    // (antes encendía «Mis solicitudes», que en el plan gratis es la venta): la pestaña dice lo mismo que el título.
+    { href: '/panel/por-decidir', es: 'Por decidir', en: 'To decide', icon: ClipboardText },
+    { href: '/panel/solicitudes', es: 'Mis solicitudes', en: 'My requests', icon: Lifebuoy, tambienEn: ['/panel/aprobaciones', '/panel/novedades'] },
   ],
 };
 

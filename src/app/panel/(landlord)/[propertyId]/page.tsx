@@ -370,7 +370,6 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           handleCloseDetail();
           toast('Candidato rechazado', {
             description: `${candidate?.fullName} ha sido rechazado y notificado.`,
-            icon: '❌',
           });
         } else {
           handleCloseDetail();

@@ -78,7 +78,8 @@ export function ModuloConDemo({
                 {llamado}
               </a>
             </Button>
-            <Button type="button" variant="secondary" className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-[15px] sm:w-auto" onClick={() => setVerDemo(true)} data-testid="ver-demo">
+            {/* Ronda 30 (revisora r27): a 1440 la vista previa de al lado ya es «Ver cómo se vería…»; un solo llamado al demo por ancho. */}
+            <Button type="button" variant="secondary" className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-[15px] sm:w-auto lg:hidden" onClick={() => setVerDemo(true)} data-testid="ver-demo">
               <PlayCircle size={18} className="mr-2" aria-hidden="true" />
               Ver demo
             </Button>
@@ -106,9 +107,8 @@ export function ModuloConDemo({
           {portada && (
             <Image src={portada} alt="" fill sizes="600px" className="object-cover object-left-top opacity-60 blur-[1.5px] transition duration-slow group-hover:opacity-80 group-hover:blur-0" />
           )}
-          <span className="absolute inset-0 bg-gradient-to-l from-transparent via-surface/10 to-surface/60" aria-hidden="true" />
           <span className="absolute inset-0 flex items-center justify-center">
-            <span className="inline-flex items-center gap-2 rounded-full bg-fg px-5 py-2.5 text-[14px] font-medium text-bg shadow-lg transition-transform duration-fast group-hover:scale-105">
+            <span className="inline-flex items-center gap-2 rounded-full bg-fg px-5 py-2.5 text-[14px] font-medium text-bg transition-transform duration-fast group-hover:scale-105">
               <PlayCircle size={18} weight="fill" aria-hidden="true" />
               {quien === 'inmobiliaria' && empresa ? `Ver cómo se vería en ${empresa}` : 'Ver cómo se vería en tu cuenta'}
             </span>
@@ -195,7 +195,7 @@ function BotonDeLado({ lado, onClick }: { lado: 'izquierda' | 'derecha'; onClick
       onClick={onClick}
       aria-label={lado === 'izquierda' ? 'Pantalla anterior' : 'Pantalla siguiente'}
       className={cn(
-        'absolute top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/95 text-fg shadow-md transition hover:scale-105',
+        'absolute top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/95 text-fg transition hover:scale-105',
         lado === 'izquierda' ? 'left-3' : 'right-3',
       )}
     >

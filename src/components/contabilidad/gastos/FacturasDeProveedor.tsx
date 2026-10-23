@@ -57,7 +57,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import {
   Table,
   TableBody,
@@ -73,7 +75,7 @@ import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { RangoDeFechas } from '../RangoDeFechas';
-import { Cifra, FranjaDeCifras, type TonoDeCifra } from '@leasefy/cadence';
+type TonoDeCifra = 'aviso' | 'voltaje';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
 import { TituloDeBloque } from '@/components/finanzas/piezas';
 import {
@@ -99,7 +101,7 @@ import {
 import { diaDe, diaLegible } from '@/lib/contabilidad/fechas';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { Monto } from '../Monto';
-import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
+import { AccionConMotivo, FaltaLaMigracion } from '../piezas';
 import { usePuedeEscribir } from '../use-puede-escribir';
 import { usePuedeRegistrar } from '../use-puede-registrar';
 import { PagarFactura } from './PagarFactura';
@@ -350,9 +352,21 @@ export function FacturasDeProveedor({
 
   if (cargando && !pagina) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <Spinner size="lg" />
-        <p className="text-sm text-fg-muted">Cargando las facturas…</p>
+      <div className="space-y-6" aria-busy="true">
+        <span className="sr-only">Cargando las facturas…</span>
+        <div className="space-y-3" aria-hidden="true">
+          <Skeleton className="h-3.5 w-40 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-9 w-56 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-2 w-full rounded-full bg-surface-muted" />
+        </div>
+        <div className="divide-y divide-border rounded-lg border border-border" aria-hidden="true">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+              <Skeleton className="h-4 flex-1 rounded-sm bg-surface-muted" />
+              <Skeleton className="h-4 w-24 rounded-sm bg-surface-muted" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -379,6 +393,26 @@ export function FacturasDeProveedor({
       ? pagina.total
       : null;
 
+  // GLOW UP 3.ª vuelta · LA RESPUESTA: lo que falta causar y pagar, de lo que se facturó en el
+  // período (con los conteos por estado que ya se piden; sin ellos, no se inventa la cifra).
+  const porCausar = conteos.BORRADOR;
+  const porPagar = conteos.CAUSADA;
+  const pagadas = conteos.PAGADA;
+  const hayRespuesta = Boolean(porCausar && porPagar && pagadas);
+  const falta = (porCausar?.neto ?? 0) + (porPagar?.neto ?? 0);
+  const facturado = falta + (pagadas?.neto ?? 0);
+  const cifras = localeDeLasCifras();
+  const notaSinCausar =
+    sinCausar > 0 ? (
+      <span data-testid="nota-sin-causar">
+        {sinCausar === 1
+          ? 'Hay 1 factura en borrador: no está en el libro.'
+          : `Hay ${sinCausar} facturas en borrador: no están en el libro.`}{' '}
+        Una factura sin causar no aparece en el P&G ni en la exógena, y el proveedor ya está
+        esperando el pago.
+      </span>
+    ) : null;
+
   const accionRegistrar = (
     <AccionConMotivo
               puede={registro.puede}
@@ -402,39 +436,57 @@ export function FacturasDeProveedor({
         <TituloDeBloque titulo="Facturas de proveedor" accion={accionRegistrar} />
       )}
 
+      {hayRespuesta ? (
+        <CifraHeroe
+          rotulo="Falta causar y pagar"
+          cifra={<Monto valor={falta} />}
+          contexto={
+            <>
+              en {((porCausar?.n ?? 0) + (porPagar?.n ?? 0)).toLocaleString(cifras)}{' '}
+              {(porCausar?.n ?? 0) + (porPagar?.n ?? 0) === 1 ? 'factura' : 'facturas'}, de{' '}
+              <Monto valor={facturado} /> facturados
+            </>
+          }
+          total={facturado}
+          tramos={[
+            { clave: 'pagadas', etiqueta: `Pagadas · ${(pagadas?.n ?? 0).toLocaleString(cifras)}`, monto: pagadas?.neto ?? 0, tono: 'exito', cifra: <Monto valor={pagadas?.neto ?? 0} /> },
+            { clave: 'por-pagar', etiqueta: `Por pagar · ${(porPagar?.n ?? 0).toLocaleString(cifras)}`, monto: porPagar?.neto ?? 0, tono: 'neutro', cifra: <Monto valor={porPagar?.neto ?? 0} /> },
+            { clave: 'por-causar', etiqueta: `Por causar · ${(porCausar?.n ?? 0).toLocaleString(cifras)}`, monto: porCausar?.neto ?? 0, tono: 'aviso', cifra: <Monto valor={porCausar?.neto ?? 0} /> },
+          ]}
+          pie={notaSinCausar}
+          data-testid="cifra-de-los-gastos"
+        />
+      ) : null}
+
       {/* ═══ GLOW UP 21-10 · el trabajo de esta pantalla: registrar la factura de un proveedor,
           causarla (que quede en el libro) y pagarla. Antes eran cuatro bloques sueltos —filtros,
           totales, nota y lista— con el estado en un desplegable. Ahora es UNA tarjeta: arriba los
           estados con su plata (lo que está por causar y por pagar es lo que pide trabajo), cada
           uno filtra; debajo fechas y rubro; la lista; y los totales del filtro al pie. */}
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
-        <FranjaDeCifras
-          aria-label="Filtrar por estado"
-          data-testid="estados-de-las-facturas"
-          className="rounded-none border-0 border-b border-border"
-        >
-          <Cifra
-            etiqueta="Todas"
-            valor={conteoTotal ?? '—'}
-            activa={estado === ''}
-            onClick={() => setEstado('')}
+        <div className="border-b border-border px-4 pt-4 pb-3">
+          <PestanasDeEstado
+            etiqueta="Filtrar por estado"
+            data-testid="estados-de-las-facturas"
+            valor={estado === '' ? 'TODAS' : estado}
+            onCambio={(v) => setEstado(v === 'TODAS' ? '' : (v as EstadoDeFacturaDeProveedor))}
+            pestanas={[
+              { valor: 'TODAS', etiqueta: 'Todas', cuantos: conteoTotal, fija: true },
+              ...ESTADOS_EN_LA_FRANJA.map(({ estado: e, etiqueta, tono }) => ({
+                valor: e as EstadoDeFacturaDeProveedor | 'TODAS',
+                etiqueta,
+                cuantos: conteos[e] ? conteos[e]!.n : null,
+                fija: true,
+                tono: conteos[e] && conteos[e]!.n > 0 && tono === 'aviso' ? ('aviso' as const) : undefined,
+                testid: `estado-${e.toLowerCase()}`,
+              })),
+            ]}
           />
-          {ESTADOS_EN_LA_FRANJA.map(({ estado: e, etiqueta, tono }) => {
-            const c = conteos[e];
-            return (
-              <Cifra
-                key={e}
-                etiqueta={etiqueta}
-                valor={c ? c.n : '—'}
-                detalle={c && c.n > 0 ? <Monto valor={c.neto} className="text-caption" /> : undefined}
-                tono={c && c.n > 0 ? tono : undefined}
-                activa={estado === e}
-                onClick={() => setEstado(estado === e ? '' : e)}
-                data-testid={`estado-${e.toLowerCase()}`}
-              />
-            );
-          })}
-        </FranjaDeCifras>
+          {/* Sin los conteos no hay cifra arriba: la nota del borrador va aquí, junto a la lista. */}
+          {!hayRespuesta && notaSinCausar ? (
+            <p className="mt-2 text-caption text-warning">{notaSinCausar}</p>
+          ) : null}
+        </div>
 
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
         {/* El período, con los mismos atajos del libro y los informes (antes, dos campos «Sin
@@ -471,20 +523,6 @@ export function FacturasDeProveedor({
         </div>
         </div>
 
-        {sinCausar > 0 ? (
-          <div className="border-b border-border px-4 py-3">
-          <Nota testId="nota-sin-causar">
-          <p>
-            {sinCausar === 1
-              ? 'Hay 1 factura en borrador: no está en el libro.'
-              : `Hay ${sinCausar} facturas en borrador: no están en el libro.`}{' '}
-            Una factura sin causar no aparece en el P&G ni en la exógena, y el proveedor ya está
-            esperando el pago.
-          </p>
-          </Nota>
-          </div>
-        ) : null}
-
         {pagina.facturas.length === 0 ? (
           <SinDatos
             hayFiltros={Boolean(desde || hasta || estado || rubroFiltro)}
@@ -502,8 +540,8 @@ export function FacturasDeProveedor({
           />
         ) : (
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+            <Table className="max-md:block">
+              <TableHeader className="max-md:hidden">
                 <TableRow>
                   <TableHead>Documento</TableHead>
                   <TableHead>Proveedor</TableHead>
@@ -515,12 +553,16 @@ export function FacturasDeProveedor({
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBodyAnimado>
+              <TableBodyAnimado className="max-md:block">
                 {pagina.facturas.map((f) => {
                   const p = permisos(f);
                   return (
-                    <TableRowAnimada key={f.id} data-testid={`factura-${f.id}`}>
-                      <TableCell className="whitespace-nowrap">
+                    <TableRowAnimada
+                      key={f.id}
+                      data-testid={`factura-${f.id}`}
+                      className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                    >
+                      <TableCell className="whitespace-nowrap max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
                         <p className="font-mono text-caption text-fg">
                           {f.prefijoDelProveedor ? `${f.prefijoDelProveedor}-` : ''}
                           {f.numeroDelProveedor}
@@ -531,7 +573,7 @@ export function FacturasDeProveedor({
                       </TableCell>
                       {/* CB-17: la tabla no cabía a 1440 (las acciones se cortaban):
                           columnas de texto más angostas y la fecha corta de la casa. */}
-                      <TableCell className="max-w-[14rem]">
+                      <TableCell className="max-w-[14rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="truncate text-sm text-fg" title={f.proveedorNombre}>
                           {f.proveedorNombre}
                         </p>
@@ -540,10 +582,10 @@ export function FacturasDeProveedor({
                           {f.proveedorId === null ? ' · escrito a mano' : ''}
                         </p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-caption text-fg-muted">
+                      <TableCell className="whitespace-nowrap text-caption text-fg-muted max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-right">
                         {fechaCorta(diaDe(f.fecha))}
                       </TableCell>
-                      <TableCell className="max-w-[14rem]">
+                      <TableCell className="max-w-[14rem] max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="truncate text-sm text-fg" title={f.concepto}>
                           {f.concepto}
                         </p>
@@ -556,13 +598,13 @@ export function FacturasDeProveedor({
                           </p>
                         ) : null}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right max-md:hidden">
                         <Monto valor={f.totalCop} className="text-sm" />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                         <Monto valor={f.netoCop} className="text-sm" />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                         <Badge variant={TONO_DEL_ESTADO[f.estado]}>
                           {NOMBRE_DEL_ESTADO_DE_FACTURA[f.estado]}
                         </Badge>
@@ -581,7 +623,7 @@ export function FacturasDeProveedor({
                           </Link>
                         ) : null}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
                         <div className="flex flex-wrap gap-2">
                           <AccionConMotivo
                             puede={p.causar.puede}
@@ -655,7 +697,7 @@ export function FacturasDeProveedor({
             </div>
             <div className="ml-auto flex items-baseline gap-2">
               <dt className="font-mono text-caption font-medium uppercase tracking-[0.06em] text-fg-subtle">Se les paga (neto)</dt>
-              <dd><Monto valor={totales.netoCop} className="text-sm font-medium" /></dd>
+              <dd><Monto valor={totales.netoCop} className="text-sm text-fg" /></dd>
             </div>
           </dl>
         ) : null}

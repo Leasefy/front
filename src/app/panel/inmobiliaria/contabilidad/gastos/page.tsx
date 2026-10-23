@@ -18,6 +18,7 @@ import { useSearchParams } from 'next/navigation';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import {
   FacturasDeProveedor,
   estadoDe,
@@ -44,9 +45,18 @@ export default function GastosPage() {
           estadoInicial={estado}
           encabezado={(accionPrincipal) => (
             <EncabezadoDePantalla
-              seccion="Finanzas"
+              seccion="Contabilidad"
               titulo="Gastos de la inmobiliaria"
-              descripcion="Registra la factura de un proveedor, cáusala para que quede en el libro y págala. Lo que se le gira al propietario no va aquí: eso baja un pasivo y no es un gasto de la inmobiliaria."
+              descripcion="Registra la factura de un proveedor, cáusala para que quede en el libro y págala."
+              ayuda={
+                <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                  <p className="text-body-sm text-fg-muted">
+                    Lo que se le gira al propietario no va aquí: eso baja un pasivo y no es un gasto de
+                    la inmobiliaria. El pago de una factura causada sale por Egresos, con la firma de
+                    otra persona.
+                  </p>
+                </ParaEntenderMas>
+              }
               accionPrincipal={accionPrincipal}
             />
           )}

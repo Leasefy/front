@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CampoDeMes } from '@/components/ui/campo-de-mes';
 import { Label } from '@/components/ui/label';
 import {
   Table,
@@ -205,13 +206,13 @@ export function PeriodosDeNominaPanel() {
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="mes-a-liquidar">Mes</Label>
-            <Input
+            {/* El campo de mes de la casa (guardián fechas-con-cadence). */}
+            <CampoDeMes
               id="mes-a-liquidar"
-              type="month"
               className="w-44"
               value={mes}
-              onChange={(e) => setMes(e.target.value)}
-              data-testid="mes-a-liquidar"
+              onChange={setMes}
+              testid="mes-a-liquidar"
             />
           </div>
           <div className="space-y-1.5">

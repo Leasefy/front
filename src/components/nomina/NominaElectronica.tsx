@@ -25,7 +25,7 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { CampoDeMes } from '@/components/ui/campo-de-mes';
 import {
   Table,
   TableBody,
@@ -160,14 +160,14 @@ export function NominaElectronicaPanel() {
                 ) : null}
                 <div className="ml-auto flex items-center gap-2">
                   <Label htmlFor="filtro-de-periodo" className="text-caption text-fg-muted">Período</Label>
-                  <Input
+                  {/* El campo de mes de la casa (guardián fechas-con-cadence: nada de calendarios del navegador). */}
+                  <CampoDeMes
                     id="filtro-de-periodo"
-                    type="month"
                     className="w-44"
                     value={periodo}
-                    onChange={(e) => setPeriodo(e.target.value)}
-                    aria-label="Filtrar por período"
-                    data-testid="filtro-de-periodo"
+                    onChange={setPeriodo}
+                    placeholder="Todos"
+                    testid="filtro-de-periodo"
                   />
                 </div>
               </div>

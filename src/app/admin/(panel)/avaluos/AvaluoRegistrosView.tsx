@@ -1,5 +1,6 @@
 'use client'
 
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
@@ -119,23 +120,19 @@ export function AvaluoRegistrosView({
       queSon={['certificado', 'certificados']}
       paginacion={items && total !== undefined ? { page, total, pageSize, onPage } : undefined}
       barra={
-        <div className="flex flex-wrap gap-1" role="group" aria-label="Estado del certificado">
-          {STATE_TABS.map((tab) => (
-            <Button
-              key={tab.value || 'todos'}
-              type="button"
-              size="sm"
-              hideArrow
-              // Ronda 30 (mandato: UNA sola acción azul): el estado puesto en contorno y los demás fantasma (antes
-              // el puesto en azul, un segundo azul en la pantalla).
-              variant={activeState === tab.value ? 'outline' : 'ghost'}
-              aria-pressed={activeState === tab.value}
-              onClick={() => onStateChange(tab.value)}
-            >
-              {tab.label}
-            </Button>
-          ))}
-        </div>
+        // Ronda 30 (revisora r27): el estado con las pestañas de la casa (antes una fila de botones); el
+        // conteo va en la abierta (el back cuenta sólo lo que se pide).
+        <PestanasDeEstado
+          etiqueta="Estado del certificado"
+          valor={activeState || 'todos'}
+          onCambio={(v) => onStateChange(v === 'todos' ? '' : v)}
+          pestanas={STATE_TABS.map((tab) => ({
+            valor: tab.value || 'todos',
+            etiqueta: tab.label,
+            cuantos: activeState === tab.value && total !== undefined ? total : null,
+            fija: true,
+          }))}
+        />
       }
     />
   )

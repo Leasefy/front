@@ -310,6 +310,7 @@ describe('arquitectura del panel — sidebar', () => {
       '/reportes/resumen': 'resumen-del-negocio',
       '/mantenimientos/tickets': 'tickets',
       '/contratos/aprobar': 'por-aprobar',
+      '/pagos/calendario': 'dias-habiles', // la tarjeta dice lo que se corrige, no «calendario» (revisora r27, C12)
       '/pipeline': 'prospeccion', // vocabulario: manual de voz (22-10), sin anglicismos en el menú
       '/postulaciones/matching': 'afinidad', // decisión 26 de Nico (22-10): «Matching» → «Afinidad»; la ruta se conserva
     };
@@ -618,6 +619,8 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
       `${PANEL}/pagos/cartera`,
       // 🔴 Juan (15-10-2026): «¿dónde se ven los recibos de caja?».
       `${PANEL}/pagos/recibos`,
+      // Revisora r27 (C12): los días hábiles entran al riel de su sección.
+      `${PANEL}/pagos/calendario`,
       // 🔴 Giros a propietarios (Nico, 22-10-2026: «unirlas»): Liquidaciones y Dispersiones son
       // los pasos de UNA entrada (`tambienEn`), no dos hermanas.
       `${PANEL}/pagos/giros`,
@@ -630,6 +633,7 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
 
   it('las tres caras están declaradas y en orden: entra, sale, y lo que está en la cuenta', () => {
     expect(pagos.pantallas?.map((p) => p.cara)).toEqual([
+      'inquilinos',
       'inquilinos',
       'inquilinos',
       'inquilinos',
@@ -1018,6 +1022,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       '/pagos/recaudo-bancario',
       '/pagos/cartera',
       '/pagos/recibos',
+      '/pagos/calendario',
       '/pagos/giros',
       '/pagos/cuadre',
       '/pagos/traslados',

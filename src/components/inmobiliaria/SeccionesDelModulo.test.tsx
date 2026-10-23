@@ -233,6 +233,27 @@ describe('🔴 SeccionesDelModulo — dentro de una sala de «Agentes IA» no ap
     expect(contenedor.querySelector('[data-testid="selector-de-caras"]')).toBeNull()
   })
 
+  it('🔴 el administrador en Cobro jurídico ve el riel de Cobrar a inquilinos, con Cartera marcada (revisora r27, C12)', () => {
+    // «Jurídico» es también una fila SÓLO del abogado externo (`soloEsosRoles`); para el
+    // administrador esa fila no existe y el riel tiene que salir del módulo de arriba.
+    render('/panel/inmobiliaria/pagos/cartera/juridico')
+    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['cartera'])
+    expect(cards().map((c) => c.label)).toContain('recaudo')
+  })
+
+  it('el abogado externo en Jurídico sigue sin riel: su fila es una sola sección', () => {
+    permisos.isAdmin = false
+    permisos.agencyRole = 'ABOGADO_EXTERNO'
+    permisos.modulos = ['cobros']
+    render('/panel/inmobiliaria/pagos/cartera/juridico')
+    expect(cards()).toEqual([])
+  })
+
+  it('Días hábiles y festivos queda marcada en el riel de su sección (revisora r27, C12)', () => {
+    render('/panel/inmobiliaria/pagos/calendario')
+    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['diasHabiles'])
+  })
+
   it('y en Pagos, Cobranza ya no es una card de la cara de los inquilinos', () => {
     render('/panel/inmobiliaria/pagos/cartera')
     expect(cards().map((c) => c.label)).not.toContain('cobranza')
@@ -339,6 +360,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       'cartera',
       // Juan (Portofino, 15-10-2026): «¿dónde se ven los recibos de caja?».
       'recibos',
+      // Revisora r27 (C12): los días hábiles, con el gate de su página (`configuracion`).
+      'diasHabiles',
     ])
   })
 
@@ -424,6 +447,7 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       '/panel/inmobiliaria/pagos/recaudo-bancario',
       '/panel/inmobiliaria/pagos/cartera',
       '/panel/inmobiliaria/pagos/recibos',
+      '/panel/inmobiliaria/pagos/calendario',
     ])
     render('/panel/inmobiliaria/pagos/cuadre')
     expect(cards().map((c) => c.href)).toEqual([
@@ -506,6 +530,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       'cartera',
       // Juan (Portofino, 15-10-2026): «¿dónde se ven los recibos de caja?».
       'recibos',
+      // Revisora r27 (C12): los días hábiles, con el gate de su página (`configuracion`).
+      'diasHabiles',
     ])
     render('/panel/inmobiliaria/pagos/liquidaciones')
     expect(cards().map((c) => c.label)).toEqual([

@@ -697,6 +697,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // se veían dentro de cada cobro o contrato. La pantalla tiene las dos
           // pestañas; los egresos piden además `dispersiones` (adentro).
           { labelKey: 'inmobiliaria.nav.recibos', href: r('/pagos/recibos'), icon: Scroll, module: 'cobros', cara: 'inquilinos' },
+          // Revisora r27 (C12): los días hábiles y festivos vivían bajo Pagos sin entrar a ningún riel
+          // (sólo por la URL). Corrigen los plazos de la factura electrónica y de las PQRS, que son del
+          // lado de los inquilinos. El gate es el de su página (`configuracion:view`): es un ajuste.
+          { labelKey: 'inmobiliaria.nav.diasHabiles', href: r('/pagos/calendario'), icon: CalendarCheck, module: 'configuracion', cara: 'inquilinos' },
           // Lo que SALE (cara propietarios). Las facturas de proveedor (CxP)
           // cuelgan de Liquidaciones: hoy no tienen listado propio, y no se
           // inventa uno.
@@ -890,10 +894,20 @@ function sinQuery(pathname: string): string {
  * entrar a la sala se vería dentro de Pagos.
  */
 export function moduloDeLaRuta(pathname: string): ModuloDelPanel | null {
+  return modulosDeLaRuta(pathname)[0] ?? null;
+}
+
+/**
+ * Todos los módulos que calzan con la ruta, del href más largo al más corto (el
+ * primero es `moduloDeLaRuta`). Revisora r27 (C12): `/pagos/cartera/juridico` es la
+ * fila del abogado externo (`soloEsosRoles`) y también una pestaña de Cartera; quien
+ * no ve esa fila tiene que caer en el módulo de arriba para ver el riel de su sección.
+ */
+export function modulosDeLaRuta(pathname: string): ModuloDelPanel[] {
   const ruta = sinQuery(pathname);
-  const candidatos = modulosDelPanel().filter((m) => ruta === m.href || ruta.startsWith(`${m.href}/`));
-  if (candidatos.length === 0) return null;
-  return candidatos.sort((a, b) => b.href.length - a.href.length)[0] ?? null;
+  return modulosDelPanel()
+    .filter((m) => ruta === m.href || ruta.startsWith(`${m.href}/`))
+    .sort((a, b) => b.href.length - a.href.length);
 }
 
 /**

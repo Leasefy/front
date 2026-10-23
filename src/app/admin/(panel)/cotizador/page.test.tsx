@@ -137,8 +137,10 @@ describe('CotizadorPage', () => {
 
     await mount()
 
-    expect(container.textContent).toContain('fianly')
-    expect(container.textContent).toContain('sura')
+    // Ronda 28 (revisora r27): el nombre, no el código («fianly», «sura» sólo al Excel).
+    expect(container.textContent).toContain('Fianly')
+    expect(container.textContent).toContain('Sura')
+    expect(container.textContent).not.toContain('fianly')
     expect(container.textContent).toContain('Puestas')
     expect(container.textContent).toContain('Sin credenciales')
   })
@@ -171,7 +173,7 @@ describe('CotizadorPage', () => {
 
     await mount()
 
-    await act(async () => editButton('fianly').click())
+    await act(async () => editButton('Fianly').click())
 
     const nameInput = document.body.querySelector('#carrier-name') as HTMLInputElement
     expect(nameInput.disabled).toBe(true)
@@ -193,7 +195,7 @@ describe('CotizadorPage', () => {
 
     await mount()
 
-    await act(async () => editButton('fianly').click())
+    await act(async () => editButton('Fianly').click())
 
     function typeInto(el: HTMLInputElement, value: string) {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
@@ -229,10 +231,32 @@ describe('CotizadorPage', () => {
     await mount()
 
     await act(async () => {
-      deleteButton('fianly').click()
+      deleteButton('Fianly').click()
     })
 
     expect(deleteCarrier).toHaveBeenCalledWith('fianly')
     expect(container.textContent).toContain('no se puede eliminar')
+  })
+
+  // Ronda 28 (revisora r27, bloqueante): una inactiva no ofrece «Desactivar» (no hacía nada) sino «Activar»,
+  // con el mismo PATCH del formulario y sólo `enabled`.
+  it('an inactive carrier offers «Activar» (PATCH enabled:true), not «Desactivar»', async () => {
+    listCarriers.mockResolvedValue([FIANLY, NEW_CARRIER])
+    updateCarrier.mockResolvedValue({ ...NEW_CARRIER, enabled: true })
+
+    await mount()
+
+    const fila = Array.from(container.querySelectorAll('tr')).find((tr) => tr.textContent?.includes('Sura'))
+    const botones = Array.from(fila?.querySelectorAll('button') ?? [])
+    expect(botones.some((b) => b.textContent?.includes('Desactivar'))).toBe(false)
+    const activar = botones.find((b) => b.textContent?.includes('Activar')) as HTMLButtonElement
+    expect(activar).toBeTruthy()
+
+    await act(async () => {
+      activar.click()
+    })
+
+    expect(updateCarrier).toHaveBeenCalledWith('sura', { enabled: true })
+    expect(listCarriers).toHaveBeenCalledTimes(2)
   })
 })

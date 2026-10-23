@@ -97,8 +97,9 @@ export const MIS_INMUEBLES: SeccionDelPropietario = {
   es: 'Mis inmuebles',
   en: 'My properties',
   pestanas: [
-    // Revisora r25: «Inmuebles» (antes «Propiedades»). «Elegir inquilino» lleva a la pantalla que el independiente
-    // SÍ tiene (escoger-inquilino); `/panel/seleccion` es la elección de quien tiene inmobiliaria y queda debajo.
+    // Revisora r25: «Inmuebles» (antes «Propiedades»). «Elegir inquilino» lleva a escoger-inquilino, que en el plan
+    // GRATIS es demo: ahí el layout la saca del riel (ronda 28). `/panel/seleccion` es la elección de quien tiene
+    // inmobiliaria; al independiente lo lleva a Candidatos.
     { href: '/panel/propiedades', es: 'Inmuebles', en: 'Properties', icon: Buildings, tambienEn: ['/panel/revisar-canon'] },
     { href: '/panel/candidatos', es: 'Candidatos', en: 'Candidates', icon: Users },
     { href: '/panel/visitas', es: 'Visitas', en: 'Visits', icon: CalendarBlank },

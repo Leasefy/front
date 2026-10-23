@@ -19,6 +19,7 @@ import { useContratosAdministrados } from '@/components/landlord/ContratosConLaI
 import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
 import { demoDelPropietario } from '@/lib/venta/demos-del-panel';
 import { abiertaParaElPropietarioGratis, claveDeDemoDelPropietario } from '@/lib/venta/propietario-gratis';
+import { esLaPestana } from '@/lib/nav/portal-del-inquilino';
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
 import {
   PropietarioDeInmobiliariaProvider,
@@ -212,7 +213,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
         <main id="main-content" tabIndex={-1}>
           <SeccionesDelPortal
-            seccion={deInmobiliaria ? seccionDelPropietario(pathname ?? '') : seccionDelIndependiente(pathname ?? '')}
+            seccion={deInmobiliaria ? seccionDelPropietario(pathname ?? '') : rielDelIndependiente(seccionDelIndependiente(pathname ?? ''), pathname ?? '', propietarioGratis)}
           />
           {/* Una pantalla del propietario independiente no se monta para quien
               tiene inmobiliaria: ni pide datos (503) ni muestra ceros. */}
@@ -256,4 +257,21 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
       </I18nProvider>
     </ProtectedRoute>
   );
+}
+
+/**
+ * Ronda 28 (revisora r27, CE): en el plan gratis, el riel no ofrece pestañas que llevan a la venta
+ * («Elegir inquilino» abría `escoger-inquilino`, que es demo). La pestaña en la que se está se queda,
+ * para que la ruta abierta desde el menú siga marcada. Sin el plan gratis, el riel de siempre.
+ */
+function rielDelIndependiente<S extends { pestanas: readonly { href: string; tambienEn?: readonly string[] }[] }>(
+  seccion: S | null,
+  pathname: string,
+  propietarioGratis: boolean,
+): S | null {
+  if (!seccion || !propietarioGratis) return seccion;
+  return {
+    ...seccion,
+    pestanas: seccion.pestanas.filter((p) => abiertaParaElPropietarioGratis(p.href) || esLaPestana(p, pathname)),
+  };
 }

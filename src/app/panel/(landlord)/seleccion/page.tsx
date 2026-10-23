@@ -8,6 +8,7 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useOwnerProcesos } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
+import { useLlevarALoSuyo } from '@/components/portales/use-llevar-a-lo-suyo';
 
 /**
  * Elegir inquilino (F2) — lista de procesos. Loading→Spinner; portal no cableado→"Próximamente";
@@ -21,8 +22,10 @@ function estadoEnFrase(estado: string): string {
 
 export default function SeleccionPage() {
   const { procesos, isLoading, unavailable, error, refetch } = useOwnerProcesos();
+  // Ronda 28: al independiente, directo a sus candidatos (antes «Tus candidatos están en Candidatos»).
+  const llevando = useLlevarALoSuyo(!isLoading && unavailable, '/panel/candidatos');
 
-  if (isLoading) {
+  if (isLoading || llevando) {
     return (
       <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}

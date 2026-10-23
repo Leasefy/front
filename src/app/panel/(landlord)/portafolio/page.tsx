@@ -7,6 +7,7 @@ import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholde
 import { MiPlataView } from '@/components/landlord/portal/finanzas/MiPlataView';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { ApiError } from '@/lib/api/client';
+import { useLlevarALoSuyo } from '@/components/portales/use-llevar-a-lo-suyo';
 
 /**
  * Mi plata (F3) — v8-02. Cableado a los endpoints de finanzas del back
@@ -30,8 +31,10 @@ export default function PortafolioPage() {
     reintentar,
     agencyId,
   } = useOwnerFinanzas();
+  // Ronda 28: al independiente, directo a sus arriendos (antes «Lo que te pagan está en Arriendos»).
+  const llevando = useLlevarALoSuyo(!isLoading && !fallo && (unavailable || !portafolio), '/panel/leases');
 
-  if (isLoading) {
+  if (isLoading || llevando) {
     return (
       <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
@@ -42,7 +45,7 @@ export default function PortafolioPage() {
 
   if (fallo) {
     return (
-      <div className="min-h-screen bg-bg px-4 py-10 sm:px-6" data-testid="mi-plata-fallo">
+      <div className="p-6 lg:p-8" data-testid="mi-plata-fallo">
         <div className="mx-auto max-w-3xl">
           {/* El fallo entero (status + cuerpo, con la referencia de un 5xx); el armado a mano queda de respaldo. */}
           <FalloDeCarga

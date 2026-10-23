@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { useOwnerNovedades } from '@/lib/hooks/useOwnerPortal';
 import { nombreDelMes } from '@/lib/recaudo/meses';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
+import { useLlevarALoSuyo } from '@/components/portales/use-llevar-a-lo-suyo';
 import { DamagesSection } from '@/components/landlord/portal/novedades/DamagesSection';
 
 /**
@@ -18,8 +19,10 @@ import { DamagesSection } from '@/components/landlord/portal/novedades/DamagesSe
 export default function NovedadesPage() {
   const { formatDate, locale } = useI18n();
   const { digests, danos, isLoading, unavailable } = useOwnerNovedades();
+  // Ronda 28: al independiente, directo a sus solicitudes (antes «Los daños y arreglos los ves en Solicitudes»).
+  const llevando = useLlevarALoSuyo(!isLoading && unavailable, '/panel/solicitudes');
 
-  if (isLoading) {
+  if (isLoading || llevando) {
     return (
       <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}

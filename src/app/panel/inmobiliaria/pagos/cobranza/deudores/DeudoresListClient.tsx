@@ -19,6 +19,9 @@
  */
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe, type TonoDelTramo } from '@/components/pantalla/CifraHeroe'
+import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
+import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
 import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -164,6 +167,15 @@ export default function DeudoresListClient() {
   // CONSISTENCIA (04-10-2026, CR-31): sin plazo fijado, que la lista esté vacía
   // es lo correcto; el vacío dice por qué y no manda a importar un CSV.
   const plazoSinFijar = usePlazoSinFijar()
+  // LA RESPUESTA: a cuántos se está cobrando y en qué etapa. Es el mismo
+  // panorama que lee la portada de Cobranza (conteo por etapa del agente); la
+  // lista de abajo pagina por cursor y no sabe su total.
+  const { data: panorama } = useCarteraOverview()
+  const porEtapa = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const e of panorama?.stages ?? []) m.set(e.stage, e.count)
+    return m
+  }, [panorama])
 
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
   // hasActiveFilters distinguishes "filtered empty" (Sin deudores con estos filtros)
@@ -300,6 +312,17 @@ export default function DeudoresListClient() {
   // armada así.
   const contador = `${total}${hasMore ? '+' : ''} ${total === 1 ? 'caso' : 'casos'}`
 
+  const TONO_DE_LA_ETAPA: Record<CarteraStage, TonoDelTramo> = {
+    S0: 'neutro',
+    S1: 'aviso',
+    S2: 'aviso',
+    S3: 'critico',
+    S4: 'critico',
+    S5: 'critico',
+    SX: 'neutro',
+  }
+  const enCobranza = panorama?.kpis.deudoresActivos ?? 0
+
   return (
     <CrossFade swapKey="lista">
     <div className="p-6 lg:p-8 space-y-6">
@@ -313,6 +336,32 @@ export default function DeudoresListClient() {
       />
 
       <AvisoPlazoSinFijarEnCobranza />
+
+      <Presence show={enCobranza > 0}>
+        <CifraHeroe
+          data-testid="deudores-en-cobranza"
+          rotulo="En cobranza"
+          cifra={enCobranza.toLocaleString('es-CO')}
+          contexto={enCobranza === 1 ? 'deudor, por etapa' : 'deudores, por etapa'}
+          total={enCobranza}
+          tramos={CARTERA_STAGES.map((st) => ({
+            clave: st,
+            etiqueta: stageDisplayName(st, 'es'),
+            monto: porEtapa.get(st) ?? 0,
+            tono: TONO_DE_LA_ETAPA[st],
+            cifra: (
+              <button
+                type="button"
+                onClick={() => setStages([st])}
+                className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`Ver sólo ${stageDisplayName(st, 'es')}`}
+              >
+                {(porEtapa.get(st) ?? 0).toLocaleString('es-CO')}
+              </button>
+            ),
+          }))}
+        />
+      </Presence>
 
       <Card>
         {/* ── Barra de filtros ──────────────────────────────────────────── */}
@@ -366,6 +415,11 @@ export default function DeudoresListClient() {
                 >
                   {/* QA-IA-95 (IA-B-09): el nombre de la etapa, no su código («S1»). */}
                   {stageDisplayName(s, 'es')}
+                  {porEtapa.has(s) ? (
+                    <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-subtle">
+                      {(porEtapa.get(s) ?? 0).toLocaleString('es-CO')}
+                    </span>
+                  ) : null}
                 </Chip>
               ))}
             </fieldset>
@@ -434,7 +488,7 @@ export default function DeudoresListClient() {
         <Presence
             show={Boolean(error)}
             role="alert"
-            className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
+            className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-body-sm text-danger"
           >
             <span>
               {t('inmobiliaria.ai.cobranza.deudores.error')}: {error}
@@ -456,7 +510,7 @@ export default function DeudoresListClient() {
         {!isLoading && pages.length === 0 && !error ? (
           <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
             <Users className="w-7 h-7 text-fg-muted" weight="duotone" aria-hidden="true" />
-            <p className="text-sm font-medium text-fg">
+            <p className="text-body-sm font-medium text-fg">
               {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
             </p>
             <p className="text-caption text-fg-muted max-w-sm">
@@ -542,7 +596,7 @@ export default function DeudoresListClient() {
                     className="w-full min-h-11 text-left px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-fg truncate">{d.fullName}</p>
+                      <p className="text-body-sm font-medium text-fg truncate">{d.fullName}</p>
                       <Badge variant="outline" title={STAGE_LABELS_ES[d.currentStage]}>
                         {stageDisplayName(d.currentStage, 'es')}
                       </Badge>
@@ -556,7 +610,7 @@ export default function DeudoresListClient() {
                     <p className="text-caption text-fg-muted mt-1.5">
                       {etiquetaDeCanal(d.channel, t)}
                       {d.lastActivityAt
-                        ? ` · ${new Date(d.lastActivityAt).toLocaleDateString(locale)}`
+                        ? ` · ${locale.startsWith('es') ? fechaCorta(diaEnColombia(d.lastActivityAt)) : new Date(d.lastActivityAt).toLocaleDateString(locale)}`
                         : ''}
                     </p>
                   </button>

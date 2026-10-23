@@ -30,6 +30,10 @@ vi.mock('@/lib/hooks/cobranza/use-debtor-list', () => ({
     refetch: vi.fn(),
   }),
 }))
+// El panorama de la cartera (la cifra de arriba) no es parte de este caso.
+vi.mock('@/lib/hooks/cobranza/use-cartera-overview', () => ({
+  useCarteraOverview: () => ({ data: null, isLoading: false, error: null, refetch: () => undefined }),
+}))
 vi.mock('@/lib/hooks/use-plazo-sin-fijar', () => ({ usePlazoSinFijar: () => h.sinFijar }))
 vi.mock('@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza', () => ({
   AvisoPlazoSinFijarEnCobranza: () => null,

@@ -9,7 +9,9 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, Lightbulb, ClipboardText, Wrench, ChatCircle } from '@phosphor-icons/react';
+import { MapPin, FileText, MagnifyingGlass, Heart, ClipboardText, Wrench, ChatCircle, Question } from '@phosphor-icons/react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RUTA_DEL_MARKETPLACE } from '@/lib/nav/portal-del-inquilino';
 
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth';
@@ -44,7 +46,6 @@ import { ScoreCard } from '@/components/tenant/ScoreCard';
 import { ScoreDetailSheet } from '@/components/tenant/ScoreDetailSheet';
 import { ScoreShareModal } from '@/components/tenant/ScoreShareModal';
 import { downloadScorePDF } from '@/lib/utils/generate-score-pdf';
-import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { useI18n } from '@/lib/i18n';
 import type { Property } from '@/lib/types/property';
@@ -364,84 +365,9 @@ export default function InquilinoPage() {
           </div>
         )}
 
-        {/* Stats Grid (quien todavía no arrienda) */}
-        {!esArrendatario && (
-        <div
-          className={`grid gap-4 mb-8 ${
-            isNewUser
-              ? 'grid-cols-1 sm:grid-cols-2'
-              : hayCasos
-                ? 'grid-cols-2 lg:grid-cols-5'
-                : 'grid-cols-2 lg:grid-cols-4'
-          }`}
-        >
-          {/* Trust Score - Always show */}
-          <ScoreCard
-            isPaid={isPaid}
-            level={score?.level}
-            onClick={() => setScoreSheetOpen(true)}
-          />
-
-          {/* Contadores — solo cuando cuentan algo. Un "Arriendos 0" y un
-              "Postulaciones 0" no resumen nada y ocupan el lugar de lo único
-              útil, que es por dónde empezar. */}
-          {!isNewUser && (
-          <>
-          {/* Active Leases */}
-          <Link href="/inquilino/arriendo" className="group">
-            <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors">
-              <p className="mb-1 flex items-center gap-1.5 text-fg-subtle"><House className="w-4 h-4 shrink-0" aria-hidden="true" /><MonoLabel>{locale === 'es' ? 'Arriendos' : 'Rentals'}</MonoLabel></p>
-              <p className="font-mono text-h2 tabular-nums text-fg group-hover:text-primary transition-colors">{cuantosArriendos}</p>
-              <p className="text-caption text-fg-muted mt-1">
-                {cuantosArriendos === 0
-                  ? (locale === 'es' ? 'Sin arriendos activos' : 'No active rentals')
-                  : (locale === 'es' ? 'Contratos vigentes' : 'Active contracts')}
-              </p>
-            </div>
-          </Link>
-
-          {/* Applications */}
-          <Link href="/inquilino/aplicaciones" className="group">
-            <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors">
-              <p className="mb-1 flex items-center gap-1.5 text-fg-subtle"><FileText className="w-4 h-4 shrink-0" aria-hidden="true" /><MonoLabel>{t('nav.applications')}</MonoLabel></p>
-              <p className="font-mono text-h2 tabular-nums text-fg group-hover:text-primary transition-colors">{activeApplications.length}</p>
-              <p className="text-caption text-fg-muted mt-1">
-                {locale === 'es' ? 'En proceso' : 'In progress'}
-              </p>
-            </div>
-          </Link>
-
-          {/* Casos abiertos — conteo real con deep-link al hub /inquilino/casos.
-              Sólo cuando hay casos: "Casos 0" no resume nada (misma regla del grid). */}
-          {hayCasos && (
-            <Link href="/inquilino/casos" className="group">
-              <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors">
-                <p className="mb-1 flex items-center gap-1.5 text-fg-subtle"><ClipboardText className="w-4 h-4 shrink-0" aria-hidden="true" /><MonoLabel>{locale === 'es' ? 'Casos' : 'Cases'}</MonoLabel></p>
-                <p className="font-mono text-h2 tabular-nums text-fg group-hover:text-primary transition-colors">{openCasesCount}</p>
-                <p className="text-caption text-fg-muted mt-1">
-                  {locale === 'es' ? 'Abiertos' : 'Open'}
-                </p>
-              </div>
-            </Link>
-          )}
-          </>
-          )}
-
-          {/* Sin arriendo: por dónde empezar (con arriendo, el próximo pago está en «Tu arriendo»). */}
-          <Link href="/propiedades" target="_blank" rel="noopener noreferrer" className="group">
-            <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors">
-              <MagnifyingGlass className="w-5 h-5 text-fg-muted mb-2" aria-hidden="true" />
-              <p className="text-caption text-primary font-medium mb-1">
-                {locale === 'es' ? 'Comienza ahora' : 'Get started'}
-              </p>
-              <p className="text-sm font-medium text-fg group-hover:text-primary transition-colors">
-                {locale === 'es' ? 'Buscar inmuebles' : 'Search properties'}
-              </p>
-            </div>
-          </Link>
-        </div>
-        )}
-
+        {/* GLOW UP (22-10): aquí iba una grilla de contadores del mismo peso (calificación «Sin evaluar»,
+            postulaciones, casos, «Buscar inmuebles»): repetía el riel. Lo abierto va en una línea en la
+            columna principal y la calificación, sólo cuando dice algo, en la lateral. */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
@@ -449,48 +375,31 @@ export default function InquilinoPage() {
             {esArrendatario && (
               <div className="space-y-4">
                 <TuArriendo estado={estadoDelPortal} hoy={hoyLocal()} titulos={titulosDeLosInmuebles} />
-                {(hayCasos || activeApplications.length > 0) && (
-                  <div
-                    className={`grid grid-cols-1 gap-4 ${hayCasos && activeApplications.length > 0 ? 'sm:grid-cols-2' : ''}`}
-                    data-testid="lo-demas-del-arrendatario"
-                  >
-                    {hayCasos && (
-                      <Link href="/inquilino/casos" className="group">
-                        <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors flex items-center gap-3">
-                          <ClipboardText className="w-5 h-5 text-fg-muted flex-shrink-0" aria-hidden="true" />
-                          <p className="text-sm text-fg group-hover:text-primary transition-colors">
-                            {locale === 'es'
-                              ? `${openCasesCount === 1 ? '1 caso abierto' : `${openCasesCount} casos abiertos`} con tu inmobiliaria`
-                              : `${openCasesCount} open cases`}
-                          </p>
-                        </div>
-                      </Link>
-                    )}
-                    {activeApplications.length > 0 && (
-                      <Link href="/inquilino/aplicaciones" className="group">
-                        <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-fg-muted flex-shrink-0" aria-hidden="true" />
-                          <p className="text-sm text-fg group-hover:text-primary transition-colors">
-                            {locale === 'es'
-                              ? activeApplications.length === 1
-                                ? '1 postulación en curso'
-                                : `${activeApplications.length} postulaciones en curso`
-                              : `${activeApplications.length} applications in progress`}
-                          </p>
-                        </div>
-                      </Link>
-                    )}
-                  </div>
-                )}
+                <LoAbierto
+                  casos={hayCasos ? openCasesCount : 0}
+                  postulaciones={activeApplications.length}
+                  es={locale === 'es'}
+                  testid="lo-demas-del-arrendatario"
+                />
                 {/* GLOW UP (21-10): lo que tiene abierto (casos, postulaciones) va antes que la pregunta de la
                     recomendación, que no es su trabajo; sigue debajo de «Tu arriendo» (Nico, 17-10). */}
                 <PreguntaDeLaRecomendacion />
               </div>
             )}
 
+            {/* Quien busca y ya se postuló: lo abierto primero, en una línea (antes, contadores en tarjetas). */}
+            {!esArrendatario && !isNewUser && (
+              <LoAbierto
+                casos={hayCasos ? openCasesCount : 0}
+                postulaciones={activeApplications.length}
+                es={locale === 'es'}
+                testid="lo-abierto-de-la-busqueda"
+              />
+            )}
+
             {/* Recomendadas: sólo para quien todavía busca dónde vivir. */}
             {!esArrendatario && (
-            <section>
+            <section data-testid="inmuebles-para-ti">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-h3 text-fg">
@@ -520,8 +429,47 @@ export default function InquilinoPage() {
                 </Link>
               </div>
 
-              {/* Las destacadas llegan DESPUÉS del panel (su propia consulta):
-                  entran escalonadas, con el techo de 320 ms del sistema. */}
+              {/* Las destacadas llegan DESPUÉS del panel (su propia consulta). Mientras, el esqueleto con la
+                  forma de las tarjetas (antes, la sección quedaba con el título y nada debajo). */}
+              {featuredLoading && featuredProperties.length === 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5" data-testid="inmuebles-para-ti-cargando" aria-busy="true">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="overflow-hidden rounded-lg border border-border bg-surface">
+                      <Skeleton className="aspect-[16/10] w-full rounded-none" />
+                      <div className="space-y-2 p-4">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3.5 w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : featuredProperties.length === 0 ? (
+                /* Sin inmuebles que mostrar: qué va a aparecer, de dónde salen y por dónde seguir buscando. */
+                <div className="rounded-lg border border-border bg-surface" data-testid="inmuebles-para-ti-vacio">
+                  <EmptyState
+                    icon={MagnifyingGlass}
+                    title={
+                      referenciaHome
+                        ? locale === 'es'
+                          ? 'Hoy no hay inmuebles dentro de tu tope'
+                          : 'No properties within your cap today'
+                        : locale === 'es'
+                          ? 'Hoy no hay inmuebles disponibles'
+                          : 'No properties available today'
+                    }
+                    description={
+                      locale === 'es'
+                        ? 'Los publican las inmobiliarias en el marketplace y aparecen aquí apenas salen. Mientras, puedes buscar con tus filtros.'
+                        : 'Agencies publish them on the marketplace and they show up here as soon as they do. Meanwhile, you can search with your own filters.'
+                    }
+                    action={{
+                      label: locale === 'es' ? 'Buscar en el marketplace' : 'Search the marketplace',
+                      // El marketplace se abre en OTRA pestaña (reunión 21-10): no pierde su portal.
+                      onClick: () => window.open(RUTA_DEL_MARKETPLACE, '_blank', 'noopener,noreferrer'),
+                    }}
+                  />
+                </div>
+              ) : (
               <Stagger className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {featuredProperties.map((property) => (
                   <StaggerItem key={property.id} className="flex">
@@ -608,186 +556,97 @@ export default function InquilinoPage() {
                   </StaggerItem>
                 ))}
               </Stagger>
+              )}
             </section>
             )}
 
-            {/*
-              Antes esto era un bloque suelto: sin encabezado y sobre un fondo
-              `surface-muted/80` que encima del fondo de la página no se ve, así
-              que quedaba flotando después de las tarjetas sin pertenecer a
-              nada. Un vacío sin sección no dice de qué está vacío.
-
-              Ahora es una sección como la de arriba —título, subtítulo y enlace
-              a la lista completa— y el vacío usa el `EmptyState` compartido,
-              el mismo de Documentos y Contratos, dentro de una tarjeta con
-              borde como el resto de las superficies del home.
-            */}
-            {!esArrendatario && activeApplications.length === 0 && (
-              <section>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-h3 text-fg">
-                      {t('nav.applications')}
-                    </h2>
-                    <p className="text-sm text-fg-muted mt-0.5">
-                      {locale === 'es'
-                        ? 'El estado de cada propiedad a la que te postules'
-                        : 'The status of every property you apply to'}
-                    </p>
-                  </div>
-                  <Link
-                    href="/inquilino/aplicaciones"
-                    className="text-sm text-fg-muted hover:text-fg font-medium flex items-center gap-1 transition-colors"
-                  >
-                    {t('common.showMore')}
-                  </Link>
-                </div>
-
-                <div className="rounded-lg border border-border bg-surface">
-                  {/* "aplicación / aplicar" está muerto: docs/VOCABULARIO.md.
-                      Y el CTA va a su catálogo, que es lo siguiente que haría. */}
-                  <EmptyState
-                    icon={FileText}
-                    title={locale === 'es' ? 'Todavía no te has postulado' : 'You have not applied yet'}
-                    description={
-                      locale === 'es'
-                        ? 'Cuando te postules a una propiedad, podrás seguir aquí cómo va tu postulación.'
-                        : 'When you apply to a property, you\'ll be able to follow your application here.'
-                    }
-                    action={{
-                      label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
-                      href: '/inquilino/para-ti',
-                    }}
-                  />
-                </div>
-              </section>
-            )}
+            {/* GLOW UP (22-10): aquí iba «Todavía no te has postulado» con «Ver propiedades para mí», la misma
+                salida del tope y de «Inmuebles para ti». Sus postulaciones siguen en «Buscar arriendo». */}
           </div>
 
-          {/* Sidebar */}
+          {/* Lateral: sólo lo que el riel no tiene (GLOW UP 22-10). Antes repetía «Pagar», «Estado de cuenta»,
+              «Postulaciones» y «Mi perfil» (ya están en el riel y en «Tu arriendo»), con un consejo sobre un
+              corazón que ya no existe y una tarjeta de ayuda aparte. */}
           <div className="space-y-6">
-
-            {/* Quick Actions */}
-            <div
-              className="rounded-lg border border-border bg-surface p-5"
-            >
-              <h3 className="font-medium text-fg mb-4">
-                {t('dashboard.quickActions')}
-              </h3>
-              <div className="space-y-2">
-                {(esArrendatario ? [
-                  {
-                    href: '/inquilino/pagos',
-                    icon: CreditCard,
-                    label: locale === 'es' ? 'Pagar mi arriendo' : 'Pay my rent',
-                    desc: locale === 'es' ? 'En línea o con tu referencia' : 'Online or with your reference',
-                  },
-                  {
-                    href: '/inquilino/estado-de-cuenta',
-                    icon: FileText,
-                    label: locale === 'es' ? 'Estado de cuenta' : 'Account statement',
-                    desc: locale === 'es' ? 'Lo pagado y lo que debes' : 'What you paid and owe',
-                  },
-                  {
-                    href: '/inquilino/solicitudes?nueva=1',
-                    icon: Wrench,
-                    label: locale === 'es' ? 'Reportar un daño' : 'Report damage',
-                    desc: locale === 'es' ? 'Le llega a tu inmobiliaria' : 'Goes to your property manager',
-                  },
-                  {
-                    href: '/inquilino/mensajes?nuevo=1',
-                    icon: ChatCircle,
-                    label: locale === 'es' ? 'Escribirle a la inmobiliaria' : 'Message your property manager',
-                    desc: locale === 'es' ? 'Un mensaje directo' : 'A direct message',
-                  },
-                ] : [
-                  {
-                    // Buscar se hace en el marketplace, en OTRA pestaña (reunión 21-10).
-                    href: '/propiedades',
-                    externo: true,
-                    icon: MagnifyingGlass,
-                    label: locale === 'es' ? 'Buscar propiedades' : 'Search properties',
-                    desc: locale === 'es' ? 'Explora el mercado' : 'Explore the market',
-                  },
-                  {
-                    href: '/inquilino/guardados',
-                    icon: Heart,
-                    label: locale === 'es' ? 'Propiedades guardadas' : 'Saved properties',
-                    desc: locale === 'es' ? 'Ver favoritos' : 'View favorites'
-                  },
-                  {
-                    href: '/inquilino/aplicaciones',
-                    icon: FileText,
-                    label: t('nav.applications'),
-                    desc: locale === 'es' ? 'Ver mis postulaciones' : 'View my applications'
-                  },
-                  {
-                    href: '/inquilino/perfil',
-                    icon: Shield,
-                    label: locale === 'es' ? 'Mi perfil' : 'My profile',
-                    desc: locale === 'es' ? 'Editar información' : 'Edit information'
-                  },
-                ] as { href: string; icon: typeof MagnifyingGlass; label: string; desc: string; externo?: boolean }[]).map((action) => (
-                  <Link
-                    key={action.href}
-                    href={action.href}
-                    {...(action.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                  >
-                    <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface transition-colors group">
-                      <action.icon className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-fg group-hover:text-primary transition-colors">
-                          {action.label}
-                        </p>
-                        <p className="text-caption text-fg-muted truncate">{action.desc}</p>
-                      </div>
-                      <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-primary transition-colors" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Tips Card for New Users */}
-            {isNewUser && (
-              <div
-                className="rounded-lg border border-border bg-surface p-5"
-              >
-                <div className="flex items-start gap-3">
-                  <Lightbulb className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />
-                  <div>
-                    <h4 className="font-medium text-fg text-sm mb-1">
-                      {locale === 'es' ? 'Consejo' : 'Tip'}
-                    </h4>
-                    <p className="text-sm text-fg-muted leading-relaxed">
-                      {locale === 'es'
-                        ? 'Guarda los inmuebles que te interesen tocando el corazón. Así puedes compararlos fácilmente.'
-                        : 'Save properties you like by tapping the heart. This way you can easily compare them.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
+            {/* La calificación sólo cuando dice algo: «Sin evaluar» no resume nada (sigue en «Mi calificación»). */}
+            {!esArrendatario && isPaid && score?.level && (
+              <ScoreCard isPaid={isPaid} level={score.level} onClick={() => setScoreSheetOpen(true)} />
             )}
 
-            {/* Help Card */}
-            <div
-              className="rounded-lg bg-surface border border-border p-5"
-            >
-              <h4 className="font-medium text-fg text-sm mb-2">
-                {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
-              </h4>
-              <p className="text-sm text-fg-muted mb-4">
-                {locale === 'es'
-                  ? 'Nuestro equipo está listo para asistirte.'
-                  : 'Our team is ready to assist you.'}
-              </p>
-              <Link
-                href="/ayuda"
-                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:opacity-80 transition-opacity"
-              >
-                {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
-              </Link>
-            </div>
+            <section className="rounded-lg border border-border bg-surface p-5" data-testid="atajos-del-inicio">
+              <h2 className="mb-3 text-fg-subtle">
+                <MonoLabel>{locale === 'es' ? 'Atajos' : 'Shortcuts'}</MonoLabel>
+              </h2>
+              <ul className="-mx-2 space-y-0.5">
+                {(esArrendatario
+                  ? [
+                      {
+                        href: '/inquilino/solicitudes?nueva=1',
+                        icon: Wrench,
+                        label: locale === 'es' ? 'Reportar un daño' : 'Report damage',
+                        desc: locale === 'es' ? 'Le llega a tu inmobiliaria' : 'Goes to your property manager',
+                      },
+                      {
+                        href: '/inquilino/mensajes?nuevo=1',
+                        icon: ChatCircle,
+                        label: locale === 'es' ? 'Escribirle a la inmobiliaria' : 'Message your property manager',
+                        desc: locale === 'es' ? 'Un mensaje directo' : 'A direct message',
+                      },
+                    ]
+                  : [
+                      {
+                        // Buscar se hace en el marketplace, en OTRA pestaña (reunión 21-10).
+                        href: RUTA_DEL_MARKETPLACE,
+                        externo: true,
+                        icon: MagnifyingGlass,
+                        label: locale === 'es' ? 'Buscar en el marketplace' : 'Search the marketplace',
+                        desc: locale === 'es' ? 'Con tus filtros, en otra pestaña' : 'With your filters, in a new tab',
+                      },
+                      {
+                        href: '/inquilino/guardados',
+                        icon: Heart,
+                        label: locale === 'es' ? 'Inmuebles guardados' : 'Saved properties',
+                        desc: locale === 'es' ? 'Los que marcaste para comparar' : 'The ones you saved to compare',
+                      },
+                    ]
+                ).concat([
+                  {
+                    href: '/ayuda',
+                    icon: Question,
+                    label: locale === 'es' ? 'Centro de ayuda' : 'Help center',
+                    desc: locale === 'es' ? 'Respuestas y cómo contactarnos' : 'Answers and how to reach us',
+                  },
+                ] as { href: string; icon: typeof MagnifyingGlass; label: string; desc: string; externo?: boolean }[]).map((action) => (
+                  <li key={action.href}>
+                    {'externo' in action && action.externo ? (
+                      <a
+                        href={action.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-surface-muted"
+                      >
+                        <action.icon className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium text-fg group-hover:text-primary">{action.label}</span>
+                          <span className="block truncate text-caption text-fg-muted">{action.desc}</span>
+                        </span>
+                      </a>
+                    ) : (
+                      <Link
+                        href={action.href}
+                        className="group flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-surface-muted"
+                      >
+                        <action.icon className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium text-fg group-hover:text-primary">{action.label}</span>
+                          <span className="block truncate text-caption text-fg-muted">{action.desc}</span>
+                        </span>
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
           </div>
         </div>
       </motion.div>
@@ -822,6 +681,52 @@ export default function InquilinoPage() {
           verificationCode={evaluation.verificationCode}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Lo que la persona tiene abierto con su inmobiliaria (casos) y en su búsqueda (postulaciones), en una
+ * línea cada uno. Sólo lo que cuenta algo: sin casos ni postulaciones no se pinta nada.
+ */
+function LoAbierto({
+  casos,
+  postulaciones,
+  es,
+  testid,
+}: {
+  casos: number;
+  postulaciones: number;
+  es: boolean;
+  testid: string;
+}) {
+  if (casos === 0 && postulaciones === 0) return null;
+  const filas = [
+    casos > 0 && {
+      href: '/inquilino/casos',
+      icon: ClipboardText,
+      texto: es ? `${casos === 1 ? '1 caso abierto' : `${casos} casos abiertos`} con tu inmobiliaria` : `${casos} open cases`,
+    },
+    postulaciones > 0 && {
+      href: '/inquilino/aplicaciones',
+      icon: FileText,
+      texto: es
+        ? postulaciones === 1
+          ? '1 postulación en curso'
+          : `${postulaciones} postulaciones en curso`
+        : `${postulaciones} applications in progress`,
+    },
+  ].filter(Boolean) as { href: string; icon: typeof FileText; texto: string }[];
+  return (
+    <div className={`grid grid-cols-1 gap-4 ${filas.length > 1 ? 'sm:grid-cols-2' : ''}`} data-testid={testid}>
+      {filas.map((f) => (
+        <Link key={f.href} href={f.href} className="group">
+          <div className="flex h-full items-center gap-3 rounded-lg border border-border bg-surface p-5 transition-colors hover:bg-surface-muted">
+            <f.icon className="h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
+            <p className="text-sm text-fg transition-colors group-hover:text-primary">{f.texto}</p>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }

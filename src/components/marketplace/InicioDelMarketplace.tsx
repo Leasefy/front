@@ -8,6 +8,7 @@ import { motionDuration, motionEase, motionStagger, Stagger, StaggerItem } from 
 import { Buildings, House, MagnifyingGlass, MapTrifold } from '@phosphor-icons/react';
 
 import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { primeraFoto } from '@/components/property/PortadaDelInmueble';
 import { useProperties } from '@/lib/hooks/useProperties';
@@ -116,9 +117,18 @@ export function InicioDelMarketplace() {
         <main className="min-w-0 pb-20">
           {/* «Conversación · Galería» también en la entrada (Nico, 09-10: «¿dónde está lo de galería y chat?»). */}
           <InterruptorDeVista vista="conversacion" hrefConversacion="/propiedades" hrefGaleria="/propiedades?vista=lista" />
-          <div className="mx-auto w-full max-w-[1280px]">
+          <div className="relative mx-auto w-full max-w-[1280px]">
+            {/* Cadence 2 · PIX (Nico, 23-10: «quiero más dots», la corriente de la landing nueva): los píxeles de
+                voltaje fluyen detrás de la llegada, concentrados abajo para que la pregunta quede sobre papel limpio.
+                Sólo en claro: en oscuro el papel no es el fondo. */}
+            <CorrienteDeVoltaje
+              className="absolute inset-x-0 top-[240px] h-[380px] w-full opacity-80 [mask-image:linear-gradient(to_bottom,transparent_0%,#000_38%,#000_62%,transparent_100%)] dark:hidden"
+              forma="horizonte"
+              fuerza={0.5}
+              semilla={11}
+            />
             {/* ── La caja, como la llegada del chat ── */}
-            <section className="llegada-grises mx-auto flex max-w-[820px] flex-col items-center px-4 pb-14 pt-12 text-center sm:px-6 md:pt-20">
+            <section className="llegada-grises relative mx-auto flex max-w-[820px] flex-col items-center px-4 pb-14 pt-12 text-center sm:px-6 md:pt-20">
               <motion.div {...entrada(0)}>
                 <OrbeDeAgente agente="orquestador" tamano={72} decorativo />
               </motion.div>

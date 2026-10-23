@@ -28,6 +28,8 @@ import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { usePaymentDetail } from '@/lib/hooks/cobranza/use-payment-detail'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 const BACK_HREF = '/panel/inmobiliaria/pagos/cobranza/pagos'
 
@@ -131,7 +133,7 @@ function BackLink() {
       data-testid="pagos-detail-back"
       className="text-primary underline-offset-4 hover:underline font-medium text-caption"
     >
-      ← Volver a pagos
+      Volver a pagos
     </Link>
   )
 }
@@ -169,7 +171,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
       <CrossFade swapKey="no-disponible">
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <BackLink />
-        <h1 className="text-h2 text-fg">Detalle de pago</h1>
+        <EncabezadoDePantalla seccion="Cobranza · Pagos" titulo="Detalle de pago" />
         <EmptyState
           icon={CurrencyCircleDollar}
           title="Pago no disponible"
@@ -193,16 +195,23 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
     <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
       <BackLink />
 
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">Detalle de pago</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            Información del pago, su estado y verificación.
-          </p>
-        </div>
-        {isVerifiable && (
-          <div className="shrink-0">
+      <EncabezadoDePantalla
+        seccion="Cobranza · Pagos"
+        titulo="Detalle de pago"
+        descripcion={
+          isVerifiable
+            ? 'El inquilino dice que ya pagó: revisa el comprobante y verifícalo.'
+            : 'El monto, su estado y quién lo verificó.'
+        }
+        junto={
+          <StatusBadge tone={statusTone(data.status)}>
+            {statusLabel(data.status, data.paymentMethod)}
+          </StatusBadge>
+        }
+        accionPrincipal={
+          isVerifiable ? (
             <Button
+              size="sm"
               hideArrow
               onClick={() => void handleVerify()}
               isLoading={isVerifying}
@@ -211,22 +220,14 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
             >
               Verificar pago
             </Button>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
+
+      <CifraHeroe rotulo="Monto" cifra={formatCop(data.amount)} tamano="mediana" data-testid="pago-monto" />
 
       <div className="rounded-lg border border-border bg-card p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <Field label="Monto">
-          <span className="text-lg font-medium text-fg">{formatCop(data.amount)}</span>
-        </Field>
-
-        <Field label="Estado">
-          <StatusBadge tone={statusTone(data.status)}>
-            {statusLabel(data.status, data.paymentMethod)}
-          </StatusBadge>
-        </Field>
-
-        <Field label="Proveedor">
+        <Field label="Pasarela">
           <span className="capitalize">{provider}</span>
         </Field>
 
@@ -276,7 +277,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
               className="text-primary underline-offset-4 hover:underline font-medium"
               data-testid="pago-comprobante-link"
             >
-              Ver comprobante →
+              Ver comprobante
             </a>
           </Field>
         )}

@@ -25,6 +25,7 @@ import { CrossFade, Presence } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Input } from '@/components/ui'
 import { Textarea } from '@/components/ui/textarea'
@@ -383,30 +384,29 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
       />
 
       {/* Header */}
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.planes.title')}
-          </h1>
-          <div className="mt-1 flex items-center gap-2 text-sm text-fg-muted">
-            <span className="font-medium text-fg">
-              {plan.debtor.nombreMasked || '—'}
-            </span>
-            <span>·</span>
+      <EncabezadoDePantalla
+        seccion="Cobranza · Pagos"
+        titulo={t('inmobiliaria.ai.cobranza.planes.title')}
+        descripcion={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            <span className="font-medium text-fg">{plan.debtor.nombreMasked || '—'}</span>
+            <span aria-hidden="true">·</span>
             <Mask field="cedula" value={plan.debtor.cedulaMasked} />
-          </div>
-        </div>
-        <Button asChild variant="outline" size="sm" hideArrow>
-          <Link href={`/panel/inmobiliaria/pagos/cobranza/deudores/${plan.debtor.id}`}>
-            {t('inmobiliaria.ai.cobranza.planes.verDeudor')} →
-          </Link>
-        </Button>
-      </header>
+          </span>
+        }
+        acciones={
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href={`/panel/inmobiliaria/pagos/cobranza/deudores/${plan.debtor.id}`}>
+              {t('inmobiliaria.ai.cobranza.planes.verDeudor')}
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Comparison panel */}
       <section className="overflow-hidden rounded-md border border-border bg-surface">
         <div className="overflow-x-auto overscroll-contain">
-        <Table className="w-full text-sm">
+        <Table className="w-full text-body-sm">
           <TableHeader className="bg-surface-muted">
             <TableRow>
               <TableHead>{t('inmobiliaria.ai.cobranza.planes.comparisonHeader.campo')}</TableHead>
@@ -481,7 +481,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
             href="/panel/inmobiliaria/configuracion/agencia"
             className="mt-2 inline-block text-sm font-medium underline underline-offset-4 hover:opacity-80"
           >
-            {t('inmobiliaria.ai.cobranza.planes.configLink')} →
+            {t('inmobiliaria.ai.cobranza.planes.configLink')}
           </Link>
         </div>
       )}
@@ -630,7 +630,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
             rel="noopener noreferrer"
             className="mt-2 inline-block break-all text-sm font-medium text-success underline underline-offset-4 hover:opacity-80"
           >
-            {t('inmobiliaria.ai.cobranza.planes.wompiLinkLabel')} →
+            {t('inmobiliaria.ai.cobranza.planes.wompiLinkLabel')}
           </a>
         </section>
       )}

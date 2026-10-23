@@ -436,7 +436,9 @@ export function FacturasDeProveedor({
         <TituloDeBloque titulo="Facturas de proveedor" accion={accionRegistrar} />
       )}
 
-      {hayRespuesta ? (
+      {/* Ronda 30 (revisora r27): sin facturas en el período, sólo el vacío (antes la línea de la cifra,
+          cinco pestañas en 0 y el vacío decían lo mismo). */}
+      {hayRespuesta && facturado > 0 ? (
         <CifraHeroe
           rotulo="Falta causar y pagar"
           cifra={<Monto valor={falta} />}
@@ -478,7 +480,8 @@ export function FacturasDeProveedor({
                 valor: e as EstadoDeFacturaDeProveedor | 'TODAS',
                 etiqueta,
                 cuantos: conteos[e] ? conteos[e]!.n : null,
-                fija: true,
+                // Ronda 30: en cero no se pinta (la regla de las pestañas).
+                fija: false,
                 tono: conteos[e] && conteos[e]!.n > 0 && tono === 'aviso' ? ('aviso' as const) : undefined,
                 testid: `estado-${e.toLowerCase()}`,
               })),
@@ -532,15 +535,8 @@ export function FacturasDeProveedor({
             ilustracion="billetera"
             titulo="Todavía no hay facturas de proveedor"
             descripcion="Registra la primera (el contador, la luz de la oficina, una cerradura), cáusala para que quede en el libro y págala: el pago sale por Egresos, con la firma de otra persona."
-            // Ronda 26 (revisora r25, Gastos UI): el azul ya es «Registrar una factura» del encabezado; el vacío
-            // lleva la suya en arena (antes dos azules iguales).
-            accion={
-              registro.puede ? (
-                <Button size="sm" variant="secondary" hideArrow onClick={() => setFormularioAbierto(true)}>
-                  Registrar la primera
-                </Button>
-              ) : undefined
-            }
+            // Ronda 30 (revisora r27): sin botón propio: «Registrar una factura» del encabezado es la acción
+            // (antes dos «Registrar» para lo mismo).
             onLimpiarFiltros={() => {
               setDesde('');
               setHasta('');

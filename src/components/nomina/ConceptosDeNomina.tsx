@@ -26,6 +26,7 @@
  * «Asentar» falle, y enterarse al intentar asentar es enterarse tarde.
  */
 
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { useState } from 'react';
 import { ListBullets } from '@phosphor-icons/react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
@@ -203,7 +204,10 @@ export function ConceptosDeNominaPanel() {
                     }
                   />
                 </div>
-                <p className="max-w-3xl text-caption text-fg-muted">{sinMayusculasDeEnfasis(datos.avisoDeCuentas)}</p>
+                {/* Ronda 30 (revisora r27): la nota del decreto (tres renglones) se consulta: plegada. */}
+                <MasDetalles etiqueta="De dónde salen las cuentas" etiquetaAbierto="Ocultar" montadoSiempre className="text-caption">
+                  <p className="max-w-3xl text-caption text-fg-muted">{sinMayusculasDeEnfasis(datos.avisoDeCuentas)}</p>
+                </MasDetalles>
               </div>
             ) : null}
 

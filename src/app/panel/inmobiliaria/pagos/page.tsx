@@ -83,6 +83,7 @@
  * algo que mostrar.
  */
 
+import { useTr } from '@/lib/i18n/use-tr'
 import Link from 'next/link'
 import { CaretRight, Clock, Robot, User as UserIcon, Gear } from '@phosphor-icons/react'
 import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -154,6 +155,8 @@ function FeedActorChip({ actorType }: { actorType: OverviewFeedEntry['actorType'
 }
 
 function PagosHome() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   const { t } = useI18n()
   const { data, isLoading: ovLoading, errorCrudo: ovError, refetch: ovRefetch } =
     useAgentOverview('pagos')
@@ -178,7 +181,7 @@ function PagosHome() {
           secciones del riel: una pantalla que no cabe en la navegación no se
           cuelga del título. */}
       <EncabezadoDePantalla
-        seccion="Pagos · inquilinos"
+        seccion={tr('Cobrar a inquilinos')}
         titulo={t('inmobiliaria.nav.deudaDelMes')}
         descripcion={t('inmobiliaria.ai.pagos_home.subtitle')}
       />
@@ -314,11 +317,13 @@ function PagosHome() {
  * pedirlas sólo le pintaría un «no pudimos cargar».
  */
 function PagosDelAuxiliar() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   const { t } = useI18n()
   return (
     <div className="space-y-6 p-6 lg:p-8" data-testid="pagos-del-auxiliar">
       <EncabezadoDePantalla
-        seccion="Pagos · inquilinos"
+        seccion={tr('Cobrar a inquilinos')}
         titulo={t('inmobiliaria.nav.deudaDelMes')}
         descripcion={t('inmobiliaria.ai.pagos_home.subtitle')}
       />

@@ -10,6 +10,7 @@
  * Permiso: `cobros`/view, el mismo del back (`GET /inmobiliaria/estudios/pagos`).
  */
 
+import { useTr } from '@/lib/i18n/use-tr';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -41,6 +42,8 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 
 function Contenido() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   const { isAdmin, agencyRole } = usePermissions();
   const esAdministrador = isAdmin || agencyRole === 'ADMIN';
   const [pagos, setPagos] = useState<PagoDeEstudio[] | null>(null);
@@ -101,7 +104,7 @@ function Contenido() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Pagos · inquilinos"
+        seccion={tr('Cobrar a inquilinos')}
         titulo="Estudios pagados"
         descripcion="Lo que pagaron los solicitantes por su estudio, con su recibo y su factura. No se devuelve y, vigente, sirve para cualquier inmueble."
         acciones={

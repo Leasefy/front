@@ -564,4 +564,7 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Ver No contactar": "See Do not contact",
   "Ninguna solicitud de no contactar espera su acuse.": "No do-not-contact request is waiting for acknowledgment.",
   "Ocultar las alertas por día": "Hide alerts per day",
+  // Ronda 26, Dinero (3.er agente): sobretítulo del Tablero y Giros paso 1
+  "Pagos": "Payments",
+  "Lo que le toca a cada propietario en el mes.": "What each owner is owed this month.",
 }

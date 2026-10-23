@@ -9,6 +9,7 @@
  * (los giros hechos con su extracto, que pide además `dispersiones:view`).
  */
 
+import { useTr } from '@/lib/i18n/use-tr';
 import { useState } from 'react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -21,6 +22,8 @@ import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 type Pestana = 'recibos' | 'egresos';
 
 export default function RecibosPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   const permisos = usePermissionsContextSafe();
   const veLosEgresos = permisos === null || permisos.canAccess('dispersiones', 'view');
   const [pestana, setPestana] = useState<Pestana>('recibos');
@@ -31,7 +34,7 @@ export default function RecibosPage() {
         {/* Revisora r24 (Recibos): el encabezado común y la misma sección que sus hermanas del
             grupo «Cobrar a inquilinos» (Deuda del mes, Recaudo, Cartera). */}
         <EncabezadoDePantalla
-          seccion="Pagos · inquilinos"
+          seccion={tr('Cobrar a inquilinos')}
           titulo="Recibos"
           descripcion="Los recibos de caja de cada pago que entró y, aparte, lo que se les giró a los propietarios."
         />

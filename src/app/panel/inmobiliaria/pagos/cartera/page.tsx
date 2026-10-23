@@ -12,6 +12,7 @@
  * Permiso: `cobros`/view, el mismo con el que el back protege el reporte.
  */
 
+import { useTr } from '@/lib/i18n/use-tr'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CarteraCompleta } from '@/components/cartera/CarteraCompleta'
@@ -19,13 +20,15 @@ import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
 import { IrALaCobranza } from '@/components/cartera/IrALaCobranza'
 
 export default function CarteraPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         {/* GLOW UP (22-10): el encabezado común; una línea de para qué sirve. Quién
             la persigue (Cobranza, un agente) es un enlace en las acciones. */}
         <EncabezadoDePantalla
-          seccion="Pagos · inquilinos"
+          seccion={tr('Cobrar a inquilinos')}
           titulo="Cartera"
           descripcion="Lo que pasó el plazo y se persigue, separado de lo que todavía no vence."
           acciones={<IrALaCobranza />}

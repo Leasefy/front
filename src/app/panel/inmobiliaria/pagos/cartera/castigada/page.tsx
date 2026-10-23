@@ -13,6 +13,7 @@
  * permiso: lo verifica el back.
  */
 
+import { useTr } from '@/lib/i18n/use-tr'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -20,11 +21,13 @@ import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
 import { CastigoDeCartera } from '@/components/cartera/CastigoDeCartera'
 
 export default function CarteraCastigadaPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion="Pagos · inquilinos"
+          seccion={tr('Cobrar a inquilinos')}
           titulo="Cartera castigada"
           descripcion="Las deudas incobrables que salieron de la cartera activa: la cobranza no las toca."
           ayuda={

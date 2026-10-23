@@ -12,6 +12,7 @@
  * `/cobros`, vista por deuda.
  */
 
+import { useTr } from '@/lib/i18n/use-tr'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CarteraPorConcepto } from '@/components/cartera/CarteraPorConcepto'
@@ -19,11 +20,13 @@ import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
 import { IrALaCobranza } from '@/components/cartera/IrALaCobranza'
 
 export default function CarteraPorConceptoPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion="Pagos · inquilinos"
+          seccion={tr('Cobrar a inquilinos')}
           titulo="Cartera por concepto"
           descripcion="Cuánto debe cada inquilino, mes a mes, separado en canon, intereses de mora, gasto administrativo y lo demás que se le cobra."
           acciones={<IrALaCobranza />}

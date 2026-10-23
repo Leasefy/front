@@ -1,4 +1,5 @@
 'use client';
+import { useTr } from '@/lib/i18n/use-tr';
 import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
 import { CobrosMarcados } from '@/components/inmobiliaria/CobrosMarcados';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -99,6 +100,8 @@ function getCurrentMonth(): string {
  * Route: /panel/inmobiliaria/pagos/cartera/cobros
  */
 function CobrosContent() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   const { t, locale } = useI18n();
   const searchParams = useSearchParams();
   const puedeHacerRecibo = usePuedeHacerRecibo();
@@ -509,7 +512,7 @@ function CobrosContent() {
       {/* Header — el encabezado común; las acciones a la derecha, sm. */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <EncabezadoDePantalla
-          seccion="Pagos · inquilinos"
+          seccion={tr('Cobrar a inquilinos')}
           titulo={t('inmobiliaria.cobros.title')}
           descripcion={t('inmobiliaria.cobros.subtitle')}
         />

@@ -26,7 +26,7 @@ export default function RecaudoPage() {
         {/* GLOW UP (22-10): el encabezado común, una línea, y los recaudos que no son
             de cuotas (estudios, aseguradoras, autopago) en un menú, no tres enlaces sueltos. */}
         <EncabezadoDePantalla
-          seccion={tr("Pagos · inquilinos")}
+          seccion={tr('Cobrar a inquilinos')}
           titulo={tr("Recaudo")}
           descripcion={tr("Lo que llegó, lo que falta y lo que salió a propietarios, mes por mes.")}
           acciones={

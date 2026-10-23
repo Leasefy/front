@@ -11,6 +11,7 @@
  * (`GET /inmobiliaria/autopago`, `payu-api-front.md`).
  */
 
+import { useTr } from '@/lib/i18n/use-tr';
 import Link from 'next/link';
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
@@ -19,11 +20,13 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { AutopagosDeLaInmobiliaria } from '@/components/inmobiliaria/pagos/autopago/AutopagosDeLaInmobiliaria';
 
 export default function AutopagoPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion="Pagos · inquilinos"
+          seccion={tr('Cobrar a inquilinos')}
           titulo="Autopago"
           descripcion="Los inquilinos que inscribieron el cobro automático de su cuota, con su tope y cómo salió el último intento. Lo inscribe, pausa o cancela el inquilino desde su portal."
           acciones={

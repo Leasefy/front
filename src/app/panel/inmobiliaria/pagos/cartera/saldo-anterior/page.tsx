@@ -9,6 +9,7 @@
  * gira solo y quien decide el giro es finanzas.
  */
 
+import { useTr } from '@/lib/i18n/use-tr'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -16,11 +17,13 @@ import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
 import { SaldoDelSistemaAnterior } from '@/components/cartera/SaldoDelSistemaAnterior'
 
 export default function SaldoDelSistemaAnteriorPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   return (
     <PageGuard module="dispersiones" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion="Pagos · inquilinos"
+          seccion={tr('Cobrar a inquilinos')}
           titulo="Saldo del sistema anterior"
           descripcion="Lo que cada inquilino debía en el sistema anterior a la fecha de corte, cobrado como cualquier deuda."
           ayuda={

@@ -8,6 +8,7 @@
  * pantalla los respeta.
  */
 
+import { useTr } from '@/lib/i18n/use-tr';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -42,6 +43,8 @@ function VolverDesde() {
 }
 
 export default function ReglasDeMoraPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
@@ -54,7 +57,7 @@ export default function ReglasDeMoraPage() {
           {/* 🔴 El techo (17-09): el interés no puede pasar de la usura del mes
               (art. 884 del Código de Comercio); por eso la usura va al lado. */}
           <EncabezadoDePantalla
-            seccion="Pagos · inquilinos"
+            seccion={tr('Cobrar a inquilinos')}
             titulo="Reglas de mora"
             descripcion="Lo que se le suma a cada cobro vencido: primero el interés, pasados los días de plazo, y después el gasto administrativo."
             ayuda={

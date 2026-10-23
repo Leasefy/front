@@ -196,7 +196,7 @@ export function TableroFinancieroPanel() {
           sola pieza: mes y sede mandan sobre TODO el tablero, no sobre el
           primer bloque. La sede sólo aparece si la inmobiliaria tiene sedes. */}
       <EncabezadoDePantalla
-        seccion={tr('Finanzas')}
+        seccion={tr('Pagos')}
         titulo={tr('Tablero financiero')}
         descripcion={tr(
           'Lo que entró, lo que deben, lo que hay que girar y lo que ganó la inmobiliaria en el mes.',

@@ -8,6 +8,7 @@
  * mismo permiso: `cobros`/view para ver, `cobros`/edit para mover.
  */
 
+import { useTr } from '@/lib/i18n/use-tr';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import Link from 'next/link';
@@ -15,6 +16,8 @@ import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { CobroJuridico } from '@/components/cartera/CobroJuridico';
 
 export default function CobroJuridicoPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
@@ -25,7 +28,7 @@ export default function CobroJuridicoPage() {
             Cartera
           </Link>
           <EncabezadoDePantalla
-            seccion="Pagos · inquilinos"
+            seccion={tr('Cobrar a inquilinos')}
             titulo="Cobro jurídico"
             descripcion="Lo que ya no se cobra con una llamada: pásalo a un abogado y lleva sus honorarios."
             ayuda={

@@ -290,6 +290,38 @@ export function LibroMayor() {
                             </Fragment>
                           );
                         })}
+                        {/* Decisión de Nico (23-10-2026): a 390 la tarjeta TAMBIÉN trae el detalle
+                            mes a mes (antes sólo los totales: las columnas de cada mes se escondían).
+                            Sólo los meses con movimiento; en escritorio esto no se pinta. */}
+                        <TableCell className="hidden max-md:col-span-2 max-md:block max-md:p-0">
+                          {(() => {
+                            const conMovimiento = meses
+                              .map((m) => ({ m, delMes: f.porMes.find((p) => p.mes === m) }))
+                              .filter(({ delMes }) => (delMes?.debitosCop ?? 0) !== 0 || (delMes?.creditosCop ?? 0) !== 0);
+                            if (conMovimiento.length === 0) return null;
+                            return (
+                              <ul
+                                className="divide-y divide-border-faint rounded-md border border-border-faint"
+                                aria-label={`Mes a mes de ${f.codigo}`}
+                                data-testid={`mayor-${f.codigo}-mes-a-mes`}
+                              >
+                                {conMovimiento.map(({ m, delMes }) => (
+                                  <li key={m} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-3 px-3 py-2">
+                                    <span className="text-caption text-fg-muted">{mesDelMayor(m)}</span>
+                                    <span className="text-right">
+                                      <span className="block text-caption text-fg-subtle">Débitos</span>
+                                      <Monto valor={delMes?.debitosCop ?? 0} className="text-caption" />
+                                    </span>
+                                    <span className="text-right">
+                                      <span className="block text-caption text-fg-subtle">Créditos</span>
+                                      <Monto valor={delMes?.creditosCop ?? 0} className="text-caption" />
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            );
+                          })()}
+                        </TableCell>
                         <TableCell className="text-right max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Débitos">
                           <Monto valor={f.debitosCop} vacioSiCero className="text-sm" />
                         </TableCell>

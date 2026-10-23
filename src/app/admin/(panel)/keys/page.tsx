@@ -212,6 +212,8 @@ export default function KeysPage() {
         buscar="Nombre de la llave"
         textoExtra={(r) => r.env_var}
         segmentos={SEGMENTOS}
+        // Ronda 26 (T8): a 390 la tarjeta pone a la derecha el estado (lo que responde: ¿hay que rotarla?).
+        cifraDelCelular="Estado"
         ordenInicial={{ columna: 3, sentido: 'asc' }}
         exportar="llaves"
         masEnElExcel={[

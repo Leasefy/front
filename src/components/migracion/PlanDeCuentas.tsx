@@ -921,7 +921,8 @@ function Nodo({
             aria-label={`Editar ${nodo.codigo} ${nodo.nombre}`}
           >
             <PencilSimple className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="hidden max-md:inline">Editar</span>
+            {/* Ronda 30 (revisora r27): con su rótulo también a 1440 (antes el lápiz solo). */}
+            <span>Editar</span>
           </Button>
           {nodo.activa ? (
             <Button
@@ -932,7 +933,7 @@ function Nodo({
               aria-label={`Agregar subcuenta a ${nodo.codigo}`}
             >
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-              <span className="hidden max-md:inline">Subcuenta</span>
+              <span>Subcuenta</span>
             </Button>
           ) : null}
         </span>

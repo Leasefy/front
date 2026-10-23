@@ -540,6 +540,21 @@ describe('Publicación en portales', () => {
   })
 })
 
+describe('revisora r25: el trabajo primero', () => {
+  it('lo publicado va antes que las cuentas, las cuentas plegadas y «Publicar un inmueble» arriba', async () => {
+    await montar()
+    const publicadas = porTestId('aviso-sin-api')!
+    const cuentas = porTestId('tarjeta-de-cuentas')!
+    expect(publicadas.compareDocumentPosition(cuentas) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // La grilla sigue en la página (para el lector y para no perder estado), pero plegada.
+    expect(porTestId('lista-de-portales')!.closest('[hidden]')).not.toBeNull()
+    expect(porTestId('cuentas-configuradas')!.textContent).toMatch(/\d+ de \d+ con cuenta anotada/)
+    // La principal vive en el encabezado, no dentro de la tarjeta de publicaciones.
+    expect(publicadas.closest('[data-testid="tarjeta-de-cuentas"]')).toBeNull()
+    expect(porTestId('abrir-publicar')!.compareDocumentPosition(publicadas) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
 describe('las tarjetas de portal', () => {
   it('cada portal es su propia tarjeta, con monograma', async () => {
     await montar()

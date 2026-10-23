@@ -115,6 +115,7 @@ import { useConsignaciones } from '@/lib/hooks/useInmobiliaria'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { cn } from '@/lib/utils'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 
 /** Cómo se lee cada estado, y con qué tono. */
 const ROTULO: Record<
@@ -1016,6 +1017,8 @@ export function PortalesClient() {
 
   const filas = tablero.datos?.filas ?? []
   const portales = cuentas.datos?.portales ?? []
+  /** Cuántos portales tienen la cuenta anotada y activa (la misma regla de «al día» de la tarjeta). */
+  const cuentasAlDia = portales.filter((p) => p.cuenta?.activa === true).length
 
   /** Cuántos avisos esperan que una persona los suba, por portal. Es lo que
    *  decide si «Descargar archivo» sirve para algo. */
@@ -1123,75 +1126,33 @@ export function PortalesClient() {
               </Link>
             </Button>
           }
+          // Revisora r25 (§25.1 4a): la acción principal arriba a la derecha (antes dentro de la segunda tarjeta,
+          // a ≈1.900 px a 390).
+          accionPrincipal={
+            puedeEditar ? (
+              <Button size="sm" hideArrow onClick={() => setPublicando(true)} data-testid="abrir-publicar">
+                <Plus className="mr-1.5 h-4 w-4" />
+                Publicar un inmueble
+              </Button>
+            ) : undefined
+          }
         />
-        <p className="text-caption text-fg-muted" data-testid="aviso-sin-api">
-          Hoy el aviso lo subes tú al portal: <span className="font-medium text-fg">todavía no publicamos solos en ninguno</span>.
-        </p>
       </div>
 
-      {/* ── 1 · Las cuentas ──────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Tus cuentas de portal</CardTitle>
-          <p className="text-sm text-fg-muted">
-            Nosotros no vendemos estas cuentas. Publicamos con las que tu inmobiliaria
-            ya tiene contratadas: aquí sólo nos dices cuáles son.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {cuentas.noHabilitado ? (
-            <p className="text-sm text-fg-muted" data-testid="cuentas-no-habilitadas">
-              {motivoEnCristiano(cuentas.noHabilitado)}
-            </p>
-          ) : (
-            <EstadoDeDatos
-              cargando={cuentas.cargando}
-              error={cuentas.errorCrudo}
-              queEs="las cuentas de portal"
-              onReintentar={cuentas.refetch}
-              conservarContenido
-              esqueleto={<EsqueletoTabla filas={4} columnas={3} />}
-            >
-              <div
-                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
-                data-testid="lista-de-portales"
-              >
-                {portales.map((p) => (
-                  <TarjetaDePortal
-                    key={p.portal}
-                    portal={p}
-                    porSubir={porSubir.get(p.portal) ?? 0}
-                    puedeEditar={puedeEditar}
-                    onAnotar={() => setCuentaAbierta(p)}
-                  />
-                ))}
-              </div>
-            </EstadoDeDatos>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ── 2 · Las publicaciones ────────────────────────────────────────── */}
+      {/* ── 1 · Las publicaciones (el trabajo, primero) ────────────────────────────────────────── */}
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">Qué está publicado dónde</CardTitle>
-            <p className="text-sm text-fg-muted">
+            {/* Revisora r25: la línea de qué NO hace la herramienta, junto al trabajo (antes una tercera línea bajo
+                la descripción del encabezado). Sigue a la vista: escondida, alguien esperaría que el aviso saliera solo. */}
+            <p className="text-sm text-fg-muted" data-testid="aviso-sin-api">
               {pendientes > 0
-                ? `${pendientes} ${pendientes === 1 ? 'aviso espera' : 'avisos esperan'} que alguien los suba o los baje en el panel del portal.`
-                : 'Un renglón por inmueble y portal, con el estado de su aviso.'}
+                ? `${pendientes} ${pendientes === 1 ? 'aviso espera' : 'avisos esperan'} que alguien los suba o los baje en el panel del portal. `
+                : null}
+              Hoy el aviso lo subes tú al portal: <span className="font-medium text-fg">todavía no publicamos solos en ninguno</span>.
             </p>
           </div>
-          {puedeEditar ? (
-            <Button
-              size="sm"
-              onClick={() => setPublicando(true)}
-              data-testid="abrir-publicar"
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              Publicar un inmueble
-            </Button>
-          ) : null}
         </CardHeader>
         <CardContent>
           {tablero.noHabilitado ? (
@@ -1313,6 +1274,57 @@ export function PortalesClient() {
                   </Stagger>
                 </table>
               </div>
+            </EstadoDeDatos>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── 2 · Las cuentas (se configuran una vez: plegadas, revisora r25) ──────────────────────────────────────────────── */}
+      <Card data-testid="tarjeta-de-cuentas">
+        <CardHeader>
+          <CardTitle className="text-base">Tus cuentas de portal</CardTitle>
+          <p className="text-sm text-fg-muted" data-testid="cuentas-configuradas">
+            {cuentas.cargando && portales.length === 0
+              ? 'Las cuentas con las que publicas.'
+              : `${cuentasAlDia} de ${portales.length} con cuenta anotada. Publicamos con las que tu inmobiliaria ya tiene contratadas: nosotros no las vendemos.`}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {cuentas.noHabilitado ? (
+            <p className="text-sm text-fg-muted" data-testid="cuentas-no-habilitadas">
+              {motivoEnCristiano(cuentas.noHabilitado)}
+            </p>
+          ) : (
+            <EstadoDeDatos
+              cargando={cuentas.cargando}
+              error={cuentas.errorCrudo}
+              queEs="las cuentas de portal"
+              onReintentar={cuentas.refetch}
+              conservarContenido
+              esqueleto={<EsqueletoTabla filas={4} columnas={3} />}
+            >
+              <MasDetalles
+                etiqueta="Ver las cuentas"
+                etiquetaAbierto="Ocultar las cuentas"
+                montadoSiempre
+                classNameDelContenido="pt-3"
+                data-testid="cuentas-plegadas"
+              >
+              <div
+                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                data-testid="lista-de-portales"
+              >
+                {portales.map((p) => (
+                  <TarjetaDePortal
+                    key={p.portal}
+                    portal={p}
+                    porSubir={porSubir.get(p.portal) ?? 0}
+                    puedeEditar={puedeEditar}
+                    onAnotar={() => setCuentaAbierta(p)}
+                  />
+                ))}
+              </div>
+              </MasDetalles>
             </EstadoDeDatos>
           )}
         </CardContent>

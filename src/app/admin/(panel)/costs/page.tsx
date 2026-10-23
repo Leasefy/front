@@ -251,6 +251,8 @@ export default function CostsPage() {
             aria-label="Costos por modelo"
             id="modelos"
             queSon={['modelo', 'modelos']}
+            // Ronda 30 (mandato: toda tabla con buscador): se busca por el nombre del modelo.
+            buscar="Buscar un modelo"
             filasPorPagina={10}
             ordenInicial={{ columna: 2, sentido: 'desc' }}
             cifraDelCelular="Costo"

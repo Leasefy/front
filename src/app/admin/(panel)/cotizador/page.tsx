@@ -58,7 +58,7 @@ const MODO: Record<string, string> = {
   rest: 'Conexión directa',
   'form-rpa': 'Formulario automático',
   'email-broker': 'Por correo',
-  'open-finance': 'Open finance',
+  'open-finance': 'Finanzas abiertas',
 }
 const PRODUCTO: Record<string, string> = { seguro: 'Seguro', fianza: 'Fianza' }
 
@@ -116,7 +116,7 @@ export default function CotizadorPage() {
       refetch()
       closeForm()
     } catch (err) {
-      setFormError(carrierErrorMessage(err, 'No se pudo guardar el carrier.', 'guardar el carrier'))
+      setFormError(carrierErrorMessage(err, 'No se pudo guardar la aseguradora.', 'guardar la aseguradora'))
     } finally {
       setSubmitting(false)
     }
@@ -136,7 +136,7 @@ export default function CotizadorPage() {
       await deleteCarrier(carrier.name)
       refetch()
     } catch (err) {
-      setRowError(carrierErrorMessage(err, 'No se pudo eliminar el carrier.', 'eliminar el carrier'))
+      setRowError(carrierErrorMessage(err, 'No se pudo desactivar la aseguradora.', 'desactivar la aseguradora'))
     } finally {
       setBusyName(null)
     }
@@ -229,7 +229,7 @@ export default function CotizadorPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Cotizador"
-        description="Las aseguradoras del cotizador: la ruta, cómo se conecta y sus credenciales."
+        description="Las aseguradoras que cotizan el seguro o la fianza: cómo se conectan y sus credenciales."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo funciona" titulo="Las aseguradoras del cotizador" variante="secundario">
             <p className="text-body-sm text-fg-muted">

@@ -14,6 +14,8 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { FranjaDeCifras, KpiCard } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/format'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
@@ -86,7 +88,7 @@ export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStrip
     },
     {
       label: tf('inmobiliaria.ai.cotizador.overview.kpis.approvalRate', 'Tasa de aprobación'),
-      value: kpis ? `${(kpis.approvalRate * 100).toFixed(0)}%` : '—',
+      value: kpis ? `${(kpis.approvalRate * 100).toFixed(0)} %` : '—',
       Icon: CheckCircle,
     },
     {
@@ -113,7 +115,7 @@ export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStrip
   if (k && typeof k.tasaAsegurabilidad === 'number') {
     cards.push({
       label: tf('inmobiliaria.ai.cotizador.overview.kpis.tasaAsegurabilidad', 'Tasa de asegurabilidad'),
-      value: `${(k.tasaAsegurabilidad * 100).toFixed(0)}%`,
+      value: `${(k.tasaAsegurabilidad * 100).toFixed(0)} %`,
       Icon: CheckCircle,
     })
   }
@@ -155,20 +157,28 @@ export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStrip
     })
   }
 
-  return (
-    // Las tarjetas entran escalonadas (techo 320 ms); las opcionales que llegan
-    // después se suman con su animación y las demás se corren.
-    // QA-IA-95: a 390 px, en dos columnas los rótulos se cortaban («TASA DE …»): una columna hasta 480 px.
-    // GLOW UP 21-10: una franja de cifras (como el resto del panel), no tarjetas
-    // sueltas; con las opcionales (hasta 8) van de a cuatro por fila. La plata
-    // es larga: `fila="lg"` (de a dos hasta 1024 px) evita cortarla.
+  /*
+   * Revisora r25 (lista negra §3): con las opcionales la franja juntaba hasta 11 cifras del
+   * mismo peso. Ahora: arriba LA RESPUESTA —cuántas consultas salieron asegurables— cuando el
+   * back la manda; la franja con las cuatro de siempre; y las demás, plegadas.
+   */
+  const base = cards.slice(0, 4)
+  const asegurables = k && typeof k.asegurablesCount === 'number' ? k.asegurablesCount : null
+  // Lo que ya dice la cifra de arriba (cuántas y qué porcentaje) no se repite plegado.
+  const yaArriba = asegurables === null
+    ? new Set<string>()
+    : new Set([
+        tf('inmobiliaria.ai.cotizador.overview.kpis.asegurables', 'Asegurables'),
+        tf('inmobiliaria.ai.cotizador.overview.kpis.tasaAsegurabilidad', 'Tasa de asegurabilidad'),
+      ])
+  const masCifras = cards.slice(4).filter((c) => !yaArriba.has(c.label))
+  const franja = (lista: Card[], testId: string) => (
     <FranjaDeCifras
       fila="lg"
-      columnas={cards.length > 4 ? 4 : undefined}
       aria-label={tf('inmobiliaria.ai.cotizador.overview.kpis.titulo', 'Resumen de asegurabilidad')}
-      data-testid="cotizador-cifras"
+      data-testid={testId}
     >
-      {cards.map(({ label, value, Icon }) => (
+      {lista.map(({ label, value, Icon }) => (
         <KpiCard
           key={label}
           label={label}
@@ -177,5 +187,28 @@ export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStrip
         />
       ))}
     </FranjaDeCifras>
+  )
+  return (
+    <div className="space-y-4">
+      {asegurables !== null && !isLoading ? (
+        <CifraHeroe
+          rotulo={tf('inmobiliaria.ai.cotizador.overview.kpis.asegurables', 'Asegurables')}
+          cifra={asegurables.toLocaleString('es-CO')}
+          contexto={
+            typeof k?.tasaAsegurabilidad === 'number'
+              ? `${(k.tasaAsegurabilidad * 100).toFixed(0)} % de las consultas`
+              : undefined
+          }
+          tamano="mediana"
+          data-testid="cotizador-asegurables"
+        />
+      ) : null}
+      {franja(base, 'cotizador-cifras')}
+      {masCifras.length > 0 ? (
+        <MasDetalles etiqueta="Más cifras de asegurabilidad" data-testid="cotizador-mas-cifras">
+          <div className="mt-3">{franja(masCifras, 'cotizador-cifras-mas')}</div>
+        </MasDetalles>
+      ) : null}
+    </div>
   )
 }

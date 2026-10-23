@@ -675,7 +675,8 @@ export function ConsignacionTable({
                   {propietarioName ? (
                     <div className="flex items-center gap-2">
                       <Avatar name={propietarioName} size="xs" />
-                      <span className="text-foreground truncate max-w-[150px]" title={propietarioName}>
+                      {/* Ronda 30 (revisora r27): el nombre del propietario se cortaba con ~70 px libres en la fila. */}
+                      <span className="text-foreground truncate max-w-[220px]" title={propietarioName}>
                         {propietarioName}
                       </span>
                     </div>

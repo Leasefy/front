@@ -35,10 +35,12 @@ function ImportarContent() {
           ZIP»): los datos de muchos inmuebles desde un Excel, o las fotos de
           muchos inmuebles desde un ZIP. */}
       <div className="inline-flex rounded-full bg-surface-muted p-1" role="tablist" aria-label="Qué vas a cargar">
+        {/* Ronda 30 (revisora r27): a 390 el nombre corto («Datos (Excel)», «Fotos (ZIP)»); el largo partía cada botón
+            en dos renglones. Sin sombra en la elegida (Cadence 2): un borde. */}
         {([
-          ['datos', 'Datos de muchos inmuebles (Excel)'],
-          ['fotos', 'Fotos de muchos inmuebles (ZIP)'],
-        ] as const).map(([clave, texto]) => (
+          ['datos', 'Datos de muchos inmuebles (Excel)', 'Datos (Excel)'],
+          ['fotos', 'Fotos de muchos inmuebles (ZIP)', 'Fotos (ZIP)'],
+        ] as const).map(([clave, texto, corto]) => (
           <button
             key={clave}
             type="button"
@@ -47,12 +49,13 @@ function ImportarContent() {
             onClick={() => setOpcion(clave)}
             className={
               opcion === clave
-                ? 'h-9 rounded-full bg-surface px-4 text-[14px] font-medium text-fg shadow-sm'
+                ? 'h-9 rounded-full bg-surface px-4 text-[14px] font-medium text-fg ring-1 ring-border'
                 : 'h-9 rounded-full px-4 text-[14px] text-fg-muted hover:text-fg'
             }
             data-testid={`importar-${clave}`}
           >
-            {texto}
+            <span className="sm:hidden">{corto}</span>
+            <span className="hidden sm:inline">{texto}</span>
           </button>
         ))}
       </div>

@@ -3883,7 +3883,7 @@
         "photos": "Fotos",
         "notFound": "Consignación no encontrada",
         "notFoundDesc": "La consignación que buscas no existe o ha sido eliminada",
-        "backToPortfolio": "Volver al portafolio",
+        "backToPortfolio": "Volver a Inmuebles",
         "editProperty": "Editar inmueble",
         "statusLabels": {
           "inProcess": "En proceso"
@@ -3911,7 +3911,7 @@
       "new": {
         "title": "Nuevo mandato",
         "backToOwner": "Volver al propietario",
-        "subtitle": "Agregar un nuevo inmueble al portafolio",
+        "subtitle": "El inmueble, su propietario y la comisión, en 6 pasos.",
         "step1": "Propietario",
         "step2": "Inmueble",
         "step3": "Condiciones",
@@ -4113,7 +4113,7 @@
         "porQue": "Los portales no entregan tus inmuebles por API: la integración que existe va al revés, publicando desde tu sistema hacia ellos. Pero el inventario ya lo tienes en tu panel del portal, y de ahí sí se puede bajar.",
         "abrirPanel": "Ir a mi panel",
         "yaLoTengo": "Ya tengo el archivo del portal",
-        "backToPortfolio": "Volver al portafolio",
+        "backToPortfolio": "Volver a Inmuebles",
         "otroMetodo": "Elegir otra forma de traerlos",
         "oEnlaces": "O pega los enlaces de tus fichas y las leemos por ti, con sus fotos.",
         "pegarEnlaces": "Pegar enlaces en vez de un archivo"

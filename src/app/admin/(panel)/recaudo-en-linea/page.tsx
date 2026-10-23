@@ -147,7 +147,7 @@ export default function RecaudoEnLineaAdminPage() {
                   type="button"
                   role="tab"
                   aria-selected={activa}
-                  className={`relative isolate shrink-0 whitespace-nowrap px-4 py-2.5 text-[15px] transition-colors ${activa ? 'text-fg' : 'text-fg-muted hover:text-fg'}`}
+                  className={`relative isolate shrink-0 whitespace-nowrap px-4 py-2.5 text-body-sm transition-colors ${activa ? 'text-fg' : 'text-fg-muted hover:text-fg'}`}
                   onClick={() => setPestana(p.id)}
                   data-testid={`pestana-${p.id}`}
                 >

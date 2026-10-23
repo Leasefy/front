@@ -36,7 +36,7 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
-import { AnimatedNumber, CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
 import { fraseDelCierre } from '@/lib/cobranza/promesas-de-pago'
@@ -52,6 +52,8 @@ import {
   type PromesaEstado,
 } from '@/components/inmobiliaria/cobranza/PromesaCard'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const DEUDORES_HREF = `${BASE}/deudores`
@@ -136,6 +138,46 @@ function PromesasContent() {
     [promesas, filtro],
   )
 
+  // Conteo de cada estado (de la lista entera, no de la página) y lo
+  // prometido en las que siguen abiertas: LA RESPUESTA de la sección del agente.
+  const pestanas = useMemo(
+    () =>
+      FILTRO_OPCIONES.map((o) => ({
+        valor: o.value,
+        etiqueta: o.label,
+        cuantos: o.value === 'todas' ? promesas.length : promesas.filter((p) => p.estado === o.value).length,
+        fija: o.value === 'todas',
+        tono: o.value === 'incumplida' || o.value === 'por_vencer' ? ('aviso' as const) : undefined,
+        testid: `promesas-pestana-${o.value}`,
+      })),
+    [promesas],
+  )
+  const tramos = useMemo(() => {
+    const tono = { por_vencer: 'aviso', activa: 'neutro', parcial: 'neutro', incumplida: 'critico' } as const
+    return (['incumplida', 'por_vencer', 'activa', 'parcial'] as const).map((e) => {
+      const suma = promesas.filter((p) => p.estado === e).reduce((s, p) => s + Math.max(0, p.valorCop ?? 0), 0)
+      const etiqueta = FILTRO_OPCIONES.find((o) => o.value === e)?.label ?? e
+      return {
+        clave: e,
+        etiqueta,
+        monto: suma,
+        tono: tono[e],
+        cifra: (
+          <button
+            type="button"
+            onClick={() => setFiltro(e)}
+            className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`Ver las promesas: ${etiqueta.toLowerCase()}`}
+          >
+            {formatCurrency(suma)}
+          </button>
+        ),
+      }
+    })
+  }, [promesas, formatCurrency])
+  const prometidoAbierto = tramos.reduce((s, t) => s + t.monto, 0)
+  const abiertas = promesas.filter((p) => p.estado !== 'cumplida').length
+
   // El histórico agency-wide llega de a 200 y se pintaba entero. Mismo pie que
   // las tablas del panel: cuántas hay, cuáles se ven y cuántas por página.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
@@ -146,7 +188,7 @@ function PromesasContent() {
     <EncabezadoDePantalla
       seccion="Cobranza"
       titulo="Promesas de pago"
-      descripcion="Las que registró tu equipo y las que los inquilinos le hicieron al agente, con su estado de hoy. El seguimiento se hace desde el detalle del deudor."
+      descripcion="Lo que cada inquilino prometió pagar y si lo está cumpliendo."
       data-testid="promesas-encabezado"
     />
   )
@@ -184,47 +226,52 @@ function PromesasContent() {
       <Presence
           show={Boolean(error)}
           role="alert"
-          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-body-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>No se pudo cargar las promesas. {error}</span>
       </Presence>
 
-      {/* Banner del agente cuando hay incumplidas: entra y sale con `Presence`. */}
-      <Presence
-          as="section"
-          show={incumplidas.length > 0}
-          role="status"
-          className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
-          data-testid="promesas-banner-incumplidas"
-        >
-          <Warning
-            className="w-5 h-5 shrink-0 text-danger mt-0.5"
-            weight="duotone"
-            aria-hidden="true"
+      {/* La sección del agente: su título, LA RESPUESTA (lo prometido en las
+          abiertas, por estado) y, si hay incumplidas, qué hacer — UNA vez, en
+          el pie de la cifra (antes era un cartel rojo aparte). */}
+      {promesas.length > 0 ? (
+        <section className="space-y-4" aria-labelledby="promesas-del-agente">
+          <h2 id="promesas-del-agente" className="text-body font-medium text-fg">
+            Las que le hicieron al agente
+          </h2>
+          <CifraHeroe
+            data-testid="promesas-prometido"
+            rotulo="Prometido en promesas abiertas"
+            cifra={formatCurrency(prometidoAbierto)}
+            contexto={abiertas === 1 ? 'en 1 promesa' : `en ${abiertas} promesas`}
+            total={prometidoAbierto}
+            tramos={tramos}
+            pie={
+              incumplidas.length > 0 ? (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="promesas-banner-incumplidas" role="status">
+                  <span>
+                    {incumplidas.length === 1 ? (
+                      <>
+                        La de <span className="font-medium text-fg">{incumplidas[0].inquilino}</span> venció sin
+                        pago conciliado: sigue con un recordatorio formal o propón un acuerdo.
+                      </>
+                    ) : (
+                      <>
+                        {incumplidas.length} vencieron sin pago conciliado: sigue con un recordatorio formal o
+                        propón un acuerdo de pago.
+                      </>
+                    )}
+                  </span>
+                  <Button asChild variant="link" size="sm" hideArrow className="h-auto px-0">
+                    <Link href={DEUDORES_HREF}>Ver deudores</Link>
+                  </Button>
+                </span>
+              ) : undefined
+            }
           />
-          <div className="space-y-2 min-w-0">
-            <p className="text-sm text-fg leading-relaxed">
-              {incumplidas.length === 1 ? (
-                <>
-                  La promesa de{' '}
-                  <span className="font-medium">{incumplidas[0].inquilino}</span> venció
-                  y no se encontró pago conciliado. Recomiendo seguimiento formal o
-                  proponer un acuerdo.
-                </>
-              ) : (
-                <>
-                  <span className="font-medium">{incumplidas.length} promesas</span>{' '}
-                  vencieron y no se encontró pago conciliado. Recomiendo seguimiento
-                  formal o proponer un acuerdo de pago.
-                </>
-              )}
-            </p>
-            <Button asChild variant="link" size="sm" hideArrow>
-              <Link href={DEUDORES_HREF}>Ver deudores</Link>
-            </Button>
-          </div>
-      </Presence>
+        </section>
+      ) : null}
 
       {/* Sin promesas → EmptyState honesto + cross-link */}
       <CrossFade swapKey={promesas.length === 0 && !error ? 'vacio' : 'lista'}>
@@ -241,18 +288,12 @@ function PromesasContent() {
         promesas.length > 0 && (
           <>
             {/* Filtro por estado — selector excluyente (SegmentedControl) */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <SegmentedControl<EstadoFiltro>
-                options={FILTRO_OPCIONES}
-                value={filtro}
-                onChange={setFiltro}
-                aria-label="Filtrar promesas por estado"
-              />
-              <span className="text-caption text-fg-muted tabular-nums">
-                <AnimatedNumber value={visibles.length} format={(n) => String(Math.round(n))} /> de{' '}
-                {promesas.length}
-              </span>
-            </div>
+            <PestanasDeEstado<EstadoFiltro>
+              pestanas={pestanas}
+              valor={filtro}
+              onCambio={setFiltro}
+              etiqueta="Filtrar promesas por estado"
+            />
 
             {/* Tabla / lista de promesas. Filtrar por estado o paginar hace
                 entrar las promesas escalonadas y salir las que sobran;

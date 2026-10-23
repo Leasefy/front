@@ -354,12 +354,12 @@ export default function ApplicationDetailPage() {
                         <div key={step.key} className="flex items-center">
                           <div className="flex flex-col items-center">
                             <div className={cn(
-                              'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
+                              'w-9 h-9 rounded-full flex items-center justify-center bg-surface transition-colors',
                               isCompleted
                                 ? isCurrent
-                                  ? 'bg-primary text-white'
-                                  : 'bg-success text-white'
-                                : 'bg-surface-muted text-fg-subtle'
+                                  ? 'border-2 border-primary text-primary'
+                                  : 'border border-success text-success'
+                                : 'border border-border text-fg-subtle'
                             )}>
                               {isCompleted && !isCurrent ? (
                                 <CheckCircle className="w-5 h-5" />
@@ -368,16 +368,16 @@ export default function ApplicationDetailPage() {
                               )}
                             </div>
                             <span className={cn(
-                              'text-caption mt-2 font-medium hidden sm:block',
-                              isCurrent ? 'text-primary' : isCompleted ? 'text-success' : 'text-fg-subtle'
+                              'text-caption mt-2 hidden sm:block',
+                              isCurrent ? 'text-fg font-medium' : isCompleted ? 'text-fg-muted' : 'text-fg-subtle'
                             )}>
                               {step.label}
                             </span>
                           </div>
                           {index < progressSteps.length - 1 && (
                             <div className={cn(
-                              'w-8 sm:w-16 lg:w-24 h-1 mx-2 rounded-full transition-colors',
-                              index < currentStep ? 'bg-success' : 'bg-surface-muted'
+                              'w-8 sm:w-16 lg:w-24 h-px mx-2 transition-colors',
+                              index < currentStep ? 'bg-success' : 'bg-border'
                             )} />
                           )}
                         </div>
@@ -397,12 +397,12 @@ export default function ApplicationDetailPage() {
                 // Sin contrato todavía: el landlord no lo creó.
                 if (!contract) {
                   return (
-                    <div className="mt-6 p-4 rounded-lg bg-success-soft border border-success/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
                         <Confetti className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                         <div>
                           <p className="font-medium text-fg">
-                            {locale === 'es' ? '¡Felicidades! Tu postulación fue aprobada' : 'Congratulations! Your application was approved'}
+                            {locale === 'es' ? 'Tu postulación fue aprobada' : 'Your application was approved'}
                           </p>
                           <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
@@ -418,12 +418,12 @@ export default function ApplicationDetailPage() {
                 // Pendiente firma del tenant → CTA principal (firma primero — flow tenant-first).
                 if (contractStatus === 'pending_tenant') {
                   return (
-                    <div className="mt-6 p-4 rounded-lg bg-primary-soft border border-primary/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
                         <PenNib className="w-5 h-5 mt-0.5 shrink-0 text-primary" aria-hidden="true" />
                         <div className="flex-1">
                           <p className="font-medium text-fg">
-                            {locale === 'es' ? '¡Tu contrato está listo para firmar!' : 'Your contract is ready to sign!'}
+                            {locale === 'es' ? 'Tu contrato está listo para firmar' : 'Your contract is ready to sign'}
                           </p>
                           <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
@@ -445,7 +445,7 @@ export default function ApplicationDetailPage() {
                 // DRAFT: landlord aún no envió el contrato.
                 if (contractStatus === 'draft') {
                   return (
-                    <div className="mt-6 p-4 rounded-lg bg-warning-soft border border-warning/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
                         <Clock className="w-5 h-5 mt-0.5 shrink-0 text-warning" aria-hidden="true" />
                         <div className="flex-1">
@@ -466,7 +466,7 @@ export default function ApplicationDetailPage() {
                 // PENDING_LANDLORD_SIGNATURE: tenant ya firmó, esperando al landlord.
                 if (contractStatus === 'pending_landlord') {
                   return (
-                    <div className="mt-6 p-4 rounded-lg bg-success-soft border border-success/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
                         <SealCheck className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                         <div className="flex-1">
@@ -493,7 +493,7 @@ export default function ApplicationDetailPage() {
                 // El propietario está aplicando los cambios que pediste antes de firmar.
                 if (contractStatus === 'rejected_pending_modifications') {
                   return (
-                    <div className="mt-6 p-4 rounded-lg bg-warning-soft border border-warning/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
                         <ArrowClockwise className="w-5 h-5 mt-0.5 shrink-0 text-warning" aria-hidden="true" />
                         <div className="flex-1">
@@ -520,12 +520,12 @@ export default function ApplicationDetailPage() {
                 // Ambos firmaron, esperando que empiece a regir.
                 if (contractStatus === 'signed') {
                   return (
-                    <div className="mt-6 p-4 rounded-lg bg-success-soft border border-success/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
                         <SealCheck className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                         <div className="flex-1">
                           <p className="font-medium text-fg">
-                            {locale === 'es' ? '¡Contrato firmado por ambas partes!' : 'Contract signed by both parties!'}
+                            {locale === 'es' ? 'El contrato quedó firmado por las dos partes' : 'The contract is signed by both parties'}
                           </p>
                           <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
@@ -547,7 +547,7 @@ export default function ApplicationDetailPage() {
                 // Contrato vigente o expirado → acceso al detalle.
                 if (contractStatus === 'active' || contractStatus === 'expired') {
                   return (
-                    <div className="mt-6 p-4 rounded-lg bg-success-soft border border-success/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
                         <SealCheck className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                         <div className="flex-1">
@@ -571,7 +571,7 @@ export default function ApplicationDetailPage() {
                 // Cancelled (raro — normalmente el backend pasa la app a CONTRACT_FAILED).
                 if (contractStatus === 'cancelled') {
                   return (
-                    <div className="mt-6 p-4 rounded-lg bg-danger-soft border border-danger/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
                         <XCircle className="w-5 h-5 mt-0.5 shrink-0 text-danger" aria-hidden="true" />
                         <div>
@@ -595,7 +595,7 @@ export default function ApplicationDetailPage() {
               )}
 
               {(application.status === 'needs_info') && !responseSubmitted && (
-                <div className="mt-6 p-4 rounded-lg bg-warning-soft border border-warning/30">
+                <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                   <div className="flex items-start gap-3">
                     <Warning className="w-5 h-5 mt-0.5 shrink-0 text-warning" aria-hidden="true" />
                     <div className="flex-1">
@@ -622,7 +622,7 @@ export default function ApplicationDetailPage() {
               )}
 
               {(application.status === 'needs_info') && responseSubmitted && (
-                <div className="mt-6 p-4 rounded-lg bg-success-soft border border-success/30">
+                <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                     <div>
@@ -644,7 +644,7 @@ export default function ApplicationDetailPage() {
                   (el texto del no adjudicado, más una promesa que nadie cumple).
                   Ahora cada caso dice lo suyo. */}
               {(application.status === 'rejected' || application.status === 'no_adjudicado') && (
-                <div className="mt-6 p-4 rounded-lg bg-danger-soft border border-danger/30">
+                <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                   <div className="flex items-start gap-3">
                     <XCircle className="w-5 h-5 mt-0.5 shrink-0 text-danger" aria-hidden="true" />
                     <div className="flex-1">
@@ -687,7 +687,7 @@ export default function ApplicationDetailPage() {
 
               <div className="relative">
                 {/* Timeline line */}
-                <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-surface-muted" />
+                <div className="absolute left-5 top-5 bottom-5 w-px bg-border" />
 
                 {/* Events */}
                 <div className="space-y-6">
@@ -701,8 +701,8 @@ export default function ApplicationDetailPage() {
                         <div className={cn(
                           'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-colors',
                           isFirst
-                            ? 'bg-primary text-white'
-                            : 'bg-surface border-2 border-border text-fg-muted'
+                            ? 'bg-surface border-2 border-primary text-primary'
+                            : 'bg-surface border border-border text-fg-muted'
                         )}>
                           <EventIcon className="w-4 h-4" />
                         </div>

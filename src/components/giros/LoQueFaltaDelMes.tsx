@@ -99,6 +99,23 @@ export function LoQueFaltaDelMes({
   const tr = useTr();
   const datos = useDatosDelMes(mes);
   const { lotes, cargando: cargandoLotes, error: errorDeLotes } = useLotesDeDispersion({ month: mes });
+  // Revisora r24 (Giros #1): «Nada por marcar» es verdad para el mes elegido y escondía un lote de otro
+  // mes aprobado sin marcar pagado. Los lotes de todos los meses (la misma consulta, sin el filtro).
+  const { lotes: todosLosLotes } = useLotesDeDispersion({});
+  const enCursoDeOtrosMeses = useMemo(() => {
+    const porMes = new Map<string, { porAprobar: number; sinPagar: number }>();
+    for (const l of todosLosLotes) {
+      if (l.month === mes) continue;
+      const porAprobar = l.estado === 'BORRADOR' || l.estado === 'ESPERANDO_APROBACION';
+      const sinPagar = l.estado === 'APROBADO' || l.estado === 'ARCHIVO_GENERADO' || l.estado === 'EN_WOMPI';
+      if (!porAprobar && !sinPagar) continue;
+      const v = porMes.get(l.month) ?? { porAprobar: 0, sinPagar: 0 };
+      if (porAprobar) v.porAprobar += 1;
+      else v.sinPagar += 1;
+      porMes.set(l.month, v);
+    }
+    return [...porMes.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [todosLosLotes, mes]);
   const resultado = useMemo(
     () =>
       datos
@@ -157,13 +174,17 @@ export function LoQueFaltaDelMes({
             /* Revisora r23 (Giros #2): «elige el mes arriba a la derecha» no decía cuál mes, no llevaba a él y a 390
                el selector ni está a la derecha. Propietarios sí sabe a quién: abre en «Por girar». */
             <p className="mt-1 text-body-sm text-fg-muted" data-testid="por-girar-de-otros-meses">
-              {tr('Quedan {plata} de meses anteriores.', { plata: formatCurrency(deOtrosMeses) })}{' '}
+              {/* Revisora r24 (Giros #2): en el paso 1 la cifra de meses anteriores ya está a la vista
+                  debajo; la tarjeta no la repite. */}
+              {paso === 'liquidar' ? null : (
+                <>{tr('Quedan {plata} de meses anteriores.', { plata: formatCurrency(deOtrosMeses) })} </>
+              )}
               <Link
                 href="/panel/inmobiliaria/propietarios"
                 className="font-medium text-primary underline-offset-4 hover:underline"
                 data-testid="ver-a-quien-de-otros-meses"
               >
-                {tr('Ver a quién')}
+                {paso === 'liquidar' ? tr('Ver a quién se le debe de meses anteriores') : tr('Ver a quién')}
               </Link>
             </p>
           ) : null}
@@ -174,6 +195,45 @@ export function LoQueFaltaDelMes({
           </div>
         ) : null}
       </div>
+      {enCursoDeOtrosMeses.length > 0 ? (
+        <ul className="space-y-1 border-t border-border-faint px-4 py-3 text-body-sm text-fg-muted sm:px-5" data-testid="lotes-de-otros-meses">
+          {enCursoDeOtrosMeses.map(([m, v]) => (
+            <li key={m} className="flex flex-wrap items-baseline gap-x-2">
+              <span>
+                <span className="text-fg">{conMayuscula(nombreDelMes(m))}:</span>{' '}
+                {[
+                  v.sinPagar > 0
+                    ? tr(v.sinPagar === 1 ? '{n} lote aprobado sin marcar pagado' : '{n} lotes aprobados sin marcar pagado', { n: v.sinPagar })
+                    : null,
+                  v.porAprobar > 0
+                    ? tr(v.porAprobar === 1 ? '{n} lote por aprobar' : '{n} lotes por aprobar', { n: v.porAprobar })
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+              {onCambiarMes ? (
+                <button
+                  type="button"
+                  onClick={() => onCambiarMes(m)}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid={`ver-lotes-de-${m}`}
+                >
+                  {tr('Ver')}
+                </button>
+              ) : (
+                <Link
+                  href={conElMes(DESTINO_DE_LA_ACCION.banco, m)}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid={`ver-lotes-de-${m}`}
+                >
+                  {tr('Ver')}
+                </Link>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <ol className="divide-y divide-border-faint border-t border-border-faint">
         {PASOS_DE_LOS_GIROS.map((p, i) => {
           const delPaso = resultado?.pasos.find((x) => x.id === p.id);

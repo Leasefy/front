@@ -338,6 +338,10 @@ function TesoreriaContent() {
     );
   }, [propietarios, busqueda]);
   const paginado = useTablePagination(visibles, { resetKey: `${month}|${busqueda}` });
+  // Revisora r24 (Giros #5): «Ajustes» sólo si alguna fila del mes tiene (en todas «—» no decía nada).
+  const hayAjustes = visibles.some(
+    (p) => p.totalConceptosAFavor > 0 || p.totalConceptosACargo > 0 || (p.conDeducciones?.deduccionesCop ?? 0) > 0,
+  );
   const suma = (campo: keyof Propietario) =>
     propietarios.reduce((s, p) => s + ((p[campo] as number | undefined) ?? 0), 0);
   /*
@@ -540,13 +544,14 @@ function TesoreriaContent() {
                   ))}
                   <div className="border-t border-border pt-2.5 flex items-center justify-between lg:col-span-full">
                     <span className="text-sm font-semibold text-fg flex items-center gap-1.5">
-                      <Wallet className={cn('w-4 h-4', neto < 0 ? 'text-danger' : 'text-success')} />
+                      <Wallet className={cn('w-4 h-4', neto < 0 ? 'text-danger' : 'text-fg-muted')} />
                       {t(k('fNeto'))}
                     </span>
                     <span
                       className={cn(
-                        'font-mono tabular-nums font-semibold',
-                        neto < 0 ? 'text-danger' : 'text-success',
+                        // Revisora r24 (Giros #6): mono en tinta, sin negrilla; el verde decoraba.
+                        'font-mono tabular-nums',
+                        neto < 0 ? 'text-danger' : 'text-fg',
                       )}
                       data-testid="tesoreria-neto-total"
                     >
@@ -563,7 +568,7 @@ function TesoreriaContent() {
                     <>
                       <div className="flex items-center justify-between gap-2 text-sm">
                         <span className="font-semibold text-fg">{t(k('fAGirar'))}</span>
-                        <span className="shrink-0 whitespace-nowrap font-mono font-semibold tabular-nums text-success" data-testid="tesoreria-a-girar-total">
+                        <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-fg" data-testid="tesoreria-a-girar-total">
                           <AnimatedNumber value={aGirarDelMes} format={formatCurrency} />
                         </span>
                       </div>
@@ -676,8 +681,8 @@ function TesoreriaContent() {
                             </span>
                             <span
                               className={cn(
-                                'shrink-0 whitespace-nowrap font-mono font-semibold tabular-nums',
-                                aGirar < 0 ? 'text-danger' : aGirar > 0 ? 'text-success' : 'text-fg-muted',
+                                'shrink-0 whitespace-nowrap font-mono tabular-nums',
+                                aGirar < 0 ? 'text-danger' : aGirar > 0 ? 'text-fg' : 'text-fg-muted',
                               )}
                             >
                               {formatCurrency(aGirar)}
@@ -692,7 +697,7 @@ function TesoreriaContent() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {COLUMNS.map((c) => (
+                        {COLUMNS.filter((c) => c !== 'colAjustes' || hayAjustes).map((c) => (
                           <TableHead
                             key={c}
                             className={cn(
@@ -752,6 +757,7 @@ function TesoreriaContent() {
                               </span>
                             )}
                           </TableCell>
+                          {hayAjustes ? (
                           <TableCell data-testid="tesoreria-ajustes-fila">
                             <AjustesDeLaFila
                               aFavor={p.totalConceptosAFavor}
@@ -764,13 +770,14 @@ function TesoreriaContent() {
                               }}
                             />
                           </TableCell>
+                          ) : null}
                           {p.conDeducciones ? (
                             /* Lo que se gira de verdad: entero o $0. Si queda en
                                contra no es «queda debiendo»: pasa al mes siguiente. */
                             <TableCell
                               className={cn(
-                                'whitespace-nowrap font-mono tabular-nums font-semibold',
-                                p.conDeducciones.aGirarCop > 0 ? 'text-success' : 'text-fg-muted',
+                                'whitespace-nowrap font-mono tabular-nums',
+                                p.conDeducciones.aGirarCop > 0 ? 'text-fg' : 'text-fg-muted',
                               )}
                               data-testid="tesoreria-neto-fila"
                             >
@@ -786,8 +793,8 @@ function TesoreriaContent() {
                           ) : (
                             <TableCell
                               className={cn(
-                                'whitespace-nowrap font-mono tabular-nums font-semibold',
-                                p.netToPropietario < 0 ? 'text-danger' : 'text-success',
+                                'whitespace-nowrap font-mono tabular-nums',
+                                p.netToPropietario < 0 ? 'text-danger' : 'text-fg',
                               )}
                               data-testid="tesoreria-neto-fila"
                             >

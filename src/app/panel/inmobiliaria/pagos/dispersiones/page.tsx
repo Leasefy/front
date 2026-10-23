@@ -892,17 +892,7 @@ function DispersionesContent() {
               },
             ]}
           />
-          {/* El conteo sólo cuando la lista es de verdad: «0 dispersiones»
-              encima de un fallo es otro «no hay». */}
-          <Presence
-            as="span"
-            show={!cargandoLista && !listaCaida}
-            initial={false}
-            direction="none"
-            className="text-xs text-fg-muted tabular-nums"
-          >
-              {filteredDispersiones.length} {filteredDispersiones.length === 1 ? tr('giro') : tr('giros')}
-          </Presence>
+          {/* Revisora r24 (Giros #8): fuera «N giros»: lo dicen la pestaña, el pie y «Mostrando 1–N de N». */}
         </div>
 
         {/* Filters Section - SECOND */}

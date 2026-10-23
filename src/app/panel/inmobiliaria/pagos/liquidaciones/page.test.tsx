@@ -221,7 +221,9 @@ describe('Liquidaciones pide y pinta la plata real del mes', () => {
     const total = q('tesoreria-neto-total');
     // 540.000 + 360.000
     expect(total?.textContent).toContain('900.000');
-    expect(total?.className).toContain('text-success');
+    // Revisora r24 (Giros #6): el neto en tinta; el verde decoraba (sólo el negativo lleva color).
+    expect(total?.className).not.toContain('text-success');
+    expect(total?.className).toContain('text-fg');
   });
 
   it('sin propietarios muestra el vacío, sin un neto de $0 al lado', async () => {
@@ -280,7 +282,7 @@ describe('L1 — un solo estado a la vez', () => {
     await montar();
 
     const netos = Array.from(host.querySelectorAll('[data-testid="tesoreria-neto-fila"]'));
-    expect(netos[0].className).toContain('text-success');
+    expect(netos[0].className).not.toContain('text-success');
     expect(netos[1].className).toContain('text-danger');
     expect(netos[1].className).not.toContain('text-success');
     expect(netos[1].textContent).toContain('Queda debiendo');

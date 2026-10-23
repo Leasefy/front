@@ -471,9 +471,8 @@ export function GenerarDispersion({
           primera pantalla entera para elegir un dato que casi nunca cambia. */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface px-4 py-3">
         <div>
-          <p className="text-sm font-medium text-fg">
-            {controlado ? `Giras ${nombreDelMes(mes)}` : 'El mes que vas a girar'}
-          </p>
+          {/* Revisora r24 (Giros #4): con el mes en el selector común, sin «Giras octubre de 2026»: queda la base. */}
+          {controlado ? null : <p className="text-sm font-medium text-fg">El mes que vas a girar</p>}
           <p className="text-caption text-fg-muted" data-testid="rotulo-de-la-base">
             {ROTULO_DEL_CANON[base]}
             {base === 'RECAUDADO'

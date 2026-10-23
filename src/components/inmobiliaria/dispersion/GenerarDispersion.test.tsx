@@ -955,7 +955,8 @@ describe('revisora r22 (Giros #8): el mes, con el selector de los otros pasos', 
     });
     await asentar();
     expect(q('mes-de-la-liquidacion')).toBeNull();
-    expect(host.textContent).toContain('Giras julio de 2026');
+    // Revisora r24 (Giros #4): el mes lo dice el selector común; sin «Giras julio de 2026».
+    expect(host.textContent).not.toContain('Giras julio de 2026');
     expect(preview).toHaveBeenCalledWith('2026-07');
   });
 });

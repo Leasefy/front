@@ -59,7 +59,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLotesDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import { lotesDeDispersionApi, type LoteResumen } from '@/lib/api/lotes-de-dispersion.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { formatDateTime, plataPareja } from '@/lib/format';
+import { plataPareja } from '@/lib/format';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -70,6 +70,7 @@ import { useNombresDelEquipo } from './use-nombres-del-equipo';
 import { ElegirAQuienPagarle, type EleccionDelLote } from './ElegirAQuienPagarle';
 import { ElegirBancoDeOrigen, type EleccionDelBanco } from './ElegirBancoDeOrigen';
 import { useI18n } from '@/lib/i18n';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { APROBADO_POR_TI } from '@/lib/doble-control/el-administrador';
 
 type Filtro = 'todos' | 'en_curso' | 'PAGADO' | 'ANULADO';
@@ -194,6 +195,7 @@ export function ListaDeLotes({
   // Una firma y no el arreglo: `lotes` puede llegar como arreglo nuevo en cada
   // render, y como dependencia volvería a pedir los candidatos sin parar.
   const firmaDeLotes = lotes.map((l) => `${l.id}:${l.estado}`).join('|');
+  const variosMesesEnLaLista = new Set(lotes.map((l) => l.month)).size > 1;
 
   useEffect(() => {
     let vigente = true;
@@ -369,7 +371,8 @@ export function ListaDeLotes({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Mes</TableHead>
+                  {/* Revisora r24 (Giros #5): «Mes» sólo si la lista mezcla meses. */}
+                  {variosMesesEnLaLista ? <TableHead>Mes</TableHead> : null}
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Pagos</TableHead>
                   <TableHead className="text-right">Total</TableHead>
@@ -393,7 +396,9 @@ export function ListaDeLotes({
                       onClick={() => irAlLote(lote.id)}
                       data-testid={`lote-${lote.id}`}
                     >
-                      <TableCell className="font-medium text-fg">{nombreDelMes(lote.month)}</TableCell>
+                      {variosMesesEnLaLista ? (
+                        <TableCell className="font-medium text-fg">{nombreDelMes(lote.month)}</TableCell>
+                      ) : null}
                       <TableCell>
                         <Badge variant={TONO_DEL_ESTADO[lote.estado]}>{NOMBRE_DEL_ESTADO[lote.estado]}</Badge>
                       </TableCell>
@@ -415,7 +420,7 @@ export function ListaDeLotes({
                         </TableCell>
                       ) : null}
                       <TableCell className="font-mono text-caption text-fg-muted">
-                        {formatDateTime(lote.createdAt)}
+                        {fechaCorta(diaEnColombia(lote.createdAt))}
                       </TableCell>
                       <TableCell className="text-right">
                         {/* Ronda 19-21: en el paso 4 la fila dice lo que se viene a hacer con un lote que ya salió

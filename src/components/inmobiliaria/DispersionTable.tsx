@@ -35,6 +35,7 @@ import {
   DropdownListItem,
 } from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
@@ -130,7 +131,7 @@ export function DispersionTable({
   clave,
 }: DispersionTableProps) {
   const tr = useTr();
-  const { t, formatDate, formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const baseDelCanon = useMemo(() => baseDeLasDispersiones(dispersiones), [dispersiones]);
   const [sortField, setSortField] = useState<SortField>('month');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -300,10 +301,10 @@ export function DispersionTable({
                   <div className="flex items-center gap-3">
                     {/* Sin el ícono en una caja azul (Cadence: nada de íconos dentro de cajas de color). */}
                     <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate max-w-[180px]">
+                      <p className="font-medium text-foreground truncate max-w-[280px] xl:max-w-[340px]">
                         {dispersion.propietarioName}
                       </p>
-                      <div className="flex items-center gap-1 text-caption text-muted-foreground truncate max-w-[180px]">
+                      <div className="flex items-center gap-1 text-caption text-muted-foreground truncate max-w-[280px] xl:max-w-[340px]">
                         <Bank className="w-3 h-3" />
                         <span>
                           {/* N-07 (QA-PAGOS-95): enmascarada en la lista; completa en el detalle. */}
@@ -386,10 +387,8 @@ export function DispersionTable({
                     <div className="flex items-center gap-1.5 text-foreground">
                       <CheckCircle className="w-4 h-4" weight="fill" />
                       <span className="text-sm tabular-nums">
-                        {formatDate(dispersion.processedAt, {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
+                        {/* Revisora r24 (Giros #4): «17 oct 2026», el día de Colombia. */}
+                        {fechaCorta(diaEnColombia(dispersion.processedAt))}
                       </span>
                     </div>
                   ) : dispersion.status === 'failed' ? (

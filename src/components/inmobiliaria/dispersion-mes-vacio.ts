@@ -107,12 +107,13 @@ export function motivoDelMesVacio({
 
   if (vacio.enUnaDispersion > 0) {
     return {
-      titulo: 'Ya están en un giro',
+      // Revisora r24 (Giros #4): que diga lo que pasó y termine en el botón («Ver los giros de…»).
+      titulo: `Ya se generaron los giros de ${enElMes}`,
       detalle: `${
         vacio.enUnaDispersion === 1
           ? `La cuota de propietario de ${enElMes} ya quedó`
           : `Las ${cuotas(vacio.enUnaDispersion)} de ${enElMes} ya quedaron`
-      } en un giro. Búscalo en la lista.`,
+      } en un giro.`,
       verLosGiros: true,
     };
   }

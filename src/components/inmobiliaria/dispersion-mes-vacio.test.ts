@@ -71,7 +71,9 @@ describe('motivoDelMesVacio', () => {
       yaGenerados: 0,
       vacio: vacio({ cuotasDelMes: 730, enUnaDispersion: 730 }),
     });
-    expect(m.titulo).toBe('Ya están en un giro');
+    // Revisora r24 (Giros #4): dice lo que pasó; el botón lleva a los giros.
+    expect(m.titulo).toMatch(/^Ya se generaron los giros de septiembre/);
+    expect(m.detalle).not.toContain('Búscalo');
     expect(m.detalle).toContain('730 cuotas de propietario');
     // revisora r22 (Giros #1): el vacío lleva a ver los giros del mes, no se queda sin salida.
     expect(m.verLosGiros).toBe(true);

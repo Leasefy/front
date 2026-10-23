@@ -18,6 +18,9 @@ export default function CobranzaLayout({ children }: { children: React.ReactNode
     <AgentModuleGate
       module="cobranza"
       deniedTitle={t('inmobiliaria.ai.access.noAccessCobranza')}
+      seccion="Agentes IA"
+      titulo="Cobranza"
+      salida={{ label: 'Ver la deuda del mes', href: '/panel/inmobiliaria/pagos' }}
     >
       {children}
     </AgentModuleGate>

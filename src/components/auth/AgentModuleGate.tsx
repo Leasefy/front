@@ -27,19 +27,30 @@ import { WifiSlash } from '@phosphor-icons/react'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useI18n } from '@/lib/i18n'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import Link from 'next/link'
 import { Button } from '@/components/ui'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 export interface AgentModuleGateProps {
   /** Módulo del agente: 'cobranza' | 'cotizador'. */
   module: string
   /** Copia del «no tienes acceso» propia del módulo. */
   deniedTitle: string
+  /** El nombre de la pantalla, para que la puerta no quede sin título cuando el asistente no contesta. */
+  titulo?: string
+  /** La sección del menú (sobretítulo). */
+  seccion?: string
+  /** Una salida a lo que sí funciona sin el asistente. */
+  salida?: { label: string; href: string }
   children: ReactNode
 }
 
 export function AgentModuleGate({
   module,
   deniedTitle,
+  titulo,
+  seccion,
+  salida,
   children,
 }: AgentModuleGateProps) {
   const { canAccess, isLoading, agentAccessStatus, refetch } =
@@ -51,31 +62,30 @@ export function AgentModuleGate({
     return <PageSkeleton variant="dashboard" />
   }
 
-  // El agente no contestó. Decirlo, no convertirlo en una negativa.
+  // El agente no contestó. Decirlo, no convertirlo en una negativa. Revisora r24 (Cobranza #1 y #2): con el título
+  // de la pantalla, la frase de la capa 2 («El asistente de Leasefy no responde ahora») y una salida a lo que sí
+  // funciona; antes, un cartel sin título que hablaba del «servicio de permisos».
   if (agentAccessStatus === 'sin-verificar') {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3 px-6 text-center">
-        <WifiSlash
-          className="w-8 h-8 text-fg-muted"
-          weight="duotone"
-          aria-hidden="true"
-        />
-        <p className="text-lg font-medium text-fg">
-          No pudimos verificar tu acceso
-        </p>
-        <p className="text-sm text-fg-muted max-w-sm">
-          El servicio de permisos no respondió. No es que no tengas acceso:
-          no pudimos comprobarlo.
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          hideArrow
-          onClick={() => void refetch()}
-          className="mt-1"
-        >
-          Reintentar
-        </Button>
+      <div className="space-y-6 p-6 lg:p-8" data-testid="puerta-sin-verificar">
+        {titulo ? <EncabezadoDePantalla seccion={seccion} titulo={titulo} /> : null}
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-14 text-center">
+          <WifiSlash className="h-8 w-8 text-fg-muted" weight="duotone" aria-hidden="true" />
+          <p className="text-lg font-medium text-fg">El asistente de Leasefy no responde ahora</p>
+          <p className="max-w-sm text-sm text-fg-muted">
+            Lo demás sigue funcionando. Tu acceso no cambió: sólo no pudimos comprobarlo.
+          </p>
+          <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+            <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
+              Reintentar
+            </Button>
+            {salida ? (
+              <Button asChild variant="ghost" size="sm" hideArrow>
+                <Link href={salida.href}>{salida.label}</Link>
+              </Button>
+            ) : null}
+          </div>
+        </div>
       </div>
     )
   }

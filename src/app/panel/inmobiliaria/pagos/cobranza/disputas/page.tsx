@@ -22,7 +22,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Scales, ShieldWarning } from '@phosphor-icons/react'
+import { Scales, ShieldWarning } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAuth } from '@/lib/auth'
@@ -32,7 +32,7 @@ import { Button } from '@/components/ui'
 import { CampoDePlata } from '@/components/ui/campo-de-plata'
 import { Textarea } from '@/components/ui/textarea'
 import { Spinner } from '@/components/ui/spinner'
-import { AnimatedNumber, CrossFade, Presence, SegmentedControl, Card } from '@leasefy/cadence'
+import { CrossFade, Presence, Card } from '@leasefy/cadence'
 // El Dialog del ADAPTADOR local (z del panel y la ✕ del producto), no el de Cadence pelado.
 import {
   Dialog,
@@ -63,6 +63,8 @@ import {
 } from '@/components/inmobiliaria/cobranza/DebtorPicker'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const DEUDORES_HREF = `${BASE}/deudores`
@@ -374,6 +376,37 @@ function DisputasContent() {
     return c
   }, [disputes])
 
+  // El conteo de TODAS se sabe cuando la lista viene sin filtro de estado; con
+  // un estado elegido el micro sólo trae ése y los demás quedan como estaban.
+  const [conteoDeTodas, setConteoDeTodas] = useState<{ open: number; resolved: number; total: number } | null>(null)
+  useEffect(() => {
+    if (filtro !== 'todas' || isLoading) return
+    setConteoDeTodas({ open: counts.open, resolved: counts.resolved, total: disputes.length })
+  }, [filtro, isLoading, counts, disputes.length])
+  const pestanas = useMemo(
+    () =>
+      FILTRO_OPCIONES.map((o) => ({
+        valor: o.value,
+        etiqueta: o.label,
+        cuantos:
+          o.value === filtro
+            ? disputes.length
+            : conteoDeTodas
+              ? o.value === 'todas'
+                ? conteoDeTodas.total
+                : o.value === 'open'
+                  ? conteoDeTodas.open
+                  : o.value === 'resolved'
+                    ? conteoDeTodas.resolved
+                    : null
+              : null,
+        fija: o.value === 'todas',
+        tono: o.value === 'open' ? ('aviso' as const) : undefined,
+        testid: `disputas-pestana-${o.value}`,
+      })),
+    [filtro, disputes.length, conteoDeTodas],
+  )
+
   // ── Mutaciones cableadas (refetch tras éxito) ─────────────────────────────
   const handleOpenDispute = useCallback(
     async (body: {
@@ -426,24 +459,24 @@ function DisputasContent() {
 
   // ── Header (compartido) ────────────────────────────────────────────────────
   const header = (
-    <header className="flex items-start justify-between gap-4 flex-wrap">
-      <EncabezadoDePantalla
-        seccion="Cobranza"
-        titulo="Disputas"
-        descripcion="Las disputas que los deudores levantaron sobre su saldo o un cargo. Abrir o resolver una disputa es una decisión humana: el agente nunca pausa ni reactiva la cobranza por su cuenta."
-      />
-      {puedeActuar && !sinPermiso && (
-        <Button
-          size="sm"
-          hideArrow
-          onClick={() => setAbrirOpen(true)}
-          data-testid="disputa-abrir"
-          className="shrink-0"
-        >
-          Abrir disputa
-        </Button>
-      )}
-    </header>
+    <EncabezadoDePantalla
+      seccion="Cobranza"
+      titulo="Disputas"
+      descripcion="Lo que los deudores discuten de su saldo o de un cargo. Abrir o resolver una es decisión de una persona: el agente no pausa ni reactiva la cobranza solo."
+      accionPrincipal={
+        puedeActuar && !sinPermiso ? (
+          <Button
+            size="sm"
+            hideArrow
+            onClick={() => setAbrirOpen(true)}
+            data-testid="disputa-abrir"
+            className="shrink-0"
+          >
+            Abrir disputa
+          </Button>
+        ) : undefined
+      }
+    />
   )
 
   // ── Primer load ────────────────────────────────────────────────────────────
@@ -471,7 +504,7 @@ function DisputasContent() {
           disputas»: no sabemos si hay o no. */}
       <Presence show={hayError}
           role="alert"
-          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3 flex-wrap"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-body-sm text-danger flex items-center justify-between gap-3 flex-wrap"
         >
           <span className="flex items-center gap-2">
             <ShieldWarning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
@@ -494,27 +527,39 @@ function DisputasContent() {
           )}
       </Presence>
 
-      {/* Filtro por estado + conteo */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <SegmentedControl<EstadoFiltro>
-          options={FILTRO_OPCIONES}
-          value={filtro}
-          onChange={(v) => {
+      {/* LA RESPUESTA: cuántas siguen abiertas (esperan a una persona). */}
+      {!hayError && conteoDeTodas && conteoDeTodas.total > 0 ? (
+        <CifraHeroe
+          data-testid="disputas-abiertas"
+          rotulo="Abiertas"
+          cifra={conteoDeTodas.open.toLocaleString('es-CO')}
+          contexto={`de ${conteoDeTodas.total.toLocaleString('es-CO')} ${conteoDeTodas.total === 1 ? 'disputa' : 'disputas'}`}
+          total={conteoDeTodas.total}
+          tramos={[
+            { clave: 'open', etiqueta: 'Abiertas', monto: conteoDeTodas.open, tono: 'aviso', cifra: conteoDeTodas.open.toLocaleString('es-CO') },
+            {
+              clave: 'resolved',
+              etiqueta: 'Resueltas',
+              monto: conteoDeTodas.resolved,
+              tono: 'exito',
+              cifra: conteoDeTodas.resolved.toLocaleString('es-CO'),
+            },
+          ]}
+        />
+      ) : null}
+
+      {/* Filtro por estado, con su conteo */}
+      {!hayError ? (
+        <PestanasDeEstado<EstadoFiltro>
+          pestanas={pestanas}
+          valor={filtro}
+          onCambio={(v) => {
             setFiltro(v)
             setVerDetalleEnMovil(false)
           }}
-          aria-label="Filtrar disputas por estado"
+          etiqueta="Filtrar disputas por estado"
         />
-        {disputes.length > 0 && (
-          <span className="text-caption text-fg-muted tabular-nums">
-            {/* «1 abierta», no «1 abiertas» (QA-AGENTES 16-10). */}
-            <AnimatedNumber value={counts.open} format={(n) => String(Math.round(n))} />{' '}
-            {counts.open === 1 ? 'abierta' : 'abiertas'} ·{' '}
-            <AnimatedNumber value={counts.resolved} format={(n) => String(Math.round(n))} />{' '}
-            {counts.resolved === 1 ? 'resuelta' : 'resueltas'}
-          </span>
-        )}
-      </div>
+      ) : null}
 
       {/* Vacío ⇄ maestro-detalle: el uno sale y el otro entra. */}
       <CrossFade swapKey={hayError ? 'fallo' : disputes.length === 0 ? `vacio-${filtro}` : 'lista'}>
@@ -585,7 +630,6 @@ function DisputasContent() {
                 hideArrow
                 onClick={() => setVerDetalleEnMovil(false)}
               >
-                <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                 Volver a la lista
               </Button>
             </div>

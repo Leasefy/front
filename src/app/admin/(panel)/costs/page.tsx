@@ -1,13 +1,14 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChatCircleDots, Coins, Robot, Waveform } from '@phosphor-icons/react'
-import { Alert, FranjaDeCifras, MonoLabel } from '@leasefy/cadence'
+import { Coins } from '@phosphor-icons/react'
+import { Alert } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDiaCorto, USD_TO_COP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 
@@ -151,18 +152,35 @@ export default function CostsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Costos"
-        description={`Lo que cuesta operar la plataforma este mes: voz (Vapi) y modelo (Claude). Los dos cobran en dólares; aquí van en pesos a ${fmtCOP(USD_TO_COP)} por dólar. WhatsApp todavía no se mide.`}
+        description="Lo que cuesta operar la plataforma este mes: la voz de las llamadas y el modelo de los agentes."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo se calcula" titulo="Los costos de la plataforma" variante="secundario">
+            <p className="text-body-sm text-fg-muted">
+              Vapi (la voz) y Claude (el modelo) cobran en dólares; aquí van en pesos a {fmtCOP(USD_TO_COP)} por dólar.
+              WhatsApp todavía no se mide.
+            </p>
+          </ParaEntenderMas>
+        }
       />
 
-      <FranjaDeCifras fila="lg" aria-label="Resumen del mes">
-        <KpiCard icon={<Waveform />} label="Vapi · este mes" value={fmtCOP(vapiMtdCop || vapiMtdUsd * USD_TO_COP)} hint="Las llamadas de voz" />
-        <KpiCard icon={<Robot />} label="Claude · este mes" value={fmtCOP(claudeMtdCop || claudeMtdUsd * USD_TO_COP)} hint="El modelo de los agentes" />
-        <KpiCard icon={<ChatCircleDots />} label="WhatsApp · este mes" value="—" hint="Todavía no se mide" />
-        <KpiCard icon={<Coins />} label="Total · este mes" value={totalCostCop > 0 ? fmtCOP(totalCostCop) : '—'} hint="Vapi y Claude, en pesos" />
-      </FranjaDeCifras>
+      {/* Glow up 22-10: LA RESPUESTA (el costo total del mes) partida en voz · modelo; antes, 4 tarjetas del mismo
+          peso, una de ellas vacía («WhatsApp —»). */}
+      <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+        <CifraHeroe
+          rotulo="Costo de este mes"
+          cifra={totalCostCop > 0 ? fmtCOP(totalCostCop) : '—'}
+          contexto="voz y modelo de los agentes, en pesos"
+          tramos={[
+            { clave: 'vapi', etiqueta: 'Voz de las llamadas (Vapi)', monto: vapiMtdCop || vapiMtdUsd * USD_TO_COP, tono: 'neutro', cifra: fmtCOP(vapiMtdCop || vapiMtdUsd * USD_TO_COP), siempre: true },
+            { clave: 'claude', etiqueta: 'Modelo de los agentes (Claude)', monto: claudeMtdCop || claudeMtdUsd * USD_TO_COP, tono: 'aviso', cifra: fmtCOP(claudeMtdCop || claudeMtdUsd * USD_TO_COP), siempre: true },
+          ]}
+          pie="WhatsApp todavía no se mide."
+          data-testid="costos-del-mes"
+        />
+      </div>
 
       <section className="space-y-3" aria-label="Por inmobiliaria">
-        <MonoLabel className="block">Por inmobiliaria</MonoLabel>
+        <h2 className="text-subtitle font-medium text-fg">Por inmobiliaria</h2>
         <DataTable
           columns={tenantColumns}
           rows={costs.data ? perTenant : undefined}
@@ -171,7 +189,7 @@ export default function CostsPage() {
           error={costs.error}
           onReintentar={costs.refetch}
           emptyTitle="Todavía no hay costos este mes"
-          emptyIcon={<Coins weight="bold" />}
+          emptyIcon={<Coins weight="duotone" />}
           aria-label="Costos por inmobiliaria"
           onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}
           id="inmobiliarias"
@@ -184,7 +202,7 @@ export default function CostsPage() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <section className="space-y-3" aria-label="Por modelo">
-          <MonoLabel className="block">Por modelo · este mes</MonoLabel>
+          <h2 className="text-subtitle font-medium text-fg">Por modelo, este mes</h2>
           <DataTable
             columns={modelColumns}
             rows={modelMix}

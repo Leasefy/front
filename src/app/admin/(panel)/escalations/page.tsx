@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Card, FranjaDeCifras, MonoLabel, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Card, MonoLabel, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { urgencia } from '@/lib/admin/textos-del-admin'
@@ -154,7 +154,7 @@ export default function EscalationsPage() {
       orden: (r) => r.created_at,
       ordenPrimero: 'desc',
       texto: (r) => fmtDateTime(r.created_at),
-      cell: (r) => <span className="whitespace-nowrap text-caption tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</span>,
+      cell: (r) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</span>,
     },
   ]
 
@@ -175,15 +175,27 @@ export default function EscalationsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Escalaciones"
-        description="Los casos que un agente le pasó a una persona: abiertos, en curso y resueltos en los últimos 7 días. Toca uno para tomarlo o resolverlo."
-        right={cambiarVista}
+        description="Los casos que un agente le pasó a una persona. Toca uno para tomarlo o resolverlo."
+        acciones={cambiarVista}
       />
 
-      <FranjaDeCifras fila="lg" aria-label="Cifras de las escalaciones">
-        <KpiCard label="Abiertas" value={data ? open.length : '—'} tone={open.length ? 'bad' : 'default'} hint="Sin nadie asignado" />
-        <KpiCard label="En curso" value={data ? assigned.length : '—'} hint="Alguien las tiene" />
-        <KpiCard label="Resueltas" value={data ? resolved.length : '—'} tone="ok" hint="Últimos 7 días" />
-      </FranjaDeCifras>
+      {/* Glow up 22-10: LA RESPUESTA (cuántas esperan a alguien) en una cifra con la barra abiertas · en curso ·
+          resueltas; antes, 3 cajas del mismo peso. */}
+      {data ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Esperan a una persona"
+            cifra={(open.length + assigned.length).toLocaleString('es-CO')}
+            contexto={open.length > 0 ? `${open.length.toLocaleString('es-CO')} sin nadie asignado` : 'todas tienen a alguien'}
+            tramos={[
+              { clave: 'abiertas', etiqueta: 'Abiertas, sin nadie', monto: open.length, tono: 'critico', cifra: open.length.toLocaleString('es-CO'), siempre: true },
+              { clave: 'en-curso', etiqueta: 'En curso', monto: assigned.length, tono: 'aviso', cifra: assigned.length.toLocaleString('es-CO'), siempre: true },
+              { clave: 'resueltas', etiqueta: 'Resueltas en 7 días', monto: resolved.length, tono: 'exito', cifra: resolved.length.toLocaleString('es-CO'), siempre: true },
+            ]}
+            data-testid="escalaciones-esperan"
+          />
+        </div>
+      ) : null}
 
       {vista === 'tabla' ? (
         <DataTable
@@ -215,7 +227,7 @@ export default function EscalationsPage() {
         <ErrorBlock error={error} onReintentar={refetch} />
       ) : (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-          <Columna title="Abiertas" sub="Sin nadie asignado" rows={open} vacio="Nada abierto. Bien." />
+          <Columna title="Abiertas" sub="Sin nadie asignado" rows={open} vacio="Nada abierto." />
           <Columna title="En curso" sub="Alguien las tiene" rows={assigned} vacio="Nadie está atendiendo una ahora." />
           <Columna title="Resueltas" sub="Últimos 7 días" rows={resolved} vacio="Ninguna resuelta esta semana." apagada />
         </div>

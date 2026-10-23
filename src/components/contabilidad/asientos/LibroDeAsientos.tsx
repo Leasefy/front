@@ -72,7 +72,7 @@ import {
   textoDeLineas,
   totalesDeAsiento,
 } from '@/lib/contabilidad/asientos';
-import { diaDe, diaLegible, rangoInvertido } from '@/lib/contabilidad/fechas';
+import { diaDe, rangoInvertido } from '@/lib/contabilidad/fechas';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
@@ -434,7 +434,8 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
                         {asiento.numero}
                       </TableCell>
                       <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
-                        {diaLegible(asiento.fecha)}
+                        {/* Revisora r25 (Asientos, UI #3): «1 oct 2026», la misma de la tarjeta de 390. */}
+                        {fechaCorta(diaDe(asiento.fecha))}
                       </TableCell>
                       <TableCell className="max-w-[420px]">
                         <span className="flex items-baseline gap-1.5">

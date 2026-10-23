@@ -9,6 +9,7 @@ import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import type { InmobiliariaDeLaLista } from '@/lib/admin/inmobiliarias-de-la-lista'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { Pill } from '@/components/admin/Pill'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -59,6 +60,19 @@ type FormMode =
   | { kind: 'none' }
   | { kind: 'create' }
   | { kind: 'edit'; plan: AdminPlan }
+
+/**
+ * Ronda 28 (revisora r27, bloqueante): la descripción del plan viene de la base y trae jerga («Scoring
+ * premium»). Al mostrarla, en español; el dato se corrige en la base (anotado para Víctor).
+ */
+function descripcionLegible(texto: string): string {
+  return texto
+    .replace(/\bscoring\b/gi, (m) => (m[0] === 'S' ? 'Calificación del inquilino' : 'calificación del inquilino'))
+    .replace(/\bscore\b/gi, (m) => (m[0] === 'S' ? 'Puntaje' : 'puntaje'))
+    .replace(/\bdashboard\b/gi, (m) => (m[0] === 'D' ? 'Tablero' : 'tablero'))
+    .replace(/\bmatching\b/gi, (m) => (m[0] === 'M' ? 'Afinidad' : 'afinidad'))
+    .replace(/\bemail(s?)\b/gi, (m, plural: string) => `${m[0] === 'E' ? 'C' : 'c'}orreo${plural}`)
+}
 
 /**
  * /admin/plans — los planes que puede elegir una inmobiliaria (catálogo AGENCY,
@@ -190,7 +204,14 @@ export default function PlansPage() {
     }
   }
 
-  const columnas: Column<AdminPlan>[] = [
+  // Ronda 28 (revisora r27): la respuesta arriba (cuántas inmobiliarias tienen plan) y, si ninguna tiene
+  // uno, sin la columna «En uso» de «—» en todas las filas (va al Excel siempre).
+  const totalInmobiliarias = inmobiliarias.data?.length ?? 0
+  const conPlan = inmobiliarias.data ? inmobiliarias.data.filter((i) => i.plan).length : 0
+  const enUsoTodoEnCero = Boolean(enUso) && plans.every((p) => !(enUso?.get(p.tier) ?? 0))
+  const hayDesactivados = plans.some((p) => !p.isActive)
+
+  const todasLasColumnas: Column<AdminPlan>[] = [
     {
       header: 'Plan',
       className: 'min-w-[240px]',
@@ -205,7 +226,7 @@ export default function PlansPage() {
           </div>
           {/* Ronda 26: el código del plan (en inglés) va sólo al Excel. */}
           {p.level != null ? <div className="mt-0.5 text-caption text-fg-subtle">Nivel {p.level}</div> : null}
-          {p.description ? <p className="mt-1 line-clamp-2 text-caption text-fg-muted">{p.description}</p> : null}
+          {p.description ? <p className="mt-1 line-clamp-2 text-caption text-fg-muted">{descripcionLegible(p.description)}</p> : null}
         </div>
       ),
     },
@@ -224,8 +245,9 @@ export default function PlansPage() {
     {
       header: 'Topes',
       cell: (p) => (
-        // Ronda 26: cada tope en su renglón que se parte entero (a 390 se cortaba «Ilim…»).
-        <dl className="flex flex-wrap gap-x-3 gap-y-0.5 text-caption">
+        // Ronda 28 (revisora r27, bloqueante): el tope DEBAJO de su rótulo, en tres columnas que se parten
+        // (a 390 «Evaluaciones al mes Ilimi…» se cortaba en el borde); el valor en gris, sin competir con el precio.
+        <dl className="grid min-w-0 grid-cols-3 gap-x-4 gap-y-1 text-caption">
           {(
             [
               ['Inmuebles', p.maxProperties],
@@ -233,9 +255,9 @@ export default function PlansPage() {
               ['Evaluaciones al mes', p.monthlyEvalCap],
             ] as const
           ).map(([nombre, valor]) => (
-            <div key={nombre} className="flex gap-1.5 whitespace-nowrap">
+            <div key={nombre} className="min-w-0">
               <dt className="text-fg-subtle">{nombre}</dt>
-              <dd className="font-mono tabular-nums text-fg">{tope(valor)}</dd>
+              <dd className="font-mono tabular-nums text-fg-muted">{tope(valor)}</dd>
             </div>
           ))}
         </dl>
@@ -288,6 +310,8 @@ export default function PlansPage() {
     },
   ]
 
+  const columnas = enUsoTodoEnCero ? todasLasColumnas.filter((c) => c.header !== 'En uso') : todasLasColumnas
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
@@ -307,6 +331,20 @@ export default function PlansPage() {
           </Button>
         }
       />
+
+      {inmobiliarias.data && totalInmobiliarias > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Inmobiliarias con plan"
+            cifra={`${fmtNumero(conPlan)} de ${fmtNumero(totalInmobiliarias)}`}
+            contexto={`en ${fmtNumero(plans.filter((p) => p.isActive).length)} ${plans.filter((p) => p.isActive).length === 1 ? 'plan activo' : 'planes activos'}`}
+            tamano="mediana"
+            esCero={conPlan === 0}
+            cuandoEsCero={`Ninguna de las ${fmtNumero(totalInmobiliarias)} inmobiliarias tiene un plan todavía: los ${fmtNumero(plans.filter((p) => p.isActive).length)} de abajo están listos para elegir.`}
+            data-testid="planes-cifra"
+          />
+        </div>
+      ) : null}
 
       {rowError ? <Alert variant="danger">{rowError}</Alert> : null}
 
@@ -352,11 +390,16 @@ export default function PlansPage() {
         queSon={['plan', 'planes']}
         buscar="Nombre, código o descripción"
         textoExtra={(p) => `${p.tier} ${p.description ?? ''}`}
-        segmentos={[
-          { valor: 'activos', nombre: 'Activos', cumple: (p) => p.isActive },
-          { valor: 'desactivados', nombre: 'Desactivados', cumple: (p) => !p.isActive },
-          { valor: 'todos', nombre: 'Todos', cumple: () => true },
-        ]}
+        // Ronda 28 (revisora r27, T14): sin desactivados, «Activos 5 · Todos 5» decía lo mismo dos veces.
+        segmentos={
+          hayDesactivados
+            ? [
+                { valor: 'activos', nombre: 'Activos', cumple: (p) => p.isActive },
+                { valor: 'desactivados', nombre: 'Desactivados', cumple: (p) => !p.isActive },
+                { valor: 'todos', nombre: 'Todos', cumple: () => true },
+              ]
+            : undefined
+        }
         exportar="planes-de-inmobiliaria"
         masEnElExcel={[
           { header: 'Código', texto: (p) => p.tier },
@@ -365,6 +408,7 @@ export default function PlansPage() {
           { header: 'Usuarios', texto: (p) => p.maxUsers },
           { header: 'Evaluaciones al mes', texto: (p) => p.monthlyEvalCap },
           { header: 'Por defecto', texto: (p) => p.isDefault },
+          ...(enUsoTodoEnCero ? [{ header: 'En uso', texto: (p: AdminPlan) => enUso?.get(p.tier) ?? 0 }] : []),
         ]}
       />
     </div>

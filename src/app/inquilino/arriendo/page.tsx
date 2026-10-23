@@ -445,7 +445,7 @@ export default function ArriendoPage() {
               /* "aplicaciones" está muerto (docs/VOCABULARIO.md). Y quien no
                  tiene arriendo no necesita revisar su historial: necesita
                  encontrar dónde vivir. */
-              action={{ label: 'Ver propiedades para mí', href: '/inquilino/para-ti' }}
+              action={{ label: 'Ver inmuebles para mí', href: '/inquilino/para-ti' }}
             />
           )}
           {/* QA-MIGRACION-95 — CA-04: los contratos que la inmobiliaria cargó sin arriendo. */}

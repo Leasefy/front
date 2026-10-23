@@ -676,7 +676,7 @@ export default function AplicacionesPage() {
               }
               description={activeTab === 'active'
                 ? (locale === 'es'
-                    ? 'Con tu tope aprobado te mostramos las propiedades que puedes tomar. Postularte es el primer paso.'
+                    ? 'Con tu tope aprobado te mostramos los inmuebles que puedes tomar. Postularte es el primer paso.'
                     : 'Explore available properties and apply to start your rental process.')
                 : (locale === 'es'
                     ? 'Las postulaciones aprobadas o rechazadas aparecerán aquí.'
@@ -684,7 +684,7 @@ export default function AplicacionesPage() {
               }
               /* A SU catálogo, no al listado general: ahí están las que puede
                  tomar de verdad. "aplicar" está muerto (docs/VOCABULARIO.md). */
-              action={activeTab === 'active' ? { label: locale === 'es' ? 'Ver propiedades para mí' : 'See properties for me', href: '/inquilino/para-ti' } : undefined}
+              action={activeTab === 'active' ? { label: locale === 'es' ? 'Ver inmuebles para mí' : 'See properties for me', href: '/inquilino/para-ti' } : undefined}
             />
           )}
           </CrossFade>

@@ -205,7 +205,7 @@
   },
   "applications": {
     "title": "Mis postulaciones",
-    "subtitle": "Gestiona tus postulaciones a inmuebles",
+    "subtitle": "Cómo va cada inmueble al que te postulaste.",
     "noApplications": "No tienes postulaciones",
     "startApplying": "Comienza a postular a inmuebles",
     "browseProperties": "Explorar inmuebles",

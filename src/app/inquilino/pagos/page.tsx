@@ -430,7 +430,7 @@ function PagosPageContent() {
                 : 'When you have an active rental, you\'ll see your payments, receipts and account status here.'}
               /* Al catálogo propio, no al listado general: es lo siguiente que
                  haría quien todavía no tiene un arriendo. */
-              action={{ label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me', href: '/inquilino/para-ti' }}
+              action={{ label: locale === 'es' ? 'Ver inmuebles para mí' : 'View properties for me', href: '/inquilino/para-ti' }}
             />
           </div>
         </motion.div>

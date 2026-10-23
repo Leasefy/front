@@ -13130,7 +13130,10 @@
       "ocultasPlural": "inmuebles que se pasan de tu tope.",
       "vacio": "Ahora mismo no hay inmuebles dentro de tu tope",
       "vacioTexto": "Aparecen nuevas seguido. Mientras tanto puedes ver el catálogo completo.",
-      "verTodo": "Ver todos los inmuebles"
+      "verTodo": "Ver todos los inmuebles",
+      "seccion": "Buscar arriendo",
+      "descripcion": "Sólo los que caben en tu tope aprobado, del más barato al más caro.",
+      "marketplace": "Buscar en el marketplace"
     }
   },
   "recibos": {

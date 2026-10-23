@@ -13095,7 +13095,10 @@
       "ocultasPlural": "properties that go above your cap.",
       "vacio": "There are no properties within your cap right now",
       "vacioTexto": "New ones come up often. Meanwhile you can browse the full catalog.",
-      "verTodo": "See all properties"
+      "verTodo": "See all properties",
+      "seccion": "Find a rental",
+      "descripcion": "Only the ones that fit your approved cap, cheapest first.",
+      "marketplace": "Search the marketplace"
     }
   },
   "recibos": {

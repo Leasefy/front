@@ -61,7 +61,8 @@ interface CarteraOverview {
 
 function TransitionArrow({ from, to }: { from: CarteraStage | null; to: CarteraStage }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
+    // Ronda 28 (revisora r27): a 390 la insignia se montaba sobre la columna de al lado: se parte en renglones.
+    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
       <span className="text-caption text-fg-muted">{from ? ETAPA[from].nombre : 'Inicio'}</span>
       <span className="text-caption text-fg-subtle" aria-hidden="true">→</span>
       <Pill tone={ETAPA[to].tono}>{ETAPA[to].nombre}</Pill>
@@ -101,12 +102,17 @@ export default function CarteraPage() {
   const total = buckets.reduce((sum, b) => sum + b.n, 0)
   const conCasos = buckets.filter((b) => b.n > 0)
   const sinCasos = buckets.filter((b) => b.n === 0)
+  const unaSola = conCasos.length === 1 ? conCasos[0] : null
+  // Ronda 28 (revisora r27, T15): si todas las filas dicen el mismo motivo («Otro motivo»), sin la columna.
+  const transiciones = data?.transitions ?? []
+  const motivoIgualEnTodas =
+    transiciones.length > 1 && transiciones.every((t) => motivoDeEtapa(t.reason) === motivoDeEtapa(transiciones[0].reason))
 
   const tracked = data ? parseInt(data.totals.tracked, 10) : 0
   const allDebtors = data ? parseInt(data.totals.total, 10) : 0
   const untracked = Math.max(0, allDebtors - tracked)
 
-  const transitionColumns: Column<TransitionRow>[] = [
+  const todasLasColumnas: Column<TransitionRow>[] = [
     {
       header: 'Cuándo',
       orden: (r) => r.transitioned_at,
@@ -135,6 +141,7 @@ export default function CarteraPage() {
       header: 'Cambio de etapa',
       orden: (r) => r.to_stage,
       texto: (r) => `${r.from_stage ? ETAPA[r.from_stage].nombre : 'Inicio'} → ${ETAPA[r.to_stage].nombre}`,
+      enCelularAncho: true,
       cell: (r) => <TransitionArrow from={r.from_stage} to={r.to_stage} />,
     },
     {
@@ -148,6 +155,8 @@ export default function CarteraPage() {
     },
   ]
 
+  const transitionColumns = motivoIgualEnTodas ? todasLasColumnas.filter((c) => c.header !== 'Motivo') : todasLasColumnas
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader title="Cartera" description="Los deudores de todas las inmobiliarias, por etapa de cobro." />
@@ -159,10 +168,21 @@ export default function CarteraPage() {
         <CifraHeroe
           rotulo="Deudores en cobro"
           cifra={total.toLocaleString('es-CO')}
-          contexto={untracked > 0 ? `${untracked.toLocaleString('es-CO')} todavía sin etapa` : undefined}
+          // Ronda 28 (revisora r27, T14): con UNA etapa con casos, sin barra ni leyenda (decían el mismo número
+          // tres veces): la etapa y su promedio en el contexto.
+          contexto={
+            [
+              unaSola
+                ? `${total === 1 ? 'en' : 'todos en'} ${ETAPA[unaSola.stage].nombre.toLowerCase()}${unaSola.avg_days_in_state !== null ? ` · ${Math.round(unaSola.avg_days_in_state).toLocaleString('es-CO')} días en promedio` : ''}`
+                : null,
+              untracked > 0 ? `${untracked.toLocaleString('es-CO')} todavía sin etapa` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ') || undefined
+          }
           // Ronda 26 (revisora r25): sólo las etapas con casos (antes las 7, casi todas en cero, cada una con su
           // pista); las vacías se nombran en una línea al pie.
-          tramos={conCasos.map((b) => ({
+          tramos={unaSola ? undefined : conCasos.map((b) => ({
             clave: b.stage,
             etiqueta: ETAPA[b.stage].nombre,
             monto: b.n,
@@ -185,7 +205,7 @@ export default function CarteraPage() {
                 <p className="text-caption text-fg-muted">{ETAPA[b.stage].pista}</p>
               ),
           }))}
-          total={total}
+          total={unaSola ? undefined : total}
           pie={
             sinCasos.length > 0 && conCasos.length > 0
               ? `Sin casos en ${sinCasos.length === 1 ? 'la etapa' : `${sinCasos.length} etapas`}: ${sinCasos

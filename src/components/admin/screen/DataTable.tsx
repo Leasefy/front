@@ -57,6 +57,8 @@ export interface Column<T> {
   texto?: (row: T) => ValorDeCelda
   /** `false` = no se muestra en la tarjeta del celular. */
   enCelular?: boolean
+  /** Ronda 28 (revisora r27): en la tarjeta del celular, a lo ancho (las dos columnas) — p. ej. una insignia larga. */
+  enCelularAncho?: boolean
 }
 
 /** La paginación del SERVIDOR: el back corta la página y manda el total. */
@@ -659,7 +661,7 @@ function TarjetasDeLaTabla<T>({
           {conNombre.length ? (
             <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
               {conNombre.map((c, ci) => (
-                <div key={ci} className="min-w-0">
+                <div key={ci} className={cn('min-w-0', c.enCelularAncho && 'col-span-2')}>
                   <dt className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{c.header}</dt>
                   <dd className="min-w-0 break-words text-body-sm text-fg">{c.cell(row)}</dd>
                 </div>

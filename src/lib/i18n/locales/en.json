@@ -1813,7 +1813,7 @@
         "cuotasPendientesSinDato": "The server does not send the lease installments yet"
       },
       "pipeline": {
-        "title": "Active Pipeline",
+        "title": "Prospecting in progress",
         "subtitle": "Leads and ongoing negotiations",
         "empty": "No active leads"
       },

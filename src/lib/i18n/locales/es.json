@@ -1848,7 +1848,7 @@
         "cuotasPendientesSinDato": "El servidor todavía no manda las cuotas del contrato"
       },
       "pipeline": {
-        "title": "Captación en curso",
+        "title": "Prospección en curso",
         "subtitle": "Interesados y negociaciones en curso",
         "empty": "No hay interesados activos"
       },

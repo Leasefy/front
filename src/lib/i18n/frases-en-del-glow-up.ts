@@ -431,4 +431,10 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "La rentabilidad sobre el valor sale cuando registres el valor comercial en la ficha del inmueble.": "Yield on value shows up once you record the market value on the property page.",
   "Ningún inmueble coincide con la búsqueda o el filtro.": "No property matches the search or filter.",
   "neto": "net",
+  "Reportes": "Reports",
+  "1 giro por hacer a propietarios": "1 owner payout to make",
+  "{n} giros por hacer a propietarios": "{n} owner payouts to make",
+  "Por vencer": "Not yet due",
+  "Ningún cierre este mes": "No closings this month",
+  "días al cierre": "days to close",
 }

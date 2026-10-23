@@ -119,15 +119,20 @@ describe('Resumen del negocio — en el orden del trabajo', () => {
     expect(antes($('resumen-tasa-de-recaudo'), $('resumen-dias-al-cierre'))).toBe(true);
   });
 
-  it('los atajos viven en el encabezado, con su destino de siempre', async () => {
+  it('el encabezado lleva sólo «Ver reportes»: la pantalla es para leer (revisora r24 #4)', async () => {
     await montar();
     const encabezado = document.querySelector('header');
     expect(encabezado?.querySelector('h1')?.textContent).toBeTruthy();
-    expect($('resumen-nuevo-propietario')?.getAttribute('href')).toBe('/panel/inmobiliaria/propietarios?nuevo=true');
-    expect($('resumen-nueva-consignacion')?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/nuevo');
-    expect($('resumen-hacer-recibo')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/cobros?status=pending');
+    expect($('resumen-ver-reportes')?.getAttribute('href')).toBe('/panel/inmobiliaria/reportes');
+    expect(encabezado?.contains($('resumen-ver-reportes'))).toBe(true);
     for (const id of ['resumen-nuevo-propietario', 'resumen-nueva-consignacion', 'resumen-hacer-recibo']) {
-      expect(encabezado?.contains($(id))).toBe(true);
+      expect($(id)).toBeNull();
     }
+  });
+
+  it('la respuesta va antes que lo que hay que atender (revisora r24 #1)', async () => {
+    datos.mantenimientos = [{ id: 'm1', status: 'open' } as unknown as Mantenimiento];
+    await montar();
+    expect(antes($('resumen-tasa-de-recaudo'), $('alerta-mantenimientos'))).toBe(true);
   });
 });

@@ -628,4 +628,10 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Ver mis propietarios": "See my owners",
   "Por aprobar": "To approve",
   "Ningún reporte espera tu aprobación.": "No report is waiting for your approval.",
+  // Cobranza (ronda 26, 3.er agente)
+  "Cuándo se le avisa a quien debe y a quién le llega cada aviso.": "When debtors are reminded and who gets each reminder.",
+  "Cuándo se le avisa a quien debe y a quién le llega cada aviso, antes de mandarlo.": "When debtors are reminded and who gets each reminder, before it's sent.",
+  "Cuándo se avisa": "When to remind",
+  "3 · Enviar los avisos": "3 · Send the reminders",
+  "El que toque hoy": "Today's step",
 }

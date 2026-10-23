@@ -69,6 +69,9 @@ import {
   Textarea,
   toast,
 } from '@/components/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { AnimatedNumber, CrossFade, Eyebrow, Presence, SegmentedControl } from '@leasefy/cadence'
 
 import {
@@ -408,11 +411,15 @@ function PagosRecordatorios() {
   if (error) {
     return (
       <CrossFade swapKey="fallo">
-      <div className="space-y-4 p-6 lg:p-8">
-        <Aviso tono="warning">{error}</Aviso>
-        <Button hideArrow onClick={() => void cargar()}>
-          Reintentar
-        </Button>
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* Revisora r25 (#2): con su encabezado y el fallo de la casa (antes un
+            aviso suelto y un «Reintentar» azul). */}
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo="Recordatorios"
+          descripcion="Cuándo se le avisa a quien debe y a quién le llega cada aviso."
+        />
+        <FalloDeCarga error={falloDelTexto(error)} queEs="los recordatorios" onReintentar={() => void cargar()} />
       </div>
       </CrossFade>
     )
@@ -427,7 +434,7 @@ function PagosRecordatorios() {
       <EncabezadoDePantalla
         seccion="Cobranza"
         titulo="Recordatorios"
-        descripcion="Cuándo se avisa a quien debe y a quién le llega cada aviso. Nada sale solo: lo manda una persona, después de ver a cuántos le llega."
+        descripcion="Cuándo se le avisa a quien debe y a quién le llega cada aviso, antes de mandarlo."
         data-testid="recordatorios-encabezado"
       />
 
@@ -440,7 +447,7 @@ function PagosRecordatorios() {
         <CardContent className="space-y-6 p-5 lg:p-6">
           <div className="space-y-1">
             <Eyebrow>1 · Condiciones de cobro</Eyebrow>
-            <h2 className="text-base font-medium text-fg">El reglaje</h2>
+            <h2 className="text-base font-medium text-fg">Cuándo se avisa</h2>
             <p className="max-w-2xl text-sm text-fg-muted">
               Un recordatorio al inicio del mes y, si no pagan, avisos con el interés ya generado,
               separados por los días que definas.
@@ -588,7 +595,7 @@ function PagosRecordatorios() {
               El interés lo calcula el motor de mora con tus{' '}
               <Link
                 href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora"
-                className="font-medium text-primary underline-offset-4 hover:underline"
+                className="font-medium text-fg underline underline-offset-2"
               >
                 reglas de mora
               </Link>
@@ -649,7 +656,7 @@ function PagosRecordatorios() {
                   {p.conInteres ? (
                     <CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-warning" weight="duotone" aria-hidden="true" />
                   ) : (
-                    <BellRinging className="mt-0.5 h-5 w-5 shrink-0 text-primary" weight="duotone" aria-hidden="true" />
+                    <BellRinging className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" weight="duotone" aria-hidden="true" />
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-fg">{p.titulo}</p>
@@ -675,7 +682,7 @@ function PagosRecordatorios() {
       <Card>
         <CardContent className="space-y-5 p-5 lg:p-6">
           <div className="space-y-1">
-            <Eyebrow>3 · Disparo desde la cartera</Eyebrow>
+            <Eyebrow>3 · Enviar los avisos</Eyebrow>
             <h2 className="text-base font-medium text-fg">
               A quién le va a llegar el aviso de {nombreDelMes(mes)}
             </h2>
@@ -688,23 +695,27 @@ function PagosRecordatorios() {
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="paso">Paso</Label>
-              <select
-                id="paso"
-                value={paso === null ? '' : String(paso)}
-                onChange={(e) => {
-                  setPaso(e.target.value === '' ? null : Number(e.target.value))
+              {/* Revisora r25 (UI): el Select de la casa, no un <select> nativo. */}
+              <Select
+                value={paso === null ? 'hoy' : String(paso)}
+                onValueChange={(v) => {
+                  setPaso(v === 'hoy' ? null : Number(v))
                   setPrevia(null)
                   setSeleccion(null)
                 }}
-                className="h-10 rounded-md border border-border bg-card px-3 text-sm text-fg"
               >
-                <option value="">El que toque hoy</option>
-                {(calendario?.pasos ?? []).map((p) => (
-                  <option key={p.paso} value={p.paso}>
-                    {p.titulo}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="paso" className="h-10 w-auto min-w-[12rem]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hoy">El que toque hoy</SelectItem>
+                  {(calendario?.pasos ?? []).map((p) => (
+                    <SelectItem key={p.paso} value={String(p.paso)}>
+                      {p.titulo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Canal</Label>
@@ -743,7 +754,7 @@ function PagosRecordatorios() {
                     <AnimatedNumber value={previa.revisados} format={(n) => String(Math.round(n))} />
                   </strong>{' '}
                   cuotas de {nombreDelMes(previa.mes)}, le va a llegar a{' '}
-                  <strong className="text-primary">
+                  <strong className="font-mono font-medium text-fg">
                     <AnimatedNumber value={previa.lesLlega} format={(n) => String(Math.round(n))} />
                   </strong>{' '}
                   por{' '}
@@ -846,7 +857,7 @@ function PagosRecordatorios() {
                         </td>
                         <td className="px-3 py-2">
                           {d.leLlega ? (
-                            <span className="inline-flex items-center gap-1.5 text-primary">
+                            <span className="inline-flex items-center gap-1.5 text-fg">
                               {previa.canal === 'CORREO' ? (
                                 <EnvelopeSimple className="h-4 w-4" weight="duotone" aria-hidden="true" />
                               ) : (

@@ -79,7 +79,8 @@ export default function NotificacionesDeLaInmobiliariaPage() {
         }
       />
 
-      <div className="max-w-4xl overflow-hidden rounded-lg border border-border bg-surface">
+      {/* Revisora r25: a todo el ancho, como el encabezado (antes max-w-4xl: 240 px vacíos a 1440). */}
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
           <PestanasDeEstado
             etiqueta="Leídas y sin leer"
@@ -87,7 +88,8 @@ export default function NotificacionesDeLaInmobiliariaPage() {
             onCambio={(v) => setSoloSinLeer(v === 'sin-leer')}
             pestanas={[
               { valor: 'sin-leer', etiqueta: 'Sin leer', cuantos: bandeja.cargando ? null : bandeja.unreadCount, fija: true, tono: 'aviso', testid: 'notificaciones-sin-leer' },
-              { valor: 'todas', etiqueta: 'Todas', cuantos: bandeja.cargando ? null : bandeja.total, fija: true, testid: 'notificaciones-todas' },
+              // Con todo sin leer, «Todas 33» repetía «Sin leer 33»: sin número cuando es igual.
+              { valor: 'todas', etiqueta: 'Todas', cuantos: bandeja.cargando || bandeja.total === bandeja.unreadCount ? null : bandeja.total, fija: true, testid: 'notificaciones-todas' },
             ]}
           />
           <div className="flex items-center gap-2 overflow-x-auto" role="group" aria-label="Filtrar por categoría">
@@ -146,15 +148,16 @@ export default function NotificacionesDeLaInmobiliariaPage() {
             </Stagger>
           )}
         </CrossFade>
-      </div>
 
-      {bandeja.hayMas && (
-        <div className="flex max-w-4xl justify-center">
-          <Button variant="secondary" size="sm" disabled={bandeja.cargandoMas} onClick={() => void bandeja.cargarMas()}>
-            {bandeja.cargandoMas ? 'Cargando…' : 'Ver más'}
-          </Button>
-        </div>
-      )}
+        {/* «Ver más» en el pie de la MISMA lista, no suelto debajo. */}
+        {bandeja.hayMas && (
+          <div className="flex justify-center border-t border-border px-4 py-3">
+            <Button variant="secondary" size="sm" disabled={bandeja.cargandoMas} onClick={() => void bandeja.cargarMas()}>
+              {bandeja.cargandoMas ? 'Cargando…' : 'Ver más'}
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

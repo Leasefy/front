@@ -16,7 +16,11 @@
  */
 
 import { formatCurrency } from '@/lib/types/inmobiliaria'
-import { Coins } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { Coins, MagnifyingGlass } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { useI18n } from '@/lib/i18n'
 import { useCostos } from '@/lib/hooks/cotizador/use-costos'
 import { CostKpiStrip } from '@/components/inmobiliaria/cotizador/CostKpiStrip'
@@ -61,6 +65,11 @@ export default function CostosPage() {
     refetchSummary,
     refetchSeries,
   } = useCostos()
+  // Ronda 30 (regla de Nico: toda tabla con buscador y paginación): la tabla de fuentes busca por el nombre de la
+  // fuente y se pagina con el pie de la casa. Los hooks van antes del esqueleto (que retorna temprano).
+  const [busqueda, setBusqueda] = useState('')
+  const [pagina, setPagina] = useState(1)
+  const [porPagina, setPorPagina] = useState<number>(PAGE_SIZE_OPTIONS[0])
 
   // Phase 38-05b: page-level skeleton on initial load only (D-38-04: skeleton only;
   // per-section table skeleton + inline empty prose preserved below; no EmptyState since
@@ -90,6 +99,14 @@ export default function CostosPage() {
   }))
 
   const tablaCargando = (isLoadingSummary || isLoadingSeries) && tableRows.length === 0
+  const plano = (v?: string | null) =>
+    (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const filasVisibles = busqueda.trim()
+    ? tableRows.filter((r) => plano(r.label).includes(plano(busqueda.trim())))
+    : tableRows
+  const ultimaPagina = Math.max(1, Math.ceil(filasVisibles.length / porPagina))
+  const paginaActual = Math.min(pagina, ultimaPagina)
+  const filasDeLaPagina = filasVisibles.slice((paginaActual - 1) * porPagina, paginaActual * porPagina)
 
   return (
     <CrossFade swapKey="costos">
@@ -152,10 +169,27 @@ export default function CostosPage() {
       {/* Per-source breakdown table — la tabla de la casa: la carga y el
           vacío viven dentro del cuerpo, con la cabecera siempre a la vista. */}
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
-        <div className="px-5 py-4 border-b border-border">
+        <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cotizador.costos.sourceBreakdownTitle')}
           </h2>
+          {tableRows.length > 0 ? (
+            <div className="relative w-full sm:w-64">
+              <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+              <Input
+                type="search"
+                value={busqueda}
+                onChange={(e) => {
+                  setBusqueda(e.target.value)
+                  setPagina(1)
+                }}
+                placeholder="Buscar una fuente"
+                aria-label="Buscar una fuente de costo"
+                className="h-9 pl-9"
+                data-testid="costos-buscar"
+              />
+            </div>
+          ) : null}
         </div>
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">
@@ -185,8 +219,14 @@ export default function CostosPage() {
                   />
                 </TableCell>
               </TableRow>
+            ) : filasVisibles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={COLUMNAS} className="p-0">
+                  <SinDatos queSon="fuentes de costo" hayFiltros onLimpiarFiltros={() => setBusqueda('')} />
+                </TableCell>
+              </TableRow>
             ) : (
-              tableRows.map(row => (
+              filasDeLaPagina.map(row => (
                 <TableRow key={row.key} className="hover:bg-surface-muted/50">
                   <TableCell className="px-4 py-3 text-sm text-fg">
                     {row.label}
@@ -212,6 +252,21 @@ export default function CostosPage() {
             )}
           </TableBody>
         </Table>
+        {filasVisibles.length > 0 ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={filasVisibles.length}
+              page={paginaActual}
+              pageSize={porPagina}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPagina}
+              onPageSizeChange={(n) => {
+                setPorPagina(n)
+                setPagina(1)
+              }}
+            />
+          </div>
+        ) : null}
       </section>
       </>
       )}

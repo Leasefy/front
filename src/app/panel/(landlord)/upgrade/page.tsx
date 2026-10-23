@@ -63,7 +63,7 @@ export default function UpgradePage() {
       currentPlanId === 'pro');
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <div className="max-w-5xl p-6 lg:p-8">
         {/* Back link */}
         <div className="mb-6">

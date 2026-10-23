@@ -90,7 +90,7 @@ export default function LandlordLeasesPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           {/* Mostraba `description={error}`: el mensaje crudo del backend,
               en inglés, como único texto de la pantalla. */}
@@ -101,7 +101,7 @@ export default function LandlordLeasesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <div className="p-6 lg:p-8">
 
         {/* Header */}

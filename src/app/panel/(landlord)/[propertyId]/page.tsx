@@ -835,7 +835,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
   // reintentar; cualquier otro → con reintentar.
   if (!property) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <FalloDeCarga
             error={errorPropiedad ?? new ApiError(404, 'property not found')}
@@ -849,7 +849,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <div className="p-6 lg:p-8">
 
         {/* Back Link */}

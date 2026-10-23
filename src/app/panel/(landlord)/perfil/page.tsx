@@ -3,7 +3,7 @@ import { CambiarCorreoDeEntrada } from '@/components/cuenta/CambiarCorreoDeEntra
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import { User, Phone, MapPin, Shield, Camera, FloppyDisk, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
+import { User, Phone, MapPin, Shield, Camera, FloppyDisk, UserPlus, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -440,7 +440,8 @@ export default function PropietarioPerfilPage() {
                       />
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  {/* Ronda 30: con ancho mínimo, a 390 «Cambiar foto» baja de renglón (antes el texto se partía en 4). */}
+                  <div className="min-w-[10rem] flex-1">
                     <p className="text-sm text-fg">{locale === 'es' ? 'Foto de perfil' : 'Profile photo'}</p>
                     <p className="text-caption text-fg-muted">{locale === 'es' ? 'JPG o PNG, hasta 5 MB.' : 'JPG or PNG, up to 5 MB.'}</p>
                   </div>
@@ -667,17 +668,18 @@ export default function PropietarioPerfilPage() {
                       {errorDelCampo('emergenciaTelefono')}
                     </>
                   ) : (
-                    <p className="py-1 font-mono text-sm text-fg tabular-nums">{formData.emergencyContactPhone || notSet}</p>
+                    <p className={cn('py-1 text-sm text-fg', formData.emergencyContactPhone && 'font-mono tabular-nums')}>{formData.emergencyContactPhone || notSet}</p>
                   )}
                 </div>
               </CrossFade>
             </div>
 
             {/* Danger Zone */}
-            <div className="rounded-lg border border-danger/30 bg-danger-soft/30 p-6">
-              <h3 className="text-h3 text-danger mb-2 flex items-center gap-2">
-                <WarningCircle className="w-5 h-5" />
-                {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
+            {/* Ronda 30 (revisora r27 y Cadence 2): sin la tarjeta rosada ni el ícono de alarma; un bloque más de la
+                página, con su título en tinta. El rojo queda sólo en el botón, y la confirmación es la que pesa. */}
+            <div className="rounded-lg border border-border bg-surface p-6" data-testid="perfil-eliminar-cuenta">
+              <h3 className="text-h3 text-fg mb-2">
+                {locale === 'es' ? 'Eliminar tu cuenta' : 'Delete your account'}
               </h3>
               {/* La copia canónica, como en el perfil de la inmobiliaria y el del
                   inquilino (Nico, 02-10-2026): nada se borra; 30 días para

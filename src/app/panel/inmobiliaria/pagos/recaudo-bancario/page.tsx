@@ -14,8 +14,10 @@ import { ROLES_QUE_VEN_LOS_BANCOS } from '@/lib/nav/el-auxiliar-de-cartera-no-ve
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { RecaudoBancarioPanel } from '@/components/tesoreria/RecaudoBancario';
+import { useTr } from '@/lib/i18n/use-tr';
 
 export default function RecaudoBancarioPage() {
+  const tr = useTr();
   return (
     // COBRANZA-MANUAL: el auxiliar de cartera no entra a los bancos.
     <PageGuard module="cobros" action="view" roles={[...ROLES_QUE_VEN_LOS_BANCOS]}>
@@ -24,15 +26,15 @@ export default function RecaudoBancarioPage() {
             sobre la pantalla: empuja hacia abajo lo que la persona vino a hacer.
             GLOW UP (20-10): el encabezado común; los pasos van debajo. */}
         <EncabezadoDePantalla
-          seccion="Tesorería"
-          titulo="Recaudo por convenio con el banco"
-          descripcion="Sube el archivo de recaudo del banco: lo que se identifica sin dudas se concilia solo, con su recibo, y ves por qué no se concilió lo demás."
+          seccion={tr('Cobrar a inquilinos')}
+          titulo={tr('Recaudo bancario')}
+          descripcion={tr('Sube el archivo del banco: lo que se identifica se concilia solo.')}
           ayuda={
             <ParaEntenderMas
                   etiqueta="Cómo funciona el recaudo por convenio"
                   descripcion="Qué hace el banco, qué hace Leasefy solo y qué decide una persona."
                 >
-                  <div className="space-y-3 text-sm text-fg-muted">
+                  <div className="space-y-3 text-caption text-fg-muted">
                     <p>
                       El inquilino paga en el banco con la <strong className="text-fg">referencia de su
                       contrato o con su cédula</strong>, y el banco te manda cada día un archivo con todo

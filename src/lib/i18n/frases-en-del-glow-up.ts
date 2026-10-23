@@ -348,4 +348,11 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Espera a que venzan cuotas": "Waiting for installments to fall due",
   "Ninguna tiene hoy deuda vencida contra la que aplicarse: hay que esperar que venzan más cuotas, o devolverla.": "None has overdue debt to apply against today: wait for more installments to fall due, or return it.",
   "entró el {fecha}": "came in on {fecha}",
+  "Cobrar a inquilinos": "Collect from tenants",
+  "Recaudo bancario": "Bank collection",
+  "Sube el archivo del banco: lo que se identifica se concilia solo.": "Upload the bank file: whatever is identified is reconciled on its own.",
+  "Elige tu banco o sube un archivo de ejemplo: te ayudamos a leerlo.": "Pick your bank or upload a sample file: we'll help you read it.",
+  "Entró por el banco": "Came in through the bank",
+  "en 1 archivo, importado el {fecha}": "in 1 file, imported on {fecha}",
+  "en {n} archivos; el último, importado el {fecha}": "in {n} files; the latest imported on {fecha}",
 }

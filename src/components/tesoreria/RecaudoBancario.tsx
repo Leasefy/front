@@ -47,6 +47,8 @@ import { CheckCircle, Plus, UploadSimple, WarningOctagon } from '@phosphor-icons
 import { Appear } from '@leasefy/cadence';
 import { PasosDeLaTarea, type PasoDeLaTarea } from '@/components/pantalla/PasosDeLaTarea';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { useTr } from '@/lib/i18n/use-tr';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
@@ -145,6 +147,9 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
   const [importado, setImportado] = useState<ResultadoDeImportar | null>(null);
   /** Sube cada vez que se importa o concilia algo: la lista de archivos se vuelve a leer. */
   const [version, setVersion] = useState(0);
+  const tr = useTr();
+  /** Los archivos que lee la lista de abajo: con ellos se arma LA respuesta de arriba. */
+  const [importados, setImportados] = useState<ArchivoDeRecaudo[]>([]);
   const conciliacion = useRef<HTMLDivElement>(null);
   const abrir = (id: string) => {
     setArchivoAbierto(id);
@@ -158,21 +163,12 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
     ? {
         id: 'convenio',
         titulo: 'Configura el convenio con tu banco',
-        descripcion: 'Se hace una vez: con qué banco recaudas y cómo se lee su archivo.',
+        descripcion: tr('Elige tu banco o sube un archivo de ejemplo: te ayudamos a leerlo.'),
         estado: 'actual',
         contenido: (
           // 🔴 UN vacío y UNA acción (21-09): antes eran dos cajas de texto y ningún botón.
+          // GLOW UP (22-10): el paso ya trae su título y su línea; aquí sólo la acción.
           <section className="space-y-4" data-testid="sin-convenio">
-            {/* Revisión de Dinero (22-10): sin la cajita de ícono ni el párrafo que repetía la
-                descripción de la pantalla: un título, una línea y la acción. */}
-            <div className="space-y-1">
-              <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">
-                Todavía no recaudas por convenio con un banco
-              </h2>
-              <p className="max-w-xl text-body-sm text-fg-muted">
-                Elige tu banco o sube un archivo de ejemplo y te ayudamos a configurarlo.
-              </p>
-            </div>
             <Button
               hideArrow
               disabled={!datos.disponible}
@@ -297,6 +293,23 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
         />
       ) : null}
 
+      {/* LA respuesta, arriba: cuánta plata entró por el banco en los archivos importados. */}
+      {datos.disponible && hayConvenio && importados.length > 0 ? (
+        <CifraHeroe
+          data-testid="recaudo-cifra"
+          rotulo={tr('Entró por el banco')}
+          cifra={formatCurrency(importados.reduce((s, a) => s + a.totalCop, 0))}
+          contexto={
+            importados.length === 1
+              ? tr('en 1 archivo, importado el {fecha}', { fecha: diaLegible(importados[0].createdAt) })
+              : tr('en {n} archivos; el último, importado el {fecha}', {
+                  n: importados.length,
+                  fecha: diaLegible(importados[0].createdAt),
+                })
+          }
+        />
+      ) : null}
+
       <PasosDeLaTarea
         titulo="Cómo entra la plata del banco"
         pasos={[convenio, subir, conciliar]}
@@ -305,7 +318,7 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
 
       {/* Lo demás: los archivos de otros días, para volver a su conciliación. */}
       {datos.disponible && hayConvenio ? (
-        <ArchivosImportados version={version} abierto={archivoAbierto} onAbrir={abrir} />
+        <ArchivosImportados version={version} abierto={archivoAbierto} onAbrir={abrir} onCargados={setImportados} />
       ) : null}
 
       <ConvenioDeRecaudoCajon
@@ -425,21 +438,26 @@ function ArchivosImportados({
   version,
   abierto,
   onAbrir,
+  onCargados,
 }: {
   version: number;
   abierto: string | null;
   onAbrir: (id: string) => void;
+  /** Le pasa al padre lo leído, para la cifra de arriba (sin otra llamada al back). */
+  onCargados?: (archivos: ArchivoDeRecaudo[]) => void;
 }) {
   const [archivos, setArchivos] = useState<ArchivoDeRecaudo[] | null>(null);
   const [fallo, setFallo] = useState<unknown>(null);
   const cargar = useCallback(async () => {
     setFallo(null);
     try {
-      setArchivos((await tesoreriaApi.listarArchivos(30)).archivos);
+      const leidos = (await tesoreriaApi.listarArchivos(30)).archivos;
+      setArchivos(leidos);
+      onCargados?.(leidos);
     } catch (error) {
       setFallo(error);
     }
-  }, []);
+  }, [onCargados]);
   useEffect(() => {
     void cargar();
   }, [cargar, version]);
@@ -448,7 +466,7 @@ function ArchivosImportados({
   return (
     <section className="space-y-3" data-testid="archivos-importados">
       <div>
-        <h2 className="text-base font-semibold text-fg">Archivos importados</h2>
+        <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Archivos importados</h2>
         <p className="mt-1 text-body-sm text-fg-muted">
           Abre uno para ver qué quedó conciliado, qué falta y por qué.
         </p>

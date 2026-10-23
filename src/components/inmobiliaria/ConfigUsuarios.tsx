@@ -389,32 +389,8 @@ export function ConfigUsuarios({
           tarjeta (antes, además, una frase arriba y un selector de estado: lo
           mismo tres veces). Arriba queda la búsqueda, el rol y la ÚNICA puerta
           para sumar a alguien. El título lo pone el marco de Configuración. */}
+      {/* Revisora r27 (R6): el buscador y el rol van DENTRO de la tarjeta de la tabla; arriba sólo la puerta para sumar a alguien. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 sm:max-w-sm">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
-          <Input
-            type="search"
-            placeholder={t('inmobiliaria.config.users.searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        <Select value={filterRole} onValueChange={(v) => setFilterRole(v as FilterRole)}>
-          <SelectTrigger className="sm:w-[180px]" aria-label={t('inmobiliaria.config.users.role')}>
-            <SelectValue placeholder={t('inmobiliaria.config.users.allRoles')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('inmobiliaria.config.users.allRoles')}</SelectItem>
-            {ROLES_DEL_SISTEMA.map((rol) => (
-              <SelectItem key={rol} value={rol}>
-                {getRoleLabel(rol)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         {onInvite && (
           <Button hideArrow size="sm" className="sm:ml-auto" onClick={() => setInviteModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
@@ -441,6 +417,32 @@ export function ConfigUsuarios({
           />
         </div>
         ) : null}
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1 sm:max-w-sm">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
+          <Input
+            type="search"
+            placeholder={t('inmobiliaria.config.users.searchPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <Select value={filterRole} onValueChange={(v) => setFilterRole(v as FilterRole)}>
+          <SelectTrigger className="sm:w-[180px]" aria-label={t('inmobiliaria.config.users.role')}>
+            <SelectValue placeholder={t('inmobiliaria.config.users.allRoles')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('inmobiliaria.config.users.allRoles')}</SelectItem>
+            {ROLES_DEL_SISTEMA.map((rol) => (
+              <SelectItem key={rol} value={rol}>
+                {getRoleLabel(rol)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        </div>
         <div className="md:overflow-x-auto">
         {/* En el celular cada persona es una tarjeta (patrón de Deuda del mes). */}
         <Table className="w-full md:min-w-[800px] max-md:block">

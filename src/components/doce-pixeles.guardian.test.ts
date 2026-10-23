@@ -108,7 +108,7 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // rótulos en mayúsculas se quedan en 12).
 // 22-10 noche: 548 con el glow up de las cuatro zonas; 23-10 madrugada: 330 al cerrar el panel, Dinero,
 // los portales y el barrido de `components/contract` (ratchet).
-const CUANTOS_HABIA = 278;
+const CUANTOS_HABIA = 275;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

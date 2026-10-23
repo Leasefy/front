@@ -708,7 +708,8 @@ describe('ContratosPage — las cifras son el encabezado de la tabla, no un bloq
     expect(tarjeta).not.toBeNull()
     const dentro = Array.from(tarjeta!.querySelectorAll('[data-testid="contratos-kpi"]'))
     // Con un solo contrato activo quedan las dos fijas: «Activos» y «Todos» (21-10: sin «Por firmar 0»).
-    expect(dentro.map((p) => p.textContent)).toEqual(['Activos1', 'Todos1'])
+    // Revisora r27 (R2): «Todos» calla el 1 que ya dice «Activos».
+    expect(dentro.map((p) => p.textContent)).toEqual(['Activos1', 'Todos'])
     // Y ninguna quedó suelta por fuera.
     expect(container.querySelectorAll('[data-testid="contratos-kpi"]')).toHaveLength(2)
   })

@@ -48,6 +48,17 @@ export function PestanasDeEstado<V extends string>({
 }: PestanasDeEstadoProps<V>) {
   const visibles = pestanas.filter((p) => p.fija || p.valor === valor || p.cuantos === null || p.cuantos > 0);
   const cifra = (n: number) => n.toLocaleString(localeDeLasCifras());
+  /*
+   * Revisora r27 (R2, el mismo número dos veces): cuando otra pestaña cuenta lo mismo que la de «todo»
+   * («Todas 30 · Por enviar 30»), «Todas» va sin número; y una pestaña sola no se pinta (no filtra nada).
+   */
+  if (visibles.length <= 1) return null;
+  // La pestaña de «todo» (la que suma a las demás) es la que repite: ésa calla su número.
+  const deTodo = visibles.find((p) => ['todos', 'todas', 'all'].includes(String(p.valor)));
+  const callarLaDeTodo =
+    !!deTodo &&
+    deTodo.cuantos !== null &&
+    visibles.some((p) => p !== deTodo && p.cuantos !== null && p.cuantos === deTodo.cuantos);
   return (
     <div
       role="group"
@@ -75,7 +86,7 @@ export function PestanasDeEstado<V extends string>({
           >
             {p.tono === 'aviso' ? <span className="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" /> : null}
             {p.etiqueta}
-            {p.cuantos !== null ? (
+            {p.cuantos !== null && !(callarLaDeTodo && p === deTodo) ? (
               <span className={cn('font-mono text-caption tabular-nums', activa ? '' : 'text-fg-subtle')}>{cifra(p.cuantos)}</span>
             ) : null}
           </button>

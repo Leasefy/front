@@ -1,5 +1,6 @@
 'use client'
 
+import { confirmar } from '@/components/ui/confirmar'
 import { useMemo, useState } from 'react'
 import { Switch } from '@/components/ui/switch'
 
@@ -114,6 +115,17 @@ export default function RegistrationProfilesPage() {
     if (!next && enabledCount <= 1) {
       setActionError('No puedes desactivar el último perfil activo. Al menos uno debe quedar habilitado.')
       return
+    }
+
+    // Ronda 26 (revisora, 3c): cerrar el registro de TODO un perfil se confirma antes (era un toque).
+    if (!next) {
+      const ok = await confirmar({
+        tipo: 'advertencia',
+        titulo: `¿Cerrar el registro de ${row.label.toLowerCase()}?`,
+        descripcion: 'Nadie nuevo podrá registrarse con ese perfil hasta que lo vuelvas a abrir. Las cuentas que ya existen siguen igual.',
+        accion: 'Cerrar el registro',
+      })
+      if (!ok) return
     }
 
     setBusyKey(row.key)

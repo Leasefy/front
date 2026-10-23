@@ -345,6 +345,8 @@ describe('Proveedores — los modales son el Dialog de la casa', () => {
  */
 describe('Proveedores — la tabla, con lo que tienen todas nuestras tablas', () => {
   it('T1 — los controles viven DENTRO de la tarjeta de la tabla, no flotando encima', async () => {
+    // Con un inactivo, para que salga su pestaña (en cero no sale: revisora r25).
+    h.api.listar.mockResolvedValue([UNO, { ...AL_DIA, activo: false }])
     await montar()
     const tabla = $('proveedores-tabla')
     expect(tabla).not.toBeNull()

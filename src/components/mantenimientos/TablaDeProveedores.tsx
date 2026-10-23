@@ -78,7 +78,7 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Chip } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { ESPECIALIDADES, EN_PALABRAS } from './especialidades';
 import type { ProveedorDeMantenimiento } from '@/lib/api/proveedores-de-mantenimiento.service';
 
@@ -267,14 +267,8 @@ export function TablaDeProveedores({
     </TableHead>
   );
 
-  const cajonChip = (valor: Cajon, etiqueta: string) => (
-    <Chip selected={cajon === valor} onClick={() => setCajon(valor)} data-testid={`cajon-${valor}`}>
-      {etiqueta}
-      <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-caption tabular-nums">
-        {conteos[valor]}
-      </span>
-    </Chip>
-  );
+  // Revisora r25: la columna «Contacto» decía «—» en todas las filas; sale si alguna tiene.
+  const hayContacto = proveedores.some((p) => Boolean(p.telefono || p.correo));
 
   return (
     <section
@@ -300,9 +294,17 @@ export function TablaDeProveedores({
       {/* UNA franja de filtros, pegada a la tabla. */}
       <div className="flex flex-col gap-3 border-b border-border px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          {cajonChip('activos', 'Activos')}
-          {cajonChip('inactivos', 'Inactivos')}
-          {cajonChip('todos', 'Todos')}
+          {/* Revisora r25 (T2): las pestañas de estado de la casa, sin «Inactivos 0». */}
+          <PestanasDeEstado<Cajon>
+            etiqueta="Activos e inactivos"
+            valor={cajon}
+            onCambio={setCajon}
+            pestanas={[
+              { valor: 'activos', etiqueta: 'Activos', cuantos: conteos.activos, fija: true, testid: 'cajon-activos' },
+              { valor: 'inactivos', etiqueta: 'Inactivos', cuantos: conteos.inactivos, testid: 'cajon-inactivos' },
+              { valor: 'todos', etiqueta: 'Todos', cuantos: conteos.todos, fija: true, testid: 'cajon-todos' },
+            ]}
+          />
           <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border lg:block" />
           <Select value={especialidad} onValueChange={setEspecialidad}>
             <SelectTrigger
@@ -331,7 +333,7 @@ export function TablaDeProveedores({
           <Input
             className="pl-9"
             type="search"
-            placeholder="Nombre, documento, teléfono u oficio"
+            placeholder="Buscar proveedor"
             aria-label="Buscar proveedor"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
@@ -367,7 +369,7 @@ export function TablaDeProveedores({
         <TableHeader className="max-md:hidden">
           <TableRow>
             <EncabezadoOrdenable valor="nombre">Proveedor</EncabezadoOrdenable>
-            <TableHead className="whitespace-nowrap">Contacto</TableHead>
+            {hayContacto ? <TableHead className="whitespace-nowrap">Contacto</TableHead> : null}
             <TableHead className="whitespace-nowrap">Qué hace</TableHead>
             <EncabezadoOrdenable valor="calificacion">Calificación</EncabezadoOrdenable>
             <EncabezadoOrdenable valor="papeles">Papeles</EncabezadoOrdenable>
@@ -384,7 +386,7 @@ export function TablaDeProveedores({
               nadie pudo verificar. */}
           {!cargando && Boolean(error) && (
             <TableRowAnimada key="fallo">
-              <TableCell colSpan={COLUMNAS} className="p-0">
+              <TableCell colSpan={COLUMNAS - (hayContacto ? 0 : 1)} className="p-0">
                 <FalloDeCarga error={error} queEs="los proveedores" onReintentar={onReintentar} />
               </TableCell>
             </TableRowAnimada>
@@ -392,7 +394,7 @@ export function TablaDeProveedores({
 
           {!cargando && !error && filtrados.length === 0 && (
             <TableRowAnimada key="vacio">
-              <TableCell colSpan={COLUMNAS} className="p-0">
+              <TableCell colSpan={COLUMNAS - (hayContacto ? 0 : 1)} className="p-0">
                 <SinDatos
                   queSon="proveedores"
                   icono={Wrench}
@@ -431,6 +433,7 @@ export function TablaDeProveedores({
                 <p className="mt-0.5 text-caption tabular-nums text-muted-foreground">{p.documento}</p>
               </TableCell>
 
+              {hayContacto ? (
               <TableCell className="max-w-[200px] px-5 py-4 align-top text-muted-foreground max-md:block max-md:max-w-none max-md:p-0">
                 {p.telefono || p.correo ? (
                   <>
@@ -440,9 +443,10 @@ export function TablaDeProveedores({
                     {p.correo ? <p className="truncate text-caption">{p.correo}</p> : null}
                   </>
                 ) : (
-                  <span>—</span>
+                  <span className="max-md:hidden">—</span>
                 )}
               </TableCell>
+              ) : null}
 
               {/*
                 🔴 19-09 (visto en el navegador, en TEMA OSCURO): los oficios

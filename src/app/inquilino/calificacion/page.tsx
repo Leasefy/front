@@ -13,7 +13,7 @@ import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Certificate, CircleNotch, Eye, Handshake, ShareNetwork, XCircle } from '@phosphor-icons/react';
+import { Certificate, CircleNotch, Eye, Handshake, ShareNetwork } from '@phosphor-icons/react';
 import { Presence } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
@@ -54,7 +54,7 @@ function Seccion({ titulo, descripcion, children }: { titulo: string; descripcio
   const tr = useTr();
   return (
     <section className="rounded-lg border border-border bg-surface p-6">
-      <h2 className="text-base font-medium text-fg">{tr(titulo)}</h2>
+      <h2 className="text-h3 text-fg">{tr(titulo)}</h2>
       {descripcion && <p className="mt-1 max-w-2xl text-sm text-fg-muted">{tr(descripcion)}</p>}
       <div className="mt-4">{children}</div>
     </section>
@@ -151,7 +151,7 @@ function Evaluacion({ e, alResponder }: { e: EvaluacionDeFin; alResponder: () =>
     }
   };
   return (
-    <div className="rounded-md border border-border p-4">
+    <div className="border-t border-border-faint py-4 first:border-t-0 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-medium text-fg">
           {e.inmobiliaria ?? tr('Una inmobiliaria')}
@@ -293,10 +293,18 @@ export default function MiCalificacionPage({
       timeZone: 'America/Bogota',
     });
 
+  const encabezado = (
+    <EncabezadoDePantalla
+      titulo={tr('Mi Calificación Leasefy')}
+      descripcion={tr('Cómo te ven para arrendar: tu historial de pagos en Leasefy y tus documentos. Verla es gratis, siempre.')}
+    />
+  );
+
   if (cargando && !datos) return <EsqueletoDePagina variante="list" className="p-6 lg:p-8" />;
   if (error && !datos) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="space-y-6 p-6 lg:p-8">
+        {encabezado}
         <FalloDeCarga error={error} queEs={tr('tu calificación')} onReintentar={cargar} />
       </div>
     );
@@ -308,15 +316,16 @@ export default function MiCalificacionPage({
 
   return (
     <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
-      <EncabezadoDePantalla
-        titulo={tr('Mi Calificación Leasefy')}
-        descripcion={tr('Cómo te ven para arrendar: tu historial de pagos en Leasefy y tus documentos. Verla es gratis, siempre.')}
-      />
+      {encabezado}
 
       {datos.calificacion ? (
         <TarjetaDeCalificacion calificacion={datos.calificacion} deTu />
       ) : (
-        <EmptyState icon={XCircle} title={tr('Todavía no hay calificación')} description={tr('Todavía no hay datos para calificar.')} />
+        <EmptyState
+          icon={Certificate}
+          title={tr('Todavía no hay calificación')}
+          description={tr('Todavía no hay datos para calificar: ni historial de arriendos en Leasefy ni un estudio de documentos reciente.')}
+        />
       )}
 
       <Autorizacion datos={datos} alCambiar={cargar} />
@@ -374,6 +383,11 @@ export default function MiCalificacionPage({
                 <span className="font-mono text-caption tabular-nums text-fg-muted">{fechaYHora(c.cuando)}</span>
               </li>
             ))}
+            {datos.consultas.lista.length > 20 && (
+              <li className="pt-2 text-caption text-fg-muted">
+                {tr('Se ven las 20 más recientes de {n} consultas.', { n: datos.consultas.lista.length })}
+              </li>
+            )}
           </ul>
         )}
       </Seccion>
@@ -385,7 +399,7 @@ export default function MiCalificacionPage({
             {tr('No tienes evaluaciones todavía.')}
           </p>
         ) : (
-          <div className="space-y-3">
+          <div>
             {datos.evaluaciones.lista.map((e) => (
               <Evaluacion key={e.id} e={e} alResponder={cargar} />
             ))}

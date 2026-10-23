@@ -85,8 +85,9 @@ afterEach(() => {
   mia.mockReset()
 })
 
-async function montar() {
-  mia.mockResolvedValue(DATOS)
+async function montar(datos: MiCalificacion | Error = DATOS) {
+  if (datos instanceof Error) mia.mockRejectedValue(datos)
+  else mia.mockResolvedValue(datos)
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)
@@ -131,5 +132,26 @@ describe('Mi Calificación Leasefy: los arriendos de la persona', () => {
     expect(t).toContain('sin cuotas pagadas en Leasefy')
     expect(t).toContain('Terminó; lo evaluó la inmobiliaria')
     expect(t).not.toContain('0 de 0')
+  })
+})
+
+describe('Mi Calificación Leasefy: glow up 22-10', () => {
+  it('si no carga, el encabezado común sigue arriba del fallo', async () => {
+    await montar(new Error('boom'))
+    expect(document.querySelector('h1')?.textContent).toContain('Mi Calificación Leasefy')
+  })
+
+  it('con más de 20 consultas, dice que se ven las 20 más recientes', async () => {
+    const lista = Array.from({ length: 23 }, (_, i) => ({
+      inmobiliaria: `Inmobiliaria ${i}`,
+      cuando: `2026-10-${String((i % 20) + 1).padStart(2, '0')}T15:00:00.000Z`,
+    }))
+    await montar({ ...DATOS, consultas: { disponible: true, lista } } as MiCalificacion)
+    expect(document.body.textContent).toContain('Se ven las 20 más recientes de 23 consultas.')
+  })
+
+  it('sin calificación, el vacío dice de dónde sale', async () => {
+    await montar({ ...DATOS, calificacion: undefined } as unknown as MiCalificacion)
+    expect(document.body.textContent).toContain('ni historial de arriendos en Leasefy ni un estudio de documentos reciente')
   })
 })

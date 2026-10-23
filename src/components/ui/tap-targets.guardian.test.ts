@@ -54,3 +54,24 @@ describe('standalone controls opt into a 44 px touch target', () => {
     });
   }
 });
+
+// T-0173 WU-8: cadence segmented controls are 26-32 px and cadence is not
+// editable from front, so globals.css gives them a coarse-pointer 44 px floor.
+describe('cadence segmented controls get a coarse-pointer 44 px floor', () => {
+  const css = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf8').replace(/\r\n/g, '\n');
+  const block = (selector: string) => {
+    const at = css.indexOf(selector);
+    expect(at, `${selector} missing in globals.css`).toBeGreaterThan(-1);
+    const open = css.lastIndexOf('@media (pointer: coarse)', at);
+    expect(open, `${selector} is not inside a coarse-pointer block`).toBeGreaterThan(-1);
+    // no closing of the media block between the at-rule and the selector
+    expect(css.slice(open, at)).not.toMatch(/\n  \}\n/);
+    expect(css.slice(at, css.indexOf('}', at))).toMatch(/min-height:\s*44px/);
+  };
+  it('SegmentedControl radio buttons (no Radix data-state)', () => {
+    block('button[role="radio"][aria-checked]:not([data-state])');
+  });
+  it('TabsList variant=segmented triggers', () => {
+    block('[role="tab"][data-variant="segmented"]');
+  });
+});

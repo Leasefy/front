@@ -15,7 +15,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Handshake, Trash, UserCircle, Users } from '@phosphor-icons/react';
+import { Handshake, MagnifyingGlass, Trash, UserCircle, Users } from '@phosphor-icons/react';
+import { TablePagination } from '@/components/ui/pagination';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { Collapse, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
@@ -260,6 +263,17 @@ export function SeccionComercial() {
     void cargar();
   }, [cargar]);
 
+  /* Ronda 30 (regla de Nico: listas con buscador y paginación): con 20 asesores la lista
+     no se recorría a ojo. Todo sale de lo que ya llegó. */
+  const [busqueda, setBusqueda] = useState('');
+  const asesoresVisibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es');
+    const todos = datos?.asesores ?? [];
+    return q ? todos.filter((a) => (a.nombre ?? '').toLocaleLowerCase('es').includes(q)) : todos;
+  }, [datos, busqueda]);
+  const pagAsesores = useTablePagination(asesoresVisibles, { resetKey: busqueda });
+  const pagReglas = useTablePagination(datos?.reglas ?? [], {});
+
   const borrar = async (r: ReglaDeComision) => {
     await confirmar({
       titulo: `¿Borrar la regla que rige desde ${nombreDelMes(r.desdeMes).toLowerCase()}?`,
@@ -363,8 +377,26 @@ export function SeccionComercial() {
         {datos.asesores.length === 0 ? (
           <p className="text-sm text-fg-muted">Todavía no hay asesores en el equipo. Invítalos en Equipo.</p>
         ) : (
+          <>
+          <div className="relative w-full sm:w-72">
+            <MagnifyingGlass
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+              aria-hidden="true"
+            />
+            <Input
+              className="pl-9"
+              placeholder="Buscar asesor"
+              aria-label="Buscar asesor"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              data-testid="buscar-asesor-comision"
+            />
+          </div>
+          {asesoresVisibles.length === 0 ? (
+            <SinDatos hayFiltros queSon="asesores" onLimpiarFiltros={() => setBusqueda('')} className="py-8" />
+          ) : null}
           <Stagger as="ul" className="divide-y divide-border">
-            {datos.asesores.map((a) => {
+            {pagAsesores.pageItems.map((a) => {
               const propia = ultimaPropia(datos.reglas, a.userId, hoy);
               const abierto = editandoAsesor === a.userId;
               return (
@@ -403,6 +435,17 @@ export function SeccionComercial() {
               );
             })}
           </Stagger>
+          {asesoresVisibles.length > 0 ? (
+            <TablePagination
+              total={pagAsesores.total}
+              page={pagAsesores.page}
+              pageSize={pagAsesores.pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={pagAsesores.setPage}
+              onPageSizeChange={pagAsesores.setPageSize}
+            />
+          ) : null}
+          </>
         )}
       </section>
 
@@ -416,7 +459,7 @@ export function SeccionComercial() {
             Cada una rige desde su mes hasta que empieza otra. Las de meses ya pagados se quedan para que la nómina de ese mes no cambie.
           </p>
           <Stagger as="ul" className="rounded-lg border border-border divide-y divide-border bg-surface">
-            {datos.reglas.map((r) => (
+            {pagReglas.pageItems.map((r) => (
               <StaggerItem as="li" key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
@@ -437,6 +480,14 @@ export function SeccionComercial() {
               </StaggerItem>
             ))}
           </Stagger>
+          <TablePagination
+            total={pagReglas.total}
+            page={pagReglas.page}
+            pageSize={pagReglas.pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={pagReglas.setPage}
+            onPageSizeChange={pagReglas.setPageSize}
+          />
         </section>
       ) : null}
     </div>

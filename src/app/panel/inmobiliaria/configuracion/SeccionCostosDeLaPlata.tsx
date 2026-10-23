@@ -159,7 +159,7 @@ export function SeccionCostosDeLaPlata() {
       cuandoVacio={
         <VacioDeSeccion
           icono={Coins}
-          titulo="Todavía no pudimos leer la configuración"
+          titulo="Todavía no se pudo leer la configuración"
           ayuda="Vuelve a intentar en un momento: las tarifas cuelgan de tu inmobiliaria."
         />
       }
@@ -173,8 +173,8 @@ export function SeccionCostosDeLaPlata() {
           <p className="text-sm text-fg-muted">
             Mover plata cuesta: el banco cobra el 4x1000 cuando le giras al propietario y la
             pasarela cobra cuando el inquilino paga en línea. Por defecto los asume la inmobiliaria
-            contra su comisión. Si los trasladas, salen{' '}
-            <strong>siempre como línea aparte</strong>: nunca por dentro del canon ni del neto.
+            contra su comisión. Si los trasladas, salen siempre como línea aparte: nunca por dentro
+            del canon ni del neto.
           </p>
 
           {/* ── 4x1000 ──────────────────────────────────────────────────── */}
@@ -195,11 +195,11 @@ export function SeccionCostosDeLaPlata() {
               </div>
               <p className="max-w-md text-caption text-fg-muted">
                 Art. 870 del Estatuto Tributario: 4 por mil sobre cada retiro o transferencia. Se
-                escribe POR MIL para que una reforma sea un número y no un despliegue. Si tu
+                escribe por mil: si la ley cambia la tarifa, sólo se cambia el número. Si tu
                 inmobiliaria está exenta (art. 879), déjalo vacío: no se calcula nada.
               </p>
             </div>
-            <div className="flex items-center justify-between gap-4 rounded-md border border-border px-4 py-3">
+            <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-fg">Trasladárselo al propietario</p>
                 <p className="text-caption text-fg-muted">
@@ -254,11 +254,11 @@ export function SeccionCostosDeLaPlata() {
                 Casi todas cobran un % más un fijo. Pueden venir los dos, uno o ninguno.
               </p>
             </div>
-            <div className="flex items-center justify-between gap-4 rounded-md border border-border px-4 py-3">
+            <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-fg">Trasladárselo al inquilino</p>
                 <p className="text-caption text-fg-muted">
-                  Prendido, es plata que el inquilino pone ADEMÁS de su deuda: no baja lo que se le
+                  Prendido, es plata que el inquilino pone además de su deuda: no baja lo que se le
                   abona. Sale como línea aparte de su recibo.
                 </p>
               </div>

@@ -353,6 +353,7 @@ export function CuentasDeLasDiferencias() {
                   </div>
                   <Button
                     size="sm"
+                    variant="ink"
                     hideArrow
                     isLoading={asentando}
                     disabled={!escritura.puede || !datos.disponible}
@@ -368,7 +369,7 @@ export function CuentasDeLasDiferencias() {
             <Dialog open={confirmando} onOpenChange={(v) => !v && !asentando && setConfirmando(false)}>
               <DialogContent variant="confirm" icon={<Bank weight="bold" />} data-testid="dialogo-asentarlas">
                 <DialogHeader>
-                  <DialogTitle>Asentar lo que falta</DialogTitle>
+                  <DialogTitle>¿Asentar lo que falta?</DialogTitle>
                   <DialogDescription>
                     {porAsentar && porAsentar.total > 0
                       ? porAsentar.total === 1
@@ -411,7 +412,7 @@ export function CuentasDeLasDiferencias() {
                               {diaLegible(g.fecha)} · {g.etiqueta}
                             </span>
                           </span>
-                          <span className="shrink-0 tabular-nums text-fg">{plata(g.valorCop)}</span>
+                          <span className="shrink-0 font-mono tabular-nums text-fg">{plata(g.valorCop)}</span>
                         </li>
                       ))}
                     </ul>

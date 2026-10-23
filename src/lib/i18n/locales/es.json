@@ -8978,7 +8978,7 @@
             "salaTitulo": "Conciliación bancaria",
             "salaDesc": "Cruza el extracto del banco con lo cobrado y lo girado; lo dudoso queda en tu cola.",
             "verMovimientos": "Ver movimientos y subir extractos",
-            "colaDesc": "Cruces bancarios que el agente sugiere y necesitan tu revisión. Aprobar concilia el movimiento; rechazar lo devuelve a sin identificar. Modo Copiloto: nada se aplica sin ti.",
+            "colaDesc": "Los cruces que el agente sugiere y esperan tu revisión: aprobar concilia el movimiento y rechazar lo devuelve a «sin identificar».",
             "colaEmptyHint": "Nada por revisar. Sube un extracto del banco y el agente cruza los movimientos con tus cobros.",
             "casoColaLabel": "Cola de conciliación",
             "analiticaDesc": "Desempeño del agente de conciliación en los últimos 30 días: casos cruzados, tasa de aciertos y monto conciliado por día.",

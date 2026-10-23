@@ -71,13 +71,13 @@ const guideSections: GuideSection[] = [
           "Descripción: un texto atractivo sobre tu inmueble",
           "Precio: Arriendo mensual y administración",
           "Inquilino ideal: Requisitos y preferencias",
-          "Plan: Selecciona el plan que se ajuste a tus necesidades",
+          "Plan: publicar es gratis; un plan suma más alcance",
           "Revisión: Verifica todos los datos antes de publicar",
         ],
       },
       {
         subtitle: "Consejos para destacar",
-        text: "Una publicación bien elaborada recibe hasta 3 veces más postulaciones.",
+        text: "Una publicación completa, con buenas fotos, recibe más postulaciones.",
         tips: [
           "Usa un título descriptivo: 'Apartamento moderno con vista a la ciudad en Chapinero'",
           "Destaca los puntos fuertes: cerca al transmilenio, zona tranquila, etc.",
@@ -91,12 +91,12 @@ const guideSections: GuideSection[] = [
   {
     id: "candidatos",
     icon: <Users className="h-5 w-5" />,
-    title: "Gestión de candidatos",
+    title: "Elegir al inquilino",
     description: "Cómo revisar y seleccionar al mejor inquilino",
     content: [
       {
         subtitle: "Recibir postulaciones",
-        text: "Cuando alguien se postula a tu inmueble, recibes un aviso con su perfil completo y su calificación de riesgo.",
+        text: "Cuando alguien se postula a tu inmueble, recibes un aviso con su perfil completo y su calificación.",
       },
       {
         subtitle: "Comparar candidatos",
@@ -118,12 +118,12 @@ const guideSections: GuideSection[] = [
   {
     id: "scoring",
     icon: <ChartBar className="h-5 w-5" />,
-    title: "Puntaje de riesgo",
+    title: "Calificación del candidato",
     description: "Entiende cómo evaluamos a los candidatos",
     content: [
       {
-        subtitle: "¿Qué es el puntaje de riesgo?",
-        text: "Es una puntuación del 0 al 100 que indica qué tan confiable es un candidato basándose en múltiples factores verificables.",
+        subtitle: "¿Qué es la calificación?",
+        text: "Es un puntaje de 0 a 100 que indica qué tan confiable es un candidato basándose en múltiples factores verificables.",
       },
       {
         subtitle: "Factores evaluados",
@@ -137,7 +137,7 @@ const guideSections: GuideSection[] = [
         ],
       },
       {
-        subtitle: "Cómo leer el puntaje",
+        subtitle: "Cómo leer la calificación",
         text: "Un puntaje alto indica menor riesgo. Recomendamos considerar candidatos con puntaje superior a 70, aunque otros factores también son importantes.",
         tips: [
           "90-100: Excelente candidato, bajo riesgo",
@@ -186,7 +186,7 @@ const guideSections: GuideSection[] = [
   {
     id: "pagos",
     icon: <CreditCard className="h-5 w-5" />,
-    title: "Gestión de pagos",
+    title: "Recibir los pagos",
     description: "Recibe y administra los pagos de arriendo",
     content: [
       {
@@ -354,30 +354,19 @@ export default function PropietariosGuidePage() {
                 </Button>
               </div>
 
-              {/* Los temas a la vista: se salta directo al que interesa. */}
-              <nav aria-label="Temas de la guía" className="mb-8 flex flex-wrap gap-2">
-                {guideSections.map((section) => (
-                  <a
-                    key={section.id}
-                    href={`#${section.id}`}
-                    className="rounded-full border border-border px-3.5 py-1.5 text-body-sm text-fg transition-colors hover:bg-surface-muted"
-                  >
-                    {section.title}
-                  </a>
-                ))}
-              </nav>
-
+              {/* Ronda 30 (revisora r27): fuera las 7 pastillas de temas; repetían los 7 acordeones que
+                  están justo debajo. */}
               {/* Pro tip: un consejo, no una advertencia (sin el amarillo de alerta). */}
               <div className="mb-10 flex items-start gap-3 rounded-lg bg-surface-muted p-4">
                 <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" aria-hidden="true" />
                 <div>
                   <p className="text-body-sm font-medium text-fg">
-                    Consejo profesional
+                    Un consejo
                   </p>
+                  {/* Revisora r25/r27 (R6): sin cifras inventadas («4 veces más», «100%»). */}
                   <p className="mt-1 text-body-sm text-fg-muted">
-                    Los propietarios que completan su perfil al 100% y responden
-                    en menos de 24 horas reciben 4 veces más aplicaciones de
-                    candidatos calificados.
+                    Un perfil completo y una respuesta el mismo día hacen que más
+                    candidatos se postulen.
                   </p>
                 </div>
               </div>

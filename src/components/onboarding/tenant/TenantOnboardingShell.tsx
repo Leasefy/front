@@ -43,7 +43,7 @@ const STEP_WHY_CONTENT = {
       eyebrow: 'Tu búsqueda',
       title: '¿Por qué preferencias?',
       points: [
-        { icono: Eye, texto: 'Te mostramos solo propiedades relevantes' },
+        { icono: Eye, texto: 'Te mostramos sólo los inmuebles que te sirven' },
         { icono: Clock, texto: 'Ahorra tiempo en tu búsqueda' },
         { icono: Lightning, texto: 'Recibe alertas personalizadas' },
       ],

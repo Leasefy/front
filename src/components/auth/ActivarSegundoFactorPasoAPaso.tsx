@@ -418,7 +418,7 @@ export function ActivarSegundoFactorPasoAPaso({
             <div className="flex justify-center">
               {/* 🔴 Blanco a propósito, en claro y en oscuro: las cámaras leen un
                   QR oscuro sobre fondo claro. No es decoración. */}
-              <div className="rounded-md border border-border bg-white p-3 shadow-sm">
+              <div className="rounded-md border border-border bg-white p-3">
                 {/* Un data URI con el SVG de Supabase: `next/image` no tiene nada que optimizar. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

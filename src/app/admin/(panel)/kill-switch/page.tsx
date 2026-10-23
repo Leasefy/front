@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import { Power } from '@phosphor-icons/react'
-import { Alert, FranjaDeCifras } from '@leasefy/cadence'
+import { Alert } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { fmtDateTime } from '@/lib/admin/format'
 import type { RespuestaDeBanderas, BanderasDeLaInmobiliaria } from '@/lib/admin/banderas'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { Button } from '@/components/ui/button'
@@ -70,7 +70,7 @@ export default function PausaDeEmergenciaPage() {
             <Pill tone="bad" dot>En pausa</Pill>
             {f.pausa ? (
               <p className="text-caption text-fg-muted">
-                Desde {fmtDateTime(f.pausa.cuando)}
+                Desde <span className="font-mono tabular-nums">{fmtDateTime(f.pausa.cuando)}</span>
                 {f.pausa.quien ? ` · ${f.pausa.quien}` : ''}
                 {f.pausa.motivo ? ` · «${f.pausa.motivo}»` : ''}
               </p>
@@ -84,9 +84,10 @@ export default function PausaDeEmergenciaPage() {
       header: '',
       align: 'right',
       cell: (f) => (
+        // Glow up 22-10: en la fila, botones callados; el rojo va en la confirmación del cajón.
         <Button
           size="sm"
-          variant={f.pausada ? 'outline' : 'destructive'}
+          variant="outline"
           hideArrow
           onClick={() => { setObjetivo(f); setMotivo(''); setFallo(null) }}
         >
@@ -100,12 +101,28 @@ export default function PausaDeEmergenciaPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Pausa de emergencia"
-        description="Detiene de inmediato TODOS los agentes de una inmobiliaria: llamadas, mensajes y piloto automático. Pide motivo, queda registrado y sólo Leasefy la quita."
+        description="Detiene de inmediato todos los agentes de una inmobiliaria: llamadas, mensajes y piloto automático. Pide motivo, queda registrado y sólo Leasefy la quita."
       />
-      <FranjaDeCifras fila="lg" aria-label="Cifras de la pausa">
-        <KpiCard label="Con agentes" value={data ? filas.length : '—'} />
-        <KpiCard label="En pausa" value={data ? enPausa : '—'} tone={enPausa ? 'bad' : 'default'} />
-      </FranjaDeCifras>
+      {/* Glow up 22-10: LA RESPUESTA (cuántas están en pausa) en una cifra con su barra; antes, 2 cajas. */}
+      {data && filas.length > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="En pausa de emergencia"
+            cifra={enPausa.toLocaleString('es-CO')}
+            contexto={
+              enPausa > 0
+                ? `de ${filas.length.toLocaleString('es-CO')} ${filas.length === 1 ? 'inmobiliaria' : 'inmobiliarias'} con agentes`
+                : `ninguna: los agentes de las ${filas.length.toLocaleString('es-CO')} funcionan`
+            }
+            tramos={[
+              { clave: 'funcionando', etiqueta: 'Funcionando', monto: filas.length - enPausa, tono: 'exito', cifra: (filas.length - enPausa).toLocaleString('es-CO'), siempre: true },
+              { clave: 'pausa', etiqueta: 'En pausa', monto: enPausa, tono: 'critico', cifra: enPausa.toLocaleString('es-CO') },
+            ]}
+            total={filas.length}
+            data-testid="pausa-en-pausa"
+          />
+        </div>
+      ) : null}
       <DataTable
         columns={columnas}
         rows={data ? filas : undefined}
@@ -114,8 +131,8 @@ export default function PausaDeEmergenciaPage() {
         error={error}
         onReintentar={refetch}
         rowClassName={(f) => (f.pausada ? 'bg-danger/5' : undefined)}
-        emptyTitle="Ninguna inmobiliaria está en el micro de agentes"
-        emptyIcon={<Power weight="bold" />}
+        emptyTitle="Ninguna inmobiliaria está conectada al asistente de agentes"
+        emptyIcon={<Power weight="duotone" />}
         aria-label="Pausa de emergencia por inmobiliaria"
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar inmobiliaria"
@@ -157,7 +174,7 @@ export default function PausaDeEmergenciaPage() {
           <Button variant="outline" hideArrow onClick={() => setObjetivo(null)}>
             Cancelar
           </Button>
-          <Button hideArrow variant={pausar ? 'destructive' : 'default'} disabled={motivo.trim().length < 5 || guardando} onClick={() => void confirmar()}>
+          <Button hideArrow variant={pausar ? 'destructive' : 'default'} disabled={motivo.trim().length < 5 || guardando} isLoading={guardando} onClick={() => void confirmar()}>
             {guardando ? 'Guardando…' : pausar ? 'Pausar todo' : 'Reanudar'}
           </Button>
         </CajonPie>

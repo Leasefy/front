@@ -340,4 +340,12 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Código, dirección o propietario": "Code, address or owner",
   "Comisión sin definir": "Commission not set",
   "{comision} de comisión": "{comision} commission",
+  // Revisora r24, Pendientes de aplicar (la cifra de arriba)
+  "Por aplicar": "To apply",
+  "en 1 entrada": "in 1 entry",
+  "en {n} entradas": "in {n} entries",
+  "Se puede aplicar hoy": "Can be applied today",
+  "Espera a que venzan cuotas": "Waiting for installments to fall due",
+  "Ninguna tiene hoy deuda vencida contra la que aplicarse: hay que esperar que venzan más cuotas, o devolverla.": "None has overdue debt to apply against today: wait for more installments to fall due, or return it.",
+  "entró el {fecha}": "came in on {fecha}",
 }

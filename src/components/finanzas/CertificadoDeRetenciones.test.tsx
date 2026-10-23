@@ -333,3 +333,42 @@ describe('QA de Contabilidad (CB-32, 03-10-2026)', () => {
     expect(numeroDelCertificado(1 as unknown as string)).toBe('N.º 1');
   });
 });
+
+describe('revisora r27 (B-B): el pie cuadra con el encabezado', () => {
+  const columnasDe = (fila: Element | null | undefined) =>
+    Array.from(fila?.children ?? []).reduce((n, c) => n + Number(c.getAttribute('colspan') ?? 1), 0);
+
+  it('🔴 sin ReteIVA, el pie tampoco la pinta: el total cae bajo «Total», no bajo «Certificado»', async () => {
+    await pintar();
+    const encabezado = document.body.querySelector('thead tr');
+    const pie = document.body.querySelector('tfoot tr');
+    const titulos = Array.from(encabezado?.children ?? []).map((c) => c.textContent?.trim());
+    expect(titulos).not.toContain('ReteIVA');
+    expect(titulos).toContain('ReteICA');
+    expect(columnasDe(pie)).toBe(columnasDe(encabezado));
+    // La celda del pie que queda bajo «Total» lleva el total retenido.
+    const celdas = Array.from(pie?.children ?? []);
+    let col = 0;
+    const bajo = new Map<number, string>();
+    for (const c of celdas) {
+      bajo.set(col, c.textContent ?? '');
+      col += Number(c.getAttribute('colspan') ?? 1);
+    }
+    expect(bajo.get(titulos.indexOf('Total'))).toContain('1.800.000');
+  });
+
+  it('sin ninguna retención de IVA ni de ICA, ni el encabezado ni el pie las pintan', async () => {
+    const base = certificado();
+    h.certificado.mockResolvedValue({
+      ...base,
+      filas: base.filas.map((f) => ({ ...f, reteIcaCop: 0, totalRetenidoCop: f.retefuenteCop })),
+      totales: { ...base.totales, reteIcaCop: 0, totalRetenidoCop: 1_680_000 },
+    });
+    await pintar();
+    const encabezado = document.body.querySelector('thead tr');
+    const pie = document.body.querySelector('tfoot tr');
+    expect(columnasDe(encabezado)).toBe(6);
+    expect(columnasDe(pie)).toBe(6);
+    expect(pie?.textContent).not.toMatch(/\$\s?0(?![.,\d])/);
+  });
+});

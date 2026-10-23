@@ -182,6 +182,8 @@ export function CertificadoDeRetencionesPanel() {
   /** Una columna de retención toda en cero no informa (r25). */
   const conReteIva = filas.some((f) => f.reteIvaCop !== 0);
   const conReteIca = filas.some((f) => f.reteIcaCop !== 0);
+  // Propietario, Documento, Base, Retefuente, Total y Certificado, más las de retención con algo.
+  const columnas = 6 + (conReteIva ? 1 : 0) + (conReteIca ? 1 : 0);
   // Sin pestañas (un solo grupo), se ve todo: un filtro de antes no deja la tabla escondida.
   const vistaEfectiva = gruposConFilas > 1 ? vista : 'todos';
   const filasVisibles = vistaEfectiva === 'todos' ? filas : filas.filter((f) => grupoDe(f) === vistaEfectiva);
@@ -454,7 +456,7 @@ export function CertificadoDeRetencionesPanel() {
                 <TableBody className="max-md:block">
                   {filasVisibles.length === 0 ? (
                     <TableRow className="max-md:block">
-                      <TableCell colSpan={8} className="py-10 text-center text-body-sm text-fg-muted max-md:block">
+                      <TableCell colSpan={columnas} className="py-10 text-center text-body-sm text-fg-muted max-md:block">
                         {filas.length === 0 ? (
                           <>
                             A ningún propietario le retuvieron nada en {datos.anio} con este criterio.
@@ -589,7 +591,7 @@ export function CertificadoDeRetencionesPanel() {
                         </TableRow>,
                         abierto ? (
                           <TableRow key={`${f.propietarioId}-detalle`} className="max-md:block">
-                            <TableCell colSpan={8} className="bg-surface-muted p-0 max-md:block">
+                            <TableCell colSpan={columnas} className="bg-surface-muted p-0 max-md:block">
                               <DetalleMesAMes fila={f} />
                             </TableCell>
                           </TableRow>
@@ -598,7 +600,7 @@ export function CertificadoDeRetencionesPanel() {
                     })
                   )}
                 </TableBody>
-                {filas.length > 0 && vista === 'todos' ? (
+                {filas.length > 0 && vistaEfectiva === 'todos' ? (
                   <TableFooter className="max-md:hidden">
                     <TableRow>
                       <TableCell colSpan={2} className="font-medium">
@@ -610,12 +612,18 @@ export function CertificadoDeRetencionesPanel() {
                       <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                         {formatCurrency(datos.totales.retefuenteCop)}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                        {formatCurrency(datos.totales.reteIvaCop)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                        {formatCurrency(datos.totales.reteIcaCop)}
-                      </TableCell>
+                      {/* Revisora r27 (B-B): el pie lleva las mismas columnas que el encabezado;
+                          si no, el total cae bajo «Certificado» y bajo «Total» se lee un $ 0 falso. */}
+                      {conReteIva ? (
+                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
+                          {formatCurrency(datos.totales.reteIvaCop)}
+                        </TableCell>
+                      ) : null}
+                      {conReteIca ? (
+                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
+                          {formatCurrency(datos.totales.reteIcaCop)}
+                        </TableCell>
+                      ) : null}
                       <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                         {formatCurrency(datos.totales.totalRetenidoCop)}
                       </TableCell>

@@ -1,7 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { Button as DSButton, buttonVariants as dsButtonVariants } from "@leasefy/cadence"
+import { animate } from "framer-motion"
+import {
+  Button as DSButton,
+  buttonVariants as dsButtonVariants,
+  motionScale,
+  motionSpring,
+  usePrefersReducedMotion,
+} from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
@@ -17,6 +24,24 @@ import { cn } from "@/lib/utils"
  * - Cadence 2 (20-10-2026): SIN flecha automática. El botón dice lo que hace;
  *   la flechita ↗ en cada botón azul era de plantilla. `hideArrow` queda por
  *   compatibilidad y ya no hace nada.
+ * - 🔴 Nico, 23-10-2026: «animación al interactuar, en hover y al presionar, con
+ *   framer, y NADA de drop shadows». Se arregla UNA vez aquí, para los ~750
+ *   archivos que usan el botón:
+ *     · al pasar el puntero sube 1 px (resorte ágil de Cadence) y al presionar
+ *       se hunde al 97 % con el resorte de rebote leve (`motionSpring.bouncy`,
+ *       `motionScale.press`); al soltar vuelve con ese rebote. Con movimiento
+ *       reducido (`usePrefersReducedMotion`) no se mueve. El enlace (`link`) no
+ *       se mueve, como en Cadence.
+ *     · Se mueve con `animate()` de framer sobre el nodo, en los eventos del
+ *       puntero —no con `whileHover`/`whileTap`—: así el HTML del servidor es el
+ *       mismo de antes (sin `tabindex` ni `style` nuevos: `whileTap` le pone
+ *       `tabindex="0"` a todo), sirve con `asChild` y los `onDrag*`/
+ *       `onAnimation*` de quien lo usa siguen siendo los del DOM.
+ *     · La presión por CSS de Cadence (`active:scale`) y la transición de
+ *       `transform` se apagan aquí para que no peleen con el resorte.
+ *     · Toda sombra de caída que llegue por `className` (`shadow-lg`,
+ *       `hover:shadow-[0_12px…]`) se quita; el filo interior de Cadence
+ *       (`inset`) se queda: no es una sombra, es el borde de la arena.
  */
 
 type ButtonVariant =
@@ -63,6 +88,34 @@ const SIZE_FIDELITY: Partial<Record<ButtonSize, string>> = {
 }
 
 
+/** Una clase de sombra de caída (`shadow`, `shadow-lg`, `hover:shadow-[0_…]`, `drop-shadow-md`), no `shadow-none` ni `inset`. */
+const esSombraDeCaida = (clase: string) =>
+  /(?:^|:)!?(?:drop-)?shadow(?:-|$)/.test(clase) && !/(?:^|:)!?shadow-none$/.test(clase) && !clase.includes("inset")
+
+/** Nico 23-10: los botones no llevan sombra de caída. Se quitan de la `className` que llega. */
+export function sinSombraDeCaida(className?: string): string | undefined {
+  if (!className) return className
+  return className
+    .split(/\s+/)
+    .filter((clase) => clase && !esSombraDeCaida(clase))
+    .join(" ")
+}
+
+/** Las posturas del botón (framer, resortes de Cadence). */
+const QUIETO = { y: 0, scale: 1 }
+const ENCIMA = { y: -1, scale: 1 }
+const PRESIONADO = { y: 0, scale: motionScale.press }
+
+/** Mueve el nodo sin romper nada si el entorno no anima (pruebas, navegadores viejos). */
+function mover(nodo: Element | null, destino: typeof QUIETO, transicion: typeof motionSpring.snappy | typeof motionSpring.bouncy) {
+  if (!nodo) return
+  try {
+    animate(nodo, destino, transicion)
+  } catch {
+    /* sin animación: el botón funciona igual */
+  }
+}
+
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant | null
   size?: ButtonSize | null
@@ -91,17 +144,45 @@ function buttonVariants(options?: {
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    // `hideArrow` se saca de las props para que no llegue al DOM.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    { className, variant, size, asChild = false, isLoading = false, hideArrow, children, ...props },
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      isLoading = false,
+      // `hideArrow` se saca de las props para que no llegue al DOM.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      hideArrow,
+      children,
+      onPointerEnter,
+      onPointerLeave,
+      onPointerDown,
+      onPointerUp,
+      onPointerCancel,
+      ...props
+    },
     ref
   ) => {
     const resolvedVariant = variant ?? "default"
     const resolvedSize = size ?? "default"
+    const reducido = usePrefersReducedMotion()
+    // El enlace no se mueve (Cadence: «sin presión ni relleno»).
+    const seMueve = !reducido && resolvedVariant !== "link"
+
+    const nodo = React.useRef<HTMLButtonElement | null>(null)
+    const encima = React.useRef(false)
+    const unirRef = React.useCallback(
+      (el: HTMLButtonElement | null) => {
+        nodo.current = el
+        if (typeof ref === "function") ref(el)
+        else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el
+      },
+      [ref]
+    )
 
     return (
       <DSButton
-        ref={ref}
+        ref={unirRef}
         asChild={asChild}
         variant={VARIANT_MAP[resolvedVariant]}
         size={SIZE_MAP[resolvedSize]}
@@ -111,10 +192,37 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           // El Button legacy del mvp era `group`: se preserva para los call sites
           // que usan group-hover en sus children.
           "group",
+          // La presión la hace el resorte de framer (abajo): fuera la de CSS y la
+          // transición de `transform`, que pelearía cuadro a cuadro con él.
+          "transition-[color,background-color,border-color,box-shadow,opacity] active:scale-100",
           SIZE_FIDELITY[resolvedSize],
           isLoading && "pointer-events-none opacity-70",
-          className
+          sinSombraDeCaida(className)
         )}
+        onPointerEnter={(e: React.PointerEvent<HTMLButtonElement>) => {
+          onPointerEnter?.(e)
+          if (!seMueve || e.pointerType !== "mouse") return
+          encima.current = true
+          mover(nodo.current, ENCIMA, motionSpring.snappy)
+        }}
+        onPointerLeave={(e: React.PointerEvent<HTMLButtonElement>) => {
+          onPointerLeave?.(e)
+          encima.current = false
+          if (seMueve) mover(nodo.current, QUIETO, motionSpring.snappy)
+        }}
+        onPointerDown={(e: React.PointerEvent<HTMLButtonElement>) => {
+          onPointerDown?.(e)
+          if (seMueve) mover(nodo.current, PRESIONADO, motionSpring.bouncy)
+        }}
+        onPointerUp={(e: React.PointerEvent<HTMLButtonElement>) => {
+          onPointerUp?.(e)
+          if (seMueve) mover(nodo.current, encima.current ? ENCIMA : QUIETO, motionSpring.bouncy)
+        }}
+        onPointerCancel={(e: React.PointerEvent<HTMLButtonElement>) => {
+          onPointerCancel?.(e)
+          encima.current = false
+          if (seMueve) mover(nodo.current, QUIETO, motionSpring.snappy)
+        }}
         {...props}
       >
         {children}

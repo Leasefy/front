@@ -207,11 +207,16 @@ describe('ExtractoBancario — pendientes', () => {
     const fila = $('[data-testid="movimiento-m-1"]');
     expect(fila.textContent).toContain('TRANSFERENCIA PEREZ GOMEZ');
     expect(fila.textContent).toContain('$\u00a01.800.000');
+    // Revisora r25 (Movimientos #1): la fila dice el MEJOR cruce (el del seguro) y el cajón,
+    // todos con su porqué.
     const seguro = $('[data-testid="candidato-m-1-ct-1"]');
     expect(seguro.getAttribute('data-seguro')).toBe('true');
     expect(seguro.textContent).toContain('Seguro');
-    expect(seguro.textContent).toContain('«perez» aparece en la descripción.');
-    expect($('[data-testid="candidato-m-1-ct-2"]').getAttribute('data-seguro')).toBe('false');
+    expect(document.querySelector('[data-testid="candidato-m-1-ct-2"]')).toBeNull();
+    expect($('[data-testid="ver-cruces-m-1"]').textContent).toBe('Ver los 2 cruces');
+    await clic($('[data-testid="ver-cruces-m-1"]'));
+    expect($('[data-testid="cruce-m-1-ct-1"]').textContent).toContain('«perez» aparece en la descripción.');
+    expect($('[data-testid="cruce-m-1-ct-2"]').getAttribute('data-seguro')).toBe('false');
     // 🔴 Ya no hay «Conciliar los seguros»: lo exacto va en lote y la tabla es la cola manual.
     expect(document.querySelector('[data-testid="conciliar-seguros"]')).toBeNull();
     expect($('[data-testid="cola-manual"]').textContent).toContain('Cola manual');
@@ -499,5 +504,53 @@ describe('ExtractoBancario — los errores en palabras', () => {
     expect(dicho).toContain('de nuestro lado');
     expect(dicho).toContain(REFERENCIA);
     expect(document.querySelector('#motivo-ignorar-error')).toBeNull();
+  });
+});
+
+describe('ExtractoBancario — la cola, el cajón de los cruces y el buscador (revisora r25)', () => {
+  it('la respuesta de arriba es «Por conciliar» con las cifras del back y el último extracto en el pie', async () => {
+    await montar();
+    const r = $('[data-testid="resumen"]');
+    expect(r.textContent).toContain('Por conciliar');
+    expect(r.textContent).toContain('Conciliados este mes');
+    expect(r.textContent).toContain('Último extracto');
+    // «Pendientes 2» en la pestaña, sin paréntesis.
+    expect($('[data-testid="pestana-PENDIENTE"]').textContent).toMatch(/Pendientes\s*2/);
+  });
+
+  it('conciliar desde el cajón manda ESE cruce y cierra el cajón', async () => {
+    api.conciliar.mockResolvedValue({ recibo: { id: 'r-2', numero: 42 }, movimiento: {}, cobro: {} });
+    await montar();
+    await clic($('[data-testid="ver-cruces-m-1"]'));
+    await clic(botonConTexto('Conciliar', $('[data-testid="cruce-m-1-ct-2"]')));
+    expect(api.conciliar).toHaveBeenCalledWith('m-1', { tenantId: 'u-carlos' });
+    expect(toastMock.success).toHaveBeenCalledWith('Recibo N.º 42 emitido a Carlos Ramírez.');
+  });
+
+  it('el buscador filtra las líneas de la página por nombre, referencia o valor, y dice cuando no hay', async () => {
+    api.listar.mockResolvedValue({
+      data: [movimiento(), movimiento({ id: 'm-2', descripcion: 'PAGO NEQUI', referencia: '777', valorCop: 950000, candidatos: [] })],
+      total: 2,
+      limite: 50,
+      desplazamiento: 0,
+    });
+    await montar();
+    const buscar = $('[data-testid="buscar-movimientos"]') as HTMLInputElement;
+    const escribirEn = async (valor: string) => {
+      await act(async () => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+        setter.call(buscar, valor);
+        buscar.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    };
+    await escribirEn('nequi');
+    expect(document.querySelector('[data-testid="movimiento-m-1"]')).toBeNull();
+    expect(document.querySelector('[data-testid="movimiento-m-2"]')).not.toBeNull();
+    await escribirEn('950.000');
+    expect(document.querySelector('[data-testid="movimiento-m-2"]')).not.toBeNull();
+    await escribirEn('carlos');
+    expect(document.querySelector('[data-testid="movimiento-m-1"]')).not.toBeNull();
+    await escribirEn('zzz');
+    expect($('[data-testid="movimientos"]').textContent).toContain('Ninguna línea de esta página dice «zzz»');
   });
 });

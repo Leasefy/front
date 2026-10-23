@@ -28,8 +28,8 @@
  * tabla es la cola manual.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { Bank, EyeSlash } from '@phosphor-icons/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Bank, EyeSlash, MagnifyingGlass } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -39,6 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -51,7 +52,8 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { Textarea } from '@/components/ui/textarea';
 import { ElegirCliente } from '@/components/inmobiliaria/ReciboPorCliente';
 import { toast } from '@/components/ui/toast';
@@ -103,6 +105,20 @@ const TITULO_DE_LA_PESTANA: Record<EstadoDelMovimientoBancario, string> = {
 };
 
 const COLUMNAS = ['Fecha', 'Movimiento', 'Valor', 'Cruce sugerido', 'Acciones'] as const;
+
+/**
+ * El buscador de la cola (regla de Nico, 23-10: toda tabla con buscador). El back todavía no
+ * busca (`GET movimientos` no tiene `q`): se busca en las líneas de ESTA página y el campo lo
+ * dice. Por descripción, referencia, cliente de un cruce o valor («1800000», «1.800.000»).
+ */
+export function lineaCoincide(m: MovimientoBancario, busqueda: string): boolean {
+  const q = busqueda.trim().toLocaleLowerCase('es-CO');
+  if (!q) return true;
+  const textos = [m.descripcion, m.referencia ?? '', ...m.candidatos.map((c) => c.tenantName ?? '')];
+  if (textos.some((t) => t.toLocaleLowerCase('es-CO').includes(q))) return true;
+  const soloDigitos = q.replace(/[^0-9]/g, '');
+  return soloDigitos.length >= 3 && String(Math.abs(Math.round(m.valorCop))).includes(soloDigitos);
+}
 
 const VACIO_POR_PESTANA: Record<EstadoDelMovimientoBancario, { titulo: string; descripcion: string }> = {
   PENDIENTE: {
@@ -182,6 +198,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
    */
   const [porCuenta, setPorCuenta] = useState<CuentasDeLaConciliacion | null>(null);
   const [filtroDeCuenta, setFiltroDeCuenta] = useState<FiltroDeCuenta | null>(null);
+  const [busqueda, setBusqueda] = useState('');
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -369,13 +386,20 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
     }
   };
 
-  const cambiarPestana = (v: string) => {
-    setPestana(v as EstadoDelMovimientoBancario);
+  const cambiarPestana = (v: EstadoDelMovimientoBancario) => {
+    setPestana(v);
     setPagina(1);
   };
 
+  const visibles = useMemo(
+    () => (movimientos ?? []).filter((m) => lineaCoincide(m, busqueda)),
+    [movimientos, busqueda],
+  );
   const sinFilas = !movimientos || movimientos.length === 0;
+  const sinCoincidencias = !sinFilas && visibles.length === 0;
   const vacioDeLaPestana = VACIO_POR_PESTANA[pestana];
+  const sinNada =
+    resumen !== null && resumen.pendientes === 0 && resumen.conciliadosEsteMes === 0 && resumen.ignorados === 0;
 
   return (
     <div className="space-y-6">
@@ -399,72 +423,94 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
         <CierreDelMes key={filtroDeCuenta} cuentaId={filtroDeCuenta} onCambio={() => void cargar()} />
       )}
 
-      {/* Los cuatro números, en la tarjeta KPI del panel. */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="resumen">
-        <Cifra etiqueta="Pendientes de conciliar" valor={resumen ? String(resumen.pendientes) : '—'} />
-        <Cifra etiqueta="Conciliados este mes" valor={resumen ? String(resumen.conciliadosEsteMes) : '—'} />
-        <Cifra etiqueta="Ignorados" valor={resumen ? String(resumen.ignorados) : '—'} />
-        <Cifra
-          etiqueta="Último extracto"
-          valor={resumen?.ultimoExtracto ? diaLegible(resumen.ultimoExtracto.cargadoAt) : 'Ninguno'}
-          detalle={resumen?.ultimoExtracto?.nombre ?? undefined}
+      {/* Revisora r25 (Movimientos #2): LA RESPUESTA en una cifra —lo que falta conciliar—,
+          con lo conciliado del mes y lo ignorado en la barra; el último extracto, en el pie.
+          Antes, cuatro tarjetas del mismo peso con el 0 de los ignorados. Las cifras son las
+          del back tal cual; la barra sólo las pone en proporción. */}
+      {resumen && (
+        <CifraHeroe
+          rotulo="Por conciliar"
+          cifra={resumen.pendientes.toLocaleString('es-CO')}
+          contexto={resumen.pendientes === 1 ? 'línea del banco sin conciliar' : 'líneas del banco sin conciliar'}
+          esCero={sinNada}
+          cuandoEsCero="Todavía no hay líneas del banco: carga el extracto y aquí aparecen con las cuotas que se les parecen."
+          tramos={[
+            {
+              clave: 'conciliados',
+              etiqueta: 'Conciliados este mes',
+              monto: resumen.conciliadosEsteMes,
+              tono: 'exito',
+              siempre: true,
+              cifra: <span className="font-mono tabular-nums">{resumen.conciliadosEsteMes.toLocaleString('es-CO')}</span>,
+            },
+            {
+              clave: 'pendientes',
+              etiqueta: 'Pendientes',
+              monto: resumen.pendientes,
+              tono: 'aviso',
+              siempre: true,
+              cifra: <span className="font-mono tabular-nums">{resumen.pendientes.toLocaleString('es-CO')}</span>,
+            },
+            {
+              clave: 'ignorados',
+              etiqueta: 'Ignorados',
+              monto: resumen.ignorados,
+              tono: 'neutro',
+              cifra: <span className="font-mono tabular-nums">{resumen.ignorados.toLocaleString('es-CO')}</span>,
+            },
+          ]}
+          pie={
+            resumen.ultimoExtracto
+              ? `Último extracto: ${diaLegible(resumen.ultimoExtracto.cargadoAt)}${resumen.ultimoExtracto.nombre ? ` · ${resumen.ultimoExtracto.nombre}` : ''}`
+              : 'Todavía no se ha cargado ningún extracto.'
+          }
+          data-testid="resumen"
         />
-      </div>
-
-      {puedeConciliar && (
-        <div id={idDeCarga} className={idDeCarga ? 'scroll-mt-24' : undefined}>
-          <CargarExtracto
-            onCargado={() => {
-              void cargar();
-              setVersionDelLote((v) => v + 1);
-            }}
-          />
-        </div>
       )}
 
-      {/* 🔴 Lo que calza exacto va en lote y se aprueba de una vez; la tabla
-          de abajo es la cola manual. */}
-      <LoteDeLoQueCalzaExacto
-        version={versionDelLote}
-        onCambio={() => void cargar()}
-      />
-
-      {/* C2-AGREGADOR: los giros de Leasefy por los pagos en línea (sólo si hay). */}
-      <LiquidacionesDeLeasefy version={versionDelLote} />
-
-      {/* D-CONCILIACION (Nico, P12): sólo si la inmobiliaria recibe efectivo (apagado por defecto). */}
-      <PlanillaDeCaja puedeConciliar={puedeConciliar} version={versionDelLote} onCambio={() => void cargar()} />
-
-      {/* D-CONCILIACION (Nico, P6): la relación de pagos de una aseguradora. */}
-      <RelacionDeAseguradora puedeConciliar={puedeConciliar} onCambio={() => void cargar()} />
-
-      {/* C2-SALIDAS: el giro que no salió o salió dos veces, y lo seguro de un golpe. */}
-      <AvisosDeLasSalidas
-        version={versionDelLote}
-        puedeConciliar={puedeConciliar}
-        onCambio={() => void cargar()}
-      />
-
+      {/* Revisora r25 (Movimientos #3): la cola es el trabajo y va primero; el lote, las
+          salidas y cargar el extracto, debajo (cargar también está en el encabezado). */}
       <SalidasDeLaPagina movimientos={movimientos}>
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
-        {/* Pestañas y lote, dentro de la tarjeta y encima de la tabla. */}
-        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={pestana} onValueChange={cambiarPestana}>
-            <TabsList variant="underline" className="justify-start">
-              {(Object.keys(TITULO_DE_LA_PESTANA) as EstadoDelMovimientoBancario[]).map((e) => (
-                <TabsTrigger key={e} value={e} data-testid={`pestana-${e}`}>
-                  {TITULO_DE_LA_PESTANA[e]}
-                  {e === 'PENDIENTE' && resumen ? ` (${resumen.pendientes})` : ''}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          {pestana === 'PENDIENTE' && (
-            <p className="text-caption text-fg-muted" data-testid="cola-manual">
-              Cola manual: lo que no calza exacto se concilia una por una.
-            </p>
-          )}
+        {/* Pestañas con su conteo y el buscador, dentro de la tarjeta y encima de la tabla. */}
+        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
+          <PestanasDeEstado
+            etiqueta="Estado de las líneas del banco"
+            valor={pestana}
+            onCambio={cambiarPestana}
+            pestanas={(Object.keys(TITULO_DE_LA_PESTANA) as EstadoDelMovimientoBancario[]).map((e) => ({
+              valor: e,
+              etiqueta: TITULO_DE_LA_PESTANA[e],
+              // Conciliados no lleva número: el resumen sólo cuenta los de este mes.
+              cuantos: !resumen || e === 'CONCILIADO' ? null : e === 'PENDIENTE' ? resumen.pendientes : resumen.ignorados,
+              fija: true,
+              testid: `pestana-${e}`,
+            }))}
+          />
+          <div className="relative w-full lg:w-80">
+            <MagnifyingGlass
+              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle"
+              aria-hidden="true"
+            />
+            <Input
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar en esta página: nombre, referencia o valor"
+              aria-label="Buscar en las líneas de esta página por nombre, referencia o valor"
+              className="w-full pl-8"
+              data-testid="buscar-movimientos"
+            />
+          </div>
         </div>
+        {pestana === 'PENDIENTE' && (
+          <p className="border-b border-border px-4 py-2.5 text-caption text-fg-muted" data-testid="cola-manual">
+            Cola manual: lo que no calza exacto se concilia una por una. Lo que calza exacto se aprueba de una vez en el{' '}
+            <a href="#lote-de-lo-exacto" className="text-fg underline underline-offset-2 hover:text-primary">
+              lote, debajo de la lista
+            </a>
+            .
+          </p>
+        )}
 
         {/* Carga y fallo, por fuera del cuerpo; el vacío va DENTRO, para que
             los encabezados de la tabla se sigan viendo. */}
@@ -480,8 +526,8 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
             </div>
           }
         >
-          <Table>
-            <TableHeader>
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 {COLUMNAS.map((c) => (
                   <TableHead key={c} className="whitespace-nowrap">
@@ -490,20 +536,39 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody data-testid="movimientos">
-              {sinFilas ? (
-                <TableRow>
-                  <TableCell colSpan={COLUMNAS.length} className="p-0">
-                    <SinDatos
-                      queSon="movimientos"
-                      icono={Bank}
-                      titulo={vacioDeLaPestana.titulo}
-                      descripcion={vacioDeLaPestana.descripcion}
-                    />
+            <TableBody data-testid="movimientos" className="max-md:block">
+              {sinFilas || sinCoincidencias ? (
+                <TableRow className="max-md:block">
+                  <TableCell colSpan={COLUMNAS.length} className="p-0 max-md:block">
+                    {sinCoincidencias ? (
+                      <SinDatos
+                        queSon="movimientos"
+                        icono={MagnifyingGlass}
+                        titulo={`Ninguna línea de esta página dice «${busqueda.trim()}»`}
+                        descripcion="La búsqueda mira las líneas de la página que estás viendo. Pasa de página o borra la búsqueda."
+                        accion={
+                          <Button size="sm" variant="secondary" hideArrow onClick={() => setBusqueda('')}>
+                            Borrar la búsqueda
+                          </Button>
+                        }
+                      />
+                    ) : (
+                      <SinDatos
+                        queSon="movimientos"
+                        icono={Bank}
+                        titulo={vacioDeLaPestana.titulo}
+                        descripcion={vacioDeLaPestana.descripcion}
+                        crear={
+                          pestana === 'PENDIENTE' && puedeConciliar && idDeCarga
+                            ? { label: 'Cargar el extracto', href: `#${idDeCarga}` }
+                            : undefined
+                        }
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               ) : (
-                movimientos.map((m) => (
+                visibles.map((m) => (
                   <MovimientoFila
                     key={m.id}
                     movimiento={m}
@@ -550,6 +615,43 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
         </EstadoDeDatos>
       </section>
       </SalidasDeLaPagina>
+
+      {/* 🔴 Lo que calza exacto va en lote y se aprueba de una vez; la tabla
+          de abajo es la cola manual. */}
+      <div id="lote-de-lo-exacto" className="scroll-mt-24">
+        <LoteDeLoQueCalzaExacto
+          version={versionDelLote}
+          onCambio={() => void cargar()}
+        />
+      </div>
+
+      {/* C2-AGREGADOR: los giros de Leasefy por los pagos en línea (sólo si hay). */}
+      <LiquidacionesDeLeasefy version={versionDelLote} />
+
+      {/* D-CONCILIACION (Nico, P12): sólo si la inmobiliaria recibe efectivo (apagado por defecto). */}
+      <PlanillaDeCaja puedeConciliar={puedeConciliar} version={versionDelLote} onCambio={() => void cargar()} />
+
+      {/* D-CONCILIACION (Nico, P6): la relación de pagos de una aseguradora. */}
+      <RelacionDeAseguradora puedeConciliar={puedeConciliar} onCambio={() => void cargar()} />
+
+      {/* C2-SALIDAS: el giro que no salió o salió dos veces, y lo seguro de un golpe. */}
+      <AvisosDeLasSalidas
+        version={versionDelLote}
+        puedeConciliar={puedeConciliar}
+        onCambio={() => void cargar()}
+      />
+
+      {puedeConciliar && (
+        <div id={idDeCarga} className={idDeCarga ? 'scroll-mt-24' : undefined}>
+          <CargarExtracto
+            onCargado={() => {
+              void cargar();
+              setVersionDelLote((v) => v + 1);
+            }}
+          />
+        </div>
+      )}
+
 
       <Dialog
         open={conCliente !== null}
@@ -668,19 +770,4 @@ async function leerLasCuentas(): Promise<CuentasDeLaConciliacion | null> {
   } catch {
     return null;
   }
-}
-
-/** La tarjeta KPI del panel: etiqueta chica arriba, número grande abajo. */
-function Cifra({ etiqueta, valor, detalle }: { etiqueta: string; valor: string; detalle?: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <p className="text-caption text-fg-muted">{etiqueta}</p>
-      <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">{valor}</p>
-      {detalle && (
-        <p className="mt-0.5 truncate text-caption text-fg-muted" title={detalle}>
-          {detalle}
-        </p>
-      )}
-    </div>
-  );
 }

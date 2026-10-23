@@ -37,14 +37,31 @@ import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-
 import { ExtractoBancario } from '@/components/cobros/extracto-bancario/ExtractoBancario';
 import { ConciliacionDelAgente } from '@/components/inmobiliaria/ai/ConciliacionDelAgente';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { UploadSimple } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 
 function ConciliacionMovimientos() {
+  // Cargar emite recibos al conciliar: la misma llave que el bloque de carga (`cobros:create`).
+  const { canAccess, isLoading } = usePermissions();
+  const puedeCargar = isLoading || canAccess('cobros', 'create');
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
         seccion="Conciliación bancaria"
         titulo="Movimientos"
         descripcion="Cada línea del extracto se cruza con las cuotas que tienen saldo; conciliarla emite el recibo de caja. Nada entra sin que alguien lo confirme."
+        accionPrincipal={
+          // Revisora r25 (Movimientos #3): cargar es la acción del encabezado; la cola va primero.
+          puedeCargar ? (
+            <Button asChild size="sm" hideArrow data-testid="ir-a-cargar-el-extracto">
+              <a href="#upload">
+                <UploadSimple className="h-4 w-4" aria-hidden="true" />
+                Cargar el extracto
+              </a>
+            </Button>
+          ) : undefined
+        }
       />
 
       {/*

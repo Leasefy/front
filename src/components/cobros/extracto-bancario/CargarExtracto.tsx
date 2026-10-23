@@ -23,6 +23,7 @@ import { Banner } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -290,9 +291,9 @@ export function CargarExtracto({ onCargado }: Props) {
     <section className="space-y-4 rounded-lg border border-border bg-surface p-5" data-testid="cargar-extracto">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-fg">Cargar el extracto</h2>
+          <h2 className="text-base font-medium text-fg">Cargar el extracto</h2>
           <p className="text-sm text-fg-muted">
-            El CSV o Excel que exporta el banco, tal cual, de UNA cuenta. Las líneas que ya estaban
+            El CSV o Excel que exporta el banco, tal cual, de una sola cuenta. Las líneas que ya estaban
             cargadas no se duplican, así que se puede subir el mes entero cada vez; dos movimientos
             iguales el mismo día entran los dos.
           </p>
@@ -342,27 +343,33 @@ export function CargarExtracto({ onCargado }: Props) {
           </Banner>
         ) : (
           <>
-            <label className="space-y-1 text-sm">
-              <span className="font-medium text-fg">¿De qué cuenta es este extracto?</span>
-              <select
-                className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-[28rem]"
-                value={cuentaId}
-                onChange={(e) => setCuentaId(e.target.value)}
-                data-testid="elegir-cuenta-del-extracto"
-                aria-describedby="cuenta-del-extracto-ayuda"
-              >
-                <option value="">— elige la cuenta —</option>
-                {cuentas.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {opcionDeLaCuenta(c)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {/* Revisora r25 (C4): el Select de la casa, no el <select> del navegador. */}
+            <div className="space-y-1 text-sm">
+              <label htmlFor="cuenta-del-extracto" className="font-medium text-fg">
+                ¿De qué cuenta es este extracto?
+              </label>
+              <Select value={cuentaId} onValueChange={setCuentaId}>
+                <SelectTrigger
+                  id="cuenta-del-extracto"
+                  className="w-full sm:w-[28rem]"
+                  data-testid="elegir-cuenta-del-extracto"
+                  aria-describedby="cuenta-del-extracto-ayuda"
+                >
+                  <SelectValue placeholder="Elige la cuenta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cuentas.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {opcionDeLaCuenta(c)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {laCuentaEntraPorArchivo ? (
               <Banner variant="warning" title="Esta cuenta recauda por el archivo del banco">
                 La plata de {nombreDeLaCuenta(laCuentaEntraPorArchivo)} entra por el archivo del convenio «
-                {laCuentaEntraPorArchivo.convenio}». Cargar además su extracto dejaría cada pago DOS veces en
+                {laCuentaEntraPorArchivo.convenio}». Cargar además su extracto dejaría cada pago dos veces en
                 la cola, y conciliar los dos le emitiría al inquilino dos recibos por un pago que hizo una
                 vez. Importa el archivo en Tesorería → Recaudo del banco.
               </Banner>
@@ -423,23 +430,26 @@ export function CargarExtracto({ onCargado }: Props) {
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {COLUMNAS_DE_EXTRACTO.map((c) => (
-              <label key={c.campo} className="space-y-1 text-sm">
-                <span className="font-medium text-fg">{c.titulo}</span>
-                <select
-                  className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
-                  value={mapeo[c.campo] ?? SIN_MAPEAR}
-                  onChange={(e) => cambiarMapeo(c.campo, e.target.value)}
-                  data-testid={`mapeo-${c.campo}`}
-                >
-                  <option value={SIN_MAPEAR}>— no viene —</option>
-                  {encabezados.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
+              <div key={c.campo} className="space-y-1 text-sm">
+                <label htmlFor={`mapeo-${c.campo}`} className="font-medium text-fg">
+                  {c.titulo}
+                </label>
+                <Select value={mapeo[c.campo] ?? SIN_MAPEAR} onValueChange={(v) => cambiarMapeo(c.campo, v)}>
+                  <SelectTrigger id={`mapeo-${c.campo}`} className="w-full" data-testid={`mapeo-${c.campo}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SIN_MAPEAR}>No viene en el archivo</SelectItem>
+                    {/* Un encabezado vacío no puede ser opción (Radix no acepta el valor ''). */}
+                    {encabezados.filter((h) => h !== '').map((h) => (
+                      <SelectItem key={h} value={h}>
+                        {h}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <span className="block text-caption text-fg-muted">{c.ayuda}</span>
-              </label>
+              </div>
             ))}
           </div>
 

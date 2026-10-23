@@ -38,6 +38,8 @@ const { api, toastMock, archivo } = vi.hoisted(() => ({
 
 vi.mock('@/lib/api/conciliacion-bancaria.service', () => ({ conciliacionBancariaApi: api }));
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
+// El Select de la casa (Radix) no se abre en happy-dom: el doble pinta el <select> nativo con su valor.
+vi.mock('@/components/ui/select', () => import('@/components/ui/select.doble-de-prueba'));
 vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({
   leerPrimerasFilas: vi.fn(async () => [archivo.encabezados]),
   // El lector de planillas (20-10-2026) recorre las hojas para elegir dónde

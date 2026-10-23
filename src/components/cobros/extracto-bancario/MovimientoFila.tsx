@@ -13,6 +13,7 @@
  * la decisión de la fila: cuál de los cobros con saldo es este movimiento.
  */
 
+import { useState } from 'react';
 import {
   ArrowCounterClockwise,
   CheckCircle,
@@ -39,6 +40,15 @@ import { SalidaDelExtracto } from './SalidaDelExtracto';
 // Seguimiento 6: el cajón del movimiento con lo que propone el agente («por el alias», las salidas).
 import { LoQueProponeElAgente } from './LoQueProponeElAgente';
 import { ParDeLaLinea } from './ParDeLaLinea';
+// Revisora r25 (Movimientos #1): los cruces y su porqué viven en el cajón de la línea.
+import { CrucesDelMovimiento, mejorCruce, textoDeVerLosCruces } from './CrucesDelMovimiento';
+
+/*
+ * A 390 px la fila es una TARJETA (el patrón `max-md:grid` de `CuotasDelMesTabla`):
+ * arriba la descripción y el valor, debajo el día, y luego el cruce y las acciones a lo
+ * ancho. Antes la tabla se encogía con filas de ≈700 px casi vacías.
+ */
+const CELDA_EN_TARJETA = 'max-md:block max-md:max-w-none max-md:p-0';
 
 interface Props {
   movimiento: MovimientoBancario;
@@ -82,20 +92,25 @@ export function MovimientoFila({
   const yaTieneSusRecibos = esPendiente && !esSalida && yaLaRespaldanRecibosEmitidos(m);
   // 🔴 ARREGLOS-6b (Nico, ARREGLOS-5 Q4 a): la línea que es el giro de Leasefy no se concilia contra una cuota ni un cliente.
   const esElGiroDeLeasefy = esPendiente && !esSalida && (m.giroDeLeasefy?.propuestas.length ?? 0) > 0;
+  const [verCruces, setVerCruces] = useState(false);
+  const mejor = mejorCruce(m);
 
   return (
     <TableRow
-      className={cn(ocupado && 'opacity-60')}
+      className={cn(
+        ocupado && 'opacity-60',
+        'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0',
+      )}
       data-testid={`movimiento-${m.id}`}
       data-estado={m.estado}
     >
       {/* Fecha */}
-      <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+      <TableCell className={cn('whitespace-nowrap tabular-nums text-fg-muted max-md:col-start-1 max-md:row-start-2 max-md:text-caption', CELDA_EN_TARJETA)}>
         {diaLegible(m.fecha)}
       </TableCell>
 
       {/* Movimiento: la descripción del banco, su referencia y su etiqueta */}
-      <TableCell className="max-w-[320px]">
+      <TableCell className={cn('max-w-[320px] max-md:col-start-1 max-md:row-start-1', CELDA_EN_TARJETA)}>
         <p className="truncate font-medium text-fg" title={m.descripcion}>
           {m.descripcion}
         </p>
@@ -123,7 +138,11 @@ export function MovimientoFila({
 
       {/* Valor */}
       <TableCell
-        className={cn('whitespace-nowrap tabular-nums', esSalida ? 'text-fg-muted' : 'text-fg')}
+        className={cn(
+          'whitespace-nowrap font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:text-right',
+          CELDA_EN_TARJETA,
+          esSalida ? 'text-fg-muted' : 'text-fg',
+        )}
       >
         {plata(m.valorCop)}
       </TableCell>
@@ -133,7 +152,7 @@ export function MovimientoFila({
           tarjetas van APILADAS (texto arriba, botón abajo). Con la fila del breakpoint `sm`
           —que mira la ventana, no la celda— el botón se comía el ancho y el
           texto quedaba de una palabra por línea (filas de 1.500 px). */}
-      <TableCell className="max-w-[460px]">
+      <TableCell className={cn('max-w-[460px] max-md:col-span-2 max-md:col-start-1 max-md:row-start-3', CELDA_EN_TARJETA)}>
         {/* 🔴 Muchos a uno: si el movimiento es la suma de recibos YA emitidos,
             eso va primero. Conciliarlo contra una cuota EMITIRÍA otro recibo
             por la misma plata. */}
@@ -219,76 +238,78 @@ export function MovimientoFila({
               </Button>
             </div>
           ) : (
-            <ul className="flex flex-col gap-1.5" aria-label="Cuotas que se parecen">
+            /* Revisora r25 (Movimientos #1): el MEJOR cruce en una línea —el del seguro si hay,
+               si no el primero del back— con su «Conciliar»; los demás y su porqué, en el cajón. */
+            <div className="space-y-1.5">
               {m.par && onConciliarElPar && (
-                <li>
-                  <ParDeLaLinea movimientoId={m.id} par={m.par} deshabilitado={!puedeConciliar || ocupado} onConciliar={() => onConciliarElPar(m)} />
-                </li>
+                <ParDeLaLinea movimientoId={m.id} par={m.par} deshabilitado={!puedeConciliar || ocupado} onConciliar={() => onConciliarElPar(m)} />
               )}
-              {m.candidatos.map((c) => (
-                <li
-                  key={c.contractId}
-                  className={cn(
-                    'flex flex-col gap-1.5 rounded-md border px-2.5 py-1.5',
-                    c.seguro ? 'border-primary bg-primary-soft' : 'border-border bg-surface-muted',
-                  )}
-                  data-testid={`candidato-${m.id}-${c.contractId}`}
-                  data-seguro={c.seguro}
-                  data-adelanto={c.adelanto}
+              {mejor && (
+                <div
+                  className="space-y-1.5"
+                  data-testid={`candidato-${m.id}-${mejor.contractId}`}
+                  data-seguro={mejor.seguro}
+                  data-adelanto={mejor.adelanto}
                 >
-                  <div className="min-w-0 space-y-0.5">
-                    <p className="flex flex-wrap items-center gap-x-2 text-body-sm">
-                      <span className="tabular-nums font-medium text-fg">
-                        {plata(c.pendienteCop)}
+                  <p className="flex flex-wrap items-baseline gap-x-2 text-body-sm">
+                    <span className="font-mono tabular-nums text-fg">{plata(mejor.pendienteCop)}</span>
+                    <span className="text-fg">· {mejor.tenantName ?? 'Sin nombre'}</span>
+                    <span className="text-fg-muted">· {mesesLegibles(mejor.meses)}</span>
+                    {mejor.adelanto && (
+                      <span className="inline-flex items-center gap-1 text-caption font-medium text-fg-muted">
+                        <ClockClockwise className="h-3.5 w-3.5" aria-hidden="true" /> Adelanto
                       </span>
-                      <span className="text-fg">· {c.tenantName ?? 'Sin nombre'}</span>
-                      <span className="text-fg-muted">· {c.propertyTitle}</span>
-                      <span className="text-fg-muted">· {mesesLegibles(c.meses)}</span>
-                      {/* Un tramo que todavía no vence no es una deuda atrasada:
-                          es plata adelantada, y quien concilia tiene que verlo. */}
-                      {c.adelanto && (
-                        <span className="inline-flex items-center gap-1 text-caption font-medium text-fg-muted">
-                          <ClockClockwise className="h-3.5 w-3.5" aria-hidden="true" /> Adelanto
-                        </span>
-                      )}
-                      {c.seguro && (
-                        <span className="inline-flex items-center gap-1 text-caption font-medium text-primary">
-                          <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Seguro
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-caption text-fg-muted">{c.porQue.join(' ')}</p>
+                    )}
+                    {mejor.seguro && (
+                      <span className="inline-flex items-center gap-1 text-caption font-medium text-primary">
+                        <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Seguro
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      hideArrow
+                      disabled={!puedeConciliar || ocupado}
+                      onClick={() => onConciliar(m, mejor)}
+                      aria-label={`Conciliar con ${mejor.tenantName ?? mejor.propertyTitle}`}
+                    >
+                      <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                      Conciliar
+                    </Button>
+                    <button
+                      type="button"
+                      className="text-body-sm text-fg underline underline-offset-2 hover:text-primary disabled:opacity-50"
+                      onClick={() => setVerCruces(true)}
+                      data-testid={`ver-cruces-${m.id}`}
+                    >
+                      {textoDeVerLosCruces(m.candidatos.length)}
+                    </button>
                   </div>
-                  <Button
-                    size="sm"
-                    variant={c.seguro ? 'default' : 'secondary'}
-                    hideArrow
-                    disabled={!puedeConciliar || ocupado}
-                    onClick={() => onConciliar(m, c)}
-                    aria-label={`Conciliar con ${c.tenantName ?? c.propertyTitle}`}
-                    className="shrink-0 self-start"
-                  >
-                    <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                    Conciliar
-                  </Button>
-                </li>
-              ))}
-              {/* Ninguno de los candidatos es: la plata igual puede ir contra
-                  la cartera del cliente, que es el camino completo. */}
-              <li>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  hideArrow
-                  disabled={!puedeConciliar || ocupado}
-                  onClick={() => onConciliarConCliente(m)}
-                  data-testid={`conciliar-cliente-${m.id}`}
-                >
-                  <User className="h-4 w-4" aria-hidden="true" />
-                  Ninguno: conciliar con un cliente
-                </Button>
-              </li>
-            </ul>
+                </div>
+              )}
+              {/* Ninguno de los cruces es: la plata igual puede ir contra la cartera del cliente. */}
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 text-caption text-fg-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
+                disabled={!puedeConciliar || ocupado}
+                onClick={() => onConciliarConCliente(m)}
+                data-testid={`conciliar-cliente-${m.id}`}
+              >
+                <User className="h-3.5 w-3.5" aria-hidden="true" />
+                Es otro: conciliar con un cliente
+              </button>
+              <CrucesDelMovimiento
+                movimiento={m}
+                abierto={verCruces}
+                onOpenChange={setVerCruces}
+                puedeConciliar={puedeConciliar}
+                ocupado={ocupado}
+                onConciliar={onConciliar}
+                onConciliarConCliente={onConciliarConCliente}
+              />
+            </div>
           )
         ) : esPendiente && esSalida ? (
           /* C2-SALIDAS (Nico, P5): el giro, el egreso, el pago al proveedor o el gasto del banco. */
@@ -318,9 +339,9 @@ export function MovimientoFila({
       </TableCell>
 
       {/* Acciones */}
-      <TableCell className="whitespace-nowrap">
+      <TableCell className={cn('whitespace-nowrap max-md:col-span-2 max-md:col-start-1 max-md:row-start-4', CELDA_EN_TARJETA)}>
         {esPendiente ? (
-          <div className="flex flex-col items-start gap-1">
+          <div className="flex flex-col items-start gap-1 max-md:flex-row max-md:flex-wrap">
             <Button
               size="sm"
               variant="ghost"

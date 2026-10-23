@@ -93,7 +93,7 @@ export function EstadoPagoAprobacion({
       <Estado
         icon={<CheckCircle className="w-6 h-6 text-success" weight="fill" aria-hidden="true" />}
         tono="success"
-        titulo="¡Tu estudio está listo!"
+        titulo="Tu estudio está listo"
         descripcion="Ya tenemos el resultado de tu aprobación."
       >
         <Button asChild className="w-full">

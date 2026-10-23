@@ -158,8 +158,9 @@ describe('TenantOnboardingShell — completion navigation', () => {
     await renderShell()
 
     // The submit CTA is replaced by a disabled loading button.
+    // Ronda 30 (a propósito): los puntos suspensivos tipográficos («Guardando…»).
     const saving = Array.from(container.querySelectorAll('button')).find((b) =>
-      (b.textContent || '').includes('Guardando...'),
+      (b.textContent || '').includes('Guardando…'),
     ) as HTMLButtonElement
     expect(saving, 'saving button').toBeTruthy()
     expect(saving.disabled).toBe(true)

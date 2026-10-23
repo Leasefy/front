@@ -324,7 +324,7 @@ export function OTPVerification({
       >
         <DialogHeader>
           <DialogTitle>
-            {status === 'verified' ? 'Verificación exitosa' : 'Verificación de identidad'}
+            {status === 'verified' ? 'Identidad verificada' : 'Verificación de identidad'}
           </DialogTitle>
           <DialogDescription>
             {/* T-0109 — con `channels` (back WU-1+) el detalle por canal de
@@ -437,7 +437,7 @@ export function OTPVerification({
             className="flex items-center justify-center gap-2 text-sm text-fg-muted"
           >
             <Spinner size="sm" variant="current" />
-            Verificando...
+            Verificando…
           </Presence>
 
           <Presence

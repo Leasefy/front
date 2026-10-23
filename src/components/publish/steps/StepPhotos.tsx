@@ -151,7 +151,7 @@ export function StepPhotos() {
             ? 'Máximo de fotos alcanzado'
             : isDragOver
               ? 'Suelta las fotos aquí'
-              : 'Haz clic o arrastra fotos aquí'}
+              : 'Elige o arrastra fotos aquí'}
         </p>
         <p className="text-caption text-neutral-500 dark:text-neutral-400 mt-1">
           {draft.photos.length}/{MAX_PHOTOS} fotos · JPG, PNG o WebP · Máx 10MB

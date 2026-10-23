@@ -51,7 +51,7 @@ export function RespuestaDelArriendo({ estado, tope }: Props) {
             <CheckCircle weight="fill" className="mt-1 h-7 w-7 flex-shrink-0 text-success" aria-hidden="true" />
             <div>
               <h2 id="respuesta-del-arriendo-titulo" className="font-heading text-2xl font-[420] text-fg text-balance">
-                ¡Te lo podemos arrendar!
+                Te lo podemos arrendar
               </h2>
               <p className="mt-1 text-sm text-fg-muted">
                 Las aseguradoras respaldan tu arriendo de <span className="font-medium text-fg">{arriendo.titulo}</span>{' '}

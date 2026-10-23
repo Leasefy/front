@@ -457,7 +457,7 @@ export function AgencyStepForm({
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            Guardando...
+            Guardando…
           </>
         ) : (
           <>

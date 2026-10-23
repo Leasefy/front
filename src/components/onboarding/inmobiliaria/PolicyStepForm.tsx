@@ -123,7 +123,7 @@ export function PolicyStepForm({ isSubmitting, onSubmit, submitError }: PolicySt
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            Guardando...
+            Guardando…
           </>
         ) : (
           <>

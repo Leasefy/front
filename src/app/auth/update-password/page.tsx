@@ -409,7 +409,7 @@ function UpdatePasswordContent() {
                   {authLoading || mfaRequired
                     ? 'Cargando sesión...'
                     : isSubmitting
-                      ? 'Guardando...'
+                      ? 'Guardando…'
                       : 'Guardar contraseña'}
                 </Button>
               </form>

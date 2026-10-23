@@ -25,6 +25,36 @@ const h = vi.hoisted(() => ({
   archivoDelCambio: vi.fn(),
 }));
 
+// Ronda 30 (a propósito): el banco pasó al Select de Cadence; en jsdom se simula con un
+// <select> nativo con el mismo id («banco-nuevo») para seguir eligiendo el banco igual.
+vi.mock('@/components/ui/select', async () => {
+  const React = await import('react');
+  return {
+    Select: ({
+      name,
+      value,
+      onValueChange,
+      children,
+    }: {
+      name?: string;
+      value?: string;
+      onValueChange?: (v: string) => void;
+      children?: React.ReactNode;
+    }) =>
+      React.createElement(
+        'select',
+        { id: name, value: value ?? '', onChange: (e: { target: { value: string } }) => onValueChange?.(e.target.value) },
+        React.createElement('option', { value: '' }, 'Escoge'),
+        children,
+      ),
+    SelectTrigger: () => null,
+    SelectValue: () => null,
+    SelectContent: ({ children }: { children?: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) =>
+      React.createElement('option', { value }, children),
+  };
+});
+
 vi.mock('@/lib/api/mandato.service', () => ({ mandatoApi: h }));
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },

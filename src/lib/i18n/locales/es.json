@@ -4738,7 +4738,7 @@
         "type": "Tipo"
       },
       "ownerStatement": {
-        "title": "Extracto del Propietario",
+        "title": "Extracto del propietario",
         "income": "Ingresos",
         "deductions": "Deducciones",
         "netPayment": "Pago neto"
@@ -5618,7 +5618,7 @@
     "propietario": {
       "extracto": {
         "statement": "Extracto",
-        "ownerStatement": "Extracto del Propietario",
+        "ownerStatement": "Extracto del propietario",
         "period": "Periodo",
         "generated": "Generado",
         "ownerInfo": "Información del Propietario",
@@ -12068,7 +12068,7 @@
     "propietario": {
       "extracto": {
         "statement": "Extracto",
-        "ownerStatement": "Extracto del Propietario",
+        "ownerStatement": "Extracto del propietario",
         "period": "Periodo",
         "generated": "Generado",
         "ownerInfo": "Información del Propietario",

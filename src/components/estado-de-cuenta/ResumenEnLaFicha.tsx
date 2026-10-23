@@ -251,7 +251,7 @@ export function ResumenEnLaFicha({
       distance="xs"
       data-testid="resumen-en-la-ficha"
       className={cn(
-        'rounded-lg border border-border bg-surface p-5 shadow-sm',
+        'rounded-lg border border-border bg-surface p-5',
         className,
       )}
     >

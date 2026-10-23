@@ -160,7 +160,7 @@ export function InvitarAlPortal({
         ) : (
           <div className="min-w-0">
             <p className="text-sm font-medium text-fg">No tiene cuenta en Leasefy</p>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle">
+            <p className="text-caption text-fg-muted dark:text-fg-subtle">
               {tieneCorreo
                 ? 'Invítalo y podrás escribirle por aquí, sin salir del producto.'
                 : 'Agrega su correo en la ficha para poder invitarlo.'}

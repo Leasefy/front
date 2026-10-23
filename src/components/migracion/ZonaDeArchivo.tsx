@@ -72,7 +72,7 @@ export function ZonaDeArchivo({
       <span
         className={cn(
           "flex h-11 w-11 items-center justify-center rounded-full transition-colors",
-          activo ? "bg-surface text-primary" : "bg-surface text-fg-muted shadow-sm",
+          activo ? "bg-surface text-primary" : "bg-surface text-fg-muted",
         )}
       >
         <FileArrowUp className="h-5 w-5" aria-hidden="true" />

@@ -18,6 +18,9 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { Plus, Receipt } from '@phosphor-icons/react';
 
 import { Badge } from '@/components/ui/badge';
@@ -111,12 +114,14 @@ export function DeduccionesDelPropietario({
   };
 
   const deducciones = listado?.deducciones ?? [];
+  // Ronda 30 (regla de Nico: tablas con paginación).
+  const pag = useTablePagination(deducciones, {});
 
   return (
     <section className="space-y-4" data-testid="deducciones-del-propietario">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h3 className="text-base font-semibold text-fg">{t(k('titulo'))}</h3>
+          <h3 className="text-base font-medium text-fg">{t(k('titulo'))}</h3>
           <p className="max-w-xl text-sm text-fg-muted">{t(k('descripcion'))}</p>
         </div>
         {puedeRegistrar && listado?.disponible && (
@@ -144,8 +149,8 @@ export function DeduccionesDelPropietario({
             { etiqueta: t(k('totalSaldoEnContra')), valor: listado.totales.saldoEnContraCop },
           ].map((c) => (
             <div key={c.etiqueta} className="rounded-lg border border-border bg-card p-3">
-              <p className="text-xs text-fg-muted">{c.etiqueta}</p>
-              <p className="font-mono text-lg font-semibold tabular-nums text-fg">{formatCurrency(c.valor)}</p>
+              <p className="text-caption text-fg-muted">{c.etiqueta}</p>
+              <p className="font-mono text-lg tabular-nums text-fg">{formatCurrency(c.valor)}</p>
             </div>
           ))}
         </div>
@@ -180,16 +185,16 @@ export function DeduccionesDelPropietario({
                 </TableHeader>
                 {/* Un descuento recién registrado ENTRA en su lugar (`key` = el id). */}
                 <TableBodyAnimado>
-                  {deducciones.map((d) => (
+                  {pag.pageItems.map((d) => (
                     <TableRowAnimada key={d.id} data-testid={`deduccion-${d.id}`} data-estado={d.estado}>
-                      <TableCell className="whitespace-nowrap font-mono text-xs tabular-nums">{d.fecha}</TableCell>
+                      <TableCell className="whitespace-nowrap font-mono text-caption tabular-nums">{fechaCorta(d.fecha)}</TableCell>
                       <TableCell>
                         <p className="text-sm text-fg">
                           {t(k(`origen.${d.origen}`))}
                           {d.origen !== 'SALDO_ANTERIOR' && `: ${d.motivo}`}
                         </p>
                         {d.participacionBps < 10_000 && (
-                          <p className="text-xs text-fg-muted">
+                          <p className="text-caption text-fg-muted">
                             {t(k('suParte'), {
                               porcentaje: `${(d.participacionBps / 100).toLocaleString(localeDeLasCifras())} %`,
                               total: formatCurrency(d.valorTotalCop),
@@ -197,7 +202,7 @@ export function DeduccionesDelPropietario({
                           </p>
                         )}
                         {d.estado === 'ANULADA' && d.motivoDeAnulacion && (
-                          <p className="text-xs text-fg-muted">
+                          <p className="text-caption text-fg-muted">
                             {t(k('anuladaPorque'), { motivo: d.motivoDeAnulacion })}
                           </p>
                         )}
@@ -239,6 +244,16 @@ export function DeduccionesDelPropietario({
                   ))}
                 </TableBodyAnimado>
               </Table>
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={pag.total}
+                  page={pag.page}
+                  pageSize={pag.pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={pag.setPage}
+                  onPageSizeChange={pag.setPageSize}
+                />
+              </div>
             </div>
           )}
         </EstadoDeDatos>

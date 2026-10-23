@@ -210,6 +210,9 @@ export default function CarteraStagePage() {
         }
         paginacion={result.data ? { page, total: result.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}
         queSon={['deudor', 'deudores']}
+        // Ronda 30 (regla de Nico: tablas con buscador): el servidor no busca por nombre, así que el buscador mira
+        // la página que llegó (y lo dice).
+        buscar="Buscar deudor en esta página"
         filtrosEnLaUrl={['tenant']}
       />
     </div>

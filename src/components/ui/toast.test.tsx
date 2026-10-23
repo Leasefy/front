@@ -24,4 +24,15 @@ describe('Toaster shim', () => {
     renderToStaticMarkup(<Toaster mobileOffset={{ top: 10 }} />);
     expect((props[props.length - 1].mobileOffset as { top: number }).top).toBe(10);
   });
+
+  it('keeps desktop toasts below the sticky header so they never cover the right cluster', () => {
+    renderToStaticMarkup(<Toaster />);
+    const offset = props[props.length - 1].offset as { top: string };
+    expect(offset.top).toContain('4rem');
+  });
+
+  it('lets a caller override the desktop offset', () => {
+    renderToStaticMarkup(<Toaster offset={{ top: 10 }} />);
+    expect((props[props.length - 1].offset as { top: number }).top).toBe(10);
+  });
 });

@@ -62,6 +62,9 @@ export function Toaster({ position = 'top-right', toastOptions, ...props }: Toas
       // 16 px from the top, right over the sticky header (h-16 = 4rem): it hid
       // the menu button, the Piloto pill and the breadcrumb. Push it below the
       // header. Still dismissible (swipe / DS close button).
+      // Same on desktop: top-right sits 24 px from the top, over the header's
+      // right cluster (Piloto pill, bell, avatar) at 1366.
+      offset={{ top: 'calc(4rem + 0.5rem)' }}
       mobileOffset={{ top: 'calc(4rem + env(safe-area-inset-top, 0px) + 0.5rem)' }}
       // El DS mergea `{ ...toastOptions, classNames: { ...suyas, ...las tuyas } }`,
       // así que `unstyled` pasa sin pisarle la piel.

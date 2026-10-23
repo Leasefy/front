@@ -111,9 +111,18 @@ export function diaParaMostrar(dia: string): string {
 
 interface Props {
   planId: string
+  /**
+   * Ronda 30 (K4, Nico: «K4 cajón»): montado en el cajón de Pagos en línea
+   * (`CajonDelCaso`). Sin la vuelta ni el encabezado de página (el deudor va en
+   * la cabecera del cajón; «Ver deudor» arriba del cuerpo). Rechazado,
+   * `onResuelto` cierra el cajón; aprobado se queda abierto: ahí está el enlace
+   * de pago que hay que mandarle al deudor.
+   */
+  enCajon?: boolean
+  onResuelto?: () => void
 }
 
-export default function PaymentPlanApprovalClient({ planId }: Props) {
+export default function PaymentPlanApprovalClient({ planId, enCajon = false, onResuelto }: Props) {
   const { t } = useI18n()
   const { canAccess } = usePermissionsContext()
   const canApprove = canAccess('cobranza', 'approve')
@@ -163,7 +172,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
   if (envMissing) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className={enCajon ? undefined : 'p-6 lg:p-8'}>
         <div className="rounded-md border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           {t('inmobiliaria.ai.cobranza.planes.envMissing')}
         </div>
@@ -183,7 +192,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
   if (error && !plan) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className={enCajon ? undefined : 'p-6 lg:p-8'}>
         <div className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.planes.loadError')}
         </div>
@@ -254,6 +263,8 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         setRejectReason('')
         setRejectComment('')
         setToast(t('inmobiliaria.ai.cobranza.planes.rechazarForm.success'))
+        // Ronda 30 (K4): en el cajón, rechazado se cierra tras leer el aviso (y la lista se refresca).
+        if (enCajon) setTimeout(() => onResuelto?.(), 1500)
       }
     } catch {
       // El hook sólo tira si el motivo falta o no es de la lista (en inglés,
@@ -377,7 +388,18 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className={enCajon ? 'space-y-6' : 'p-6 lg:p-8 space-y-6'}>
+      {enCajon ? (
+        // En el cajón: el deudor va en su cabecera; aquí, su ficha a la mano.
+        <div className="flex justify-end" data-testid="plan-cajon-deudor">
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href={`/panel/inmobiliaria/pagos/cobranza/deudores/${plan.debtor.id}`}>
+              {t('inmobiliaria.ai.cobranza.planes.verDeudor')}
+            </Link>
+          </Button>
+        </div>
+      ) : (
+      <>
       <VolverALaLista
         href="/panel/inmobiliaria/pagos/cobranza/pagos"
         label={t('inmobiliaria.ai.volverA.pagos')}
@@ -402,6 +424,8 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           </Button>
         }
       />
+      </>
+      )}
 
       {/* Comparison panel */}
       <section className="overflow-hidden rounded-md border border-border bg-surface">

@@ -13,7 +13,7 @@
  * El polling vive en `useArcoRequests`; acá sólo se pinta.
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowClockwise,
@@ -26,6 +26,8 @@ import {
 
 import { useI18n } from '@/lib/i18n'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { CajonDelCaso } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
+import ArcoDetailClient from './[id]/ArcoDetailClient'
 import { cn } from '@/lib/utils'
 import {
   useArcoRequests,
@@ -225,6 +227,12 @@ function BandejaArco() {
   const { t } = useI18n()
   const tr = useTr()
   const { requests, slaTerms, isLoading, isRefreshing, error, lastUpdatedAt, refetch } = useArcoRequests()
+  // Ronda 30 (K4): la solicitud abierta en el cajón; al cerrarlo, la bandeja se vuelve a leer.
+  const [abierta, setAbierta] = useState<string | null>(null)
+  const cerrarElCajon = useCallback(() => {
+    setAbierta(null)
+    void refetch()
+  }, [refetch])
 
   // C8 (r25): abre en «Vencen pronto» si hay alguna; el filtro vive en la URL.
   const estadoUrl = useEstadoEnLaUrl<EstadoArco>(ESTADOS_ARCO)
@@ -490,8 +498,16 @@ function BandejaArco() {
                       <TableCell className={cn('min-w-[180px] px-4 py-3 max-md:col-start-1 max-md:row-start-1', CELDA_390)}>
                         {/* QA-AGENTES 16-10: el nombre abre la solicitud. Sin
                             «Ref.» del hash de la cédula (bloqueante r25). */}
+                        {/* Ronda 30 (K4, Nico: «K4 cajón»): abre la solicitud en un cajón sobre la
+                            bandeja; con Cmd/Ctrl (o en otra pestaña) sigue yendo a su página. */}
                         <Link
                           href={`/panel/inmobiliaria/pagos/cobranza/arco/${row.id}`}
+                          onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                            e.preventDefault()
+                            setAbierta(row.id)
+                          }}
+                          data-testid={`arco-abrir-${row.id}`}
                           className="text-body-sm font-medium text-fg hover:underline"
                           aria-label={t(`${NS}.actions.view`).replace('{name}', row.requesterName)}
                         >
@@ -546,6 +562,17 @@ function BandejaArco() {
           ) : null}
         </Card>
       )}
+
+      <CajonDelCaso
+        abierto={abierta !== null}
+        onCerrar={cerrarElCajon}
+        tamano="lg"
+        titulo={requests.find((r) => r.id === abierta)?.requesterName ?? t('inmobiliaria.ai.arco.detail.title')}
+        descripcion="Lo que pidió la persona, en qué va y lo que falta para responderle dentro del término."
+        data-testid="arco-cajon"
+      >
+        {abierta ? <ArcoDetailClient requestId={abierta} enCajon onResuelto={cerrarElCajon} /> : null}
+      </CajonDelCaso>
     </div>
     </CrossFade>
   )

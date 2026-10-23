@@ -103,9 +103,9 @@ afterEach(() => {
   contenedor.remove()
 })
 
-async function montar() {
+async function montar(props: { enCajon?: boolean } = {}) {
   await act(async () => {
-    root.render(<PaymentPlanApprovalClient planId="plan-1" />)
+    root.render(<PaymentPlanApprovalClient planId="plan-1" {...props} />)
   })
 }
 
@@ -272,5 +272,17 @@ describe('Plan de pago — lo que se ve (PRUEBAS-PAGOS, 03-10-2026)', () => {
     expect(texto).toContain('inmobiliaria.ai.cobranza.planes.comparison.pagoUnico')
     expect(texto.replace(/\s/g, ' ')).toMatch(/6\.050\.000/)
     expect(texto.replace(/\s/g, ' ')).not.toMatch(/\$ ?0(?![\d.])/)
+  })
+})
+
+// Ronda 30 (K4, Nico: «K4 cajón»): el mismo componente se monta en el cajón de
+// Pagos en línea y del acuerdo: sin el encabezado de página, con «Ver deudor»
+// arriba del cuerpo y aprobar donde siempre.
+describe('Plan de pago — en el cajón de la lista (ronda 30, K4)', () => {
+  it('no pinta el encabezado de página; «Ver deudor» y aprobar siguen a la mano', async () => {
+    await montar({ enCajon: true })
+    expect(contenedor.querySelector('[data-testid="plan-cajon-deudor"] a')?.getAttribute('href')).toContain('/pagos/cobranza/deudores/')
+    expect(contenedor.querySelector('[data-testid="approval-aprobar-plan"]')).not.toBeNull()
+    expect(contenedor.textContent).not.toContain('inmobiliaria.ai.cobranza.planes.title')
   })
 })

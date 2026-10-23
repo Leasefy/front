@@ -35,7 +35,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
-  ArrowRight,
   CaretRight,
   CheckCircle,
   FileArrowUp,
@@ -570,13 +569,11 @@ export function PlanDeCuentas({
               {onContinuar ? (
                 <Button hideArrow onClick={onContinuar} data-testid="puc-continuar">
                   Continuar al paso 6
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
               ) : (
                 <Button asChild hideArrow>
                   <Link href={RUTA_DEL_PASO_5} data-testid="puc-continuar">
                     Continuar al paso 6
-                    <ArrowRight className="ml-1.5 h-4 w-4" />
                   </Link>
                 </Button>
               )}
@@ -598,7 +595,6 @@ export function PlanDeCuentas({
                 data-testid="puc-ver-lo-que-falta"
               >
                 Ver los que faltan
-                <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </>
           )}
@@ -831,7 +827,7 @@ function Nodo({
           <span className="h-5 w-5" aria-hidden />
         )}
         <span
-          className={`font-mono text-sm tabular-nums ${nivel <= 1 ? 'font-semibold text-fg' : 'text-fg'}`}
+          className={`font-mono text-sm tabular-nums ${nivel <= 1 ? 'font-medium text-fg' : 'text-fg'}`}
         >
           {nodo.codigo}
         </span>
@@ -839,19 +835,19 @@ function Nodo({
         <span className={`min-w-0 break-words [overflow-wrap:anywhere] text-sm ${nivel <= 1 ? 'font-medium text-fg' : 'text-fg'}`}>
           {nodo.nombre}
         </span>
-        <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-muted">
+        <span className="text-caption text-fg-muted">
           {nodo.naturaleza === 'DEBITO' ? 'Débito' : 'Crédito'}
         </span>
         {nodo.imputable ? (
-          <span className="text-[11px] font-medium text-primary">
-            Imputable
+          <span className="text-caption text-fg-muted">
+            · Imputable
           </span>
         ) : null}
         {/* 🔴 Visible en el árbol: una cuenta marcada cambia el 1001 de la
             exógena, y eso no puede vivir sólo dentro del formulario. */}
         {estaMarcadaNoDeducible(nodo) ? (
           <span
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"
+            className="inline-flex items-center gap-1 text-caption text-warning-700 dark:text-warning-100"
             data-testid={`puc-no-deducible-${nodo.codigo}`}
             title="El gasto de esta cuenta va a la columna «Pago o abono no deducible» del formato 1001."
           >
@@ -860,7 +856,7 @@ function Nodo({
           </span>
         ) : null}
         {!nodo.activa ? (
-          <span className="text-[11px] italic text-fg-subtle">
+          <span className="text-caption italic text-fg-subtle">
             Inactiva
           </span>
         ) : null}

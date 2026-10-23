@@ -19,6 +19,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { portadaDelInmueble } from '@/lib/inmuebles/titulo-de-la-ficha';
 import { CrossFade } from '@leasefy/cadence';
@@ -532,7 +533,7 @@ function ConsignacionDetailContent() {
         {/* «Inmueble», no la clave `portafolio.detail.title` («Detalle de
             Propiedad»): el menú dice Inmuebles y el producto no llama
             «propiedad» a nada. */}
-        <h1 className="text-h2 text-fg">Inmueble</h1>
+        <EncabezadoDePantalla seccion="Inmuebles" titulo="Inmueble" />
         <div className="max-w-2xl">
           <FalloDeCarga
             error={errorConsignacion}

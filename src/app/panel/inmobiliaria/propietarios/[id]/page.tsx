@@ -259,14 +259,14 @@ function PropertyCard({
               )}
               {sinPorcentaje ? (
                 <span
-                  className="mt-1 inline-block rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning"
+                  className="mt-1 inline-block rounded-full bg-warning-soft px-2 py-0.5 text-caption font-medium text-warning"
                   data-testid="copropiedad-sin-porcentaje"
                 >
                   Copropiedad · {FALTA_EL_PORCENTAJE.toLowerCase()}
                 </span>
               ) : suParte != null && (
                 <span
-                  className="mt-1 inline-block rounded-full bg-primary-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-primary"
+                  className="mt-1 inline-block rounded-full bg-surface-muted px-2 py-0.5 font-mono text-caption tabular-nums text-fg"
                   data-testid="copropiedad-del-inmueble"
                 >
                   {t('inmobiliaria.propietarios.detail.copropiedadPct', { pct: formatParticipacion(suParte) })}
@@ -293,7 +293,7 @@ function PropertyCard({
               <>
                 {suParteDelCanon ? (
                   <div data-testid="su-parte-del-canon">
-                    <p className="text-base font-semibold tabular-nums text-foreground">
+                    <p className="font-mono text-base tabular-nums text-foreground">
                       {formatCurrency(suParteDelCanon.canonCop ?? 0)}
                     </p>
                     <p className="text-caption text-muted-foreground">
@@ -306,7 +306,7 @@ function PropertyCard({
                   </div>
                 ) : (
                   <div>
-                    <p className="text-base font-semibold tabular-nums text-foreground">
+                    <p className="font-mono text-base tabular-nums text-foreground">
                       {canonDelContrato !== null && canonDelContrato !== undefined
                         ? formatCurrency(canonDelContrato)
                         : consignacion.canonPorConfirmar
@@ -398,7 +398,7 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
       </div>
 
       <div className="text-right">
-        <p className="text-sm font-semibold tabular-nums text-foreground">
+        <p className="font-mono text-sm tabular-nums text-foreground">
           {formatCurrency(dispersion.netToPropietario)}
         </p>
         <span className={cn('text-caption font-medium px-2 py-0.5 rounded-full', statusColors[dispersion.status])}>
@@ -819,7 +819,9 @@ function PropietarioDetailContent() {
             {isCompany ? <Buildings className="size-7" /> : undefined}
           </Avatar>
           <div className="min-w-0 space-y-1.5">
-            <h1 className="text-h2 text-fg">
+            {/* Glow up 22-10: el título con la medida y el peso del encabezado común (40 px, liviano). */}
+            <p className="font-mono text-caption uppercase tracking-[0.14em] text-fg-subtle">{t('inmobiliaria.nav.propietarios')}</p>
+            <h1 className="text-[30px] font-[420] leading-[1.08] tracking-[-0.025em] text-fg lg:text-[40px]">
               {propietario.name}
             </h1>
             <div className="flex flex-wrap items-center gap-1.5" data-testid="propietario-chips">

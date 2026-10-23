@@ -17,7 +17,6 @@ import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-reg
 import Link from 'next/link';
 import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
 import {
-  CaretLeft,
   PaperPlaneTilt,
   UserPlus,
   PencilSimpleLine,
@@ -101,6 +100,7 @@ import {
   bloqueoDelError,
   type BloqueoPorInventario as BloqueoPorInventarioDatos,
 } from '@/lib/inventario/bloqueo-por-inventario';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -380,7 +380,7 @@ function ContratoDetalleContent() {
     return (
       <div className="space-y-6 p-6 lg:p-8" data-testid="contrato-fallo">
         <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
-        <h1 className="text-h2 text-fg">Contrato</h1>
+        <EncabezadoDePantalla seccion="Contratos" titulo="Contrato" />
         {/* La tarjeta no ocupa el ancho de la pantalla: tres renglones
             centrados en una caja de 1.900 px se leen como una pantalla rota.
             El encabezado sí va a ancho completo, como en todas. */}
@@ -463,7 +463,7 @@ function ContratoDetalleContent() {
         <section className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
             <FileText className="w-4 h-4 text-muted-foreground" />
-            <h3 className="text-base font-semibold text-foreground">Documento</h3>
+            <h3 className="text-base font-medium text-foreground">Documento</h3>
           </div>
           <CrossFade swapKey={ramaDelDocumento} className="p-5">
             {/* Cuando hay firma(s), el iframe usa la URL de /pdf (con estampado actualizado).
@@ -473,7 +473,7 @@ function ContratoDetalleContent() {
                 {contract.tenantSignature && !contract.landlordSignature && (
                   <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2">
                     <Info className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-warning">
+                    <p className="text-caption text-warning">
                       Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
                       Firma abajo para completar el contrato.
                     </p>
@@ -482,7 +482,7 @@ function ContratoDetalleContent() {
                 {contract.tenantSignature && contract.landlordSignature && (
                   <div className="rounded-lg border border-success/30 bg-success-soft px-4 py-2.5 flex items-start gap-2">
                     <Info className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-success">
+                    <p className="text-caption text-success">
                       PDF final con <strong>ambas firmas</strong>, certificado completo y hash SHA-256.
                     </p>
                   </div>
@@ -500,7 +500,7 @@ function ContratoDetalleContent() {
                     />
                   )}
                 </CrossFade>
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <p className="text-caption text-muted-foreground flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5" />
                   Enlace válido por tiempo limitado. Si caduca, recarga la página.
                 </p>
@@ -516,7 +516,7 @@ function ContratoDetalleContent() {
                   className="w-full h-[720px] rounded-md border border-border bg-surface"
                   title="Contrato"
                 />
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <p className="text-caption text-muted-foreground flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5" />
                   Enlace válido por tiempo limitado. Si caduca, recarga la página.
                 </p>
@@ -582,86 +582,67 @@ function ContratoDetalleContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <Button
-            asChild
-            variant="link"
-            hideArrow
-            className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
-          >
-            <Link href={rutaDeVuelta}>
-              <CaretLeft className="w-4 h-4" /> {etiquetaDeVuelta}
-            </Link>
-          </Button>
-          {/*
-            T-0040 — el número es el nombre del contrato: va en el título, no
-            en una línea debajo de un título genérico. El UUID vuelve tal cual
-            cuando no hay número —sólo un `back` anterior a T-0040 lo
-            produce—. Sin `#0` ni `#undefined`: o el número, o el id.
-
-            🔴 Nico, 2026-09-12: para un contrato MIGRADO el número que se lee
-            es el de SU sistema anterior (1686), no nuestro consecutivo
-            (#1839) — lo buscó en su archivo y era otra persona. El nuestro va
-            debajo, nombrado, para que se sepa cuál es cuál
-            (`numero-del-contrato.ts`).
-          */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-h2 text-fg">{tituloDelContrato(contract)}</h1>
+    <div className="mx-auto max-w-7xl space-y-6 p-6 lg:p-8">
+      {/* Glow up 22-10: el encabezado común. T-0040 — el número es el nombre del contrato: va en el título.
+          Sin número (sólo un back anterior a T-0040) vuelve el UUID. 🔴 Nico 12-09: para un contrato MIGRADO el
+          número que se lee es el de SU sistema anterior; el nuestro va debajo, nombrado (`numero-del-contrato.ts`). */}
+      <div className="space-y-3">
+        <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
+        <EncabezadoDePantalla
+          seccion="Contratos"
+          titulo={tituloDelContrato(contract)}
+          junto={
             <Badge variant={statusVariant} title={estadoDelChip.titulo} data-testid="estado-del-contrato">
               {statusLabel}
             </Badge>
-          </div>
-          {numero.principal == null ? (
-            <p className="text-sm text-muted-foreground mt-1">ID: {contract.id}</p>
-          ) : null}
-          {numero.esDeLaInmobiliaria ? (
-            <p className="text-sm text-muted-foreground mt-1" data-testid="numero-de-leasefy">
-              {numero.principal} es el número de tu sistema anterior.
-            </p>
-          ) : null}
-          {/* De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino. */}
-          <p className="text-sm text-muted-foreground mt-1">
-            {[
+          }
+          descripcion={
+            // De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino.
+            [
               [contract.propertyAddress, contract.propertyCity].filter(Boolean).join(', ') || null,
               contract.tenantName || null,
             ]
               .filter(Boolean)
-              .join(' · ') || 'Arrendamiento'}
+              .join(' · ') || 'Arrendamiento'
+          }
+          acciones={
+            <>
+              {/* T-0109 contract.md §3.1.B/§3.2 — se oculta sola cuando el back no manda `documentoFirmado`
+                  (viejo), es legacy (null) o el contrato todavía no tiene versión FINAL (parcial). */}
+              <SealStatusBadge
+                contractId={contract.id}
+                documentoFirmado={contract.documentoFirmado}
+                canEdit={canEditContracts}
+                onReintentado={() => void refetch()}
+              />
+              {/* 🔴 QA-CONT-95 (CR-15, B-06): el migrado SIN documento no ofrece «Descargar PDF». */}
+              {!sinDocumento && (
+                <DownloadContractPdfButton
+                  contractId={contract.id}
+                  contractStatus={contract.status}
+                  variant="secondary"
+                  numero={numero.principal}
+                />
+              )}
+              {chatHref && (
+                <Button asChild variant="outline" size="sm" hideArrow className="gap-2">
+                  <Link href={chatHref}>
+                    <ChatCircle className="h-4 w-4" aria-hidden="true" />
+                    Abrir chat
+                  </Link>
+                </Button>
+              )}
+            </>
+          }
+        />
+        {numero.principal == null ? (
+          <p className="text-caption text-fg-muted">ID: <span className="font-mono">{contract.id}</span></p>
+        ) : null}
+        {numero.esDeLaInmobiliaria ? (
+          <p className="text-caption text-fg-muted" data-testid="numero-de-leasefy">
+            {numero.principal} es el número de tu sistema anterior.
           </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-          {/* T-0109 contract.md §3.1.B/§3.2 — se oculta sola cuando el back
-              no manda `documentoFirmado` (viejo), es legacy (null) o el
-              contrato todavía no tiene versión FINAL (parcial). */}
-          <SealStatusBadge
-            contractId={contract.id}
-            documentoFirmado={contract.documentoFirmado}
-            canEdit={canEditContracts}
-            onReintentado={() => void refetch()}
-          />
-          {/* 🔴 QA-CONT-95 (CR-15, B-06): el migrado SIN documento no ofrece
-              «Descargar PDF» — rebotaba con 400 y un toast. La sección
-              «Documento» ya dice que se cargó desde el sistema anterior. */}
-          {!sinDocumento && (
-            <DownloadContractPdfButton
-              contractId={contract.id}
-              contractStatus={contract.status}
-              variant="secondary"
-              numero={numero.principal}
-            />
-          )}
-          {chatHref && (
-            <Button asChild variant="secondary" hideArrow className="gap-2">
-              <Link href={chatHref}>
-                <ChatCircle className="w-4 h-4" />
-                Abrir chat
-              </Link>
-            </Button>
-          )}
-        </div>
+        ) : null}
       </div>
 
       {/*
@@ -1393,7 +1374,7 @@ function InfoCard({
     <section className="rounded-lg border border-border bg-card p-5 space-y-3">
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4 text-muted-foreground" />
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        <h3 className="text-base font-medium text-foreground">{title}</h3>
       </div>
       <div className="space-y-2">{children}</div>
     </section>

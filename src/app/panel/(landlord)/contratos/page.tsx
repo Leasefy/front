@@ -1,7 +1,7 @@
 'use client';
 
 import { FileText, Clock, CheckCircle, WarningCircle, Pen } from '@phosphor-icons/react';
-import { KpiCard } from '@leasefy/cadence';
+import { FranjaDeCifras, KpiCard } from '@leasefy/cadence';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ContractExpandableItem } from '@/components/contract/ContractExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -128,8 +128,8 @@ export default function ContratosPage() {
           />
         </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Revisora r25: las cuatro cifras en UNA franja de la casa (antes, cuatro tarjetas sueltas). */}
+        <FranjaDeCifras className="mb-8" data-testid="cifras-de-contratos">
           <KpiCard
             label={t('landlord.contracts.totalContracts')}
             value={String(allContracts.length)}
@@ -154,7 +154,7 @@ export default function ContratosPage() {
             sublabel={t('landlord.contracts.currentContracts')}
             icon={<CheckCircle />}
           />
-        </div>
+        </FranjaDeCifras>
 
         {/* Urgent Action Banner */}
         {needsAction.length > 0 && (

@@ -50,6 +50,7 @@ import type { AgenteId } from '@/lib/api/work-item';
 import { fechaEnFrase } from '@/lib/api/facturacion-por-mes.service';
 import { useDesempenoDeLosAgentes, type DesempenoDelAgente } from '@/lib/hooks/ai/use-desempeno-de-los-agentes';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { clasificarFallo } from '@/lib/errores/clasificar';
 
 /** Los agentes que ya guardan su actividad en el micro, en el orden del menú. */
 const AGENTES_CON_SALA: { agente: AgenteId; nombre: string; hace: string; fila: string }[] = [
@@ -322,8 +323,19 @@ function DesempenoContent() {
 
   // 2 y 3. Arriba lo que tiene algo que mostrar (o se está leyendo, o falló);
   // abajo, en una lista corta, los que todavía no hicieron nada.
-  const arriba = agentes.filter((a) => a.lectura.estado !== 'sin' || a.id === 'con-manos-sin-dato');
-  const abajo = agentes.filter((a) => a.lectura.estado === 'sin' && a.id !== 'con-manos-sin-dato');
+  /*
+   * Revisora r25 (T4): con el servicio de los agentes caído, cada tarjeta pintaba
+   * su propio cartel del MISMO fallo (seis, 3.715 px a 390). Si dos o más caen
+   * con el servicio no disponible, se dice UNA vez arriba, con un «Reintentar»
+   * que vuelve a leerlas todas, y esas tarjetas no se pintan.
+   */
+  const caidas = agentes.filter(
+    (a) => a.lectura.estado === 'fallo' && clasificarFallo(a.lectura.error).tipo === 'servicioNoDisponible',
+  );
+  const unSoloFallo = caidas.length >= 2 ? caidas : [];
+  const sinUnSoloFallo = agentes.filter((a) => !unSoloFallo.includes(a));
+  const arriba = sinUnSoloFallo.filter((a) => a.lectura.estado !== 'sin' || a.id === 'con-manos-sin-dato');
+  const abajo = sinUnSoloFallo.filter((a) => a.lectura.estado === 'sin' && a.id !== 'con-manos-sin-dato');
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -346,6 +358,18 @@ function DesempenoContent() {
         >
           {esperan.length === 1 ? `La propuso ${esperan[0].nombre}.` : `Las propusieron ${esperan.map((d) => d.nombre).join(', ')}.`}
         </AlertaAccionable>
+      ) : null}
+
+      {unSoloFallo.length > 0 && unSoloFallo[0].lectura.estado === 'fallo' ? (
+        <div data-testid="desempeno-un-solo-fallo">
+          <FalloDeCarga
+            error={unSoloFallo[0].lectura.error}
+            queEs="la actividad de los agentes"
+            onReintentar={() => {
+              for (const a of unSoloFallo) if (a.lectura.estado === 'fallo') a.lectura.reintentar();
+            }}
+          />
+        </div>
       ) : null}
 
       {arriba.length > 0 ? (

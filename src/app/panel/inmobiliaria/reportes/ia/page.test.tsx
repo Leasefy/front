@@ -282,4 +282,16 @@ describe('GLOW UP 21-10: la pantalla en el orden del trabajo', () => {
     await render()
     expect(container.querySelector('[data-testid="desempeno-cobranza-ir"]')).toBeNull()
   })
+
+  it('🔴 T4 (revisora r25): con el servicio de los agentes caído, el fallo se dice UNA vez arriba', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const caido = new ApiError(502, 'Agents service unreachable', 'SERVICIO_NO_DISPONIBLE', { servicio: 'agentes' })
+    const reintentos = [vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn()]
+    let i = 0
+    overviewMock.mockImplementation(() => ({ data: null, isLoading: false, errorCrudo: caido, notAvailable: false, refetch: reintentos[i++ % 5] }))
+    await render()
+    expect(container.querySelectorAll('[data-testid="desempeno-un-solo-fallo"]')).toHaveLength(1)
+    expect(container.querySelector('[data-testid="desempeno-cobranza"]')).toBeNull()
+    expect(container.querySelector('[data-testid="desempeno-pagos"]')).toBeNull()
+  })
 })

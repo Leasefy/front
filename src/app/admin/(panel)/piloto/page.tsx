@@ -31,8 +31,12 @@ const cuando = (iso: string | null) => {
     : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })
 }
 
-/** El botón de la fila, corto para que los tres quepan en una línea (el nombre entero va en `aria-label`). */
-const ACCION: Record<EstadoDelPilotoPorLeasefy, string> = { prueba: 'Prueba', contratado: 'Contratar', apagado: 'Apagar' }
+/**
+ * Cada opción del selector de la fila, corta para que las tres quepan en una línea (el nombre entero va en
+ * `aria-label`). Ronda 26 (revisora r25): son ESTADOS, no verbos («Prueba» era un sustantivo suelto y «Apagar»
+ * se ofrecía a lo que nunca se encendió).
+ */
+const ACCION: Record<EstadoDelPilotoPorLeasefy, string> = { prueba: 'En prueba', contratado: 'Contratado', apagado: 'Apagado' }
 
 const tono = (e: EstadoDelPilotoPorLeasefy) => (e === 'contratado' ? 'ok' : e === 'apagado' ? 'bad' : 'warn')
 
@@ -103,12 +107,21 @@ export default function PilotoDeLasInmobiliariasPage() {
   const columnas: Column<PilotoDeLaInmobiliaria>[] = [
     {
       header: 'Inmobiliaria',
-      cell: (f) => <span className="font-medium text-fg">{f.legal_name}</span>,
+      // Ronda 26 (revisora r25): «Cómo está hoy» ya no es una columna con la misma frase larga en cada fila;
+      // va callada debajo del nombre.
+      cell: (f) => (
+        <div className="min-w-0">
+          <span className="text-body-sm font-medium text-fg">{f.legal_name}</span>
+          <span className="block text-caption text-fg-muted" data-testid={`admin-piloto-detalle-${f.tenant_id}`}>
+            {f.detalle}
+          </span>
+        </div>
+      ),
       orden: (f) => f.legal_name,
       texto: (f) => f.legal_name,
     },
     {
-      header: 'Plan del Piloto',
+      header: 'Plan del piloto',
       cell: (f) => <Pill tone={tono(f.estado)}>{EL_ESTADO[f.estado].nombre}</Pill>,
       orden: (f) => EL_ESTADO[f.estado].nombre,
       texto: (f) => EL_ESTADO[f.estado].nombre,
@@ -120,19 +133,17 @@ export default function PilotoDeLasInmobiliariasPage() {
       texto: (f) => (f.activo ? 'Encendido' : 'Sin encender'),
     },
     {
-      header: 'Cómo está hoy',
-      cell: (f) => (
-        <span className="text-caption text-fg-muted" data-testid={`admin-piloto-detalle-${f.tenant_id}`}>
-          {f.detalle}
-        </span>
-      ),
-      texto: (f) => f.detalle,
-    },
-    {
       header: 'Último cambio',
       cell: (f) => (
         <span className="text-caption text-fg-muted">
-          {f.updated_at ? <span className="font-mono tabular-nums">{cuando(f.updated_at)}</span> : 'Nadie lo ha cambiado'}
+          {f.updated_at ? (
+            <span className="font-mono tabular-nums">{cuando(f.updated_at)}</span>
+          ) : (
+            <span className="text-fg-subtle" title="Nadie lo ha cambiado">
+              <span aria-hidden="true">—</span>
+              <span className="sr-only">Nadie lo ha cambiado</span>
+            </span>
+          )}
           {f.updated_by ? <span className="block">{f.updated_by}</span> : null}
         </span>
       ),
@@ -143,18 +154,23 @@ export default function PilotoDeLasInmobiliariasPage() {
     {
       header: '',
       cell: (f) => (
-        <div className="flex gap-1.5 whitespace-nowrap" role="group" aria-label={`Cambiar el Piloto de ${f.legal_name}`}>
+        // Un selector de tres (se ve como uno): la opción de hoy marcada y sin acción; las otras abren el cajón.
+        <div
+          className="inline-flex gap-0.5 whitespace-nowrap rounded-md border border-border bg-surface-muted p-0.5"
+          role="group"
+          aria-label={`Cambiar el plan del piloto de ${f.legal_name}`}
+        >
           {ESTADOS_DEL_PILOTO.map((e) => (
             <Button
               key={e}
               type="button"
-              variant={f.estado === e ? 'secondary' : 'outline'}
+              variant={f.estado === e ? 'secondary' : 'ghost'}
               size="sm"
               hideArrow
               aria-pressed={f.estado === e}
-              aria-label={`Dejarlo en «${EL_ESTADO[e].nombre}»`}
+              aria-label={f.estado === e ? `Hoy está en «${EL_ESTADO[e].nombre}»` : `Dejarlo en «${EL_ESTADO[e].nombre}»`}
               title={EL_ESTADO[e].nombre}
-              disabled={guardando}
+              disabled={guardando || f.estado === e}
               onClick={(ev) => {
                 ev.stopPropagation()
                 abrir(f, e)
@@ -181,18 +197,24 @@ export default function PilotoDeLasInmobiliariasPage() {
         }
       />
 
-      {/* Glow up 22-10: LA RESPUESTA (para cuántas corre el Piloto) con la barra por plan; antes una frase con
-          cinco cifras del mismo peso. */}
+      {/* Glow up 22-10: LA RESPUESTA (para cuántas corre el piloto); antes una frase con cinco cifras del mismo peso. */}
       {!isLoading && data && data.length > 0 ? (
         <div className="rounded-lg border border-border bg-surface p-5 sm:p-6" data-testid="admin-piloto-conteo">
           <CifraHeroe
-            rotulo="Con el Piloto encendido"
+            rotulo="Con el piloto encendido"
             cifra={conteo.activos.toLocaleString('es-CO')}
             contexto={`de ${data.length.toLocaleString('es-CO')} ${data.length === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
+            // Ronda 26 (revisora r25): la barra cuenta lo MISMO que la cifra (encendido o no); antes contaba el plan
+            // y no se leían juntas. El plan, en las pestañas de la tabla.
             tramos={[
-              { clave: 'contratado', etiqueta: EL_ESTADO.contratado.nombre, monto: conteo.contratado, tono: 'exito', cifra: conteo.contratado.toLocaleString('es-CO'), siempre: true },
-              { clave: 'prueba', etiqueta: EL_ESTADO.prueba.nombre, monto: conteo.prueba, tono: 'aviso', cifra: conteo.prueba.toLocaleString('es-CO'), siempre: true },
-              { clave: 'apagado', etiqueta: EL_ESTADO.apagado.nombre, monto: conteo.apagado, tono: 'critico', cifra: conteo.apagado.toLocaleString('es-CO'), siempre: true },
+              { clave: 'encendido', etiqueta: 'Encendido', monto: conteo.activos, tono: 'exito', cifra: conteo.activos.toLocaleString('es-CO'), siempre: true },
+              {
+                clave: 'sin-encender',
+                etiqueta: 'Sin encender',
+                monto: data.length - conteo.activos,
+                tono: 'neutro',
+                cifra: (data.length - conteo.activos).toLocaleString('es-CO'),
+              },
             ]}
             total={data.length}
           />
@@ -214,13 +236,14 @@ export default function PilotoDeLasInmobiliariasPage() {
         onReintentar={refetch}
         emptyTitle="Todavía no hay inmobiliarias"
         emptyIcon={<Airplane weight="duotone" />}
-        aria-label="El Piloto automático de cada inmobiliaria"
+        aria-label="El piloto automático de cada inmobiliaria"
         filaTestid={(f) => `admin-piloto-fila-${f.tenant_id}`}
         filaMarcada={(f) => f.tenant_id === cambio?.fila.tenant_id}
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar una inmobiliaria"
         segmentos={SEGMENTOS}
         exportar="piloto-automatico"
+        masEnElExcel={[{ header: 'Cómo está hoy', texto: (f) => f.detalle }]}
       />
 
       <Cajon

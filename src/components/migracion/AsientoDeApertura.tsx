@@ -418,7 +418,9 @@ export function AsientoDeApertura({
             htmlFor="apertura-fecha"
             className="text-sm font-medium text-fg"
           >
-            Fecha de corte
+            {/* Ronda 30 (Nico): las dos fechas se quedan, con nombre claro: ésta es la de los saldos; la de
+                la cartera es el «Corte de movimientos». */}
+            Corte de saldos
           </label>
           <CampoDeDia
             id="apertura-fecha"
@@ -429,6 +431,9 @@ export function AsientoDeApertura({
             }}
             testid="apertura-fecha"
           />
+          <p className="text-caption text-fg-muted" data-testid="que-mide-el-corte-de-saldos">
+            El día de tu balance: lo que había en cada cuenta al cierre de ese día.
+          </p>
         </div>
         <div className="space-y-1">
           <label

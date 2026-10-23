@@ -46,7 +46,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DownloadSimple, Prohibit, SealCheck, Table as TablaIcono } from '@phosphor-icons/react';
+import { DownloadSimple, Prohibit, SealCheck } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -61,7 +61,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import {
   Table,
   TableBody,
@@ -74,7 +76,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Avisos, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos } from '@/components/finanzas/piezas';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
 import {
   AVISO_DEL_PREVALIDADOR,
@@ -216,9 +218,16 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
 
   if (cargando && !resumen) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <Spinner size="lg" />
-        <p className="text-sm text-fg-muted">Armando los formatos de {anio}…</p>
+      <div className="space-y-5" aria-busy="true">
+        <span className="sr-only">Armando los formatos de {anio}…</span>
+        <div className="space-y-3" aria-hidden="true">
+          <Skeleton className="h-3.5 w-40 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-9 w-48 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-2 w-full rounded-full bg-surface-muted" />
+        </div>
+        {Array.from({ length: 3 }, (_, i) => (
+          <Skeleton key={i} className="h-28 w-full rounded-lg bg-surface-muted" aria-hidden="true" />
+        ))}
       </div>
     );
   }
@@ -229,25 +238,48 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
   const totales = totalesDelAnio(resumen);
   const cuantias = frasesDeCuantiasMenores(resumen.cuantiasMenores, formatCurrency);
 
+  // GLOW UP 3.ª vuelta · LA RESPUESTA: cuántos de los formatos ya tienen el visto bueno, y qué
+  // le pasa a los demás. Y un solo azul: el «Visto bueno» del primer formato que lo puede recibir.
+  const conVistoBueno = resumen.formatos.filter((f) => f.estado === 'APROBADA');
+  const conBloqueo = resumen.formatos.filter((f) => f.estado !== 'APROBADA' && f.bloqueos.length > 0);
+  const sinFilas = resumen.formatos.filter((f) => f.estado !== 'APROBADA' && f.bloqueos.length === 0 && f.filas === 0);
+  const porRevisar = resumen.formatos.filter(
+    (f) => f.estado !== 'APROBADA' && f.bloqueos.length === 0 && f.filas > 0,
+  );
+  const siguienteVistoBueno =
+    resumen.formatos.find((f) => escritura.puede && sePuedeAprobar(f, resumen.disponible).puede)?.formato ?? null;
+  const cifras = localeDeLasCifras();
+
   return (
     <div className="space-y-6" data-testid="exogena">
-      {/* 🔴 ARRIBA, antes de cualquier botón de descarga. */}
-      <div
-        className="flex gap-3 rounded-lg border border-warning/40 bg-warning-soft p-4 text-sm text-fg"
-        role="status"
-        data-testid="aviso-del-prevalidador"
-      >
-        <TablaIcono className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
-        <p>{AVISO_DEL_PREVALIDADOR}</p>
-      </div>
+      <CifraHeroe
+        rotulo={`Formatos de ${anio} con visto bueno`}
+        cifra={`${conVistoBueno.length.toLocaleString(cifras)} de ${resumen.formatos.length.toLocaleString(cifras)}`}
+        contexto={
+          <span data-testid="totales-del-anio">
+            {totales.filas.toLocaleString(cifras)} filas en los seis formatos ·{' '}
+            <Monto valor={totales.totalCop} />
+          </span>
+        }
+        total={resumen.formatos.length}
+        tramos={[
+          { clave: 'listos', etiqueta: 'Con visto bueno', monto: conVistoBueno.length, tono: 'exito', cifra: conVistoBueno.length.toLocaleString(cifras) },
+          { clave: 'por-revisar', etiqueta: 'Falta el visto bueno', monto: porRevisar.length, tono: 'neutro', cifra: porRevisar.length.toLocaleString(cifras) },
+          { clave: 'bloqueados', etiqueta: 'No se pueden presentar', monto: conBloqueo.length, tono: 'critico', cifra: conBloqueo.length.toLocaleString(cifras) },
+          { clave: 'sin-filas', etiqueta: 'Sin filas', monto: sinFilas.length, tono: 'neutro', cifra: sinFilas.length.toLocaleString(cifras) },
+        ]}
+        // 🔴 ARRIBA, antes de cualquier botón de descarga: Leasefy no transmite.
+        pie={
+          <span role="status" data-testid="aviso-del-prevalidador">
+            {AVISO_DEL_PREVALIDADOR}
+          </span>
+        }
+        data-testid="cifra-de-la-exogena"
+      />
 
-      {/* 🔴 UNA SOLA COSA (Nico, 21-09): el año gravable estaba en su propia
-          tarjeta y las pestañas flotaban debajo, sueltas. Las dos responden lo
-          mismo —«qué estoy mirando»—, así que van en la misma fila: pestañas a
-          la izquierda, año y total a la derecha. El total del año se queda aquí
-          porque es el resumen, y el resumen va con el alcance que lo produce. */}
+      {/* 🔴 UNA SOLA COSA (Nico, 21-09): las pestañas y el año van en la misma fila. */}
       <Tabs value={parte} onValueChange={(v) => setParte(v as ParteDeLaExogena)}>
-        <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList variant="segmented" className="justify-start">
             <TabsTrigger value="formatos" data-testid="parte-formatos" className="whitespace-nowrap">
               Los formatos
@@ -260,28 +292,22 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
               Configuración
             </TabsTrigger>
           </TabsList>
-          <div className="flex flex-wrap items-center gap-4">
-            <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <span>Año gravable</span>
-              <select
-                aria-label="Año gravable"
-                className="h-11 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-                value={anio}
-                onChange={(e) => setAnio(Number(e.target.value))}
-                data-testid="selector-de-anio"
-              >
-                {anios.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p className="text-caption text-fg-muted" data-testid="totales-del-anio">
-              {totales.filas.toLocaleString(localeDeLasCifras())} filas en los seis formatos ·{' '}
-              <Monto valor={totales.totalCop} className="text-caption" />
-            </p>
-          </div>
+          <label className="flex items-center gap-2 text-body-sm text-fg-muted">
+            <span>Año gravable</span>
+            <select
+              aria-label="Año gravable"
+              className="h-10 rounded-md border border-border bg-surface px-3 text-body-sm text-fg"
+              value={anio}
+              onChange={(e) => setAnio(Number(e.target.value))}
+              data-testid="selector-de-anio"
+            >
+              {anios.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <TabsContent value="formatos" className="space-y-6 pt-5">
@@ -301,19 +327,23 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
         </Nota>
       ) : null}
 
-      {/* 🔴 Lo que decide la resolución y el sistema no puede saber. */}
-      <VistoBuenoDelContador
-        introduccion="Estas cinco cosas las fija la resolución de la DIAN de cada año, o son decisiones de la inmobiliaria. Leasefy propone una respuesta y el contador la confirma: lo que está abajo se calculó con esas respuestas."
-        puntos={PENDIENTES_DEL_CONTADOR}
-        testId="pendientes-del-contador"
-      />
-
       {/* ── Los seis formatos ─────────────────────────────────────────── */}
       <section className="space-y-4">
-        <TituloDeBloque
-          titulo="Los seis formatos"
-          explicacion="Cada uno sale del libro: de las cuentas de gasto por tercero, de las de ingreso, de los saldos al 31 de diciembre. El 1647 es el propio de una inmobiliaria — lo que se recaudó para los propietarios."
-        />
+        <div className="space-y-1">
+          <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Los seis formatos</h2>
+          <p className="text-body-sm text-fg-muted">
+            Cada uno sale del libro. El 1647 es el propio de una inmobiliaria: lo que se recaudó para los propietarios.
+          </p>
+        </div>
+
+        {/* 🔴 Lo que decide la resolución y el sistema no puede saber: se consulta, plegado. */}
+        <MasDetalles etiqueta="Las cinco decisiones del contador" etiquetaAbierto="Ocultar las decisiones" montadoSiempre>
+          <VistoBuenoDelContador
+            introduccion="Estas cinco cosas las fija la resolución de la DIAN de cada año, o son decisiones de la inmobiliaria. Leasefy propone una respuesta y el contador la confirma: lo que está abajo se calculó con esas respuestas."
+            puntos={PENDIENTES_DEL_CONTADOR}
+            testId="pendientes-del-contador"
+          />
+        </MasDetalles>
 
         <ul className="space-y-4">
           {resumen.formatos.map((f) => {
@@ -333,8 +363,8 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-0.5">
-                    <p className="text-sm font-medium text-fg">
-                      <span className="font-mono">{f.formato}</span> · {f.nombre}
+                    <p className="text-body-sm font-medium text-fg">
+                      <span className="font-mono font-normal">{f.formato}</span> · {f.nombre}
                     </p>
                     <p className="text-caption text-fg-muted">{DE_DONDE_SALE[f.formato]}</p>
                     <p className="text-caption text-fg-muted">
@@ -426,7 +456,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                       setAprobando(f.formato);
                       setObservaciones('');
                     }}
-                    variant="default"
+                    variant={siguienteVistoBueno === f.formato ? 'default' : 'outline'}
                     testId={`aprobar-${f.formato}`}
                     motivoVisible={false}
                   >

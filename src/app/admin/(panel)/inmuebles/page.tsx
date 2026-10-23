@@ -67,7 +67,7 @@ export default function InmueblesPage() {
   )
   const abierto = ver ? data?.data.find((r) => r.id === ver) ?? null : null
 
-  const columns: Column<InmuebleAdminRow>[] = [
+  const todasLasColumnas: Column<InmuebleAdminRow>[] = [
     // Ronda 26 (revisora r25): el consecutivo de Leasefy y el código de la inmobiliaria ya no son columnas
     // (iguales en todas las filas a la vista); van debajo de la dirección, en mono, y al Excel.
     {
@@ -79,9 +79,11 @@ export default function InmueblesPage() {
           <div className="text-body-sm font-medium leading-snug text-fg">{r.address}</div>
           <div className="text-caption text-fg-muted">
             {r.city}
+            {/* Ronda 28 (revisora r27): UN número (antes «#111 · N.º 111»): el de la inmobiliaria si lo tiene;
+                si no, el consecutivo de Leasefy. Los dos, al Excel. */}
             <span className="font-mono tabular-nums text-fg-subtle">
-              {' · '}#{r.code}
-              {r.externalId ? ` · N.º ${r.externalId}` : ''}
+              {' · '}
+              {r.externalId ? `N.º ${r.externalId}` : `#${r.code}`}
             </span>
           </div>
         </div>
@@ -142,11 +144,16 @@ export default function InmueblesPage() {
     },
   ]
 
+  // Ronda 28 (revisora r27, T15): sin reparaciones en ninguna fila de la página, sin la columna de «—».
+  const filasDeLaPagina = data?.data ?? []
+  const sinReparaciones = filasDeLaPagina.length > 0 && filasDeLaPagina.every((r) => !r.reparaciones)
+  const columns = sinReparaciones ? todasLasColumnas.filter((c) => c.header !== 'Reparaciones') : todasLasColumnas
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Inmuebles"
-        description="Cuántas veces se arrendó cada inmueble, cuánto estuvo vacío y qué se reparó."
+        description="Cuántas veces se arrendó cada inmueble; al abrirlo, cuánto estuvo vacío y qué se reparó."
         ayuda={
           <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="La historia de los inmuebles" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">
@@ -208,7 +215,6 @@ export default function InmueblesPage() {
           </BarraDeFiltros>
         }
       />
-      <p className="text-caption text-fg-subtle">Primero los que más contratos han tenido.</p>
       <CajonDeLaFicha
         ver={ver}
         onCerrar={() => abrir(null)}

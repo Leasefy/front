@@ -140,10 +140,14 @@ export function PersonasDeNominaPanel() {
               const visibles = vistaReal === 'activas' ? activas : vistaReal === 'retiradas' ? retiradas : personas.personas;
               const salarios = activas.reduce((t, p) => t + (p.salarioCop ?? 0), 0);
               const cifras = localeDeLasCifras();
+              /** Revisora r25 (Personas, C3): sin nadie registrado, sólo el vacío con «Registrar a alguien». */
+              const nadie = personas.personas.length === 0 && !busqueda;
               return (
                 <>
-                  {/* GLOW UP 3.ª vuelta · LA RESPUESTA: cuánta gente está activa y lo que suman sus salarios. */}
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                  {/* GLOW UP 3.ª vuelta · LA RESPUESTA: cuánta gente está activa y lo que suman sus salarios.
+                      Revisora r25 (Personas, UI): a 390 la cifra arriba y el botón debajo (el rótulo se partía). */}
+                  {nadie ? null : (
+                  <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                     <CifraHeroe
                       tamano="mediana"
                       rotulo="Personas activas en nómina"
@@ -158,12 +162,14 @@ export function PersonasDeNominaPanel() {
                       esCero={activas.length === 0 && !busqueda}
                       data-testid="cifra-de-personas"
                     />
-                    <Button size="sm" onClick={() => setAbriendo(true)} data-testid="nueva-persona">
+                    <Button size="sm" onClick={() => setAbriendo(true)} data-testid="nueva-persona" className="self-start">
                       Registrar a alguien
                     </Button>
                   </div>
+                  )}
 
                   <section className="overflow-hidden rounded-lg border border-border bg-surface" aria-label="Las personas de nómina">
+                    {nadie ? null : (
                     <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
                       {retiradas.length > 0 ? (
                         <PestanasDeEstado
@@ -189,6 +195,7 @@ export function PersonasDeNominaPanel() {
                         />
                       </div>
                     </div>
+                    )}
               {visibles.length === 0 ? (
                 // Revisora r25 (C5): el vacío con su salida (antes una línea gris).
                 personas.personas.length === 0 && !busqueda ? (
@@ -197,7 +204,7 @@ export function PersonasDeNominaPanel() {
                     titulo="Todavía no hay nadie registrado"
                     descripcion="Registra a la primera persona para liquidarle la nómina."
                     accion={
-                      <Button size="sm" variant="secondary" hideArrow onClick={() => setAbriendo(true)}>
+                      <Button hideArrow onClick={() => setAbriendo(true)} data-testid="nueva-persona">
                         Registrar a alguien
                       </Button>
                     }

@@ -32,7 +32,8 @@ export default function NuevoAvaluoRedirectPage() {
           </Link>
           <h1 className="text-balance text-h3 text-fg">La solicitud de avalúo está en pausa</h1>
           <p className="text-body-sm text-fg-muted">
-            Mientras, escríbenos a{" "}
+            {/* Ronda 30 (revisora r27): dice que vuelve pronto (no hay fecha que prometer). */}
+            Vuelve a abrir pronto. Mientras, escríbenos a{" "}
             <a href="mailto:avaluos@leasefy.co" className="text-fg underline underline-offset-4">
               avaluos@leasefy.co
             </a>{" "}

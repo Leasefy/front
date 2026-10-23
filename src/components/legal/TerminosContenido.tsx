@@ -7,11 +7,15 @@
  * asistente (Nico, 2026-09-07: «que no lo saque a uno a otro lado»). Un solo
  * texto, dos superficies: la página pública y el cajón del asistente.
  */
-export function TerminosContenido() {
+/**
+ * La ficha de cabecera (quién presta el servicio, desde cuándo y qué versión).
+ * Ronda 30 (revisora r27): la misma ficha y el mismo orden que Privacidad —sin
+ * tarjeta gris y ANTES del índice «Contenido»—; antes Términos ponía primero el
+ * índice y la ficha dentro de una tarjeta. Los datos no cambian.
+ */
+export function FichaDeLosTerminos() {
   return (
-    <>
-            <div className="mb-10 rounded-lg border border-border bg-surface-muted/40 p-5 text-[14px]">
-              <dl className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-[auto_1fr]">
+              <dl className="mb-10 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-[14px]">
                 <dt className="font-medium text-foreground">Prestador</dt>
                 <dd className="text-muted-foreground">Leasefy S.A.S.</dd>
                 <dt className="font-medium text-foreground">Domicilio</dt>
@@ -25,7 +29,13 @@ export function TerminosContenido() {
                 <dt className="font-medium text-foreground">Versión</dt>
                 <dd className="text-muted-foreground font-mono">v2.2</dd>
               </dl>
-            </div>
+  );
+}
+
+export function TerminosContenido({ conFicha = true }: { conFicha?: boolean } = {}) {
+  return (
+    <>
+            {conFicha && <FichaDeLosTerminos />}
 
             <div className="space-y-10 text-[15px] text-foreground/85 leading-relaxed">
 

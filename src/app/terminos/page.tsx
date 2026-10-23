@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
-import { TerminosContenido } from "@/components/legal/TerminosContenido";
+import { FichaDeLosTerminos, TerminosContenido } from "@/components/legal/TerminosContenido";
 import { SectionLabel } from "@/components/ui/section-label";
 import { IndiceDeLosTerminos } from "./IndiceDeLosTerminos";
 
@@ -73,8 +73,10 @@ export default function TerminosPage() {
               Términos y condiciones
             </h1>
 
+            {/* Ronda 30 (revisora r27): primero la ficha y después el índice, como Privacidad. */}
+            <FichaDeLosTerminos />
             <IndiceDeLosTerminos>
-              <TerminosContenido />
+              <TerminosContenido conFicha={false} />
             </IndiceDeLosTerminos>
           </div></div>
         </section>

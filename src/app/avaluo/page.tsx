@@ -40,7 +40,7 @@ const HOW_IT_WORKS = [
     step: "02",
     icon: CreditCard,
     title: "Pagar",
-    tagline: "Pago en línea al solicitar",
+    tagline: "Ves el valor antes de pagar",
     body: "Pagas en línea al enviar la solicitud, y la estimación se prepara cuando el pago queda confirmado. Si al final no se puede emitir el avalúo, te devolvemos el pago.",
   },
   {

@@ -37,7 +37,7 @@ export function BotonDelEquipo({
       onClick={() => abrir(agente)}
       aria-label={conTexto ? undefined : t('agentes.equipo.abrirAria')}
       className={cn(
-        'group inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1.5 pr-3 text-caption font-medium text-fg',
+        'group inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1.5 pr-3 text-caption font-medium text-fg [@media(pointer:coarse)]:min-h-11',
         'transition-colors hover:border-border-strong hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         className,
       )}

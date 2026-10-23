@@ -572,7 +572,7 @@ export default function InmobiliariaPerfilPage() {
                       setEditingSection('avatar');
                     }}
                     aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                    className="absolute top-3 right-3 bg-card/70 hover:bg-card backdrop-blur-sm text-fg"
+                    className="absolute top-3 right-3 bg-card/70 hover:bg-card backdrop-blur-sm text-fg [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                     icon={<Pencil className="w-4 h-4" />}
                   />
                 )}

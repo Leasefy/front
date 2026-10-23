@@ -184,6 +184,7 @@ export default function NotificacionesPage() {
             variant="ghost"
             icon={<Gear className="w-5 h-5" />}
             aria-label="Configuración"
+            className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
             onClick={() => router.push('/panel/configuracion/notificaciones')}
           />
         </div>
@@ -209,7 +210,7 @@ export default function NotificacionesPage() {
             key={f.id}
             selected={filter === f.id}
             onClick={() => setFilter(f.id as FilterType)}
-            className="whitespace-nowrap"
+            className="whitespace-nowrap [@media(pointer:coarse)]:min-h-11"
           >
             {f.label}
             {'count' in f && f.count !== undefined && f.count > 0 && (

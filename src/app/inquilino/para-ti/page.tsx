@@ -258,7 +258,7 @@ export default function ParaTiPage() {
         <div className="max-w-6xl mx-auto px-6 py-8">
           <Link
             href="/inquilino"
-            className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6"
+            className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6 [@media(pointer:coarse)]:min-h-11"
           >
             <ArrowLeft className="w-4 h-4" />
             {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}
@@ -315,7 +315,7 @@ export default function ParaTiPage() {
         {/* Back Link */}
         <Link
           href="/inquilino"
-          className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6 transition-colors [@media(pointer:coarse)]:min-h-11"
         >
           <ArrowLeft className="w-4 h-4" />
           {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}

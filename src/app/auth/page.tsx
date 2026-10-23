@@ -118,7 +118,7 @@ export default function AuthPage() {
                 (32px) para que las dos queden a la misma altura. */}
             <div className="mx-auto flex h-8 w-full max-w-[400px] items-center lg:hidden">
               <Link
-            href="/" className="inline-flex items-center">
+            href="/" className="relative hit-area-44 inline-flex items-center">
                 <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
               </Link>
             </div>

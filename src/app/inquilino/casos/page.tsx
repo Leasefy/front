@@ -242,7 +242,7 @@ export default function CasosPage() {
           <div className="flex items-center gap-3 flex-shrink-0">
             <Link
               href="/inquilino/notificaciones"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-80 transition-opacity"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-80 transition-opacity [@media(pointer:coarse)]:min-h-11"
             >
               {locale === 'es' ? 'Ver notificaciones' : 'View notifications'}
               {unreadCount > 0 && (

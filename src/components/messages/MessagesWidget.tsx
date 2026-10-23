@@ -147,7 +147,7 @@ function BotonDeNuevoMensaje({
       aria-label={etiqueta}
       title={etiqueta}
       data-testid="abrir-nuevo-mensaje"
-      className={cn('shrink-0 gap-1.5', conEtiqueta ? 'px-3' : 'w-9 px-0')}
+      className={cn('shrink-0 gap-1.5', conEtiqueta ? 'px-3' : 'w-9 px-0 [@media(pointer:coarse)]:min-w-11')}
     >
       <Plus className="h-4 w-4" weight="bold" aria-hidden="true" />
       {conEtiqueta && <span>{etiqueta}</span>}
@@ -745,7 +745,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={locale === 'es' ? 'Buscar conversación' : 'Search conversation'}
                     aria-label={locale === 'es' ? 'Buscar conversación' : 'Search conversation'}
-                    className="h-9 rounded-md bg-surface-muted pl-9 pr-3 text-sm md:text-sm"
+                    className="h-9 rounded-md bg-surface-muted pl-9 pr-3 text-sm md:text-sm [@media(pointer:coarse)]:h-11"
                   />
                 </div>
                 <BotonDeNuevoMensaje

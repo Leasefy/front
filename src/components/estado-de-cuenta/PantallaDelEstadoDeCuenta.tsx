@@ -293,7 +293,7 @@ export function PantallaDelEstadoDeCuenta({
           <Link
             href={regreso.href}
             data-testid="estado-volver"
-            className="inline-flex items-center gap-1 text-body-sm text-fg-muted transition-colors hover:text-fg"
+            className="inline-flex items-center gap-1 text-body-sm text-fg-muted transition-colors hover:text-fg [@media(pointer:coarse)]:min-h-11"
           >
             <CaretLeft className="h-4 w-4" aria-hidden="true" />
             {regreso.label}

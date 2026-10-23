@@ -769,7 +769,7 @@ export default function InquilinoPage() {
               </p>
               <Link
                 href="/ayuda"
-                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:opacity-80 transition-opacity"
+                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:opacity-80 transition-opacity [@media(pointer:coarse)]:min-h-11"
               >
                 {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
                 <ArrowRight className="w-4 h-4" />

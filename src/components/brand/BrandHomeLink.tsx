@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useContext, type ComponentProps } from 'react'
 import { AuthContext } from '@/lib/auth/auth-context'
 import { getUserHomeRoute } from '@/lib/auth/role-routes'
+import { cn } from '@/lib/utils'
 
 /**
  * Brand/logo link honoring the owner rule "logged in → dashboard, everywhere":
@@ -18,5 +19,6 @@ export function BrandHomeLink(props: Omit<ComponentProps<typeof Link>, 'href'>) 
   const auth = useContext(AuthContext)
   // For dual-context users the destination follows the active context; for
   // single-context users activeContext mirrors their role, so this is a no-op.
-  return <Link href={getUserHomeRoute(auth?.user, auth?.activeContext)} {...props} />
+  // T-0173: `hit-area-44` gives the logo link a 44 px touch hit area (the mark is ~24 px tall).
+  return <Link href={getUserHomeRoute(auth?.user, auth?.activeContext)} {...props} className={cn('relative hit-area-44', props.className)} />
 }

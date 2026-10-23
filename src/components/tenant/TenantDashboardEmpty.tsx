@@ -392,7 +392,7 @@ export function TenantDashboardEmpty() {
               </p>
               <Link
                 href="/ayuda"
-                className="inline-flex items-center gap-2 text-sm font-medium text-fg dark:text-fg-subtle hover:text-fg dark:hover:text-white transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-medium text-fg dark:text-fg-subtle hover:text-fg dark:hover:text-white transition-colors [@media(pointer:coarse)]:min-h-11"
               >
                 {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
                 <ArrowRight className="w-4 h-4" />

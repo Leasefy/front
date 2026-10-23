@@ -503,7 +503,7 @@ export default function PropietarioPerfilPage() {
                     size="sm"
                     onClick={() => { setAvatarPreview(savedAvatar); setEditingSection('avatar'); }}
                     aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                    className="absolute top-3 right-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white"
+                    className="absolute top-3 right-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                     icon={<Pencil className="w-4 h-4" />}
                   />
                 )}

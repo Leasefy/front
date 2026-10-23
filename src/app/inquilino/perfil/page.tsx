@@ -520,7 +520,7 @@ export default function PerfilPage() {
                   <IconButton
                     variant="ghost"
                     onClick={() => setEditingSection('avatar')}
-                    className="absolute top-3 right-3 p-2 bg-surface/20 hover:bg-surface/30 backdrop-blur-sm rounded-full text-white"
+                    className="absolute top-3 right-3 p-2 bg-surface/20 hover:bg-surface/30 backdrop-blur-sm rounded-full text-white [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                     aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
                     icon={<Pencil className="w-4 h-4" />}
                   />

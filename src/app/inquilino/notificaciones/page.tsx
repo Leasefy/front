@@ -244,7 +244,7 @@ export default function NotificacionesPage() {
               <IconButton
                 variant="ghost"
                 onClick={() => router.push('/inquilino/configuracion')}
-                className="p-2.5 rounded-xl text-fg-subtle dark:text-fg-muted hover:text-fg-muted dark:hover:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface/5"
+                className="p-2.5 rounded-xl text-fg-subtle dark:text-fg-muted hover:text-fg-muted dark:hover:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface/5 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                 aria-label={locale === 'es' ? 'Configuración' : 'Settings'}
                 icon={<Gear className="w-5 h-5" />}
               />
@@ -262,7 +262,7 @@ export default function NotificacionesPage() {
                 key={f.id}
                 onClick={() => setFilter(f.id as FilterType)}
                 className={cn(
-                  'relative isolate flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
+                  'relative isolate flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors [@media(pointer:coarse)]:min-h-11',
                   filter === f.id
                     ? 'text-white dark:text-fg'
                     : 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface-muted'

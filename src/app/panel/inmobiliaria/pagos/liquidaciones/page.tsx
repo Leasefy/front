@@ -61,7 +61,6 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useTr } from '@/lib/i18n/use-tr';
 import { SectionLabel } from '@/components/ui/section-label';
-import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones';
 import { CajonDeLaLiquidacion } from '@/components/liquidaciones/CajonDeLaLiquidacion';
 import {
   Table,
@@ -606,12 +605,11 @@ function TesoreriaContent() {
                   pestañas y el mes: lo que cambia la lista vive pegado a la
                   lista. El resumen del mes se queda afuera, que es lo que él
                   pidió: es un resumen, no un filtro. */}
+              {/* Ronda 26 (revisora r25, #3): sin el riel «Liquidaciones · Facturas de proveedores». La
+                  segunda llevaba a las facturas de PROVEEDOR, otra tarea dentro de «Pagar a propietarios»
+                  (viven en Contabilidad › Gastos y Egresos). El mes ya no se elige aquí: es el selector
+                  ÚNICO de los cuatro pasos (`MesDeLosGiros`, ronda 19). */}
               <section className="rounded-lg border border-border bg-card overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
-                  <PestanasDeLiquidaciones />
-                  {/* Ronda 19: el mes ya no se elige aquí: es el selector ÚNICO de los cuatro pasos, a la
-                      derecha del riel (`MesDeLosGiros`). */}
-                </div>
                 {/* El buscador DENTRO de la tarjeta de la tabla, con el alcance
                     a su lado: suelto arriba no diría qué está filtrando. */}
                 <div className="flex flex-col gap-2 border-b border-border px-5 py-3 sm:flex-row sm:items-center sm:justify-between">

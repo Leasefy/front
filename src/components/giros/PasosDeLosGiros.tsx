@@ -34,7 +34,9 @@ export const PASOS_DE_LOS_GIROS: readonly {
   {
     id: 'liquidar',
     titulo: 'Liquidar',
-    descripcion: 'Lo que le toca a cada propietario en el mes: su parte del canon, menos la comisión y los descuentos.',
+    // Ronda 26 (revisora r25, #2): una línea; el desglose (canon, comisión, ajustes, neto) ya son las
+    // columnas de la tabla.
+    descripcion: 'Lo que le toca a cada propietario en el mes.',
     href: `${RAIZ}/liquidaciones`,
   },
   {

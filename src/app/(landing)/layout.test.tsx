@@ -175,7 +175,8 @@ describe('<LandingLayout>', () => {
   })
 
   it('marca el enlace del nav que corresponde a la ruta', () => {
-    usePathnameMock.mockReturnValue('/blog')
+    // Ronda 30 (Nico 23-10): la barra es la de la home y ya no trae «Blog»; se prueba con Contacto.
+    usePathnameMock.mockReturnValue('/contacto')
     act(() => {
       root.render(
         <LandingLayout>
@@ -184,6 +185,6 @@ describe('<LandingLayout>', () => {
       )
     })
     const actual = container.querySelector('nav.main [aria-current="page"]')
-    expect(actual?.textContent).toContain('Blog')
+    expect(actual?.textContent).toContain('Contacto')
   })
 })

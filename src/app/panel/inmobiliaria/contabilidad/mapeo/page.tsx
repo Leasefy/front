@@ -32,7 +32,7 @@ export default function MapeoContablePage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Finanzas"
+            seccion="Contabilidad"
             titulo="Mapeo contable"
             descripcion="A qué cuenta del PUC va cada movimiento que el sistema asienta solo —los recibos de caja cuando entran, los giros a propietarios cuando el banco paga el lote, y las líneas de una factura de proveedor cuando se causa—."
             ayuda={

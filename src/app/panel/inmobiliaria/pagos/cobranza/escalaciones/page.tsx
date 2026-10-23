@@ -39,6 +39,8 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner, toast } from '@/components/ui'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 
 function EscalacionesContent() {
@@ -57,6 +59,9 @@ function EscalacionesContent() {
   const currentUserEmail = user?.email ?? null
 
   const [resolveOpen, setResolveOpen] = useState<string | null>(null)
+  // En el celular las tres columnas no caben juntas: se ve UNA, elegida con
+  // sus pestañas (la de «sin tomar» primero, que es la que pide a alguien).
+  const [columnaMovil, setColumnaMovil] = useState<'open' | 'assigned' | 'resolved'>('open')
   const [assignOpen, setAssignOpen] = useState<string | null>(null)
   const [members, setMembers] = useState<AgencyUser[]>([])
 
@@ -251,10 +256,10 @@ function EscalacionesContent() {
               if (window.history.length > 1) router.back()
               else router.push('/panel/inmobiliaria/pagos/cobranza')
             }}
-            className="gap-1 px-0 h-auto text-sm text-muted-foreground hover:text-foreground"
+            className="gap-1 px-0 h-auto text-body-sm text-muted-foreground hover:text-foreground"
             data-testid="escalaciones-volver"
           >
-            ← Volver
+            Volver
           </Button>
         </div>
       <EncabezadoDePantalla
@@ -289,12 +294,50 @@ function EscalacionesContent() {
           propia entrada (la página entra con su template): se anima el
           CAMBIO — tomar, asignar o resolver saca la tarjeta de su columna y la
           hace entrar en la otra, y el número de la columna cuenta. */}
+      {data ? (
+        <CifraHeroe
+          data-testid="escalaciones-sin-tomar"
+          rotulo={locale.startsWith('es') ? 'Sin tomar' : 'Unclaimed'}
+          cifra={data.open.length.toLocaleString(locale)}
+          contexto={
+            locale.startsWith('es')
+              ? `de ${(data.open.length + data.assigned.length).toLocaleString(locale)} sin resolver`
+              : `of ${(data.open.length + data.assigned.length).toLocaleString(locale)} unresolved`
+          }
+          tramos={columns.map((col) => ({
+            clave: col.key,
+            etiqueta: col.label,
+            monto: col.items.length,
+            tono: col.key === 'open' ? ('aviso' as const) : col.key === 'resolved' ? ('exito' as const) : ('neutro' as const),
+            cifra: col.items.length.toLocaleString(locale),
+            siempre: true,
+          }))}
+        />
+      ) : null}
+
+      {data && (
+        <PestanasDeEstado<'open' | 'assigned' | 'resolved'>
+          className="md:hidden"
+          pestanas={columns.map((col) => ({
+            valor: col.key,
+            etiqueta: col.label,
+            cuantos: col.items.length,
+            fija: true,
+            tono: col.key === 'open' && col.items.length > 0 ? ('aviso' as const) : undefined,
+            testid: `escalaciones-pestana-${col.key}`,
+          }))}
+          valor={columnaMovil}
+          onCambio={setColumnaMovil}
+          etiqueta={locale.startsWith('es') ? 'Ver una columna' : 'Show one column'}
+        />
+      )}
+
       {data && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {columns.map((col) => (
             <section
               key={col.key}
-              className="rounded-lg border border-border bg-card/50 overflow-hidden"
+              className={`rounded-lg border border-border bg-card/50 overflow-hidden${col.key === columnaMovil ? '' : ' max-md:hidden'}`}
               aria-labelledby={`column-${col.key}-heading`}
             >
               <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between">

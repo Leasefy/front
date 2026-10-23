@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link, { useLinkStatus } from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MessageBubble, motionDuration, motionEase } from '@leasefy/cadence';
-import { CircleNotch, MapTrifold, ShieldCheck, Sparkle, X } from '@phosphor-icons/react';
+import { FotoEnEstrias, MessageBubble, motionDuration, motionEase } from '@leasefy/cadence';
+import { CircleNotch, MapTrifold, ShieldCheck, X } from '@phosphor-icons/react';
 
 import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
 import { PensamientoDelTurno } from '@/components/beta/PensamientoDelTurno';
@@ -52,7 +52,6 @@ import { ReproductorDelVideo, type VideoParaVer } from './ReproductorDelVideo';
 import { LadoDelMarketplace } from './LadoDelMarketplace';
 import {
   BotonSeguir,
-  colorDe,
   LogoDeLaInmobiliaria,
   numero,
   Recomienda,
@@ -60,7 +59,7 @@ import {
   TarjetaDelVideo,
   Tira,
 } from './inmobiliaria/piezas';
-import { portadaDe } from '@/lib/marketplace/portadas';
+import { esPortadaDeLeasefy, portadaDe } from '@/lib/marketplace/portadas';
 
 /**
  * ══ LA CONVERSACIÓN DEL MARKETPLACE · OPCIÓN 1 (Nico, 09-10-2026) ══════════
@@ -268,19 +267,31 @@ function PresentacionDeLaInmobiliaria({ t, suyos }: { t: TarjetaDeInmobiliaria; 
           )}
           .
         </p>
-        <div className="overflow-hidden rounded-lg border border-border bg-surface">
-          <Link href={paginaDe(t)} className="relative block h-24 bg-surface-muted" aria-label={`Ver la página de ${t.nombre}`}>
-            {portadaDe(t.portadaUrl) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={portadaDe(t.portadaUrl)} alt="" className="absolute inset-0 h-full w-full object-cover" />
-            ) : (
-              <span className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${colorDe(t)}40, ${colorDe(t)}12)` }} aria-hidden />
+        {/* Ronda 30 (diseño nuevo): la portada de Leasefy en estrías de voltaje (al pasar el mouse, la foto);
+            la portada propia de la inmobiliaria se ve tal cual. */}
+        <div className="overflow-hidden rounded-lg border border-border-faint bg-surface">
+          <Link
+            href={paginaDe(t)}
+            className="group relative block h-24 overflow-hidden bg-surface-muted"
+            aria-label={`Ver la página de ${t.nombre}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={portadaDe(t.portadaUrl)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            {(!t.portadaUrl || esPortadaDeLeasefy(t.portadaUrl)) && (
+              <FotoEnEstrias
+                src={portadaDe(t.portadaUrl)}
+                alt=""
+                paso={9}
+                proporcion={7}
+                className="!absolute inset-0 !h-full transition-opacity duration-[700ms] ease-enter group-hover:opacity-0"
+                style={{ aspectRatio: 'auto' }}
+              />
             )}
           </Link>
           <div className="flex flex-wrap items-end gap-4 px-5 pb-5">
             <LogoDeLaInmobiliaria i={t} tamano={64} className="relative z-10 -mt-8 ring-4 ring-surface" />
             <div className="min-w-0 flex-1 pt-3">
-              <p className="flex items-center gap-1.5 font-heading text-[18px] font-medium text-fg">
+              <p className="flex items-center gap-1.5 text-[17px] font-medium leading-[1.3] text-fg">
                 <span className="truncate">{t.nombre}</span>
                 {t.verificada && <SelloVerificada />}
               </p>
@@ -293,15 +304,15 @@ function PresentacionDeLaInmobiliaria({ t, suyos }: { t: TarjetaDeInmobiliaria; 
             <div className="flex gap-2">
               <Link
                 href={paginaDe(t)}
-                className="inline-flex h-8 items-center rounded-full border border-border px-3 text-[13px] font-medium text-fg transition-colors duration-base hover:border-border-strong"
+                className="inline-flex h-[38px] items-center rounded-[13px] border border-border bg-surface px-[15px] text-[14px] font-medium text-fg transition-colors duration-base hover:border-fg-subtle active:scale-[0.97]"
               >
                 Ver su página
               </Link>
-              <BotonSeguir i={t} tamano="sm" />
+              <BotonSeguir i={t} tamano="sm" className="h-[38px] rounded-[13px] px-[15px] text-[14px]" />
             </div>
           </div>
           {conVideo.length > 0 && (
-            <div className="border-t border-border px-5 py-4">
+            <div className="border-t border-border-faint px-5 py-4">
               <Tira>
                 {conVideo.map((p, k) => {
                   const v = videoDelInmueble(p)!;
@@ -349,25 +360,25 @@ function AntesDeVisitar({ primero, cuantos }: { primero: Property; cuantos: numb
     <div className="flex gap-3" data-testid="antes-de-visitar">
       <OrbeDeAgente agente="orquestador" tamano={30} decorativo className="mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-          <p className="flex items-center gap-2 text-[15px] font-medium text-fg">
-            <ShieldCheck className="h-4 w-4 text-primary" aria-hidden />
+        <div className="rounded-[20px] border border-primary/30 bg-primary/5 p-[18px]">
+          <p className="flex items-center gap-2 text-[15.5px] font-medium text-fg">
+            <ShieldCheck className="h-[18px] w-[18px] text-primary" aria-hidden />
             Antes de visitar, haz tu estudio una sola vez
           </p>
-          <p className="mt-1 text-[14px] text-fg-muted">
+          <p className="mt-1 text-[14.5px] text-fg-muted">
             Te dice hasta cuánto puedes arrendar y te sirve para postularte {cuantos > 1 ? `a los ${cuantos}` : 'a este'}, sin
             codeudor.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3.5 flex flex-wrap gap-2.5">
             <Link
               href="/aprobacion"
-              className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-[13.5px] font-medium text-primary-fg transition-colors duration-fast hover:bg-primary-600 active:scale-[0.97]"
+              className="inline-flex h-[38px] items-center rounded-[13px] bg-primary px-[15px] text-[14px] font-medium text-primary-fg transition-colors duration-fast hover:bg-primary-600 active:scale-[0.97]"
             >
               <TextoDelEnlace texto="Hacer mi estudio" />
             </Link>
             <Link
               href={`/propiedades/${primero.id}?visita=1`}
-              className="inline-flex h-9 items-center rounded-full border border-border bg-surface px-4 text-[13.5px] font-medium text-fg transition-colors duration-fast hover:border-border-strong active:scale-[0.97]"
+              className="inline-flex h-[38px] items-center rounded-[13px] border border-border bg-surface px-[15px] text-[14px] font-medium text-fg transition-colors duration-fast hover:border-fg-subtle active:scale-[0.97]"
             >
               <TextoDelEnlace texto={`Agendar visita ${lugar}`} />
             </Link>
@@ -433,11 +444,11 @@ function RespuestaDeOri({
                 </p>
               )}
               {ia ? (
-                <p className="whitespace-pre-wrap break-words text-[16px] leading-relaxed text-fg" data-testid="lo-que-dijo-ori">
+                <p className="whitespace-pre-wrap break-words text-[16.5px] leading-[1.6] text-fg" data-testid="lo-que-dijo-ori">
                   {ia.respuesta}
                 </p>
               ) : (
-              <p className="text-[16px] leading-relaxed text-fg" data-testid="lo-que-dijo-ori">
+              <p className="text-[16.5px] leading-[1.6] text-fg" data-testid="lo-que-dijo-ori">
                 {sonCercanos ? (
                   <>
                     Ninguno cumple todo lo que pides. Estos{' '}
@@ -459,14 +470,15 @@ function RespuestaDeOri({
 
               {pastillas.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2" data-testid="pastillas-de-la-busqueda">
-                  <span className="text-[13px] text-fg-subtle">Entendí:</span>
+                  <span className="mr-0.5 text-[13px] text-fg-subtle">Entendí:</span>
                   {pastillas.map((p) => (
                     <span
                       key={p.clave}
-                      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 py-1 pl-3 pr-1 text-[13px] text-fg"
+                      className="inline-flex h-8 items-center gap-[7px] whitespace-nowrap rounded-[11px] border border-primary/30 bg-primary-soft pl-3 pr-1 text-[13px] text-fg"
                       data-testid="pastilla"
                     >
-                      {p.entendida && <Sparkle className="h-3.5 w-3.5 text-primary" weight="fill" aria-hidden />}
+                      {/* Lo que Ori entendió lleva el cuadrito de voltaje (Ronda 30, diseño nuevo; antes una chispa). */}
+                      {p.entendida && <i className="h-1.5 w-1.5 flex-none rounded-[2px] bg-primary" aria-hidden />}
                       {p.etiqueta}
                       {ultimo ? (
                         <button
@@ -486,14 +498,14 @@ function RespuestaDeOri({
               )}
 
               {mostrados.length > 0 && (
-                <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0" data-testid="tarjetas-de-la-respuesta">
+                <div className="-mx-4 flex snap-x snap-proximity gap-[18px] overflow-x-auto px-4 pb-2.5 sm:mx-0 sm:px-0.5" data-testid="tarjetas-de-la-respuesta">
                   {mostrados.map((p, k) => (
                     <motion.div
                       key={p.id}
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: motionDuration.slow, ease: motionEase.enter, delay: Math.min(k * 0.04, 0.32) }}
-                      className="w-[290px] shrink-0"
+                      className="w-[290px] shrink-0 snap-start"
                     >
                       <PropertyCard
                         property={p}
@@ -512,7 +524,7 @@ function RespuestaDeOri({
               {lista && totalMostrado > 0 && (
                 <Link
                   href={lista}
-                  className="inline-flex items-center gap-1.5 text-[14px] font-medium text-primary hover:underline"
+                  className="inline-flex items-center gap-[7px] text-[15px] font-medium text-primary underline-offset-4 hover:underline"
                   data-testid="ver-en-lista"
                 >
                   <MapTrifold className="h-4 w-4" aria-hidden />
@@ -752,7 +764,7 @@ export function ConversacionDelMarketplace() {
             hrefConversacion={`/propiedades?${escribirBusqueda(ultimo.busqueda)}`}
             hrefGaleria={`/propiedades?${escribirBusqueda(absorber(ultimo.busqueda, ultimo.foto?.entendidos))}&vista=lista`}
           />
-          <div className="mx-auto w-full max-w-3xl flex-1 space-y-8 px-4 py-8 sm:px-6">
+          <div className="mx-auto w-full max-w-[800px] flex-1 space-y-[34px] px-4 pb-[30px] pt-[34px]">
             {turnos.map((t, k) => {
               const esElUltimo = k === turnos.length - 1;
               return (

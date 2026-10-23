@@ -10,6 +10,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import type { Movimiento } from '@/lib/api/movimientos.service';
 import {
   RESULTADO_EN_PALABRAS,
@@ -68,7 +69,6 @@ export function CajonDelMovimiento({
           >
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant={TONO[r]}>{RESULTADO_EN_PALABRAS[r]}</Badge>
-              <span className="font-mono text-caption text-fg-muted">HTTP {m.resultado}</span>
             </div>
           </CajonCabecera>
 
@@ -101,18 +101,25 @@ export function CajonDelMovimiento({
               <dl className="grid gap-3 sm:grid-cols-2">
                 <Dato etiqueta="Módulo">{moduloEnPalabras(m.modulo)}</Dato>
                 <Dato etiqueta="Registro">
-                  {m.recurso ? (
-                    <>
-                      {m.recurso.tipo}
-                      {m.recurso.id ? (
-                        <span className="block break-all font-mono text-caption text-fg-muted">
-                          {m.recurso.id}
-                        </span>
-                      ) : null}
-                    </>
-                  ) : (
-                    '—'
-                  )}
+                  {m.recurso ? m.recurso.tipo : '—'}
+                </Dato>
+              </dl>
+            </section>
+
+            {/* Ronda 30: lo técnico (código de respuesta, ruta, identificador, campos tal como viajaron,
+                IP y navegador) es para quien audita a fondo: plegado, no a la vista de entrada. */}
+            <MasDetalles etiqueta="Ver los datos técnicos" etiquetaAbierto="Ocultar los datos técnicos" montadoSiempre>
+            <div className="space-y-6 pt-3">
+            <section className="space-y-2" aria-labelledby="mov-tecnico">
+              <h3 id="mov-tecnico" className="text-sm font-medium text-fg">
+                Cómo quedó registrado
+              </h3>
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <Dato etiqueta="Respuesta del sistema">
+                  <span className="font-mono">{m.resultado}</span>
+                </Dato>
+                <Dato etiqueta="Identificador del registro">
+                  <span className="break-all font-mono text-caption">{m.recurso?.id ?? '—'}</span>
                 </Dato>
                 <div className="sm:col-span-2">
                   <dt className="text-caption text-fg-muted">Dónde</dt>
@@ -170,6 +177,8 @@ export function CajonDelMovimiento({
                 </div>
               </dl>
             </section>
+            </div>
+            </MasDetalles>
           </CajonCuerpo>
         </>
       ) : null}

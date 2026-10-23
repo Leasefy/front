@@ -62,6 +62,9 @@ import {
 } from '@/lib/movimientos/en-palabras';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
 import { EsqueletoDeSeccion } from './piezas';
+import { MagnifyingGlass } from '@phosphor-icons/react';
+import { Input } from '@/components/ui/input';
+import { SinDatos } from '@/components/estado/SinDatos';
 
 const TODOS = 'todos';
 const POR_PAGINA = 50;
@@ -155,9 +158,23 @@ export function SeccionMovimientos() {
     setFiltros((f) => ({ ...f, [clave]: v }));
     setPagina(1);
   };
+  /* Ronda 30 (regla de Nico: «las tablas siempre con buscador»): el back no busca por texto,
+     así que el buscador mira lo que ya llegó en esta página (quién, qué hizo, módulo). */
+  const [busqueda, setBusqueda] = useState('');
+  const filasVisibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es');
+    const todas = datos?.filas ?? [];
+    if (!q) return todas;
+    return todas.filter((m) =>
+      [quienFue(m), m.accion, moduloEnPalabras(m.modulo), rolEnPalabras(m.actor.rol)].some((x) =>
+        (x ?? '').toLocaleLowerCase('es').includes(q),
+      ),
+    );
+  }, [datos, busqueda]);
   const hayFiltros = useMemo(
-    () => (Object.keys(filtros) as (keyof Filtros)[]).some((k) => filtros[k] !== TODOS),
-    [filtros],
+    () =>
+      (Object.keys(filtros) as (keyof Filtros)[]).some((k) => filtros[k] !== TODOS) || busqueda.trim() !== '',
+    [filtros, busqueda],
   );
 
   if (!datos && (cargando || error)) {
@@ -207,6 +224,20 @@ export function SeccionMovimientos() {
 
       <section className="overflow-x-clip rounded-lg border border-border bg-surface">
         <div className="flex flex-col gap-3 border-b border-border p-4">
+          <div className="relative w-full sm:w-80">
+            <MagnifyingGlass
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+              aria-hidden="true"
+            />
+            <Input
+              className="pl-9"
+              placeholder="Buscar persona o acción en esta página"
+              aria-label="Buscar en los movimientos de esta página"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              data-testid="buscar-movimientos"
+            />
+          </div>
           <div className="flex flex-wrap items-center gap-2" data-testid="filtros-de-movimientos">
             <span className="text-sm text-fg-muted">Filtrar por</span>
             <SelectorDeMes
@@ -269,6 +300,7 @@ export function SeccionMovimientos() {
                 hideArrow
                 onClick={() => {
                   setFiltros(SIN_FILTROS);
+                  setBusqueda('');
                   setPagina(1);
                 }}
                 data-testid="quitar-filtros"
@@ -279,14 +311,25 @@ export function SeccionMovimientos() {
           </div>
         </div>
 
-        {datos.filas.length === 0 ? (
-          <p className="p-8 text-center text-sm text-fg-muted" data-testid="movimientos-vacio">
-            {datos.disponible
-              ? hayFiltros
-                ? 'Nada coincide con estos filtros en este mes.'
-                : 'Nadie hizo nada en el panel este mes.'
-              : 'Sin movimientos todavía.'}
-          </p>
+        {filasVisibles.length === 0 ? (
+          <div data-testid="movimientos-vacio">
+            {/* Ronda 30: el vacío con SinDatos (por qué está vacío y su salida), antes un renglón gris. */}
+            {datos.disponible ? (
+              <SinDatos
+                hayFiltros={hayFiltros}
+                queSon="movimientos"
+                titulo={`Nadie hizo nada en el panel ${cuando}`}
+                descripcion="Cada vez que alguien del equipo crea, cambia o borra algo, queda aquí con su nombre y su rol."
+                onLimpiarFiltros={() => {
+                  setFiltros(SIN_FILTROS);
+                  setBusqueda('');
+                  setPagina(1);
+                }}
+              />
+            ) : (
+              <p className="p-8 text-center text-sm text-fg-muted">Sin movimientos todavía.</p>
+            )}
+          </div>
         ) : (
           <div className="md:overflow-x-auto">
             {/* En el celular cada movimiento es una tarjeta: qué hizo y su resultado arriba. */}
@@ -300,7 +343,7 @@ export function SeccionMovimientos() {
                 </TableRow>
               </TableHeader>
               <TableBody className="max-md:block">
-                {datos.filas.map((m) => {
+                {filasVisibles.map((m) => {
                   const r = resultadoDe(m.resultado);
                   return (
                     <TableRow

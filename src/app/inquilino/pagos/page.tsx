@@ -27,6 +27,8 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
+import { Input } from '@/components/ui/input';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { Progress } from '@/components/ui/progress';
 import { PayRentModal } from '@/components/tenant/PayRentModal';
 import { MediosDePagoDeLaInmobiliaria } from '@/components/tenant/MediosDePagoDeLaInmobiliaria';
@@ -121,6 +123,9 @@ function PagosPageContent() {
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  // Revisora r27 (regla de Nico: toda lista con buscador y filtro): el historial se busca y se filtra por estado.
+  const [busquedaPagos, setBusquedaPagos] = useState('');
+  const [estadoPagos, setEstadoPagos] = useState<'todos' | 'aprobados' | 'en-revision' | 'rechazados'>('todos');
 
   /*
    * 🔴 Las tarjetas de arriba salen del ESTADO DE CUENTA, no de las solicitudes
@@ -187,10 +192,6 @@ function PagosPageContent() {
       propertyTitle: leaseMap.get(r.leaseId)?.propertyTitle ?? `${r.lease.propertyAddress}, ${r.lease.propertyCity}`,
     }));
 
-  // Pagination
-  const totalPages = Math.ceil(allRequests.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedRequests = allRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const showNextPaymentCta =
     paymentInfo?.currentPeriodStatus === 'NONE' || paymentInfo?.currentPeriodStatus === 'REJECTED';
@@ -206,6 +207,23 @@ function PagosPageContent() {
     const names = locale === 'es' ? MONTH_NAMES_ES : MONTH_NAMES_EN;
     return `${names[month - 1]} ${year}`;
   };
+
+  const grupoDelPago = (st: TenantPaymentRequestStatus): 'aprobados' | 'en-revision' | 'rechazados' =>
+    st === 'APPROVED' ? 'aprobados' : st === 'REJECTED' || st === 'DISPUTED' ? 'rechazados' : 'en-revision';
+  const cuentaDelGrupo = (g: 'aprobados' | 'en-revision' | 'rechazados') => allRequests.filter((r) => grupoDelPago(r.status) === g).length;
+  const qPagos = busquedaPagos.trim().toLowerCase();
+  const pagosVisibles = allRequests.filter((r) => {
+    if (estadoPagos !== 'todos' && grupoDelPago(r.status) !== estadoPagos) return false;
+    if (!qPagos) return true;
+    const periodo = r.periodMonth && r.periodYear ? formatPeriod(r.periodMonth, r.periodYear) : '';
+    return [periodo, r.propertyTitle, r.referenceNumber, r.bankName, String(r.periodYear ?? '')]
+      .some((v) => String(v ?? '').toLowerCase().includes(qPagos));
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(pagosVisibles.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRequests = pagosVisibles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   // Día de pago del arriendo: los migrados no lo traen, y entonces no se afirma
   // un vencimiento ni una barra (de ahí salían «NaN días» y «NaN%»).
@@ -463,11 +481,7 @@ function PagosPageContent() {
               ? 'Cuánto debes y cuándo vence, cómo pagarlo y lo que ya pagaste.'
               : 'What you owe and when it is due, how to pay it and what you have already paid.'
           }
-          acciones={
-            <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">
-              <Link href="/inquilino/estado-de-cuenta">{locale === 'es' ? 'Ver mi estado de cuenta' : 'View my statement'}</Link>
-            </Button>
-          }
+          // Revisora r27: sin «Ver mi estado de cuenta» (es la pestaña de al lado en el riel de «Mi arriendo»).
         />
 
         {/* N-21 (QA-PAGOS-95): con contrato y sin arriendo del portal, la deuda se
@@ -585,12 +599,16 @@ function PagosPageContent() {
                     {resumen.vencidoCop === 0 && resumen.proxima && (
                       <span data-testid="cifra-vencido">{locale === 'es' ? 'Estás al día' : 'You are up to date'}</span>
                     )}
-                    <span data-testid="cifra-resta-por-pagar">
-                      {locale === 'es' ? 'Resta por pagar hasta el fin del contrato' : 'Remaining until the end of the contract'}{' '}
-                      <span className="font-mono tabular-nums text-fg">
-                        {formatCurrencyI18n(resumen.restaPorPagar)}
+                    {/* Revisora r27 (§3): con «Pagado $ X de $ Y» a la vista, lo que resta es Y − X y la barra ya lo
+                        pinta: se dice sólo cuando no hay ese avance. */}
+                    {!(avance && avance.pactado > 0) && (
+                      <span data-testid="cifra-resta-por-pagar">
+                        {locale === 'es' ? 'Resta por pagar hasta el fin del contrato' : 'Remaining until the end of the contract'}{' '}
+                        <span className="font-mono tabular-nums text-fg">
+                          {formatCurrencyI18n(resumen.restaPorPagar)}
+                        </span>
                       </span>
-                    </span>
+                    )}
                   </span>
                 }
               />
@@ -629,8 +647,37 @@ function PagosPageContent() {
 
             {/* Vacío → primer pago y cambiar de página se cruzan; un pago nuevo
                 entra a la lista y los demás se corren (lo que ya estaba no se anima). */}
-            <CrossFade swapKey={allRequests.length > 0 ? `pagina-${currentPage}` : 'vacio'}>
-            {allRequests.length > 0 ? (
+            {allRequests.length > 5 ? (
+              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between" data-testid="historial-filtros">
+                <PestanasDeEstado<'todos' | 'aprobados' | 'en-revision' | 'rechazados'>
+                  pestanas={[
+                    { valor: 'todos', etiqueta: locale === 'es' ? 'Todos' : 'All', cuantos: allRequests.length, fija: true },
+                    { valor: 'aprobados', etiqueta: locale === 'es' ? 'Aprobados' : 'Approved', cuantos: cuentaDelGrupo('aprobados') },
+                    { valor: 'en-revision', etiqueta: locale === 'es' ? 'En revisión' : 'In review', cuantos: cuentaDelGrupo('en-revision'), tono: 'aviso' },
+                    { valor: 'rechazados', etiqueta: locale === 'es' ? 'Rechazados' : 'Rejected', cuantos: cuentaDelGrupo('rechazados') },
+                  ]}
+                  valor={estadoPagos}
+                  onCambio={(v) => { setEstadoPagos(v); setCurrentPage(1); }}
+                  etiqueta={locale === 'es' ? 'Filtrar los pagos por estado' : 'Filter payments by status'}
+                />
+                <Input
+                  type="search"
+                  value={busquedaPagos}
+                  onChange={(e) => { setBusquedaPagos(e.target.value); setCurrentPage(1); }}
+                  placeholder={locale === 'es' ? 'Buscar mes, año o referencia' : 'Search month, year or reference'}
+                  aria-label={locale === 'es' ? 'Buscar en tus pagos' : 'Search your payments'}
+                  className="md:w-64"
+                  data-testid="historial-buscar"
+                />
+              </div>
+            ) : null}
+            <CrossFade swapKey={allRequests.length > 0 ? (pagosVisibles.length > 0 ? `pagina-${currentPage}` : 'sin-resultados') : 'vacio'}>
+            {allRequests.length > 0 && pagosVisibles.length === 0 ? (
+              <div className="rounded-lg border border-border bg-surface px-6 py-10 text-center" data-testid="historial-sin-resultados">
+                <p className="text-body-sm font-medium text-fg">{locale === 'es' ? 'Ningún pago con ese filtro' : 'No payments match that filter'}</p>
+                <p className="mt-1 text-caption text-fg-muted">{locale === 'es' ? 'Cambia la pestaña o borra la búsqueda.' : 'Change the tab or clear the search.'}</p>
+              </div>
+            ) : allRequests.length > 0 ? (
               <>
                 <div className="relative space-y-3">
                   <AnimatePresence initial={false} mode="popLayout">

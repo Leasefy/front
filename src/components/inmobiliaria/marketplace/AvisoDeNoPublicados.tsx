@@ -56,9 +56,17 @@ export function AvisoDeNoPublicados({
         <div className="flex items-start gap-3">
           <Storefront className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" />
           <div>
-            <p className="text-sm font-medium text-fg">
-              <span className="font-mono tabular-nums">{MILES.format(resumen.noPublicados)}</span>{' '}
-              {resumen.noPublicados === 1 ? 'inmueble no sale' : 'inmuebles no salen'} en el marketplace
+            {/* Revisora r25 (Inmuebles): con nada publicado, el número es el mismo «Todos 2.923» de la tabla y
+                del pie (tres veces en la pantalla). Entonces se dice sin la cifra. */}
+            <p className="text-sm font-medium text-fg" data-testid="aviso-no-publicados-titulo">
+              {resumen.publicados === 0 ? (
+                'Ninguno de tus inmuebles sale en el marketplace'
+              ) : (
+                <>
+                  <span className="font-mono tabular-nums">{MILES.format(resumen.noPublicados)}</span>{' '}
+                  {resumen.noPublicados === 1 ? 'inmueble no sale' : 'inmuebles no salen'} en el marketplace
+                </>
+              )}
             </p>
             <p className="text-body-sm text-fg-muted">
               Lo que migraste queda sin publicar hasta que elijas.

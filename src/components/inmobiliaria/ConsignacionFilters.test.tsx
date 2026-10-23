@@ -166,6 +166,16 @@ describe('la franja de cajones de Inmuebles', () => {
     expect(cajones.querySelector('button[role="combobox"]')).toBeNull()
   })
 
+  it('revisora r25 (UNA barra): la vista va al final del renglón del buscador y los cajones van antes', () => {
+    montar({ vista: <span data-testid="la-vista">Tabla · Tarjetas</span> })
+    const fila1 = container.querySelector('[data-testid="filtros-fila-1"]')!
+    const cajones = container.querySelector('[data-testid="filtros-cajones"]')!
+    expect(fila1.querySelector('[data-testid="filtros-vista"] [data-testid="la-vista"]')).not.toBeNull()
+    expect(fila1.lastElementChild?.getAttribute('data-testid')).toBe('filtros-vista')
+    // Los cajones van primero en el orden del documento.
+    expect(cajones.compareDocumentPosition(fila1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('el chip del cajón elegido se ve distinto de los demás', () => {
     montar({ filters: { ...FILTROS, cajon: 'arrendado' } })
     // No se fija la clase exacta —es del design system—, sino que el elegido

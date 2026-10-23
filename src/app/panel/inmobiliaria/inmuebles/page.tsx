@@ -593,40 +593,40 @@ function PortafolioContent() {
           Sin entrada propia: la página ya entra con el `template.tsx`. Lo que
           se anima aquí adentro son los CAMBIOS (vista, filtros, páginas). */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        {/* View Toggle Header - First */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <SegmentedControl<ViewMode>
-            aria-label={t('inmobiliaria.portafolio.views.table')}
-            value={viewMode}
-            onChange={setViewMode}
-            options={[
-              {
-                value: 'table',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <List className="w-4 h-4" />
-                    {t('inmobiliaria.portafolio.views.table')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.portafolio.views.table'),
-              },
-              {
-                value: 'grid',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <SquaresFour className="w-4 h-4" />
-                    {t('inmobiliaria.portafolio.views.cards')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.portafolio.views.cards'),
-              },
-            ]}
-          />
-          {/* Revisora r24 (Inmuebles #2): sin «2.923 inmuebles» aquí: lo dicen «Todos 2.923» y el pie de la tabla. */}
-        </div>
-
-        {/* Filters - Second */}
+        {/* Revisora r25 (skill §2, UNA barra): los cajones y, debajo, el buscador, los filtros y la
+            vista (Tabla · Tarjetas) en un solo renglón. Antes la vista iba sola en un renglón propio
+            encima de los filtros: tres renglones de controles antes del primer inmueble. En el
+            celular la vista queda en sus dos íconos (el nombre sigue para el lector). */}
         <ConsignacionFilters
+          vista={
+              <SegmentedControl<ViewMode>
+                aria-label={t('inmobiliaria.portafolio.views.table')}
+                value={viewMode}
+                onChange={setViewMode}
+                options={[
+                  {
+                    value: 'table',
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <List className="w-4 h-4" aria-hidden="true" />
+                        <span className="max-md:sr-only">{t('inmobiliaria.portafolio.views.table')}</span>
+                      </span>
+                    ),
+                    ariaLabel: t('inmobiliaria.portafolio.views.table'),
+                  },
+                  {
+                    value: 'grid',
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <SquaresFour className="w-4 h-4" aria-hidden="true" />
+                        <span className="max-md:sr-only">{t('inmobiliaria.portafolio.views.cards')}</span>
+                      </span>
+                    ),
+                    ariaLabel: t('inmobiliaria.portafolio.views.cards'),
+                  },
+                ]}
+              />
+          }
           filters={filters}
           onFiltersChange={handleFiltersChange}
           consignaciones={allConsignaciones}

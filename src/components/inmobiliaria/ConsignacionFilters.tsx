@@ -73,6 +73,11 @@ interface ConsignacionFiltersProps {
   total: number | null;
   /** COMERCIAL: cuántos hay en cada filtro comercial; sin él no se muestran. */
   conteoComercial?: Record<FiltroComercial, number> | null;
+  /**
+   * Revisora r25 (Inmuebles, skill §2: UNA barra): el control «Tabla · Tarjetas» va al final del renglón del
+   * buscador, no en un renglón propio encima de los filtros.
+   */
+  vista?: React.ReactNode;
 }
 
 const ROTULO_DEL_CAJON: Record<CajonDelInmueble, string> = {
@@ -118,6 +123,7 @@ export function ConsignacionFilters({
   conteo,
   total,
   conteoComercial,
+  vista,
 }: ConsignacionFiltersProps) {
   const { t } = useI18n();
   const tr = useTr();
@@ -234,13 +240,63 @@ export function ConsignacionFilters({
   /*
    * IN-03 (QA 04-10): el filtro «Tipo» caía solo a un segundo renglón a 1440
    * px: los seis chips, el separador y los cuatro desplegables no cabían en una
-   * fila. Ahora el buscador y los desplegables van en la PRIMERA fila (caben a
-   * 1440) y los cajones, que son la forma de ver los números, en la segunda.
-   * A 390 px los desplegables se apilan de a dos y los chips se acomodan solos.
+   * fila. Ahora el buscador y los desplegables van juntos en su fila (caben a
+   * 1440) y los cajones, que son la forma de ver los números, en la suya.
+   * Revisora r25: los cajones arriba y, debajo, UNA barra con el buscador, los
+   * filtros y la vista (antes la vista iba sola en un tercer renglón).
    */
   return (
     <div className="p-4 space-y-3 border-b border-border">
-      {/* Fila 1: buscador + desplegables */}
+      {/* Arriba, los cajones con su número EN la pestaña (revisora r25: primero qué se ve, después cómo se busca). */}
+      <div
+        className={cn(
+          'flex items-center gap-1.5',
+          enElCelular ? '-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&>*]:shrink-0' : 'flex-wrap',
+        )}
+        data-testid="filtros-cajones"
+      >
+        {/* Revisora r25 (T2): las pestañas de estado de la casa (antes chips rectangulares hechos a
+            mano). Nico (22-10, decisión 23): un cajón en 0 no sale, salvo el elegido; sin conteo
+            salen todos, sin número. El punto ámbar, sólo en «Sin mandato» (no cobran ni se publican). */}
+        <PestanasDeEstado<CajonDelInmueble | 'all'>
+          etiqueta={t('inmobiliaria.consignaciones.filters.all')}
+          valor={filters.cajon}
+          onCambio={(v) => updateFilter('cajon', v)}
+          pestanas={[
+            { valor: 'all', etiqueta: t('inmobiliaria.consignaciones.filters.all'), cuantos: total, fija: true, testid: 'cajon-all' },
+            ...CAJONES_DEL_INMUEBLE.map((cajon) => ({
+              valor: cajon,
+              etiqueta: t(ROTULO_DEL_CAJON[cajon]),
+              cuantos: conteo === null ? null : conteo[cajon],
+              ...(cajon === 'sinMandato' ? { tono: 'aviso' as const } : {}),
+              testid: `cajon-${cajon}`,
+            })),
+          ]}
+          className="contents"
+        />
+        {/* COMERCIAL (Nico, 04-10-2026): las vacantes largas y los mandatos
+            que se vencen. Un segundo clic quita el filtro. */}
+        {conteoComercial && FILTROS_COMERCIALES.some((f) => conteoComercial[f.id] > 0 || filters.comercial === f.id) ? (
+          <>
+            <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
+            {/* Revisora r22 (Inmuebles #1): las alertas en 0 no salen (como los cajones, decisión 23), salvo la elegida. */}
+            {FILTROS_COMERCIALES.filter((f) => conteoComercial[f.id] > 0 || filters.comercial === f.id).map((f) => (
+              <Chip
+                key={f.id}
+                selected={filters.comercial === f.id}
+                onClick={() => updateFilter('comercial', filters.comercial === f.id ? undefined : f.id)}
+                className="whitespace-nowrap"
+                data-testid={`filtro-${f.id}`}
+              >
+                {conteoComercial[f.id] > 0 ? <PuntoDeAtencion /> : null}
+                {f.rotulo} {conteoComercial[f.id].toLocaleString(localeDeLasCifras())}
+              </Chip>
+            ))}
+          </>
+        ) : null}
+      </div>
+
+      {/* Debajo, UN renglón: buscador + desplegables + la vista (Tabla · Tarjetas) al final. */}
       <div
         className={cn('flex gap-3', enElCelular ? 'flex-row items-center gap-2' : 'flex-col lg:flex-row lg:items-center')}
         data-testid="filtros-fila-1"
@@ -351,56 +407,13 @@ export function ConsignacionFilters({
             </Button>
           </Presence>
         </div>
-      </div>
-
-      {/* Fila 2: los cajones, con su número EN el chip */}
-      <div
-        className={cn(
-          'flex items-center gap-1.5',
-          enElCelular ? '-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&>*]:shrink-0' : 'flex-wrap',
-        )}
-        data-testid="filtros-cajones"
-      >
-        {/* Revisora r25 (T2): las pestañas de estado de la casa (antes chips rectangulares hechos a
-            mano). Nico (22-10, decisión 23): un cajón en 0 no sale, salvo el elegido; sin conteo
-            salen todos, sin número. El punto ámbar, sólo en «Sin mandato» (no cobran ni se publican). */}
-        <PestanasDeEstado<CajonDelInmueble | 'all'>
-          etiqueta={t('inmobiliaria.consignaciones.filters.all')}
-          valor={filters.cajon}
-          onCambio={(v) => updateFilter('cajon', v)}
-          pestanas={[
-            { valor: 'all', etiqueta: t('inmobiliaria.consignaciones.filters.all'), cuantos: total, fija: true, testid: 'cajon-all' },
-            ...CAJONES_DEL_INMUEBLE.map((cajon) => ({
-              valor: cajon,
-              etiqueta: t(ROTULO_DEL_CAJON[cajon]),
-              cuantos: conteo === null ? null : conteo[cajon],
-              ...(cajon === 'sinMandato' ? { tono: 'aviso' as const } : {}),
-              testid: `cajon-${cajon}`,
-            })),
-          ]}
-          className="contents"
-        />
-        {/* COMERCIAL (Nico, 04-10-2026): las vacantes largas y los mandatos
-            que se vencen. Un segundo clic quita el filtro. */}
-        {conteoComercial && FILTROS_COMERCIALES.some((f) => conteoComercial[f.id] > 0 || filters.comercial === f.id) ? (
-          <>
-            <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
-            {/* Revisora r22 (Inmuebles #1): las alertas en 0 no salen (como los cajones, decisión 23), salvo la elegida. */}
-            {FILTROS_COMERCIALES.filter((f) => conteoComercial[f.id] > 0 || filters.comercial === f.id).map((f) => (
-              <Chip
-                key={f.id}
-                selected={filters.comercial === f.id}
-                onClick={() => updateFilter('comercial', filters.comercial === f.id ? undefined : f.id)}
-                className="whitespace-nowrap"
-                data-testid={`filtro-${f.id}`}
-              >
-                {conteoComercial[f.id] > 0 ? <PuntoDeAtencion /> : null}
-                {f.rotulo} {conteoComercial[f.id].toLocaleString(localeDeLasCifras())}
-              </Chip>
-            ))}
-          </>
+        {vista ? (
+          <div className={cn('shrink-0', !enElCelular && 'lg:ml-auto')} data-testid="filtros-vista">
+            {vista}
+          </div>
         ) : null}
       </div>
+
     </div>
   );
 }

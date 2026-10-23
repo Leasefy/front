@@ -140,8 +140,8 @@ function PostLoginResolver() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted">
-      <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
+    <div className="min-h-screen flex items-center justify-center bg-bg">
+      <CargaDeMarca tamano="lg" disposicion="apilada" texto="Entrando a tu cuenta…" />
     </div>
   );
 }
@@ -150,8 +150,8 @@ export default function PostLoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-muted">
-          <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
+        <div className="min-h-screen flex items-center justify-center bg-bg">
+          <CargaDeMarca tamano="lg" disposicion="apilada" texto="Entrando a tu cuenta…" />
         </div>
       }
     >

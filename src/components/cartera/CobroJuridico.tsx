@@ -22,11 +22,12 @@
 
 import { cn } from '@/lib/utils';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Gavel, Prohibit } from '@phosphor-icons/react';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { Cifra, FranjaDeCifras, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import {
   AlertDialog,
@@ -357,6 +358,36 @@ export function CobroJuridico() {
   return (
     <EstadoDeDatos cargando={cargando} error={error} queEs="el cobro jurídico" onReintentar={cargar}>
       <div className="space-y-6" data-testid="cobro-juridico">
+        {/* GLOW UP 3.ª vuelta · LA RESPUESTA: la deuda que ya no se cobra con una llamada (los
+            sugeridos), y al lado lo que ya está en manos de un abogado y lo que se le debe. */}
+        {!esAbogadoExterno ? (
+          <div className="space-y-4">
+            <CifraHeroe
+              rotulo="Deuda sugerida para jurídico"
+              cifra={formatCurrency(sugeridos.reduce((t, x) => t + x.deudaCop, 0))}
+              contexto={
+                sugeridos.length === 0
+                  ? 'ningún contrato cumple hoy'
+                  : `en ${sugeridos.length} ${sugeridos.length === 1 ? 'contrato' : 'contratos'} con 90 días o más de mora y sin póliza`
+              }
+              data-testid="cifra-del-juridico"
+            />
+            <FranjaDeCifras aria-label="Lo que ya está en jurídico">
+              <Cifra
+                etiqueta="En jurídico"
+                valor={enJuridico.length}
+                detalle={enJuridico.length === 1 ? 'caso con abogado' : 'casos con abogado'}
+              />
+              <Cifra
+                etiqueta="Por pagar a los abogados"
+                valor={formatCurrency(porPagar.reduce((t, h) => t + h.honorarioCop, 0))}
+                detalle={`${porPagar.length} ${porPagar.length === 1 ? 'honorario' : 'honorarios'}`}
+                tono={porPagar.length > 0 ? 'aviso' : undefined}
+              />
+            </FranjaDeCifras>
+          </div>
+        ) : null}
+
         {/* Sugeridos */}
         {!esAbogadoExterno && (
         <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="sugeridos">
@@ -393,7 +424,7 @@ export function CobroJuridico() {
                   {puedeMover && (
                     <span className="flex items-center gap-2">
                       <select
-                        className="rounded-md border border-border bg-surface p-1.5 text-sm"
+                        className="h-9 rounded-md border border-border bg-surface px-2 text-body-sm"
                         value={abogadoElegido[s.contractId] ?? ''}
                         onChange={(e) =>
                           setAbogadoElegido((prev) => ({ ...prev, [s.contractId]: e.target.value }))
@@ -409,8 +440,11 @@ export function CobroJuridico() {
                             </option>
                           ))}
                       </select>
+                      {/* Una por fila, en contorno: con varias sugeridas, varios azules
+                          competían entre sí. */}
                       <Button
                         size="sm"
+                        variant="outline"
                         hideArrow
                         disabled={ocupado}
                         onClick={() => void pasar(s)}

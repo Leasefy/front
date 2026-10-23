@@ -10,7 +10,8 @@
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { BackButton } from '@/components/ui/back-button';
+import Link from 'next/link';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { CobroJuridico } from '@/components/cartera/CobroJuridico';
 
 export default function CobroJuridicoPage() {
@@ -20,11 +21,22 @@ export default function CobroJuridicoPage() {
         {/* La vuelta va arriba, como en toda sub-pantalla (antes era un enlace
             al final de la descripción, fácil de no ver). */}
         <div className="space-y-3">
-          <BackButton href="/panel/inmobiliaria/pagos/cartera" label="Volver a Cartera" />
+          <Link href="/panel/inmobiliaria/pagos/cartera" className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
+            Cartera
+          </Link>
           <EncabezadoDePantalla
             seccion="Pagos · inquilinos"
             titulo="Cobro jurídico"
-            descripcion="Lo que ya no se cobra con una llamada. El sistema sugiere desde el día 90 de mora sin póliza; pasar el caso lo decide una persona y queda visible en el contrato y en la cartera."
+            descripcion="Lo que ya no se cobra con una llamada: pásalo a un abogado y lleva sus honorarios."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">
+                  El sistema sugiere desde el día 90 de mora sin póliza; pasar el caso lo decide una
+                  persona y queda visible en el contrato y en la cartera. Los honorarios son plata del
+                  abogado: no son ingreso de la inmobiliaria ni del propietario.
+                </p>
+              </ParaEntenderMas>
+            }
           />
         </div>
         <CobroJuridico />

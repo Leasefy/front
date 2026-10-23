@@ -101,7 +101,7 @@ export function AvaluoRegistrosView({
     {
       header: 'Certificado',
       texto: (r) => r.slug,
-      cell: (r) => <span className="font-mono text-[11px] text-fg-subtle">{r.slug}</span>,
+      cell: (r) => <span className="font-mono text-caption text-fg-muted">{r.slug}</span>,
     },
   ]
 

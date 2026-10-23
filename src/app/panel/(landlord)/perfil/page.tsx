@@ -108,7 +108,8 @@ export default function PropietarioPerfilPage() {
     emergencyContactName: user?.emergencyContactName || '',
     emergencyContactPhone: user?.emergencyContactPhone || '',
   });
-  const notSet = locale === 'es' ? 'No registrado' : 'Not set';
+  // Revisora r25: como el perfil gemelo del inquilino («Sin registrar»).
+  const notSet = locale === 'es' ? 'Sin registrar' : 'Not set';
   /** El error de cada campo de la pantalla (del cliente o del back). */
   const [errores, setErrores] = useState<Partial<Record<CampoDeLaPantalla, string>>>({});
   const limpiarError = (campo: CampoDeLaPantalla) =>
@@ -160,7 +161,7 @@ export default function PropietarioPerfilPage() {
     },
     {
       id: 'id-number',
-      label: t('landlordProfile.fields.cedula'),
+      label: locale === 'es' ? 'Documento' : t('landlordProfile.fields.cedula'),
       description: locale === 'es' ? 'Tu documento de identidad' : 'Your ID number',
       icon: Shield,
       completed: completo('id-number'),
@@ -601,7 +602,7 @@ export default function PropietarioPerfilPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordProfile.fields.cedula')}</label>
+                  <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Documento' : t('landlordProfile.fields.cedula')}</label>
                   <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                     <Shield className="w-4 h-4 text-fg-subtle" />
                     <span className="text-sm text-fg">{formData.rut || notSet}</span>
@@ -727,7 +728,13 @@ export default function PropietarioPerfilPage() {
                   inquilino (Nico, 02-10-2026): nada se borra; 30 días para
                   volver y después sólo el soporte de Leasefy. */}
               <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>
-              <Button variant="destructive" hideArrow onClick={handleOpenDeleteModal}>
+              {/* Revisora r25: de borde, como en el perfil del inquilino (antes rojo lleno): la confirmación es la que pesa. */}
+              <Button
+                variant="outline"
+                hideArrow
+                onClick={handleOpenDeleteModal}
+                className="rounded-full border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
+              >
                 {locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'}
               </Button>
             </div>

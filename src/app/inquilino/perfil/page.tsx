@@ -690,7 +690,7 @@ export default function PerfilPage() {
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Phone className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.phone || notSet}</span>
+                      <span className="text-sm text-fg font-mono tabular-nums">{user.phone ? celularLegible(user.phone) : notSet}</span>
                     </div>
                   )}
                 </div>
@@ -1064,4 +1064,13 @@ export default function PerfilPage() {
       </Dialog>
     </div>
   );
+}
+
+/**
+ * Revisora r25: el celular con sus espacios («+57 300 111 2233»; antes «+573001112233»). Sólo para mostrar: lo
+ * guardado no cambia. Un número que no tenga la forma de un celular colombiano se muestra tal cual.
+ */
+function celularLegible(numero: string): string {
+  const m = numero.replace(/\s+/g, '').match(/^\+57(\d{3})(\d{3})(\d{4})$/);
+  return m ? `+57 ${m[1]} ${m[2]} ${m[3]}` : numero;
 }

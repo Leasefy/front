@@ -29,6 +29,7 @@
  * quedaría diciendo otra cosa que lo que se presentó.
  */
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FloppyDisk } from '@phosphor-icons/react';
 
@@ -287,28 +288,35 @@ export function ConceptosDeExogena({
                         <p className="text-caption text-fg-muted">{c.nombre}</p>
                       </TableCell>
                       <TableCell>
-                        <select
-                          aria-label={`Formato de la cuenta ${c.codigo}`}
-                          className="h-9 rounded-md border border-border bg-surface px-2 text-sm text-fg"
+                        {/* Ronda 30 (revisora r27, C4): el selector de la casa (antes el <select> del navegador). */}
+                        <Select
                           value={cambio?.formato ?? c.formato}
                           disabled={!escritura.puede || !conceptos.disponible}
-                          onChange={(e) =>
+                          onValueChange={(v) =>
                             setCambios((previo) => ({
                               ...previo,
                               [c.cuentaId]: {
-                                formato: e.target.value as FormatoDeExogena,
+                                formato: v as FormatoDeExogena,
                                 concepto: previo[c.cuentaId]?.concepto ?? c.concepto,
                               },
                             }))
                           }
-                          data-testid={`formato-de-${c.codigo}`}
                         >
-                          {FORMATOS_DE_EXOGENA.map((f) => (
-                            <option key={f} value={f}>
-                              {f}
-                            </option>
-                          ))}
-                        </select>
+                          <SelectTrigger
+                            className="h-9 w-24"
+                            aria-label={`Formato de la cuenta ${c.codigo}`}
+                            data-testid={`formato-de-${c.codigo}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FORMATOS_DE_EXOGENA.map((f) => (
+                              <SelectItem key={f} value={f}>
+                                {f}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <Input

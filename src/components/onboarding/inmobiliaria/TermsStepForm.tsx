@@ -101,7 +101,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            Guardando...
+            Guardando…
           </>
         ) : (
           <>

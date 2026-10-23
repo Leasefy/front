@@ -138,7 +138,7 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
       back: 'Atrás',
       continue: 'Continuar',
       submit: 'Completar perfil',
-      saving: 'Guardando...',
+      saving: 'Guardando…',
       autoFloppyDisk: 'Tu progreso se guarda automáticamente',
       changeProfile: 'Cambiar de perfil',
       secure: 'Datos protegidos con encriptación de nivel bancario',

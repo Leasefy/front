@@ -386,7 +386,7 @@ export function OwnerNameStepForm({
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            {corrigiendo ? 'Guardando...' : 'Creando tu cuenta...'}
+            {corrigiendo ? 'Guardando…' : 'Creando tu cuenta…'}
           </>
         ) : (
           <>

@@ -82,7 +82,7 @@ export function WizardNavigation({
         hideArrow
       >
         {isSubmitting ? (
-          <span>{mode === 'update' ? 'Actualizando...' : 'Enviando...'}</span>
+          <span>{mode === 'update' ? 'Actualizando…' : 'Enviando…'}</span>
         ) : isReviewStep ? (
           mode === 'update' ? (
             <>

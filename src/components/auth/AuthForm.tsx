@@ -1582,7 +1582,7 @@ export function AuthForm({
               <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
               <ErrorBanner mensaje={error} />
               <Button type="submit" disabled={isLoading || !hidratado} className="w-full h-11 rounded-full text-[14px]">
-                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
+                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando…</>) : 'Enviar enlace de recuperación'}
               </Button>
               <p className="text-[13px] text-fg-subtle leading-relaxed">
                 Ingresa el email asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.

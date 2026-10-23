@@ -165,7 +165,7 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            Guardando...
+            Guardando…
           </>
         ) : (
           <>

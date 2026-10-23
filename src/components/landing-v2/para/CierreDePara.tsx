@@ -3,7 +3,7 @@
 import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 import { Appear } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
-import { Acento, ANCHO, BotonDePara, Ceja, CifrasConPunto, Punto } from './piezas';
+import { Acento, ANCHO, BotonDePara, Ceja, Punto } from './piezas';
 
 /**
  * El cierre de las páginas por público, con la identidad nueva: papel, el
@@ -27,7 +27,7 @@ export function CierreDePara({ semilla = 11 }: { semilla?: number }) {
       />
       <div className={cn(ANCHO, 'relative z-[1]')}>
         <Appear inView direction="none" duration="slow">
-          <Ceja>+200 inmobiliarias ya confían en nosotros</Ceja>
+          <Ceja>Empieza hoy</Ceja>
         </Appear>
         <Appear inView distance="md" duration="slow" delay={0.08}>
           <h2 className="mx-auto mt-6 max-w-[1100px] font-heading text-[clamp(44px,6.6vw,100px)] font-[340] leading-[0.98] tracking-[-0.045em]">
@@ -37,7 +37,7 @@ export function CierreDePara({ semilla = 11 }: { semilla?: number }) {
         <Appear inView as="p" distance="md" duration="slow" delay={0.16}
           className="mx-auto mt-6 max-w-[620px] text-[clamp(17px,1.35vw,20px)] leading-[1.55] text-[#5B5751]"
         >
-          Sube tu portafolio, activa los agentes AI, y deja que la plataforma haga el trabajo pesado por ti.
+          Sube tu portafolio, activa los agentes de IA, y deja que la plataforma haga el trabajo pesado por ti.
         </Appear>
         <Appear inView distance="md" duration="slow" delay={0.22}
           className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"
@@ -58,21 +58,9 @@ export function CierreDePara({ semilla = 11 }: { semilla?: number }) {
               </li>
             ))}
           </ul>
-          <p className="mt-5 font-mono text-caption tracking-[0.04em] text-[#706B64]">
-            <span className="text-[#121110]">4.9</span> de 5 · 850+ reseñas
-          </p>
         </Appear>
 
-        <Appear inView distance="md" duration="slow" delay={0.32} className="mx-auto mt-[clamp(48px,6vw,80px)] max-w-[1080px] text-left">
-          <CifrasConPunto
-            cifras={[
-              { valor: '+340', rotulo: 'Arriendos este mes' },
-              { valor: '98%', rotulo: 'Satisfacción' },
-              { valor: '48 horas', rotulo: 'De aplicación a aprobación' },
-              { valor: '2,847', rotulo: 'Propiedades activas' },
-            ]}
-          />
-        </Appear>
+        {/* Ronda 30: fuera «4.9 de 5 · 850+ reseñas» y las cifras «+340 arriendos», «98 %», «48 horas», «2,847»: inventadas. */}
       </div>
     </section>
   );

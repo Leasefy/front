@@ -543,7 +543,7 @@ export function MembersStepForm({
         {isSubmitting || enviando ? (
           <>
             <Spinner size="xs" variant="current" />
-            Guardando...
+            Guardando…
           </>
         ) : (
           <>

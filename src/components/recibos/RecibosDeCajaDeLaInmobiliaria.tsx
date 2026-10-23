@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DownloadSimple, MagnifyingGlass, Prohibit, Scroll, X } from '@phosphor-icons/react'
+import { DotsThreeVertical, DownloadSimple, MagnifyingGlass, Prohibit, Scroll, X } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,12 +27,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import {
   Table,
   TableBodyAnimado,
@@ -63,7 +64,6 @@ import { diaLegible } from '@/lib/mandato/textos'
 import { nombreDelMes } from '@/lib/utils/mes'
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 import { cn } from '@/lib/utils'
-import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const POR_PAGINA = [25, 50, 100]
 const ESTADOS: Array<{ id: EstadoDeLosRecibos; nombre: string }> = [
@@ -132,10 +132,10 @@ export function RecibosDeCajaDeLaInmobiliaria() {
 
   const resumen = useMemo(() => {
     if (!datos) return null
-    const n = datos.total
-    return `${n.toLocaleString(localeDeLasCifras())} ${n === 1 ? 'recibo' : 'recibos'} · ${formatCurrency(datos.totalCop)} recibidos${
-      estado === 'anulados' ? '' : ' (sin contar los anulados)'
-    }`
+    // Ronda 26 (revisora r25, Recibos #1): el conteo va en la pestaña; aquí, la plata de esa pestaña.
+    return estado === 'anulados'
+      ? `${formatCurrency(datos.totalCop)} anulados`
+      : `${formatCurrency(datos.totalCop)} recibidos${estado === 'todos' ? ' (sin contar los anulados)' : ''}`
   }, [datos, estado])
 
   return (
@@ -165,22 +165,21 @@ export function RecibosDeCajaDeLaInmobiliaria() {
             />
           )}
         </div>
-        <Select value={estado} onValueChange={(v) => setEstado(v as EstadoDeLosRecibos)}>
-          <SelectTrigger className="h-10 w-full sm:w-52" aria-label="Qué recibos ver" data-testid="estado-de-los-recibos">
-            {/* Ronda 11: «Todos» a secas no decía de qué; ahora «Estado: Todos». */}
-            <span className="flex min-w-0 items-center gap-1.5">
-              <span className="shrink-0 text-fg-muted">Estado:</span>
-              <SelectValue />
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            {ESTADOS.map((e) => (
-              <SelectItem key={e.id} value={e.id}>
-                {e.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Ronda 26 (revisora r25, Recibos #1): el estado en pestañas DENTRO de la tarjeta (antes un Select
+            «Estado: Todos»). El back cuenta sólo lo que se pide: el número va en la abierta. */}
+        <PestanasDeEstado
+          etiqueta="Qué recibos ver"
+          valor={estado}
+          onCambio={(v) => setEstado(v)}
+          data-testid="estado-de-los-recibos"
+          pestanas={ESTADOS.map((e) => ({
+            valor: e.id,
+            etiqueta: e.nombre,
+            cuantos: e.id === estado && datos ? datos.total : null,
+            fija: true,
+            testid: `recibos-${e.id}`,
+          }))}
+        />
         {resumen && (
           <p className="text-sm text-fg-muted sm:ml-auto" data-testid="resumen-de-los-recibos">
             {resumen}
@@ -276,7 +275,8 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                     {/* La referencia INTERNA («cobro-<uuid>», la del pago en línea) no se muestra;
                         la del banco sí, en un renglón y entera al pasar el cursor. */}
                     {r.referencia && !/^cobro-[0-9a-f]{8}-/i.test(r.referencia) && (
-                      <p className="truncate text-caption text-fg-muted" title={`Ref. ${r.referencia}`}>
+                      // Ronda 26 (revisora r25, Recibos UI): a 390 la tarjeta tenía 7 renglones; la referencia, sólo desde md.
+                      <p className="truncate text-caption text-fg-muted max-md:hidden" title={`Ref. ${r.referencia}`}>
                         Ref. {r.referencia}
                       </p>
                     )}
@@ -297,20 +297,29 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                         icon={<DownloadSimple className="h-4 w-4" />}
                       />
                       {puedeAnular && !r.anulado && (
-                        // Anular no se esconde en un ícono suelto; dice lo que hace (y abre la confirmación de siempre).
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          hideArrow
-                          aria-label={`Anular el recibo ${r.numero}`}
-                          onClick={() => setAAnular(r)}
-                          data-testid={`anular-recibo-${r.numero}`}
-                          // 22-10 (revisión): gris en la fila (11 rojos seguidos gritaban); rojo al pasar y en la confirmación.
-                          className="text-fg-muted hover:text-danger"
-                        >
-                          <Prohibit className="h-4 w-4" aria-hidden="true" />
-                          Anular
-                        </Button>
+                        // Ronda 26 (revisora r25, Recibos #2): anular es destructivo y del administrador: va en el
+                        // «⋯» de la fila, no al mismo peso que bajar el PDF. Abre la confirmación de siempre.
+                        <DropdownList>
+                          <DropdownListTrigger asChild>
+                            <IconButton
+                              variant="ghost"
+                              size="sm"
+                              aria-label={`Más acciones del recibo ${r.numero}`}
+                              data-testid={`acciones-del-recibo-${r.numero}`}
+                              icon={<DotsThreeVertical className="h-4 w-4" weight="bold" />}
+                            />
+                          </DropdownListTrigger>
+                          <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
+                            <DropdownListItem
+                              onSelect={() => setAAnular(r)}
+                              data-testid={`anular-recibo-${r.numero}`}
+                              className="text-danger"
+                            >
+                              <Prohibit className="h-4 w-4" aria-hidden="true" />
+                              Anular el recibo
+                            </DropdownListItem>
+                          </DropdownListContent>
+                        </DropdownList>
                       )}
                     </div>
                   </TableCell>

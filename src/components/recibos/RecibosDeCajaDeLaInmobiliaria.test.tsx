@@ -89,19 +89,24 @@ describe('los recibos de la inmobiliaria', () => {
     expect(fila1).toContain('Anulado')
     expect(fila1).toContain('Se registró dos veces')
     expect(fila1).toContain('Sin nombre registrado')
-    expect(contenedor.querySelector('[data-testid="resumen-de-los-recibos"]')!.textContent).toContain('2 recibos')
+    // Ronda 26: el conteo va en la pestaña abierta («Todos 2»), no en la línea del resumen.
+    expect(contenedor.querySelector('[data-testid="recibos-todos"]')!.textContent).toBe('Todos2')
+    expect(contenedor.querySelector('[data-testid="recibos-todos"]')!.getAttribute('aria-pressed')).toBe('true')
+    expect(contenedor.querySelector('[data-testid="resumen-de-los-recibos"]')!.textContent).toContain('recibidos')
   })
 
   it('el anulado no se vuelve a anular', async () => {
     await montar()
-    expect(contenedor.querySelector('[data-testid="anular-recibo-2"]')).not.toBeNull()
-    expect(contenedor.querySelector('[data-testid="anular-recibo-1"]')).toBeNull()
+    // Ronda 26: «Anular» vive en el «⋯» de la fila; el anulado no lo lleva.
+    expect(contenedor.querySelector('[data-testid="acciones-del-recibo-2"]')).not.toBeNull()
+    expect(contenedor.querySelector('[data-testid="acciones-del-recibo-1"]')).toBeNull()
   })
 
   it('🔴 al contador no se le ofrece anular (sólo el administrador, PG-R06)', async () => {
     permisos.value = { isAdmin: false, agencyRole: 'CONTADOR' }
     await montar()
     expect(contenedor.querySelector('[data-testid^="anular-recibo-"]')).toBeNull()
+    expect(contenedor.querySelector('[data-testid^="acciones-del-recibo-"]')).toBeNull()
     // El PDF sí.
     expect(contenedor.querySelector('[data-testid="pdf-del-recibo-2"]')).not.toBeNull()
   })

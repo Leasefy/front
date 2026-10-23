@@ -27,7 +27,7 @@ export function CierreDePara({ semilla = 11 }: { semilla?: number }) {
       />
       <div className={cn(ANCHO, 'relative z-[1]')}>
         <Appear inView direction="none" duration="slow">
-          <Ceja>+200 inmobiliarias ya confían en nosotros</Ceja>
+          <Ceja>Empieza hoy</Ceja>
         </Appear>
         <Appear inView distance="md" duration="slow" delay={0.08}>
           <h2 className="mx-auto mt-6 max-w-[1100px] font-heading text-[clamp(44px,6.6vw,100px)] font-[340] leading-[0.98] tracking-[-0.045em]">

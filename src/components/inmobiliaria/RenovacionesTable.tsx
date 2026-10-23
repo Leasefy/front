@@ -81,6 +81,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Presence } from '@leasefy/cadence';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { textoLegible } from '@/lib/renovaciones/texto-legible';
+import { diasParaVencer } from '@/lib/renovaciones/dias-para-vencer';
 import type { ReactNode } from 'react';
 
 import type { Renovacion, RenovacionStatus } from '@/lib/types/inmobiliaria';
@@ -138,6 +139,8 @@ interface RenovacionesTableProps {
    * tabla; en Contratos va en su pie).
    */
   pie?: ReactNode;
+  /** Qué día es hoy, para contar los días que faltan; sólo las pruebas lo fijan. */
+  hoy?: Date;
   /** Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas. */
   marcadas?: ReadonlySet<string>;
   onMarcar?: (ids: readonly string[], si: boolean) => void;
@@ -247,6 +250,7 @@ export function RenovacionesTable({
   marcadas,
   onMarcar,
   pie,
+  hoy,
 }: RenovacionesTableProps) {
   const conCasillas = Boolean(marcadas && onMarcar);
   const { t, locale } = useI18n();
@@ -306,8 +310,8 @@ export function RenovacionesTable({
           bVal = b.propietarioName.toLowerCase();
           break;
         case 'daysUntilExpiry':
-          aVal = a.daysUntilExpiry;
-          bVal = b.daysUntilExpiry;
+          aVal = diasParaVencer(a, hoy);
+          bVal = diasParaVencer(b, hoy);
           break;
         case 'currentRent':
           aVal = a.currentRent;
@@ -323,7 +327,7 @@ export function RenovacionesTable({
       return 0;
     });
     return result;
-  }, [visibles, bucketFilter, statusFilter, busqueda, sortField, sortDirection]);
+  }, [visibles, bucketFilter, statusFilter, busqueda, sortField, sortDirection, hoy]);
 
   /*
    * Paginado de presentación: `useRenovaciones()` trae todas y crecen con la
@@ -438,6 +442,13 @@ export function RenovacionesTable({
               <SelectItem value="terminated">{t('inmobiliaria.finance.renewals.statusTerminated')}</SelectItem>
             </SelectContent>
           </Select>
+          {/* El estado, UNA vez y al lado de su filtro, cuando todas van en el
+              mismo (revisora r27: suelto en el pie, sobre la paginación, sobraba). */}
+          {estadoUnico && filtradas.length > 0 ? (
+            <span className="text-caption text-fg-muted" data-testid="estado-de-todas">
+              {visibles.length === data.length ? 'Todas' : `Las ${visibles.length} abiertas`} en «{getRenovacionStatusLabel(estadoUnico)}»
+            </span>
+          ) : null}
         </div>
 
         <div className="relative w-full lg:max-w-xs">
@@ -536,6 +547,7 @@ export function RenovacionesTable({
             su lugar (`key` = el id). */}
         <TableBodyAnimado className="max-md:block">
           {pageItems.map((item) => {
+            const dias = diasParaVencer(item, hoy);
             const propuesto = item.negotiatedRent || item.proposedRent;
             const incremento =
               propuesto && item.currentRent > 0
@@ -559,8 +571,15 @@ export function RenovacionesTable({
                 )}
                 {/* El inmueble y quién vive. 🔴 El número del contrato: es como la
                     inmobiliaria nombra las cosas («el 1686») y se busca por él. */}
+                {/* A 390 (revisora r27), cada cosa en su sitio: arriba el inmueble
+                    (a lo ancho si no hay estado) y el estado; abajo la fecha y, a
+                    la derecha, el canon. Antes el canon caía donde lo dejara la
+                    rejilla, a media tarjeta, y cortaba el nombre a 14 letras. */}
                 <TableCell
-                  className="max-w-[320px] px-5 py-4 max-md:order-1 max-md:block max-md:max-w-none max-md:p-0"
+                  className={cn(
+                    'max-w-[320px] px-5 py-4 max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0',
+                    estadoUnico && 'max-md:col-span-2',
+                  )}
                   title={[item.propertyAddress, item.propietarioName ? `Propietario: ${item.propietarioName}` : null, item.tenantPhone].filter(Boolean).join(' · ')}
                 >
                   <p className="truncate font-medium text-foreground">{textoLegible(item.propertyTitle)}</p>
@@ -571,29 +590,29 @@ export function RenovacionesTable({
                 </TableCell>
 
                 {/* Vence: la fecha y cuánto falta. Rojo sólo a 7 días o menos; ámbar hasta 30. */}
-                <TableCell className="whitespace-nowrap px-5 py-4 tabular-nums max-md:order-3 max-md:block max-md:p-0 max-md:text-caption">
+                <TableCell className="whitespace-nowrap px-5 py-4 tabular-nums max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption">
                   <span className="text-foreground">{fechaCorta(item.leaseEndDate, locale)}</span>
                   <span className="md:hidden"> · </span>
                   <span
                     className={cn(
                       'text-caption md:block',
-                      item.daysUntilExpiry <= 7
+                      dias <= 7
                         ? 'font-medium text-danger'
-                        : item.daysUntilExpiry <= 30
+                        : dias <= 30
                           ? 'font-medium text-warning'
                           : 'text-muted-foreground',
                     )}
                   >
-                    {cuantoFalta(item.daysUntilExpiry)}
+                    {cuantoFalta(dias)}
                   </span>
                 </TableCell>
 
-                <TableCell className="whitespace-nowrap px-5 py-4 text-right font-mono tabular-nums text-foreground max-md:order-4 max-md:block max-md:p-0">
+                <TableCell className="whitespace-nowrap px-5 py-4 text-right font-mono tabular-nums text-foreground max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0">
                   {formatCurrency(item.currentRent)}
                 </TableCell>
 
                 {hayPropuestas ? (
-                <TableCell className="whitespace-nowrap px-5 py-4 text-right font-mono tabular-nums max-md:order-5 max-md:block max-md:p-0">
+                <TableCell className="whitespace-nowrap px-5 py-4 text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0">
                   {propuesto ? (
                     <div className="flex flex-col items-end">
                       <span className="text-foreground">{formatCurrency(propuesto)}</span>
@@ -612,7 +631,7 @@ export function RenovacionesTable({
                 ) : null}
 
                 {estadoUnico ? null : (
-                <TableCell className="whitespace-nowrap px-5 py-4 max-md:order-2 max-md:block max-md:p-0 max-md:text-right">
+                <TableCell className="whitespace-nowrap px-5 py-4 max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                   <span
                     className={cn(
                       'inline-flex rounded-full px-2.5 py-1 text-caption font-medium',
@@ -642,13 +661,6 @@ export function RenovacionesTable({
           })}
         </TableBodyAnimado>
       </Table>
-
-      {/* El estado, UNA vez, cuando todas van en el mismo (revisora r25). */}
-      {estadoUnico && filtradas.length > 0 ? (
-        <p className="border-t border-border px-5 py-2.5 text-caption text-fg-muted" data-testid="estado-de-todas">
-          {visibles.length === data.length ? 'Todas' : `Las ${visibles.length} abiertas`} van en «{getRenovacionStatusLabel(estadoUnico)}».
-        </p>
-      ) : null}
 
       {pie}
 

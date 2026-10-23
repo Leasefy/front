@@ -151,7 +151,9 @@ function RenovacionesContent() {
         pie={
           /* Acciones masivas (Nico, 10-10-2026): la propuesta con el IPC a
              varias. En el pie de la MISMA tabla, como en Contratos (r25). */
-          puedeProponerEnBloque && renovaciones.length > 0 ? (
+          /* Revisora r27: «Marca renovaciones…» sólo sobraba como renglón
+             suelto; la barra sale al marcar la primera (y sube animada). */
+          puedeProponerEnBloque && renovaciones.length > 0 && marcadas.size > 0 ? (
             <RenovacionesMarcadas
               marcadas={renovaciones.filter((r) => marcadas.has(r.id))}
               onQuitar={quitarLaSeleccion}

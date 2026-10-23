@@ -41,6 +41,7 @@ import {
 import type { Renovacion, RenovacionHistoryItem } from '@/lib/types/inmobiliaria';
 import { RiesgoEnLaRenovacion } from '@/components/retencion/RiesgoEnLaRenovacion';
 import { getUrgencyColor } from '@/lib/types/inmobiliaria';
+import { diasParaVencer } from '@/lib/renovaciones/dias-para-vencer';
 import { URL_IPC_DANE } from '@/lib/constants/inmobiliaria-data';
 import {
   type CanalDeEnvio,
@@ -112,12 +113,18 @@ function Rotulo({ children }: { children: React.ReactNode }) {
 /** «Vence el 1 de octubre de 2026 · en 23 días», con el tono del cajón de urgencia. */
 export function ChipDeVencimiento({
   renovacion,
+  hoy,
 }: {
   renovacion: Pick<Renovacion, 'leaseEndDate' | 'daysUntilExpiry' | 'urgencyBucket'>;
+  /** Qué día es hoy; sólo las pruebas lo fijan. */
+  hoy?: Date;
 }) {
   const { locale } = useI18n();
-  const dias = renovacion.daysUntilExpiry;
-  const cuando = dias === 0 ? 'hoy' : dias === 1 ? 'mañana' : `en ${dias} días`;
+  // B1 (revisora r27): los días con la fecha de la fila; el back los corta en 0.
+  const dias = diasParaVencer(renovacion, hoy);
+  const yaVencio = dias < 0;
+  const cuando =
+    dias === 0 ? 'hoy' : dias === 1 ? 'mañana' : yaVencio ? `hace ${-dias} ${dias === -1 ? 'día' : 'días'}` : `en ${dias} días`;
   return (
     <span
       className={cn(
@@ -127,7 +134,7 @@ export function ChipDeVencimiento({
       data-testid="renovacion-vence"
     >
       <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
-      Vence el {fechaLarga(renovacion.leaseEndDate, locale)} · {cuando}
+      {yaVencio ? 'Venció el' : 'Vence el'} {fechaLarga(renovacion.leaseEndDate, locale)} · {cuando}
     </span>
   );
 }

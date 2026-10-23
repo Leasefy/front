@@ -19,6 +19,7 @@ void React;
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 
 import { RenovacionesTable, cuantoFalta } from './RenovacionesTable';
+import { diasParaVencer } from '@/lib/renovaciones/dias-para-vencer';
 import type { Renovacion } from '@/lib/types/inmobiliaria';
 
 function renovacion(overrides: Partial<Renovacion> = {}): Renovacion {
@@ -131,7 +132,8 @@ describe('<RenovacionesTable>', () => {
   });
 
   it('cada fila muestra lo real: fecha sin corrimiento de zona, días y cajón del back', () => {
-    render({ data: [renovacion()] });
+    // Los días se cuentan con la fecha de la fila (B1, r27): del 16 nov al 31 dic, 45.
+    render({ data: [renovacion()], hoy: new Date(2026, 10, 16) });
 
     const fila = container.querySelector('[data-testid="renovacion-r-1"]')!;
     // 2026-12-31 (DATE, medianoche UTC) sigue siendo 31 dic en Bogotá.
@@ -320,10 +322,29 @@ describe('estaCerrada (CONTR-9, QA de agentes 17-10)', () => {
     expect(cuantoFalta(-1)).toBe('venció hace 1 día');
     expect(cuantoFalta(0)).toBe('vence hoy');
     expect(cuantoFalta(3)).toBe('en 3 días');
-    render({ data: [renovacion({ id: 'v', daysUntilExpiry: -3, urgencyBucket: '0-30' })] });
-    const fila = container.querySelector('[data-testid="renovacion-v"]')!;
-    expect(fila.textContent).toContain('venció hace 3 días');
-    expect(fila.textContent).not.toContain('vence hoy');
+    // 🔴 r27: el back corta los negativos en 0, así que los tres llegan como
+    // los manda hoy (0, 0 y 3) y la tabla los cuenta con la fecha de la fila.
+    render({
+      hoy: new Date(2026, 9, 23, 15),
+      data: [
+        renovacion({ id: 'v', leaseEndDate: '2026-10-20T00:00:00.000Z', daysUntilExpiry: 0, urgencyBucket: '0-30' }),
+        renovacion({ id: 'h', leaseEndDate: '2026-10-23T00:00:00.000Z', daysUntilExpiry: 0, urgencyBucket: '0-30' }),
+        renovacion({ id: 'p', leaseEndDate: '2026-10-26T00:00:00.000Z', daysUntilExpiry: 3, urgencyBucket: '0-30' }),
+      ],
+    });
+    const fila = (id: string) => container.querySelector(`[data-testid="renovacion-${id}"]`)!.textContent;
+    expect(fila('v')).toContain('venció hace 3 días');
+    expect(fila('v')).not.toContain('vence hoy');
+    expect(fila('h')).toContain('vence hoy');
+    expect(fila('p')).toContain('en 3 días');
+  });
+
+  it('🔴 B1: los días salen de la fecha de la fila: −3, 0 y 3 (y lo del back sólo sin fecha)', () => {
+    const hoy = new Date(2026, 9, 23, 23, 30);
+    expect(diasParaVencer({ leaseEndDate: '2026-10-20T00:00:00.000Z', daysUntilExpiry: 0 }, hoy)).toBe(-3);
+    expect(diasParaVencer({ leaseEndDate: '2026-10-23', daysUntilExpiry: 0 }, hoy)).toBe(0);
+    expect(diasParaVencer({ leaseEndDate: '2026-10-26T00:00:00.000Z', daysUntilExpiry: 3 }, hoy)).toBe(3);
+    expect(diasParaVencer({ leaseEndDate: '', daysUntilExpiry: 12 }, hoy)).toBe(12);
   });
 
   it('el nombre que llegó en MAYÚSCULAS se lee en tipo oración, como en Contratos', () => {

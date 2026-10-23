@@ -20,6 +20,8 @@ import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { Pill } from '@/components/admin/Pill'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { legible } from '@/lib/admin/textos-del-admin'
 import { BackButton } from '@/components/ui/back-button'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -172,7 +174,7 @@ function PromptEditor({
                 <span className="flex min-w-0 flex-1 items-center gap-2">
                   <span className="truncate text-body-sm font-medium">{sec.title}</span>
                   {sec.markers.map((mk) => (
-                    <Pill key={mk} tone="info">
+                    <Pill key={mk} tone="neutral">
                       {mk}
                     </Pill>
                   ))}
@@ -215,15 +217,20 @@ export default function AgentDetailPage() {
       <div className="space-y-6 p-6 lg:p-8">
         <BackButton href="/admin/agents" label="Volver a agentes de voz" />
         <EmptyBlock
-          icono={<Robot weight="bold" />}
+          icono={<Robot weight="duotone" />}
           title="No encontramos este agente"
-          hint={`El agente ${id} no existe en Vapi, o Vapi no respondió.`}
+          hint="No existe en Vapi, o Vapi no respondió. Vuelve a la lista y ábrelo de nuevo."
         />
       </div>
     )
   }
 
-  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
+  if (error)
+    return (
+      <div className="space-y-6 p-6 lg:p-8">
+        <ErrorBlock error={error} onReintentar={refetch} volverA={{ label: 'Volver a agentes de voz', href: '/admin/agents' }} />
+      </div>
+    )
   if (!data) return null
 
   const systemPrompt = data.systemPrompt ?? ''
@@ -234,44 +241,50 @@ export default function AgentDetailPage() {
       <BackButton href="/admin/agents" label="Volver a agentes de voz" />
       <PageHeader
         title={data.name ?? 'Agente sin nombre'}
-        description={
-          <span className="font-mono text-body-sm">
-            {data.model?.provider ?? '—'} / {data.model?.model ?? '—'} · voz {data.voice?.provider ?? '—'} · silencio{' '}
-            {data.silenceTimeoutSeconds ?? '—'} s
-          </span>
-        }
+        description={[
+          data.model?.model ? `Modelo ${data.model.model}` : null,
+          data.voice?.provider ? `voz de ${legible(data.voice.provider)}` : null,
+          data.silenceTimeoutSeconds != null ? `cuelga tras ${data.silenceTimeoutSeconds} s de silencio` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ') || undefined}
       />
 
-      <Tarjeta titulo="Configuración" descripcion="Sólo lectura: se cambia en Vapi.">
-        <KeyValueList
-          className="grid gap-x-8 md:grid-cols-2"
-          items={[
-            {
-              label: 'Primer mensaje',
-              value: data.firstMessage
-                ? data.firstMessage.length > 120
-                  ? data.firstMessage.slice(0, 120) + '…'
-                  : data.firstMessage
-                : '—',
-            },
-            { label: 'Duración máxima', value: <span className="font-mono tabular-nums">{data.maxDurationSeconds != null ? `${data.maxDurationSeconds} s` : '—'}</span> },
-            { label: 'Frases para colgar', value: (data.endCallPhrases ?? []).join(' · ') || '—' },
-            { label: 'Temperatura', value: <span className="font-mono tabular-nums">{String(data.temperature ?? '—')}</span> },
-            { label: 'Tokens máximos', value: <span className="font-mono tabular-nums">{String(data.maxTokens ?? '—')}</span> },
-            { label: 'Herramientas', value: <span className="font-mono tabular-nums">{String(data.toolsCount ?? 0)}</span> },
-          ]}
-        />
-      </Tarjeta>
-
+      {/* Glow up 22-10: el trabajo primero —editar las instrucciones—; la configuración (de sólo lectura) plegada al final. */}
       <section className="space-y-3" aria-label="Instrucciones del agente">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-subtitle font-medium text-fg">Instrucciones</h2>
-          <MonoLabel className="tabular-nums">
-            {systemPrompt.length.toLocaleString('es-CO')} caracteres · {sections.length} secciones
-          </MonoLabel>
+          <span className="text-caption text-fg-muted">
+            <span className="font-mono tabular-nums">{systemPrompt.length.toLocaleString('es-CO')}</span> caracteres ·{' '}
+            <span className="font-mono tabular-nums">{sections.length}</span> secciones
+          </span>
         </div>
         <PromptEditor agentId={id} initialSystemPrompt={systemPrompt} onSaved={refetch} />
       </section>
+
+      <MasDetalles etiqueta="Ver la configuración en Vapi" etiquetaAbierto="Ocultar la configuración">
+        <Tarjeta titulo="Configuración" descripcion="Sólo lectura: se cambia en Vapi.">
+          <KeyValueList
+            className="grid gap-x-8 md:grid-cols-2"
+            items={[
+              {
+                label: 'Primer mensaje',
+                value: data.firstMessage
+                  ? data.firstMessage.length > 120
+                    ? data.firstMessage.slice(0, 120) + '…'
+                    : data.firstMessage
+                  : '—',
+              },
+              { label: 'Duración máxima', value: <span className="font-mono tabular-nums">{data.maxDurationSeconds != null ? `${data.maxDurationSeconds} s` : '—'}</span> },
+              { label: 'Frases para colgar', value: (data.endCallPhrases ?? []).join(' · ') || '—' },
+              { label: 'Temperatura', value: <span className="font-mono tabular-nums">{String(data.temperature ?? '—')}</span> },
+              { label: 'Tokens máximos', value: <span className="font-mono tabular-nums">{String(data.maxTokens ?? '—')}</span> },
+              { label: 'Herramientas', value: <span className="font-mono tabular-nums">{String(data.toolsCount ?? 0)}</span> },
+              { label: 'Proveedor del modelo', value: data.model?.provider ? legible(data.model.provider) : '—' },
+            ]}
+          />
+        </Tarjeta>
+      </MasDetalles>
     </div>
   )
 }

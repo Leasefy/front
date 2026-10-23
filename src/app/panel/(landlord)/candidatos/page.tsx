@@ -65,7 +65,8 @@ function ScoringGuide() {
 
   const RISK_LEVEL_DETAILS = [
     { level: 'A', labelKey: 'landlord.candidates.riskExcellent', range: '85–100', color: 'bg-success', textColor: 'text-success', bgColor: 'bg-success-soft', descKey: 'landlord.candidates.riskExcellentDesc' },
-    { level: 'B', labelKey: 'landlord.candidates.riskGood', range: '70–84', color: 'bg-primary', textColor: 'text-primary', bgColor: 'bg-primary-soft', descKey: 'landlord.candidates.riskGoodDesc' },
+    // Revisora r25: el nivel B en tinta, no en voltaje (el azul es la acción, no un dato).
+    { level: 'B', labelKey: 'landlord.candidates.riskGood', range: '70–84', color: 'bg-fg', textColor: 'text-fg', bgColor: 'bg-surface-muted', descKey: 'landlord.candidates.riskGoodDesc' },
     { level: 'C', labelKey: 'landlord.candidates.riskFair', range: '50–69', color: 'bg-warning', textColor: 'text-warning', bgColor: 'bg-warning-soft', descKey: 'landlord.candidates.riskFairDesc' },
     { level: 'D', labelKey: 'landlord.candidates.riskPoor', range: '0–49', color: 'bg-danger', textColor: 'text-danger', bgColor: 'bg-danger-soft', descKey: 'landlord.candidates.riskPoorDesc' },
   ];
@@ -77,7 +78,7 @@ function ScoringGuide() {
         variant="outline"
         hideArrow
         onClick={() => setOpen(!open)}
-        className={cn('gap-2.5 rounded-lg', open && 'bg-primary-soft border-primary/30 text-primary')}
+        className={cn('gap-2.5 rounded-lg', open && 'bg-surface-muted')}
       >
         <Question className="w-4 h-4" />
         <span>{t('landlord.candidates.scoringGuideToggle')}</span>
@@ -518,7 +519,7 @@ export default function CandidatosPage() {
                 'flex items-start gap-2 p-3 text-sm rounded-md',
                 flag.severity === 'high' ? 'bg-danger-soft text-danger' :
                 flag.severity === 'medium' ? 'bg-warning-soft text-warning' :
-                'bg-primary-soft text-primary'
+                'bg-surface-muted text-fg'
               )}
             >
               <Warning className="w-4 h-4 flex-shrink-0 mt-0.5" />

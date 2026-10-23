@@ -51,11 +51,6 @@ const copFormatter = plataEnPantalla(localeDeLasCifras, {
   maximumFractionDigits: 0,
 })
 
-/** tasa_conciliacion ya viene 0–100 (un decimal) o null. */
-function formatTasa(tasa: number | null): string {
-  if (tasa === null) return '—'
-  return `${numberFormatter.format(tasa)} %`
-}
 
 // ── Franja de KPIs ───────────────────────────────────────────────────────────
 
@@ -64,79 +59,126 @@ export interface ConciliacionResumenProps {
   isLoading?: boolean
   /** Esqueleto opcional (apagado por defecto — el host ya muestra el suyo). */
   showSkeleton?: boolean
+  /** Con él, la tarjeta también lleva lo que espera tu decisión («Revisar») y los tipos de caso. */
+  colaHref?: string
 }
 
-export function ConciliacionResumen({ data, isLoading, showSkeleton }: ConciliacionResumenProps) {
+export function ConciliacionResumen({ data, isLoading, showSkeleton, colaHref }: ConciliacionResumenProps) {
   if (isLoading && showSkeleton) {
+    // Revisora r24 (Conciliación #4): el esqueleto con la forma de lo que llega —rótulo, cifra,
+    // barra y leyenda—, no las cuatro cajas de antes.
     return (
       <div
-        className="grid grid-cols-2 gap-4 lg:grid-cols-4"
+        className="space-y-4 rounded-lg border border-border bg-surface p-5"
         data-testid="conciliacion-resumen-loading"
+        aria-label="cargando"
       >
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-[88px] rounded-lg border border-border bg-surface-muted animate-pulse" />
-        ))}
+        <div className="h-3.5 w-40 animate-pulse rounded-sm bg-surface-muted" />
+        <div className="h-9 w-56 animate-pulse rounded-sm bg-surface-muted" />
+        <div className="h-2 w-full animate-pulse rounded-full bg-surface-muted" />
+        <div className="flex gap-8">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-8 w-24 animate-pulse rounded-sm bg-surface-muted" />
+          ))}
+        </div>
       </div>
     )
   }
 
-  // FAIL-SOFT: sin resumen no se pinta nada; el host conserva su vacío.
   if (!data) return null
 
-  const { totals, tasa_conciliacion } = data
-  const porCruzar = Math.max(0, totals.movimientos - totals.conciliados)
+  const { totals } = data
+  const n = (x: number) => numberFormatter.format(x)
+  const falta = Math.max(0, totals.movimientos - totals.conciliados)
+  const enCola = Math.min(falta, Math.max(0, totals.en_cola ?? 0))
+  const porCruzar = Math.max(0, falta - enCola)
+  const hallazgos = hallazgosPorTipo(data.taxonomy)
 
   /*
-   * GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA en una cifra —cuántos movimientos
-   * lleva conciliados el agente de los que tiene—, con su barra (conciliados · por cruzar), y la
-   * tasa y el monto debajo. Antes, cuatro tarjetas del mismo peso. «En cola» sigue sin repetirse
-   * aquí: es el número de «Lo que encontró el agente».
-   *
-   * 🔴 21-09-2026: el rótulo le pone dueño a la cifra —«lo que lleva cruzado el agente»—: arriba la
-   * pantalla habla de lo que mandó el banco y nadie cruzó todavía; sin dueño, una de las dos miente.
+   * Revisora r24 (Conciliación #1 y #5): UNA tarjeta con LA RESPUESTA —lo que falta por conciliar—
+   * y, en la barra, lo conciliado, lo que espera tu decisión (con «Revisar») y lo que falta cruzar.
+   * Antes la cifra medía al agente («Lo que lleva cruzado el agente: 8 de 11») y lo que te tocaba
+   * iba en otra tarjeta debajo. La tasa sale del pie: decía lo mismo que la barra.
    */
   return (
     <section
-      aria-labelledby="lo-que-cruzo-el-agente"
+      aria-labelledby="falta-por-conciliar"
       className="rounded-lg border border-border bg-surface p-5"
       data-testid="conciliacion-resumen"
     >
       <CifraHeroe
-        rotulo={<span id="lo-que-cruzo-el-agente">Lo que lleva cruzado el agente</span>}
+        rotulo={<span id="falta-por-conciliar">Falta por conciliar</span>}
         cifra={
-          <span data-testid="conciliacion-total-conciliados">
-            <span className="sr-only">Conciliados: </span>
-            <AnimatedNumber value={totals.conciliados} format={(n) => numberFormatter.format(n)} />
+          <span data-testid="conciliacion-total-falta">
+            <AnimatedNumber value={falta} format={(x) => numberFormatter.format(x)} />{' '}
+            <span className="text-fg-muted">{falta === 1 ? 'movimiento' : 'movimientos'}</span>
           </span>
         }
         contexto={
           <span data-testid="conciliacion-total-movimientos">
-            de <AnimatedNumber value={totals.movimientos} format={(n) => numberFormatter.format(n)} />{' '}
-            {totals.movimientos === 1 ? 'movimiento conciliado' : 'movimientos conciliados'}
+            de los <AnimatedNumber value={totals.movimientos} format={(x) => numberFormatter.format(x)} /> del extracto
           </span>
         }
         total={totals.movimientos}
         tramos={[
-          { clave: 'conciliados', etiqueta: 'Conciliados', monto: totals.conciliados, tono: 'exito' },
-          { clave: 'por-cruzar', etiqueta: 'Por cruzar', monto: porCruzar, tono: 'neutro' },
+          {
+            clave: 'conciliados',
+            etiqueta: 'Conciliados',
+            monto: totals.conciliados,
+            tono: 'exito',
+            siempre: true,
+            cifra: <span data-testid="conciliacion-total-conciliados">{n(totals.conciliados)}</span>,
+          },
+          {
+            clave: 'en-cola',
+            etiqueta: 'Esperan tu decisión',
+            monto: enCola,
+            tono: 'aviso',
+            cifra: n(enCola),
+            extra:
+              colaHref && enCola > 0 ? (
+                <Link
+                  href={colaHref}
+                  className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid="conciliacion-hallazgos-cta"
+                >
+                  {etiquetaDeRevision(enCola)}
+                </Link>
+              ) : null,
+          },
+          { clave: 'por-cruzar', etiqueta: 'Por cruzar', monto: porCruzar, tono: 'neutro', cifra: n(porCruzar) },
         ]}
         tamano="mediana"
         pie={
-          <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-border-faint pt-3">
-            <div className="space-y-0.5" data-testid="conciliacion-total-tasa">
-              <dt className="font-mono uppercase tracking-[0.06em] text-fg-subtle">Tasa de conciliación</dt>
-              <dd className="font-mono text-body-sm tabular-nums text-fg">
-                {tasa_conciliacion === null ? formatTasa(null) : <AnimatedNumber value={tasa_conciliacion} format={formatTasa} />}
-              </dd>
-            </div>
-            <div className="space-y-0.5" data-testid="conciliacion-total-monto">
-              <dt className="font-mono uppercase tracking-[0.06em] text-fg-subtle">Monto conciliado</dt>
-              <dd className="font-mono text-body-sm tabular-nums text-fg">
-                <AnimatedNumber value={totals.monto_conciliado_cop} format={(n) => copFormatter.format(n)} />
-              </dd>
-            </div>
-          </dl>
+          <div className="space-y-2 border-t border-border-faint pt-3">
+            {colaHref && hallazgos.length > 0 ? (
+              <Stagger
+                as="ul"
+                className="flex flex-wrap gap-2"
+                data-testid="conciliacion-hallazgos-tipos"
+              >
+                {hallazgos.map((h) => (
+                  <StaggerItem
+                    as="li"
+                    key={h.tipo}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-caption text-fg-muted"
+                    data-testid={`conciliacion-hallazgo-${h.tipo}`}
+                  >
+                    <span className="font-mono tabular-nums text-fg">{n(h.cantidad)}</span>
+                    {h.etiqueta}
+                  </StaggerItem>
+                ))}
+              </Stagger>
+            ) : null}
+            <p data-testid="conciliacion-total-monto">
+              <span className="font-mono tabular-nums text-fg">
+                <AnimatedNumber value={totals.monto_conciliado_cop} format={(x) => copFormatter.format(x)} />
+              </span>{' '}
+              conciliados
+            </p>
+          </div>
         }
+        data-testid={colaHref ? 'conciliacion-hallazgos' : undefined}
       />
     </section>
   )

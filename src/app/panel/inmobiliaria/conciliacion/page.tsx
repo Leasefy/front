@@ -87,7 +87,6 @@ import { AlertaDePartidas } from '@/components/cobros/extracto-bancario/AlertaDe
 import { useConciliacionRun } from '@/lib/hooks/conciliacion/use-conciliacion-run'
 import {
   ConciliacionResumen,
-  HallazgosDelAgente,
 } from '@/components/inmobiliaria/ai/ConciliacionResumen'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { actorLabel, actorMeta } from '@/components/inmobiliaria/ai/TrazaCaso'
@@ -100,6 +99,7 @@ const COLA_HREF = '/panel/inmobiliaria/conciliacion/cola'
 
 /** Ancla en la página de movimientos — el cargador lleva id="upload". */
 const SUBIR_EXTRACTO_HREF = '/panel/inmobiliaria/conciliacion/movimientos#upload'
+const MOVIMIENTOS_HREF = '/panel/inmobiliaria/conciliacion/movimientos'
 
 /** Cada cuánto se vuelve a leer el resumen mientras corre una conciliación. */
 const SONDEO_MS = 5000
@@ -393,6 +393,8 @@ function ConciliacionSala() {
             titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
             descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
           >
+            {/* Revisora r24 (Conciliación #6): salió de la descripción del encabezado. */}
+            <p className="mb-3 text-body-sm text-fg">Modo Copiloto: nada se aplica sin tu aprobación.</p>
             <PasosExplicados
               data-testid="conciliacion-como-funciona"
               pasos={COMO_FUNCIONA_STEPS.map((step) => ({
@@ -432,27 +434,63 @@ function ConciliacionSala() {
                 ? 'Conciliando…'
                 : movimientos != null && conciliados != null && movimientos > conciliados
                   ? `Conciliar ${movimientos - conciliados} movimientos`
-                  : 'Conciliar ahora'}
+                  : pendientesEnElBack > 0
+                    ? `Conciliar ${pendientesEnElBack} ${pendientesEnElBack === 1 ? 'movimiento' : 'movimientos'}`
+                    : 'Conciliar ahora'}
             </Button>
           </>
         }
       />
 
+      {/* Revisora r24 (Conciliación #2): con la principal apagada, la razón en corto y su salida al lado
+          (en el celular el `title` no existe). */}
+      {!isRunning && porQueNoSePuedeConciliar && !leyendoResumen ? (
+        <p className="-mt-3 flex flex-wrap items-baseline gap-x-2 text-body-sm text-fg-muted" data-testid="conciliacion-por-que-no">
+          <span>{porQueNoSePuedeConciliar}</span>
+          {resumenCaido ? (
+            <button
+              type="button"
+              onClick={() => void refetchSummary()}
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Reintentar
+            </button>
+          ) : sinMovimientos ? (
+            <Link href={SUBIR_EXTRACTO_HREF} className="font-medium text-primary underline-offset-4 hover:underline">
+              {sinExtracto || leyendoElBack ? 'Subir el extracto' : 'Ver movimientos'}
+            </Link>
+          ) : null}
+        </p>
+      ) : null}
+
       {/* D-CONCILIACION (Nico, P10): el aviso de las partidas que pasan de los días de la alerta. */}
       <AlertaDePartidas />
 
       {/* 1. El extracto del banco: en qué va, en una línea. */}
+      {/* Revisora r24 (Conciliación #3): la línea lleva a donde están los movimientos; sin el ícono de
+          subir (subir ya es la secundaria del encabezado). */}
       <div
-        className="flex items-start gap-2.5 rounded-lg border border-border bg-surface px-4 py-3"
+        className="rounded-lg border border-border bg-surface px-4 py-3"
         data-testid="conciliacion-subir-extracto"
       >
-        <UploadSimple className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
         <p className="text-body-sm text-fg-muted" data-testid="conciliacion-hero-linea">
-          {sinExtracto
-            ? 'Todavía no cargaste ningún extracto, así que no hay movimientos que cruzar.'
-            : pendientesEnElBack > 0
-              ? `Hay ${pendientesEnElBack} ${pendientesEnElBack === 1 ? 'movimiento del banco esperando' : 'movimientos del banco esperando'} en Movimientos.`
-              : t(`${PAGES_NS}.accionDesc`)}
+          {sinExtracto ? (
+            'Todavía no cargaste ningún extracto, así que no hay movimientos que cruzar.'
+          ) : pendientesEnElBack > 0 ? (
+            <>
+              <span className="font-mono tabular-nums text-fg">{pendientesEnElBack}</span>{' '}
+              {pendientesEnElBack === 1 ? 'movimiento del banco espera' : 'movimientos del banco esperan'} ·{' '}
+              <Link
+                href={MOVIMIENTOS_HREF}
+                className="font-medium text-primary underline-offset-4 hover:underline"
+                data-testid="conciliacion-ver-movimientos"
+              >
+                Ver movimientos
+              </Link>
+            </>
+          ) : (
+            t(`${PAGES_NS}.accionDesc`)
+          )}
         </p>
       </div>
 
@@ -492,10 +530,9 @@ function ConciliacionSala() {
 
       {/* 2. LA RESPUESTA: cuánto lleva conciliado el agente. El esqueleto sólo en la PRIMERA lectura:
              en cada vuelta del sondeo se borraban los números y volvían. */}
-      <ConciliacionResumen data={summary} isLoading={leyendoResumen} showSkeleton />
-
-      {/* 3. Lo que encontró el agente, con su botón para revisarlo. */}
-      <HallazgosDelAgente data={summary} colaHref={COLA_HREF} />
+      {/* Revisora r24 (Conciliación #1): UNA tarjeta —lo que falta por conciliar, con lo que espera tu
+          decisión y su «Revisar»—; antes, «Lo que encontró el agente» iba en otra tarjeta debajo. */}
+      <ConciliacionResumen data={summary} isLoading={leyendoResumen} showSkeleton colaHref={COLA_HREF} />
 
       {/* 4. Qué pasó con la última corrida. */}
       <ResultadoDeLaCorrida corrida={corrida} />

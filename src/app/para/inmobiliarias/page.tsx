@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { Appear } from '@leasefy/cadence';
 import { CheckCircle } from '@phosphor-icons/react';
@@ -10,7 +9,6 @@ import { FAQSection } from '@/components/home/FAQSection';
 import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 import { HeroeDePara } from '@/components/landing-v2/para/HeroeDePara';
 import { FotoQueSeRevela } from '@/components/landing-v2/para/FotoQueSeRevela';
-import { TestimoniosDePara } from '@/components/landing-v2/para/TestimoniosDePara';
 import { CierreDePara } from '@/components/landing-v2/para/CierreDePara';
 import {
   Acento,
@@ -26,34 +24,6 @@ import {
   TituloDeSeccion,
 } from '@/components/landing-v2/para/piezas';
 import { cn } from '@/lib/utils';
-
-// Testimonials data
-const testimonials = [
-  {
-    quote: 'Pasamos de gestionar 50 propiedades a 200 sin aumentar el equipo. La automatización del scoring y los contratos digitales son un game-changer.',
-    author: 'Inmobiliaria Santafé',
-    role: 'Bogotá, 200+ propiedades',
-    image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    quote: 'El API nos permitió integrar con nuestro ERP existente. La migración fue sin fricciones, en solo 2 semanas teníamos todo funcionando.',
-    author: 'Grupo Inmobiliario Antioquia',
-    role: 'Medellín, 350+ propiedades',
-    image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    quote: 'El scoring con IA redujo nuestros impagos en un 60%. El ROI fue inmediato desde el primer mes de implementación.',
-    author: 'Arriendos del Valle',
-    role: 'Cali, 120+ propiedades',
-    image: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    quote: 'La plataforma white-label nos permitió ofrecer a nuestros clientes una experiencia completamente personalizada con nuestra marca.',
-    author: 'Propiedades Premium',
-    role: 'Barranquilla, 85+ propiedades',
-    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=400&fit=crop&q=80',
-  },
-];
 
 const problemasConFoto = [
   {
@@ -184,9 +154,9 @@ export default function InmobiliariasPage() {
           principal={{ href: '/auth', texto: 'Empezar prueba gratis' }}
           secundaria={{ href: '/pricing', texto: 'Ver planes' }}
           cifras={[
-            { valor: '92%', rotulo: 'Precisión IA' },
-            { valor: '500+', rotulo: 'Inmobiliarias' },
-            { valor: '10x', rotulo: 'Más rápido' },
+            // Ronda 30: sólo cifras que se pueden sostener (antes porcentajes, «x» y satisfacción inventados).
+            { valor: '$0', rotulo: 'Publicar en el marketplace' },
+            { valor: 'Ley 820', rotulo: 'Contratos digitales' },
           ]}
           foto={{ src: '/hero-7.jpg', alt: 'Sala de un apartamento moderno' }}
           pieza={<PiezaDelHeroe />}
@@ -246,13 +216,13 @@ export default function InmobiliariasPage() {
                     <Rotulo tono="neutro">PROBLEMA 05</Rotulo>
                     <h3 className="mt-4 text-[24px] font-[420] leading-tight tracking-[-0.02em]">Escalabilidad limitada</h3>
                     <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
-                      Cada 50 propiedades nuevas, necesitas contratar más personal. Tu operación no escala eficientemente.
+                      Cada 50 inmuebles nuevos, necesitas contratar más personal. Tu operación no escala eficientemente.
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex-none">
                       <p className="font-mono text-[30px] leading-none text-[#121110]">50</p>
-                      <p className="mt-1 text-caption text-[#706B64]">propiedades por persona</p>
+                      <p className="mt-1 text-caption text-[#706B64]">inmuebles por persona</p>
                     </div>
                     <HiloDePuntos className="min-w-[40px] flex-1" />
                     <div className="flex-none text-right">
@@ -321,7 +291,7 @@ export default function InmobiliariasPage() {
                 className="md:col-span-5"
                 delay={0.08}
                 titulo="Scoring con IA"
-                texto="Evalúa candidatos en segundos con 92% de precisión."
+                texto="Evalúa candidatos en segundos, con el porqué de cada calificación."
               >
                 <div className="flex flex-col items-center justify-center py-2">
                   <svg viewBox="0 0 100 60" className="h-[60px] w-[100px]" aria-hidden="true">
@@ -337,7 +307,7 @@ export default function InmobiliariasPage() {
                 className="md:col-span-5"
                 delay={0.12}
                 titulo="Multi-Propiedad"
-                texto="Gestiona cientos de propiedades por sucursal."
+                texto="Gestiona cientos de inmuebles por sucursal."
               >
                 <div aria-hidden="true" className="mx-auto grid w-[132px] grid-cols-3 gap-1.5">
                   {[92, 88, 96, 75, 90, 85, 78, 94, 82].map((occ, i) => (
@@ -411,20 +381,7 @@ export default function InmobiliariasPage() {
           </div>
         </Seccion>
 
-        <TestimoniosDePara
-          testimonios={testimonials}
-          ceja="Testimonios"
-          titulo={
-            <>
-              Inmobiliarias que <Acento>confían</Acento> en nosotros
-            </>
-          }
-          avatar={(testimonial) => (
-            <span className={cn('h-11 w-11 flex-none overflow-hidden rounded-[12px] bg-[#E7E3DC]', ESQUINA)}>
-              <Image src={testimonial.image} alt="" width={44} height={44} className="h-full w-full object-cover" />
-            </span>
-          )}
-        />
+        {/* Ronda 30: fuera los testimonios: eran inventados (nombres, cifras y fotos de banco). Vuelven cuando haya reales. */}
 
         <div className="[&>section]:!bg-[#FBFAF8]">
           <FAQSection />

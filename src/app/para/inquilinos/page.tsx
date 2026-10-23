@@ -7,7 +7,6 @@ import { FAQSection } from '@/components/home/FAQSection';
 import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 import { HeroeDePara } from '@/components/landing-v2/para/HeroeDePara';
 import { FotoQueSeRevela } from '@/components/landing-v2/para/FotoQueSeRevela';
-import { TestimoniosDePara } from '@/components/landing-v2/para/TestimoniosDePara';
 import { CierreDePara } from '@/components/landing-v2/para/CierreDePara';
 import {
   Acento,
@@ -24,34 +23,6 @@ import {
 } from '@/components/landing-v2/para/piezas';
 import { cn } from '@/lib/utils';
 
-// Testimonials data
-const testimonials = [
-  {
-    quote: 'Encontré apartamento en Chapinero en solo 2 días. El Arriendo Pass me permitió postularme a 5 inmuebles sin volver a llenar formularios.',
-    author: 'Andrés Pereira',
-    role: 'Inquilino en Bogotá',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face&q=80',
-  },
-  {
-    quote: 'Me mudé de Medellín a Bogotá por trabajo y pude postularme a inmuebles antes de llegar. El proceso fue 100% digital.',
-    author: 'Laura Sánchez',
-    role: 'Reubicación laboral',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face&q=80',
-  },
-  {
-    quote: 'Como estudiante extranjero, pensé que sería imposible arrendar. Con mi perfil verificado, el propietario confió en mí de inmediato.',
-    author: 'Nicolás Mendez',
-    role: 'Estudiante universitario',
-    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face&q=80',
-  },
-  {
-    quote: 'La búsqueda con IA es increíble. Escribe lo que buscaba y me mostró exactamente lo que necesitaba. Firmé contrato en una semana.',
-    author: 'María Fernanda López',
-    role: 'Inquilina en Medellín',
-    image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-];
-
 const problemas = [
   {
     foto: '/hero-interior.jpg',
@@ -59,7 +30,7 @@ const problemas = [
     rotulo: 'ESTAFAS',
     cifra: '8 de 10',
     detalle: 'han visto anuncios falsos',
-    texto: 'Fotos robadas, precios irreales, propiedades que no existen',
+    texto: 'Fotos robadas, precios irreales, inmuebles que no existen',
   },
   {
     foto: '/hero-4.jpg',
@@ -82,17 +53,17 @@ const problemas = [
 const soluciones = [
   {
     titulo: 'Búsqueda con IA',
-    texto: 'Describe lo que buscas en lenguaje natural. Nuestra IA encuentra propiedades que realmente te interesan.',
+    texto: 'Describe lo que buscas en lenguaje natural. Leasefy te muestra los inmuebles que de verdad te sirven.',
     chips: ['Filtros inteligentes', 'Alertas automáticas', 'Mapa interactivo'],
   },
   {
     titulo: 'Arriendo Pass',
-    texto: 'Paga una vez, postulate sin límite por 60 días. Sin repetir documentos.',
-    chips: ['Aplicaciones ilimitadas', '60 días', 'Sin repetir docs'],
+    texto: 'Paga una vez, postúlate sin límite por 60 días. Sin repetir documentos.',
+    chips: ['Postulaciones ilimitadas', '60 días', 'Sin repetir documentos'],
   },
   {
-    titulo: '100% Verificado',
-    texto: 'Cada propiedad verificada. Fotos reales, precios reales, cero estafas.',
+    titulo: 'Verificado',
+    texto: 'Cada inmueble verificado. Fotos reales, precios reales, cero estafas.',
     chips: ['Fotos verificadas', 'Visitas reales', 'Cero estafas'],
   },
 ];
@@ -151,7 +122,7 @@ function PiezaDelHeroe() {
       <Tarjeta className="flex items-center gap-3 px-4 py-3">
         <Punto />
         <div className="min-w-0">
-          <p className="text-caption font-medium text-[#121110]">Nueva propiedad</p>
+          <p className="text-caption font-medium text-[#121110]">Nuevo inmueble</p>
           <p className="font-mono text-caption text-[#706B64]">Chapinero · $1.8M/mes</p>
         </div>
       </Tarjeta>
@@ -164,7 +135,7 @@ export default function InquilinosPage() {
     <LandingChrome>
       <main className="overflow-hidden bg-[#FBFAF8]">
         <HeroeDePara
-          ceja="+2,500 propiedades verificadas"
+          ceja="Inmuebles verificados"
           titulo={
             <>
               Encuentra tu hogar <span className="block"><Acento>sin estrés</Acento></span>
@@ -176,12 +147,12 @@ export default function InquilinosPage() {
               <span className="text-[#121110]"> Cero estafas, cero sorpresas.</span>
             </>
           }
-          principal={{ href: '/propiedades', texto: 'Ver propiedades' }}
+          principal={{ href: '/propiedades', texto: 'Ver inmuebles' }}
           secundaria={{ href: '/auth', texto: 'Crear perfil gratis' }}
           cifras={[
-            { valor: '100%', rotulo: 'Verificadas' },
-            { valor: '24h', rotulo: 'Respuesta' },
-            { valor: '4.8', rotulo: 'Satisfacción' },
+            // Ronda 30: sólo cifras que se pueden sostener (antes porcentajes, «x» y satisfacción inventados).
+            { valor: '$0', rotulo: 'Crear tu perfil' },
+            { valor: 'Ley 820', rotulo: 'Contratos claros' },
           ]}
           foto={{ src: '/images/people/woman-laptop-kitchen.jpg', alt: 'Inquilina feliz' }}
           pieza={<PiezaDelHeroe />}
@@ -341,15 +312,7 @@ export default function InquilinosPage() {
           </div>
         </Seccion>
 
-        <TestimoniosDePara
-          testimonios={testimonials}
-          ceja="Testimonios"
-          titulo={
-            <>
-              Inquilinos que encontraron su <Acento>hogar</Acento>
-            </>
-          }
-        />
+        {/* Ronda 30: fuera los testimonios: eran inventados (nombres, cifras y fotos de banco). Vuelven cuando haya reales. */}
 
         <div className="[&>section]:!bg-[#FBFAF8]">
           <FAQSection />

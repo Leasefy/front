@@ -121,7 +121,7 @@ export function PostulacionEnviadaModal({
             aria-hidden="true"
           />
           <div className="min-w-0 space-y-1">
-            <p className="text-base font-semibold text-foreground">
+            <p className="text-base font-medium text-foreground">
               {property.title}
             </p>
             <p className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -130,7 +130,7 @@ export function PostulacionEnviadaModal({
                 {property.neighborhood || property.city}
               </span>
             </p>
-            <p className="text-sm font-medium text-foreground">
+            <p className="font-mono text-sm font-medium tabular-nums text-foreground">
               {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
               {property.monthlyRent != null ? `${formatCurrency(property.monthlyRent)} /mes` : '—'}
             </p>
@@ -143,7 +143,7 @@ export function PostulacionEnviadaModal({
             <div className="min-w-0">
               <p className="text-caption text-muted-foreground">Código de seguimiento</p>
               <p
-                className="font-mono text-lg font-semibold tracking-wider text-foreground"
+                className="font-mono text-lg font-medium tracking-wider text-foreground"
                 data-testid="codigo-seguimiento"
               >
                 {codigo}
@@ -268,7 +268,8 @@ function Paso({
           aria-hidden="true"
         />
       ) : null}
-      <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-medium text-primary">
+      {/* Ronda 30: el número en un aro neutro (antes un círculo azul). */}
+      <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface font-mono text-sm tabular-nums text-fg-muted">
         {numero}
       </div>
       <div className="min-w-0 flex-1 pb-1">

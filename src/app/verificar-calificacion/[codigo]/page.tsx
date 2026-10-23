@@ -29,6 +29,7 @@ import { traducir } from '@/lib/i18n/use-tr';
 import { IDIOMAS } from '@/lib/idioma/idioma';
 import { cambiarIdioma, useIdioma, useTx } from '@/lib/idioma/use-idioma';
 import { cn } from '@/lib/utils';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 
 type Par = readonly [es: string, en: string];
 
@@ -84,13 +85,12 @@ export default function VerificarCalificacionPage({ params }: { params: Promise<
   }, [codigo]);
 
   const par = (p: Par | undefined) => (p ? tx(p[0], p[1]) : '—');
+  // Ronda 30: en español, la fecha de la casa («16 oct 2026»).
   const dia = (iso: string | null) =>
     iso
-      ? new Date(iso).toLocaleDateString(idioma === 'en' ? 'en-US' : 'es-CO', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })
+      ? idioma === 'en'
+        ? new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+        : fechaCorta(iso)
       : '—';
   const meses = (n: number) => (n === 1 ? tx('1 mes', '1 month') : tx(`${n} meses`, `${n} months`));
   const aTiempo = (p: number) => tx(` · ${p} % a tiempo`, ` · ${p}% on time`);

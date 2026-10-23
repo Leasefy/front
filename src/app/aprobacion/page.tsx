@@ -387,11 +387,11 @@ export default function AprobacionPage() {
         {/* Sin inmueble de por medio, los pasos del estudio solo (Juan, 15-10-2026:
             «no muestra el paso a paso del estudio»). */}
         {desdeLaFicha ? (
-          <section data-testid="paso-2-de-3" className="rounded-2xl border border-border bg-surface px-5 py-4">
+          <section data-testid="paso-2-de-3" className="rounded-lg border border-border bg-surface px-5 py-4">
             <PasosDelArriendo actual={2} />
           </section>
         ) : (
-          <section data-testid="franja-del-estudio" className="rounded-2xl border border-border bg-surface px-5 py-4">
+          <section data-testid="franja-del-estudio" className="rounded-lg border border-border bg-surface px-5 py-4">
             <PasosDelArriendo variante="estudio" actual={pagando ? 2 : 1} />
           </section>
         )}
@@ -409,7 +409,7 @@ export default function AprobacionPage() {
         ) : pagando ? (
           // Reemplaza el form: el pago se abrió en otra pestaña, esta se
           // queda poleando el back en vez de navegar.
-          <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm md:p-8">
+          <section className="rounded-lg border border-border bg-surface p-6 md:p-8">
             <EstadoPagoAprobacion
               paymentUrl={paymentUrl}
               popupBlocked={popupBlocked}
@@ -420,16 +420,16 @@ export default function AprobacionPage() {
           <>
             <section
               aria-labelledby="estudio-titulo"
-              className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+              className="overflow-hidden rounded-lg border border-border bg-surface"
             >
               <div className="flex flex-col gap-5 bg-primary-soft px-6 py-8 md:px-10">
                 <div className="flex flex-col gap-2">
-                  <p className="text-caption font-medium uppercase tracking-wide text-primary">
+                  <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
                     {desdeLaFicha ? 'Paso 2 de 3 · validamos tus datos' : 'Paso 1 de 3 · tus datos'}
                   </p>
                   <h1
                     id="estudio-titulo"
-                    className="font-heading text-2xl font-semibold leading-tight text-fg text-balance md:text-4xl"
+                    className="font-heading text-2xl font-[420] leading-tight text-fg text-balance md:text-4xl"
                   >
                     {desdeLaFicha ? 'Validemos que te lo podamos arrendar' : 'Conoce hasta cuánto te arrendamos'}
                   </h1>
@@ -438,7 +438,7 @@ export default function AprobacionPage() {
                         inventa el monto: el precio lo manda el backend y hoy no
                         lo manda (ver lib/api/estudio-pago.service.ts). */}
                     Consultamos varias aseguradoras a la vez y te decimos hasta cuánto te
-                    respaldan. Se paga una sola vez y te sirve para todas las propiedades
+                    respaldan. Se paga una sola vez y te sirve para todos los inmuebles
                     que te interesen.
                   </p>
                 </div>
@@ -446,19 +446,19 @@ export default function AprobacionPage() {
                 {arriendo && (
                   <div
                     data-testid="inmueble-del-paso-2"
-                    className="flex items-center gap-4 rounded-xl border border-border bg-surface p-3"
+                    className="flex items-center gap-4 rounded-lg border border-border bg-surface p-3"
                   >
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
                       {arriendo.foto ? (
                         <Image src={arriendo.foto} alt={arriendo.titulo} fill sizes="64px" className="object-cover" />
                       ) : (
-                        <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary-soft to-surface-muted text-primary">
+                        <div className="flex h-full items-center justify-center bg-surface-muted text-fg-subtle">
                           <HouseLine weight="duotone" className="h-7 w-7" aria-hidden="true" />
                         </div>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-fg">{arriendo.titulo}</p>
+                      <p className="text-sm font-medium text-fg">{arriendo.titulo}</p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-fg-muted">
                         {arriendo.ciudad && (
                           <span className="inline-flex items-center gap-1">
@@ -620,7 +620,7 @@ export default function AprobacionPage() {
                   </Field>
                 </Grupo>
 
-                <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface-muted p-4">
+                <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface-muted p-4">
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="consent"
@@ -630,7 +630,7 @@ export default function AprobacionPage() {
                       aria-describedby={errors.consent ? 'consent-error' : undefined}
                       className="mt-0.5"
                     />
-                    <Label htmlFor="consent" className="text-xs font-normal leading-relaxed text-fg-muted">
+                    <Label htmlFor="consent" className="text-body-sm font-normal leading-relaxed text-fg-muted">
                       {/* Al inquilino no se le dice "asegurabilidad" — docs/VOCABULARIO.md */}
                       Autorizo el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 para
                       consultar mi aprobación con las aseguradoras y ser contactado por un asesor de Leasefy.
@@ -704,7 +704,7 @@ function Grupo({
   return (
     <div role="group" aria-labelledby={id} className="flex flex-col gap-4">
       <div>
-        <h2 id={id} className="font-heading text-lg font-semibold text-fg">
+        <h2 id={id} className="font-heading text-lg font-medium text-fg">
           {titulo}
         </h2>
         <p className="mt-0.5 text-caption text-fg-muted">{ayuda}</p>

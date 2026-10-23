@@ -178,16 +178,15 @@ function FlexCalculator() {
   const sliderPercentage = Math.min(((units - 10) / (500 - 10)) * 100, 100);
 
   return (
-    <Appear inView distance="md" duration="slow" className="mb-12 rounded-[20px] overflow-hidden border border-border">
+    <Appear inView distance="md" duration="slow" className="mb-12 rounded-lg overflow-hidden border border-border">
       <div className="relative bg-foreground text-background px-6 py-5">
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-warning via-warning to-danger" />
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-md bg-white/10 flex items-center justify-center">
             <Calculator className="w-4 h-4 text-white" />
           </div>
           <div>
             <h3 className="text-[15px] font-medium text-white">Calculadora Flex</h3>
-            <p className="text-[12px] text-white/50">Estima tu costo mensual con el plan Flex</p>
+            <p className="text-[13px] text-white/50">Estima tu costo mensual con el plan Flex</p>
           </div>
         </div>
       </div>
@@ -197,7 +196,7 @@ function FlexCalculator() {
           <div className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">
+                <label className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider">
                   Unidades administradas
                 </label>
                 <input
@@ -206,7 +205,7 @@ function FlexCalculator() {
                   max="1000"
                   value={units}
                   onChange={(e) => setUnits(Math.max(10, Math.min(1000, parseInt(e.target.value) || 10)))}
-                  className="w-16 h-8 px-2 text-center text-[14px] font-bold font-mono tabular-nums bg-muted/50 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10"
+                  className="w-16 h-8 px-2 text-center text-[14px] font-medium font-mono tabular-nums bg-muted/50 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10"
                 />
               </div>
               <div className="relative h-10 flex items-center">
@@ -250,7 +249,7 @@ function FlexCalculator() {
               </div>
             </div>
             <div>
-              <label className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+              <label className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
                 Canon promedio (COP)
               </label>
               <div className="relative">
@@ -272,23 +271,23 @@ function FlexCalculator() {
           </div>
           <div className="flex flex-col justify-center">
             <div className="bg-muted/30 rounded-[18px] p-5 border border-border">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Costo mensual estimado</p>
+              <p className="text-[13px] uppercase tracking-wider text-muted-foreground mb-1">Costo mensual estimado</p>
               {/* La cifra cuenta desde la anterior al mover el control (`AnimatedNumber`). */}
-              <p className="text-[36px] font-mono font-bold text-foreground tracking-tight leading-none tabular-nums">
+              <p className="text-[36px] font-mono font-medium text-foreground tracking-tight leading-none tabular-nums">
                 <AnimatedNumber value={monthlyFee} format={(n) => `$${Math.round(n).toLocaleString('es-CO')}`} />
               </p>
-              <p className="text-[12px] text-muted-foreground mt-1">COP/mes</p>
+              <p className="text-[13px] text-muted-foreground mt-1">COP/mes</p>
               <div className="mt-4 pt-4 space-y-2 border-t border-border">
-                <div className="flex items-center justify-between text-[12px]">
+                <div className="flex items-center justify-between text-[13px]">
                   <span className="text-muted-foreground">{units} unidades x ${avgRent.toLocaleString('es-CO')} canon</span>
                   <span className="text-foreground font-medium font-mono tabular-nums">= ${(units * avgRent).toLocaleString('es-CO')}</span>
                 </div>
-                <div className="flex items-center justify-between text-[12px]">
+                <div className="flex items-center justify-between text-[13px]">
                   <span className="text-muted-foreground">1% del canon administrado</span>
                   <span className="text-foreground font-semibold font-mono tabular-nums">${monthlyFee.toLocaleString('es-CO')}</span>
                 </div>
               </div>
-              <p className="text-[11px] text-muted-foreground/70 mt-3 leading-relaxed">
+              <p className="text-[13px] text-muted-foreground/70 mt-3 leading-relaxed">
                 Ej: {units} unidades x ${(avgRent / 1000000).toFixed(1)}M canon = ${(monthlyFee / 1000000).toFixed(1)}M COP/mes. Evaluaciones ilimitadas incluidas.
               </p>
             </div>
@@ -415,12 +414,11 @@ export default function PricingPage() {
                   className="flex flex-wrap gap-6"
                 >
                   {[
-                    { value: '5-6%', label: 'Administración' },
+                    { value: '5–6 %', label: 'Administración' },
                     { value: '$0', label: 'Publicar' },
-                    { value: '2,400+', label: 'Clientes' },
                   ].map((stat) => (
                     <div key={stat.label} className="flex items-baseline gap-2">
-                      <span className="text-[24px] font-mono font-bold tabular-nums text-white">{stat.value}</span>
+                      <span className="text-[24px] font-mono font-medium tabular-nums text-white">{stat.value}</span>
                       <span className="text-[13px] text-white/50">{stat.label}</span>
                     </div>
                   ))}
@@ -448,7 +446,7 @@ export default function PricingPage() {
                         </div>
                         <div>
                           <p className="text-[13px] font-mono uppercase font-normal text-white">{prop.label}</p>
-                          <p className="text-[12px] leading-relaxed mt-0.5 text-white/60">{prop.description}</p>
+                          <p className="text-[13px] leading-relaxed mt-0.5 text-white/60">{prop.description}</p>
                         </div>
                       </div>
                     </div>
@@ -483,7 +481,7 @@ export default function PricingPage() {
               as="button"
               onClick={() => setUserTextT('owner-managed')}
               className={cn(
-                "group relative h-full w-full text-left rounded-[20px] overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer border-2 bg-surface hover:ring-1 hover:ring-primary",
+                "group relative h-full w-full text-left rounded-lg overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer border-2 bg-surface hover:ring-1 hover:ring-primary",
                 userTextT === 'owner-managed'
                   ? "border-primary/30 ring-2 ring-primary/10"
                   : "border-border-faint hover:border-primary/30"
@@ -501,8 +499,8 @@ export default function PricingPage() {
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Nosotros cobramos y gestionamos todo</p>
                   <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-[24px] font-mono font-bold tabular-nums text-foreground">5-6%</span>
-                    <span className="text-[12px] text-muted-foreground">del arriendo</span>
+                    <span className="text-[24px] font-mono font-medium tabular-nums text-foreground">5-6%</span>
+                    <span className="text-[13px] text-muted-foreground">del arriendo</span>
                   </div>
                 </div>
               </div>
@@ -515,7 +513,7 @@ export default function PricingPage() {
               as="button"
               onClick={() => setUserTextT('owner-diy')}
               className={cn(
-                "group relative h-full w-full text-left rounded-[20px] overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
+                "group relative h-full w-full text-left rounded-lg overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
                 userTextT === 'owner-diy'
                   ? "border-primary/30 ring-2 ring-primary/10"
                   : "border-border-faint hover:border-primary/30"
@@ -533,8 +531,8 @@ export default function PricingPage() {
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Herramientas profesionales para ti</p>
                   <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-[24px] font-mono font-bold tabular-nums text-foreground">$0</span>
-                    <span className="text-[12px] text-muted-foreground">para empezar</span>
+                    <span className="text-[24px] font-mono font-medium tabular-nums text-foreground">$0</span>
+                    <span className="text-[13px] text-muted-foreground">para empezar</span>
                   </div>
                 </div>
               </div>
@@ -547,7 +545,7 @@ export default function PricingPage() {
               as="button"
               onClick={() => setUserTextT('evaluation')}
               className={cn(
-                "group relative h-full w-full text-left rounded-[20px] overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
+                "group relative h-full w-full text-left rounded-lg overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
                 userTextT === 'evaluation'
                   ? "border-primary/30 ring-2 ring-primary/10"
                   : "border-border-faint hover:border-primary/30"
@@ -565,9 +563,9 @@ export default function PricingPage() {
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Crédito, identidad, antecedentes</p>
                   <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-[12px] text-muted-foreground mr-0.5">Desde</span>
-                    <span className="text-[24px] font-mono font-bold tabular-nums text-foreground">$24.9K</span>
-                    <span className="text-[12px] text-muted-foreground">/eval</span>
+                    <span className="text-[13px] text-muted-foreground mr-0.5">Desde</span>
+                    <span className="text-[24px] font-mono font-medium tabular-nums text-foreground">$ 24.900</span>
+                    <span className="text-[13px] text-muted-foreground">/eval</span>
                   </div>
                 </div>
               </div>
@@ -580,7 +578,7 @@ export default function PricingPage() {
               as="button"
               onClick={() => setUserTextT('agency')}
               className={cn(
-                "group relative h-full w-full text-left rounded-[20px] overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
+                "group relative h-full w-full text-left rounded-lg overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
                 userTextT === 'agency'
                   ? "border-primary/30 ring-2 ring-primary/10"
                   : "border-border-faint hover:border-primary/30"
@@ -598,8 +596,8 @@ export default function PricingPage() {
                   </h3>
                   <p className="text-[13px] text-sand-700 mb-3">Escala tu negocio con tecnología</p>
                   <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-[24px] font-mono font-bold tabular-nums text-foreground">$0</span>
-                    <span className="text-[12px] text-muted-foreground">para empezar</span>
+                    <span className="text-[24px] font-mono font-medium tabular-nums text-foreground">$0</span>
+                    <span className="text-[13px] text-muted-foreground">para empezar</span>
                   </div>
                 </div>
               </div>
@@ -607,24 +605,7 @@ export default function PricingPage() {
             </div>
           </div>
 
-          {/* Social proof strip */}
-          <Appear inView direction="none" duration="slow" delay={0.32}
-            className="flex items-center justify-center gap-3 mt-8"
-          >
-            <div className="flex -space-x-2">
-              {['774909', '2379004', '1239291', '220453'].map((id, i) => (
-                <img
-                  key={i}
-                  src={`https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=100`}
-                  alt=""
-                  className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                />
-              ))}
-            </div>
-            <p className="text-[13px] text-muted-foreground">
-              <span className="font-semibold text-foreground">+2,400 clientes</span> confían en nosotros
-            </p>
-          </Appear>
+          {/* Ronda 30: fuera la franja «+2,400 clientes confían en nosotros» con caras de banco de fotos: un dato inventado. */}
         </div>
       </section>
 
@@ -653,7 +634,7 @@ export default function PricingPage() {
 
             {/* Interactive Rent Calculator - Compact light style */}
             <Appear inView distance="md" duration="slow"
-              className="mb-10 p-5 rounded-[20px] bg-surface-muted border border-border-faint"
+              className="mb-10 p-5 rounded-lg bg-surface-muted border border-border-faint"
             >
               <div className="flex flex-col lg:flex-row lg:items-center gap-5">
                 {/* Input section */}
@@ -685,21 +666,21 @@ export default function PricingPage() {
                         className="w-full h-10 pl-7 pr-3 bg-surface text-[15px] font-medium font-mono tabular-nums text-foreground rounded-md border border-border-faint focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-[border-color,box-shadow] duration-fast ease-standard placeholder:text-fg-placeholder"
                       />
                     </div>
-                    <span className="text-[12px] text-muted-foreground">/mes</span>
+                    <span className="text-[13px] text-muted-foreground">/mes</span>
                   </div>
                 </div>
 
                 {/* Results preview - compact */}
                 <div className="flex gap-3">
                   <div className="px-4 py-3 rounded-md bg-surface border border-border-faint text-center min-w-[100px]">
-                    <p className="text-[11px] font-mono tabular-nums text-muted-foreground mb-0.5">5%</p>
-                    <p className="text-[18px] font-mono font-bold tabular-nums text-foreground">
+                    <p className="text-[13px] font-mono tabular-nums text-muted-foreground mb-0.5">5%</p>
+                    <p className="text-[18px] font-mono font-medium tabular-nums text-foreground">
                       ${(exampleRent * 0.05).toLocaleString('es-CO')}
                     </p>
                   </div>
                   <div className="px-4 py-3 rounded-md bg-success-soft border border-success/30 text-center min-w-[100px]">
-                    <p className="text-[11px] font-mono tabular-nums text-success mb-0.5">6%</p>
-                    <p className="text-[18px] font-mono font-bold tabular-nums text-foreground">
+                    <p className="text-[13px] font-mono tabular-nums text-success mb-0.5">6%</p>
+                    <p className="text-[18px] font-mono font-medium tabular-nums text-foreground">
                       ${(exampleRent * 0.06).toLocaleString('es-CO')}
                     </p>
                   </div>
@@ -707,7 +688,7 @@ export default function PricingPage() {
               </div>
 
               {/* Savings indicator - compact */}
-              <div className="mt-4 pt-3 border-t border-border-faint flex flex-wrap items-center gap-4 text-[12px]">
+              <div className="mt-4 pt-3 border-t border-border-faint flex flex-wrap items-center gap-4 text-[13px]">
                 <span className="text-muted-foreground">
                   Ahorro: <span className="text-success font-medium font-mono tabular-nums">${(exampleRent * 0.05).toLocaleString('es-CO')}</span>/mes
                 </span>
@@ -743,7 +724,7 @@ export default function PricingPage() {
                 popular
                 features={[
                   'Todo lo del plan Básico',
-                  'Búsqueda y selección de inquilinos (AI)',
+                  'Búsqueda y selección de inquilinos (con IA)',
                   'Verificación de antecedentes incluida',
                   'Contratos digitales incluidos',
                   'Coordinación de mantenimiento',
@@ -1049,7 +1030,7 @@ export default function PricingPage() {
 
           {/* B2B Plan-based Pricing Banner */}
           <Appear inView distance="md" duration="slow"
-            className="p-6 bg-gradient-to-br from-warning/10 via-card to-card rounded-[20px] border border-warning/30 mb-16"
+            className="p-6 bg-card rounded-lg border border-border mb-16"
           >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -1073,7 +1054,7 @@ export default function PricingPage() {
 
           {/* How it works */}
           <Appear inView distance="md" duration="slow"
-            className="p-8 md:p-10 bg-card rounded-[20px] border border-border"
+            className="p-8 md:p-10 bg-card rounded-lg border border-border"
           >
             <div className="flex items-center justify-center gap-2 mb-8">
               <span className="w-2 h-2 rounded-full bg-primary" />
@@ -1092,11 +1073,11 @@ export default function PricingPage() {
                   key={step.num}
                   className="text-center"
                 >
-                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-md flex items-center justify-center mx-auto mb-4 shadow-primary/25">
-                    <span className="text-[15px] font-bold font-mono tabular-nums">{step.num}</span>
+                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-md flex items-center justify-center mx-auto mb-4">
+                    <span className="text-[15px] font-medium font-mono tabular-nums">{step.num}</span>
                   </div>
                   <h4 className="font-semibold text-foreground text-[14px] mb-1">{step.title}</h4>
-                  <p className="text-[12px] text-muted-foreground leading-relaxed">{step.desc}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{step.desc}</p>
                 </StaggerItem>
               ))}
             </Stagger>
@@ -1136,10 +1117,8 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-4">
             {/* Large card - Security */}
             <Appear inView distance="md" duration="slow"
-              className="md:col-span-3 lg:col-span-5 rounded-[20px] p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 border border-sand-200 relative overflow-hidden"
+              className="md:col-span-3 lg:col-span-5 rounded-lg p-6 bg-sand-50 border border-sand-200 relative overflow-hidden"
             >
-              {/* Decorative corner */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sand-200/50 to-transparent rounded-bl-full" />
 
               <div className="flex flex-col h-full relative z-10">
                 <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center mb-4">
@@ -1154,16 +1133,10 @@ export default function PricingPage() {
                 {/* Visual */}
                 <div className="mt-auto p-3 rounded-md bg-white border border-sand-200">
                   <div className="flex items-center gap-3">
-                    <div className="flex -space-x-1.5">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="w-7 h-7 rounded-full bg-success-soft flex items-center justify-center text-[10px] font-bold text-success border-2 border-white">
-                          ✓
-                        </div>
-                      ))}
-                    </div>
+                    {/* Ronda 30: sin la cifra inventada «+2,400 verificados este mes». */}
                     <div>
-                      <p className="text-[12px] font-medium text-foreground">+2,400 verificados</p>
-                      <p className="text-[10px] text-muted-foreground">este mes</p>
+                      <p className="text-[13px] font-medium text-foreground">Identidad y antecedentes</p>
+                      <p className="text-[13px] text-muted-foreground">De cada candidato, antes de firmar</p>
                     </div>
                   </div>
                 </div>
@@ -1172,7 +1145,7 @@ export default function PricingPage() {
 
             {/* Medium card - Speed */}
             <Appear inView distance="md" duration="slow" delay={0.1}
-              className="md:col-span-3 lg:col-span-4 rounded-[20px] p-6 bg-surface border border-border-faint"
+              className="md:col-span-3 lg:col-span-4 rounded-lg p-6 bg-surface border border-border-faint"
             >
               <div className="w-10 h-10 rounded-md bg-warning-soft flex items-center justify-center mb-4">
                 <Lightning className="w-5 h-5 text-warning" />
@@ -1205,7 +1178,7 @@ export default function PricingPage() {
 
             {/* Small card - Support */}
             <Appear inView distance="md" duration="slow" delay={0.2}
-              className="md:col-span-6 lg:col-span-3 rounded-[20px] p-6 bg-surface-muted border border-border-faint"
+              className="md:col-span-6 lg:col-span-3 rounded-lg p-6 bg-surface-muted border border-border-faint"
             >
               <div className="w-10 h-10 rounded-md bg-surface flex items-center justify-center mb-4">
                 <Headphones className="w-5 h-5 text-foreground" />
@@ -1218,7 +1191,7 @@ export default function PricingPage() {
               </p>
               <div className="mt-4 flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                <span className="text-[12px] text-muted-foreground">Online ahora</span>
+                <span className="text-[13px] text-muted-foreground">Online ahora</span>
               </div>
             </Appear>
           </div>

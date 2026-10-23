@@ -122,7 +122,7 @@ export function EstadoPagoAprobacion({
   return (
     <div className="flex flex-col items-center text-center gap-3 py-4">
       <Spinner size="lg" variant="current" className="text-primary" />
-      <h1 className="text-lg font-semibold text-fg leading-tight">
+      <h1 className="text-lg font-medium text-fg leading-tight">
         Esperando la confirmación de tu pago…
       </h1>
       <p className="text-sm text-fg-muted leading-relaxed max-w-sm">
@@ -183,7 +183,7 @@ function Estado({
           {icon}
         </div>
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold text-fg leading-tight">{titulo}</h1>
+          <h1 className="text-lg font-medium text-fg leading-tight">{titulo}</h1>
           <p className="text-sm text-fg-muted mt-1 leading-relaxed">{descripcion}</p>
         </div>
       </div>

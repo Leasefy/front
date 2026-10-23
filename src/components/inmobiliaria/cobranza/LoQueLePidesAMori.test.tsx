@@ -54,6 +54,8 @@ vi.mock('@/lib/hooks/cobranza/use-instrucciones-de-cobranza', () => ({
   useInstruccionesDeCobranza: () => ({ datos, isLoading: false, error: null, recargar: vi.fn(), revisar, confirmar, deshacer }),
 }))
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { email: 'carolina@portofino.test' }, agency: { id: 'ag-1' } }) }))
+let equipo: { email: string; name: string }[] = []
+vi.mock('@/lib/hooks/useInmobiliaria', () => ({ useAgencyUsers: () => ({ users: equipo }) }))
 vi.mock('sonner', () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(() => 'aviso-1'), error: vi.fn(), dismiss: vi.fn() }),
 }))
@@ -87,6 +89,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   // Cada prueba empieza sin borrador: uno ofrecido esconde el campo (es la única entrada).
   window.sessionStorage.clear()
+  equipo = []
   datos = VACIO
   revisar.mockResolvedValue(REVISION)
   confirmar.mockResolvedValue({ ...VACIO, reglas: REVISION.reglas.slice(0, 2) })
@@ -247,11 +250,25 @@ describe('LoQueLePidesAMori', () => {
     })
   })
 
-  it('quién guardó: un correo largo se parte (no se sale a 390) y un id interno no se muestra', async () => {
+  it('quién guardó: su nombre si está en el equipo (Nico, 23-10)', async () => {
+    equipo = [{ email: 'Carolina.Restrepo@inmobiliariaportofino.com', name: 'Carolina Restrepo' }]
+    datos = {
+      ...VACIO,
+      texto: 'No aceptamos efectivo.',
+      reglas: [REVISION.reglas[1]],
+      confirmadasEn: '2026-10-22T17:30:00.000Z',
+      confirmadasPor: 'carolina.restrepo@inmobiliariaportofino.com',
+    }
+    await render(<LoQueLePidesAMori puedeEditar />)
+    expect(host.textContent).toContain('las guardó Carolina Restrepo')
+    expect(host.textContent).not.toContain('@inmobiliariaportofino.com')
+  })
+
+  it('quién guardó: sin nombre, el correo; uno largo se parte (no se sale a 390) y un id interno no se muestra', async () => {
     const base = { ...VACIO, texto: 'No aceptamos efectivo.', reglas: [REVISION.reglas[1]], confirmadasEn: '2026-10-22T17:30:00.000Z' }
     datos = { ...base, confirmadasPor: 'carolina.restrepo@inmobiliariaportofino.com' }
     await render(<LoQueLePidesAMori puedeEditar />)
-    const correo = host.querySelector('[data-testid="correo-de-quien-guardo"]') as HTMLElement
+    const correo = host.querySelector('[data-testid="quien-guardo"]') as HTMLElement
     expect(correo.textContent).toBe('carolina.restrepo@inmobiliariaportofino.com')
     expect(correo.className).toContain('[overflow-wrap:anywhere]')
     expect(correo.className).not.toContain('whitespace-nowrap')

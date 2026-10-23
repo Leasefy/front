@@ -38,6 +38,7 @@ import {
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { useAuth } from '@/lib/auth'
+import { useAgencyUsers } from '@/lib/hooks/useInmobiliaria'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   useInstruccionesDeCobranza,
@@ -684,6 +685,14 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
     datos?.confirmadasPor && user?.email && datos.confirmadasPor.toLowerCase() === user.email.toLowerCase(),
   )
   const correoDeQuienGuardo = !guardasteTu && datos?.confirmadasPor?.includes('@') ? datos.confirmadasPor : null
+  // Nico (23-10-2026): el nombre de la persona, no su correo. Sale de la lista del equipo (sólo se
+  // pide cuando guardó otra persona); si no está o no se puede leer, queda el correo.
+  const { users: equipo } = useAgencyUsers(correoDeQuienGuardo !== null)
+  const nombreDeQuienGuardo = correoDeQuienGuardo
+    ? (equipo as { email?: string; name?: string }[])
+        .find((m) => m.email?.toLowerCase() === correoDeQuienGuardo.toLowerCase())
+        ?.name?.trim() || null
+    : null
   const desde = fechaLegible(datos?.confirmadasEn ?? null)
   // «Volver a las de antes»: sólo quien guardó, dentro de los 15 minutos y con el aviso de
   // «listo» ya cerrado (si no, habría dos «Deshacer» a la vista).
@@ -837,8 +846,8 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
                     <>
                       {' · '}
                       <span className="whitespace-nowrap">las guardó</span>{' '}
-                      <span data-testid="correo-de-quien-guardo" className="[overflow-wrap:anywhere]">
-                        {correoDeQuienGuardo}
+                      <span data-testid="quien-guardo" className="[overflow-wrap:anywhere]">
+                        {nombreDeQuienGuardo ?? correoDeQuienGuardo}
                       </span>
                     </>
                   ) : null}

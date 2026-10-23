@@ -220,7 +220,9 @@ export default function UsersPage() {
       {data && admins.length > 0 ? (
         <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
           <CifraHeroe
-            rotulo="Activas en 30 días"
+            // Ronda 28 (revisora r27): el rótulo dice lo que cuenta («Activas» con la sesión de hoy en la tabla
+            // se leía como mentira) y, en cero, UNA frase (T6).
+            rotulo="Hicieron algo en 30 días"
             cifra={`${activos30} de ${admins.length}`}
             contexto={`${acciones30.toLocaleString('es-CO')} ${acciones30 === 1 ? 'acción' : 'acciones'} en 30 días`}
             tramos={[
@@ -235,6 +237,8 @@ export default function UsersPage() {
               },
             ]}
             total={admins.length}
+            esCero={activos30 === 0}
+            cuandoEsCero={`En 30 días la bitácora no tiene acciones de ${admins.length === 1 ? 'la persona del equipo' : `nadie del equipo (${admins.length.toLocaleString('es-CO')} personas)`}: entrar no cuenta, hacer algo sí.`}
             data-testid="equipo-activas"
           />
         </div>

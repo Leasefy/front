@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation'
 import { ArrowSquareOut } from '@phosphor-icons/react'
-import { CodeBlock, KeyValueList, MessageBubble, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CodeBlock, KeyValueList, MessageBubble, Stagger, StaggerItem } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime, fmtDuration, fmtCOP, USD_TO_COP } from '@/lib/admin/format'
@@ -11,6 +11,7 @@ import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { Pill } from '@/components/admin/Pill'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { BackButton } from '@/components/ui/back-button'
 import { Button } from '@/components/ui/button'
 
@@ -69,7 +70,12 @@ export default function CallDetailPage() {
   )
 
   if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={8} /></div>
-  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
+  if (error)
+    return (
+      <div className="space-y-6 p-6 lg:p-8">
+        <ErrorBlock error={error} onReintentar={refetch} volverA={{ label: 'Volver a llamadas', href: '/admin/calls' }} />
+      </div>
+    )
   if (!data) return null
 
   const recording = data.recording_url ?? data.vapi?.recordingUrl ?? null
@@ -81,26 +87,8 @@ export default function CallDetailPage() {
       <PageHeader
         title={data.debtor_name ?? 'Llamada'}
         description={data.legal_name ?? undefined}
-        right={<Pill tone={tonoDelResultado(data.outcome)}>{resultadoDeLaLlamada(data.outcome)}</Pill>}
+        junto={<Pill tone={tonoDelResultado(data.outcome)}>{resultadoDeLaLlamada(data.outcome)}</Pill>}
       />
-
-      <Tarjeta titulo="La llamada">
-        <KeyValueList
-          className="grid gap-x-8 md:grid-cols-2 xl:grid-cols-3"
-          items={[
-            { label: 'Inmobiliaria', value: data.legal_name ?? '—' },
-            { label: 'Teléfono', value: <span className="font-mono tabular-nums">{data.debtor_phone ?? '—'}</span> },
-            { label: 'Empezó', value: <span className="font-mono tabular-nums">{fmtDateTime(data.initiated_at)}</span> },
-            { label: 'Duración', value: <span className="font-mono tabular-nums">{fmtDuration(data.duration_seconds)}</span> },
-            { label: 'Calidad', value: <span className="font-mono tabular-nums">{data.qa_score != null ? Number(data.qa_score).toFixed(0) : '—'}</span> },
-            ...(data.vapi?.status ? [{ label: 'Estado en Vapi', value: legible(data.vapi.status) }] : []),
-            ...(data.vapi?.endedReason ? [{ label: 'Por qué terminó', value: legible(data.vapi.endedReason) }] : []),
-            ...(data.vapi?.cost != null
-              ? [{ label: 'Costo en Vapi', value: <span className="font-mono tabular-nums">{fmtCOP((data.vapi.cost ?? 0) * USD_TO_COP)}</span> }]
-              : []),
-          ]}
-        />
-      </Tarjeta>
 
       {recording && (
         <Tarjeta titulo="Grabación">
@@ -148,16 +136,40 @@ export default function CallDetailPage() {
         </Tarjeta>
       ) : null}
 
+      {typeof data.agent_summary === 'string' && data.agent_summary.trim() ? (
+        <Tarjeta titulo="Resumen del agente">
+          <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-fg-muted">{data.agent_summary}</p>
+        </Tarjeta>
+      ) : null}
+
+      <Tarjeta titulo="La llamada">
+        <KeyValueList
+          className="grid gap-x-8 md:grid-cols-2 xl:grid-cols-3"
+          items={[
+            { label: 'Inmobiliaria', value: data.legal_name ?? '—' },
+            { label: 'Teléfono', value: <span className="font-mono tabular-nums">{data.debtor_phone ?? '—'}</span> },
+            { label: 'Empezó', value: <span className="font-mono tabular-nums">{fmtDateTime(data.initiated_at)}</span> },
+            { label: 'Duración', value: <span className="font-mono tabular-nums">{fmtDuration(data.duration_seconds)}</span> },
+            { label: 'Calidad', value: <span className="font-mono tabular-nums">{data.qa_score != null ? Number(data.qa_score).toFixed(0) : '—'}</span> },
+            ...(data.vapi?.status ? [{ label: 'Estado en Vapi', value: legible(data.vapi.status) }] : []),
+            ...(data.vapi?.endedReason ? [{ label: 'Por qué terminó', value: legible(data.vapi.endedReason) }] : []),
+            ...(data.vapi?.cost != null
+              ? [{ label: 'Costo en Vapi', value: <span className="font-mono tabular-nums">{fmtCOP((data.vapi.cost ?? 0) * USD_TO_COP)}</span> }]
+              : []),
+          ]}
+        />
+      </Tarjeta>
+
       {data.agent_summary != null || data.summary_json != null || data.qa_dimensions != null || data.vapi?.costBreakdown != null ? (
-        <section className="space-y-3" aria-label="Datos crudos">
-          <MonoLabel className="block">Datos crudos</MonoLabel>
+        // Glow up 22-10: lo técnico (JSON del agente y de Vapi), plegado: se consulta, no se lee.
+        <MasDetalles etiqueta="Ver los datos técnicos de la llamada" etiquetaAbierto="Ocultar los datos técnicos" data-testid="datos-crudos">
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <JsonBlock label="Resumen del agente" value={data.agent_summary} />
+            {typeof data.agent_summary === 'string' ? null : <JsonBlock label="Resumen del agente" value={data.agent_summary} />}
             <JsonBlock label="Resumen (JSON)" value={data.summary_json} />
             <JsonBlock label="Calidad por dimensión" value={data.qa_dimensions} />
             {data.vapi?.costBreakdown != null && <JsonBlock label="Costo en Vapi, desglosado" value={data.vapi.costBreakdown} />}
           </div>
-        </section>
+        </MasDetalles>
       ) : null}
     </div>
   )

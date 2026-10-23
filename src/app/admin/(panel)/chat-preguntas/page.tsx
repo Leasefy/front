@@ -22,7 +22,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { Card, Chip, Cifra, FranjaDeCifras, MonoLabel, Sheet, SheetBody, SheetContent, SheetHeader } from '@leasefy/cadence'
+import { Card, Chip, Cifra, FranjaDeCifras, MonoLabel } from '@leasefy/cadence'
 import {
   getChatPreguntas,
   type SugerenciaDelChat,
@@ -38,6 +38,8 @@ import { LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import { Button } from '@/components/ui/button'
 import { BarraDeFiltros, Buscador, Desplegable, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
+import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 
 const POR_PAGINA = 50
 
@@ -142,72 +144,96 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactN
   )
 }
 
-/** El detalle de un turno, en el cajón. */
+/**
+ * El detalle de un turno, en el cajón del admin (Ronda 30: `CajonDelDetalle`, el mismo de las demás
+ * pantallas del backoffice; antes un Sheet propio). Las píldoras van dentro de `.admin-scope`
+ * porque el cajón vive en un portal.
+ */
 function DetalleDelTurno({ t, onClose }: { t: TurnoDelChat | null; onClose: () => void }) {
+  const conEstilos = (hijos: React.ReactNode) => (
+    <div className="admin-scope !min-h-0 !bg-transparent">{hijos}</div>
+  )
   return (
-    <Sheet open={t !== null} onOpenChange={(abierto) => !abierto && onClose()}>
-      <SheetContent side="right" size="md" aria-describedby={undefined} data-testid="detalle-del-turno">
-        {/* El cajón vive en un portal, fuera de `.admin-scope`: sin esta clase
-            las píldoras y los tokens del backoffice no se aplican adentro. */}
-        {t && (
-          <div className="admin-scope !min-h-0 !bg-transparent flex flex-col min-h-0 flex-1">
-            <SheetHeader title="Detalle de la pregunta" description={`${t.inmobiliaria ?? 'Inmobiliaria sin nombre'} · ${fmtDateTime(t.fecha)}`} />
-            <SheetBody className="space-y-4">
-              <Dato etiqueta="pregunta">
-                <p className="whitespace-pre-wrap">{t.pregunta || '—'}</p>
-              </Dato>
-              <Dato etiqueta="respuesta del chat">
-                {t.respuesta ? (
-                  <pre className="text-caption text-fg-muted whitespace-pre-wrap leading-snug max-h-72 overflow-y-auto font-sans">{t.respuesta}</pre>
+    <CajonDelDetalle
+      abierto={t !== null}
+      onCerrar={onClose}
+      titulo="Detalle de la pregunta"
+      descripcion={t ? `${t.inmobiliaria ?? 'Inmobiliaria sin nombre'} · ${fmtDateTime(t.fecha)}` : undefined}
+      campos={
+        t
+          ? [
+              {
+                nombre: 'Pregunta',
+                valor: (
+                  <p className="whitespace-pre-wrap" data-testid="detalle-del-turno">
+                    {t.pregunta || '—'}
+                  </p>
+                ),
+              },
+              {
+                nombre: 'Respuesta del chat',
+                valor: t.respuesta ? (
+                  <pre className="max-h-72 overflow-y-auto whitespace-pre-wrap font-sans text-caption leading-snug text-fg-muted">{t.respuesta}</pre>
                 ) : (
                   <span className="text-fg-muted">{t.falla ? 'El turno se cortó antes de responder.' : 'Sin respuesta guardada.'}</span>
-                )}
-              </Dato>
-              <Dato etiqueta="cómo terminó">
-                <EstadoDelTurno t={t} />
-              </Dato>
-              {t.comentario && <Dato etiqueta="lo que esperaba (con el pulgar)">{t.comentario}</Dato>}
-              {t.metricasContradichas.length > 0 && (
-                <Dato etiqueta="cifras que el ERP contradijo">{t.metricasContradichas.join(' · ')}</Dato>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                <Dato etiqueta="temas">{t.temas.join(' · ') || '—'}</Dato>
-                <Dato etiqueta="rol de quien preguntó">{t.rol ?? '—'}</Dato>
-                <Dato etiqueta="tardó">{segundos(t.ms)}</Dato>
-                <Dato etiqueta="costo">{costo(t.costoUsd)}</Dato>
-                <Dato etiqueta="tokens (entrada / salida)">
-                  {t.tokensEntrada == null && t.tokensSalida == null
+                ),
+              },
+              { nombre: 'Cómo terminó', valor: conEstilos(<EstadoDelTurno t={t} />) },
+              ...(t.comentario ? [{ nombre: 'Lo que esperaba', valor: t.comentario }] : []),
+              ...(t.metricasContradichas.length > 0
+                ? [{ nombre: 'Cifras que el ERP contradijo', valor: t.metricasContradichas.join(' · ') }]
+                : []),
+              { nombre: 'Temas', valor: t.temas.join(' · ') || '—' },
+              { nombre: 'Rol de quien preguntó', valor: t.rol ?? '—' },
+              { nombre: 'Tardó', valor: <span className="font-mono">{segundos(t.ms)}</span> },
+              { nombre: 'Costo', valor: <span className="font-mono">{costo(t.costoUsd)}</span> },
+              {
+                nombre: 'Tokens (entrada / salida)',
+                valor:
+                  t.tokensEntrada == null && t.tokensSalida == null ? (
+                    '—'
+                  ) : (
+                    <span className="font-mono">
+                      {(t.tokensEntrada ?? 0).toLocaleString('es-CO')} / {(t.tokensSalida ?? 0).toLocaleString('es-CO')}
+                    </span>
+                  ),
+              },
+              { nombre: 'Modelo', valor: t.modelo ?? '—' },
+              {
+                nombre: 'Pidió una acción',
+                valor: t.pideAccion ? (t.propusoAccion ? 'Sí, y la propuso' : 'Sí, y no la propuso') : 'No',
+              },
+              { nombre: 'Camino', valor: t.camino ?? '—' },
+              {
+                nombre: 'Quién trabajó',
+                valor:
+                  t.especialistas.length + t.fuentes.length === 0
                     ? '—'
-                    : `${(t.tokensEntrada ?? 0).toLocaleString('es-CO')} / ${(t.tokensSalida ?? 0).toLocaleString('es-CO')}`}
-                </Dato>
-                <Dato etiqueta="modelo">{t.modelo ?? '—'}</Dato>
-                <Dato etiqueta="pidió una acción">{t.pideAccion ? (t.propusoAccion ? 'sí, y la propuso' : 'sí, y no la propuso') : 'no'}</Dato>
-                <Dato etiqueta="camino">{t.camino ?? '—'}</Dato>
-              </div>
-              <Dato etiqueta="quién trabajó">
-                {t.especialistas.length + t.fuentes.length === 0 ? (
-                  '—'
-                ) : (
-                  <div className="flex flex-wrap gap-1">
-                    {t.especialistas.map((e) => (
-                      <Pill key={`e-${e}`} tone="neutral">{especialistaLegible(e)}</Pill>
-                    ))}
-                    {t.fuentes
-                      .filter((f) => !f.startsWith('especialista:'))
-                      .map((f) => (
-                        <Pill key={`f-${f}`}>{fuenteLegible(f)}</Pill>
-                      ))}
-                  </div>
-                )}
-              </Dato>
-              <p className="text-caption text-fg-subtle">
-                Sin el correo de quién preguntó. Los números largos (documentos, cuentas, teléfonos) van ocultos.
-              </p>
-            </SheetBody>
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+                    : conEstilos(
+                        <div className="flex flex-wrap gap-1">
+                          {t.especialistas.map((e) => (
+                            <Pill key={`e-${e}`} tone="neutral">{especialistaLegible(e)}</Pill>
+                          ))}
+                          {t.fuentes
+                            .filter((f) => !f.startsWith('especialista:'))
+                            .map((f) => (
+                              <Pill key={`f-${f}`}>{fuenteLegible(f)}</Pill>
+                            ))}
+                        </div>,
+                      ),
+              },
+              {
+                nombre: 'Privacidad',
+                valor: (
+                  <span className="text-fg-subtle">
+                    Sin el correo de quién preguntó. Los números largos (documentos, cuentas, teléfonos) van ocultos.
+                  </span>
+                ),
+              },
+            ]
+          : []
+      }
+    />
   )
 }
 
@@ -361,8 +387,8 @@ export default function ChatPreguntasPage() {
             onDesde={(v) => setFilters({ desde: v || undefined }, { resetPage: true })}
             onHasta={(v) => setFilters({ hasta: v || undefined }, { resetPage: true })}
           />
-        </BarraDeFiltros>
-        <div className="flex flex-wrap items-center gap-2">
+          {/* Ronda 30: los dos atajos en la misma barra (antes un tercer renglón a 1440). */}
+          <div className="flex flex-wrap items-center gap-2 self-end">
           <Chip
             selected={sinRespuesta}
             onClick={() => setFilters({ sinRespuesta: sinRespuesta ? undefined : '1' }, { resetPage: true })}
@@ -375,7 +401,8 @@ export default function ChatPreguntasPage() {
           >
             Sólo pulgar abajo
           </Chip>
-        </div>
+          </div>
+        </BarraDeFiltros>
       </div>
     </div>
   )
@@ -448,6 +475,14 @@ export default function ChatPreguntasPage() {
             </div>
           )}
 
+          {/* Ronda 30: temas, especialistas, fuentes y el resumen por semana se consultan: plegados
+              (la página era larga: sugerencias + semanas + tabla). Montados siempre. */}
+          <MasDetalles
+            etiqueta="Ver temas, especialistas y el resumen por semana"
+            etiquetaAbierto="Ocultar temas, especialistas y el resumen por semana"
+            montadoSiempre
+            classNameDelContenido="space-y-4 pt-4"
+          >
           {/* Temas, especialistas y fuentes. */}
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="p-5">
@@ -533,6 +568,7 @@ export default function ChatPreguntasPage() {
             />
           </div>
 
+          </MasDetalles>
         </>
       )}
 
@@ -540,8 +576,8 @@ export default function ChatPreguntasPage() {
           «Fecha» suelto y un botón «Buscar»). Los filtros acotan toda la pantalla. A 390, el buscador queda a la
           vista y lo demás va en «Filtros (n)». */}
       {data || error ? (
-        <section className="space-y-3" aria-label="Las preguntas">
-          <h2 className="text-subtitle font-medium text-fg">Las preguntas, más recientes primero</h2>
+        <section className="space-y-3" aria-label="Las preguntas, más recientes primero">
+          {/* Ronda 30: sin el título suelto encima de la tarjeta de la tabla (la región lo dice). */}
           <DataTable
             rows={error ? undefined : data?.filas}
             getKey={(t) => t.turnoId}

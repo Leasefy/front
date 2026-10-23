@@ -104,9 +104,8 @@ export function PropietarioCard({
         <div className="flex items-center gap-3">
           <div className={cn(
             'w-12 h-12 rounded-lg flex items-center justify-center',
-            isCompany
-              ? 'bg-muted text-muted-foreground'
-              : 'bg-primary-soft text-primary'
+            // Ronda 30: en neutro también la persona (antes un ícono en una caja azul).
+            'bg-muted text-muted-foreground'
           )}>
             {isCompany ? <Buildings className="w-6 h-6" /> : <User className="w-6 h-6" />}
           </div>
@@ -140,7 +139,7 @@ export function PropietarioCard({
             <Buildings className="w-4 h-4 text-muted-foreground" />
             <span className="text-caption text-muted-foreground">{t('inmobiliaria.propietarios.card.propertiesLabel')}</span>
           </div>
-          <p className="text-lg font-semibold text-foreground">
+          <p className="font-mono text-lg tabular-nums text-foreground">
             {propietario.propertyCount}
           </p>
           <p className="text-caption text-muted-foreground">
@@ -156,12 +155,12 @@ export function PropietarioCard({
             <span className="text-caption text-muted-foreground">{t('inmobiliaria.propietarios.card.monthlyRent')}</span>
           </div>
           {sinPlata ? (
-            <p className="text-lg font-semibold text-fg-subtle" title={t('inmobiliaria.propietario.table.sinAccesoALaPlata')}>
+            <p className="font-mono text-lg tabular-nums text-fg-subtle" title={t('inmobiliaria.propietario.table.sinAccesoALaPlata')}>
               <span aria-hidden="true">—</span>
               <span className="sr-only">{t('inmobiliaria.propietario.table.sinAccesoALaPlata')}</span>
             </p>
           ) : (
-            <p className="text-lg font-semibold text-foreground">
+            <p className="font-mono text-lg tabular-nums text-foreground">
               {formatCurrency(propietario.totalMonthlyRent)}
             </p>
           )}

@@ -299,7 +299,7 @@ function DroppableColumn({
                   'border-primary/30 bg-primary-soft/50'
                 )}
               >
-                <p className="text-xs text-primary">
+                <p className="text-caption text-primary">
                   {t('inmobiliaria.pipeline.dropHere')}
                 </p>
               </Collapse>
@@ -324,7 +324,7 @@ function DroppableColumn({
 
       {/* Collapsed footer showing count */}
       <Presence show={isCollapsed} initial={false} className="p-3 text-center">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           {items.length} {items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}
         </p>
       </Presence>

@@ -46,6 +46,9 @@ import {
 } from '@/lib/api/ciclo-de-vida.service';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const NINGUNA_COPROPIEDAD = '__ninguna__';
 
 /** Los campos de `AceptarSeguroOpcionalDto` que este formulario muestra. */
 type CampoDelSeguro = 'aceptadoPor' | 'aceptadoEl' | 'primaCop';
@@ -875,21 +878,25 @@ function ACualCopropiedad({
       <label className="block text-caption" htmlFor="copropiedad-del-mandato">
         ¿A qué copropiedad pertenece el inmueble?
       </label>
-      <select
-        id="copropiedad-del-mandato"
-        className="h-9 w-full max-w-sm rounded-md border border-border bg-surface px-2 text-caption text-fg"
-        value={elegida}
+      {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). «A ninguna» viaja como
+          una clave propia porque el Select no admite una opción vacía; se guarda como antes (''). */}
+      <Select
+        value={elegida === '' ? NINGUNA_COPROPIEDAD : elegida}
         disabled={!editable || guardando || !consignacionId}
-        onChange={(e) => void guardar(e.target.value)}
-        data-testid="elegir-copropiedad"
+        onValueChange={(v) => void guardar(v === NINGUNA_COPROPIEDAD ? '' : v)}
       >
-        <option value="">A ninguna (casa independiente)</option>
-        {(opciones ?? (copropiedad ? [copropiedad as Copropiedad] : [])).map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.nombre} — NIT {nitLegible(c)}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger id="copropiedad-del-mandato" className="w-full max-w-sm" data-testid="elegir-copropiedad">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NINGUNA_COPROPIEDAD}>A ninguna (casa independiente)</SelectItem>
+          {(opciones ?? (copropiedad ? [copropiedad as Copropiedad] : [])).map((c) => (
+            <SelectItem key={c.id} value={c.id}>
+              {c.nombre} — NIT {nitLegible(c)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {elegida === '' ? (
         <p className="text-caption text-warning-700 dark:text-warning-100" data-testid="copropiedad-sin-declarar">
           Sin copropiedad, la cuota de administración entra al libro sin decir de quién es, y eso es

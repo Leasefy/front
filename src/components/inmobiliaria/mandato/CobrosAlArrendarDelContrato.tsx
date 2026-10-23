@@ -128,7 +128,7 @@ export function CobrosAlArrendarDelContrato({
                       )}
                       <span>
                         <span className="block text-sm text-foreground">{c.nombre}</span>
-                        <span className="block text-xs text-muted-foreground">
+                        <span className="block text-caption text-muted-foreground">
                           {c.tipo === 'PORCENTAJE_PRIMER_CANON'
                             ? `${c.valor.toLocaleString(localeDeLasCifras())} % del primer canon`
                             : 'valor fijo'}
@@ -141,7 +141,7 @@ export function CobrosAlArrendarDelContrato({
                         {PESOS.format(c.valorCop)}
                       </span>
                       <span
-                        className="block text-xs text-muted-foreground"
+                        className="block text-caption text-muted-foreground"
                         data-testid={`estado-${c.id}`}
                       >
                         {c.aplicado ? 'ya descontado' : 'sin aplicar'}

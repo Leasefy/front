@@ -355,6 +355,15 @@ function PlanEditable({
   const cambiar = (i: number, cambios: Partial<ConceptoPropuesto>) =>
     onCambio({ ...plan, conceptos: plan.conceptos.map((c, j) => (j === i ? { ...c, ...cambios } : c)) });
   const r = plan.resumen;
+  // Ronda 30 (regla de Nico: listas con buscador y paginación): un archivo trae 80 filas.
+  const [busquedaDelPlan, setBusquedaDelPlan] = useState('');
+  const filasDelPlan = useMemo(() => {
+    const q = sinTildes(busquedaDelPlan.trim());
+    return plan.conceptos
+      .map((c, i) => ({ c, i, id: `${c.clave ?? 'nuevo'}-${i}` }))
+      .filter(({ c }) => !q || sinTildes(c.nombre).includes(q) || c.nombresDelSistemaAnterior.some((n) => sinTildes(n).includes(q)));
+  }, [plan.conceptos, busquedaDelPlan]);
+  const pagDelPlan = useTablePagination(filasDelPlan, { resetKey: busquedaDelPlan });
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground" data-testid="conceptos-resumen-del-plan">
@@ -362,6 +371,16 @@ function PlanEditable({
         {r.nuevos} son nuevos. {r.juntadas > 0 ? `${r.juntadas} filas se juntaron con otra porque sólo cambiaban por impuestos. ` : ''}
         {r.apagados > 0 ? `${r.apagados} entran apagados («NO UTILIZAR»). ` : ''}Puedes cambiar el nombre, el tipo y si queda activo antes de importar.
       </p>
+      <div className="relative w-full sm:w-80">
+        <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
+        <Input
+          value={busquedaDelPlan}
+          onChange={(e) => setBusquedaDelPlan(e.target.value)}
+          placeholder="Buscar en el archivo"
+          className="pl-9"
+          aria-label="Buscar en los conceptos del archivo"
+        />
+      </div>
       <div className="max-h-[55vh] overflow-auto rounded-md border border-border">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-surface text-left text-caption text-muted-foreground">
@@ -373,7 +392,7 @@ function PlanEditable({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {plan.conceptos.map((c, i) => {
+            {pagDelPlan.pageItems.map(({ c, i }) => {
               const deLeasefy = c.accion !== 'NUEVO';
               return (
                 <tr key={`${c.clave ?? 'nuevo'}-${i}`}>
@@ -410,6 +429,18 @@ function PlanEditable({
           </tbody>
         </table>
       </div>
+      {filasDelPlan.length === 0 ? (
+        <p className="text-sm text-fg-muted">Ningún concepto del archivo coincide con la búsqueda.</p>
+      ) : (
+        <TablePagination
+          total={pagDelPlan.total}
+          page={pagDelPlan.page}
+          pageSize={pagDelPlan.pageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onPageChange={pagDelPlan.setPage}
+          onPageSizeChange={pagDelPlan.setPageSize}
+        />
+      )}
     </div>
   );
 }

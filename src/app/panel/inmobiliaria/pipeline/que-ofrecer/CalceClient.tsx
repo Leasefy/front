@@ -158,7 +158,7 @@ async function copiar(texto: string, tr: Tr = (es) => es) {
   } catch {
     // El portapapeles se niega en contextos no seguros y cuando el permiso
     // está cortado. Decirlo es mejor que un botón que no hace nada.
-    toast.error(tr('No pudimos copiarlo'), {
+    toast.error(tr('No se pudo copiar'), {
       description: tr('Tu navegador no nos dejó usar el portapapeles.'),
     })
   }

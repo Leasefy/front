@@ -143,8 +143,8 @@ function RiskBadge({ score, level }: { score?: number; level?: string }) {
   if (!score && !level) return null;
 
   const colors: Record<string, string> = {
-    A: 'bg-primary-soft text-primary',
-    B: 'bg-primary-soft text-primary',
+    A: 'bg-success-soft text-success',
+    B: 'bg-success-soft text-success',
     C: 'bg-warning-soft text-warning',
     D: 'bg-danger-soft text-danger',
     E: 'bg-muted text-muted-foreground',

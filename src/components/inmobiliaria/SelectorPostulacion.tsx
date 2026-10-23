@@ -216,7 +216,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
                           <span className="block truncate text-sm font-medium text-fg">
                             {c.tenantName}
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-fg-muted">
+                          <span className="flex items-center gap-1 text-caption text-fg-muted">
                             <House className="h-3 w-3 shrink-0" />
                             <span className="truncate">{c.propertyTitle}</span>
                           </span>

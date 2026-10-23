@@ -35,6 +35,7 @@ import {
   type CampoDelCodeudor,
 } from '@/lib/contratos/errores-del-codeudor';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export interface CodeudoresSectionProps {
   contractId: string;
@@ -308,21 +309,23 @@ function FormularioDeCodeudor({
           <ErrorDelCampo id={`${idDelCampoDelCodeudor('nombre')}-error`} mensaje={errores.nombre} />
         </div>
         <div>
-          <select
-            {...aria('tipoDeDocumento')}
-            aria-label="Tipo de documento"
+          {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). */}
+          <Select
             value={datos.tipoDeDocumento}
-            onChange={(e) => {
-              setDatos((d) => ({ ...d, tipoDeDocumento: e.target.value as TipoDeDocumentoDelCodeudor }));
+            onValueChange={(v) => {
+              setDatos((d) => ({ ...d, tipoDeDocumento: v as TipoDeDocumentoDelCodeudor }));
               limpiar('tipoDeDocumento');
             }}
-            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
-            data-testid="codeudor-tipo-documento"
           >
-            {DOCUMENTOS.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+            <SelectTrigger {...aria('tipoDeDocumento')} aria-label="Tipo de documento" className="w-full" data-testid="codeudor-tipo-documento">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DOCUMENTOS.map((t) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <ErrorDelCampo id={`${idDelCampoDelCodeudor('tipoDeDocumento')}-error`} mensaje={errores.tipoDeDocumento} />
         </div>
         <div>

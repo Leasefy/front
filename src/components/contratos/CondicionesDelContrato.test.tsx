@@ -53,6 +53,42 @@ vi.mock('@/lib/api/copropiedades.service', async () => {
 import { cicloDeVidaApi, type CondicionesDelContrato as Condiciones } from '@/lib/api/ciclo-de-vida.service';
 import { CondicionesDelContrato } from './CondicionesDelContrato';
 
+// Ronda 30 (a propósito): el campo pasó al Select de Cadence; en jsdom se simula con un <select>
+// nativo que lleva las props del SelectTrigger (id, data-testid, aria-*), para elegir igual que antes.
+vi.mock('@/components/ui/select', async () => {
+  const React = await import('react');
+  const SelectTrigger = (_props: Record<string, unknown>) => null;
+  const SelectContent = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children);
+  const SelectValue = (_props: Record<string, unknown>) => null;
+  const SelectItem = ({ value, children }: { value: string; children?: React.ReactNode }) =>
+    React.createElement('option', { value }, children);
+  const Select = ({
+    value,
+    onValueChange,
+    disabled,
+    children,
+  }: {
+    value?: string;
+    onValueChange?: (v: string) => void;
+    disabled?: boolean;
+    children?: React.ReactNode;
+  }) => {
+    const hijos = React.Children.toArray(children) as React.ReactElement<Record<string, unknown>>[];
+    const trigger = hijos.find((h) => h.type === SelectTrigger);
+    const content = hijos.find((h) => h.type === SelectContent);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { children: _hijos, className: _clase, ...props } = (trigger?.props ?? {}) as Record<string, unknown>;
+    return React.createElement(
+      'select',
+      { ...props, value: value ?? '', disabled, onChange: (e: { target: { value: string } }) => onValueChange?.(e.target.value) },
+      (content?.props as { children?: React.ReactNode } | undefined)?.children,
+    );
+  };
+  return { Select, SelectTrigger, SelectContent, SelectValue, SelectItem };
+});
+
+
 const api = cicloDeVidaApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 let root: Root | null = null;

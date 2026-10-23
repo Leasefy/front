@@ -40,6 +40,7 @@ import { diaLegible } from '@/lib/mandato/textos';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 import { CampoDeMes } from '@/components/ui/campo-de-mes';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const PESOS = plataEnPantalla(localeDeLasCifras, { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
@@ -550,18 +551,19 @@ function NuevoMovimiento({
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-caption">
           Tipo
-          <select
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value as TipoDeMovimientoDeGarantia)}
-            className="mt-1 block h-9 rounded-md border border-input bg-background px-2 text-sm"
-            data-testid="movimiento-tipo"
-          >
-            {tipos.map((t) => (
-              <option key={t} value={t}>
-                {NOMBRE_DEL_TIPO[t]}
-              </option>
-            ))}
-          </select>
+          {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). */}
+          <Select value={tipo} onValueChange={(v) => setTipo(v as TipoDeMovimientoDeGarantia)}>
+            <SelectTrigger className="mt-1" aria-label="Tipo de movimiento" data-testid="movimiento-tipo">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {tipos.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {NOMBRE_DEL_TIPO[t]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
         <label className="text-caption">
           Valor

@@ -375,7 +375,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "{n} lotes aprobados sin marcar pagado": "{n} approved batches not marked as paid",
   "{n} lote por aprobar": "{n} batch to approve",
   "{n} lotes por aprobar": "{n} batches to approve",
-  "Ver": "View",
   // Nómina (portada, 22-10)
   "Dinero": "Money",
   "Liquida, aprueba, asienta y paga la nómina de cada período.": "Run, approve, post and pay the payroll of each period.",

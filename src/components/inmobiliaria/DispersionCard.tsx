@@ -200,32 +200,37 @@ export function DispersionCard({
           </span>
         </div>
 
-        <div className="space-y-1 text-body-sm text-fg-muted">
-          <div className="flex items-center justify-between gap-3">
-            {/* 🔴 Decía «Total recaudado» siempre, y la dispersión gira por
-                defecto con base CAUSADO: el canon del mes, pagado o no. */}
-            <span data-testid="tarjeta-rotulo-canon">{ROTULO_DEL_CANON[dispersion.baseDelCanon ?? 'CAUSADO']}</span>
-            <span className="whitespace-nowrap font-mono tabular-nums">{formatCurrency(dispersion.totalCollected)}</span>
-          </div>
-          {/* Ronda 20: la comisión neutra (era marrón aquí, roja en el paso 1 y azul en la tabla), y el «−» pegado a su cifra. */}
-          <div className="flex items-center justify-between gap-3">
-            <span className="min-w-0">{tr("Comisión de administración")}</span>
-            <span className="shrink-0 whitespace-nowrap font-mono tabular-nums">{conSigno('−', formatCurrency(dispersion.totalCommission))}</span>
-          </div>
-          {/* 🔴 22-09: el IVA de la comisión, en su línea (antes no se nombraba). */}
-          {(dispersion.totalIvaComision ?? 0) > 0 && (
-            <div className="flex items-center justify-between gap-3" data-testid="tarjeta-iva-comision">
-              <span className="min-w-0">{tr("IVA de la comisión")}</span>
-              <span className="shrink-0 whitespace-nowrap font-mono tabular-nums">{conSigno('−', formatCurrency(dispersion.totalIvaComision ?? 0))}</span>
+        {/* Revisora r24 (Giros #3): con cajón, la tarjeta del celular es nombre, estado, neto y «Ver detalle»
+            (≈150 px; antes ≈390 con 40 propietarios = 16.000 px). El desglose, la referencia y los
+            inmuebles van al cajón; sin cajón, se quedan aquí. */}
+        {onViewDetail ? null : (
+          <div className="space-y-1 text-body-sm text-fg-muted">
+            <div className="flex items-center justify-between gap-3">
+              {/* 🔴 Decía «Total recaudado» siempre, y la dispersión gira por
+                  defecto con base CAUSADO: el canon del mes, pagado o no. */}
+              <span data-testid="tarjeta-rotulo-canon">{ROTULO_DEL_CANON[dispersion.baseDelCanon ?? 'CAUSADO']}</span>
+              <span className="whitespace-nowrap font-mono tabular-nums">{formatCurrency(dispersion.totalCollected)}</span>
             </div>
-          )}
-        </div>
+            {/* Ronda 20: la comisión neutra (era marrón aquí, roja en el paso 1 y azul en la tabla), y el «−» pegado a su cifra. */}
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0">{tr("Comisión de administración")}</span>
+              <span className="shrink-0 whitespace-nowrap font-mono tabular-nums">{conSigno('−', formatCurrency(dispersion.totalCommission))}</span>
+            </div>
+            {/* 🔴 22-09: el IVA de la comisión, en su línea (antes no se nombraba). */}
+            {(dispersion.totalIvaComision ?? 0) > 0 && (
+              <div className="flex items-center justify-between gap-3" data-testid="tarjeta-iva-comision">
+                <span className="min-w-0">{tr("IVA de la comisión")}</span>
+                <span className="shrink-0 whitespace-nowrap font-mono tabular-nums">{conSigno('−', formatCurrency(dispersion.totalIvaComision ?? 0))}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Lo que dice el estado y la palabra no alcanza a decir: cuándo salió y con qué referencia, o por qué no. */}
         {fechaDelGiro && (
           <p className="text-caption text-fg-muted">
             {tr("Girado el {fecha}", { fecha: fechaDelGiro })}
-            {dispersion.transferReference ? (
+            {dispersion.transferReference && !onViewDetail ? (
               <span className="font-mono"> · {tr("Ref.")} {dispersion.transferReference}</span>
             ) : null}
           </p>
@@ -239,6 +244,7 @@ export function DispersionCard({
       </div>
 
       {/* Los inmuebles del giro, plegados (sin la banda gris). */}
+      {onViewDetail ? null : (
       <div className="border-t border-border-faint px-4 py-2.5">
         {/* allowlist: collapsible disclosure toggle (count + caret) inside a clickable card; el
             contenido se abre con `Collapse` de Cadence (antes animaba `height` a mano). */}
@@ -278,6 +284,7 @@ export function DispersionCard({
           </Stagger>
         </Collapse>
       </div>
+      )}
 
       {/* La acción de la fila y «Ver detalle» (el banco completo y el extracto viven en el cajón). */}
       {(onViewDetail || ((dispersion.status === 'pending' || dispersion.status === 'failed') && onProcess)) && (

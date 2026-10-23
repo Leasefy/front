@@ -494,8 +494,10 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
       )}
       {isPending && (
       <div className="flex flex-wrap gap-2">
+        {/* Ronda 30 (revisora r27): aprobar va en tinta (decidir), no en voltaje. */}
         <Button
           type="button"
+          variant="ink"
           data-testid="approval-aprobar-plan"
           onClick={() => void handleAprobar()}
           disabled={aprobarDisabled}
@@ -574,6 +576,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               <Button
                 type="button"
                 size="sm"
+                variant="ink"
                 data-testid="plan-aprobar-primero"
                 onClick={() => void handleAprobarPrimero()}
                 disabled={aprobarDisabled}

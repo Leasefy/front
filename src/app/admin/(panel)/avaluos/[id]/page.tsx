@@ -189,9 +189,9 @@ export default function AvaluoDetailPage() {
             {item ? (
               <>
                 <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-border">
-                  <Meta label="valor estimado" value={fmtCOP(item.valueCop)} mono />
+                  <Meta label="Valor estimado" value={fmtCOP(item.valueCop)} mono />
                   <Meta
-                    label="banda"
+                    label="Banda"
                     value={
                       item.bandLowCop != null || item.bandHighCop != null
                         ? `${fmtCOP(item.bandLowCop)} – ${fmtCOP(item.bandHighCop)}`
@@ -199,9 +199,9 @@ export default function AvaluoDetailPage() {
                     }
                     mono
                   />
-                  <Meta label="método" value={item.method ? metodoDelAvaluo(item.method) : '—'} />
+                  <Meta label="Método" value={item.method ? metodoDelAvaluo(item.method) : '—'} />
                   <Meta
-                    label="confianza"
+                    label="Confianza"
                     value={
                       item.confianza
                         ? `${item.confianza.nivel} · ancho ${fmtBps(item.confianza.anchoRelativoBps)}`
@@ -369,8 +369,8 @@ export default function AvaluoDetailPage() {
             </MonoLabel>
             {band ? (
               <>
-                <Meta label="banda" value={`${fmtCOP(band.lowCop)} – ${fmtCOP(band.highCop)}`} mono />
-                <Meta label="cobertura" value={fmtBps(band.coverageBps)} mono />
+                <Meta label="Banda" value={`${fmtCOP(band.lowCop)} – ${fmtCOP(band.highCop)}`} mono />
+                <Meta label="Cobertura" value={fmtBps(band.coverageBps)} mono />
               </>
             ) : (
               <div className="mb-2">
@@ -379,9 +379,9 @@ export default function AvaluoDetailPage() {
             )}
             {d?.sufficiency && (
               <>
-                <Meta label="suficiencia" value={suficiencia(d.sufficiency.status)} />
-                <Meta label="puntaje" value={fmtBps(d.sufficiency.scoreBps)} mono />
-                <Meta label="comparables usados" value={String(d.sufficiency.compCount)} mono />
+                <Meta label="Suficiencia" value={suficiencia(d.sufficiency.status)} />
+                <Meta label="Puntaje" value={fmtBps(d.sufficiency.scoreBps)} mono />
+                <Meta label="Comparables usados" value={String(d.sufficiency.compCount)} mono />
               </>
             )}
           </Card>
@@ -391,8 +391,8 @@ export default function AvaluoDetailPage() {
               <MonoLabel className="block mb-3">
                 canon Ley 820
               </MonoLabel>
-              <Meta label="canon sugerido" value={fmtCOP(item.canonLey820.canonSugeridoCop)} mono />
-              <Meta label="tope legal" value={fmtCOP(item.canonLey820.topeLegalCop)} mono />
+              <Meta label="Canon sugerido" value={fmtCOP(item.canonLey820.canonSugeridoCop)} mono />
+              <Meta label="Tope legal" value={fmtCOP(item.canonLey820.topeLegalCop)} mono />
               {item.canonLey820.capped && (
                 <div className="mb-2">
                   <Pill tone="warn">Tope aplicado</Pill>

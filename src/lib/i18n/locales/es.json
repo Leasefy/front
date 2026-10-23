@@ -9285,7 +9285,7 @@
               }
             },
             "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble.",
-            "colaSinServicio": "No pudimos leer tus solicitudes: el servicio de avalúos no responde. Lo demás sigue funcionando.",
+            "colaSinServicio": "No se pudieron leer tus solicitudes: el servicio de avalúos no responde. Lo demás sigue funcionando.",
             "colaPasosAria": "En qué va: {{paso}}",
             "colaPedidoEl": "Pedido el {{fecha}}",
             "colaFirmadoEl": "firmado el {{fecha}}",

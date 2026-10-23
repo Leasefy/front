@@ -32,6 +32,7 @@ import { useId, type ReactNode } from 'react';
 import { Info, Prohibit, SealCheck, WarningOctagon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 
@@ -373,6 +374,25 @@ export function FranjaDeInforme({
       )}
     >
       {children}
+    </div>
+  );
+}
+
+/**
+ * Mientras llega un informe o una lista: la forma de las filas, no una rueda sola en el medio
+ * (glow up, 3.ª vuelta). `queEs` lo lee el lector de pantalla.
+ */
+export function EsqueletoDeTabla({ queEs, filas = 5 }: { queEs?: string; filas?: number }) {
+  return (
+    <div className="divide-y divide-border" aria-busy="true" data-testid="esqueleto-de-tabla">
+      {queEs ? <span className="sr-only">{queEs}</span> : null}
+      {Array.from({ length: filas }, (_, i) => (
+        <div key={i} className="flex items-center gap-4 px-4 py-3.5" aria-hidden="true">
+          <Skeleton className="h-4 w-16 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-4 flex-1 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-4 w-24 rounded-sm bg-surface-muted" />
+        </div>
+      ))}
     </div>
   );
 }

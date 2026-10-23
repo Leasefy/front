@@ -31,7 +31,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -54,7 +53,7 @@ import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { DescargarElInforme } from './DescargarElInforme';
 import { tablasDelAuxiliarPorTercero } from '@/lib/contabilidad/tablas-de-los-informes';
-import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
+import { Bloqueos, Nota, TarjetaDeInforme, EsqueletoDeTabla } from '../piezas';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Los tipos de tercero que el libro usa, tal como se asientan. */
@@ -186,10 +185,7 @@ export function AuxiliarPorTercero() {
       }
     >
       {cargando && !auxiliar ? (
-        <div className="flex flex-col items-center gap-3 py-16">
-          <Spinner size="lg" />
-          <p className="text-sm text-fg-muted">Buscando los terceros…</p>
-        </div>
+        <EsqueletoDeTabla queEs="Buscando los terceros…" />
       ) : error && !auxiliar ? (
         <div className="p-4">
           <FalloDeCarga error={error} queEs="el auxiliar por tercero" onReintentar={cargar} />

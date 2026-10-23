@@ -30,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -50,7 +49,7 @@ import { diaLegible, rangoInvertido } from '@/lib/contabilidad/fechas';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
-import { TarjetaDeInforme } from '../piezas';
+import { TarjetaDeInforme, EsqueletoDeTabla } from '../piezas';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { DescargarElInforme } from './DescargarElInforme';
 import { tablasDelEstadoDeCuenta } from '@/lib/contabilidad/tablas-de-los-informes';
@@ -339,9 +338,7 @@ export function EstadoDeCuenta() {
           queEs="el estado de cuenta"
           onReintentar={cargar}
           esqueleto={
-            <div className="flex items-center justify-center py-16">
-              <Spinner />
-            </div>
+            <EsqueletoDeTabla />
           }
         >
           <div className={cn(cargando && 'opacity-60')} aria-busy={cargando || undefined}>

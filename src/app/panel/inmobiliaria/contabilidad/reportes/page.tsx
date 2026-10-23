@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ReportesContables, informeDe } from '@/components/contabilidad/reportes/ReportesContables';
 import { ROLES_DE_LA_CONTABILIDAD } from '@/lib/auth/roles-de-la-contabilidad';
@@ -22,9 +23,17 @@ export default function ReportesContablesPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Finanzas"
+            seccion="Contabilidad"
             titulo="Reportes contables"
-            descripcion="Todo sale de los movimientos, sin saldos guardados aparte: lo que se ve es lo que hay en el libro."
+            descripcion="El libro como lo pide el contador: balance de prueba, mayor, auxiliares y cartera."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">
+                  Todo sale de los movimientos, sin saldos guardados aparte: lo que se ve es lo que hay
+                  en el libro. Cada informe se baja en el formato que pide el contador.
+                </p>
+              </ParaEntenderMas>
+            }
           />
         </div>
         {/* `key`: si se llega de nuevo a esta ruta con otro `informe`, Next no

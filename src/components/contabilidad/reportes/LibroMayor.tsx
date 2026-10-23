@@ -28,7 +28,6 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -61,7 +60,7 @@ import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { DescargarElInforme } from './DescargarElInforme';
 import { tablasDelMayor } from '@/lib/contabilidad/tablas-de-los-informes';
-import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
+import { Bloqueos, Nota, TarjetaDeInforme, EsqueletoDeTabla } from '../piezas';
 
 /** Las clases del PUC que se pueden pedir sueltas. */
 const CLASES = [
@@ -183,10 +182,7 @@ export function LibroMayor() {
       }
     >
       {cargando && !mayor ? (
-        <div className="flex flex-col items-center gap-3 py-16">
-          <Spinner size="lg" />
-          <p className="text-sm text-fg-muted">Armando el mayor…</p>
-        </div>
+        <EsqueletoDeTabla queEs="Armando el mayor…" />
       ) : error && !mayor ? (
         <div className="p-4">
           <FalloDeCarga error={error} queEs="el libro mayor" onReintentar={cargar} />

@@ -211,6 +211,19 @@ export default function DeudoresListClient() {
   const totalDeCasos = useMemo(() => [...porEtapa.values()].reduce((a, n) => a + n, 0), [porEtapa])
   const porVencer = porEtapa.get('S0') ?? 0
   const enMora = totalDeCasos - porVencer
+  // Revisora r27 (K1): la cifra con su barra. Sin plata (para Víctor), los
+  // tramos van por GRAVEDAD de la mora, agrupando las etapas (las pestañas
+  // dicen cada etapa): hasta 15 días · de 16 a 89 · siniestro o jurídico ·
+  // ilocalizables.
+  const tramosDeLaMora = useMemo(() => {
+    const n = (...st: string[]) => st.reduce((a, x) => a + (porEtapa.get(x) ?? 0), 0)
+    return [
+      { clave: 'temprana', etiqueta: tr('Hasta 15 días'), monto: n('S1'), tono: 'neutro' as const },
+      { clave: 'media', etiqueta: tr('De 16 a 89 días'), monto: n('S2', 'S3'), tono: 'aviso' as const },
+      { clave: 'grave', etiqueta: tr('Siniestro o jurídico'), monto: n('S4', 'S5'), tono: 'critico' as const },
+      { clave: 'ilocalizable', etiqueta: tr('Ilocalizables'), monto: n('SX'), tono: 'neutro' as const },
+    ].map((t) => ({ ...t, cifra: t.monto.toLocaleString(!locale || locale.startsWith('es') ? 'es-CO' : 'en-US'), 'data-testid': `deudores-tramo-${t.clave}` }))
+  }, [porEtapa, tr, locale])
   const pestana: PestanaDeEtapa = stages.length === 0 ? 'todas' : stages.length === 1 ? stages[0] : 'varias'
 
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
@@ -397,6 +410,7 @@ export default function DeudoresListClient() {
                 ) : null}
               </>
             }
+            tramos={tramosDeLaMora}
             esCero={enMora === 0}
             cuandoEsCero={
               porVencer > 0
@@ -511,7 +525,10 @@ export default function DeudoresListClient() {
               </Button>
             </Presence>
           </div>
-          <span className="shrink-0 text-caption text-fg-muted" data-testid="sort-label">
+          {/* Revisora r27 (UI): «Ordenado por días en la etapa» era un texto
+              suelto que parecía un control; se dice sólo a los lectores de
+              pantalla (el orden se ve en la columna). */}
+          <span className="sr-only" data-testid="sort-label">
             {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
           </span>
         </div>

@@ -695,4 +695,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Promedio en la etapa": "Avg. in stage",
   "Esta semana": "This week",
   "Sin casos": "No cases",
+  // cobranza/deudores: los tramos de la mora (ronda 28)
+  "Hasta 15 días": "Up to 15 days",
+  "De 16 a 89 días": "16 to 89 days",
+  "Siniestro o jurídico": "Claim or legal",
+  "Ilocalizables": "Unreachable",
 }

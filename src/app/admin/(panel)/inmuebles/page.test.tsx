@@ -88,7 +88,8 @@ describe('InmueblesPage', () => {
 
     expect(listarInmuebles).toHaveBeenCalledWith({ q: '', agencyId: '', page: 0 }, expect.any(AbortSignal))
     const texto = container.textContent ?? ''
-    expect(texto).toContain('2 inmuebles')
+    // Ronda 28 (revisora r27, T14): el total lo dice el paginador; sin el «2 inmuebles» suelto que lo repetía.
+    expect(texto).toContain('Mostrando 1–2 de 2')
     expect(texto).toContain('Calle Falsa 123')
     expect(texto).toContain('Inmobiliaria de prueba')
     expect(texto).toContain('Arrendado')

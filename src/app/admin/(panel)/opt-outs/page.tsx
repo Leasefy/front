@@ -11,7 +11,7 @@ import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
-import { BarraDeFiltros, Buscador, Filtro } from '@/components/admin/screen/Filtros'
+import { Buscador } from '@/components/admin/screen/Filtros'
 import { comoSeDetecto } from '@/lib/admin/textos-del-admin'
 
 /** El canal de la baja, en palabras (antes «Voice», «Email»). */
@@ -146,17 +146,16 @@ export default function OptOutsPage() {
         emptyIcon={<BellSlash weight="duotone" />}
         emptyTono={q ? undefined : "exito"}
         aria-label="Bajas de contacto"
-        barra={
-          <BarraDeFiltros>
-            <Filtro etiqueta="Deudor" htmlFor="filtro-deudor" className="sm:min-w-72 sm:flex-1">
-              <Buscador
-                id="filtro-deudor"
-                value={q}
-                onChange={(v) => setFilters({ q: v }, { resetPage: true })}
-                placeholder="Buscar por nombre…"
-              />
-            </Filtro>
-          </BarraDeFiltros>
+        // Ronda 28 (revisora r27, T13): el buscador SIEMPRE a la vista a 390 (antes detrás de «Filtros»);
+        // sólo los desplegables se pliegan.
+        buscadorPropio={
+          <Buscador
+            id="filtro-deudor"
+            value={q}
+            onChange={(v) => setFilters({ q: v }, { resetPage: true })}
+            placeholder="Buscar por nombre…"
+            aria-label="Deudor"
+          />
         }
         paginacion={result.data ? { page, total: result.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}
         queSon={['baja', 'bajas']}

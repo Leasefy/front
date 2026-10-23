@@ -104,6 +104,7 @@ export function DataTable<T>({
   emptyAction,
   onReintentar,
   barra,
+  buscadorPropio,
   acciones,
   pie,
   filaMarcada,
@@ -152,6 +153,12 @@ export function DataTable<T>({
   onReintentar?: () => void
   /** Filtros propios de la pantalla (desplegables), en la misma barra. */
   barra?: React.ReactNode
+  /**
+   * Ronda 28 (revisora r27, T13): el buscador PROPIO de la pantalla (uno que busca en el servidor, con su
+   * botón), en el lugar del buscador de la tabla: a 390 va a lo ancho y SIEMPRE a la vista; sólo los
+   * desplegables de `barra` se pliegan detrás de «Filtros (n)».
+   */
+  buscadorPropio?: React.ReactNode
   /** Botones de la pantalla al lado de «Exportar». */
   acciones?: React.ReactNode
   /** El paginador propio de la pantalla (si ya corta la página ella). */
@@ -406,11 +413,13 @@ export function DataTable<T>({
       </Table>
     )
 
-  const conBuscador = Boolean(buscar)
+  const conBuscador = Boolean(buscar) || Boolean(buscadorPropio)
   const conSegmentos = Boolean(segmentos?.length)
-  const conteoVisible = queSon && rows && (paginacion ? paginacion.total > 0 : calculo.total > 0)
-  const barraArriba = conBuscador || barra || acciones || exportar
-  const barraAbajo = conSegmentos || (hayFiltros && hayDatosSinFiltro) || conteoVisible
+  // Ronda 28 (revisora r27, T3): con FALLO, sin barra (antes el buscador y «Exportar» apagado encima del
+  // cartel). Sin datos, la barra se queda (Nico: las tablas SIEMPRE con buscador, filtros y paginación).
+  // El buscador PROPIO (el que busca en el servidor) se queda con el fallo: puede ser la búsqueda la que falló.
+  const barraArriba = error ? Boolean(buscadorPropio) : Boolean(conBuscador || barra || acciones || exportar)
+  const conExportarEnLaFila = !error && Boolean(exportar) && Boolean(conBuscador || barra)
 
   const paginador = paginacion ? (
     paginacion.total > 0 ? (
@@ -434,6 +443,37 @@ export function DataTable<T>({
     />
   ) : null
 
+  // Ronda 28 (revisora r27, T14): «N cosas» suelto sólo cuando dice algo que nada más dice: sin paginador
+  // («Mostrando 1–N de N») y sin pestañas con su conteo, o cuando la búsqueda o un filtro recortan.
+  const seVeElPaginador = !pie && Boolean(paginador)
+  const recortado = hayBusqueda || propiosPuestos > 0
+  const conteoVisible =
+    !error &&
+    queSon &&
+    rows &&
+    (paginacion ? paginacion.total > 0 : calculo.total > 0) &&
+    !seVeElPaginador &&
+    (!conSegmentos || recortado)
+  const barraAbajo = !error && (conSegmentos || (hayFiltros && hayDatosSinFiltro) || conteoVisible)
+
+  const botonExportar = (soloIcono: boolean) =>
+    exportar ? (
+      <Button
+        variant="secondary"
+        size="sm"
+        hideArrow
+        isLoading={exportando}
+        onClick={() => void bajarExcel()}
+        disabled={exportando || (paginacion ? paginacion.total === 0 : calculo.ordenadas.length === 0)}
+        className={cn('gap-2', soloIcono ? 'shrink-0 px-2.5 sm:hidden' : conExportarEnLaFila && 'max-sm:hidden')}
+        aria-label={soloIcono ? 'Exportar a Excel' : undefined}
+        title={soloIcono ? 'Exportar a Excel' : undefined}
+      >
+        <Export className="h-4 w-4" aria-hidden />
+        {soloIcono ? null : exportando ? 'Armando el Excel…' : 'Exportar a Excel'}
+      </Button>
+    ) : null
+
   return (
     <div className={cn('overflow-hidden rounded-lg border border-border bg-surface', className)}>
       {barraArriba || barraAbajo ? (
@@ -444,14 +484,20 @@ export function DataTable<T>({
                derecha. En el celular el buscador va a lo ancho y los filtros se
                pliegan detrás de «Filtros (n)». */
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              {conBuscador || barra ? (
+              {buscadorPropio || (!error && (conBuscador || barra)) ? (
                 <div
                   className={cn(
                     'flex w-full min-w-0 items-center gap-2',
-                    conBuscador ? 'sm:w-auto sm:min-w-[16rem] sm:max-w-sm sm:flex-1' : 'sm:hidden',
+                    buscadorPropio
+                      ? 'sm:w-auto sm:min-w-[20rem] sm:flex-1'
+                      : conBuscador
+                        ? 'sm:w-auto sm:min-w-[16rem] sm:max-w-sm sm:flex-1'
+                        : 'sm:hidden',
                   )}
                 >
-                  {conBuscador ? (
+                  {buscadorPropio ? (
+                    <div className="min-w-0 flex-1">{buscadorPropio}</div>
+                  ) : conBuscador ? (
                     <div className="min-w-0 flex-1">
                       <Buscador
                         id={k('buscar')}
@@ -461,7 +507,7 @@ export function DataTable<T>({
                       />
                     </div>
                   ) : null}
-                  {barra ? (
+                  {barra && !error ? (
                     <Button
                       variant="secondary"
                       size="sm"
@@ -475,30 +521,19 @@ export function DataTable<T>({
                       Filtros{propiosPuestos > 0 ? ` (${propiosPuestos})` : ''}
                     </Button>
                   ) : null}
+                  {/* Ronda 28 (T3): a 390, «Exportar» al lado del buscador y de «Filtros» (antes en su renglón). */}
+                  {conExportarEnLaFila ? botonExportar(true) : null}
                 </div>
               ) : null}
-              {barra ? (
+              {barra && !error ? (
                 <div className={cn('min-w-0 sm:block', filtrosAbiertos ? 'block' : 'hidden')} data-testid="tabla-filtros-propios">
                   {barra}
                 </div>
               ) : null}
-              {acciones || exportar ? (
-                <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              {!error && (acciones || exportar) ? (
+                <div className={cn('flex flex-wrap items-center gap-2 sm:ml-auto', !acciones && conExportarEnLaFila && 'max-sm:hidden')}>
                   {acciones}
-                  {exportar ? (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      hideArrow
-                      isLoading={exportando}
-                      onClick={() => void bajarExcel()}
-                      disabled={exportando || (paginacion ? paginacion.total === 0 : calculo.ordenadas.length === 0)}
-                      className="gap-2"
-                    >
-                      <Export className="h-4 w-4" aria-hidden />
-                      {exportando ? 'Armando el Excel…' : 'Exportar a Excel'}
-                    </Button>
-                  ) : null}
+                  {botonExportar(false)}
                 </div>
               ) : null}
             </div>

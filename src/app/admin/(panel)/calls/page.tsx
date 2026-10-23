@@ -95,17 +95,20 @@ export default function CallsPage() {
         emptyIcon={<PhoneCall weight="duotone" />}
         aria-label="Llamadas"
         onRowClick={(r) => abrir(r.id)}
+        // Ronda 28 (revisora r27, T13): el buscador SIEMPRE a la vista a 390 (antes detrás de «Filtros»);
+        // sólo los desplegables se pliegan.
+        buscadorPropio={
+          <Buscador
+            id="filtro-deudor"
+            value={q}
+            onChange={(v) => setFilters({ q: v }, { resetPage: true })}
+            placeholder="Buscar por nombre…"
+            aria-label="Deudor"
+          />
+        }
         barra={
           // Los filtros viven en la URL: se comparten y sobreviven a recargar.
           <BarraDeFiltros>
-            <Filtro etiqueta="Deudor" htmlFor="filtro-deudor" className="sm:min-w-64 sm:flex-1">
-              <Buscador
-                id="filtro-deudor"
-                value={q}
-                onChange={(v) => setFilters({ q: v }, { resetPage: true })}
-                placeholder="Buscar por nombre…"
-              />
-            </Filtro>
             <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
               <SelectorDeInmobiliaria
                 id="filtro-inmobiliaria"

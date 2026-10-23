@@ -118,18 +118,19 @@ export default function DebtorsPage() {
       <Input
         id="buscar-deudor"
         type="search"
-        className="min-w-[220px] flex-1"
+        className="min-w-0 flex-1"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         placeholder="Nombre, cédula o teléfono"
         aria-label="Buscar un deudor por nombre, cédula o teléfono"
         autoComplete="off"
       />
-      <Button size="sm" hideArrow type="submit" isLoading={debtors.isLoading && Boolean(committedQ)}>
+      {/* Ronda 28 (revisora r27): el botón del alto del campo (h-11; antes «sm», más bajo). */}
+      <Button hideArrow type="submit" className="h-11" isLoading={debtors.isLoading && Boolean(committedQ)}>
         Buscar
       </Button>
       {committedQ ? (
-        <Button size="sm" variant="outline" hideArrow type="button" onClick={handleClear}>
+        <Button variant="outline" hideArrow type="button" className="h-11" onClick={handleClear}>
           Limpiar
         </Button>
       ) : null}
@@ -163,7 +164,9 @@ export default function DebtorsPage() {
         aria-label="Deudores encontrados"
         onRowClick={(r) => router.push(`/admin/calls?q=${encodeURIComponent(r.full_name)}`)}
         queSon={['deudor', 'deudores']}
-        barra={buscador}
+        // Ronda 28 (revisora r27, T13): el buscador SIEMPRE a la vista y a lo ancho (antes, a 390, detrás de
+        // «Filtros» mientras el vacío decía «Escribe arriba a quién buscas»).
+        buscadorPropio={buscador}
         filasPorPagina={10}
       />
     </div>

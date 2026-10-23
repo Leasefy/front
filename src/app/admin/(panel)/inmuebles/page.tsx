@@ -185,16 +185,19 @@ export default function InmueblesPage() {
           { header: 'Ciudad', texto: (r) => r.city },
           { header: 'Contratos vigentes', texto: (r) => r.activos },
         ]}
+        // Ronda 28 (revisora r27, T13): el buscador SIEMPRE a la vista a 390 (antes detrás de «Filtros»);
+        // sólo los desplegables se pliegan.
+        buscadorPropio={
+          <Buscador
+            id="buscar-inmueble"
+            value={busqueda}
+            onChange={setBusqueda}
+            placeholder="Dirección o código"
+            aria-label="Buscar"
+          />
+        }
         barra={
           <BarraDeFiltros>
-            <Filtro etiqueta="Buscar" htmlFor="buscar-inmueble" className="sm:min-w-72 sm:flex-1">
-              <Buscador
-                id="buscar-inmueble"
-                value={busqueda}
-                onChange={setBusqueda}
-                placeholder="Dirección o código"
-              />
-            </Filtro>
             <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
               <SelectorDeInmobiliaria
                 id="filtro-inmobiliaria"

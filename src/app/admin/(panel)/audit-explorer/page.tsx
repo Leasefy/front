@@ -137,16 +137,19 @@ export default function AuditExplorerPage() {
           { header: 'Id de lo afectado', texto: (r) => r.entity_id ?? '' },
           { header: 'Id', texto: (r) => r.id },
         ]}
+        // Ronda 28 (revisora r27, T13): el buscador SIEMPRE a la vista a 390 (antes detrás de «Filtros»);
+        // sólo los desplegables se pliegan.
+        buscadorPropio={
+          <Buscador
+            id="filtro-accion"
+            value={action}
+            onChange={(v) => setFilters({ action: v }, { resetPage: true })}
+            placeholder="Buscar una acción"
+            aria-label="Acción (contiene)"
+          />
+        }
         barra={
           <BarraDeFiltros>
-            <Filtro etiqueta="Acción (contiene)" htmlFor="filtro-accion" className="sm:min-w-56 sm:flex-1">
-              <Buscador
-                id="filtro-accion"
-                value={action}
-                onChange={(v) => setFilters({ action: v }, { resetPage: true })}
-                placeholder="Buscar una acción"
-              />
-            </Filtro>
             {/* El rótulo de cada texto va ADENTRO, como en los desplegables (21-10). */}
             <Filtro etiqueta="Cédula del deudor" htmlFor="filtro-cedula" className="sm:w-48">
               <Input

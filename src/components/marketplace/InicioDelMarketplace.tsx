@@ -173,7 +173,7 @@ export function InicioDelMarketplace() {
                       onClick={() => setOperacion(op)}
                       className={cn(
                         'rounded-full px-4 py-1.5 text-[14px] transition-colors duration-fast',
-                        operacion === op ? 'bg-surface font-medium text-fg shadow-sm' : 'text-fg-muted hover:text-fg',
+                        operacion === op ? 'bg-surface font-medium text-fg ring-1 ring-border' : 'text-fg-muted hover:text-fg',
                       )}
                     >
                       {op === 'arriendo' ? 'Arrendar' : 'Comprar'}

@@ -39,7 +39,7 @@ function MejorOpcion({ visible }: { visible: boolean }) {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, transition: motionTransition.exit }}
           transition={motionSpring.bouncy}
-          className="text-[8px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full uppercase"
+          className="text-[12px] font-medium bg-white/20 px-1.5 py-0.5 rounded-full uppercase"
         >
           Mejor opción
         </motion.span>
@@ -182,7 +182,7 @@ export default function EmpresasCalculadoraPage() {
                         </motion.div>
                       </div>
 
-                      <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+                      <div className="flex justify-between mt-2 text-[12px] text-muted-foreground">
                         <span>1</span>
                         <span>25</span>
                         <span>50</span>
@@ -207,7 +207,7 @@ export default function EmpresasCalculadoraPage() {
                             </span>
                             <MejorOpcion visible={bestPlan === 'starter'} />
                           </div>
-                          <span className={cn("text-[13px] font-semibold font-mono tabular-nums", bestPlan === 'starter' ? 'text-background' : 'text-foreground')}>
+                          <span className={cn("text-[13px] font-medium font-mono tabular-nums", bestPlan === 'starter' ? 'text-background' : 'text-foreground')}>
                             <AnimatedNumber value={starterTotal} format={formatCOP} />
                           </span>
                         </div>
@@ -224,11 +224,11 @@ export default function EmpresasCalculadoraPage() {
                             <MejorOpcion visible={bestPlan === 'pro'} />
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={cn("text-[13px] font-semibold font-mono tabular-nums", bestPlan === 'pro' ? 'text-background' : 'text-foreground')}>
+                            <span className={cn("text-[13px] font-medium font-mono tabular-nums", bestPlan === 'pro' ? 'text-background' : 'text-foreground')}>
                               <AnimatedNumber value={proTotalWithExcess} format={formatCOP} />
                             </span>
                             {starterSavingsVsPro > 0 && (
-                              <span className={cn("text-[10px] font-medium font-mono tabular-nums px-1.5 py-0.5 rounded-full", bestPlan === 'pro' ? 'bg-success/20 text-success' : 'bg-success-soft text-success')}>
+                              <span className={cn("text-[12px] font-medium font-mono tabular-nums px-1.5 py-0.5 rounded-full", bestPlan === 'pro' ? 'bg-success/20 text-success' : 'bg-success-soft text-success')}>
                                 -{Math.round((starterSavingsVsPro / starterTotal) * 100)}%
                               </span>
                             )}
@@ -246,7 +246,7 @@ export default function EmpresasCalculadoraPage() {
                             </span>
                             <MejorOpcion visible={bestPlan === 'flex'} />
                           </div>
-                          <span className={cn("text-[13px] font-semibold", bestPlan === 'flex' ? 'text-success' : 'text-success')}>
+                          <span className={cn("text-[13px] font-medium", bestPlan === 'flex' ? 'text-success' : 'text-success')}>
                             $0 por eval
                           </span>
                         </div>
@@ -264,7 +264,7 @@ export default function EmpresasCalculadoraPage() {
                   <div className="relative p-8">
                     <div className="flex items-start justify-between mb-8">
                       <div>
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-1">Recomendación</p>
+                        <p className="text-[12px] uppercase tracking-[0.2em] text-white/40 mb-1">Recomendación</p>
                         {/* El plan recomendado cambia cruzándose en el lugar (`popLayout`). */}
                         <div className="relative">
                           <CrossFade swapKey={bestPlan} mode="popLayout">
@@ -276,7 +276,7 @@ export default function EmpresasCalculadoraPage() {
                           </CrossFade>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 bg-success text-white text-[13px] font-bold px-3 py-1.5 rounded-full">
+                      <div className="flex items-center gap-1.5 bg-success text-white text-[13px] font-medium px-3 py-1.5 rounded-full">
                         <CheckCircle className="w-3 h-3" />
                         Mejor para ti
                       </div>
@@ -285,11 +285,11 @@ export default function EmpresasCalculadoraPage() {
                     {/* Details Grid */}
                     <div className="grid grid-cols-2 gap-6 mb-8">
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">Evaluaciones</p>
+                        <p className="text-[12px] uppercase tracking-wider text-white/40">Evaluaciones</p>
                         <p className="text-[14px] font-medium font-mono tabular-nums">{quantity} eval/mes</p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">Precio por eval</p>
+                        <p className="text-[12px] uppercase tracking-wider text-white/40">Precio por eval</p>
                         <p className="text-[14px] font-medium font-mono tabular-nums">
                           {bestPlan === 'starter' && formatCOP(42000)}
                           {bestPlan === 'pro' && formatCOP(21000)}
@@ -297,7 +297,7 @@ export default function EmpresasCalculadoraPage() {
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">Suscripción</p>
+                        <p className="text-[12px] uppercase tracking-wider text-white/40">Suscripción</p>
                         <p className="text-[14px] font-medium font-mono tabular-nums">
                           {bestPlan === 'starter' && 'Gratis'}
                           {bestPlan === 'pro' && formatCOP(149000) + '/mes'}
@@ -305,7 +305,7 @@ export default function EmpresasCalculadoraPage() {
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">Ahorro vs Starter</p>
+                        <p className="text-[12px] uppercase tracking-wider text-white/40">Ahorro vs Starter</p>
                         <p className="text-[14px] font-medium font-mono text-success tabular-nums">
                           {bestPlan === 'starter' && '—'}
                           {bestPlan === 'pro' && formatCOP(starterSavingsVsPro)}
@@ -318,7 +318,7 @@ export default function EmpresasCalculadoraPage() {
                     <div className="pt-6 mb-8 border-t border-white/10">
                       <div className="flex items-end justify-between">
                         <div>
-                          <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Costo total evaluaciones</p>
+                          <p className="text-[12px] uppercase tracking-wider text-white/40 mb-1">Costo total evaluaciones</p>
                           <p className="text-[40px] font-mono font-light tracking-tight leading-none tabular-nums">
                             {bestPlan === 'flex' ? (
                               <span className="text-success">$0</span>
@@ -383,7 +383,7 @@ export default function EmpresasCalculadoraPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="text-[15px] font-medium text-foreground">Plan Flex recomendado</h3>
-                          <span className="text-[9px] font-bold bg-foreground text-background px-1.5 py-0.5 rounded-full uppercase">
+                          <span className="text-[12px] font-medium bg-foreground text-background px-1.5 py-0.5 rounded-full uppercase">
                             Recomendado
                           </span>
                         </div>
@@ -433,10 +433,10 @@ export default function EmpresasCalculadoraPage() {
                     <th className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider py-3 pr-4">Evaluaciones/mes</th>
                     <th className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider py-3 px-4">Starter (Gratis)</th>
                     <th className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider py-3 px-4">
-                      <span className="flex items-center gap-1.5">Pro ($ 149.000/mes) <span className="bg-primary text-primary-fg uppercase tracking-wide font-mono text-[8px] px-1.5 py-0.5 rounded-full">Popular</span></span>
+                      <span className="flex items-center gap-1.5">Pro ($ 149.000/mes) <span className="bg-primary text-primary-fg uppercase tracking-wide font-mono text-[12px] px-1.5 py-0.5 rounded-full">Popular</span></span>
                     </th>
                     <th className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider py-3 pl-4">
-                      <span className="flex items-center gap-1.5">Flex (1% canon) <span className="bg-warning text-white text-[8px] px-1.5 py-0.5 rounded-full">Todo incluido</span></span>
+                      <span className="flex items-center gap-1.5">Flex (1% canon) <span className="bg-warning text-white text-[12px] px-1.5 py-0.5 rounded-full">Todo incluido</span></span>
                     </th>
                   </tr>
                 </thead>
@@ -451,23 +451,23 @@ export default function EmpresasCalculadoraPage() {
 
                     return (
                       <tr key={qty} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                        <td className="text-[13px] font-semibold text-foreground py-3 pr-4 font-mono tabular-nums">{qty}</td>
+                        <td className="text-[13px] font-medium text-foreground py-3 pr-4 font-mono tabular-nums">{qty}</td>
                         <td className={cn(
                           "text-[13px] py-3 px-4 font-mono tabular-nums",
-                          isCheapestStarter && qty < 50 ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                          isCheapestStarter && qty < 50 ? 'font-medium text-foreground' : 'text-muted-foreground'
                         )}>
                           {formatCOP(sTotal)}
                         </td>
                         <td className={cn(
                           "text-[13px] py-3 px-4 font-mono tabular-nums",
-                          !isCheapestStarter && qty < 50 ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                          !isCheapestStarter && qty < 50 ? 'font-medium text-foreground' : 'text-muted-foreground'
                         )}>
                           {formatCOP(pTotal)}
-                          {qty > 30 && <span className="text-[10px] text-warning ml-1">({qty - 30} extra)</span>}
+                          {qty > 30 && <span className="text-[12px] text-warning ml-1">({qty - 30} extra)</span>}
                         </td>
                         <td className={cn(
                           "text-[13px] py-3 pl-4",
-                          qty >= 50 ? 'font-semibold text-success' : 'text-success'
+                          qty >= 50 ? 'font-medium text-success' : 'text-success'
                         )}>
                           $0 por eval
                         </td>

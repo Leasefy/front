@@ -86,12 +86,12 @@ export function WizardNavigation({
         ) : isReviewStep ? (
           mode === 'update' ? (
             <>
-              <span>Actualizar solicitud</span>
+              <span>Actualizar postulación</span>
               <ArrowClockwise className="h-4 w-4" />
             </>
           ) : (
             <>
-              <span>Enviar solicitud</span>
+              <span>Enviar postulación</span>
               <PaperPlaneTilt className="h-4 w-4" />
             </>
           )

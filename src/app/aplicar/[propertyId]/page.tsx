@@ -209,7 +209,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     return (
       <AvisoDeAplicar
         icono={HouseLine}
-        titulo="Propiedad no encontrada"
+        titulo="No encontramos este inmueble"
         texto="El inmueble que buscas no existe o ya no está publicado."
         accion={{ href: '/propiedades', label: 'Ver inmuebles disponibles' }}
       />

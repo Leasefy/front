@@ -150,7 +150,7 @@ export function PropertyCard({
   };
 
   const chip =
-    'inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums';
+    'inline-flex items-center gap-1.5 whitespace-nowrap text-[13px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums';
 
   const typeLabels: Record<string, string> = {
     apartment: 'Apartamento',
@@ -329,7 +329,7 @@ export function PropertyCard({
         {/* Price overlay — bottom left, shows on hover (hidden when dots visible to avoid overlap) */}
         {allImages.length <= 1 && (
           <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-[opacity,transform] duration-reveal ease-enter translate-y-1 group-hover:translate-y-0">
-            <span className="text-[13px] font-semibold text-white bg-black/40 backdrop-blur-xl rounded-full px-3 py-1.5 font-mono tabular-nums">
+            <span className="text-[13px] font-medium text-white bg-black/40 backdrop-blur-xl rounded-full px-3 py-1.5 font-mono tabular-nums">
               {displayPrice != null ? formatCurrency(displayPrice) : 'Sin dato'}
               {!isSaleListing && <span className="text-white/50 font-normal font-sans">/mes</span>}
             </span>
@@ -348,7 +348,7 @@ export function PropertyCard({
         </div>
 
         {/* Title */}
-        <h3 className="text-[16px] font-heading font-semibold text-foreground tracking-[-0.02em] leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors duration-base">
+        <h3 className="text-[16px] font-heading font-medium text-foreground tracking-[-0.02em] leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors duration-base">
           {title}
         </h3>
 
@@ -370,7 +370,7 @@ export function PropertyCard({
         </p>
         {/* Lo que se paga de verdad: canon + administración. Sólo si la hay. */}
         {costo && costo.administracion > 0 && (
-          <p className="mt-1.5 text-[12.5px] text-fg-muted" data-testid="costo-mensual">
+          <p className="mt-1.5 text-[13px] text-fg-muted" data-testid="costo-mensual">
             Con administración:{' '}
             <span className="font-mono tabular-nums text-fg">{formatCurrency(costo.total)}</span> al mes
           </p>
@@ -411,7 +411,7 @@ export function PropertyCard({
 
         {/* Lo que pesa al decidir: sin depósito (ley) y por qué sale en la lista. */}
         {(vivienda || (explicacion && (explicacion.cumple.length > 0 || (explicacion.noCumple?.length ?? 0) > 0))) && (
-          <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-[12.5px] leading-snug">
+          <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-[13px] leading-snug">
             {vivienda && (
               <p className="flex items-start gap-1.5 text-fg-muted" data-testid="sin-deposito">
                 <ShieldCheck className="mt-[1px] h-3.5 w-3.5 shrink-0 text-success" aria-hidden />

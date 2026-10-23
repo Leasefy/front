@@ -130,7 +130,7 @@ function TarjetaDeGaleria({
         <div
           className={cn(
             'relative aspect-[4/3] overflow-hidden rounded-lg bg-surface-muted transition-shadow duration-base',
-            resaltada ? 'shadow-md ring-2 ring-primary ring-offset-2 ring-offset-background' : 'group-hover:shadow-md',
+            resaltada ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'group-hover:ring-1 group-hover:ring-border-strong',
           )}
         >
           <PortadaDelInmueble
@@ -143,7 +143,7 @@ function TarjetaDeGaleria({
           {/* El velo oscuro es para leer el precio sobre una foto; sin foto, el precio va en tinta. */}
           {conFoto && <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" aria-hidden />}
           {video && (
-            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-[12px] font-medium text-white backdrop-blur-sm">
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-[13px] font-medium text-white backdrop-blur-sm">
               <Play className="h-3 w-3" weight="fill" aria-hidden />
               {NOMBRE_DE_LA_RED[video.red]}
             </span>
@@ -157,7 +157,7 @@ function TarjetaDeGaleria({
             }}
             aria-pressed={guardado}
             aria-label={guardado ? 'Quitar de guardados' : 'Guardar'}
-            className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-fg shadow-sm transition-transform duration-fast active:scale-[0.94]"
+            className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-fg transition-transform duration-fast active:scale-[0.94]"
           >
             <Heart
               className={cn('h-4 w-4', guardado && 'text-primary')}
@@ -166,14 +166,14 @@ function TarjetaDeGaleria({
             />
           </button>
           <span className={cn('absolute inset-x-4 bottom-3', conFoto ? 'text-white' : 'text-fg')}>
-            <span className="block font-mono text-[24px] font-semibold leading-none tabular-nums">
+            <span className="block font-mono text-[24px] font-medium leading-none tabular-nums">
               {precio != null ? (venta ? millones(precio) : formatCurrency(precio)) : 'Por confirmar'}
               {!venta && precio != null && (
                 <span className={cn('ml-1 text-[13px] font-normal', conFoto ? 'text-white/80' : 'text-fg-muted')}>al mes</span>
               )}
             </span>
             {costo && costo.administracion > 0 && (
-              <span className={cn('mt-1 block text-[12.5px]', conFoto ? 'text-white/85' : 'text-fg-muted')}>
+              <span className={cn('mt-1 block text-[13px]', conFoto ? 'text-white/85' : 'text-fg-muted')}>
                 Con administración: <span className="font-mono tabular-nums">{formatCurrency(costo.total)}</span>
               </span>
             )}
@@ -182,7 +182,7 @@ function TarjetaDeGaleria({
         <div className="space-y-2 px-1 pt-3">
           <div>
             <p className="truncate text-[15.5px] font-medium text-fg">{barrioYCiudad(p.neighborhood, p.city)}</p>
-            <p className="font-mono text-[12.5px] tabular-nums text-fg-muted">
+            <p className="font-mono text-[13px] tabular-nums text-fg-muted">
               {[
                 p.bedrooms != null ? `${p.bedrooms} hab` : null,
                 p.bathrooms != null ? `${p.bathrooms} ${p.bathrooms === 1 ? 'baño' : 'baños'}` : null,
@@ -193,12 +193,12 @@ function TarjetaDeGaleria({
             </p>
           </div>
           {explicacion && explicacion.noCumple.length > 0 ? (
-            <p className="flex items-start gap-1.5 text-[12.5px] text-fg-muted" data-testid="no-cumple">
+            <p className="flex items-start gap-1.5 text-[13px] text-fg-muted" data-testid="no-cumple">
               <Info className="mt-[1px] h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
               <span className="line-clamp-1">No cumple: {explicacion.noCumple.join(' · ')}</span>
             </p>
           ) : explicacion && explicacion.cumple.length > 0 ? (
-            <p className="flex items-start gap-1.5 text-[12.5px] text-fg-muted" data-testid="por-que-sale">
+            <p className="flex items-start gap-1.5 text-[13px] text-fg-muted" data-testid="por-que-sale">
               <Check className="mt-[1px] h-3.5 w-3.5 shrink-0 text-primary" weight="bold" aria-hidden />
               <span className="line-clamp-1">Cumple: {explicacion.cumple.join(' · ')}</span>
             </p>

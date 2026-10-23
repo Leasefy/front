@@ -20,9 +20,11 @@ import { TopScriptsTable }        from '@/components/inmobiliaria/cobranza/TopSc
 import { FalloDeCarga }           from '@/components/estado/FalloDeCarga'
 import { CrossFade } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 
 export default function CobranzaAnaliticaPage() {
-  const { t } = useI18n()
+  const { t, formatCurrency } = useI18n()
   const { isLoading, error, data, refetch } = useCobranzaAnalytics()
 
   // ── Loading skeleton (first load, no data yet) ─────────────────────────────
@@ -128,6 +130,17 @@ export default function CobranzaAnaliticaPage() {
 
   // ── Widget grid (agencyGate passed) ───────────────────────────────────────
   // maxCount for heatmap: derived from cadence.heatmap.cells
+  // LA RESPUESTA: cuánto se recuperó de la cartera en el último corte (la
+  // suma de todas las etapas de ese día; las mismas filas que pinta la gráfica).
+  const filasDeRecuperacion = data?.recovery?.populated ? data.recovery.rows : []
+  const ultimoCorte = filasDeRecuperacion.reduce<string | null>(
+    (max, r) => (max === null || r.bucket_date > max ? r.bucket_date : max),
+    null,
+  )
+  const delCorte = filasDeRecuperacion.filter((r) => r.bucket_date === ultimoCorte)
+  const recuperado = delCorte.reduce((s, r) => s + (Number(r.recovered_cop) || 0), 0)
+  const enCartera = delCorte.reduce((s, r) => s + (Number(r.total_cop_in_stage) || 0), 0)
+
   const heatmapCells = data?.cadence?.heatmap?.cells ?? []
   const heatmapMaxCount = Math.max(1, ...heatmapCells.map((c) => c.call_count))
 
@@ -140,6 +153,26 @@ export default function CobranzaAnaliticaPage() {
         titulo={t('inmobiliaria.ai.cobranza.analitica.title')}
         descripcion={t('inmobiliaria.ai.cobranza.analitica.subtitle')}
       />
+
+      {ultimoCorte && enCartera > 0 ? (
+        <CifraHeroe
+          data-testid="analitica-recuperado"
+          rotulo="Recuperado"
+          cifra={formatCurrency(recuperado)}
+          contexto={`de ${formatCurrency(enCartera)} en cartera · corte del ${fechaCorta(ultimoCorte)}`}
+          total={enCartera}
+          tramos={[
+            { clave: 'recuperado', etiqueta: 'Recuperado', monto: recuperado, tono: 'exito', cifra: formatCurrency(recuperado) },
+            {
+              clave: 'falta',
+              etiqueta: 'Sin recuperar',
+              monto: Math.max(0, enCartera - recuperado),
+              tono: 'neutro',
+              cifra: formatCurrency(Math.max(0, enCartera - recuperado)),
+            },
+          ]}
+        />
+      ) : null}
 
       {/* 5-widget grid — XR-03: responsive cols */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

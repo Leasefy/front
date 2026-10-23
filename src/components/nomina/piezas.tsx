@@ -36,6 +36,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { cn } from '@/lib/utils';
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { nombreDelMes } from '@/lib/recaudo/meses';
 
 // ── El cartel del módulo no habilitado ──────────────────────────────────────
 
@@ -397,9 +398,14 @@ export function LeyendaDeEstados() {
   );
 }
 
-/** `YYYY-MM` + quincena, en palabras. */
+/**
+ * `YYYY-MM` + quincena, en palabras: «Marzo de 2026» y «Marzo de 2026 · 1.ª quincena»
+ * (glow up, 3.ª vuelta: antes «2026-03 · quincena 1»). Lo que no sea un mes se devuelve tal cual.
+ */
 export function etiquetaDelPeriodo(mes: string, quincena: number | null): string {
-  return quincena == null ? mes : `${mes} · quincena ${quincena}`;
+  const nombre = /^\d{4}-(0[1-9]|1[0-2])$/.test(mes) ? nombreDelMes(mes) : mes;
+  const conMayuscula = nombre.charAt(0).toUpperCase() + nombre.slice(1);
+  return quincena == null ? conMayuscula : `${conMayuscula} · ${quincena}.ª quincena`;
 }
 
 /** Centésimas a texto: 750 → «7,5». */

@@ -21,6 +21,7 @@ import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transi
 import { CobranzaResultadosKpis } from '@/components/inmobiliaria/cobranza/CobranzaResultadosKpis'
 import { CobranzaAnaliticaResumen } from '@/components/inmobiliaria/cobranza/CobranzaAnaliticaResumen'
 import { CobranzaTeTocaATi } from '@/components/inmobiliaria/cobranza/CobranzaTeTocaATi'
+import { ANCLA_COMO_TRABAJO, ANCLA_TE_TOCA } from '@/lib/cobranza/anclas-del-resumen'
 import { CobranzaDeudoresQuePesan } from '@/components/inmobiliaria/cobranza/CobranzaDeudoresQuePesan'
 import { CarteraPorEtapa } from '@/components/inmobiliaria/cobranza/CarteraPorEtapa'
 import { CobranzaTransitionsFeed } from '@/components/inmobiliaria/cobranza/CobranzaTransitionsFeed'
@@ -42,6 +43,25 @@ import { useTr } from '@/lib/i18n/use-tr'
 const TENANT_PLACEHOLDER = ''
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.cobranza'
+
+/*
+ * Ronda 30 (K8, Nico 23-10-2026: «K8 fusionar»): «Analítica» y «Resultados»
+ * repetían lo que este Resumen ya dice; sus rutas redirigen a `#como-trabajo`
+ * (`cobranza-retiradas.data.mjs`) y el plegado llega abierto. «Pendientes», a
+ * `#te-toca-a-ti`. Las anclas: `lib/cobranza/anclas-del-resumen.ts`.
+ */
+
+/** El ancla de la URL (`#te-toca-a-ti`, `#como-trabajo`) después de montar; sigue los cambios. */
+function useAnclaDeLaUrl(): string {
+  const [ancla, setAncla] = useState('')
+  useEffect(() => {
+    const leer = () => setAncla(window.location.hash.replace(/^#/, ''))
+    leer()
+    window.addEventListener('hashchange', leer)
+    return () => window.removeEventListener('hashchange', leer)
+  }, [])
+  return ancla
+}
 
 /**
  * «¿Cómo funciona?» — el viaje de la cobranza en 4 pasos, SIEMPRE detrás del
@@ -109,6 +129,16 @@ export default function CobranzaOverviewPage() {
   // «Atender N» (revisora r25, Resumen #2): cuántas decisiones esperan, de «Te toca a ti».
   const [queEspera, setQueEspera] = useState<number | null>(null)
 
+  // Ronda 30 (K8): quien llega por una ruta retirada (`/pendientes`, `/analitica`,
+  // `/resultados`) aterriza en su ancla; el panorama se pinta después de cargar,
+  // así que el salto se hace cuando ya está en la página.
+  const ancla = useAnclaDeLaUrl()
+  const hayPanorama = Boolean(data) && !sinDeudores
+  useEffect(() => {
+    if (!hayPanorama || (ancla !== ANCLA_TE_TOCA && ancla !== ANCLA_COMO_TRABAJO)) return
+    document.getElementById(ancla)?.scrollIntoView?.({ block: 'start' })
+  }, [ancla, hayPanorama])
+
   // Local state for realtime-prepended transitions
   const [realtimeTransitions, setRealtimeTransitions] = useState<StageTransitionEvent[]>([])
 
@@ -174,7 +204,8 @@ export default function CobranzaOverviewPage() {
       accionPrincipal={
         queEspera && queEspera > 0 ? (
           <Button asChild size="sm" hideArrow data-testid="cobranza-atender">
-            <Link href="/panel/inmobiliaria/pagos/cobranza/pendientes">
+            {/* Ronda 30 (K8): lleva al tablero de esta misma pantalla (antes a «Pendientes», que lo repetía). */}
+            <Link href={`#${ANCLA_TE_TOCA}`}>
               {tr('Atender {n}', { n: queEspera.toLocaleString('es-CO') })}
             </Link>
           </Button>
@@ -336,7 +367,17 @@ export default function CobranzaOverviewPage() {
       </section>
 
       {/* Revisora r24 (Cobranza #3): lo que hizo el agente es de consulta: plegado, después de la cartera. */}
-      <MasDetalles etiqueta={tr("Lo que hizo el agente")} etiquetaAbierto={tr("Ocultar lo que hizo el agente")} montadoSiempre data-testid="lo-que-hizo-el-agente-plegado">
+      {/* Ronda 30 (K8): aquí entraron «Resultados» y «Analítica» (lo que recuperó, cómo
+          trabajó y por qué); sus rutas aterrizan en este ancla con el plegado abierto. */}
+      <div id={ANCLA_COMO_TRABAJO} className="scroll-mt-6">
+      <MasDetalles
+        key={ancla === ANCLA_COMO_TRABAJO ? 'abierto' : 'plegado'}
+        abiertoAlInicio={ancla === ANCLA_COMO_TRABAJO}
+        etiqueta={tr("Cómo trabajó la cobranza")}
+        etiquetaAbierto={tr("Ocultar cómo trabajó la cobranza")}
+        montadoSiempre
+        data-testid="lo-que-hizo-el-agente-plegado"
+      >
       {/* ═══ 2. LO QUE HIZO EL AGENTE ══════════════════════════════════════
           Resultado del trabajo automático. Es información, no acción: por eso
           va DESPUÉS de lo que te toca, y sin botones que compitan. */}
@@ -381,6 +422,7 @@ export default function CobranzaOverviewPage() {
         </div>
       </section>
       </MasDetalles>
+      </div>
 
     </div>
     </CrossFade>

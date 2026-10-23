@@ -1,10 +1,13 @@
 /**
- * cobranza-retiradas.data.mjs — las tres pantallas de Cobranza que ya no
+ * cobranza-retiradas.data.mjs — las pantallas de Cobranza que ya no
  * existen y a dónde aterriza quien llega por un enlace guardado.
  *
  *   /pagos/cobranza/equipo     → /pagos/cobranza                          (MORI-37, Nico 19-10)
  *   /pagos/cobranza/promesas   → /pagos/cobranza/acuerdos?estado=vigente  (fusionada en Acuerdos)
  *   /pagos/cobranza/plantillas → /pagos/cobranza/configuracion            (Playbooks ocultos)
+ *   /pagos/cobranza/analitica  → /pagos/cobranza#como-trabajo              (ronda 30, K8: fusionada en el Resumen)
+ *   /pagos/cobranza/resultados → /pagos/cobranza#como-trabajo              (ronda 30, K8: fusionada en el Resumen)
+ *   /pagos/cobranza/pendientes → /pagos/cobranza#te-toca-a-ti              (ronda 30, K8: fusionada en «Te toca a ti»)
  *
  * ── Por qué aquí y no sólo en el `page.tsx` ─────────────────────────────────
  *
@@ -27,6 +30,10 @@ const RETIRADAS = [
   ['equipo', `${P}/pagos/cobranza`],
   ['promesas', `${P}/pagos/cobranza/acuerdos?estado=vigente`],
   ['plantillas', `${P}/pagos/cobranza/configuracion`],
+  // Ronda 30 (K8, Nico 23-10-2026: «K8 fusionar»): repetían el Resumen; aterrizan en su ancla.
+  ['analitica', `${P}/pagos/cobranza#como-trabajo`],
+  ['resultados', `${P}/pagos/cobranza#como-trabajo`],
+  ['pendientes', `${P}/pagos/cobranza#te-toca-a-ti`],
 ]
 
 export const COBRANZA_RETIRADAS_DATA = RETIRADAS.flatMap(([de, a]) => [

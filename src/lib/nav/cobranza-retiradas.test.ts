@@ -52,6 +52,10 @@ const CASOS: Array<[string, string]> = [
   [`${C}/equipo`, C],
   [`${C}/promesas`, `${C}/acuerdos?estado=vigente`],
   [`${C}/plantillas`, `${C}/configuracion`],
+  // Ronda 30 (K8): Analítica, Resultados y Pendientes se fusionaron en el Resumen.
+  [`${C}/analitica`, `${C}#como-trabajo`],
+  [`${C}/resultados`, `${C}#como-trabajo`],
+  [`${C}/pendientes`, `${C}#te-toca-a-ti`],
 ]
 
 describe('las pantallas retiradas de Cobranza redirigen sin depender del asistente', () => {
@@ -65,21 +69,22 @@ describe('las pantallas retiradas de Cobranza redirigen sin depender del asisten
 
   it('cada destino es una pantalla que existe', () => {
     for (const [, a] of CASOS) {
-      const ruta = (a.split('?')[0] ?? a).replace(`${P}/`, '')
+      // Ronda 30 (K8): un destino puede traer ancla (`#como-trabajo`), además de consulta.
+      const ruta = (a.split(/[?#]/)[0] ?? a).replace(`${P}/`, '')
       expect(existsSync(join(RAIZ, 'src/app/panel/inmobiliaria', ruta, 'page.tsx')), a).toBe(true)
     }
   })
 
   it('las fuentes son literales: no tapan ninguna otra ruta', () => {
     for (const r of COBRANZA_RETIRADAS_DATA) expect(r.source).not.toMatch(/:/)
-    for (const viva of ['', '/acuerdos', '/configuracion', '/deudores', '/equipos', '/promesas/1']) {
+    for (const viva of ['', '/acuerdos', '/configuracion', '/deudores', '/equipos', '/promesas/1', '/reporte', '/escalaciones']) {
       expect(resolver(`${C}${viva}`, COBRANZA_RETIRADAS_DATA), viva).toBeNull()
     }
   })
 
   it('ningún destino vuelve a redirigir', () => {
     for (const [, a] of CASOS) {
-      const sinQuery = a.split('?')[0] ?? a
+      const sinQuery = a.split(/[?#]/)[0] ?? a
       expect(resolver(sinQuery, [...LA_SALA_DE_PAGOS_SE_FUE, ...COBRANZA_RETIRADAS_DATA, ...DESPUES]), a).toBeNull()
     }
   })

@@ -39,6 +39,11 @@ vi.mock('@/components/ui/toast', () => ({
   toast: { error: h.toastError, success: h.toastSuccess },
 }));
 vi.mock('@leasefy/cadence', () => ({
+  // Ronda 30: el botón de la casa importa las escalas del movimiento (hover/press sin sombras).
+  motionScale: { pop: 0.96, press: 0.97, hover: 1.02, lift: 1.01 },
+  motionSpring: {},
+  motionDuration: {},
+  motionEase: {},
   Eyebrow: ({ children }: { children?: React.ReactNode }) => React.createElement('span', null, children),
 }));
 // El encabezado común (21-10) y su «¿Cómo funciona?» tienen sus propias pruebas: acá sólo el título.

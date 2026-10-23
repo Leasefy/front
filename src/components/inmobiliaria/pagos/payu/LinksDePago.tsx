@@ -21,7 +21,8 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { TablePagination } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { useTr } from '@/lib/i18n/use-tr';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDate, plataPareja } from '@/lib/format';
@@ -73,6 +74,7 @@ export function LinksDePago({
   esperanEnLaBandeja,
 }: LinksDePagoProps) {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const idDelTitulo = useId();
   const esMovil = useIsMobile();
 
@@ -143,29 +145,22 @@ export function LinksDePago({
             onClick={() => puedeAvanzar && cambiarMes(sumarMeses(mes, 1))}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {data && (
-            <span className="text-caption tabular-nums text-fg-muted" data-testid="conteo-de-links">
-              {total === 1 ? t('inmobiliaria.cobros.linksDePago.conteoUno') : t('inmobiliaria.cobros.linksDePago.conteoVarios', { total })}
-            </span>
-          )}
-          <Select
-            value={estado ?? TODOS}
-            onValueChange={(v) => setEstado(v === TODOS ? undefined : (v as EstadoDelLinkDePago))}
-          >
-            <SelectTrigger className="w-52" aria-label={t('inmobiliaria.cobros.linksDePago.filtroEstado')} data-testid="filtro-de-estado-del-link">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={TODOS}>{t('inmobiliaria.cobros.linksDePago.todos')}</SelectItem>
-              {ESTADOS_DEL_LINK_DE_PAGO.map((e) => (
-                <SelectItem key={e} value={e}>
-                  {t(`${P}.estado.${e}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Revisora r25 (Agente de pagos #3): el estado en pestañas DENTRO de la tarjeta (antes un Select
+            «Todos los estados»). El back cuenta sólo lo que se pide: el número va en la abierta (y deja
+            de ir aparte en «N cuotas»). Los conteos por estado y «Sin pagar» de una vez son para Víctor. */}
+        <PestanasDeEstado
+          etiqueta={t('inmobiliaria.cobros.linksDePago.filtroEstado')}
+          valor={estado ?? TODOS}
+          onCambio={(v) => setEstado(v === TODOS ? undefined : (v as EstadoDelLinkDePago))}
+          data-testid="filtro-de-estado-del-link"
+          pestanas={[TODOS, ...ESTADOS_DEL_LINK_DE_PAGO].map((e) => ({
+            valor: e,
+            etiqueta: e === TODOS ? tr('Todas') : t(`${P}.estado.${e}`),
+            cuantos: (estado ?? TODOS) === e && data ? total : null,
+            fija: true,
+            testid: `filtro-del-link-${e}`,
+          }))}
+        />
       </div>
 
       {resumen ? <div className="border-b border-border px-4 py-3">{resumen}</div> : null}

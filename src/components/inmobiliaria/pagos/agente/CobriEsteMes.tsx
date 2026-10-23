@@ -21,9 +21,9 @@
  * No hay «Enviar link»: Nico eligió el cron, no el pedido manual.
  */
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { ArrowRight, ChatCircleText, HandPalm, WarningCircle } from '@phosphor-icons/react'
+import { ArrowRight, HandPalm } from '@phosphor-icons/react'
 
 import {
   PildoraDelAgente,
@@ -34,7 +34,7 @@ import { LinksDePago } from '@/components/inmobiliaria/pagos/payu/LinksDePago'
 import { Button } from '@/components/ui/button'
 import { useCobrosEnLaBandeja } from '@/lib/hooks/use-cobros-en-la-bandeja'
 import { useResumenDePayu, type Lectura } from '@/lib/hooks/use-payu'
-import { fraseDelMesDePayu } from '@/lib/payu/frases'
+import { loQueLaCifraDeCobriNoDice } from '@/lib/payu/frases'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { formatCurrency } from '@/lib/format'
@@ -73,14 +73,15 @@ function CuandoEscribe() {
         ))}
       </ol>
       <p className="mt-3 max-w-2xl text-body-sm text-fg-muted">
-        Son máximo tres mensajes por cuota y siempre el mismo enlace. Después del tercero ya no escribe: la sigue
-        cobranza.
+        Son máximo tres mensajes por cuota y siempre el mismo enlace, el mismo que va en los correos de aviso de
+        cobro. Después del tercero ya no escribe: la sigue cobranza.
       </p>
     </div>
   )
 }
 
 function FraseDelMes({ lectura }: { lectura: Lectura<ResumenDeLinksDePago> }) {
+  const estado = estadoDeCobri(lectura)
   if (lectura.data) {
     const d = lectura.data
     const conEnlaceSinPagar = Math.max(0, d.linksEnviados - d.pagadosPorLink)
@@ -100,9 +101,11 @@ function FraseDelMes({ lectura }: { lectura: Lectura<ResumenDeLinksDePago> }) {
           { clave: 'sin-enlace', etiqueta: 'Sin enlace todavía', monto: sinEnlace, tono: 'neutro', cifra: sinEnlace },
         ]}
         pie={
-          <p className="flex items-start gap-2" data-testid="frase-de-cobri">
-            <ChatCircleText className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            {fraseDelMesDePayu(d)}
+          // Revisora r25 (Agente de pagos #1 y #2): el estado de Cobri en el pie de la cifra, y la frase
+          // sólo con lo que la cifra no dice (antes repetía «$ 2.230.000» y «de 10 cuotas»).
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1" data-testid="frase-de-cobri">
+            <PildoraDelAgente estado={estado} data-testid="estado-de-cobri" />
+            <span>{loQueLaCifraDeCobriNoDice(d)}</span>
           </p>
         }
         data-testid="cifra-de-cobri"
@@ -112,8 +115,8 @@ function FraseDelMes({ lectura }: { lectura: Lectura<ResumenDeLinksDePago> }) {
   if (lectura.error) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-3" data-testid="frase-de-cobri-fallo">
-        <p className="flex items-start gap-3 text-body-sm text-fg-muted">
-          <WarningCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">
+          <PildoraDelAgente estado={estado} data-testid="estado-de-cobri" />
           No se pudo leer el resumen de Cobri, así que no sabemos si está prendido.
         </p>
         <Button variant="outline" size="sm" hideArrow onClick={() => lectura.recargar()}>
@@ -167,41 +170,46 @@ function EsperanTuAprobacion({ ids }: { ids: readonly string[] }) {
   )
 }
 
-export function CobriEsteMes() {
+export function CobriEsteMes({ debajoDeLaCifra }: { debajoDeLaCifra?: ReactNode } = {}) {
   const [mes, setMes] = useState(() => mesActual())
   const resumen = useResumenDePayu(mes)
   const enLaBandeja = useCobrosEnLaBandeja()
 
   return (
-    <section aria-labelledby="cobri-este-mes" className="space-y-4" data-testid="cobri-este-mes">
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+    <>
+      {/* Revisora r25 (Agente de pagos #1): LA RESPUESTA pegada al encabezado (antes dentro de la tabla,
+          debajo de «Qué necesita para trabajar», del título de Cobri y de «Cuándo escribe»: y≈600 a 1440). */}
+      <div data-testid="cobri-la-respuesta">
+        <FraseDelMes lectura={resumen} />
+      </div>
+
+      {debajoDeLaCifra}
+
+      <section aria-labelledby="cobri-este-mes" className="space-y-4" data-testid="cobri-este-mes">
+        <div className="space-y-1">
           <h2 id="cobri-este-mes" className="text-subtitle text-fg">
             Cobri · el enlace de pago de cada cuota
           </h2>
-          <PildoraDelAgente estado={estadoDeCobri(resumen)} data-testid="estado-de-cobri" />
+          <p className="max-w-2xl text-body-sm text-fg-muted">
+            Le manda al inquilino por WhatsApp el enlace de pago de su cuota más vieja con saldo, por el valor exacto.
+          </p>
         </div>
-        <p className="max-w-2xl text-body-sm text-fg-muted">
-          Le manda al inquilino por WhatsApp el enlace de pago de su cuota más vieja con saldo, por el valor exacto. Es
-          el mismo enlace que va en los correos de aviso de cobro.
-        </p>
-      </div>
 
-      {/* Revisora r24 (Agente de pagos #2): «Cuándo escribe» se consulta; plegado, no ~600 px abiertos a 390. */}
-      <MasDetalles etiqueta="Cuándo escribe Cobri" etiquetaAbierto="Ocultar" montadoSiempre>
-        <CuandoEscribe />
-      </MasDetalles>
+        {/* Revisora r24 (Agente de pagos #2): «Cuándo escribe» se consulta; plegado, no ~600 px abiertos a 390. */}
+        <MasDetalles etiqueta="Cuándo escribe Cobri" etiquetaAbierto="Ocultar" montadoSiempre>
+          <CuandoEscribe />
+        </MasDetalles>
 
-      <EsperanTuAprobacion ids={enLaBandeja.ids} />
+        <EsperanTuAprobacion ids={enLaBandeja.ids} />
 
-      <LinksDePago
-        mes={mes}
-        onCambiarMes={setMes}
-        titulo="El enlace de cada cuota"
-        descripcion={null}
-        resumen={<FraseDelMes lectura={resumen} />}
-        esperanEnLaBandeja={enLaBandeja.porCuota}
-      />
-    </section>
+        <LinksDePago
+          mes={mes}
+          onCambiarMes={setMes}
+          titulo="El enlace de cada cuota"
+          descripcion={null}
+          esperanEnLaBandeja={enLaBandeja.porCuota}
+        />
+      </section>
+    </>
   )
 }

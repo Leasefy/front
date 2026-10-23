@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { fraseDelMesDePayu, PAYU_APAGADO } from './frases'
+import { fraseDelMesDePayu, loQueLaCifraDeCobriNoDice, PAYU_APAGADO } from './frases'
 import type { ResumenDeLinksDePago } from '@/lib/types/payu'
 
 const resumen = (parcial: Partial<ResumenDeLinksDePago>): ResumenDeLinksDePago => ({
@@ -66,5 +66,27 @@ describe('fraseDelMesDePayu — Payu prendido', () => {
   it('un mes sin cuotas no se lee como «0 de 0»', () => {
     const frase = fraseDelMesDePayu(resumen({ cuotas: 0, linksEnviados: 0, pagadosPorLink: 0 }))
     expect(frase).toBe('Cobri está prendido, pero octubre de 2026 no tiene cuotas por cobrar.')
+  })
+})
+
+describe('loQueLaCifraDeCobriNoDice (r25, Agente de pagos #2)', () => {
+  it('no repite lo pagado ni «N de M cuotas»: los enlaces y lo pendiente', () => {
+    const r = resumen({})
+    const frase = loQueLaCifraDeCobriNoDice(r)
+    expect(frase).toContain(`mandó ${r.linksEnviados} enlace`)
+    expect(frase).not.toContain(` de ${r.cuotas} cuotas`)
+    expect(frase).not.toContain('por enlace (')
+  })
+
+  it('apagado sin enlaces: lo dice sin números', () => {
+    expect(loQueLaCifraDeCobriNoDice(resumen({ payuActivo: false, linksEnviados: 0, pagadosPorLink: 0 }))).toBe(
+      'Cobri no manda enlaces mientras esté apagado: lo prende Leasefy.',
+    )
+  })
+
+  it('apagado con enlaces de antes: cuántos mandó mientras estuvo prendido', () => {
+    expect(loQueLaCifraDeCobriNoDice(resumen({ payuActivo: false, linksEnviados: 1, pendientesCop: 0 }))).toBe(
+      'Cobri no manda enlaces mientras esté apagado: lo prende Leasefy. Mientras estuvo prendido mandó 1 enlace.',
+    )
   })
 })

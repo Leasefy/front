@@ -34,7 +34,15 @@ vi.mock('@/lib/context/PermissionsContext', () => ({
 // La sección de Cobri tiene sus propias lecturas y su prueba (`CobriEsteMes.test.tsx`):
 // acá sólo importa que esté, entre los pasos y el equipo.
 vi.mock('./CobriEsteMes', () => ({
-  CobriEsteMes: () => React.createElement('section', { 'data-testid': 'cobri-este-mes' }),
+  // r25 (#1): la cifra de Cobri arriba, lo que necesita el equipo debajo de ella y, después, su sección.
+  CobriEsteMes: ({ debajoDeLaCifra }: { debajoDeLaCifra?: React.ReactNode }) =>
+    React.createElement(
+      React.Fragment,
+      null,
+      React.createElement('div', { 'data-testid': 'cobri-la-respuesta' }),
+      debajoDeLaCifra,
+      React.createElement('section', { 'data-testid': 'cobri-este-mes' }),
+    ),
 }))
 
 import { AgenteDePagos } from './AgenteDePagos'
@@ -186,6 +194,9 @@ describe('AgenteDePagos — con las llaves', () => {
     const pasos = q('[data-testid="paso-leasefy"]')
     const equipo = q('[data-testid="especialista-pagui"]')
     expect(pasos!.compareDocumentPosition(cobri!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // r25 (#1): la respuesta (la cifra de Cobri) va ANTES de lo que necesita: pegada al encabezado.
+    const respuesta = q('[data-testid="cobri-la-respuesta"]')
+    expect(respuesta!.compareDocumentPosition(pasos!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(cobri!.compareDocumentPosition(equipo!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

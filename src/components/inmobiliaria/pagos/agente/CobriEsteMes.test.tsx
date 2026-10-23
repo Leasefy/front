@@ -87,7 +87,13 @@ describe('Cobri dentro de «Agente de pagos»', () => {
     expect(estado()?.textContent).toMatch(/Prendido/)
     const frase = q('[data-testid="frase-de-cobri"]')?.textContent ?? ''
     expect(frase).toMatch(/Cobri/)
-    expect(q('[data-testid="links-de-pago"]')?.contains(q('[data-testid="frase-de-cobri"]'))).toBe(true)
+    // Revisora r25 (#1): la cifra y su frase van ARRIBA, fuera de la tabla y antes de ella.
+    const frasePintada = q('[data-testid="frase-de-cobri"]')!
+    const tabla = q('[data-testid="links-de-pago"]')!
+    expect(tabla.contains(frasePintada)).toBe(false)
+    expect(frasePintada.compareDocumentPosition(tabla) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // Y no repite lo que la cifra ya dice («N de M cuotas»).
+    expect(frase).not.toMatch(/de \d+ cuotas/)
     // La tarjeta se titula por lo que muestra y va sin bajada: la cadencia ya se dijo arriba.
     expect(h.links).toHaveBeenLastCalledWith(expect.objectContaining({ titulo: 'El enlace de cada cuota', descripcion: null }))
   })

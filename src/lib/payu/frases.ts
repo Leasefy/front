@@ -47,3 +47,22 @@ export function fraseDelMesDePayu(r: ResumenDeLinksDePago): string {
 
   return `En ${mes} Cobri ${loQueMando(r, null)}`
 }
+
+/**
+ * Revisora r25 (Agente de pagos #2): bajo la cifra «Pagadas por enlace», sólo lo que la cifra NO dice
+ * (cuántos enlaces mandó y lo que queda pendiente); lo pagado y «N de M cuotas» ya están arriba. El
+ * estado (prendido/apagado) lo dice la pastilla de al lado.
+ */
+export function loQueLaCifraDeCobriNoDice(r: ResumenDeLinksDePago): string {
+  const mes = nombreDelMes(r.mes)
+  const enlaces = (n: number) => `${n} ${n === 1 ? 'enlace' : 'enlaces'}`
+  const pendientes = r.pendientesCop > 0 ? `; quedan ${formatCurrency(r.pendientesCop)} pendientes` : ''
+  if (!r.payuActivo) {
+    return r.linksEnviados === 0
+      ? 'Cobri no manda enlaces mientras esté apagado: lo prende Leasefy.'
+      : `Cobri no manda enlaces mientras esté apagado: lo prende Leasefy. Mientras estuvo prendido mandó ${enlaces(r.linksEnviados)}${pendientes}.`
+  }
+  if (r.cuotas === 0) return `Cobri está listo, pero ${mes} no tiene cuotas por cobrar.`
+  if (r.linksEnviados === 0) return 'Cobri todavía no ha mandado enlaces: el primer aviso de cada cuota sale antes de su vencimiento.'
+  return `Cobri mandó ${enlaces(r.linksEnviados)}${pendientes}.`
+}

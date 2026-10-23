@@ -176,6 +176,12 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
         }
       />
 
+      {/* Cobri (08-10, de cambios-nico-10): lo que el equipo ya hace de verdad, con el resumen del back.
+          Revisora r25 (#1): su cifra va pegada al encabezado; «Qué necesita para trabajar» debajo de ella
+          (lo que falta para empezar) y, después, Cobri con la tabla. */}
+      <CobriEsteMes
+        debajoDeLaCifra={
+          <>
       {/* Revisora r24 (Agente de pagos #3): «Sin verificar» UNA vez (la píldora); con la consulta caída, una
           línea con su salida, y con todo prendido, una línea. La lista queda adentro, plegada. */}
       <section aria-labelledby="que-necesita" className="space-y-3">
@@ -266,10 +272,9 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
           </ol>
         )}
       </section>
-
-      {/* Cobri (08-10, de cambios-nico-10): lo que el equipo ya hace de verdad,
-          con el resumen del back. */}
-      <CobriEsteMes />
+          </>
+        }
+      />
 
       {/* Revisora r24 (Agente de pagos #2): «El equipo» es de consulta (≈900 px a 1440, ≈2.300 a 390): plegado. */}
       <section aria-labelledby="el-equipo">

@@ -471,4 +471,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   // Propietarios › Cuenta de cobro (5.º agente panel)
   'Propietarios': "Owners",
   'Lo que el propietario le debe a la inmobiliaria, listo para imprimir o guardar en PDF.': "What the owner owes the agency, ready to print or save as PDF.",
+  // Dinero, 3.ª vuelta: Cartera (r24 #2)
+  'Ningún caso en siniestro': 'No claims in progress',
+  'Ninguna cuota castigada': 'No written-off installments',
+  'Edad de la cartera': 'Age of the arrears',
+  'Cómo se cuentan los tramos': 'How the age brackets are counted',
 }

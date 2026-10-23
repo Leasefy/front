@@ -90,6 +90,7 @@ import { CarteraMarcada } from '@/components/cartera/CarteraMarcada'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { useTr } from '@/lib/i18n/use-tr'
 import { useRouter } from 'next/navigation'
 import {
   CurrencyCircleDollar,
@@ -185,6 +186,7 @@ interface PropietarioElegido {
 
 export function CarteraCompleta() {
   const { t } = useI18n()
+  const tr = useTr()
   const { report, isLoading, error, errorCrudo, refetch } = useCarteraReport()
   // `undefined` = todavía nadie eligió: ver `cajon` más abajo.
   const [cajonElegido, setCajon] = useState<Cajon | null | undefined>(undefined)
@@ -267,6 +269,10 @@ export function CarteraCompleta() {
     [cartera],
   )
   const interesTotal = useMemo(() => sumarIntereses(todas), [todas])
+  const siniestrosYCastigadaEnCero =
+    Boolean(siniestros || castigada) &&
+    (!siniestros || siniestros.totalCop === 0) &&
+    (!castigada || castigada.totalCop === 0)
   const interesEnSiniestro = useMemo(
     () => sumarIntereses(siniestros?.items ?? []),
     [siniestros],
@@ -547,7 +553,38 @@ export function CarteraCompleta() {
               )
             })}
 
-            {siniestros ? (
+            {/* Revisora r24 (Cartera #2): con siniestro y castigada en cero, UNA línea a todo el
+                ancho en vez de dos celdas con «—» (siguen las dos, con su testid y su salida: son
+                parte de la cuenta del total). */}
+            {siniestrosYCastigadaEnCero ? (
+              <p
+                className="col-span-full flex flex-wrap items-center gap-x-1.5 gap-y-1 bg-surface px-5 py-3 text-caption text-fg-muted sm:px-6"
+                data-testid="nada-en-siniestro-ni-castigado"
+              >
+                {siniestros ? (
+                  <button
+                    type="button"
+                    onClick={() => setVista('siniestros')}
+                    className="underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    data-testid="resumen-en-siniestro"
+                  >
+                    {tr('Ningún caso en siniestro')}
+                  </button>
+                ) : null}
+                {siniestros && castigada ? <span aria-hidden="true">·</span> : null}
+                {castigada ? (
+                  <Link
+                    href="/panel/inmobiliaria/pagos/cartera/castigada"
+                    className="underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    data-testid="resumen-castigada"
+                  >
+                    {tr('Ninguna cuota castigada')}
+                  </Link>
+                ) : null}
+              </p>
+            ) : null}
+
+            {siniestros && !siniestrosYCastigadaEnCero ? (
               /* La cifra abre el segmento: es el mismo dato, visto de cerca. */
               <button
                 type="button"
@@ -576,7 +613,7 @@ export function CarteraCompleta() {
               </button>
             ) : null}
 
-            {castigada ? (
+            {castigada && !siniestrosYCastigadaEnCero ? (
               /*
                * Enlace y no botón: lo castigado vive en otra pantalla porque el
                * pedido es que SALGA de la cartera activa.
@@ -651,7 +688,28 @@ export function CarteraCompleta() {
               arriba, como una franja (no como tarjetas sueltas encima). */}
           {/* ── La edad DE LA CARTERA. Cada ficha es un filtro. ──────────── */}
           <div className="border-b border-border" data-testid="edad-en-la-tabla">
-            <p className="px-4 pt-3 text-caption text-fg-muted">{t('cartera.porEdad.edadDeLaCartera')}</p>
+            {/* Revisora r24 (Cartera #2): cómo se cuentan los tramos se consulta, plegado. */}
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 pt-3">
+              <p className="text-caption text-fg-muted">{tr('Edad de la cartera')}</p>
+              <MasDetalles
+                etiqueta={tr('Cómo se cuentan los tramos')}
+                etiquetaAbierto={tr('Ocultar')}
+                montadoSiempre
+                className="text-caption"
+                classNameDelContenido="space-y-1 text-caption text-fg-muted"
+              >
+                <p>{t('cartera.porEdad.edadDeLaCartera')}</p>
+                {tramosVaciosPorElSiniestro.length > 0 ? (
+                  <p data-testid="tramos-que-no-se-llenan">
+                    {/* Ronda 12: dicho como es —sólo un contrato con respaldo pasa a siniestro—,
+                        para no contradecir las deudas viejas de la tabla sin respaldo. */}
+                    {tramosVaciosPorElSiniestro.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}: con el
+                    siniestro a los {siniestros!.diasParaSiniestro} días, la mora de los contratos
+                    con respaldo pasa a «En siniestro».
+                  </p>
+                ) : null}
+              </MasDetalles>
+            </div>
             {/*
               🔴 21-09-2026, abriendo esta pantalla con la agencia migrada:
               «31 a 60», «61 a 90» y «Más de 90 días» salían en $0 con 788 casos
@@ -661,15 +719,6 @@ export function CarteraCompleta() {
               pueden llenarse nunca. Tres ceros permanentes sin explicación se
               leen como «no hay mora vieja», que es lo contrario de la verdad.
             */}
-            {tramosVaciosPorElSiniestro.length > 0 ? (
-              <p className="px-4 pt-1 text-caption text-fg-muted" data-testid="tramos-que-no-se-llenan">
-                {/* Ronda 12: dicho como es —sólo un contrato con respaldo pasa a siniestro—,
-                    para no contradecir las deudas viejas de la tabla sin respaldo. */}
-                {tramosVaciosPorElSiniestro.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}: con el
-                siniestro a los {siniestros!.diasParaSiniestro} días, la mora de los contratos
-                con respaldo pasa a «En siniestro».
-              </p>
-            ) : null}
             {/* Ronda 11 (390): en el celular los tramos van en una grilla de dos —el riel
                 que se desplazaba escondía justo los más graves—. */}
             <div

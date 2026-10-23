@@ -21,6 +21,7 @@
  *     recomendación sobre la que decide una persona.
  */
 
+import { useEstadoEnLaUrl } from '@/lib/cobranza/use-estado-en-la-url'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Scales, ShieldWarning } from '@phosphor-icons/react'
@@ -315,7 +316,19 @@ function DisputasContent() {
   const { user: authUser } = useAuth()
 
   // Filtro server-side por estado (el endpoint soporta ?status).
-  const [filtro, setFiltro] = useState<EstadoFiltro>('todas')
+  const [filtro, setFiltroInterno] = useState<EstadoFiltro>('todas')
+  // C8 (r25): abre en «Abiertas» si hay alguna, y el filtro vive en la URL.
+  const estadoUrl = useEstadoEnLaUrl<EstadoFiltro>(FILTRO_OPCIONES.map((o) => o.value))
+  useEffect(() => {
+    if (estadoUrl.deLaUrl) setFiltroInterno(estadoUrl.deLaUrl)
+  }, [estadoUrl.deLaUrl])
+  const setFiltro = useCallback(
+    (f: EstadoFiltro) => {
+      setFiltroInterno(f)
+      estadoUrl.escribir(f === 'todas' ? null : f)
+    },
+    [estadoUrl],
+  )
   // Abrir y resolver es `cobranza:intervene` en el micro (también la lista).
   // QA-IA-B (04-10-2026): al contador se le ofrecía «Abrir disputa» y la
   // lista decía «No pudimos cargar las disputas. 403».
@@ -382,7 +395,11 @@ function DisputasContent() {
   useEffect(() => {
     if (filtro !== 'todas' || isLoading) return
     setConteoDeTodas({ open: counts.open, resolved: counts.resolved, total: disputes.length })
-  }, [filtro, isLoading, counts, disputes.length])
+    if (!estadoUrl.yaEligio() && counts.open > 0) {
+      estadoUrl.marcarElegido()
+      setFiltroInterno('open' as EstadoFiltro)
+    }
+  }, [filtro, isLoading, counts, disputes.length, estadoUrl])
   const pestanas = useMemo(
     () =>
       FILTRO_OPCIONES.map((o) => ({

@@ -11,6 +11,7 @@
  * §11 (loading skeleton), §16 (tabular-nums).
  */
 
+import { useEstadoEnLaUrl } from '@/lib/cobranza/use-estado-en-la-url'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -113,6 +114,11 @@ function CartasContent() {
 
   const [kindFilter, setKindFilter] = useState<LegalArtifactKind | undefined>()
   const [statusFilter, setStatusFilter] = useState<LegalArtifactStatus | undefined>()
+  // C8 (r25): abre en «Por revisar» si hay alguna, y el filtro vive en la URL.
+  const estadoUrl = useEstadoEnLaUrl<LegalArtifactStatus>(Object.keys(STATUS_LABELS) as LegalArtifactStatus[])
+  useEffect(() => {
+    if (estadoUrl.deLaUrl) setStatusFilter(estadoUrl.deLaUrl)
+  }, [estadoUrl.deLaUrl])
 
   const { data, isLoading, error, refetch } = useLegalArtifacts({
     kind: kindFilter,
@@ -155,7 +161,11 @@ function CartasContent() {
     const porEstado: Record<string, number> = {}
     for (const a of data.artifacts ?? []) porEstado[a.status] = (porEstado[a.status] ?? 0) + 1
     setConteos({ tipo: kindFilter ?? '', porEstado, total: (data.artifacts ?? []).length })
-  }, [data, statusFilter, kindFilter])
+    if (!estadoUrl.yaEligio() && (porEstado.pending_human_review ?? 0) > 0) {
+      estadoUrl.marcarElegido()
+      setStatusFilter('pending_human_review')
+    }
+  }, [data, statusFilter, kindFilter, estadoUrl])
   const conteosDelTipo = conteos && conteos.tipo === (kindFilter ?? '') ? conteos : null
 
   const fecha = useCallback(
@@ -309,7 +319,11 @@ function CartasContent() {
         <PestanasDeEstado<string>
           pestanas={pestanas}
           valor={statusFilter ?? 'todas'}
-          onCambio={(v) => setStatusFilter(v === 'todas' ? undefined : (v as LegalArtifactStatus))}
+          onCambio={(v) => {
+            const st = v === 'todas' ? undefined : (v as LegalArtifactStatus)
+            setStatusFilter(st)
+            estadoUrl.escribir(st ?? null)
+          }}
           etiqueta={isEs ? 'Filtrar las cartas por estado' : 'Filter letters by status'}
         />
       </div>

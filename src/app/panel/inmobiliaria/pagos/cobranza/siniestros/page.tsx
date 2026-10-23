@@ -11,6 +11,7 @@
  * §11 (loading skeleton), §16 (tabular-nums).
  */
 
+import { useEstadoEnLaUrl } from '@/lib/cobranza/use-estado-en-la-url'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -89,6 +90,11 @@ function SiniestrosContent() {
   const isEs = locale.startsWith('es')
 
   const [statusFilter, setStatusFilter] = useState<InsuranceClaimStatus | undefined>()
+  // C8 (r25): abre en «Por revisar» si hay alguno, y el filtro vive en la URL.
+  const estadoUrl = useEstadoEnLaUrl<InsuranceClaimStatus>(Object.keys(STATUS_LABELS) as InsuranceClaimStatus[])
+  useEffect(() => {
+    if (estadoUrl.deLaUrl) setStatusFilter(estadoUrl.deLaUrl)
+  }, [estadoUrl.deLaUrl])
 
   const { data, isLoading, error, refetch } = useInsuranceClaims({
     status: statusFilter,
@@ -137,7 +143,11 @@ function SiniestrosContent() {
       e.saldo += Math.max(0, c.outstandingCop ?? 0)
     }
     setResumen({ porEstado, total: (data.claims ?? []).length })
-  }, [data, statusFilter])
+    if (!estadoUrl.yaEligio() && (porEstado.pending_human_review?.n ?? 0) > 0) {
+      estadoUrl.marcarElegido()
+      setStatusFilter('pending_human_review')
+    }
+  }, [data, statusFilter, estadoUrl])
 
   const fecha = useCallback(
     (iso: string) =>
@@ -266,7 +276,11 @@ function SiniestrosContent() {
         <PestanasDeEstado<string>
           pestanas={pestanas}
           valor={statusFilter ?? 'todos'}
-          onCambio={(v) => setStatusFilter(v === 'todos' ? undefined : (v as InsuranceClaimStatus))}
+          onCambio={(v) => {
+            const st = v === 'todos' ? undefined : (v as InsuranceClaimStatus)
+            setStatusFilter(st)
+            estadoUrl.escribir(st ?? null)
+          }}
           etiqueta={isEs ? 'Filtrar los siniestros por estado' : 'Filter claims by status'}
         />
       </div>

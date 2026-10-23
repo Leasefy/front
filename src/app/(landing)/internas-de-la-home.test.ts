@@ -42,7 +42,12 @@ function leer(p: Pagina) {
   return { carpeta, html, scripts, js, todo: `${html}\n${Object.values(js).join('\n')}` }
 }
 const DE = { productos: leer('productos'), para: leer('para') }
-const documento = (html: string): Document => new DOMParser().parseFromString(html, 'text/html')
+/**
+ * El documento sin pedir nada a la red: happy-dom bajaría las hojas de estilo y los scripts (Google Fonts, las
+ * CDN) al parsear. Los `src` de los scripts se leen de `data-src`.
+ */
+const documento = (html: string): Document =>
+  new DOMParser().parseFromString(html.replace(/<link\b[^>]*>/g, '').replace(/<script\b([^>]*)\bsrc=/g, '<script$1data-src='), 'text/html')
 const HOME = documento(readFileSync(join('public', 'landing', 'index.html'), 'utf8'))
 
 /** Los datos de las ocho internas de producto, tal como los lee la página. */
@@ -140,7 +145,7 @@ describe('las internas de la home se sirven estáticas (Ronda 30, Nico)', () => 
     // Los propios más las cuatro librerías (GSAP, ScrollTrigger, Lenis y Motion).
     expect(enLaPagina.length).toBe(scripts.length + 4)
     for (const s of enLaPagina) {
-      const src = s.getAttribute('src')
+      const src = s.getAttribute('data-src')
       expect(src, `script en línea: ${s.textContent?.slice(0, 60)}`).toBeTruthy()
       if (src!.startsWith(`/internas/${p}/js/`)) expect(existsSync(join('public', src!)), src!).toBe(true)
       else expect(TERCEROS_DE_LA_HOME.scripts.some((t) => src!.startsWith(t)), src!).toBe(true)

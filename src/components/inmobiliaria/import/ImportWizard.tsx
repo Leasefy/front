@@ -506,7 +506,8 @@ export function ImportWizard({
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    // Revisora r25: alineado con el encabezado (antes centrado con mx-auto, 120 px corrido).
+    <div className="max-w-4xl">
       <CargasAMedias
         lotes={cargasParaOfrecer}
         onRetomar={retomarLote}

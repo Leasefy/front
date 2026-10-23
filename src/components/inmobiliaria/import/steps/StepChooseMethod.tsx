@@ -133,24 +133,16 @@ export function StepChooseMethod({ state, updateState, origen }: ImportStepProps
               style={{ animationDelay: retrasoEscalonado(index) }}
               disabled={card.disabled}
             >
-              {/* Icon */}
-              <div className={cn(
-                'w-12 h-12 rounded-lg flex items-center justify-center mb-4',
-                card.iconBg
-              )}>
-                <CardIcon className={cn(
-                  'w-6 h-6',
-                  card.method === 'enlaces' ? 'text-primary' :
-                  card.method === 'excel' ? 'text-success' :
-                  card.method === 'software' ? 'text-warning' :
-                  'text-fg-muted'
-                )} />
-              </div>
+              {/* Revisora r25: el ícono suelto y en grafito (antes en cajas de cuatro colores que no
+                  juzgaban nada), y una sola etiqueta, «Recomendado», en neutro (antes «Nuevo» azul,
+                  «Recomendado» verde y «Guiado» ámbar ×2). */}
+              <CardIcon className="mb-4 h-6 w-6 text-fg-muted" aria-hidden="true" />
 
-              {/* Badge */}
-              <Badge variant={card.badgeVariant} className="mb-3">
-                {t(card.badgeKey)}
-              </Badge>
+              {card.method === 'excel' ? (
+                <Badge variant="secondary" className="mb-3">
+                  {t(card.badgeKey)}
+                </Badge>
+              ) : null}
 
               {/* Title & Description */}
               <h3 className="font-medium text-fg text-base mb-1">

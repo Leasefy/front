@@ -997,7 +997,8 @@ export function ConsignacionWizard({
   const borradorEncontrado = useUltimoPresente(borrador.encontrado);
 
   return (
-    <div className="max-w-4xl mx-auto">
+    // Revisora r25: alineado con el encabezado (antes centrado con mx-auto).
+    <div className="max-w-4xl">
       {/* W4 — lo que quedó de la última vez. Se OFRECE, no se aplica solo. */}
       <Collapse open={Boolean(borrador.decisionPendiente && borrador.encontrado)}>
         {borradorEncontrado && (

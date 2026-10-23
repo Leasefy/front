@@ -3920,7 +3920,7 @@
     },
     "import": {
       "title": "Importar inmuebles",
-      "subtitle": "Migra tu portafolio completo en minutos",
+      "subtitle": "Sube tu Excel o CSV y revisa lo que falta antes de crear.",
       "steps": {
         "method": "Método",
         "upload": "Archivo",
@@ -4537,7 +4537,7 @@
           "draftSavedDesc": "\"{{title}}\" no se publica hasta que tenga fotos. Súbelas desde el inmueble y publícalo desde ahí."
         },
         "step1": {
-          "title": "Seleccionar Propietario",
+          "title": "¿De quién es el inmueble?",
           "subtitle": "Elige uno o varios propietarios, o crea uno nuevo"
         },
         "step2": {

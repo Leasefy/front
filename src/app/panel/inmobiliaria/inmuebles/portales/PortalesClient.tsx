@@ -793,7 +793,7 @@ function TarjetaDePortal({
         {esNuestro ? (
           <>
             Es nuestro propio catálogo.{' '}
-            <span className="font-medium text-fg">Se publica automático</span>,
+            <span className="font-medium text-fg">Se publica solo</span>,
             sin archivos ni trámites.
           </>
         ) : !p.cuenta ? (

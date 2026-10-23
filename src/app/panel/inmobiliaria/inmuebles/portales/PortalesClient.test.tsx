@@ -602,7 +602,7 @@ describe('las tarjetas de portal', () => {
     await montar()
     const t = porTestId('portal-SITIO_PROPIO')!.textContent ?? ''
     expect(t).toContain('nuestro propio catálogo')
-    expect(t).toContain('Se publica automático')
+    expect(t).toContain('Se publica solo')
     // Y NO le dice que «no puede recibir avisos»: ese texto es de los de afuera.
     expect(t).not.toContain('necesitamos los datos de tu cuenta')
   })

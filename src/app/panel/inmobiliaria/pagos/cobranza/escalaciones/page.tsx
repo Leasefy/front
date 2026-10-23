@@ -18,7 +18,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle } from '@phosphor-icons/react'
-import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { AnimatedNumber, Card, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { BackButton } from '@/components/ui/back-button'
+import { confirmar } from '@/components/ui/confirmar'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -36,7 +39,7 @@ import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Spinner, toast } from '@/components/ui'
+import { toast } from '@/components/ui'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
@@ -61,7 +64,7 @@ function EscalacionesContent() {
   const [resolveOpen, setResolveOpen] = useState<string | null>(null)
   // En el celular las tres columnas no caben juntas: se ve UNA, elegida con
   // sus pestañas (la de «sin tomar» primero, que es la que pide a alguien).
-  const [columnaMovil, setColumnaMovil] = useState<'open' | 'assigned' | 'resolved'>('open')
+  const [columnaMovil, setColumnaMovil] = useState<'open' | 'assigned'>('open')
   const [assignOpen, setAssignOpen] = useState<string | null>(null)
   const [members, setMembers] = useState<AgencyUser[]>([])
 
@@ -94,6 +97,17 @@ function EscalacionesContent() {
   // `message`, un 5xx «de nuestro lado», la red la conexión).
   const handleClaim = useCallback(
     async (id: string) => {
+      // Revisora r25 (Escalaciones #4, 1c): tomarla se confirma antes; el caso
+      // pasa a tu nombre y deja de estar libre para el resto del equipo.
+      const es = locale.startsWith('es')
+      const ok = await confirmar({
+        titulo: es ? '¿Tomas este caso?' : 'Take this case?',
+        descripcion: es
+          ? 'Queda a tu nombre: el resto del equipo deja de verlo como libre.'
+          : 'It will be assigned to you: the rest of the team stops seeing it as free.',
+        accion: es ? 'Tomarlo' : 'Take it',
+      })
+      if (!ok) return
       const r = await claim(id)
       if (!r.ok) {
         toast.error(
@@ -106,7 +120,7 @@ function EscalacionesContent() {
         )
       }
     },
-    [claim, t],
+    [claim, t, locale],
   )
 
   const handleResolve = useCallback(
@@ -201,6 +215,26 @@ function EscalacionesContent() {
   // ── Skeleton + celebratory EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─
   // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
   // tablero, → «todo al día»); lo que ya estaba al montarse no se anima.
+  // La vuelta y el encabezado común, los mismos en el vacío y en el tablero
+  // (revisora r25, Escalaciones #1 y UI: la pieza `BackButton`, no un enlace
+  // armado a mano con `router.back`).
+  const encabezado = (
+    <div className="space-y-3">
+      <BackButton href="/panel/inmobiliaria/pagos/cobranza" label={locale.startsWith('es') ? 'Volver' : 'Back'} />
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
+        descripcion="Los casos que el agente le pasó a una persona: tómalos, asígnalos o resuélvelos."
+        junto={
+          lastUpdated ? (
+            <span className="text-caption tabular-nums text-fg-muted">{lastUpdated}</span>
+          ) : null
+        }
+        data-testid="escalaciones-encabezado"
+      />
+    </div>
+  )
+
   if (isLoading && !data) {
     return (
       <CrossFade swapKey="esqueleto">
@@ -217,7 +251,8 @@ function EscalacionesContent() {
   if (!isLoading && allEmpty && !error) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8 space-y-6">
+        {encabezado}
         <EmptyState
           icon={CheckCircle}
           title={t('inmobiliaria.ai.cobranza.escalaciones.empty.title')}
@@ -241,147 +276,139 @@ function EscalacionesContent() {
         {escalacionAnnouncement}
       </div>
 
-      {/* La vuelta y el encabezado común (GLOW UP 21-10). */}
-      <div className="space-y-3">
-        <div>
-          {/* Se llega acá desde el caso («Escalaciones →») o desde el tablero
-              del Resumen, y no había forma de devolverse. `router.back()`
-              regresa a donde estabas; sin historial (pestaña nueva) cae al
-              Resumen de Cobranza. */}
-          <Button
-            variant="link"
-            size="sm"
-            hideArrow
-            onClick={() => {
-              if (window.history.length > 1) router.back()
-              else router.push('/panel/inmobiliaria/pagos/cobranza')
-            }}
-            className="gap-1 px-0 h-auto text-body-sm text-muted-foreground hover:text-foreground"
-            data-testid="escalaciones-volver"
-          >
-            Volver
-          </Button>
-        </div>
-      <EncabezadoDePantalla
-        seccion="Cobranza"
-        titulo={t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
-        descripcion="Los casos que el agente subió a una persona: tómalos, asígnalos o resuélvelos."
-        junto={
-          lastUpdated ? (
-            <span className="text-caption tabular-nums text-fg-muted">{lastUpdated}</span>
-          ) : null
-        }
-        data-testid="escalaciones-encabezado"
-      />
-      </div>
-
-      {/* Loading state — DESIGN.md §11 */}
-      {isLoading && !data && (
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="md" />
-        </div>
-      )}
+      {encabezado}
 
       {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
-      {/* GLOW UP 21-10: el hook guarda el error como texto crudo («500», el
-          nombre de una variable) y aquí salía tal cual, con «Error:» adelante.
-          Ahora es el cartel de siempre: qué no cargó y su reintento. */}
+      {/* GLOW UP 21-10: el cartel de siempre: qué no cargó y su reintento. */}
       {error && !data ? (
         <FalloDeCarga error={new Error(error)} queEs="las escalaciones" onReintentar={() => mutate()} />
       ) : null}
 
-      {/* Kanban — 3 columns md+, stacked sm. Las columnas ya no animan su
-          propia entrada (la página entra con su template): se anima el
-          CAMBIO — tomar, asignar o resolver saca la tarjeta de su columna y la
-          hace entrar en la otra, y el número de la columna cuenta. */}
+      {/* C3 (r25): LA RESPUESTA y el tablero en UNA tarjeta. La cifra y lo que
+          la acompaña miden lo mismo —lo que sigue sin resolver—: sin la barra
+          que sumaba las resueltas. Lo resuelto va plegado debajo (crecía sin
+          tope en su columna abierta). */}
       {data ? (
-        <CifraHeroe
-          data-testid="escalaciones-sin-tomar"
-          rotulo={locale.startsWith('es') ? 'Sin tomar' : 'Unclaimed'}
-          cifra={data.open.length.toLocaleString(locale)}
-          contexto={
-            locale.startsWith('es')
-              ? `de ${(data.open.length + data.assigned.length).toLocaleString(locale)} sin resolver`
-              : `of ${(data.open.length + data.assigned.length).toLocaleString(locale)} unresolved`
-          }
-          tramos={columns.map((col) => ({
-            clave: col.key,
-            etiqueta: col.label,
-            monto: col.items.length,
-            tono: col.key === 'open' ? ('aviso' as const) : col.key === 'resolved' ? ('exito' as const) : ('neutro' as const),
-            cifra: col.items.length.toLocaleString(locale),
-            siempre: true,
-          }))}
-        />
+        <Card className="overflow-hidden">
+          <CifraHeroe
+            className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+            data-testid="escalaciones-sin-tomar"
+            tamano="mediana"
+            rotulo={locale.startsWith('es') ? 'Sin tomar' : 'Unclaimed'}
+            cifra={data.open.length.toLocaleString(locale)}
+            contexto={
+              locale.startsWith('es')
+                ? `de ${(data.open.length + data.assigned.length).toLocaleString(locale)} sin resolver`
+                : `of ${(data.open.length + data.assigned.length).toLocaleString(locale)} unresolved`
+            }
+            esCero={data.open.length === 0}
+            cuandoEsCero={
+              locale.startsWith('es')
+                ? data.assigned.length === 1
+                  ? 'Nada sin tomar: 1 caso está en manos de una persona.'
+                  : data.assigned.length > 1
+                    ? `Nada sin tomar: ${data.assigned.length.toLocaleString(locale)} casos están en manos de una persona.`
+                    : 'Nada sin tomar ni por resolver.'
+                : 'Nothing unclaimed.'
+            }
+          />
+
+          <div className="border-b border-border px-4 py-3 md:hidden">
+            <PestanasDeEstado<'open' | 'assigned'>
+              pestanas={columns
+                .filter((col): col is typeof col & { key: 'open' | 'assigned' } => col.key !== 'resolved')
+                .map((col) => ({
+                  valor: col.key,
+                  etiqueta: col.label,
+                  cuantos: col.items.length,
+                  fija: true,
+                  tono: col.key === 'open' && col.items.length > 0 ? ('aviso' as const) : undefined,
+                  testid: `escalaciones-pestana-${col.key}`,
+                }))}
+              valor={columnaMovil}
+              onCambio={setColumnaMovil}
+              etiqueta={locale.startsWith('es') ? 'Ver una columna' : 'Show one column'}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x md:divide-border">
+            {columns
+              .filter((col) => col.key !== 'resolved')
+              .map((col) => (
+                <section
+                  key={col.key}
+                  className={col.key === columnaMovil ? '' : 'max-md:hidden'}
+                  aria-labelledby={`column-${col.key}-heading`}
+                >
+                  <div className="hidden items-center justify-between border-b border-border px-4 py-2.5 md:flex">
+                    <h2 id={`column-${col.key}-heading`} className="text-body-sm font-medium text-fg">
+                      {col.label}
+                    </h2>
+                    <span className="font-mono text-caption tabular-nums text-fg-muted">
+                      <AnimatedNumber value={col.items.length} format={(n) => String(Math.round(n))} />
+                    </span>
+                  </div>
+                  <div className="min-h-[160px] space-y-2 p-3">
+                    <Presence
+                      as="p"
+                      show={col.items.length === 0}
+                      initial={false}
+                      direction="none"
+                      className="py-6 text-center text-caption text-fg-muted"
+                    >
+                      {locale.startsWith('es') ? 'Ninguno por ahora' : 'None for now'}
+                    </Presence>
+                    <Stagger className="space-y-2">
+                      {col.items.map((esc) => (
+                        <StaggerItem key={esc.id}>
+                          <EscalationCard
+                            escalation={esc}
+                            currentUserEmail={currentUserEmail}
+                            hasResolvePerm={hasResolvePerm}
+                            hasAssignPerm={hasAssignPerm}
+                            onOpen={handleOpenDetail}
+                            onClaim={handleClaim}
+                            onAssign={setAssignOpen}
+                            onResolve={setResolveOpen}
+                          />
+                        </StaggerItem>
+                      ))}
+                    </Stagger>
+                  </div>
+                </section>
+              ))}
+          </div>
+        </Card>
       ) : null}
 
-      {data && (
-        <PestanasDeEstado<'open' | 'assigned' | 'resolved'>
-          className="md:hidden"
-          pestanas={columns.map((col) => ({
-            valor: col.key,
-            etiqueta: col.label,
-            cuantos: col.items.length,
-            fija: true,
-            tono: col.key === 'open' && col.items.length > 0 ? ('aviso' as const) : undefined,
-            testid: `escalaciones-pestana-${col.key}`,
-          }))}
-          valor={columnaMovil}
-          onCambio={setColumnaMovil}
-          etiqueta={locale.startsWith('es') ? 'Ver una columna' : 'Show one column'}
-        />
-      )}
-
-      {data && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {columns.map((col) => (
-            <section
-              key={col.key}
-              className={`rounded-lg border border-border bg-card/50 overflow-hidden${col.key === columnaMovil ? '' : ' max-md:hidden'}`}
-              aria-labelledby={`column-${col.key}-heading`}
-            >
-              <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between">
-                <h2
-                  id={`column-${col.key}-heading`}
-                  className="text-caption font-medium uppercase tracking-wide text-muted-foreground"
-                >
-                  {col.label}
-                </h2>
-                <span className="text-caption text-muted-foreground tabular-nums">
-                  <AnimatedNumber value={col.items.length} format={(n) => String(Math.round(n))} />
-                </span>
-              </div>
-              <div className="p-3 space-y-2 min-h-[200px]">
-                <Presence
-                  as="p"
-                  show={col.items.length === 0}
-                  initial={false}
-                  direction="none"
-                  className="text-caption text-muted-foreground text-center py-6"
-                >
-                  {locale.startsWith('es') ? 'Sin escalaciones' : 'No escalations'}
-                </Presence>
-                <Stagger className="space-y-2">
-                  {col.items.map((esc) => (
-                    <StaggerItem key={esc.id}>
-                      <EscalationCard
-                        escalation={esc}
-                        currentUserEmail={currentUserEmail}
-                        hasResolvePerm={hasResolvePerm}
-                        hasAssignPerm={hasAssignPerm}
-                        onOpen={handleOpenDetail}
-                        onClaim={handleClaim}
-                        onAssign={setAssignOpen}
-                        onResolve={setResolveOpen}
-                      />
-                    </StaggerItem>
-                  ))}
-                </Stagger>
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+      {data && data.resolved.length > 0 ? (
+        <MasDetalles
+          etiqueta={
+            locale.startsWith('es')
+              ? `${t('inmobiliaria.ai.cobranza.escalaciones.kanbanColumns.resolved')} · ${data.resolved.length.toLocaleString(locale)}`
+              : `${t('inmobiliaria.ai.cobranza.escalaciones.kanbanColumns.resolved')} · ${data.resolved.length}`
+          }
+          etiquetaAbierto={locale.startsWith('es') ? 'Ocultar las resueltas' : 'Hide resolved'}
+          data-testid="escalaciones-resueltas"
+        >
+          <Stagger className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+            {data.resolved.map((esc) => (
+              <StaggerItem key={esc.id}>
+                <EscalationCard
+                  escalation={esc}
+                  currentUserEmail={currentUserEmail}
+                  hasResolvePerm={hasResolvePerm}
+                  hasAssignPerm={hasAssignPerm}
+                  onOpen={handleOpenDetail}
+                  onClaim={handleClaim}
+                  onAssign={setAssignOpen}
+                  onResolve={setResolveOpen}
+                />
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </MasDetalles>
+      ) : null}
 
       <EscalationResolveModal
         escalationId={resolveOpen}

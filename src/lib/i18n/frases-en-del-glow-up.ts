@@ -369,6 +369,8 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Preparar visitas": "Prepare visits",
   "Lo que le falta a cada visita para poder hacerse. El calendario completo está en Agenda.": "What each visit still needs before it can happen. The full calendar is in Agenda.",
   "Ver la agenda": "View the agenda",
+  // Cobranza, portada (22-10)
+  "Ocultar lo que hizo el agente": "Hide what the agent did",
   // Giros, lo que falta del mes (22-10)
   "Ver a quién se le debe de meses anteriores": "See who is owed from earlier months",
   "{n} lote aprobado sin marcar pagado": "{n} approved batch not marked as paid",

@@ -30,6 +30,7 @@ import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaI
 import { AvisoPlazoSinFijarEnCobranza } from '@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Button } from '@/components/ui'
 import { CrossFade, Presence } from '@leasefy/cadence'
@@ -274,46 +275,14 @@ export default function CobranzaOverviewPage() {
           </Button>
       </Presence>
 
-      {/* ═══ 1. TE TOCA A TI ═══════════════════════════════════════════════
-          Lo único que pide que una persona haga algo. Reemplaza cuatro
-          superficies que contestaban la misma pregunta: el banner narrativo,
-          la fila de 4 tarjetas, la tarjeta «Revisar escalaciones» y la lista
-          «Qué necesita tu atención hoy» — con el mismo número repetido cuatro
-          veces y la lista, lo único accionable, al final. */}
-      <CobranzaTeTocaATi enMora={enMora} gestionados={data?.kpis.llamadasHoy ?? 0} />
-
-      {/* ═══ 2. LO QUE HIZO EL AGENTE ══════════════════════════════════════
-          Resultado del trabajo automático. Es información, no acción: por eso
-          va DESPUÉS de lo que te toca, y sin botones que compitan. */}
-      <section className="space-y-4" aria-labelledby="cobranza-agente">
-        {/* Título y botón en LA MISMA fila. El botón vivía dentro de
-            CobranzaResultadosKpis en una fila propia `justify-end`: quedaba
-            una franja casi vacía entre el título y las tarjetas, como si a la
-            sección le faltara algo (screenshot de Nico, 2026-08-25). */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h2 id="cobranza-agente" className="text-lg font-medium text-fg">
-            {tr("Lo que hizo el agente")}
-          </h2>
-          {/* Solo el reporte diario: la analítica se fusionó en esta misma
-              pantalla, así que enlazarla sería mandar a la gente a donde ya está. */}
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cobranza/reporte">
-              <Scales className="w-4 h-4" aria-hidden="true" />
-              {tr("Ver reporte diario")}
-            </Link>
-          </Button>
-        </div>
-        <CobranzaResultadosKpis overview={data} />
-        {/* Se monta solo con analítica de verdad (≥5 llamadas en 30 días). */}
-        <CobranzaAnaliticaResumen />
-      </section>
-
+      {/* Revisora r24 (Cobranza #3): LA RESPUESTA primero —cómo está la mora, por etapa, con su barra—;
+          después lo que te toca y, plegado, lo que hizo el agente. Antes eran seis bloques del mismo peso. */}
       {/* ═══ 3. TU CARTERA ═════════════════════════════════════════════════
           Cómo está compuesta la mora: en qué etapa está cada caso, cómo se
           mueve entre etapas, y quiénes pesan más. Las tres respondían la misma
           pregunta desde tres lugares distintos de la página. */}
       <section className="space-y-4" aria-labelledby="cobranza-cartera">
-        <h2 id="cobranza-cartera" className="text-lg font-medium text-fg">
+        <h2 id="cobranza-cartera" className="text-lg font-normal text-fg">
           {tr("Tu cartera")}
         </h2>
 
@@ -331,6 +300,44 @@ export default function CobranzaOverviewPage() {
             como si fuera algo que atender hoy. Es composición de cartera. */}
         <CobranzaDeudoresQuePesan />
       </section>
+
+      {/* ═══ 1. TE TOCA A TI ═══════════════════════════════════════════════
+          Lo único que pide que una persona haga algo. Reemplaza cuatro
+          superficies que contestaban la misma pregunta: el banner narrativo,
+          la fila de 4 tarjetas, la tarjeta «Revisar escalaciones» y la lista
+          «Qué necesita tu atención hoy» — con el mismo número repetido cuatro
+          veces y la lista, lo único accionable, al final. */}
+      <CobranzaTeTocaATi enMora={enMora} gestionados={data?.kpis.llamadasHoy ?? 0} />
+
+      {/* Revisora r24 (Cobranza #3): lo que hizo el agente es de consulta: plegado, después de la cartera. */}
+      <MasDetalles etiqueta={tr("Lo que hizo el agente")} etiquetaAbierto={tr("Ocultar lo que hizo el agente")} montadoSiempre data-testid="lo-que-hizo-el-agente-plegado">
+      {/* ═══ 2. LO QUE HIZO EL AGENTE ══════════════════════════════════════
+          Resultado del trabajo automático. Es información, no acción: por eso
+          va DESPUÉS de lo que te toca, y sin botones que compitan. */}
+      <section className="space-y-4" aria-labelledby="cobranza-agente">
+        {/* Título y botón en LA MISMA fila. El botón vivía dentro de
+            CobranzaResultadosKpis en una fila propia `justify-end`: quedaba
+            una franja casi vacía entre el título y las tarjetas, como si a la
+            sección le faltara algo (screenshot de Nico, 2026-08-25). */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h2 id="cobranza-agente" className="sr-only">
+            {tr("Lo que hizo el agente")}
+          </h2>
+          {/* Solo el reporte diario: la analítica se fusionó en esta misma
+              pantalla, así que enlazarla sería mandar a la gente a donde ya está. */}
+          <Button asChild variant="secondary" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/pagos/cobranza/reporte">
+              <Scales className="w-4 h-4" aria-hidden="true" />
+              {tr("Ver reporte diario")}
+            </Link>
+          </Button>
+        </div>
+        <CobranzaResultadosKpis overview={data} />
+        {/* Se monta solo con analítica de verdad (≥5 llamadas en 30 días). */}
+        <CobranzaAnaliticaResumen />
+      </section>
+
+      </MasDetalles>
 
       {/* ═══ 4. ACTIVIDAD ══════════════════════════════════════════════════ */}
       <section className="space-y-4" aria-labelledby="cobranza-actividad">

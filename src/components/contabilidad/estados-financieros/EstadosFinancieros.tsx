@@ -283,7 +283,20 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                     </span>
                   </>
                 }
-                pie={<span data-testid="el-canon-no-es-ingreso">{leyendaDelCanon(pyg)}</span>}
+                // Ronda 30 (revisora r27): lo que el canon NO es se sigue diciendo siempre, en UNA línea a la vista;
+                // el porqué (2815, CTCP) plegado debajo, montado siempre (antes un párrafo abierto bajo la cifra).
+                pie={
+                  <span data-testid="el-canon-no-es-ingreso" className="block">
+                    <MasDetalles
+                      montadoSiempre
+                      etiqueta="El canon recaudado no es ingreso de la inmobiliaria: por qué"
+                      etiquetaAbierto="Ocultar"
+                      classNameDelContenido="max-w-2xl pt-1"
+                    >
+                      {leyendaDelCanon(pyg)}
+                    </MasDetalles>
+                  </span>
+                }
                 data-testid="cifra-del-pyg"
               />
 
@@ -408,8 +421,9 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                               return (
                                 <TableCell key={c.clave} className="text-right max-md:block max-md:p-0 max-md:text-left">
                                   <span className="block text-caption text-fg-subtle md:hidden">{c.titulo}</span>
-                                  {/* 🔴 `null` es «—», nunca `0`. */}
-                                  {valor === null ? (
+                                  {/* 🔴 `null` es «—», nunca `0`. Ronda 30 (revisora r27): un cero del año anterior
+                                      tampoco informa («$ 0» en todas las filas): «—» atenuado. */}
+                                  {valor === null || (valor === 0 && (c.clave === 'anioAnterior' || c.clave === 'anioAnteriorAcumulado')) ? (
                                     <span className="text-fg-subtle">—</span>
                                   ) : (
                                     <Monto

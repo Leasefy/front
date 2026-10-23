@@ -1283,9 +1283,10 @@ export function HubDeContabilidad() {
           data-testid="revisiones-caidas"
         >
           <div className="space-y-0.5">
-            <p className="text-sm font-medium text-fg">No pude revisar todo el libro</p>
+            {/* Ronda 30 (revisora r27): la voz de Leasefy no habla en primera persona («No pude…»). */}
+            <p className="text-sm font-medium text-fg">No se pudo revisar todo el libro</p>
             <p className="text-caption text-fg-muted">
-              Sin estas consultas no sé si hay alertas: que no aparezca ninguna no quiere decir que
+              Sin estas consultas no se sabe si hay alertas: que no aparezca ninguna no quiere decir que
               esté todo en orden.
             </p>
           </div>
@@ -1345,7 +1346,7 @@ export function HubDeContabilidad() {
                 </div>
               ) : falla1 ? (
                 <p className="text-sm text-fg-muted">
-                  No pude revisar todo (arriba dice qué no cargó): hasta que cargue, no sé si falta algo.
+                  No se pudo revisar todo (arriba dice qué no cargó): hasta que cargue, no se sabe si falta algo.
                 </p>
               ) : null,
           },
@@ -1364,10 +1365,11 @@ export function HubDeContabilidad() {
                     <Alerta alerta={alertaNoCuadra} onReprocesar={() => setConfirmandoReproceso(true)} ocupado={reprocesando} />
                   </div>
                 ) : falla2 ? (
-                  <p className="text-sm text-fg-muted">No pude leer el balance: no sé todavía si cuadra.</p>
+                  <p className="text-sm text-fg-muted">No se pudo leer el balance: todavía no se sabe si cuadra.</p>
                 ) : null}
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild size="sm" variant="secondary" hideArrow>
+                  {/* Ronda 30 (revisora r27): con el cuadre como paso actual, su acción es LA de la pantalla (azul). */}
+                  <Button asChild size="sm" variant={paso2 === 'actual' ? 'default' : 'secondary'} hideArrow>
                     <Link href={`${BASE}/reportes?informe=balance`} data-testid="revisar-balance-de-prueba">
                       Revisar el balance de prueba
                     </Link>

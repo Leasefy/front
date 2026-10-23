@@ -210,10 +210,23 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
   // selector más entre los filtros: ahora son las pestañas de la tarjeta, con el conteo de la
   // que está elegida (el libro pagina en el servidor y sólo cuenta lo que se pidió).
   const periodo = PERIODO_DEL_FILTRO[filtros.cerrado];
+  // Ronda 30 (revisora r27): sin ningún mes cerrado se sabe todo sin preguntar —ninguno es de meses
+  // cerrados y todos son de meses abiertos—: «De meses cerrados» no se pinta (estaba en cero, vacía).
+  const sinMesCerrado = Boolean(datos) && !cierre?.cerradaHasta && periodo === 'todos';
   const pestanasDelPeriodo: PestanaDeEstado<Periodo>[] = [
     { valor: 'todos', etiqueta: 'Todos', cuantos: periodo === 'todos' && datos ? total : null, fija: true },
-    { valor: 'abiertos', etiqueta: 'De meses abiertos', cuantos: periodo === 'abiertos' && datos ? total : null, fija: true },
-    { valor: 'cerrados', etiqueta: 'De meses cerrados', cuantos: periodo === 'cerrados' && datos ? total : null, fija: true },
+    {
+      valor: 'abiertos',
+      etiqueta: 'De meses abiertos',
+      cuantos: periodo === 'abiertos' && datos ? total : sinMesCerrado ? total : null,
+      fija: true,
+    },
+    {
+      valor: 'cerrados',
+      etiqueta: 'De meses cerrados',
+      cuantos: periodo === 'cerrados' && datos ? total : sinMesCerrado ? 0 : null,
+      fija: !sinMesCerrado,
+    },
   ];
   const otrosFiltros = Boolean(filtros.desde || filtros.hasta || filtros.cuentaId || filtros.origen);
 

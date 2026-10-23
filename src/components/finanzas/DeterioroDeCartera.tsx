@@ -32,6 +32,7 @@
  *    lleva motivo.
  */
 
+import { cn } from '@/lib/utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle, Prohibit, WarningCircle } from '@phosphor-icons/react';
 
@@ -383,7 +384,7 @@ export function DeterioroDeCarteraPanel() {
                             {t.cuotas > 0 ? <span className="md:hidden"> en {NUMERO.format(t.cuotas)} cuotas</span> : null}
                           </TableCell>
                           <TableCell className="text-right font-mono tabular-nums max-md:hidden">
-                            {NUMERO.format(t.cuotas)}
+                            {t.cuotas === 0 ? <span className="text-fg-subtle">—</span> : NUMERO.format(t.cuotas)}
                           </TableCell>
                           <TableCell className="text-right max-md:col-start-2 max-md:row-span-2 max-md:row-start-2 max-md:block max-md:p-0">
                             <Input
@@ -447,11 +448,14 @@ export function DeterioroDeCarteraPanel() {
                 </p>
               ) : null}
 
-              <p className="text-caption text-fg-muted">
-                En siniestro: {formatCurrency(datos.calculo.enSiniestroCop)} en{' '}
-                {NUMERO.format(datos.calculo.cuotasEnSiniestro)} cuotas, fuera de esta provisión. Su
-                deterioro depende de la póliza, no de la edad de la cuota.
-              </p>
+              {/* Ronda 30: con cero en siniestro, la línea no sale. */}
+              {datos.calculo.enSiniestroCop > 0 || datos.calculo.cuotasEnSiniestro > 0 ? (
+                <p className="text-caption text-fg-muted">
+                  En siniestro: {formatCurrency(datos.calculo.enSiniestroCop)} en{' '}
+                  {NUMERO.format(datos.calculo.cuotasEnSiniestro)} cuotas, fuera de esta provisión. Su
+                  deterioro depende de la póliza, no de la edad de la cuota.
+                </p>
+              ) : null}
             </section>
 
             {/* Lo que se consulta: qué mide cada cifra. */}
@@ -483,7 +487,14 @@ export function DeterioroDeCarteraPanel() {
             {/* ── Las tres acciones, en el PIE de la tarjeta ──────────────
                 No flotando debajo: son las acciones de ESTA provisión, no de
                 la pantalla, y separadas por aire se leían como otra cosa. */}
-            <div className="-mx-4 -mb-4 flex flex-wrap items-center gap-2 border-t border-border px-4 py-3">
+            {/* Ronda 30 (revisora r27, prevenir): sin nada que provisionar ni provisión guardada, no se
+                ofrece proponer una provisión de $ 0 (ni aprobar o anular lo que no existe). */}
+            <div
+              className={cn(
+                '-mx-4 -mb-4 flex flex-wrap items-center gap-2 border-t border-border px-4 py-3',
+                enCero && !provision && 'hidden',
+              )}
+            >
               {/* Un solo azul, en el paso que sigue: con una propuesta guardada y sin cambios,
                   lo que sigue es aprobarla; si no, proponer. */}
               <Button

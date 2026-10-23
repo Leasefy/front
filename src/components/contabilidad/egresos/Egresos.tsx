@@ -58,6 +58,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -569,6 +571,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
     pagados: egresos.filter((e) => e.estado === 'PAGADO'),
   };
 
+  const sinNada = egresos.length === 0 && lotes.length === 0;
   const faltaPagar =
     sumar(enCamino.porArmar.map((e) => e.netoCop)) +
     sumar(enCamino.porAprobar.map((l) => l.totalCop)) +
@@ -586,6 +589,9 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       {/* GLOW UP 3.ª vuelta · LA RESPUESTA: cuánto falta sacarles a los proveedores y en qué va
           (orden suelta → lote esperando la OTRA firma → aprobado, listo para el banco). Antes eran
           cuatro cifras del mismo peso dentro de la tarjeta. */}
+      {/* Ronda 30 (revisora r27): sin egresos ni lotes, sólo el vacío (antes «nada» cuatro veces: la
+          línea de la cifra, «Pagados: 0», «Egresos 0 · Lotes 0» y el vacío). */}
+      {sinNada ? null : (
       <CifraHeroe
         rotulo="Falta pagar a proveedores"
         cifra={<Monto valor={faltaPagar} />}
@@ -612,13 +618,14 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
         }
         data-testid="egresos-en-camino"
       />
+      )}
         <section
           /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta
              tarjeta se vuelve el contenedor de desplazamiento más cercano y
              el pie pegajoso de adentro deja de medirse contra la ventana. */
           className="overflow-x-clip rounded-lg border border-border bg-surface"
         >
-          <div className="space-y-2 border-b border-border p-4 empty:hidden">
+          <div className={cn('space-y-2 border-b border-border p-4 empty:hidden', sinNada && 'hidden')}>
             <PestanasDeEstado
               etiqueta="Egresos o lotes"
               valor={parte}
@@ -654,8 +661,13 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 ilustracion="billetera"
                 titulo="Todavía no hay egresos"
                 descripcion="Nacen al pagar una factura de proveedor causada (en Gastos, «Pagar»): ahí se crea su orden de pago, que luego se arma en un lote."
-                // El siguiente paso real del recorrido: las facturas causadas, que esperan su pago.
-                crear={{ label: 'Ver las facturas por pagar', href: '/panel/inmobiliaria/contabilidad/gastos?estado=CAUSADA' }}
+                // El siguiente paso real del recorrido: las facturas causadas, que esperan su pago. Ronda 30: es
+                // ir a otra pantalla, no crear: un enlace sin el «+».
+                accion={
+                  <Button asChild size="sm" variant="secondary" hideArrow>
+                    <Link href="/panel/inmobiliaria/contabilidad/gastos?estado=CAUSADA">Ver las facturas por pagar</Link>
+                  </Button>
+                }
               />
             ) : esCelular ? (
               /* 🔴 CB-22 (QA de Contabilidad, 03-10-2026): a 390 px la tabla se

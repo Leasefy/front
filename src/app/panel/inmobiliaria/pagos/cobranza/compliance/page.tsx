@@ -32,6 +32,7 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { MonoLabel } from '@leasefy/cadence'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 function ComplianceOverviewContent() {
   const { t, locale } = useI18n()
@@ -119,6 +120,10 @@ function ComplianceOverviewContent() {
     return (
       <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-6">
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
+        />
         <EmptyState
           icon={ShieldCheck}
           title={t('inmobiliaria.ai.cobranza.compliance.empty.title')}
@@ -136,6 +141,11 @@ function ComplianceOverviewContent() {
       <EncabezadoDePantalla
         seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
+        descripcion={
+          locale.startsWith('es')
+            ? 'Si la cobranza cumple la Ley 2300 (horarios y contactos), Habeas Data y la retención de los datos.'
+            : 'Whether collections complies with Law 2300 (hours and contacts), Habeas Data and data retention.'
+        }
         junto={
           lastUpdated ? (
             <span className="text-caption font-mono tabular-nums text-fg-muted">{lastUpdated}</span>
@@ -157,7 +167,7 @@ function ComplianceOverviewContent() {
             weight="fill"
             aria-hidden="true"
           />
-          <p className="text-sm text-danger">
+          <p className="text-body-sm text-danger">
             {t('inmobiliaria.ai.cobranza.compliance.habeasData.banner')}
           </p>
       </Presence>
@@ -166,47 +176,30 @@ function ComplianceOverviewContent() {
       <Presence
         show={Boolean(error && !data)}
         role="alert"
-        className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+        className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-body-sm text-danger flex items-center gap-2"
       >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>Error: {error}</span>
+          <span>{locale.startsWith('es') ? 'No pudimos cargar el cumplimiento.' : 'We could not load compliance.'} {error}</span>
       </Presence>
 
       {data && (
         <>
-          {/* Section 1: Ley 2300 weekly counter */}
-          <section className="rounded-lg border border-border bg-card p-4">
-            <MonoLabel>
-              {t('inmobiliaria.ai.cobranza.compliance.overview.ley2300Heading')}
-            </MonoLabel>
-            <div className="mt-3 flex items-baseline gap-3">
-              <span
-                className={[
-                  'text-4xl font-mono tabular-nums',
-                  data.ley_2300.weekly_outside_hours_count === 0
-                    ? 'text-success'
-                    : 'text-danger font-medium',
-                ].join(' ')}
-              >
+          {/* LA RESPUESTA: los contactos fuera de horario de la semana (Ley 2300).
+              Es un CONTEO contra un objetivo que sólo puede ser cero: se dice con
+              palabras, nunca «4 / 0». */}
+          <CifraHeroe
+            data-testid="cumplimiento-ley-2300"
+            rotulo={t('inmobiliaria.ai.cobranza.compliance.overview.ley2300Heading')}
+            cifra={
+              <span className={data.ley_2300.weekly_outside_hours_count === 0 ? 'text-success' : 'text-danger'}>
                 <AnimatedNumber
                   value={data.ley_2300.weekly_outside_hours_count}
                   format={(n) => String(Math.round(n))}
                 />
               </span>
-              {/*
-                Decía «4 / 0», que se lee como una fracción rota — «cuatro de
-                cero». No es un progreso hacia una meta: es un CONTEO de
-                infracciones contra un objetivo que sólo puede ser cero. Se
-                escribe con palabras.
-              */}
-              <span className="text-sm text-muted-foreground">
-                {data.ley_2300.weekly_outside_hours_count === 1
-                  ? 'intento'
-                  : 'intentos'}{' '}
-                · el objetivo es {data.ley_2300.target}
-              </span>
-            </div>
-          </section>
+            }
+            contexto={`${data.ley_2300.weekly_outside_hours_count === 1 ? 'intento' : 'intentos'} · el objetivo es ${data.ley_2300.target}`}
+          />
 
           {/* Section 2: Habeas Data SLA list */}
           <section className="space-y-3">
@@ -222,7 +215,7 @@ function ComplianceOverviewContent() {
               </Link>
             </div>
             {data.habeas_data.open_requests.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-body-sm text-muted-foreground text-center py-6">
                 {locale.startsWith('es')
                   ? 'Sin solicitudes Habeas Data abiertas'
                   : 'No open Habeas Data requests'}

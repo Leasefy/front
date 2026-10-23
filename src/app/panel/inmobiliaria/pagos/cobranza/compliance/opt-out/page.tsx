@@ -174,7 +174,7 @@ function OptOutContent() {
     <CrossFade swapKey="lista">
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
-        seccion="Cobranza"
+        seccion="Cobranza · Cumplimiento"
         titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle')}
       />
 

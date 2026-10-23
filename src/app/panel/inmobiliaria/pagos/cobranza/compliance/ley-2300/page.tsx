@@ -124,12 +124,17 @@ function Ley2300Content() {
     <CrossFade swapKey="lista">
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
-        seccion="Cobranza"
+        seccion="Cobranza · Cumplimiento"
         titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.ley2300Title')}
+        descripcion={
+          locale.startsWith('es')
+            ? 'Cada intento de contacto fuera del horario que permite la Ley 2300, para revisarlo.'
+            : 'Every contact attempt outside the hours Law 2300 allows, to review.'
+        }
       />
 
-      <Presence show={Boolean(error)} className="rounded-lg bg-danger-soft text-danger">
-          Error: {error}
+      <Presence show={Boolean(error)} role="alert" className="rounded-lg border border-danger/30 bg-danger-soft p-3 text-body-sm text-danger">
+          {locale.startsWith('es') ? 'No pudimos cargar los intentos.' : 'We could not load the attempts.'} {error}
       </Presence>
 
       {items.length > 0 && (

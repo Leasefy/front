@@ -218,7 +218,7 @@ function AuditContent() {
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <EncabezadoDePantalla
-          seccion="Cobranza"
+          seccion="Cobranza · Cumplimiento"
           titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
           descripcion={locale.startsWith('es')
               ? 'Lo que pasó en la cobranza, quién lo hizo y cuándo. Es sólo lectura y los datos personales no se muestran aquí.'
@@ -411,8 +411,8 @@ function AuditContent() {
       )}
 
       {/* Error state */}
-      <Presence show={Boolean(error)} className="rounded-lg bg-danger-soft text-danger">
-          Error: {error}
+      <Presence show={Boolean(error)} role="alert" className="rounded-lg border border-danger/30 bg-danger-soft p-3 text-body-sm text-danger">
+          {locale.startsWith('es') ? 'No pudimos cargar la bitácora.' : 'We could not load the log.'} {error}
       </Presence>
 
       {/* Empty state — Phase 38-05a: EmptyState primitive */}
@@ -486,7 +486,7 @@ function AuditContent() {
                           )
                         }
                         return row.entity_id ? (
-                          <div className="font-mono text-[11px] opacity-70">{row.entity_id.slice(0, 8)}…</div>
+                          <div className="font-mono text-caption text-fg-subtle">{row.entity_id.slice(0, 8)}…</div>
                         ) : null
                       })()}
                     </TableCell>
@@ -503,7 +503,7 @@ function AuditContent() {
                       {/* N-09 (QA-PAGOS-95): los detalles en renglones «clave: valor»,
                           no JSON crudo. Siguen siendo TEXTO plano — NUNCA HTML
                           (T-34-07-02). */}
-                      <dl className="text-[11px] text-muted-foreground max-h-32 overflow-y-auto space-y-0.5" data-testid="detalles-de-la-auditoria">
+                      <dl className="text-caption text-muted-foreground max-h-32 overflow-y-auto space-y-0.5" data-testid="detalles-de-la-auditoria">
                         {detallesLegibles(details).map((d, i) => (
                           <div key={`${d.clave}-${i}`} className="flex flex-wrap gap-x-1">
                             <dt className="font-medium text-fg-muted">{d.clave}:</dt>

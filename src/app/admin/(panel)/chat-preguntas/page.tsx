@@ -40,7 +40,6 @@ import { Pill } from '@/components/admin/Pill'
 import { Button } from '@/components/ui/button'
 import { BarraDeFiltros, Buscador, Desplegable, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
 import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
-import { MasDetalles } from '@/components/pantalla/MasDetalles'
 
 const POR_PAGINA = 50
 

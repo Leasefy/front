@@ -553,9 +553,16 @@ export default function CandidatosPage() {
       </div>
     );
   }
+  // Revisora r25: con el fallo, el encabezado se queda (antes el h1 desaparecía y no se sabía dónde se estaba).
   if (error) {
     return (
       <div className="p-6 lg:p-8">
+        <EncabezadoDePantalla
+          className="mb-6"
+          seccion="Mis inmuebles"
+          titulo={t('landlord.candidates.title')}
+          descripcion={t('landlord.candidates.subtitle')}
+        />
         <FalloDeCarga error={error} queEs="tus candidatos" onReintentar={refetch} />
       </div>
     );

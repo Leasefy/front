@@ -19,7 +19,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import { FranjaDeCifras, KpiCard, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
+import { FranjaDeCifras, KpiCard, RadioCard, RadioCardGroup } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useI18n } from '@/lib/i18n';
@@ -388,8 +389,8 @@ export default function VisitasPage() {
             <span className="text-sm text-fg">{visit.propertyTitle}</span>
           </div>
           {visit.rescheduledFrom && (
-            <div className="p-3 bg-primary-soft rounded-lg">
-              <p className="text-caption text-primary">{t('landlord.visits.rescheduledNote')}</p>
+            <div className="p-3 bg-surface-muted rounded-lg">
+              <p className="text-caption text-fg">{t('landlord.visits.rescheduledNote')}</p>
             </div>
           )}
         </div>
@@ -464,76 +465,56 @@ export default function VisitasPage() {
           descripcion={t('landlord.visits.subtitle')}
         />
 
-        {/* Las cifras en la franja común; la de «por confirmar» dice que toca. */}
+        {/* Revisora r25: sin visitas, sin franja (antes cuatro ceros); con visitas, las cifras que importan. */}
+        {visits.length > 0 && (
         <FranjaDeCifras className="mb-6" data-testid="cifras-de-las-visitas">
-          <KpiCard
-            label={t('landlord.visits.totalVisits')}
-            value={String(stats.total)}
-            icon={<CalendarBlank />}
-          />
           <KpiCard
             label={t('landlord.visits.pendingVisits')}
             value={String(stats.requested)}
             sublabel={stats.requested > 0 ? t('landlord.visits.toConfirm') : undefined}
             icon={<Clock />}
           />
-
           <KpiCard
             label={t('landlord.visits.confirmedToday')}
             value={String(confirmedToday)}
             icon={<CalendarCheck />}
           />
-
           <KpiCard
             label={t('landlord.visits.completedVisits')}
             value={String(stats.completed)}
             icon={<CheckCircle />}
           />
         </FranjaDeCifras>
-
-        {/* Tabs — revisora r24 (N7): a 390 se salían 187 px; ahora se deslizan dentro de su riel. */}
-        <div className="mb-6 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-lenis-prevent>
-        <SegmentedControl
-          size="md"
-          className="[&>button]:whitespace-nowrap"
-          aria-label={t('landlord.visits.title')}
-          value={tabFunnel}
-          onChange={(value) => setTabFunnel(value)}
-          options={tabs.map((tab) => ({
-            value: tab.id as TabFunnel,
-            ariaLabel: tab.label,
-            label: (
-              <span className="flex items-center gap-2">
-                {tab.label}
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span className="tabular-nums">{tab.count}</span>
-                )}
-              </span>
-            ),
-          }))}
-        />
-        </div>
+        )}
 
         {/* Table */}
-        {getFunneledVisits().length === 0 ? (
+        {visits.length === 0 ? (
           <EmptyState
             icon={CalendarBlank}
-            title={
-              tabFunnel === 'all'
-                ? t('landlord.visits.emptyAll')
-                : tabFunnel === 'requested'
-                ? t('landlord.visits.emptyRequested')
-                : tabFunnel === 'confirmed'
-                ? t('landlord.visits.emptyConfirmed')
-                : tabFunnel === 'completed'
-                ? t('landlord.visits.emptyCompleted')
-                : t('landlord.visits.emptyCancelled')
-            }
+            title={t('landlord.visits.emptyAll')}
             description={t('landlord.visits.emptyDescription')}
             action={{ label: t('landlord.visits.emptyAction'), href: '/panel/propiedades' }}
           />
         ) : (
           <div className="bg-surface rounded-lg border border-border overflow-hidden">
+            {/* Revisora r25: los estados con su conteo DENTRO de la tarjeta (sin las pestañas en cero). */}
+            <div className="border-b border-border px-4 pt-3 sm:px-5">
+              <PestanasDeEstado
+                etiqueta={t('landlord.visits.title')}
+                valor={tabFunnel}
+                onCambio={(v) => setTabFunnel(v)}
+                pestanas={tabs.map((tab) => ({
+                  valor: tab.id as TabFunnel,
+                  etiqueta: tab.label,
+                  cuantos: tab.count,
+                  fija: tab.id === 'all',
+                  tono: tab.id === 'requested' ? ('aviso' as const) : undefined,
+                }))}
+              />
+            </div>
+            {getFunneledVisits().length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-fg-muted">{t('landlord.visits.emptyDescription')}</p>
+            ) : (
             <PlanTable
               data={getFunneledVisits()}
               columns={columns}
@@ -543,6 +524,7 @@ export default function VisitasPage() {
               pagination
               pageSize={5}
             />
+            )}
           </div>
         )}
       </div>

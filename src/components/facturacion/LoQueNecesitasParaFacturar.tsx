@@ -119,8 +119,10 @@ export function LoQueNecesitasParaFacturar({
       } else {
         estado = 'falta';
         detalle =
-          resoluciones.porTipoDisponible && faltan.length > 0 && faltan.length < porTipo.length
-            ? tr('Falta la que numera «{tipo}».', { tipo: faltan[0].nombre })
+          // Ronda 30 (revisora r27, «se contradice»): con una resolución vigente que ya numera (hay facturas
+          // emitidas), lo que falta es la de ESE tipo de documento, no «ninguna factura».
+          resoluciones.porTipoDisponible && faltan.length > 0 && (faltan.length < porTipo.length || resoluciones.vigente.puedeNumerar)
+            ? tr('Falta la que numera «{tipo}».', { tipo: faltan.map((t) => t.nombre).join('», «') })
             : sinLaRutaDeFacturacion(resoluciones.vigente.explicacion) ||
               tr('Sin ella no se numera ninguna factura. Son los datos del papel que te dio la DIAN.');
       }

@@ -639,9 +639,9 @@ function CobrosContent() {
                   tono: 'critico',
                   siempre: true,
                   cifra: (
-                    <button type="button" className="font-mono tabular-nums underline-offset-2 hover:underline" onClick={handleViewLate} data-testid="cobros-ver-en-mora">
+                    <Button type="button" variant="link" hideArrow className="h-auto p-0 font-mono font-normal tabular-nums text-inherit underline-offset-2 hover:underline" onClick={handleViewLate} data-testid="cobros-ver-en-mora">
                       {formatCurrency(resumen.totalLate)}
-                    </button>
+                    </Button>
                   ),
                   extra: resumen.plazoSinFijar ? <p className="text-caption text-fg-muted">sin plazo fijado: no corre mora</p> : undefined,
                   'data-testid': 'cobros-tramo-en-mora',
@@ -655,9 +655,9 @@ function CobrosContent() {
                   tono: 'neutro',
                   siempre: true,
                   cifra: (
-                    <button type="button" className="font-mono tabular-nums underline-offset-2 hover:underline" onClick={handleViewPending} data-testid="cobros-ver-pendientes">
+                    <Button type="button" variant="link" hideArrow className="h-auto p-0 font-mono font-normal tabular-nums text-inherit underline-offset-2 hover:underline" onClick={handleViewPending} data-testid="cobros-ver-pendientes">
                       {formatCurrency(Math.max(0, resumen.totalPending - resumen.totalLate))}
-                    </button>
+                    </Button>
                   ),
                   'data-testid': 'cobros-tramo-pendiente',
                 },

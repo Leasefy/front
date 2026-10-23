@@ -269,17 +269,28 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
   // bueno); «0 de 6 con visto bueno» ponía el cero en grande. Un formato sin filas no se
   // resuelve: queda en su tramo. Con todo resuelto, cuántos tienen el visto bueno.
   const porResolver = conBloqueo.length + porRevisar.length;
+  const todosBloqueados = resumen.formatos.length > 0 && conBloqueo.length === resumen.formatos.length;
   const cuantosFormatos = resumen.formatos.length.toLocaleString(cifras);
   const formatoVisto = visto ? (resumen.formatos.find((f) => f.formato === visto) ?? null) : null;
 
   return (
     <div className="space-y-6" data-testid="exogena">
+      {/* Ronda 30 (revisora r27, §3): con TODOS bloqueados, «6 de 6» con la barra entera en rojo y «No se pueden
+          presentar 6» decían lo mismo tres veces: la respuesta es una frase, sin barra. */}
       <CifraHeroe
-        rotulo={porResolver > 0 ? `Formatos de ${anio} por resolver` : `Formatos de ${anio} con visto bueno`}
+        rotulo={
+          todosBloqueados
+            ? `Formatos de ${anio}`
+            : porResolver > 0
+              ? `Formatos de ${anio} por resolver`
+              : `Formatos de ${anio} con visto bueno`
+        }
         cifra={
-          porResolver > 0
-            ? `${porResolver.toLocaleString(cifras)} de ${cuantosFormatos}`
-            : `${conVistoBueno.length.toLocaleString(cifras)} de ${cuantosFormatos}`
+          todosBloqueados
+            ? 'Ninguno se puede presentar todavía'
+            : porResolver > 0
+              ? `${porResolver.toLocaleString(cifras)} de ${cuantosFormatos}`
+              : `${conVistoBueno.length.toLocaleString(cifras)} de ${cuantosFormatos}`
         }
         esCero={porResolver === 0 && conVistoBueno.length === 0}
         cuandoEsCero={`Ningún formato de ${anio} tiene filas: no hay nada que presentar.`}
@@ -290,7 +301,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
           </span>
         }
         total={resumen.formatos.length}
-        tramos={[
+        tramos={todosBloqueados ? undefined : [
           { clave: 'bloqueados', etiqueta: 'No se pueden presentar', monto: conBloqueo.length, tono: 'critico', cifra: conBloqueo.length.toLocaleString(cifras) },
           { clave: 'por-revisar', etiqueta: 'Falta el visto bueno', monto: porRevisar.length, tono: 'aviso', cifra: porRevisar.length.toLocaleString(cifras) },
           { clave: 'listos', etiqueta: 'Con visto bueno', monto: conVistoBueno.length, tono: 'exito', cifra: conVistoBueno.length.toLocaleString(cifras) },

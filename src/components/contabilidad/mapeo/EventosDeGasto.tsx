@@ -30,6 +30,7 @@
  * campo, y afirmar que la migración está por la ausencia del dato sería inventar.
  */
 
+import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { CheckCircle, Sparkle, Warning } from '@phosphor-icons/react';
 
@@ -118,6 +119,7 @@ export function EventosDeGasto({
   );
   const apagado = useMemo(() => loQueNoSePuedeCausar(faltantes), [faltantes]);
 
+  const hayPropuestaDistinta = lista.some((e) => Boolean(e.propuesta) && !(e.cuenta && !propuestaQueSirve(e, e.cuenta.id)));
   return (
     <section className="space-y-4" data-testid="eventos-de-gasto">
       <TituloDeBloque
@@ -181,7 +183,7 @@ export function EventosDeGasto({
                     <TableHead className="min-w-[240px]">Evento</TableHead>
                     <TableHead>Lado</TableHead>
                     <TableHead className="min-w-[280px]">Cuenta del PUC</TableHead>
-                    <TableHead>Propuesta</TableHead>
+                    <TableHead className={cn(!hayPropuestaDistinta && 'hidden')}>Propuesta</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBodyAnimado className="max-md:block">
@@ -233,7 +235,15 @@ export function EventosDeGasto({
                           mensaje={errores?.[e.evento]}
                         />
                       </TableCell>
-                      <TableCell className="max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0">
+                      {/* Ronda 30 (revisora r27): si ninguna fila trae una propuesta distinta, la columna no se pinta
+                          (eran «—» en todas); a 390 el «—» tampoco queda huérfano bajo el selector. */}
+                      <TableCell
+                        className={cn(
+                          'max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0',
+                          (!hayPropuestaDistinta || (e.cuenta && !propuestaQueSirve(e, e.cuenta.id))) && 'max-md:hidden',
+                          !hayPropuestaDistinta && 'hidden',
+                        )}
+                      >
                         {/* 🔴 CB-05: la propuesta repetía, fila por fila, la cuenta que ya
                             estaba elegida. Sólo se dice cuando DIFIERE (o no hay cuenta). */}
                         {e.cuenta && !propuestaQueSirve(e, e.cuenta.id) ? (

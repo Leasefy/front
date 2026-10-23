@@ -214,7 +214,7 @@ export function MapeoContable({
     [todos, vista],
   );
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(eventos, { resetKey: vista });
+    useTablePagination(eventos, { resetKey: vista, initialPageSize: 25 }); // ronda 30: los 13 eventos en una página
 
   const marcar = (evento: EventoContable, activo: boolean) =>
     setGuardando((prev) => {

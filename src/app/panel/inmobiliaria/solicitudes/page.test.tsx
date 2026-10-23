@@ -176,6 +176,20 @@ describe('solicitudes — se llega desde la ficha de un contrato', () => {
     updatedAt: '2026-03-01T10:00:00.000Z',
   }
 
+  it('revisora r25: a 390 cada solicitud es una tarjeta (radicado, solicitante, estado y plazo), no una tabla que se corre', async () => {
+    listarMock.mockResolvedValue({
+      resumen: { total: 1, recibidas: 0, asignadas: 0, enProceso: 1, enCotizacion: 0, resueltas: 0, cerradas: 0 },
+      solicitudes: [UNA],
+    })
+    await montar()
+    const fila = container.querySelector('[data-testid="pqrs-fila"]')!
+    expect(fila.className).toContain('max-md:grid')
+    expect(container.querySelector('table')!.className).toContain('max-md:block')
+    // Lo que no cabe en la tarjeta (tipo, inmueble, responsable) se va del celular; queda en el cajón.
+    const ocultas = [...fila.querySelectorAll('td')].filter((td) => td.className.includes('max-md:hidden'))
+    expect(ocultas.length).toBe(3)
+  })
+
   it('`?pqrs=` abre ESA solicitud y `?volver=` ofrece la vuelta al contrato', async () => {
     listarMock.mockResolvedValue({
       resumen: {

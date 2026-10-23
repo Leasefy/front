@@ -297,8 +297,10 @@ function PqrsContent() {
             </div>
           }
         >
-          <Table>
-            <TableHeader>
+          {/* Revisora r25 (§25.1 4b): a 390 cada solicitud es una tarjeta (patrón de Deuda del mes), no una
+              tabla encogida que se corre a los lados. Arriba de md, la tabla de siempre. */}
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 <TableHead className="w-10 pl-4 pr-0">
                   <CasillaDeLaPagina ids={pageItems.map((p) => p.id)} marcadas={marcadas} onMarcar={marcar} queSon="solicitudes" />
@@ -312,10 +314,10 @@ function PqrsContent() {
             </TableHeader>
             {/* Buscar, filtrar, paginar o radicar: las filas entran
                 escalonadas y las que sobran salen. */}
-            <TableBodyAnimado>
+            <TableBodyAnimado className="max-md:block">
               {solicitudes.length === 0 ? (
-                <TableRowAnimada key="vacio">
-                  <TableCell colSpan={COLUMNS.length + 1} className="p-0">
+                <TableRowAnimada key="vacio" className="max-md:block">
+                  <TableCell colSpan={COLUMNS.length + 1} className="p-0 max-md:block">
                     {/* Filtrado a cero NO es «no hay solicitudes»: ofrecer
                         «Nueva solicitud» sobre un filtro que esconde 80 filas
                         es mandar a radicar una que ya existe. */}
@@ -341,7 +343,7 @@ function PqrsContent() {
                   return (
                     <TableRowAnimada
                       key={p.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer max-md:grid max-md:grid-cols-[auto_minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3 max-md:last:border-0"
                       data-testid="pqrs-fila"
                       tabIndex={0}
                       onClick={() => setSeleccionada(p)}
@@ -352,29 +354,29 @@ function PqrsContent() {
                         }
                       }}
                     >
-                      <TableCell className="w-10 pl-4 pr-0" onKeyDown={(e) => e.stopPropagation()}>
+                      <TableCell className="w-10 pl-4 pr-0 max-md:col-start-1 max-md:row-span-3 max-md:row-start-1 max-md:block max-md:w-auto max-md:p-0 max-md:pt-0.5" onKeyDown={(e) => e.stopPropagation()}>
                         <CasillaDeLaFila id={p.id} nombre={`la solicitud ${p.radicado}`} marcadas={marcadas} onMarcar={marcar} />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap font-mono text-fg">{p.radicado}</TableCell>
-                      <TableCell className="max-w-[220px]">
+                      <TableCell className="whitespace-nowrap font-mono text-fg max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">{p.radicado}</TableCell>
+                      <TableCell className="max-w-[220px] max-md:col-start-2 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="text-fg font-medium truncate">{p.solicitanteNombre}</p>
                         <p className="text-caption text-fg-muted">{SOLICITANTE_LABEL[p.solicitanteTipo]}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-fg-muted">{nombreDelTipo(p)}</TableCell>
-                      <TableCell className="max-w-[240px]">
+                      <TableCell className="whitespace-nowrap text-fg-muted max-md:hidden">{nombreDelTipo(p)}</TableCell>
+                      <TableCell className="max-w-[240px] max-md:hidden">
                         <span className="text-fg-muted truncate block">
                           {inmuebleSinRepetir(p.inmuebleLabel) ?? t(k('sinInmueble'))}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-fg-muted">
+                      <TableCell className="whitespace-nowrap text-fg-muted max-md:hidden">
                         {p.asignadoANombre ?? t(k('sinAsignar'))}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-3 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                         <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[p.estado])}>
                           {ESTADO_LABEL[p.estado]}
                         </span>
                       </TableCell>
-                      <TableCell className={cn('whitespace-nowrap tabular-nums', sla.vencido ? 'text-danger font-medium' : 'text-fg-muted')}>
+                      <TableCell className={cn('whitespace-nowrap tabular-nums max-md:col-span-2 max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption', sla.vencido ? 'text-danger font-medium' : 'text-fg-muted')}>
                         {sla.texto}
                       </TableCell>
                     </TableRowAnimada>

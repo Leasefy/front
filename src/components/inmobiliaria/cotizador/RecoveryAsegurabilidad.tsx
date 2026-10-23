@@ -139,7 +139,7 @@ function RecoveryBlock({
   onGuardarNoAsegurable,
 }: {
   recovery: RecoveryEvent | null
-  onReQuote: () => void
+  onReQuote?: () => void
   /** Optional handlers; omit → the menu item degrades to "Próximamente". */
   onComplementarIngresos?: () => void
   onConsultarOtraEntidad?: () => void
@@ -290,15 +290,17 @@ function RecoveryBlock({
         <span className="text-caption text-fg-muted">
           {t('inmobiliaria.ai.cotizador.detail.recovery.footerNote')}
         </span>
-        <Button
-          hideArrow
-          onClick={onReQuote}
-          className="group shrink-0"
-        >
-          <ArrowClockwise className="w-4 h-4" />
-          {t('inmobiliaria.ai.cotizador.detail.recovery.recotizar')}
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
-        </Button>
+        {onReQuote ? (
+          <Button
+            hideArrow
+            onClick={onReQuote}
+            className="group shrink-0"
+          >
+            <ArrowClockwise className="w-4 h-4" />
+            {t('inmobiliaria.ai.cotizador.detail.recovery.recotizar')}
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+          </Button>
+        ) : null}
       </div>
     </section>
   )
@@ -412,7 +414,7 @@ interface RecoveryAsegurabilidadProps {
   /** All carriers (used to aggregate the condicionado section). */
   carriers: CarrierState[]
   /** Reuses the existing re-quote flow (navigate to wizard with ?from=). */
-  onReQuote: () => void
+  onReQuote?: () => void
   /** Opens the counterfactual modal; omit to degrade the condicionado CTA. */
   onResolverCondiciones?: () => void
   /** Secondary-action menu (visión #10) — optional; omitted items degrade to "Próximamente". */

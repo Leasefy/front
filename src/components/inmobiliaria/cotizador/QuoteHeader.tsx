@@ -29,6 +29,11 @@ interface QuoteHeaderProps {
   terminada?: boolean
   /** COTIZ-18 (19-10-2026): el nombre del candidato, si se guardó. */
   nombre?: string | null
+  /**
+   * Las acciones del caso (Nico, 23-10-2026): «Re-cotizar» va UNA sola vez y aquí,
+   * en el encabezado, junto a «Pedir explicación».
+   */
+  acciones?: React.ReactNode
 }
 
 export function QuoteHeader({
@@ -43,6 +48,7 @@ export function QuoteHeader({
   isConnected,
   terminada = false,
   nombre = null,
+  acciones,
 }: QuoteHeaderProps) {
   const { t, locale } = useI18n()
 
@@ -102,6 +108,7 @@ export function QuoteHeader({
       />
       <EncabezadoDePantalla
         seccion={t('inmobiliaria.ai.nav.cotizador')}
+        acciones={acciones}
         titulo={<span data-testid={nombre ? 'quote-header-nombre' : undefined}>{tituloDelCaso}</span>}
         junto={
           <StatusBadge tone={isConnected ? 'info' : terminada ? 'success' : 'neutral'} pulse={isConnected}>

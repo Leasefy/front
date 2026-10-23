@@ -17,6 +17,7 @@
 import { ArrowRight, ArrowCounterClockwise } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
+import { useTr } from '@/lib/i18n/use-tr'
 import { Button } from '@/components/ui/button'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import type { FinalVerdict } from '@/lib/cotizador/verdict-derive'
@@ -34,7 +35,7 @@ interface RecomendacionRailProps {
   /** Avanzar con la opción recomendada (sin backend → padre muestra próximamente). */
   onAvanzar: () => void
   /** Re-cotizar con cambios (handler existente del padre). */
-  onReQuote: () => void
+  onReQuote?: () => void
   /** Pasos post-selección (visión #22) → padre. */
   onPostSeleccion: (code: PostSeleccionCode) => void
   /** COTIZ-17: la elegida y la póliza que ya quedaron. */
@@ -58,6 +59,7 @@ export function RecomendacionRail({
   onPasosAbiertosChange,
 }: RecomendacionRailProps) {
   const { t } = useI18n()
+  const tr = useTr()
 
   /** i18n con fallback — nunca muestra la clave cruda. */
   const tf = (key: string, fallback: string): string => {
@@ -187,7 +189,7 @@ export function RecomendacionRail({
               </>
             )}
           </Button>
-        ) : (
+        ) : onReQuote ? (
           <Button
             variant="secondary"
             hideArrow
@@ -198,6 +200,11 @@ export function RecomendacionRail({
             <ArrowCounterClockwise className="w-4 h-4" weight="regular" aria-hidden="true" />
             {tf(`${NS}.recomendacion.recotizar`, 'Re-cotizar con cambios')}
           </Button>
+        ) : (
+          // Nico (23-10-2026): «Re-cotizar» vive UNA vez, en el encabezado del caso.
+          <p className="mt-3 text-body-sm text-fg-muted" data-testid="recotizar-arriba">
+            {tr('Para probar con otro canon o un codeudor, usa «Re-cotizar» arriba.')}
+          </p>
         )}
       </section>
 

@@ -347,6 +347,31 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         isConnected={isConnected}
         terminada={finalVerdict !== null}
         nombre={seguimiento?.nombreCandidato ?? null}
+        acciones={
+          // Phase 33 (D-33-10), visible con cotizador:view y al menos un veredicto. Nico (23-10): «Re-cotizar»
+          // va UNA sola vez y aquí, en el encabezado (antes también en el cierre, la recomendación y el «nadie
+          // lo asegura»).
+          canView && hasAnyVerdict ? (
+            <div className="contents" data-testid="phase33-action-row">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePedirExplicacion}
+                aria-label={t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
+              >
+                {t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReQuote}
+                aria-label={t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
+              >
+                {t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
+              </Button>
+            </div>
+          ) : null
+        }
       />
 
       {/* Main content — ficha del caso en 3 columnas (visión #14):
@@ -378,29 +403,6 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
                 originated as a re-quote of a previous one. */}
             {metadata?.reQuoteOf && (
               <ReQuoteOfBadge parentId={metadata.reQuoteOf} />
-            )}
-
-            {/* Phase 33 header action row (D-33-10): visible when operator has
-                cotizador:view AND at least one carrier has a final verdict. */}
-            {canView && hasAnyVerdict && (
-              <div className="flex gap-2 justify-end" data-testid="phase33-action-row">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePedirExplicacion}
-                  aria-label={t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
-                >
-                  {t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReQuote}
-                  aria-label={t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
-                >
-                  {t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
-                </Button>
-              </div>
             )}
 
             {/* Reconnection error banner */}
@@ -435,7 +437,6 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
                 carrierCount={carriers.length}
                 totalCostCop={totalCostCop}
                 isStubMode={isStubMode}
-                onReQuote={handleReQuote}
                 onBack={handleBack}
                 locale={locale}
                 agencyId={agency?.id}
@@ -531,7 +532,6 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
               asegurabilidad={finalVerdict?.asegurabilidad ?? null}
               recovery={recovery}
               carriers={carriers}
-              onReQuote={handleReQuote}
               onResolverCondiciones={handlePedirExplicacion}
             />
             {/* ═══════════════ FIN SECCIONES INFERIORES W2 ════════════════ */}
@@ -543,7 +543,6 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
               finalVerdict={finalVerdict}
               carriers={carriers}
               onAvanzar={() => handleMatrizAction('avanzar')}
-              onReQuote={handleReQuote}
               onPostSeleccion={handlePostSeleccion}
               seguimiento={seguimiento}
               guardando={guardandoElegida}

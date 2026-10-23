@@ -476,4 +476,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Ninguna cuota castigada': 'No written-off installments',
   'Edad de la cartera': 'Age of the arrears',
   'Cómo se cuentan los tramos': 'How the age brackets are counted',
+  // Asegurabilidad › el caso (Nico 23-10): «Re-cotizar» una sola vez, en el encabezado.
+  'Para probar con otro canon o un codeudor, usa «Re-cotizar» arriba.': 'To try a different rent or a co-signer, use “Re-quote” above.',
 }

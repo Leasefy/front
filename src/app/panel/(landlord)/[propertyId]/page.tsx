@@ -10,7 +10,8 @@ import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button, Spinner, Card } from '@/components/ui';
+import { Button, Card } from '@/components/ui';
+import { Skeleton } from '@/components/ui/skeleton';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { Avatar, MonoLabel } from '@leasefy/cadence';
 import {
@@ -718,8 +719,11 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
     ) : (
       <div className="space-y-3">
         {isLoadingDocs ? (
-          <div className="flex items-center justify-center py-8">
-            <Spinner size="md" />
+          /* Los renglones de los documentos mientras llegan (antes, una rueda). */
+          <div className="space-y-2" aria-busy="true" data-testid="documentos-del-candidato-cargando">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
           </div>
         ) : (
           <>

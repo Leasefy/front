@@ -10,7 +10,7 @@ import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { mesesDelContrato } from '@/lib/propietario/el-mes-del-contrato';
 import { Button } from '@/components/ui/button';
-import { Card, Spinner } from '@/components/ui';
+import { Card } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { toast } from '@/components/ui/toast';
 import { Avatar, StatusBadge, MonoLabel } from '@leasefy/cadence';
@@ -109,19 +109,11 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
                   )}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={cn(
-                      'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
-                      isSelected
-                        ? 'bg-primary-soft'
-                        : 'bg-surface-muted group-hover:bg-surface-hover'
-                    )}>
-                      <Icon className={cn(
-                        'w-5 h-5 transition-colors',
-                        isSelected
-                          ? 'text-primary'
-                          : 'text-fg-muted'
-                      )} />
-                    </div>
+                    {/* El ícono suelto (antes, en una caja de color). */}
+                    <Icon
+                      aria-hidden="true"
+                      className={cn('mt-0.5 w-5 h-5 shrink-0 transition-colors', isSelected ? 'text-primary' : 'text-fg-muted')}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium text-fg">
@@ -561,12 +553,13 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                     hideArrow
                     onClick={handleCreateContract}
                     disabled={!selectedType || (selectedType === 'custom' && !uploadedFile) || isCreating}
+                    isLoading={isCreating}
                     className="w-full"
                   >
+                    {/* El botón carga y conserva su ancho (antes, una rueda adentro). */}
                     {isCreating ? (
                       <>
-                        <Spinner size="sm" variant="white" />
-                        {selectedType === 'custom' ? 'Procesando contrato...' : 'Generando contrato...'}
+                        {selectedType === 'custom' ? 'Procesando contrato…' : 'Generando contrato…'}
                       </>
                     ) : (
                       <>
@@ -594,16 +587,12 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
             {contract && template && (
               <>
                 {/* Status Banner */}
-                <div className={cn(
-                  'mb-6 rounded-lg px-5 py-4 flex items-center gap-3',
-                  isLandlordTurn && 'bg-primary-soft border border-primary text-primary',
-                  isTenantTurn && 'bg-primary-soft border border-primary text-primary',
-                )}>
-                  <div className="w-10 h-10 rounded-lg bg-primary-soft flex items-center justify-center flex-shrink-0">
-                    {isLandlordTurn && <FileText className="h-5 w-5 text-primary" />}
-                    {isTenantTurn && <Clock className="h-5 w-5 text-primary" />}
-                  </div>
-                  <p className="text-sm font-medium">
+                {/* Quién firma ahora, en arena y con el ícono suelto (antes, bloque azul con borde, texto azul y el
+                    ícono en otra caja azul). */}
+                <div className="mb-6 rounded-lg bg-surface-muted px-5 py-4 flex items-center gap-3 text-fg">
+                  {isLandlordTurn && <FileText className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />}
+                  {isTenantTurn && <Clock className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />}
+                  <p className="text-sm">
                     {isLandlordTurn && 'Revisa el contrato y firma para continuar el proceso'}
                     {isTenantTurn && 'Esperando firma del arrendatario — se le ha enviado una notificación'}
                   </p>

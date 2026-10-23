@@ -20,7 +20,6 @@
 
 import Link from 'next/link'
 import {
-  ArrowRight,
   CheckCircle,
   Clock,
   MagnifyingGlass,
@@ -29,17 +28,20 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
-import { CrossFade, MonoLabel } from '@leasefy/cadence'
+import { CrossFade, MonoLabel, StatusBadge, type SemanticTone } from '@leasefy/cadence'
 
 import type { WorkItemAction, WorkItemEstado } from '@/lib/api/work-item'
 import type { WorkItemDetailResponse } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { Button } from '@/components/ui/button'
+import { BackButton } from '@/components/ui/back-button'
 import { AccionSugerida } from './AccionSugerida'
 import { TrazaCaso } from './TrazaCaso'
 import {
   FLAG_META,
-  SEVERIDAD_TOKEN,
+  SEVERIDAD_TONE,
   estadoLabel,
   flagLabel,
   relativeTime,
@@ -47,6 +49,13 @@ import {
 } from './ColaHumana'
 
 const NS = 'inmobiliaria.ai.workspace.detalle'
+
+/** Glow up 22-10: las banderas con el punto de StatusBadge (antes pastillas de 11 px con anillo). */
+const TONO_DE_LA_BANDERA: Record<string, SemanticTone> = {
+  necesita_humano: 'warning',
+  t323: 'critical',
+  en_espera: 'neutral',
+}
 
 /**
  * Estados where the human can still act. Everything else
@@ -106,6 +115,7 @@ export function WorkItemDetalle({
   error,
   notAvailable,
   colaHref,
+  colaLabel,
   icon,
   onAction,
   crossLink,
@@ -159,16 +169,16 @@ export function WorkItemDetalle({
   // CTA de los empty states (estilo limpio: pill outlined ElevenLabs, único
   // elemento con énfasis): el notFoundAction de la página o, si no llega, el
   // clásico "Volver a la cola". Ambos comparten el mismo pill mudo.
-  const EMPTY_CTA_CLS =
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-[border-color,box-shadow,transform] duration-fast ease-enter'
   const emptyStateCta = notFoundAction ? (
-    <Link href={notFoundAction.href} className={EMPTY_CTA_CLS} data-testid="caso-not-found-action">
-      {notFoundAction.label}
-    </Link>
+    <Button asChild variant="outline" size="sm" hideArrow>
+      <Link href={notFoundAction.href} data-testid="caso-not-found-action">
+        {notFoundAction.label}
+      </Link>
+    </Button>
   ) : (
-    <Link href={colaHref} className={EMPTY_CTA_CLS}>
-      {t(`${NS}.volverACola`)}
-    </Link>
+    <Button asChild variant="outline" size="sm" hideArrow>
+      <Link href={colaHref}>{t(`${NS}.volverACola`)}</Link>
+    </Button>
   )
 
   // ── Not available (404 — the backend doesn't publish the resolver) ────────
@@ -184,18 +194,13 @@ export function WorkItemDetalle({
           className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
           data-testid="caso-no-disponible"
         >
-          <div className="flex items-center justify-center w-14 h-14 rounded-lg bg-surface-muted">
-            <BreadcrumbIcon
-              weight="duotone"
-              className="h-6 w-6 text-fg-subtle"
-              aria-hidden="true"
-            />
-          </div>
+          {/* El ícono suelto, sin caja (Cadence 2). */}
+          <BreadcrumbIcon weight="light" className="h-8 w-8 text-fg-subtle" aria-hidden="true" />
           <div className="space-y-1.5">
             <p className="text-[15px] font-medium text-fg">
               {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleTitle')}
             </p>
-            <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
+            <p className="text-sm text-fg-muted max-w-sm leading-relaxed mx-auto">
               {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleBody')}
             </p>
           </div>
@@ -217,18 +222,12 @@ export function WorkItemDetalle({
           className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
           data-testid="caso-not-found"
         >
-          <div className="flex items-center justify-center w-14 h-14 rounded-lg bg-surface-muted">
-            <MagnifyingGlass
-              weight="duotone"
-              className="h-6 w-6 text-fg-subtle"
-              aria-hidden="true"
-            />
-          </div>
+          <MagnifyingGlass weight="light" className="h-8 w-8 text-fg-subtle" aria-hidden="true" />
           <div className="space-y-1.5">
             <p className="text-[15px] font-medium text-fg">
               {t(`${NS}.notFoundTitle`)}
             </p>
-            <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
+            <p className="text-sm text-fg-muted max-w-sm leading-relaxed mx-auto">
               {t(`${NS}.notFoundBody`)}
             </p>
           </div>
@@ -240,46 +239,50 @@ export function WorkItemDetalle({
   }
 
   const { item, contexto, traza } = data
-  // Finite maps crash on unknown keys — ALWAYS fall back (SalaAgente invariant).
-  const sev = SEVERIDAD_TOKEN[item.severidad] ?? SEVERIDAD_TOKEN.media
   const isActionable = ACTIONABLE_ESTADOS.has(item.estado)
 
   return (
     <CrossFade swapKey="caso">
     <div className="p-6 lg:p-8 space-y-6" data-testid={`caso-${item.id}`}>
-      {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{item.titulo}</h1>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <MonoLabel
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
-          >
-            {severidadLabel(t, item.severidad)}
-          </MonoLabel>
-          <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
-            {estadoLabel(t, item.estado, item.agente)}
-          </span>
-          {item.flags.map((flag) => {
-            // Unknown flags are silently skipped (finite-map fallback).
-            const meta = FLAG_META[flag] ?? null
-            if (!meta) return null
-            const FlagIcon = meta.icon
-            return (
-              <span
-                key={flag}
-                className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ring-1 ${meta.cls}`}
-              >
-                <FlagIcon className="w-3 h-3" aria-hidden="true" />
-                {flagLabel(t, flag)}
+      {/* Glow up 22-10 (la vara de Deuda del mes): la vuelta a la cola y el encabezado común
+          —sección, el caso como título liviano de 40 px, la severidad y el estado al lado con su
+          punto, y una línea con cuándo llegó y las banderas—. Antes un h1 suelto, sin salida, con
+          pastillas de 11 px. */}
+      <div className="space-y-3">
+        <BackButton variant="subtle" href={colaHref} label={colaLabel} />
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.nav.secAgentes')}
+          titulo={item.titulo}
+          junto={
+            <span className="flex flex-wrap items-center gap-2">
+              <StatusBadge tone={SEVERIDAD_TONE[item.severidad] ?? 'warning'} pulse={item.severidad === 'critica'}>
+                {severidadLabel(t, item.severidad)}
+              </StatusBadge>
+              <StatusBadge tone="neutral" dot={false}>
+                {estadoLabel(t, item.estado, item.agente)}
+              </StatusBadge>
+            </span>
+          }
+          descripcion={
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm">
+              <span className="inline-flex items-center gap-1.5 tabular-nums">
+                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                {relativeTime(item.createdAt, t)}
               </span>
-            )
-          })}
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
-            <Clock className="w-3 h-3" aria-hidden="true" />
-            {relativeTime(item.createdAt, t)}
-          </span>
-        </div>
-      </header>
+              {item.flags.map((flag) => {
+                // Unknown flags are silently skipped (finite-map fallback).
+                const meta = FLAG_META[flag] ?? null
+                if (!meta) return null
+                return (
+                  <StatusBadge key={flag} tone={TONO_DE_LA_BANDERA[flag] ?? 'neutral'}>
+                    {flagLabel(t, flag)}
+                  </StatusBadge>
+                )
+              })}
+            </span>
+          }
+        />
+      </div>
 
       {/* 2-col: suggestion + contexto | traza */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -343,7 +346,7 @@ export function WorkItemDetalle({
                     className="py-1.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
                   >
                     <dt className="text-caption text-muted-foreground">{row.label}</dt>
-                    <dd className="text-caption font-medium text-foreground tabular-nums text-right">
+                    <dd className="text-body-sm text-foreground tabular-nums text-right">
                       {row.value}
                     </dd>
                   </div>
@@ -363,10 +366,6 @@ export function WorkItemDetalle({
                 <p className="text-sm font-medium text-foreground">{crossLink.pregunta}</p>
                 <p className="text-caption text-muted-foreground mt-0.5">{crossLink.destino}</p>
               </div>
-              <ArrowRight
-                className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-[color,transform] duration-fast ease-enter shrink-0"
-                aria-hidden="true"
-              />
             </Link>
           )}
         </div>

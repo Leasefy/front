@@ -20,7 +20,8 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { CuentaDeCobroDelPropietario } from '@/components/cobros/cuenta-de-cobro/CuentaDeCobroDelPropietario';
 import { deduccionesApi } from '@/lib/api/deducciones.service';
 import { useI18n } from '@/lib/i18n';
-import { BackButton, CrossFade } from '@leasefy/cadence';
+import { CrossFade } from '@leasefy/cadence';
+import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useTr } from '@/lib/i18n/use-tr';
 import type { CuentaDeCobroDelPropietario as Cuenta } from '@/lib/types/deducciones';
@@ -57,7 +58,7 @@ function Contenido() {
       {/* Glow up 22-10: el encabezado común (sección, título y para qué sirve) con la vuelta
           arriba y «Imprimir» como la única principal. Todo esto se esconde al imprimir. */}
       <div className="space-y-3" data-cuenta-barra>
-        <BackButton href={ficha} label={t(k('volver'))} />
+        <BackButton variant="subtle" href={ficha} label={t(k('volver'))} />
         <EncabezadoDePantalla
           seccion={tr('Propietarios')}
           titulo={t(k('titulo'))}

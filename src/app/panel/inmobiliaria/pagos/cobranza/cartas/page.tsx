@@ -48,6 +48,7 @@ import {
 } from '@/lib/hooks/cobranza/use-legal-artifacts'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { antiguedadDeLaCola, diasEnPalabras } from '@/lib/cobranza/antiguedad-de-la-cola'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
@@ -242,18 +243,33 @@ function CartasContent() {
   // El conteo por estado se sabe cuando la lista viene sin filtro de estado
   // (trae todas). Se guarda por tipo de carta; con un estado elegido, el back
   // sólo trae ése y los demás quedan como estaban en la última lectura entera.
-  const [conteos, setConteos] = useState<{ tipo: string; porEstado: Record<string, number>; total: number } | null>(null)
+  const [conteos, setConteos] = useState<{
+    tipo: string
+    porEstado: Record<string, number>
+    total: number
+    /** Desde cuándo espera cada carta por revisar (para la antigüedad de la cola). */
+    fechasPorRevisar: string[]
+  } | null>(null)
   useEffect(() => {
     if (!data || statusFilter !== undefined) return
     const porEstado: Record<string, number> = {}
     for (const a of data.artifacts ?? []) porEstado[a.status] = (porEstado[a.status] ?? 0) + 1
-    setConteos({ tipo: kindFilter ?? '', porEstado, total: (data.artifacts ?? []).length })
+    const fechasPorRevisar = (data.artifacts ?? [])
+      .filter((a) => a.status === 'pending_human_review')
+      .map((a) => a.generatedAt)
+    setConteos({ tipo: kindFilter ?? '', porEstado, total: (data.artifacts ?? []).length, fechasPorRevisar })
     if (!estadoUrl.yaEligio() && (porEstado.pending_human_review ?? 0) > 0) {
       estadoUrl.marcarElegido()
       setStatusFilter('pending_human_review')
     }
   }, [data, statusFilter, kindFilter, estadoUrl])
   const conteosDelTipo = conteos && conteos.tipo === (kindFilter ?? '') ? conteos : null
+  // Revisora r27 (K1 y K2): la cifra ya no repite el conteo de la pestaña «Por
+  // revisar»; dice cuánto lleva esperando la más vieja, con tramos por antigüedad.
+  const colaPorRevisar = useMemo(
+    () => antiguedadDeLaCola(conteosDelTipo?.fechasPorRevisar ?? [], { es: isEs, locale, testid: 'cartas-por-revisar' }),
+    [conteosDelTipo, isEs, locale],
+  )
 
   const fecha = useCallback(
     (iso: string) =>
@@ -372,19 +388,16 @@ function CartasContent() {
       */}
       <Card className="overflow-hidden">
       {/* C3 (r25): LA RESPUESTA dentro de la tarjeta, encima de las pestañas.
-          Sin tramos: eran los MISMOS conteos de las pestañas, dichos dos veces. */}
+          Revisora r27 (K1 y K2): no repite el conteo de la pestaña; dice cuánto
+          espera la carta más vieja y la barra la reparte por antigüedad. */}
       {conteosDelTipo && conteosDelTipo.total > 0 ? (
         <CifraHeroe
           className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
           data-testid="cartas-por-revisar"
           tamano="mediana"
-          rotulo={isEs ? 'Por revisar' : 'To review'}
-          cifra={(conteosDelTipo.porEstado.pending_human_review ?? 0).toLocaleString(locale)}
-          contexto={
-            isEs
-              ? `de ${conteosDelTipo.total.toLocaleString(locale)} ${conteosDelTipo.total === 1 ? 'carta' : 'cartas'}`
-              : `of ${conteosDelTipo.total.toLocaleString(locale)} letters`
-          }
+          rotulo={isEs ? 'La carta más vieja por revisar espera' : 'The oldest letter to review has waited'}
+          cifra={colaPorRevisar.masVieja === null ? '—' : diasEnPalabras(colaPorRevisar.masVieja, isEs)}
+          tramos={colaPorRevisar.tramos}
           esCero={(conteosDelTipo.porEstado.pending_human_review ?? 0) === 0}
           cuandoEsCero={isEs ? 'No hay cartas por revisar.' : 'No letters to review.'}
         />

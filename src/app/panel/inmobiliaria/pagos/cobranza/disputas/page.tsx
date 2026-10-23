@@ -24,7 +24,7 @@
 import { useEstadoEnLaUrl } from '@/lib/cobranza/use-estado-en-la-url'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Lock, Scales } from '@phosphor-icons/react'
+import { Lock, MagnifyingGlass, Scales } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 
@@ -66,6 +66,10 @@ import {
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { antiguedadDeLaCola, diasEnPalabras } from '@/lib/cobranza/antiguedad-de-la-cola'
+import { formatCurrency } from '@/lib/format'
+import { debtorLabel } from '@/lib/cobranza/dispute-vocab'
+import { Input } from '@/components/ui/input'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 
 
@@ -352,6 +356,14 @@ function DisputasContent() {
   /** Falló la carga y no tenemos nada: no sabemos si hay o no. */
   const hayError = (error !== null && disputes.length === 0) || sinPermiso
 
+  // Revisora r27 (K3): la lista tiene buscador por deudor, como las demás tablas.
+  const [busqueda, setBusqueda] = useState('')
+  const disputasVistas = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return disputes
+    return disputes.filter((d) => debtorLabel(d).toLocaleLowerCase('es').includes(q))
+  }, [disputes, busqueda])
+
   const seleccionada = useMemo(
     () => disputes.find((d) => d.id === seleccionadaId) ?? null,
     [disputes, seleccionadaId],
@@ -360,14 +372,14 @@ function DisputasContent() {
   // Auto-selección: al cargar, al cambiar de filtro, o si la elegida ya no
   // está en la lista. Sin esto el panel derecho arrancaría vacío siempre.
   useEffect(() => {
-    if (disputes.length === 0) {
+    if (disputasVistas.length === 0) {
       setSeleccionadaId(null)
       return
     }
-    if (!disputes.some((d) => d.id === seleccionadaId)) {
-      setSeleccionadaId(disputes[0].id)
+    if (!disputasVistas.some((d) => d.id === seleccionadaId)) {
+      setSeleccionadaId(disputasVistas[0].id)
     }
-  }, [disputes, seleccionadaId])
+  }, [disputasVistas, seleccionadaId])
 
   // Paginación de la columna izquierda. El paginado vive acá y no dentro de
   // <DisputasList> porque `filtro` vive acá: al cambiar de estado hay que
@@ -375,7 +387,7 @@ function DisputasContent() {
   // conoce el filtro. La selección y los conteos siguen mirando la lista
   // COMPLETA — sólo se recorta lo que se pinta.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(disputes, { resetKey: filtro })
+    useTablePagination(disputasVistas, { resetKey: `${filtro}|${busqueda}` })
 
   const counts = useMemo(() => {
     const c = { open: 0, in_review: 0, resolved: 0 }
@@ -389,15 +401,45 @@ function DisputasContent() {
 
   // El conteo de TODAS se sabe cuando la lista viene sin filtro de estado; con
   // un estado elegido el micro sólo trae ése y los demás quedan como estaban.
-  const [conteoDeTodas, setConteoDeTodas] = useState<{ open: number; inReview: number; resolved: number; total: number } | null>(null)
+  const [conteoDeTodas, setConteoDeTodas] = useState<{
+    open: number
+    inReview: number
+    resolved: number
+    total: number
+    /** Las que siguen sin resolver (abiertas y en revisión): desde cuándo y por cuánto. */
+    sinResolver: Array<{ desde: string; monto: number | null }>
+  } | null>(null)
   useEffect(() => {
     if (filtro !== 'todas' || isLoading) return
-    setConteoDeTodas({ open: counts.open, inReview: counts.in_review, resolved: counts.resolved, total: disputes.length })
+    setConteoDeTodas({
+      open: counts.open,
+      inReview: counts.in_review,
+      resolved: counts.resolved,
+      total: disputes.length,
+      sinResolver: disputes
+        .filter((d) => d.status !== 'resolved')
+        .map((d) => ({ desde: d.opened_at, monto: d.disputed_amount ?? null })),
+    })
     if (!estadoUrl.yaEligio() && counts.open > 0) {
       estadoUrl.marcarElegido()
       setFiltroInterno('open' as EstadoFiltro)
     }
   }, [filtro, isLoading, counts, disputes.length, estadoUrl])
+  // Revisora r27 (K1 y K2): la cifra no repite el conteo de «Abiertas»; dice la
+  // plata en disputa sin resolver, con la barra por antigüedad (en plata). Sin
+  // ningún monto registrado, dice cuánto espera la más vieja.
+  const sinResolver = conteoDeTodas?.sinResolver ?? []
+  const plataEnDisputa = sinResolver.reduce((s, d) => s + (d.monto ?? 0), 0)
+  const colaSinResolver = useMemo(
+    () =>
+      antiguedadDeLaCola(
+        sinResolver.map((d) => d.desde),
+        plataEnDisputa > 0
+          ? { es: true, testid: 'disputas-abiertas', montos: sinResolver.map((d) => d.monto), formato: formatCurrency }
+          : { es: true, testid: 'disputas-abiertas' },
+      ),
+    [sinResolver, plataEnDisputa],
+  )
   const pestanas = useMemo(
     () =>
       FILTRO_OPCIONES.map((o) => ({
@@ -542,18 +584,22 @@ function DisputasContent() {
               className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
               data-testid="disputas-abiertas"
               tamano="mediana"
-              rotulo="Abiertas"
-              cifra={conteoDeTodas.open.toLocaleString('es-CO')}
-              contexto={
-                <>
-                  {`de ${conteoDeTodas.total.toLocaleString('es-CO')} ${conteoDeTodas.total === 1 ? 'disputa' : 'disputas'}`}
-                  {conteoDeTodas.inReview > 0 ? (
-                    <span className="text-fg-subtle">
-                      {` · ${conteoDeTodas.inReview.toLocaleString('es-CO')} en revisión`}
-                    </span>
-                  ) : null}
-                </>
+              rotulo={plataEnDisputa > 0 ? 'En disputa, sin resolver' : 'La disputa más vieja sin resolver espera'}
+              cifra={
+                plataEnDisputa > 0
+                  ? formatCurrency(plataEnDisputa)
+                  : colaSinResolver.masVieja === null
+                    ? '—'
+                    : diasEnPalabras(colaSinResolver.masVieja, true)
               }
+              contexto={
+                plataEnDisputa > 0 && colaSinResolver.masVieja !== null
+                  ? colaSinResolver.masVieja === 0
+                    ? 'la más vieja se abrió hoy'
+                    : `la más vieja espera hace ${diasEnPalabras(colaSinResolver.masVieja, true)}`
+                  : undefined
+              }
+              tramos={colaSinResolver.tramos}
               esCero={conteoDeTodas.open === 0 && conteoDeTodas.inReview === 0}
               cuandoEsCero="Ninguna disputa abierta: todas están resueltas."
             />
@@ -571,9 +617,33 @@ function DisputasContent() {
             />
           </div>
 
+          {disputes.length > 0 ? (
+            <div className="border-b border-border px-4 py-3">
+              <div className="relative w-full sm:w-64">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+                <Input
+                  type="search"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar deudor"
+                  aria-label="Buscar disputas por deudor"
+                  className="pl-9"
+                  data-testid="disputas-buscar"
+                />
+              </div>
+            </div>
+          ) : null}
+
           {/* Vacío ⇄ maestro-detalle: el uno sale y el otro entra. */}
-          <CrossFade swapKey={disputes.length === 0 ? `vacio-${filtro}` : 'lista'}>
-          {disputes.length === 0 ? (
+          <CrossFade swapKey={disputes.length === 0 ? `vacio-${filtro}` : disputasVistas.length === 0 ? 'sin-resultados' : 'lista'}>
+          {disputes.length > 0 && disputasVistas.length === 0 ? (
+            <EmptyState
+              icon={MagnifyingGlass}
+              title="Ninguna disputa coincide con la búsqueda"
+              description="Revisa el nombre del deudor o borra la búsqueda."
+              primaryCta={{ label: 'Borrar la búsqueda', onClick: () => setBusqueda('') }}
+            />
+          ) : disputes.length === 0 ? (
             /* Revisora r25 (Disputas #3): el vacío ofrece la acción de esta
                pantalla, «Abrir disputa», no mandar a Casos. */
             <EmptyState
@@ -599,10 +669,9 @@ function DisputasContent() {
               <div className={`lg:border-r lg:border-border ${verDetalleEnMovil ? 'hidden lg:block' : ''}`}>
                 {/* `data-lenis-prevent`: Lenis escucha la rueda en `window`, así
                     que sin esto la lista no scrollea dentro de su propia caja. */}
-                <div
-                  data-lenis-prevent
-                  className="lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto"
-                >
+                {/* Revisora r27 (UI): sin caja con scroll propio dentro de una
+                    página con scroll (dos barras a 1440); la lista se pagina. */}
+                <div>
                   <DisputasList
                     disputes={pageItems}
                     selectedId={seleccionadaId}

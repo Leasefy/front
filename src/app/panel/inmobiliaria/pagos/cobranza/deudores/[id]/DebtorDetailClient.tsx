@@ -236,7 +236,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
           className="mb-2"
         />
         <EncabezadoDePantalla
-          seccion="Cobranza · Deudores"
+          seccion="Cobranza"
           titulo={debtorName || t('inmobiliaria.ai.cobranza.detail.title')}
           descripcion="Lo que debe, lo que se ha hablado con esta persona y lo que sigue."
           junto={

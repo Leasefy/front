@@ -231,7 +231,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
       <CrossFade swapKey="no-disponible">
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <BackLink />
-        <EncabezadoDePantalla seccion="Cobranza · Pagos en línea" titulo="Detalle de pago" />
+        <EncabezadoDePantalla seccion="Cobranza" titulo="Detalle de pago" />
         <EmptyState
           icon={CurrencyCircleDollar}
           title="Pago no disponible"
@@ -255,7 +255,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
       <BackLink />
 
       <EncabezadoDePantalla
-        seccion="Cobranza · Pagos en línea"
+        seccion="Cobranza"
         titulo="Detalle de pago"
         descripcion={
           isVerifiable

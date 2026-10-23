@@ -308,7 +308,7 @@ export function AcuerdoGeneralForm({
         )}
         <EncabezadoDePantalla
           className="mt-3"
-          seccion="Cobranza · Acuerdos"
+          seccion="Cobranza"
           titulo={titulo}
           descripcion="Una regla que el agente cierra sin preguntarte. Nunca puede ofrecer más que los límites que ya configuraste."
         />

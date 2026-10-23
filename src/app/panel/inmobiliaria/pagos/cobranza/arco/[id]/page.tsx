@@ -31,6 +31,7 @@ import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdo
 import { ArcoStatusBadge } from '@/components/inmobiliaria/cobranza/ArcoStatusBadge'
 import { BackButton } from '@/components/ui/back-button'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
@@ -911,21 +912,15 @@ function DetalleArco(props: ArcoDetailPageProps) {
   if (error) {
     return (
       <CrossFade swapKey="fallo">
+      {/* Ronda 30 (mandato: el fallo dice qué no cargó y tiene salida): la pieza de la casa con la vuelta a la
+          bandeja (antes un aviso rojo «Error» con el texto crudo y sin salida). */}
       <div className="p-6 lg:p-8">
-        <Alert variant="destructive">
-          <AlertTitle>{t('common.error')}</AlertTitle>
-          <AlertDescription className="flex items-center justify-between gap-4">
-            <span>{error}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void detailRefetch()}
-              className="min-h-[44px] shrink-0"
-            >
-              {t('common.retry')}
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <FalloDeCarga
+          error={error}
+          queEs="la solicitud"
+          onReintentar={() => void detailRefetch()}
+          volverA={{ label: t('inmobiliaria.ai.arco.detail.backToInbox'), href: '/panel/inmobiliaria/pagos/cobranza/arco' }}
+        />
       </div>
       </CrossFade>
     )
@@ -952,7 +947,7 @@ function DetalleArco(props: ArcoDetailPageProps) {
           solicitud no había forma de ver en qué estado está — había que
           deducirlo del último evento del timeline. */}
       <EncabezadoDePantalla
-        seccion="Cobranza · Solicitudes ARCO"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.arco.detail.title')}
         descripcion="Lo que pidió la persona, en qué va y lo que falta para responderle dentro del término."
         junto={<ArcoStatusBadge status={detail.status} />}

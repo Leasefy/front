@@ -154,7 +154,7 @@ function EscalationDetailContent() {
           {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
         </Link>
         <EncabezadoDePantalla
-          seccion="Cobranza · Escalaciones"
+          seccion="Cobranza"
           titulo={data.debtor_name ?? data.debtor_id_masked ?? data.debtor_id}
           descripcion={
             locale.startsWith('es')

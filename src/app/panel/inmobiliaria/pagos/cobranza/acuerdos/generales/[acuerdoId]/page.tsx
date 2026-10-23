@@ -41,7 +41,7 @@ function Marco({ titulo, children }: { titulo: string; children: React.ReactNode
     <div className="space-y-6 p-6 lg:p-8">
       <div>
         <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
-        <EncabezadoDePantalla className="mt-3" seccion="Cobranza · Acuerdos" titulo={titulo} />
+        <EncabezadoDePantalla className="mt-3" seccion="Cobranza" titulo={titulo} />
       </div>
       {children}
     </div>
@@ -86,7 +86,7 @@ function EditarAcuerdoGeneral() {
         <div className="space-y-6 p-6 lg:p-8">
           <div>
             <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
-            <EncabezadoDePantalla className="mt-3" seccion="Cobranza · Acuerdos" titulo="Acuerdo general" />
+            <EncabezadoDePantalla className="mt-3" seccion="Cobranza" titulo="Acuerdo general" />
           </div>
           <FalloDeCarga
             error={error}

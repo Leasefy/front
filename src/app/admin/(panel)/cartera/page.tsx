@@ -1,21 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Wallet } from '@phosphor-icons/react'
-import { Card, MonoLabel, Progress, Stagger, StaggerItem, StatusBadge } from '@leasefy/cadence'
+import { Wallet } from '@phosphor-icons/react'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { ETAPA, ETAPAS_DE_CARTERA, legible, type EtapaDeCartera as CarteraStage } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 
 
 /** El tono de Cadence (`StatusBadge`) de cada etapa. */
-const TONO_DEL_SELLO = { ok: 'success', neutral: 'info', warn: 'warning', bad: 'critical', muted: 'neutral' } as const
+const TONO_DEL_TRAMO = { ok: 'exito', neutral: 'neutro', warn: 'aviso', bad: 'critico', muted: 'neutro' } as const
 
 // ---------- Types ----------
 
@@ -60,39 +59,12 @@ interface CarteraOverview {
 
 // ---------- Sub-components ----------
 
-function StageCard({ bucket, total }: { bucket: StageBucket; total: number }) {
-  const etapa = ETAPA[bucket.stage]
-  const pct = total > 0 ? (bucket.n / total) * 100 : 0
-  return (
-    <Link href={`/admin/cartera/${bucket.stage}`} className="group block h-full rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-ring">
-      <Card interactive className="flex h-full flex-col gap-2 p-5">
-        <div className="flex items-center justify-between gap-2">
-          <StatusBadge tone={TONO_DEL_SELLO[etapa.tono]}>{bucket.stage}</StatusBadge>
-          <MonoLabel className="tabular-nums">{pct.toLocaleString('es-CO', { maximumFractionDigits: 1 })} %</MonoLabel>
-        </div>
-        <div className="font-mono text-stat tabular-nums text-fg">{bucket.n.toLocaleString('es-CO')}</div>
-        <div className="truncate text-body-sm font-medium text-fg" title={etapa.nombre}>
-          {etapa.nombre}
-        </div>
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-border-faint pt-2 text-caption text-fg-subtle">
-          <span>{etapa.pista}</span>
-          {bucket.avg_days_in_state !== null && (
-            <span className="font-mono tabular-nums text-fg-muted">
-              {bucket.avg_days_in_state.toLocaleString('es-CO', { maximumFractionDigits: 1 })} d prom.
-            </span>
-          )}
-        </div>
-      </Card>
-    </Link>
-  )
-}
-
 function TransitionArrow({ from, to }: { from: CarteraStage | null; to: CarteraStage }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="font-mono text-caption text-fg-subtle">{from ?? 'inicio'}</span>
-      <ArrowRight className="h-3.5 w-3.5 text-fg-subtle" aria-hidden="true" />
-      <Pill tone={ETAPA[to].tono}>{to}</Pill>
+      <span className="text-caption text-fg-muted">{from ? ETAPA[from].nombre : 'Inicio'}</span>
+      <span className="text-caption text-fg-subtle" aria-hidden="true">→</span>
+      <Pill tone={ETAPA[to].tono}>{ETAPA[to].nombre}</Pill>
     </span>
   )
 }
@@ -107,7 +79,12 @@ export default function CarteraPage() {
 
 
   if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={6} /></div>
-  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
+  if (error)
+    return (
+      <div className="space-y-6 p-6 lg:p-8">
+        <ErrorBlock error={error} onReintentar={refetch} titulo="No pudimos cargar la cartera" />
+      </div>
+    )
 
   // Normalise: fill in stages missing from the API (n=0 if no debtors in stage)
   const byStage = new Map((data?.buckets ?? []).map((b) => [b.stage, b]))
@@ -122,7 +99,6 @@ export default function CarteraPage() {
   })
 
   const total = buckets.reduce((sum, b) => sum + b.n, 0)
-  const maxN = Math.max(1, ...buckets.map((b) => b.n))
 
   const tracked = data ? parseInt(data.totals.tracked, 10) : 0
   const allDebtors = data ? parseInt(data.totals.total, 10) : 0
@@ -153,76 +129,72 @@ export default function CarteraPage() {
     {
       header: 'Cambio de etapa',
       orden: (r) => r.to_stage,
-      texto: (r) => `${r.from_stage ?? 'inicio'} → ${r.to_stage}`,
+      texto: (r) => `${r.from_stage ? ETAPA[r.from_stage].nombre : 'Inicio'} → ${ETAPA[r.to_stage].nombre}`,
       cell: (r) => <TransitionArrow from={r.from_stage} to={r.to_stage} />,
     },
     {
       header: 'Motivo',
       texto: (r) => legible(r.reason),
-      cell: (r) => <span className="block max-w-[260px] truncate text-fg-muted" title={r.reason}>{legible(r.reason)}</span>,
+      cell: (r) => <span className="block max-w-[260px] truncate text-fg-muted">{legible(r.reason)}</span>,
     },
   ]
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <PageHeader
-        title="Cartera"
-        description={[
-          `${total.toLocaleString('es-CO')} deudores en 7 etapas de cobro (S0 a S5 y SX).`,
-          untracked > 0 ? ` ${untracked.toLocaleString('es-CO')} todavía sin etapa.` : '',
-        ].join('')}
-      />
+      <PageHeader title="Cartera" description="Los deudores de todas las inmobiliarias, por etapa de cobro. Toca una etapa para ver sus deudores." />
 
-      <section aria-label="Deudores por etapa">
-        <Stagger className="grid grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-7">
-          {buckets.map((b) => (
-            <StaggerItem key={b.stage} className="h-full">
-              <StageCard bucket={b} total={total} />
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </section>
-
-      <Tarjeta titulo="Cómo se reparte" descripcion="Toca una etapa para ver sus deudores.">
-        <div className="space-y-3">
-          {buckets.map((b) => {
-            const pct = total > 0 ? (b.n / total) * 100 : 0
-            const etapa = ETAPA[b.stage]
-            return (
+      {/* Glow up 22-10: LA RESPUESTA (cuántos deudores hay en cobro y en qué etapa) en una cifra con la barra por
+          etapa; cada etapa abre su lista. Antes, 7 tarjetas del mismo peso con el código (S0…SX) arriba y la misma
+          cuenta repetida en una segunda tarjeta. */}
+      <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+        <CifraHeroe
+          rotulo="Deudores en cobro"
+          cifra={total.toLocaleString('es-CO')}
+          contexto={untracked > 0 ? `${untracked.toLocaleString('es-CO')} todavía sin etapa` : 'todos con su etapa'}
+          tramos={buckets.map((b) => ({
+            clave: b.stage,
+            etiqueta: ETAPA[b.stage].nombre,
+            monto: b.n,
+            tono: TONO_DEL_TRAMO[ETAPA[b.stage].tono],
+            siempre: true,
+            cifra: (
               <Link
-                key={b.stage}
                 href={`/admin/cartera/${b.stage}`}
-                className="group -mx-2 grid grid-cols-[minmax(0,10rem)_1fr_auto] items-center gap-3 rounded-sm px-2 py-1 outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[minmax(0,14rem)_1fr_auto]"
+                className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`Ver los deudores en ${ETAPA[b.stage].nombre.toLowerCase()} (${b.n})`}
               >
-                <span className="flex min-w-0 items-baseline gap-2">
-                  <span className="font-mono text-caption text-fg-subtle">{b.stage}</span>
-                  <span className="truncate text-body-sm text-fg">{etapa.nombre}</span>
-                </span>
-                <Progress value={(b.n / maxN) * 100} color={etapa.barra} size="sm" label={`${etapa.nombre}: ${b.n}`} />
-                <span className="w-24 text-right font-mono text-caption tabular-nums text-fg-muted">
-                  {b.n.toLocaleString('es-CO')} · {pct.toLocaleString('es-CO', { maximumFractionDigits: 1 })} %
-                </span>
+                {b.n.toLocaleString('es-CO')}
               </Link>
-            )
-          })}
-        </div>
-      </Tarjeta>
+            ),
+            extra:
+              b.avg_days_in_state !== null ? (
+                <p className="text-caption text-fg-muted">
+                  <span className="font-mono tabular-nums">{b.avg_days_in_state.toLocaleString('es-CO', { maximumFractionDigits: 1 })}</span> días en promedio
+                </p>
+              ) : (
+                <p className="text-caption text-fg-muted">{ETAPA[b.stage].pista}</p>
+              ),
+          }))}
+          total={total}
+          data-testid="cartera-por-etapa"
+        />
+      </div>
 
       <section className="space-y-3" aria-label="Cambios de etapa recientes">
-        <MonoLabel className="block">Cambios de etapa recientes</MonoLabel>
+        <h2 className="text-subtitle font-medium text-fg">Cambios de etapa recientes</h2>
         <DataTable
           columns={transitionColumns}
           rows={data?.transitions}
           getKey={(r) => r.id}
           emptyTitle="Todavía no hay cambios de etapa"
           emptyHint="La tarea de cartera corre todos los días a las 6:30 a. m. (hora de Bogotá)."
-          emptyIcon={<Wallet weight="bold" />}
+          emptyIcon={<Wallet weight="duotone" />}
           aria-label="Cambios de etapa"
           queSon={['cambio', 'cambios']}
           buscar="Deudor, inmobiliaria o motivo"
           segmentos={[
             { valor: 'todos', nombre: 'Todos', cumple: () => true },
-            ...ETAPAS_DE_CARTERA.map((e) => ({ valor: e, nombre: `A ${e}`, cumple: (r: TransitionRow) => r.to_stage === e })),
+            ...ETAPAS_DE_CARTERA.map((e) => ({ valor: e, nombre: `A ${ETAPA[e].nombre.toLowerCase()}`, cumple: (r: TransitionRow) => r.to_stage === e })),
           ]}
           ordenInicial={{ columna: 0, sentido: 'desc' }}
           exportar="cambios-de-etapa"

@@ -19,7 +19,7 @@ import { Plus, SquaresFour, Kanban } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { AnimatedNumber, CrossFade, SegmentedControl } from '@leasefy/cadence';
+import { CrossFade, SegmentedControl } from '@leasefy/cadence';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import type {
@@ -94,7 +94,6 @@ type MantenimientoViewMode = 'cards' | 'kanban';
 // ============================================================================
 
 /** El número tal cual (sin separador de miles): la cuenta de solicitudes. */
-const enteroTalCual = (n: number) => String(Math.round(n));
 
 function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
   const activeMantenimientos = mantenimientos.filter((m) =>
@@ -727,11 +726,12 @@ function MantenimientosContent() {
               : ''
           }`}
           total={stats.active}
+          // Revisora r27: los tramos son las columnas del tablero (antes «Esperan al propietario» contaba otra vez la
+          // misma solicitud de «Por aprobar»: queda sólo en el contexto); los que están en cero no se listan.
           tramos={[
-            { clave: 'por-cotizar', etiqueta: 'Por cotizar', monto: etapas.porCotizar, tono: 'aviso', cifra: etapas.porCotizar, siempre: true },
-            { clave: 'por-aprobar', etiqueta: 'Por aprobar', monto: stats.quoted, tono: 'aviso', cifra: stats.quoted, siempre: true },
-            { clave: 'esperan-al-propietario', etiqueta: 'Esperan al propietario', monto: stats.esperanAlPropietario, tono: 'neutro', cifra: stats.esperanAlPropietario, siempre: true },
-            { clave: 'en-arreglo', etiqueta: 'En arreglo', monto: etapas.enArreglo, tono: 'exito', cifra: etapas.enArreglo, siempre: true },
+            { clave: 'por-cotizar', etiqueta: 'Por cotizar', monto: etapas.porCotizar, tono: 'aviso', cifra: etapas.porCotizar },
+            { clave: 'por-aprobar', etiqueta: 'Por aprobar', monto: stats.quoted, tono: 'aviso', cifra: stats.quoted },
+            { clave: 'en-arreglo', etiqueta: 'En arreglo', monto: etapas.enArreglo, tono: 'exito', cifra: etapas.enArreglo },
           ]}
           pie={
             etapas.cerradas > 0
@@ -762,22 +762,10 @@ function MantenimientosContent() {
               {/* El conteo se calla si no se pudo traer: «0 solicitudes
                   activas» sobre una consulta muerta es tranquilizar con
                   un dato que nadie tiene. */}
+              {/* Revisora r27: el conteo ya lo dice la cifra de arriba («N solicitudes abiertas»): aquí sólo el fallo. */}
               {mantenimientosError ? (
                 <span className="text-fg-muted">Solicitudes sin cargar</span>
-              ) : (
-                <>
-                  <AnimatedNumber
-                    className="font-medium text-foreground"
-                    value={mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
-                    format={enteroTalCual}
-                  />
-                  {' '}
-                  {/* SO-11: «1 solicitud activa», no «1 solicitudes activas». */}
-                  {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length === 1
-                    ? 'solicitud activa'
-                    : t('inmobiliaria.operaciones.maintenance.activeRequests')}
-                </>
-              )}
+              ) : null}
             </p>
           </div>
           <SegmentedControl<MantenimientoViewMode>

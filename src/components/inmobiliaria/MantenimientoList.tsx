@@ -438,10 +438,13 @@ function MantenimientoCard({
             {solicitud.propertyTitle}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-caption text-muted-foreground">
-          <MapPin className="w-3 h-3" />
-          <span className="line-clamp-1">{solicitud.propertyAddress}</span>
-        </div>
+        {/* Revisora r27: sin dirección no se pinta un renglón con el pin solo. */}
+        {solicitud.propertyAddress ? (
+          <div className="flex items-center gap-2 text-caption text-muted-foreground">
+            <MapPin className="w-3 h-3" />
+            <span className="line-clamp-1">{solicitud.propertyAddress}</span>
+          </div>
+        ) : null}
         <div className="flex items-center gap-2 mt-1 text-caption text-muted-foreground">
           <User className="w-3 h-3" />
           <span>{solicitud.tenantName}</span>
@@ -470,7 +473,8 @@ function MantenimientoCard({
           <div className="flex items-center gap-1">
             <CalendarBlank className="w-4 h-4" />
             <span>
-              {formatDateFn(solicitud.createdAt, fmtDate)} ({daysSince}d)
+              {/* Revisora r27: «hace 7 días», no «(7d)». */}
+              {formatDateFn(solicitud.createdAt, fmtDate)} · {daysSince === 0 ? 'hoy' : daysSince === 1 ? 'hace 1 día' : `hace ${daysSince} días`}
             </span>
           </div>
 
@@ -493,7 +497,8 @@ function MantenimientoCard({
 
         {/* Approved amount */}
         {solicitud.approvedAmount && (
-          <span className="font-medium text-success">
+          // Revisora r27: un costo no es un éxito: la plata en tinta y en mono (antes en verde).
+          <span className="font-mono tabular-nums text-fg">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}

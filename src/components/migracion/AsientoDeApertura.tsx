@@ -449,9 +449,11 @@ export function AsientoDeApertura({
         </div>
       </div>
 
-      <div className="mt-5 overflow-x-auto">
-        <Table>
-          <TableHeader>
+      {/* Revisora r25: a 390 la tabla se corría dentro de su caja y «Sin cuenta» se partía. Bajo md, una
+          tarjeta por línea: la cuenta a lo ancho (con quitar al lado) y débito y crédito debajo, con su rótulo. */}
+      <div className="mt-5 overflow-x-auto max-md:overflow-visible">
+        <Table className="max-md:block">
+          <TableHeader className="max-md:hidden">
             <TableRow>
               <TableHead>Cuenta</TableHead>
               <TableHead className="w-44 text-right">Débito</TableHead>
@@ -461,12 +463,16 @@ export function AsientoDeApertura({
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="max-md:block">
             {visibles.map((fila) => {
               const i = indiceDe.get(fila.id) ?? 0;
               return (
-              <TableRow key={fila.id} data-testid={`apertura-fila-${i}`}>
-                <TableCell>
+              <TableRow
+                key={fila.id}
+                data-testid={`apertura-fila-${i}`}
+                className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:py-3"
+              >
+                <TableCell className="max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                   <Select
                     value={fila.cuentaId ?? SIN_CUENTA}
                     onValueChange={(v) => {
@@ -504,7 +510,8 @@ export function AsientoDeApertura({
                     />
                   ) : null}
                 </TableCell>
-                <TableCell>
+                <TableCell className="max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
+                  <span className="mb-1 block text-caption text-fg-muted md:hidden" aria-hidden="true">Débito</span>
                   <CampoDePlata
                     areas="contabilidad_facturacion_y_exogena"
                     // Los saldos iniciales guardan sus centavos (Nico, 04-10-2026).
@@ -519,7 +526,8 @@ export function AsientoDeApertura({
                     data-testid={`apertura-debito-${i}`}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell className="max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0">
+                  <span className="mb-1 block text-caption text-fg-muted md:hidden" aria-hidden="true">Crédito</span>
                   <CampoDePlata
                     areas="contabilidad_facturacion_y_exogena"
                     // Los saldos iniciales guardan sus centavos (Nico, 04-10-2026).
@@ -536,7 +544,7 @@ export function AsientoDeApertura({
                     data-testid={`apertura-credito-${i}`}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell className="max-md:col-start-3 max-md:row-start-1 max-md:block max-md:p-0">
                   <Button
                     size="sm"
                     variant="ghost"

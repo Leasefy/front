@@ -32,6 +32,8 @@ import Link from "next/link";
 import { useDropzone } from "react-dropzone";
 import { ArrowRight, BookOpen, Info, Receipt, Scales, Warning } from "@phosphor-icons/react";
 import { SegmentedControl } from "@leasefy/cadence";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { MasDetalles } from "@/components/pantalla/MasDetalles";
 
 import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
@@ -92,6 +94,7 @@ export function RegistrosContables({
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [camino, setCamino] = useState<Camino>("apertura");
+  const enElCelular = useIsMobile();
   /*
    * 8.ª tanda (14-10): el archivo de «Sube tu archivo contable», con la puerta
    * a la que va. Cada camino lo recibe como `archivoInicial` y lo lee una vez.
@@ -451,47 +454,62 @@ export function RegistrosContables({
                 </p>
               ) : null}
             </div>
-            <SegmentedControl<Camino>
-              value={camino}
-              onChange={setCamino}
-              aria-label="Cómo cargar los registros"
-              options={[
-                {
-                  value: "apertura",
-                  label: (
-                    <span className="flex items-center gap-2">
-                      <Scales className="h-4 w-4" />
-                      Saldos iniciales
-                    </span>
-                  ),
-                },
-                {
-                  value: "historico",
-                  // «Subir» y no «migrar»: Nico pasó por acá y no vio que
-                  // el archivo se podía subir. El sustantivo del botón tiene
-                  // que ser el objeto que la persona tiene en la mano.
-                  label: (
-                    <span className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      Subir el libro diario
-                    </span>
-                  ),
-                },
-                {
-                  // El tercer camino, y el que el archivo real de la
-                  // inmobiliaria necesita: comprobantes SIN líneas por cuenta.
-                  // Va aparte del libro diario a propósito — meterlos ahí
-                  // serían 116 mil asientos descuadrados.
-                  value: "documentos",
-                  label: (
-                    <span className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4" />
-                      Subir los comprobantes
-                    </span>
-                  ),
-                },
-              ]}
-            />
+            {/* Revisora r25: a 390 el segmentado se partía en tres renglones («Subir / el libro / diario»); en el
+                celular es un Select con las mismas tres opciones. */}
+            {enElCelular ? (
+              <Select value={camino} onValueChange={(v) => setCamino(v as Camino)}>
+                <SelectTrigger aria-label="Cómo cargar los registros" data-testid="camino-en-el-celular">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="apertura">Saldos iniciales</SelectItem>
+                  <SelectItem value="historico">Subir el libro diario</SelectItem>
+                  <SelectItem value="documentos">Subir los comprobantes</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <SegmentedControl<Camino>
+                value={camino}
+                onChange={setCamino}
+                aria-label="Cómo cargar los registros"
+                options={[
+                  {
+                    value: "apertura",
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <Scales className="h-4 w-4" />
+                        Saldos iniciales
+                      </span>
+                    ),
+                  },
+                  {
+                    value: "historico",
+                    // «Subir» y no «migrar»: Nico pasó por acá y no vio que
+                    // el archivo se podía subir. El sustantivo del botón tiene
+                    // que ser el objeto que la persona tiene en la mano.
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        Subir el libro diario
+                      </span>
+                    ),
+                  },
+                  {
+                    // El tercer camino, y el que el archivo real de la
+                    // inmobiliaria necesita: comprobantes SIN líneas por cuenta.
+                    // Va aparte del libro diario a propósito — meterlos ahí
+                    // serían 116 mil asientos descuadrados.
+                    value: "documentos",
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <Receipt className="h-4 w-4" />
+                        Subir los comprobantes
+                      </span>
+                    ),
+                  },
+                ]}
+              />
+            )}
             <p className="max-w-2xl text-sm text-fg-muted">
               {camino === "apertura"
                 ? "Los saldos de cada cuenta al cierre del año anterior, en un asiento. Súbelos desde el balance de prueba por tercero o escríbelos. Con esto queda listo el paso."

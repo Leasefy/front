@@ -96,7 +96,9 @@ export default function PrivacidadPage() {
               <dt className="font-medium text-foreground">Ámbito</dt>
               <dd className="text-muted-foreground">Colombia, únicamente</dd>
               <dt className="font-medium text-foreground">Versión</dt>
-              <dd className="text-muted-foreground">{VERSION_POLITICA_DE_TRATAMIENTO}</dd>
+              {/* Revisora r25 (R7): la versión como la dice Términos («v6.0»); el
+                  identificador «politica-tratamiento-v6.0» queda para la base. */}
+              <dd className="text-muted-foreground font-mono">{VERSION_POLITICA_DE_TRATAMIENTO.replace(/^.*-(v[\d.]+)$/, '$1')}</dd>
               <dt className="font-medium text-foreground">Vigente desde</dt>
               <dd className="text-muted-foreground">{fechaDeVigencia(VIGENCIA_POLITICA_DE_TRATAMIENTO)}</dd>
               <dt className="font-medium text-foreground">Vigencia de la base de datos</dt>

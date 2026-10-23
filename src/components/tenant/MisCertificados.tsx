@@ -50,7 +50,12 @@ const QUE_CERTIFICA: Record<TipoDeCertificado, string> = {
     'Saliste de este contrato por un cambio de inquilino: certifica que no debes nada del tiempo en que fuiste el inquilino. No es el paz y salvo del contrato.',
 };
 
-export function MisCertificados() {
+/**
+ * `ocultarSiVacio` (glow up 22-10): en Documentos, sin ningún contrato la página ya dice que todavía no hay nada;
+ * esta tarjeta repetía «Todavía no tienes contratos». Se oculta sólo cuando SU propia lectura confirma que no hay
+ * contratos; cargando o con error se ve como siempre.
+ */
+export function MisCertificados({ ocultarSiVacio = false, className }: { ocultarSiVacio?: boolean; className?: string } = {}) {
   const [contratos, setContratos] = useState<CertificadoDisponible[] | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [emitiendo, setEmitiendo] = useState<string | null>(null);
@@ -101,8 +106,10 @@ export function MisCertificados() {
     }
   }, [cargar]);
 
+  if (ocultarSiVacio && !error && contratos !== null && contratos.length === 0) return null;
+
   return (
-    <section className="rounded-lg border border-border bg-surface p-6 space-y-4">
+    <section className={['rounded-lg border border-border bg-surface p-6 space-y-4', className].filter(Boolean).join(' ')}>
       <div className="flex items-start gap-3">
         <Certificate className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
         <div>

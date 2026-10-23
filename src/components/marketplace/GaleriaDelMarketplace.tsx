@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { motionDuration, motionEase } from '@leasefy/cadence';
-import { ArrowsOut, CaretDown, Check, Heart, Info, MapTrifold, Play, Plus, Sparkle, X } from '@phosphor-icons/react';
+import { ArrowsOut, CaretDown, Check, Heart, Info, MapTrifold, Play, Plus, X } from '@phosphor-icons/react';
 
 import { LogoDelAdministrador } from '@/components/property/AdministradoPor';
-import { PortadaDelInmueble, primeraFoto } from '@/components/property/PortadaDelInmueble';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { formatCurrency } from '@/lib/format';
 import { useProperties } from '@/lib/hooks/useProperties';
@@ -109,11 +109,13 @@ function TarjetaDeGaleria({
   const { isWishlisted, toggleWishlist } = useWishlist();
   const guardado = isWishlisted(p.id);
   const video = videoDelInmueble(p);
-  const conFoto = primeraFoto(p) !== null;
   const costo = costoMensual(p);
   const venta = p.listingType === 'sale';
   const precio = venta ? p.salePrice : p.monthlyRent;
 
+  // Ronda 30 (diseño nuevo del marketplace): la foto sin velo; el precio en una marca de papel blanco abajo a
+  // la izquierda (antes, letra blanca sobre un degradado oscuro); guardar en un círculo blanco que se pinta de
+  // voltaje; debajo, el lugar, lo que se sabe en mono, por qué sale y quién lo administra.
   return (
     <motion.article
       ref={refDeLaTarjeta}
@@ -123,14 +125,17 @@ function TarjetaDeGaleria({
       transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
       onMouseEnter={() => onHover(p.id)}
       onMouseLeave={() => onHover(null)}
-      className="group"
+      className="group min-w-0"
       data-testid="tarjeta-de-galeria"
     >
-      <Link href={`/propiedades/${p.id}`} className="block">
+      <Link
+        href={`/propiedades/${p.id}`}
+        className="block transition-transform duration-base ease-enter hover:-translate-y-0.5 active:scale-[0.99] motion-reduce:hover:translate-y-0"
+      >
         <div
           className={cn(
-            'relative aspect-[4/3] overflow-hidden rounded-lg bg-surface-muted transition-shadow duration-base',
-            resaltada ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'group-hover:ring-1 group-hover:ring-border-strong',
+            'relative aspect-[4/3] overflow-hidden rounded-lg bg-surface-muted',
+            resaltada && 'outline outline-2 outline-offset-[3px] outline-primary',
           )}
         >
           <PortadaDelInmueble
@@ -138,12 +143,10 @@ function TarjetaDeGaleria({
             conPrecioEncima
             alt={p.title}
             sizes="(min-width: 1280px) 30vw, (min-width: 640px) 45vw, 100vw"
-            className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-[1.04]"
+            className="object-cover transition-transform duration-[700ms] ease-enter group-hover:scale-[1.04]"
           />
-          {/* El velo oscuro es para leer el precio sobre una foto; sin foto, el precio va en tinta. */}
-          {conFoto && <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" aria-hidden />}
           {video && (
-            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-[13px] font-medium text-white backdrop-blur-sm">
+            <span className="absolute left-3 top-3 z-[2] inline-flex h-6 items-center gap-1.5 rounded-sm bg-white px-[9px] font-mono text-[11px] uppercase tracking-[0.08em] text-[#121110]">
               <Play className="h-3 w-3" weight="fill" aria-hidden />
               {NOMBRE_DE_LA_RED[video.red]}
             </span>
@@ -157,41 +160,38 @@ function TarjetaDeGaleria({
             }}
             aria-pressed={guardado}
             aria-label={guardado ? 'Quitar de guardados' : 'Guardar'}
-            className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-fg transition-transform duration-fast active:scale-[0.94]"
+            className={cn(
+              'absolute right-3 top-3 z-[3] inline-flex h-[38px] w-[38px] items-center justify-center rounded-full bg-white transition-[color,transform] duration-fast active:scale-[0.94]',
+              guardado ? 'text-primary' : 'text-[#121110]',
+            )}
           >
-            <Heart
-              className={cn('h-4 w-4', guardado && 'text-primary')}
-              weight={guardado ? 'fill' : 'regular'}
-              aria-hidden
-            />
+            <Heart className="h-[18px] w-[18px]" weight={guardado ? 'fill' : 'regular'} aria-hidden />
           </button>
-          <span className={cn('absolute inset-x-4 bottom-3', conFoto ? 'text-white' : 'text-fg')}>
-            <span className="block font-mono text-[24px] font-medium leading-none tabular-nums">
-              {precio != null ? (venta ? millones(precio) : formatCurrency(precio)) : 'Por confirmar'}
-              {!venta && precio != null && (
-                <span className={cn('ml-1 text-[13px] font-normal', conFoto ? 'text-white/80' : 'text-fg-muted')}>al mes</span>
-              )}
-            </span>
-            {costo && costo.administracion > 0 && (
-              <span className={cn('mt-1 block text-[13px]', conFoto ? 'text-white/85' : 'text-fg-muted')}>
-                Con administración: <span className="font-mono tabular-nums">{formatCurrency(costo.total)}</span>
-              </span>
+          <span className="pointer-events-none absolute bottom-3 left-3 z-[2] inline-flex h-9 items-center gap-[5px] rounded-[12px] bg-white px-3 font-mono text-[17px] leading-none tracking-[-0.01em] tabular-nums text-[#121110]">
+            {precio != null ? (venta ? millones(precio) : formatCurrency(precio)) : 'Por confirmar'}
+            {!venta && precio != null && (
+              <span className="font-sans text-[13px] tracking-normal text-[#706B64]">al mes</span>
             )}
           </span>
         </div>
-        <div className="space-y-2 px-1 pt-3">
-          <div>
-            <p className="truncate text-[15.5px] font-medium text-fg">{barrioYCiudad(p.neighborhood, p.city)}</p>
-            <p className="font-mono text-[13px] tabular-nums text-fg-muted">
-              {[
-                p.bedrooms != null ? `${p.bedrooms} hab` : null,
-                p.bathrooms != null ? `${p.bathrooms} ${p.bathrooms === 1 ? 'baño' : 'baños'}` : null,
-                p.area != null ? `${p.area} m²` : null,
-              ]
-                .filter(Boolean)
-                .join(' · ') || p.title}
+        <div className="flex flex-col gap-[5px] px-0.5 pt-3">
+          <p className="truncate text-[15.5px] font-[450] tracking-[-0.01em] text-fg transition-colors duration-base group-hover:text-primary">
+            {barrioYCiudad(p.neighborhood, p.city)}
+          </p>
+          <p className="truncate font-mono text-[13px] tabular-nums text-fg-muted">
+            {[
+              p.bedrooms != null ? `${p.bedrooms} hab` : null,
+              p.bathrooms != null ? `${p.bathrooms} ${p.bathrooms === 1 ? 'baño' : 'baños'}` : null,
+              p.area != null ? `${p.area} m²` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ') || p.title}
+          </p>
+          {costo && costo.administracion > 0 && (
+            <p className="text-[13px] text-fg-muted">
+              Con administración: <span className="font-mono tabular-nums text-fg">{formatCurrency(costo.total)}</span>
             </p>
-          </div>
+          )}
           {explicacion && explicacion.noCumple.length > 0 ? (
             <p className="flex items-start gap-1.5 text-[13px] text-fg-muted" data-testid="no-cumple">
               <Info className="mt-[1px] h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
@@ -204,7 +204,7 @@ function TarjetaDeGaleria({
             </p>
           ) : null}
           {p.agencyName && (
-            <p className="flex items-center gap-2 text-[13px] text-fg-muted">
+            <p className="flex min-w-0 items-center gap-2 text-[13px] text-fg-muted">
               <LogoDelAdministrador
                 administrador={{ agencyId: p.agencyId ?? null, nombre: p.agencyName, logoUrl: p.agencyLogoUrl ?? null }}
                 tamano={20}
@@ -239,10 +239,11 @@ function MasFiltros({ vigente, poner }: { vigente: Busqueda; poner: (c: Partial<
 
   const opcion = (activa: boolean) =>
     cn(
-      'rounded-full border px-3 py-1.5 text-[13px] transition-colors duration-fast',
+      // Ronda 30 (diseño nuevo): pastillas de 34 px con esquina de 12 px; la elegida en voltaje suave.
+      'inline-flex h-[34px] items-center rounded-[12px] border px-[13px] text-[13.5px] transition-colors duration-fast active:scale-[0.97]',
       activa
-        ? 'border-primary bg-primary/10 text-primary'
-        : 'border-border bg-surface text-fg hover:border-border-strong',
+        ? 'border-primary bg-primary-soft text-primary'
+        : 'border-border bg-surface text-fg hover:border-fg-subtle',
     );
 
   return (
@@ -251,7 +252,7 @@ function MasFiltros({ vigente, poner }: { vigente: Busqueda; poner: (c: Partial<
         type="button"
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
-        className="inline-flex h-8 items-center gap-1 rounded-full border border-dashed border-border px-3 text-[13px] text-fg-muted transition-colors duration-fast hover:border-border-strong hover:text-fg"
+        className="inline-flex h-8 items-center gap-[5px] rounded-[11px] border border-dashed border-fg-subtle bg-surface px-3 text-[13px] text-fg-muted transition-colors duration-fast hover:text-fg"
       >
         <Plus className="h-3.5 w-3.5" aria-hidden />
         Filtro
@@ -264,7 +265,7 @@ function MasFiltros({ vigente, poner }: { vigente: Busqueda; poner: (c: Partial<
             exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: motionDuration.fast } }}
             transition={{ duration: motionDuration.base, ease: motionEase.enter }}
             style={{ transformOrigin: 'top left' }}
-            className="absolute left-0 top-full z-40 mt-2 w-[min(360px,calc(100vw-2rem))] space-y-4 rounded-[20px] border border-border bg-surface p-4 shadow-[0_18px_48px_-12px_rgba(20,19,15,0.22)]"
+            className="absolute left-0 top-full z-40 mt-2 w-[min(360px,calc(100vw-2rem))] space-y-4 rounded-[20px] border border-border-faint bg-surface p-4 text-left shadow-[0_50px_90px_-40px_rgba(18,17,16,0.35),0_22px_40px_-22px_rgba(18,17,16,0.18)]"
             data-testid="mas-filtros"
           >
             <div>
@@ -462,34 +463,35 @@ export function GaleriaDelMarketplace() {
       {/* ── Arriba: la misma familia que la llegada del chat (Nico, 09-10:
           «mejora eso del chat, quiero que sea más hermoso») ── */}
       {/* Sin `overflow-hidden`: recortaba el menú «Ideas para afinar» (Nico, 09-10). */}
-      <header className="relative border-b border-border bg-surface">
+      <header className="relative border-b border-border-faint bg-surface">
         {/* Cadence 2 · PIX (Nico, 23-10): la corriente de voltaje abajo del encabezado, en vez del degradado azul
             (Cadence no usa degradados). Sólo en claro. */}
         <CorrienteDeVoltaje
-          className="absolute inset-x-0 bottom-0 h-[70%] w-full opacity-70 [mask-image:linear-gradient(to_top,#000_0%,rgba(0,0,0,.5)_45%,transparent_95%)] dark:hidden"
+          className="absolute inset-x-0 bottom-0 h-[72%] w-full [mask-image:linear-gradient(to_top,#000_0%,rgba(0,0,0,.5)_45%,transparent_95%)] dark:hidden"
           fondo="superficie"
           forma="horizonte"
+          celda={3}
           fuerza={0.42}
           semilla={19}
         />
-        <div className="llegada-grises relative mx-auto flex max-w-[980px] flex-col items-center px-4 pb-8 pt-9 text-center md:px-8 md:pt-12">
+        <div className="llegada-grises relative z-[1] mx-auto flex max-w-[980px] flex-col items-center px-4 pb-8 pt-10 text-center">
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-3 py-1 font-mono text-[11.5px] uppercase tracking-[0.08em] text-fg-muted"
+            className="inline-flex h-[30px] items-center gap-2 rounded-[10px] border border-border-faint bg-surface px-3 font-mono text-[11.5px] uppercase tracking-[0.08em] text-fg-subtle"
             data-testid="resumen-de-la-galeria"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
+            <span className="h-[7px] w-[7px] rounded-[2px] bg-primary" aria-hidden />
             {isLoading ? (
               'Buscando…'
             ) : (
               <>
-                <span className="tabular-nums text-fg">{total}</span> {total === 1 ? 'cumple' : 'cumplen'} todo
+                <span className="font-medium tabular-nums text-fg">{total}</span> {total === 1 ? 'cumple' : 'cumplen'} todo
                 {casi.length > 0 && (
                   <>
                     <span aria-hidden>·</span>
-                    <span className="tabular-nums text-fg">{casi.length}</span> casi
+                    <span className="font-medium tabular-nums text-fg">{casi.length}</span> casi
                   </>
                 )}
               </>
@@ -499,13 +501,13 @@ export function GaleriaDelMarketplace() {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: motionDuration.slow, ease: motionEase.enter, delay: 0.04 }}
-            className="mt-4 font-heading font-[400] leading-[1.04] tracking-[-0.04em] text-fg text-[clamp(2rem,4.6vw,3.25rem)] [text-wrap:balance]"
+            className="mt-4 font-heading text-[clamp(32px,4.4vw,56px)] font-[360] leading-[1.04] tracking-[-0.04em] text-fg [text-wrap:balance]"
             data-testid="titulo-de-la-busqueda"
           >
             {titulo}
           </motion.h1>
           {busqueda.q && (
-            <p className="mt-3 max-w-[60ch] text-[15.5px] text-fg-muted [text-wrap:balance]">
+            <p className="mt-2.5 max-w-[60ch] text-[15.5px] text-fg-muted [text-wrap:balance]">
               Lo que Ori encontró para «{busqueda.q}». Afina escribiendo o quita lo que no quieras.
             </p>
           )}
@@ -513,7 +515,7 @@ export function GaleriaDelMarketplace() {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: motionDuration.slow, ease: motionEase.enter, delay: 0.08 }}
-            className="relative z-10 mt-6 w-full max-w-[760px] text-left"
+            className="relative z-10 mt-[22px] w-full max-w-[760px] text-left"
           >
             <CajaDelMarketplace
               compacta
@@ -523,7 +525,7 @@ export function GaleriaDelMarketplace() {
               opciones={IDEAS_PARA_AFINAR}
             />
           </motion.div>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2" data-testid="pastillas-de-la-busqueda">
+          <div className="mt-[18px] flex flex-wrap items-center justify-center gap-2" data-testid="pastillas-de-la-busqueda">
             <AnimatePresence initial={false}>
               {pastillas.map((p) => (
                 <motion.span
@@ -532,16 +534,17 @@ export function GaleriaDelMarketplace() {
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96, transition: { duration: motionDuration.fast } }}
-                  className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-surface py-1 pl-3.5 pr-1.5 text-[13.5px] text-fg shadow-sm"
+                  className="inline-flex h-8 items-center gap-[7px] whitespace-nowrap rounded-[11px] border border-border bg-surface py-1 pl-3 pr-1 text-[13px] text-fg"
                   data-testid="pastilla"
                 >
-                  {p.entendida && <Sparkle className="h-3.5 w-3.5 text-primary" weight="fill" aria-hidden />}
+                  {/* Lo que Ori entendió lleva el cuadrito de voltaje (Ronda 30, diseño nuevo; antes una chispa). */}
+                  {p.entendida && <i className="h-1.5 w-1.5 flex-none rounded-[2px] bg-primary" aria-hidden />}
                   {p.etiqueta}
                   <button
                     type="button"
                     onClick={() => cambiar(quitarPastilla(busqueda, entendidos, p.clave))}
                     aria-label={`Quitar ${p.etiqueta}`}
-                    className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-muted transition-colors duration-fast hover:bg-surface-muted hover:text-fg"
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-muted transition-colors duration-fast hover:bg-primary-soft hover:text-fg"
                   >
                     <X className="h-3 w-3" weight="bold" aria-hidden />
                   </button>
@@ -554,11 +557,11 @@ export function GaleriaDelMarketplace() {
       </header>
 
       {/* ── La galería y el mapa flotante ── */}
-      <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-8 px-4 py-8 md:px-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-8 px-[clamp(16px,2.6vw,32px)] pb-10 pt-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="min-w-0 space-y-12">
           <section aria-labelledby="cumplen-todo">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 id="cumplen-todo" className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
+              <h2 id="cumplen-todo" className="font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-fg-subtle">
                 Cumplen todo
               </h2>
               <div className="relative">
@@ -566,7 +569,7 @@ export function GaleriaDelMarketplace() {
                   type="button"
                   onClick={() => setAbiertoOrden((v) => !v)}
                   aria-expanded={abiertoOrden}
-                  className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-[13px] text-fg hover:bg-surface-muted"
+                  className="inline-flex h-[34px] items-center gap-1.5 rounded-[11px] px-3 text-[13.5px] text-fg transition-colors duration-fast hover:bg-surface-muted"
                 >
                   {ORDENES.find((o) => o.valor === orden)?.nombre}
                   <CaretDown
@@ -575,7 +578,7 @@ export function GaleriaDelMarketplace() {
                   />
                 </button>
                 {abiertoOrden && (
-                  <div className="absolute right-0 top-full z-40 mt-1 min-w-[180px] rounded-md border border-border bg-surface p-1 shadow-md">
+                  <div className="absolute right-0 top-full z-40 mt-1.5 min-w-[190px] rounded-[16px] border border-border-faint bg-surface p-1.5 shadow-[0_50px_90px_-40px_rgba(18,17,16,0.35),0_22px_40px_-22px_rgba(18,17,16,0.18)]">
                     {ORDENES.map((o) => (
                       <button
                         key={o.valor}
@@ -585,7 +588,7 @@ export function GaleriaDelMarketplace() {
                           setAbiertoOrden(false);
                         }}
                         className={cn(
-                          'block w-full rounded-sm px-3 py-2 text-left text-[13.5px]',
+                          'block w-full rounded-[10px] px-3 py-[9px] text-left text-[13.5px] transition-colors duration-fast',
                           orden === o.valor
                             ? 'bg-surface-muted font-medium text-fg'
                             : 'text-fg-muted hover:bg-surface-muted',
@@ -607,7 +610,7 @@ export function GaleriaDelMarketplace() {
             ) : cumplen.length > 0 ? (
               rejilla(cumplen)
             ) : (
-              <p className="rounded-lg border border-dashed border-border px-5 py-6 text-[14.5px] text-fg-muted">
+              <p className="rounded-[20px] border border-dashed border-border p-[22px] text-[14.5px] text-fg-muted">
                 Ninguno cumple todo. Quita una pastilla o mira los que están cerca.
               </p>
             )}
@@ -615,10 +618,10 @@ export function GaleriaDelMarketplace() {
 
           {casi.length > 0 && (
             <section aria-labelledby="casi">
-              <h2 id="casi" className="mb-1 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
+              <h2 id="casi" className="mb-4 font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-fg-subtle">
                 Casi
               </h2>
-              <p className="mb-4 text-[14px] text-fg-muted">
+              <p className="-mt-2 mb-4 text-[14px] text-fg-muted">
                 Les falta una cosa de lo que pides, o no dicen si la tienen. Cada uno lo dice.
               </p>
               {rejilla(casi)}
@@ -628,9 +631,9 @@ export function GaleriaDelMarketplace() {
 
         {/* El mapa, pequeño y fijo; se agranda al tocarlo. */}
         <aside className="hidden lg:block" aria-label="Mapa">
-          <div className="sticky top-[150px] space-y-4">
+          <div className="sticky top-[152px] space-y-3.5">
             <div
-              className="relative h-[300px] overflow-hidden rounded-lg border border-border shadow-sm"
+              className="relative h-[300px] overflow-hidden rounded-lg border border-border-faint bg-surface-muted"
               data-testid="mapa-flotante"
             >
               {!mapaGrande && mapa}
@@ -638,20 +641,20 @@ export function GaleriaDelMarketplace() {
                 type="button"
                 onClick={() => setMapaGrande(true)}
                 // Arriba: abajo lo tapaba el crédito del mapa al abrirse (QA, 10-10-2026).
-                className="absolute left-3 top-3 z-10 inline-flex h-8 items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] font-medium text-fg shadow-md active:scale-[0.97]"
+                className="absolute left-3 top-3 z-10 inline-flex h-[38px] items-center gap-[7px] rounded-[13px] border border-border bg-surface px-[15px] text-[14px] font-medium text-fg transition-colors duration-fast hover:border-fg-subtle active:scale-[0.97]"
               >
                 <ArrowsOut className="h-4 w-4" aria-hidden />
                 Agrandar
               </button>
             </div>
-            <div className="rounded-lg border border-border bg-surface p-4">
-              <p className="text-[14px] font-medium text-fg">¿Hasta cuánto puedes arrendar?</p>
+            <div className="rounded-[20px] border border-border-faint bg-surface p-4">
+              <p className="text-[14.5px] font-medium text-fg">¿Hasta cuánto puedes arrendar?</p>
               <p className="mt-1 text-[13px] text-fg-muted">
                 Con tu aprobación te mostramos sólo lo que va contigo y te postulas sin codeudor.
               </p>
               <Link
                 href="/aprobacion"
-                className="mt-3 inline-flex text-[13.5px] font-medium text-primary hover:underline"
+                className="mt-2.5 inline-flex text-[13.5px] font-medium text-primary underline-offset-4 hover:underline"
               >
                 Conoce tu tope
               </Link>
@@ -664,7 +667,7 @@ export function GaleriaDelMarketplace() {
       <button
         type="button"
         onClick={() => setMapaGrande(true)}
-        className="fixed bottom-5 left-1/2 z-30 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-fg px-5 py-3 text-[14px] font-medium text-bg shadow-lg active:scale-[0.97] lg:hidden"
+        className="fixed bottom-[calc(18px+env(safe-area-inset-bottom,0px))] left-1/2 z-[35] inline-flex h-[46px] -translate-x-1/2 items-center gap-2 rounded-[16px] bg-fg px-5 text-[14.5px] font-medium text-bg outline outline-[3px] outline-background active:scale-[0.97] lg:hidden"
       >
         <MapTrifold className="h-4 w-4" aria-hidden />
         Ver en el mapa
@@ -677,7 +680,7 @@ export function GaleriaDelMarketplace() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: motionDuration.base }}
-            className="fixed inset-0 z-50 bg-black/40 p-3 md:p-10"
+            className="fixed inset-0 z-50 bg-[rgba(10,12,20,0.46)] p-4 md:p-10"
             onClick={() => setMapaGrande(false)}
             data-testid="mapa-grande"
           >
@@ -686,7 +689,7 @@ export function GaleriaDelMarketplace() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
-              className="relative mx-auto h-full max-w-[1280px] overflow-hidden rounded-xl bg-surface shadow-lg"
+              className="relative mx-auto h-full max-w-[1280px] overflow-hidden rounded-[28px] bg-surface-muted"
               onClick={(e) => e.stopPropagation()}
             >
               {mapa}
@@ -694,7 +697,7 @@ export function GaleriaDelMarketplace() {
                 type="button"
                 onClick={() => setMapaGrande(false)}
                 aria-label="Cerrar el mapa"
-                className="absolute left-3 top-3 z-10 inline-flex h-10 items-center gap-1.5 rounded-full bg-surface px-4 text-[14px] font-medium text-fg shadow-md"
+                className="absolute left-3.5 top-3.5 z-10 inline-flex h-[38px] items-center gap-[7px] rounded-[13px] border border-border bg-surface px-[15px] text-[14px] font-medium text-fg transition-colors duration-fast hover:border-fg-subtle"
               >
                 <X className="h-4 w-4" aria-hidden />
                 Cerrar

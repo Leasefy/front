@@ -37,17 +37,11 @@ import {
   CreditCard,
   FileText,
   ClipboardText,
-  CaretRight,
   CheckCircle,
-  Clock,
-  Warning,
   Wrench,
   ChatCircle,
   Handshake,
-  Bell,
-  ArrowUpRight,
   XCircle,
-  Lifebuoy,
   type Icon,
 } from '@phosphor-icons/react';
 
@@ -57,9 +51,9 @@ import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { useI18n } from '@/lib/i18n';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import type { BadgeProps } from '@/components/ui/badge';
 import type { CaseTone, CaseType, TenantCase } from '@/lib/types/tenant-case';
 
 // ============================================================================
@@ -71,10 +65,11 @@ import type { CaseTone, CaseType, TenantCase } from '@/lib/types/tenant-case';
  * intentionally NO `destructive`/alarm mapping — pair icon + text, never color
  * alone (DESIGN.md §7).
  */
-const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>; icon: Icon }> = {
-  neutral: { variant: 'secondary', icon: CheckCircle },
-  info: { variant: 'default', icon: Clock },
-  attention: { variant: 'warning', icon: Warning },
+// Glow up 22-10: el estado con su punto y su palabra (StatusBadge). Tope en ámbar: nunca rojo.
+const TONO_DEL_CASO: Record<CaseTone, 'neutral' | 'info' | 'warning'> = {
+  neutral: 'neutral',
+  info: 'info',
+  attention: 'warning',
 };
 
 /** Case type → leading icon tile. Only `pago`/`aplicacion` are emitted today. */
@@ -111,13 +106,11 @@ function formatRelative(iso: string, locale: string): string {
 
 function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
   const TypeIcon = TYPE_ICON[c.type] ?? ClipboardText;
-  const badge = TONE_BADGE[c.tone];
-  const ToneIcon = badge.icon;
 
   return (
     <div>
       <Link href={c.detailLink} className="group block">
-        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5 flex items-center gap-4 hover:border-border transition-colors">
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5 flex items-center gap-4 hover:bg-surface-muted/40 transition-colors">
           <TypeIcon className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
 
           <div className="flex-1 min-w-0">
@@ -131,10 +124,7 @@ function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
                   {c.solicitud.radicado}
                 </span>
               )}
-              <Badge variant={badge.variant} className="inline-flex items-center gap-1">
-                <ToneIcon className="w-3 h-3" aria-hidden="true" />
-                {c.estadoLabel}
-              </Badge>
+              <StatusBadge tone={TONO_DEL_CASO[c.tone]}>{c.estadoLabel}</StatusBadge>
             </div>
             <p className="text-caption text-fg-muted mt-1">
               {locale === 'es' ? 'Responsable' : 'Owner'}: {c.responsable}
@@ -143,7 +133,6 @@ function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
             </p>
           </div>
 
-          <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-primary transition-colors flex-shrink-0" />
         </div>
       </Link>
     </div>
@@ -193,11 +182,18 @@ export default function CasosPage() {
     return (
       <div className="min-h-screen bg-bg">
         <div className="p-6 lg:p-8">
+          {/* Glow up 22-10: el encabezado se queda con el error (se sabe dónde se está) y «Reintentar» vuelve a
+              pedir los casos (antes recargaba la ruta). */}
+          <EncabezadoDePantalla
+            className="mb-8"
+            seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+            titulo={locale === 'es' ? 'Mis casos' : 'My cases'}
+          />
           <EmptyState
             icon={XCircle}
             title={locale === 'es' ? 'Error al cargar tus casos' : 'Error loading your cases'}
             description={error}
-            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', href: '/inquilino/casos' }}
+            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', onClick: () => void refetch() }}
           />
         </div>
       </div>
@@ -218,43 +214,39 @@ export default function CasosPage() {
               ? 'Tus pagos y postulaciones en curso, en un solo lugar.'
               : 'Your ongoing payments and applications, all in one place.'
           }
+          acciones={
+            <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">
+              <Link href="/inquilino/solicitudes">{locale === 'es' ? 'Ver mis solicitudes' : 'View my requests'}</Link>
+            </Button>
+          }
+          accionPrincipal={
+            <Button asChild size="sm" hideArrow className="max-lg:flex-1">
+              <Link href="/inquilino/solicitudes?nueva=1">{locale === 'es' ? 'Nueva solicitud' : 'New request'}</Link>
+            </Button>
+          }
         />
 
         <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={refetch} className="mb-6" />
 
-        {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). */}
-        <div
-          className="mb-8 rounded-lg border border-border bg-surface p-5 flex flex-col sm:flex-row sm:items-center gap-4"
-        >
-          <Bell className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
-          <div className="flex-1 min-w-0">
-            {/* QA-INQ-95 (PI-30): sin «Próximamente»: se dice lo que hay hoy. */}
-            <p className="text-sm font-medium text-fg">
-              {locale === 'es'
-                ? 'Te avisamos en el portal cuando cambia el estado de un caso'
-                : 'We let you know in the portal when a case status changes'}
-            </p>
-            <p className="text-caption text-fg-muted mt-0.5">
-              {locale === 'es'
-                ? 'Los avisos quedan en la campana de arriba y en Notificaciones.'
-                : 'Notices stay in the bell at the top and in Notifications.'}
-            </p>
-          </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <Link
-              href="/inquilino/notificaciones"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-80 transition-opacity"
-            >
-              {locale === 'es' ? 'Ver notificaciones' : 'View notifications'}
-              {unreadCount > 0 && (
-                <Badge variant="default" className="ml-0.5 h-auto px-2 py-0.5 font-mono tabular-nums">
-                  {/* El conteo llega por sondeo: cuando cambia, cuenta. */}
-                  <AnimatedNumber value={unreadCount} />
-                </Badge>
-              )}
-            </Link>
-          </div>
-        </div>
+        {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). Glow up 22-10:
+            una línea bajo el encabezado, no una tarjeta con su campana del mismo peso que los casos. */}
+        <p className="mb-6 text-sm text-fg-muted" data-testid="aviso-de-notificaciones">
+          {locale === 'es'
+            ? 'Te avisamos en el portal cuando cambia el estado de un caso: los avisos quedan en la campana de arriba y en '
+            : 'We let you know in the portal when a case status changes: notices stay in the bell at the top and in '}
+          <Link href="/inquilino/notificaciones" className="font-medium text-fg underline underline-offset-4 hover:text-primary">
+            {locale === 'es' ? 'Notificaciones' : 'Notifications'}
+          </Link>
+          {unreadCount > 0 && (
+            <>
+              {' · '}
+              {/* El conteo llega por sondeo: cuando cambia, cuenta. */}
+              <span className="font-mono tabular-nums text-fg"><AnimatedNumber value={unreadCount} /></span>{' '}
+              {locale === 'es' ? (unreadCount === 1 ? 'sin leer' : 'sin leer') : 'unread'}
+            </>
+          )}
+          .
+        </p>
 
         {/* Case list (CASO-01) — real rows, or an honest neutral "todo al día" empty */}
         <section className="mb-10">
@@ -275,60 +267,8 @@ export default function CasosPage() {
           )}
         </section>
 
-        {/* More in the portal — one REAL entry point (Solicitudes) + honest Próximamente (Acuerdos) */}
-        <section>
-          <h2 className="text-sm font-mono uppercase tracking-wide text-fg-subtle mb-4">
-            {locale === 'es' ? 'Más en tu portal' : 'More in your portal'}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Real entry point — PQRS + mantenimiento now flow through /inquilino/solicitudes */}
-            <Link
-              href="/inquilino/solicitudes"
-              className="group rounded-lg border border-border bg-surface p-6 space-y-4 block hover:border-primary/40 transition-colors"
-            >
-              <div className="flex items-start gap-3">
-                <Lifebuoy className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
-                <div>
-                  <h2 className="text-h3 text-fg group-hover:text-primary transition-colors">
-                    {locale === 'es' ? 'Solicitudes' : 'Requests'}
-                  </h2>
-                  <p className="text-sm text-fg-muted">
-                    {locale === 'es'
-                      ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS.'
-                      : 'Open and track your maintenance requests and PQRS.'}
-                  </p>
-                </div>
-              </div>
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-                {locale === 'es' ? 'Nueva solicitud' : 'New request'}
-              </span>
-            </Link>
-
-            {/* Real entry point — approved acuerdos now flow through /inquilino/acuerdos */}
-            <Link
-              href="/inquilino/acuerdos"
-              className="group rounded-lg border border-border bg-surface p-6 space-y-4 block hover:border-primary/40 transition-colors"
-            >
-              <div className="flex items-start gap-3">
-                <Handshake className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
-                <div>
-                  <h2 className="text-h3 text-fg group-hover:text-primary transition-colors">
-                    {locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
-                  </h2>
-                  <p className="text-sm text-fg-muted">
-                    {locale === 'es'
-                      ? 'Consulta y gestiona tus acuerdos de pago.'
-                      : 'Review and manage your payment agreements.'}
-                  </p>
-                </div>
-              </div>
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-                {locale === 'es' ? 'Ver acuerdos' : 'View agreements'}
-              </span>
-            </Link>
-          </div>
-        </section>
-
+        {/* Glow up 22-10: aquí iba «Más en tu portal» con dos tarjetas: Acuerdos (ya es una pestaña de «Mi arriendo»)
+            y Solicitudes (mantenimiento y PQRS), que pasa al encabezado: «Nueva solicitud» y «Ver mis solicitudes». */}
       </motion.div>
     </div>
   );

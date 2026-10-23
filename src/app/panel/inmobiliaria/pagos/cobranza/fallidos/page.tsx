@@ -22,8 +22,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   XCircle,
-  Robot,
-  ArrowSquareOut,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
@@ -38,8 +36,9 @@ import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { useLinksDeCobriQueNoSePagaron } from '@/lib/hooks/use-links-de-cobri-que-no-se-pagaron'
 import { useCobrosEnLaBandeja } from '@/lib/hooks/use-cobros-en-la-bandeja'
 import { LinksFallidosDeCobri } from '@/components/inmobiliaria/pagos/LinksFallidosDeCobri'
-import { CrossFade, Presence } from '@leasefy/cadence'
+import { CrossFade } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 function PagosFallidos() {
   const router = useRouter()
@@ -63,46 +62,33 @@ function PagosFallidos() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <EncabezadoDePantalla
-          seccion="Cobranza"
-          titulo="Pagos fallidos"
-          descripcion="Los cobros que no se completaron, agrupados por motivo, para que recuperes el recaudo con la acción correcta en cada caso."
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo="Pagos fallidos"
+        descripcion="Los cobros que no se completaron, agrupados por lo que conviene hacer con cada uno."
+      />
+
+      {/* LA RESPUESTA: cuántos fallaron y, en la barra, qué hacer con ellos.
+          Antes eran una cajita con el total en el encabezado y un cartel del
+          agente con un ícono en caja de color que decía lo mismo en una frase. */}
+      {!isLoading && !deCobri.cargando && !error && total + deCobri.total > 0 ? (
+        <CifraHeroe
+          data-testid="fallidos-total"
+          rotulo="Pagos fallidos"
+          cifra={(total + deCobri.total).toLocaleString('es-CO')}
+          contexto={
+            deCobri.total > 0 && total > 0
+              ? `${total} en la cola del agente · ${deCobri.total} de enlaces de pago`
+              : undefined
+          }
+          total={total}
+          tramos={[
+            { clave: 'reenviar', etiqueta: 'Reenviar el enlace', monto: reenviar, tono: 'aviso', cifra: reenviar.toLocaleString('es-CO') },
+            { clave: 'otro', etiqueta: 'Ofrecer otro medio de pago', monto: otroMetodo, tono: 'neutro', cifra: otroMetodo.toLocaleString('es-CO') },
+            { clave: 'esperar', etiqueta: 'Esperar y reintentar', monto: esperar, tono: 'neutro', cifra: esperar.toLocaleString('es-CO') },
+          ]}
         />
-
-        {/* KPI: total de fallidos */}
-        <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center">
-          <p className="text-2xl font-medium text-fg tabular-nums">
-            {isLoading || deCobri.cargando ? '—' : total + deCobri.total}
-          </p>
-          <p className="text-caption text-fg-muted">Pagos fallidos</p>
-        </div>
-      </header>
-
-      {/* Banner del agente — resumen accionable del diagnóstico */}
-      <Presence show={!isLoading && !error && total > 0} className="rounded-lg border border-border bg-primary-soft p-4">
-          <div className="flex items-start gap-3">
-            <span className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg bg-primary-soft text-primary">
-              <Robot className="h-5 w-5" weight="duotone" aria-hidden="true" />
-            </span>
-            <div className="space-y-1 min-w-0">
-              <p className="text-sm font-medium text-fg">
-                Detecté {total} {total === 1 ? 'pago fallido' : 'pagos fallidos'}.
-              </p>
-              <p className="text-sm text-fg-muted leading-relaxed">
-                {[
-                  reenviar > 0 ? `en ${reenviar} conviene reenviar el link` : null,
-                  otroMetodo > 0 ? `en ${otroMetodo} ofrecer otro método de pago` : null,
-                  esperar > 0 ? `en ${esperar} esperar y reintentar con la pasarela` : null,
-                ]
-                  .filter(Boolean)
-                  .join(', ')}
-                .
-              </p>
-            </div>
-          </div>
-      </Presence>
+      ) : null}
 
       {/* COBRI-13 (Nico 18-10): las acciones masivas de verdad, sobre los links de Cobri que se marcan. */}
       <LinksFallidosDeCobri lectura={deCobri} esperanEnLaBandeja={enLaBandeja.porCuota} />
@@ -144,13 +130,12 @@ function PagosFallidos() {
       </CrossFade>
 
       {/* Cross-link a la operación profunda — NUNCA duplicar esa tabla acá */}
-      <div className="text-sm">
+      <div className="text-body-sm">
         <Link
           href="/panel/inmobiliaria/pagos/cartera/cobros"
           className="inline-flex items-center gap-1.5 text-primary underline-offset-4 hover:underline font-medium"
         >
           Ver todos los cobros y el detalle de cada factura
-          <ArrowSquareOut className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
     </div>

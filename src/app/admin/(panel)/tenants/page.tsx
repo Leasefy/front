@@ -69,6 +69,16 @@ const FILTRO_DE_COBRANZA = [
  * El endpoint devuelve el arreglo entero (no pagina): el filtro y el recorte
  * van en el cliente, con los filtros en la URL para poder compartir el enlace.
  */
+/** Ronda 26 (revisora r25): el cero de una columna, callado («—» atenuado), para que se vea lo que sí tiene. */
+function Cero({ titulo = 'Ninguno' }: { titulo?: string }) {
+  return (
+    <span className="text-fg-subtle" title={titulo}>
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">{titulo}</span>
+    </span>
+  )
+}
+
 export default function TenantsPage() {
   const router = useRouter()
   const { get, setFilters } = useUrlFilters()
@@ -134,7 +144,7 @@ export default function TenantsPage() {
             </Pill>
           </div>
         ) : (
-          <Pill tone="muted">Sin plan</Pill>
+          <span className="text-caption text-fg-subtle">Sin plan</span>
         )
       },
     },
@@ -144,12 +154,15 @@ export default function TenantsPage() {
       orden: (r) => r.contratos_activos ?? 0,
       ordenPrimero: 'desc',
       texto: (r) => r.contratos_activos ?? 0,
-      cell: (r) => (
-        <div className="font-mono tabular-nums">
-          <span className="text-fg">{fmtNumero(r.contratos_activos ?? 0)}</span>
-          {r.contratos ? <div className="text-caption text-fg-subtle">de {fmtNumero(r.contratos)}</div> : null}
-        </div>
-      ),
+      cell: (r) =>
+        r.contratos_activos || r.contratos ? (
+          <div className="font-mono tabular-nums">
+            <span className="text-fg">{fmtNumero(r.contratos_activos ?? 0)}</span>
+            {r.contratos ? <div className="text-caption text-fg-subtle">de {fmtNumero(r.contratos)}</div> : null}
+          </div>
+        ) : (
+          <Cero />
+        ),
     },
     {
       header: 'Inmuebles',
@@ -157,7 +170,7 @@ export default function TenantsPage() {
       orden: (r) => r.inmuebles ?? 0,
       ordenPrimero: 'desc',
       texto: (r) => r.inmuebles ?? 0,
-      cell: (r) => <span className="font-mono tabular-nums">{fmtNumero(r.inmuebles ?? 0)}</span>,
+      cell: (r) => (r.inmuebles ? <span className="font-mono tabular-nums">{fmtNumero(r.inmuebles)}</span> : <Cero />),
     },
     {
       header: 'Equipo',
@@ -165,7 +178,7 @@ export default function TenantsPage() {
       orden: (r) => r.equipo ?? 0,
       ordenPrimero: 'desc',
       texto: (r) => r.equipo ?? 0,
-      cell: (r) => <span className="font-mono tabular-nums">{fmtNumero(r.equipo ?? 0)}</span>,
+      cell: (r) => (r.equipo ? <span className="font-mono tabular-nums">{fmtNumero(r.equipo)}</span> : <Cero />),
     },
     {
       header: 'Cobranza por voz',
@@ -186,7 +199,7 @@ export default function TenantsPage() {
         ) : r.en_cobranza_por_voz === null ? (
           <span className="text-caption text-fg-subtle">No se pudo leer</span>
         ) : (
-          <span className="text-caption text-fg-subtle">Sin conectar</span>
+          <Cero titulo="Sin conectar" />
         ),
     },
     {
@@ -230,20 +243,29 @@ export default function TenantsPage() {
                     ? 'ninguna en mora ni suspendida'
                     : undefined
               }
-              tramos={TRAMOS.map((t) => ({ clave: t.valor, etiqueta: t.nombre, monto: cifras.porEstado[t.valor] ?? 0, tono: t.tono }))}
+              tramos={TRAMOS.map((t) => ({
+                clave: t.valor,
+                etiqueta: t.nombre,
+                monto: cifras.porEstado[t.valor] ?? 0,
+                tono: t.tono,
+                cifra: fmtNumero(cifras.porEstado[t.valor] ?? 0),
+              }))}
               total={cifras.total}
               data-testid="inmobiliarias-cifra"
             />
           </div>
-          <FranjaDeCifras fila="md" columnas={3} aria-label="La operación de las inmobiliarias">
-            <Cifra etiqueta="Contratos vigentes" valor={cifras.contratos} detalle="sumados entre todas" />
-            <Cifra etiqueta="Inmuebles" valor={cifras.inmuebles} detalle="sumados entre todas" />
+          {/* Ronda 26 (revisora r25): tres ceros no informan; la franja sólo con operación, y «entre todas» una vez. */}
+          {cifras.contratos + cifras.inmuebles + cifras.conVoz > 0 ? (
+          <FranjaDeCifras fila="md" columnas={3} aria-label="La operación de las inmobiliarias, sumada entre todas">
+            <Cifra etiqueta="Contratos vigentes" valor={cifras.contratos} detalle="entre todas las inmobiliarias" />
+            <Cifra etiqueta="Inmuebles" valor={cifras.inmuebles} />
             <Cifra
               etiqueta="Con cobranza por voz"
               valor={cifras.conVoz}
               detalle={`de ${fmtNumero(cifras.total)} ${cifras.total === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
             />
           </FranjaDeCifras>
+          ) : null}
         </div>
       ) : null}
 
@@ -266,6 +288,7 @@ export default function TenantsPage() {
         filtrar={filtrar}
         filtrosEnLaUrl={['voz', 'migracion', 'origen']}
         ordenInicial={{ columna: 6, sentido: 'desc' }}
+        cifraDelCelular="Contratos"
         exportar="inmobiliarias"
         masEnElExcel={[
           { header: 'NIT', texto: (r) => r.nit },

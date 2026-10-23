@@ -41,27 +41,27 @@ export function LadoDelMarketplace({
 
   return (
     <aside
-      className="hidden border-r border-border bg-surface lg:block lg:min-h-[calc(100vh-76px)]"
+      className="hidden border-r border-border-faint bg-surface lg:block lg:min-h-[calc(100vh-76px)]"
       aria-label="Tus búsquedas"
       data-testid="lado-del-marketplace"
     >
       {/* Queda a la vista al bajar (QA del marketplace, 10-10-2026: al desplazar,
           la columna se iba con la página y quedaba en blanco). */}
       <div
-        className="px-4 py-5 lg:sticky lg:top-[76px] lg:max-h-[calc(100vh-76px)] lg:overflow-y-auto"
+        className="px-4 pb-7 pt-5 lg:sticky lg:top-[76px] lg:max-h-[calc(100vh-76px)] lg:overflow-y-auto"
         data-lenis-prevent
       >
         <Link
           href="/propiedades"
-          className="flex h-10 w-full items-center gap-2 rounded-full border border-border bg-surface px-4 text-[14px] font-medium text-fg transition-colors duration-fast hover:border-border-strong hover:bg-bg active:scale-[0.98]"
+          className="flex h-[38px] w-full items-center gap-[7px] rounded-[13px] border border-border bg-surface px-[15px] text-[14px] font-medium text-fg transition-colors duration-fast hover:border-fg-subtle active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" aria-hidden />
           Nueva búsqueda
         </Link>
         <LadoPublicar />
-        <p className="mt-6 px-1 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">Tus búsquedas</p>
+        <p className="mt-[26px] px-1 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">Tus búsquedas</p>
         {recientes.length === 0 ? (
-          <p className="mt-2 px-1 text-[13px] leading-relaxed text-fg-muted">
+          <p className="mt-2 px-1 text-[13px] leading-[1.55] text-fg-muted">
             Aquí van quedando lo que buscas, para volver con un clic. Se guardan sólo en este navegador.
           </p>
         ) : (
@@ -79,7 +79,7 @@ export function LadoDelMarketplace({
                   <Link
                     href={`/propiedades?${r.qs}`}
                     className={cn(
-                      'flex items-center gap-2 rounded-md px-3 py-2 text-[14px] transition-colors duration-fast',
+                      'flex items-center gap-[9px] rounded-[11px] px-2.5 py-2 text-[14px] transition-colors duration-fast',
                       r.qs === activa
                         ? 'bg-surface-muted text-fg'
                         : 'text-fg-muted hover:bg-surface-muted hover:text-fg',
@@ -95,11 +95,11 @@ export function LadoDelMarketplace({
           </ul>
         )}
 
-        <p className="mt-6 px-1 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
+        <p className="mt-[26px] px-1 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
           Inmobiliarias que sigues
         </p>
         {sigues === null ? (
-          <p className="mt-2 px-1 text-[13px] leading-relaxed text-fg-muted">
+          <p className="mt-2 px-1 text-[13px] leading-[1.55] text-fg-muted">
             Síguelas para ver aquí lo que publican.{' '}
             <button type="button" onClick={abrirCuenta} className="font-medium text-primary hover:underline">
               Crea tu cuenta
@@ -107,7 +107,7 @@ export function LadoDelMarketplace({
             (es gratis).
           </p>
         ) : sigues.length === 0 ? (
-          <p className="mt-2 px-1 text-[13px] leading-relaxed text-fg-muted">
+          <p className="mt-2 px-1 text-[13px] leading-[1.55] text-fg-muted">
             Todavía no sigues a ninguna. En su página, toca «Seguir».
           </p>
         ) : (
@@ -116,7 +116,7 @@ export function LadoDelMarketplace({
               <li key={i.id}>
                 <Link
                   href={paginaDe(i)}
-                  className="flex items-center gap-2.5 rounded-md px-3 py-2 transition-colors duration-fast hover:bg-surface-muted"
+                  className="flex items-center gap-2.5 rounded-[11px] px-2.5 py-2 transition-colors duration-fast hover:bg-surface-muted"
                 >
                   <LogoDeLaInmobiliaria i={i} tamano={26} />
                   <span className="min-w-0 flex-1 truncate text-[14px] text-fg">{i.nombre}</span>
@@ -134,12 +134,12 @@ export function LadoDelMarketplace({
           </ul>
         )}
 
-        <div className="mt-6 rounded-md bg-surface-muted p-3 text-[13px] text-fg-muted">
-          <p className="flex items-center gap-1.5 font-medium text-fg">
+        <div className="mt-[26px] rounded-[16px] bg-surface-muted p-3.5 text-[13px] text-fg-muted">
+          <p className="flex items-center gap-[7px] font-medium text-fg">
             <BellRinging className="h-4 w-4 text-primary" aria-hidden />
             Te aviso lo nuevo
           </p>
-          <p className="mt-1 leading-relaxed">
+          <p className="mt-1 leading-[1.5]">
             Cuando una de las que sigues publique algo, te aviso aquí en Leasefy y por correo.
           </p>
         </div>
@@ -161,7 +161,7 @@ function LadoPublicar() {
     <div className="mt-1" data-testid="lado-publicar">
       <Link
         href={donde.muchos}
-        className="flex h-9 w-full items-center gap-2 rounded-full px-4 text-[13.5px] text-fg-muted transition-colors duration-fast hover:bg-surface-muted hover:text-fg"
+        className="flex h-9 w-full items-center gap-2 rounded-[11px] px-2.5 text-[13.5px] text-fg-muted transition-colors duration-fast hover:bg-surface-muted hover:text-fg"
       >
         <FileArrowUp className="h-4 w-4" aria-hidden />
         Cargar muchos desde un archivo

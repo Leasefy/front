@@ -41,13 +41,14 @@ export default function CallsPage() {
   )
 
   const columns: Column<CallRow>[] = [
+    { header: 'Deudor', texto: (r) => r.debtor_name, cell: (r) => <span className="font-medium text-fg">{r.debtor_name ?? '—'}</span> },
+    { header: 'Inmobiliaria', texto: (r) => r.legal_name, cell: (r) => <span className="text-fg-muted">{r.legal_name ?? '—'}</span> },
     {
       header: 'Cuándo',
+      align: 'right',
       texto: (r) => fmtDateTime(r.initiated_at),
       cell: (r) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.initiated_at)}</span>,
     },
-    { header: 'Inmobiliaria', texto: (r) => r.legal_name, cell: (r) => <span className="text-fg-muted">{r.legal_name ?? '—'}</span> },
-    { header: 'Deudor', texto: (r) => r.debtor_name, cell: (r) => <span className="font-medium text-fg">{r.debtor_name ?? '—'}</span> },
     {
       header: 'Duración',
       align: 'right',
@@ -67,7 +68,7 @@ export default function CallsPage() {
       texto: (r) => Boolean(r.recording_url),
       cell: (r) =>
         r.recording_url ? (
-          <Waveform className="mx-auto h-4 w-4 text-primary" weight="fill" aria-label="Tiene grabación" />
+          <Waveform className="mx-auto h-4 w-4 text-fg-muted" weight="fill" aria-label="Tiene grabación" />
         ) : (
           <span className="text-fg-subtle" aria-label="Sin grabación">—</span>
         ),
@@ -76,7 +77,7 @@ export default function CallsPage() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <PageHeader title="Llamadas" description="Todas las llamadas de los agentes, de todas las inmobiliarias." />
+      <PageHeader title="Llamadas" description="Todas las llamadas de los agentes, de todas las inmobiliarias. Toca una para escucharla." />
 
       <DataTable
         columns={columns}
@@ -87,7 +88,7 @@ export default function CallsPage() {
         onReintentar={calls.refetch}
         emptyTitle="No hay llamadas con estos filtros"
         emptyHint="Prueba con otra inmobiliaria u otro resultado."
-        emptyIcon={<PhoneCall weight="bold" />}
+        emptyIcon={<PhoneCall weight="duotone" />}
         aria-label="Llamadas"
         onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}
         barra={

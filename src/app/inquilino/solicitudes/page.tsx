@@ -22,20 +22,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CrossFade, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, StaggerItem, StatusBadge } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Lifebuoy,
   Wrench,
   ChatCircle,
-  CaretRight,
-  CheckCircle,
-  Clock,
-  Warning,
   XCircle,
   Plus,
 } from '@phosphor-icons/react';
-import type { Icon } from '@phosphor-icons/react';
 
 import { useTenantPqrs } from '@/lib/hooks/use-tenant-pqrs';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -44,8 +39,6 @@ import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { NuevaSolicitudModal } from '@/components/tenant/NuevaSolicitudModal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { Badge } from '@/components/ui/badge';
-import type { BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { resolveExpectedResponse } from '@/lib/date/business-days';
@@ -57,11 +50,15 @@ import type { SolicitudPqrs } from '@/lib/api/pqrs.types';
 // Neutral tone → badge (capped at `warning`; no alarm level at all)
 // ============================================================================
 
-const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>; icon: Icon }> = {
-  neutral: { variant: 'secondary', icon: CheckCircle },
-  info: { variant: 'default', icon: Clock },
-  attention: { variant: 'warning', icon: Warning },
+// GLOW UP (22-10): el estado con su punto y su palabra (StatusBadge), sin ícono en la pastilla.
+const TONO_DEL_ESTADO: Record<CaseTone, 'neutral' | 'info' | 'warning'> = {
+  neutral: 'neutral',
+  info: 'info',
+  attention: 'warning',
 };
+
+/** Respondida, resuelta o cerrada: ya no espera nada (va después de las abiertas). */
+const yaRespondida = (s: SolicitudPqrs) => s.estado === 'resuelta' || s.estado === 'cerrada' || Boolean(s.respuestaDetalle);
 
 /**
  * Per-row expected-response line — NEVER blank. Authoritative `slaVenceAt` renders
@@ -108,7 +105,7 @@ function ExpectedResponseLine({ s, locale }: { s: SolicitudPqrs; locale: string 
         {locale === 'es'
           ? `Respuesta estimada hacia el ${dateStr}`
           : `Estimated response around ${dateStr}`}
-        <span className="rounded-full bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium text-fg-subtle">
+        <span className="rounded-full bg-surface-muted px-1.5 py-0.5 text-caption text-fg-subtle">
           {locale === 'es' ? 'estimado' : 'estimate'}
         </span>
       </span>
@@ -130,13 +127,12 @@ function ExpectedResponseLine({ s, locale }: { s: SolicitudPqrs; locale: string 
 
 function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
   const TypeIcon = s.tipo === 'reparacion' ? Wrench : ChatCircle;
-  const badge = TONE_BADGE[pqrsStatusToTone(s.estado)];
-  const ToneIcon = badge.icon;
+  const tono = TONO_DEL_ESTADO[pqrsStatusToTone(s.estado)];
 
   return (
     <StaggerItem>
       <Link href={`/inquilino/casos/${encodeURIComponent(s.id)}`} className="group block">
-        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5 flex items-center gap-4 hover:border-border transition-colors">
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5 flex items-center gap-4 hover:border-border-strong transition-colors">
           <TypeIcon className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
 
           <div className="flex-1 min-w-0">
@@ -150,17 +146,12 @@ function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
                   {s.radicado}
                 </span>
               )}
-              <Badge variant={badge.variant} className="inline-flex items-center gap-1">
-                <ToneIcon className="w-3 h-3" aria-hidden="true" />
-                {pqrsStatusToLabel(s.estado)}
-              </Badge>
+              <StatusBadge tone={tono}>{pqrsStatusToLabel(s.estado)}</StatusBadge>
             </div>
             <p className="text-caption text-fg-muted mt-1">
               <ExpectedResponseLine s={s} locale={locale} />
             </p>
           </div>
-
-          <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-primary transition-colors flex-shrink-0" />
         </div>
       </Link>
     </StaggerItem>
@@ -203,6 +194,46 @@ export default function SolicitudesPage() {
   // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
   const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);
 
+  const abiertas = items.filter((s) => !yaRespondida(s)).length;
+  // Lo que espera respuesta primero; dentro de cada grupo, el orden del back.
+  const ordenadas = [...items].sort((a, b) => Number(yaRespondida(a)) - Number(yaRespondida(b)));
+
+  const encabezado = (
+    <EncabezadoDePantalla
+      className="mb-6"
+      seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+      titulo={locale === 'es' ? 'Solicitudes' : 'Requests'}
+      descripcion={
+        abiertas === 1
+          ? locale === 'es'
+            ? 'Tienes 1 solicitud abierta: va primero, con la fecha en que te responden.'
+            : 'You have 1 open request: it comes first, with the date you will hear back.'
+          : abiertas > 1
+            ? locale === 'es'
+              ? `Tienes ${abiertas} solicitudes abiertas: van primero, con la fecha en que te responden.`
+              : `You have ${abiertas} open requests: they come first, with the date you will hear back.`
+            : locale === 'es'
+              ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS, en un solo lugar.'
+              : 'Open and track your maintenance requests and PQRS, all in one place.'
+      }
+      accionPrincipal={
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => setModalOpen(true)}
+          disabled={sinRadicar}
+          title={sinRadicar ? motivoSinRadicar : undefined}
+          hideArrow
+          className="inline-flex items-center gap-2 max-lg:flex-1"
+          data-testid="nueva-solicitud"
+        >
+          <Plus className="w-4 h-4" />
+          {locale === 'es' ? 'Nueva solicitud' : 'New request'}
+        </Button>
+      }
+    />
+  );
+
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
@@ -230,11 +261,12 @@ export default function SolicitudesPage() {
     return (
       <div className="min-h-screen bg-bg">
         <div className="p-6 lg:p-8">
+          {encabezado}
           <EmptyState
             icon={XCircle}
-            title={locale === 'es' ? 'Error al cargar tus solicitudes' : 'Error loading your requests'}
+            title={locale === 'es' ? 'No pudimos cargar tus solicitudes' : "We couldn't load your requests"}
             description={error}
-            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', href: '/inquilino/solicitudes' }}
+            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', onClick: () => void refetch() }}
           />
         </div>
       </div>
@@ -246,31 +278,7 @@ export default function SolicitudesPage() {
       <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* GLOW UP (21-10): el encabezado de todas las pantallas; «Nueva solicitud» es la única azul. */}
-        <EncabezadoDePantalla
-          className="mb-6"
-          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
-          titulo={locale === 'es' ? 'Solicitudes' : 'Requests'}
-          descripcion={
-            locale === 'es'
-              ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS, en un solo lugar.'
-              : 'Open and track your maintenance requests and PQRS, all in one place.'
-          }
-          accionPrincipal={
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setModalOpen(true)}
-              disabled={sinRadicar}
-              title={sinRadicar ? motivoSinRadicar : undefined}
-              hideArrow
-              className="inline-flex items-center gap-2 max-lg:flex-1"
-              data-testid="nueva-solicitud"
-            >
-              <Plus className="w-4 h-4" />
-              {locale === 'es' ? 'Nueva solicitud' : 'New request'}
-            </Button>
-          }
-        />
+        {encabezado}
         {sinRadicar && (
           <p className="-mt-3 mb-6 text-sm text-fg-muted lg:text-right" data-testid="nueva-solicitud-motivo">
             {motivoSinRadicar}
@@ -285,7 +293,7 @@ export default function SolicitudesPage() {
           {items.length > 0 ? (
             <div className="space-y-3">
               <AnimatePresence initial={false}>
-                {items.map((s) => (
+                {ordenadas.map((s) => (
                   <SolicitudRow key={s.id} s={s} locale={locale} />
                 ))}
               </AnimatePresence>

@@ -217,6 +217,14 @@ export default function PilotoDeLasInmobiliariasPage() {
               },
             ]}
             total={data.length}
+            // Ronda 28 (revisora r27, T6): con ninguna encendida, UNA frase (antes «0 de 5» con barra gris y
+            // leyenda 0 / 5).
+            esCero={conteo.activos === 0}
+            cuandoEsCero={
+              data.length === 1
+                ? 'La inmobiliaria todavía no tiene el piloto encendido.'
+                : `Ninguna de las ${data.length.toLocaleString('es-CO')} inmobiliarias tiene el piloto encendido todavía.`
+            }
           />
         </div>
       ) : null}

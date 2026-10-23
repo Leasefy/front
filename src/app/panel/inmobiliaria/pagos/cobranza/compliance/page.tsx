@@ -16,6 +16,9 @@
  * (rose for warning/error, emerald for ok).
  */
 
+import { formatRelativeTime } from '@/lib/format'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -55,9 +58,9 @@ function ComplianceOverviewContent() {
       0,
       Math.round((Date.now() - new Date(data.generated_at).getTime()) / 1000),
     )
-    if (sec < 60) return locale.startsWith('es') ? `hace ${sec}s` : `${sec}s ago`
-    const min = Math.round(sec / 60)
-    return locale.startsWith('es') ? `hace ${min}m` : `${min}m ago`
+    // C7 (r25): «hace 3 minutos», no «hace 30s».
+    void sec
+    return formatRelativeTime(data.generated_at, locale.startsWith('en') ? 'en' : 'es')
   }, [data?.generated_at, locale])
 
   // Phase 38-05a: page-level skeleton during first load. Movimiento: cada
@@ -173,14 +176,10 @@ function ComplianceOverviewContent() {
       </Presence>
 
       {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
-      <Presence
-        show={Boolean(error && !data)}
-        role="alert"
-        className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-body-sm text-danger flex items-center gap-2"
-      >
-          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>{locale.startsWith('es') ? 'No pudimos cargar el cumplimiento.' : 'We could not load compliance.'} {error}</span>
-      </Presence>
+      {/* C5 (r25): FalloDeCarga con «Intentar de nuevo», nunca el error crudo pegado a la frase. */}
+      {error && !data ? (
+        <FalloDeCarga error={falloDelTexto(error)} queEs="el cumplimiento" onReintentar={() => refetch()} />
+      ) : null}
 
       {data && (
         <>
@@ -255,10 +254,10 @@ function ComplianceOverviewContent() {
                         : 'text-warning',
                     ].join(' ')}
                   >
-                    {data.retention.compliance_pct}%
+                    {data.retention.compliance_pct} %
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    / {data.retention.target}%
+                    / {data.retention.target} %
                   </span>
                 </div>
                 <div

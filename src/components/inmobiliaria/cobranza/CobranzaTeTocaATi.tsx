@@ -37,6 +37,7 @@
  * el título nunca vuelva a quedar suelto sobre otra tarjeta.
  */
 
+import { formatRelativeTime } from '@/lib/format'
 import Link from 'next/link'
 import { CheckCircle, Clock, Siren, Warning } from '@phosphor-icons/react'
 import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -77,15 +78,9 @@ const TIPO_FICHA: Record<string, string> = {
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
 
+// C7 (r25): «hace 3 horas», no «hace 3h» (VOZ §4).
 function haceCuanto(iso: string, en = false): string {
-  const seg = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000))
-  const hace = (x: string) => (en ? `${x} ago` : `hace ${x}`)
-  if (seg < 60) return hace(`${seg}s`)
-  const min = Math.round(seg / 60)
-  if (min < 60) return hace(`${min}m`)
-  const hr = Math.round(min / 60)
-  if (hr < 24) return hace(`${hr}h`)
-  return hace(`${Math.round(hr / 24)}d`)
+  return formatRelativeTime(iso, en ? 'en' : 'es')
 }
 
 const COP = plataEnPantalla(localeDeLasCifras, {

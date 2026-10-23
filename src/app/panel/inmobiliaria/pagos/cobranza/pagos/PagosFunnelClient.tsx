@@ -19,6 +19,8 @@
  * explicado por qué una obligación importada no es un pago pendiente.
  */
 
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -465,19 +467,9 @@ export default function PagosFunnelClient() {
       </div>
 
       {/* Error banner */}
-      <Presence show={Boolean(error)} className="border-b border-border bg-danger-soft px-4 py-3 flex items-center justify-between gap-3">
-          <p className="text-body-sm text-danger">
-            {t('inmobiliaria.ai.cobranza.pagos.error')}: {error}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => void refetch()}
-            className="shrink-0"
-          >
-            {t('inmobiliaria.ai.cobranza.pagos.errorRetry')}
-          </Button>
+      {/* C5 (r25): FalloDeCarga, nunca el error crudo pegado a la frase. */}
+      <Presence show={Boolean(error)} className="border-b border-border">
+          <FalloDeCarga error={falloDelTexto(error)} queEs="los pagos" onReintentar={() => refetch()} enmarcado={false} />
       </Presence>
 
       {/* Table */}

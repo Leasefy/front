@@ -98,7 +98,7 @@ const RENDER_FIRST_PAINT_MARK = 'reporte:first-paint'
 const RENDER_MEASURE = 'reporte:render'
 
 function ReporteViewerContent() {
-  const { t, locale } = useI18n()
+  const { t, locale, formatDate } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? null
 
@@ -216,7 +216,7 @@ function ReporteViewerContent() {
           data?.report_date ? (
             <span className="text-caption font-mono tabular-nums text-fg-muted">
               {diaDelReporte(data.report_date, locale)}
-              {data.computed_at ? ` · ${new Date(data.computed_at).toLocaleString(locale)}` : ''}
+              {data.computed_at ? ` · ${formatDate(new Date(data.computed_at), { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}
             </span>
           ) : null
         }

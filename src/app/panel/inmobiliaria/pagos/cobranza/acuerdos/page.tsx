@@ -27,6 +27,7 @@
  * bg-card/surface-muted, border-border).
  */
 
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -950,8 +951,9 @@ function AcuerdosContent() {
       {/* Cargando → la tabla: entra con su fundido. */}
       <CrossFade swapKey={cargando && acuerdos.length === 0 && !error ? 'cargando' : 'tabla'}>
       {cargando && acuerdos.length === 0 && !error ? (
-        <div className="flex items-center justify-center py-16">
-          <Spinner size="md" />
+        // C6 (r25): esqueleto con la forma de la tabla, no una rueda.
+        <div className="overflow-hidden rounded-lg border border-border bg-card" aria-busy="true">
+          <EsqueletoTabla columnas={5} filas={5} />
         </div>
       ) : (
         <AcuerdosTabla

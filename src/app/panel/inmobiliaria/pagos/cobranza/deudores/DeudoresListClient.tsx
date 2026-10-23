@@ -18,6 +18,8 @@
  * Does NOT render raw cédula / phone / email anywhere.
  */
 
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { CifraHeroe, type TonoDelTramo } from '@/components/pantalla/CifraHeroe'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
@@ -485,24 +487,12 @@ export default function DeudoresListClient() {
         </div>
 
         {/* ── Error ─────────────────────────────────────────────────────── */}
-        <Presence
-            show={Boolean(error)}
-            role="alert"
-            className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-body-sm text-danger"
-          >
-            <span>
-              {t('inmobiliaria.ai.cobranza.deudores.error')}: {error}
-            </span>
-            <Button
-              variant="link"
-              size="sm"
-              hideArrow
-              onClick={() => void refetch()}
-              className="shrink-0 px-0 h-auto text-danger underline hover:no-underline"
-            >
-              {t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
-            </Button>
-        </Presence>
+        {/* C5 (r25): FalloDeCarga, nunca el error crudo pegado a la frase. */}
+        {error ? (
+          <div className="border-b border-border">
+            <FalloDeCarga error={falloDelTexto(error)} queEs="los casos" onReintentar={() => refetch()} enmarcado={false} />
+          </div>
+        ) : null}
 
         {/* ── Vacío filtrado — DENTRO de la tarjeta, no flotando ────────── */}
         {/* Filtrar a cero ⇄ volver a ver casos: el uno sale y el otro entra. */}

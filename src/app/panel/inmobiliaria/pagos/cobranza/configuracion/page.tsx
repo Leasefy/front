@@ -794,8 +794,8 @@ function CobranzaConfiguracionContent() {
             desde las 7) y el Art. 3 se lee como un solo canal por semana ISO
             (`compliance/schedule.ts` y `frequency.ts`). */}
         <ul className="text-sm text-foreground list-disc pl-5 space-y-1">
-          <li>Lunes a viernes: 08:00–19:00 (la ley permite desde las 07:00; el agente empieza a las 8)</li>
-          <li>Sábados: 08:00–15:00</li>
+          <li>Lunes a viernes: de 8 a. m. a 7 p. m. (la ley permite desde las 7 a. m.; el agente empieza a las 8)</li>
+          <li>Sábados: de 8 a. m. a 3 p. m.</li>
           <li>Sin contacto domingos ni festivos</li>
           <li>Máximo 1 contacto por día, sumando todos los canales</li>
           <li>Un solo canal por semana (de lunes a domingo)</li>

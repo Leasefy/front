@@ -15,20 +15,23 @@
  * (rose=alta, amber=media, emerald=baja — mismos de EscalationCard).
  */
 
+import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
+import { formatRelativeTime } from '@/lib/format'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   CheckCircle,
   Clock,
-  Warning,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Spinner } from '@/components/ui'
-import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Button } from '@/components/ui'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import {
@@ -112,16 +115,9 @@ function truncate(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s
 }
 
+// C7 (r25): «hace 3 horas», no «hace 3h» (VOZ §4).
 function relative(iso: string, locale: string): string {
-  const then = new Date(iso).getTime()
-  const deltaSec = Math.max(0, Math.round((Date.now() - then) / 1000))
-  if (deltaSec < 60) return locale.startsWith('es') ? `hace ${deltaSec}s` : `${deltaSec}s ago`
-  const deltaMin = Math.round(deltaSec / 60)
-  if (deltaMin < 60) return locale.startsWith('es') ? `hace ${deltaMin}m` : `${deltaMin}m ago`
-  const deltaHr = Math.round(deltaMin / 60)
-  if (deltaHr < 24) return locale.startsWith('es') ? `hace ${deltaHr}h` : `${deltaHr}h ago`
-  const deltaDay = Math.round(deltaHr / 24)
-  return locale.startsWith('es') ? `hace ${deltaDay}d` : `${deltaDay}d ago`
+  return formatRelativeTime(iso, locale.startsWith('en') ? 'en' : 'es')
 }
 
 /** Parse seguro de fechas DATE (YYYY-MM-DD) sin corrimiento de zona horaria. */
@@ -251,10 +247,9 @@ function PendientesContent() {
   if (isLoading && items.length === 0 && !error) {
     return (
       <CrossFade swapKey="cargando">
-      <div className="p-6 lg:p-8">
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="md" />
-        </div>
+      {/* C6 (r25): esqueleto con la forma de lo que viene, no una rueda. */}
+      <div className="p-6 lg:p-8" aria-busy="true">
+        <EsqueletoTarjetas cantidad={4} />
       </div>
       </CrossFade>
     )
@@ -292,14 +287,10 @@ function PendientesContent() {
       </header>
 
       {/* Error total — solo cuando ninguna fuente rindió datos */}
-      <Presence
-          show={Boolean(error && items.length === 0)}
-          role="alert"
-          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-body-sm text-danger flex items-center gap-2"
-        >
-          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>No pudimos cargar lo pendiente. {error}</span>
-      </Presence>
+      {/* C5 (r25): FalloDeCarga con «Intentar de nuevo», nunca el error crudo pegado a la frase. */}
+      {error && items.length === 0 ? (
+        <FalloDeCarga error={falloDelTexto(error)} queEs="lo pendiente" onReintentar={() => refetch()} />
+      ) : null}
 
       {/* LA RESPUESTA: cuántas cosas esperan a una persona, por prioridad. */}
       {items.length > 0 && (

@@ -11,9 +11,11 @@
  * §11 (loading skeleton), §16 (tabular-nums).
  */
 
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Siren, Warning } from '@phosphor-icons/react'
+import { Siren } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -31,7 +33,7 @@ import {
   TableBodyAnimado,
   TableRowAnimada,
 } from '@/components/ui'
-import { Card, CrossFade, Presence } from '@leasefy/cadence'
+import { Card, CrossFade } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   useTablePagination,
@@ -270,13 +272,12 @@ function SiniestrosContent() {
       </div>
 
       {/* Error */}
-      <Presence show={Boolean(error)}
-          role="alert"
-          className="border-b border-border bg-danger-soft px-4 py-3 text-body-sm text-danger flex items-center gap-2"
-        >
-          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>{isEs ? 'No pudimos cargar los siniestros.' : 'We could not load the claims.'} {error}</span>
-      </Presence>
+      {/* C5 (r25): FalloDeCarga con «Intentar de nuevo», nunca el error crudo pegado a la frase. */}
+      {error ? (
+        <div className="border-b border-border">
+          <FalloDeCarga error={falloDelTexto(error)} queEs="los siniestros" onReintentar={() => refetch()} enmarcado={false} />
+        </div>
+      ) : null}
 
       {/* Table */}
         <div className="overflow-x-auto max-md:overflow-visible">

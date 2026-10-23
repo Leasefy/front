@@ -256,7 +256,7 @@ describe('<CobranzaConfiguracionPage> — layout', () => {
     const section = byTestId('section-horario') as HTMLElement
     expect(section).toBeTruthy()
     expect(section.querySelectorAll('input, select, button').length).toBe(0)
-    expect(section.textContent).toMatch(/07:00/)
+    expect(section.textContent).toMatch(/7 a\. m\./) // C7 (r25): «7 a. m.», no «07:00»
     expect(section.textContent).toMatch(/2300/)
   })
 })

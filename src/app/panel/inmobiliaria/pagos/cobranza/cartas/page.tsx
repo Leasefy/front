@@ -11,10 +11,12 @@
  * §11 (loading skeleton), §16 (tabular-nums).
  */
 
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Envelope, Warning } from '@phosphor-icons/react'
+import { Envelope } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -346,13 +348,12 @@ function CartasContent() {
       </div>
 
       {/* Error */}
-      <Presence show={Boolean(error)}
-          role="alert"
-          className="border-b border-border bg-danger-soft px-4 py-3 text-body-sm text-danger flex items-center gap-2"
-        >
-          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>{isEs ? 'No pudimos cargar las cartas.' : 'We could not load the letters.'} {error}</span>
-      </Presence>
+      {/* C5 (r25): FalloDeCarga con «Intentar de nuevo», nunca el error crudo pegado a la frase. */}
+      {error ? (
+        <div className="border-b border-border">
+          <FalloDeCarga error={falloDelTexto(error)} queEs="las cartas" onReintentar={() => refetch()} enmarcado={false} />
+        </div>
+      ) : null}
 
       {/* Table */}
         <div className="overflow-x-auto max-md:overflow-visible">

@@ -21,6 +21,7 @@
  *     recomendación sobre la que decide una persona.
  */
 
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Scales, ShieldWarning } from '@phosphor-icons/react'
 
@@ -31,7 +32,6 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui'
 import { CampoDePlata } from '@/components/ui/campo-de-plata'
 import { Textarea } from '@/components/ui/textarea'
-import { Spinner } from '@/components/ui/spinner'
 import { CrossFade, Presence, Card } from '@leasefy/cadence'
 // El Dialog del ADAPTADOR local (z del panel y la ✕ del producto), no el de Cadence pelado.
 import {
@@ -487,9 +487,8 @@ function DisputasContent() {
       <CrossFade swapKey="cargando">
       <div className="p-6 lg:p-8 space-y-6">
         {header}
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="md" variant="default" />
-        </div>
+        {/* C6 (r25): esqueleto con la forma de la tabla, no una rueda. */}
+        <Card className="overflow-hidden" aria-busy="true"><EsqueletoTabla columnas={5} filas={5} /></Card>
       </div>
       </CrossFade>
     )

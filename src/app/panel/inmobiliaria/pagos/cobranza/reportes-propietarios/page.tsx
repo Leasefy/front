@@ -34,6 +34,7 @@
  * un solo primary CTA por vista, tokens semánticos.
  */
 
+import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -592,9 +593,9 @@ function ReportesPropietariosContent() {
       {/* Cargando → vacío → maestro-detalle: cada estado entra con su fundido. */}
       <CrossFade swapKey={isLoading && !hayReales ? 'cargando' : !seleccionado ? 'vacio' : 'reportes'}>
       {isLoading && !hayReales ? (
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-fg-muted">
-          <Spinner size="sm" variant="muted" className="shrink-0" />
-          Cargando reportes…
+        // C6 (r25): esqueleto con la forma del maestro-detalle, no una rueda con texto.
+        <div aria-busy="true" aria-label="Cargando reportes">
+          <EsqueletoTarjetas cantidad={3} />
         </div>
       ) : !seleccionado ? (
         <EmptyState

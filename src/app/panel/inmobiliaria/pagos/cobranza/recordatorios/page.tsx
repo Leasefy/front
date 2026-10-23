@@ -44,6 +44,7 @@
  * y no sale nada, en silencio.
  */
 
+import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -396,7 +397,10 @@ function PagosRecordatorios() {
   if (cargando) {
     return (
       <CrossFade swapKey="cargando">
-        <div className="p-6 text-sm text-fg-muted lg:p-8">Cargando las condiciones de cobro…</div>
+        {/* C6 (r25): esqueleto, no un texto suelto. */}
+        <div className="space-y-6 p-6 lg:p-8" aria-busy="true" aria-label="Cargando las condiciones de cobro">
+          <EsqueletoTarjetas cantidad={3} />
+        </div>
       </CrossFade>
     )
   }

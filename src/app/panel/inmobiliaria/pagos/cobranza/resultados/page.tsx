@@ -23,6 +23,7 @@
  * El detalle vive en /analitica y /reporte — esta vista solo cross-linkea.
  */
 
+import { EsqueletoIndicadores } from '@/components/estado/EsqueletoTabla'
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { ChartLineUp, Warning } from '@phosphor-icons/react'
@@ -35,7 +36,7 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Button, Spinner } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { Cifra, CrossFade, FranjaDeCifras, Presence } from '@leasefy/cadence'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
@@ -170,7 +171,7 @@ function ResultadosContent() {
         key: 'tasa-respuesta',
         grupo: 'trabajo',
         label: 'Tasa de respuesta',
-        value: tasaRespuesta != null ? `${formatNumber(tasaRespuesta)}%` : null,
+        value: tasaRespuesta != null ? `${formatNumber(tasaRespuesta)} %` : null,
         sublabel:
           tasaRespuesta != null
             ? 'Contactos que respondieron'
@@ -384,9 +385,8 @@ function ResultadosContent() {
       <CrossFade swapKey="cargando">
         <div className="p-6 lg:p-8 space-y-6">
           {header}
-          <div className="flex items-center justify-center py-12">
-            <Spinner size="md" />
-          </div>
+          {/* C6 (r25): esqueleto con la forma de las cifras, no una rueda. */}
+          <EsqueletoIndicadores cantidad={4} />
         </div>
       </CrossFade>
     )

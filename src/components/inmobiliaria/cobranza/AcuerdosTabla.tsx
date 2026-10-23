@@ -18,8 +18,10 @@
 import { useMemo } from 'react'
 import { CaretRight, Handshake } from '@phosphor-icons/react'
 import { Card, CrossFade, Presence } from '@leasefy/cadence'
-import { Badge, Button } from '@/components/ui'
+import { Badge } from '@/components/ui'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 
 import { useI18n } from '@/lib/i18n'
 import {
@@ -120,23 +122,9 @@ export function AcuerdosTabla({
         />
       </div>
 
-      <Presence
-          show={Boolean(error)}
-          role="alert"
-          className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-body-sm text-danger"
-        >
-          <span>No pudimos cargar los acuerdos. {error}</span>
-          {onReintentar && (
-            <Button
-              variant="link"
-              size="sm"
-              hideArrow
-              onClick={onReintentar}
-              className="shrink-0 px-0 h-auto text-body-sm text-danger underline hover:no-underline"
-            >
-              Reintentar
-            </Button>
-          )}
+      {/* C5 (r25): FalloDeCarga, nunca el error crudo pegado a la frase. */}
+      <Presence show={Boolean(error)} className="border-b border-border">
+        <FalloDeCarga error={falloDelTexto(error)} queEs="los acuerdos" onReintentar={onReintentar} enmarcado={false} />
       </Presence>
 
       {/* Filtrado a cero ⇄ con acuerdos: el uno sale y el otro entra. */}

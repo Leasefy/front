@@ -23,6 +23,7 @@
  * Refs DESIGN.md §2 (tokens), §11 (estados), §12 (badges), §16 (numéricos).
  */
 
+import { formatRelativeTime } from '@/lib/format'
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PhoneCall, Warning, ShieldWarning, Handshake } from '@phosphor-icons/react'
@@ -95,24 +96,12 @@ function formatDuration(seconds: number | null): string {
   return s === 0 ? `${m}m` : `${m}m ${s}s`
 }
 
+// C7 (r25): «hace 3 horas», no «Hace 3h» (VOZ §4). La regla vive en `formatRelativeTime`.
 function formatRelative(iso: string, locale: string): string {
-  try {
-    const diff = Date.now() - new Date(iso).getTime()
-    const minutes = Math.floor(diff / 60_000)
-    if (minutes < 2) return 'Hace un momento'
-    if (minutes < 60) return `Hace ${minutes}m`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `Hace ${hours}h`
-    const days = Math.floor(hours / 24)
-    if (days < 7) return `Hace ${days}d`
-    return new Date(iso).toLocaleDateString(locale, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  } catch {
-    return iso
-  }
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const texto = formatRelativeTime(iso, locale.startsWith('en') ? 'en' : 'es')
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
 
 /** «20 de agosto» — la fecha de una promesa no necesita el año si es cercana. */
@@ -474,7 +463,8 @@ function LlamadasContent() {
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>
-            No pudimos actualizar la lista ({error}). Estás viendo la última carga que sí funcionó.
+            {/* C5 (r25): sin el error crudo entre paréntesis. */}
+            No pudimos actualizar la lista. Estás viendo la última carga que sí funcionó.
           </span>
           <Button
             variant="link"

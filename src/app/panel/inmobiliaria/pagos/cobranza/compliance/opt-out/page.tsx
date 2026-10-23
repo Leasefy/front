@@ -49,6 +49,7 @@ import {
 } from '@/lib/hooks/cobranza/compliance-entries'
 import { channelLabel } from '@/lib/cobranza/call-vocab'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { antiguedadDeLaCola, diasEnPalabras } from '@/lib/cobranza/antiguedad-de-la-cola'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
@@ -172,6 +173,15 @@ function OptOutContent() {
   )
 
   const porAcusar = useMemo(() => items.filter((i) => i.acknowledgedAt === null).length, [items])
+  /*
+   * Revisora r27 (No contactar, K1 y K2): la cifra repetía «Por acusar N» de la pestaña. Dice cuánto lleva
+   * esperando la solicitud más vieja sin acuse, con la barra por antigüedad (un plazo legal no se inventa en el front:
+   * si el back lo manda algún día, va en el contexto).
+   */
+  const colaSinAcuse = useMemo(
+    () => antiguedadDeLaCola(items.filter((i) => i.acknowledgedAt === null).map((i) => i.requestedAt), { es: true, testid: 'no-contactar-cifra' }),
+    [items],
+  )
   const acusadas = items.length - porAcusar
   // Lo pendiente va primero: abre en «Por acusar» cuando hay alguna.
   const filtroVivo: Filtro = filtro ?? (porAcusar > 0 ? 'por_acusar' : 'todas')
@@ -227,15 +237,14 @@ function OptOutContent() {
               className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
               data-testid="no-contactar-cifra"
               tamano="mediana"
-              rotulo="Por acusar"
-              cifra={porAcusar.toLocaleString('es-CO')}
+              rotulo="La solicitud más vieja sin acuse espera"
+              cifra={colaSinAcuse.masVieja === null ? '—' : diasEnPalabras(colaSinAcuse.masVieja, true)}
               contexto={
-                porAcusar === 0
-                  ? 'Todas las solicitudes tienen su acuse.'
-                  : porAcusar === 1
-                    ? 'solicitud espera que la inmobiliaria deje constancia'
-                    : 'solicitudes esperan que la inmobiliaria deje constancia'
+                porAcusar === 1
+                  ? 'es la única que espera que la inmobiliaria deje constancia'
+                  : `${porAcusar.toLocaleString('es-CO')} esperan que la inmobiliaria deje constancia`
               }
+              tramos={porAcusar > 1 ? colaSinAcuse.tramos : undefined}
               esCero={porAcusar === 0}
               cuandoEsCero="Todas las solicitudes de no contactar tienen su acuse."
             />

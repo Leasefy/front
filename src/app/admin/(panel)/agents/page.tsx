@@ -8,6 +8,7 @@ import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
+import { legible } from '@/lib/admin/textos-del-admin'
 
 /** Minimal Vapi assistant shape returned by GET /agents (BACK.md §8.2). */
 interface Agent {
@@ -37,7 +38,7 @@ export default function AgentsPage() {
       cell: (r) => (
         <span className="flex items-center gap-2">
           <span className="font-medium text-fg">{r.name ?? 'Sin nombre'}</span>
-          {r.default && <Pill tone="info">Principal</Pill>}
+          {r.default && <Pill tone="neutral">Principal</Pill>}
         </span>
       ),
     },
@@ -46,16 +47,17 @@ export default function AgentsPage() {
       orden: (r) => r.model?.model,
       texto: (r) => `${r.model?.provider ?? ''} / ${r.model?.model ?? ''}`,
       cell: (r) => (
-        <span className="font-mono text-fg-muted">
-          {r.model?.provider ?? '—'} / {r.model?.model ?? '—'}
+        <span className="text-caption text-fg-muted">
+          {r.model?.model ?? 'Sin modelo'}
+          {r.model?.provider ? <span className="block">de {legible(r.model.provider)}</span> : null}
         </span>
       ),
     },
     {
       header: 'Voz',
       orden: (r) => r.voice?.provider,
-      texto: (r) => r.voice?.provider,
-      cell: (r) => <span className="text-fg-muted">{r.voice?.provider ?? '—'}</span>,
+      texto: (r) => (r.voice?.provider ? legible(r.voice.provider) : ''),
+      cell: (r) => <span className="text-fg-muted">{r.voice?.provider ? legible(r.voice.provider) : '—'}</span>,
     },
     {
       header: 'Silencio',
@@ -74,15 +76,7 @@ export default function AgentsPage() {
       ordenPrimero: 'desc',
       texto: (r) => fmtDateTime(r.updatedAt),
       cell: (r) => (
-        <span className="whitespace-nowrap font-mono tabular-nums text-fg-muted">{fmtDateTime(r.updatedAt)}</span>
-      ),
-    },
-    {
-      header: 'ID',
-      align: 'right',
-      texto: (r) => r.id,
-      cell: (r) => (
-        <span className="font-mono text-caption text-fg-subtle">{r.id.slice(0, 8)}</span>
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.updatedAt)}</span>
       ),
     },
   ]
@@ -91,7 +85,7 @@ export default function AgentsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Agentes de voz"
-        description="Las instrucciones de cada agente de voz (Vapi). Se editan aquí, sin entrar al tablero de Vapi."
+        description="Las instrucciones de cada agente de voz. Toca uno para editarlas aquí, sin entrar a Vapi."
       />
       <DataTable
         columns={columns}
@@ -100,8 +94,8 @@ export default function AgentsPage() {
         isLoading={agents.isLoading}
         error={agents.error}
         emptyTitle="No hay agentes de voz"
-        emptyHint="Si debería haber, revisa la llave de Vapi (VAPI_API_KEY) en el back."
-        emptyIcon={<Robot weight="bold" />}
+        emptyHint="Si debería haber, revisa la conexión con Vapi en el servidor."
+        emptyIcon={<Robot weight="duotone" />}
         onReintentar={agents.refetch}
         aria-label="Agentes de voz"
         onRowClick={(r) => router.push(`/admin/agents/${r.id}`)}
@@ -109,6 +103,10 @@ export default function AgentsPage() {
         buscar="Nombre, modelo o voz"
         ordenInicial={{ columna: 4, sentido: 'desc' }}
         exportar="agentes-de-voz"
+        masEnElExcel={[
+          { header: 'ID', texto: (r) => r.id },
+          { header: 'Proveedor del modelo', texto: (r) => r.model?.provider ?? '' },
+        ]}
       />
     </div>
   )

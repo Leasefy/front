@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FileText, MapPin, Clock, CheckCircle, XCircle, GridFour, List, CaretLeft, CaretRight, ListBullets, Warning } from '@phosphor-icons/react';
-import { SegmentedControl, IconButton, CrossFade, MotionIndicator, Cifra, FranjaDeCifras, MonoLabel, StatusBadge } from '@leasefy/cadence';
+import { IconButton, CrossFade, MotionIndicator, MonoLabel, StatusBadge } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 
 import { useTenantApplications } from '@/lib/hooks/useApplications';
@@ -17,7 +18,6 @@ import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import type { Contract } from '@/lib/types/contract';
@@ -299,64 +299,21 @@ export default function AplicacionesPage() {
           descripcion={t('applications.subtitle')}
         />
 
-        {/* Las tres cifras en la franja de Cadence (glow up de los portales, 22-10): sin cajas de ícono y
-            con «postulaciones», no «aplicaciones» (manual de voz). */}
-        {!sinPostulaciones && (
-          <FranjaDeCifras className="mb-8" aria-label={locale === 'es' ? 'Tus postulaciones' : 'Your applications'} data-testid="cifras-de-postulaciones">
-            <Cifra
-              etiqueta={locale === 'es' ? 'Postulaciones' : 'Applications'}
-              valor={activeApplications.length + completedApplications.length}
-              detalle={locale === 'es' ? 'Todas las que enviaste' : 'All you have sent'}
-            />
-            <Cifra
-              etiqueta={locale === 'es' ? 'En proceso' : 'In progress'}
-              valor={activeApplications.length}
-              tono={activeApplications.length > 0 ? 'voltaje' : undefined}
-              detalle={t('applications.active')}
-            />
-            <Cifra
-              etiqueta={locale === 'es' ? 'Cerradas' : 'Closed'}
-              valor={completedApplications.length}
-              detalle={locale === 'es' ? 'Aprobadas o no' : 'Approved or not'}
-            />
-          </FranjaDeCifras>
-        )}
+        {/* GLOW UP (22-10): aquí iban tres cifras (todas, en proceso, cerradas) que repetían los números de las
+            pestañas de abajo. Cada postulación dice su estado; las pestañas cuentan. */}
 
         {/* Controls: Tabs + View Toggle */}
         {!sinPostulaciones && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          {/* Tabs — Cadence SegmentedControl */}
-          <SegmentedControl
-            value={activeTab}
-            onChange={handleTabChange}
-            aria-label={locale === 'es' ? 'Filtrar aplicaciones' : 'Filter applications'}
-            options={[
-              {
-                value: 'active',
-                label: (
-                  <span className="inline-flex items-center">
-                    {locale === 'es' ? 'En Proceso' : 'In Progress'}
-                    {activeApplications.length > 0 && (
-                      <Badge variant="default" className="ml-2 h-auto bg-primary-soft px-2 py-0.5 font-mono tabular-nums text-primary">
-                        {activeApplications.length}
-                      </Badge>
-                    )}
-                  </span>
-                ),
-              },
-              {
-                value: 'completed',
-                label: (
-                  <span className="inline-flex items-center">
-                    {locale === 'es' ? 'Historial' : 'History'}
-                    {completedApplications.length > 0 && (
-                      <Badge variant="default" className="ml-2 h-auto bg-primary-soft px-2 py-0.5 font-mono tabular-nums text-primary">
-                        {completedApplications.length}
-                      </Badge>
-                    )}
-                  </span>
-                ),
-              },
+          {/* Las pestañas de estado de todas las pantallas (antes, un SegmentedControl con el conteo en una
+              pastilla voltaje: el azul es para la acción, no para un número). */}
+          <PestanasDeEstado
+            etiqueta={locale === 'es' ? 'Filtrar postulaciones' : 'Filter applications'}
+            valor={activeTab}
+            onCambio={handleTabChange}
+            pestanas={[
+              { valor: 'active', etiqueta: locale === 'es' ? 'En proceso' : 'In progress', cuantos: activeApplications.length, fija: true, testid: 'pestana-en-proceso' },
+              { valor: 'completed', etiqueta: locale === 'es' ? 'Historial' : 'History', cuantos: completedApplications.length, fija: true, testid: 'pestana-historial' },
             ]}
           />
 

@@ -298,7 +298,8 @@ export default function PricingConfigPage() {
 
       {rows && cuantas(null) > 0 ? (
         <Alert variant="warning" title={`${cuantas(null) === 1 ? 'Una inmobiliaria no tiene' : `${cuantas(null)} inmobiliarias no tienen`} modelo de cobro`}>
-          Están en la cobranza por voz pero sin tarifa: no se les puede calcular el cobro.
+          Están en la cobranza por voz pero sin tarifa: no se les puede calcular el cobro. Elige «Sin modelo» en la tabla y
+          abre cada una para ponerle el suyo.
         </Alert>
       ) : null}
 
@@ -321,14 +322,21 @@ export default function PricingConfigPage() {
           { valor: 'hybrid', nombre: NOMBRE_DEL_MODELO.hybrid, cumple: (r) => r.billing_model === 'hybrid' },
           { valor: 'sin', nombre: 'Sin modelo', cumple: (r) => !r.billing_model },
         ]}
-        onRowClick={(r) => (r.billing_model ? setEditando(r) : undefined)}
+        // Ronda 30: también la que no tiene modelo se abre, para ponerle uno (antes la fila no hacía nada).
+        onRowClick={(r) => setEditando(r)}
         filaMarcada={(r) => r.tenant_id === editando?.tenant_id}
         exportar="precios-cobranza-por-voz"
       />
 
       <Cajon abierto={editando !== null} onOpenChange={(abierto) => (abierto ? null : setEditando(null))}>
         <CajonCabecera
-          titulo={editando ? `Modelo de cobro de ${editando.legal_name}` : 'Modelo de cobro'}
+          titulo={
+            editando
+              ? editando.billing_model
+                ? `Modelo de cobro de ${editando.legal_name}`
+                : `Ponerle modelo de cobro a ${editando.legal_name}`
+              : 'Modelo de cobro'
+          }
           descripcion="Sólo Leasefy lo cambia; la inmobiliaria lo ve sin poder editarlo. Queda registrado quién lo cambió, cuándo y de qué a qué."
         />
         <CajonCuerpo>

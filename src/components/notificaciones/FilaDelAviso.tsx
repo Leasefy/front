@@ -49,7 +49,8 @@ export function FilaDelAviso({ aviso, compacta = false, onAbrir, onMarcarLeido, 
         <span
           aria-hidden="true"
           className={cn(
-            'relative mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[11px]',
+            // Revisora r24 (Notificaciones #2): a 390 sin la caja del ícono (el punto de «sin leer» basta), para que el texto respire.
+            'relative mt-0.5 hidden h-9 w-9 flex-shrink-0 items-center justify-center rounded-[11px] sm:flex',
             urgente ? 'bg-danger-soft text-danger' : 'bg-surface-muted text-fg-muted',
           )}
         >
@@ -65,7 +66,7 @@ export function FilaDelAviso({ aviso, compacta = false, onAbrir, onMarcarLeido, 
             {aviso.title}
           </span>
           {aviso.message && (
-            <span className={cn('mt-0.5 block text-[12px] leading-snug text-fg-muted', compacta && 'line-clamp-2')}>
+            <span className={cn('mt-0.5 block text-caption leading-snug text-fg-muted', 'line-clamp-2')}>
               {aviso.message}
             </span>
           )}

@@ -6,7 +6,7 @@
  * leídas, «Marcar todas como leídas», los repetidos agrupados y «Ver más».
  * Cualquier miembro activo entra: son SUS avisos.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, Check, Gear } from '@phosphor-icons/react';
 import { Chip, CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
@@ -21,17 +21,20 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useAvisosAgrupados } from '@/lib/hooks/use-avisos-agrupados';
 import type { GrupoDeAvisos } from '@/lib/api/avisos-agrupados.service';
 import { FILTROS_DE_CATEGORIA } from '@/lib/notificaciones/aviso';
-import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
-
-function plural(n: number, uno: string, varios: string) {
-  return `${n.toLocaleString(localeDeLasCifras())} ${n === 1 ? uno : varios}`;
-}
 
 export default function NotificacionesDeLaInmobiliariaPage() {
   const router = useRouter();
   const [soloSinLeer, setSoloSinLeer] = useState(false);
   const [categoria, setCategoria] = useState<string | undefined>(undefined);
   const bandeja = useAvisosAgrupados({ porPagina: 30, soloSinLeer, categoria });
+  // Revisora r24 (Notificaciones #1): con algo sin leer, la pantalla abre en «Sin leer» (lo que pide atención primero).
+  // Sólo la primera vez: lo que la persona elija después se respeta.
+  const yaElegida = useRef(false);
+  useEffect(() => {
+    if (yaElegida.current || bandeja.cargando) return;
+    yaElegida.current = true;
+    if (bandeja.unreadCount > 0) setSoloSinLeer(true);
+  }, [bandeja.cargando, bandeja.unreadCount]);
 
   const fallo = (accion: string) => (e: unknown) =>
     toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo actualizar la notificación.', accion }));
@@ -51,17 +54,8 @@ export default function NotificacionesDeLaInmobiliariaPage() {
           categorías al lado. */}
       <EncabezadoDePantalla
         titulo="Notificaciones"
-        descripcion={
-          <span data-testid="notificaciones-resumen">
-            {bandeja.cargando
-              ? 'Cargando…'
-              : bandeja.unreadCount > 0
-                ? `${plural(bandeja.unreadCount, 'sin leer', 'sin leer')} de ${plural(bandeja.total, 'notificación', 'notificaciones')}`
-                : bandeja.total > 0
-                  ? `Leíste todas (${plural(bandeja.total, 'notificación', 'notificaciones')})`
-                  : 'No tienes notificaciones'}
-          </span>
-        }
+        // Revisora r24 (Notificaciones #1): UNA línea de para qué es; los conteos, sólo en las pestañas.
+        descripcion={<span data-testid="notificaciones-resumen">Lo que pasa en tu inmobiliaria y lo que te pide algo.</span>}
         acciones={
           <>
             <Button
@@ -92,8 +86,8 @@ export default function NotificacionesDeLaInmobiliariaPage() {
             valor={soloSinLeer ? 'sin-leer' : 'todas'}
             onCambio={(v) => setSoloSinLeer(v === 'sin-leer')}
             pestanas={[
-              { valor: 'todas', etiqueta: 'Todas', cuantos: bandeja.cargando ? null : bandeja.total, fija: true, testid: 'notificaciones-todas' },
               { valor: 'sin-leer', etiqueta: 'Sin leer', cuantos: bandeja.cargando ? null : bandeja.unreadCount, fija: true, tono: 'aviso', testid: 'notificaciones-sin-leer' },
+              { valor: 'todas', etiqueta: 'Todas', cuantos: bandeja.cargando ? null : bandeja.total, fija: true, testid: 'notificaciones-todas' },
             ]}
           />
           <div className="flex items-center gap-2 overflow-x-auto" role="group" aria-label="Filtrar por categoría">

@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { MagnifyingGlass } from '@phosphor-icons/react';
+import { EnvelopeSimple, MagnifyingGlass } from '@phosphor-icons/react';
 import { Avatar, Stagger, StaggerItem } from '@leasefy/cadence';
 import { LeasefyLogotype } from '@/components/brand';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import { rutaDelFormulario, type InmobiliariaDelFormulario } from './inmobiliaria-del-formulario';
 
@@ -34,24 +35,53 @@ export function ElegirInmobiliaria({ inmobiliarias }: { inmobiliarias: Inmobilia
     return q ? ordenadas.filter((i) => plano(`${i.nombre} ${i.ciudad ?? ''}`).includes(q)) : ordenadas;
   }, [inmobiliarias, busqueda]);
 
+  // Sin lista (el back no respondió o no hay ninguna): no se pide «elegir» lo
+  // que no se ve; la salida es el correo de Leasefy (revisora r25, R4).
+  const sinLista = inmobiliarias === null || inmobiliarias.length === 0;
+  const escribirnos = (
+    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center" data-testid="arco-escribirnos">
+      <Button asChild size="sm" hideArrow>
+        <a href="mailto:hola@leasefy.co?subject=Solicitud%20sobre%20mis%20datos%20personales">
+          <EnvelopeSimple className="h-4 w-4" aria-hidden />
+          {t('inmobiliaria.ai.arco.public.elegir.escribirnos')}
+        </a>
+      </Button>
+      <Link href="/" className="text-body-sm text-fg-muted underline underline-offset-4 hover:text-fg sm:ml-2">
+        {t('inmobiliaria.ai.arco.public.elegir.irAlInicio')}
+      </Link>
+    </div>
+  );
+
   return (
     <div className="w-full max-w-xl rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-8" data-testid="arco-elegir">
       <div className="mb-6 space-y-3 text-center">
-        <LeasefyLogotype className="mx-auto h-5 w-auto text-fg" title="Leasefy" />
-        <h1 className="text-balance font-heading text-[26px] font-[420] leading-[1.12] tracking-[-0.025em] text-fg sm:text-[30px]">{t('inmobiliaria.ai.arco.public.title')}</h1>
-        <p className="mx-auto max-w-sm text-body-sm text-fg-muted">{t('inmobiliaria.ai.arco.public.elegir.texto')}</p>
+        {/* El logo lleva al inicio (antes no llevaba a ningún lado). */}
+        <Link href="/" aria-label="Leasefy, ir al inicio" className="mx-auto inline-block">
+          <LeasefyLogotype className="h-5 w-auto text-fg" title="Leasefy" />
+        </Link>
+        <h1 className="text-balance text-h2 text-fg">{t('inmobiliaria.ai.arco.public.title')}</h1>
+        <p className="mx-auto max-w-sm text-body-sm text-fg-muted">
+          {t(sinLista ? 'inmobiliaria.ai.arco.public.elegir.textoSinLista' : 'inmobiliaria.ai.arco.public.elegir.texto')}
+        </p>
       </div>
 
-      <h2 className="mb-3 text-body font-medium text-fg">{t('inmobiliaria.ai.arco.public.elegir.titulo')}</h2>
+      {!sinLista && <h2 className="mb-3 text-body font-medium text-fg">{t('inmobiliaria.ai.arco.public.elegir.titulo')}</h2>}
 
       {inmobiliarias === null ? (
-        <p className="rounded-md bg-surface-muted px-4 py-3 text-body-sm text-fg-muted" role="alert">
-          {t('inmobiliaria.ai.arco.public.elegir.noCargo')}
-        </p>
+        <div>
+          <p className="text-body-sm text-fg" role="alert">
+            {t('inmobiliaria.ai.arco.public.elegir.noCargo')}
+          </p>
+          <p className="mt-1 text-body-sm text-fg-muted">{t('inmobiliaria.ai.arco.public.elegir.mientras')}</p>
+          {escribirnos}
+        </div>
       ) : inmobiliarias.length === 0 ? (
-        <p className="px-1 py-1 text-body-sm text-fg-muted" data-testid="arco-elegir-vacio">
-          {t('inmobiliaria.ai.arco.public.elegir.sinResultados')}
-        </p>
+        <div>
+          <p className="text-body-sm text-fg-muted" data-testid="arco-elegir-vacio">
+            {t('inmobiliaria.ai.arco.public.elegir.sinLista')}
+          </p>
+          {escribirnos}
+        </div>
       ) : (
         <>
           <div className="relative mb-3">

@@ -1,20 +1,28 @@
 'use client';
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Appear } from '@leasefy/cadence';
-import { Bucle, ZonaDeBucles } from '@/components/landing/motion/bucles';
-import { LandingChrome } from "@/components/landing-v2/LandingChrome";
+import { Appear, Avatar } from '@leasefy/cadence';
+import { LandingChrome } from '@/components/landing-v2/LandingChrome';
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
-import { Button } from '@/components/ui/button';
-import { CTASection } from '@/components/home/CTASection';
 import { FAQSection } from '@/components/home/FAQSection';
-import { SectionLabel } from '@/components/ui/section-label';
-import { CheckCircle, Users, CreditCard, FileText, ShareNetwork, Wallet, Bell, TrendUp, Calendar, Buildings, PenNib, Lock, Lightning, Eye } from '@phosphor-icons/react';
-import { BentoCard } from '@/components/home/BentoCard';
-import { TestimonialCarousel } from '@/components/home/TestimonialCarousel';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
+import { HeroeDePara } from '@/components/landing-v2/para/HeroeDePara';
+import { FotoQueSeRevela } from '@/components/landing-v2/para/FotoQueSeRevela';
+import { TestimoniosDePara } from '@/components/landing-v2/para/TestimoniosDePara';
+import { CierreDePara } from '@/components/landing-v2/para/CierreDePara';
+import {
+  Acento,
+  ANCHO,
+  Ceja,
+  Entrada,
+  ESQUINA,
+  ListaNumerada,
+  Punto,
+  Rotulo,
+  Seccion,
+  Tarjeta,
+  TituloDeSeccion,
+} from '@/components/landing-v2/para/piezas';
+import { cn } from '@/lib/utils';
 
 // Testimonials data
 const testimonials = [
@@ -44,1248 +52,308 @@ const testimonials = [
   },
 ];
 
-/* ================================================================
-   VISUAL 1 — Evaluación de Inquilinos (HERO — 7col, DARK)
-   Premium gauge + candidate profile + score bars
-   ================================================================ */
-function EvaluationVisual() {
+const problemas = [
+  {
+    foto: '/hero-interior.jpg',
+    alt: 'Interior moderno',
+    rotulo: 'IMPAGO',
+    cifra: '$18M',
+    detalle: 'pérdida promedio por impago',
+    texto: 'Sin verificación real, el riesgo lo asume completo el propietario',
+  },
+  {
+    foto: '/hero-2.jpg',
+    alt: 'Espacio moderno',
+    rotulo: 'VACANCIA',
+    cifra: '47 días',
+    detalle: 'promedio para arrendar',
+    texto: 'Documentos, visitas, negociaciones... un proceso del siglo pasado',
+  },
+  {
+    foto: '/hero-3.jpg',
+    alt: 'Habitación moderna',
+    rotulo: 'DESALOJO',
+    cifra: '14 meses',
+    detalle: 'proceso legal promedio',
+    texto: 'Sin contrato sólido, recuperar tu propiedad es una pesadilla',
+  },
+];
+
+const soluciones = [
+  {
+    titulo: 'Evaluación de Inquilinos',
+    texto: 'Verificamos capacidad de pago, historial crediticio y referencias. Tú eliges con datos, no con corazonadas.',
+    chips: ['Score de riesgo IA', 'Verificación de identidad', 'Historial crediticio'],
+  },
+  {
+    titulo: 'Cobro Automático',
+    texto: 'Recibe el pago puntual cada mes. Sin perseguir a nadie, sin excusas.',
+    chips: ['PSE y tarjeta', 'Recordatorios', 'Reporte mensual'],
+  },
+  {
+    titulo: 'Contratos Digitales',
+    texto: 'Firma electrónica con validez legal. Todo conforme a la Ley 820 de Colombia.',
+    chips: ['Firma electrónica', 'Plantillas legales', 'Descarga PDF'],
+  },
+  {
+    titulo: 'Publicación Multi-Portal',
+    texto: 'Un clic y tu propiedad aparece en FincaRaíz, Metrocuadrado y más. Candidatos pre-filtrados, sin comisión.',
+    chips: ['4 portales', 'Fotos optimizadas', 'Sin comisión'],
+  },
+];
+
+/** Las etiquetas de cada solución, con su punto (DM Mono). */
+function Chips({ items, enNoche = false }: { items: string[]; enNoche?: boolean }) {
   return (
-    <ZonaDeBucles className="relative w-full h-full flex items-center overflow-hidden px-8 py-4">
-      {/* Animated glow effects */}
-      <Bucle.div
-        className="absolute top-[20%] left-[18%] w-[180px] h-[180px] bg-[#2C7A53]/[0.07] rounded-full blur-[80px] pointer-events-none"
-        animate={{
-          scale: [1, 1.3, 1],
-          opacity: [0.07, 0.12, 0.07],
-        }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <Bucle.div
-        className="absolute bottom-[10%] right-[20%] w-[120px] h-[120px] bg-[#1A40FF]/[0.05] rounded-full blur-[60px] pointer-events-none"
-        animate={{
-          scale: [1, 1.4, 1],
-          opacity: [0.05, 0.1, 0.05],
-        }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-      />
-
-      <div className="flex items-center gap-10 w-full">
-        {/* Left: Gauge + score with enhanced animation */}
-        <motion.div
-          initial={{ scale: 0.3, opacity: 0, rotate: -10 }}
-          animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={{ duration: 1, type: "spring", stiffness: 80, damping: 12 }}
-          className="relative flex-shrink-0"
-        >
-          <div className="w-[160px] h-[94px] overflow-hidden">
-            <svg viewBox="0 0 160 94" className="w-full h-full">
-              <path d="M 16 86 A 64 64 0 0 1 144 86" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" strokeLinecap="round" />
-              <motion.path
-                d="M 16 86 A 64 64 0 0 1 144 86"
-                fill="none" stroke="url(#gaugeProp)" strokeWidth="10" strokeLinecap="round"
-                initial={{ pathLength: 0 }} animate={{ pathLength: 0.87 }}
-                transition={{ delay: 0.5, duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
-              />
-              <motion.path
-                d="M 16 86 A 64 64 0 0 1 144 86"
-                fill="none" stroke="url(#gaugeProp)" strokeWidth="14" strokeLinecap="round"
-                opacity="0.25" style={{ filter: "blur(8px)" }}
-                initial={{ pathLength: 0 }} animate={{ pathLength: 0.87 }}
-                transition={{ delay: 0.5, duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
-              />
-              <defs>
-                <linearGradient id="gaugeProp" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#1A40FF" />
-                  <stop offset="100%" stopColor="#8A9CFF" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <motion.div
-            initial={{ opacity: 0, y: 15, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 1.2, duration: 0.6, type: "spring" }}
-            className="text-center mt-1"
-          >
-            <Bucle.span
-              className="text-[44px] font-bold text-white leading-none tracking-tight inline-block"
-              animate={{
-                textShadow: ["0 0 20px rgba(52,211,153,0)", "0 0 30px rgba(52,211,153,0.4)", "0 0 20px rgba(52,211,153,0)"]
-              }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-            >
-              87
-            </Bucle.span>
-            <span className="text-[12px] text-white/30 font-medium">/100</span>
-          </motion.div>
-        </motion.div>
-
-        {/* Right: Profile + bars */}
-        <div className="flex-1 min-w-0">
-          <motion.div
-            initial={{ opacity: 0, x: 25 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6, duration: 0.6, type: "spring" }}
-            className="flex items-center gap-3 mb-4"
-          >
-            <Bucle.div
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center flex-shrink-0"
-              whileHover={{ scale: 1.1, borderColor: "rgba(255,255,255,0.3)" }}
-              animate={{
-                boxShadow: ["0 0 0 0 rgba(255,255,255,0)", "0 0 15px 2px rgba(255,255,255,0.1)", "0 0 0 0 rgba(255,255,255,0)"]
-              }}
-              transition={{ boxShadow: { duration: 3, repeat: Infinity } }}
-            >
-              <span className="text-[14px] font-semibold text-white/60">CR</span>
-            </Bucle.div>
-            <div>
-              <div className="flex items-center gap-2">
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8 }}
-                  className="text-[13px] font-semibold text-white"
-                >
-                  Nicolás Ruiz
-                </motion.span>
-                <motion.span
-                  initial={{ scale: 0, rotate: -20 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 1.4, type: "spring", stiffness: 400, damping: 12 }}
-                  className="flex items-center gap-0.5 bg-[#2C7A53]/15 text-[#2C7A53] text-[8px] font-bold px-2 py-0.5 rounded-full border border-[#2C7A53]/30"
-                >
-                  <Bucle.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <CheckCircle className="w-2.5 h-2.5" />
-                  </Bucle.div>
-                  Bajo riesgo
-                </motion.span>
-              </div>
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.9 }}
-                className="text-[9px] text-white/30 block mt-0.5"
-              >
-                Empleado · 3 años antigüedad
-              </motion.span>
-            </div>
-          </motion.div>
-
-          <div className="space-y-2.5">
-            {[
-              { label: "Capacidad de pago", score: 92, colorClass: "bg-[#2C7A53]", glowClass: "bg-[#2C7A53]/30" },
-              { label: "Historial crediticio", score: 85, colorClass: "bg-[#1A40FF]", glowClass: "bg-[#1A40FF]/30" },
-              { label: "Referencias", score: 88, colorClass: "bg-[#6B6B6B]", glowClass: "bg-[#6B6B6B]/30" },
-            ].map((c, i) => (
-              <motion.div
-                key={c.label}
-                initial={{ x: 30, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{
-                  delay: 0.8 + i * 0.15,
-                  duration: 0.5,
-                  type: "spring",
-                  stiffness: 100
-                }}
-                whileHover={{ x: 4 }}
-                className="flex items-center gap-3 cursor-pointer"
-              >
-                <span className="text-[9px] text-white/40 font-medium w-[100px] flex-shrink-0">{c.label}</span>
-                <div className="flex-1 h-[6px] bg-white/[0.04] rounded-full overflow-hidden relative">
-                  <motion.div style={{ width: `${c.score}%` }}
-                    className={`h-full rounded-full ${c.colorClass} origin-left`}
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: 1 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  />
-                  <motion.div style={{ width: `${c.score}%` }}
-                    className={`absolute top-0 h-full rounded-full blur-[4px] ${c.glowClass} origin-left`}
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: 1 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  />
-                </div>
-                <motion.span
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 1.3 + i * 0.15, type: "spring" }}
-                  className="text-[12px] font-bold text-white w-7 text-right tabular-nums"
-                >
-                  {c.score}
-                </motion.span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </ZonaDeBucles>
-  );
-}
-
-/* ================================================================
-   VISUAL 2 — Cobro Automático (5col)
-   Payment dashboard with recent transactions
-   ================================================================ */
-function PaymentVisual() {
-  return (
-    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-4 pt-3">
-      {/* Balance card with enhanced animation */}
-      <motion.div
-        initial={{ y: -20, opacity: 0, scale: 0.95 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
-        whileHover={{ y: -2, boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}
-        className="bg-foreground text-white px-4 py-3 mb-3 cursor-pointer"
-      >
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] text-white/50 font-medium">Balance disponible</span>
-          <Bucle.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-          >
-            <Wallet className="w-3.5 h-3.5 text-white/30" />
-          </Bucle.div>
-        </div>
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, type: "spring" }}
-          className="flex items-baseline gap-1"
-        >
-          <Bucle.span
-            className="text-[24px] font-bold tracking-tight"
-            animate={{
-              textShadow: ["0 0 0 transparent", "0 0 20px rgba(52,211,153,0.3)", "0 0 0 transparent"]
-            }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
-          >
-            $4.850.000
-          </Bucle.span>
-          <span className="text-[9px] text-white/40">COP</span>
-        </motion.div>
-        <motion.div style={{ width: "100%" }}
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ delay: 0.6, duration: 0.8 }}
-          className="h-[3px] bg-[#2C7A53]/30 mt-2 rounded-full overflow-hidden origin-left"
-        >
-          <motion.div style={{ width: "78%" }}
-            className="h-full bg-[#2C7A53] rounded-full relative origin-left"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.8, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {/* Shimmer effect */}
-            <Bucle.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-              animate={{ x: ["-100%", "200%"] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
-            />
-          </motion.div>
-        </motion.div>
-      </motion.div>
-
-      {/* Recent transactions with stagger */}
-      <div className="space-y-2">
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-[8px] text-muted-foreground font-mono font-normal uppercase tracking-wider block"
-        >
-          Últimos pagos
-        </motion.span>
-        {[
-          { name: "María López", apt: "Apto 301", amount: "+$2.400.000", status: "Recibido", time: "Hoy" },
-          { name: "Nicolás Ruiz", apt: "Apto 502", amount: "+$1.850.000", status: "Recibido", time: "Ayer" },
-          { name: "Ana García", apt: "Casa 12", amount: "+$3.200.000", status: "Pendiente", time: "En 2 días" },
-        ].map((tx, i) => (
-          <motion.div
-            key={tx.name}
-            initial={{ opacity: 0, x: -20, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{
-              delay: 0.5 + i * 0.12,
-              type: "spring",
-              stiffness: 150,
-              damping: 15
-            }}
-            whileHover={{ x: 4, backgroundColor: "rgba(0,0,0,0.03)" }}
-            className="flex items-center gap-3 p-2 bg-muted/50 cursor-pointer transition-colors"
-          >
-            <motion.div
-              className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-[10px] font-bold text-foreground"
-              whileHover={{ scale: 1.1 }}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.6 + i * 0.12, type: "spring", stiffness: 300 }}
-            >
-              {tx.name.charAt(0)}
-            </motion.div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-medium text-foreground truncate">{tx.name}</span>
-                <span className="text-[8px] text-muted-foreground">· {tx.apt}</span>
-              </div>
-              <span className="text-[8px] text-muted-foreground">{tx.time}</span>
-            </div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7 + i * 0.12 }}
-              className="text-right"
-            >
-              <Bucle.span
-                className={`text-[11px] font-bold ${tx.status === 'Recibido' ? 'text-[#2C7A53]' : 'text-[#B7791F]'}`}
-                animate={tx.status === 'Recibido' ? { scale: [1, 1.05, 1] } : {}}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-              >
-                {tx.amount}
-              </Bucle.span>
-              <span className={`block text-[7px] ${tx.status === 'Recibido' ? 'text-[#2C7A53]/60' : 'text-[#B7791F]/60'}`}>
-                {tx.status}
-              </span>
-            </motion.div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Auto-transfer badge with pulse */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1 }}
-        className="flex items-center justify-center gap-1.5 mt-3"
-      >
-        <Bucle.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.5, 1, 0.5]
-          }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <Bell className="w-2.5 h-2.5 text-muted-foreground" />
-        </Bucle.div>
-        <span className="text-[8px] text-muted-foreground">Transferencia automática cada viernes</span>
-      </motion.div>
-    </ZonaDeBucles>
-  );
-}
-
-/* ================================================================
-   VISUAL 3 — Contratos Digitales (5col, outline)
-   Contract with signature animation
-   ================================================================ */
-function ContractVisual() {
-  const [signed, setSigned] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setSigned(true), 2200);
-    return () => clearTimeout(t);
-  }, []);
-
-  return (
-    <ZonaDeBucles className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-5">
-      {/* Animated glow effects */}
-      <Bucle.div
-        className="absolute top-[30%] left-[20%] w-[100px] h-[100px] bg-neutral-500/[0.06] rounded-full blur-[50px] pointer-events-none"
-        animate={{
-          scale: [1, 1.3, 1],
-          opacity: [0.06, 0.1, 0.06],
-        }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <Bucle.div
-        className="absolute bottom-[20%] right-[15%] w-[80px] h-[80px] bg-[#2C7A53]/[0.05] rounded-full blur-[40px] pointer-events-none"
-        animate={{
-          scale: [1, 1.4, 1],
-          opacity: [0.05, 0.09, 0.05],
-        }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-      />
-
-      {/* Background pages with subtle animation */}
-      <motion.div
-        className="absolute top-[24px] left-1/2 -translate-x-1/2 w-[78%] h-[175px] bg-black/[0.01] border border-border translate-y-2 scale-[0.95]"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 8 }}
-        transition={{ delay: 0.1 }}
-      />
-      <motion.div
-        className="absolute top-[24px] left-1/2 -translate-x-1/2 w-[82%] h-[175px] bg-black/[0.005] border border-border translate-y-1 scale-[0.975]"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 4 }}
-        transition={{ delay: 0.15 }}
-      />
-
-      <motion.div
-        initial={{ y: 12, opacity: 0, scale: 0.98 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], type: "spring", stiffness: 100 }}
-        whileHover={{ y: -2, boxShadow: "0 8px 25px rgba(0,0,0,0.08)" }}
-        className="relative w-full overflow-hidden z-10 bg-white/80 backdrop-blur-sm cursor-pointer"
-        style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-      >
-        <div className="px-4 py-2.5 flex items-center gap-2.5" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-          <Bucle.div
-            animate={{ rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-          >
-            <FileText className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-          </Bucle.div>
-          <div className="flex-1">
-            <div className="text-[10px] font-medium text-foreground">Contrato de Arriendo</div>
-            <div className="text-[7px] text-muted-foreground font-mono">REF-2026-00847</div>
-          </div>
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
-            className={`text-[7px] font-semibold px-2 py-0.5 ${signed ? "border border-[#2C7A53]/30 text-[#2C7A53]" : "border border-[#B7791F]/30 text-[#B7791F]"}`}
-          >
-            {signed ? "✓ Firmado" : "Pendiente"}
-          </motion.div>
-        </div>
-
-        <div className="px-4 py-1">
-          {[
-            { l: "Inquilino", v: "María López" },
-            { l: "Canon", v: "$2.800.000" },
-            { l: "Duración", v: "12 meses" },
-          ].map((c, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -15 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + i * 0.1, type: "spring", stiffness: 120 }}
-              whileHover={{ x: 3 }}
-              className="flex items-center justify-between py-1.5 cursor-pointer"
-              style={{ borderBottom: i < 2 ? "1px dashed rgba(0,0,0,0.05)" : "none" }}
-            >
-              <span className="text-[8px] text-muted-foreground">{c.l}</span>
-              <motion.span
-                className="text-[9px] font-medium text-foreground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-              >
-                {c.v}
-              </motion.span>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="px-4 py-2.5 relative" style={{ borderTop: "1px solid rgba(0,0,0,0.03)" }}>
-          <Bucle.div
-            className="h-9 flex items-center justify-center"
-            style={{ border: "1px dashed rgba(0,0,0,0.06)" }}
-            animate={!signed ? {
-              borderColor: ["rgba(0,0,0,0.06)", "rgba(245,158,11,0.2)", "rgba(0,0,0,0.06)"]
-            } : {}}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            {!signed ? (
-              <Bucle.div
-                animate={{ opacity: [0.3, 0.7, 0.3] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="flex items-center gap-1"
-              >
-                <Bucle.div
-                  animate={{ x: [0, 3, 0], y: [0, -2, 0] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                >
-                  <PenNib className="w-2.5 h-2.5 text-[#B7791F]" strokeWidth={1.5} />
-                </Bucle.div>
-                <span className="text-[7px] text-muted-foreground">Esperando firma...</span>
-              </Bucle.div>
-            ) : (
-              <motion.svg width="90" height="18" viewBox="0 0 110 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <motion.path
-                  d="M8 18 Q18 4 28 14 Q38 24 48 10 Q58 2 68 12 Q78 20 88 8 L100 6"
-                  fill="none" stroke="hsl(var(--neutral-900))" strokeWidth="1.5" strokeLinecap="round" opacity={0.4}
-                  initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                />
-              </motion.svg>
-            )}
-          </Bucle.div>
-
-          {signed && (
-            <motion.div
-              initial={{ scale: 0, rotate: -30, opacity: 0 }}
-              animate={{ scale: 1, rotate: -8, opacity: 1 }}
-              transition={{ delay: 0.3, type: "spring", stiffness: 250, damping: 12 }}
-              className="absolute -top-3 right-6"
-            >
-              <Bucle.div
-                className="w-14 h-14 rounded-full border-2 border-[#2C7A53]/30 flex items-center justify-center bg-[#E8F3EC]/50 backdrop-blur-sm"
-                animate={{
-                  boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 20px 5px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
-                }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-              >
-                <div className="w-10 h-10 rounded-full border border-dashed border-[#2C7A53]/30 flex flex-col items-center justify-center">
-                  <Bucle.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <CheckCircle className="w-3 h-3 text-[#2C7A53]" />
-                  </Bucle.div>
-                  <span className="text-[5px] text-[#2C7A53] font-mono font-normal uppercase tracking-wider mt-0.5">Legal</span>
-                </div>
-              </Bucle.div>
-            </motion.div>
+    <ul className="mt-4 flex flex-wrap gap-2">
+      {items.map((c) => (
+        <li
+          key={c}
+          className={cn(
+            'inline-flex h-8 items-center gap-2 rounded-[10px] px-3 font-mono text-caption uppercase tracking-[0.06em]',
+            enNoche ? 'bg-white/[0.06] text-[#B9BCD0]' : 'bg-[#F3F1ED] text-[#5B5751]',
+            ESQUINA,
           )}
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, type: "spring" }}
-        className="flex gap-2 mt-2.5 z-10"
-      >
-        {[{ icon: Lock, label: "Ley 820" }, { icon: Lightning, label: "Firma digital" }].map(({ icon: Icon, label }, i) => (
-          <motion.span
-            key={label}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.7 + i * 0.1, type: "spring" }}
-            whileHover={{ scale: 1.05, y: -1 }}
-            className="flex items-center gap-1 text-[7px] font-medium text-muted-foreground px-2 py-1 cursor-pointer"
-            style={{ border: "1px solid rgba(0,0,0,0.05)" }}
-          >
-            <Icon className="w-2.5 h-2.5" strokeWidth={1.5} />
-            {label}
-          </motion.span>
-        ))}
-      </motion.div>
-    </ZonaDeBucles>
+        >
+          <Punto enNoche={enNoche} className="h-1.5 w-1.5" />
+          {c}
+        </li>
+      ))}
+    </ul>
   );
 }
 
-/* ================================================================
-   VISUAL 4 — Publicación Multi-Portal (7col)
-   Portal logos with sync animation
-   ================================================================ */
-function PublishVisual() {
-  const portals = [
-    { name: "FincaRaíz", color: "#E53935", delay: 0.3 },
-    { name: "Metrocuadrado", color: "#1565C0", delay: 0.45 },
-    { name: "Properati", color: "#7B1FA2", delay: 0.6 },
-    { name: "Ciencuadras", color: "#00897B", delay: 0.75 },
-  ];
-
+/** La pieza del producto sobre la foto del héroe: lo que el propietario ve. */
+function PiezaDelHeroe() {
   return (
-    <ZonaDeBucles className="relative w-full h-full flex flex-col justify-center overflow-hidden px-6">
-      {/* Property preview with hover */}
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
-        whileHover={{ y: -3, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
-        className="bg-white p-3 mb-4 cursor-pointer"
-        style={{ border: "1px solid rgba(0,0,0,0.06)" }}
-      >
-        <div className="flex gap-3">
-          <motion.div
-            className="w-16 h-12 bg-gradient-to-br from-[#B7791F] to-[#B7791F] flex-shrink-0 flex items-center justify-center overflow-hidden relative"
-            whileHover={{ scale: 1.05 }}
-          >
-            {/* Shimmer effect */}
-            <Bucle.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
-              animate={{ x: ["-100%", "200%"] }}
-              transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-            />
-            <Bucle.div
-              animate={{ y: [0, -2, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <Buildings className="w-5 h-5 text-[#B7791F]/40" />
-            </Bucle.div>
-          </motion.div>
-          <div className="flex-1 min-w-0">
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-[11px] font-semibold text-foreground"
-            >
-              Apartamento Chapinero
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-[9px] text-muted-foreground"
-            >
-              2 hab · 72m² · $2.800.000/mes
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="flex items-center gap-1 mt-1"
-            >
-              <Bucle.span
-                className="text-[7px] bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] px-1.5 py-0.5 font-medium"
-                animate={{
-                  boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 8px 2px rgba(16,185,129,0.3)", "0 0 0 0 rgba(16,185,129,0)"]
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                Publicado
-              </Bucle.span>
-              <span className="text-[7px] text-muted-foreground">· 12 candidatos</span>
-            </motion.div>
+    <div className="space-y-3">
+      <Tarjeta className="p-5 shadow-[0_50px_90px_-40px_rgba(18,17,16,.35),0_22px_40px_-22px_rgba(18,17,16,.18)]">
+        <div className="flex items-center gap-3">
+          <Avatar name="Juan Nicolás M." size="md" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-[450] text-[#121110]">Juan Nicolás M.</p>
+            <p className="text-caption text-[#706B64]">Propietario verificado</p>
           </div>
         </div>
-      </motion.div>
-
-      {/* Portals grid with enhanced animations */}
-      <div className="grid grid-cols-2 gap-2">
-        {portals.map((portal, i) => (
-          <motion.div
-            key={portal.name}
-            initial={{ opacity: 0, scale: 0.8, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{
-              delay: portal.delay,
-              duration: 0.4,
-              type: "spring",
-              stiffness: 200
-            }}
-            whileHover={{ scale: 1.03, backgroundColor: "rgba(0,0,0,0.03)" }}
-            className="flex items-center gap-2 p-2 bg-muted/50 cursor-pointer transition-colors"
-          >
-            <Bucle.div
-              className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[8px] font-bold"
-              style={{ backgroundColor: portal.color }}
-              whileHover={{ scale: 1.15, rotate: 5 }}
-              animate={{
-                boxShadow: ["0 0 0 0 transparent", `0 0 10px 2px ${portal.color}40`, "0 0 0 0 transparent"]
-              }}
-              transition={{
-                boxShadow: { duration: 2, repeat: Infinity, delay: i * 0.3 }
-              }}
-            >
-              {portal.name.charAt(0)}
-            </Bucle.div>
-            <div className="flex-1 min-w-0">
-              <span className="text-[9px] font-medium text-foreground block truncate">{portal.name}</span>
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: portal.delay + 0.2 }}
-                className="text-[7px] text-[#2C7A53] flex items-center gap-0.5"
-              >
-                <Bucle.span
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                >
-                  ✓
-                </Bucle.span>
-                Sincronizado
-              </motion.span>
+        <div className="mt-4 rounded-[16px] bg-[#F3F1ED] p-4">
+          <div className="flex items-center justify-between text-caption">
+            <span className="text-[#5B5751]">Ingresos este mes</span>
+            <span className="font-mono text-[#2B7549]">+12%</span>
+          </div>
+          <p className="mt-1 font-mono text-[28px] font-normal leading-none tracking-[-0.03em] text-[#121110]">$4.800.000</p>
+        </div>
+        <dl className="mt-3 grid grid-cols-2 gap-2">
+          {[
+            { v: '2', l: 'Propiedades' },
+            { v: '100%', l: 'Ocupación' },
+          ].map((s) => (
+            <div key={s.l} className="rounded-[12px] bg-[#FBFAF8] px-3 py-2.5 ring-1 ring-[#ECE8E1]">
+              <dt className="text-caption text-[#706B64]">{s.l}</dt>
+              <dd className="font-mono text-[18px] text-[#121110]">{s.v}</dd>
             </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Stats with pop effect */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1 }}
-        className="flex items-center justify-between mt-4 pt-3"
-        style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}
-      >
-        <motion.div
-          className="flex items-center gap-1.5"
-          whileHover={{ x: 3 }}
-        >
-          <Bucle.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          >
-            <ShareNetwork className="w-3 h-3 text-muted-foreground" />
-          </Bucle.div>
-          <span className="text-[8px] text-muted-foreground">Un clic, 4 portales</span>
-        </motion.div>
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1.1, type: "spring" }}
-          whileHover={{ scale: 1.05 }}
-          className="flex items-center gap-1 bg-primary/10 px-2 py-1 cursor-pointer"
-        >
-          <Bucle.div
-            animate={{ y: [0, -2, 0] }}
-            transition={{ duration: 1, repeat: Infinity }}
-          >
-            <TrendUp className="w-2.5 h-2.5 text-primary" />
-          </Bucle.div>
-          <Bucle.span
-            className="text-[8px] font-semibold text-primary"
-            animate={{ scale: [1, 1.02, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            +340% visibilidad
-          </Bucle.span>
-        </motion.div>
-      </motion.div>
-    </ZonaDeBucles>
+          ))}
+        </dl>
+      </Tarjeta>
+      <Tarjeta className="flex items-center gap-3 px-4 py-3">
+        <Punto />
+        <div className="min-w-0">
+          <p className="text-caption font-medium text-[#121110]">Pago recibido</p>
+          <p className="font-mono text-caption text-[#706B64]">$2.400.000 · Hace 2min</p>
+        </div>
+      </Tarjeta>
+    </div>
   );
 }
 
 export default function PropietariosPage() {
   return (
     <LandingChrome>
-      <main className="overflow-hidden">
-        {/* Hero Section */}
-        <section className="relative h-[600px] overflow-hidden bg-black">
-          <Image
-            src="/hero-interior.jpg"
-            alt="Modern apartment interior"
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-black/40 z-[1]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 z-[1]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/40 z-[1]" />
+      <main className="overflow-hidden bg-[#FBFAF8]">
+        <HeroeDePara
+          ceja="Plataforma #1 para propietarios en Colombia"
+          titulo={
+            <>
+              Arrienda tu propiedad <span className="block"><Acento>sin comisiones</Acento></span>
+            </>
+          }
+          entrada={
+            <>
+              Evaluación de inquilinos gratis, publicación en portales gratis, cobro automatizado.
+              <span className="text-[#121110]"> Tú mantienes el control.</span>
+            </>
+          }
+          principal={{ href: '/auth', texto: 'Comenzar gratis' }}
+          secundaria={{ href: '/pricing', texto: 'Ver precios' }}
+          cifras={[
+            { valor: '$0', rotulo: 'Costo de evaluación' },
+            { valor: '48h', rotulo: 'Tiempo promedio' },
+            { valor: '4.9', rotulo: 'Satisfacción' },
+          ]}
+          foto={{ src: '/images/people/woman-desk-coffee.jpg', alt: 'Propietaria feliz' }}
+          pieza={<PiezaDelHeroe />}
+          semilla={23}
+        />
 
-          <div className="relative z-10 h-full container-platform pt-[72px] flex items-center">
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
-              {/* Left Content */}
-              <div className="space-y-4">
-                <motion.span
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
-                >
-                  <Lightning className="w-3.5 h-3.5" />
-                  Plataforma #1 para propietarios en Colombia
-                </motion.span>
-
-                <motion.h1
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
-                >
-                  <span className="whitespace-nowrap">Arrienda tu propiedad</span>
-                  <span className="block mt-2 text-white/90">sin comisiones</span>
-                </motion.h1>
-
-                <motion.p
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="!mt-2 text-lg text-white/70 max-w-lg"
-                >
-                  Evaluación de inquilinos gratis, publicación en portales gratis, cobro automatizado.
-                  <span className="text-white font-medium"> Tú mantienes el control.</span>
-                </motion.p>
-
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col sm:flex-row gap-3 pt-2"
-                >
-                  <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6">
-                      Comenzar gratis
-                    </Button>
-                  </Link>
-                  <Link href="/pricing">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6"
-                    >
-                      Ver precios
-                    </Button>
-                  </Link>
-                </motion.div>
-
-                {/* Hero Stats */}
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-8 pt-6"
-                >
-                  {[
-                    { value: '$0', label: 'Costo de evaluación' },
-                    { value: '48h', label: 'Tiempo promedio' },
-                    { value: '4.9', label: 'Satisfacción' },
-                  ].map((stat) => (
-                    <div key={stat.label}>
-                      <p className="text-2xl md:text-3xl font-bold text-white font-mono tabular-nums">{stat.value}</p>
-                      <p className="text-[11px] text-white/50 mt-0.5">{stat.label}</p>
-                    </div>
-                  ))}
-                </motion.div>
+        {/* El problema: las tres cifras que cuestan, cada una con su foto */}
+        <Seccion fondo="papel" className="pt-[clamp(72px,8vw,110px)]">
+          <div className={ANCHO}>
+            <div className="grid gap-8 md:grid-cols-12 md:items-end">
+              <div className="md:col-span-7">
+                <Ceja>El problema</Ceja>
+                <TituloDeSeccion className="mt-5">
+                  Arrendar no debería ser tan <Acento>difícil</Acento>
+                </TituloDeSeccion>
               </div>
-
-              {/* Right - Hero Card */}
-              <motion.div
-                initial={false}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                className="hidden lg:flex lg:justify-end"
-              >
-                <div className="relative">
-                  <motion.div
-                    initial={false}
-                    animate={{ opacity: 1 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
-                  >
-                    {/* Header with profile */}
-                    <motion.div
-                      initial={false}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-3 mb-5 pb-4 border-b border-white/10"
-                    >
-                      <Image
-                        src="/images/people/woman-desk-coffee.jpg"
-                        alt="Propietaria feliz"
-                        width={44}
-                        height={44}
-                        className="rounded-xl object-cover ring-2 ring-white/20"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-[14px]">Juan Nicolás M.</p>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
-                          <p className="text-white/50 text-[11px]">Propietario verificado</p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Main income card */}
-                    <motion.div
-                      initial={false}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-white/10 backdrop-blur-sm rounded-md p-4 border border-white/10 mb-3"
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-white/50 text-[11px]">Ingresos este mes</span>
-                        <span className="inline-flex items-center gap-1 text-[#2C7A53] text-[11px] font-medium bg-[#2C7A53]/10 px-2 py-0.5 rounded-full">
-                          <TrendUp className="w-3 h-3" />
-                          +12%
-                        </span>
-                      </div>
-                      <p className="text-[28px] font-bold text-white tracking-tight">$4.800.000</p>
-                    </motion.div>
-
-                    {/* Stats grid */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <motion.div
-                        initial={false}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Buildings className="w-3.5 h-3.5 text-white/40" />
-                          <p className="text-[10px] text-white/50">Propiedades</p>
-                        </div>
-                        <p className="text-xl font-bold text-white">2</p>
-                      </motion.div>
-                      <motion.div
-                        initial={false}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Users className="w-3.5 h-3.5 text-white/40" />
-                          <p className="text-[10px] text-white/50">Ocupación</p>
-                        </div>
-                        <p className="text-xl font-bold text-white">100%</p>
-                      </motion.div>
-                    </div>
-                  </motion.div>
-
-                  {/* Floating notification */}
-                  <motion.div
-                    initial={false}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-border-faint"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-md bg-[#E8F3EC] flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-[#2C7A53]" />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-medium text-foreground">Pago recibido</p>
-                        <p className="text-[11px] text-muted-foreground">$2.400.000 · Hace 2min</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-
-        {/* Bento Section - Problems */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
-          <div className="container-platform">
-            <div className="mb-14 lg:mb-20">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-                <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
-                  Arrendar no debería ser tan <span className="italic">difícil</span>
-                </h2>
-                <div className="flex items-start pl-0 lg:pl-6 pt-2">
-                  <p className="text-[15px] text-muted-foreground leading-relaxed">
-                    Impagos, vacancia, desalojos interminables. El proceso tradicional está roto. Pero no tiene que ser así.
-                  </p>
-                </div>
-              </div>
+              <Entrada className="md:col-span-5">
+                Impagos, vacancia, desalojos interminables. El proceso tradicional está roto. Pero no tiene que ser así.
+              </Entrada>
             </div>
 
-            {/* Top Row - Image Cards with Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 mb-4 lg:mb-5">
-              {/* Card 1 - Impago */}
-              <Appear inView distance="md" duration="slow" delay={0.1}
-                className="relative h-[420px] rounded-xl overflow-hidden group"
-              >
-                <Image
-                  src="/hero-interior.jpg"
-                  alt="Interior moderno"
-                  fill
-                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
-                    Impago
-                  </span>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <p className="text-[64px] md:text-[72px] font-heading font-light text-white leading-none tracking-tight mb-2">
-                    $18M
+            <div className="mt-[clamp(40px,5vw,72px)] grid gap-x-5 gap-y-12 md:grid-cols-3">
+              {problemas.map((p, i) => (
+                <Appear key={p.rotulo} inView distance="md" duration="slow" delay={i * 0.08}>
+                  <FotoQueSeRevela src={p.foto} alt={p.alt} proporcion={4 / 3} rotulo={p.rotulo} />
+                  <p className="mt-6 font-mono text-[clamp(36px,3.6vw,52px)] font-normal leading-none tracking-[-0.04em] text-[#121110]">
+                    {p.cifra}
                   </p>
-                  <p className="text-[15px] font-medium text-white/90 mb-1">
-                    pérdida promedio por impago
+                  <p className="mt-2 flex items-center gap-2 text-caption text-[#706B64]">
+                    <Punto className="h-1.5 w-1.5" />
+                    {p.detalle}
                   </p>
-                  <p className="text-[13px] text-white/60 leading-relaxed">
-                    Sin verificación real, el riesgo lo asume completo el propietario
-                  </p>
-                </div>
-              </Appear>
-
-              {/* Card 2 - Vacancia */}
-              <Appear inView distance="md" duration="slow" delay={0.2}
-                className="relative h-[420px] rounded-xl overflow-hidden group"
-              >
-                <Image
-                  src="/hero-2.jpg"
-                  alt="Espacio moderno"
-                  fill
-                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
-                    Vacancia
-                  </span>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <p className="text-[64px] md:text-[72px] font-heading font-light text-white leading-none tracking-tight mb-2">
-                    47 días
-                  </p>
-                  <p className="text-[15px] font-medium text-white/90 mb-1">
-                    promedio para arrendar
-                  </p>
-                  <p className="text-[13px] text-white/60 leading-relaxed">
-                    Documentos, visitas, negociaciones... un proceso del siglo pasado
-                  </p>
-                </div>
-              </Appear>
-
-              {/* Card 3 - Desalojo */}
-              <Appear inView distance="md" duration="slow" delay={0.3}
-                className="relative h-[420px] rounded-xl overflow-hidden group"
-              >
-                <Image
-                  src="/hero-3.jpg"
-                  alt="Habitación moderna"
-                  fill
-                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
-                    Desalojo
-                  </span>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <p className="text-[64px] md:text-[72px] font-heading font-light text-white leading-none tracking-tight mb-2">
-                    14 meses
-                  </p>
-                  <p className="text-[15px] font-medium text-white/90 mb-1">
-                    proceso legal promedio
-                  </p>
-                  <p className="text-[13px] text-white/60 leading-relaxed">
-                    Sin contrato sólido, recuperar tu propiedad es una pesadilla
-                  </p>
-                </div>
-              </Appear>
+                  <p className="mt-4 text-[15px] leading-[1.5] text-[#5B5751]">{p.texto}</p>
+                </Appear>
+              ))}
             </div>
 
-            {/* Robottom Row - Illustration Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
-              {/* Card 4 - Blind Selection Widget */}
-              <Appear inView distance="md" duration="slow" delay={0.32}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
-              >
-                {/* Widget Illustration */}
-                <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[200px] border border-border-faint">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border-faint">
-                      <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center">
-                        <Users className="w-5 h-5 text-fg-subtle" />
-                      </div>
-                      <div>
-                        <p className="text-[12px] font-medium text-foreground">Candidato #1</p>
-                        <p className="text-[10px] text-muted-foreground">Sin verificar</p>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">Ingresos</span>
-                        <span className="text-[10px] text-fg-subtle">— — —</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">Historial</span>
-                        <span className="text-[10px] text-fg-subtle">— — —</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">Score</span>
-                        <span className="text-[10px] text-fg-subtle">— — —</span>
-                      </div>
-                    </div>
+            <div className="mt-[clamp(48px,6vw,80px)] grid gap-5 md:grid-cols-2">
+              <Appear inView distance="md" duration="slow">
+                <Tarjeta className="flex h-full flex-col gap-8 p-7 sm:flex-row sm:items-center sm:p-8">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[24px] font-[420] leading-tight tracking-[-0.02em]">«Elegir a ciegas»</h3>
+                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                      Sin datos reales, seleccionar inquilinos es apostar. Un mal candidato puede costarte millones.
+                    </p>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#B7791F] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    ?
-                  </div>
-                </div>
-
-                {/* Text Content */}
-                <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
-                    {'"'}Elegir a ciegas{'"'}
-                  </h3>
-                  <p className="text-[14px] text-muted-foreground leading-relaxed">
-                    Sin datos reales, seleccionar inquilinos es apostar. Un mal candidato puede costarte millones.
-                  </p>
-                </div>
-              </Appear>
-
-              {/* Card 5 - Payment Tracker Widget */}
-              <Appear inView distance="md" duration="slow" delay={0.32}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
-              >
-                {/* Widget Illustration */}
-                <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[220px] border border-border-faint">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[11px] font-medium text-foreground bg-[#F8F0E0] px-2 py-0.5 rounded">Cuenta de arriendo</span>
-                      <span className="text-[10px] text-muted-foreground">2024</span>
+                  <div className="w-full flex-none rounded-[18px] bg-[#FBFAF8] p-4 ring-1 ring-[#ECE8E1] sm:w-[220px]">
+                    <div className="flex items-center gap-3 border-b border-[#ECE8E1] pb-3">
+                      <Avatar name="Candidato" size="md" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-caption font-medium text-[#121110]">Candidato #1</p>
+                        <p className="text-caption text-[#706B64]">Sin verificar</p>
+                      </div>
+                      <Rotulo tono="aviso">?</Rotulo>
                     </div>
-                    <div className="space-y-2">
+                    <dl className="mt-3 space-y-2">
+                      {['Ingresos', 'Historial', 'Score'].map((l) => (
+                        <div key={l} className="flex items-center justify-between text-caption">
+                          <dt className="text-[#5B5751]">{l}</dt>
+                          <dd className="font-mono text-[#A8A29A]">— — —</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                </Tarjeta>
+              </Appear>
+              <Appear inView distance="md" duration="slow" delay={0.08}>
+                <Tarjeta className="flex h-full flex-col gap-8 p-7 sm:flex-row sm:items-center sm:p-8">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[24px] font-[420] leading-tight tracking-[-0.02em]">«4 meses sin cobrar arriendo»</h3>
+                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                      Sin verificación real, el propietario asume todo el riesgo de impago. Y recuperarlo puede tomar más de un año.
+                    </p>
+                  </div>
+                  <div className="w-full flex-none rounded-[18px] bg-[#FBFAF8] p-4 ring-1 ring-[#ECE8E1] sm:w-[220px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-caption font-medium text-[#121110]">Cuenta de arriendo</span>
+                      <span className="font-mono text-caption text-[#706B64]">2024</span>
+                    </div>
+                    <ul className="mt-3 space-y-2">
                       {[
                         { month: 'Ene', paid: true, amount: '$2.5M' },
                         { month: 'Feb', paid: true, amount: '$2.5M' },
                         { month: 'Mar', paid: false, amount: '$2.5M' },
                         { month: 'Abr', paid: false, amount: '$2.5M' },
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between text-[11px]">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${item.paid ? 'bg-[#E8F3EC]' : 'bg-[#F8EAE7]'}`}>
-                              <span className={`text-[8px] ${item.paid ? 'text-[#2C7A53]' : 'text-[#C4503B]'}`}>
-                                {item.paid ? '✓' : '✕'}
-                              </span>
-                            </div>
-                            <span className="text-muted-foreground">{item.month}</span>
-                          </div>
-                          <span className={item.paid ? 'text-foreground' : 'text-[#C4503B] font-medium'}>{item.amount}</span>
-                        </div>
+                      ].map((item) => (
+                        <li key={item.month} className="flex items-center justify-between text-caption">
+                          <span className="flex items-center gap-2 text-[#5B5751]">
+                            <i aria-hidden="true" className={cn('h-2 w-2 rounded-[2px]', item.paid ? 'bg-[#2B7549]' : 'bg-[#B8372A]')} />
+                            {item.month}
+                            <span className="sr-only">{item.paid ? 'pagado' : 'sin pagar'}</span>
+                          </span>
+                          <span className={cn('font-mono', item.paid ? 'text-[#121110]' : 'text-[#B8372A]')}>{item.amount}</span>
+                        </li>
                       ))}
+                    </ul>
+                    <div className="mt-3 flex items-center justify-between border-t border-[#ECE8E1] pt-3 text-caption">
+                      <span className="text-[#5B5751]">Deuda acumulada:</span>
+                      <span className="font-mono text-[#B8372A]">$5.0M</span>
                     </div>
-                    <div className="h-px bg-surface-muted my-3" />
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">Deuda acumulada:</span>
-                      <span className="text-[12px] text-[#C4503B] font-bold">$5.0M</span>
-                    </div>
+                    <p className="mt-1 text-right font-mono text-caption text-[#706B64]">4 meses</p>
                   </div>
-                  <div className="absolute -top-2 -right-2 bg-[#C4503B] text-white uppercase tracking-wide font-mono text-[9px] font-medium px-2 py-1 rounded-full flex items-center gap-1">
-                    <Bell className="w-3 h-3" />
-                    4 meses
-                  </div>
-                </div>
-
-                {/* Text Content */}
-                <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
-                    {'"'}4 meses sin cobrar arriendo{'"'}
-                  </h3>
-                  <p className="text-[14px] text-muted-foreground leading-relaxed">
-                    Sin verificación real, el propietario asume todo el riesgo de impago. Y recuperarlo puede tomar más de un año.
-                  </p>
-                </div>
+                </Tarjeta>
               </Appear>
             </div>
           </div>
-        </section>
+        </Seccion>
 
-        {/* Bento Section - Solutions */}
-        <section className="bg-muted py-24 lg:py-32 overflow-hidden">
-          <div className="container-platform">
-            <div className="mb-14 lg:mb-20">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-                <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
-                  Todo lo que necesitas para <span className="italic">arrendar con confianza</span>
-                </h2>
-                <div className="flex items-start pl-0 lg:pl-6 pt-2">
-                  <p className="text-[15px] text-muted-foreground leading-relaxed">
-                    Evaluación, cobro automático, contratos digitales y publicación en múltiples portales. Todo desde una sola plataforma.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
-              {/* Large Card - Evaluation */}
-              <Appear inView distance="md" duration="slow" delay={0.1}
-                className="md:col-span-7 bg-foreground rounded-xl p-8 min-h-[360px] flex flex-col justify-between relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full" />
-                <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-[28px] md:text-[32px] font-mono uppercase font-normal text-white leading-tight mb-3">
-                    Evaluación de Inquilinos
-                  </h3>
-                  <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
-                    Verificamos capacidad de pago, historial crediticio y referencias. Tú eliges con datos, no con corazonadas.
-                  </p>
-                </div>
-                <div className="relative z-10 flex flex-wrap gap-2 mt-6">
-                  {['Score de riesgo IA', 'Verificación de identidad', 'Historial crediticio'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </Appear>
-
-              {/* Small Card - Automatic Collection */}
-              <Appear inView distance="md" duration="slow" delay={0.2}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
-              >
-                <div>
-                  <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-6">
-                    <Wallet className="w-6 h-6 text-[#2C7A53]" />
-                  </div>
-                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
-                    Cobro Automático
-                  </h3>
-                  <p className="text-[14px] text-muted-foreground leading-relaxed">
-                    Recibe el pago puntual cada mes. Sin perseguir a nadie, sin excusas.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-6">
-                  {['PSE y tarjeta', 'Recordatorios', 'Reporte mensual'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </Appear>
-
-              {/* Small Card - Digital Contracts */}
-              <Appear inView distance="md" duration="slow" delay={0.3}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
-              >
-                <div>
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                    <FileText className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
-                    Contratos Digitales
-                  </h3>
-                  <p className="text-[14px] text-muted-foreground leading-relaxed">
-                    Firma electrónica con validez legal. Todo conforme a la Ley 820 de Colombia.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-6">
-                  {['Firma electrónica', 'Plantillas legales', 'Descarga PDF'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </Appear>
-
-              {/* Large Card - Multi Portal */}
-              <Appear inView distance="md" duration="slow" delay={0.32}
-                className="md:col-span-7 relative rounded-xl overflow-hidden min-h-[360px] group"
-              >
-                <Image
+        {/* La solución: el momento de medianoche, con la foto en estrías encendidas */}
+        <Seccion fondo="noche">
+          <CorrienteDeVoltaje
+            fondo="noche"
+            forma="horizonte"
+            semilla={29}
+            fuerza={0.5}
+            className="absolute inset-x-0 bottom-0 z-0 h-[40%] w-full opacity-80 [mask-image:linear-gradient(to_top,#000_0%,rgba(0,0,0,.6)_40%,transparent_95%)]"
+          />
+          <div className={cn(ANCHO, 'relative z-[1]')}>
+            <div className="grid gap-[clamp(40px,6vw,96px)] lg:grid-cols-[.9fr_1.1fr]">
+              <div className="lg:sticky lg:top-28 lg:self-start">
+                <Ceja enNoche>La plataforma</Ceja>
+                <TituloDeSeccion enNoche className="mt-5">
+                  Todo lo que necesitas para <Acento enNoche>arrendar con confianza</Acento>
+                </TituloDeSeccion>
+                <Entrada enNoche className="mt-6">
+                  Evaluación, cobro automático, contratos digitales y publicación en múltiples portales. Todo desde una sola plataforma.
+                </Entrada>
+                <FotoQueSeRevela
                   src="/hero-5.jpg"
                   alt="Propiedad moderna"
-                  fill
-                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
+                  tono="voltaje-sobre-medianoche"
+                  proporcion={16 / 10}
+                  rotulo="PUBLICACIÓN MULTI-PORTAL"
+                  className="mt-10 bg-[#0A0F2C]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
-                <div className="absolute inset-0 p-8 flex flex-col justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                    <ShareNetwork className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-[28px] md:text-[32px] font-mono uppercase font-normal text-white leading-tight mb-3">
-                      Publicación Multi-Portal
-                    </h3>
-                    <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
-                      Un clic y tu propiedad aparece en FincaRaíz, Metrocuadrado y más. Candidatos pre-filtrados, sin comisión.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {['4 portales', 'Fotos optimizadas', 'Sin comisión'].map((item, i) => (
-                        <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              </div>
+              <Appear inView distance="md" duration="slow">
+                <ListaNumerada
+                  enNoche
+                  columnas={1}
+                  items={soluciones.map((s) => ({
+                    titulo: <span className="text-[clamp(22px,2vw,28px)] font-[400] tracking-[-0.02em]">{s.titulo}</span>,
+                    texto: s.texto,
+                    extra: <Chips items={s.chips} enNoche />,
+                  }))}
+                  className="[&>li]:py-8"
+                />
               </Appear>
             </div>
           </div>
-        </section>
+        </Seccion>
 
-        <TestimonialCarousel
-          testimonials={testimonials}
-          title={
+        <TestimoniosDePara
+          testimonios={testimonials}
+          ceja="Testimonios"
+          titulo={
             <>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-[6px] h-[6px] rounded-full bg-primary" />
-                <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-muted-foreground">
-                  Testimonios
-                </span>
-              </div>
-              <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-10">
-                Propietarios que confían en nosotros
-              </h2>
+              Propietarios que <Acento>confían</Acento> en nosotros
             </>
           }
         />
 
-        <FAQSection />
-        <CTASection />
+        <div className="[&>section]:!bg-[#FBFAF8]">
+          <FAQSection />
+        </div>
+        <CierreDePara semilla={23} />
       </main>
       <LandingFooterV2 />
     </LandingChrome>

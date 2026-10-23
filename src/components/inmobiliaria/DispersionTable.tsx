@@ -235,12 +235,15 @@ export function DispersionTable({
     field,
     children,
     className,
+    derecha = false,
   }: {
     field: SortField;
     children: React.ReactNode;
     className?: string;
+    /** Ronda 30 (revisora r27, §2): las cifras van a la derecha, su encabezado también. */
+    derecha?: boolean;
   }) => (
-    <TableHead className={cn('p-4 text-left', className)}>
+    <TableHead className={cn('p-4', derecha ? 'text-right' : 'text-left', className)}>
       {/*
         allowlist: disparador de orden — Cadence no trae uno (DataTable no
         ordena). El botón HEREDA el tratamiento del encabezado del DS
@@ -250,7 +253,10 @@ export function DispersionTable({
       */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg"
+        className={cn(
+          'flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg',
+          derecha && 'ml-auto',
+        )}
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -269,10 +275,10 @@ export function DispersionTable({
           <TableRow className="border-b border-border">
             <SortableHeader field="propietarioName">{t('inmobiliaria.dispersiones.tableView.propietario')}</SortableHeader>
             {variosMeses && <SortableHeader field="month">{t('inmobiliaria.dispersiones.tableView.month')}</SortableHeader>}
-            <SortableHeader field="properties">{t('inmobiliaria.dispersiones.tableView.properties')}</SortableHeader>
-            <SortableHeader field="totalCollected">{t(COLUMNA_DEL_CANON[baseDelCanon])}</SortableHeader>
-            <SortableHeader field="totalCommission">{t('inmobiliaria.dispersiones.tableView.commission')}</SortableHeader>
-            <SortableHeader field="netToPropietario">{t('inmobiliaria.dispersiones.tableView.net')}</SortableHeader>
+            <SortableHeader field="properties" derecha>{t('inmobiliaria.dispersiones.tableView.properties')}</SortableHeader>
+            <SortableHeader field="totalCollected" derecha>{t(COLUMNA_DEL_CANON[baseDelCanon])}</SortableHeader>
+            <SortableHeader field="totalCommission" derecha>{t('inmobiliaria.dispersiones.tableView.commission')}</SortableHeader>
+            <SortableHeader field="netToPropietario" derecha>{t('inmobiliaria.dispersiones.tableView.net')}</SortableHeader>
             <SortableHeader field="status">{t('inmobiliaria.dispersiones.tableView.status')}</SortableHeader>
             <SortableHeader field="processedAt">{t('inmobiliaria.dispersiones.tableView.paymentDate')}</SortableHeader>
             <TableHead className="w-12 p-4" />
@@ -327,14 +333,13 @@ export function DispersionTable({
                 )}
 
                 {/* Properties Count */}
-                <TableCell className="p-4">
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-foreground text-sm font-medium tabular-nums">
-                    {dispersion.items.length}
-                  </span>
+                {/* Ronda 30: el número de inmuebles en mono a la derecha (antes en una pastilla gris). */}
+                <TableCell className="p-4 text-right">
+                  <span className="font-mono tabular-nums text-fg">{dispersion.items.length}</span>
                 </TableCell>
 
                 {/* Canon (causado o recaudado, según la base de la fila) */}
-                <TableCell className="p-4">
+                <TableCell className="p-4 text-right">
                   <span className="font-mono tabular-nums text-fg">
                     {formatCurrency(dispersion.totalCollected)}
                   </span>
@@ -351,14 +356,14 @@ export function DispersionTable({
 
                 {/* Commission */}
                 {/* Ronda 21: neutra, en mono y con su «−», como en los pasos 1 y 3 (era azul de enlace). */}
-                <TableCell className="p-4">
+                <TableCell className="p-4 text-right">
                   <span className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
                     {conSigno('−', formatCurrency(dispersion.totalCommission))}
                   </span>
                 </TableCell>
 
                 {/* Net Amount: lo que se gira (N-39: nunca un negativo). */}
-                <TableCell className="p-4">
+                <TableCell className="p-4 text-right">
                   <span className="font-mono font-medium tabular-nums text-fg">
                     {formatCurrency(loQueSeGira(dispersion).aGirarCop)}
                   </span>
@@ -466,17 +471,17 @@ export function DispersionTable({
                   {tr('Total')}
                 </span>
               </TableCell>
-              <TableCell className="p-4">
+              <TableCell className="p-4 text-right">
                 <span className="font-mono tabular-nums text-fg">
                   {formatCurrency(summary.totalCollected)}
                 </span>
               </TableCell>
-              <TableCell className="p-4">
+              <TableCell className="p-4 text-right">
                 <span className="whitespace-nowrap font-mono font-medium tabular-nums text-fg-muted">
                   {conSigno('−', formatCurrency(summary.totalCommissions))}
                 </span>
               </TableCell>
-              <TableCell className="p-4">
+              <TableCell className="p-4 text-right">
                 <span className="font-mono font-medium tabular-nums text-fg">
                   {formatCurrency(summary.totalToDisburse)}
                 </span>

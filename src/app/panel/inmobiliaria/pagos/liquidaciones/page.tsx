@@ -703,6 +703,8 @@ function TesoreriaContent() {
                               // El nombre no se parte en tres renglones (PG-15: dos sí,
                               // para que la tabla quepa a 1440 px).
                               c === 'colPropietario' && 'min-w-[11rem]',
+                              // Ronda 30 (revisora r27, §2): las cifras a la derecha.
+                              (c === 'colCanon' || c === 'colComision' || c === 'colAjustes' || c === 'colNeto') && 'text-right',
                             )}
                           >
                             {t(k(c))}
@@ -734,9 +736,9 @@ function TesoreriaContent() {
                           }}
                         >
                           <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
-                          <TableCell className="whitespace-nowrap font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
+                          <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
                           {/* Ronda 20: la comisión neutra en los tres pasos (era roja aquí). */}
-                          <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
+                          <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
                             {conSigno('−', formatCurrency(p.totalCommission))}
                             {/* El IVA de la comisión debajo, no en una columna
                                 más: la tabla ya no cabía a lo ancho (21-09). */}
@@ -756,7 +758,7 @@ function TesoreriaContent() {
                             )}
                           </TableCell>
                           {hayAjustes ? (
-                          <TableCell data-testid="tesoreria-ajustes-fila">
+                          <TableCell className="text-right" data-testid="tesoreria-ajustes-fila">
                             <AjustesDeLaFila
                               aFavor={p.totalConceptosAFavor}
                               aCargo={p.totalConceptosACargo}
@@ -774,7 +776,7 @@ function TesoreriaContent() {
                                contra no es «queda debiendo»: pasa al mes siguiente. */
                             <TableCell
                               className={cn(
-                                'whitespace-nowrap font-mono tabular-nums',
+                                'whitespace-nowrap text-right font-mono tabular-nums',
                                 p.conDeducciones.aGirarCop > 0 ? 'text-fg' : 'text-fg-muted',
                               )}
                               data-testid="tesoreria-neto-fila"
@@ -791,7 +793,7 @@ function TesoreriaContent() {
                           ) : (
                             <TableCell
                               className={cn(
-                                'whitespace-nowrap font-mono tabular-nums',
+                                'whitespace-nowrap text-right font-mono tabular-nums',
                                 p.netToPropietario < 0 ? 'text-danger' : 'text-fg',
                               )}
                               data-testid="tesoreria-neto-fila"

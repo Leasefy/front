@@ -503,7 +503,7 @@ export function GenerarDispersion({
       </Presence>
 
       {cargando ? (
-        <div className="rounded-lg border border-dashed border-border p-12 text-center">
+        <div className="rounded-lg border border-border bg-surface p-12 text-center">
           <p className="text-fg-muted">Calculando lo que se giraría…</p>
         </div>
       ) : error ? (

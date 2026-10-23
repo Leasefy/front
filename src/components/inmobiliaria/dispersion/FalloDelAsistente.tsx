@@ -77,9 +77,10 @@ export function MesSinGiros({
   /** La salida del vacío («Ver los giros de octubre»): un vacío sin acción deja a la persona sin camino. */
   accion?: { label: string; href: string };
 }) {
-  // El vacío de Cadence (círculo, título liviano, una acción secondary) dentro del recuadro punteado del asistente.
+  // El vacío de Cadence (círculo, título liviano, una acción secondary). Ronda 30 (revisora r27): en la
+  // tarjeta de siempre, con borde liso (era el único vacío punteado de la casa).
   return (
-    <div className="rounded-lg border border-dashed border-border" data-testid="asistente-mes-vacio">
+    <div className="rounded-lg border border-border bg-surface" data-testid="asistente-mes-vacio">
       <EmptyState icon={CurrencyCircleDollar} title={motivo.titulo} description={motivo.detalle} action={accion} />
     </div>
   );

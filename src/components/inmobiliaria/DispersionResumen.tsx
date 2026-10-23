@@ -3,17 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { AnimatedNumber, Presence } from '@leasefy/cadence';
-import {
-  CurrencyCircleDollar,
-  Clock,
-  Warning,
-  CheckCircle,
-  TrendUp,
-  Coin,
-  PaperPlaneTilt,
-  Bank,
-  ArrowsClockwise,
-} from '@phosphor-icons/react';
+import { CurrencyCircleDollar, Warning, TrendUp, Coin, PaperPlaneTilt, Bank, ArrowsClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -228,25 +218,10 @@ export function DispersionResumen({
             </div>
         </Presence>
 
-        {/* Status Counts - Inline */}
+        {/* Ronda 30 (revisora r27): «Por aprobar N · Girados N» ya lo cuentan las pestañas de la tabla;
+            aquí sólo queda lo que NO salió, si hubo. */}
+        {hasFailed ? (
         <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-1.5 text-sm">
-            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-muted-foreground">{t('inmobiliaria.dispersiones.resumen.pendingLabel')}</span>
-            <span className={cn(
-              'font-mono tabular-nums',
-              hasPending ? 'text-foreground' : 'text-muted-foreground'
-            )}>
-              {summary.dispersionsPending}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-sm">
-            <CheckCircle className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-muted-foreground">{t('inmobiliaria.dispersiones.resumen.completedLabel')}</span>
-            <span className="font-mono text-foreground tabular-nums">
-              {summary.dispersionsCompleted}
-            </span>
-          </div>
           {hasFailed && (
             <div className="flex items-center gap-1.5 text-sm">
               <Warning className="w-3.5 h-3.5 text-destructive" />
@@ -257,6 +232,7 @@ export function DispersionResumen({
             </div>
           )}
         </div>
+        ) : null}
       </div>
 
       {/* Action Footer — al aprobar la última pendiente se va con su salida. */}

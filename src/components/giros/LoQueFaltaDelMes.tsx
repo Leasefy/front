@@ -33,6 +33,7 @@ import type { LiquidacionDelMesCompleto } from '@/lib/liquidaciones/liquidacion-
 import type { PorGirarDelBack } from '@/lib/propietarios/por-girar';
 import { PASOS_DE_LOS_GIROS, type PasoDeLosGiros } from './PasosDeLosGiros';
 import { MesDeLosGiros } from './MesDeLosGiros';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 
 const RAIZ = '/panel/inmobiliaria/pagos';
 
@@ -234,8 +235,11 @@ export function LoQueFaltaDelMes({
           ))}
         </ul>
       ) : null}
-      <ol className="divide-y divide-border-faint border-t border-border-faint">
-        {PASOS_DE_LOS_GIROS.map((p, i) => {
+      {/* Ronda 30 (revisora r27): el paso a paso ya no ocupa ≈320–450 px en las tres pantallas. A la vista
+          sólo el paso de esta pantalla y el que toca; los demás (y todos, con el mes girado completo)
+          plegados en «Ver los 4 pasos». */}
+      {(() => {
+        const pintarPaso = (p: (typeof PASOS_DE_LOS_GIROS)[number], i: number) => {
           const delPaso = resultado?.pasos.find((x) => x.id === p.id);
           const aqui = p.id === paso;
           const toca = resultado?.siguiente === p.id;
@@ -292,8 +296,36 @@ export function LoQueFaltaDelMes({
               ) : null}
             </li>
           );
-        })}
-      </ol>
+        };
+        const conIndice = PASOS_DE_LOS_GIROS.map((p, i) => ({ p, i }));
+        const aLaVista = completo
+          ? []
+          : conIndice.filter(({ p }) => p.id === paso || p.id === resultado?.siguiente);
+        const plegados = conIndice.filter((x) => !aLaVista.includes(x));
+        return (
+          <>
+            {aLaVista.length > 0 ? (
+              <ol className="divide-y divide-border-faint border-t border-border-faint">
+                {aLaVista.map(({ p, i }) => pintarPaso(p, i))}
+              </ol>
+            ) : null}
+            {plegados.length > 0 ? (
+              <div className="border-t border-border-faint px-4 py-2.5 sm:px-5" data-testid="pasos-plegados">
+                <MasDetalles
+                  montadoSiempre
+                  etiqueta={completo ? tr('Ver los 4 pasos') : tr('Ver los demás pasos')}
+                  etiquetaAbierto={tr('Ocultar')}
+                  classNameDelContenido="-mx-4 pt-2 sm:-mx-5"
+                >
+                  <ol className="divide-y divide-border-faint">
+                    {plegados.map(({ p, i }) => pintarPaso(p, i))}
+                  </ol>
+                </MasDetalles>
+              </div>
+            ) : null}
+          </>
+        );
+      })()}
     </section>
   );
 }

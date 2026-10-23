@@ -373,9 +373,9 @@ function ConciliacionSala() {
          */
         `El agente todavía no tiene estos movimientos. Los ${pendientesEnElBack} que esperan se concilian en Movimientos.`
     : leyendoResumen
-      ? 'Todavía estoy leyendo el resumen: en un momento sabes qué hay para conciliar.'
+      ? 'Se está leyendo el resumen: en un momento se sabe qué hay para conciliar.'
       : resumenCaido
-        ? 'No pude leer el resumen, así que no sé qué movimientos hay para cruzar. Reintenta abajo.'
+        ? 'No se puede conciliar mientras no se lea el resumen de los movimientos.'
         : undefined
 
   return (
@@ -447,15 +447,9 @@ function ConciliacionSala() {
       {!isRunning && porQueNoSePuedeConciliar && !leyendoResumen ? (
         <p className="-mt-3 flex flex-wrap items-baseline gap-x-2 text-body-sm text-fg-muted" data-testid="conciliacion-por-que-no">
           <span>{porQueNoSePuedeConciliar}</span>
-          {resumenCaido ? (
-            <button
-              type="button"
-              onClick={() => void refetchSummary()}
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
-              Reintentar
-            </button>
-          ) : sinMovimientos ? (
+          {/* Revisora r25 (Conciliación #1): con el resumen caído, el reintento es el de la
+              tarjeta del fallo de abajo; aquí sólo se dice por qué está apagado. */}
+          {resumenCaido ? null : sinMovimientos ? (
             <Link href={SUBIR_EXTRACTO_HREF} className="font-medium text-primary underline-offset-4 hover:underline">
               {sinExtracto || leyendoElBack ? 'Subir el extracto' : 'Ver movimientos'}
             </Link>

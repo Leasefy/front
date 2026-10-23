@@ -14133,7 +14133,7 @@
       "centroDeProcesos": "Centro de procesos",
       "inventario": "Inventario de inmuebles",
       "agenda": "Agenda de visitas",
-      "pipeline": "Pipeline comercial",
+      "pipeline": "Prospección",
       "portales": "Portales",
       "documentos": "Documentos del candidato",
       "aseguradoras": "Sura, Mapfre, Bolívar y Fianly",
@@ -14196,12 +14196,12 @@
       "hace": {
         "cobro": "Revisa cada cuota una semana antes de que venza y te avisa la que va a salir mal",
         "envia": "Le manda al inquilino el enlace de pago por WhatsApp: 3 días antes, el día y 3 días después del vencimiento",
-        "fallidos": "Recupera los pagos fallidos según el caso: reenvía el link, manda uno nuevo o las instrucciones de transferencia, o lo pasa a cobranza",
+        "fallidos": "Recupera los pagos fallidos según el caso: reenvía el enlace, manda uno nuevo o las instrucciones de transferencia, o lo pasa a cobranza",
         "liquidacion": "Revisa cada liquidación antes de girarle al propietario y marca la que hay que mirar",
         "cierre": "Te avisa en la campana los pagos que fallan y los que entran, y cada mañana te deja el resumen del equipo"
       },
       "noHace": {
-        "link": "Nunca inventa un link: sólo usa Wompi real a través de Leasefy",
+        "link": "Nunca inventa un enlace: sólo usa Wompi real a través de Leasefy",
         "aprueba": "No aprueba los giros: manda a revisar los que tienen algo raro",
         "masivo": "No ejecuta acciones masivas sin tu confirmación"
       }
@@ -14312,7 +14312,7 @@
         "inventario": "Busca en tu inventario y verifica que el inmueble siga disponible",
         "similares": "Propone inmuebles parecidos cuando el presupuesto no alcanza",
         "visita": "Agenda la visita con el asesor del inmueble a quien pidió que lo llamaran",
-        "pipeline": "Prioriza tu pipeline y avisa de los prospectos que se enfrían",
+        "pipeline": "Ordena tu Prospección por prioridad y avisa de los prospectos que se enfrían",
         "asesores": "Mide qué tan rápido responde cada asesor",
         "responde": "Le responde al interesado nuevo con el inmueble, el canon y las horas libres de su asesor"
       },

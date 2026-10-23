@@ -22,7 +22,7 @@ export default function CarteraPorPagarPage() {
     <PageGuard module="dispersiones" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion="Pagos · propietarios"
+          seccion="Pagar a propietarios"
           titulo="Por pagar a propietarios"
           descripcion={
             /*

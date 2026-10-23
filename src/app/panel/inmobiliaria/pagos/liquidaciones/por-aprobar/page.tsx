@@ -46,7 +46,7 @@ function PagosCola() {
       {/* PG-16: lo que se ve acá son las facturas de PROVEEDOR, no las
           liquidaciones de los propietarios. */}
       <EncabezadoDePantalla
-        seccion="Pagos · proveedores"
+        seccion="Pagar a propietarios"
         titulo="Cuentas por pagar"
         descripcion="Las facturas de proveedor causadas en Gastos: lo que se debe, lo vencido y lo pagado."
       />

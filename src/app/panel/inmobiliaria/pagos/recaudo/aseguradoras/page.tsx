@@ -121,7 +121,7 @@ function Contenido() {
       <div className="space-y-3">
         <BackButton href="/panel/inmobiliaria/pagos/recaudo" label="Volver a Recaudo" />
         <EncabezadoDePantalla
-          seccion="Pagos · recaudo"
+          seccion="Cobrar a inquilinos"
           titulo="Aseguradoras"
           descripcion="Las que pagan siniestros. Cuando una paga, el recibo lleva a la aseguradora como pagador: las cuotas quedan pagadas para la inmobiliaria y el propietario, y en el estado de cuenta del inquilino esa deuda sale «subrogada a la aseguradora»."
         />

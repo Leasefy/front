@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { BarraDeFiltros, Buscador, Filtro, SelectorDeInmobiliaria } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 
 const TONO_DEL_ESTADO: Record<InmuebleAdminRow['status'], PillTone> = {
   RENTED: 'ok',
@@ -29,6 +30,16 @@ const TONO_DEL_ESTADO: Record<InmuebleAdminRow['status'], PillTone> = {
  * Filtros en la URL (`q`, `agencyId`, `page`) como toda tabla del admin.
  * Paginado del SERVIDOR: el endpoint devuelve `Paginated<T>` de a 50.
  */
+/** El cero de una columna, callado («—» atenuado), con su texto para el lector de pantalla. */
+function Cero({ titulo }: { titulo: string }) {
+  return (
+    <span className="text-fg-subtle" title={titulo}>
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">{titulo}</span>
+    </span>
+  )
+}
+
 export default function InmueblesPage() {
   const router = useRouter()
   const { get, page, setFilters, setPage } = useUrlFilters()
@@ -54,24 +65,22 @@ export default function InmueblesPage() {
   )
 
   const columns: Column<InmuebleAdminRow>[] = [
-    {
-      header: '# Leasefy',
-      texto: (r) => r.code,
-      cell: (r) => <span className="font-mono text-caption tabular-nums text-fg">{r.code}</span>,
-    },
-    {
-      header: 'N.º en la inmobiliaria',
-      texto: (r) => r.externalId,
-      cell: (r) => <span className="font-mono text-caption tabular-nums text-fg-muted">{r.externalId ?? '—'}</span>,
-    },
+    // Ronda 26 (revisora r25): el consecutivo de Leasefy y el código de la inmobiliaria ya no son columnas
+    // (iguales en todas las filas a la vista); van debajo de la dirección, en mono, y al Excel.
     {
       header: 'Dirección',
-      className: 'min-w-[220px]',
+      className: 'min-w-[240px]',
       texto: (r) => r.address,
       cell: (r) => (
         <div className="min-w-0">
-          <div className="font-medium leading-snug text-fg">{r.address}</div>
-          <div className="text-caption text-fg-muted">{r.city}</div>
+          <div className="text-body-sm font-medium leading-snug text-fg">{r.address}</div>
+          <div className="text-caption text-fg-muted">
+            {r.city}
+            <span className="font-mono tabular-nums text-fg-subtle">
+              {' · '}#{r.code}
+              {r.externalId ? ` · N.º ${r.externalId}` : ''}
+            </span>
+          </div>
         </div>
       ),
     },
@@ -105,22 +114,28 @@ export default function InmueblesPage() {
       header: 'Contratos',
       align: 'right',
       texto: (r) => r.contratos,
-      cell: (r) => (
-        <span className="font-mono text-caption tabular-nums text-fg">
-          {r.contratos}
-          <span className="text-fg-subtle"> · {r.activos} vigentes</span>
-        </span>
-      ),
+      cell: (r) =>
+        r.contratos > 0 ? (
+          <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg">
+            {r.contratos}
+            {r.activos > 0 ? <span className="text-fg-subtle"> · {r.activos} {r.activos === 1 ? 'vigente' : 'vigentes'}</span> : null}
+          </span>
+        ) : (
+          <Cero titulo="Sin contratos" />
+        ),
     },
     {
       header: 'Reparaciones',
       align: 'right',
       texto: (r) => r.reparaciones,
-      cell: (r) => (
-        <span className={`font-mono text-caption tabular-nums ${r.reparaciones > 0 ? 'text-warning' : 'text-fg-subtle'}`}>
-          {r.reparaciones}
-        </span>
-      ),
+      // A 390 la tarjeta se acorta (antes ~300 px con cinco campos): las reparaciones se ven en su historia.
+      enCelular: false,
+      cell: (r) =>
+        r.reparaciones > 0 ? (
+          <span className="font-mono text-caption tabular-nums text-warning">{r.reparaciones}</span>
+        ) : (
+          <Cero titulo="Sin reparaciones" />
+        ),
     },
   ]
 
@@ -128,8 +143,19 @@ export default function InmueblesPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Inmuebles"
-        description="Cuántas veces se arrendó cada inmueble, cuánto estuvo desocupado y qué se le reparó. Toca uno para ver su historia."
-        junto={<Pill tone="neutral">Interno de Leasefy</Pill>}
+        description="Cuántas veces se arrendó cada inmueble, cuánto estuvo desocupado y qué se le reparó."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="La historia de los inmuebles" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                Aquí están los inmuebles de todas las inmobiliarias. Al abrir uno se ve su historia: cada contrato,
+                cuánto estuvo desocupado entre uno y otro y qué se le reparó.
+              </p>
+              <p>Es interno de Leasefy: la inmobiliaria no ve esta pantalla.</p>
+              <p>Se busca por la dirección, el consecutivo de Leasefy (#) o el código que le puso la inmobiliaria.</p>
+            </div>
+          </ParaEntenderMas>
+        }
       />
 
       <DataTable
@@ -149,7 +175,10 @@ export default function InmueblesPage() {
         onLimpiarFiltros={() => setBusqueda('')}
         exportar="inmuebles"
         traerTodoParaElExcel={() => traerTodasLasPaginas<InmuebleAdminRow>('/inmuebles', { q: q || undefined, agencyId: agencyId || undefined })}
+        cifraDelCelular="Contratos"
         masEnElExcel={[
+          { header: '# Leasefy', texto: (r) => r.code },
+          { header: 'N.º en la inmobiliaria', texto: (r) => r.externalId },
           { header: 'Ciudad', texto: (r) => r.city },
           { header: 'Contratos vigentes', texto: (r) => r.activos },
         ]}
@@ -160,7 +189,7 @@ export default function InmueblesPage() {
                 id="buscar-inmueble"
                 value={busqueda}
                 onChange={setBusqueda}
-                placeholder="Consecutivo, código de la inmobiliaria o dirección"
+                placeholder="Dirección o código"
               />
             </Filtro>
             <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">

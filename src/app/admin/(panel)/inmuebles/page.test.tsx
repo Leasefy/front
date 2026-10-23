@@ -92,7 +92,7 @@ describe('InmueblesPage', () => {
     expect(texto).toContain('Calle Falsa 123')
     expect(texto).toContain('Inmobiliaria de prueba')
     expect(texto).toContain('Arrendado')
-    expect(texto).toContain('6 · 1 vigentes')
+    expect(texto).toContain('6 · 1 vigente')
     expect(texto).toContain('(sin inmobiliaria)')
     expect(texto).toContain('Disponible')
   })

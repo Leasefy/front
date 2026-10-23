@@ -6175,7 +6175,8 @@
         "mantenimientoTickets": "Solicitudes",
         "mantenimientoResumen": "Resumen",
         "cobranzaGrupoAcuerdos": "Acuerdos",
-        "cobranzaGrupoContactos": "Contactos"
+        "cobranzaGrupoContactos": "Contactos",
+        "pagosEnLinea": "Pagos en línea"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -7561,7 +7562,7 @@
           "exportTranscriptPdf": "Descargar la transcripción en PDF"
         },
         "pagos": {
-          "title": "Pagos",
+          "title": "Pagos en línea",
           "subtitle": "Lo que está por cobrarse y lo que ya entró. Una obligación importada de la cartera todavía no es un pago.",
           "kpi": {
             "porCobrar": "Por cobrar",
@@ -7571,7 +7572,7 @@
             "approved": "Aprobados",
             "declined": "Rechazados",
             "recaudado": "Total recaudado",
-            "disbursed": "Total desembolsado"
+            "disbursed": "Girado"
           },
           "dateWindow": {
             "today": "Hoy",
@@ -7582,7 +7583,7 @@
             "label": "Ventana de tiempo"
           },
           "filter": {
-            "provider": "Proveedor",
+            "provider": "Pasarela",
             "status": "Estado",
             "clear": "Limpiar filtros",
             "wompi": "Wompi",
@@ -7593,24 +7594,24 @@
             "enProceso": "En proceso",
             "approved": "Aprobado",
             "declined": "Rechazado",
-            "disbursed": "Desembolsado"
+            "disbursed": "Girado"
           },
           "sort": {
             "createdAt": "Más recientes",
             "amountDesc": "Mayor monto",
-            "disbursementPendingDays": "Desembolso pendiente",
+            "disbursementPendingDays": "Giro pendiente",
             "label": "Ordenar"
           },
           "columns": {
             "nombre": "Nombre",
             "monto": "Monto",
-            "provider": "Proveedor",
+            "provider": "Pasarela",
             "status": "Estado",
             "fecha": "Fecha",
-            "disbursement": "Desembolso"
+            "disbursement": "Giro"
           },
           "pill": {
-            "disbursementPending": "Desembolso pendiente"
+            "disbursementPending": "Giro pendiente"
           },
           "error": "No se pudo cargar pagos",
           "errorRetry": "Reintentar",
@@ -7618,13 +7619,13 @@
           "loadingMore": "Cargando más...",
           "detail": {
             "title": "Detalle de pago",
-            "provider": "Proveedor",
+            "provider": "Pasarela",
             "status": "Estado",
             "amount": "Monto",
             "fee": "Comisión",
             "createdAt": "Fecha",
             "debtor": "Deudor",
-            "back": "Volver a pagos",
+            "back": "Volver a Pagos en línea",
             "notFound": "Pago no encontrado"
           },
           "emptyFiltered": "Sin pagos en este período",
@@ -7640,9 +7641,9 @@
             "noAplica": "No aplica"
           },
           "disbursement": {
-            "settled": "Desembolsado",
-            "pending": "Sin desembolsar",
-            "days": "{{days}} d",
+            "settled": "Girado",
+            "pending": "Sin girar",
+            "days": "{{days}} días",
             "noAplica": "No aplica"
           }
         },

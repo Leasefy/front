@@ -195,7 +195,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
         icon: CreditCard,
         module: 'cobranza',
         segmentos: [
-          { labelKey: 'inmobiliaria.ai.nav.pagos', href: `${COBRANZA}/pagos`, icon: CreditCard, module: 'cobranza' },
+          // Revisora r25 (Pagos #4): «Pagos» chocaba con Pagos de Dinero; son los pagos por enlace (Wompi, Bold).
+          { labelKey: 'inmobiliaria.ai.nav.pagosEnLinea', href: `${COBRANZA}/pagos`, icon: CreditCard, module: 'cobranza' },
           { labelKey: 'inmobiliaria.ai.nav.pagosFallidos', href: `${COBRANZA}/fallidos`, icon: WarningCircle, module: 'cobranza' },
           { labelKey: 'inmobiliaria.ai.nav.siniestros', href: `${COBRANZA}/siniestros`, icon: Siren, module: 'cobranza' },
         ],

@@ -6140,7 +6140,8 @@
         "mantenimientoTickets": "Tickets",
         "mantenimientoResumen": "Overview",
         "cobranzaGrupoAcuerdos": "Agreements",
-        "cobranzaGrupoContactos": "Outreach"
+        "cobranzaGrupoContactos": "Outreach",
+        "pagosEnLinea": "Online payments"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -7526,7 +7527,7 @@
           "exportTranscriptPdf": "Export transcript PDF"
         },
         "pagos": {
-          "title": "Payments",
+          "title": "Online payments",
           "subtitle": "What's still owed and what has come in. An obligation imported from the portfolio is not a payment yet.",
           "kpi": {
             "porCobrar": "Outstanding",
@@ -7536,7 +7537,7 @@
             "approved": "Approved",
             "declined": "Declined",
             "recaudado": "Total collected",
-            "disbursed": "Total disbursed"
+            "disbursed": "Sent to owners"
           },
           "dateWindow": {
             "today": "Today",
@@ -7607,7 +7608,7 @@
           "disbursement": {
             "settled": "Disbursed",
             "pending": "Not disbursed",
-            "days": "{{days}} d",
+            "days": "{{days}} days",
             "noAplica": "Not applicable"
           }
         },

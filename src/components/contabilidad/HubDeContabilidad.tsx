@@ -480,8 +480,11 @@ function Alerta({
         <p className="text-sm font-medium text-fg">{alerta.titulo}</p>
         <p className="text-sm text-fg-muted">{alerta.detalle}</p>
       </div>
+      {/* Revisora r24 (Contabilidad #4): bajo `sm`, el botón va debajo del texto y a lo ancho
+          (antes el texto quedaba en ≈130 px al lado, en 13 renglones). */}
+      <div className="basis-full pl-8 empty:hidden sm:basis-auto sm:pl-0">
       {alerta.accion.tipo === 'ir' ? (
-        <Button variant="outline" size="sm" hideArrow asChild>
+        <Button variant="outline" size="sm" hideArrow asChild className="max-sm:w-full">
           <Link href={alerta.accion.href}>{alerta.accion.label}</Link>
         </Button>
       ) : alerta.accion.tipo === 'reprocesar' ? (
@@ -489,6 +492,7 @@ function Alerta({
           variant="outline"
           size="sm"
           hideArrow
+          className="max-sm:w-full"
           onClick={onReprocesar}
           disabled={ocupado}
           // Sin «Reprocesando…» (23-09): el avance es del centro de procesos.
@@ -499,6 +503,7 @@ function Alerta({
           {alerta.accion.label}
         </Button>
       ) : null}
+      </div>
       {/* 🔴 CB-04 (QA de Contabilidad, 03-10-2026): «Cerrar el mes» de esta
           alerta y «Cerrar período…» de la tarjeta del período, en la misma
           pantalla, eran dos botones para lo mismo — y el de la alerta sólo
@@ -1031,6 +1036,9 @@ const DESTINOS: Destino[] = [
  * Las revisiones que alimentan las alertas. Si una no carga, «no hay alertas»
  * deja de significar «está todo bien», y eso se dice.
  */
+/** Las consultas de la frase del libro. */
+const FRASE_DEL_LIBRO = ['cuentas', 'delMes', 'libro'] as const;
+
 /** Los avisos que NO son del paso 1 (asentar): el descuadre, el mes por cerrar y lo del año. */
 const FUERA_DEL_PASO_1 = new Set(['no-cuadra', 'mes-sin-cerrar', 'exogena-sin-visto-bueno']);
 
@@ -1186,6 +1194,7 @@ export function HubDeContabilidad() {
   const falla1 = fallo(['cuentas', 'faltantes', 'rubros', 'facturas', 'lotes']);
   const falla2 = fallo(['balance']);
   const [forzarCierre, setForzarCierre] = useState(false);
+  const [preguntandoCierre, setPreguntandoCierre] = useState(false);
   /** El último día que se puede cerrar (el mes que se cierra ahora). */
   const hastaPorCerrar = datos.cierre?.sePuedeCerrarHasta ?? datos.mesAnterior?.hasta ?? null;
   const mesPorCerrar = hastaPorCerrar ? hastaPorCerrar.slice(0, 7) : null;
@@ -1221,49 +1230,49 @@ export function HubDeContabilidad() {
           La frase la arma `elLibroEnUnaFrase`, que está probada aparte: los
           casos raros son varios (libro vacío, mes en cero con libro lleno, y
           cualquiera de los tres números sin poder leerse). */}
-      {/* Revisión de Dinero (22-10): la frase del libro como un renglón, sin tarjeta: informa,
-          no decide nada, y no compite con el cierre del mes. */}
-      <section className="px-1 text-body-sm" aria-label="Resumen del libro">
-        {/* Esqueleto → la frase del libro con fundido cruzado. */}
-        <CrossFade swapKey={cargando ? 'cargando' : 'frase'}>
-        {cargando ? (
-          // La forma de la frase que va a llegar —un renglón largo y uno más
-          // corto—, no una barra suelta (Nico, 22-09: «ese diseño de carga es
-          // horrible»).
-          <div className="space-y-2 py-0.5" aria-label="cargando" data-testid="resumen-cargando">
-            <Skeleton className="h-5 w-full max-w-2xl rounded-sm bg-surface-muted" />
-            <Skeleton className="h-5 w-3/5 max-w-md rounded-sm bg-surface-muted" />
-          </div>
-        ) : (
-          <p className="text-body text-fg" data-testid="el-libro-en-una-frase">
-            {elLibroEnUnaFrase({
-              cuentasActivas: datos.cuentasActivas,
-              asientosEnElLibro: datos.asientosEnElLibro,
-              asientosDelMes: datos.asientosDelMes,
-              ultimoDia: ultimo ? diaLegible(ultimo.fecha) : null,
-            }).map((trozo, i) =>
-              trozo.tipo === 'texto' ? (
-                <span key={i}>{trozo.texto}</span>
-              ) : (
-                <strong
-                  key={i}
-                  className="font-mono tabular-nums text-fg"
-                  title={trozo.rotulo}
-                >
-                  {trozo.valor === null ? '—' : trozo.valor.toLocaleString(localeDeLasCifras())}
-                </strong>
-              ),
-            )}
-          </p>
-        )}
-        </CrossFade>
-        {/* Cada consulta falla por separado y lo DICE: sin esto, un número que
-            no se pudo leer saldría como un guion mudo. */}
-        {!cargando &&
-          (['cuentas', 'delMes', 'libro'] as const)
-            .map((c) => falloDe(c))
+      {/* Revisora r24 (Contabilidad #1): la frase del libro (14 asientos sobre 2.805 cuentas) informa
+          pero no decide nada: va dentro de «Últimos asientos del libro ▾» y el cierre queda pegado al
+          encabezado. Arriba sólo queda el fallo de una consulta, si lo hay. */}
+      {/* Cada consulta falla por separado y lo DICE: sin esto, un número que no se
+          pudo leer saldría como un guion mudo. */}
+      {!cargando && FRASE_DEL_LIBRO.some((c) => c in datos.fallos) ? (
+        <div className="space-y-1">
+          {FRASE_DEL_LIBRO.map((c) => falloDe(c))
             .filter((f): f is NonNullable<typeof f> => Boolean(f))
             .map((f, i) => <NoCargo key={i} {...f} />)}
+        </div>
+      ) : null}
+
+      {/* Revisora r24 (Contabilidad #3): las 12 pantallas, en un riel arriba y por cuándo se usan;
+          antes, plegadas al pie (y Asientos, Gastos, Egresos, PUC o Exógena no están en el menú: esta
+          es su puerta). A 390, una cara por renglón, que se corre de lado. */}
+      <section aria-labelledby="pantallas-de-contabilidad" data-testid="riel-de-contabilidad">
+        <h2 id="pantallas-de-contabilidad" className="sr-only">
+          Todas las pantallas de contabilidad
+        </h2>
+        <nav
+          aria-label="Secciones de contabilidad"
+          className="flex flex-col gap-2 border-y border-border-faint py-3 lg:flex-row lg:flex-wrap lg:gap-x-8 lg:gap-y-2"
+        >
+          {gruposDeDestinos.map((g) => (
+            <div key={g.titulo} className="flex min-w-0 items-baseline gap-3">
+              <h3 className="w-[5.5rem] shrink-0 text-caption font-medium text-fg-subtle lg:w-auto">{g.titulo}</h3>
+              <ul className="flex min-w-0 gap-x-4 overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
+                {g.destinos.map((d) => (
+                  <li key={d.href}>
+                    <Link
+                      href={d.href}
+                      title={d.texto}
+                      className="rounded-sm text-caption text-fg underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
+                      {d.titulo}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
       </section>
 
       {/* CT1: que no aparezca ninguna alerta sólo vale si se pudo revisar. */}
@@ -1346,6 +1355,8 @@ export function HubDeContabilidad() {
             descripcion: 'Débitos y créditos iguales, y un resultado del mes que tenga sentido.',
             estado: paso2,
             resumen: 'Débitos y créditos iguales.',
+            // Revisora r24 (Contabilidad #6): el rótulo dice qué se abre.
+            etiquetaDeCambio: 'Ver el cuadre',
             contenido: (
               <div className="space-y-3">
                 {alertaNoCuadra ? (
@@ -1377,19 +1388,22 @@ export function HubDeContabilidad() {
             resumen: datos.cierre?.cerradaHasta
               ? `Cerrado hasta el ${fechaCorta(datos.cierre.cerradaHasta)}.`
               : 'Al día.',
-            bloqueadoPorque: (
-              <span className="inline-flex flex-wrap items-center gap-x-2">
-                Primero, que todo quede asentado y el libro cuadre.
-                <button
+            // Revisora r24 (Contabilidad #2): cerrar con cosas sin asiento es lo más delicado de la
+            // pantalla; antes salía de un subrayado en esta línea. Ahora es un botón con su pregunta.
+            bloqueadoPorque: 'Antes, que todo quede asentado y el libro cuadre.',
+            extra:
+              paso3 === 'pendiente' && !cargando && !cerradoAlDia ? (
+                <Button
                   type="button"
-                  onClick={() => setForzarCierre(true)}
-                  className="font-medium text-fg underline decoration-border-strong underline-offset-2 hover:decoration-fg"
+                  size="sm"
+                  variant="outline"
+                  hideArrow
+                  onClick={() => setPreguntandoCierre(true)}
                   data-testid="cerrar-de-todos-modos"
                 >
-                  Cerrar de todos modos
-                </button>
-              </span>
-            ),
+                  Cerrar igual
+                </Button>
+              ) : null,
             contenido: (
               // `tabIndex={-1}`: el bloque del cierre puede recibir el foco.
               <div ref={cierreRef} tabIndex={-1} className="space-y-3 outline-none">
@@ -1439,7 +1453,7 @@ export function HubDeContabilidad() {
           className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border bg-surface"
           aria-label="Lo del año"
         >
-          <p className="px-4 pb-2 pt-3 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">
+          <p className="px-4 pb-2 pt-3 text-caption font-medium text-fg-subtle">
             Este año
           </p>
           {delAnio.map((a) => (
@@ -1451,52 +1465,51 @@ export function HubDeContabilidad() {
       {/* Para consultar: lo último que entró al libro (la fila abre el asiento). */}
       {/* Revisora r23 (Contabilidad #2): lo que se consulta, plegado; no es del cierre del mes. */}
       <MasDetalles etiqueta="Últimos asientos del libro" etiquetaAbierto="Ocultar" montadoSiempre data-testid="ultimos-asientos-plegados">
-        <UltimosAsientos
-          asientos={datos.ultimos}
-          cargando={cargando}
-          fallo={falloDe('libro')}
-          onAbrir={setAsientoAbierto}
-        />
-      </MasDetalles>
-
-      {/* Las pantallas, agrupadas por CUÁNDO se usan (antes, doce tarjetas iguales con ícono en un
-          círculo de color y flecha). */}
-      <MasDetalles
-        etiqueta="Todas las pantallas de contabilidad"
-        etiquetaAbierto="Ocultar las pantallas"
-        montadoSiempre
-        data-testid="pantallas-de-contabilidad-plegadas"
-      >
-      <section className="space-y-3" aria-labelledby="pantallas-de-contabilidad">
-        <h2 id="pantallas-de-contabilidad" className="sr-only">
-          Todas las pantallas de contabilidad
-        </h2>
-        <nav aria-label="Secciones de contabilidad" className="grid gap-x-5 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
-          {gruposDeDestinos.map((g) => (
-            <div key={g.titulo} className="min-w-0 space-y-2">
-              <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">
-                {g.titulo}
-              </h3>
-              <ul className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border bg-surface">
-                {g.destinos.map((d) => (
-                  <li key={d.href}>
-                    <Link
-                      href={d.href}
-                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+        <div className="space-y-4">
+      {/* Revisión de Dinero (22-10): la frase del libro como un renglón, sin tarjeta: informa,
+              no decide nada, y no compite con el cierre del mes. */}
+              <section className="px-1 text-body-sm" aria-label="Resumen del libro">
+            {/* Esqueleto → la frase del libro con fundido cruzado. */}
+            <CrossFade swapKey={cargando ? 'cargando' : 'frase'}>
+            {cargando ? (
+              // La forma de la frase que va a llegar —un renglón largo y uno más
+              // corto—, no una barra suelta (Nico, 22-09: «ese diseño de carga es
+              // horrible»).
+              <div className="space-y-2 py-0.5" aria-label="cargando" data-testid="resumen-cargando">
+                <Skeleton className="h-5 w-full max-w-2xl rounded-sm bg-surface-muted" />
+                <Skeleton className="h-5 w-3/5 max-w-md rounded-sm bg-surface-muted" />
+              </div>
+            ) : (
+              <p className="text-body text-fg" data-testid="el-libro-en-una-frase">
+                {elLibroEnUnaFrase({
+                  cuentasActivas: datos.cuentasActivas,
+                  asientosEnElLibro: datos.asientosEnElLibro,
+                  asientosDelMes: datos.asientosDelMes,
+                  ultimoDia: ultimo ? diaLegible(ultimo.fecha) : null,
+                }).map((trozo, i) =>
+                  trozo.tipo === 'texto' ? (
+                    <span key={i}>{trozo.texto}</span>
+                  ) : (
+                    <strong
+                      key={i}
+                      className="font-mono tabular-nums text-fg"
+                      title={trozo.rotulo}
                     >
-                      <d.icono className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                      <span className="min-w-0 space-y-0.5">
-                        <span className="block text-sm font-medium text-fg">{d.titulo}</span>
-                        <span className="block text-caption text-fg-muted">{d.texto}</span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
-      </section>
+                      {trozo.valor === null ? '—' : trozo.valor.toLocaleString(localeDeLasCifras())}
+                    </strong>
+                  ),
+                )}
+              </p>
+            )}
+            </CrossFade>
+          </section>
+          <UltimosAsientos
+            asientos={datos.ultimos}
+            cargando={cargando}
+            fallo={falloDe('libro')}
+            onAbrir={setAsientoAbierto}
+          />
+        </div>
       </MasDetalles>
 
       {/* El asiento de «Últimos asientos», en el mismo cajón del libro. Si se
@@ -1507,6 +1520,42 @@ export function HubDeContabilidad() {
         onCerrar={() => setAsientoAbierto(null)}
         onReversado={() => void recargar()}
       />
+
+      {/* Revisora r24 (Contabilidad #2): antes de abrir el cierre con cosas pendientes, lo que falta. */}
+      <AlertDialog open={preguntandoCierre} onOpenChange={setPreguntandoCierre}>
+        <AlertDialogContent variant="confirm" icon={<Notebook weight="bold" />} data-testid="pregunta-cerrar-igual">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {mesPorCerrar ? `¿Cerrar ${nombreDelMes(mesPorCerrar)} igual?` : '¿Cerrar el mes igual?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>Todavía falta:</p>
+                <ul className="list-disc space-y-1 pl-5" data-testid="lo-que-falta-para-cerrar">
+                  {porAsentar.map((a) => (
+                    <li key={a.clave}>{a.titulo}</li>
+                  ))}
+                  {paso2 !== 'hecho' ? <li>Que el libro cuadre.</li> : null}
+                  {falla1 || falla2 ? <li>Revisar lo que no cargó.</li> : null}
+                </ul>
+                <p>Al cerrarlo nadie asienta con fecha de ese mes; si hace falta, el administrador lo reabre con motivo.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setPreguntandoCierre(false);
+                setForzarCierre(true);
+              }}
+              data-testid="confirmar-cerrar-igual"
+            >
+              Seguir al cierre
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* CT2: reprocesar escribe en el libro. Se dice cuánto y qué antes. */}
       <AlertDialog

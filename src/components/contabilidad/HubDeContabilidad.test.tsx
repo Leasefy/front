@@ -756,6 +756,10 @@ describe('HubDeContabilidad — el cierre del mes, paso por paso', () => {
     expect(paso('cerrar')?.getAttribute('data-estado')).toBe('pendiente');
 
     await clic($('[data-testid="cerrar-de-todos-modos"]'));
+    // Revisora r24 (Contabilidad #2): antes pregunta, con lo que falta.
+    expect(paso('cerrar')?.getAttribute('data-estado')).toBe('pendiente');
+    expect(document.querySelector('[data-testid="lo-que-falta-para-cerrar"]')?.textContent).toMatch(/\S/);
+    await clic(document.querySelector<HTMLElement>('[data-testid="confirmar-cerrar-igual"]'));
     expect(paso('cerrar')?.getAttribute('data-estado')).toBe('actual');
   });
 

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { PageGuard } from '@/components/auth/PageGuard';
 
@@ -7,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import { GenerarDispersion } from '@/components/inmobiliaria/dispersion/GenerarDispersion';
 import { useI18n } from '@/lib/i18n';
-import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { SECCION_DE_LOS_GIROS } from '@/components/giros/PasosDeLosGiros';
 import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
@@ -67,7 +67,14 @@ function GenerarDispersionesContent() {
   // vuelta arriba, como las demás pantallas de Pagos; sin la franja aparte.
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <BackButton href="/panel/inmobiliaria/pagos/dispersiones" label={t('inmobiliaria.common.back')} />
+      {/* Ronda 26 (revisora r25, Generar UI): la vuelta sin flecha y con el nombre de a dónde vuelve, como las demás. */}
+      <Link
+        href="/panel/inmobiliaria/pagos/dispersiones"
+        className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+        data-testid="volver-a-los-giros"
+      >
+        {tr('Volver a Giros a propietarios')}
+      </Link>
       <EncabezadoDePantalla
         seccion={tr(SECCION_DE_LOS_GIROS)}
         titulo={t('inmobiliaria.dispersiones.wizard.title')}

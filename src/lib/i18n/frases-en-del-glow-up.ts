@@ -617,4 +617,5 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Limpiar filtros": "Clear filters",
   "Ver los casos": "See the cases",
   "Ninguna llamada coincide con los filtros seleccionados.": "No call matches the selected filters.",
+  "Volver a Giros a propietarios": "Back to Owner payouts",
 }

@@ -618,4 +618,14 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Ver los casos": "See the cases",
   "Ninguna llamada coincide con los filtros seleccionados.": "No call matches the selected filters.",
   "Volver a Giros a propietarios": "Back to Owner payouts",
+  // Cobranza (ronda 26, 3.er agente)
+  "Nuevo reporte": "New report",
+  "El agente redacta la mora, las gestiones hechas y una recomendación. Lo revisas antes de enviarlo.": "The agent writes up the arrears, the actions taken and a recommendation. You review it before sending.",
+  "¿De qué deudor?": "Which debtor?",
+  "Generar borrador": "Generate draft",
+  "Lo que se le cuenta a cada propietario de la cobranza de su inmueble: revísalo y envíaselo.": "What each owner is told about collections on their property: review it and send it.",
+  "Genera el primero: el agente redacta el estado de mora, las gestiones hechas y una recomendación, para que lo revises y lo apruebes antes de enviárselo al propietario.": "Generate the first one: the agent writes up the arrears, the actions taken and a recommendation, so you can review and approve it before sending it to the owner.",
+  "Ver mis propietarios": "See my owners",
+  "Por aprobar": "To approve",
+  "Ningún reporte espera tu aprobación.": "No report is waiting for your approval.",
 }

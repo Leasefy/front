@@ -198,8 +198,8 @@ export default function AplicarPage({ params }: AplicarPageProps) {
       <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
         <FalloDeCarga
           error={errorCrudo ?? error}
-          queEs="esta propiedad"
-          volverA={{ label: 'Ver propiedades disponibles', href: '/propiedades' }}
+          queEs="este inmueble"
+          volverA={{ label: 'Ver inmuebles disponibles', href: '/propiedades' }}
         />
       </div>
     );
@@ -210,8 +210,8 @@ export default function AplicarPage({ params }: AplicarPageProps) {
       <AvisoDeAplicar
         icono={HouseLine}
         titulo="Propiedad no encontrada"
-        texto="La propiedad que buscas no existe o ha sido removida."
-        accion={{ href: '/propiedades', label: 'Ver propiedades disponibles' }}
+        texto="El inmueble que buscas no existe o ya no está publicado."
+        accion={{ href: '/propiedades', label: 'Ver inmuebles disponibles' }}
       />
     );
   }
@@ -226,8 +226,8 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     return (
       <AvisoDeAplicar
         icono={Tag}
-        titulo="Esta propiedad está en venta"
-        texto="No se puede postular a una propiedad en venta. Contacta a la inmobiliaria por chat o agenda una visita desde la ficha del inmueble."
+        titulo="Este inmueble está en venta"
+        texto="No se puede postular a un inmueble en venta. Contacta a la inmobiliaria por chat o agenda una visita desde la ficha del inmueble."
         accion={{ href: `/propiedades/${resolvedParams.propertyId}`, label: 'Volver al inmueble' }}
       />
     );
@@ -239,8 +239,8 @@ export default function AplicarPage({ params }: AplicarPageProps) {
       <AvisoDeAplicar
         icono={HouseLine}
         titulo="Propiedad no disponible"
-        texto="Esta propiedad ya no está disponible para aplicaciones."
-        accion={{ href: '/propiedades', label: 'Ver propiedades disponibles' }}
+        texto="Este inmueble ya no recibe postulaciones."
+        accion={{ href: '/propiedades', label: 'Ver inmuebles disponibles' }}
       />
     );
   }
@@ -330,7 +330,7 @@ function AvisoDeAplicar({
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-      <div className="w-full max-w-md space-y-4 rounded-lg border border-border bg-surface p-6 text-center shadow-xs sm:p-8">
+      <div className="w-full max-w-md space-y-4 rounded-lg border border-border bg-surface p-6 text-center sm:p-8">
         <Icono className="mx-auto h-8 w-8 text-fg-subtle" aria-hidden="true" />
         <div className="space-y-2">
           <h1 className="text-balance font-heading text-[24px] font-[420] leading-[1.15] tracking-[-0.02em] text-fg">
@@ -366,7 +366,7 @@ function AlreadyAppliedCard({
 }: AlreadyAppliedCardProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg px-4">
-      <div className="w-full max-w-md space-y-4 rounded-lg border border-border bg-surface p-6 text-center shadow-xs sm:p-8">
+      <div className="w-full max-w-md space-y-4 rounded-lg border border-border bg-surface p-6 text-center sm:p-8">
         {/* El visto suelto, sin círculo de color detrás. */}
         <CheckCircle className="mx-auto h-8 w-8 text-success" weight="fill" aria-hidden="true" />
         <div className="space-y-2">
@@ -374,7 +374,7 @@ function AlreadyAppliedCard({
             Ya tienes una postulación
           </h1>
           <p className="text-body-sm text-fg-muted">
-            Ya postulaste a esta propiedad. Puedes ver el estado de tu postulación,
+            Ya te postulaste a este inmueble. Puedes ver el estado de tu postulación,
             o retirarla para volver a empezar.
           </p>
         </div>

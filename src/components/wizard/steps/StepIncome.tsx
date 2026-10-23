@@ -153,7 +153,7 @@ export function StepIncome() {
         >
           <LightInput
             id="additionalIncomeSource"
-            placeholder="Ej: Arriendo de propiedad, trabajo freelance"
+            placeholder="Ej.: arriendo de un inmueble, trabajos independientes"
             value={income.additionalIncomeSource || ''}
             onChange={(e) => handleSourceChange(e.target.value)}
             onBlur={() => handleBlur('additionalIncomeSource')}

@@ -34,7 +34,7 @@ function ArcoVerifyInner() {
       id="main-content"
       className="min-h-screen flex flex-col items-center justify-center py-16 px-4 bg-bg"
     >
-      <div className="w-full max-w-md rounded-lg border border-border bg-surface p-6 text-center shadow-xs sm:p-8">
+      <div className="w-full max-w-md rounded-lg border border-border bg-surface p-6 text-center sm:p-8">
         <CheckCircle weight="fill" className="mx-auto mb-4 h-10 w-10 text-success" aria-hidden="true" />
         <h1 className="text-balance font-heading text-[24px] font-[420] leading-[1.15] tracking-[-0.02em] text-fg">
           {t('inmobiliaria.ai.arco.verify.confirmed')}

@@ -195,7 +195,7 @@ export default function ReporteAvaluoPage() {
         <section className="space-y-4 rounded-lg border border-border bg-surface p-5">
           <div className="space-y-1">
             <TituloDeBloque>Inmuebles parecidos cerca</TituloDeBloque>
-            <p className="text-body-sm text-fg-muted">Lo que se cobra hoy por propiedades como la tuya.</p>
+            <p className="text-body-sm text-fg-muted">Lo que se cobra hoy por inmuebles como el tuyo.</p>
           </div>
           <ul className="divide-y divide-border-faint">
             {COMPARABLES.map((c) => (

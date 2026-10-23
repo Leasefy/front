@@ -133,9 +133,8 @@ export default function ArrendarPage({ params }: Props) {
                 className="overflow-hidden rounded-lg border border-border bg-surface"
               >
                 <div className="flex flex-col gap-3 px-6 pt-8 md:px-8 md:pt-10">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-success text-white" aria-hidden="true">
-                    <Check weight="bold" className="h-5 w-5" />
-                  </span>
+                  {/* Ronda 30: el visto suelto, en verde, sin el círculo de color (Cadence 2). */}
+                  <Check weight="bold" className="h-7 w-7 text-success" aria-hidden="true" />
                   <h1 id="te-alcanza-titulo" className="font-heading text-h1 font-normal leading-tight text-fg text-balance">
                     Felicitaciones
                   </h1>

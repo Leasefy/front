@@ -458,7 +458,7 @@ export function PantallaDelEstadoDeCuenta({
            propio marco para no quedar como una tarjeta dentro de otra. */
         <section
           data-estado-marco
-          className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm"
+          className="overflow-hidden rounded-lg border border-border bg-surface"
         >
 
           {vista.contratos.length === 0 && conFiltros ? (

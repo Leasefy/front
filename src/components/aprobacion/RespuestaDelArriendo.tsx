@@ -41,7 +41,7 @@ export function RespuestaDelArriendo({ estado, tope }: Props) {
     <section
       data-testid="respuesta-del-arriendo"
       aria-labelledby="respuesta-del-arriendo-titulo"
-      className="rounded-2xl border border-border bg-surface p-6 shadow-sm md:p-8"
+      className="rounded-lg border border-border bg-surface p-6 md:p-8"
     >
       <PasosDelArriendo actual={3} />
 
@@ -50,7 +50,7 @@ export function RespuestaDelArriendo({ estado, tope }: Props) {
           <div data-testid="respuesta-aprobado" className="flex items-start gap-3">
             <CheckCircle weight="fill" className="mt-1 h-7 w-7 flex-shrink-0 text-success" aria-hidden="true" />
             <div>
-              <h2 id="respuesta-del-arriendo-titulo" className="font-heading text-2xl font-semibold text-fg text-balance">
+              <h2 id="respuesta-del-arriendo-titulo" className="font-heading text-2xl font-[420] text-fg text-balance">
                 ¡Te lo podemos arrendar!
               </h2>
               <p className="mt-1 text-sm text-fg-muted">
@@ -66,7 +66,7 @@ export function RespuestaDelArriendo({ estado, tope }: Props) {
           <div data-testid="respuesta-se-pasa" className="flex items-start gap-3">
             <WarningCircle weight="fill" className="mt-1 h-7 w-7 flex-shrink-0 text-warning" aria-hidden="true" />
             <div>
-              <h2 id="respuesta-del-arriendo-titulo" className="font-heading text-2xl font-semibold text-fg text-balance">
+              <h2 id="respuesta-del-arriendo-titulo" className="font-heading text-2xl font-[420] text-fg text-balance">
                 Te aprobaron, pero este inmueble se pasa de tu tope
               </h2>
               <p className="mt-1 text-sm text-fg-muted">
@@ -82,7 +82,7 @@ export function RespuestaDelArriendo({ estado, tope }: Props) {
           <div data-testid="respuesta-rechazado" className="flex items-start gap-3">
             <Compass className="mt-1 h-7 w-7 flex-shrink-0 text-primary" aria-hidden="true" />
             <div>
-              <h2 id="respuesta-del-arriendo-titulo" className="font-heading text-2xl font-semibold text-fg text-balance">
+              <h2 id="respuesta-del-arriendo-titulo" className="font-heading text-2xl font-[420] text-fg text-balance">
                 Por ahora no te podemos arrendar {arriendo.titulo}
               </h2>
               <p className="mt-1 text-sm text-fg-muted">
@@ -97,7 +97,7 @@ export function RespuestaDelArriendo({ estado, tope }: Props) {
           <div data-testid="respuesta-en-proceso" className="flex items-start gap-3">
             <Hourglass className="mt-1 h-7 w-7 flex-shrink-0 text-primary" aria-hidden="true" />
             <div>
-              <h2 id="respuesta-del-arriendo-titulo" className="font-heading text-2xl font-semibold text-fg text-balance">
+              <h2 id="respuesta-del-arriendo-titulo" className="font-heading text-2xl font-[420] text-fg text-balance">
                 Estamos validando tus datos
               </h2>
               <p className="mt-1 text-sm text-fg-muted">

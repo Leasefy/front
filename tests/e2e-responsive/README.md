@@ -24,12 +24,15 @@ pnpm e2e:responsive -- --project "Pixel 7-8 412x915" -g "pagos/cartera"   # extr
 | `E2E_ENV_FILE` | Credentials file. Default `./.env.e2e.local` relative to the front root. |
 | `PLAYWRIGHT_BASE_URL` | Default `http://localhost:3001`. |
 | `RESPONSIVE_WORKERS` | Parallel workers (default 4). The dev server is the bottleneck. |
-| `RESPONSIVE_REPORT_DIR` | Output dir (default `./responsive-report`). It is wiped at the start of a run unless `RESPONSIVE_REPORT_KEEP=1`. |
+| `RESPONSIVE_REPORT_DIR` | Output dir (default `./responsive-report`). It is wiped when the first test finishes unless `RESPONSIVE_REPORT_KEEP=1`; `--list`, and a run that aborts in global setup, never touch it. |
 | `RESPONSIVE_ALLOW_POST` | Regex of URLs the read-only guard may let through. Default: none (Supabase token refresh is always allowed). |
 | `RESPONSIVE_SAMPLE` | Keep every Nth route of each persona (default 1 = all). |
 | `RESPONSIVE_ROUTE_FILTER` | Regex tested against `<persona> <route>`; only matches run. |
 | `RESPONSIVE_WARMUP` | `0` skips the warm-up pass, `1` forces it. Default: on for localhost, off otherwise. `RESPONSIVE_WARMUP_ROUTE_MS` caps each warm-up navigation (default 90000). |
 | `RESPONSIVE_RETRIES` | Playwright retries per test (default 1). |
+| `RESPONSIVE_IPHONE_ENGINE` | `chromium` runs the iPhone projects on Chromium (same viewport, DPR, `isMobile`, `hasTouch`, iPhone UA); names get a ` [chromium]` suffix. Default `webkit`. See "iPhones without WebKit". |
+| `RESPONSIVE_PREFLIGHT` | `0` skips the start-up GET of the base URL. Default on: a server that does not answer stops the run in seconds. |
+| `RESPONSIVE_BREAKER_N` | Consecutive refused/reset/timed-out navigations that abort the run (default 6). |
 | `RESPONSIVE_REUSE_AUTH` / `RESPONSIVE_REUSE_RESOLVED` | `1` = keep the session / resolved ids of a previous run (iterating on the suite). |
 
 Credentials come from `E2E_TENANT_*`, `E2E_LANDLORD_*`, `E2E_AGENCY_ADMIN_*`, `E2E_AGENCY_AGENT_*`
@@ -39,6 +42,35 @@ not fail.
 Browsers: `npx playwright install chromium firefox webkit` and, for the Edge projects, a local
 Microsoft Edge (`npx playwright install msedge`). A missing browser makes its projects fail with
 Playwright's "executable doesn't exist" error; nothing is skipped silently.
+
+### iPhones without WebKit
+
+WebKit hangs on some Windows machines. Run every iPhone project on Chromium instead:
+
+```bash
+RESPONSIVE_IPHONE_ENGINE=chromium pnpm e2e:responsive          # PowerShell: $env:RESPONSIVE_IPHONE_ENGINE='chromium'
+```
+
+Projects are then named like `iPhone 12-13-14 390x844 [chromium]`, so a report can never be mistaken
+for a Safari run. **Chromium emulation does not catch Safari-only rendering bugs** (dvh/svh and URL-bar
+resizing, safe-area insets, `position: fixed` in Safari, flex/grid and `aspect-ratio` quirks, input
+zoom on focus). It checks layout at the iPhone viewport; it is not a Safari sign-off. The desktop WebKit
+projects are unaffected by this switch.
+
+### Dead server
+
+Global setup GETs the base URL (3 attempts, 10 s each) and aborts with a banner if nothing answers.
+During the run every navigation feeds a circuit breaker (`support/breaker.ts`, state in
+`tests/e2e-responsive/.auth/breaker.log`): after `RESPONSIVE_BREAKER_N` consecutive refused/reset/timed-out
+navigations the launcher (`pnpm e2e:responsive*`) kills the run, prints a banner and exits 4. Plain
+`npx playwright test -c ...` still stops navigating but cannot kill itself. The report keeps the tests that
+finished before the failure.
+
+### Suite self-tests
+
+`pnpm e2e:responsive:selftest` runs `selftest/*.selftest.ts` (config `playwright.responsive.selftest.config.ts`):
+the occlusion sweep on inline pages (nested sidebar scroller false positive, real fixed overlap), the
+breaker, the preflight and the iPhone engine switch. No app, login or server needed.
 
 ## Output
 
@@ -74,7 +106,7 @@ excluded routes with reasons). Devices: `support/devices.ts`.
 | --- | --- | --- |
 | 1 | Horizontal overflow: page scrollbar and, because `body { overflow-x: clip }` hides it, every element that extends past the viewport (not contained by a clipping/scrolling ancestor, not an off-canvas panel) | hard |
 | 2 | Text clipped by a fixed-size box without ellipsis (skip links, `sr-only` and sub-8px boxes ignored; text with a `title`/`aria-label` is info) | soft |
-| 3 | Occluded clickables (elements inside collapsed accordions / `aria-hidden` are not measured; a coverer inside the same interactive ancestor is not an occluder): `elementFromPoint` at the centre must hit the element at SOME scroll position of a sweep down the page; an element covered at every position is reported with what covers it | hard |
+| 3 | Occluded clickables (elements inside collapsed accordions / `aria-hidden` are not measured; a coverer inside the same interactive ancestor is not an occluder): `elementFromPoint` at the centre must hit the element at SOME scroll position of a sweep down the page (an element inside its own scroller, e.g. a sidebar nav, is first centred with `scrollIntoView` so its last items are tested where a user could see them); an element covered at every position is reported with what covers it | hard |
 | 4 | Tap targets under 44x44 (touch devices; inline text links exempt) | soft |
 | 5 | Fixed/sticky elements overlapping each other, or content hidden under a fixed bar at the top/bottom of the page | soft |
 | 6 | Mobile navigation (< 1024px): toggle opens (waits for the loading veil and up to 10 s), collapsed groups are expanded through their own `aria-expanded` trigger, every visible item is reachable, menu closes | hard |

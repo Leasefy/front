@@ -31,23 +31,40 @@ export interface DeviceMeta {
 // viewport (browser chrome is NOT subtracted). Real phones show less than that
 // (URL bar, toolbars), so 100vh-type bugs are, if anything, under-reported here.
 
+/**
+ * Engine that runs the iPhone projects. WebKit (default) is the real Safari engine; on this
+ * Windows box it hangs, so `RESPONSIVE_IPHONE_ENGINE=chromium` runs the SAME viewport, DPR,
+ * isMobile, hasTouch and iPhone user agent on Chromium. Chromium emulation does NOT reproduce
+ * Safari-only rendering (dvh/svh, safe-area insets, sticky/fixed in the URL bar, flex gap and
+ * aspect-ratio quirks, input zoom), so a green Chromium run is not a Safari sign-off.
+ */
+export function iphoneEngine(): 'webkit' | 'chromium' {
+  return process.env.RESPONSIVE_IPHONE_ENGINE?.trim().toLowerCase() === 'chromium' ? 'chromium' : 'webkit';
+}
+
+/** Project id of an iPhone: the engine is spelled out whenever it is not the default. */
+export function iphoneId(label: string, engine = iphoneEngine()): string {
+  return engine === 'chromium' ? `${label} [chromium]` : label;
+}
+
 function iphone(
-  id: string,
+  label: string,
   width: number,
   height: number,
   dpr: number,
   fast = false,
 ): DeviceSpec {
   const base = devices['iPhone 14'];
+  const engine = iphoneEngine();
   return {
-    id,
+    id: iphoneId(label, engine),
     group: 'mobile',
     width,
     height,
     fast,
     use: {
       ...base,
-      browserName: 'webkit',
+      browserName: engine,
       viewport: { width, height },
       screen: { width, height },
       deviceScaleFactor: dpr,
@@ -85,12 +102,14 @@ function android(
 
 function landscape(id: string, descriptor: string): DeviceSpec {
   const d = devices[descriptor];
+  const isIphone = /^iPhone/.test(descriptor);
+  const engine = isIphone ? iphoneEngine() : undefined;
   return {
-    id,
+    id: isIphone ? iphoneId(id, engine) : id,
     group: 'mobile',
     width: d.viewport.width,
     height: d.viewport.height,
-    use: { ...d },
+    use: { ...d, ...(engine ? { browserName: engine } : {}) },
   };
 }
 
@@ -125,7 +144,7 @@ function desktop(
 }
 
 export const DEVICES: DeviceSpec[] = [
-  // iPhones (WebKit)
+  // iPhones (WebKit by default, Chromium with RESPONSIVE_IPHONE_ENGINE=chromium)
   iphone('iPhone 11 414x896', 414, 896, 2, true),
   iphone('iPhone 12-13 mini 375x812', 375, 812, 3),
   iphone('iPhone 12-13-14 390x844', 390, 844, 3, true),

@@ -21,6 +21,7 @@ import { loadE2eEnv } from './tests/e2e-responsive/support/env';
  *                           (RESPONSIVE_WARMUP_ROUTE_MS = per-route navigation cap, default 90000)
  *   RESPONSIVE_REUSE_AUTH=1 / RESPONSIVE_REUSE_RESOLVED=1   skip re-login / re-crawl when the files from
  *                           a previous run exist (iterating on the suite)
+ *   RESPONSIVE_IPHONE_ENGINE=chromium  run the iPhone projects on Chromium (WebKit hangs on some Windows boxes)
  *   RESPONSIVE_PREFLIGHT=0  skip the start-up GET of the base URL (default: on; a dead server aborts the run)
  *   RESPONSIVE_BREAKER_N    consecutive refused/timed-out navigations that abort the run (default 6)
  *   RESPONSIVE_ALLOW_POST   regex of URLs the read-only guard may let through (default none)

@@ -82,14 +82,19 @@ function EditarAcuerdoGeneral() {
   if (error) {
     return (
       <CrossFade swapKey="fallo">
-        <Marco titulo="Acuerdo general">
+        {/* El fallo ocupa la pantalla: su propia salida arriba, a la vista (guardián el-fallo-de-una-ficha-tiene-salida). */}
+        <div className="space-y-6 p-6 lg:p-8">
+          <div>
+            <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
+            <EncabezadoDePantalla className="mt-3" seccion="Cobranza · Acuerdos" titulo="Acuerdo general" />
+          </div>
           <FalloDeCarga
             error={error}
             queEs="el acuerdo"
             onReintentar={() => refetch()}
             volverA={{ label: 'Volver a Acuerdos de pago', href: VOLVER }}
           />
-        </Marco>
+        </div>
       </CrossFade>
     )
   }

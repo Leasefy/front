@@ -42,6 +42,7 @@ import {
 } from '@/components/inmobiliaria/cobranza/approval/RechazarForm'
 import { Collapse, CrossFade, Presence } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { BackButton } from '@/components/ui/back-button'
 
 void React
 
@@ -203,6 +204,8 @@ export default function CartaApprovalClient({ artifactId }: Props) {
   return (
     <CrossFade swapKey="carta">
     <div className="p-6 lg:p-8 space-y-6">
+      {/* La vuelta a la lista de cartas (guardián fichas-con-vuelta). */}
+      <BackButton href="/panel/inmobiliaria/pagos/cobranza/cartas" label="Cartas" variant="subtle" />
       <EncabezadoDePantalla
         seccion="Cobranza · Cartas"
         titulo={t('inmobiliaria.ai.cobranza.cartas.title')}

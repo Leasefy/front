@@ -23,13 +23,18 @@
  *    inventado, y cuando no hay, la fila lo dice.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SearchInput } from '@leasefy/cadence';
 import { FileArrowDown } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination } from '@/lib/hooks/use-table-pagination';
+import type { InmuebleDelCertificado } from '@/lib/api/informes-del-propietario.service';
 import { toast } from '@/components/ui/toast';
 import {
   informesDelPropietarioApi,
@@ -215,36 +220,7 @@ export default function MisInformesPage() {
                 />
               </dl>
 
-              {certificado.inmuebles.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-fg-muted">
-                        <th className="py-2 pr-4">Inmueble</th>
-                        <th className="py-2 pr-4 text-right">Ingreso bruto</th>
-                        <th className="py-2 pr-4 text-right">Comisión</th>
-                        <th className="py-2 text-right">Retenido</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {certificado.inmuebles.map((i) => (
-                        <tr key={i.contractId} className="border-t border-border">
-                          <td className="py-2 pr-4">{i.inmueble}</td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatCurrency(i.ingresoBrutoCop)}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatCurrency(i.comisionCop)}
-                          </td>
-                          <td className="py-2 text-right tabular-nums">
-                            {formatCurrency(i.retenidoCop)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {certificado.inmuebles.length > 0 && <InmueblesDelCertificado inmuebles={certificado.inmuebles} />}
 
               {/* 🔴 Lo que el certificado NO incluye se dice, no se calla. */}
               <ul className="space-y-1.5" data-testid="advertencias">
@@ -341,6 +317,103 @@ function Renglon({ titulo, valor }: { titulo: string; valor: number }) {
       <dd className="text-sm tabular-nums text-fg">
         {formatCurrency(valor)}
       </dd>
+    </div>
+  );
+}
+
+/** Con más de esta cantidad de inmuebles la tabla trae su buscador y su paginación. */
+const POR_PAGINA = 10;
+
+/**
+ * Revisora r25: el detalle por inmueble del certificado en la tabla de la casa
+ * (antes una `<table>` a mano), en tarjetas a 390 y, si crece, con buscador y
+ * paginación dentro de la tarjeta (regla de Nico, 23-10: las tablas los conservan).
+ */
+function InmueblesDelCertificado({ inmuebles }: { inmuebles: readonly InmuebleDelCertificado[] }) {
+  const [texto, setTexto] = useState('');
+  const crece = inmuebles.length > POR_PAGINA;
+  const filas = useMemo(() => {
+    const q = texto.trim().toLocaleLowerCase('es');
+    return q ? inmuebles.filter((i) => i.inmueble.toLocaleLowerCase('es').includes(q)) : inmuebles;
+  }, [inmuebles, texto]);
+  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(filas, {
+    initialPageSize: POR_PAGINA,
+    resetKey: texto,
+  });
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-surface" data-testid="inmuebles-del-certificado">
+      {crece && (
+        <div className="border-b border-border p-3">
+          <SearchInput
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onClear={() => setTexto('')}
+            placeholder="Buscar inmueble"
+            inputSize="md"
+            className="w-full sm:w-72"
+            data-testid="inmuebles-del-certificado-buscar"
+          />
+        </div>
+      )}
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
+          <TableRow>
+            <TableHead>Inmueble</TableHead>
+            <TableHead numeric>Ingreso bruto</TableHead>
+            <TableHead numeric>Comisión</TableHead>
+            <TableHead numeric>Retenido</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody className="max-md:block">
+          {pageItems.length === 0 ? (
+            <TableRow className="max-md:block">
+              <TableCell colSpan={4} className="py-6 text-center text-body-sm text-fg-muted max-md:block">
+                Ningún inmueble se llama así.{' '}
+                <button type="button" className="underline" onClick={() => setTexto('')}>
+                  Ver todos
+                </button>
+              </TableCell>
+            </TableRow>
+          ) : (
+            pageItems.map((i) => (
+              <TableRow
+                key={i.contractId}
+                data-testid="inmueble-del-certificado"
+                className="max-md:grid max-md:grid-cols-3 max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+              >
+                <TableCell className="max-md:col-span-3 max-md:block max-md:p-0">
+                  <span className="font-medium text-fg">{i.inmueble}</span>
+                </TableCell>
+                <TableCell numeric className="font-mono tabular-nums max-md:block max-md:p-0 max-md:text-left">
+                  <span className="block text-caption text-fg-muted md:hidden">Ingreso bruto</span>
+                  {formatCurrency(i.ingresoBrutoCop)}
+                </TableCell>
+                <TableCell numeric className="font-mono tabular-nums max-md:block max-md:p-0 max-md:text-left">
+                  <span className="block text-caption text-fg-muted md:hidden">Comisión</span>
+                  {formatCurrency(i.comisionCop)}
+                </TableCell>
+                <TableCell numeric className="font-mono tabular-nums max-md:block max-md:p-0 max-md:text-left">
+                  <span className="block text-caption text-fg-muted md:hidden">Retenido</span>
+                  {formatCurrency(i.retenidoCop)}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      {crece && (
+        <div className="border-t border-border">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 25, 50]}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -159,6 +159,38 @@ describe('el certificado de ingresos', () => {
     expect(texto()).toContain('Retenciones que te practicaron');
   });
 
+  it('revisora r25: el detalle por inmueble va en la tabla de la casa; con muchos inmuebles trae buscador y paginación', async () => {
+    api.certificadoDeIngresos.mockResolvedValue({
+      ...CERTIFICADO,
+      inmuebles: Array.from({ length: 12 }, (_, n) => ({
+        contractId: `ct-${n}`,
+        inmueble: n === 11 ? 'Carrera 7 # 80-12' : `Calle ${n + 1} # 5-20`,
+        ingresoBrutoCop: 2_000_000,
+        comisionCop: 200_000,
+        retenidoCop: 70_000,
+      })),
+    });
+    await montar();
+    const tabla = document.querySelector('[data-testid="inmuebles-del-certificado"]');
+    expect(tabla?.querySelectorAll('[data-testid="inmueble-del-certificado"]').length).toBe(10);
+    const buscar = tabla?.querySelector('[data-testid="inmuebles-del-certificado-buscar"] input, input[data-testid="inmuebles-del-certificado-buscar"]') as HTMLInputElement | null;
+    expect(buscar).not.toBeNull();
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      set.call(buscar!, 'carrera');
+      buscar!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const filas = tabla?.querySelectorAll('[data-testid="inmueble-del-certificado"]');
+    expect(filas?.length).toBe(1);
+    expect(filas?.[0]?.textContent).toContain('Carrera 7 # 80-12');
+  });
+
+  it('con pocos inmuebles, la tabla sin buscador', async () => {
+    await montar();
+    expect(document.querySelectorAll('[data-testid="inmueble-del-certificado"]').length).toBe(1);
+    expect(document.querySelector('[data-testid="inmuebles-del-certificado-buscar"]')).toBeNull();
+  });
+
   it('🔴 muestra lo que el certificado NO incluye', async () => {
     await montar();
     expect(texto()).toContain('sistema anterior de la inmobiliaria');

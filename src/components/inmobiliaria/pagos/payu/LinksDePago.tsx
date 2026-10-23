@@ -173,7 +173,7 @@ export function LinksDePago({
       <EstadoDeDatos
         cargando={cargando && !data}
         error={error}
-        queEs="los links de pago"
+        queEs="los enlaces de pago"
         onReintentar={recargar}
         vacio={Boolean(data) && total === 0}
         esqueleto={<EsqueletoTabla filas={5} columnas={4} />}

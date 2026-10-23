@@ -73,7 +73,7 @@ function CuandoEscribe() {
         ))}
       </ol>
       <p className="mt-3 max-w-2xl text-body-sm text-fg-muted">
-        Son máximo tres mensajes por cuota y siempre el mismo link. Después del tercero ya no escribe: la sigue
+        Son máximo tres mensajes por cuota y siempre el mismo enlace. Después del tercero ya no escribe: la sigue
         cobranza.
       </p>
     </div>
@@ -153,8 +153,8 @@ function EsperanTuAprobacion({ ids }: { ids: readonly string[] }) {
       <p className="flex items-start gap-3 text-body-sm text-fg">
         <HandPalm className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
         {total === 1
-          ? 'Un link de pago espera tu aprobación para salir: Cobri no lo manda sin tu clic.'
-          : `${total} links de pago esperan tu aprobación para salir: Cobri no los manda sin tu clic.`}
+          ? 'Un enlace de pago espera tu aprobación para salir: Cobri no lo manda sin tu clic.'
+          : `${total} enlaces de pago esperan tu aprobación para salir: Cobri no los manda sin tu clic.`}
       </p>
       <Link
         href={href}
@@ -177,13 +177,13 @@ export function CobriEsteMes() {
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h2 id="cobri-este-mes" className="text-subtitle text-fg">
-            Cobri · el link de pago de cada cuota
+            Cobri · el enlace de pago de cada cuota
           </h2>
           <PildoraDelAgente estado={estadoDeCobri(resumen)} data-testid="estado-de-cobri" />
         </div>
         <p className="max-w-2xl text-body-sm text-fg-muted">
-          Le manda al inquilino por WhatsApp el link de pago de su cuota más vieja con saldo, por el valor exacto. Es
-          el mismo link que va en los correos de aviso de cobro.
+          Le manda al inquilino por WhatsApp el enlace de pago de su cuota más vieja con saldo, por el valor exacto. Es
+          el mismo enlace que va en los correos de aviso de cobro.
         </p>
       </div>
 
@@ -197,7 +197,7 @@ export function CobriEsteMes() {
       <LinksDePago
         mes={mes}
         onCambiarMes={setMes}
-        titulo="El link de cada cuota"
+        titulo="El enlace de cada cuota"
         descripcion={null}
         resumen={<FraseDelMes lectura={resumen} />}
         esperanEnLaBandeja={enLaBandeja.porCuota}

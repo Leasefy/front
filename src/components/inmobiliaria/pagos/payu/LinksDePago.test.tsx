@@ -133,7 +133,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     get.mockResolvedValue(pagina(LOS_CINCO));
     await montar(<LinksDePago mes="2026-10" />);
     const palabras: Record<string, string> = {
-      ninguno: 'Sin link',
+      ninguno: 'Sin enlace',
       enviado: 'Enviado',
       pagado: 'Pagado',
       vencido: 'Vencido',
@@ -330,7 +330,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     );
     await montar(<LinksDePago mes="2026-10" />);
     expect(fila('c-pagado')?.querySelector('[data-testid="pago-sin-aplicar"]')?.textContent).toBe(
-      `El pago entró por el link, pero no se aplicó a la cuota y sigue debiéndose: ${motivo}`,
+      `El pago entró por el enlace, pero no se aplicó a la cuota y sigue debiéndose: ${motivo}`,
     );
     // Un «Pagado» verde encima de «sigue debiéndose» se contradecía.
     const pastilla = fila('c-pagado')?.querySelector('[data-testid="estado-del-link"]');

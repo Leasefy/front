@@ -2030,10 +2030,11 @@ export function NuevaFactura({
             cuando: la pregunta del CEO del 13-09, «qué tengo por facturar hasta
             diciembre»). Al plegarlo, la consulta vuelve al mes solo. */}
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="flex flex-col gap-1.5">
+          {/* Ronda 30 (revisora r27): el rótulo al lado del campo, en la barra (antes encima). */}
+          <div className="flex items-center gap-2">
             <label
               htmlFor="facturacion-mes"
-              className="text-caption font-medium text-fg-muted"
+              className="whitespace-nowrap text-caption font-medium text-fg-muted"
             >
               Mes a facturar
             </label>

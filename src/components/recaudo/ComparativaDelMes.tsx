@@ -28,6 +28,7 @@
  *     otra, y lo único que dice «no se pudo leer» es la comparación.
  */
 
+import type { ReactNode } from 'react';
 import { ArrowDown, ArrowUp, Equals } from '@phosphor-icons/react';
 
 import { Spinner } from '@/components/ui/spinner';
@@ -325,22 +326,53 @@ export function ComparativaDelMes({
     >
       {comparativa && (
         <div className="grid gap-4 lg:grid-cols-3" data-testid="comparativa">
-          <CuerpoDelGrafico comparativa={comparativa} mes={mes} formato={formato} />
-          <TarjetaDeProyeccion proyeccion={comparativa.proyeccion} month={month} formato={formato} />
+          {/* Ronda 26 (revisora r25, Recaudo #1, §3): con la tasa en 0 la proyección ES lo que llegó, y la
+              tarjeta repetía la cifra de arriba por cuarta vez. Sin la tarjeta: una línea bajo el día a día. */}
+          {proyeccionSinTasa(comparativa.proyeccion) ? (
+            <CuerpoDelGrafico
+              comparativa={comparativa}
+              mes={mes}
+              formato={formato}
+              ancho
+              pie={
+                <p className="text-caption leading-relaxed text-fg-muted" data-testid="proyeccion-sin-tasa">
+                  {locale === 'en'
+                    ? 'No close projection: in previous months nothing still due came in before the close. For now, the close is what already came in.'
+                    : 'No hay proyección del cierre: en los meses anteriores no entró nada de lo por vencer antes del cierre. Por ahora, el cierre es lo que ya llegó.'}
+                </p>
+              }
+            />
+          ) : (
+            <>
+              <CuerpoDelGrafico comparativa={comparativa} mes={mes} formato={formato} />
+              <TarjetaDeProyeccion proyeccion={comparativa.proyeccion} month={month} formato={formato} />
+            </>
+          )}
         </div>
       )}
     </EstadoDeDatos>
   );
 }
 
+/** La proyección que no dice nada nuevo: proyectada con tasa 0 = lo que ya llegó. */
+function proyeccionSinTasa(p: Comparativa['proyeccion']): boolean {
+  return p.estado === 'PROYECTADA' && p.tasa === 0;
+}
+
 function CuerpoDelGrafico({
   comparativa: c,
   mes,
   formato = formatCurrency,
+  ancho = false,
+  pie,
 }: {
   comparativa: Comparativa;
   mes: string;
   formato?: (n: number | null | undefined) => string;
+  /** Sin la tarjeta de la proyección al lado: ocupa toda la fila. */
+  ancho?: boolean;
+  /** Una línea al pie (la proyección que no se pinta en tarjeta). */
+  pie?: ReactNode;
 }) {
   const { t, locale } = useI18n();
   const mesAnterior = soloElMes(c.mesAnterior, locale);
@@ -363,7 +395,10 @@ function CuerpoDelGrafico({
 
   return (
     <section
-      className="min-w-0 space-y-4 rounded-lg border border-border bg-surface p-5 sm:p-6 lg:col-span-2"
+      className={cn(
+        'min-w-0 space-y-4 rounded-lg border border-border bg-surface p-5 sm:p-6',
+        ancho ? 'lg:col-span-3' : 'lg:col-span-2',
+      )}
       aria-labelledby="dia-a-dia-titulo"
     >
       <div className="space-y-1">
@@ -404,6 +439,7 @@ function CuerpoDelGrafico({
           {t(`${C}.diaADia.sinRecibos`, { mes, mesAnterior })}
         </p>
       )}
+      {pie}
     </section>
   );
 }

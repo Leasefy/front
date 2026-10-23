@@ -279,6 +279,21 @@ describe('ComparativaDelMes', () => {
     expect(el$('[data-testid="proyeccion-rango"]')).toBeNull();
   });
 
+  /** Ronda 26 (revisora r25, Recaudo #1): con la tasa en 0 la proyección es lo que llegó: sin tarjeta, una línea. */
+  it('con la tasa en 0 no pinta la tarjeta de la proyección: una línea bajo el día a día', async () => {
+    const c = comparativa();
+    await montar(
+      bloque({
+        ...c,
+        proyeccion: { ...c.proyeccion, tasa: 0, cierreCop: 800_000, rango: null },
+      }),
+    );
+    expect(el$('[data-testid="proyeccion"]')).toBeNull();
+    expect(el$('[data-testid="proyeccion-cifra"]')).toBeNull();
+    expect($('[data-testid="proyeccion-sin-tasa"]').textContent).toContain('el cierre es lo que ya llegó');
+    expect($('[data-testid="dia-a-dia-resumen"]')).toBeTruthy();
+  });
+
   /** 🔴 Sin historia no hay proyección: «Sin datos», nunca «$\u00a00». */
   it('sin historia dice «Sin datos» y por qué, sin inventar una tasa', async () => {
     await montar(bloque(sinMesAnterior()));

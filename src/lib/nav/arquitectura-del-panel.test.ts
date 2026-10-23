@@ -310,6 +310,7 @@ describe('arquitectura del panel — sidebar', () => {
       '/mantenimientos/tickets': 'tickets',
       '/contratos/aprobar': 'por-aprobar',
       '/pipeline': 'prospeccion', // vocabulario: manual de voz (22-10), sin anglicismos en el menú
+      '/postulaciones/matching': 'afinidad', // decisión 26 de Nico (22-10): «Matching» → «Afinidad»; la ruta se conserva
     };
     /*
      * 🔴 R4 mide el nombre con el que se NAVEGA a la ruta, que para la raíz de

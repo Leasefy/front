@@ -101,9 +101,9 @@ function metodoEnEspanol(metodo: string | null | undefined): string {
     case 'cartera_import':
       return 'Importado de la cartera'
     case 'wompi':
-      return 'Link de pago (Wompi)'
+      return 'Enlace de pago (Wompi)'
     case 'bold':
-      return 'Link de pago (Bold)'
+      return 'Enlace de pago (Bold)'
     case 'pse':
       return 'PSE'
     case 'transferencia':

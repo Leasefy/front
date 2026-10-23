@@ -56,7 +56,7 @@ const AGENTES_CON_SALA: { agente: AgenteId; nombre: string; hace: string; fila: 
   { agente: 'cobranza', nombre: 'Cobranza', hace: 'Sigue a los inquilinos atrasados hasta que pagan.', fila: 'cobranza' },
   { agente: 'pagos', nombre: 'Pagos', hace: 'Revisa los pagos que llegan y los deja listos para aplicar.', fila: 'agente-de-pagos' },
   { agente: 'conciliacion', nombre: 'Conciliación', hace: 'Cruza el extracto del banco con los recibos.', fila: 'conciliacion' },
-  { agente: 'matching', nombre: 'Matching', hace: 'Le busca otro inmueble al candidato que se quedó sin el suyo.', fila: 'matching' },
+  { agente: 'matching', nombre: 'Afinidad', hace: 'Le busca otro inmueble al candidato que se quedó sin el suyo.', fila: 'matching' },
   { agente: 'cotizador', nombre: 'Asegurabilidad', hace: 'Pide la aprobación de las aseguradoras para cada inquilino.', fila: 'asegurabilidad' },
 ];
 

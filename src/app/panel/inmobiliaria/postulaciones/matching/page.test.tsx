@@ -114,7 +114,7 @@ describe('Resumen de Matching — el vacío honesto', () => {
 
     const vacio = pantalla.querySelector('[data-testid="empty-state"]')
     expect(vacio).not.toBeNull()
-    expect(vacio!.textContent).toContain('Matching todavía no tiene casos en tu cartera')
+    expect(vacio!.textContent).toContain('Afinidad todavía no tiene casos en tu cartera')
     expect(vacio!.textContent).toContain('Cuando un candidato se quede sin inmueble')
     expect(vacio!.querySelector('a, button')).toBeNull()
 
@@ -138,7 +138,7 @@ describe('Resumen de Matching — el vacío honesto', () => {
     const pantalla = await montar()
 
     expect(pantalla.querySelector('[data-testid="empty-state"]')?.textContent).toContain(
-      'Matching todavía no tiene casos en tu cartera',
+      'Afinidad todavía no tiene casos en tu cartera',
     )
     expect(pantalla.querySelector('[data-testid="matching-resumen-datos"]')).toBeNull()
   })
@@ -161,7 +161,7 @@ describe('Resumen de Matching — el vacío honesto', () => {
       },
     })
     const pantalla = await montar()
-    expect(pantalla.querySelector('[data-testid="empty-state"]')?.textContent).toContain('Matching todavía no tiene casos en tu cartera')
+    expect(pantalla.querySelector('[data-testid="empty-state"]')?.textContent).toContain('Afinidad todavía no tiene casos en tu cartera')
     expect(pantalla.textContent).not.toContain('Calce promedio')
   })
 
@@ -209,7 +209,7 @@ describe('Resumen de Matching — el vacío honesto', () => {
     const pantalla = await montar()
 
     const header = pantalla.querySelector('header')!
-    expect(header.textContent).toContain('Matching')
+    expect(header.textContent).toContain('Afinidad')
     expect(header.querySelector('h1')?.textContent).toBe('Resumen')
     expect(header.querySelector('a')?.getAttribute('href')).toBe(
       '/panel/inmobiliaria/postulaciones/matching/cola',

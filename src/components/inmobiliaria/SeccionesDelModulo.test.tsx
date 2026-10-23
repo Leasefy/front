@@ -277,6 +277,16 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     }))
   }
 
+  it('en un teléfono el selector y el riel van en renglones separados (T-0173: el riel quedaba en ~90 px y las secciones inalcanzables)', () => {
+    render('/panel/inmobiliaria/pagos')
+    const renglon = contenedor.querySelector('[data-testid="selector-de-caras"]')!.parentElement!
+    expect(renglon.className).toContain('flex-col')
+    expect(renglon.className).toContain('sm:flex-row')
+    const separador = renglon.querySelector(':scope > span[aria-hidden="true"]')!
+    expect(separador.className).toContain('hidden')
+    expect(separador.className).toContain('sm:block')
+  })
+
   it('la cara es un SELECTOR aparte, no una pestaña más del riel', () => {
     render('/panel/inmobiliaria/pagos')
     expect(caras().map((c) => c.clave)).toEqual(['inquilinos', 'propietarios', 'tesoreria'])

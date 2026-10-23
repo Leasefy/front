@@ -466,7 +466,7 @@ export function BarraDePestanas({
   const conCaras = esSecciones && !!caras && caras.length > 1;
 
   const riel = (
-      <div className={cn('relative', conCaras && 'min-w-0 flex-1')}>
+      <div className={cn('relative', conCaras && 'min-w-0 sm:flex-1')}>
         <div
           className={cn(
             'pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-bg to-transparent transition-opacity',
@@ -512,7 +512,7 @@ export function BarraDePestanas({
             'flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
             // Con selector, el padding izquierdo lo pone el renglón: si no, el
             // riel arrancaría a 24 px del control del que cuelga.
-            conCaras ? 'pl-2 pr-4 md:pr-6' : 'px-4 md:px-6',
+            conCaras ? 'pl-0 pr-4 sm:pl-2 md:pr-6' : 'px-4 md:px-6',
             esSecciones && !conCaras ? 'py-2' : '',
             esSecciones ? '' : 'gap-1',
           )}
@@ -583,13 +583,16 @@ export function BarraDePestanas({
           encima de la otra, se leen como dos juegos de pestañas del mismo
           nivel por bien pintada que esté cada una. */}
       {conCaras ? (
-        <div className="flex items-center gap-2 py-2 pl-4 md:pl-6">
+        // T-0173: bajo `sm` van en DOS renglones. En una fila el selector (hasta
+        // 15 rem) dejaba al riel ~90 px a 360: las secciones quedaban bajo el
+        // rótulo «Cobrar a inquilinos» y no se podían tocar.
+        <div className="flex flex-col gap-1 py-2 pl-4 sm:flex-row sm:items-center sm:gap-2 md:pl-6">
           <SelectorDeCaras
             caras={caras!}
             ariaLabel={carasAriaLabel ?? 'Caras del módulo'}
             pathname={pathname}
           />
-          <span aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
+          <span aria-hidden="true" className="hidden h-8 w-px shrink-0 bg-border sm:block" />
           {riel}
         </div>
       ) : (

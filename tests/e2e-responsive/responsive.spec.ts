@@ -305,9 +305,10 @@ for (const persona of PERSONAS) {
         findings.push(...findingsFromSweep(sweep, meta.touch));
         if (sweep.overlayOpenOnLoad) {
           findings.push({
-            type: 'note',
+            type: 'blocked-by-modal',
             severity: 'info',
-            detail: 'A dialog was already open on load (cookie banner, tour or modal): occlusion was judged only inside it.',
+            selector: sweep.blockingModal,
+            detail: `Page blocked by modal ${sweep.blockingModal}: it was open on load (pending legal acceptance, cookie banner, tour...), so the page behind it is inert. Modal layers are not judged as fixed bars and occlusion was judged only inside it. The suite is read-only and does not dismiss it.`,
           });
         }
 

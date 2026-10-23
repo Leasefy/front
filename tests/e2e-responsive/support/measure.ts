@@ -56,6 +56,8 @@ export interface SweepResult {
   scroller: string;
   maxScroll: number;
   overlayOpenOnLoad: boolean;
+  /** Selector of a modal / dialog that is open on load and makes the page behind it inert; '' when none. */
+  blockingModal: string;
   overflow: Offender[];
   overflowTotal: number;
   occluded: OccludedItem[];
@@ -133,6 +135,11 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
       ((e as HTMLElement).innerText || e.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 28);
     return `${p}${own}${label ? ` "${label}"` : ''}`.slice(0, 160);
   };
+
+  // A modal layer (Radix Dialog, alertdialog, aria-modal) is not part of the page layout: it sits
+  // over it on purpose and makes everything behind it inert. It is never a "fixed bar" nor an occluder.
+  const MODAL = '[role=dialog],[role=alertdialog],[aria-modal=true]';
+  const inModal = (e: Element): boolean => !!e.closest(MODAL);
 
   const inPortal = (e: Element): boolean => e.tagName === 'NEXTJS-PORTAL';
   const all = Array.from(document.body.querySelectorAll('*')).filter(
@@ -270,10 +277,9 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
 
   // Overlay already open on load (cookie banner, tour, modal): everything behind it is
   // expected to be covered, so occlusion is only judged for elements inside it.
-  const overlayEl = Array.from(
-    document.querySelectorAll('[role=dialog],[role=alertdialog],[aria-modal=true]'),
-  ).find((e) => visible(e));
+  const overlayEl = Array.from(document.querySelectorAll(MODAL)).find((e) => visible(e));
   const overlayOpenOnLoad = !!overlayEl;
+  const blockingModal = overlayEl ? sel(overlayEl) : '';
 
   // ---- tap targets (soft) -----------------------------------------------------------------
   const tap: TapItem[] = [];
@@ -298,6 +304,7 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
   const fixedTop = (): HTMLElement[] => {
     const list = (all as HTMLElement[]).filter((e) => {
       if (inPortal(e)) return false;
+      if (inModal(e) || e.querySelector(MODAL)) return false; // modal layers are reported on their own
       if (['TH', 'TD', 'THEAD', 'TR'].includes(e.tagName)) return false;
       const cs = getComputedStyle(e);
       if (cs.position !== 'fixed' && cs.position !== 'sticky') return false;
@@ -315,7 +322,7 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
   const covered: CoverItem[] = [];
   const leaves = (): HTMLElement[] =>
     (all as HTMLElement[]).filter((e) => {
-      if (inPortal(e) || decorative(e)) return false;
+      if (inPortal(e) || decorative(e) || inModal(e)) return false;
       const t = e.tagName;
       const leaf =
         hasOwnText(e) || t === 'IMG' || t === 'INPUT' || t === 'BUTTON' || t === 'SELECT' || t === 'TEXTAREA';
@@ -384,6 +391,8 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
   const hitOk = (el: HTMLElement, hit: Element | null): boolean => {
     if (!hit) return true;
     if (inPortal(hit)) return true; // Next dev indicator
+    const hitModal = hit.closest(MODAL);
+    if (hitModal && !hitModal.contains(el)) return true; // behind a modal: inert on purpose, not occluded
     if (hit === el || el.contains(hit) || hit.contains(el)) return true;
     // A sibling inside the same interactive ancestor (a span in the same <a>/<button>) is not an occluder.
     const parentInteractive = el.parentElement?.closest(INTERACTIVE);
@@ -493,6 +502,7 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
     scroller: scroller ? sel(scroller) : 'document',
     maxScroll: Math.round(maxScroll),
     overlayOpenOnLoad,
+    blockingModal,
     overflow: overflow.slice(0, 12),
     overflowTotal: overflow.length,
     occluded,

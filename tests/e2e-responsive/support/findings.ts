@@ -13,6 +13,7 @@ export type FindingType =
   | 'page-error'
   | 'redirected'
   | 'forbidden-for-role'
+  | 'blocked-by-modal'
   | 'blocked-mutation'
   | 'note'
   | 'suite-error';

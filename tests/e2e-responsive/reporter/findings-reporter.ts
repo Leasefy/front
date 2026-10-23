@@ -69,6 +69,7 @@ const TYPE_TITLES: Record<string, string> = {
   'page-error': 'Page errors (not layout)',
   redirected: 'Redirected routes (informational)',
   'forbidden-for-role': 'Forbidden for this role (informational, not measured)',
+  'blocked-by-modal': 'Page blocked by a modal (informational, layout of the page behind it not judged)',
   note: 'Notes',
   'blocked-mutation': 'Requests blocked by the read-only guard',
   'suite-error': 'Suite errors (the check itself crashed or timed out)',
@@ -323,7 +324,7 @@ export default class FindingsReporter implements Reporter {
     for (const type of order) {
       const c = json.countsByType[type];
       if (!c) continue;
-      L.push(`| ${TYPE_TITLES[type]} | ${hardTypes.has(type) ? 'hard' : type === 'redirected' || type === 'forbidden-for-role' || type === 'blocked-mutation' || type === 'note' ? 'info' : 'soft'} | ${c.occurrences} | ${c.routes} |`);
+      L.push(`| ${TYPE_TITLES[type]} | ${hardTypes.has(type) ? 'hard' : type === 'redirected' || type === 'forbidden-for-role' || type === 'blocked-by-modal' || type === 'blocked-mutation' || type === 'note' ? 'info' : 'soft'} | ${c.occurrences} | ${c.routes} |`);
     }
     L.push('');
 

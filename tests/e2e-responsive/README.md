@@ -116,7 +116,12 @@ excluded routes with reasons). Devices: `support/devices.ts`.
 An error page ("No pudimos cargar esto", 404, 5xx) is reported as `page-error` and its layout is not
 measured. A route that redirects away (e.g. a role without access) is `redirected` (informational). A screen that
 renders the "No tienes acceso a ..." card is recorded as `forbidden-for-role` (informational) and its
-layout is not measured. Running a single route: `RESPONSIVE_ROUTE_FILTER='^agencyAgent /panel/inmobiliaria/pagos/cobranza/acuerdos$'`
+layout is not measured. A modal that is open on load and makes the page inert (the landlord
+`aceptar-legales` legal acceptance, a cookie banner, a tour) is recorded as `blocked-by-modal`
+(informational, with the modal selector). Layers that are `role=dialog` / `role=alertdialog` /
+`aria-modal=true`, or sit inside one, are never counted as fixed bars (no `content-under-fixed` or
+`fixed-overlap`) nor as occluders, and occlusion is judged only inside the modal. The suite never
+accepts the terms: it is read-only and its guard aborts non-GET requests. Running a single route: `RESPONSIVE_ROUTE_FILTER='^agencyAgent /panel/inmobiliaria/pagos/cobranza/acuerdos$'`
 (anchored; a bare `-g` route pattern also matches its sub-routes).
 
 ## Safety: read only

@@ -668,4 +668,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "cosas más": "more things",
   // Panel (ronda 26, 2.º agente)
   "La creó": "Created it",
+  // Cobranza (ronda 26, 2.º agente)
+  "Todavía no puedes subir la cartera desde aquí: entra sola cada noche desde las cuotas vencidas.": "You can't upload your portfolio from here yet: it comes in on its own every night from the overdue installments.",
 }

@@ -21,7 +21,7 @@
  * todas las filas aunque tuviera los tres datos.
  *
  * FAIL-SOFT: si el backend no está desplegado (404 / red caída), el hook degrada
- * a status 'unavailable' y este card muestra "Próximamente — requiere despliegue"
+ * a status 'unavailable' y este card dice que la cartera entra sola cada noche
  * sin romper la pantalla. El empty-state que lo envuelve sigue intacto.
  *
  * DS: tokens (sin hex), <Button> del DS, controles rounded-md, una sola acción
@@ -273,11 +273,16 @@ export function CobranzaImportCard({
         </>
       )}
 
-      {/* Estado "Próximamente" cuando el backend no está desplegado (fail-soft) */}
+      {/* Sin el import desplegado (fail-soft). Revisora r27 (bloqueante): antes
+          «Próximamente — requiere despliegue del backend». Ahora dice lo cierto y
+          qué pasa sin el archivo: la cartera entra sola cada noche. */}
       {status === 'unavailable' && (
-        <div className="mt-3 rounded-md border border-border bg-surface-muted px-3 py-2.5 text-sm text-muted-foreground">
-          {message ?? 'Próximamente — requiere despliegue del backend.'}
-        </div>
+        <p
+          data-testid="cartera-import-no-disponible"
+          className="mt-3 text-sm text-fg-muted"
+        >
+          {tr("Todavía no puedes subir la cartera desde aquí: entra sola cada noche desde las cuotas vencidas.")}
+        </p>
       )}
 
       {/* Error real (un 4xx, un 5xx, la red) — `message` ya es la frase entera

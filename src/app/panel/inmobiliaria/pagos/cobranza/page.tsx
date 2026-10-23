@@ -213,7 +213,7 @@ export default function CobranzaOverviewPage() {
         </section>
         {/* Importar cartera — ahora cableada al endpoint POST /cartera/import.
             FAIL-SOFT: si el backend no está desplegado (404/red), el card
-            degrada a "Próximamente — requiere despliegue" sin romper. Tras un
+            dice que la cartera entra sola cada noche, sin romper. Tras un
             import exitoso refrescamos el overview para salir del empty state. */}
         <CobranzaImportCard onImported={() => void refetch()} />
       </div>

@@ -129,13 +129,6 @@ const EN_PANTALLA: Record<string, Promesa> = {
       '(De paso: hoy ningún archivo importa esta tarjeta — la de `preview-ds` es ' +
       'otra, definida ahí mismo.)',
   },
-  'components/inmobiliaria/cobranza/CobranzaImportCard.tsx': {
-    estado: 'HONESTO',
-    de: 'micro',
-    nota:
-      'Importar cartera. Llama a `POST /cartera/import` y degrada a «Próximamente ' +
-      '— requiere despliegue» con 404 o red caída.',
-  },
   'components/inmobiliaria/cotizador/RecoveryAsegurabilidad.tsx': {
     estado: 'FALTA',
     de: 'micro',
@@ -192,11 +185,6 @@ const EN_PANTALLA: Record<string, Promesa> = {
       'WhatsApp ruteado por la inmobiliaria (Ley 2300). El back ya dice si se ' +
       'puede contactar (`/agent/contact/can-contact`); lo que falta es que la ' +
       'agencia lo tenga prendido.',
-  },
-  'lib/hooks/cobranza/use-cartera-import.ts': {
-    estado: 'HONESTO',
-    de: 'micro',
-    nota: 'El mensaje de degradación que pinta `CobranzaImportCard`.',
   },
 };
 

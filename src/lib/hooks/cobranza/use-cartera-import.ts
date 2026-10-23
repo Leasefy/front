@@ -23,7 +23,7 @@
  *
  * REGLA DE ORO — FAIL-SOFT: el backend nuevo puede no estar desplegado todavía
  * (Victor despliega + aplica migración). Por eso:
- *  - 404 / red caída → status 'unavailable' con mensaje "Próximamente / requiere
+ *  - 404 / red caída → status 'unavailable' con mensaje honesto («todavía no… entra sola cada noche»), antes "Próximamente / requiere
  *    despliegue", SIN romper ni mostrar error feo.
  *  - 200 con summary (incluso vacío por migración pendiente) → status 'done'.
  *  - sin URL o sin agencyId → status 'idle' (degrada silencioso, sin warn ruidoso).
@@ -101,7 +101,10 @@ export interface UseCarteraImportResult {
   reset: () => void
 }
 
-const UNAVAILABLE_MESSAGE = 'Próximamente — requiere despliegue del backend.'
+// Revisora r27 (bloqueante del Resumen): sin «Próximamente» ni jerga. Es cierto:
+// la cartera entra sola cada noche desde las cuotas vencidas (`mora-sync`, 2 a. m.).
+const UNAVAILABLE_MESSAGE =
+  'Todavía no puedes subir la cartera desde aquí: entra sola cada noche desde las cuotas vencidas.'
 
 export function useCarteraImport(): UseCarteraImportResult {
   const { agency } = useAuth()
@@ -158,7 +161,7 @@ export function useCarteraImport(): UseCarteraImportResult {
           },
         )
 
-        // 404 → endpoint aún no desplegado: degrada a "Próximamente".
+        // 404 → endpoint aún no desplegado: degrada al mensaje honesto (sin promesa).
         if (res.status === 404) {
           setStatus('unavailable')
           setMessage(UNAVAILABLE_MESSAGE)

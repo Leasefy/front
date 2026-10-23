@@ -3,13 +3,13 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChartLineUp } from '@phosphor-icons/react'
-import { Alert, FranjaDeCifras } from '@leasefy/cadence'
+import { Alert, Cifra, FranjaDeCifras } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtFecha } from '@/lib/admin/format'
 import { estadoDelPlan } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 
@@ -127,7 +127,7 @@ export default function IngresosPage() {
       ordenPrimero: 'desc',
       texto: (f) => f.cobradoEsteMesCop,
       cell: (f) => (
-        <div className="tabular-nums">
+        <div className="font-mono tabular-nums">
           <span className={f.cobradoEsteMesCop > 0 ? 'text-success' : 'text-fg-muted'}>{fmtCOP(f.cobradoEsteMesCop)}</span>
           {f.ultimoPago ? <div className="text-caption text-fg-subtle">Último pago {fmtFecha(f.ultimoPago)}</div> : null}
         </div>
@@ -148,7 +148,7 @@ export default function IngresosPage() {
       ordenPrimero: 'desc',
       texto: (f) => f.pendienteCop,
       cell: (f) => (
-        <div className="tabular-nums">
+        <div className="font-mono tabular-nums">
           <span className={f.pendienteCop > 0 ? 'text-warning' : 'text-fg-muted'}>{fmtCOP(f.pendienteCop)}</span>
           {f.cobrosFallidosEsteMes > 0 ? (
             <div className="text-caption text-danger">
@@ -173,7 +173,7 @@ export default function IngresosPage() {
       texto: (f) => (f.voz ? f.voz.estimadoCop : ''),
       cell: (f) =>
         f.voz ? (
-          <div className="tabular-nums">
+          <div className="font-mono tabular-nums">
             <span className="text-fg">{fmtCOP(f.voz.estimadoCop)}</span>
             <div className="text-caption text-fg-subtle">
               {f.voz.enElMinimo ? 'El mínimo del mes' : `Recuperó ${fmtCOP(f.voz.recuperadoEsteMesCop)}`}
@@ -192,13 +192,34 @@ export default function IngresosPage() {
         description="Lo que Leasefy cobra a cada inmobiliaria: la mensualidad de su plan y lo que se le cobra por la cobranza por voz. Toca una para ver su ficha."
       />
 
-      <FranjaDeCifras fila="lg" aria-label="Cifras de los ingresos">
-        <KpiCard label="Mensualidades de los planes" value={t ? fmtCOP(t.mensualidadesCop) : '—'} hint="Planes fijos al día o en mora" />
-        <KpiCard label={`Cobrado en ${mes || 'el mes'}`} value={t ? fmtCOP(t.cobradoEsteMesCop) : '—'} tone="ok" hint={t ? `Mes pasado ${fmtCOP(t.cobradoMesPasadoCop)}` : undefined} />
-        <KpiCard label="Por cobrar" value={t ? fmtCOP(t.pendienteCop) : '—'} tone={t && t.pendienteCop > 0 ? 'warn' : 'default'} hint="Cobros de planes sin pagar" />
-        <KpiCard label="Cobros fallidos" value={t ? t.cobrosFallidosEsteMes : '—'} tone={t && t.cobrosFallidosEsteMes > 0 ? 'bad' : 'default'} hint={`En ${mes || 'el mes'}`} />
-        <KpiCard label="Cobranza por voz" value={t ? fmtCOP(t.estimadoPorVozCop) : '—'} hint="Estimado del mes" />
-      </FranjaDeCifras>
+      {/* Glow up 22-10: LA RESPUESTA (lo cobrado del mes, con la barra cobrado · por cobrar) y tres cifras de
+          apoyo, sin tonos de color; antes, 5 tarjetas del mismo peso. */}
+      {t ? (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo={`Cobrado en ${mes || 'el mes'}`}
+              cifra={fmtCOP(t.cobradoEsteMesCop)}
+              contexto={`el mes pasado ${fmtCOP(t.cobradoMesPasadoCop)}`}
+              tramos={[
+                { clave: 'cobrado', etiqueta: 'Cobrado', monto: t.cobradoEsteMesCop, tono: 'exito', cifra: fmtCOP(t.cobradoEsteMesCop), siempre: true },
+                { clave: 'por-cobrar', etiqueta: 'Por cobrar (planes sin pagar)', monto: t.pendienteCop, tono: 'aviso', cifra: fmtCOP(t.pendienteCop), siempre: true },
+              ]}
+              data-testid="ingresos-cobrado"
+            />
+          </div>
+          <FranjaDeCifras fila="lg" columnas={3} aria-label="Lo demás de los ingresos">
+            <Cifra etiqueta="Mensualidades de los planes" valor={fmtCOP(t.mensualidadesCop)} detalle="planes fijos al día o en mora" />
+            <Cifra
+              etiqueta="Cobros fallidos"
+              valor={t.cobrosFallidosEsteMes}
+              detalle={`en ${mes || 'el mes'}`}
+              tono={t.cobrosFallidosEsteMes > 0 ? 'peligro' : undefined}
+            />
+            <Cifra etiqueta="Cobranza por voz" valor={fmtCOP(t.estimadoPorVozCop)} detalle="estimado del mes" />
+          </FranjaDeCifras>
+        </div>
+      ) : null}
 
       {d && !d.vozDisponible ? (
         <Alert variant="warning">No se pudo leer la base de los agentes: lo de la cobranza por voz no aparece (no es cero).</Alert>
@@ -212,7 +233,7 @@ export default function IngresosPage() {
         error={ingresos.error}
         onReintentar={ingresos.refetch}
         emptyTitle="Todavía no hay inmobiliarias"
-        emptyIcon={<ChartLineUp weight="bold" />}
+        emptyIcon={<ChartLineUp weight="duotone" />}
         aria-label="Ingresos por inmobiliaria"
         onRowClick={(f) => router.push(`/admin/tenants/${f.tenant_id}`)}
         queSon={['inmobiliaria', 'inmobiliarias']}

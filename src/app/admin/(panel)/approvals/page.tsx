@@ -9,8 +9,7 @@ import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime } from '@/lib/admin/format'
 import { tipoDeDecision } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
-import { FranjaDeCifras } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
@@ -47,7 +46,8 @@ function summarizePayload(type: string, payload: Record<string, unknown>): strin
         (payload.reason as string | undefined) ?? 'sin motivo'
       }`
     default:
-      return JSON.stringify(payload).slice(0, 200)
+      // Nunca el JSON crudo en pantalla: el detalle completo está en la decisión.
+      return 'Ábrela para ver lo que propone.'
   }
 }
 
@@ -80,7 +80,10 @@ export default function ApprovalsPage() {
   const totalPending = facets.reduce((a, f) => a + parseInt(f.n, 10), 0)
   const ahora = Date.now()
   const diasDe = (r: PendingRow) => (ahora - new Date(r.created_at).getTime()) / 86_400_000
-  const vencidas = (data?.data ?? []).filter((r) => diasDe(r) > 3).length
+  const filas = data?.data ?? []
+  const vencidas = filas.filter((r) => diasDe(r) > 3).length
+  const paraMirar = filas.filter((r) => diasDe(r) > 1 && diasDe(r) <= 3).length
+  const recientes = filas.length - vencidas - paraMirar
 
   const columnas: Column<PendingRow>[] = [
     {
@@ -90,7 +93,7 @@ export default function ApprovalsPage() {
       texto: (r) => `${tipoDeDecision(r.decision_type)} · ${summarizePayload(r.decision_type, r.decision_payload)}`,
       cell: (r) => (
         <div className="min-w-0 max-w-md space-y-1">
-          <Pill tone="info">{tipoDeDecision(r.decision_type)}</Pill>
+          <span className="text-body-sm font-medium text-fg">{tipoDeDecision(r.decision_type)}</span>
           <p className="line-clamp-2 text-caption text-fg-muted">{summarizePayload(r.decision_type, r.decision_payload)}</p>
         </div>
       ),
@@ -122,7 +125,7 @@ export default function ApprovalsPage() {
       orden: (r) => (r.confidence_score != null ? Number(r.confidence_score) : null),
       texto: (r) => (r.confidence_score != null ? Math.round(Number(r.confidence_score) * 100) : null),
       cell: (r) => (
-        <span className="tabular-nums text-fg">
+        <span className="font-mono tabular-nums text-fg">
           {r.confidence_score != null ? `${Math.round(Number(r.confidence_score) * 100)} %` : '—'}
         </span>
       ),
@@ -134,10 +137,7 @@ export default function ApprovalsPage() {
       ordenPrimero: 'desc',
       texto: (r) => fmtDateTime(r.created_at),
       cell: (r) => (
-        <div className="whitespace-nowrap text-caption">
-          <div className="tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</div>
-          <div className="font-mono text-fg-subtle">{r.model_used}</div>
-        </div>
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</span>
       ),
     },
   ]
@@ -149,10 +149,27 @@ export default function ApprovalsPage() {
         description="Toda decisión de un agente con efecto legal pasa por aquí antes de ejecutarse (sentencia T-323 de 2024). Toca una para revisarla y decidir."
       />
 
-      <FranjaDeCifras fila="lg" aria-label="Cifras de la cola">
-        <KpiCard label="Esperando" value={data ? totalPending : '—'} tone={totalPending ? 'warn' : 'default'} />
-        <KpiCard label="Más de 3 días" value={data ? vencidas : '—'} tone={vencidas ? 'bad' : 'default'} />
-      </FranjaDeCifras>
+      {/* Glow up 22-10: LA RESPUESTA (cuántas esperan y cuántas ya pasaron de 3 días) con la barra por espera. */}
+      {data && totalPending > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Esperan un visto bueno"
+            cifra={totalPending.toLocaleString('es-CO')}
+            contexto={
+              vencidas > 0
+                ? `${vencidas.toLocaleString('es-CO')} ${vencidas === 1 ? 'lleva' : 'llevan'} más de 3 días`
+                : 'ninguna lleva más de 3 días'
+            }
+            tramos={[
+              { clave: 'vencidas', etiqueta: 'Más de 3 días', monto: vencidas, tono: 'critico', cifra: vencidas.toLocaleString('es-CO') },
+              { clave: 'mirar', etiqueta: 'De 1 a 3 días', monto: paraMirar, tono: 'aviso', cifra: paraMirar.toLocaleString('es-CO') },
+              { clave: 'recientes', etiqueta: 'Menos de 1 día', monto: recientes, tono: 'neutro', cifra: recientes.toLocaleString('es-CO') },
+            ]}
+            total={filas.length}
+            data-testid="aprobaciones-esperando"
+          />
+        </div>
+      ) : null}
 
       <DataTable
         columns={columnas}
@@ -163,7 +180,7 @@ export default function ApprovalsPage() {
         onReintentar={refetch}
         emptyTitle="No hay decisiones esperando"
         emptyHint="Cuando un agente proponga algo con efecto legal, aparece aquí para que alguien lo apruebe."
-        emptyIcon={<SealCheck weight="bold" />}
+        emptyIcon={<SealCheck weight="duotone" />}
         aria-label="Cola de aprobaciones"
         onRowClick={(r) => router.push(`/admin/approvals/${r.id}`)}
         queSon={['decisión', 'decisiones']}

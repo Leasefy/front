@@ -43,6 +43,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CampoDeMes } from '@/components/ui/campo-de-mes';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableCell,
@@ -217,17 +218,21 @@ export function PeriodosDeNominaPanel() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="quincena-a-liquidar">Periodicidad</Label>
-            <select
-              id="quincena-a-liquidar"
-              className="h-10 rounded-md border border-border bg-surface px-3 text-body-sm text-fg"
-              value={quincena}
-              onChange={(e) => setQuincena(e.target.value as '' | '1' | '2')}
-              data-testid="quincena-a-liquidar"
+            {/* Revisora r25 (C4): el Select de la casa. Radix no acepta el valor '': «mensual»
+                es el '' de siempre (lo que viaja no cambia). */}
+            <Select
+              value={quincena === '' ? 'mensual' : quincena}
+              onValueChange={(v) => setQuincena(v === 'mensual' ? '' : (v as '1' | '2'))}
             >
-              <option value="">Mensual</option>
-              <option value="1">Quincenal · primera</option>
-              <option value="2">Quincenal · segunda</option>
-            </select>
+              <SelectTrigger id="quincena-a-liquidar" className="w-52" data-testid="quincena-a-liquidar">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mensual">Mensual</SelectItem>
+                <SelectItem value="1">Quincenal · primera</SelectItem>
+                <SelectItem value="2">Quincenal · segunda</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {/* Un solo azul: con un borrador esperando, lo que sigue es aprobarlo (en su fila). */}
           <Button

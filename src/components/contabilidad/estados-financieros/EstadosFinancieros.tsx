@@ -40,6 +40,7 @@
  * no está incompleto: está mal, y nadie lo sabe.
  */
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -218,23 +219,24 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
           </TabsList>
           <div className="flex flex-wrap items-center gap-4">
             <SelectorDeMes mes={mes} onCambiar={setMes} />
-            <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <span>Sede</span>
-              <select
-                aria-label="Sede"
-                className="h-11 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-                value={sedeId}
-                onChange={(e) => setSedeId(e.target.value)}
-                data-testid="selector-de-sede"
-              >
-                <option value="">Consolidado (todas)</option>
-                {sedes.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre} ({s.codigo})
-                  </option>
-                ))}
-              </select>
-            </label>
+            {/* Revisora r25 (C4): el Select de la casa. Radix no acepta el valor '': «todas» es
+                el consolidado de siempre ('' en la consulta). */}
+            <div className="flex items-center gap-2 text-sm text-fg-muted">
+              <span aria-hidden="true">Sede</span>
+              <Select value={sedeId === '' ? 'todas' : sedeId} onValueChange={(v) => setSedeId(v === 'todas' ? '' : v)}>
+                <SelectTrigger aria-label="Sede" className="w-56" data-testid="selector-de-sede">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Consolidado (todas)</SelectItem>
+                  {sedes.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre} ({s.codigo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {/* CB-C-13 (QA-FACT-CONTA-95 r2): el P&G y el balance general se bajan. */}
             <DescargarElInforme
               informe={informe === 'pyg' ? 'Estado de resultados (P&G)' : 'Balance general'}

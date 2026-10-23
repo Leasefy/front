@@ -93,7 +93,7 @@ describe('Cobranza → Casos vacía', () => {
     // COBRANZA-MANUAL (04-10-2026): «Cobranza se llena con la cartera de los
     // contratos». El vacío ya no manda a importar un CSV como única puerta.
     const vacio = container.querySelector('[data-testid="casos-vacio-de-la-cartera"]')
-    expect(vacio?.textContent).toContain('Todavía no hay deudores en Cobranza')
+    expect(vacio?.textContent).toContain('Todavía no hay casos de cobranza')
     expect(container.textContent).not.toContain('Importa una cartera CSV')
     const traer = container.querySelector('[data-testid="traer-la-cartera"]')
     const csv = container.querySelector('[data-testid="importar-cartera-csv"]')

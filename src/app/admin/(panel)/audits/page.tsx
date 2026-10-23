@@ -42,6 +42,19 @@ interface AuditFacets {
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 /** /audits — Compliance events table with facet selects + CSV export (FRONT.md §6.8 · BACK.md §8.13). */
+function resumenDeLosDetalles(detalles: unknown): string {
+  if (!detalles || typeof detalles !== 'object') return '—'
+  const simples = Object.entries(detalles as Record<string, unknown>).filter(
+    ([, v]) => v != null && ['string', 'number', 'boolean'].includes(typeof v),
+  )
+  if (simples.length === 0) return 'Ábrelo para ver los detalles'
+  const texto = simples
+    .slice(0, 2)
+    .map(([k, v]) => `${legible(k)}: ${typeof v === 'boolean' ? (v ? 'sí' : 'no') : String(v)}`)
+    .join(' · ')
+  return simples.length > 2 ? `${texto} · y ${simples.length - 2} más` : texto
+}
+
 export default function AuditsPage() {
   const { get, page, setFilters, setPage } = useUrlFilters()
   const type   = get('type')
@@ -126,14 +139,11 @@ export default function AuditsPage() {
     },
     {
       header: 'Detalles',
-      cell: (r) => {
-        const full = r.details ? JSON.stringify(r.details) : null
-        return (
-          <span className="block max-w-[420px] truncate font-mono text-caption text-fg-muted" title={full ?? undefined}>
-            {full ? full.slice(0, 120) : '—'}
-          </span>
-        )
-      },
+      // Glow up 22-10: los datos en palabras (los dos primeros, con su nombre), nunca el JSON crudo en la fila;
+      // completos en el cajón.
+      cell: (r) => (
+        <span className="block max-w-[420px] truncate text-caption text-fg-muted">{resumenDeLosDetalles(r.details)}</span>
+      ),
     },
   ]
 
@@ -141,7 +151,7 @@ export default function AuditsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Auditoría"
-        description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y barandas de los agentes. Se descargan en CSV (hasta 50.000 filas)."
+        description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y barandas de los agentes. Toca uno para ver su detalle."
       />
 
       {exportError && <Alert variant="danger">{exportError}</Alert>}
@@ -155,7 +165,7 @@ export default function AuditsPage() {
         onReintentar={events.refetch}
         emptyTitle="No hay eventos con estos filtros"
         emptyHint="Prueba con otro tipo, otra inmobiliaria u otras fechas."
-        emptyIcon={<ShieldCheck weight="bold" />}
+        emptyIcon={<ShieldCheck weight="duotone" />}
         aria-label="Eventos de cumplimiento"
         onRowClick={setAbierto}
         filaMarcada={(r) => r.id === abierto?.id}
@@ -163,9 +173,9 @@ export default function AuditsPage() {
         queSon={['evento', 'eventos']}
         filtrosEnLaUrl={['type', 'tenant', 'from', 'to']}
         acciones={
-          <Button variant="secondary" hideArrow onClick={onExport} disabled={exporting} className="gap-2">
-            <DownloadSimple className="h-4 w-4" aria-hidden="true" />
-            {exporting ? 'Descargando…' : 'Exportar CSV'}
+          <Button variant="outline" size="sm" hideArrow onClick={onExport} disabled={exporting} isLoading={exporting} className="gap-2">
+            {exporting ? null : <DownloadSimple className="h-4 w-4" aria-hidden="true" />}
+            {exporting ? 'Descargando…' : 'Descargar en CSV (hasta 50.000)'}
           </Button>
         }
         barra={

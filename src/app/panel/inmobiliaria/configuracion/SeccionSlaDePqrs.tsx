@@ -34,6 +34,10 @@ import { pqrsApi } from '@/lib/api/pqrs-agencia.service';
 import type { ResponsableDePqrs } from '@/lib/api/pqrs-agencia.types';
 import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { EsqueletoDeSeccion, TarjetaDeAjustes, FilaDeAjuste } from './piezas';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+/** Ronda 30: «A nadie» / «Nadie» en el Select de Cadence (no admite opción vacía). */
+const NADIE = '__nadie__';
 
 /** Los cuatro tipos, en el orden en que los lee una persona. */
 const TIPOS: Array<{ valor: string; titulo: string; descripcion: string }> = [
@@ -295,24 +299,32 @@ export function SeccionSlaDePqrs() {
               : 'Hoy no se le escala a nadie: elige quién recibe las PQRS vencidas para que el plazo legal no se pase sin que nadie se entere.'
           }
         >
-          <select
-            aria-label="A quién se escalan las PQRS vencidas"
-            value={jefeElegido ?? datos.escalarAUserId ?? ''}
+          {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). «A nadie» viaja como una
+              clave propia (el Select no admite opción vacía) y se guarda como antes (''). */}
+          <Select
+            value={(jefeElegido ?? datos.escalarAUserId ?? '') || NADIE}
             disabled={!isAdmin || guardandoJefe || !datos.disponible}
-            onChange={(e) => (conBarra ? setJefeElegido(e.target.value) : void guardarJefe(e.target.value))}
-            className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-64"
-            data-testid="pqrs-escalar-a"
+            onValueChange={(v) => {
+              const id = v === NADIE ? '' : v;
+              if (conBarra) setJefeElegido(id);
+              else void guardarJefe(id);
+            }}
           >
-            <option value="">A nadie</option>
-            {datos.escalarAUserId && !equipo.some((m) => m.userId === datos.escalarAUserId) && (
-              <option value={datos.escalarAUserId}>{datos.escalarANombre ?? 'Responsable actual'}</option>
-            )}
-            {equipo.map((m) => (
-              <option key={m.userId} value={m.userId}>
-                {m.nombre}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger aria-label="A quién se escalan las PQRS vencidas" className="w-full sm:w-64" data-testid="pqrs-escalar-a">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NADIE}>A nadie</SelectItem>
+              {datos.escalarAUserId && !equipo.some((m) => m.userId === datos.escalarAUserId) && (
+                <SelectItem value={datos.escalarAUserId}>{datos.escalarANombre ?? 'Responsable actual'}</SelectItem>
+              )}
+              {equipo.map((m) => (
+                <SelectItem key={m.userId} value={m.userId}>
+                  {m.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FilaDeAjuste>
       </TarjetaDeAjustes>
       {datos.responsablePorDefectoDisponible !== undefined && (
@@ -328,29 +340,33 @@ export function SeccionSlaDePqrs() {
                   : 'Sin responsable por defecto, la PQRS que llega sin responsable pide tu clic aunque el Piloto esté en Automático.'
             }
           >
-            <select
-              aria-label="Responsable por defecto de las PQRS"
-              value={porDefectoElegido ?? datos.responsablePorDefectoUserId ?? ''}
+            <Select
+              value={(porDefectoElegido ?? datos.responsablePorDefectoUserId ?? '') || NADIE}
               disabled={!isAdmin || guardandoPorDefecto || !datos.disponible || !datos.responsablePorDefectoDisponible}
-              onChange={(e) =>
-                conBarra ? setPorDefectoElegido(e.target.value) : void guardarPorDefecto(e.target.value)
-              }
-              className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-64"
-              data-testid="pqrs-responsable-por-defecto"
+              onValueChange={(v) => {
+                const id = v === NADIE ? '' : v;
+                if (conBarra) setPorDefectoElegido(id);
+                else void guardarPorDefecto(id);
+              }}
             >
-              <option value="">Nadie</option>
-              {datos.responsablePorDefectoUserId &&
-                !equipo.some((m) => m.userId === datos.responsablePorDefectoUserId) && (
-                  <option value={datos.responsablePorDefectoUserId}>
-                    {datos.responsablePorDefectoNombre ?? 'Responsable actual'}
-                  </option>
-                )}
-              {equipo.map((m) => (
-                <option key={m.userId} value={m.userId}>
-                  {m.nombre}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Responsable por defecto de las PQRS" className="w-full sm:w-64" data-testid="pqrs-responsable-por-defecto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NADIE}>Nadie</SelectItem>
+                {datos.responsablePorDefectoUserId &&
+                  !equipo.some((m) => m.userId === datos.responsablePorDefectoUserId) && (
+                    <SelectItem value={datos.responsablePorDefectoUserId}>
+                      {datos.responsablePorDefectoNombre ?? 'Responsable actual'}
+                    </SelectItem>
+                  )}
+                {equipo.map((m) => (
+                  <SelectItem key={m.userId} value={m.userId}>
+                    {m.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </FilaDeAjuste>
         </TarjetaDeAjustes>
       )}

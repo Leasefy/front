@@ -226,8 +226,9 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
 
           {/* Split Bar */}
           <div className="h-3 rounded-full bg-surface-muted overflow-hidden flex mb-3">
+            {/* Ronda 30: el reparto en tinta (el voltaje es para la acción, no para un dato). */}
             <div
-              className="bg-primary"
+              className="bg-fg"
               style={{ width: `${agentPercent}%` }}
             />
             <div
@@ -239,15 +240,15 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Labels */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-primary" />
+              <div className="w-3 h-3 rounded-full bg-fg" />
               <span className="text-fg-muted">
-                {t('inmobiliaria.agente.agentLabel')}: <span className="font-medium text-fg">{agentPercent}%</span>
+                {t('inmobiliaria.agente.agentLabel')}: <span className="font-mono text-fg">{agentPercent} %</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-muted" />
               <span className="text-fg-muted">
-                {t('inmobiliaria.agente.agencyLabel')}: <span className="font-medium text-fg">{agencyPercent}%</span>
+                {t('inmobiliaria.agente.agencyLabel')}: <span className="font-mono text-fg">{agencyPercent} %</span>
               </span>
             </div>
           </div>

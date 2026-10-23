@@ -33,6 +33,7 @@ import {
   Lightning,
   Warning,
   Info,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 
 import { useAuth } from '@/lib/auth'
@@ -47,6 +48,8 @@ import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion'
 import { useChatLessons } from '@/lib/hooks/use-chat-lessons'
 import { ChatLessonCard } from './ChatLessonCard'
 import { TablePagination } from '@/components/ui/pagination'
+import { Input } from '@/components/ui/input'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 
 /** Ronda 30 (regla de Nico: listas con paginación): cada grupo de lecciones, de a 10. */
@@ -140,6 +143,18 @@ export function ChatLessonsPanel() {
   }, [lessons])
 
   const candidateCount = grouped.candidate.length
+
+  // Ronda 30 (regla de Nico: listas con buscador): se busca en el texto de cada lección.
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return grouped
+    const filtra = (xs: typeof lessons) =>
+      xs.filter((l) => (l.recommendation ?? '').toLocaleLowerCase('es').includes(q))
+    return { candidate: filtra(grouped.candidate), certified: filtra(grouped.certified), rejected: filtra(grouped.rejected) }
+  }, [grouped, busqueda])
+  const sinCoincidencias =
+    busqueda.trim() !== '' && visibles.candidate.length + visibles.certified.length + visibles.rejected.length === 0
 
   async function handleDecide(lessonId: string, decision: CertifyDecision) {
     setPendingId(lessonId)
@@ -266,8 +281,26 @@ export function ChatLessonsPanel() {
         </div>
       )}
 
+      <div className="relative w-full sm:w-80">
+        <MagnifyingGlass
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+          aria-hidden="true"
+        />
+        <Input
+          className="pl-9"
+          placeholder="Buscar en las lecciones"
+          aria-label="Buscar en las lecciones"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          data-testid="buscar-lecciones"
+        />
+      </div>
+      {sinCoincidencias ? (
+        <SinDatos hayFiltros queSon="lecciones" onLimpiarFiltros={() => setBusqueda('')} />
+      ) : null}
+
       {STATUS_ORDER.map((status) => {
-        const items = grouped[status]
+        const items = visibles[status]
         if (items.length === 0) return null
         return (
           <section key={status} aria-labelledby={`lessons-group-${status}`}>

@@ -21,6 +21,7 @@
 
 import { ArrowDown, ArrowUp, CaretRight } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
+import { useTr } from '@/lib/i18n/use-tr'
 import { cn } from '@/lib/utils'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { CARTERA_STAGES, STAGE_LABELS_EN, STAGE_LABELS_ES, type CarteraStage } from '@/lib/cartera'
@@ -36,6 +37,12 @@ interface CarteraPorEtapaProps {
   etapas: readonly EtapaDeLaCartera[]
   isLoading?: boolean
   onEtapa: (stage: CarteraStage) => void
+  /**
+   * Revisora r27 (Resumen): «Te toca a ti» va entre LA RESPUESTA y el detalle
+   * por etapa. `cifra` pinta sólo la cifra con su barra; `etapas`, sólo la
+   * lista por etapa. Por defecto, las dos juntas.
+   */
+  parte?: 'todo' | 'cifra' | 'etapas'
 }
 
 /** La gravedad de cada etapa, en los tokens de estado (de gris a rojo). */
@@ -51,10 +58,10 @@ export const COLOR_DE_LA_ETAPA: Record<CarteraStage, string> = {
 
 const COLUMNAS = 'grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_5rem_9rem_8rem_1rem]'
 
-export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraPorEtapaProps) {
+export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa, parte = 'todo' }: CarteraPorEtapaProps) {
   const { locale } = useI18n()
   const en = locale === 'en'
-  const tx = (es: string, eng: string) => (en ? eng : es)
+  const tr = useTr()
   const etiquetas = en ? STAGE_LABELS_EN : STAGE_LABELS_ES
 
   const porEtapa = new Map(etapas.map((e) => [e.stage, e]))
@@ -66,9 +73,13 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
   const enMora = total - porVencer
   const nombre = (stage: CarteraStage) => etiquetas[stage].split(' · ')[0]!
   const rango = (stage: CarteraStage) => etiquetas[stage].split(' · ')[1] ?? null
-  const dias = (n: number) => `${n} ${n === 1 ? tx('día', 'day') : tx('días', 'days')}`
+  const dias = (n: number) => `${n} ${n === 1 ? tr('día') : tr('días')}`
+
+  const conCifra = parte !== 'etapas'
+  const conEtapas = parte !== 'cifra'
 
   if (isLoading) {
+    if (!conCifra) return null
     return (
       <div className="rounded-lg border border-border bg-surface p-4 sm:p-5" aria-busy="true" data-testid="cartera-por-etapa-cargando">
         <div className="h-5 w-40 animate-pulse rounded bg-surface-muted" />
@@ -83,15 +94,17 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
   }
 
   if (total === 0) {
+    if (!conCifra) return null
     return (
       <div className="rounded-lg border border-border bg-surface px-4 py-4 sm:px-5" data-testid="cartera-por-etapa-vacia">
-        <p className="text-body-sm text-fg">{tx('Nadie en cobranza: toda la cartera está al día.', 'No one in collections: the whole portfolio is current.')}</p>
+        <p className="text-body-sm text-fg">{tr('Nadie en cobranza: toda la cartera está al día.')}</p>
       </div>
     )
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface" data-testid="cartera-por-etapa">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface" data-testid={parte === 'etapas' ? 'cartera-por-etapa-lista' : 'cartera-por-etapa'}>
+      {conCifra ? (
       <div className="space-y-3 px-4 pb-4 pt-4 sm:px-5">
         {/* Revisora r25 (Resumen #1): LA RESPUESTA en una CifraHeroe y con la
             MISMA cuenta de «Te toca a ti»: en mora es todo menos
@@ -101,26 +114,25 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
         <CifraHeroe
           data-testid="cartera-en-mora"
           tamano="mediana"
-          rotulo={tx('En mora', 'Past due')}
+          rotulo={tr('En mora')}
           cifra={enMora.toLocaleString(en ? 'en-US' : 'es-CO')}
           contexto={
             <>
-              {enMora === 1 ? tx('inquilino', 'tenant') : tx('inquilinos', 'tenants')}
+              {enMora === 1 ? tr('inquilino') : tr('inquilinos')}
               {porVencer > 0 ? (
                 <span className="text-fg-subtle">
                   {' · '}
                   {porVencer === 1
-                    ? tx('1 más con la cuota por vencer', '1 more with a payment coming due')
-                    : tx(`${porVencer} más con la cuota por vencer`, `${porVencer} more with a payment coming due`)}
+                    ? tr('1 más con la cuota por vencer')
+                    : tr('{n} más con la cuota por vencer', { n: porVencer })}
                 </span>
               ) : null}
             </>
           }
           esCero={enMora === 0}
-          cuandoEsCero={tx(
-            `Nadie en mora: ${porVencer === 1 ? '1 caso tiene' : `${porVencer} casos tienen`} la cuota por vencer.`,
-            `No one past due: ${porVencer} with a payment coming due.`,
-          )}
+          cuandoEsCero={porVencer === 1
+            ? tr('Nadie en mora: 1 caso tiene la cuota por vencer.')
+            : tr('Nadie en mora: {n} casos tienen la cuota por vencer.', { n: porVencer })}
         />
         {/* La barra: un tramo por etapa con casos, ancho = su parte del total. */}
         <div
@@ -139,24 +151,28 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
           ))}
         </div>
       </div>
+      ) : null}
 
+      {conEtapas ? (
+      <>
       {/* Cabecera de las columnas: sólo donde hay columnas. */}
       <div
         className={cn(
-          'hidden border-t border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle sm:grid sm:px-5',
+          'hidden border-border px-4 py-2 font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle sm:grid sm:px-5',
+          conCifra && 'border-t',
           COLUMNAS,
           'gap-x-4',
         )}
         aria-hidden="true"
       >
-        <span>{tx('Etapa', 'Stage')}</span>
-        <span className="text-right">{tx('Casos', 'Cases')}</span>
-        <span className="text-right">{tx('Promedio en la etapa', 'Avg. in stage')}</span>
-        <span className="text-right">{tx('Esta semana', 'This week')}</span>
+        <span>{tr('Etapa')}</span>
+        <span className="text-right">{tr('Casos')}</span>
+        <span className="text-right">{tr('Promedio en la etapa')}</span>
+        <span className="text-right">{tr('Esta semana')}</span>
         <span />
       </div>
 
-      <ul className="divide-y divide-border border-t border-border">
+      <ul className={cn('divide-y divide-border border-border sm:border-t', conCifra && 'border-t')}>
         {conCasos.map((f) => {
           const promedio = Math.round(f.avgDaysInStage ?? 0)
           const delta = f.weeklyDelta ?? 0
@@ -183,10 +199,9 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
                   COLUMNAS,
                 )}
                 data-testid={`cartera-etapa-${f.stage}`}
-                aria-label={tx(
-                  `${nombre(f.stage)}: ${f.count} ${f.count === 1 ? 'caso' : 'casos'}. Ver los deudores`,
-                  `${nombre(f.stage)}: ${f.count} ${f.count === 1 ? 'case' : 'cases'}. See the debtors`,
-                )}
+                aria-label={f.count === 1
+                  ? tr('{etapa}: 1 caso. Ver los deudores', { etapa: nombre(f.stage) })
+                  : tr('{etapa}: {n} casos. Ver los deudores', { etapa: nombre(f.stage), n: f.count })}
               >
                 <span className="flex min-w-0 items-start gap-2.5">
                   <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', COLOR_DE_LA_ETAPA[f.stage])} aria-hidden="true" />
@@ -197,7 +212,7 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
                       {rango(f.stage)}
                       <span className="sm:hidden">
                         {rango(f.stage) ? ' · ' : ''}
-                        {tx(`${dias(promedio)} en la etapa`, `${dias(promedio)} in stage`)}
+                        {tr('{d} en la etapa', { d: dias(promedio) })}
                         {cambio ? <> · {cambio}</> : null}
                       </span>
                     </span>
@@ -215,9 +230,11 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
 
       {sinCasos.length > 0 && (
         <p className="border-t border-border px-4 py-3 text-caption text-fg-subtle sm:px-5" data-testid="cartera-sin-casos">
-          {tx('Sin casos', 'No cases')}: {sinCasos.map((f) => nombre(f.stage)).join(' · ')}
+          {tr('Sin casos')}: {sinCasos.map((f) => nombre(f.stage)).join(' · ')}
         </p>
       )}
+      </>
+      ) : null}
     </div>
   )
 }

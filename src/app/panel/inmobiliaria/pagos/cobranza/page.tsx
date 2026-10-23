@@ -295,6 +295,25 @@ export default function CobranzaOverviewPage() {
           Cómo está compuesta la mora: en qué etapa está cada caso, cómo se
           mueve entre etapas, y quiénes pesan más. Las tres respondían la misma
           pregunta desde tres lugares distintos de la página. */}
+      {/* Revisora r27 (Resumen): LA RESPUESTA → «Te toca a ti» → la cartera por
+          etapa → lo plegado. Antes «Te toca a ti» iba debajo de la cartera y de
+          «Los que más pesan»: lo que pide trabajo hoy quedaba a más de una
+          pantalla a 390. */}
+      <CarteraPorEtapa
+        etapas={data?.stages ?? []}
+        isLoading={isLoading}
+        onEtapa={handleStageClick}
+        parte="cifra"
+      />
+
+      {/* ═══ 1. TE TOCA A TI ═══════════════════════════════════════════════
+          Lo único que pide que una persona haga algo. Reemplaza cuatro
+          superficies que contestaban la misma pregunta: el banner narrativo,
+          la fila de 4 tarjetas, la tarjeta «Revisar escalaciones» y la lista
+          «Qué necesita tu atención hoy» — con el mismo número repetido cuatro
+          veces y la lista, lo único accionable, al final. */}
+      <CobranzaTeTocaATi enMora={enMora} gestionados={data?.kpis.llamadasHoy ?? 0} onTotalQueEspera={setQueEspera} />
+
       <section className="space-y-4" aria-labelledby="cobranza-cartera">
         <h2 id="cobranza-cartera" className="text-body font-normal text-fg">
           {tr("Tu cartera")}
@@ -308,20 +327,13 @@ export default function CobranzaOverviewPage() {
           etapas={data?.stages ?? []}
           isLoading={isLoading}
           onEtapa={handleStageClick}
+          parte="etapas"
         />
 
         {/* «Los que más pesan» estaba entre siniestros y alertas de umbral,
             como si fuera algo que atender hoy. Es composición de cartera. */}
         <CobranzaDeudoresQuePesan />
       </section>
-
-      {/* ═══ 1. TE TOCA A TI ═══════════════════════════════════════════════
-          Lo único que pide que una persona haga algo. Reemplaza cuatro
-          superficies que contestaban la misma pregunta: el banner narrativo,
-          la fila de 4 tarjetas, la tarjeta «Revisar escalaciones» y la lista
-          «Qué necesita tu atención hoy» — con el mismo número repetido cuatro
-          veces y la lista, lo único accionable, al final. */}
-      <CobranzaTeTocaATi enMora={enMora} gestionados={data?.kpis.llamadasHoy ?? 0} onTotalQueEspera={setQueEspera} />
 
       {/* Revisora r24 (Cobranza #3): lo que hizo el agente es de consulta: plegado, después de la cartera. */}
       <MasDetalles etiqueta={tr("Lo que hizo el agente")} etiquetaAbierto={tr("Ocultar lo que hizo el agente")} montadoSiempre data-testid="lo-que-hizo-el-agente-plegado">

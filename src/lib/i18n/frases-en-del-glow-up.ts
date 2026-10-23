@@ -682,4 +682,17 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "contratos esperan tu firma": "contracts await your signature",
   "Ningún contrato espera tu firma.": "No contract awaits your signature.",
   "Ver los que esperan tu firma": "See the ones awaiting your signature",
+  // Cobranza (ronda 26, 2.º agente)
+  "{d} en la etapa": "{d} in stage",
+  "Nadie en mora: 1 caso tiene la cuota por vencer.": "No one past due: 1 case has a payment coming due.",
+  "Nadie en mora: {n} casos tienen la cuota por vencer.": "No one past due: {n} cases have a payment coming due.",
+  "{etapa}: 1 caso. Ver los deudores": "{etapa}: 1 case. See the debtors",
+  "{etapa}: {n} casos. Ver los deudores": "{etapa}: {n} cases. See the debtors",
+  "día": "day",
+  "días": "days",
+  "Nadie en cobranza: toda la cartera está al día.": "No one in collections: the whole portfolio is current.",
+  "Etapa": "Stage",
+  "Promedio en la etapa": "Avg. in stage",
+  "Esta semana": "This week",
+  "Sin casos": "No cases",
 }

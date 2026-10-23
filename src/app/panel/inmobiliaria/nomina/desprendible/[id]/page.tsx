@@ -10,7 +10,6 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
@@ -25,8 +24,7 @@ export default function DesprendiblePage() {
     <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <div className="space-y-6 p-6 lg:p-8">
         <div className="space-y-3">
-          <Link href="/panel/inmobiliaria/nomina/periodos" className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          <Link href="/panel/inmobiliaria/nomina/periodos" className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
             Liquidación
           </Link>
           <EncabezadoDePantalla

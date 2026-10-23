@@ -697,6 +697,18 @@
     }
   }
 
+  /* T-0173 WU-6: @leasefy/cadence Chip and Tabs triggers are 26-34 px tall and
+     cadence is not editable from front, so touch gets a 44 px floor here.
+     Chip = a role=checkbox button WITHOUT data-state (the Radix Checkbox has
+     one). Segmented tabs (26 px pill inside a track) are NOT raised: that
+     would redraw the control. Move these into cadence and delete this block. */
+  @media (pointer: coarse) {
+    button[role="checkbox"][aria-checked]:not([data-state]),
+    [role="tab"][data-variant="underline"] {
+      min-height: 44px;
+    }
+  }
+
   /* Section padding - Consistent vertical rhythm */
   .section-padding {
     @apply py-16 md:py-20 lg:py-24;

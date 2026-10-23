@@ -30,3 +30,24 @@ describe('small form controls expose a 44 px hit area on touch', () => {
     expect(before).toContain('@media (pointer: coarse)');
   });
 });
+
+// Cadence Chip and Tabs triggers are not editable from front, so globals.css
+// raises them on coarse pointers only. Chip is a `role=checkbox` button that,
+// unlike the Radix Checkbox, has no `data-state`.
+describe('cadence chips and tabs get a 44 px height on touch via globals.css', () => {
+  const css = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf8');
+  const rule = (selector: string) => {
+    const i = css.indexOf(selector);
+    expect(i, `${selector} missing`).toBeGreaterThan(-1);
+    expect(css.slice(Math.max(0, i - 400), i)).toContain('@media (pointer: coarse)');
+    expect(css.slice(i, i + 200)).toContain('min-height: 44px');
+  };
+
+  it('Chip (role=checkbox without data-state)', () => {
+    rule('button[role="checkbox"][aria-checked]:not([data-state])');
+  });
+
+  it('underline Tabs triggers', () => {
+    rule('[role="tab"][data-variant="underline"]');
+  });
+});

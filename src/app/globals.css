@@ -620,6 +620,9 @@
   }
 
   html {
+    /* T-0173 WU-10: the sticky page header is 65 px; scrollIntoView and focus
+       scrolling must land controls below it, not under its icons. */
+    scroll-padding-top: 5rem;
     /* Prevent pull-to-refresh / rubber-band glitches on mobile */
     overscroll-behavior-y: none;
   }

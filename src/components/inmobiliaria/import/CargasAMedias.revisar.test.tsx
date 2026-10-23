@@ -56,6 +56,10 @@ describe('CargasAMedias · carga terminada con filas por revisar', () => {
     expect(boton.textContent).toBe('Revisar las 19');
     act(() => boton.click());
     expect(onRetomar).toHaveBeenCalledWith(expect.objectContaining({ lote: 'lote-9' }), { revisar: true });
+    // La fecha va UNA vez: en la línea de quién la subió, no también en la del avance.
+    const tarjeta = container.querySelector('[data-testid="carga-terminada-lote-9"]')!
+    expect(tarjeta.querySelector('p.text-sm')!.textContent).not.toMatch(/oct/i)
+    expect(tarjeta.querySelector('[data-testid="datos-de-la-carga-lote-9"]')!.textContent).toMatch(/oct/i)
     // El resumen sigue a la mano.
     expect(container.querySelector('[data-testid="retomar-lote-9"]')!.textContent).toBe('Ver resumen');
   });

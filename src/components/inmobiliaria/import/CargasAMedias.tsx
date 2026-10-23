@@ -136,9 +136,11 @@ export function CargasAMedias({
               data-testid={`carga-terminada-${l.lote}`}
             >
               <div className="min-w-0 space-y-0.5">
+              {/* Revisora r25: la fecha iba dos veces (aquí y en la línea de abajo, «Subida por … el …»).
+                  Va UNA vez, abajo, con quién la subió. */}
               <p className="min-w-0 text-sm text-fg">
-                {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
-                {d.cuando ? ' · ' : null}
+                {d.cuando && !l.creadoEn ? <span className="font-medium">{d.cuando}</span> : null}
+                {d.cuando && !l.creadoEn ? ' · ' : null}
                 <span className="font-mono tabular-nums" data-testid={`avance-${l.lote}`}>
                   {d.avance}
                 </span>

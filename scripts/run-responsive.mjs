@@ -13,14 +13,54 @@ const args = process.argv.slice(2);
 const fast = args.includes('--fast');
 const rest = args.filter((a) => a !== '--fast');
 
+// Circuit breaker (tests/e2e-responsive/support/breaker.ts): the workers append to this file; when it
+// holds a T the target server is gone, so the whole process tree is killed instead of spinning.
+const breakerFile = path.resolve(
+  process.env.RESPONSIVE_BREAKER_FILE ?? path.join('tests', 'e2e-responsive', '.auth', 'breaker.log'),
+);
+const breakerN = Number(process.env.RESPONSIVE_BREAKER_N ?? 6) || 6;
+const BREAKER_BANNER = [
+  '',
+  '!'.repeat(72),
+  'RESPONSIVE SWEEP ABORTED: THE TARGET SERVER STOPPED ANSWERING',
+  `${breakerN} consecutive navigations to ${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3001'} were refused, reset or timed out.`,
+  'The report holds only the tests that finished BEFORE the failure. Restart the server and re-run',
+  '(RESPONSIVE_REUSE_AUTH=1 RESPONSIVE_REUSE_RESOLVED=1 skips login and crawl).',
+  '!'.repeat(72),
+  '',
+].join('\n');
+
 const cli = require.resolve('@playwright/test/cli');
 const child = spawn(
   process.execPath,
   [cli, 'test', '-c', 'playwright.responsive.config.ts', ...rest],
-  { stdio: 'inherit', env: { ...process.env, ...(fast ? { RESPONSIVE_FAST: '1' } : {}) } },
+  {
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      RESPONSIVE_BREAKER_FILE: breakerFile,
+      ...(fast ? { RESPONSIVE_FAST: '1' } : {}),
+    },
+  },
 );
+let aborted = false;
+const watcher = setInterval(() => {
+  let history = '';
+  try {
+    history = fs.readFileSync(breakerFile, 'utf8');
+  } catch {
+    return;
+  }
+  if (!history.includes('T') || aborted) return;
+  aborted = true;
+  clearInterval(watcher);
+  console.error(BREAKER_BANNER);
+  if (process.platform === 'win32') spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+  else child.kill('SIGTERM');
+}, 1000);
 child.on('exit', (code) => {
-  let exit = code ?? 1;
+  clearInterval(watcher);
+  let exit = aborted ? 4 : (code ?? 1);
   const authDir = path.resolve('tests', 'e2e-responsive', '.auth');
   const failed = [];
   if (fs.existsSync(authDir)) {

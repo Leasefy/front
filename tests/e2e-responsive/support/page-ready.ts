@@ -1,5 +1,6 @@
 import type { Page, Response } from '@playwright/test';
 
+import { breakerTripped, isDeadServerError, recordNavigation } from './breaker';
 import { errorProbe, type PageErrorProbe } from './measure';
 
 export interface OpenResult {
@@ -52,9 +53,20 @@ const pathnameOnly = (u: string): string => {
 /** Navigates and waits for the page to settle. Never throws on slow pages. */
 export async function openAndSettle(page: Page, route: string): Promise<OpenResult> {
   let response: Response | null = null;
+  if (breakerTripped()) {
+    return {
+      status: null,
+      finalPath: pathnameOnly(page.url()),
+      finalUrl: page.url(),
+      error: { isError: true, reason: 'navigation skipped: circuit breaker tripped (target server stopped answering)' },
+      redirected: false,
+    };
+  }
   try {
     response = await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 75_000 });
+    recordNavigation('ok');
   } catch (error) {
+    if (isDeadServerError(String(error))) recordNavigation('dead');
     // Navigation interrupted by a client-side redirect is fine; anything else is reported.
     if (!/interrupted by another navigation|NS_BINDING_ABORTED/i.test(String(error))) {
       return {

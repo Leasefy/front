@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 import { test as setup } from '@playwright/test';
 
+import { breakerTripped, isDeadServerError, recordNavigation } from '../support/breaker';
 import { warmupEnabled } from '../support/env';
 import { installReadOnlyGuard } from '../support/guard';
 import { concretePath, selectRoutes } from '../support/open-path';
@@ -55,12 +56,15 @@ for (const persona of PERSONAS) {
     const page = await context.newPage();
 
     const visit = async (path: string): Promise<boolean> => {
+      if (breakerTripped()) return false;
       try {
         await page.goto(path, { waitUntil: 'domcontentloaded', timeout: ROUTE_TIMEOUT_MS });
+        recordNavigation('ok');
         // Let the route's lazy chunks and data requests start so they compile too.
         await page.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => {});
         return true;
       } catch (error) {
+        if (isDeadServerError(String(error))) recordNavigation('dead');
         // A client-side redirect interrupts the navigation: the route did answer.
         return /interrupted by another navigation|ERR_ABORTED/i.test(String(error));
       }

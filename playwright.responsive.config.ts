@@ -21,6 +21,8 @@ import { loadE2eEnv } from './tests/e2e-responsive/support/env';
  *                           (RESPONSIVE_WARMUP_ROUTE_MS = per-route navigation cap, default 90000)
  *   RESPONSIVE_REUSE_AUTH=1 / RESPONSIVE_REUSE_RESOLVED=1   skip re-login / re-crawl when the files from
  *                           a previous run exist (iterating on the suite)
+ *   RESPONSIVE_PREFLIGHT=0  skip the start-up GET of the base URL (default: on; a dead server aborts the run)
+ *   RESPONSIVE_BREAKER_N    consecutive refused/timed-out navigations that abort the run (default 6)
  *   RESPONSIVE_ALLOW_POST   regex of URLs the read-only guard may let through (default none)
  *
  * Recommended target: `pnpm build && npx next start -p 3001` (no dev overlay, no per-route
@@ -37,6 +39,8 @@ const selected = DEVICES.filter((d) => !fastOnly || d.fast);
 
 export default defineConfig({
   testDir: './tests/e2e-responsive',
+  // Preflight GET of the base URL + circuit-breaker reset: a dead server fails in seconds, not 30 minutes.
+  globalSetup: './tests/e2e-responsive/setup/global-setup.ts',
   outputDir: './test-results-responsive',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

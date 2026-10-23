@@ -324,7 +324,7 @@ function PipelineContent() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Encabezado por tarea: qué es y, a la derecha, lo que más se hace aquí. */}
       <EncabezadoDePantalla
-        seccion={tr('Captación y arriendo')}
+        seccion={tr('Captación')}
         titulo={t('inmobiliaria.pipeline.title')}
         descripcion={t('inmobiliaria.pipeline.subtitle')}
         accionPrincipal={

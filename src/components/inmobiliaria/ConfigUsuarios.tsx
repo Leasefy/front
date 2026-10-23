@@ -530,12 +530,13 @@ export function ConfigUsuarios({
                       <div className="flex items-center gap-3">
                         <Avatar name={user.name || user.email || '?'} src={user.avatar || undefined} size="md" />
                         <div className="min-w-0">
-                          <p className="font-medium text-fg truncate max-w-[200px] max-md:max-w-none">
+                          <p className="font-medium text-fg truncate max-w-[280px] max-md:max-w-none">
                             {user.name?.trim() || user.email}
                           </p>
                           <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
                             <EnvelopeSimple className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate max-w-[180px] max-md:max-w-none">{user.email}</span>
+                            {/* Ronda 30 (revisora r27): el correo se cortaba con la columna Rol medio vacía. */}
+                            <span className="truncate max-w-[280px] max-md:max-w-none">{user.email}</span>
                           </div>
                           {user.phone && (
                             <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">

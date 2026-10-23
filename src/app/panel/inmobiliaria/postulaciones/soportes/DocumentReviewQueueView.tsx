@@ -13,14 +13,21 @@
  */
 
 import { useMemo, useState } from 'react';
-import { FolderOpen, CheckCircle, XCircle, Eye, MagnifyingGlass } from '@phosphor-icons/react';
+import { FolderOpen, CheckCircle, XCircle, Eye, MagnifyingGlass, DotsThree } from '@phosphor-icons/react';
 import { CifraHeroe, type TonoDelTramo } from '@/components/pantalla/CifraHeroe';
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Badge, Button } from '@/components/ui';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
-import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, IconButton } from '@leasefy/cadence';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 
 /** El número tal cual se escribía antes: sin separador de miles. */
 const enteroTalCual = (n: number) => String(Math.round(n));
@@ -151,7 +158,7 @@ export function DocumentReviewQueueView({
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Captación y arriendo"
+        seccion="Captación"
         titulo="Soportes de candidatos"
         descripcion="Los papeles que el candidato adjunta al postularse: ábrelos y decide si la postulación sigue."
         ayuda={
@@ -181,8 +188,11 @@ export function DocumentReviewQueueView({
         className="rounded-lg border border-border bg-card px-5 py-5"
         data-testid="resumen-de-la-cola"
       >
+        {/* Ronda 30 (revisora r27): «Por revisar» se decía tres veces (rótulo, contexto y leyenda) y con un solo
+            estado la barra era un tramo que no repartía nada: rótulo «Soportes», contexto «por revisar» y, mientras
+            todo esté en el mismo estado, sin barra ni leyenda. */}
         <CifraHeroe
-          rotulo="Por revisar"
+          rotulo="Soportes"
           cifra={
             <span data-testid="count-pending">
               {isLoading || error ? '—' : <AnimatedNumber value={counts.pending} format={enteroTalCual} />}
@@ -200,7 +210,8 @@ export function DocumentReviewQueueView({
               'data-testid': `count-${key}`,
               cifra: isLoading || error ? '—' : <AnimatedNumber value={counts[key]} format={enteroTalCual} />,
             })),
-          ].filter((t) => t.clave !== 'pending' || t.monto > 0)}
+          ].filter((t) => t.clave !== 'pending' || t.monto > 0)
+            .filter((_t, _i, todos) => todos.filter((x) => x.monto > 0).length > 1)}
         />
       </section>
 
@@ -360,18 +371,26 @@ export function DocumentReviewQueueView({
                                   Rechazar
                                 </Button>
                               )}
-                              {/* Revisora r25: tomar es un paso previo que casi nadie necesita; va al
-                                  final y sin borde, después de lo que decide (Aprobar · Rechazar). */}
+                              {/* Ronda 30 (revisora r27): tomar es un paso previo que casi nadie necesita; va en el
+                                  «⋯» de la fila (antes un tercer botón del mismo peso que Aprobar y Rechazar). */}
                               {showTake && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  hideArrow
-                                  disabled={busy}
-                                  onClick={() => onTakeToReview(item.applicationId, doc.id)}
-                                >
-                                  Tomar a revisión
-                                </Button>
+                                <DropdownList>
+                                  <DropdownListTrigger asChild>
+                                    <IconButton
+                                      variant="ghost"
+                                      size="sm"
+                                      disabled={busy}
+                                      icon={<DotsThree className="h-5 w-5" weight="bold" />}
+                                      aria-label={`Más acciones de ${doc.originalName || 'este soporte'}`}
+                                      data-testid={`soporte-mas-acciones-${doc.id}`}
+                                    />
+                                  </DropdownListTrigger>
+                                  <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
+                                    <DropdownListItem onClick={() => onTakeToReview(item.applicationId, doc.id)}>
+                                      <span className="text-sm">Tomar a revisión</span>
+                                    </DropdownListItem>
+                                  </DropdownListContent>
+                                </DropdownList>
                               )}
                             </div>
                           )}

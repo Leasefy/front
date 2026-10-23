@@ -25,7 +25,7 @@ function ImportarContent() {
           label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
         />
         <EncabezadoDePantalla
-          seccion={t('inmobiliaria.nav.secCaptacion')}
+          seccion={t('inmobiliaria.nav.secCaptacionCorta')}
           titulo={t('inmobiliaria.import.title')}
           descripcion={t('inmobiliaria.import.subtitle')}
         />

@@ -101,12 +101,14 @@ export function ParaHoyDelEmbudo({
             >
               {porQue(p)}
             </p>
+            {/* Ronda 30 (revisora r27): a 390 «Sí llegó» y «Reagendar» en UNA fila (antes cada uno en su renglón,
+                con media fila vacía). */}
+            <div className="flex flex-wrap gap-2">
             {onLlego && p.porQue === 'vencida' && esUnaVisita(p.item.nextAction) ? (
               <Button
                 variant="secondary"
                 size="sm"
                 hideArrow
-                className="self-start sm:self-auto"
                 onClick={() => onLlego(p.item)}
                 data-testid="para-hoy-llego"
               >
@@ -118,13 +120,13 @@ export function ParaHoyDelEmbudo({
                 variant="secondary"
                 size="sm"
                 hideArrow
-                className="self-start sm:self-auto"
                 onClick={() => onAgendar(p.item)}
                 data-testid="para-hoy-agendar"
               >
                 {p.porQue === 'quieto' ? tr('Agendar visita') : tr('Reagendar')}
               </Button>
             ) : null}
+            </div>
           </li>
         ))}
       </ul>

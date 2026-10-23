@@ -163,7 +163,7 @@ function Marco({
                   <div key={grupo.id} className={cn('space-y-0.5', enRiel && 'flex shrink-0 gap-1 space-y-0 lg:block lg:space-y-0.5')}>
                     <p
                       className={cn(
-                        'px-3 pb-1 text-caption font-medium uppercase tracking-wide text-fg-subtle',
+                        'px-3 pb-1 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle', // Ronda 30 (revisora r27): el rótulo de la casa en DM Mono (antes mayúsculas en Host Grotesk)
                         enRiel && 'hidden lg:block',
                       )}
                     >

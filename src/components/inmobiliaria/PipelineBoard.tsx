@@ -215,7 +215,8 @@ function DroppableColumn({
           <div
             className={cn(
               'w-2.5 h-2.5 rounded-full',
-              bgColorClass.replace('-100', '-500').replace('-soft', '')
+              // Ronda 30 (revisora r27): el punto de la columna nunca en azul (el azul es la acción): neutro.
+              bgColorClass.includes('primary') ? 'bg-fg-subtle' : bgColorClass.replace('-100', '-500').replace('-soft', '')
             )}
           />
 

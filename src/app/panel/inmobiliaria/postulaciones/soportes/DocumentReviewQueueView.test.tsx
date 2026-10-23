@@ -192,8 +192,10 @@ describe('<DocumentReviewQueueView>', () => {
 
   it('shows contextual actions per status when the user can review', () => {
     render(baseProps());
-    // PENDING doc → Tomar a revisión + Aprobar + Rechazar
-    expect(buttonByText('Tomar a revisión')).toBeTruthy();
+    // PENDING doc → Aprobar + Rechazar, y «Tomar a revisión» en el «⋯» de la fila.
+    // Ronda 30 (revisora r27), a propósito: tomar ya no es un botón suelto; se mira el disparador del menú.
+    expect(container.querySelector('[data-testid^="soporte-mas-acciones-"]')).toBeTruthy();
+    expect(buttonByText('Tomar a revisión')).toBeUndefined();
     // APPROVED doc → no "Aprobar" duplicate for it, but a Rechazar exists
     expect(buttonByText('Rechazar')).toBeTruthy();
   });
@@ -201,6 +203,7 @@ describe('<DocumentReviewQueueView>', () => {
   it('hides all action buttons when the user cannot review', () => {
     render({ ...baseProps(), canReview: false });
     expect(buttonByText('Tomar a revisión')).toBeUndefined();
+    expect(container.querySelector('[data-testid^="soporte-mas-acciones-"]')).toBeNull();
     expect(buttonByText('Aprobar')).toBeUndefined();
     expect(buttonByText('Rechazar')).toBeUndefined();
   });

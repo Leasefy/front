@@ -534,7 +534,7 @@ function PortafolioContent() {
           secundaria y la única azul, chicas). La «Captura con IA» sigue apagada a pedido de Nico
           (2026-09-02: «eso no sirve ahora»); el componente PropertyIACapture sigue entero. */}
       <EncabezadoDePantalla
-        seccion={t('inmobiliaria.nav.secCaptacion')}
+        seccion={t('inmobiliaria.nav.secCaptacionCorta')}
         titulo={t('inmobiliaria.portafolio.title')}
         descripcion={
           <>

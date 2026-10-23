@@ -41,7 +41,8 @@ function ContenidoDeContables() {
           {t('inmobiliaria.nav.contabilidad')}
         </Link>
         <EncabezadoDePantalla
-          seccion={t('migracion.eyebrow')}
+          // Ronda 30 (revisora r27, R4): la sección del menú de su vuelta (Contabilidad, en «Dinero»), no «Arranque».
+          seccion="Dinero"
           titulo={t('migracion.contables.titulo')}
           descripcion={t('migracion.contables.subtitulo')}
         />

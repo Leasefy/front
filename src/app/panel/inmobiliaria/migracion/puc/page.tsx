@@ -42,7 +42,8 @@ function ContenidoDelPuc() {
       <div className="space-y-3">
         <BackButton href="/panel/inmobiliaria/contabilidad" label={t('inmobiliaria.nav.contabilidad')} />
         <EncabezadoDePantalla
-          seccion={t('migracion.eyebrow')}
+          // Ronda 30 (revisora r27, R4): la sección del menú de su vuelta (Contabilidad, en «Dinero»), no «Arranque».
+          seccion="Dinero"
           titulo={t('migracion.puc.titulo')}
           descripcion={t('migracion.puc.subtitulo')}
         />

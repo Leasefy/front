@@ -419,7 +419,9 @@ export function TablaDeProveedores({
               // El apagado se atenúa en sus celdas: la opacidad de la fila la
               // maneja su entrada animada.
               className={cn(
-                'border-b border-border last:border-0 max-md:grid max-md:grid-cols-1 max-md:gap-y-2.5 max-md:px-4 max-md:py-4',
+                // Revisora r25 (§25.1 4b): a 390 una tarjeta corta —nombre, oficio y lo que le falta—; lo que
+                // está vacío (sin oficio, sin calificar) no se pinta en el celular.
+                'border-b border-border last:border-0 max-md:grid max-md:grid-cols-1 max-md:gap-y-1.5 max-md:px-4 max-md:py-4',
                 !p.activo && '[&>td]:opacity-70',
               )}
             >
@@ -457,13 +459,23 @@ export function TablaDeProveedores({
                 borde, fondo y radio para decir «objeto aparte»; un oficio no
                 es un objeto aparte, es un dato de la fila. Va como texto.
               */}
-              <TableCell className="max-w-[180px] px-5 py-4 align-top text-muted-foreground max-md:block max-md:max-w-none max-md:p-0">
+              <TableCell
+                className={cn(
+                  'max-w-[180px] px-5 py-4 align-top text-muted-foreground max-md:block max-md:max-w-none max-md:p-0',
+                  p.especialidades.length === 0 && 'max-md:hidden',
+                )}
+              >
                 {p.especialidades.length > 0
                   ? p.especialidades.map((e) => EN_PALABRAS.get(e) ?? e).join(' · ')
                   : '—'}
               </TableCell>
 
-              <TableCell className="px-5 py-4 align-top max-md:block max-md:p-0">
+              <TableCell
+                className={cn(
+                  'px-5 py-4 align-top max-md:block max-md:p-0',
+                  p.trabajosCalificados === 0 && p.reaperturasPorGarantia === 0 && 'max-md:hidden',
+                )}
+              >
                 <Estrellas calificacion={p.calificacion} trabajos={p.trabajosCalificados} />
                 {p.reaperturasPorGarantia > 0 && (
                   <p className="mt-1 text-caption text-warning">
@@ -507,8 +519,8 @@ export function TablaDeProveedores({
                 )}
               </TableCell>
 
-              <TableCell className="whitespace-nowrap px-3 py-4 align-top text-right max-md:block max-md:p-0 max-md:text-left">
-                <div className="flex justify-end gap-1">
+              <TableCell className="whitespace-nowrap px-3 py-4 align-top text-right max-md:block max-md:p-0 max-md:pt-1 max-md:text-left">
+                <div className="flex justify-end gap-1 max-md:-ml-2 max-md:justify-start">
                   {p.trabajosCalificados > 0 && (
                     <Button variant="ghost" size="sm" hideArrow onClick={() => onVerHistorial(p)}>
                       Historial

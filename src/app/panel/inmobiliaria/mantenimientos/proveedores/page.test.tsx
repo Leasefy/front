@@ -442,6 +442,15 @@ describe('Proveedores — la tabla, con lo que tienen todas nuestras tablas', ()
     expect(celdas[2].textContent).toBe('Plomería · Estructural')
   })
 
+  it('revisora r25 — a 390 la tarjeta no pinta lo vacío: sin oficio ni calificación, esas celdas se van del celular', async () => {
+    h.api.listar.mockResolvedValue([{ ...UNO, especialidades: [], trabajosCalificados: 0, reaperturasPorGarantia: 0 }])
+    await montar()
+    const celdas = Array.from(contenedor.querySelector('[data-testid="proveedor"]')!.querySelectorAll('td'))
+    const ocultas = celdas.filter((td) => td.className.includes('max-md:hidden'))
+    // El oficio en «—» y la calificación sin trabajos: en la tabla de escritorio siguen; en el celular, no.
+    expect(ocultas.length).toBe(2)
+  })
+
   it('T5 — el vacío vive DENTRO de la tabla y ofrece registrar al primero', async () => {
     h.api.listar.mockResolvedValue([])
     await montar()

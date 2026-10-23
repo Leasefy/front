@@ -88,7 +88,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               aria-pressed={value.severidad?.includes(s) ?? false}
               onClick={() => set({ severidad: toggleInArray(value.severidad, s) })}
               className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors [@media(pointer:coarse)]:min-h-11 ' +
                 chipClasses(value.severidad?.includes(s) ?? false)
               }
             >
@@ -111,7 +111,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               aria-pressed={value.categoria?.includes(c) ?? false}
               onClick={() => set({ categoria: toggleInArray(value.categoria, c) })}
               className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors [@media(pointer:coarse)]:min-h-11 ' +
                 chipClasses(value.categoria?.includes(c) ?? false)
               }
             >
@@ -134,7 +134,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               aria-pressed={value.estado?.includes(e) ?? false}
               onClick={() => set({ estado: toggleInArray(value.estado, e) })}
               className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors [@media(pointer:coarse)]:min-h-11 ' +
                 chipClasses(value.estado?.includes(e) ?? false)
               }
             >
@@ -157,7 +157,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               aria-pressed={value.responsable?.includes(r) ?? false}
               onClick={() => set({ responsable: toggleInArray(value.responsable, r) })}
               className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors [@media(pointer:coarse)]:min-h-11 ' +
                 chipClasses(value.responsable?.includes(r) ?? false)
               }
             >
@@ -181,7 +181,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
             aria-pressed={value.slaBreached === true}
             onClick={() => set({ slaBreached: value.slaBreached === true ? undefined : true })}
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors [@media(pointer:coarse)]:min-h-11 ' +
               chipClasses(value.slaBreached === true)
             }
           >
@@ -195,7 +195,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               set({ requiereAprobacion: value.requiereAprobacion === true ? undefined : true })
             }
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors [@media(pointer:coarse)]:min-h-11 ' +
               chipClasses(value.requiereAprobacion === true)
             }
           >
@@ -215,7 +215,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
             aria-pressed={value.hasPhotos === true}
             onClick={() => set({ hasPhotos: value.hasPhotos === true ? undefined : true })}
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors [@media(pointer:coarse)]:min-h-11 ' +
               chipClasses(value.hasPhotos === true)
             }
           >
@@ -226,7 +226,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
             aria-pressed={value.reabierto === true}
             onClick={() => set({ reabierto: value.reabierto === true ? undefined : true })}
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors [@media(pointer:coarse)]:min-h-11 ' +
               chipClasses(value.reabierto === true)
             }
           >
@@ -237,7 +237,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
             aria-pressed={value.retencionRiesgo === true}
             onClick={() => set({ retencionRiesgo: value.retencionRiesgo === true ? undefined : true })}
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors [@media(pointer:coarse)]:min-h-11 ' +
               chipClasses(value.retencionRiesgo === true)
             }
           >

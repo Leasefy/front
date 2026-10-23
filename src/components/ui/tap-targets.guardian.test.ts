@@ -51,6 +51,16 @@ const SITES: Array<[file: string, anchor: string]> = [
   ['src/components/contratos/BandejaDeCartasDelIncremento.tsx', "#{carta.externalId"],
   ['src/app/panel/inmobiliaria/reportes/resumen/page.tsx', "{t('inmobiliaria.common.viewAll"],
   ['src/app/panel/inmobiliaria/reportes/resumen/page.tsx', "viewFullReports"],
+  // WU-8: filter pills, inputs and calendar controls
+  ['src/components/inmobiliaria/mantenimiento/InboxFilters.tsx', "'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors"],
+  ['src/components/cartera/CobroJuridico.tsx', "rounded-md border border-border bg-surface p-"],
+  ['src/components/inmobiliaria/PipelineFilters.tsx', "className=\"w-40"],
+  ['src/app/panel/inmobiliaria/pagos/cartera/cobros/page.tsx', "aria-label=\"Mes anterior\""],
+  ['src/app/panel/inmobiliaria/pagos/cartera/cobros/page.tsx', "aria-label=\"Mes siguiente\""],
+  ['src/app/panel/inmobiliaria/agenda/page.tsx', "aria-label=\"Semana anterior\""],
+  ['src/app/panel/inmobiliaria/agenda/page.tsx', "aria-label=\"Semana siguiente\""],
+  ['src/app/panel/inmobiliaria/agenda/page.tsx', "relative h-auto rounded-md px-3 py-1.5"],
+  ['src/components/contabilidad/reportes/BalanceDePrueba.tsx', "htmlFor=\"balance-solo-con-movimiento\""],
 ];
 
 describe('standalone controls opt into a 44 px touch target', () => {

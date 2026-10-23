@@ -334,7 +334,7 @@ export function BalanceDePrueba() {
               checked={soloConMovimiento}
               onCheckedChange={(v) => setSoloConMovimiento(v === true)}
             />
-            <Label htmlFor="balance-solo-con-movimiento" className="font-normal">
+            <Label htmlFor="balance-solo-con-movimiento" className="font-normal [@media(pointer:coarse)]:flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center">
               Sólo cuentas con movimiento o saldo
             </Label>
           </div>

@@ -360,7 +360,7 @@ function AgendaContent() {
                 setPage(1);
               }}
               className={cn(
-                'relative h-auto rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-transparent',
+                'relative h-auto rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-transparent [@media(pointer:coarse)]:min-h-11',
                 pestana === p.id ? 'text-fg' : 'text-fg-muted hover:text-fg',
               )}
             >
@@ -448,6 +448,7 @@ function AgendaContent() {
                   size="sm"
                   hideArrow
                   aria-label="Semana anterior"
+                  className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                   onClick={() => setLunes((l) => { const d = new Date(l); d.setDate(d.getDate() - 7); return d; })}
                 >
                   <CaretLeft className="h-4 w-4" />
@@ -460,6 +461,7 @@ function AgendaContent() {
                   size="sm"
                   hideArrow
                   aria-label="Semana siguiente"
+                  className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                   onClick={() => setLunes((l) => { const d = new Date(l); d.setDate(d.getDate() + 7); return d; })}
                 >
                   <CaretRight className="h-4 w-4" />

@@ -432,6 +432,7 @@ function DialogoDePublicar({
   portales,
   onCerrar,
   onPublicado,
+  onAnotarCuenta,
 }: {
   inmuebles: InmuebleParaPublicar[]
   /**
@@ -444,6 +445,13 @@ function DialogoDePublicar({
   portales: PortalConCuenta[]
   onCerrar: () => void
   onPublicado: () => void
+  /**
+   * Revisora r27: con 0 cuentas al día el diálogo decía «Anota abajo la que ya
+   * pagas y vuelve», sin botón, y «abajo» ya no existía (las cuentas quedaron
+   * plegadas detrás del diálogo). Con esto el callejón tiene su salida: anotar
+   * la cuenta de un portal ahí mismo.
+   */
+  onAnotarCuenta?: (portal: PortalConCuenta) => void
 }) {
   const [busqueda, setBusqueda] = useState('')
   const [elegido, setElegido] = useState<InmuebleParaPublicar | null>(null)
@@ -655,13 +663,34 @@ function DialogoDePublicar({
             {/* ── En qué portales ────────────────────────────────────── */}
             {puedeSalir ? (
               conCuenta.length === 0 ? (
-                <p
-                  className="rounded-lg border border-border bg-surface p-3 text-sm text-fg-muted"
+                <div
+                  className="space-y-3 rounded-lg border border-border bg-surface p-3"
                   data-testid="sin-cuentas-para-publicar"
                 >
-                  No tienes ninguna cuenta de portal al día. Anota abajo la que ya
-                  pagas y vuelve: sin cuenta activa el portal no recibe el aviso.
-                </p>
+                  <p className="text-sm text-fg-muted">
+                    Todavía no tienes ninguna cuenta de portal al día, y sin ella el
+                    portal no recibe el aviso. Anota la que ya pagas: al guardarla
+                    vuelves aquí a publicar.
+                  </p>
+                  {onAnotarCuenta ? (
+                    <div className="flex flex-wrap gap-2">
+                      {portales
+                        .filter((p) => p.portal !== EL_CATALOGO_DE_LEASEFY && !p.cuenta?.activa)
+                        .map((p) => (
+                          <Button
+                            key={p.portal}
+                            variant="outline"
+                            size="sm"
+                            hideArrow
+                            onClick={() => onAnotarCuenta(p)}
+                            data-testid={`anotar-desde-publicar-${p.portal}`}
+                          >
+                            Anotar la cuenta de {p.nombre}
+                          </Button>
+                        ))}
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 <fieldset className="space-y-2">
                   <legend className="mb-1 text-sm font-medium text-fg">
@@ -1014,6 +1043,8 @@ export function PortalesClient() {
   const [bajando, setBajando] = useState<string | null>(null)
   const [cuentaAbierta, setCuentaAbierta] = useState<PortalConCuenta | null>(null)
   const [publicando, setPublicando] = useState(false)
+  /** La cuenta se abrió desde «Publicar un inmueble»: al cerrarla se vuelve allá. */
+  const [volverAPublicar, setVolverAPublicar] = useState(false)
 
   const filas = tablero.datos?.filas ?? []
   const portales = cuentas.datos?.portales ?? []
@@ -1108,7 +1139,7 @@ export function PortalesClient() {
         <EncabezadoDePantalla
           seccion="Captación y arriendo"
           titulo="Publicación en portales"
-          descripcion="Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene cuenta, y mira en un solo lugar dónde están."
+          descripcion="Publica tus inmuebles en los portales donde ya tienes cuenta."
           ayuda={
             <ParaEntenderMas
               etiqueta="Cómo se publica un inmueble"
@@ -1333,10 +1364,20 @@ export function PortalesClient() {
       {cuentaAbierta ? (
         <DialogoDeCuenta
           portal={cuentaAbierta}
-          onCerrar={() => setCuentaAbierta(null)}
+          onCerrar={() => {
+            setCuentaAbierta(null)
+            if (volverAPublicar) {
+              setVolverAPublicar(false)
+              setPublicando(true)
+            }
+          }}
           onGuardado={() => {
             setCuentaAbierta(null)
             void cuentas.refetch()
+            if (volverAPublicar) {
+              setVolverAPublicar(false)
+              setPublicando(true)
+            }
           }}
         />
       ) : null}
@@ -1347,6 +1388,11 @@ export function PortalesClient() {
           cargandoInmuebles={cargandoInmuebles}
           portales={portales}
           onCerrar={() => setPublicando(false)}
+          onAnotarCuenta={(p) => {
+            setPublicando(false)
+            setVolverAPublicar(true)
+            setCuentaAbierta(p)
+          }}
           onPublicado={() => {
             setPublicando(false)
             void tablero.refetch()

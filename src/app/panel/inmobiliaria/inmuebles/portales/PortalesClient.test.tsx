@@ -446,6 +446,48 @@ describe('Publicación en portales', () => {
     expect(enElModal('marcar-FINCARAIZ')).toBeNull()
   })
 
+  it('🔴 P3b (r27) — con 0 cuentas al día el diálogo no es un callejón: anota la cuenta ahí mismo y vuelve a publicar', async () => {
+    h.api.cuentas.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      portales: [FINCARAIZ, { ...METRO, cuenta: { ...METRO.cuenta, activa: false } }],
+    })
+    h.consignaciones.mockReturnValue({
+      consignaciones: [
+        { propertyId: 'prop-1', propertyTitle: 'Apartaestudio en El Socorro', propertyCode: 812, propertyZone: 'El Socorro', propertyCity: 'Caldas' },
+      ],
+    })
+    h.api.revision.mockResolvedValue({
+      propertyId: 'prop-1',
+      estado: 'AVAILABLE',
+      fotos: 8,
+      fotosMinimas: 4,
+      falta: [],
+      sePuedePublicar: true,
+      ocupacion: { puede: true, disponibleDesde: null, porQue: '', motivo: null },
+    })
+    h.api.guardarCuenta.mockResolvedValue({ aviso: null })
+    await montar()
+    await clic(porTestId('abrir-publicar'))
+    await clic(enElModal('elegir-prop-1'))
+    const sinCuentas = enElModal('sin-cuentas-para-publicar')!
+    expect(sinCuentas.textContent).not.toContain('Anota abajo')
+    // Un botón por portal sin cuenta al día.
+    expect(enElModal('anotar-desde-publicar-FINCARAIZ')!.textContent).toBe('Anotar la cuenta de Fincaraíz')
+    expect(enElModal('anotar-desde-publicar-METROCUADRADO')).not.toBeNull()
+    await clic(enElModal('anotar-desde-publicar-FINCARAIZ'))
+    // Se abre la cuenta de ESE portal…
+    expect(enElModal('form-de-cuenta')).not.toBeNull()
+    expect(enElModal('sin-cuentas-para-publicar')).toBeNull()
+    await act(async () => {
+      enElModal('form-de-cuenta')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect(h.api.guardarCuenta).toHaveBeenCalledWith(expect.objectContaining({ portal: 'FINCARAIZ', activa: true }))
+    // …y al guardarla se vuelve a «Publicar un inmueble».
+    expect(enElModal('form-de-cuenta')).toBeNull()
+    expect(enElModal('elegir-prop-1')).not.toBeNull()
+  })
+
   it('P4 — lo que le falta al inmueble lo dice el back, y se muestra tal cual', async () => {
     h.consignaciones.mockReturnValue({
       consignaciones: [

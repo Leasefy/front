@@ -9,6 +9,7 @@ import { CONCILIACION_EN_UN_SOLO_LUGAR_DATA } from "./src/lib/nav/conciliacion-e
 import { UN_SOLO_MODULO_DE_PLATA_DATA } from "./src/lib/nav/un-solo-modulo-de-plata.data.mjs";
 import { LA_SALA_DE_PAGOS_SE_FUE_DATA } from "./src/lib/nav/la-sala-de-pagos-se-fue.data.mjs";
 import { LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA } from "./src/lib/nav/los-nombres-que-no-decian-nada.data.mjs";
+import { COBRANZA_RETIRADAS_DATA } from "./src/lib/nav/cobranza-retiradas.data.mjs";
 import { asegurarElTrabajadorDeMaplibre } from "./scripts/copiar-trabajador-de-maplibre.mjs";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
@@ -263,6 +264,11 @@ const nextConfig = {
       // que van arriba sin tapar nada. Ver
       // src/lib/nav/los-nombres-que-no-decian-nada.data.mjs.
       ...LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA,
+      // Las tres pantallas retiradas de Cobranza (equipo, promesas, plantillas).
+      // Fuentes literales: no tapan nada. Aquí y no sólo en su `page.tsx`, que
+      // con el asistente caído no se monta (revisora r27, K7). Ver
+      // src/lib/nav/cobranza-retiradas.data.mjs (con test).
+      ...COBRANZA_RETIRADAS_DATA,
       // La arquitectura por ciclo de vida (2026-09) va después: Next aplica la
       // primera regla que calza y estas son las más generales del panel. Ver
       // src/lib/nav/rutas-por-ciclo-de-vida.data.mjs (con test).

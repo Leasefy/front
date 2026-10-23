@@ -229,7 +229,7 @@ export function InicioDelMarketplace() {
             {recientes.length > 0 && (
               <section className="px-4 md:px-8" aria-labelledby="recien-publicados">
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <h2 id="recien-publicados" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+                  <h2 id="recien-publicados" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
                     Recién publicados
                   </h2>
                   <Link
@@ -259,7 +259,7 @@ export function InicioDelMarketplace() {
             {/* ── Quién publica: su página es su perfil en Leasefy ── */}
             {inmobiliarias.length > 0 && (
               <section className="mt-14 px-4 md:px-8" aria-labelledby="inmobiliarias-en-leasefy">
-                <h2 id="inmobiliarias-en-leasefy" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+                <h2 id="inmobiliarias-en-leasefy" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
                   Inmobiliarias en Leasefy
                 </h2>
                 <p className="mt-1 text-[14px] text-fg-muted">
@@ -279,7 +279,7 @@ export function InicioDelMarketplace() {
             {conVideo.length > 0 && (
               <section className="mt-14 px-4 md:px-8" aria-labelledby="en-video">
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <h2 id="en-video" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+                  <h2 id="en-video" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
                     Recórrelos en video
                   </h2>
                   <span className="text-[13px] text-fg-muted">Se ven aquí mismo, sin salir de Leasefy</span>

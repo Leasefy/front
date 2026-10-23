@@ -201,7 +201,7 @@ export function PaginaDeLaInmobiliaria({ nombre }: { nombre: string }) {
   if (falla) {
     return (
       <div className="mx-auto max-w-[720px] px-4 py-24 text-center" data-testid="inmobiliaria-no-existe">
-        <h1 className="font-heading text-[28px] font-semibold text-fg">
+        <h1 className="font-heading text-[28px] font-[450] text-fg">
           {falla === 'no-existe' ? 'No encontramos esa inmobiliaria' : 'No pudimos abrir esta página'}
         </h1>
         <p className="mt-2 text-[15px] text-fg-muted">
@@ -312,7 +312,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
             <div className="flex items-center gap-3">
               <OrbeDeAgente agente="orquestador" tamano={44} decorativo />
               <div>
-                <h2 className="font-heading text-[20px] font-semibold text-fg">Pregúntale a {pagina.nombre}</h2>
+                <h2 className="font-heading text-[20px] font-[450] text-fg">Pregúntale a {pagina.nombre}</h2>
                 <p className="text-[13.5px] text-fg-muted">
                   Conoce sus <span className="font-mono tabular-nums">{numero(pagina.inmuebles)}</span>{' '}
                   {pagina.inmuebles === 1 ? 'inmueble' : 'inmuebles'} y responde a cualquier hora. Nunca se inventa uno.
@@ -329,7 +329,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
             >
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-4 md:px-7">
                 <div className="min-w-0">
-                  <h2 id="donde-estan" className="font-heading text-[17px] font-semibold text-fg">
+                  <h2 id="donde-estan" className="font-heading text-[17px] font-[450] text-fg">
                     Dónde están sus inmuebles
                   </h2>
                   {barrios.length > 0 && <p className="truncate text-[13px] text-fg-muted">{barrios.join(' · ')}</p>}
@@ -376,7 +376,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
       {pagina.videos.length > 0 && (
         <section className="mx-auto mt-12 max-w-[1280px] px-4 md:px-6" aria-labelledby="sus-videos">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 id="sus-videos" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+            <h2 id="sus-videos" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
               Sus videos
             </h2>
             <span className="text-[13px] text-fg-muted">Se ven aquí mismo, sin salir de Leasefy</span>
@@ -393,7 +393,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
       <section className="mx-auto mt-12 max-w-[1280px] px-4 md:px-6" aria-labelledby="sus-inmuebles">
         {/* Sin «Ver los N con mapa» arriba: el mapa ya está debajo de su chat
             (Nico, 16-10-2026: «saca esto si ya metiste lo del mapa»). */}
-        <h2 id="sus-inmuebles" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+        <h2 id="sus-inmuebles" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
           Sus inmuebles
         </h2>
         {suyos.length > 0 ? (

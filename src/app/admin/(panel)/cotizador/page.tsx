@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import { legible } from '@/lib/admin/textos-del-admin'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
@@ -147,8 +149,8 @@ export default function CotizadorPage() {
     {
       header: 'Conexión',
       orden: (c) => c.mode,
-      texto: (c) => MODO[c.mode] ?? c.mode,
-      cell: (c) => <Pill tone="info">{MODO[c.mode] ?? c.mode}</Pill>,
+      texto: (c) => MODO[c.mode] ?? legible(c.mode),
+      cell: (c) => <Pill tone="neutral">{MODO[c.mode] ?? legible(c.mode)}</Pill>,
     },
     {
       header: 'Estado',
@@ -186,10 +188,18 @@ export default function CotizadorPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Aseguradoras"
-        description="Las aseguradoras del cotizador (empezando por Fianly): la ruta, cómo se conecta y sus credenciales. Las credenciales se guardan cifradas y nunca se vuelven a mostrar."
-        right={
+        description="Las aseguradoras del cotizador: la ruta, cómo se conecta y sus credenciales."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo funciona" titulo="Las aseguradoras del cotizador" variante="secundario">
+            <p className="text-body-sm text-fg-muted">
+              Empezando por Fianly. Las credenciales se guardan cifradas y nunca se vuelven a mostrar: al editar una
+              aseguradora sólo se ve si están puestas.
+            </p>
+          </ParaEntenderMas>
+        }
+        principal={
           form.kind === 'none' ? (
-            <Button hideArrow onClick={openCreate}>
+            <Button size="sm" hideArrow onClick={openCreate}>
               Nueva aseguradora
             </Button>
           ) : undefined
@@ -235,9 +245,7 @@ export default function CotizadorPage() {
         masEnElExcel={[{ header: 'Código', texto: (c) => c.name }]}
       />
 
-      <div className="">
-        <PreScoringConfigCard />
-      </div>
+      <PreScoringConfigCard />
     </div>
   )
 }

@@ -89,7 +89,7 @@ function Field({
       {error ? (
         <p className="mt-1 text-caption text-danger">{error}</p>
       ) : (
-        <p className="mt-1 text-[11px] text-fg-subtle">{help}</p>
+        <p className="mt-1 text-caption text-fg-muted">{help}</p>
       )}
     </div>
   )

@@ -120,7 +120,7 @@ export function CarrierForm({
     // contraseña de la aseguradora. Sus campos no tienen `name`, pero un envío
     // nativo nunca debe poder armar una URL con credenciales (ver
     // `formularios-con-contrasena.test.ts`).
-    <form method="post" onSubmit={submit} noValidate className="card p-6 space-y-6">
+    <form method="post" onSubmit={submit} noValidate className="space-y-6 rounded-lg border border-border bg-surface p-6">
       <div className="flex items-center justify-between">
         <MonoLabel>{isEdit ? 'Editar aseguradora' : 'Nueva aseguradora'}</MonoLabel>
         <Pill tone="info">COTIZADOR</Pill>

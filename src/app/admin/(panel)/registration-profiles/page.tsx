@@ -3,10 +3,12 @@
 import { useMemo, useState } from 'react'
 import { Switch } from '@/components/ui/switch'
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import { useApiQuery } from '@/lib/admin/use-api-query'
+import { fmtFecha } from '@/lib/admin/format'
 import { ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import {
@@ -51,15 +53,6 @@ function mergeRows(backend: RegistrationProfileAdminRow[] | undefined): ProfileR
   })
 }
 
-function fmtWhen(iso: string | null): string {
-  if (!iso) return 'nunca'
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? 'nunca' : d.toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
 
 // ── Toggle ──────────────────────────────────────────────────────────────────
 
@@ -147,19 +140,35 @@ export default function RegistrationProfilesPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Perfiles de registro"
-        description="Qué puede elegir una persona al crear su cuenta en Leasefy: inquilino, propietario o inmobiliaria. Vale para toda la plataforma. Un perfil apagado deja de aparecer en el registro; las cuentas que ya existen no cambian."
+        description="Qué puede elegir una persona al crear su cuenta en Leasefy: inquilino, propietario o inmobiliaria."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo funciona" titulo="Los perfiles de registro" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Vale para toda la plataforma. Un perfil apagado deja de aparecer en el registro; las cuentas que ya existen no cambian.</p>
+              <p>Siempre queda al menos uno encendido. Si el servidor no responde, el registro muestra los tres para no dejar a nadie por fuera.</p>
+              <p>Cada cambio queda guardado y registrado con tu correo.</p>
+            </div>
+          </ParaEntenderMas>
+        }
+        junto={
+          !isLoading ? (
+            <Pill tone="neutral">
+              {enabledCount} de {rows.length} abiertos
+            </Pill>
+          ) : null
+        }
       />
 
       {/* Endpoint-pending notice (backend not shipped yet) */}
       {notReady && (
         <Alert variant="warning" title="Todavía no se puede cambiar desde aquí">
-          El servidor no tiene esta función (falta <code className="font-mono">GET /registration-profiles</code>). Se
-          muestran los tres perfiles encendidos, como están por defecto, y los interruptores quedan apagados.
+          El servidor todavía no tiene esta función. Se muestran los tres perfiles encendidos, como están por defecto, y
+          los interruptores quedan apagados.
         </Alert>
       )}
 
       {/* Load error that is NOT a 404 */}
-      {error && !notReady ? <ErrorBlock error={error} /> : null}
+      {error && !notReady ? <ErrorBlock error={error} onReintentar={refetch} /> : null}
 
       {/* Action error (toggle failed / guard) */}
       {actionError && (
@@ -167,21 +176,21 @@ export default function RegistrationProfilesPage() {
       )}
 
       {isLoading ? (
-        <LoadingBlock label="cargando perfiles" />
+        <LoadingBlock label="Cargando los perfiles" />
       ) : (
         <div className="space-y-3">
           {rows.map((row) => (
             <Card className="p-5 flex items-center gap-4" key={row.key}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-fg">{row.label}</span>
+                  <span className="text-body font-medium text-fg">{row.label}</span>
                   <Pill tone={row.enabled ? 'ok' : 'muted'}>
                     {row.enabled ? 'Encendido' : 'Apagado'}
                   </Pill>
                 </div>
-                <p className="text-caption text-fg-muted mt-1">{row.description}</p>
+                <p className="text-body-sm text-fg-muted mt-1">{row.description}</p>
                 <p className="mt-2 text-caption text-fg-subtle">
-                  {row.updated_at ? `Último cambio: ${fmtWhen(row.updated_at)}` : 'Nadie lo ha cambiado'}
+                  {row.updated_at ? `Último cambio: ${fmtFecha(row.updated_at)}` : 'Nadie lo ha cambiado'}
                   {row.updated_by ? ` · ${row.updated_by}` : ''}
                 </p>
               </div>
@@ -198,10 +207,6 @@ export default function RegistrationProfilesPage() {
         </div>
       )}
 
-      <p className="text-caption text-fg-muted">
-        Si el servidor no responde, el registro muestra los tres perfiles para no dejar a nadie por fuera. Apagar uno
-        queda guardado y registrado con tu correo.
-      </p>
     </div>
   )
 }

@@ -7979,7 +7979,7 @@
             "morosidadBase": "{{enMora}} de {{conContrato}} inquilinos con contrato vigente"
           },
           "topDebtors": {
-            "heading": "Los que más deben",
+            "heading": "Los que más pesan",
             "empty": "No hay deudores destacados hoy",
             "diasDeMora": "Días de mora"
           },

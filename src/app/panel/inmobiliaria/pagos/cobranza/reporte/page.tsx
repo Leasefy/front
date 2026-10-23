@@ -48,7 +48,8 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table'
-import { MonoLabel } from '@leasefy/cadence'
+import { toast } from 'sonner'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
 import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
@@ -168,8 +169,8 @@ function ReporteViewerContent() {
     try {
       await downloadHistoryCsv(agencyId)
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[reporte] CSV download failed', err)
+      // Revisora r25 (Reporte #2): si falla, se dice (antes sólo la consola).
+      toast.error(mensajeParaLaPersona(err, { porDefecto: 'No pudimos descargar el historial.', accion: 'descargar el historial' }))
     }
   }
 
@@ -189,7 +190,9 @@ function ReporteViewerContent() {
   if (!isLoading && !data && !error) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Revisora r25 (Reporte #3): el vacío también lleva el encabezado. */}
+        <EncabezadoDePantalla seccion="Cobranza" titulo={t('inmobiliaria.ai.cobranza.reporte.pageTitle')} />
         <EmptyState
           icon={CalendarBlank}
           title={t('inmobiliaria.ai.cobranza.reporte.empty.title')}
@@ -316,37 +319,23 @@ function ReporteViewerContent() {
           {/* Cada aviso baja 4px a su lugar, escalonado (techo 320 ms). La
               clave es el aviso (código + texto), no su posición. */}
           {data.alerts.length > 0 && (
-            <Stagger as="section" direction="down" distance="xs" className="space-y-2">
+            /* Revisora r25 (Reporte #1): cada aviso es UN renglón de una lista,
+               no un cartel de color apilado sobre otro. */
+            <Stagger as="ul" direction="down" distance="xs" className="divide-y divide-border rounded-lg border border-border bg-card" data-testid="reporte-avisos">
               {data.alerts.map((alert) => (
                 <StaggerItem
+                  as="li"
                   key={`${alert.code}-${alert.message_es}`}
-                  className={[
-                    'rounded-lg border p-3 flex items-start gap-3',
-                    alert.level === 'CRITICAL'
-                      ? 'border-danger/30 bg-danger-soft'
-                      : 'border-warning/30 bg-warning-soft',
-                  ].join(' ')}
+                  className="flex items-start gap-2.5 px-4 py-2.5"
                   role="alert"
                 >
                   <Warning
-                    className={[
-                      'w-4 h-4 flex-shrink-0 mt-0.5',
-                      alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
-                    ].join(' ')}
+                    className={['mt-0.5 h-4 w-4 flex-shrink-0', alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning'].join(' ')}
                     weight="fill"
                     aria-hidden="true"
                   />
-                  {/* `message_es` viene redactado del agente. Antes se ignoraba
-                      para componer «{kpi}: {actual} (umbral {threshold})» con
-                      campos que no existen → «: undefined (umbral 12)». */}
-                  <p
-                    className={[
-                      'text-caption',
-                      alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
-                    ].join(' ')}
-                  >
-                    {textoDelAviso(alert, locale)}
-                  </p>
+                  {/* `message_es` viene redactado del agente. */}
+                  <p className="text-body-sm text-fg">{textoDelAviso(alert, locale)}</p>
                 </StaggerItem>
               ))}
             </Stagger>
@@ -354,18 +343,18 @@ function ReporteViewerContent() {
 
           {/* 3. Top-N debtors */}
           <section className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b border-border bg-muted/20">
-              <MonoLabel>
+            <div className="px-4 py-3 border-b border-border">
+              <h2 className="text-body font-normal text-fg">
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.heading')}
-              </MonoLabel>
+              </h2>
             </div>
             {data.top_debtors.length === 0 ? (
               <p className="text-body-sm text-muted-foreground text-center py-6">
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.empty')}
               </p>
             ) : (
-              <Table>
-                <TableHeader className="bg-muted/10 border-b border-border">
+              <Table className="max-md:block">
+                <TableHeader className="max-md:hidden">
                   <TableRow>
                     <TableHead>
                       {locale.startsWith('es') ? 'Deudor' : 'Debtor'}
@@ -381,9 +370,9 @@ function ReporteViewerContent() {
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBodyAnimado>
+                <TableBodyAnimado className="max-md:block">
                   {data.top_debtors.slice(0, topN).map((d) => (
-                    <TableRowAnimada key={d.debtor_id} className="border-b border-border last:border-0">
+                    <TableRowAnimada key={d.debtor_id} className="border-b border-border last:border-0 max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:px-4 max-md:py-3">
                       {/* El agente SÍ manda `debtor_name` (JOIN agregado el
                           2026-08-10); esta tabla se quedó pintando la
                           referencia y mostraba «CD06141F» en la columna
@@ -392,20 +381,21 @@ function ReporteViewerContent() {
                           nombre. La referencia queda de respaldo, para un
                           payload cacheado sin el JOIN — nunca un nombre
                           inventado. */}
-                      <TableCell className="px-3 py-2 text-caption text-foreground">
+                      <TableCell className="px-3 py-2 text-body-sm text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                         {d.debtor_name?.trim() || (
                           <span className="font-mono text-muted-foreground">
                             {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-fg max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted">
                         {d.dpd}
+                        <span className="md:hidden"> {locale.startsWith('es') ? 'días de mora' : 'days past due'}</span>
                       </TableCell>
-                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-fg max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                         {COP_FORMATTER.format(d.balance_cop)}
                       </TableCell>
-                      <TableCell className="px-3 py-2 font-mono tabular-nums text-caption text-muted-foreground">
+                      <TableCell className="px-3 py-2 font-mono tabular-nums text-caption text-fg-muted max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                         {d.last_contact_at ? diaCorto(d.last_contact_at, locale) : '—'}
                       </TableCell>
                     </TableRowAnimada>
@@ -417,10 +407,10 @@ function ReporteViewerContent() {
 
           {/* 4. 30-day history + CSV export */}
           <section className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
-              <MonoLabel>
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+              <h2 className="text-body font-normal text-fg">
                 {t('inmobiliaria.ai.cobranza.reporte.history.heading')}
-              </MonoLabel>
+              </h2>
               <Button
                 variant="outline"
                 size="sm"

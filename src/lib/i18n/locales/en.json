@@ -7944,7 +7944,7 @@
             "morosidadBase": "{{enMora}} of {{conContrato}} tenants with an active lease"
           },
           "topDebtors": {
-            "heading": "Largest balances",
+            "heading": "The ones that weigh the most",
             "empty": "No notable debtors today",
             "diasDeMora": "Days past due"
           },

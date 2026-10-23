@@ -64,7 +64,7 @@ export default function MigrarContratosPage() {
             Contratos
           </Link>
           <EncabezadoDePantalla
-            seccion="Portafolio"
+            seccion="Operación"
             titulo="Migrar contratos"
             descripcion="Trae los contratos que ya tienes en otro sistema, con sus inquilinos y su cartera. Entran vigentes y firmados."
             ayuda={

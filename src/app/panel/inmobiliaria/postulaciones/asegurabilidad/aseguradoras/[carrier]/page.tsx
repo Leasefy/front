@@ -62,7 +62,7 @@ export default function CarrierDeepDivePage() {
           label={t('inmobiliaria.ai.cotizador.aseguradoras.backToList')}
         />
         <EncabezadoDePantalla
-          seccion={t('inmobiliaria.ai.nav.cotizador')}
+          seccion={t('inmobiliaria.nav.secAgentes')}
           titulo={carrier.toUpperCase()}
           descripcion={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.subtitle')}
           acciones={

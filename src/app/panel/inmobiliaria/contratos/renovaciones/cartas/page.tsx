@@ -164,7 +164,7 @@ function ColaDeCartas() {
     <div className="space-y-6 p-6 lg:p-8">
       {/* Glow up 22-10: el encabezado común; una línea de para qué sirve y el porqué en la ayuda. */}
       <EncabezadoDePantalla
-        seccion="Renovaciones"
+        seccion="Operación"
         titulo="Cartas del incremento"
         descripcion={`Cada carta sale sola ${datos?.diasAntes ?? 30} días antes del aniversario del contrato.`}
         ayuda={

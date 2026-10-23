@@ -493,7 +493,7 @@ export default function NuevaCotizacionPage() {
             propio fondo y un `min-h-screen`: la única pestaña de la sección
             que no se veía como las demás. */}
         <EncabezadoDePantalla
-          seccion={t('inmobiliaria.ai.nav.cotizador')}
+          seccion={t('inmobiliaria.nav.secAgentes')}
           titulo={t('inmobiliaria.ai.cotizador.nueva.title')}
           descripcion={t('inmobiliaria.ai.cotizador.nueva.subtitle')}
         />

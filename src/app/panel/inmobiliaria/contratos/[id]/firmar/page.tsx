@@ -165,7 +165,7 @@ function FirmarContratoContent() {
             parte del panel estás (Nico: «ni se entiende y no tiene navegación
             para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
         <BackButton href="/panel/inmobiliaria/contratos" label="Contratos" />
-        <EncabezadoDePantalla seccion="Contratos" titulo="Firmar el contrato" />
+        <EncabezadoDePantalla seccion="Operación" titulo="Firmar el contrato" />
         {/*
           🔴 C27 (auditoría 2026-09-13): sin `onReintentar`, un corte de red
           dejaba «Volver» como única salida — se perdía el camino y había que
@@ -268,7 +268,7 @@ function FirmarContratoContent() {
     <div className="space-y-6 p-6 lg:p-8">
       <BackButton href={`/panel/inmobiliaria/contratos/${contract.id}`} label="El contrato" />
       <EncabezadoDePantalla
-        seccion="Contratos"
+        seccion="Operación"
         titulo="Firmar el contrato"
         // La inmobiliaria firma ÚLTIMA (el back exige la firma del inquilino
         // antes), así que firmar acá no «envía» nada: cierra el contrato.

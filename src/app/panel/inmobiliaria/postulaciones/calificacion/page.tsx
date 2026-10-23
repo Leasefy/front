@@ -372,7 +372,7 @@ export default function CalificacionLeasefyPanelPage() {
     <PageGuard module="portafolio">
       <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion={tr('Postulaciones')}
+          seccion={tr('Captación y arriendo')}
           titulo={tr('Calificación Leasefy')}
           descripcion={tr('Cómo le ha ido a una persona arrendando en Leasefy, más sus documentos: si se le arrienda fácil, con condiciones o no, y hasta qué canon.')}
         />

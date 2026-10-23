@@ -29,7 +29,7 @@ export default function CotizadorColaPage() {
           pantalla: cuántos casos esperan. */}
       {/* Glow up 22-10: el encabezado común; lo pendiente junto al título (antes una caja de KPI aparte). */}
       <EncabezadoDePantalla
-        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        seccion={t('inmobiliaria.nav.secAgentes')}
         titulo={t('inmobiliaria.ai.workspace.pages.cotizador.colaTitle')}
         descripcion={
           <>

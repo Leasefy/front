@@ -120,7 +120,7 @@ function ContenidoDeClausulas() {
           camino de vuelta son las pestañas de arriba, y un botón que repite lo
           que la navegación ya hace sólo agrega una decisión más. */}
         <EncabezadoDePantalla
-          seccion="Contratos"
+          seccion="Operación"
           titulo="Cláusulas propias"
           descripcion="Lo que tu inmobiliaria agrega a sus contratos, además del texto legal. El articulado de la ley no se edita: estas cláusulas se suman al final y pasan por el mismo validador que revisa todo contrato."
           // Revisión de Operación (21-10): con la lista vacía, el único botón es el del vacío

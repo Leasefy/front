@@ -149,7 +149,7 @@ export default function CotizadorOverviewPage() {
           punto). «Por revisar» sigue fuera: su cola siempre vuelve vacía
           (`sin-cola-que-nadie-llena.test.tsx`). */}
       <EncabezadoDePantalla
-        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        seccion={t('inmobiliaria.nav.secAgentes')}
         titulo={t('inmobiliaria.ai.nav.cotizadorResumen')}
         descripcion={tf(
           'inmobiliaria.ai.cotizador.overview.radarSubtitle',

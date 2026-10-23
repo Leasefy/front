@@ -106,7 +106,7 @@ export function FirmasClient() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Contratos"
+        seccion="Operación"
         titulo="Invitaciones a firmar"
         descripcion="Los contratos mandados a firmar que nadie ha firmado: primero lo que te toca."
         ayuda={

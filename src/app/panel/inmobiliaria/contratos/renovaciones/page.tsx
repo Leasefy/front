@@ -104,7 +104,7 @@ function RenovacionesContent() {
         en la lista hasta que se firma o se cierra, aunque el vencimiento se aleje.
       */}
       <EncabezadoDePantalla
-        seccion="Contratos"
+        seccion="Operación"
         titulo={t('inmobiliaria.nav.renovaciones')}
         descripcion="Las renovaciones abiertas y en qué paso va cada una: propuesta, respuesta del inquilino y firma."
         ayuda={

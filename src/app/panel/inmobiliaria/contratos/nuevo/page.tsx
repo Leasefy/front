@@ -1154,7 +1154,7 @@ function NuevoContratoContent() {
       <div>
         <BackButton className="mb-3" />
         <EncabezadoDePantalla
-          seccion="Contratos"
+          seccion="Operación"
           titulo="Crear contrato"
           descripcion={
             esManual ? (

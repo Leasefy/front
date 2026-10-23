@@ -1103,7 +1103,7 @@ export function PortalesClient() {
           propósito (escondida, alguien esperaría que el aviso saliera solo); la calidad, como secundaria. */}
       <div className="space-y-2">
         <EncabezadoDePantalla
-          seccion="Inmuebles"
+          seccion="Captación y arriendo"
           titulo="Publicación en portales"
           descripcion="Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene cuenta, y mira en un solo lugar dónde están."
           ayuda={

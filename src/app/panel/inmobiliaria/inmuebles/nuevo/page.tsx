@@ -72,7 +72,7 @@ function NuevaConsignacionContent() {
       <div className="space-y-3">
         <BackButton href={volverA} label={etiquetaDeRegreso} />
         <EncabezadoDePantalla
-          seccion={t('inmobiliaria.nav.inmuebles')}
+          seccion={t('inmobiliaria.nav.secCaptacion')}
           titulo={t('inmobiliaria.portafolio.new.title')}
           descripcion={t('inmobiliaria.portafolio.new.subtitle')}
         />

@@ -234,7 +234,7 @@ function EquipoAsegurabilidad() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
-        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        seccion={t('inmobiliaria.nav.secAgentes')}
         titulo={tf(`${NS}.title`, 'Equipo IA')}
         descripcion={tf(
           `${NS}.subtitle`,

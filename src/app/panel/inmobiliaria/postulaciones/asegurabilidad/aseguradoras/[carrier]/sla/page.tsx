@@ -101,7 +101,7 @@ export default function CarrierSlaPage() {
       <div className="space-y-3">
         <VolverALaLista href=".." label={carrier.toUpperCase()} />
         <EncabezadoDePantalla
-          seccion={t('inmobiliaria.ai.nav.cotizador')}
+          seccion={t('inmobiliaria.nav.secAgentes')}
           titulo={`${t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.title')} — ${carrier.toUpperCase()}`}
           descripcion={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.subtitle')}
           acciones={

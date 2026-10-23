@@ -96,7 +96,7 @@ export default function CostosPage() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
       <EncabezadoDePantalla
-        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        seccion={t('inmobiliaria.nav.secAgentes')}
         titulo={t('inmobiliaria.ai.cotizador.costos.pageTitle')}
         descripcion={t('inmobiliaria.ai.cotizador.costos.pageSubtitle')}
       />

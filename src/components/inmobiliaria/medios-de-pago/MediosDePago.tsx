@@ -29,7 +29,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -39,6 +38,7 @@ import { finanzasApi } from '@/lib/api/finanzas.service';
 import { estaApagado } from '@/lib/finanzas/medios';
 import type { MedioDePago, NuevoMedioDePago } from '@/lib/api/medios-de-pago.types';
 import { cn } from '@/lib/utils';
+import { EsqueletoDeSeccion } from '@/components/configuracion/piezas';
 import { EditorDeMedio } from './EditorDeMedio';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
@@ -198,9 +198,9 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
       </p>
 
       {cargando ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <Spinner size="lg" />
-          <p className="text-sm text-fg-muted">Cargando medios de pago...</p>
+        // Ronda 30: el esqueleto con la forma de la lista (antes un spinner y «Cargando…»).
+        <div aria-busy="true" aria-label="Cargando los medios de pago">
+          <EsqueletoDeSeccion filas={3} />
         </div>
       ) : errorDeCarga ? (
         <FalloDeCarga error={errorDeCarga} queEs="los medios de pago" onReintentar={cargar} />
@@ -353,7 +353,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
             </p>
           </div>
         </div>
-        <div className="flex items-start gap-3 rounded-lg border border-dashed border-border p-4 opacity-70" data-testid="tarjeta-cobre" aria-disabled="true">
+        <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4" data-testid="tarjeta-cobre" aria-disabled="true">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-muted">
             <Bank className="h-5 w-5 text-fg-muted" aria-hidden="true" />
           </div>

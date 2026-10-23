@@ -2382,7 +2382,7 @@
         "subtitleFull": "Conecta servicios externos para automatizar tu negocio",
         "searchPlaceholder": "Buscar integración...",
         "syncedAt": "Sincronizado {{time}}",
-        "apiKeyNotConfigured": "API Key no configurada. Configura la integración para activarla.",
+        "apiKeyNotConfigured": "Falta la llave de acceso de este servicio: Leasefy la conecta contigo.",
         "noResults": "No se encontraron integraciones",
         "configureTitle": "Configurar {{name}}",
         "apiKeyInfo": "Ingresa tu API Key para conectar con {{name}}. Puedes obtenerla en el panel de administración del servicio.",
@@ -2395,7 +2395,7 @@
         "detailCategory": "Categoría",
         "detailLastSync": "Última sincronización",
         "detailNeverSynced": "Todavía no sincronizó",
-        "keysNotHere": "Las llaves y los webhooks de esta integración todavía no se configuran desde el panel. Desde aquí la prendes o la apagas; el resto lo hacemos nosotros contigo.",
+        "keysNotHere": "Las llaves de acceso de esta integración todavía no se configuran desde el panel. Desde aquí la prendes o la apagas; el resto lo configura Leasefy contigo.",
         "close": "Cerrar"
       },
       "billing": {

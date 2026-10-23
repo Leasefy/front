@@ -53,7 +53,7 @@ export function SeccionTuPagina() {
       cuandoVacio={
         <VacioDeSeccion
           icono={Globe}
-          titulo="Todavía no pudimos leer tu inmobiliaria"
+          titulo="Todavía no se pudo leer tu inmobiliaria"
           ayuda="Vuelve a intentar en un momento: sin los datos de la agencia no hay página que mostrar."
         />
       }
@@ -120,7 +120,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       alGuardar();
       return true;
     } catch (e) {
-      const texto = mensajeParaLaPersona(e, { porDefecto: 'No pudimos guardar tu página.', accion: 'guardar tu página' });
+      const texto = mensajeParaLaPersona(e, { porDefecto: 'No se pudo guardar tu página.', accion: 'guardar tu página' });
       if (/nombre corto/i.test(texto)) setErrorDelNombre(texto);
       else toast.error(texto);
       return false;
@@ -162,7 +162,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       toast.success('La portada quedó en tu página.');
       alGuardar();
     } catch (e) {
-      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos subir la portada.', accion: 'subir la portada' }));
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo subir la portada.', accion: 'subir la portada' }));
     } finally {
       setSubiendo(false);
     }
@@ -177,7 +177,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       toast.success(src ? 'Elegiste esa portada para tu página.' : 'Quedó la portada de Leasefy.');
       alGuardar();
     } catch (e) {
-      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos cambiar la portada.', accion: 'cambiar la portada' }));
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo cambiar la portada.', accion: 'cambiar la portada' }));
     } finally {
       setEligiendo(null);
     }
@@ -192,7 +192,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       toast.success('Tu logo quedó en tu página.');
       alGuardar();
     } catch (e) {
-      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos subir el logo.', accion: 'subir el logo' }));
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo subir el logo.', accion: 'subir el logo' }));
     } finally {
       setSubiendoLogo(false);
     }
@@ -206,7 +206,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       toast.success('Tu página muestra tus iniciales.');
       alGuardar();
     } catch (e) {
-      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos quitar el logo.', accion: 'quitar el logo' }));
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo quitar el logo.', accion: 'quitar el logo' }));
     } finally {
       setSubiendoLogo(false);
     }

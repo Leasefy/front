@@ -128,8 +128,8 @@ export function SeccionMediosDeRecibo() {
       cuandoVacio={
         <VacioDeSeccion
           icono={Receipt}
-          titulo="No pudimos leer el catálogo de medios"
-          ayuda="Vuelve a intentar en un momento: el catálogo lo arma el back con lo que el producto conoce."
+          titulo="El catálogo de medios llegó vacío"
+          ayuda="Vuelve a intentar en un momento; si sigue así, escríbenos a hola@leasefy.co."
         />
       }
     >

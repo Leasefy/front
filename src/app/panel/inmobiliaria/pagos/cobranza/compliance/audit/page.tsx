@@ -216,7 +216,7 @@ function AuditContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
-        seccion="Cobranza · Cumplimiento"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
         descripcion="Lo que pasó en la cobranza, quién lo hizo y cuándo. Es sólo lectura y los datos personales no se muestran aquí."
         acciones={

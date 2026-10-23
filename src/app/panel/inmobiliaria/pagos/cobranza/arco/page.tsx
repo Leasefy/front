@@ -306,7 +306,7 @@ function BandejaArco() {
     <div className="space-y-6 p-6 lg:p-8">
       {/* El título es el del riel («Habeas Data», C2); la descripción dice qué son. */}
       <EncabezadoDePantalla
-        seccion="Cobranza · Cumplimiento"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.nav.arco')}
         descripcion={tr('Las solicitudes de los titulares para ver, corregir, borrar u oponerse al uso de sus datos personales, con el plazo que pone la ley.')}
         junto={

@@ -143,7 +143,7 @@ function Ley2300Content() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
-        seccion="Cobranza · Cumplimiento"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.ley2300Title')}
         descripcion="Cada intento de contacto fuera del horario que permite la Ley 2300. Lo normal es que no haya ninguno."
       />

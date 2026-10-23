@@ -61,6 +61,7 @@ import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/Cobra
 import { DiasDeGraciaDeLaPromesa } from '@/components/inmobiliaria/cobranza/DiasDeGraciaDeLaPromesa'
 import { FormasDeOfrecerElAcuerdo } from '@/components/inmobiliaria/cobranza/FormasDeOfrecerElAcuerdo'
 import { Button } from '@/components/ui/button'
+import { BackButton } from '@/components/ui/back-button'
 import {
   Select,
   SelectContent,
@@ -554,15 +555,11 @@ function CobranzaConfiguracionContent() {
             ahí (`?volver=acuerdos`), para no inventar una vuelta que no existe
             cuando entraste por el menú. */}
         {volverA === 'acuerdos' && (
-          <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2 mb-2">
-            <Link href={`${COBRANZA_BASE}/acuerdos`}>
-              Volver a Acuerdos de pago
-            </Link>
-          </Button>
+          <BackButton href={`${COBRANZA_BASE}/acuerdos`} label="Acuerdos de pago" variant="subtle" className="mb-2" />
         )}
         <EncabezadoDePantalla
           seccion="Cobranza"
-          titulo="Configuración de cobranza"
+          titulo="Configuración"
           descripcion={
             <>
               Cuánto decide solo el agente, cómo cierra las promesas y cómo te reporta.

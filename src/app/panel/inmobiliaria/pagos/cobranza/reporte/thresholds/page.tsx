@@ -47,7 +47,7 @@ function ThresholdsContent() {
           cifras ni dónde se ven. GLOW UP 21-10: el encabezado común, con la
           versión que rige junto al título. */}
       <EncabezadoDePantalla
-        seccion="Cobranza · Reporte diario"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle')}
         descripcion={
           locale.startsWith('es')

@@ -7894,7 +7894,7 @@
             "redPulse": "Expires in less than 24 hours"
           },
           "subPages": {
-            "ley2300Title": "Ley 2300 — outside-hours attempts",
+            "ley2300Title": "Outside contact hours",
             "optOutTitle": "Do not contact (opt-out)",
             "auditTitle": "Audit log"
           },

@@ -104,7 +104,7 @@ function SuscripcionContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
-        seccion="Cobranza · Reporte diario"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.reporte.subscription.pageTitle')}
         descripcion={
           locale.startsWith('es')

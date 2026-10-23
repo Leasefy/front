@@ -203,7 +203,7 @@ function OptOutContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
-        seccion="Cobranza · Cumplimiento"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle')}
         descripcion="Los deudores que pidieron que no los contacten por un canal. Marcar el acuse deja constancia de que la inmobiliaria recibió la solicitud."
       />

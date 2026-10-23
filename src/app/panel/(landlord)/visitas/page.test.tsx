@@ -77,3 +77,17 @@ describe('Visitas del propietario', () => {
     expect(createVisit).not.toHaveBeenCalled()
   })
 })
+
+describe('Visitas del propietario en móvil (T-0173)', () => {
+  it('el selector de pestañas scrollea por dentro: no ensancha la página a 360/412 px', async () => {
+    await act(async () => {
+      root.render(React.createElement(VisitasPage))
+    })
+    const selector = container.querySelector('[aria-label="landlord.visits.title"]') as HTMLElement
+    expect(selector).not.toBeNull()
+    // El control mide ~569 px; su contenedor debe acotarlo y scrollear.
+    const contenedor = selector.parentElement as HTMLElement
+    expect(contenedor.className).toContain('max-w-full')
+    expect(contenedor.className).toContain('overflow-x-auto')
+  })
+})

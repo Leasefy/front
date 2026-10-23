@@ -494,9 +494,10 @@ export default function VisitasPage() {
         </div>
 
         {/* Tabs */}
+        {/* ~569 px wide: scrolls inside this wrapper instead of widening the phone page. */}
+        <div className="mb-6 max-w-full overflow-x-auto">
         <SegmentedControl
           size="md"
-          className="mb-6"
           aria-label={t('landlord.visits.title')}
           value={tabFunnel}
           onChange={(value) => setTabFunnel(value)}
@@ -513,6 +514,7 @@ export default function VisitasPage() {
             ),
           }))}
         />
+        </div>
 
         {/* Table */}
         {getFunneledVisits().length === 0 ? (

@@ -1,16 +1,31 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Appear, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
-import { LandingChrome } from "@/components/landing-v2/LandingChrome";
+import type { ReactNode } from 'react';
+import { Appear } from '@leasefy/cadence';
+import { CheckCircle } from '@phosphor-icons/react';
+import { LandingChrome } from '@/components/landing-v2/LandingChrome';
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
-import { Button } from '@/components/ui/button';
-import { CTASection } from '@/components/home/CTASection';
 import { FAQSection } from '@/components/home/FAQSection';
-import { CaretLeft, CaretRight, CheckCircle, Users, FileText, Code, TrendUp, Buildings, Building, Clock, Lightning, Warning, XCircle, Shield, Cpu, PencilLine, ArrowRight } from '@phosphor-icons/react';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
+import { HeroeDePara } from '@/components/landing-v2/para/HeroeDePara';
+import { FotoQueSeRevela } from '@/components/landing-v2/para/FotoQueSeRevela';
+import { TestimoniosDePara } from '@/components/landing-v2/para/TestimoniosDePara';
+import { CierreDePara } from '@/components/landing-v2/para/CierreDePara';
+import {
+  Acento,
+  ANCHO,
+  Ceja,
+  Entrada,
+  ESQUINA,
+  HiloDePuntos,
+  Punto,
+  Rotulo,
+  Seccion,
+  Tarjeta,
+  TituloDeSeccion,
+} from '@/components/landing-v2/para/piezas';
+import { cn } from '@/lib/utils';
 
 // Testimonials data
 const testimonials = [
@@ -40,677 +55,381 @@ const testimonials = [
   },
 ];
 
+const problemasConFoto = [
+  {
+    foto: '/hero-interior.jpg',
+    alt: 'Sala de un apartamento en arriendo',
+    titulo: 'Procesos manuales',
+    texto: 'Excel, WhatsApp, papeles. Tu equipo pierde horas en tareas repetitivas.',
+  },
+  {
+    foto: '/hero-2.jpg',
+    alt: 'Sala amplia de un apartamento',
+    titulo: 'Evaluaciones lentas',
+    texto: 'Días para evaluar un candidato. Los buenos inquilinos se van con la competencia.',
+  },
+  {
+    foto: '/hero-3.jpg',
+    alt: 'Sala con ventanales de un apartamento',
+    titulo: 'Impagos frecuentes',
+    texto: 'Sin scoring predictivo, los impagos afectan tu rentabilidad.',
+  },
+];
+
+/** La pieza del producto que flota sobre la foto del héroe: clara, sin vidrio. */
+function PiezaDelHeroe() {
+  return (
+    <div className="space-y-3">
+      <Tarjeta className="p-5 shadow-[0_50px_90px_-40px_rgba(18,17,16,.35),0_22px_40px_-22px_rgba(18,17,16,.18)]">
+        <div className="flex items-center gap-3">
+          <span className={cn('grid h-10 w-10 place-items-center rounded-[12px] bg-[#0A0F2C] font-mono text-caption text-white', ESQUINA)}>
+            IB
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-[450] text-[#121110]">Inmobiliaria Bogotá</p>
+            <p className="text-caption text-[#706B64]">Plan Flex</p>
+          </div>
+          <CheckCircle className="h-5 w-5 text-[#2B7549]" aria-hidden="true" />
+        </div>
+        <div className="mt-4 rounded-[16px] bg-[#F3F1ED] p-4">
+          <div className="flex items-center justify-between text-caption">
+            <span className="text-[#5B5751]">Candidatos este mes</span>
+            <span className="font-mono text-[#2B7549]">+28%</span>
+          </div>
+          <p className="mt-1 font-mono text-[30px] font-normal leading-none tracking-[-0.03em] text-[#121110]">347</p>
+        </div>
+        <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+          {[
+            { v: '45', l: 'Propiedades' },
+            { v: '12', l: 'Agentes' },
+            { v: '89%', l: 'Ocupación' },
+          ].map((s) => (
+            <div key={s.l} className="rounded-[12px] bg-[#FBFAF8] px-1 py-2.5 ring-1 ring-[#ECE8E1]">
+              <dd className="font-mono text-[18px] text-[#121110]">{s.v}</dd>
+              <dt className="text-caption text-[#706B64]">{s.l}</dt>
+            </div>
+          ))}
+        </dl>
+      </Tarjeta>
+      <Tarjeta className="flex items-center gap-3 px-4 py-3">
+        <Punto />
+        <div className="min-w-0">
+          <p className="text-caption font-medium text-[#121110]">Scoring completado</p>
+          <p className="font-mono text-caption text-[#706B64]">Score: 87/100 · Bajo riesgo</p>
+        </div>
+      </Tarjeta>
+    </div>
+  );
+}
+
+/** Tarjeta de la medianoche (soluciones): superficie de noche, sin cajas de color. */
+function TarjetaDeNoche({
+  titulo,
+  texto,
+  chips,
+  children,
+  className,
+  delay = 0,
+}: {
+  titulo: string;
+  texto: string;
+  chips?: string[];
+  children?: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  return (
+    <Appear inView distance="md" duration="slow" delay={delay} className={className}>
+      <Tarjeta enNoche className="flex h-full flex-col gap-6 p-6 sm:flex-row sm:p-7">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[22px] font-[420] leading-tight tracking-[-0.02em] text-[#F3F1ED]">{titulo}</h3>
+          <p className="mt-2 text-[15px] leading-[1.5] text-[#B9BCD0]">{texto}</p>
+          {chips ? (
+            <ul className="mt-5 flex flex-wrap gap-2">
+              {chips.map((c) => (
+                <li
+                  key={c}
+                  className={cn('inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-[#B9BCD0]', ESQUINA)}
+                >
+                  <Punto enNoche className="h-1.5 w-1.5" />
+                  {c}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+        {children ? <div className="flex-none sm:w-[220px]">{children}</div> : null}
+      </Tarjeta>
+    </Appear>
+  );
+}
 
 export default function InmobiliariasPage() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  // «Siguiente» trae el par nuevo por la derecha; «Anterior», por la izquierda.
-  const [direccion, setDireccion] = useState<'forward' | 'backward'>('forward');
-
-  const nextTestimonial = () => {
-    setDireccion('forward');
-    setCurrentIndex((prev) => (prev + 2) % testimonials.length);
-  };
-
-  const prevTestimonial = () => {
-    setDireccion('backward');
-    setCurrentIndex((prev) => (prev - 2 + testimonials.length) % testimonials.length);
-  };
-
   return (
     <LandingChrome>
-      <main className="overflow-hidden">
-        {/* Hero Section */}
-        <section className="relative h-[600px] overflow-hidden bg-black">
-          <Image
-            src="/hero-7.jpg"
-            alt="Modern office building"
-            fill
-            sizes="100vw"
-            className="object-cover"
-            priority
+      <main className="overflow-hidden bg-[#FBFAF8]">
+        <HeroeDePara
+          ceja="Solución empresarial para inmobiliarias"
+          titulo={
+            <>
+              Escala tu operación <span className="block">con <Acento>tecnología</Acento></span>
+            </>
+          }
+          entrada={
+            <>
+              CRM de candidatos, scoring con IA, contratos digitales y API completa.
+              <span className="text-[#121110]"> Todo integrado.</span>
+            </>
+          }
+          principal={{ href: '/auth', texto: 'Empezar prueba gratis' }}
+          secundaria={{ href: '/pricing', texto: 'Ver planes' }}
+          cifras={[
+            { valor: '92%', rotulo: 'Precisión IA' },
+            { valor: '500+', rotulo: 'Inmobiliarias' },
+            { valor: '10x', rotulo: 'Más rápido' },
+          ]}
+          foto={{ src: '/hero-7.jpg', alt: 'Sala de un apartamento moderno' }}
+          pieza={<PiezaDelHeroe />}
+          semilla={7}
+        />
+
+        {/* El problema */}
+        <Seccion fondo="papel" className="pt-[clamp(72px,8vw,110px)]">
+          <div className={ANCHO}>
+            <div className="grid gap-8 md:grid-cols-12 md:items-end">
+              <div className="md:col-span-7">
+                <Ceja>El problema</Ceja>
+                <TituloDeSeccion className="mt-5">
+                  Escalar una inmobiliaria no debería ser tan <Acento>complicado</Acento>
+                </TituloDeSeccion>
+              </div>
+              <Entrada className="md:col-span-5">
+                Procesos manuales, evaluaciones lentas y errores humanos limitan tu crecimiento. Es hora de automatizar.
+              </Entrada>
+            </div>
+
+            <div className="mt-[clamp(40px,5vw,72px)] grid gap-x-5 gap-y-10 md:grid-cols-3">
+              {problemasConFoto.map((p, i) => (
+                <Appear key={p.titulo} inView distance="md" duration="slow" delay={i * 0.08}>
+                  <FotoQueSeRevela src={p.foto} alt={p.alt} proporcion={4 / 3} rotulo={`PROBLEMA ${String(i + 1).padStart(2, '0')}`} />
+                  <h3 className="mt-5 text-[24px] font-[420] leading-tight tracking-[-0.02em] text-[#121110]">{p.titulo}</h3>
+                  <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">{p.texto}</p>
+                </Appear>
+              ))}
+            </div>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <Appear inView distance="md" duration="slow" delay={0.1}>
+                <Tarjeta className="flex h-full flex-col justify-between gap-8 p-7 sm:p-8">
+                  <div>
+                    <Rotulo tono="neutro">PROBLEMA 04</Rotulo>
+                    <h3 className="mt-4 text-[24px] font-[420] leading-tight tracking-[-0.02em]">Sin integración</h3>
+                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                      Tu ERP, CRM y sistemas de contabilidad no se hablan entre sí. Doble digitación y errores constantes.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5" aria-hidden="true">
+                      {['ERP', 'CRM', 'CONT'].map((s) => (
+                        <span key={s} className={cn('grid h-9 w-12 place-items-center rounded-[10px] bg-[#F3F1ED] font-mono text-caption text-[#5B5751]', ESQUINA)}>
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-caption text-[#5B5751]">3 sistemas desconectados</span>
+                  </div>
+                </Tarjeta>
+              </Appear>
+              <Appear inView distance="md" duration="slow" delay={0.16}>
+                <Tarjeta className="flex h-full flex-col justify-between gap-8 p-7 sm:p-8">
+                  <div>
+                    <Rotulo tono="neutro">PROBLEMA 05</Rotulo>
+                    <h3 className="mt-4 text-[24px] font-[420] leading-tight tracking-[-0.02em]">Escalabilidad limitada</h3>
+                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                      Cada 50 propiedades nuevas, necesitas contratar más personal. Tu operación no escala eficientemente.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-none">
+                      <p className="font-mono text-[30px] leading-none text-[#121110]">50</p>
+                      <p className="mt-1 text-caption text-[#706B64]">propiedades por persona</p>
+                    </div>
+                    <HiloDePuntos className="min-w-[40px] flex-1" />
+                    <div className="flex-none text-right">
+                      <p className="font-mono text-[30px] leading-none text-[#1A40FF]">200+</p>
+                      <p className="mt-1 text-caption text-[#706B64]">con automatización</p>
+                    </div>
+                  </div>
+                </Tarjeta>
+              </Appear>
+            </div>
+          </div>
+        </Seccion>
+
+        {/* La solución: el momento de medianoche */}
+        <Seccion fondo="noche">
+          <CorrienteDeVoltaje
+            fondo="noche"
+            forma="horizonte"
+            semilla={19}
+            fuerza={0.5}
+            className="absolute inset-x-0 bottom-0 z-0 h-[45%] w-full opacity-80 [mask-image:linear-gradient(to_top,#000_0%,rgba(0,0,0,.6)_40%,transparent_95%)]"
           />
-          <div className="absolute inset-0 bg-black/40 z-[1]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 z-[1]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/40 z-[1]" />
+          <div className={cn(ANCHO, 'relative z-[1]')}>
+            <div className="grid gap-8 md:grid-cols-12 md:items-end">
+              <div className="md:col-span-7">
+                <Ceja enNoche>La plataforma</Ceja>
+                <TituloDeSeccion enNoche className="mt-5">
+                  Todo lo que necesitas para <Acento enNoche>escalar</Acento>
+                </TituloDeSeccion>
+              </div>
+              <Entrada enNoche className="md:col-span-5">
+                Plataforma completa para gestionar candidatos, automatizar evaluaciones e integrar con tu operación.
+              </Entrada>
+            </div>
 
-          <div className="relative z-10 h-full container-platform pt-[72px] pb-16 flex items-center">
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
-              {/* Left Content */}
-              <div className="space-y-4">
-                <motion.span
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
-                >
-                  <Building className="w-3.5 h-3.5" />
-                  Solución empresarial para inmobiliarias
-                </motion.span>
+            <div className="mt-[clamp(40px,5vw,72px)] grid gap-4 md:grid-cols-12 lg:gap-5">
+              <TarjetaDeNoche
+                className="md:col-span-7"
+                titulo="CRM de Candidatos"
+                texto="Gestiona todos tus candidatos desde un solo panel con historial completo."
+                chips={['Pipeline', 'Historial', 'Chat', 'Reportes']}
+              >
+                <div className="rounded-[16px] bg-white/[0.04] p-4 ring-1 ring-white/[0.08]">
+                  <div className="flex items-center justify-between text-caption">
+                    <span className="text-[#8E93B0]">Candidatos</span>
+                    <span className="font-mono text-[#7FD3A0]">+12%</span>
+                  </div>
+                  <p className="mt-1 font-mono text-[28px] leading-none text-[#F3F1ED]">247</p>
+                  <ul className="mt-3 space-y-2 border-t border-white/[0.08] pt-3">
+                    {[
+                      { name: 'María L.', status: 'Aprobado', color: 'bg-[#2B7549]' },
+                      { name: 'Nicolás R.', status: 'En revisión', color: 'bg-[#D9911C]' },
+                      { name: 'Ana M.', status: 'Nuevo', color: 'bg-[#4D6BFF]' },
+                    ].map((item) => (
+                      <li key={item.name} className="flex items-center gap-2 text-caption">
+                        <i aria-hidden="true" className={cn('h-1.5 w-1.5 rounded-[2px]', item.color)} />
+                        <span className="flex-1 text-[#F3F1ED]">{item.name}</span>
+                        <span className="text-[#8E93B0]">{item.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </TarjetaDeNoche>
 
-                <motion.h1
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
-                >
-                  Escala tu operación
-                  <span className="block mt-2 text-white/90">con <span className="italic">tecnología</span></span>
-                </motion.h1>
+              <TarjetaDeNoche
+                className="md:col-span-5"
+                delay={0.08}
+                titulo="Scoring con IA"
+                texto="Evalúa candidatos en segundos con 92% de precisión."
+              >
+                <div className="flex flex-col items-center justify-center py-2">
+                  <svg viewBox="0 0 100 60" className="h-[60px] w-[100px]" aria-hidden="true">
+                    <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="8" strokeLinecap="round" />
+                    <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="#4D6BFF" strokeWidth="8" strokeLinecap="round" strokeDasharray="126" strokeDashoffset="16" />
+                  </svg>
+                  <span className="-mt-3 font-mono text-[26px] leading-none text-[#F3F1ED]">87</span>
+                  <span className="mt-2 text-caption text-[#7FD3A0]">Bajo riesgo</span>
+                </div>
+              </TarjetaDeNoche>
 
-                <motion.p
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="!mt-2 text-lg text-white/70 max-w-lg"
-                >
-                  CRM de candidatos, scoring con IA, contratos digitales y API completa.
-                  <span className="text-white font-medium"> Todo integrado.</span>
-                </motion.p>
-
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col sm:flex-row gap-3 pt-2"
-                >
-                  <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6">
-                      Empezar prueba gratis
-                    </Button>
-                  </Link>
-                  <Link href="/pricing">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 h-12 px-6"
-                    >
-                      Ver planes
-                    </Button>
-                  </Link>
-                </motion.div>
-
-                {/* Hero Stats - No separator line */}
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-8 pt-6"
-                >
-                  {[
-                    { value: '92%', label: 'Precisión IA' },
-                    { value: '500+', label: 'Inmobiliarias' },
-                    { value: '10x', label: 'Más rápido' },
-                  ].map((stat) => (
-                    <div key={stat.label}>
-                      <p className="text-2xl md:text-3xl font-bold text-white font-mono tabular-nums">{stat.value}</p>
-                      <p className="text-[11px] text-white/50 mt-0.5">{stat.label}</p>
+              <TarjetaDeNoche
+                className="md:col-span-5"
+                delay={0.12}
+                titulo="Multi-Propiedad"
+                texto="Gestiona cientos de propiedades por sucursal."
+              >
+                <div aria-hidden="true" className="mx-auto grid w-[132px] grid-cols-3 gap-1.5">
+                  {[92, 88, 96, 75, 90, 85, 78, 94, 82].map((occ, i) => (
+                    <div key={i} className="flex aspect-square flex-col justify-end rounded-[6px] bg-white/[0.06] p-1">
+                      <div className={cn('w-full rounded-[3px]', occ > 85 ? 'bg-[#4D6BFF]' : 'bg-[#4D6BFF]/50')} style={{ height: `${occ * 0.6}%` }} />
                     </div>
                   ))}
-                </motion.div>
-              </div>
-
-              {/* Right - Hero Widget (Glass style, aligned to right) */}
-              <motion.div
-                initial={false}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                className="hidden lg:flex lg:justify-end"
-              >
-                <div className="relative">
-                  <motion.div
-                    initial={false}
-                    animate={{ opacity: 1 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
-                  >
-                    <motion.div
-                      initial={false}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-3 mb-5"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                        <Building className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white font-semibold text-sm">Inmobiliaria Bogotá</p>
-                        <p className="text-white/60 text-xs">Plan Flex</p>
-                      </div>
-                      <motion.div
-                        initial={false}
-                        animate={{ scale: 1 }}
-                      >
-                        <CheckCircle className="w-5 h-5 text-[#2C7A53]" />
-                      </motion.div>
-                    </motion.div>
-
-                    <div className="space-y-3">
-                      <motion.div
-                        initial={false}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-white/60 text-xs">Candidatos este mes</span>
-                          <span className="text-[#2C7A53] text-xs font-medium">+28%</span>
-                        </div>
-                        <p className="text-2xl font-bold text-white">347</p>
-                      </motion.div>
-
-                      <div className="grid grid-cols-3 gap-2">
-                        <motion.div
-                          initial={false}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10"
-                        >
-                          <p className="text-lg font-bold text-white">45</p>
-                          <p className="text-[9px] text-white/60">Propiedades</p>
-                        </motion.div>
-                        <motion.div
-                          initial={false}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10"
-                        >
-                          <p className="text-lg font-bold text-white">12</p>
-                          <p className="text-[9px] text-white/60">Agentes</p>
-                        </motion.div>
-                        <motion.div
-                          initial={false}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10"
-                        >
-                          <p className="text-lg font-bold text-white">89%</p>
-                          <p className="text-[9px] text-white/60">Ocupación</p>
-                        </motion.div>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Floating notification */}
-                  <motion.div
-                    initial={false}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    className="absolute -bottom-4 -left-4 bg-white rounded-xl p-3 border border-border"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                        <Lightning className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-foreground">Scoring completado</p>
-                        <p className="text-[10px] text-muted-foreground">Score: 87/100 · Bajo riesgo</p>
-                      </div>
-                    </div>
-                  </motion.div>
                 </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-
-        {/* Problems Bento Section */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
-          <div className="container-platform">
-            {/* Section Title - 3 column grid */}
-            <div className="grid md:grid-cols-12 gap-8 mb-14 lg:mb-20">
-              <div className="md:col-span-7">
-                <h2 className="text-[clamp(2.25rem,5vw,3.5rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
-                  Escalar una inmobiliaria no debería ser tan <span className="italic">complicado</span>
-                </h2>
-              </div>
-              <div className="md:col-span-5 flex items-end">
-                <p className="text-muted-foreground text-base leading-relaxed">
-                  Procesos manuales, evaluaciones lentas y errores humanos limitan tu crecimiento. Es hora de automatizar.
+                <p className="mt-3 text-center text-caption text-[#8E93B0]">
+                  <span className="font-mono text-[#F3F1ED]">91%</span> ocupación
                 </p>
-              </div>
-            </div>
+              </TarjetaDeNoche>
 
-            {/* Problems Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
-              {/* Image Card 1 - Procesos manuales */}
-              <Appear inView distance="md" duration="slow"
-                className="md:col-span-4 relative rounded-xl overflow-hidden h-[320px] group"
+              <TarjetaDeNoche
+                className="md:col-span-7"
+                delay={0.16}
+                titulo="API REST Completa"
+                texto="Integra con tu ERP existente. Webhooks en tiempo real."
+                chips={['REST API', 'Webhooks', 'SDK', 'Sandbox']}
               >
-                <Image
-                  src="/hero-interior.jpg"
-                  alt="Manual processes"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-white" />
+                <div className="overflow-hidden rounded-[14px] bg-[#0B0C12] ring-1 ring-white/[0.08]">
+                  <div className="flex items-center gap-1.5 border-b border-white/[0.08] px-3 py-2">
+                    <Punto enNoche className="h-1.5 w-1.5" />
+                    <span className="font-mono text-caption text-[#8E93B0]">terminal</span>
+                  </div>
+                  <pre className="m-0 whitespace-pre p-3 font-mono text-caption leading-relaxed text-[#B9BCD0]">
+                    <span className="text-[#7FD3A0]">GET</span>
+                    {' /candidates\n{\n  "id": '}
+                    <span className="text-[#8FA2FF]">1247</span>
+                    {',\n  "score": '}
+                    <span className="text-[#8FA2FF]">87</span>
+                    {',\n  "risk": '}
+                    <span className="text-[#7FD3A0]">&quot;low&quot;</span>
+                    {'\n}'}
+                  </pre>
+                </div>
+              </TarjetaDeNoche>
+
+              <TarjetaDeNoche
+                className="md:col-span-6"
+                delay={0.2}
+                titulo="Contratos Digitales"
+                texto="Firma electrónica con validez legal. Genera contratos desde plantillas."
+              >
+                <div className="flex flex-col items-center">
+                  <div aria-hidden="true" className="relative h-[84px] w-[66px] rounded-[8px] bg-white/[0.06] p-2.5 ring-1 ring-white/[0.08]">
+                    <div className="space-y-1.5">
+                      <div className="h-1 w-full rounded bg-white/20" />
+                      <div className="h-1 w-3/4 rounded bg-white/20" />
+                      <div className="h-1 w-full rounded bg-white/20" />
+                      <div className="h-1 w-1/2 rounded bg-white/20" />
                     </div>
-                    <span className="text-white/60 text-xs font-medium">Problema #1</span>
+                    <CheckCircle className="absolute bottom-2 right-2 h-4 w-4 text-[#8FA2FF]" />
                   </div>
-                  <h3 className="text-white text-xl font-mono uppercase font-normal mb-1">Procesos manuales</h3>
-                  <p className="text-white/70 text-sm">Excel, WhatsApp, papeles. Tu equipo pierde horas en tareas repetitivas.</p>
+                  <span className="mt-2 text-caption text-[#8E93B0]">Firmado</span>
                 </div>
-              </Appear>
+              </TarjetaDeNoche>
 
-              {/* Image Card 2 - Evaluaciones lentas */}
-              <Appear inView distance="md" duration="slow" delay={0.1}
-                className="md:col-span-4 relative rounded-xl overflow-hidden h-[320px] group"
+              <TarjetaDeNoche
+                className="md:col-span-6"
+                delay={0.24}
+                titulo="Seguro de Arriendo"
+                texto="Protección completa contra impagos. Cobertura desde el primer día."
               >
-                <Image
-                  src="/hero-2.jpg"
-                  alt="Slow evaluations"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Clock className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-white/60 text-xs font-medium">Problema #2</span>
-                  </div>
-                  <h3 className="text-white text-xl font-mono uppercase font-normal mb-1">Evaluaciones lentas</h3>
-                  <p className="text-white/70 text-sm">Días para evaluar un candidato. Los buenos inquilinos se van con la competencia.</p>
+                <div className="flex flex-col items-center">
+                  <p className="font-mono text-[34px] leading-none text-[#F3F1ED]">100%</p>
+                  <span className="mt-2 text-caption text-[#8E93B0]">cubierto</span>
                 </div>
-              </Appear>
-
-              {/* Image Card 3 - Impagos frecuentes */}
-              <Appear inView distance="md" duration="slow" delay={0.2}
-                className="md:col-span-4 relative rounded-xl overflow-hidden h-[320px] group"
-              >
-                <Image
-                  src="/hero-3.jpg"
-                  alt="Payment defaults"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Warning className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-white/60 text-xs font-medium">Problema #3</span>
-                  </div>
-                  <h3 className="text-white text-xl font-mono uppercase font-normal mb-1">Impagos frecuentes</h3>
-                  <p className="text-white/70 text-sm">Sin scoring predictivo, los impagos afectan tu rentabilidad.</p>
-                </div>
-              </Appear>
-
-              {/* Illustration Card 1 - Sin integración */}
-              <Appear inView distance="md" duration="slow" delay={0.3}
-                className="md:col-span-6 bg-surface rounded-xl p-8 h-[280px] flex flex-col justify-between"
-              >
-                <div>
-                  <div className="w-12 h-12 rounded-xl bg-[#F8EAE7] flex items-center justify-center mb-4">
-                    <XCircle className="w-6 h-6 text-[#C4503B]" />
-                  </div>
-                  <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Sin integración</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Tu ERP, CRM y sistemas de contabilidad no se hablan entre sí. Doble digitación y errores constantes.
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex -space-x-2">
-                    {['bg-[#C4503B]', 'bg-[#B7791F]', 'bg-[#B7791F]'].map((color, i) => (
-                      <div key={i} className={`w-6 h-6 rounded-full ${color} border-2 border-white flex items-center justify-center`}>
-                        <span className="text-[8px] text-white font-bold">!</span>
-                      </div>
-                    ))}
-                  </div>
-                  <span className="text-xs text-muted-foreground">3 sistemas desconectados</span>
-                </div>
-              </Appear>
-
-              {/* Illustration Card 2 - Escalabilidad limitada */}
-              <Appear inView distance="md" duration="slow" delay={0.32}
-                className="md:col-span-6 bg-surface rounded-xl p-8 h-[280px] flex flex-col justify-between"
-              >
-                <div>
-                  <div className="w-12 h-12 rounded-xl bg-[#F8F0E0] flex items-center justify-center mb-4">
-                    <TrendUp className="w-6 h-6 text-[#B7791F]" />
-                  </div>
-                  <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Escalabilidad limitada</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Cada 50 propiedades nuevas, necesitas contratar más personal. Tu operación no escala eficientemente.
-                  </p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-foreground">50</span>
-                    <span className="text-xs text-muted-foreground">propiedades<br/>por persona</span>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-[#2C7A53]">200+</span>
-                    <span className="text-xs text-muted-foreground">con<br/>automatización</span>
-                  </div>
-                </div>
-              </Appear>
+              </TarjetaDeNoche>
             </div>
           </div>
-        </section>
+        </Seccion>
 
-        {/* Solutions Bento Section */}
-        <section className="bg-muted py-24 lg:py-32 overflow-hidden">
-          <div className="container-platform">
-            {/* Section Title - 3 column grid */}
-            <div className="grid md:grid-cols-12 gap-8 mb-14 lg:mb-20">
-              <div className="md:col-span-7">
-                <h2 className="text-[clamp(2.25rem,5vw,3.5rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
-                  Todo lo que necesitas para <span className="italic">escalar</span>
-                </h2>
-              </div>
-              <div className="md:col-span-5 flex items-end">
-                <p className="text-muted-foreground text-base leading-relaxed">
-                  Plataforma completa para gestionar candidatos, automatizar evaluaciones e integrar con tu operación.
-                </p>
-              </div>
-            </div>
+        <TestimoniosDePara
+          testimonios={testimonials}
+          ceja="Testimonios"
+          titulo={
+            <>
+              Inmobiliarias que <Acento>confían</Acento> en nosotros
+            </>
+          }
+          avatar={(testimonial) => (
+            <span className={cn('h-11 w-11 flex-none overflow-hidden rounded-[12px] bg-[#E7E3DC]', ESQUINA)}>
+              <Image src={testimonial.image} alt="" width={44} height={44} className="h-full w-full object-cover" />
+            </span>
+          )}
+        />
 
-            {/* Solutions Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
-              {/* Large Card - CRM de Candidatos */}
-              <Appear inView distance="md" duration="slow"
-                className="md:col-span-7 bg-foreground rounded-xl p-6 relative overflow-hidden"
-              >
-                <div className="flex gap-6">
-                  {/* Left: Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
-                      <Users className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="text-white text-xl font-mono uppercase font-normal mb-2">CRM de Candidatos</h3>
-                    <p className="text-white/70 text-sm leading-relaxed mb-4">
-                      Gestiona todos tus candidatos desde un solo panel con historial completo.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {['Pipeline', 'Historial', 'Chat', 'Reportes'].map((feature) => (
-                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/80 text-xs font-mono uppercase font-normal">
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Right: Visual - Mini CRM Dashboard */}
-                  <div className="hidden sm:block w-[200px] flex-shrink-0">
-                    <div className="bg-white/10 rounded-md p-3 space-y-2">
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-white/50">Candidatos</span>
-                        <span className="text-[#2C7A53]">+12%</span>
-                      </div>
-                      <div className="text-xl font-bold text-white">247</div>
-                      <div className="space-y-1.5 pt-2 border-t border-white/10">
-                        {[
-                          { name: 'María L.', status: 'Aprobado', color: 'bg-[#2C7A53]' },
-                          { name: 'Nicolás R.', status: 'En revisión', color: 'bg-[#B7791F]' },
-                          { name: 'Ana M.', status: 'Nuevo', color: 'bg-[#1A40FF]' },
-                        ].map((item) => (
-                          <div key={item.name} className="flex items-center gap-2 text-[9px]">
-                            <div className={`w-1.5 h-1.5 rounded-full ${item.color}`} />
-                            <span className="text-white/70 flex-1">{item.name}</span>
-                            <span className="text-white/40">{item.status}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Appear>
-
-              {/* Small Card - Scoring con IA */}
-              <Appear inView distance="md" duration="slow" delay={0.1}
-                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
-              >
-                <div className="flex gap-4">
-                  {/* Left: Content */}
-                  <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
-                      <Cpu className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
-                    </div>
-                    <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Scoring con IA</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                      Evalúa candidatos en segundos con 92% de precisión.
-                    </p>
-                  </div>
-                  {/* Right: Visual - Score Gauge */}
-                  <div className="hidden sm:flex flex-col items-center justify-center w-[100px]">
-                    <div className="relative">
-                      <svg viewBox="0 0 100 60" className="w-[90px] h-[54px]">
-                        <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="#e5e7eb" strokeWidth="8" strokeLinecap="round" />
-                        <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="url(#gaugeGradient)" strokeWidth="8" strokeLinecap="round" strokeDasharray="126" strokeDashoffset="16" />
-                        <defs>
-                          <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#1A40FF" />
-                            <stop offset="100%" stopColor="#8A9CFF" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                      <div className="absolute inset-0 flex items-end justify-center pb-0.5">
-                        <span className="text-xl font-bold text-foreground">87</span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-[#2C7A53] font-medium mt-1">Bajo riesgo</span>
-                  </div>
-                </div>
-              </Appear>
-
-              {/* Small Card - Multi-Propiedad */}
-              <Appear inView distance="md" duration="slow" delay={0.2}
-                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
-              >
-                <div className="flex gap-4">
-                  {/* Left: Content */}
-                  <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-4">
-                      <Buildings className="w-5 h-5 text-[#2C7A53]" />
-                    </div>
-                    <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Multi-Propiedad</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                      Gestiona cientos de propiedades por sucursal.
-                    </p>
-                  </div>
-                  {/* Right: Visual - Property Grid */}
-                  <div className="hidden sm:block w-[100px]">
-                    <div className="grid grid-cols-3 gap-1">
-                      {[92, 88, 96, 75, 90, 85, 78, 94, 82].map((occ, i) => (
-                        <div key={i} className="aspect-square rounded bg-muted p-1 flex flex-col justify-end">
-                          <div
-                            className={`w-full rounded-sm ${occ > 85 ? 'bg-[#2C7A53]' : occ > 70 ? 'bg-[#B7791F]' : 'bg-[#C4503B]'}`}
-                            style={{ height: `${occ * 0.6}%` }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-center gap-1 mt-2">
-                      <span className="text-[10px] text-muted-foreground">91%</span>
-                      <span className="text-[9px] text-muted-foreground/70">ocupación</span>
-                    </div>
-                  </div>
-                </div>
-              </Appear>
-
-              {/* Large Card - API REST */}
-              <Appear inView distance="md" duration="slow" delay={0.3}
-                className="md:col-span-7 bg-[#6B6B6B] rounded-xl p-6 relative overflow-hidden"
-              >
-                <div className="flex gap-6">
-                  {/* Left: Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
-                      <Code className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="text-white text-xl font-mono uppercase font-normal mb-2">API REST Completa</h3>
-                    <p className="text-white/70 text-sm leading-relaxed mb-4">
-                      Integra con tu ERP existente. Webhooks en tiempo real.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {['REST API', 'Webhooks', 'SDK', 'Sandbox'].map((feature) => (
-                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/80 text-xs font-mono">
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Right: Visual - Code Terminal */}
-                  <div className="hidden sm:block w-[180px] flex-shrink-0">
-                    <div className="bg-[#6B6B6B] rounded-md overflow-hidden border border-[#6B6B6B]">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#6B6B6B]">
-                        <div className="w-2 h-2 rounded-full bg-[#C4503B]/80" />
-                        <div className="w-2 h-2 rounded-full bg-[#B7791F]/80" />
-                        <div className="w-2 h-2 rounded-full bg-[#2C7A53]/80" />
-                        <span className="text-[8px] text-[#6B6B6B] ml-1.5 font-mono">terminal</span>
-                      </div>
-                      <div className="p-2.5 font-mono text-[9px] leading-relaxed">
-                        <div><span className="text-[#2C7A53]">GET</span> <span className="text-[#6B6B6B]">/candidates</span></div>
-                        <div className="text-[#6B6B6B] mt-1">{"{"}</div>
-                        <div className="text-[#6B6B6B] pl-2">&quot;id&quot;: <span className="text-[#1A40FF]">1247</span>,</div>
-                        <div className="text-[#6B6B6B] pl-2">&quot;score&quot;: <span className="text-[#2C7A53]">87</span>,</div>
-                        <div className="text-[#6B6B6B] pl-2">&quot;risk&quot;: <span className="text-[#2C7A53]">&quot;low&quot;</span></div>
-                        <div className="text-[#6B6B6B]">{"}"}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Appear>
-
-              {/* Additional row - Contratos Digitales & Seguro */}
-              <Appear inView distance="md" duration="slow" delay={0.32}
-                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
-              >
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] flex items-center justify-center mb-4">
-                      <FileText className="w-5 h-5 text-[#1A40FF]" />
-                    </div>
-                    <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Contratos Digitales</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Firma electrónica con validez legal. Genera contratos desde plantillas.
-                    </p>
-                  </div>
-                  {/* Visual - Document preview */}
-                  <div className="hidden sm:flex flex-col items-center justify-center w-[80px]">
-                    <div className="w-14 h-18 bg-muted rounded border border-border relative">
-                      <div className="absolute top-2 left-2 right-2 space-y-1">
-                        <div className="h-1 bg-border rounded w-full" />
-                        <div className="h-1 bg-border rounded w-3/4" />
-                        <div className="h-1 bg-border rounded w-full" />
-                        <div className="h-1 bg-border rounded w-1/2" />
-                      </div>
-                      <div className="absolute bottom-2 right-2">
-                        <CheckCircle className="w-4 h-4 text-[#1A40FF]" />
-                      </div>
-                    </div>
-                    <span className="text-[9px] text-muted-foreground mt-1.5">Firmado</span>
-                  </div>
-                </div>
-              </Appear>
-
-              <Appear inView distance="md" duration="slow" delay={0.32}
-                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
-              >
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] flex items-center justify-center mb-4">
-                      <Shield className="w-5 h-5 text-[#B7791F]" />
-                    </div>
-                    <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Seguro de Arriendo</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Protección completa contra impagos. Cobertura desde el primer día.
-                    </p>
-                  </div>
-                  {/* Visual - Shield with checkmark */}
-                  <div className="hidden sm:flex flex-col items-center justify-center w-[80px]">
-                    <div className="relative">
-                      <Shield className="w-12 h-12 text-[#B7791F] fill-[#B7791F]" />
-                      <CheckCircle className="w-5 h-5 text-[#B7791F] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                    </div>
-                    <span className="text-[9px] text-muted-foreground mt-1.5">100% cubierto</span>
-                  </div>
-                </div>
-              </Appear>
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials Section */}
-        <section className="bg-white overflow-hidden">
-          <div className="container-platform py-[80px] pb-[100px]">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-              <Appear inView direction="right" distance="md" duration="slow"
-                className="lg:sticky lg:top-32"
-              >
-                <h2 className="text-[40px] md:text-[52px] font-heading font-light text-foreground tracking-[-0.03em] leading-[1.05] mb-10">
-                  Inmobiliarias que <span className="italic">confían</span> en nosotros
-                </h2>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={prevTestimonial}
-                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
-                    aria-label="Anterior testimonio"
-                  >
-                    <CaretLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={nextTestimonial}
-                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
-                    aria-label="Siguiente testimonio"
-                  >
-                    <CaretRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </Appear>
-
-              {/*
-                El par de testimonios cambia como un paso: el viejo se va hacia
-                un lado y el nuevo entra desde el otro (`CrossFade`); adentro
-                las dos tarjetas llegan una tras otra (`Stagger`, 40 ms).
-              */}
-              <CrossFade swapKey={currentIndex} direction={direccion} className="lg:col-span-2">
-                <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-5" layout={false}>
-                  {[0, 1].map((offset) => {
-                    const index = (currentIndex + offset) % testimonials.length;
-                    const testimonial = testimonials[index];
-                    return (
-                      <StaggerItem
-                        key={testimonial.author}
-                        className="bg-muted rounded-xl p-8 flex flex-col"
-                      >
-                        <div className="mb-6">
-                          <svg className="w-10 h-10 text-muted-foreground/50" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" />
-                          </svg>
-                        </div>
-
-                        <p className="text-[20px] tracking-[-0.5px] leading-[1.4] text-foreground mb-8 flex-grow">
-                          {testimonial.quote}
-                        </p>
-
-                        <div className="flex items-center gap-4">
-                          <div className="w-[48px] h-[48px] rounded-xl overflow-hidden bg-muted flex-shrink-0">
-                            <Image
-                              src={testimonial.image}
-                              alt={testimonial.author}
-                              width={48}
-                              height={48}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                          <div>
-                            <p className="text-[15px] font-medium text-foreground">
-                              {testimonial.author}
-                            </p>
-                            <p className="text-[13px] text-muted-foreground">
-                              {testimonial.role}
-                            </p>
-                          </div>
-                        </div>
-                      </StaggerItem>
-                    );
-                  })}
-                </Stagger>
-              </CrossFade>
-            </div>
-          </div>
-        </section>
-
-        <FAQSection />
-        <CTASection />
+        <div className="[&>section]:!bg-[#FBFAF8]">
+          <FAQSection />
+        </div>
+        <CierreDePara semilla={7} />
       </main>
       <LandingFooterV2 />
     </LandingChrome>

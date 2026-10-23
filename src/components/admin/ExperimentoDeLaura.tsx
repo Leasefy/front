@@ -6,6 +6,7 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { Pill } from '@/components/admin/Pill'
+import { ErrorBlock } from '@/components/admin/screen/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   adoptarLaGanadora,
@@ -61,16 +62,15 @@ export function ExperimentoDeLaura() {
     )
   }
   if (consulta.error && !e) {
+    // Ronda 26 (revisora r25): el MISMO cartel de fallo que la tabla de abajo (antes un rojo suelto con
+    // «Reintentar» y la tabla con «Intentar de nuevo»).
     return (
-      <Card className="p-5 mb-6">
-        <MonoLabel className="block">laura · cómo ofrece el acuerdo</MonoLabel>
-        <p role="alert" className="text-body-sm text-danger mt-2">
-          No pudimos leer el experimento: {mensajeDelAdmin(consulta.error, { accion: 'leer el experimento' })}
-        </p>
-        <Button variant="outline" hideArrow className="mt-3" type="button"  onClick={consulta.refetch}>
-          Reintentar
-        </Button>
-      </Card>
+      <ErrorBlock
+        titulo="No pudimos cargar el experimento de Laura"
+        error={consulta.error}
+        onReintentar={consulta.refetch}
+        className="mb-6"
+      />
     )
   }
   if (!e) return null
@@ -104,7 +104,7 @@ export function ExperimentoDeLaura() {
     <Card className="p-5 space-y-4 mb-6" aria-labelledby="experimento-laura-titulo" data-testid="experimento-de-laura">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div id="experimento-laura-titulo" className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+          <div id="experimento-laura-titulo" className="font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle">
             laura · cómo ofrece el acuerdo
           </div>
           <p className="text-caption text-fg-muted mt-1 max-w-3xl">
@@ -158,7 +158,7 @@ export function ExperimentoDeLaura() {
                 <TableCell className="text-right font-mono tabular-nums">
                   {f.medidos.toLocaleString('es-CO')}
                   {(f.enCurso > 0 || f.sinDatos > 0) && (
-                    <div className="text-[11px] text-fg-subtle font-sans">
+                    <div className="text-caption text-fg-subtle font-sans">
                       {f.enCurso > 0 ? `${f.enCurso} en curso` : ''}
                       {f.enCurso > 0 && f.sinDatos > 0 ? ' · ' : ''}
                       {f.sinDatos > 0 ? `${f.sinDatos} sin contrato` : ''}

@@ -2,7 +2,8 @@
 
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtDateTime } from '@/lib/admin/format'
+import { fmtFecha } from '@/lib/admin/format'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { estadoDelExperimento } from '@/lib/admin/textos-del-admin'
@@ -48,18 +49,19 @@ const SEGMENTOS: Segmento<ExperimentRow>[] = [
 
 // ─── Columns ───────────────────────────────────────────────────────────────
 
+// Ronda 26 (revisora r25): primero lo que identifica (el experimento), después su estado.
 const columns: Column<ExperimentRow>[] = [
-  {
-    header: 'Estado',
-    orden: (r) => estadoDelExperimento(r.status),
-    texto: (r) => estadoDelExperimento(r.status),
-    cell: (r) => <Pill tone={statusTone(r.status)}>{estadoDelExperimento(r.status)}</Pill>,
-  },
   {
     header: 'Experimento',
     orden: (r) => r.name,
     texto: (r) => r.name,
     cell: (r) => <span className="break-words text-body-sm font-medium text-fg">{r.name}</span>,
+  },
+  {
+    header: 'Estado',
+    orden: (r) => estadoDelExperimento(r.status),
+    texto: (r) => estadoDelExperimento(r.status),
+    cell: (r) => <Pill tone={statusTone(r.status)}>{estadoDelExperimento(r.status)}</Pill>,
   },
   {
     header: 'Asignaciones',
@@ -77,10 +79,10 @@ const columns: Column<ExperimentRow>[] = [
     header: 'Creado',
     orden: (r) => r.created_at,
     ordenPrimero: 'desc',
-    texto: (r) => fmtDateTime(r.created_at),
+    texto: (r) => fmtFecha(r.created_at),
     cell: (r) => (
       <span className="font-mono text-caption text-fg-muted tabular-nums whitespace-nowrap">
-        {fmtDateTime(r.created_at)}
+        {fmtFecha(r.created_at)}
       </span>
     ),
   },
@@ -102,13 +104,29 @@ export default function AbTestsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Experimentos"
-        description="Pruebas A/B de los agentes: dos formas de hacer algo y cuál funciona mejor."
+        description="Dos formas de hacer algo en los agentes, y cuál funciona mejor."
+        // Ronda 26 (revisora r25): «0 en curso» no informa; la insignia sólo con alguno corriendo.
         junto={
-          data ? (
-            <Pill tone={running > 0 ? 'ok' : 'neutral'} dot={running > 0}>
+          running > 0 ? (
+            <Pill tone="ok" dot>
               {running === 1 ? '1 en curso' : `${running} en curso`}
             </Pill>
           ) : null
+        }
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Los experimentos" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                Un experimento reparte a las personas entre dos variantes: dos formas de hacer lo mismo (por ejemplo,
+                cómo Laura ofrece un acuerdo de pago). Cada persona queda en una sola variante; esa es su asignación.
+              </p>
+              <p>
+                Mientras corre, se mide qué variante funciona mejor. Cuando la diferencia ya se sostiene, Leasefy
+                aprueba la ganadora y desde ahí se usa para todas las inmobiliarias. Un experimento en pausa no
+                reparte a nadie nuevo.
+              </p>
+            </div>
+          </ParaEntenderMas>
         }
       />
 

@@ -28,7 +28,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
-import { AnimatedNumber, Chip, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import {
@@ -39,6 +39,8 @@ import {
   type PendientePrioridad,
 } from '@/lib/hooks/cobranza/use-pendientes'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
@@ -206,7 +208,8 @@ function PendienteCard({ item }: { item: PendienteItem }) {
         <span className="text-caption text-muted-foreground">
           {t(`${NS}.accionSugerida`)}
         </span>
-        <Button asChild size="sm">
+        {/* En una lista de muchas, cada acción va en secundaria: un solo azul por pantalla. */}
+        <Button asChild variant="outline" size="sm" hideArrow>
           <Link href={item.href}>
             {t(CTA_KEY[item.cta])}
           </Link>
@@ -292,35 +295,49 @@ function PendientesContent() {
       <Presence
           show={Boolean(error && items.length === 0)}
           role="alert"
-          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-body-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>Error: {error}</span>
+          <span>No pudimos cargar lo pendiente. {error}</span>
       </Presence>
 
-      {/* Chips de conteo por grupo — click = filtro */}
+      {/* LA RESPUESTA: cuántas cosas esperan a una persona, por prioridad. */}
       {items.length > 0 && (
-        <div className="flex flex-wrap gap-2" role="group" aria-label={t(`${NS}.pageTitle`)}>
-          {GRUPOS.map((grupo) => {
-            const active = effectiveFilter === grupo
-            const count = counts[grupo]
-            return (
-              <Chip
-                key={grupo}
-                size="sm"
-                disabled={count === 0}
-                selected={active}
-                onClick={() => setGrupoFilter(active ? null : grupo)}
-                data-testid={`pendientes-chip-${grupo}`}
-              >
-                {t(GRUPO_KEY[grupo])}
-                <span className="tabular-nums">
-                  <AnimatedNumber value={count} format={(n) => String(Math.round(n))} />
-                </span>
-              </Chip>
-            )
+        <CifraHeroe
+          data-testid="pendientes-cuantos"
+          rotulo="Te esperan"
+          cifra={items.length.toLocaleString('es-CO')}
+          contexto={items.length === 1 ? 'decisión' : 'decisiones'}
+          total={items.length}
+          tramos={(['alta', 'media', 'baja'] as const).map((pr) => {
+            const n = items.filter((i) => i.prioridad === pr).length
+            return {
+              clave: pr,
+              etiqueta: t(PRIORIDAD_TOKEN[pr].labelKey),
+              monto: n,
+              tono: pr === 'alta' ? ('critico' as const) : pr === 'media' ? ('aviso' as const) : ('neutro' as const),
+              cifra: n.toLocaleString('es-CO'),
+            }
           })}
-        </div>
+        />
+      )}
+
+      {/* Los grupos, con su conteo: filtran la lista */}
+      {items.length > 0 && (
+        <PestanasDeEstado<string>
+          pestanas={[
+            { valor: 'todos', etiqueta: 'Todo', cuantos: items.length, fija: true },
+            ...GRUPOS.map((grupo) => ({
+              valor: grupo,
+              etiqueta: t(GRUPO_KEY[grupo]),
+              cuantos: counts[grupo],
+              testid: `pendientes-chip-${grupo}`,
+            })),
+          ]}
+          valor={effectiveFilter ?? 'todos'}
+          onCambio={(v) => setGrupoFilter(v === 'todos' ? null : (v as PendienteGrupo))}
+          etiqueta={t(`${NS}.pageTitle`)}
+        />
       )}
 
       {/* Lista priorizada — Alta → Media → Baja, fecha DESC dentro */}

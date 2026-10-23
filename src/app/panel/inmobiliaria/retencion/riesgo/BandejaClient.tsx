@@ -62,7 +62,7 @@ export default function BandejaClient() {
   if (esRetencionApagada(error)) {
     return (
       <div className="space-y-6 p-6 lg:p-8">
-        <CabeceraDeVinci titulo="Casos en riesgo" />
+        <CabeceraDeVinci titulo="Riesgo de salida" />
         <RetencionApagada />
       </div>
     )
@@ -71,7 +71,7 @@ export default function BandejaClient() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <CabeceraDeVinci
-        titulo="Casos en riesgo"
+        titulo="Riesgo de salida"
         descripcion="Propietarios que pueden sacar su inmueble e inquilinos que pueden no renovar, con qué señal sumó cuánto."
       >
         {data?.disponible ? (

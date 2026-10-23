@@ -47,7 +47,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -348,7 +349,18 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
    * mediana ya son cientos. El hook va acá arriba —antes de los retornos
    * tempranos— porque no se puede llamar condicionalmente.
    */
-  const pagos = useTablePagination(vista?.lote.items ?? SIN_PAGOS, { resetKey: id });
+  // GLOW UP 3.ª vuelta · los pagos por si entran al archivo del banco o no: «No entran» es lo
+  // que hay que mirar antes de aprobar (sin cuenta, o se cierran en $0).
+  const [vistaDePagos, setVistaDePagos] = useState<'todos' | 'entran' | 'no-entran'>('todos');
+  const todosLosPagos = vista?.lote.items ?? SIN_PAGOS;
+  const pagosVisibles = useMemo(
+    () =>
+      vistaDePagos === 'todos'
+        ? todosLosPagos
+        : todosLosPagos.filter((p) => (vistaDePagos === 'entran' ? p.motivoDeExclusion === null : p.motivoDeExclusion !== null)),
+    [todosLosPagos, vistaDePagos],
+  );
+  const pagos = useTablePagination(pagosVisibles, { resetKey: `${id}|${vistaDePagos}` });
 
   /*
    * 🔴 El archivo vive en el CENTRO DE PROCESOS (Nico, 22-09: «ese diseño de
@@ -373,8 +385,14 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
   if (cargando && !vista) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Spinner />
+      <div className="space-y-6" aria-busy="true">
+        <span className="sr-only">Cargando el lote…</span>
+        <div className="space-y-3" aria-hidden="true">
+          <Skeleton className="h-3.5 w-48 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-10 w-72 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-9 w-56 rounded-sm bg-surface-muted" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-lg bg-surface-muted" aria-hidden="true" />
       </div>
     );
   }
@@ -427,11 +445,12 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
   return (
     <div className="space-y-6" data-testid="detalle-del-lote" data-estado={lote.estado}>
-      <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2">
-        <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">
-          Lotes al banco
-        </Link>
-      </Button>
+      <Link
+        href="/panel/inmobiliaria/pagos/dispersiones/lotes"
+        className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
+      >
+        Lotes al banco
+      </Link>
 
       {/* ── Encabezado ─────────────────────────────────────────────────── */}
       <EncabezadoDePantalla
@@ -761,16 +780,30 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
       {/* ── Los pagos, con los datos congelados ─────────────────────────── */}
       <section className="space-y-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-base font-medium text-fg">Pagos del lote</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Pagos del lote</h2>
           <p className="text-caption text-fg-muted">
             Datos bancarios congelados al armar el lote: la plata va adonde se aprobó.
           </p>
         </div>
-        <div className="overflow-hidden rounded-lg border border-border">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
+          {todosLosPagos.some((p) => p.motivoDeExclusion !== null) ? (
+            <div className="border-b border-border px-4 py-3">
+              <PestanasDeEstado
+                etiqueta="Qué pagos ver"
+                valor={vistaDePagos}
+                onCambio={setVistaDePagos}
+                pestanas={[
+                  { valor: 'todos', etiqueta: 'Todos', cuantos: todosLosPagos.length, fija: true },
+                  { valor: 'entran', etiqueta: 'Entran al archivo', cuantos: todosLosPagos.filter((p) => p.motivoDeExclusion === null).length },
+                  { valor: 'no-entran', etiqueta: 'No entran', cuantos: todosLosPagos.filter((p) => p.motivoDeExclusion !== null).length, tono: 'aviso' },
+                ]}
+              />
+            </div>
+          ) : null}
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+            <Table className="max-md:block">
+              <TableHeader className="max-md:hidden">
                 <TableRow>
                   <TableHead>Titular</TableHead>
                   <TableHead>Documento</TableHead>
@@ -781,10 +814,14 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                   {lotePagado ? <TableHead>Giro</TableHead> : null}
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="max-md:block">
                 {pagos.pageItems.map((item) => (
-                  <TableRow key={item.id} data-excluido={item.motivoDeExclusion !== null}>
-                    <TableCell>
+                  <TableRow
+                    key={item.id}
+                    data-excluido={item.motivoDeExclusion !== null}
+                    className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                  >
+                    <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                       {(() => {
                         const t = titularDelPago(item, vista.cuentasDeOtraPersona);
                         return (
@@ -809,18 +846,25 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                         );
                       })()}
                     </TableCell>
-                    <TableCell className="font-mono text-caption">
+                    <TableCell className="font-mono text-caption max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-fg-muted">
                       {item.tipoDocumento} {item.documento || '—'}
                     </TableCell>
-                    <TableCell>{item.banco || '—'}</TableCell>
-                    <TableCell className="font-mono text-caption">
+                    <TableCell className="max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
+                      {item.banco || '—'}
+                      <span className="font-mono md:hidden">
+                        {' · '}
+                        {item.tipoDeCuenta ? `${item.tipoDeCuenta} ` : ''}
+                        {ultimos4(item.numeroDeCuenta)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-mono text-caption max-md:hidden">
                       {item.tipoDeCuenta ? `${item.tipoDeCuenta} ` : ''}
                       {ultimos4(item.numeroDeCuenta)}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                       {formatCurrency(item.valorCop)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                       {item.motivoDeExclusion === null ? (
                         <span className="inline-flex items-center gap-1 text-success">
                           <Check className="h-3.5 w-3.5" /> Sí
@@ -834,7 +878,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                       )}
                     </TableCell>
                     {lotePagado ? (
-                      <TableCell>
+                      <TableCell className="max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
                         {/* 🔴 PRUEBAS-PAGOS (03-10-2026): sólo lo que ENTRÓ al
                             archivo salió del banco y puede volver. A un pago
                             excluido (sin cuenta, o que se cierra en $0) se le

@@ -185,12 +185,17 @@ function ComplianceOverviewContent() {
                     monto: 1,
                     tono: intentos > 0 ? 'critico' : 'exito',
                     siempre: true,
+                    // Ronda 30 (revisora r27): lo que falla lleva a su lista (Ley 2300 sólo lista lo que hay que revisar).
                     cifra:
-                      intentos === 0
-                        ? tr('Sin contactos fuera de horario')
-                        : intentos === 1
-                          ? tr('1 intento fuera de horario esta semana')
-                          : tr('{n} intentos fuera de horario esta semana', { n: intentos }),
+                      intentos === 0 ? (
+                        tr('Sin contactos fuera de horario')
+                      ) : (
+                        <Link href="/panel/inmobiliaria/pagos/cobranza/compliance/ley-2300" className="underline underline-offset-2 hover:no-underline" data-testid="cumplimiento-ir-a-ley-2300">
+                          {intentos === 1
+                            ? tr('1 intento fuera de horario esta semana')
+                            : tr('{n} intentos fuera de horario esta semana', { n: intentos })}
+                        </Link>
+                      ),
                   },
                   {
                     clave: 'no-contactar',
@@ -198,12 +203,17 @@ function ComplianceOverviewContent() {
                     monto: 1,
                     tono: urgen > 0 ? 'critico' : porAcusar > 0 ? 'aviso' : 'exito',
                     siempre: true,
+                    // «No contactar» abre en «Por acusar» cuando hay alguna: el enlace cae en lo que falta.
                     cifra:
-                      porAcusar === 0
-                        ? tr('Todas con su acuse')
-                        : urgen > 0
-                          ? tr('{n} por acusar, {u} vencen ya', { n: porAcusar, u: urgen })
-                          : tr('{n} por acusar, en plazo', { n: porAcusar }),
+                      porAcusar === 0 ? (
+                        tr('Todas con su acuse')
+                      ) : (
+                        <Link href="/panel/inmobiliaria/pagos/cobranza/compliance/opt-out" className="underline underline-offset-2 hover:no-underline" data-testid="cumplimiento-ir-a-no-contactar">
+                          {urgen > 0
+                            ? tr('{n} por acusar, {u} vencen ya', { n: porAcusar, u: urgen })
+                            : tr('{n} por acusar, en plazo', { n: porAcusar })}
+                        </Link>
+                      ),
                   },
                   {
                     clave: 'retencion',
@@ -211,7 +221,14 @@ function ComplianceOverviewContent() {
                     monto: 1,
                     tono: pct === null ? 'neutro' : retencionMal ? 'aviso' : 'exito',
                     siempre: true,
-                    cifra: pct === null ? tr('Sin nada que medir') : `${pct} % / ${data.retention.target} %`,
+                    cifra:
+                      pct === null ? (
+                        tr('Sin nada que medir')
+                      ) : retencionMal ? (
+                        <a href="#retencion-de-los-datos" className="underline underline-offset-2 hover:no-underline">{`${pct} % / ${data.retention.target} %`}</a>
+                      ) : (
+                        `${pct} % / ${data.retention.target} %`
+                      ),
                   },
                 ]}
               />
@@ -250,7 +267,7 @@ function ComplianceOverviewContent() {
           </section>
 
           {/* Section 3: Retention gauge */}
-          <section className="rounded-lg border border-border bg-card p-4">
+          <section id="retencion-de-los-datos" className="scroll-mt-24 rounded-lg border border-border bg-card p-4">
             <h2 className="text-body font-normal text-fg">
               {t('inmobiliaria.ai.cobranza.compliance.overview.retentionHeading')}
             </h2>

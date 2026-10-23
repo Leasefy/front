@@ -123,6 +123,44 @@ const DEL_PROPIETARIO: Record<string, DemoDelModulo> = {
     puntos: ['Estudio en minutos', 'Puntaje claro', 'Seguro de arrendamiento'],
     capturas: [cap('inq-detalle', 'Detalle del estudio de un inquilino'), cap('aseg-resumen', 'Cotización con aseguradoras')],
   },
+  // Ronda 30 (revisora r27): cada parte cerrada dice lo suyo; antes Inicio, Certificados, Informes y
+  // Solicitudes repetían la general y Giros, Aprobaciones y Revisar el canon, la del cobro.
+  giros: {
+    titulo: 'Tu plata a tu cuenta, cada mes',
+    promesa: 'Te giramos lo del arriendo con el extracto del mes: qué entró y qué se descontó.',
+    puntos: ['Giro a tu cuenta', 'Extracto de cada mes', 'Todo tu historial de giros'],
+    capturas: [cap('erp-dispersiones', 'Giros a propietarios del mes'), cap('erp-recaudo', 'Recaudo del mes')],
+  },
+  aprobaciones: {
+    titulo: 'Las reparaciones, con tu visto bueno',
+    promesa: 'Te mostramos cada reparación a tu cargo y nada se te descuenta sin tu aprobación.',
+    puntos: ['Aprueba o rechaza en un clic', 'Hazla tú si no es urgente', 'Sabes cuánto y por qué'],
+    capturas: [TABLERO],
+  },
+  'revisar-canon': {
+    titulo: 'El canon justo para tu inmueble',
+    promesa: 'Sabes cuánto te cuesta tenerlo desocupado y qué canon pide el mercado, para decidir a tiempo.',
+    puntos: ['Avalúo con comparables reales', 'Lo que cuesta cada mes desocupado', 'Tú decides si lo cambias'],
+    capturas: [cap('ava-lista', 'Avalúos con comparables')],
+  },
+  informes: {
+    titulo: 'Tu inmueble en cifras',
+    promesa: 'Tu certificado anual de ingresos y el historial de reparaciones, siempre a la mano.',
+    puntos: ['Certificado anual de ingresos', 'Historial de reparaciones', 'Listo para tu contador'],
+    capturas: [TABLERO],
+  },
+  certificados: {
+    titulo: 'Tu declaración de renta, sin buscar papeles',
+    promesa: 'Lo que los inquilinos te retuvieron en el año, en un certificado listo para declarar.',
+    puntos: ['Retenciones del año', 'Certificados y facturas', 'Descárgalos cuando quieras'],
+    capturas: [cap('erp-recaudo', 'Recaudo del mes')],
+  },
+  solicitudes: {
+    titulo: 'Tus solicitudes, respondidas a tiempo',
+    promesa: 'Lo que pides queda con número, plazo y respuesta por escrito.',
+    puntos: ['Cada solicitud con su plazo', 'Sabes en qué va', 'Todo queda por escrito'],
+    capturas: [TABLERO],
+  },
 };
 
 const GENERAL_DEL_PROPIETARIO: DemoDelModulo = {

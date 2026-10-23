@@ -46,7 +46,9 @@ export function abiertaParaElPropietarioGratis(ruta: string): boolean {
 export function claveDeDemoDelPropietario(ruta: string): string | null {
   const segundo = ruta.split('/').filter(Boolean)[1] ?? '';
   if (segundo === 'contratos') return 'contratos';
-  if (['leases', 'estado-de-cuenta', 'aprobaciones', 'revisar-canon', 'giros'].includes(segundo)) return 'cobro';
+  // Ronda 30: Giros, Aprobaciones, Revisar el canon, Informes, Certificados y Solicitudes tienen su propia demo.
+  if (['giros', 'aprobaciones', 'revisar-canon', 'informes', 'certificados', 'solicitudes'].includes(segundo)) return segundo;
+  if (['leases', 'estado-de-cuenta'].includes(segundo)) return 'cobro';
   if (segundo === 'escoger-inquilino') return 'estudio';
   return null;
 }

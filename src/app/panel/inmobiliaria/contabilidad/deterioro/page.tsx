@@ -10,39 +10,35 @@
  */
 
 import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
 import { DeterioroDeCarteraPanel } from '@/components/finanzas/DeterioroDeCartera';
 
 export default function DeterioroPage() {
   return (
     <PageGuard module="reportes" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Contabilidad">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          {/* 🔴 20-09 · Nico, mirando esta pantalla: «no tiene navegación,
-              uno no sabe cómo devolverse». Tres de las doce de Contabilidad
-              —certificados, deterioro y presupuesto— no tenían el camino de
-              vuelta que sí tienen las otras nueve. Se llega a ellas desde la
-              portada y desde el menú de «Reportes», así que el botón atrás del
-              navegador tampoco siempre sirve. */}
+        <div className="space-y-3">
           <Link
             href="/panel/inmobiliaria/contabilidad"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+            className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-h2 text-fg">Deterioro de cartera</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Cuánta de la cartera se reconoce como incobrable, por edades. El sistema sugiere los
-            porcentajes; el contador los edita y los aprueba cada mes. Lo que va al libro es el
-            movimiento contra el mes anterior, no el saldo.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Finanzas"
+            titulo="Deterioro de cartera"
+            descripcion="Cuánta de la cartera se reconoce como incobrable, por edades."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">El sistema sugiere los porcentajes; el contador los edita y los aprueba cada mes. Lo que va al libro es el movimiento contra el mes anterior, no el saldo.</p>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         <DeterioroDeCarteraPanel />
       </div>
     </PageGuard>

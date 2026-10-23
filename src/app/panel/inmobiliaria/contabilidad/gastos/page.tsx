@@ -15,7 +15,6 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
@@ -33,9 +32,8 @@ export default function GastosPage() {
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <Link
           href="/panel/inmobiliaria/contabilidad"
-          className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+          className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Contabilidad
         </Link>
         {/* `key`: si se llega de nuevo con otro `estado`, Next no remonta la

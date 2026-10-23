@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, Plus } from '@phosphor-icons/react';
+import { Plus } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
@@ -15,9 +15,8 @@ export default function AsientosPage() {
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <Link
           href="/panel/inmobiliaria/contabilidad"
-          className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+          className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Contabilidad
         </Link>
         {/* El encabezado lo pinta el libro: la acción principal («Asiento manual») abre su cajón. */}

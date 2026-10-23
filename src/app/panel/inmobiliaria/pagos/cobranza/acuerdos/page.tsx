@@ -98,6 +98,9 @@ import { AcuerdosGeneralesTabla } from '@/components/inmobiliaria/cobranza/Acuer
 import { CrossFade, Presence } from '@leasefy/cadence'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { ACUERDO_ESTADO } from '@/lib/cobranza/acuerdo-vocab'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -850,42 +853,101 @@ function AcuerdosContent() {
     void recargarPlanes()
   }, [recargarPromesas, recargarPlanes])
 
+  // LA RESPUESTA: cuánto está comprometido en los acuerdos que siguen abiertos,
+  // partido por estado (lo que espera una aprobación primero). Sale de la misma
+  // lista de la tabla: no hay otra llamada.
+  const { formatCurrency } = useI18n()
+  const abiertos = useMemo(
+    () => acuerdos.filter((a) => a.estado !== 'cumplido'),
+    [acuerdos],
+  )
+  const tramos = useMemo(() => {
+    const suma = (e: AcuerdoRow['estado']) =>
+      acuerdos.filter((a) => a.estado === e).reduce((s, a) => s + Math.max(0, a.montoCop), 0)
+    const cuantos = (e: AcuerdoRow['estado']) => acuerdos.filter((a) => a.estado === e).length
+    const tono = { por_aprobar: 'aviso', vigente: 'neutro', parcial: 'neutro', incumplido: 'critico' } as const
+    return (['por_aprobar', 'vigente', 'parcial', 'incumplido'] as const).map((e) => ({
+      clave: e,
+      etiqueta: `${ACUERDO_ESTADO[e].label} · ${cuantos(e)}`,
+      monto: suma(e),
+      tono: tono[e],
+      'data-testid': `acuerdos-tramo-${e}`,
+      cifra: (
+        <button
+          type="button"
+          onClick={() => setFiltro(e)}
+          className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Ver los acuerdos ${ACUERDO_ESTADO[e].label.toLowerCase()}`}
+        >
+          {formatCurrency(suma(e))}
+        </button>
+      ),
+    }))
+  }, [acuerdos, formatCurrency])
+  const comprometido = tramos.reduce((s, t) => s + t.monto, 0)
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <EncabezadoDePantalla
-          seccion="Cobranza"
-          titulo="Acuerdos de pago"
-          descripcion="Lo que cada deudor se comprometió a pagar: los compromisos que el agente toma en una llamada y los planes de cuotas que armes aquí. Ningún plan se activa sin que una persona lo apruebe."
-        />
-        <Button
-          hideArrow
-          onClick={() => setCrearAbierto(true)}
-          className="shrink-0"
-          data-testid="acuerdo-nuevo"
-        >
-          Nuevo acuerdo
-        </Button>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo="Acuerdos de pago"
+        descripcion="Lo que cada deudor se comprometió a pagar. Ningún plan se activa sin que una persona lo apruebe."
+        ayuda={
+          <ParaEntenderMas
+            etiqueta="Cómo funcionan"
+            titulo="Cómo funcionan los acuerdos de pago"
+            variante="secundario"
+          >
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                Aquí ves los dos tipos de compromiso: lo que el agente registra en una llamada y
+                los planes de cuotas que armes con «Nuevo acuerdo».
+              </p>
+              <p>
+                Un plan de cuotas siempre espera la aprobación de una persona con permiso de
+                cobranza; se aprueba desde su detalle.
+              </p>
+              <p>
+                Al final de la pantalla están los límites del agente y los acuerdos generales: lo
+                que el agente puede cerrar solo, sin preguntarte.
+              </p>
+            </div>
+          </ParaEntenderMas>
+        }
+        accionPrincipal={
+          <Button
+            size="sm"
+            hideArrow
+            onClick={() => setCrearAbierto(true)}
+            className="shrink-0"
+            data-testid="acuerdo-nuevo"
+          >
+            Nuevo acuerdo
+          </Button>
+        }
+      />
 
       {/* Aviso si el usuario no puede aprobar (la aprobación vive en el detalle real) */}
       {!canApprove && (
         <div className="flex items-start gap-2 rounded-lg bg-surface-muted p-3 ring-1 ring-border">
-          <Info className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
+          <Info className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-caption text-fg-muted leading-relaxed">
-            Puedes proponer acuerdos, pero la aprobación final requiere permiso de cobranza.
-            Un compañero con permiso podrá aprobarlos desde el detalle del plan.
+            Puedes proponer acuerdos; aprobarlos pide permiso de cobranza. Un compañero con ese
+            permiso los aprueba desde el detalle del plan.
           </p>
         </div>
       )}
 
-      {/* Dos cosas distintas, en este orden a propósito:
-          1. Los LÍMITES — el techo que el agente no puede pasar nunca.
-          2. Los ACUERDOS GENERALES — las reglas que la inmobiliaria escribe y
-             que el agente cierra solo, siempre recortadas por (1).
-          Antes las dos se llamaban «acuerdo general» y (2) ni existía. */}
-      <AcuerdosGeneralesCard />
-      <AcuerdosGeneralesTabla />
+      <Presence show={abiertos.length > 0}>
+        <CifraHeroe
+          data-testid="acuerdos-comprometido"
+          rotulo="Comprometido en acuerdos abiertos"
+          cifra={formatCurrency(comprometido)}
+          contexto={abiertos.length === 1 ? 'en 1 acuerdo' : `en ${abiertos.length} acuerdos`}
+          total={comprometido}
+          tramos={tramos}
+        />
+      </Presence>
 
       {/* Cargando → la tabla: entra con su fundido. */}
       <CrossFade swapKey={cargando && acuerdos.length === 0 && !error ? 'cargando' : 'tabla'}>
@@ -906,6 +968,18 @@ function AcuerdosContent() {
       </CrossFade>
 
       <AcuerdoDetalleSheet acuerdo={detalle} onClose={() => setDetalle(null)} />
+
+      {/* Lo que se consulta va después del trabajo, en este orden a propósito:
+          1. Los LÍMITES — el techo que el agente no puede pasar nunca.
+          2. Los ACUERDOS GENERALES — las reglas que la inmobiliaria escribe y
+             que el agente cierra solo, siempre recortadas por (1). */}
+      <section className="space-y-4" aria-labelledby="acuerdos-lo-que-cierra-solo">
+        <h2 id="acuerdos-lo-que-cierra-solo" className="text-body font-medium text-fg">
+          Lo que el agente puede cerrar solo
+        </h2>
+        <AcuerdosGeneralesCard />
+        <AcuerdosGeneralesTabla />
+      </section>
 
       {/* Crear — en modal: la pantalla es para MIRAR los acuerdos; armar uno es
           una tarea puntual que no tiene por qué ocupar media pantalla siempre. */}

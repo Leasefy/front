@@ -17,8 +17,9 @@
 
 import { useMemo } from 'react'
 import { CaretRight, Handshake } from '@phosphor-icons/react'
-import { AnimatedNumber, Card, CrossFade, Presence, SegmentedControl } from '@leasefy/cadence'
+import { Card, CrossFade, Presence } from '@leasefy/cadence'
 import { Badge, Button } from '@/components/ui'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 
 import { useI18n } from '@/lib/i18n'
 import {
@@ -44,10 +45,12 @@ import {
 
 export type AcuerdoFiltro = 'todos' | AcuerdoEstado
 
-const FILTRO_OPCIONES: { value: AcuerdoFiltro; label: string }[] = [
+// El orden es el del trabajo: lo que espera a una persona primero.
+const FILTRO_OPCIONES: { value: AcuerdoFiltro; label: string; aviso?: boolean }[] = [
   { value: 'todos', label: 'Todos' },
+  { value: 'por_aprobar', label: 'Por aprobar', aviso: true },
   { value: 'vigente', label: 'Vigentes' },
-  { value: 'por_aprobar', label: 'Por aprobar' },
+  { value: 'parcial', label: 'Parciales' },
   { value: 'incumplido', label: 'Incumplidos' },
   { value: 'cumplido', label: 'Cumplidos' },
 ]
@@ -83,6 +86,20 @@ export function AcuerdosTabla({
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(visibles, { resetKey: filtro })
 
+  // El conteo de cada pestaña sale de la lista entera (no de la página).
+  const pestanas = useMemo(
+    () =>
+      FILTRO_OPCIONES.map((o) => ({
+        valor: o.value,
+        etiqueta: o.label,
+        cuantos: o.value === 'todos' ? acuerdos.length : acuerdos.filter((a) => a.estado === o.value).length,
+        fija: o.value === 'todos',
+        tono: o.aviso ? ('aviso' as const) : undefined,
+        testid: `acuerdos-pestana-${o.value}`,
+      })),
+    [acuerdos],
+  )
+
   const fecha = (iso: string | null) => {
     if (!iso) return VACIO
     const d = new Date(iso)
@@ -93,24 +110,20 @@ export function AcuerdosTabla({
 
   return (
     <Card className="overflow-hidden">
-      {/* Filtro excluyente + conteo */}
-      <div className="flex items-center justify-between gap-3 flex-wrap border-b border-border px-4 py-3">
-        <SegmentedControl<AcuerdoFiltro>
-          options={FILTRO_OPCIONES}
-          value={filtro}
-          onChange={onFiltro}
-          aria-label="Filtrar acuerdos por estado"
+      {/* Las pestañas de estado, con su conteo, DENTRO de la tarjeta. */}
+      <div className="border-b border-border px-4 py-3">
+        <PestanasDeEstado<AcuerdoFiltro>
+          pestanas={pestanas}
+          valor={filtro}
+          onCambio={onFiltro}
+          etiqueta="Filtrar acuerdos por estado"
         />
-        <span className="text-caption text-fg-muted tabular-nums">
-          <AnimatedNumber value={total} format={(n) => String(Math.round(n))} />{' '}
-          {total === 1 ? 'acuerdo' : 'acuerdos'}
-        </span>
       </div>
 
       <Presence
           show={Boolean(error)}
           role="alert"
-          className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
+          className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-body-sm text-danger"
         >
           <span>No pudimos cargar los acuerdos. {error}</span>
           {onReintentar && (
@@ -119,7 +132,7 @@ export function AcuerdosTabla({
               size="sm"
               hideArrow
               onClick={onReintentar}
-              className="shrink-0 px-0 h-auto text-sm text-danger underline hover:no-underline"
+              className="shrink-0 px-0 h-auto text-body-sm text-danger underline hover:no-underline"
             >
               Reintentar
             </Button>
@@ -136,7 +149,7 @@ export function AcuerdosTabla({
             weight="duotone"
             aria-hidden="true"
           />
-          <p className="text-sm font-medium text-fg">
+          <p className="text-body-sm font-medium text-fg">
             {filtro === 'todos'
               ? 'Todavía no hay acuerdos de pago'
               : 'Sin acuerdos en este estado'}
@@ -148,9 +161,9 @@ export function AcuerdosTabla({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
+        <div className="overflow-x-auto max-md:overflow-visible">
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 <TableHead>Deudor</TableHead>
                 <TableHead>Tipo</TableHead>
@@ -163,7 +176,7 @@ export function AcuerdosTabla({
               </TableRow>
             </TableHeader>
             {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
-            <TableBodyAnimado>
+            <TableBodyAnimado className="max-md:block">
               {pageItems.map((a) => {
                 const estado = ACUERDO_ESTADO[a.estado]
                 return (
@@ -183,24 +196,25 @@ export function AcuerdosTabla({
                         onAbrir(a)
                       }
                     }}
-                    className="cursor-pointer hover:bg-surface-muted/60 focus-visible:outline-none focus-visible:bg-surface-muted"
+                    className="cursor-pointer hover:bg-surface-muted/60 focus-visible:outline-none focus-visible:bg-surface-muted max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
                   >
-                    <TableCell className="font-medium text-fg">{a.deudor}</TableCell>
-                    <TableCell className="text-fg-muted">
+                    <TableCell className="font-medium text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">{a.deudor}</TableCell>
+                    <TableCell className="text-fg-muted max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption">
                       {ACUERDO_TIPO_LABEL[a.tipo]}
+                      <span className="md:hidden"> · vence {fecha(a.venceEl)}</span>
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-fg">
+                    <TableCell className="text-right font-mono tabular-nums text-fg max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                       {formatCurrency(a.montoCop)}
                     </TableCell>
-                    <TableCell className="font-mono tabular-nums text-fg-muted">
+                    <TableCell className="font-mono tabular-nums text-fg-muted max-md:hidden">
                       {fecha(a.venceEl)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                       <Badge variant={estado.variant}>
                         {estado.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right max-md:hidden">
                       <CaretRight
                         className="w-4 h-4 text-fg-muted inline-block"
                         aria-hidden="true"

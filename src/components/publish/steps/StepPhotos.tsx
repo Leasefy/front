@@ -252,7 +252,7 @@ export function StepPhotos() {
       </div>
 
       {/* Tips */}
-      <div className="flex items-start gap-3 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-200 dark:border-neutral-700">
+      <div className="flex items-start gap-3 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-200 dark:border-neutral-700">
         <WarningCircle className="w-5 h-5 text-neutral-500 dark:text-neutral-400 flex-shrink-0 mt-0.5" />
         <div className="text-sm text-neutral-600 dark:text-neutral-300">
           <p className="font-medium text-neutral-900 dark:text-white mb-1">Tips para mejores fotos:</p>

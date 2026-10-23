@@ -308,7 +308,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
             marketplace, 10-10-2026). */}
         <div className="flex min-w-0 flex-col gap-6">
           <section
-            className="rounded-xl border border-border bg-surface p-5 shadow-sm md:p-7"
+            className="rounded-lg border border-border bg-surface p-5 md:p-7"
             aria-label={`Pregúntale a ${pagina.nombre}`}
           >
             <div className="flex items-center gap-3">
@@ -329,7 +329,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
           </section>
           {ubicados.length > 0 && (
             <section
-              className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm"
+              className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-lg border border-border bg-surface"
               aria-labelledby="donde-estan"
               data-testid="mapa-de-sus-inmuebles"
             >
@@ -340,7 +340,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
                   </h2>
                   {barrios.length > 0 && <p className="truncate text-[13px] text-fg-muted">{barrios.join(' · ')}</p>}
                 </div>
-                <span className="text-[12.5px] text-fg-subtle">Toca un precio para verlo</span>
+                <span className="text-[13px] text-fg-subtle">Toca un precio para verlo</span>
               </div>
               <div className="relative min-h-[220px] flex-1 border-t border-border">
                 <PropertyMap

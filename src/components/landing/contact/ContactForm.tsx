@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { Presence } from '@leasefy/cadence'
 import { buildContactMailto, isContactFormValid, CONTACT_EMAIL } from '@/lib/landing/contact-mailto'
 
-const INTEREST_CHIPS = ['CRM', 'ERP', 'Agentes AI', 'Todo el sistema'] as const
+const INTEREST_CHIPS = ['CRM', 'ERP', 'Agentes IA', 'Todo el sistema'] as const
 
 /**
  * Contact route form (landing-react-port SLICE 7), ported from the

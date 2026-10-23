@@ -259,7 +259,7 @@ export function StepDetails() {
           Características del inmueble
         </h3>
         <p className="text-sm text-fg-muted">
-          Describe las especificaciones de tu propiedad
+          Describe cómo es tu inmueble
         </p>
       </div>
 

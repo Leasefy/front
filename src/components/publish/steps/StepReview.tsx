@@ -352,7 +352,7 @@ export function StepReview() {
               )}>
                 <Icon className="w-5 h-5" />
                 <div>
-                  <p className="font-semibold">{plan.name}</p>
+                  <p className="font-medium">{plan.name}</p>
                   <p className="text-caption opacity-70 font-mono tabular-nums">{plan.price}</p>
                 </div>
               </div>

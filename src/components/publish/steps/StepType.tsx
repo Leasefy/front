@@ -25,11 +25,11 @@ export function StepType() {
   return (
     <div className="space-y-6">
       <div className="text-center pb-2">
-        <h3 id={tituloId} className="text-lg font-semibold text-fg">
+        <h3 id={tituloId} className="text-lg font-medium text-fg">
           ¿Qué tipo de inmueble vas a publicar?
         </h3>
         <p className="text-sm text-fg-muted mt-1">
-          Selecciona el tipo que mejor describe tu propiedad
+          Elige el tipo que mejor describe tu inmueble
         </p>
       </div>
 
@@ -83,7 +83,7 @@ export function StepType() {
 
                 {/* Text */}
                 <p className={cn(
-                  'font-semibold text-[15px]',
+                  'font-medium text-[15px]',
                   isSelected ? 'text-fg' : 'text-fg-muted'
                 )}>
                   {type.label}

@@ -199,7 +199,7 @@ export function PublishSuccess() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ ...motionSpring.bouncy, delay: 0.15 }}
-                  className="relative w-24 h-24 rounded-full bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] flex items-center justify-center"
+                  className="relative w-24 h-24 rounded-full bg-white flex items-center justify-center"
                 >
                   <Check className="w-10 h-10 text-[#1A40FF]" strokeWidth={2.5} />
                 </motion.div>
@@ -207,10 +207,10 @@ export function PublishSuccess() {
 
               <Appear delay={0.2}>
                 <h1 className="text-h2 text-white mb-1.5 tracking-tight">
-                  ¡Publicación exitosa!
+                  Tu inmueble quedó publicado
                 </h1>
                 <p className="text-white/70 text-[15px]">
-                  Tu inmueble ya está activo y visible
+                  Ya está activo y se ve en el marketplace
                 </p>
               </Appear>
             </div>
@@ -233,7 +233,7 @@ export function PublishSuccess() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-3 left-3 right-3">
-                  <h2 className="text-white font-semibold truncate">{draft.title}</h2>
+                  <h2 className="text-white font-medium truncate">{draft.title}</h2>
                   <div className="flex items-center gap-1 text-white/80 text-sm">
                     <MapPin className="w-3.5 h-3.5" />
                     <span>{draft.neighborhood}, {draft.city}</span>
@@ -246,14 +246,14 @@ export function PublishSuccess() {
             <StaggerItem key="datos" className="grid grid-cols-3 gap-3">
               <div className="bg-surface-muted p-3 rounded-lg text-center">
                 <CurrencyDollar className="w-4 h-4 mx-auto text-fg-subtle mb-1" />
-                <p className="text-sm font-semibold text-fg">
+                <p className="text-sm font-medium text-fg">
                   {formatCurrency(draft.monthlyRent)}
                 </p>
                 <p className="text-caption text-fg-subtle">/mes</p>
               </div>
               <div className="bg-surface-muted p-3 rounded-lg text-center">
                 <Buildings className="w-4 h-4 mx-auto text-fg-subtle mb-1" />
-                <p className="text-sm font-semibold text-fg">
+                <p className="text-sm font-medium text-fg">
                   {draft.bedrooms} hab
                 </p>
                 <p className="text-caption text-fg-subtle">
@@ -262,7 +262,7 @@ export function PublishSuccess() {
               </div>
               <div className="bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-3 rounded-lg text-center">
                 <Sparkle className="w-4 h-4 mx-auto text-[#1A40FF] dark:text-[#5570FF] mb-1" />
-                <p className="text-caption font-semibold text-fg">
+                <p className="text-caption font-medium text-fg">
                   {draft.selectedPlan ? planLabels[draft.selectedPlan] ?? 'Plan' : 'Plan'}
                 </p>
                 <p className="text-caption text-fg-subtle">Activo</p>

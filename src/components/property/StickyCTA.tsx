@@ -502,8 +502,8 @@ export function StickyCTA({
     <div ref={raiz} id="reservar" className={cn('scroll-mt-24 lg:sticky lg:top-28', className)}>
       <Card
         className={cn(
-          'overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-shadow duration-slow',
-          resaltada && 'shadow-[0_0_0_3px_hsl(var(--primary)/0.35),0_8px_30px_rgba(0,0,0,0.06)]',
+          'overflow-hidden rounded-lg border-border transition-shadow duration-slow',
+          resaltada && 'shadow-[0_0_0_3px_hsl(var(--primary)/0.35)]',
         )}
         data-resaltada={resaltada || undefined}
       >
@@ -520,7 +520,7 @@ export function StickyCTA({
                   <>
                     <LogoDelAdministrador administrador={administrador} tamano={28} />
                     {/* Entero, en dos líneas si hace falta: nunca «Portofino Propiedad Raiz…» (21-10-2026). */}
-                    <span className="min-w-0 break-words text-[15px] font-semibold leading-snug text-foreground">
+                    <span className="min-w-0 break-words text-[15px] font-medium leading-snug text-foreground">
                       {administrador.nombre}
                     </span>
                   </>
@@ -532,7 +532,7 @@ export function StickyCTA({
                   eran promesas sin un dato detrás (nadie mide ese tiempo ni
                   verifica nada aquí). Se dice sólo lo que consta. */}
               {administrador && !esLeasefy(administrador.agencyId) ? (
-                <p className="text-xs text-muted-foreground">Administra este inmueble</p>
+                <p className="text-[13px] text-muted-foreground">Administra este inmueble</p>
               ) : null}
               {sobreLaInmobiliaria && <div className="mt-2">{sobreLaInmobiliaria}</div>}
             </div>
@@ -579,14 +579,14 @@ export function StickyCTA({
               // (that helper silently renders "$ 0", C6). `salePrice` is
               // never displayed as a canon: no "/mes" suffix.
               <div className="flex items-baseline gap-1.5">
-                <span className="text-[30px] font-mono tabular-nums font-bold text-foreground tracking-[-0.02em]">
+                <span className="text-[30px] font-mono tabular-nums font-medium text-foreground tracking-[-0.02em]">
                   {salePrice != null ? formatCurrency(salePrice) : 'Sin dato'}
                 </span>
               </div>
             ) : (
               <>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-[30px] font-mono tabular-nums font-bold text-foreground tracking-[-0.02em]">
+                  <span className="text-[30px] font-mono tabular-nums font-medium text-foreground tracking-[-0.02em]">
                     {formatCurrency(price)}
                   </span>
                   <span className="text-[14px] text-muted-foreground font-medium">/mes</span>
@@ -606,7 +606,7 @@ export function StickyCTA({
               <div className="flex items-start gap-2.5 mb-4">
                 <ShareNetwork className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                 <p className="text-[13px] text-muted-foreground">
-                  Comparte esta propiedad con un interesado por el canal que prefieras.
+                  Comparte este inmueble con un interesado por el canal que prefieras.
                 </p>
               </div>
 
@@ -614,7 +614,7 @@ export function StickyCTA({
                 <input
                   readOnly
                   value={shareUrl}
-                  aria-label="Enlace de la propiedad"
+                  aria-label="Enlace del inmueble"
                   data-testid="agency-share-url"
                   onFocus={(e) => e.currentTarget.select()}
                   className="flex-1 min-w-0 bg-transparent text-[13px] text-fg-muted outline-none truncate"
@@ -643,14 +643,14 @@ export function StickyCTA({
 
               {ficha && <CompartirLaFicha propertyId={propertyId} ficha={ficha} className="mt-2" />}
 
-              <p className="text-[11px] text-muted-foreground text-center mt-3">
+              <p className="text-[13px] text-muted-foreground text-center mt-3">
                 Como inmobiliaria no aplicas ni agendas visitas — comparte el enlace con tus clientes.
               </p>
             </div>
           ) : arrendado ? (
             <div data-testid="inmueble-arrendado" className="flex flex-col gap-4">
               <div className="rounded-lg bg-surface-muted p-4">
-                <p className="text-[15px] font-semibold text-foreground">Este inmueble ya está arrendado</p>
+                <p className="text-[15px] font-medium text-foreground">Este inmueble ya está arrendado</p>
                 <p className="mt-1 text-[13px] text-muted-foreground">
                   Ya no recibe postulaciones ni visitas. Te mostramos los que siguen disponibles.
                 </p>
@@ -695,16 +695,15 @@ export function StickyCTA({
                this only gates on auth and states the current capability
                honestly instead of faking a chat UI. ── */
             <div className="text-center py-4">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary-soft flex items-center justify-center">
-                <ChatCircle className="w-6 h-6 text-primary" />
-              </div>
+              {/* Ronda 30: el ícono suelto, sin el círculo azul. */}
+              <ChatCircle className="w-7 h-7 mx-auto mb-4 text-fg-subtle" aria-hidden="true" />
               {isAuthenticated ? (
                 <>
-                  <h3 className="text-[15px] font-heading font-semibold text-foreground mb-2">
+                  <h3 className="text-[15px] font-heading font-medium text-foreground mb-2">
                     Chatea con la inmobiliaria
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-4">
-                    Inicia una conversación sobre esta propiedad. Si ya escribiste antes, te llevamos al mismo hilo.
+                    Inicia una conversación sobre este inmueble. Si ya escribiste antes, te llevamos al mismo hilo.
                   </p>
                   <Button
                     type="button"
@@ -721,7 +720,7 @@ export function StickyCTA({
                 </>
               ) : (
                 <>
-                  <h3 className="text-[15px] font-heading font-semibold text-foreground mb-2">
+                  <h3 className="text-[15px] font-heading font-medium text-foreground mb-2">
                     Inicia sesión para contactar a la inmobiliaria
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-4">
@@ -760,13 +759,13 @@ export function StickyCTA({
                     <p className="text-[13px] text-muted-foreground">
                       {sinCodeudor ? (
                         <>
-                          <span className="font-semibold text-foreground">Sin codeudor</span> — te
+                          <span className="font-medium text-foreground">Sin codeudor</span> — te
                           postulas solo con tu información
                         </>
                       ) : (
                         <>
                           Tu aprobación quedó{' '}
-                          <span className="font-semibold text-foreground">con condiciones</span> — la
+                          <span className="font-medium text-foreground">con condiciones</span> — la
                           aseguradora puede pedirte codeudor
                         </>
                       )}
@@ -777,7 +776,7 @@ export function StickyCTA({
               <PostularButton propertyId={propertyId} canonCop={price} className="w-full">
                 Postularme a esta propiedad
               </PostularButton>
-              <p className="text-[11px] text-muted-foreground text-center mt-3">
+              <p className="text-[13px] text-muted-foreground text-center mt-3">
                 Completa tu solicitud en minutos
               </p>
             </div>
@@ -787,7 +786,7 @@ export function StickyCTA({
               <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--success-500))] rounded-xl flex items-center justify-center">
                 <Check className="w-8 h-8 text-white" strokeWidth={3} />
               </div>
-              <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
+              <h3 className="text-lg font-heading font-medium text-foreground mb-2">
                 ¡Visita agendada!
               </h3>
               <p className="text-sm text-muted-foreground mb-1">
@@ -798,7 +797,7 @@ export function StickyCTA({
                   {parseDateDisplay(selectedDay).dayName} {parseDateDisplay(selectedDay).dayNumber} · {formatTimeSlot(selectedTime)}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground mb-6">
+              <p className="text-[13px] text-muted-foreground mb-6">
                 Te enviaremos un correo con los detalles de la visita y recordatorios.
               </p>
               <Button
@@ -873,7 +872,7 @@ export function StickyCTA({
                   <div>
                     <div className="flex items-center gap-1.5 mb-2.5">
                       <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                      <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">Selecciona fecha</p>
+                      <p className="text-[13px] text-muted-foreground font-medium uppercase tracking-wide">Selecciona fecha</p>
                     </div>
                     <div className="grid grid-cols-5 gap-1.5">
                       {availableDates.map((dateStr) => {
@@ -891,7 +890,7 @@ export function StickyCTA({
                             )}
                           >
                             <span className={cn(
-                              'block text-[9px] font-semibold uppercase tracking-wide',
+                              'block text-[9px] font-medium uppercase tracking-wide',
                               isSelected ? 'text-white/70' : 'text-muted-foreground'
                             )}>
                               {dayName}
@@ -908,7 +907,7 @@ export function StickyCTA({
                     <div>
                       <div className="flex items-center gap-1.5 mb-2.5">
                         <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">Selecciona hora</p>
+                        <p className="text-[13px] text-muted-foreground font-medium uppercase tracking-wide">Selecciona hora</p>
                       </div>
                       <div className="grid grid-cols-3 gap-1.5">
                         {timesForDay.map(({ time, available }) => (
@@ -919,7 +918,7 @@ export function StickyCTA({
                             onClick={() => { if (available) { setSelectedTime(time); setScheduleError(null); } }}
                             disabled={!available}
                             className={cn(
-                              'h-auto py-2.5 rounded-md text-[12px] font-semibold font-mono tabular-nums',
+                              'h-auto py-2.5 rounded-md text-[13px] font-medium font-mono tabular-nums',
                               !available && 'line-through',
                               available && selectedTime !== time && 'hover:border-primary/30'
                             )}
@@ -934,7 +933,7 @@ export function StickyCTA({
               )}
 
               {/* Error message */}
-              <ErrorDelCampo id="visita-error" mensaje={scheduleError} className="text-[12px] text-center" />
+              <ErrorDelCampo id="visita-error" mensaje={scheduleError} className="text-[13px] text-center" />
 
               {/* CTA button. Sin horarios no hay fecha que elegir: el
                   formulario de «te contactamos» trae su propio botón y este
@@ -963,7 +962,7 @@ export function StickyCTA({
                 </Button>
               )}
 
-              <p className="text-[11px] text-muted-foreground text-center flex items-center justify-center gap-2">
+              <p className="text-[13px] text-muted-foreground text-center flex items-center justify-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[hsl(var(--success-500))]" />
                 Visita gratuita
                 <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
@@ -1050,7 +1049,7 @@ export function MobileStickyCTA({
       <div className="px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="truncate text-[16px] font-mono tabular-nums font-bold text-foreground tracking-tight">
+            <p className="truncate text-[16px] font-mono tabular-nums font-medium text-foreground tracking-tight">
               {isSaleListing ? (
                 salePrice != null ? formatCurrency(salePrice) : 'Sin dato'
               ) : (

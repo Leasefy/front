@@ -204,13 +204,13 @@ export function PropertyDetailView({
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-normal text-foreground tracking-tight">
-            Propiedad no encontrada
+            No encontramos este inmueble
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            La propiedad que buscas no existe o ha sido removida.
+            El inmueble que buscas no existe o ya no está publicado.
           </p>
           <Link href={listingHref}>
-            <Button className="mt-6">Volver a propiedades</Button>
+            <Button className="mt-6">Ver los inmuebles</Button>
           </Link>
         </div>
       </div>
@@ -412,12 +412,11 @@ export function PropertyDetailView({
                     direccion={`${barrioYCiudad(property.neighborhood, property.city)}, Colombia`}
                   />
                 ) : (
-                <div className="border border-border rounded-xl bg-surface-muted p-8 flex flex-col items-center justify-center gap-5 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-primary" strokeWidth={1.5} />
-                  </div>
+                <div className="border border-border rounded-lg bg-surface-muted p-8 flex flex-col items-center justify-center gap-5 text-center">
+                  {/* Ronda 30: el pin suelto, sin la caja azul. */}
+                  <MapPin className="w-7 h-7 text-fg-subtle" strokeWidth={1.5} aria-hidden="true" />
                   <div>
-                    <p className="text-[17px] font-heading font-semibold text-foreground">
+                    <p className="text-[17px] font-heading font-medium text-foreground">
                       {property.neighborhood}
                     </p>
                     <p className="text-[14px] text-muted-foreground mt-1">{property.city}, Colombia</p>
@@ -426,7 +425,7 @@ export function PropertyDetailView({
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(barrioYCiudad(property.neighborhood, property.city) + ', Colombia')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-primary bg-primary/10 rounded-xl hover:bg-primary/15 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-5 py-2.5 text-[13px] font-medium text-fg transition-colors hover:bg-surface-muted"
                   >
                     <ArrowSquareOut className="w-4 h-4" />
                     Ver en Google Maps

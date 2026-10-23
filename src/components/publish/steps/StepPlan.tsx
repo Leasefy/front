@@ -46,7 +46,7 @@ const INMOBILIARIA_OPTIONS = AGENCY_PLANS.map((plan) => ({
   description: plan.description,
   icon: PLAN_ICONS[plan.id] ?? '📦',
   features: [
-    ...(plan.limits.properties != null ? [`${plan.limits.properties} propiedades`] : []),
+    ...(plan.limits.properties != null ? [`${plan.limits.properties} inmuebles`] : []),
     ...(plan.limits.users != null ? [`${plan.limits.users} usuarios`] : []),
     ...plan.features,
   ],
@@ -81,7 +81,7 @@ export function StepPlan() {
     <div className="space-y-6">
       {/* Owner type selector */}
       <div>
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white text-center">
+        <h3 className="text-lg font-medium text-neutral-900 dark:text-white text-center">
           ¿Cómo publicarás?
         </h3>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 text-center">
@@ -124,7 +124,7 @@ export function StepPlan() {
                   <div>
                     <span
                       className={cn(
-                        'text-sm font-semibold block',
+                        'text-sm font-medium block',
                         isSelected
                           ? 'text-neutral-900 dark:text-white'
                           : 'text-neutral-700 dark:text-neutral-300',
@@ -149,7 +149,7 @@ export function StepPlan() {
       <Collapse open={Boolean(draft.ownerType)}>
           <CrossFade swapKey={draft.ownerType || 'sin-tipo'} className="space-y-4">
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <h3 className="text-lg font-medium text-neutral-900 dark:text-white">
                 Elige tu plan
               </h3>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
@@ -166,20 +166,20 @@ export function StepPlan() {
                   return (
                     <div
                       key={plan.id}
-                      className="relative w-full p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-border"
+                      className="relative w-full p-5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-border"
                     >
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-neutral-100 dark:bg-neutral-800">
                           <span className="text-2xl">{plan.icon}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
+                          <h4 className="text-base font-medium text-neutral-700 dark:text-neutral-300">
                             {plan.name}
                           </h4>
                           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
                             {plan.description}
                           </p>
-                          <p className="text-lg font-bold text-neutral-700 dark:text-neutral-300 mt-1">
+                          <p className="text-lg font-medium text-neutral-700 dark:text-neutral-300 mt-1">
                             Precio personalizado
                           </p>
                           <a
@@ -218,7 +218,7 @@ export function StepPlan() {
                   >
                     {/* Badge */}
                     {plan.badge && (
-                      <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-primary text-white uppercase tracking-wide font-mono">
+                      <span className="absolute -top-3 right-4 px-3 py-1 text-[12px] font-medium rounded-full bg-primary text-white uppercase tracking-wide font-mono">
                         {plan.badge}
                       </span>
                     )}
@@ -243,7 +243,7 @@ export function StepPlan() {
                         <div className="flex items-baseline gap-2">
                           <h4
                             className={cn(
-                              'text-base font-semibold',
+                              'text-base font-medium',
                               isSelected
                                 ? 'text-neutral-900 dark:text-white'
                                 : 'text-neutral-700 dark:text-neutral-300',
@@ -254,7 +254,7 @@ export function StepPlan() {
                           <div className="flex items-baseline gap-1">
                             <span
                               className={cn(
-                                'text-lg font-bold',
+                                'text-lg font-medium',
                                 isSelected
                                   ? 'text-neutral-900 dark:text-white'
                                   : 'text-neutral-700 dark:text-neutral-300',

@@ -28,6 +28,7 @@ import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Checkbox } from '@/components/ui'
 import { BackButton, Collapse, CrossFade, Presence } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import {
   useSiniestroApproval,
   type SiniestroInsurer,
@@ -218,19 +219,17 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           label={t('inmobiliaria.ai.cobranza.siniestros.back')}
         />
       </div>
-      <header className="space-y-1">
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cobranza.siniestros.title')}
-        </h1>
-        {/* De quién y con qué aseguradora. La pantalla no lo decía: se aprobaba
-            la radicación de un siniestro sin saber sobre qué póliza. */}
-        {siniestro && (
-          <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
-            {siniestro.debtorName ?? 'Deudor sin nombre'}
-            {siniestro.aseguradora ? ` · ${siniestro.aseguradora}` : ''}
-          </p>
-        )}
-      </header>
+      {/* De quién y con qué aseguradora. La pantalla no lo decía: se aprobaba
+          la radicación de un siniestro sin saber sobre qué póliza. */}
+      <EncabezadoDePantalla
+        seccion="Cobranza · Siniestros"
+        titulo={t('inmobiliaria.ai.cobranza.siniestros.title')}
+        descripcion={
+          siniestro
+            ? `${siniestro.debtorName ?? 'Deudor sin nombre'}${siniestro.aseguradora ? ` · ${siniestro.aseguradora}` : ''}`
+            : undefined
+        }
+      />
 
       {siniestro && !aseguradoraNotificable && (
         <div className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
@@ -245,7 +244,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
         aria-label={t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
         className="space-y-2"
       >
-        <h2 className="text-sm font-medium text-fg-muted">
+        <h2 className="text-body font-medium text-fg">
           {t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
         </h2>
         <iframe
@@ -253,7 +252,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           title={t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
           src={pdfBlobUrl ?? 'about:blank'}
           loading="lazy"
-          className="w-full h-96 rounded border border-border"
+          className="w-full h-[28rem] rounded-md border border-border bg-surface-muted max-md:h-[70vh]"
         />
         <Presence show={pdfError} className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.error')}
@@ -262,7 +261,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
 
       {/* Insurer checkbox group */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-fg-muted">
+        <h2 className="text-body font-medium text-fg">
           {t('inmobiliaria.ai.cobranza.siniestros.insurers.title')}
         </h2>
         <div className="flex flex-wrap gap-3">

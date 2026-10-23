@@ -11,7 +11,7 @@
  * §11 (loading skeleton), §16 (tabular-nums).
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Siren, Warning } from '@phosphor-icons/react'
 
@@ -31,7 +31,7 @@ import {
   TableBodyAnimado,
   TableRowAnimada,
 } from '@/components/ui'
-import { Card, Chip, CrossFade, Presence } from '@leasefy/cadence'
+import { Card, CrossFade, Presence } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   useTablePagination,
@@ -42,6 +42,9 @@ import {
   type InsuranceClaimStatus,
 } from '@/lib/hooks/cobranza/use-insurance-claims'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
 
 // ── Status → Cadence Badge variant — tokens semánticos del DS (contrato §8) ────
 function statusBadgeVariant(
@@ -71,7 +74,7 @@ const STATUS_OPTIONS: InsuranceClaimStatus[] = [
 ]
 
 const STATUS_LABELS: Record<InsuranceClaimStatus, { es: string; en: string }> = {
-  pending_human_review: { es: 'Pendiente revisión', en: 'Pending review' },
+  pending_human_review: { es: 'Por revisar', en: 'To review' },
   draft: { es: 'Borrador', en: 'Draft' },
   filed: { es: 'Radicado', en: 'Filed' },
   accepted: { es: 'Aceptado', en: 'Accepted' },
@@ -116,6 +119,52 @@ function SiniestrosContent() {
   } = useTablePagination(claims, { resetKey: `${statusFilter ?? ''}` })
   const hasFilters = statusFilter !== undefined
 
+  // Conteo y saldo por estado: se saben cuando la lista viene sin filtro (trae
+  // todos). Con un estado elegido el back sólo trae ése; los demás quedan como
+  // en la última lectura entera.
+  const [resumen, setResumen] = useState<{
+    porEstado: Record<string, { n: number; saldo: number }>
+    total: number
+  } | null>(null)
+  useEffect(() => {
+    if (!data || statusFilter !== undefined) return
+    const porEstado: Record<string, { n: number; saldo: number }> = {}
+    for (const c of data.claims ?? []) {
+      const e = (porEstado[c.status] ??= { n: 0, saldo: 0 })
+      e.n += 1
+      e.saldo += Math.max(0, c.outstandingCop ?? 0)
+    }
+    setResumen({ porEstado, total: (data.claims ?? []).length })
+  }, [data, statusFilter])
+
+  const fecha = useCallback(
+    (iso: string) =>
+      isEs
+        ? fechaCorta(diaEnColombia(iso))
+        : new Date(iso).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' }),
+    [isEs, locale],
+  )
+
+  const pestanas = useMemo(
+    () => [
+      {
+        valor: 'todos',
+        etiqueta: isEs ? 'Todos' : 'All',
+        cuantos: resumen?.total ?? (statusFilter === undefined ? total : null),
+        fija: true,
+        testid: 'siniestros-pestana-todos',
+      },
+      ...STATUS_OPTIONS.map((st) => ({
+        valor: st,
+        etiqueta: STATUS_LABELS[st][isEs ? 'es' : 'en'],
+        cuantos: statusFilter === st ? total : resumen ? resumen.porEstado[st]?.n ?? 0 : null,
+        tono: st === 'pending_human_review' ? ('aviso' as const) : undefined,
+        testid: `siniestros-pestana-${st}`,
+      })),
+    ],
+    [isEs, resumen, statusFilter, total],
+  )
+
   // ── Skeleton ──────────────────────────────────────────────────────────────
   // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
   // lista, → vacío); lo que ya estaba al montarse no se anima.
@@ -151,7 +200,12 @@ function SiniestrosContent() {
   if (!isLoading && !hasFilters && claims.length === 0 && !error) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8 space-y-6">
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.siniestros.list.pageTitle')}
+          descripcion={t('inmobiliaria.ai.cobranza.siniestros.list.pageSubtitle')}
+        />
         <EmptyState
           icon={Siren}
           title={t('inmobiliaria.ai.cobranza.siniestros.list.empty.title')}
@@ -164,15 +218,40 @@ function SiniestrosContent() {
 
   return (
     <CrossFade swapKey="lista">
-    <div className="p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <EncabezadoDePantalla
-          seccion="Cobranza"
-          titulo={t('inmobiliaria.ai.cobranza.siniestros.list.pageTitle')}
-          descripcion={t('inmobiliaria.ai.cobranza.siniestros.list.pageSubtitle')}
+    <div className="p-6 lg:p-8 space-y-6">
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.siniestros.list.pageTitle')}
+        descripcion={t('inmobiliaria.ai.cobranza.siniestros.list.pageSubtitle')}
+      />
+
+      {/* LA RESPUESTA: lo que espera tu aprobación para reclamarle a la aseguradora. */}
+      {resumen && resumen.total > 0 ? (
+        <CifraHeroe
+          data-testid="siniestros-por-revisar"
+          rotulo={isEs ? 'Por revisar' : 'To review'}
+          cifra={formatCurrency(resumen.porEstado.pending_human_review?.saldo ?? 0)}
+          contexto={
+            isEs
+              ? `en ${resumen.porEstado.pending_human_review?.n ?? 0} de ${resumen.total} siniestros`
+              : `in ${resumen.porEstado.pending_human_review?.n ?? 0} of ${resumen.total} claims`
+          }
+          tramos={STATUS_OPTIONS.map((st) => ({
+            clave: st,
+            etiqueta: STATUS_LABELS[st][isEs ? 'es' : 'en'],
+            monto: resumen.porEstado[st]?.saldo ?? 0,
+            tono:
+              st === 'pending_human_review'
+                ? ('aviso' as const)
+                : st === 'accepted'
+                  ? ('exito' as const)
+                  : st === 'rejected'
+                    ? ('critico' as const)
+                    : ('neutro' as const),
+            cifra: formatCurrency(resumen.porEstado[st]?.saldo ?? 0),
+          }))}
         />
-      </div>
+      ) : null}
 
       {/* Status filter chips */}
       {/*
@@ -181,49 +260,28 @@ function SiniestrosContent() {
         sueltos por encima y la pantalla se leía como bloques sin relación.
       */}
       <Card className="overflow-hidden">
-      <div className="flex flex-wrap gap-2 border-b border-border px-4 py-3">
-        <fieldset>
-          <legend className="sr-only">{isEs ? 'Estado del siniestro' : 'Claim status'}</legend>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.map((s) => (
-              <Chip
-                key={s}
-                size="sm"
-                selected={statusFilter === s}
-                onClick={() => setStatusFilter((prev) => (prev === s ? undefined : s))}
-              >
-                {STATUS_LABELS[s][isEs ? 'es' : 'en']}
-              </Chip>
-            ))}
-          </div>
-        </fieldset>
-
-        <Presence show={hasFilters} direction="none" initial={false} className="self-center">
-          <Button
-            variant="link"
-            size="sm"
-            hideArrow
-            onClick={() => setStatusFilter(undefined)}
-            className="self-center px-0 h-auto"
-          >
-            {isEs ? 'Limpiar filtro' : 'Clear filter'}
-          </Button>
-        </Presence>
+      <div className="border-b border-border px-4 py-3">
+        <PestanasDeEstado<string>
+          pestanas={pestanas}
+          valor={statusFilter ?? 'todos'}
+          onCambio={(v) => setStatusFilter(v === 'todos' ? undefined : (v as InsuranceClaimStatus))}
+          etiqueta={isEs ? 'Filtrar los siniestros por estado' : 'Filter claims by status'}
+        />
       </div>
 
       {/* Error */}
       <Presence show={Boolean(error)}
           role="alert"
-          className="border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2"
+          className="border-b border-border bg-danger-soft px-4 py-3 text-body-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>Error: {error}</span>
+          <span>{isEs ? 'No pudimos cargar los siniestros.' : 'We could not load the claims.'} {error}</span>
       </Presence>
 
       {/* Table */}
-        <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
+        <div className="overflow-x-auto max-md:overflow-visible">
+        <Table className="max-md:block">
+          <TableHeader className="max-md:hidden">
             <TableRow>
               {/* Destinatario y monto primero: la tabla mostraba aseguradora,
                   estado y fechas, o sea que aprobar un siniestro era autorizar
@@ -250,7 +308,7 @@ function SiniestrosContent() {
             </TableRow>
           </TableHeader>
           {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
-          <TableBodyAnimado>
+          <TableBodyAnimado className="max-md:block">
             {/*
               Con error NO se puede decir «sin siniestros»: eso es una
               afirmación sobre los datos, y con la carga fallida no sabemos
@@ -259,9 +317,9 @@ function SiniestrosContent() {
               justo cuando no debía.
             */}
             {claims.length === 0 && !isLoading && (
-              <TableRowAnimada key="vacio">
-                <TableCell colSpan={7} className="px-3 py-12 text-center">
-                  <p className="text-sm text-fg-muted">
+              <TableRowAnimada key="vacio" className="max-md:block">
+                <TableCell colSpan={7} className="px-3 py-12 text-center max-md:block">
+                  <p className="text-body-sm text-fg-muted">
                     {error
                       ? isEs
                         ? 'No pudimos cargar los siniestros.'
@@ -293,9 +351,9 @@ function SiniestrosContent() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigateToSiniestro(c.id)
                 }}
-                className=" cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
               >
-                <TableCell className="px-3 py-2">
+                <TableCell className="px-3 py-2 max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                   <span className="block text-fg">
                     {c.debtorName ?? (isEs ? 'Deudor no encontrado' : 'Debtor not found')}
                   </span>
@@ -305,7 +363,7 @@ function SiniestrosContent() {
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-right whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-right whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                   <span className="block text-fg font-mono tabular-nums">
                     {c.outstandingCop != null ? formatCurrency(c.outstandingCop) : '—'}
                   </span>
@@ -324,36 +382,26 @@ function SiniestrosContent() {
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-fg capitalize whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-fg capitalize whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
                   {c.aseguradora}
                 </TableCell>
-                <TableCell className="px-3 py-2">
+                <TableCell className="px-3 py-2 max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                   <Badge variant={statusBadgeVariant(c.status)}>
                     {isEs
                       ? (STATUS_LABELS[c.status as InsuranceClaimStatus]?.es ?? c.status)
                       : (STATUS_LABELS[c.status as InsuranceClaimStatus]?.en ?? c.status)}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-3 py-2 text-caption text-fg-muted tabular-nums whitespace-nowrap">
-                  {new Date(c.createdAt).toLocaleDateString(locale, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+                <TableCell className="px-3 py-2 font-mono text-caption text-fg-muted tabular-nums whitespace-nowrap max-md:hidden">
+                  {fecha(c.createdAt)}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-caption text-fg-muted tabular-nums whitespace-nowrap">
-                  {c.filedAt
-                    ? new Date(c.filedAt).toLocaleDateString(locale, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })
-                    : '—'}
+                <TableCell className="px-3 py-2 font-mono text-caption text-fg-muted tabular-nums whitespace-nowrap max-md:hidden">
+                  {c.filedAt ? fecha(c.filedAt) : '—'}
                 </TableCell>
                 {/* El correo, no el UUID: «4a0efc55…» no le dice nada a nadie.
                     Si el aprobador ya no está en el equipo cae al id recortado,
                     que al menos es rastreable en la auditoría. */}
-                <TableCell className="px-3 py-2 text-caption text-fg-muted">
+                <TableCell className="px-3 py-2 text-caption text-fg-muted max-md:hidden">
                   {c.approvedByEmail ??
                     (c.approvedByHumanUserId
                       ? c.approvedByHumanUserId.slice(0, 8) + '…'

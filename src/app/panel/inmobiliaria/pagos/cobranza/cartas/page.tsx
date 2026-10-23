@@ -11,7 +11,7 @@
  * §11 (loading skeleton), §16 (tabular-nums).
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Envelope, Warning } from '@phosphor-icons/react'
@@ -44,6 +44,9 @@ import {
   type LegalArtifactStatus,
 } from '@/lib/hooks/cobranza/use-legal-artifacts'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
 
 // ── Status badge colours — tokens semánticos del DS (contrato §8) ─────────────
 function statusBadgeVariant(
@@ -76,7 +79,7 @@ const STATUS_OPTIONS: LegalArtifactStatus[] = [
 
 const KIND_LABELS: Record<LegalArtifactKind, { es: string; en: string }> = {
   pre_judicial_letter: { es: 'Prejurídica', en: 'Pre-judicial' },
-  pre_bureau_notification: { es: 'Bureau', en: 'Bureau notification' },
+  pre_bureau_notification: { es: 'Aviso antes del reporte', en: 'Pre-bureau notice' },
 }
 
 /**
@@ -95,7 +98,7 @@ const SEND_METHOD_LABELS: Record<string, { es: string; en: string }> = {
 }
 
 const STATUS_LABELS: Record<LegalArtifactStatus, { es: string; en: string }> = {
-  pending_human_review: { es: 'Pendiente revisión', en: 'Pending review' },
+  pending_human_review: { es: 'Por revisar', en: 'To review' },
   approved: { es: 'Aprobada', en: 'Approved' },
   sent: { es: 'Enviada', en: 'Sent' },
   void: { es: 'Anulada', en: 'Void' },
@@ -141,6 +144,46 @@ function CartasContent() {
   } = useTablePagination(artifacts, { resetKey: `${kindFilter ?? ''}|${statusFilter ?? ''}` })
   const hasFilters = kindFilter !== undefined || statusFilter !== undefined
 
+  // El conteo por estado se sabe cuando la lista viene sin filtro de estado
+  // (trae todas). Se guarda por tipo de carta; con un estado elegido, el back
+  // sólo trae ése y los demás quedan como estaban en la última lectura entera.
+  const [conteos, setConteos] = useState<{ tipo: string; porEstado: Record<string, number>; total: number } | null>(null)
+  useEffect(() => {
+    if (!data || statusFilter !== undefined) return
+    const porEstado: Record<string, number> = {}
+    for (const a of data.artifacts ?? []) porEstado[a.status] = (porEstado[a.status] ?? 0) + 1
+    setConteos({ tipo: kindFilter ?? '', porEstado, total: (data.artifacts ?? []).length })
+  }, [data, statusFilter, kindFilter])
+  const conteosDelTipo = conteos && conteos.tipo === (kindFilter ?? '') ? conteos : null
+
+  const fecha = useCallback(
+    (iso: string) =>
+      isEs
+        ? fechaCorta(diaEnColombia(iso))
+        : new Date(iso).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' }),
+    [isEs, locale],
+  )
+
+  const pestanas = useMemo(
+    () => [
+      {
+        valor: 'todas',
+        etiqueta: isEs ? 'Todas' : 'All',
+        cuantos: conteosDelTipo?.total ?? (statusFilter === undefined ? total : null),
+        fija: true,
+        testid: 'cartas-pestana-todas',
+      },
+      ...STATUS_OPTIONS.map((st) => ({
+        valor: st,
+        etiqueta: STATUS_LABELS[st][isEs ? 'es' : 'en'],
+        cuantos: statusFilter === st ? total : conteosDelTipo ? conteosDelTipo.porEstado[st] ?? 0 : null,
+        tono: st === 'pending_human_review' ? ('aviso' as const) : undefined,
+        testid: `cartas-pestana-${st}`,
+      })),
+    ],
+    [conteosDelTipo, isEs, statusFilter, total],
+  )
+
   // ── Skeleton ──────────────────────────────────────────────────────────────
   // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
   // lista, → vacío); lo que ya estaba al montarse no se anima.
@@ -176,7 +219,17 @@ function CartasContent() {
   if (!isLoading && !hasFilters && artifacts.length === 0 && !error) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8 space-y-3">
+      <div className="p-6 lg:p-8 space-y-6">
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.cartas.pageTitle')}
+          descripcion={
+            isEs
+              ? 'Revisa y aprueba las cartas que preparó el agente antes de que salgan.'
+              : 'Review and approve the letters the agent prepared before they go out.'
+          }
+        />
+        <div className="space-y-3">
         <EmptyState
           icon={Envelope}
           title={t('inmobiliaria.ai.cobranza.cartas.empty.title')}
@@ -190,6 +243,7 @@ function CartasContent() {
             </Link>
           </Button>
         </div>
+        </div>
       </div>
       </CrossFade>
     )
@@ -197,15 +251,50 @@ function CartasContent() {
 
   return (
     <CrossFade swapKey="lista">
-    <div className="p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <EncabezadoDePantalla
-          seccion="Cobranza"
-          titulo={t('inmobiliaria.ai.cobranza.cartas.pageTitle')}
-          descripcion={t('inmobiliaria.ai.cobranza.cartas.pageSubtitle')}
+    <div className="p-6 lg:p-8 space-y-6">
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.cartas.pageTitle')}
+        descripcion={
+          isEs
+            ? 'Revisa y aprueba las cartas que preparó el agente antes de que salgan.'
+            : 'Review and approve the letters the agent prepared before they go out.'
+        }
+        acciones={
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/pagos/cobranza/deudores" data-testid="cartas-ir-a-casos">
+              {isEs ? 'Hacer una carta a mano' : 'Write a letter by hand'}
+            </Link>
+          </Button>
+        }
+      />
+
+      {/* LA RESPUESTA: cuántas esperan tu revisión. */}
+      {conteosDelTipo && conteosDelTipo.total > 0 ? (
+        <CifraHeroe
+          data-testid="cartas-por-revisar"
+          rotulo={isEs ? 'Por revisar' : 'To review'}
+          cifra={(conteosDelTipo.porEstado.pending_human_review ?? 0).toLocaleString(locale)}
+          contexto={
+            isEs
+              ? `de ${conteosDelTipo.total.toLocaleString(locale)} ${conteosDelTipo.total === 1 ? 'carta' : 'cartas'}`
+              : `of ${conteosDelTipo.total.toLocaleString(locale)} letters`
+          }
+          total={conteosDelTipo.total}
+          tramos={STATUS_OPTIONS.map((st) => ({
+            clave: st,
+            etiqueta: STATUS_LABELS[st][isEs ? 'es' : 'en'],
+            monto: conteosDelTipo.porEstado[st] ?? 0,
+            tono:
+              st === 'pending_human_review'
+                ? ('aviso' as const)
+                : st === 'sent'
+                  ? ('exito' as const)
+                  : ('neutro' as const),
+            cifra: (conteosDelTipo.porEstado[st] ?? 0).toLocaleString(locale),
+          }))}
         />
-      </div>
+      ) : null}
 
       {/* Filters */}
       {/*
@@ -214,6 +303,14 @@ function CartasContent() {
         sueltos por encima y la pantalla se leía como bloques sin relación.
       */}
       <Card className="overflow-hidden">
+      <div className="border-b border-border px-4 pt-3">
+        <PestanasDeEstado<string>
+          pestanas={pestanas}
+          valor={statusFilter ?? 'todas'}
+          onCambio={(v) => setStatusFilter(v === 'todas' ? undefined : (v as LegalArtifactStatus))}
+          etiqueta={isEs ? 'Filtrar las cartas por estado' : 'Filter letters by status'}
+        />
+      </div>
       <div className="flex flex-wrap gap-3 border-b border-border px-4 py-3">
         {/* Kind filter */}
         <fieldset>
@@ -227,23 +324,6 @@ function CartasContent() {
                 onClick={() => setKindFilter((prev) => (prev === k ? undefined : k))}
               >
                 {KIND_LABELS[k][isEs ? 'es' : 'en']}
-              </Chip>
-            ))}
-          </div>
-        </fieldset>
-
-        {/* Status filter */}
-        <fieldset>
-          <legend className="sr-only">{isEs ? 'Estado' : 'Status'}</legend>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.map((s) => (
-              <Chip
-                key={s}
-                size="sm"
-                selected={statusFilter === s}
-                onClick={() => setStatusFilter((prev) => (prev === s ? undefined : s))}
-              >
-                {STATUS_LABELS[s][isEs ? 'es' : 'en']}
               </Chip>
             ))}
           </div>
@@ -268,16 +348,16 @@ function CartasContent() {
       {/* Error */}
       <Presence show={Boolean(error)}
           role="alert"
-          className="border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2"
+          className="border-b border-border bg-danger-soft px-4 py-3 text-body-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>Error: {error}</span>
+          <span>{isEs ? 'No pudimos cargar las cartas.' : 'We could not load the letters.'} {error}</span>
       </Presence>
 
       {/* Table */}
-        <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
+        <div className="overflow-x-auto max-md:overflow-visible">
+        <Table className="max-md:block">
+          <TableHeader className="max-md:hidden">
             <TableRow>
               {/* Destinatario primero: la tabla mostraba tipo, estado y fechas,
                   o sea que había que adivinar de quién era cada carta. Una
@@ -302,11 +382,11 @@ function CartasContent() {
             </TableRow>
           </TableHeader>
           {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
-          <TableBodyAnimado>
+          <TableBodyAnimado className="max-md:block">
             {artifacts.length === 0 && !isLoading && (
-              <TableRowAnimada key="vacio">
-                <TableCell colSpan={6} className="px-3 py-12 text-center">
-                  <p className="text-sm text-fg-muted">
+              <TableRowAnimada key="vacio" className="max-md:block">
+                <TableCell colSpan={6} className="px-3 py-12 text-center max-md:block">
+                  <p className="text-body-sm text-fg-muted">
                     {isEs
                       ? 'Sin cartas con los filtros seleccionados.'
                       : 'No letters match the selected filters.'}
@@ -323,9 +403,9 @@ function CartasContent() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigateToCarta(a.id)
                 }}
-                className=" cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
               >
-                <TableCell className="px-3 py-2">
+                <TableCell className="px-3 py-2 max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                   <span className="block text-fg">
                     {a.debtorName ?? (isEs ? 'Deudor no encontrado' : 'Debtor not found')}
                   </span>
@@ -335,35 +415,26 @@ function CartasContent() {
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-fg capitalize whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-fg whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
                   {isEs
                     ? (KIND_LABELS[a.kind as LegalArtifactKind]?.es ?? a.kind)
                     : (KIND_LABELS[a.kind as LegalArtifactKind]?.en ?? a.kind)}
+                  <span className="md:hidden"> · {fecha(a.generatedAt)}</span>
                 </TableCell>
-                <TableCell className="px-3 py-2">
+                <TableCell className="px-3 py-2 max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                   <Badge variant={statusBadgeVariant(a.status)}>
                     {isEs
                       ? (STATUS_LABELS[a.status as LegalArtifactStatus]?.es ?? a.status)
                       : (STATUS_LABELS[a.status as LegalArtifactStatus]?.en ?? a.status)}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-3 py-2 text-caption text-fg-muted tabular-nums whitespace-nowrap">
-                  {new Date(a.generatedAt).toLocaleDateString(locale, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+                <TableCell className="px-3 py-2 text-caption text-fg-muted font-mono tabular-nums whitespace-nowrap max-md:hidden">
+                  {fecha(a.generatedAt)}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-caption text-fg-muted tabular-nums whitespace-nowrap">
-                  {a.sentAt
-                    ? new Date(a.sentAt).toLocaleDateString(locale, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })
-                    : '—'}
+                <TableCell className="px-3 py-2 text-caption text-fg-muted font-mono tabular-nums whitespace-nowrap max-md:hidden">
+                  {a.sentAt ? fecha(a.sentAt) : '—'}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-caption text-fg-muted">
+                <TableCell className="px-3 py-2 text-caption text-fg-muted max-md:hidden">
                   {a.physicalSendMethod
                     ? (isEs
                         ? SEND_METHOD_LABELS[a.physicalSendMethod]?.es

@@ -1,13 +1,16 @@
 /**
- * Resultados del agente (GLOW UP, 21-10-2026): lo que recuperó y cómo trabajó,
- * y lo que espera de ti.
- *
- * Lo que fija:
- *   1. «Revisar N escalados» sale sólo con escalaciones PENDIENTES (las del
- *      overview), no con las de la ventana (que incluyen las ya resueltas);
- *   2. las cifras van en dos franjas y la que nunca tiene dato («Ahorro
- *      operativo») ya no se pinta;
- *   3. la mora que SUBE no se anuncia como buena noticia.
+ * Ronda 30 (K8, Nico 23-10-2026: «K8 fusionar»): «Resultados del agente» se
+ * fusionó en el Resumen de Cobranza. Estas pruebas protegían la pantalla; ahora
+ * protegen que su ruta lleve al Resumen y que lo que la pantalla decía siga
+ * dicho ahí, en «Cómo trabajó la cobranza» (`CobranzaResultadosKpis`):
+ *   1. la ruta redirige a `#como-trabajo` (respaldo de `next.config.mjs`);
+ *   2. lo recuperado, los casos cerrados y los escalados están; «Ahorro
+ *      operativo» (siempre sin dato) no sale;
+ *   3. la mora que SUBE no se anuncia como buena noticia;
+ *   4. sin el agregado de recuperación, la cifra dice «Pagado hoy» (era lo
+ *      propio de Resultados; antes el Resumen la llamaba «Valor recuperado»).
+ * «Revisar N escalados» ya es una columna de «Te toca a ti» (su prueba vive en
+ * `CobranzaTeTocaATi.test.tsx`).
  *
  * Convención del repo: createRoot + act, sin RTL.
  */
@@ -21,16 +24,14 @@ void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const h = vi.hoisted(() => ({
-  recovery: { data: null as unknown, isLoading: false, error: null as unknown, refetch: vi.fn() },
-  overview: { data: null as unknown, isLoading: false, error: null as unknown, refetch: vi.fn() },
-  daily: { data: null as unknown, isLoading: false, error: null as unknown, refetch: vi.fn() },
+  recovery: { data: null as unknown, isLoading: false, error: null as unknown, refetch: () => undefined },
+  daily: { data: null as unknown, isLoading: false, error: null as unknown, refetch: () => undefined },
+  redirect: (() => undefined) as (url: string) => void,
 }))
 
+vi.mock('next/navigation', () => ({ redirect: (url: string) => h.redirect(url) }))
 vi.mock('@/lib/hooks/cobranza/use-recovery', () => ({ useRecovery: () => h.recovery }))
-vi.mock('@/lib/hooks/cobranza/use-cartera-overview', () => ({ useCarteraOverview: () => h.overview }))
 vi.mock('@/lib/hooks/cobranza/use-daily-report', () => ({ useDailyReport: () => h.daily }))
-vi.mock('@/lib/hooks/use-auto-refresh', () => ({ useAutoRefresh: () => undefined }))
-vi.mock('@/lib/auth', () => ({ useAuth: () => ({ agency: { name: 'Portofino' } }) }))
 vi.mock('@/lib/i18n', async (original) => ({
   ...(await original<Record<string, unknown>>()),
   useI18n: () => ({
@@ -40,14 +41,18 @@ vi.mock('@/lib/i18n', async (original) => ({
     formatNumber: (n: number) => n.toLocaleString('es-CO'),
   }),
 }))
-vi.mock('@/components/auth/PageGuard', () => ({
-  PageGuard: ({ children }: { children: React.ReactNode }) => children,
+vi.mock('@/lib/i18n/use-tr', () => ({
+  useTr: () => (s: string, v?: Record<string, unknown>) => s.replace(/\{(\w+)\}/g, (_m, k: string) => String(v?.[k] ?? '')),
+  useLocaleDeFechas: () => 'es-CO',
 }))
 
 import ResultadosPage from './page'
+import { CobranzaResultadosKpis } from '@/components/inmobiliaria/cobranza/CobranzaResultadosKpis'
+import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
 
 let host: HTMLDivElement
 let root: Root
+let overview: CarteraOverviewResponse
 
 beforeEach(() => {
   host = document.createElement('div')
@@ -67,8 +72,8 @@ beforeEach(() => {
     moraReducedPct: -3.5,
     moraWindowDays: 90,
   }
-  h.overview.data = { kpis: { escalacionesPendientes: 2, llamadasHoy: 10, pagadoHoyCop: 0 } }
   h.daily.data = null
+  overview = { kpis: { escalacionesPendientes: 2, llamadasHoy: 10, pagadoHoyCop: 0 } } as unknown as CarteraOverviewResponse
 })
 
 afterEach(() => {
@@ -78,49 +83,42 @@ afterEach(() => {
 
 const montar = async () => {
   await act(async () => {
-    root.render(<ResultadosPage />)
+    root.render(<CobranzaResultadosKpis overview={overview} />)
   })
 }
 const q = (id: string) => host.querySelector(`[data-testid="${id}"]`)
 
-describe('Resultados del agente', () => {
-  it('con escalaciones pendientes, la acción principal es revisarlas (las pendientes, no las de la ventana)', async () => {
-    await montar()
-    const cta = q('resultados-revisar-escalados')
-    expect(cta?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cobranza/escalaciones')
-    expect(cta?.textContent).toContain('Revisar 2 escalados')
+describe('Resultados del agente, fusionado en el Resumen (ronda 30, K8)', () => {
+  it('la ruta vieja lleva al Resumen, a «Cómo trabajó la cobranza»', () => {
+    let destino = ''
+    h.redirect = (url) => {
+      destino = url
+    }
+    ResultadosPage()
+    expect(destino).toBe('/panel/inmobiliaria/pagos/cobranza#como-trabajo')
   })
 
-  it('sin escalaciones pendientes no hay acción principal; la analítica y el reporte siguen a la mano', async () => {
-    h.overview.data = { kpis: { escalacionesPendientes: 0, llamadasHoy: 10, pagadoHoyCop: 0 } }
+  it('lo recuperado, los casos cerrados y los escalados están; «Ahorro operativo» (siempre sin dato) no sale', async () => {
     await montar()
-    expect(q('resultados-revisar-escalados')).toBeNull()
-    expect(q('resultados-ver-analitica')).not.toBeNull()
-    expect(q('resultados-ver-reporte')).not.toBeNull()
-  })
-
-  it('lo recuperado va arriba como la respuesta, las demás cifras en dos franjas y «Ahorro operativo» (siempre sin dato) ya no sale', async () => {
-    await montar()
-    // Glow up 22-10: lo recuperado es LA cifra de la pantalla (CifraHeroe), fuera de la franja.
-    expect(q('resultado-kpi-recuperado')).not.toBeNull()
-    expect(q('franja-recupero')?.querySelector('[data-testid="resultado-kpi-recuperado"]')).toBeNull()
-    expect(q('franja-recupero')?.querySelector('[data-testid="resultado-kpi-casos-cerrados"]')).not.toBeNull()
-    expect(q('franja-trabajo')?.querySelector('[data-testid="resultado-kpi-escalados"]')).not.toBeNull()
-    expect(q('resultado-kpi-ahorro-operativo')).toBeNull()
+    expect(q('cobranza-kpi-recuperado')?.textContent).toContain('Valor recuperado')
+    expect(q('cobranza-kpi-casos-cerrados')).not.toBeNull()
+    expect(q('cobranza-kpi-escalados')).not.toBeNull()
+    expect(q('cobranza-kpi-ahorro-operativo')).toBeNull()
   })
 
   it('la mora que sube se dice como subida', async () => {
     await montar()
-    const mora = q('resultado-kpi-mora-reducida')
+    const mora = q('cobranza-kpi-mora')
     expect(mora?.textContent).toContain('Mora aumentada')
     expect(mora?.textContent).toContain('Subió en 90 días')
   })
 
-  it('sin ningún dato, el vacío con su ilustración y el encabezado con sus acciones', async () => {
+  it('sin el agregado de recuperación, la cifra es lo pagado hoy y se dice así', async () => {
     h.recovery.data = null
-    h.overview.data = null
+    h.daily.data = { summary: { payments_today_total_cop: 850_000 } }
     await montar()
-    expect(q('resultados-vacio')).not.toBeNull()
-    expect(q('resultados-ver-analitica')).not.toBeNull()
+    const recuperado = q('cobranza-kpi-recuperado')
+    expect(recuperado?.textContent).toContain('Pagado hoy')
+    expect(recuperado?.textContent).not.toContain('Valor recuperado')
   })
 })

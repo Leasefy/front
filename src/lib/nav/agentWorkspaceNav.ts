@@ -456,6 +456,12 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  * datos, eran métricas sin fuente posible.
  *
  * La ruta y su i18n se quedan (sólo alcanzable escribiendo la URL).
+ *
+ * Ronda 30 (K8, Nico 23-10-2026: «K8 fusionar»): Resultados, Analítica y
+ * Pendientes redirigen al Resumen desde `next.config.mjs`
+ * (`cobranza-retiradas.data.mjs`): las dos primeras a «Cómo trabajó la
+ * cobranza» (`#como-trabajo`), Pendientes a «Te toca a ti» (`#te-toca-a-ti`),
+ * que ahora pliega la lista con buscador (`ListaDePendientes`).
  */
 
 /**

@@ -9,7 +9,7 @@
  * incumplidas y tasa de recuperación. No eran métricas sin datos todavía —
  * eran métricas que no podían existir, dijera lo que dijera la base.
  *
- * Las de verdad estaban en `/cobranza/resultados`, que salía del agregado
+ * Las de verdad estaban en `/cobranza/resultados` (hoy redirige al Resumen, ronda 30 K8), que salía del agregado
  * `GET /cobranza/recovery`. Esa pantalla se fusionó acá (decisión de Nico,
  * 2026-08-08): hacía el mismo trabajo que el Resumen y hasta tenía una tarjeta
  * al pie explicando que ella no era la analítica ni el reporte.
@@ -89,6 +89,11 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
       ov?.kpis.pagadoHoyCop ??
       null
 
+    // Ronda 30 (K8): lo que «Resultados» tenía de propio (revisora r25, #3): sin el
+    // agregado, la cifra es lo pagado HOY y se dice así, no «Valor recuperado»
+    // (mezclaba periodos). La pantalla se fusionó aquí.
+    const recuperadoEsDeHoy = rec?.recoveredValueCop == null && recuperadoCop != null
+
     const casosCerrados = rec?.casesClosed ?? null
     const gestionados = rec?.casesManaged ?? ov?.kpis.llamadasHoy ?? null
     const tiempoRecuperacion = rec?.avgRecoveryDays ?? null
@@ -118,10 +123,10 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
     return [
       {
         key: 'recuperado',
-        label: 'Valor recuperado',
+        label: recuperadoEsDeHoy ? 'Pagado hoy' : 'Valor recuperado',
         icon: CurrencyDollar,
         value: recuperadoCop != null ? formatCurrency(recuperadoCop) : null,
-        sublabel: 'Recaudo confirmado',
+        sublabel: recuperadoEsDeHoy ? 'Recaudo confirmado de hoy' : 'Recaudo confirmado',
       },
       {
         key: 'promesas-cumplidas',

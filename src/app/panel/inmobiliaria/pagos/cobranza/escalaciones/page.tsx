@@ -16,7 +16,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { CheckCircle, MagnifyingGlass } from '@phosphor-icons/react'
 import { Card, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { BackButton } from '@/components/ui/back-button'
@@ -49,10 +48,11 @@ import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { CajonDelCaso } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
+import EscalationDetailClient from './[id]/EscalationDetailClient'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
-  const router = useRouter()
   const { user } = useAuth()
   const { canAccess } = usePermissionsContext()
 
@@ -91,12 +91,18 @@ function EscalacionesContent() {
     }
   }, [hasAssignPerm])
 
-  const handleOpenDetail = useCallback(
-    (id: string) => {
-      router.push(`/panel/inmobiliaria/pagos/cobranza/escalaciones/${id}`)
-    },
-    [router],
-  )
+  // Ronda 30 (K4, Nico: «K4 cajón»): «Ver» abre la escalación en un cajón sobre
+  // esta lista (antes `router.push` a `escalaciones/[id]`, que sigue viva para
+  // los enlaces profundos). Al cerrarse —o al resolverla— la lista se vuelve a leer.
+  const [abierta, setAbierta] = useState<string | null>(null)
+  const handleOpenDetail = useCallback((id: string) => setAbierta(id), [])
+  const cerrarElCajon = useCallback(() => {
+    setAbierta(null)
+    void mutate()
+  }, [mutate])
+  const laAbierta = abierta
+    ? [...(data?.open ?? []), ...(data?.assigned ?? []), ...(data?.resolved ?? [])].find((e) => e.id === abierta) ?? null
+    : null
 
   // Tomar y asignar ignoraban el resultado: si fallaban, la tarjeta volvía a
   // su sitio sin decir nada. Ahora avisan con el traductor (un 409 dice su
@@ -474,6 +480,20 @@ function EscalacionesContent() {
         }
         onAssign={handleAssign}
       />
+
+      <CajonDelCaso
+        abierto={abierta !== null}
+        onCerrar={cerrarElCajon}
+        titulo={laAbierta?.debtor_name ?? laAbierta?.debtor_id_masked ?? t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
+        descripcion={
+          locale.startsWith('es')
+            ? 'Por qué el agente lo subió a una persona, quién lo tiene y cómo se cierra.'
+            : 'Why the agent handed it to a person, who has it and how it closes.'
+        }
+        data-testid="escalacion-cajon"
+      >
+        {abierta ? <EscalationDetailClient escalationId={abierta} enCajon onResuelto={cerrarElCajon} /> : null}
+      </CajonDelCaso>
     </div>
     </CrossFade>
   )

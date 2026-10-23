@@ -44,7 +44,10 @@ import { CheckCircle, Clock, Siren, Warning } from '@phosphor-icons/react'
 import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
-import { Button } from '@/components/ui'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+// El ancla del tablero: «Atender N» del encabezado y la ruta vieja `/pendientes` aterrizan aquí.
+import { ANCLA_TE_TOCA } from '@/lib/cobranza/anclas-del-resumen'
+import { ListaDePendientes } from '@/components/inmobiliaria/cobranza/ListaDePendientes'
 import { usePendientes, type PendienteItem } from '@/lib/hooks/cobranza/use-pendientes'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { errorLegible } from '@/lib/cobranza/error-legible'
@@ -54,7 +57,6 @@ import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
-const PENDIENTES_HREF = '/panel/inmobiliaria/pagos/cobranza/pendientes'
 
 // ── Columnas del tablero ─────────────────────────────────────────────────────
 
@@ -150,7 +152,7 @@ export interface CobranzaTeTocaATiProps {
 export function CobranzaTeTocaATi({ enMora, gestionados, onTotalQueEspera }: CobranzaTeTocaATiProps) {
   const tr = useTr();
   const { t } = useI18n()
-  const { items, isLoading, error } = usePendientes()
+  const { items, counts, isLoading, error } = usePendientes()
   const { data: reporte } = useDailyReport()
 
   const alertas = reporte?.alerts ?? []
@@ -194,7 +196,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados, onTotalQueEspera }: Cob
         : `${totalQueEspera} ${totalQueEspera === 1 ? 'decisión espera' : 'decisiones esperan'} tu aprobación.`
 
   return (
-    <section data-testid="cobranza-te-toca" aria-labelledby="cobranza-te-toca-titulo">
+    <section id={ANCLA_TE_TOCA} className="scroll-mt-6" data-testid="cobranza-te-toca" aria-labelledby="cobranza-te-toca-titulo">
       {/* UN recuadro: título arriba, columnas debajo, alertas y pie al final. */}
       <div
         data-testid="te-toca-tablero"
@@ -356,11 +358,17 @@ export function CobranzaTeTocaATi({ enMora, gestionados, onTotalQueEspera }: Cob
               </div>
             )}
 
-            <Button asChild variant="outline" size="sm" hideArrow className="w-full sm:w-auto">
-              <Link href={PENDIENTES_HREF}>
-                {en ? `See the ${totalQueEspera} pending` : <>{tr("Ver los")} {totalQueEspera} {tr("pendientes")}</>}
-              </Link>
-            </Button>
+            {/* Ronda 30 (K8, Nico: «K8 fusionar»): la pantalla «Pendientes» repetía
+                este tablero; lo suyo —buscar, filtrar por grupo y paginar— entra aquí,
+                plegado (antes un botón que llevaba a otra pantalla con lo mismo). */}
+            <MasDetalles
+              etiqueta={en ? `See the ${totalQueEspera} as a list` : tr('Ver los {n} en lista', { n: totalQueEspera })}
+              etiquetaAbierto={en ? 'Hide the list' : tr('Ocultar la lista')}
+              className="border-t border-border pt-2.5"
+              data-testid="te-toca-en-lista"
+            >
+              <ListaDePendientes items={items} counts={counts} />
+            </MasDetalles>
           </>
         )}
         </CrossFade>

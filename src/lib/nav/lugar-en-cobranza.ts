@@ -23,10 +23,8 @@ export interface Vuelta {
 
 /** Las sub-pantallas (ruta EXACTA) y su vuelta. Las fichas (`/[id]`) ya traen la suya. */
 export const VUELTA_DE_LA_SUBPANTALLA: Record<string, Vuelta> = {
-  [`${C}/analitica`]: { href: C, label: 'Resumen' },
-  [`${C}/resultados`]: { href: C, label: 'Resumen' },
+  // Ronda 30 (K8): sin analítica, resultados ni pendientes: redirigen al Resumen.
   [`${C}/reporte`]: { href: C, label: 'Resumen' },
-  [`${C}/pendientes`]: { href: C, label: 'Resumen' },
   [`${C}/inbox`]: { href: C, label: 'Resumen' },
   [`${C}/escalaciones`]: { href: C, label: 'Resumen' },
   [`${C}/reporte/suscripcion`]: { href: `${C}/reporte`, label: 'Reporte diario' },

@@ -21,7 +21,9 @@ describe('el lugar en Cobranza', () => {
   it('las sub-pantallas sin pestaña tienen su vuelta; las pestañas y las fichas no la duplican', () => {
     expect(vueltaDeLaRuta(`${C}/compliance/audit`)).toEqual({ href: `${C}/compliance`, label: 'Cumplimiento' })
     expect(vueltaDeLaRuta(`${C}/reporte/thresholds`)?.href).toBe(`${C}/reporte`)
-    expect(vueltaDeLaRuta(`${C}/analitica`)?.href).toBe(C)
+    // Ronda 30 (K8): «Analítica» se fusionó en el Resumen y redirige (next.config.mjs): ya no pinta vuelta.
+    expect(vueltaDeLaRuta(`${C}/reporte`)?.href).toBe(C)
+    expect(vueltaDeLaRuta(`${C}/analitica`)).toBeNull()
     expect(vueltaDeLaRuta(`${C}/cartas`)).toBeNull()
     expect(vueltaDeLaRuta(`${C}/deudores/9`)).toBeNull()
   })

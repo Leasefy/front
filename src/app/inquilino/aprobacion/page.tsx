@@ -154,7 +154,7 @@ function AprobadoView({
     <div className="space-y-6">
       {/* GLOW UP (22-10): LA RESPUESTA en una CifraHeroe con su estado (punto y palabra) y los datos del buró en
           una línea al pie, en vez de dos tarjetas con borde dentro de la tarjeta. */}
-      <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-6">
+      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-6">
         <StatusBadge tone="success">{tf(`${NS}.aprobado.badge`, 'Aprobado')}</StatusBadge>
 
         {tieneTope ? (
@@ -167,7 +167,7 @@ function AprobadoView({
                 <span className="block max-w-lg leading-relaxed">
                   {tf(
                     `${NS}.aprobado.ayuda`,
-                    'Puedes postularte a cualquier propiedad con un canon hasta ese valor. Y a todas las que quieras: con esta aprobación no vuelves a pagar.',
+                    'Puedes postularte a cualquier inmueble con un canon hasta ese valor. Y a todos los que quieras: con esta aprobación no vuelves a pagar.',
                   )}
                 </span>
                 {tieneDatosDeBuro && (
@@ -323,7 +323,7 @@ function RechazadoView({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
+      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
         {/* Informativo, no error (Nico, 02-10): es un «no», pero el texto dice
             que no es definitivo y que hay salidas; un medallón rojo con una ✕
             lo contradecía. El mismo tono que el modal de `PostularButton`. */}
@@ -414,7 +414,7 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
       title: tf(`${NS}.pasos.dos.title`, 'Eliges'),
       desc: tf(
         `${NS}.pasos.dos.desc`,
-        'Te mostramos las propiedades que van con tu tope aprobado, para que no pierdas tiempo con las que no aplican.',
+        'Te mostramos los inmuebles que van con tu tope aprobado, para que no pierdas tiempo con los que no aplican.',
       ),
     },
     {
@@ -422,14 +422,14 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
       title: tf(`${NS}.pasos.tres.title`, 'El propietario decide'),
       desc: tf(
         `${NS}.pasos.tres.desc`,
-        'Te postulas a las que quieras con el mismo estudio, sin volver a pagar.',
+        'Te postulas a los que quieras con el mismo estudio, sin volver a pagar.',
       ),
     },
   ]
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
+      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
         {/* h2 y no h1: el h1 de la página es "Mi tope de arriendo". */}
         <h2 className="text-h3 text-fg">
           {tf(`${NS}.vacio.title`, 'Todavía no tienes una aprobación')}
@@ -437,12 +437,14 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
         <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
           {tf(
             `${NS}.vacio.desc`,
-            'Con una aprobación sabes hasta cuánto puedes arrendar, y te postulas a todas las propiedades que quieras con el mismo estudio.',
+            'Con una aprobación sabes hasta cuánto puedes arrendar, y te postulas a todos los inmuebles que quieras con el mismo estudio.',
           )}
         </p>
         <div className="pt-2">
           {/* `/aprobacion` es la entrada del flujo vigente (Wompi, Slice 1). */}
-          <Button asChild size="lg">
+          {/* A 390 el botón va a lo ancho y parte el texto: no se sale de la
+              tarjeta (revisora r25, R1). */}
+          <Button asChild size="lg" className="w-full sm:w-auto whitespace-normal h-auto min-h-12 py-3 text-center">
             <Link href="/aprobacion">
               {tf(`${NS}.vacio.cta`, 'Conoce hasta cuánto te arrendamos')}
             </Link>
@@ -459,7 +461,7 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
         <ol className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {pasos.map((p) => (
             <li key={p.n} className="rounded-lg border border-border bg-surface p-5 space-y-2">
-              <span className="font-mono tabular-nums text-2xl font-light text-primary/40 leading-none">
+              <span className="font-mono tabular-nums text-caption text-fg-subtle leading-none">
                 {p.n}
               </span>
               <p className="text-sm font-medium text-fg">{p.title}</p>
@@ -478,7 +480,7 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
 
 function ExpiradoView({ tf }: { tf: (k: string, f: string) => string }) {
   return (
-    <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
+    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
       <Clock className="w-6 h-6 text-warning" aria-hidden="true" />
       <h2 className="text-h3 text-fg">
         {tf(`${NS}.expirado.title`, 'Tu tiempo para completar la aprobación venció')}
@@ -510,7 +512,7 @@ function ErrorEstudioView({
   onReintentar: () => void
 }) {
   return (
-    <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
+    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
       <WarningOctagon className="w-6 h-6 text-danger" aria-hidden="true" />
       <h2 className="text-h3 text-fg">
         {tf(`${NS}.error.title`, 'Algo falló al hacer tu estudio')}

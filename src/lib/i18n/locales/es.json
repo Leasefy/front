@@ -12899,7 +12899,7 @@
       "aprobado": {
         "badge": "Aprobado",
         "label": "Estás aprobado hasta",
-        "ayuda": "Puedes postularte a cualquier inmueble con un canon hasta ese valor. Y a todas las que quieras: con esta aprobación no vuelves a pagar.",
+        "ayuda": "Puedes postularte a cualquier inmueble con un canon hasta ese valor. Y a todos los que quieras: con esta aprobación no vuelves a pagar.",
         "sinTope": {
           "title": "Estás aprobado",
           "ayuda": "Estamos terminando de calcular hasta cuánto podemos respaldarte. Te avisamos apenas esté listo."
@@ -12951,17 +12951,17 @@
         },
         "dos": {
           "title": "Eliges",
-          "desc": "Te mostramos los inmuebles que van con tu tope aprobado, para que no pierdas tiempo con las que no aplican."
+          "desc": "Te mostramos los inmuebles que van con tu tope aprobado, para que no pierdas tiempo con los que no aplican."
         },
         "tres": {
           "title": "El propietario decide",
-          "desc": "Te postulas a las que quieras con el mismo estudio, sin volver a pagar."
+          "desc": "Te postulas a los que quieras con el mismo estudio, sin volver a pagar."
         }
       }
     },
     "postularse": {
       "titulo": "Qué pasa cuando te postulas",
-      "intro": "Estos inmuebles están dentro de lo que las aseguradoras te aprobaron, así que puedes tomarlas. Postularte es el primer paso de un proceso, no el final.",
+      "intro": "Estos inmuebles están dentro de lo que las aseguradoras te aprobaron, así que puedes tomarlos. Postularte es el primer paso de un proceso, no el final.",
       "pasos": {
         "postulas": {
           "titulo": "Te postulas",

@@ -29,7 +29,7 @@ export default function DeterioroPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Contabilidad"
+            seccion="Dinero"
             titulo="Deterioro de cartera"
             descripcion="Cuánta de la cartera se reconoce como incobrable, por edades."
             ayuda={

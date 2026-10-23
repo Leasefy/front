@@ -29,7 +29,7 @@ export default function PeriodoDeNominaPage() {
             Liquidación
           </Link>
           <EncabezadoDePantalla
-            seccion="Nómina"
+            seccion="Dinero"
             titulo="El período"
             descripcion="Cada persona con su neto y su desprendible; lo que un contador tiene que validar sale marcado antes de aprobar."
           />

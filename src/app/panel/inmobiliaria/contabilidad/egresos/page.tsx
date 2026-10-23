@@ -31,7 +31,7 @@ export default function EgresosPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Contabilidad"
+            seccion="Dinero"
             titulo="Egresos"
             descripcion="Lo que la inmobiliaria le paga a sus proveedores, abogados, técnicos y empleados."
           />

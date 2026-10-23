@@ -31,7 +31,7 @@ export default function NominaElectronicaPage() {
             Nómina
           </Link>
           <EncabezadoDePantalla
-            seccion="Nómina"
+            seccion="Dinero"
             titulo="Nómina electrónica (DIAN)"
             descripcion="Los documentos de nómina electrónica, su CUNE y lo que falta por transmitir."
             ayuda={

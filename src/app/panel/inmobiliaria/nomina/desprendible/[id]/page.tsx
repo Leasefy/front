@@ -28,7 +28,7 @@ export default function DesprendiblePage() {
             Liquidación
           </Link>
           <EncabezadoDePantalla
-            seccion="Nómina"
+            seccion="Dinero"
             titulo="Desprendible de pago"
             descripcion="Cada renglón con su base, sus días u horas y su norma; los aportes del empleador van aparte porque son costo, no descuento."
           />

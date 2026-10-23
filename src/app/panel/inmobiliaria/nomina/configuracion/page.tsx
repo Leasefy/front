@@ -31,7 +31,7 @@ export default function ConfiguracionDeNominaPage() {
             Nómina
           </Link>
           <EncabezadoDePantalla
-            seccion="Nómina"
+            seccion="Dinero"
             titulo="Configuración del año"
             descripcion="Las cifras del año y los factores con los que se liquida, cada uno con su norma."
             ayuda={

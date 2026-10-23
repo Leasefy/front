@@ -31,7 +31,7 @@ export default function ProvisionesDeNominaPage() {
             Nómina
           </Link>
           <EncabezadoDePantalla
-            seccion="Nómina"
+            seccion="Dinero"
             titulo="Prestaciones sociales"
             descripcion="Prima, cesantías, intereses y vacaciones: lo causado cada mes por persona y su pago."
             ayuda={

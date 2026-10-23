@@ -26,7 +26,7 @@ export default function PlanDeCuentasPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Contabilidad"
+            seccion="Dinero"
             titulo="Plan de cuentas"
             descripcion="El PUC de la inmobiliaria: las cuentas a las que va cada asiento."
             ayuda={

@@ -30,7 +30,7 @@ export default function GastosPage() {
 
   return (
     <PageGuard module="reportes" roles={ROLES_DE_LA_CONTABILIDAD} seccion="Contabilidad" action="view">
-      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      <div className="space-y-6 p-6 lg:p-8">
         <Link
           href="/panel/inmobiliaria/contabilidad"
           className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
@@ -45,7 +45,7 @@ export default function GastosPage() {
           estadoInicial={estado}
           encabezado={(accionPrincipal) => (
             <EncabezadoDePantalla
-              seccion="Contabilidad"
+              seccion="Dinero"
               titulo="Gastos de la inmobiliaria"
               descripcion="Registra la factura de un proveedor, cáusala para que quede en el libro y págala."
               ayuda={

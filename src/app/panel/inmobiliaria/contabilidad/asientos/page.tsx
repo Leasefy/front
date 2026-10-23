@@ -13,7 +13,7 @@ import { ROLES_DE_LA_CONTABILIDAD } from '@/lib/auth/roles-de-la-contabilidad';
 export default function AsientosPage() {
   return (
     <PageGuard module="reportes" roles={ROLES_DE_LA_CONTABILIDAD} seccion="Contabilidad">
-      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      <div className="space-y-6 p-6 lg:p-8">
         <Link
           href="/panel/inmobiliaria/contabilidad"
           className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
@@ -24,7 +24,7 @@ export default function AsientosPage() {
         <LibroDeAsientos
           encabezado={(abrirAsientoManual) => (
             <EncabezadoDePantalla
-              seccion="Contabilidad"
+              seccion="Dinero"
               titulo="Asientos"
               descripcion="Encuentra un asiento, ábrelo con sus líneas y, si está mal, revérsalo."
               ayuda={

@@ -28,7 +28,7 @@ export default function CertificadosPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Contabilidad"
+            seccion="Dinero"
             titulo="Certificados de retención"
             descripcion="Lo que los inquilinos le retuvieron a cada propietario en el año, para que pueda declarar."
             ayuda={

@@ -47,7 +47,7 @@ export default function ExogenaPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Contabilidad"
+            seccion="Dinero"
             titulo="Información exógena"
             descripcion="Los seis formatos que le toca presentar a una inmobiliaria, armados contra el libro."
             ayuda={

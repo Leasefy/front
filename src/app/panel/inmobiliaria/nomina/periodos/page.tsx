@@ -31,7 +31,7 @@ export default function PeriodosDeNominaPage() {
             Nómina
           </Link>
           <EncabezadoDePantalla
-            seccion="Nómina"
+            seccion="Dinero"
             titulo="Liquidación"
             descripcion="Armar el borrador de cada período, aprobarlo, asentarlo y marcarlo pagado."
             ayuda={

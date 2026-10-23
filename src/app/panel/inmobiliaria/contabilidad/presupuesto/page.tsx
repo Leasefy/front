@@ -28,7 +28,7 @@ export default function PresupuestoPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Contabilidad"
+            seccion="Dinero"
             titulo="Presupuesto"
             descripcion="Lo que se planeó para el mes, contra lo que pasó y contra el mismo mes del año pasado."
             ayuda={

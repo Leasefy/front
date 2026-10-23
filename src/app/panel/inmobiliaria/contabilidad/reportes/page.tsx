@@ -23,7 +23,7 @@ export default function ReportesContablesPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Contabilidad"
+            seccion="Dinero"
             titulo="Reportes contables"
             descripcion="El libro como lo pide el contador: balance de prueba, mayor, auxiliares y cartera."
             ayuda={

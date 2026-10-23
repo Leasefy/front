@@ -30,7 +30,7 @@ export default function ConceptosDeNominaPage() {
             Nómina
           </Link>
           <EncabezadoDePantalla
-            seccion="Nómina"
+            seccion="Dinero"
             titulo="Conceptos y cuentas"
             descripcion="Lo que se devenga, se deduce, aporta el empleador y se provisiona, con su cuenta del PUC: sin cuenta se liquida, pero no se asienta (el asiento no se escribe a medias)."
             ayuda={<PorQueDosMarcas />}

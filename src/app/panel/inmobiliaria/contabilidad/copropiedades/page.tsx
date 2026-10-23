@@ -27,7 +27,7 @@ export default function CopropiedadesPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Contabilidad"
+            seccion="Dinero"
             titulo="Copropiedades"
             descripcion="El conjunto o el edificio donde está el inmueble, con su NIT."
             ayuda={

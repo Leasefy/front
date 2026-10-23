@@ -31,7 +31,7 @@ export default function PersonasDeNominaPage() {
             Nómina
           </Link>
           <EncabezadoDePantalla
-            seccion="Nómina"
+            seccion="Dinero"
             titulo="Personas"
             descripcion="Quién está en nómina y cómo se le liquida: empleados, asesores, contratistas y aprendices."
             ayuda={

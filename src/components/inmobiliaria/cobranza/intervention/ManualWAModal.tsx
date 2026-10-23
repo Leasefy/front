@@ -387,7 +387,7 @@ export function ManualWAModal({
                   {vistaPrevia.texto}
                 </div>
                 {vistaPrevia.huecos.length > 0 && (
-                  <p className="mt-1 text-[11px] text-warning">
+                  <p className="mt-1 text-caption text-warning">
                     {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.previewMissing')}
                   </p>
                 )}
@@ -400,7 +400,7 @@ export function ManualWAModal({
                 <p className="text-caption font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.variablesLabel')}
                 </p>
-                <p className="mb-2 mt-0.5 text-[11px] leading-relaxed text-fg-muted">
+                <p className="mb-2 mt-0.5 text-caption leading-relaxed text-fg-muted">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.variablesHelp')}
                 </p>
                 <div className="space-y-2.5">
@@ -418,7 +418,7 @@ export function ManualWAModal({
                             {etiqueta ?? v}
                           </span>
                           {etiqueta && (
-                            <span className="font-mono text-[10px] text-fg-subtle">{v}</span>
+                            <span className="font-mono text-caption text-fg-subtle">{v}</span>
                           )}
                         </span>
                         <Input
@@ -463,7 +463,7 @@ export function ManualWAModal({
         </Presence>
 
         {vacias.length > 0 && !envMissing && templates.length > 0 && (
-          <p className="text-[11px] text-warning" data-testid="wa-faltan-datos">
+          <p className="text-caption text-warning" data-testid="wa-faltan-datos">
             {vacias.length === 1 ? 'Falta 1 dato del mensaje' : `Faltan ${vacias.length} datos del mensaje`}{tr(": complétalo para poder enviarlo.")}
           </p>
         )}

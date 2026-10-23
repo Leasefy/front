@@ -329,7 +329,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
           {/* Tab nav — md+ horizontal */}
           <TabsList
             variant="underline"
-            aria-label="Debtor detail tabs"
+            aria-label="Secciones del caso"
             className="hidden md:flex mb-4"
           >
             {TAB_KEYS.map((k) => (

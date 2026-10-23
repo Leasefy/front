@@ -350,37 +350,6 @@ export function CobranzaPorVoz({
         )}
       </div>
 
-      {kpis || hoy ? (
-        <FranjaDeCifras fila="lg" aria-label="La cobranza en cifras">
-          <Cifra
-            etiqueta="Cobrado hoy"
-            valor={hoy ? fmtCOP(num(hoy.payments_today_total)) : '—'}
-            detalle={
-              hoy
-                ? [`ayer ${fmtCOP(num(hoy.payments_yesterday_total))}`, frenteAAyer(num(hoy.payments_today_total), num(hoy.payments_yesterday_total))]
-                    .filter(Boolean)
-                    .join(' · ')
-                : undefined
-            }
-          />
-          <Cifra
-            etiqueta="Costo este mes"
-            valor={kpis ? fmtCOP(costo) : '—'}
-            detalle={kpis ? `llamadas ${fmtCOP(costoVapi)} · IA ${fmtCOP(costoClaude)}` : undefined}
-          />
-          <Cifra
-            etiqueta="Deudores activos"
-            valor={kpis ? num(kpis.debtors_active) : '—'}
-            detalle={kpis ? contar(num(kpis.debtors_closed), 'cerrado', 'cerrados') : undefined}
-          />
-          <Cifra
-            etiqueta="Cartera atrasada"
-            valor={kpis ? num(kpis.cartera_atrasada_count) : '—'}
-            detalle={kpis ? fmtCOP(num(kpis.cartera_atrasada_amount)) : undefined}
-            tono={kpis && num(kpis.cartera_atrasada_count) > 0 ? 'aviso' : undefined}
-          />
-        </FranjaDeCifras>
-      ) : null}
 
       <div className="space-y-3">
         <h2 className="text-subtitle font-medium text-fg">Escalaciones abiertas</h2>
@@ -419,6 +388,41 @@ export function CobranzaPorVoz({
       </div>
 
       <MasDetalles etiqueta="Ver más cifras de la cobranza" etiquetaAbierto="Ocultar las cifras de la cobranza" data-testid="resumen-mas-cifras">
+        {/* Ronda 30 (mandato: lo que se consulta, plegado): las cuatro cifras de apoyo van aquí (antes a la vista
+            bajo la cifra: cinco números arriba). */}
+        <div className="mb-4">
+        {kpis || hoy ? (
+          <FranjaDeCifras fila="lg" aria-label="La cobranza en cifras">
+            <Cifra
+              etiqueta="Cobrado hoy"
+              valor={hoy ? fmtCOP(num(hoy.payments_today_total)) : '—'}
+              detalle={
+                hoy
+                  ? [`ayer ${fmtCOP(num(hoy.payments_yesterday_total))}`, frenteAAyer(num(hoy.payments_today_total), num(hoy.payments_yesterday_total))]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : undefined
+              }
+            />
+            <Cifra
+              etiqueta="Costo este mes"
+              valor={kpis ? fmtCOP(costo) : '—'}
+              detalle={kpis ? `llamadas ${fmtCOP(costoVapi)} · IA ${fmtCOP(costoClaude)}` : undefined}
+            />
+            <Cifra
+              etiqueta="Deudores activos"
+              valor={kpis ? num(kpis.debtors_active) : '—'}
+              detalle={kpis ? contar(num(kpis.debtors_closed), 'cerrado', 'cerrados') : undefined}
+            />
+            <Cifra
+              etiqueta="Cartera atrasada"
+              valor={kpis ? num(kpis.cartera_atrasada_count) : '—'}
+              detalle={kpis ? fmtCOP(num(kpis.cartera_atrasada_amount)) : undefined}
+              tono={kpis && num(kpis.cartera_atrasada_count) > 0 ? 'aviso' : undefined}
+            />
+          </FranjaDeCifras>
+        ) : null}
+        </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Tarjeta titulo="Lo cobrado frente al costo" descripcion="Los últimos 14 días.">
             <BarrasDeCatorceDias trend={d?.dailyTrend ?? []} />

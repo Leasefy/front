@@ -279,7 +279,7 @@ export default function OnboardingPage() {
       ) : null}
 
       <PestanasDeLaFicha
-        etiqueta="Secciones del onboarding"
+        etiqueta="Secciones de las inmobiliarias nuevas"
         pestanas={[
           {
             id: 'recorrido',

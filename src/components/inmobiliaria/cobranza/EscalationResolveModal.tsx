@@ -295,7 +295,7 @@ export function EscalationResolveModal({
               'inmobiliaria.ai.cobranza.escalaciones.resolveModal.textLabel',
             )}
           />
-          <div className="mt-1 flex items-start justify-between gap-3 text-[11px]">
+          <div className="mt-1 flex items-start justify-between gap-3 text-caption">
             {/* Vacío, el mínimo es una pista; escrito y corto (o largo), un error. */}
             <ErrorDelCampo
               id="resolve-text-error"

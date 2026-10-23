@@ -277,13 +277,13 @@ describe('sin estudio — enseña el camino antes de pedir datos', () => {
     const t = texto()
     expect(t).toContain('Te estudiamos')
     expect(t).toContain('Eliges')
-    expect(t).toContain('El propietario decide')
+    expect(t).toContain('Te postulas')
   })
 
   it('sin order (nunca se consultó) también cae aquí', () => {
     montar(null)
     render()
-    expect(texto()).toContain('Todavía no tienes una aprobación')
+    expect(texto()).toContain('Todavía no conoces tu tope')
   })
 
   it('el CTA por defecto va al flujo vigente de /aprobacion', () => {

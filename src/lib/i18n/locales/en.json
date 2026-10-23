@@ -12913,9 +12913,9 @@
         "desc": "We're asking every insurer we work with, not just one. This can take a few minutes."
       },
       "vacio": {
-        "title": "You don't have an approval yet",
-        "desc": "With an approval you know how much you can rent for, and you apply to as many properties as you want with the same assessment.",
-        "cta": "Find out how much you can rent for",
+        "title": "You don't know your limit yet",
+        "desc": "With your limit you know how much you can rent for, and you apply to as many properties as you want with the same assessment.",
+        "cta": "Find out my limit",
         "comoFunciona": "How it works"
       },
       "pasos": {
@@ -12928,7 +12928,7 @@
           "desc": "We show you the properties that fit your approved cap, so you don't waste time on ones that don't."
         },
         "tres": {
-          "title": "The owner decides",
+          "title": "You apply",
           "desc": "You apply to as many as you want with the same assessment, without paying again."
         }
       }

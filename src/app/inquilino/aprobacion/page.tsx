@@ -24,6 +24,7 @@
  * ni "estudio": se dice **aprobación** y **tope aprobado**.
  */
 
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { StatusBadge } from '@leasefy/cadence';
@@ -102,7 +103,7 @@ export default function AprobacionPage() {
       <EncabezadoDePantalla
         seccion={tf('nav.buscarArriendo', 'Buscar arriendo')}
         titulo={tf(`${NS}.titulo`, 'Mi tope de arriendo')}
-        descripcion={tf(`${NS}.subtitulo`, 'Hasta cuánto te respaldan las aseguradoras')}
+        descripcion={tf(`${NS}.subtitulo`, 'Hasta cuánto te respaldan las aseguradoras.')}
       />
 
       {/* Paso 3 de 3 cuando llegó desde «¿Te podemos arrendar este inmueble?». */}
@@ -419,7 +420,7 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
     },
     {
       n: '03',
-      title: tf(`${NS}.pasos.tres.title`, 'El propietario decide'),
+      title: tf(`${NS}.pasos.tres.title`, 'Te postulas'),
       desc: tf(
         `${NS}.pasos.tres.desc`,
         'Te postulas a los que quieras con el mismo estudio, sin volver a pagar.',
@@ -432,12 +433,12 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
       <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
         {/* h2 y no h1: el h1 de la página es "Mi tope de arriendo". */}
         <h2 className="text-h3 text-fg">
-          {tf(`${NS}.vacio.title`, 'Todavía no tienes una aprobación')}
+          {tf(`${NS}.vacio.title`, 'Todavía no conoces tu tope')}
         </h2>
         <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
           {tf(
             `${NS}.vacio.desc`,
-            'Con una aprobación sabes hasta cuánto puedes arrendar, y te postulas a todos los inmuebles que quieras con el mismo estudio.',
+            'Con tu tope sabes hasta cuánto puedes arrendar, y te postulas a todos los inmuebles que quieras con el mismo estudio.',
           )}
         </p>
         <div className="pt-2">
@@ -446,7 +447,7 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
               tarjeta (revisora r25, R1). */}
           <Button asChild size="lg" className="w-full sm:w-auto whitespace-normal h-auto min-h-12 py-3 text-center">
             <Link href="/aprobacion">
-              {tf(`${NS}.vacio.cta`, 'Conoce hasta cuánto te arrendamos')}
+              {tf(`${NS}.vacio.cta`, 'Conocer mi tope')}
             </Link>
           </Button>
         </div>
@@ -454,23 +455,31 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
 
       {/* El camino completo ANTES de pedir el primer dato: así "postular" deja
           de parecer un compromiso ciego. */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-fg">
+      {/* Revisora r27 (Mi tope, UI): a 390 las tres tarjetas medían ≈550 px de consulta: ahí van plegadas. */}
+      <section className="hidden space-y-3 sm:block">
+        <h2 className="text-body-sm font-medium text-fg">
           {tf(`${NS}.vacio.comoFunciona`, 'Cómo funciona')}
         </h2>
-        <ol className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {pasos.map((p) => (
-            <li key={p.n} className="rounded-lg border border-border bg-surface p-5 space-y-2">
-              <span className="font-mono tabular-nums text-caption text-fg-subtle leading-none">
-                {p.n}
-              </span>
-              <p className="text-sm font-medium text-fg">{p.title}</p>
-              <p className="text-sm text-fg-muted leading-relaxed">{p.desc}</p>
-            </li>
-          ))}
-        </ol>
+        <PasosDeMiTope pasos={pasos} />
       </section>
+      <MasDetalles className="sm:hidden" etiqueta={tf(`${NS}.vacio.comoFunciona`, 'Cómo funciona')} montadoSiempre>
+        <PasosDeMiTope pasos={pasos} />
+      </MasDetalles>
     </div>
+  )
+}
+
+function PasosDeMiTope({ pasos }: { pasos: ReadonlyArray<{ n: string; title: string; desc: string }> }) {
+  return (
+    <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {pasos.map((p) => (
+        <li key={p.n} className="space-y-2 rounded-lg border border-border bg-surface p-5">
+          <span className="font-mono text-caption leading-none tabular-nums text-fg-subtle">{p.n}</span>
+          <p className="text-body-sm font-medium text-fg">{p.title}</p>
+          <p className="text-body-sm leading-relaxed text-fg-muted">{p.desc}</p>
+        </li>
+      ))}
+    </ol>
   )
 }
 

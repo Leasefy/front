@@ -137,6 +137,9 @@ toast.error(
         error={error}
         vacio={!cargando && !error && !estado}
         esqueleto={<EsqueletoDeSeccion filas={6} />}
+        onReintentar={cargar}
+        queEs="los avisos automáticos"
+        principal
       >
         <span />
       </EstadoDeDatos>
@@ -154,8 +157,10 @@ toast.error(
           <p
             className="rounded-md border border-border bg-warning-soft px-3 py-2 text-caption text-fg"
             data-testid="avisos-sin-migrar"
+            title={estado.motivo ?? undefined}
           >
-            {estado.motivo}
+            {/* Ronda 30: el número de la migración es para quien despliega (queda en el `title`), no para la inmobiliaria. */}
+            Por ahora ningún aviso sale solo: falta un paso de la base de datos que nuestro equipo está habilitando.
           </p>
         )}
 

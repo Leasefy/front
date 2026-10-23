@@ -48,6 +48,10 @@ import {
 import type { Parte } from '@/lib/contratos/conceptos';
 import type { BaseTributaria } from '@/lib/contratos/escenarios-tributarios';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { TablePagination } from '@/components/ui/pagination';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { EsqueletoDeSeccion } from './piezas';
 
 export const TIPOS: Record<BaseTributaria, string> = {
   ARRENDAMIENTO: 'Arrendamiento',
@@ -92,6 +96,8 @@ export function SeccionConceptos() {
     );
   }, [conceptos, busqueda, estado]);
   const activos = conceptos.filter((c) => c.activo).length;
+  // Ronda 30 (regla de Nico: listas con paginación): el catálogo pasa de 40 conceptos.
+  const pag = useTablePagination(visibles, { resetKey: `${busqueda}|${estado}` });
   const soloLectura = !disponible;
 
   async function cambiar(c: ConceptoDelCatalogo, cambios: { nombre?: string; activo?: boolean }) {
@@ -161,22 +167,13 @@ export function SeccionConceptos() {
       {(soloLectura || deRespaldo) && !cargando && (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-fg" data-testid="conceptos-solo-lectura">
           {deRespaldo
-            ? 'No pudimos traer tu catálogo: estás viendo el de Leasefy. Vuelve a intentar en un momento.'
+            ? 'No se pudo traer tu catálogo: estás viendo el de Leasefy. Vuelve a intentar en un momento.'
             : 'Tu catálogo propio todavía no está activo: por ahora se usa el de Leasefy y no se puede cambiar.'}
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[16rem] flex-1">
-          <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Busca por nombre, también el de tu sistema anterior"
-            className="pl-9"
-            aria-label="Buscar concepto"
-          />
-        </div>
+      {/* Ronda 30: arriba sólo las dos acciones; el buscador vive en la tarjeta de la lista. */}
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <input
           ref={archivoRef}
           type="file"
@@ -213,8 +210,25 @@ export function SeccionConceptos() {
             ]}
           />
         </div>
+        <div className="border-b border-border px-4 py-3">
+          <div className="relative w-full sm:w-96">
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
+            <Input
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Busca por nombre, también el de tu sistema anterior"
+              className="pl-9"
+              aria-label="Buscar concepto"
+            />
+          </div>
+        </div>
+        {cargando ? (
+          <div className="p-4">
+            <EsqueletoDeSeccion filas={5} />
+          </div>
+        ) : null}
         <ul className="divide-y divide-border" data-testid="conceptos-lista">
-          {visibles.map((c) => (
+          {(cargando ? [] : pag.pageItems).map((c) => (
             <li key={c.clave} className="flex flex-wrap items-center gap-3 px-4 py-3" data-testid={`concepto-${c.clave}`}>
               <div className="min-w-[14rem] flex-1 space-y-0.5">
                 {editando?.clave === c.clave ? (
@@ -230,7 +244,7 @@ export function SeccionConceptos() {
                       }}
                       aria-label={`Nuevo nombre de ${c.nombre}`}
                     />
-                    <Button size="sm" disabled={guardando === c.clave || editando.nombre.trim().length < 2} onClick={() => void cambiar(c, { nombre: editando.nombre.trim() })} aria-label="Guardar nombre">
+                    <Button size="sm" variant="secondary" disabled={guardando === c.clave || editando.nombre.trim().length < 2} onClick={() => void cambiar(c, { nombre: editando.nombre.trim() })} aria-label="Guardar nombre">
                       <Check className="h-4 w-4" />
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditando(null)} aria-label="Cancelar">
@@ -266,12 +280,41 @@ export function SeccionConceptos() {
               </label>
             </li>
           ))}
-          {visibles.length === 0 && (
-            <li className="px-4 py-6 text-sm text-muted-foreground">
-              {busqueda.trim() ? 'Ningún concepto se llama así.' : 'No hay conceptos apagados.'}
+          {!cargando && visibles.length === 0 && (
+            <li>
+              {/* Ronda 30: el vacío con su salida (antes un renglón gris). */}
+              <SinDatos
+                hayFiltros={busqueda.trim() !== ''}
+                queSon="conceptos"
+                titulo={
+                  estado === 'apagados'
+                    ? 'No hay conceptos apagados'
+                    : estado === 'activos'
+                      ? 'No hay conceptos activos'
+                      : 'Todavía no hay conceptos'
+                }
+                descripcion={
+                  estado === 'apagados'
+                    ? 'Los que apagues salen de las listas al crear cobros; aquí los vuelves a prender.'
+                    : 'Crea uno con «Nuevo concepto» o tráelos de tu sistema anterior.'
+                }
+                onLimpiarFiltros={() => setBusqueda('')}
+              />
             </li>
           )}
         </ul>
+        {!cargando && visibles.length > 0 ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={pag.total}
+              page={pag.page}
+              pageSize={pag.pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={pag.setPage}
+              onPageSizeChange={pag.setPageSize}
+            />
+          </div>
+        ) : null}
       </Card>
 
       <NuevoConcepto abierto={nuevoAbierto} onCerrar={() => setNuevoAbierto(false)} onCreado={recargar} />
@@ -319,13 +362,13 @@ function PlanEditable({
         {r.nuevos} son nuevos. {r.juntadas > 0 ? `${r.juntadas} filas se juntaron con otra porque sólo cambiaban por impuestos. ` : ''}
         {r.apagados > 0 ? `${r.apagados} entran apagados («NO UTILIZAR»). ` : ''}Puedes cambiar el nombre, el tipo y si queda activo antes de importar.
       </p>
-      <div className="max-h-[55vh] overflow-y-auto rounded-md border border-border">
+      <div className="max-h-[55vh] overflow-auto rounded-md border border-border">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-surface text-left text-caption text-muted-foreground">
             <tr>
               <th className="px-3 py-2">Nombre</th>
               <th className="px-3 py-2">Tipo</th>
-              <th className="px-3 py-2">Quién paga → recibe</th>
+              <th className="px-3 py-2 max-sm:hidden">Quién paga → recibe</th>
               <th className="px-3 py-2">Activo</th>
             </tr>
           </thead>
@@ -355,7 +398,7 @@ function PlanEditable({
                       </Select>
                     )}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
+                  <td className="px-3 py-2 whitespace-nowrap max-sm:hidden">
                     {PARTES[c.paga]} → {PARTES[c.recibe]}
                   </td>
                   <td className="px-3 py-2">
@@ -431,6 +474,14 @@ function NuevoConcepto({
             {selector(paga, (v) => setPaga(v as Parte), PARTES, 'Lo paga')}
             {selector(recibe, (v) => setRecibe(v as Parte), PARTES, 'Lo recibe')}
           </div>
+          {/* Ronda 30: el botón apagado dice qué falta. */}
+          {paga === recibe ? (
+            <p className="text-sm text-danger" role="alert" data-testid="concepto-misma-parte">
+              Quien lo paga y quien lo recibe no pueden ser la misma parte.
+            </p>
+          ) : nombre.trim().length > 0 && nombre.trim().length < 2 ? (
+            <p className="text-sm text-fg-muted">El nombre necesita al menos 2 letras.</p>
+          ) : null}
         </div>
         <DialogFooter>
           <Button variant="outline" disabled={creando} onClick={onCerrar}>Volver</Button>

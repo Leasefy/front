@@ -91,7 +91,9 @@ describe('<SeccionBitacora>', () => {
       filas: [],
     })
     await montar()
-    expect(q('bitacora-sin-migrar')?.textContent).toContain('20260918182000')
+    // Ronda 30 (a propósito): el número de la migración ya no se ve; queda en el `title` para quien despliega.
+    expect(q('bitacora-sin-migrar')?.getAttribute('title')).toContain('20260918182000')
+    expect(q('bitacora-sin-migrar')?.textContent).not.toContain('20260918182000')
     expect(q('bitacora-vacia')).toBeNull()
   })
 

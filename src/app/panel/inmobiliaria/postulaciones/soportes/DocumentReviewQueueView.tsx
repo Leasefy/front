@@ -12,7 +12,8 @@
  * que las columnas se sigan viendo.
  */
 
-import { FolderOpen, CheckCircle, XCircle, Eye } from '@phosphor-icons/react';
+import { useMemo, useState } from 'react';
+import { FolderOpen, CheckCircle, XCircle, Eye, MagnifyingGlass } from '@phosphor-icons/react';
 import { CifraHeroe, type TonoDelTramo } from '@/components/pantalla/CifraHeroe';
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -33,6 +34,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { Input } from '@/components/ui/input';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { getReviewStatusLabel, reviewStatusBadgeVariant } from '@/lib/documents/review-status';
@@ -65,7 +69,14 @@ function formatSize(bytes: number): string {
     : `${Math.round(bytes / 1024)} KB`;
 }
 
-const COLUMNAS = ['Candidato', 'Documento', 'Estado', ''] as const;
+/**
+ * Revisora r25: agrupado por candidato. El nombre va UNA vez, en la fila que abre su grupo, y sus papeles
+ * debajo; por eso la columna «Candidato» ya no se repite en cada papel.
+ */
+const COLUMNAS = ['Documento', 'Estado', ''] as const;
+
+/** Sin tildes ni mayúsculas, para buscar «perez» y encontrar «Pérez». */
+const normalizar = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 export interface DocumentReviewQueueViewProps {
   counts: ReviewQueueCounts;
@@ -107,11 +118,6 @@ const SECUNDARIOS: CountCard[] = [
   { key: 'rejected', label: 'rechazados', icon: XCircle },
 ];
 
-/** Una fila por documento: el candidato es una columna, no un encabezado. */
-interface Fila {
-  item: ReviewQueueItem;
-  doc: ReviewQueueDocument;
-}
 
 export function DocumentReviewQueueView({
   counts,
@@ -125,7 +131,22 @@ export function DocumentReviewQueueView({
   onReject,
   onRetry,
 }: DocumentReviewQueueViewProps) {
-  const filas: Fila[] = items.flatMap((item) => item.documents.map((doc) => ({ item, doc })));
+  // El buscador, DENTRO de la tarjeta: por candidato, inmueble o papel.
+  const [busqueda, setBusqueda] = useState('');
+  const candidatos = useMemo(() => {
+    const q = normalizar(busqueda.trim());
+    if (!q) return items;
+    return items.filter((item) =>
+      [item.tenant.fullName, item.property?.title ?? '', ...item.documents.flatMap((d) => [docTypeLabel(d.type), d.originalName])]
+        .some((t) => normalizar(t).includes(q)),
+    );
+  }, [items, busqueda]);
+  // La página es de CANDIDATOS (un grupo no se parte entre dos páginas).
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(candidatos, {
+    initialPageSize: 10,
+    resetKey: busqueda,
+  });
+  const hayCola = items.length > 0;
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -195,6 +216,21 @@ export function DocumentReviewQueueView({
         />
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-hidden">
+          {hayCola ? (
+            <div className="border-b border-border px-4 py-3">
+              <div className="relative w-full sm:max-w-sm">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
+                <Input
+                  className="h-9 pl-9"
+                  placeholder="Buscar candidato o inmueble"
+                  aria-label="Buscar en los soportes"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  data-testid="buscar-soportes"
+                />
+              </div>
+            </div>
+          ) : null}
           {/* En el celular cada soporte es una tarjeta (patrón de Deuda del mes). */}
           <Table className="max-md:block">
             <TableHeader className="max-md:hidden">
@@ -212,7 +248,18 @@ export function DocumentReviewQueueView({
             {/* Tomar, aprobar o rechazar: la fila que sale de la cola se va y
                 las demás suben. */}
             <TableBodyAnimado className="max-md:block">
-              {filas.length === 0 ? (
+              {hayCola && candidatos.length === 0 ? (
+                <TableRowAnimada key="sin-resultados" className="max-md:block">
+                  <TableCell colSpan={COLUMNAS.length} className="p-0 max-md:block">
+                    <SinDatos
+                      hayFiltros
+                      queSon="soportes"
+                      icono={FolderOpen}
+                      onLimpiarFiltros={() => setBusqueda('')}
+                    />
+                  </TableCell>
+                </TableRowAnimada>
+              ) : !hayCola ? (
                 /* Sin filtros en esta pantalla: acá el vacío es siempre «todavía no
                    llegó nada», nunca «filtraste mal». Y no se crea desde aquí — los
                    soportes los sube quien se postula—, así que la salida útil es ir a
@@ -233,91 +280,123 @@ export function DocumentReviewQueueView({
                   </TableCell>
                 </TableRowAnimada>
               ) : (
-                filas.map(({ item, doc }) => {
-                  const busy = pendingDocId === doc.id;
-                  const showTake = doc.reviewStatus === 'PENDING';
-                  const showApprove = doc.reviewStatus !== 'APPROVED';
-                  const showReject = doc.reviewStatus !== 'REJECTED';
-                  return (
+                pageItems.flatMap((item) => {
+                  const porRevisar = item.documents.filter((d) => d.reviewStatus === 'PENDING' || d.reviewStatus === 'IN_REVIEW').length;
+                  const papeles = item.documents.length;
+                  return [
                     <TableRowAnimada
-                      key={doc.id}
-                      data-testid="review-doc"
-                      className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                      key={`grupo-${item.applicationId}`}
+                      data-testid="grupo-candidato"
+                      className="bg-surface-muted/40 max-md:block max-md:border-b max-md:border-border max-md:px-4 max-md:py-3"
                     >
-                      <TableCell className="align-top max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
-                        <p className="font-medium text-fg truncate">{item.tenant.fullName}</p>
-                        {item.property?.title ? (
-                          <p className="text-sm text-fg-muted truncate">{item.property.title}</p>
-                        ) : null}
-                      </TableCell>
-
-                      <TableCell className="max-w-[320px] align-top max-md:col-span-2 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
-                        <p className="text-fg truncate">{docTypeLabel(doc.type)}</p>
-                        <p className="text-caption text-fg-muted truncate">
-                          {doc.originalName} · {formatSize(doc.size)}
-                        </p>
-                      </TableCell>
-
-                      <TableCell className="align-top max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
-                        <Badge variant={reviewStatusBadgeVariant(doc.reviewStatus)}>
-                          {getReviewStatusLabel(doc.reviewStatus)}
-                        </Badge>
-                        {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
-                          <p className="mt-1 text-caption text-danger break-words max-w-[280px]">
-                            Motivo: {doc.rejectionReason}
+                      <TableCell colSpan={COLUMNAS.length} className="max-md:block max-md:p-0">
+                        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+                          <p className="min-w-0 truncate font-medium text-fg">
+                            {item.tenant.fullName}
+                            {item.property?.title ? (
+                              <span className="font-normal text-fg-muted"> · {item.property.title}</span>
+                            ) : null}
                           </p>
-                        )}
+                          <p className="shrink-0 text-caption text-fg-muted" data-testid="grupo-cuantos">
+                            {papeles === 1 ? '1 papel' : `${papeles} papeles`}
+                            {porRevisar > 0 ? ` · ${porRevisar} por revisar` : ''}
+                          </p>
+                        </div>
                       </TableCell>
+                    </TableRowAnimada>,
+                    ...(item.documents.map((doc) => {
+                    const busy = pendingDocId === doc.id;
+                    const showTake = doc.reviewStatus === 'PENDING';
+                    const showApprove = doc.reviewStatus !== 'APPROVED';
+                    const showReject = doc.reviewStatus !== 'REJECTED';
+                    return (
+                      <TableRowAnimada
+                        key={doc.id}
+                        data-testid="review-doc"
+                        className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                      >
+                        <TableCell className="max-w-[420px] align-top max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
+                          <p className="text-fg truncate">{docTypeLabel(doc.type)}</p>
+                          <p className="text-caption text-fg-muted truncate">
+                            {doc.originalName} · {formatSize(doc.size)}
+                          </p>
+                        </TableCell>
 
-                      <TableCell className="align-top max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0">
-                        {canReview && (
-                          <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
-                            {showApprove && (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                hideArrow
-                                disabled={busy}
-                                isLoading={busy}
-                                onClick={() => onApprove(item.applicationId, doc.id)}
-                              >
-                                Aprobar
-                              </Button>
-                            )}
-                            {showReject && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                hideArrow
-                                className="text-danger hover:text-danger"
-                                disabled={busy}
-                                onClick={() => onReject(item, doc)}
-                              >
-                                Rechazar
-                              </Button>
-                            )}
-                            {/* Revisora r25: tomar es un paso previo que casi nadie necesita; va al
-                                final y sin borde, después de lo que decide (Aprobar · Rechazar). */}
-                            {showTake && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                hideArrow
-                                disabled={busy}
-                                onClick={() => onTakeToReview(item.applicationId, doc.id)}
-                              >
-                                Tomar a revisión
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRowAnimada>
-                  );
+                        <TableCell className="align-top max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
+                          <Badge variant={reviewStatusBadgeVariant(doc.reviewStatus)}>
+                            {getReviewStatusLabel(doc.reviewStatus)}
+                          </Badge>
+                          {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
+                            <p className="mt-1 text-caption text-danger break-words max-w-[280px]">
+                              Motivo: {doc.rejectionReason}
+                            </p>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="align-top max-md:col-span-2 max-md:row-start-2 max-md:block max-md:p-0">
+                          {canReview && (
+                            <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
+                              {showApprove && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  hideArrow
+                                  disabled={busy}
+                                  isLoading={busy}
+                                  onClick={() => onApprove(item.applicationId, doc.id)}
+                                >
+                                  Aprobar
+                                </Button>
+                              )}
+                              {showReject && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  hideArrow
+                                  className="text-danger hover:text-danger"
+                                  disabled={busy}
+                                  onClick={() => onReject(item, doc)}
+                                >
+                                  Rechazar
+                                </Button>
+                              )}
+                              {/* Revisora r25: tomar es un paso previo que casi nadie necesita; va al
+                                  final y sin borde, después de lo que decide (Aprobar · Rechazar). */}
+                              {showTake && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  hideArrow
+                                  disabled={busy}
+                                  onClick={() => onTakeToReview(item.applicationId, doc.id)}
+                                >
+                                  Tomar a revisión
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRowAnimada>
+                    );
+                  })),
+                  ];
                 })
               )}
             </TableBodyAnimado>
           </Table>
+          {/* La paginación de la casa (Nico, 23-10: las tablas la conservan siempre); sólo con más de una página. */}
+          {shouldPaginate && total > pageSize ? (
+            <div className="border-t border-border px-4 py-3" data-testid="soportes-pie">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 25, 50]}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          ) : null}
         </div>
       )}
       </CrossFade>

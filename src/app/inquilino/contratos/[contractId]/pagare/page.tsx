@@ -13,7 +13,7 @@ import { ArrowSquareOut, CheckCircle, Receipt, WarningCircle } from '@phosphor-i
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EmptyState } from '@/components/ui/empty-state';
 import { pagareApi } from '@/lib/api/pagare.service';
@@ -60,8 +60,11 @@ export default function MiFirmaDelPagarePage(props: Props) {
       />
 
       {cargando ? (
-        <div className="min-h-[30vh] flex items-center justify-center">
-          <Spinner size="md" variant="muted" />
+        /* El esqueleto con la forma de la tarjeta (antes, una rueda). */
+        <div className="space-y-3 rounded-lg border border-border bg-surface p-6" data-testid="pagare-cargando" aria-busy="true">
+          <Skeleton className="h-5 w-1/3" />
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-9 w-40" />
         </div>
       ) : noDisponible ? (
         <EmptyState
@@ -99,10 +102,11 @@ function Contenido({ datos }: { datos: MiFirmaDelPagareResponse }) {
       )}
 
       {datos.miEstado === 'FIRMADO' ? (
-        <div className="rounded-lg border border-success/30 bg-success-soft p-6 text-center space-y-2" data-testid="mi-firma-firmado">
-          <CheckCircle className="w-8 h-8 text-success mx-auto" />
-          <p className="font-semibold text-success">Ya firmaste el pagaré</p>
-        </div>
+        /* Un hecho en una línea con el ícono suelto (antes, un bloque verde con borde y la frase en negrilla). */
+        <p className="flex items-center gap-2 text-body-sm text-fg" data-testid="mi-firma-firmado">
+          <CheckCircle className="h-5 w-5 shrink-0 text-success" aria-hidden="true" />
+          Ya firmaste el pagaré
+        </p>
       ) : datos.miEstado === 'RECHAZADO' ? (
         <p className="text-body-sm text-danger" data-testid="mi-firma-rechazado">
           Rechazaste este pagaré. Si fue un error, comunícate con tu inmobiliaria.

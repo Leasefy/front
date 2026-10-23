@@ -232,11 +232,11 @@ function UpdateWizardContent({
   if (isSuccess) {
     return (
       <div className="min-h-screen bg-surface-muted flex items-center justify-center px-4">
-        {/* Enviar → «¡Información actualizada!»: la tarjeta llega (es un cambio, no la entrada de la página). */}
+        {/* Enviar → «Tu información quedó enviada» (sin «¡!», glow up 22-10): la tarjeta llega (es un cambio, no la entrada de la página). */}
         <Appear className="bg-surface rounded-lg p-8 max-w-md w-full text-center">
           <CheckCircle className="w-8 h-8 text-success shrink-0 mx-auto" aria-hidden="true" />
           <h2 className="text-h3 text-fg mb-3">
-            ¡Información actualizada!
+            Tu información quedó enviada
           </h2>
           <p className="text-fg-muted mb-8">
             La inmobiliaria fue notificada de que completaste la información solicitada.

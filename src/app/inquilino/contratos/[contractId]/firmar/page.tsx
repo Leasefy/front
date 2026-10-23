@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Appear } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { WarningCircle, CheckCircle, Confetti, Clock, XCircle, PencilSimple, ChatCircle } from '@phosphor-icons/react';
+import { WarningCircle, CheckCircle, Confetti, Clock, XCircle, PencilSimple, ChatCircle, PenNib } from '@phosphor-icons/react';
 import { MonoLabel } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
@@ -152,8 +152,13 @@ function ContractDocumentView({
     );
   }
   return (
-    <div className="rounded-lg border border-border bg-surface p-8 flex items-center justify-center">
-      <Spinner size="md" variant="muted" />
+    /* El esqueleto con la forma del documento (antes, una rueda). */
+    <div className="rounded-lg border border-border bg-surface p-6 space-y-3" data-testid="contrato-cargando" aria-busy="true">
+      <Skeleton className="h-5 w-1/2" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-11/12" />
+      <Skeleton className="h-4 w-4/5" />
+      <Skeleton className="h-[40vh] w-full" />
     </div>
   );
 }
@@ -200,25 +205,25 @@ function readOnlyBanner(status: Contract['status'], locale: string): { tone: Sta
 
 const BANNER_TONES: Record<StatusBannerTone, { container: string; iconBg: string; iconColor: string; text: string }> = {
   emerald: {
-    container: 'bg-success-soft border-success/30',
+    container: 'bg-surface border-border',
     iconBg: 'bg-success-soft',
     iconColor: 'text-success',
-    text: 'text-success',
+    text: 'text-fg',
   },
   amber: {
-    container: 'bg-warning-soft border-warning/30',
+    container: 'bg-surface border-border',
     iconBg: 'bg-warning-soft',
     iconColor: 'text-warning',
-    text: 'text-warning',
+    text: 'text-fg',
   },
   rose: {
-    container: 'bg-danger-soft border-danger/30',
+    container: 'bg-surface border-border',
     iconBg: 'bg-danger-soft',
     iconColor: 'text-danger',
-    text: 'text-danger',
+    text: 'text-fg',
   },
   neutral: {
-    container: 'bg-surface-muted border-border',
+    container: 'bg-surface border-border',
     iconBg: 'bg-surface-muted',
     iconColor: 'text-fg-muted',
     text: 'text-fg-muted',
@@ -254,9 +259,7 @@ function ReadOnlyView({
     <div>
       <div className={cn('mb-6 rounded-lg px-5 py-4 border space-y-3', tone.container)}>
         <div className="flex items-center gap-3">
-          <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', tone.iconBg)}>
-            <Icon className={cn('w-5 h-5', tone.iconColor)} />
-          </div>
+          <Icon className={cn('w-5 h-5 shrink-0', tone.iconColor)} aria-hidden="true" />
           <p className={cn('text-sm font-medium', tone.text)}>{banner.message}</p>
         </div>
 
@@ -565,11 +568,11 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
           <>
             {/* Status Banner */}
             <div
-              className="mb-6 rounded-lg px-5 py-4 bg-primary-soft border border-primary/30 flex items-center justify-between gap-3 flex-wrap"
+              className="mb-6 rounded-lg px-5 py-4 bg-surface-muted flex items-center justify-between gap-3 flex-wrap"
             >
               <div className="flex items-center gap-3">
-                <WarningCircle className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-primary">
+                <PenNib className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
+                <p className="text-sm text-fg">
                   {locale === 'es'
                     ? 'Revisa el contrato y firma. El propietario firmará después para cerrar el proceso.'
                     : 'Review the contract and sign. The landlord will sign next to close the process.'}

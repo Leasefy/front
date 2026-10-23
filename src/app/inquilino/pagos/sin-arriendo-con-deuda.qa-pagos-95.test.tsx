@@ -120,6 +120,37 @@ describe('Pagos · LA RESPUESTA en grande (glow up 22-10)', () => {
     expect(cifras?.querySelector('[data-testid="cifra-resta-por-pagar"]')?.textContent).toMatch(/11\.830\.000/);
   });
 
+  it('revisora r25: la cifra trae su barra con lo pagado del contrato, dicho una vez al pie', async () => {
+    mio.mockResolvedValue({
+      contratos: [
+        {
+          secciones: {
+            arriendos: [
+              { estado: 'CANCELADA', valorNeto: 2_100_000 },
+              { estado: 'PENDIENTE', valorNeto: 2_100_000 },
+              { estado: 'PENDIENTE', valorNeto: 2_100_000 },
+            ],
+            otrosConceptos: [],
+          },
+        },
+      ],
+    });
+    resumen.valor = {
+      proxima: { valor: 2_100_000, fecha: '2026-11-05', diasQueFaltan: 14 },
+      vencidoCop: 2_100_000,
+      cuotasVencidas: 1,
+      restaPorPagar: 4_200_000,
+      enMora: true,
+      diasDeMora: 10,
+    };
+    await montar();
+    const cifras = host.querySelector('[data-testid="cifras-de-pagos"]');
+    expect(cifras?.querySelector('[role="img"]')).not.toBeNull();
+    expect(cifras?.querySelector('[data-testid="cifra-pagado-del-contrato"]')?.textContent).toMatch(
+      /Pagado \$\s?2\.100\.000 de \$\s?6\.300\.000 del contrato/,
+    );
+  });
+
   it('al día, la cifra grande es la próxima cuota con su vencimiento', async () => {
     mio.mockResolvedValue({});
     resumen.valor = {

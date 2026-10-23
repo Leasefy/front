@@ -44,9 +44,14 @@ export function mesEnPalabras(mes: string): string {
 interface Props {
   leaseId: string;
   datos: LoQueSePuedePagar;
+  /**
+   * Revisora r25: va dentro de la tarjeta de la cifra de Pagos («Pagar $ X» junto a lo que se debe),
+   * sin su propia tarjeta celeste ni la caja del ícono: el azul queda sólo en el botón.
+   */
+  dentroDeLaCifra?: boolean;
 }
 
-export function PagarLoVencido({ leaseId, datos }: Props) {
+export function PagarLoVencido({ leaseId, datos, dentroDeLaCifra = false }: Props) {
   const { formatCurrency } = useI18n();
   const { cuotas } = datos;
   const [cuantas, setCuantas] = useState(cuotas.length);
@@ -103,13 +108,20 @@ export function PagarLoVencido({ leaseId, datos }: Props) {
       : `${cuantas} cuotas (${mesEnPalabras(cuotas[0].mes)} a ${mesEnPalabras(cuotas[cuantas - 1].mes)})`;
 
   return (
-    <section data-testid="pagar-lo-vencido" className="rounded-lg border border-primary/30 bg-primary-soft p-6">
-      <div className="mb-1 flex items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface">
-          <CreditCard className="h-5 w-5 text-primary" />
+    <section
+      data-testid="pagar-lo-vencido"
+      className={dentroDeLaCifra ? undefined : 'rounded-lg border border-primary/30 bg-primary-soft p-6'}
+    >
+      {dentroDeLaCifra ? (
+        <h2 className="mb-1 text-body font-medium text-fg">{hayVencidas ? 'Pagar lo vencido' : 'Pagar tu próxima cuota'}</h2>
+      ) : (
+        <div className="mb-1 flex items-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface">
+            <CreditCard className="h-5 w-5 text-primary" />
+          </div>
+          <h2 className="text-sm font-medium text-primary">{hayVencidas ? 'Pagar lo vencido' : 'Pagar tu próxima cuota'}</h2>
         </div>
-        <h2 className="text-sm font-medium text-primary">{hayVencidas ? 'Pagar lo vencido' : 'Pagar tu próxima cuota'}</h2>
-      </div>
+      )}
       <p className="mb-4 text-sm text-fg-muted">
         {hayVencidas ? 'Se paga de la cuota más vieja a la más nueva.' : 'Puedes adelantarla desde ya.'}
       </p>
@@ -162,7 +174,13 @@ export function PagarLoVencido({ leaseId, datos }: Props) {
                 disabled={Boolean(enVerificacion)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors',
-                  marcada ? 'bg-surface' : 'hover:bg-surface/60',
+                  dentroDeLaCifra
+                    ? marcada
+                      ? 'bg-surface-muted'
+                      : 'hover:bg-surface-muted/60'
+                    : marcada
+                      ? 'bg-surface'
+                      : 'hover:bg-surface/60',
                   enVerificacion && 'cursor-not-allowed opacity-60',
                 )}
               >
@@ -181,9 +199,14 @@ export function PagarLoVencido({ leaseId, datos }: Props) {
         })}
       </ul>
 
-      <div className="mt-4 flex items-baseline justify-between border-t border-primary/30 pt-4">
+      <div
+        className={`mt-4 flex items-baseline justify-between border-t pt-4 ${dentroDeLaCifra ? 'border-border' : 'border-primary/30'}`}
+      >
         <span className="text-sm text-fg-muted">Total a pagar</span>
-        <span data-testid="total-a-pagar" className="font-mono text-2xl font-bold text-fg">
+        <span
+          data-testid="total-a-pagar"
+          className={`font-mono text-2xl text-fg ${dentroDeLaCifra ? 'font-medium tabular-nums' : 'font-bold'}`}
+        >
           <AnimatedNumber value={total} format={(n) => formatCurrency(n)} />
         </span>
       </div>
@@ -191,7 +214,10 @@ export function PagarLoVencido({ leaseId, datos }: Props) {
 
       <Presence show={confirmando && cuantas > 0} initial={false}>
         {confirmando && cuantas > 0 && (
-          <div data-testid="confirmar-pago" className="mt-4 rounded-lg bg-surface p-4 text-sm text-fg">
+          <div
+            data-testid="confirmar-pago"
+            className={cn('mt-4 rounded-lg p-4 text-sm text-fg', dentroDeLaCifra ? 'bg-surface-muted' : 'bg-surface')}
+          >
             <p>
               Vas a pagar <span className="font-mono font-semibold">{formatCurrency(total)}</span> por {rango}. Te llevamos a
               Wompi para pagar con PSE, tarjeta o Nequi.

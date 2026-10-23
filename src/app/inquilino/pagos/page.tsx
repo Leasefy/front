@@ -42,6 +42,7 @@ import type {
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { avisarDelPagoAlVolver, transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
 import { PagarLoVencido } from '@/components/tenant/PagarLoVencido';
+import { amortizacionDe } from '@/components/estado-de-cuenta/resumen';
 import { pagoEnLineaApi, type LoQueSePuedePagar } from '@/lib/api/pago-en-linea.service';
 import { fechaDeLaSolicitud } from '@/lib/pagos/fecha-de-la-solicitud';
 
@@ -127,6 +128,8 @@ function PagosPageContent() {
    * mismo. Si no llega, se dice —no se pinta un cero—.
    */
   const [resumen, setResumen] = useState<ResumenDePagos | null>(null);
+  /** Revisora r25: la barra de la cifra, «pagado $ X de $ Y del contrato» (la misma cuenta del estado de cuenta). */
+  const [avance, setAvance] = useState<{ pagado: number; pactado: number } | null>(null);
   const [errorResumen, setErrorResumen] = useState<unknown>(null);
   const [cargandoResumen, setCargandoResumen] = useState(true);
   const cargarResumen = () => {
@@ -134,7 +137,14 @@ function PagosPageContent() {
     setErrorResumen(null);
     estadoDeCuentaApi
       .mio()
-      .then((doc) => setResumen(resumenDePagos(doc, hoyLocal())))
+      .then((doc) => {
+        setResumen(resumenDePagos(doc, hoyLocal()));
+        const amortizaciones = (doc.contratos ?? []).map(amortizacionDe);
+        setAvance({
+          pagado: amortizaciones.reduce((s, a) => s + a.cubiertoCop, 0),
+          pactado: amortizaciones.reduce((s, a) => s + a.pactadoCop, 0),
+        });
+      })
       .catch((e: unknown) => setErrorResumen(e))
       .finally(() => setCargandoResumen(false));
   };
@@ -408,6 +418,7 @@ function PagosPageContent() {
 
   // No active lease — show clean empty state (no fake stats, no mock Visa)
   /** Tiene un contrato con cuotas aunque no tenga arriendo del portal (N-21). */
+  const puedePagarEnLinea = Boolean(primaryLease && pagoEnLinea?.aplica && pagoEnLinea.cuotas.length > 0);
   const conContrato = resumen !== null && (resumen.restaPorPagar > 0 || resumen.proxima !== null);
   if (!primaryLease && (errorResumen || !cargandoResumen) && !conContrato) {
     return (
@@ -540,8 +551,33 @@ function PagosPageContent() {
                         ? 'Estás al día y no quedan cuotas por vencer'
                         : 'You are up to date with no upcoming installments'
                 }
+                /* Revisora r25: la barra dice cuánto del contrato va pagado, cuánto está vencido y
+                   cuánto falta por vencer. Los montos se dicen una vez, en el pie. */
+                tramos={
+                  avance && avance.pactado > 0
+                    ? [
+                        { clave: 'pagado', etiqueta: locale === 'es' ? 'Pagado' : 'Paid', monto: avance.pagado, tono: 'exito' },
+                        { clave: 'vencido', etiqueta: locale === 'es' ? 'Vencido' : 'Overdue', monto: resumen.vencidoCop, tono: 'critico' },
+                        {
+                          clave: 'por-vencer',
+                          etiqueta: locale === 'es' ? 'Por vencer' : 'Not yet due',
+                          monto: Math.max(0, resumen.restaPorPagar - resumen.vencidoCop),
+                          tono: 'neutro',
+                        },
+                      ]
+                    : undefined
+                }
                 pie={
                   <span className="flex flex-wrap gap-x-4 gap-y-1">
+                    {avance && avance.pactado > 0 && (
+                      <span data-testid="cifra-pagado-del-contrato">
+                        {locale === 'es' ? 'Pagado' : 'Paid'}{' '}
+                        <span className="font-mono tabular-nums text-fg">{formatCurrencyI18n(avance.pagado)}</span>{' '}
+                        {locale === 'es' ? 'de' : 'of'}{' '}
+                        <span className="font-mono tabular-nums text-fg">{formatCurrencyI18n(avance.pactado)}</span>{' '}
+                        {locale === 'es' ? 'del contrato' : 'of the contract'}
+                      </span>
+                    )}
                     {resumen.vencidoCop > 0 && resumen.proxima && (
                       <span data-testid="cifra-proxima-cuota">
                         {locale === 'es' ? 'Próxima cuota' : 'Next installment'}{' '}
@@ -563,13 +599,23 @@ function PagosPageContent() {
                   </span>
                 }
               />
+              {/* Revisora r25: el botón «Pagar $ X» DENTRO de la respuesta, no en otro bloque debajo. */}
+              {puedePagarEnLinea && primaryLease && pagoEnLinea && (
+                <div className="mt-6 border-t border-border pt-6 lg:max-w-2xl">
+                  <PagarLoVencido
+                    key={pagoEnLinea.cuotas.map((c) => c.id).join()}
+                    leaseId={primaryLease.id}
+                    datos={pagoEnLinea}
+                    dentroDeLaCifra
+                  />
+                </div>
+              )}
             </section>
           )}
         </CrossFade>
 
-        {/* «Pagar lo vencido» (PAGO-ONLINE): justo debajo de lo que debe, antes de
-            «Cómo pagar» (a 390 px quedaba al final, después del historial). */}
-        {primaryLease && pagoEnLinea?.aplica && pagoEnLinea.cuotas.length > 0 && (
+        {/* «Pagar lo vencido» (PAGO-ONLINE) suelto sólo si la cifra no está (cargando o sin llegar). */}
+        {puedePagarEnLinea && primaryLease && pagoEnLinea && (errorResumen || cargandoResumen || !resumen) && (
           <div className="mb-8 lg:max-w-2xl">
             <PagarLoVencido key={pagoEnLinea.cuotas.map((c) => c.id).join()} leaseId={primaryLease.id} datos={pagoEnLinea} />
           </div>

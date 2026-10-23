@@ -252,6 +252,9 @@ describe('la semilla', () => {
     expect(fila?.textContent).toContain('4x1000');
     expect(fila?.textContent).toContain('Editar');
     expect(fila?.textContent).toContain('Desactivar');
+    // Revisora r25: el aviso es UNA línea con «Ver»; lo de adentro queda en la página, plegado.
+    expect(fila?.closest('[hidden]')).not.toBeNull();
+    expect(pendientes?.querySelector('button[aria-expanded="false"]')?.textContent).toContain('Ver');
 
     // Con cuentas, se puede seguir al paso 5.
     expect(q('puc-continuar')?.getAttribute('href')).toBe('/panel/inmobiliaria/migracion/contables');

@@ -54,6 +54,7 @@ import {
   soportaNoDeducible,
 } from '@/lib/contabilidad/no-deducible';
 import { Button } from '@/components/ui/button';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { TablePagination } from '@/components/ui/pagination';
@@ -753,24 +754,25 @@ function PendientesDelContador({
 
   return (
     <section
-      className="rounded-lg bg-warning-soft p-5"
+      className="rounded-lg bg-warning-soft px-4 py-3"
       aria-labelledby="puc-pendientes-titulo"
       data-testid="puc-pendientes"
     >
-      <div className="flex items-start gap-2">
-        <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-        <div className="min-w-0 flex-1">
-          <h2 id="puc-pendientes-titulo" className="text-sm font-medium text-fg">
-            {pendientes.length === 1
-              ? 'Una cuenta para confirmar con tu contador'
-              : `${pendientes.length} cuentas para confirmar con tu contador`}
-          </h2>
-          <p className="mt-0.5 text-sm text-fg-muted">
-            El plan base las trae con el código más usado, pero no es una decisión del sistema.
-            Si tu contador usa otro código, crea la cuenta con el suyo y desactiva ésta.
-          </p>
-        </div>
+      {/* Revisora r25 (Plan de cuentas): el aviso ocupaba ≈230 px arriba del plan; ahora es UNA
+          línea con «Ver», y lo de adentro sigue en la página (plegado) para quien lo abre. */}
+      <div className="flex items-center gap-2">
+        <Warning className="h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+        <h2 id="puc-pendientes-titulo" className="min-w-0 flex-1 text-sm font-medium text-fg">
+          {pendientes.length === 1
+            ? 'Una cuenta para confirmar con tu contador'
+            : `${pendientes.length.toLocaleString('es-CO')} cuentas para confirmar con tu contador`}
+        </h2>
       </div>
+      <MasDetalles etiqueta="Ver" etiquetaAbierto="Ocultar" montadoSiempre className="mt-1 pl-6">
+      <p className="text-sm text-fg-muted">
+        El plan base las trae con el código más usado, pero no es una decisión del sistema.
+        Si tu contador usa otro código, crea la cuenta con el suyo y desactiva ésta.
+      </p>
 
       {/* Entran escalonadas (ARREGLOS-8, MOV-A6). */}
       <Stagger as="ul" layout={false} distance="xs" className="mt-4 space-y-2">
@@ -816,6 +818,7 @@ function PendientesDelContador({
           );
         })}
       </Stagger>
+      </MasDetalles>
       {error ? (
         <p className="mt-2 text-sm text-danger" role="alert">
           {error}
@@ -879,6 +882,10 @@ function Nodo({
         <span className={`min-w-0 break-words [overflow-wrap:anywhere] text-sm ${nivel <= 1 ? 'font-medium text-fg' : 'text-fg'}`}>
           {nodo.nombre}
         </span>
+        {/* Revisora r25: a 390 lo que describe la cuenta baja a su propio renglón, debajo del
+            nombre, y las acciones quedan en la primera línea con su rótulo (antes tres renglones
+            con los íconos solos). */}
+        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 max-md:order-last max-md:basis-full max-md:pl-7">
         <span className="text-caption text-fg-muted">
           {nodo.naturaleza === 'DEBITO' ? 'Débito' : 'Crédito'}
         </span>
@@ -904,6 +911,7 @@ function Nodo({
             Inactiva
           </span>
         ) : null}
+        </span>
         <span className="ml-auto flex shrink-0 gap-1">
           <Button
             size="sm"
@@ -912,7 +920,8 @@ function Nodo({
             onClick={() => onEditar(cuenta)}
             aria-label={`Editar ${nodo.codigo} ${nodo.nombre}`}
           >
-            <PencilSimple className="h-3.5 w-3.5" />
+            <PencilSimple className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="hidden max-md:inline">Editar</span>
           </Button>
           {nodo.activa ? (
             <Button
@@ -922,7 +931,8 @@ function Nodo({
               onClick={() => onSubcuenta(cuenta)}
               aria-label={`Agregar subcuenta a ${nodo.codigo}`}
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="hidden max-md:inline">Subcuenta</span>
             </Button>
           ) : null}
         </span>

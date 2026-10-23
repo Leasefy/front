@@ -4,12 +4,13 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
+import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
 import {
   Collapse,
   CrossFade,
   IconButton,
   Avatar,
+  StatusBadge,
 } from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
 import {
@@ -393,19 +394,9 @@ export default function PerfilPage() {
           <div className="lg:col-span-1 space-y-6">
             {/* Avatar Card */}
             <div className="rounded-lg border border-border bg-surface overflow-hidden">
-              <div className="relative bg-primary-soft h-28">
-                {/* Edit button for avatar section */}
-                {editingSection !== 'avatar' && (
-                  <IconButton
-                    variant="ghost"
-                    onClick={() => setEditingSection('avatar')}
-                    className="absolute top-3 right-3 p-2 bg-surface/20 hover:bg-surface/30 backdrop-blur-sm rounded-full text-white"
-                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                    icon={<Pencil className="w-4 h-4" />}
-                  />
-                )}
-              </div>
-              <div className="px-6 pb-6">
+              {/* GLOW UP 22-10: sin la franja azul de adorno ni el lápiz de vidrio encima (blanco sobre azul claro,
+                  casi no se veía): la foto arriba y «Cambiar foto» como botón con su nombre. */}
+              <div className="px-6 pb-6 pt-6">
                 {/* Hidden file input */}
                 <input
                   ref={fileInputRef}
@@ -415,7 +406,7 @@ export default function PerfilPage() {
                   className="hidden"
                 />
 
-                <div className="relative -mt-14 mb-4">
+                <div className="relative mb-4 w-28">
                   {/* Avatar circle with image preview */}
                   <div
                     className={cn(
@@ -441,7 +432,7 @@ export default function PerfilPage() {
                     <IconButton
                       variant="ghost"
                       onClick={handleAvatarClick}
-                      className="absolute bottom-1 right-1 p-2.5 bg-primary rounded-full text-primary-fg hover:bg-primary-hover"
+                      className="absolute bottom-1 right-1 p-2.5 bg-ink rounded-full text-white hover:bg-ink/90"
                       aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
                       icon={<Camera className="w-4 h-4" />}
                     />
@@ -512,6 +503,19 @@ export default function PerfilPage() {
 
                 <h2 className="text-h3 text-fg">{displayName}</h2>
                 <p className="text-sm text-fg-muted mt-1">{user.email}</p>
+                {editingSection !== 'avatar' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    hideArrow
+                    onClick={() => setEditingSection('avatar')}
+                    className="mt-4"
+                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
+                  >
+                    <Camera className="w-4 h-4" aria-hidden="true" />
+                    {locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                  </Button>
+                )}
 
                 {/* FloppyDisk/Cancel buttons for avatar section */}
                 <Collapse open={editingSection === 'avatar'}>
@@ -546,17 +550,13 @@ export default function PerfilPage() {
                 There is no phone/identity verification system in the backend. */}
             {emailVerified && (
               <div className="rounded-lg border border-border bg-surface p-6">
-                <h3 className="font-medium text-fg mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-fg-subtle" />
+                <h3 className="text-h3 text-fg mb-4">
                   {t('profile.verification.title')}
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-surface-muted border border-border-faint">
-                    <span className="text-sm font-medium text-fg">Correo</span>
-                    <span className="flex items-center gap-1.5 text-caption font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      {t('profile.verification.verified')}
-                    </span>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-fg">{locale === 'es' ? 'Correo' : 'Email'}</span>
+                    <StatusBadge tone="success">{t('profile.verification.verified')}</StatusBadge>
                   </div>
                 </div>
               </div>
@@ -569,7 +569,7 @@ export default function PerfilPage() {
                 cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
             <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-medium text-fg">{t('profile.personalInfo')}</h3>
+                <h3 className="text-h3 text-fg">{t('profile.personalInfo')}</h3>
                 <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'personal' ? (
                   <Button
@@ -785,7 +785,7 @@ export default function PerfilPage() {
             {/* Emergency Contact — mismo cruce que los datos personales. */}
             <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-medium text-fg">{t('profile.emergencyContact')}</h3>
+                <h3 className="text-h3 text-fg">{t('profile.emergencyContact')}</h3>
                 <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button
@@ -884,7 +884,7 @@ export default function PerfilPage() {
 
             {/* Danger Zone */}
             <div className="rounded-lg border border-danger/30 bg-danger-soft/30 p-6">
-              <h3 className="font-medium text-danger mb-2 flex items-center gap-2">
+              <h3 className="text-h3 text-danger mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>

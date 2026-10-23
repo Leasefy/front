@@ -320,3 +320,22 @@ describe('Perfil del inquilino — la zona de peligro', () => {
     expect(texto).toContain('sólo el soporte de Leasefy puede recuperarla')
   })
 })
+
+describe('Perfil del inquilino — glow up 22-10', () => {
+  beforeEach(() => {
+    useAuthMock.mockReturnValue({
+      user: { id: 'u-1', email: 'laura@example.com', firstName: 'Laura', lastName: 'Gómez', emailConfirmedAt: '2026-01-01T00:00:00Z' },
+      updateProfile: vi.fn(),
+      refreshUser: vi.fn(),
+      signOut: vi.fn(),
+    })
+  })
+
+  it('la foto se cambia con un botón con su nombre, sin la franja azul ni el lápiz de vidrio', async () => {
+    await renderPage()
+    const cambiar = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Cambiar foto'))
+    expect(cambiar).toBeTruthy()
+    expect(container.querySelector('.bg-primary-soft.h-28')).toBeNull()
+    expect(container.innerHTML).not.toContain('backdrop-blur')
+  })
+})

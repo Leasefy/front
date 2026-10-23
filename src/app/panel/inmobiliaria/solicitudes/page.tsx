@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { SearchInput, type TonoDeCifra } from '@leasefy/cadence';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { sinElNumeroRepetido } from '@/lib/pantalla/pestanas-sin-repetir';
 
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -254,7 +255,8 @@ function PqrsContent() {
             etiqueta="Filtrar por plazo y estado"
             valor={filtros.estado}
             onCambio={(v) => setFiltros((f) => ({ ...f, estado: v }))}
-            pestanas={[
+            // R2 (revisora r27): «Todas 1 · Asignadas 1» decía el número dos veces.
+            pestanas={sinElNumeroRepetido<FiltrosDePqrs['estado']>([
               { valor: 'todos' as FiltrosDePqrs['estado'], etiqueta: 'Todas', cuantos: isLoading || error ? null : resumen.total, fija: true, testid: 'pqrs-pestana-todas' }, // r25: «Todas» con su número, como las demás
               ...CIFRAS_DE_PQRS.map((item) => ({
                 valor: item.filtro,
@@ -263,7 +265,7 @@ function PqrsContent() {
                 tono: item.key === 'vencidas' ? ('aviso' as const) : undefined,
                 testid: `pqrs-pestana-${item.key}`,
               })),
-            ]}
+            ], 'todos', filtros.estado)}
           />
           {!isLoading && error ? <p className="mt-2 text-caption text-fg-muted">No se pudo traer el resumen.</p> : null}
         </div>

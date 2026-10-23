@@ -60,6 +60,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { IconButton, Avatar, StatusBadge, type SemanticTone } from '@leasefy/cadence';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { hayQuePintarLasPestanas, sinElNumeroRepetido } from '@/lib/pantalla/pestanas-sin-repetir';
+import type { PestanaDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { useTr } from '@/lib/i18n/use-tr';
 import type {
   AgencyUser,
@@ -350,6 +352,15 @@ export function ConfigUsuarios({
     };
   }, [users]);
   const todosActivos = userCounts.total > 1 && userCounts.active === userCounts.total;
+  const pestanasDeEstado: PestanaDeEstado<FilterStatus>[] = [
+    { valor: 'all', etiqueta: tr('Todos'), cuantos: userCounts.total, fija: true },
+    // Revisora r25: con nadie inactivo ni invitado, «Activos» repetía «Todos».
+    ...(todosActivos && filterStatus !== 'active'
+      ? []
+      : [{ valor: 'active' as FilterStatus, etiqueta: tr('Activos'), cuantos: userCounts.active, fija: true }]),
+    { valor: 'invited', etiqueta: tr('Invitaciones abiertas'), cuantos: userCounts.invited, tono: 'aviso' },
+    { valor: 'inactive', etiqueta: tr('Inactivos'), cuantos: userCounts.inactive },
+  ];
 
 
   // Handle invite submit
@@ -417,23 +428,19 @@ export function ConfigUsuarios({
           los encabezados. */}
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Las pestañas de estado con su conteo, DENTRO de la tarjeta (como Deuda del mes). */}
+        {/* R2 (revisora r27): con todos activos quedaba UNA pestaña, «Todos 8», que no
+            filtra nada: sola no se pinta. Con dos o más, «Todos» sin el número repetido. */}
+        {hayQuePintarLasPestanas(pestanasDeEstado, filterStatus) ? (
         <div className="border-b border-border px-4 py-2.5">
           <PestanasDeEstado<FilterStatus>
             etiqueta={tr('Estado de las personas')}
             valor={filterStatus}
             onCambio={setFilterStatus}
             data-testid="equipo-estados"
-            pestanas={[
-              { valor: 'all', etiqueta: tr('Todos'), cuantos: userCounts.total, fija: true },
-              // Revisora r25: con nadie inactivo ni invitado, «Activos» repetía «Todos».
-              ...(todosActivos && filterStatus !== 'active'
-                ? []
-                : [{ valor: 'active' as FilterStatus, etiqueta: tr('Activos'), cuantos: userCounts.active, fija: true }]),
-              { valor: 'invited', etiqueta: tr('Invitaciones abiertas'), cuantos: userCounts.invited, tono: 'aviso' },
-              { valor: 'inactive', etiqueta: tr('Inactivos'), cuantos: userCounts.inactive },
-            ]}
+            pestanas={sinElNumeroRepetido(pestanasDeEstado, 'all', filterStatus)}
           />
         </div>
+        ) : null}
         <div className="md:overflow-x-auto">
         {/* En el celular cada persona es una tarjeta (patrón de Deuda del mes). */}
         <Table className="w-full md:min-w-[800px] max-md:block">

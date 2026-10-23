@@ -48,6 +48,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 import { Fila, tipoDeLaCarta } from '@/components/contratos/BandejaDeCartasDelIncremento';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { sinElNumeroRepetido } from '@/lib/pantalla/pestanas-sin-repetir';
 import { plataPareja } from '@/lib/format';
 import {
   CartaDelIncrementoCajon,
@@ -198,8 +199,9 @@ function ColaDeCartas() {
             <div className="flex flex-wrap items-center gap-2">
               {/* Revisora r25 (T2): las pestañas de estado de la casa, sin ceros
                   (antes chips grises con «Sin constancia 0», «Enviadas 0»). */}
+              {/* R2 (revisora r27): «Todas 30 · Por enviar 30» decía el número dos veces. */}
               <PestanasDeEstado<ClaveDeEstado>
-                pestanas={[
+                pestanas={sinElNumeroRepetido<ClaveDeEstado>([
                   { valor: 'todas', etiqueta: 'Todas', cuantos: conteos.todas, fija: true },
                   ...ESTADOS.map((e) => ({
                     valor: e.clave as ClaveDeEstado,
@@ -208,7 +210,7 @@ function ColaDeCartas() {
                     ...(e.clave === 'sin-constancia' ? { tono: 'aviso' as const } : {}),
                     testid: `pestana-cartas-${e.clave}`,
                   })),
-                ]}
+                ], 'todas', estado)}
                 valor={estado}
                 onCambio={setEstado}
                 etiqueta="Estado de las cartas"

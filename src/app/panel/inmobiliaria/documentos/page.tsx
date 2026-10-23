@@ -50,6 +50,7 @@ import { useTr } from '@/lib/i18n/use-tr';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { sinElNumeroRepetido } from '@/lib/pantalla/pestanas-sin-repetir';
 
 import {
   Table,
@@ -584,6 +585,9 @@ function DocumentosContent() {
                   setFiltros((f) => ({ ...f, estado: v }));
                 }}
                 pestanas={[
+                  // R2 (revisora r27): «Todos 2 · Borrador 2» decía el número dos veces. Las actas
+                  // son otra lista: no entran a la comparación.
+                  ...sinElNumeroRepetido<FiltrosDeDocumentos['estado'] | 'actas'>([
                   { valor: 'todos', etiqueta: tr('Todos'), cuantos: documentos.length, fija: true, testid: 'documentos-estado-todos' },
                   ...ESTADOS.map((e) => ({
                     valor: e as FiltrosDeDocumentos['estado'] | 'actas',
@@ -592,6 +596,7 @@ function DocumentosContent() {
                     tono: e === 'PENDING_SIGNATURE' || e === 'DOC_EXPIRED' ? ('aviso' as const) : undefined,
                     testid: `documentos-estado-${e}`,
                   })),
+                  ], 'todos', pestana === 'actas' ? 'actas' : filtros.estado),
                   /* Sin número en cero; con las actas caídas (un 403 para quien no tiene `portafolio:view`)
                      tampoco: un «0» ahí sería mentir que no hay actas. */
                   {

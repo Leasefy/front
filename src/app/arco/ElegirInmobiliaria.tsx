@@ -54,13 +54,15 @@ export function ElegirInmobiliaria({ inmobiliarias }: { inmobiliarias: Inmobilia
 
   return (
     <div className="w-full max-w-xl rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-8" data-testid="arco-elegir">
-      <div className="mb-6 space-y-3 text-center">
+      {/* Revisora r27 (ARCO, UI): todo alineado a la izquierda, como el cuerpo y los botones (antes el título y la
+          descripción centrados en la misma tarjeta); el correo sólo en el botón. */}
+      <div className="mb-6 space-y-3">
         {/* El logo lleva al inicio (antes no llevaba a ningún lado). */}
-        <Link href="/" aria-label="Leasefy, ir al inicio" className="mx-auto inline-block">
+        <Link href="/" aria-label="Leasefy, ir al inicio" className="inline-block">
           <LeasefyLogotype className="h-5 w-auto text-fg" title="Leasefy" />
         </Link>
         <h1 className="text-balance text-h2 text-fg">{t('inmobiliaria.ai.arco.public.title')}</h1>
-        <p className="mx-auto max-w-sm text-body-sm text-fg-muted">
+        <p className="max-w-md text-body-sm text-fg-muted">
           {t(sinLista ? 'inmobiliaria.ai.arco.public.elegir.textoSinLista' : 'inmobiliaria.ai.arco.public.elegir.texto')}
         </p>
       </div>

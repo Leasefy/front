@@ -71,10 +71,10 @@ export default function AvaluoPage() {
         </h1>
 
         <p className="text-body-lg text-fg-muted max-w-xl mx-auto mt-6 leading-relaxed">
-          Una estimación del valor de referencia de tu inmueble, para venta o
-          arriendo, hecha de forma remota con los datos y las fotos que cargas y
-          con datos del mercado. Nadie visita el inmueble: un revisor la revisa
-          y la firma antes de entregártela.
+          {/* Revisora r27: a 390 eran 6 renglones. Más corta, sin perder que es una estimación de referencia. */}
+          Una estimación de referencia del valor de tu inmueble, para vender o
+          arrendar, sin que nadie vaya a verlo. Un revisor la firma antes de
+          entregártela.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">

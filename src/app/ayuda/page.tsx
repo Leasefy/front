@@ -170,12 +170,6 @@ export default function AyudaPage() {
                   {category.title}
                 </a>
               ))}
-              <Link
-                href="/ayuda/propietarios"
-                className="rounded-full border border-border px-3.5 py-1.5 text-body-sm text-fg transition-colors hover:bg-surface-muted"
-              >
-                Guía para propietarios
-              </Link>
             </nav>
 
             <div className="space-y-10">
@@ -187,6 +181,17 @@ export default function AyudaPage() {
                       <FAQItem key={item.question} item={item} />
                     ))}
                   </div>
+                  {/* Revisora r27: la Guía es OTRA página: va como enlace bajo «Para propietarios», no mezclada con
+                      las anclas de los temas (se leían igual). */}
+                  {category.title === 'Para propietarios' ? (
+                    <Link
+                      href="/ayuda/propietarios"
+                      className="mt-3 inline-block text-body-sm text-fg underline underline-offset-4 hover:text-primary"
+                      data-testid="ayuda-guia-propietarios"
+                    >
+                      Leer la guía para propietarios
+                    </Link>
+                  ) : null}
                 </section>
               ))}
             </div>

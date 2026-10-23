@@ -66,7 +66,9 @@ describe('Mis giros', () => {
     await montar();
     expect(host.querySelector('[data-testid="girado-en-el-anio"]')?.textContent).toMatch(/2\.200\.000/);
     expect(host.querySelector('[data-testid="lo-que-te-giraron"]')?.textContent).toContain('en 2 giros');
-    expect(host.querySelectorAll('[data-testid="lista-de-giros"] li').length).toBe(4);
+    // Revisora r27: la lista va por año (el más reciente primero); 2025 queda en su pestaña.
+    expect(host.querySelectorAll('[data-testid="lista-de-giros"] li').length).toBe(3);
+    expect(Array.from(host.querySelectorAll('button')).some((b) => b.textContent?.includes('2025'))).toBe(true);
     // La cuenta sin novedades va DESPUÉS de lo girado.
     const orden = Array.from(host.querySelectorAll('[data-testid="lo-que-te-giraron"], [data-testid^="cuenta-de-giro-"]')).map(
       (n) => n.getAttribute('data-testid'),

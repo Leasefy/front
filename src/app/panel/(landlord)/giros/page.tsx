@@ -11,7 +11,11 @@
  * QA 11-10: el banco había devuelto el giro de Paula y lo retenido no se le
  * decía en ninguna parte del portal; sólo veía «Giro atrasado · 58 días».
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Bank, FileArrowDown, Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -252,6 +256,8 @@ function FilaDelGiro({ g }: { g: GiroDelPropietario }) {
 
 export default function MisGirosPage() {
   const [cuentas, setCuentas] = useState<CuentaDeGiro[] | null>(null);
+  // Revisora r27 (regla de Nico: listas con filtro y paginación): los giros por año, de a una página.
+  const [anioElegido, setAnioElegido] = useState<string | null>(null);
   const [giros, setGiros] = useState<GiroDelPropietario[] | null>(null);
   const [cargando, setCargando] = useState(true);
   const [fallo, setFallo] = useState<unknown>(null);
@@ -273,6 +279,16 @@ export default function MisGirosPage() {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  const anios = useMemo(
+    () => [...new Set((giros ?? []).map((g) => g.mes.slice(0, 4)))].sort((a, b) => b.localeCompare(a)),
+    [giros],
+  );
+  const anio = anioElegido && anios.includes(anioElegido) ? anioElegido : (anios[0] ?? null);
+  const delAnio = useMemo(() => (giros ?? []).filter((g) => !anio || g.mes.startsWith(anio)), [giros, anio]);
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(delAnio, {
+    resetKey: anio ?? '',
+  });
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -304,16 +320,50 @@ export default function MisGirosPage() {
                 })()}
               />
             )}
-            <h2 className="text-subtitle text-fg">Mes por mes</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-subtitle text-fg">Mes por mes</h2>
+              {anios.length > 1 ? (
+                <PestanasDeEstado<string>
+                  etiqueta="Ver los giros de un año"
+                  valor={anio ?? ''}
+                  onCambio={setAnioElegido}
+                  pestanas={anios.map((a) => ({
+                    valor: a,
+                    etiqueta: a,
+                    cuantos: (giros ?? []).filter((g) => g.mes.startsWith(a)).length,
+                    fija: true,
+                  }))}
+                />
+              ) : null}
+            </div>
             {giros && giros.length > 0 ? (
-              <ul className="divide-y divide-border-faint" data-testid="lista-de-giros">
-                {giros.map((g) => (
-                  <FilaDelGiro key={g.id} g={g} />
-                ))}
-              </ul>
+              <>
+                <ul className="divide-y divide-border-faint" data-testid="lista-de-giros">
+                  {pageItems.map((g) => (
+                    <FilaDelGiro key={g.id} g={g} />
+                  ))}
+                </ul>
+                {shouldPaginate ? (
+                  <div className="border-t border-border pt-3">
+                    <TablePagination
+                      total={total}
+                      page={page}
+                      pageSize={pageSize}
+                      pageSizeOptions={PAGE_SIZE_OPTIONS}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                    />
+                  </div>
+                ) : null}
+              </>
             ) : (
               <p className="mt-2 text-body-sm text-fg-muted" data-testid="sin-giros">
-                Todavía no te han girado nada por Leasefy. Lo que está por girar lo ves en tu estado de cuenta.
+                Todavía no te han girado nada por Leasefy. Lo que está por girar lo ves en{' '}
+                {/* Revisora r27: el vacío lleva a donde dice (antes lo nombraba sin enlace). */}
+                <Link href="/panel/estado-de-cuenta" className="font-medium text-fg underline underline-offset-4 hover:text-primary">
+                  tu estado de cuenta
+                </Link>
+                .
               </p>
             )}
           </section>

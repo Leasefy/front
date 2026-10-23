@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { SealCheck } from '@phosphor-icons/react'
 
 import { adminApi } from '@/lib/admin/api'
@@ -15,6 +15,8 @@ import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
+import { CajonDeLaFicha, useFichaEnLaUrl } from '@/components/admin/screen/CajonDeLaFicha'
+import { DetalleDeLaAprobacion } from './DetalleDeLaAprobacion'
 
 interface PendingRow {
   id: string
@@ -51,9 +53,11 @@ function esperaEnPalabras(dias: number): string {
 
 /** /admin/approvals — la cola de la ley T-323/2024 (FRONT.md §6.11 · BACK.md §8.10). */
 export default function ApprovalsPage() {
-  const router = useRouter()
   const { get, setFilters } = useUrlFilters()
   const type = get('type')
+  // Ronda 26 (revisora r25, «cajón ✗»): la decisión se abre en un cajón sobre la cola —antes otra página— y
+  // queda en la URL (`?ver=`) para compartirla; `/admin/approvals/:id` sigue para los enlaces directos.
+  const { ver, abrir } = useFichaEnLaUrl()
 
   const { data, isLoading, error, refetch } = useApiQuery<ApprovalsResponse>(
     (signal) => adminApi('/approvals', { query: { type: type || undefined }, signal }),
@@ -151,6 +155,13 @@ export default function ApprovalsPage() {
             })),
         ]
       : undefined
+  // La fila se recuerda: decidida, sale de la cola y el cajón sigue diciendo qué era.
+  const enLaCola = ver ? filas.find((r) => r.id === ver) ?? null : null
+  const [recordada, setRecordada] = useState<PendingRow | null>(null)
+  useEffect(() => {
+    if (enLaCola) setRecordada(enLaCola)
+  }, [enLaCola])
+  const abierta = enLaCola ?? (recordada?.id === ver ? recordada : null)
   const montoEnJuego = filas.reduce((a, r) => a + (resumen(r).montoCop ?? 0), 0)
 
   const todasViejas = vencidas > 0 && vencidas === filas.length
@@ -223,7 +234,7 @@ export default function ApprovalsPage() {
         emptyIcon={<SealCheck weight="duotone" />}
         emptyTono="exito"
         aria-label="Cola de aprobaciones"
-        onRowClick={(r) => router.push(`/admin/approvals/${r.id}`)}
+        onRowClick={(r) => abrir(r.id)}
         queSon={['decisión', 'decisiones']}
         buscar="Deudor, inmobiliaria o detalle"
         textoExtra={(r) => `${r.legal_name ?? ''} ${r.model_used}`}
@@ -260,6 +271,16 @@ export default function ApprovalsPage() {
       {data && data.data.length >= 100 ? (
         <p className="text-caption text-fg-subtle">Se muestran las 100 más viejas; el resto aparece a medida que se decidan.</p>
       ) : null}
+
+      <CajonDeLaFicha
+        ver={ver}
+        onCerrar={() => abrir(null)}
+        titulo={abierta ? tipoDeDecision(abierta.decision_type) : 'La decisión'}
+        descripcion={abierta ? `${persona(abierta) ?? 'Sin nombre'} · ${abierta.legal_name ?? 'Sin inmobiliaria'}` : undefined}
+        enlace={`/admin/approvals/${ver}`}
+      >
+        <DetalleDeLaAprobacion key={ver} id={ver} enCajon alDecidir={refetch} />
+      </CajonDeLaFicha>
     </div>
   )
 }

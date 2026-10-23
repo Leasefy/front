@@ -8034,7 +8034,7 @@
           }
         },
         "analitica": {
-          "title": "Analítica de Cobranza",
+          "title": "Analítica de cobranza",
           "subtitle": "Métricas agregadas de recuperación, objeciones y cadencia del agente.",
           "sampleDataWatermark": "Datos de muestra",
           "agencyGate": {
@@ -8047,7 +8047,7 @@
               "title": "Tasa de recuperación por etapa",
               "legend": {
                 "transitions": "Deudores recuperados",
-                "cop": "COP recuperado"
+                "cop": "Pesos recuperados"
               },
               "empty": "Sin suficientes transiciones de etapa en los últimos 30 días."
             },
@@ -8059,9 +8059,9 @@
                 "script": "Guion",
                 "stage": "Etapa",
                 "nCalls": "Llamadas",
-                "conversionRate": "Tasa conv.",
+                "conversionRate": "Conversión",
                 "lift": "Mejora vs promedio",
-                "sparkline": "Tendencia 30d"
+                "sparkline": "Últimos 30 días"
               }
             },
             "topObjections": {

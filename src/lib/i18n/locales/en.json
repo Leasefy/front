@@ -4944,7 +4944,7 @@
       "legales": {
         "subtitle": "The agency's contracts, handover records, inventories and letters.",
         "generar": "Generate document",
-        "buscar": "Search document, property or party",
+        "buscar": "Document, property or person",
         "tipo": "Type",
         "estado": "Status",
         "todosLosTipos": "All types",

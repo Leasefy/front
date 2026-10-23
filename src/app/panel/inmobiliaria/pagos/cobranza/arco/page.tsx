@@ -16,15 +16,12 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowSquareOut,
   ArrowClockwise,
   CheckCircle,
   Clock,
   IdentificationCard,
+  MagnifyingGlass,
   Scales,
-  ShieldCheck,
-  Warning,
-  WarningCircle,
 } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
@@ -55,17 +52,20 @@ import {
   TableCell,
   TableRowAnimada,
 } from '@/components/ui/table'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { useEstadoEnLaUrl } from '@/lib/cobranza/use-estado-en-la-url'
+import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
+import { useTr } from '@/lib/i18n/use-tr'
 import { TablePagination } from '@/components/ui/pagination'
 // Piezas que resuelve el design system: no rehacerlas a mano.
-import { AnimatedNumber, Banner, Callout, Card, CrossFade, Eyebrow, FranjaDeCifras, KpiCard, MonoLabel, Presence } from '@leasefy/cadence'
+import { Callout, Card, Chip, CrossFade, Eyebrow, MonoLabel } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const NS = 'inmobiliaria.ai.arco'
 
-type TabValue = 'all' | ArcoRequestType
-
-const TABS: TabValue[] = ['all', ...ARCO_TYPES]
 
 /**
  * Las filas son altas (dos líneas: tipo + qué significa, nombre + referencia),
@@ -90,7 +90,7 @@ const TYPE_VARIANT: Record<ArcoRequestType, 'default' | 'secondary' | 'warning' 
  * Era el párrafo «qué es esta bandeja» puesto en la cabecera; sus frases
  * siguen acá, repartidas en tres pasos.
  */
-function ComoFuncionaArco() {
+function ComoFuncionaArco({ terms }: { terms: ArcoSlaTerms }) {
   const { t } = useI18n()
   const pasos: PasoExplicado[] = [
     { id: 'paso1', icono: IdentificationCard, titulo: t(`${NS}.intro.paso1.title`), explicacion: t(`${NS}.intro.paso1.desc`) },
@@ -111,7 +111,11 @@ function ComoFuncionaArco() {
       descripcion={t(`${NS}.intro.descripcion`)}
       variante="secundario"
     >
-      <PasosExplicados data-testid="arco-como-funciona" pasos={pasos} />
+      <div className="space-y-6">
+        <PasosExplicados data-testid="arco-como-funciona" pasos={pasos} />
+        {/* Revisora r25 (ARCO #2): lo legal vive aquí, no abierto encima de la tabla. */}
+        <IntroPanel terms={terms} />
+      </div>
     </ParaEntenderMas>
   )
 }
@@ -142,7 +146,7 @@ function IntroPanel({ terms }: { terms: ArcoSlaTerms }) {
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8">
         <div className="min-w-0 flex-1 space-y-2">
           <Eyebrow>{t(`${NS}.intro.eyebrow`)}</Eyebrow>
-          <p className="max-w-[62ch] text-sm leading-relaxed text-fg-muted">
+          <p className="max-w-[62ch] text-body-sm leading-relaxed text-fg-muted">
             {t(`${NS}.intro.consequence`)}
           </p>
         </div>
@@ -154,7 +158,7 @@ function IntroPanel({ terms }: { terms: ArcoSlaTerms }) {
             </MonoLabel>
             <ul className="space-y-1.5">
               {deadlines.map(({ key, days }) => (
-                <li key={key} className="text-sm text-fg-muted">
+                <li key={key} className="text-body-sm text-fg-muted">
                   {t(`${NS}.intro.${key}`).replace('{days}', String(days))}
                 </li>
               ))}
@@ -169,64 +173,6 @@ function IntroPanel({ terms }: { terms: ArcoSlaTerms }) {
   )
 }
 
-// ─── Banda de atención ────────────────────────────────────────────────────────
-
-/**
- * Sólo aparece cuando hay algo que atender. Un banner permanente se vuelve
- * invisible; uno que aparece sólo cuando importa, se lee.
- */
-function AttentionBanner({
-  overdue,
-  urgent,
-  onFocus,
-}: {
-  overdue: number
-  urgent: number
-  onFocus: () => void
-}) {
-  const { t } = useI18n()
-  const hay = overdue > 0 || urgent > 0
-
-  const critical = overdue > 0
-  const count = critical ? overdue : urgent
-  const key = critical
-    ? count === 1 ? 'attention.overdueTitle' : 'attention.overdueTitlePlural'
-    : count === 1 ? 'attention.urgentTitle' : 'attention.urgentTitlePlural'
-
-  const label = t(`${NS}.${key}`)
-    .replace('{count}', String(count))
-    .replace('{days}', String(ARCO_URGENT_THRESHOLD_DAYS))
-
-  // Sale con `Presence` (fundido): atender lo vencido la retira con su
-  // animación (antes `return null` la desmontaba de golpe). La entrada la
-  // pone el propio `Banner` (sube 8px), por eso aquí sin desplazamiento.
-  return (
-    <Presence show={hay} direction="none">
-    <Banner
-      role="status"
-      variant={critical ? 'danger' : 'warning'}
-      icon={
-        critical ? (
-          <WarningCircle className="h-5 w-5" weight="fill" aria-hidden="true" />
-        ) : (
-          <Clock className="h-5 w-5" weight="fill" aria-hidden="true" />
-        )
-      }
-    >
-      {/* `span`, no `div`: Banner pinta sus children dentro de un `<p>` y un
-          bloque ahí es HTML inválido — rompe la hidratación y la pantalla no
-          llega a montar. */}
-      <span className="flex flex-wrap items-center justify-between gap-3">
-        <span className="font-medium">{label}</span>
-        <Button variant="outline" size="sm" hideArrow onClick={onFocus}>
-          {t(`${NS}.attention.cta`)}
-        </Button>
-      </span>
-    </Banner>
-    </Presence>
-  )
-}
-
 // ─── Indicador de frescura ────────────────────────────────────────────────────
 
 function formatUpdatedAgo(t: (k: string) => string, at: Date | null): string | null {
@@ -237,147 +183,30 @@ function formatUpdatedAgo(t: (k: string) => string, at: Date | null): string | n
   return t(`${NS}.live.updatedHours`).replace('{count}', String(Math.floor(minutes / 60)))
 }
 
-// ─── Tabla ────────────────────────────────────────────────────────────────────
+// ─── Pestañas por estado (revisora r25, ARCO #3) ─────────────────────────────
 
-function RequestsTable({
-  rows,
-  total,
-  page,
-  pageSize,
-  onPageChange,
-  onPageSizeChange,
-  emptyTitle,
-  emptyBody,
-}: {
-  /** Sólo las filas de la página actual. */
-  rows: ArcoRequestRow[]
-  /** Total del filtro activo — lo que cuenta el pie, no `rows.length`. */
-  total: number
-  page: number
-  pageSize: number
-  onPageChange: (page: number) => void
-  onPageSizeChange: (size: number) => void
-  emptyTitle: string
-  emptyBody: string
-}) {
-  const { t } = useI18n()
+/**
+ * Lo que importa de una solicitud es su ESTADO y su plazo, no su tipo: las
+ * pestañas van por estado, dentro de la tarjeta, y el tipo pasa a filtro.
+ * «Vencen pronto» = vencidas + las que vencen en menos de
+ * `ARCO_URGENT_THRESHOLD_DAYS` días hábiles, sin contar las que esperan que el
+ * titular confirme su correo (su plazo no corre).
+ */
+type EstadoArco = 'vencen' | 'abiertas' | 'sin_confirmar' | 'cerradas' | 'todas'
+const ESTADOS_ARCO: EstadoArco[] = ['vencen', 'abiertas', 'sin_confirmar', 'cerradas', 'todas']
 
-  // Vacío ⇄ tabla (cambiar de pestaña o de filtro): el uno sale y el otro
-  // entra; es el mismo `CrossFade` en las dos ramas.
-  if (total === 0) {
-    return (
-      <CrossFade swapKey={`vacio-${emptyTitle}`}>
-        <EmptyState icon={CheckCircle} title={emptyTitle} description={emptyBody} />
-      </CrossFade>
-    )
-  }
+const sinConfirmar = (r: ArcoRequestRow) => r.status === 'pending_email_verification'
+const vencePronto = (r: ArcoRequestRow) => !r.isClosed && !sinConfirmar(r) && (r.isOverdue || r.isUrgent)
 
-  return (
-    <CrossFade swapKey="tabla">
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-      <Table className="min-w-full">
-        <TableHeader className="bg-surface-muted">
-          <TableRow>
-            <TableHead className="px-4 py-2.5">{t(`${NS}.table.type`)}</TableHead>
-            <TableHead className="px-4 py-2.5">{t(`${NS}.table.requester`)}</TableHead>
-            <TableHead className="px-4 py-2.5">{t(`${NS}.table.status`)}</TableHead>
-            <TableHead className="px-4 py-2.5">{t(`${NS}.table.sla`)}</TableHead>
-            <TableHead className="px-4 py-2.5">{t(`${NS}.table.submitted`)}</TableHead>
-            <TableHead className="px-4 py-2.5 text-right">{t(`${NS}.table.actions`)}</TableHead>
-          </TableRow>
-        </TableHeader>
-        {/* Cambiar de pestaña, filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
-        <TableBodyAnimado>
-          {rows.map((row) => (
-            <TableRowAnimada
-              key={row.id}
-              className={cn(
-                'border-t border-border transition-colors hover:bg-surface-muted',
-                // Franja izquierda: el estado del plazo se lee sin recorrer la fila.
-                row.isOverdue && 'border-l-2 border-l-danger',
-                row.isUrgent && 'border-l-2 border-l-warning',
-              )}
-            >
-              <TableCell className="px-4 py-3">
-                <Badge variant={TYPE_VARIANT[row.type]}>{t(`${NS}.type.${row.type}`)}</Badge>
-                <p className="mt-1 text-caption leading-snug text-fg-subtle">
-                  {t(`${NS}.typeMeaning.${row.type}`)}
-                </p>
-              </TableCell>
-
-              <TableCell className="min-w-[180px] px-4 py-3">
-                {/* QA-AGENTES 16-10: el nombre también abre la solicitud (sólo abría el ícono del final). */}
-                <Link
-                  href={`/panel/inmobiliaria/pagos/cobranza/arco/${row.id}`}
-                  className="text-sm font-medium text-fg hover:underline"
-                >
-                  {row.requesterName}
-                </Link>
-                {/* Revisora r25 (bloqueante): aquí iba «Ref. A1B2C3D4», sacado del hash de la cédula. No identifica a
-                    nadie ni sirve para hacer nada: se quitó. El nombre basta para reconocer la solicitud. */}
-              </TableCell>
-
-              <TableCell className="whitespace-nowrap px-4 py-3">
-                <ArcoStatusBadge status={row.status} />
-              </TableCell>
-
-              <TableCell className="whitespace-nowrap px-4 py-3">
-                <SlaCountdownBadge
-                  remainingDays={row.slaRemainingDays}
-                  isClosed={row.isClosed}
-                  isPaused={row.status === 'pending_email_verification'}
-                />
-              </TableCell>
-
-              <TableCell className="whitespace-nowrap px-4 py-3">
-                <span className="font-mono text-caption tabular-nums text-fg-muted">
-                  {new Date(row.submittedAt).toLocaleDateString('es-CO', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </span>
-              </TableCell>
-
-              <TableCell className="whitespace-nowrap px-4 py-3 text-right">
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="icon"
-                  hideArrow
-                  aria-label={t(`${NS}.actions.view`).replace('{name}', row.requesterName)}
-                >
-                  <Link href={`/panel/inmobiliaria/pagos/cobranza/arco/${row.id}`}>
-                    <ArrowSquareOut className="h-4 w-4" weight="regular" aria-hidden="true" />
-                  </Link>
-                </Button>
-              </TableCell>
-            </TableRowAnimada>
-          ))}
-        </TableBodyAnimado>
-      </Table>
-      </div>
-
-      {/* El pie se monta siempre que haya filas —acá arriba ya se devolvió el
-          vacío—, aunque entren todas en una página: dice «Mostrando 1–3 de 3» y
-          deja elegir cuántas ver (Nico, 2026-09-02). */}
-      {total > 0 && (
-        <div className="border-t border-border px-4 py-3">
-          <TablePagination
-            total={total}
-            page={page}
-            pageSize={pageSize}
-            pageSizeOptions={PAGE_SIZE_OPTIONS}
-            onPageChange={onPageChange}
-            onPageSizeChange={onPageSizeChange}
-          />
-        </div>
-      )}
-    </Card>
-    </CrossFade>
-  )
+function deLaPestana(r: ArcoRequestRow, e: EstadoArco): boolean {
+  if (e === 'vencen') return vencePronto(r)
+  if (e === 'abiertas') return !r.isClosed
+  if (e === 'sin_confirmar') return !r.isClosed && sinConfirmar(r)
+  if (e === 'cerradas') return r.isClosed
+  return true
 }
+
+const CELDA_390 = 'max-md:block max-md:p-0'
 
 // ─── Pantalla ─────────────────────────────────────────────────────────────────
 
@@ -394,74 +223,74 @@ export default function ArcoInboxPage() {
 
 function BandejaArco() {
   const { t } = useI18n()
-  const {
-    requests,
-    kpis,
-    slaTerms,
-    countsByType,
-    needsAttention,
-    isLoading,
-    isRefreshing,
-    error,
-    lastUpdatedAt,
-    refetch,
-  } = useArcoRequests()
+  const tr = useTr()
+  const { requests, slaTerms, isLoading, isRefreshing, error, lastUpdatedAt, refetch } = useArcoRequests()
 
-  const [activeTab, setTab] = useState<TabValue>('all')
-  /** Filtro transversal a las pestañas, activado desde la banda de atención. */
-  const [onlyAttention, setOnlyAttention] = useState(false)
+  // C8 (r25): abre en «Vencen pronto» si hay alguna; el filtro vive en la URL.
+  const estadoUrl = useEstadoEnLaUrl<EstadoArco>(ESTADOS_ARCO)
+  const [elegido, setElegido] = useState<EstadoArco | null>(null)
+  const [tipo, setTipo] = useState<ArcoRequestType | null>(null)
+  const [busqueda, setBusqueda] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
+  // LA RESPUESTA y su barra: las abiertas, partidas sin solaparse.
+  const cuentas = useMemo(() => {
+    const abiertas = requests.filter((r) => !r.isClosed)
+    const esperan = abiertas.filter(sinConfirmar)
+    const corren = abiertas.filter((r) => !sinConfirmar(r))
+    const vencidas = corren.filter((r) => r.isOverdue).length
+    const porVencer = corren.filter((r) => r.isUrgent).length
+    return {
+      abiertas: abiertas.length,
+      sinConfirmar: esperan.length,
+      vencidas,
+      porVencer,
+      enPlazo: corren.length - vencidas - porVencer,
+      cerradas: requests.length - abiertas.length,
+    }
+  }, [requests])
+  const vencen = cuentas.vencidas + cuentas.porVencer
+
+  const estado: EstadoArco = elegido ?? estadoUrl.deLaUrl ?? (vencen > 0 ? 'vencen' : 'abiertas')
+  const cambiarEstado = (e: EstadoArco) => {
+    setElegido(e)
+    estadoUrl.escribir(e)
+    setPage(1)
+  }
+
   const filteredRows = useMemo(() => {
-    const base = onlyAttention ? needsAttention : requests
-    return activeTab === 'all' ? base : base.filter((r) => r.type === activeTab)
-  }, [requests, needsAttention, onlyAttention, activeTab])
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    return requests.filter(
+      (r) =>
+        deLaPestana(r, estado) &&
+        (tipo === null || r.type === tipo) &&
+        (q === '' || r.requesterName.toLocaleLowerCase('es').includes(q)),
+    )
+  }, [requests, estado, tipo, busqueda])
 
   /**
-   * Página efectiva, acotada al total actual.
-   *
-   * Hacen falta dos guardas y por motivos distintos:
-   *  · cambiar de pestaña o de filtro reduce el total → estando en la página 3
-   *    de «Todas», pasar a «Oposición» (2 filas) mostraría una tabla vacía;
-   *  · el polling cada minuto puede achicar la lista sin que el usuario toque
-   *    nada (alguien resolvió una solicitud) → misma página vacía, pero sin
-   *    ninguna acción a la cual reaccionar.
-   *
-   * Acotar al renderizar cubre ambos casos sin un efecto que persiga al estado.
+   * Página efectiva, acotada al total actual: cambiar de pestaña o el polling
+   * cada minuto pueden achicar la lista sin que el usuario toque el paginador.
    */
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safePage = Math.min(page, totalPages)
-
   const visibleRows = useMemo(
     () => filteredRows.slice((safePage - 1) * pageSize, safePage * pageSize),
     [filteredRows, safePage, pageSize],
   )
 
-  /** Todo cambio de filtro vuelve a la primera página. */
-  const changeTab = (tab: TabValue) => {
-    setTab(tab)
-    setPage(1)
-  }
-
-  const overdueByTab = useMemo(() => {
-    const map: Record<TabValue, number> = {
-      all: 0, acceso: 0, rectificacion: 0, cancelacion: 0, oposicion: 0,
-    }
-    for (const r of requests) {
-      if (!r.isOverdue) continue
-      map.all += 1
-      map[r.type] += 1
-    }
-    return map
-  }, [requests])
-
-  const urgentCount = needsAttention.length - kpis.overdue
   const updatedAgo = formatUpdatedAgo(t, lastUpdatedAt)
+  const lineaDelPlazo =
+    cuentas.vencidas > 0
+      ? t(`${NS}.attention.${cuentas.vencidas === 1 ? 'overdueTitle' : 'overdueTitlePlural'}`).replace('{count}', String(cuentas.vencidas))
+      : cuentas.porVencer > 0
+        ? t(`${NS}.attention.${cuentas.porVencer === 1 ? 'urgentTitle' : 'urgentTitlePlural'}`)
+            .replace('{count}', String(cuentas.porVencer))
+            .replace('{days}', String(ARCO_URGENT_THRESHOLD_DAYS))
+        : null
 
   // Primera carga: esqueleto. Los refetch posteriores no desmontan la vista.
-  // Movimiento: esqueleto → bandeja en un `CrossFade` (el mismo nodo en las
-  // dos ramas); lo que ya estaba al montarse no se anima.
   if (isLoading && requests.length === 0 && !error) {
     return (
       <CrossFade swapKey="esqueleto">
@@ -470,14 +299,16 @@ function BandejaArco() {
     )
   }
 
+  const fecha = (iso: string) => fechaCorta(diaEnColombia(iso))
+
   return (
     <CrossFade swapKey="bandeja">
     <div className="space-y-6 p-6 lg:p-8">
-      {/* GLOW UP 21-10: el encabezado común. Junto al título, si la bandeja está
-          al día (en vivo); a la derecha, «¿Cómo funciona?» y actualizar. */}
+      {/* El título es el del riel («Habeas Data», C2); la descripción dice qué son. */}
       <EncabezadoDePantalla
-        seccion="Cobranza"
-        titulo={t(`${NS}.title`)}
+        seccion="Cobranza · Cumplimiento"
+        titulo={t('inmobiliaria.ai.nav.arco')}
+        descripcion={tr('Las solicitudes de los titulares para ver, corregir, borrar u oponerse al uso de sus datos personales, con el plazo que pone la ley.')}
         junto={
           <span className="flex items-center gap-1.5 text-caption text-fg-subtle" aria-live="polite">
             <span
@@ -487,12 +318,10 @@ function BandejaArco() {
               )}
               aria-hidden="true"
             />
-            {isRefreshing
-              ? t(`${NS}.live.refreshing`)
-              : `${updatedAgo ?? t(`${NS}.live.auto`)} · ${t(`${NS}.live.auto`)}`}
+            {isRefreshing ? t(`${NS}.live.refreshing`) : updatedAgo ?? t(`${NS}.live.auto`)}
           </span>
         }
-        ayuda={<ComoFuncionaArco />}
+        ayuda={<ComoFuncionaArco terms={slaTerms} />}
         acciones={
           <Button
             variant="outline"
@@ -513,127 +342,189 @@ function BandejaArco() {
         data-testid="arco-encabezado"
       />
 
-      <IntroPanel terms={slaTerms} />
+      {/* Error: no reemplaza la tabla — los datos viejos siguen sirviendo. Sin
+          nada cargado, el cartel de la casa con su reintento. */}
+      {error && requests.length === 0 ? (
+        <FalloDeCarga error={new Error(t(`${NS}.error.load`))} queEs="las solicitudes de datos personales" onReintentar={() => refetch()} />
+      ) : (
+        <Card className="overflow-hidden">
+          {error ? (
+            <div className="border-b border-border">
+              <FalloDeCarga error={new Error(t(`${NS}.error.load`))} queEs="las solicitudes más nuevas" onReintentar={() => refetch()} enmarcado={false} />
+            </div>
+          ) : null}
 
-      {/* Error: no reemplaza la tabla — los datos viejos siguen sirviendo. */}
-      <Presence show={Boolean(error)} className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-danger-soft p-3">
-          <Warning className="h-5 w-5 shrink-0 text-danger" weight="fill" aria-hidden="true" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-danger">{t(`${NS}.error.load`)}</p>
-            <p className="text-caption text-fg-muted">{t(`${NS}.error.loadHint`)}</p>
+          {/* 1 · LA RESPUESTA (revisora r25, ARCO #1): antes cuatro KpiCard del
+              mismo peso, una de ellas «Cerradas», que no cambia ninguna
+              decisión; y el cartel de atención aparte. Ahora UNA cifra con su
+              barra, y el cartel es su pie. */}
+          {cuentas.abiertas > 0 ? (
+            <CifraHeroe
+              className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+              data-testid="arco-vencen-pronto"
+              tamano="mediana"
+              rotulo={tr('Vencen pronto')}
+              cifra={vencen.toLocaleString('es-CO')}
+              contexto={cuentas.abiertas === 1 ? tr('de 1 abierta') : tr('de {n} abiertas', { n: cuentas.abiertas.toLocaleString('es-CO') })}
+              total={cuentas.abiertas}
+              tramos={[
+                { clave: 'vencidas', etiqueta: tr('Vencidas'), monto: cuentas.vencidas, tono: 'critico', cifra: cuentas.vencidas.toLocaleString('es-CO') },
+                { clave: 'por-vencer', etiqueta: tr('Por vencer'), monto: cuentas.porVencer, tono: 'aviso', cifra: cuentas.porVencer.toLocaleString('es-CO') },
+                { clave: 'en-plazo', etiqueta: tr('En plazo'), monto: cuentas.enPlazo, tono: 'exito', cifra: cuentas.enPlazo.toLocaleString('es-CO') },
+                { clave: 'sin-confirmar', etiqueta: tr('Sin confirmar el correo'), monto: cuentas.sinConfirmar, tono: 'neutro', cifra: cuentas.sinConfirmar.toLocaleString('es-CO') },
+              ]}
+              esCero={vencen === 0}
+              cuandoEsCero={tr('Ninguna vence pronto: las {n} abiertas están en plazo.', { n: cuentas.abiertas.toLocaleString('es-CO') })}
+              pie={lineaDelPlazo ? <span className="text-fg">{lineaDelPlazo}</span> : undefined}
+            />
+          ) : null}
+
+          {/* 2 · Las pestañas por estado, con su conteo */}
+          <div className="border-b border-border px-4 py-3">
+            <PestanasDeEstado<EstadoArco>
+              data-testid="arco-pestanas"
+              etiqueta={tr('Filtrar las solicitudes por estado')}
+              valor={estado}
+              onCambio={cambiarEstado}
+              pestanas={[
+                { valor: 'vencen', etiqueta: tr('Vencen pronto'), cuantos: vencen, tono: 'aviso', testid: 'arco-pestana-vencen' },
+                { valor: 'abiertas', etiqueta: tr('Abiertas'), cuantos: cuentas.abiertas, fija: true, testid: 'arco-pestana-abiertas' },
+                { valor: 'sin_confirmar', etiqueta: tr('Sin confirmar el correo'), cuantos: cuentas.sinConfirmar, testid: 'arco-pestana-sin-confirmar' },
+                { valor: 'cerradas', etiqueta: tr('Cerradas'), cuantos: cuentas.cerradas, testid: 'arco-pestana-cerradas' },
+                { valor: 'todas', etiqueta: tr('Todas'), cuantos: requests.length, fija: true, testid: 'arco-pestana-todas' },
+              ]}
+            />
           </div>
-          <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
-            {t(`${NS}.error.retry`)}
-          </Button>
-      </Presence>
 
-      <AttentionBanner
-        overdue={kpis.overdue}
-        urgent={urgentCount}
-        onFocus={() => {
-          setOnlyAttention(true)
-          changeTab('all')
-        }}
-      />
-
-      {/* KPIs — KpiCard del DS: número mono tabular, tile de icono y elevación
-          los resuelve Cadence. `sublabel` explica qué cuenta cada uno. */}
-      <FranjaDeCifras data-testid="cifras-de-arco">
-        <KpiCard
-          icon={<WarningCircle className="h-5 w-5 text-danger" weight="duotone" />}
-          label={t(`${NS}.kpi.overdue`)}
-          sublabel={t(`${NS}.kpi.overdueHint`)}
-          value={String(kpis.overdue)}
-        />
-        <KpiCard
-          icon={<ShieldCheck className="h-5 w-5 text-success" weight="duotone" />}
-          label={t(`${NS}.kpi.onTime`)}
-          sublabel={t(`${NS}.kpi.onTimeHint`)}
-          value={String(kpis.onTime)}
-        />
-        <KpiCard
-          icon={<Clock className="h-5 w-5 text-fg-subtle" weight="duotone" />}
-          label={t(`${NS}.kpi.pendingVerification`)}
-          sublabel={t(`${NS}.kpi.pendingVerificationHint`)}
-          value={String(kpis.pendingVerification)}
-        />
-        <KpiCard
-          icon={<CheckCircle className="h-5 w-5 text-fg-subtle" weight="duotone" />}
-          label={t(`${NS}.kpi.closed`)}
-          sublabel={t(`${NS}.kpi.closedHint`)}
-          value={String(kpis.closed)}
-        />
-      </FranjaDeCifras>
-
-      {/* Filtro activo desde la banda de atención */}
-      <Presence show={onlyAttention} direction="none" initial={false} className="flex items-center gap-2">
-          <Badge variant="warning">{t(`${NS}.attention.cta`)}</Badge>
-          <Button
-            variant="ghost"
-            size="sm"
-            hideArrow
-            onClick={() => {
-              setOnlyAttention(false)
-              setPage(1)
-            }}
-          >
-            {t('common.all')}
-          </Button>
-      </Presence>
-
-      {/* Pestañas por tipo + tabla */}
-      <Tabs value={activeTab} onValueChange={(v) => changeTab(v as TabValue)}>
-        <TabsList variant="underline" className="flex-wrap">
-          {TABS.map((tab) => {
-            const count = tab === 'all' ? requests.length : countsByType[tab]
-            const hasOverdue = overdueByTab[tab] > 0
-            return (
-              <TabsTrigger key={tab} value={tab} className="inline-flex items-center gap-1.5">
-                {t(`${NS}.tab.${tab}`)}
-                <Badge
-                  variant={hasOverdue ? 'destructive' : 'secondary'}
-                  className="px-1.5 py-0.5 font-mono text-caption tabular-nums"
+          {/* 3 · Buscar y el tipo, como filtro */}
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center">
+            <div className="relative w-full md:w-64">
+              <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+              <Input
+                type="search"
+                value={busqueda}
+                onChange={(e) => {
+                  setBusqueda(e.target.value)
+                  setPage(1)
+                }}
+                placeholder={tr('Buscar titular')}
+                aria-label={tr('Buscar solicitudes por titular')}
+                className="pl-9"
+                data-testid="arco-buscar"
+              />
+            </div>
+            <fieldset className="flex flex-wrap items-center gap-2">
+              <legend className="sr-only">{tr('Tipo de solicitud')}</legend>
+              {ARCO_TYPES.map((tp) => (
+                <Chip
+                  key={tp}
+                  size="sm"
+                  selected={tipo === tp}
+                  onClick={() => {
+                    setTipo((prev) => (prev === tp ? null : tp))
+                    setPage(1)
+                  }}
+                  data-testid={`arco-tipo-${tp}`}
                 >
-                  <AnimatedNumber value={count} format={(n) => String(Math.round(n))} />
-                </Badge>
-                {/* El color no puede ser la única señal (DESIGN.md §7). */}
-                {hasOverdue && (
-                  <span className="sr-only">
-                    {t(`${NS}.kpi.overdue`)}: {overdueByTab[tab]}
-                  </span>
-                )}
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+                  {t(`${NS}.type.${tp}`)}
+                </Chip>
+              ))}
+            </fieldset>
+          </div>
 
-        <div className="mt-4">
-          <RequestsTable
-            rows={visibleRows}
-            total={filteredRows.length}
-            page={safePage}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={(size) => {
-              setPageSize(size)
-              setPage(1)
-            }}
-            emptyTitle={
-              activeTab === 'all' && !onlyAttention
-                ? t(`${NS}.empty.title`)
-                : t(`${NS}.empty.filteredTitle`)
-            }
-            emptyBody={
-              activeTab === 'all' && !onlyAttention
-                ? t(`${NS}.empty.body`)
-                : t(`${NS}.empty.filteredBody`).replace(
-                    '{type}',
-                    activeTab === 'all' ? '' : t(`${NS}.type.${activeTab}`).toLowerCase(),
-                  )
-            }
-          />
-        </div>
-      </Tabs>
+          {/* 4 · La tabla; a 390, tarjetas (revisora r25, ARCO #4) */}
+          <CrossFade swapKey={filteredRows.length === 0 ? `vacio-${estado}` : 'tabla'}>
+          {filteredRows.length === 0 ? (
+            <EmptyState
+              icon={CheckCircle}
+              title={requests.length === 0 ? t(`${NS}.empty.title`) : tr('Ninguna solicitud con este filtro')}
+              description={requests.length === 0 ? t(`${NS}.empty.body`) : tr('Cambia la pestaña, el tipo o la búsqueda para ver las demás.')}
+            />
+          ) : (
+            <div className="overflow-x-auto max-md:overflow-visible">
+              <Table className="min-w-full max-md:block">
+                <TableHeader className="max-md:hidden">
+                  <TableRow>
+                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.requester`)}</TableHead>
+                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.type`)}</TableHead>
+                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.status`)}</TableHead>
+                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.sla`)}</TableHead>
+                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.submitted`)}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                {/* Cambiar de pestaña, filtrar o paginar: las filas entran escalonadas (techo 320 ms). */}
+                <TableBodyAnimado className="max-md:block">
+                  {visibleRows.map((row) => (
+                    <TableRowAnimada
+                      key={row.id}
+                      data-testid={`arco-fila-${row.id}`}
+                      className={cn(
+                        'transition-colors hover:bg-surface-muted',
+                        'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0',
+                        // Franja izquierda: el estado del plazo se lee sin recorrer la fila.
+                        row.isOverdue && !row.isClosed && 'border-l-2 border-l-danger',
+                        row.isUrgent && 'border-l-2 border-l-warning',
+                      )}
+                    >
+                      <TableCell className={cn('min-w-[180px] px-4 py-3 max-md:col-start-1 max-md:row-start-1', CELDA_390)}>
+                        {/* QA-AGENTES 16-10: el nombre abre la solicitud. Sin
+                            «Ref.» del hash de la cédula (bloqueante r25). */}
+                        <Link
+                          href={`/panel/inmobiliaria/pagos/cobranza/arco/${row.id}`}
+                          className="text-body-sm font-medium text-fg hover:underline"
+                          aria-label={t(`${NS}.actions.view`).replace('{name}', row.requesterName)}
+                        >
+                          {row.requesterName}
+                        </Link>
+                      </TableCell>
+                      <TableCell className={cn('px-4 py-3 max-md:col-start-1 max-md:row-start-2', CELDA_390)}>
+                        <Badge variant={TYPE_VARIANT[row.type]}>{t(`${NS}.type.${row.type}`)}</Badge>
+                        <p className="mt-1 text-caption leading-snug text-fg-subtle max-md:hidden">
+                          {t(`${NS}.typeMeaning.${row.type}`)}
+                        </p>
+                      </TableCell>
+                      <TableCell className={cn('whitespace-nowrap px-4 py-3 max-md:col-start-2 max-md:row-start-1 max-md:text-right', CELDA_390)}>
+                        <ArcoStatusBadge status={row.status} />
+                      </TableCell>
+                      <TableCell className={cn('whitespace-nowrap px-4 py-3 max-md:col-start-2 max-md:row-start-2 max-md:text-right', CELDA_390)}>
+                        <SlaCountdownBadge
+                          remainingDays={row.slaRemainingDays}
+                          isClosed={row.isClosed}
+                          isPaused={sinConfirmar(row)}
+                        />
+                      </TableCell>
+                      <TableCell className={cn('whitespace-nowrap px-4 py-3 max-md:col-span-2 max-md:row-start-3', CELDA_390)}>
+                        <span className="font-mono text-caption tabular-nums text-fg-muted">
+                          <span className="md:hidden">{tr('Llegó el')} </span>
+                          {fecha(row.submittedAt)}
+                        </span>
+                      </TableCell>
+                    </TableRowAnimada>
+                  ))}
+                </TableBodyAnimado>
+              </Table>
+            </div>
+          )}
+          </CrossFade>
+
+          {/* El pie dice «Mostrando 1–3 de 3» y deja elegir cuántas ver (Nico, 2026-09-02). */}
+          {filteredRows.length > 0 ? (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={filteredRows.length}
+                page={safePage}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setPage(1)
+                }}
+              />
+            </div>
+          ) : null}
+        </Card>
+      )}
     </div>
     </CrossFade>
   )

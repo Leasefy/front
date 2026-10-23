@@ -49,7 +49,7 @@ function loQueEspera(plataforma?: ResumenDeLaPlataforma, cobranza?: DashboardRes
     lista.push({
       clave: 'en-mora',
       frase: `${fmtNumero(enMora)} ${enMora === 1 ? 'inmobiliaria está en mora' : 'inmobiliarias están en mora'} con su plan`,
-      href: '/admin/tenants?plan=PAST_DUE',
+      href: '/admin/tenants?vista=PAST_DUE',
       tono: 'aviso',
     })
   const suspendidas = plataforma?.inmobiliarias.porEstadoDelPlan.SUSPENDED ?? 0
@@ -57,7 +57,7 @@ function loQueEspera(plataforma?: ResumenDeLaPlataforma, cobranza?: DashboardRes
     lista.push({
       clave: 'suspendidas',
       frase: `${fmtNumero(suspendidas)} ${suspendidas === 1 ? 'inmobiliaria está suspendida' : 'inmobiliarias están suspendidas'}`,
-      href: '/admin/tenants?plan=SUSPENDED',
+      href: '/admin/tenants?vista=SUSPENDED',
       tono: 'critico',
     })
   return lista
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
             contenido: (
               <LaPlataforma
                 estado={plataforma}
-                onInmobiliarias={(plan) => router.push(plan ? `/admin/tenants?plan=${plan}` : '/admin/tenants')}
+                onInmobiliarias={(plan) => router.push(plan ? `/admin/tenants?vista=${plan}` : '/admin/tenants')}
               />
             ),
           },

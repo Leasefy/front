@@ -127,7 +127,8 @@ describe('<DocumentReviewQueueView>', () => {
     // Los otros tres acompañan, en chico.
     expect(container.querySelector('[data-testid="count-inReview"]')?.textContent).toContain('1');
     expect(container.querySelector('[data-testid="count-approved"]')?.textContent).toContain('1');
-    expect(container.querySelector('[data-testid="count-rejected"]')?.textContent).toContain('0');
+    // Revisora r25: el tramo en cero no sale en la leyenda (antes «Rechazados 0»).
+    expect(container.querySelector('[data-testid="count-rejected"]')).toBeNull();
   });
 
   it('🔴 con la consulta caída no afirma «0»: dice que no sabe', () => {

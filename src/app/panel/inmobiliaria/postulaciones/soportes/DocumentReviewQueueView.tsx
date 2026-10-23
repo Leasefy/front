@@ -175,7 +175,7 @@ export function DocumentReviewQueueView({
               etiqueta: label.charAt(0).toUpperCase() + label.slice(1),
               monto: isLoading || error ? 0 : counts[key],
               tono: (key === 'approved' ? 'exito' : key === 'rejected' ? 'critico' : 'neutro') as TonoDelTramo,
-              siempre: true,
+              // Revisora r25: «En revisión 0 · Aprobados 0 · Rechazados 0» en la leyenda; los ceros no salen.
               'data-testid': `count-${key}`,
               cifra: isLoading || error ? '—' : <AnimatedNumber value={counts[key]} format={enteroTalCual} />,
             })),
@@ -272,17 +272,6 @@ export function DocumentReviewQueueView({
                       <TableCell className="align-top max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0">
                         {canReview && (
                           <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
-                            {showTake && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                hideArrow
-                                disabled={busy}
-                                onClick={() => onTakeToReview(item.applicationId, doc.id)}
-                              >
-                                Tomar a revisión
-                              </Button>
-                            )}
                             {showApprove && (
                               <Button
                                 size="sm"
@@ -305,6 +294,19 @@ export function DocumentReviewQueueView({
                                 onClick={() => onReject(item, doc)}
                               >
                                 Rechazar
+                              </Button>
+                            )}
+                            {/* Revisora r25: tomar es un paso previo que casi nadie necesita; va al
+                                final y sin borde, después de lo que decide (Aprobar · Rechazar). */}
+                            {showTake && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                hideArrow
+                                disabled={busy}
+                                onClick={() => onTakeToReview(item.applicationId, doc.id)}
+                              >
+                                Tomar a revisión
                               </Button>
                             )}
                           </div>

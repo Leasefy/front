@@ -116,7 +116,8 @@ describe('<TuArriendo>', () => {
     // Glow up 22-10: LA RESPUESTA en una cifra («Vencido, en mora · $ X»), antes «Tienes $ X vencidos».
     expect(q('tu-arriendo-vencido')?.textContent).toContain('Vencido, en mora');
     expect(q('tu-arriendo-vencido')?.textContent).toContain('$ 1524971.91');
-    expect(q('tu-arriendo-pagar')?.textContent).toBe('Pagar lo vencido');
+    // Revisora r24: el botón dice cuánto paga (mismo dato que la cifra).
+    expect(q('tu-arriendo-pagar')?.textContent).toBe('Pagar lo vencido · $ 1524971.91');
     expect(q('tu-arriendo-vencido')?.textContent).toContain('1 cuota; la más vieja venció el 1 de septiembre de 2026. Lleva 31 días de mora.');
     expect(q('tu-arriendo-proximo')?.textContent).toContain('$ 3165472.41');
     expect(q('tu-arriendo-proximo')?.textContent).toContain('Vence el 1 de noviembre de 2026 · 2 cuotas ese día');

@@ -93,7 +93,12 @@ export function TuArriendo({
     v.vencido || v.proximo ? (
       <Button asChild size="sm" hideArrow data-testid="tu-arriendo-pagar">
         <Link href="/inquilino/pagos">
-          {v.vencido ? (es ? 'Pagar lo vencido' : 'Pay what is overdue') : es ? 'Pagar la próxima cuota' : 'Pay the next installment'}
+          {/* Revisora r24: el botón dice cuánto paga (el monto y el botón juntos). */}
+          {v.vencido
+            ? es ? `Pagar lo vencido · ${formatCurrency(v.vencido.valor)}` : `Pay what is overdue · ${formatCurrency(v.vencido.valor)}`
+            : v.proximo
+              ? es ? `Pagar la próxima cuota · ${formatCurrency(v.proximo.valor)}` : `Pay the next installment · ${formatCurrency(v.proximo.valor)}`
+              : null}
         </Link>
       </Button>
     ) : null;

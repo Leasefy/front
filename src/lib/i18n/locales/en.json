@@ -7958,7 +7958,7 @@
             "pageTitle": "Report thresholds",
             "fields": {
               "topN": "Top-N debtors to show",
-              "moraBoundaries": "Days-past-due bucket boundaries",
+              "moraBoundaries": "Days-past-due cuts",
               "pkrAlertBelow": "Alert if PKR falls below (%)",
               "morosidadAlertAbove": "Alert if delinquency exceeds (%)",
               "violationsAtLeast": "Minimum violations to alert",

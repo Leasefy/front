@@ -17,7 +17,7 @@
 
 import { useState } from 'react'
 import { ArrowCounterClockwise } from '@phosphor-icons/react'
-import { MonoLabel, Presence } from '@leasefy/cadence'
+import { Presence } from '@leasefy/cadence'
 
 import type { ThresholdRow } from '@/lib/hooks/cobranza/use-thresholds'
 import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
@@ -134,13 +134,13 @@ export function ThresholdVersionsTable({
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between">
-        <MonoLabel className="text-caption text-muted-foreground">
+        <h2 className="text-body-sm font-medium text-fg">
           {t('inmobiliaria.ai.cobranza.reporte.thresholds.versionsHeading')}
-        </MonoLabel>
+        </h2>
         {!supported && (
-          <MonoLabel className="text-[10px] text-warning">
-            {locale.startsWith('es') ? 'Sólo versión activa' : 'Active only'}
-          </MonoLabel>
+          <span className="text-caption text-fg-muted">
+            {locale.startsWith('es') ? 'Sólo se ve la versión que rige' : 'Only the active version is shown'}
+          </span>
         )}
       </div>
 
@@ -183,9 +183,9 @@ export function ThresholdVersionsTable({
                     <TableCell className="px-3 py-2 font-mono tabular-nums text-foreground">
                       {v.version != null ? `v${v.version}` : '—'}
                       {isCurrent && (
-                        <MonoLabel className="ml-2 text-[10px] text-success">
-                          {locale.startsWith('es') ? 'vigente' : 'active'}
-                        </MonoLabel>
+                        <Badge variant="success" className="ml-2">
+                          {locale.startsWith('es') ? 'Rige' : 'Active'}
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell className="px-3 py-2 text-caption text-muted-foreground">

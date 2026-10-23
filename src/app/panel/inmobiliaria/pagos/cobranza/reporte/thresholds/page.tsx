@@ -25,6 +25,8 @@ import { ThresholdVersionsTable } from '@/components/inmobiliaria/cobranza/Thres
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { CrossFade, Presence } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 
 function ThresholdsContent() {
   const { t, locale } = useI18n()
@@ -36,6 +38,7 @@ function ThresholdsContent() {
     error,
     updateThresholds,
     rollbackTo,
+    refetch,
   } = useThresholds()
 
   return (
@@ -48,8 +51,8 @@ function ThresholdsContent() {
         titulo={t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle')}
         descripcion={
           locale.startsWith('es')
-            ? 'Cuándo te avisa el Reporte diario —en la pantalla y en el correo— y cuántos deudores muestra. Cada cambio queda guardado como una versión y puedes volver a una anterior.'
-            : 'When the Daily report warns you —on screen and by email— and how many debtors it shows. Every change is saved as a version you can go back to.'
+            ? 'Cuándo te avisa el Reporte diario y cuántos deudores muestra. Cada cambio queda como una versión.'
+            : 'When the Daily report warns you and how many debtors it shows. Every change is saved as a version.'
         }
         junto={
           active?.version != null ? (
@@ -69,9 +72,16 @@ function ThresholdsContent() {
       <CrossFade swapKey={isLoading && !active ? 'cargando' : active ? 'editor' : 'nada'} className="space-y-6">
       {isLoading && !active && <PageSkeleton variant="list" />}
 
-      {/* `error` ya es la frase del traductor (antes: «Error: 500»). */}
-      <Presence show={Boolean(error)} role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-body-sm text-danger">
-          {error}
+      {/* Revisora r25 (#2): sin datos, el fallo de la casa con su reintento
+          (antes la frase cruda y la pantalla en blanco debajo). Con datos, una
+          línea: lo que se ve sigue valiendo. */}
+      {error && !active && !isLoading ? (
+        <FalloDeCarga error={falloDelTexto(error)} queEs="los umbrales" onReintentar={() => void refetch()} />
+      ) : null}
+      <Presence show={Boolean(error) && Boolean(active)} role="status" className="rounded-lg bg-warning-soft px-3 py-2 text-body-sm text-fg">
+          {locale.startsWith('es')
+            ? 'No pudimos actualizar los umbrales. Estás viendo los últimos que sí cargaron.'
+            : "We couldn't refresh the thresholds. You're seeing the last ones that loaded."}
       </Presence>
 
       {active && (

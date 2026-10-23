@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { CrossFade, MonoLabel } from '@leasefy/cadence'
+import { CrossFade } from '@leasefy/cadence'
 import { toast } from 'sonner'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -33,6 +33,9 @@ import { useAgencyPolicy } from '@/lib/hooks/cobranza/use-agency-policy'
 import { SubscriptionToggles } from '@/components/inmobiliaria/cobranza/SubscriptionToggles'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 
 interface SubscriptionStats {
   email_subscribed: number
@@ -48,7 +51,7 @@ function SuscripcionContent() {
   // Admin proxy per plan — anyone who can edit thresholds can see the aggregate
   const isAdmin = canAccess('cobranza', 'edit-thresholds')
 
-  const { data, isLoading, isSaving, error, setToggle, ultimoGuardado } = useSubscription()
+  const { data, isLoading, isSaving, error, setToggle, refetch, ultimoGuardado } = useSubscription()
   // El WhatsApp del reporte lo prende la inmobiliaria (Configuración); sin eso,
   // el interruptor personal no manda nada y hay que decirlo (MORI-24).
   const { data: politica } = useAgencyPolicy()
@@ -99,7 +102,7 @@ function SuscripcionContent() {
   }, [ultimoGuardado])
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-2xl">
+    <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
         seccion="Cobranza · Reporte diario"
         titulo={t('inmobiliaria.ai.cobranza.reporte.subscription.pageTitle')}
@@ -115,7 +118,7 @@ function SuscripcionContent() {
          D-34-06), not a list. Even "both toggles off" is a valid state, not an
          empty one. See SUMMARY deviations. */}
       {/* Esqueleto → formulario con su fundido (`CrossFade`). */}
-      <CrossFade swapKey={isLoading && !data ? 'cargando' : data ? 'formulario' : 'nada'} className="space-y-6">
+      <CrossFade swapKey={isLoading && !data ? 'cargando' : data ? 'formulario' : 'nada'} className="max-w-2xl space-y-6">
       {isLoading && !data && <PageSkeleton variant="list" />}
 
       {/* 🔴 ROLES (14-10-2026): sin `subscribe-daily-report` la pantalla quedaba
@@ -124,6 +127,12 @@ function SuscripcionContent() {
         <p className="rounded-lg border border-border bg-muted/20 p-4 text-body-sm text-muted-foreground" data-testid="suscripcion-sin-permiso">
           Tu rol no puede suscribirse al reporte diario de cobranza. Si lo necesitas, pídeselo a un administrador de tu inmobiliaria.
         </p>
+      )}
+
+      {/* Revisora r25 (#1): si la lectura falla, el fallo de la casa con su
+          reintento (antes la pantalla quedaba en blanco bajo el título). */}
+      {!isLoading && !data && canAccess('cobranza', 'subscribe-daily-report') && (
+        <FalloDeCarga error={falloDelTexto(error) ?? 'fetch_failed'} queEs="tu suscripción al reporte" onReintentar={() => void refetch()} />
       )}
 
       {data && (
@@ -141,7 +150,7 @@ function SuscripcionContent() {
               {isAdmin && (
                 <>
                   {' '}
-                  <Link href="/panel/inmobiliaria/pagos/cobranza/configuracion" className="text-primary underline-offset-2 hover:underline">
+                  <Link href="/panel/inmobiliaria/pagos/cobranza/configuracion" className="text-fg underline underline-offset-2">
                     Se prende en Configuración.
                   </Link>
                 </>
@@ -150,20 +159,23 @@ function SuscripcionContent() {
           )}
 
           {/* Habeas Data / autodeterminación rationale (D-34-06) */}
-          <div className="rounded-lg border border-border bg-muted/20 p-3 text-caption text-muted-foreground leading-relaxed">
+          {/* Revisora r25 (#3): lo legal, plegado. */}
+          <MasDetalles etiqueta={locale.startsWith('es') ? 'Por qué sólo tú la cambias' : 'Why only you can change it'} etiquetaAbierto={locale.startsWith('es') ? 'Ocultar' : 'Hide'}>
+          <p className="text-body-sm text-fg-muted leading-relaxed">
             {locale.startsWith('es')
               ? 'Tu suscripción es individual: sólo tú puedes prenderla o apagarla, como lo pide la Ley de Habeas Data. Los administradores ven cuántos del equipo lo reciben, pero no pueden suscribir a nadie.'
               : 'Your subscription is individual. Only you can enable or disable it, per Colombia\'s Habeas Data law and the informational self-determination principle. Admins can see the aggregate count but CANNOT force-subscribe anyone.'}
-          </div>
+          </p>
+          </MasDetalles>
 
           {/* Admin aggregate — read only */}
           {isAdmin && (
             <div className="rounded-lg border border-border bg-card p-4 space-y-1">
-              <MonoLabel>
+              <p className="text-body-sm font-medium text-fg">
                 {locale.startsWith('es') ? 'Cuántos del equipo lo reciben' : 'How many on the team get it'}
-              </MonoLabel>
+              </p>
               {!statsSupported ? (
-                <p className="text-caption font-mono text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   {locale.startsWith('es')
                     ? 'No pudimos contar a tu equipo.'
                     : "We couldn't count your team."}
@@ -190,7 +202,7 @@ function SuscripcionContent() {
                   </p>
                 </>
               ) : (
-                <p className="text-caption font-mono text-muted-foreground">…</p>
+                <span className="block h-4 w-40 animate-pulse rounded bg-surface-muted" aria-hidden="true" />
               )}
             </div>
           )}

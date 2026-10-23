@@ -7993,7 +7993,7 @@
             "pageTitle": "Umbrales del reporte",
             "fields": {
               "topN": "Cuántos deudores mostrar (los que más deben)",
-              "moraBoundaries": "Cortes de días de mora, separados por coma",
+              "moraBoundaries": "Cortes de días de mora",
               "pkrAlertBelow": "Avisar si las promesas cumplidas bajan de (%)",
               "morosidadAlertAbove": "Avisar si la morosidad pasa de (%)",
               "violationsAtLeast": "Avisar desde cuántas faltas a la Ley 2300",

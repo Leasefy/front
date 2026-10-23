@@ -732,6 +732,22 @@ describe('Documentos — escribir plantillas propias', () => {
     expect(container.querySelector('[data-testid="plantilla-nueva"]')).not.toBeNull()
   })
 
+  it('T-0173: los botones de la cabecera envuelven en un teléfono, no ensanchan la página (433 px a 360)', async () => {
+    canAccessMock.mockImplementation(permisosDe('ADMIN'))
+    useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, plantillas: [PROPIA] })
+    await renderPage()
+    abrirPestana('plantillas')
+    const boton = container.querySelector('[data-testid="documentos-generar"]')!
+    expect(container.querySelector('[data-testid="plantilla-nueva"]')).not.toBeNull()
+    // Cada contenedor de botones hasta la cabecera: nada puede ser shrink-0 sin `sm:`,
+    // o su ancho máximo (los dos botones lado a lado) empuja el documento más allá del teléfono.
+    for (let el = boton.parentElement; el && el.tagName !== 'HEADER'; el = el.parentElement) {
+      const clases = el.className.split(/s+/)
+      expect(clases).not.toContain('shrink-0')
+    }
+    expect(boton.parentElement!.className).toContain('min-w-0')
+  })
+
   it('un VIEWER no ve ninguno de los botones de escribir', async () => {
     canAccessMock.mockImplementation(permisosDe('VIEWER'))
     useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, plantillas: [PROPIA] })

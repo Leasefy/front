@@ -403,7 +403,7 @@ function DocumentosContent() {
           <h1 className="text-h2 text-fg">{t('inmobiliaria.documentos.title')}</h1>
           <p className="text-body text-fg-muted max-w-2xl">{t(k('subtitle'))}</p>
         </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="flex min-w-0 max-w-full flex-wrap gap-2 sm:shrink-0">
         {/* 🔴 03-10 (pruebas en el navegador): «Nueva acta» vivía SÓLO en el vacío
             de la pestaña: con un acta en la lista no había cómo levantar otra.
             Es acción de SU pestaña (como «Nueva plantilla») y pide su permiso,
@@ -422,7 +422,7 @@ function DocumentosContent() {
         {/* Un CONTADOR o un VIEWER sólo tienen `documentos:view`, y el back
             responde 403 al preparar. El botón no se dibuja si no se puede. */}
         <PermissionGate module="documentos" action="create" fallback={null}>
-          <div className="flex shrink-0 flex-wrap gap-2">
+          <div className="flex min-w-0 max-w-full flex-wrap gap-2 sm:shrink-0">
             {/* Escribir una plantilla es una acción de SU pestaña: en la de
                 documentos sería un botón que no tiene nada que ver con lo que
                 se está mirando. */}
@@ -457,7 +457,7 @@ function DocumentosContent() {
         {/* Pestañas + buscador + filtros: la primera fila de la card. */}
         <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
           <Tabs value={pestana} onValueChange={(v) => setPestana(v as Pestana)}>
-            <TabsList variant="segmented">
+            <TabsList variant="segmented" className="justify-start">
               <TabsTrigger value="documentos" className="gap-2 whitespace-nowrap">
                 {t('inmobiliaria.documentos.title')}
                 <span className="ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full bg-surface-muted px-1.5 text-caption tabular-nums text-fg-muted">{documentos.length}</span>

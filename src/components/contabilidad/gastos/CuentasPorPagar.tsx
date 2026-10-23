@@ -19,7 +19,6 @@ import { Money, Plus } from '@phosphor-icons/react';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -43,7 +42,7 @@ import {
   sePuedePagar,
 } from '@/lib/contabilidad/pagar-factura';
 import { Monto } from '../Monto';
-import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
+import { AccionConMotivo, FaltaLaMigracion, Nota, EsqueletoDeTabla } from '../piezas';
 import { usePuedeRegistrar } from '../use-puede-registrar';
 import { PagarFactura, numeroDeLaFactura } from './PagarFactura';
 
@@ -146,8 +145,8 @@ export function CuentasPorPagar({
       {error ? (
         <FalloDeCarga error={error} queEs="las cuentas por pagar" onReintentar={cargar} />
       ) : cargando && !pagina ? (
-        <div className="flex justify-center py-12">
-          <Spinner />
+        <div className="rounded-lg border border-border bg-card">
+          <EsqueletoDeTabla queEs="Cargando las cuentas por pagar…" filas={4} />
         </div>
       ) : pagina && !pagina.disponible ? (
         <FaltaLaMigracion
@@ -157,8 +156,8 @@ export function CuentasPorPagar({
         />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <Table>
-            <TableHeader>
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 <TableHead>Proveedor</TableHead>
                 <TableHead>Factura</TableHead>
@@ -170,10 +169,10 @@ export function CuentasPorPagar({
                 </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="max-md:block">
               {facturas.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted">
+                <TableRow className="max-md:block">
+                  <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted max-md:block">
                     {actual.vacio}
                   </TableCell>
                 </TableRow>
@@ -181,22 +180,26 @@ export function CuentasPorPagar({
                 facturas.map((f) => {
                   const estado = estadoDePago(f, dia);
                   return (
-                    <TableRow key={f.id} data-testid={`cxp-fila-${f.id}`}>
-                      <TableCell>
+                    <TableRow
+                      key={f.id}
+                      data-testid={`cxp-fila-${f.id}`}
+                      className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                    >
+                      <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                         <p className="text-sm font-medium text-fg">{f.proveedorNombre}</p>
                         <p className="text-caption text-fg-muted">{f.concepto}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">
+                      <TableCell className="whitespace-nowrap text-sm max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
                         <p>{numeroDeLaFactura(f) || 'Sin número'}</p>
                         <p className="text-caption text-fg-muted">{diaLegible(f.fecha)}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">
+                      <TableCell className="whitespace-nowrap text-sm max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-right max-md:text-caption max-md:text-fg-muted max-md:before:content-['Vence_']">
                         {f.fechaDeVencimiento ? diaLegible(f.fechaDeVencimiento) : 'Sin fecha'}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                         <Monto valor={f.netoCop} className="text-sm" />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                         {estado ? (
                           <Badge variant={TONO[estado]}>{NOMBRE_DEL_ESTADO_DE_PAGO[estado]}</Badge>
                         ) : null}
@@ -209,7 +212,7 @@ export function CuentasPorPagar({
                           </Link>
                         ) : null}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
                         {sePuedePagar(f) ? (
                           <AccionConMotivo
                             puede={escritura.puede}

@@ -636,25 +636,25 @@ export function FacturasDeProveedor({
             data-testid="totales-de-facturas"
           >
             <div className="flex items-baseline gap-2">
-              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">Facturas</dt>
+              <dt className="font-mono text-caption font-medium uppercase tracking-[0.06em] text-fg-subtle">Facturas</dt>
               <dd className="font-mono text-sm tabular-nums text-fg">
                 {pagina.total.toLocaleString(localeDeLasCifras())}
               </dd>
             </div>
             <div className="flex items-baseline gap-2">
-              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">Subtotal</dt>
+              <dt className="font-mono text-caption font-medium uppercase tracking-[0.06em] text-fg-subtle">Subtotal</dt>
               <dd><Monto valor={totales.subtotalCop} className="text-sm" /></dd>
             </div>
             <div className="flex items-baseline gap-2">
-              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">IVA</dt>
+              <dt className="font-mono text-caption font-medium uppercase tracking-[0.06em] text-fg-subtle">IVA</dt>
               <dd><Monto valor={totales.ivaCop} className="text-sm" /></dd>
             </div>
             <div className="flex items-baseline gap-2">
-              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">Retenciones</dt>
+              <dt className="font-mono text-caption font-medium uppercase tracking-[0.06em] text-fg-subtle">Retenciones</dt>
               <dd><Monto valor={totales.retencionesCop} className="text-sm" /></dd>
             </div>
             <div className="ml-auto flex items-baseline gap-2">
-              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">Se les paga (neto)</dt>
+              <dt className="font-mono text-caption font-medium uppercase tracking-[0.06em] text-fg-subtle">Se les paga (neto)</dt>
               <dd><Monto valor={totales.netoCop} className="text-sm font-medium" /></dd>
             </div>
           </dl>

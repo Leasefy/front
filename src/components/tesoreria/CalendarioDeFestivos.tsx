@@ -222,7 +222,7 @@ export function CalendarioDeFestivosPanel() {
 
             <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full text-sm" data-testid="calendario">
-                <thead className="bg-bg text-xs text-fg-muted">
+                <thead className="bg-bg text-caption text-fg-muted">
                   <tr>
                     <th className="p-3 text-left">Fecha</th>
                     <th className="p-3 text-left">Día</th>
@@ -246,7 +246,7 @@ export function CalendarioDeFestivosPanel() {
                           {d.nombre}
                         </span>
                       </td>
-                      <td className="p-3 text-xs text-fg-muted">
+                      <td className="p-3 text-caption text-fg-muted">
                         {d.origen === 'CALCULADO' ? (
                           d.trasladado ? (
                             <Badge variant="outline">Trasladado al lunes (Ley 51 de 1983)</Badge>

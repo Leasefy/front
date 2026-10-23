@@ -40,7 +40,7 @@ function Cifra({
 }) {
   return (
     <Card className="p-4">
-      <p className="text-xs text-fg-muted">{rotulo}</p>
+      <p className="text-caption text-fg-muted">{rotulo}</p>
       <p className={`mt-1 font-mono text-2xl font-semibold tabular-nums ${tono ?? 'text-fg'}`} data-testid={testid}>
         {formatCurrency(valor)}
       </p>

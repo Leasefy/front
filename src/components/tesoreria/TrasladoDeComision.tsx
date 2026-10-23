@@ -515,7 +515,7 @@ function FilaDelTraslado({
         </div>
         <Badge variant={TONO_DEL_ESTADO[traslado.estado]}>{NOMBRE_DEL_ESTADO[traslado.estado] ?? traslado.estado}</Badge>
       </div>
-      <dl className="grid grid-cols-2 gap-2 text-xs text-fg-muted sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-2 text-caption text-fg-muted sm:grid-cols-4">
         <div>
           <dt className="text-fg">Comisión</dt>
           <dd className="font-mono tabular-nums">{plata(traslado.comisionCop)}</dd>
@@ -538,10 +538,10 @@ function FilaDelTraslado({
         </div>
       </dl>
       {traslado.motivo ? (
-        <p className="text-xs text-fg-muted">Motivo: {traslado.motivo}</p>
+        <p className="text-caption text-fg-muted">Motivo: {traslado.motivo}</p>
       ) : null}
       {traslado.estado === 'APROBADO' && traslado.asientoId === null ? (
-        <p className="text-xs text-warning">
+        <p className="text-caption text-warning">
           Quedó aprobado SIN asiento contable: falta decir cuál cuenta del PUC es la de recaudo y
           cuál la propia, en la configuración de tesorería.
         </p>

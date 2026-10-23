@@ -479,7 +479,7 @@ function Dato({
       >
         {formatCurrency(valorCop)}
       </p>
-      {nota && <p className="text-[11px] text-fg-muted">{nota}</p>}
+      {nota && <p className="text-caption text-fg-muted">{nota}</p>}
     </div>
   );
 }

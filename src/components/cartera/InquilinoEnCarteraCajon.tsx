@@ -200,12 +200,12 @@ export function InquilinoEnCarteraCajon({
               >
                 <span className="text-fg">{c.inmueble}</span>
                 {c.contrato ? (
-                  <span className="text-xs text-fg-muted">
+                  <span className="text-caption text-fg-muted">
                     {rotuloDelContrato(c).replace(/^ · /, '')}
                   </span>
                 ) : null}
                 {c.enJuridico ? (
-                  <span className="text-xs text-danger">en jurídico</span>
+                  <span className="text-caption text-danger">en jurídico</span>
                 ) : null}
               </li>
             ))}
@@ -248,12 +248,12 @@ export function InquilinoEnCarteraCajon({
                       {formatCurrency(fila.saldoCop)}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs">
+                  <p className="mt-0.5 text-caption">
                     <ElCajonDelMes fila={fila} />
                   </p>
                   {/* Los conceptos del mes, sólo los que tienen plata: una lista
                       de guiones no informa nada. */}
-                  <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-fg-muted">
+                  <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-caption text-fg-muted">
                     {conceptos
                       .filter((c) => saldoDe(fila.saldoPorConcepto, c) !== 0)
                       .map((c) => (

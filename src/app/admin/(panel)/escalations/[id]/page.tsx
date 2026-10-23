@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { ArrowRight, CheckCircle, UserPlus } from '@phosphor-icons/react'
+import { CheckCircle, UserPlus } from '@phosphor-icons/react'
 import { Alert, KeyValueList, MonoLabel, Presence, SegmentedControl } from '@leasefy/cadence'
 import { adminApi, ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -64,7 +64,12 @@ export default function EscalationDetailPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={6} /></div>
-  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
+  if (error)
+    return (
+      <div className="space-y-6 p-6 lg:p-8">
+        <ErrorBlock error={error} onReintentar={refetch} volverA={{ label: 'Volver a escalaciones', href: '/admin/escalations' }} />
+      </div>
+    )
   if (!data) return null
 
   const isOpen = data.status === 'open' || data.status === 'assigned'
@@ -139,10 +144,11 @@ export default function EscalationDetailPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <BackButton href="/admin/escalations" label="Volver a escalaciones" />
       <PageHeader
-        title={isOpen ? 'Escalación abierta' : `Resuelta el ${fmtDateTime(data.resolved_at)}`}
+        title={data.debtor_name ?? 'Deudor sin nombre'}
         description={
           <>
-            {data.legal_name ?? 'Sin inmobiliaria'} · {data.debtor_name ?? 'Deudor sin nombre'}
+            {data.legal_name ?? 'Sin inmobiliaria'}
+            {isOpen ? '' : ` · resuelta el ${fmtDateTime(data.resolved_at)}`}
             {data.phone_primary ? (
               <>
                 {' '}· <span className="font-mono tabular-nums">{data.phone_primary}</span>
@@ -150,15 +156,20 @@ export default function EscalationDetailPage() {
             ) : null}
           </>
         }
-        right={
-          <Pill tone={u.tono} dot>
-            Urgencia {u.nombre.toLowerCase()}
-          </Pill>
+        junto={
+          <span className="flex flex-wrap items-center gap-1.5">
+            <Pill tone={isOpen ? 'warn' : 'ok'} dot>
+              {ESTADO_DE_LA_ESCALACION[data.status] ?? legible(data.status)}
+            </Pill>
+            {isOpen ? <Pill tone={u.tono}>Urgencia {u.nombre.toLowerCase()}</Pill> : null}
+          </span>
         }
       />
 
+      {/* Glow up 22-10: el trabajo en orden —qué pasó y, justo debajo, qué hacer—; los datos al lado. */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Tarjeta titulo="Qué pasó" className="lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2">
+        <Tarjeta titulo="Qué pasó">
           <div className="space-y-5">
             {data.reason ? (
               <div className="space-y-1.5">
@@ -174,10 +185,9 @@ export default function EscalationDetailPage() {
                 <MonoLabel className="block">Llamada relacionada</MonoLabel>
                 <Link
                   href={`/admin/calls/${data.call_id}`}
-                  className="group inline-flex items-center gap-1.5 text-body-sm font-medium text-primary underline-offset-4 hover:underline"
+                  className="text-body-sm font-medium text-fg underline underline-offset-4 hover:text-primary"
                 >
-                  Ver la llamada
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                  Escuchar la llamada
                 </Link>
               </div>
             )}
@@ -190,23 +200,6 @@ export default function EscalationDetailPage() {
             )}
           </div>
         </Tarjeta>
-
-        <Tarjeta titulo="Datos">
-          <KeyValueList
-            compact
-            items={[
-              { label: 'Estado', value: ESTADO_DE_LA_ESCALACION[data.status] ?? legible(data.status) },
-              { label: 'La tiene', value: <span className="break-all">{data.assigned_to ?? 'Nadie'}</span> },
-              { label: 'Cédula', value: <span className="font-mono tabular-nums">{data.document_number ?? '—'}</span> },
-              { label: 'Correo del deudor', value: <span className="break-all">{data.debtor_email ?? '—'}</span> },
-              { label: 'Creada', value: <span className="font-mono tabular-nums">{fmtDateTime(data.created_at)}</span> },
-              ...(data.resolved_at
-                ? [{ label: 'Resuelta', value: <span className="font-mono tabular-nums">{fmtDateTime(data.resolved_at)}</span> }]
-                : []),
-            ]}
-          />
-        </Tarjeta>
-      </div>
 
       {isOpen && (
         <Tarjeta titulo="Qué hacer" descripcion="Queda en la bitácora de auditoría con tu correo y la hora.">
@@ -292,6 +285,25 @@ export default function EscalationDetailPage() {
           </div>
         </Tarjeta>
       )}
+        </div>
+
+        <Tarjeta titulo="Datos">
+          <KeyValueList
+            compact
+            items={[
+              { label: 'Estado', value: ESTADO_DE_LA_ESCALACION[data.status] ?? legible(data.status) },
+              { label: 'La tiene', value: <span className="break-all">{data.assigned_to ?? 'Nadie'}</span> },
+              { label: 'Cédula', value: <span className="font-mono tabular-nums">{data.document_number ?? '—'}</span> },
+              { label: 'Correo del deudor', value: <span className="break-all">{data.debtor_email ?? '—'}</span> },
+              { label: 'Creada', value: <span className="font-mono tabular-nums">{fmtDateTime(data.created_at)}</span> },
+              ...(data.resolved_at
+                ? [{ label: 'Resuelta', value: <span className="font-mono tabular-nums">{fmtDateTime(data.resolved_at)}</span> }]
+                : []),
+            ]}
+          />
+        </Tarjeta>
+      </div>
+
     </div>
   )
 }

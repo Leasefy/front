@@ -342,8 +342,14 @@ function FilaDeRequisito({
   ocupado,
   onAlternar,
   onBorrar,
+  repetido = false,
 }: {
   r: RequisitoDePostulacion
+  /**
+   * Revisora r25: en «Todos» el estudio salía en cada perfil con su párrafo y su nota
+   * («No frena la postulación…»). La explicación va UNA vez, en la primera.
+   */
+  repetido?: boolean
   puedeEditar: boolean
   esElPreset: boolean
   ocupado: boolean
@@ -374,7 +380,7 @@ function FilaDeRequisito({
               <Lock className="h-4 w-4 text-fg-subtle" aria-label="No se puede cambiar" />
             ) : null}
           </p>
-          {r.detalle ? <p className="text-sm text-fg-muted">{r.detalle}</p> : null}
+          {r.detalle && !repetido ? <p className="text-sm text-fg-muted">{r.detalle}</p> : null}
           <p className="text-caption text-fg-subtle">{texto}</p>
         </div>
       </div>
@@ -385,9 +391,11 @@ function FilaDeRequisito({
         {r.esElEstudio ? (
           <>
             <Badge variant="secondary">Opcional</Badge>
-            <span className="text-caption text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
-              No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
-            </span>
+            {repetido ? null : (
+              <span className="text-caption text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
+                No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
+              </span>
+            )}
           </>
         ) : puedeEditar && !esElPreset ? (
           <>
@@ -443,7 +451,8 @@ function FilaDeRequisito({
           </>
         ) : (
           // Sin permiso, o mientras es el preset: la etiqueta dice cómo está.
-          <Badge variant={r.obligatorio ? 'default' : 'secondary'}>
+          // Revisora r25 (T3): «Obligatorio» iba en azul ×19; el azul es de la acción.
+          <Badge variant={r.obligatorio ? 'secondary' : 'outline'}>
             {r.obligatorio ? 'Obligatorio' : 'Opcional'}
           </Badge>
         )}
@@ -722,7 +731,7 @@ export function RequisitosClient() {
                   </Stagger>
                 ) : (
                   <div className="space-y-6" data-testid="lista-de-requisitos">
-                    {grupos.map((g) => (
+                    {grupos.map((g, gi) => (
                       <section key={g.perfil} data-testid={`grupo-${g.perfil}`}>
                         <h3 className="mb-1 flex items-baseline gap-2 text-sm font-medium text-fg">
                           {g.nombre}
@@ -736,6 +745,10 @@ export function RequisitosClient() {
                             <FilaDeRequisito
                               key={r.id}
                               r={r}
+                              repetido={
+                                r.esElEstudio &&
+                                grupos.slice(0, gi).some((anterior) => anterior.items.some((x) => x.esElEstudio))
+                              }
                               puedeEditar={puedeEditar}
                               esElPreset={esElPreset}
                               ocupado={tocando === r.id}

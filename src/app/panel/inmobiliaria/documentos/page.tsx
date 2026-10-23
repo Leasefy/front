@@ -339,8 +339,24 @@ function DocumentosContent() {
   const paginaDocumentos = useTablePagination(visibles, {
     resetKey: `${filtros.texto}|${filtros.categoria}|${filtros.estado}`,
   });
-  const paginaPlantillas = useTablePagination(plantillas);
-  const paginaActas = useTablePagination(actas);
+  /*
+   * Ronda 30 (regla de Nico: toda tabla con buscador): las actas y las plantillas también se buscan —las actas
+   * por inmueble, dirección o inquilino; las plantillas por su nombre—. El mismo texto del buscador de la barra.
+   */
+  const plano = (v?: string | null) =>
+    (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const actasVisibles = useMemo(() => {
+    const q = plano(filtros.texto.trim());
+    return q
+      ? actas.filter((a) => [a.propertyTitle, a.propertyAddress, a.tenantName].some((v) => plano(v).includes(q)))
+      : actas;
+  }, [actas, filtros.texto]);
+  const plantillasVisibles = useMemo(() => {
+    const q = plano(filtros.texto.trim());
+    return q ? plantillas.filter((p) => plano(p.name).includes(q)) : plantillas;
+  }, [plantillas, filtros.texto]);
+  const paginaPlantillas = useTablePagination(plantillasVisibles, { resetKey: filtros.texto });
+  const paginaActas = useTablePagination(actasVisibles, { resetKey: filtros.texto });
 
   // El PDF va por `getBlob` porque la ruta pide el token en el encabezado: un
   // `<a href>` pelado responde 401. La pestaña se abre ANTES del await, o el
@@ -584,9 +600,20 @@ function DocumentosContent() {
               {t('inmobiliaria.documentos.filters.templates')}
               <span className="ml-2 font-mono text-caption tabular-nums text-fg-subtle">{cifra(plantillas.length)}</span>
             </h2>
-            <Button size="sm" variant="ghost" hideArrow onClick={() => setPestana('documentos')} data-testid="tab-documentos">
-              {tr('Volver a los documentos')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <SearchInput
+                value={filtros.texto}
+                onChange={(e) => setFiltros((f) => ({ ...f, texto: e.target.value }))}
+                onClear={() => setFiltros((f) => ({ ...f, texto: '' }))}
+                placeholder={tr('Buscar una plantilla')}
+                inputSize="md"
+                className="w-full sm:w-64"
+                data-testid="plantillas-buscar"
+              />
+              <Button size="sm" variant="ghost" hideArrow onClick={() => setPestana('documentos')} data-testid="tab-documentos">
+                {tr('Volver a los documentos')}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
@@ -628,6 +655,17 @@ function DocumentosContent() {
               />
             </div>
 
+            {pestana === 'actas' ? (
+              <SearchInput
+                value={filtros.texto}
+                onChange={(e) => setFiltros((f) => ({ ...f, texto: e.target.value }))}
+                onClear={() => setFiltros((f) => ({ ...f, texto: '' }))}
+                placeholder={tr('Inmueble, dirección o inquilino')}
+                inputSize="md"
+                className="w-full sm:w-72"
+                data-testid="actas-buscar"
+              />
+            ) : null}
             <Presence
               show={pestana === 'documentos'}
               initial={false}
@@ -808,6 +846,14 @@ function DocumentosContent() {
                       </AlAnchoVisible>
                     </TableCell>
                   </TableRowAnimada>
+                ) : plantillasVisibles.length === 0 ? (
+                  <TableRowAnimada key="sin-resultado-plantillas">
+                    <TableCell colSpan={columnas.length} className="p-0">
+                      <AlAnchoVisible>
+                        <SinDatos queSon="plantillas" hayFiltros onLimpiarFiltros={() => setFiltros((f) => ({ ...f, texto: '' }))} />
+                      </AlAnchoVisible>
+                    </TableCell>
+                  </TableRowAnimada>
                 ) : (
                   paginaPlantillas.pageItems.map((p) => (
                     <TableRowAnimada
@@ -926,6 +972,14 @@ function DocumentosContent() {
                             : undefined
                         }
                       />
+                      </AlAnchoVisible>
+                    </TableCell>
+                  </TableRowAnimada>
+                ) : actasVisibles.length === 0 ? (
+                  <TableRowAnimada key="sin-resultado-actas">
+                    <TableCell colSpan={columnas.length} className="p-0">
+                      <AlAnchoVisible>
+                        <SinDatos queSon="actas" hayFiltros onLimpiarFiltros={() => setFiltros((f) => ({ ...f, texto: '' }))} />
                       </AlAnchoVisible>
                     </TableCell>
                   </TableRowAnimada>

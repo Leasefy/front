@@ -5,13 +5,15 @@ import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtNumero } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { CifraHeroe, type TramoDeLaCifra } from '@/components/pantalla/CifraHeroe'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { legible } from '@/lib/admin/textos-del-admin'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { EditarModeloDeCobro } from '@/components/admin/EditarModeloDeCobro'
 import { NOMBRE_DEL_MODELO, fraccionAPorcentaje, type ModeloDeCobro } from '@/lib/admin/modelo-de-cobro'
 import { Button } from '@/components/ui/button'
-import { Alert, FranjaDeCifras } from '@leasefy/cadence'
+import { Alert } from '@leasefy/cadence'
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon'
 
 import type { PillTone } from '@/lib/admin/types'
@@ -110,7 +112,8 @@ function tarifa(p: PolicyRow): string[] {
 
 function modelTone(model: string | null): PillTone {
   if (!model) return 'warn'
-  return model === 'performance' ? 'ok' : model === 'standard' ? 'info' : 'neutral'
+  // Un solo azul en la pantalla (el botón principal): los modelos van en tinta.
+  return 'neutral'
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -141,6 +144,16 @@ export default function PricingConfigPage() {
 
   const cuantas = (modelo: string | null) => (rows ?? []).filter((r) => (r.billing_model ?? null) === modelo).length
   const estimadoDelMes = ingresos.data?.totales.estimadoPorVozCop
+  // Cuánto deja cada modelo este mes (la suma de los estimados de sus inmobiliarias).
+  const porModelo = (modelo: ModeloDeCobro) =>
+    (rows ?? []).filter((r) => r.billing_model === modelo).reduce((a, r) => a + (vozDe.get(r.tenant_id)?.estimadoCop ?? 0), 0)
+  const tramosDelEstimado: TramoDeLaCifra[] = (['performance', 'standard', 'hybrid'] as const).map((m, i) => ({
+    clave: m,
+    etiqueta: `${NOMBRE_DEL_MODELO[m]} · ${cuantas(m)}`,
+    monto: porModelo(m),
+    tono: (['exito', 'neutro', 'aviso'] as const)[i],
+    cifra: fmtCOP(porModelo(m)),
+  }))
 
   const columns: Column<PolicyRow>[] = [
     {
@@ -163,12 +176,12 @@ export default function PricingConfigPage() {
       texto: (r) =>
         r.billing_model && r.billing_model in NOMBRE_DEL_MODELO
           ? NOMBRE_DEL_MODELO[r.billing_model as ModeloDeCobro]
-          : r.billing_model ?? 'Sin modelo',
+          : r.billing_model ? legible(r.billing_model) : 'Sin modelo',
       cell: (r) => (
         <Pill tone={modelTone(r.billing_model)}>
           {r.billing_model && r.billing_model in NOMBRE_DEL_MODELO
             ? NOMBRE_DEL_MODELO[r.billing_model as ModeloDeCobro]
-            : r.billing_model ?? 'Sin modelo'}
+            : r.billing_model ? legible(r.billing_model) : 'Sin modelo'}
         </Pill>
       ),
     },
@@ -208,8 +221,8 @@ export default function PricingConfigPage() {
       cell: (r) => {
         const v = vozDe.get(r.tenant_id)
         return v ? (
-          <div className="whitespace-nowrap tabular-nums">
-            <div className="text-fg">{fmtCOP(v.recuperadoEsteMesCop)}</div>
+          <div className="whitespace-nowrap">
+            <div className="font-mono tabular-nums text-fg">{fmtCOP(v.recuperadoEsteMesCop)}</div>
             <div className="text-caption text-fg-subtle">Mes pasado {fmtCOP(v.recuperadoMesPasadoCop)}</div>
           </div>
         ) : (
@@ -227,7 +240,7 @@ export default function PricingConfigPage() {
         const v = vozDe.get(r.tenant_id)
         return v && r.billing_model ? (
           <div className="max-w-[220px]">
-            <div className="tabular-nums font-medium text-fg">{fmtCOP(v.estimadoCop)}</div>
+            <div className="font-mono tabular-nums text-fg">{fmtCOP(v.estimadoCop)}</div>
             <div className="text-caption text-fg-subtle">{comoSeCobra(r, v)}</div>
           </div>
         ) : (
@@ -258,16 +271,30 @@ export default function PricingConfigPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Precios de la cobranza por voz"
-        description="Cuánto le cobra Leasefy a cada inmobiliaria por Mori. Sólo Leasefy lo cambia (la inmobiliaria lo ve sin poder editarlo) y cada cambio queda registrado con quién, cuándo y de qué a qué. El cobro del mes es un estimado con lo de hoy y la misma fórmula de su factura."
+        description="Cuánto le cobra Leasefy a cada inmobiliaria por Mori. Toca una para cambiar su modelo."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo funciona" titulo="Los precios de la cobranza por voz" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Sólo Leasefy cambia el modelo de cobro; la inmobiliaria lo ve sin poder editarlo. Cada cambio queda registrado con quién, cuándo y de qué a qué.</p>
+              <p>El cobro del mes es un estimado con lo de hoy y la misma fórmula de su factura.</p>
+            </div>
+          </ParaEntenderMas>
+        }
       />
 
-      <FranjaDeCifras fila="lg" aria-label="Cifras de los precios">
-        <KpiCard label="Inmobiliarias" value={rows ? rows.length : '—'} />
-        <KpiCard label={NOMBRE_DEL_MODELO.performance} value={rows ? cuantas('performance') : '—'} />
-        <KpiCard label={NOMBRE_DEL_MODELO.standard} value={rows ? cuantas('standard') : '—'} />
-        <KpiCard label={NOMBRE_DEL_MODELO.hybrid} value={rows ? cuantas('hybrid') : '—'} />
-        <KpiCard label="Cobro estimado del mes" value={estimadoDelMes != null ? fmtCOP(estimadoDelMes) : '—'} tone="ok" />
-      </FranjaDeCifras>
+      {/* Glow up 22-10: LA RESPUESTA (el cobro estimado del mes) partida por modelo; antes, 5 cifras del mismo
+          peso que repetían las pestañas. */}
+      {rows ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Cobro estimado del mes"
+            cifra={estimadoDelMes != null ? fmtCOP(estimadoDelMes) : '—'}
+            contexto={`a ${fmtNumero(rows.length)} ${rows.length === 1 ? 'inmobiliaria' : 'inmobiliarias'} en la cobranza por voz`}
+            tramos={estimadoDelMes != null ? tramosDelEstimado : []}
+            data-testid="precios-estimado"
+          />
+        </div>
+      ) : null}
 
       {rows && cuantas(null) > 0 ? (
         <Alert variant="warning" title={`${cuantas(null) === 1 ? 'Una inmobiliaria no tiene' : `${cuantas(null)} inmobiliarias no tienen`} modelo de cobro`}>

@@ -151,3 +151,19 @@ describe('Cobros — la respuesta de arriba es la cifra del back', () => {
     expect(PAGINA).toContain('monto: Math.max(0, resumen.totalPending - resumen.totalLate)')
   })
 })
+
+describe('Cobros — la barra de la tabla (revisora r25, #3 y #4)', () => {
+  it('«Vigentes / Anulados» son pestañas con conteo y ya no hay «Tabla / Tarjetas»', () => {
+    expect(PAGINA).toContain("testid: 'pestana-vigentes'");
+    expect(PAGINA).toContain("testid: 'pestana-anulados'");
+    expect(PAGINA).not.toContain("t('inmobiliaria.cobros.viewCards')");
+    expect(PAGINA).toContain("const viewMode: ViewMode = isMobile ? 'cards' : 'table';");
+  });
+
+  it('un solo azul: «Hacer recibo» de cada tarjeta va con borde', () => {
+    const TARJETA = readFileSync(join(process.cwd(), 'src/components/inmobiliaria/CobroCard.tsx'), 'utf8');
+    const i = TARJETA.indexOf("{t('recibos.hacerCorto')}");
+    const boton = TARJETA.slice(TARJETA.lastIndexOf('<Button', i), i);
+    expect(boton).toContain('variant="secondary"');
+  });
+});

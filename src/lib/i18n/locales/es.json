@@ -2909,7 +2909,7 @@
         "lateFee": "Interés mora",
         "paidLabel": "Pagado",
         "pendingLabel": "Pendiente",
-        "dueDate": "Vence:",
+        "dueDate": "Vence",
         "daysLate": "{{count}} días de mora",
         "daysLateUno": "1 día de mora",
         "paidOn": "Pagado el {{date}}",

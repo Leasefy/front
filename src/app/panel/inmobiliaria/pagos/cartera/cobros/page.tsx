@@ -11,8 +11,6 @@ import {
   CurrencyCircleDollar,
   BellRinging,
   Scales,
-  Table,
-  SquaresFour,
   Plus,
   CaretLeft,
   CaretRight,
@@ -38,7 +36,8 @@ import {
   MOTIVO_SIN_PERMISO_DE_RECIBO,
   usePuedeHacerRecibo,
 } from '@/components/inmobiliaria/permiso-de-recibo';
-import { CrossFade, IconButton, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import {
   useCobros,
   useCobroSummary,
@@ -161,15 +160,11 @@ function CobrosContent() {
   });
 
 
-  // State for view mode.
-  // `null` = no explicit user choice → default from viewport (cards under md).
-  // useIsMobile is false on SSR + first client render and only flips after
-  // mount, so the server and client first paint agree ('table') and the
-  // mobile default applies post-hydration without a mismatch.
+  // La vista sale del ancho (revisora r25, Cobros #3: sin «Tabla / Tarjetas»): tarjetas
+  // bajo md, tabla arriba. useIsMobile es false en el servidor y en la primera pintada, así
+  // que las dos pintadas coinciden ('table') y las tarjetas entran después de hidratar.
   const isMobile = useIsMobile();
-  const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
-  const viewMode: ViewMode = viewModeOverride ?? (isMobile ? 'cards' : 'table');
-  const setViewMode = setViewModeOverride;
+  const viewMode: ViewMode = isMobile ? 'cards' : 'table';
 
   // State for modals
   const [selectedCobro, setSelectedCobro] = useState<Cobro | null>(null);
@@ -534,13 +529,13 @@ function CobrosContent() {
           <Button asChild variant="outline" size="sm" hideArrow>
             <Link href={RUTA_DE_LOS_RECORDATORIOS} data-testid="ir-a-recordatorios">
               <BellRinging className="w-4 h-4" />
-              <span className="hidden sm:inline">Recordatorios</span>
+              <span>Recordatorios</span>
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora">
               <Scales className="w-4 h-4" />
-              <span className="hidden sm:inline">Reglas de mora</span>
+              <span>Reglas de mora</span>
             </Link>
           </Button>
           {/* Emitir el documento de cobro del mes que se está viendo. Es
@@ -686,30 +681,28 @@ function CobrosContent() {
           className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/20 px-4 py-3"
           data-testid="barra-de-la-tabla-de-cobros"
         >
-          <SegmentedControl
-            aria-label={t('inmobiliaria.cobros.viewTable')}
-            value={viewMode}
-            onChange={(v) => setViewMode(v as ViewMode)}
-            options={[
+          {/* Revisora r25 (Cobros #3): «Vigentes / Anulados» son pestañas con su conteo dentro
+              de la tabla (antes un interruptor) y ya no hay «Tabla / Tarjetas»: a 390 la lista
+              sale en tarjetas sola y en el escritorio, en tabla. */}
+          <PestanasDeEstado
+            etiqueta={t('inmobiliaria.cobros.anular.anulados')}
+            valor={verAnulados ? 'anulados' : 'vigentes'}
+            onCambio={(v) => setVerAnulados(v === 'anulados')}
+            pestanas={[
               {
-                value: 'table',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <Table className="w-4 h-4" />
-                    {t('inmobiliaria.cobros.viewTable')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.cobros.viewTable'),
+                valor: 'vigentes',
+                etiqueta: t('inmobiliaria.cobros.anular.vigentes'),
+                // Se cuenta lo que se leyó: el de la otra pestaña no se pide hasta abrirla.
+                cuantos: !verAnulados && !cobrosLoading && !cobrosError ? (apiCobros ?? []).length : null,
+                fija: true,
+                testid: 'pestana-vigentes',
               },
               {
-                value: 'cards',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <SquaresFour className="w-4 h-4" />
-                    {t('inmobiliaria.cobros.viewCards')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.cobros.viewCards'),
+                valor: 'anulados',
+                etiqueta: t('inmobiliaria.cobros.anular.anulados'),
+                cuantos: verAnulados && !cobrosLoading && !cobrosError ? (apiCobros ?? []).length : null,
+                fija: true,
+                testid: 'pestana-anulados',
               },
             ]}
           />
@@ -724,7 +717,7 @@ function CobrosContent() {
                 aria-label="Mes anterior"
                 onClick={() => shiftMonth(-1)}
               />
-              <span className="text-sm font-medium text-fg text-center tabular-nums min-w-[7rem]">
+              <span className="min-w-[7rem] whitespace-nowrap text-center text-sm font-medium tabular-nums text-fg">
                 {monthDisplay}
               </span>
               <IconButton
@@ -736,18 +729,6 @@ function CobrosContent() {
                 onClick={() => shiftMonth(1)}
               />
             </div>
-            <span className="text-caption text-fg-muted tabular-nums">
-              {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}
-            </span>
-            <SegmentedControl
-              aria-label={t('inmobiliaria.cobros.anular.anulados')}
-              value={verAnulados ? 'anulados' : 'vigentes'}
-              onChange={(v) => setVerAnulados(v === 'anulados')}
-              options={[
-                { value: 'vigentes', label: t('inmobiliaria.cobros.anular.vigentes') },
-                { value: 'anulados', label: t('inmobiliaria.cobros.anular.anulados') },
-              ]}
-            />
           </div>
         </div>
 

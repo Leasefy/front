@@ -1,5 +1,6 @@
 'use client';
 
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useMemo, useState } from 'react';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { Pressable } from '@leasefy/cadence';
@@ -242,11 +243,10 @@ export function CobroCard({
           <CalendarBlank className="w-4 h-4 text-fg-subtle" />
           <span className="text-fg-muted">{t('inmobiliaria.cobros.card.dueDate')}</span>
           <span className="text-fg-muted font-mono tabular-nums">
-            {new Date(cobro.dueDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            })}
+            {/* «16 oct 2026», la fecha de la casa (como la tabla); antes «16 de oct de 2026». */}
+            {locale === 'es'
+              ? fechaCorta(cobro.dueDate)
+              : new Date(cobro.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
         </div>
 
@@ -287,8 +287,11 @@ export function CobroCard({
       <div className="px-5 py-4 flex items-center justify-between border-t border-border-faint">
         {cobro.status !== 'paid' && onRegisterPayment && (
           <div className="flex flex-col items-start gap-1">
+            {/* Revisora r25 (Cobros #4): un solo azul en la pantalla —«Hacer recibo de caja» del
+                encabezado—; el de cada tarjeta va con borde. */}
             <Button
               size="sm"
+              variant="secondary"
               hideArrow
               disabled={!puedeHacerRecibo}
               onClick={(e) => {

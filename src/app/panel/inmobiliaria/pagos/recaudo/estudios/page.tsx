@@ -10,6 +10,7 @@
  * Permiso: `cobros`/view, el mismo del back (`GET /inmobiliaria/estudios/pagos`).
  */
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { useTr } from '@/lib/i18n/use-tr';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { useCallback, useEffect, useState } from 'react';
@@ -103,16 +104,30 @@ function Contenido() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <EncabezadoDePantalla
-        seccion={tr('Cobrar a inquilinos')}
-        titulo="Estudios pagados"
-        descripcion="Lo que pagaron los solicitantes por su estudio, con su recibo y su factura. No se devuelve y, vigente, sirve para cualquier inmueble."
-        acciones={
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/recaudo">Volver a Recaudo</Link>
-          </Button>
-        }
-      />
+      {/* Ronda 26 (revisora r25, Estudios): la vuelta ARRIBA a la izquierda (navegar no es una acción) y la
+          descripción en una línea; lo de que no se devuelve, a la ayuda. */}
+      <div className="space-y-3">
+        <Link
+          href="/panel/inmobiliaria/pagos/recaudo"
+          className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+          data-testid="volver-a-recaudo"
+        >
+          Volver a Recaudo
+        </Link>
+        <EncabezadoDePantalla
+          seccion={tr('Cobrar a inquilinos')}
+          titulo="Estudios pagados"
+          descripcion="Lo que pagaron los solicitantes por su estudio, con su recibo y su factura."
+          ayuda={
+            <ParaEntenderMas etiqueta="Cómo funciona" titulo="El pago del estudio" variante="secundario">
+              <p className="text-body-sm text-fg-muted">
+                El estudio no se devuelve. Mientras esté vigente, le sirve al solicitante para postularse a
+                cualquier inmueble.
+              </p>
+            </ParaEntenderMas>
+          }
+        />
+      </div>
       {pagos && pagos.length > 0 ? (
         <CifraHeroe
           data-testid="estudios-cobrado"

@@ -17,7 +17,12 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { BackButton } from '@/components/ui/back-button';
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -50,6 +55,8 @@ function Contenido() {
   const [nit, setNit] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [errores, setErrores] = useState<Partial<Record<CampoDeLaAseguradora, string>>>({});
+  // Ronda 26 (revisora r25, Aseguradoras #1): registrar va en un cajón; la lista, arriba.
+  const [registrando, setRegistrando] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -76,6 +83,7 @@ function Contenido() {
       toast.success(`${creada.nombre} quedó registrada (NIT ${creada.nit})`);
       setNombre('');
       setNit('');
+      setRegistrando(false);
       await cargar();
     } catch (e) {
       // 🔴 El NIT repetido es un problema DEL NIT: va debajo del NIT.
@@ -116,70 +124,44 @@ function Contenido() {
     }
   };
 
+  const abrirElRegistro = () => {
+    setErrores({});
+    setRegistrando(true);
+  };
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      {/* La vuelta va arriba (antes, un enlace al final de la descripción). */}
+      {/* La vuelta va arriba, sin flecha y con el nombre de a dónde vuelve (como las demás sub-pantallas). */}
       <div className="space-y-3">
-        <BackButton href="/panel/inmobiliaria/pagos/recaudo" label="Volver a Recaudo" />
+        <Link
+          href="/panel/inmobiliaria/pagos/recaudo"
+          className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+          data-testid="volver-a-recaudo"
+        >
+          Volver a Recaudo
+        </Link>
         <EncabezadoDePantalla
           seccion="Cobrar a inquilinos"
           titulo="Aseguradoras"
-          descripcion="Las que pagan siniestros. Cuando una paga, el recibo lleva a la aseguradora como pagador: las cuotas quedan pagadas para la inmobiliaria y el propietario, y en el estado de cuenta del inquilino esa deuda sale «subrogada a la aseguradora»."
+          descripcion="Las aseguradoras que pagan siniestros."
+          ayuda={
+            <ParaEntenderMas etiqueta="Cómo funciona" titulo="Cuando paga la aseguradora" variante="secundario">
+              <p className="text-body-sm text-fg-muted">
+                Cuando una aseguradora paga un siniestro, el recibo la lleva como pagador: las cuotas quedan
+                pagadas para la inmobiliaria y el propietario, y en el estado de cuenta del inquilino esa deuda
+                sale «subrogada a la aseguradora».
+              </p>
+            </ParaEntenderMas>
+          }
+          accionPrincipal={
+            puedeEditar ? (
+              <Button size="sm" hideArrow onClick={abrirElRegistro} data-testid="abrir-registro-de-aseguradora">
+                Registrar una aseguradora
+              </Button>
+            ) : undefined
+          }
         />
       </div>
-
-      {puedeEditar && (
-        <div className="flex flex-wrap items-start gap-2 rounded-lg border border-border p-4" data-testid="nueva-aseguradora">
-          <div>
-            <label className="text-sm" htmlFor="aseguradora-nombre">
-              <span className="block text-caption text-fg-muted">Nombre</span>
-              <input
-                id="aseguradora-nombre"
-                className="mt-1 rounded-md border border-border bg-surface p-2 text-sm"
-                value={nombre}
-                maxLength={MAX_LARGO_DEL_NOMBRE}
-                onChange={(e) => {
-                  setNombre(e.target.value);
-                  setErrores((previos) => ({ ...previos, nombre: undefined }));
-                }}
-                placeholder="Seguros Bolívar S.A."
-                aria-invalid={errores.nombre ? true : undefined}
-                aria-describedby={errores.nombre ? 'aseguradora-nombre-error' : undefined}
-                data-testid="aseguradora-nombre"
-              />
-            </label>
-            <ErrorDelCampo id="aseguradora-nombre-error" mensaje={errores.nombre} />
-          </div>
-          <div>
-            <label className="text-sm" htmlFor="aseguradora-nit">
-              <span className="block text-caption text-fg-muted">NIT</span>
-              <input
-                id="aseguradora-nit"
-                className="mt-1 rounded-md border border-border bg-surface p-2 text-sm"
-                value={nit}
-                onChange={(e) => {
-                  setNit(e.target.value);
-                  setErrores((previos) => ({ ...previos, nit: undefined }));
-                }}
-                placeholder="860.002.503-2"
-                aria-invalid={errores.nit ? true : undefined}
-                aria-describedby={errores.nit ? 'aseguradora-nit-error' : undefined}
-                data-testid="aseguradora-nit"
-              />
-            </label>
-            <ErrorDelCampo id="aseguradora-nit-error" mensaje={errores.nit} />
-          </div>
-          <Button
-            hideArrow
-            className="mt-5"
-            disabled={guardando}
-            onClick={() => void registrar()}
-            data-testid="registrar-aseguradora"
-          >
-            Registrar
-          </Button>
-        </div>
-      )}
 
       <EstadoDeDatos
         cargando={cargando}
@@ -194,12 +176,12 @@ function Contenido() {
             titulo="Todavía no hay aseguradoras registradas"
             descripcion={
               puedeEditar
-                ? 'Regístrala arriba con su nombre y su NIT.'
+                ? 'Regístrala con su nombre y su NIT para ponerla como pagador en los recibos.'
                 : 'Pídele a un administrador que la registre.'
             }
             accion={
               puedeEditar ? (
-                <Button size="sm" variant="secondary" hideArrow onClick={() => document.getElementById('aseguradora-nombre')?.focus()}>
+                <Button size="sm" variant="secondary" hideArrow onClick={abrirElRegistro}>
                   Registrar la primera
                 </Button>
               ) : undefined
@@ -207,35 +189,107 @@ function Contenido() {
           />
         }
       >
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm" data-testid="aseguradoras">
-            <thead className="bg-surface-muted text-left text-caption text-fg-muted">
-              <tr>
-                <th className="p-3">Aseguradora</th>
-                <th className="p-3">NIT</th>
-                <th className="p-3">Estado</th>
-                <th className="p-3" />
-              </tr>
-            </thead>
-            <tbody>
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
+          <Table data-testid="aseguradoras">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Aseguradora</TableHead>
+                <TableHead>NIT</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="w-32" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {(aseguradoras ?? []).map((a) => (
-                <tr key={a.id} className="border-t border-border" data-testid={`aseguradora-${a.id}`}>
-                  <td className="p-3">{a.nombre}</td>
-                  <td className="p-3 font-mono tabular-nums">{a.nit}</td>
-                  <td className="p-3">{a.activa ? 'Activa' : 'Inactiva'}</td>
-                  <td className="p-3 text-right">
+                <TableRow key={a.id} data-testid={`aseguradora-${a.id}`}>
+                  <TableCell className="font-medium text-fg">{a.nombre}</TableCell>
+                  <TableCell className="font-mono tabular-nums">{a.nit}</TableCell>
+                  <TableCell>
+                    <Badge variant={a.activa ? 'success' : 'outline'}>{a.activa ? 'Activa' : 'Inactiva'}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
                     {puedeEditar && (
-                      <Button size="sm" variant="outline" hideArrow onClick={() => void alternar(a)}>
+                      <Button size="sm" variant="ghost" hideArrow onClick={() => void alternar(a)}>
                         {a.activa ? 'Desactivar' : 'Activar'}
                       </Button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </EstadoDeDatos>
+
+      {puedeEditar && (
+        <Cajon abierto={registrando} onOpenChange={(abierto) => !guardando && setRegistrando(abierto)} tamano="sm">
+          <CajonCabecera
+            titulo="Registrar una aseguradora"
+            descripcion="Con su nombre y su NIT queda para elegirla como pagador en un recibo."
+          />
+          <CajonCuerpo>
+            <form
+              className="space-y-4"
+              data-testid="nueva-aseguradora"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void registrar();
+              }}
+            >
+              <div className="space-y-1.5">
+                <label className="text-body-sm font-medium text-fg" htmlFor="aseguradora-nombre">
+                  Nombre
+                </label>
+                <Input
+                  id="aseguradora-nombre"
+                  value={nombre}
+                  maxLength={MAX_LARGO_DEL_NOMBRE}
+                  onChange={(e) => {
+                    setNombre(e.target.value);
+                    setErrores((previos) => ({ ...previos, nombre: undefined }));
+                  }}
+                  placeholder="Seguros Bolívar S.A."
+                  aria-invalid={errores.nombre ? true : undefined}
+                  aria-describedby={errores.nombre ? 'aseguradora-nombre-error' : undefined}
+                  data-testid="aseguradora-nombre"
+                />
+                <ErrorDelCampo id="aseguradora-nombre-error" mensaje={errores.nombre} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-body-sm font-medium text-fg" htmlFor="aseguradora-nit">
+                  NIT
+                </label>
+                <Input
+                  id="aseguradora-nit"
+                  value={nit}
+                  onChange={(e) => {
+                    setNit(e.target.value);
+                    setErrores((previos) => ({ ...previos, nit: undefined }));
+                  }}
+                  placeholder="860.002.503-2"
+                  aria-invalid={errores.nit ? true : undefined}
+                  aria-describedby={errores.nit ? 'aseguradora-nit-error' : undefined}
+                  data-testid="aseguradora-nit"
+                />
+                <ErrorDelCampo id="aseguradora-nit-error" mensaje={errores.nit} />
+              </div>
+            </form>
+          </CajonCuerpo>
+          <CajonPie>
+            <Button variant="ghost" hideArrow onClick={() => setRegistrando(false)} disabled={guardando}>
+              Cancelar
+            </Button>
+            <Button
+              hideArrow
+              disabled={guardando || !nombre.trim() || !nit.trim()}
+              onClick={() => void registrar()}
+              data-testid="registrar-aseguradora"
+            >
+              {guardando ? 'Registrando…' : 'Registrar'}
+            </Button>
+          </CajonPie>
+        </Cajon>
+      )}
     </div>
   );
 }

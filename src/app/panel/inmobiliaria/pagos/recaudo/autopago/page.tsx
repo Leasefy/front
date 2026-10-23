@@ -15,7 +15,6 @@ import { useTr } from '@/lib/i18n/use-tr';
 import Link from 'next/link';
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { Button } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AutopagosDeLaInmobiliaria } from '@/components/inmobiliaria/pagos/autopago/AutopagosDeLaInmobiliaria';
 
@@ -25,16 +24,23 @@ export default function AutopagoPage() {
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <EncabezadoDePantalla
-          seccion={tr('Cobrar a inquilinos')}
-          titulo="Autopago"
-          descripcion="Los inquilinos que inscribieron el cobro automático de su cuota, con su tope y cómo salió el último intento. Lo inscribe, pausa o cancela el inquilino desde su portal."
-          acciones={
-            <Button asChild variant="outline" size="sm" hideArrow>
-              <Link href="/panel/inmobiliaria/pagos/recaudo">Volver a Recaudo</Link>
-            </Button>
-          }
-        />
+        {/* Ronda 26 (revisora r25, Autopago): la vuelta ARRIBA a la izquierda, como en las demás
+            sub-pantallas (navegar no es una acción); la descripción en una línea (lo de que lo inscribe
+            el inquilino desde su portal ya lo dice el vacío). */}
+        <div className="space-y-3">
+          <Link
+            href="/panel/inmobiliaria/pagos/recaudo"
+            className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+            data-testid="volver-a-recaudo"
+          >
+            Volver a Recaudo
+          </Link>
+          <EncabezadoDePantalla
+            seccion={tr('Cobrar a inquilinos')}
+            titulo="Autopago"
+            descripcion="Los inquilinos con cobro automático, su tope y el último intento."
+          />
+        </div>
         <AutopagosDeLaInmobiliaria />
       </div>
     </PageGuard>

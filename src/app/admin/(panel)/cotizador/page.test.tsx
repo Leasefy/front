@@ -177,7 +177,8 @@ describe('CotizadorPage', () => {
 
     const nameInput = document.body.querySelector('#carrier-name') as HTMLInputElement
     expect(nameInput.disabled).toBe(true)
-    expect(container.textContent).toContain('Puestas')
+    // Ronda 28 (revisora r27, T15): con todas iguales, la columna sale y lo dice la cifra (mismo dato).
+    expect(container.textContent).toContain('todas con credenciales puestas')
 
     await act(async () => {
       submitButton().click()

@@ -157,7 +157,7 @@ export default function CotizadorPage() {
     }
   }
 
-  const columns: Column<CarrierRow>[] = [
+  const todasLasColumnas: Column<CarrierRow>[] = [
     {
       header: 'Aseguradora',
       orden: (c) => nombreDeLaAseguradora(c),
@@ -219,6 +219,11 @@ export default function CotizadorPage() {
       ),
     },
   ]
+
+  // Ronda 28 (revisora r27, T15): con todas iguales («Sin credenciales» ×14), la columna no informa: lo dice
+  // la cifra de arriba y va al Excel.
+  const credencialesIguales = carriers.length > 0 && (conCredenciales === 0 || conCredenciales === carriers.length)
+  const columns = credencialesIguales ? todasLasColumnas.filter((c) => c.header !== 'Credenciales') : todasLasColumnas
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -306,7 +311,12 @@ export default function CotizadorPage() {
             : []),
         ]}
         exportar="aseguradoras-del-cotizador"
-        masEnElExcel={[{ header: 'Código', texto: (c) => c.name }]}
+        masEnElExcel={[
+          { header: 'Código', texto: (c) => c.name },
+          ...(credencialesIguales
+            ? [{ header: 'Credenciales', texto: (c: CarrierRow) => (c.has_config ? 'Puestas' : 'Sin credenciales') }]
+            : []),
+        ]}
       />
 
       <PreScoringConfigCard />

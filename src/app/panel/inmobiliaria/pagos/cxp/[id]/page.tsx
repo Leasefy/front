@@ -34,6 +34,7 @@ import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
@@ -313,18 +314,22 @@ function ApBillDetailContent({ billId }: { billId: string }) {
       <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
-          <p className="text-caption font-semibold text-primary">{t(k('m1BannerTitle'))}</p>
+          <p className="text-caption font-medium text-primary">{t(k('m1BannerTitle'))}</p>
           <p className="text-caption text-primary mt-0.5">{t(k('m1BannerDesc'))}</p>
         </div>
       </div>
 
+      {/* LA RESPUESTA: cuánto es y para cuándo. El valor ya no se repite en la lista de abajo. */}
+      <CifraHeroe
+        data-testid="ap-bill-valor"
+        rotulo={t(k('labelAmount'))}
+        cifra={formatCOP(bill.amountCop)}
+        contexto={`${t(k('labelDue'))}: ${formatDate(bill.dueDate, locale)}`}
+        tamano="mediana"
+      />
+
       <section className="rounded-lg border border-border bg-card p-6">
         <div className="divide-y divide-border">
-          <DetailRow label={t(k('labelAmount'))}>
-            <span className="font-mono tabular-nums text-base font-semibold text-foreground">
-              {formatCOP(bill.amountCop)}
-            </span>
-          </DetailRow>
 
           {bill.concepto ? (
             <DetailRow label={t(k('labelConcepto'))}>

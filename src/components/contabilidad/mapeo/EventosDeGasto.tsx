@@ -52,6 +52,8 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { FaltaLaMigracion, Nota } from '../piezas';
 import { NOMBRE_DEL_LADO, propuestaQueSirve } from './mapeo';
 import { TituloDeBloque } from '@/components/finanzas/piezas';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 
 export interface EventosDeGastoProps {
   /** Los siete del back. `undefined` = un back que todavía no los manda. */
@@ -119,6 +121,8 @@ export function EventosDeGasto({
   );
   const apagado = useMemo(() => loQueNoSePuedeCausar(faltantes), [faltantes]);
 
+  // Ronda 30 (regla de Nico: toda tabla con su pie de paginación, aunque sean los siete eventos).
+  const pag = useTablePagination(lista);
   const hayPropuestaDistinta = lista.some((e) => Boolean(e.propuesta) && !(e.cuenta && !propuestaQueSirve(e, e.cuenta.id)));
   return (
     <section className="space-y-4" data-testid="eventos-de-gasto">
@@ -187,7 +191,7 @@ export function EventosDeGasto({
                   </TableRow>
                 </TableHeader>
                 <TableBodyAnimado className="max-md:block">
-                  {lista.map((e) => (
+                  {pag.pageItems.map((e) => (
                     <TableRowAnimada
                       key={e.evento}
                       data-testid={`evento-de-gasto-${e.evento}`}
@@ -299,6 +303,16 @@ export function EventosDeGasto({
                   ))}
                 </TableBodyAnimado>
               </Table>
+            </div>
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={pag.total}
+                page={pag.page}
+                pageSize={pag.pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={pag.setPage}
+                onPageSizeChange={pag.setPageSize}
+              />
             </div>
           </div>
         </>

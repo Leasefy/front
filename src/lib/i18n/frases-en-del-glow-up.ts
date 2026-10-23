@@ -607,4 +607,14 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Volver a Pagos en línea": "Back to Online payments",
   "Cobranza · Pagos en línea": "Collections · Online payments",
   "Pagos en línea": "Online payments",
+  // Cobranza (ronda 26, 3.er agente)
+  "Prometido en las llamadas": "Promised on calls",
+  "Qué pasó": "What happened",
+  "Prometió": "Promised",
+  "Con señales": "With signals",
+  "Sin respuesta": "No answer",
+  "Buscar por deudor": "Search by debtor",
+  "Limpiar filtros": "Clear filters",
+  "Ver los casos": "See the cases",
+  "Ninguna llamada coincide con los filtros seleccionados.": "No call matches the selected filters.",
 }

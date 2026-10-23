@@ -127,7 +127,7 @@ export const SOLICITUDES_DEL_INDEPENDIENTE: SeccionDelPropietario = {
   pestanas: [
     // Revisora r25: «Novedades» salió del menú del independiente (las manda una inmobiliaria); «Por decidir» también
     // cae aquí, para que se marque su pestaña.
-    { href: '/panel/solicitudes', es: 'Solicitudes', en: 'Requests', icon: Lifebuoy, tambienEn: ['/panel/aprobaciones', '/panel/novedades', '/panel/por-decidir'] },
+    { href: '/panel/solicitudes', es: 'Mis solicitudes', en: 'My requests', icon: Lifebuoy, tambienEn: ['/panel/aprobaciones', '/panel/novedades', '/panel/por-decidir'] },
   ],
 };
 

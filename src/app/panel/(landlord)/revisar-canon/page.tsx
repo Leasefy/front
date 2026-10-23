@@ -260,7 +260,7 @@ export default function RevisarCanonPage() {
         <EncabezadoDePantalla
           seccion="Solicitudes"
           titulo="Revisar el canon"
-          descripcion="Cuando tu inmueble lleva más de un mes desocupado, tu inmobiliaria te cuenta lo que te ha costado y te pregunta si quieres revisar el canon. Tú decides."
+          descripcion="Lo que te ha costado el inmueble desocupado, para que decidas si cambias el canon."
         />
         <EstadoDeDatos
           cargando={cargando}

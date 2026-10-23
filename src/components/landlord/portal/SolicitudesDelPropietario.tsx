@@ -82,7 +82,8 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
         seccion="Solicitudes"
-        titulo="Solicitudes"
+        // Revisora r25: el título es el de la pestaña (antes «Solicitudes · Solicitudes»).
+        titulo="Mis solicitudes"
         descripcion={
           abiertas === 1
             ? 'Tienes 1 solicitud abierta: va primero. Tu inmobiliaria te responde aquí.'

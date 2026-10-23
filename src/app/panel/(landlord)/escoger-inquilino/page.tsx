@@ -70,7 +70,7 @@ function Candidato({
           {/* MANOS-2 (04-10-2026): la lista corta de tu inmobiliaria va primero y se dice. */}
           {typeof c.enLaListaCorta === 'number' && (
             <span
-              className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-caption font-medium text-primary"
+              className="inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-caption font-medium text-fg"
               data-testid={`lista-corta-${c.applicationId}`}
             >
               Lista corta de tu inmobiliaria · {c.enLaListaCorta}.º

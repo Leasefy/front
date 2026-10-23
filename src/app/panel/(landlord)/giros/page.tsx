@@ -278,8 +278,9 @@ export default function MisGirosPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
         seccion="Mi plata"
-        titulo="Mis giros"
-        descripcion="A qué cuenta te giran, lo que ya te giraron mes por mes y el extracto de cada mes."
+        // Revisora r25: el título es el de la pestaña y la descripción va en el orden de la pantalla (la cuenta, al final).
+        titulo="Giros"
+        descripcion="Lo que ya te giraron mes por mes, el extracto de cada mes y a qué cuenta te giran."
       />
       <EstadoDeDatos cargando={cargando} error={fallo} queEs="tus giros" onReintentar={cargar}>
         <div className="space-y-6">

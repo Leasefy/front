@@ -63,6 +63,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { PropietariosQueDeben } from '@/components/cartera/PropietariosQueDeben'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -174,55 +175,39 @@ export function CarteraDePropietarios() {
       }
     >
       <div className="space-y-6">
-        <div
-          className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0"
-          data-testid="resumen-por-pagar"
-        >
-          {/* 🔴 «Por girar» → UNA sola cifra (Nico, 04-10-2026): la del back,
-              la misma del Tablero, Liquidaciones y el chat, neta de
-              deducciones. Lo de los meses siguientes, aparte. */}
-          <div className="p-4" data-testid="por-girar-por-pagar">
-            <p className="text-caption text-fg-muted" title={definicionDePorGirar(hastaMes)}>
-              {rotuloDePorGirar(hastaMes)}
-            </p>
-            <p
-              className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg"
-              data-testid="por-girar-cifra"
-            >
-              {formatCurrency(datos?.porGirar?.porGirarCop ?? visibles.pendienteCop)}
-            </p>
-            {datos?.porGirar ? (
-              <p className="mt-0.5 text-caption text-fg-muted" data-testid="proximos-giros">
-                {rotuloDeProximosGiros(
-                  datos.porGirar.proximosGiros.desdeMes,
-                  datos.porGirar.proximosGiros.hastaMes,
-                )}
-                :{' '}
-                <span className="font-mono tabular-nums">
-                  {formatCurrency(datos.porGirar.proximosGiros.totalCop)}
+        {/* Ronda 26 (revisora r25, Por pagar #1): LA RESPUESTA en una cifra —lo que hay que girar hasta el mes
+            en curso, la misma del Tablero y de Giros— con los próximos giros al pie; «Ya girado» en una línea y
+            «Neto liquidado» fuera (girado + pendiente: no sirve para decidir). Antes tres tarjetas del mismo peso. */}
+        <div className="space-y-2" data-testid="resumen-por-pagar">
+          <CifraHeroe
+            data-testid="por-girar-por-pagar"
+            rotulo={<span title={definicionDePorGirar(hastaMes)}>{rotuloDePorGirar(hastaMes)}</span>}
+            cifra={
+              <span data-testid="por-girar-cifra">
+                {formatCurrency(datos?.porGirar?.porGirarCop ?? visibles.pendienteCop)}
+              </span>
+            }
+            contexto={`a ${datos?.propietarios.length ?? 0} ${datos?.propietarios.length === 1 ? 'propietario' : 'propietarios'}, de ${datos?.meses.length ?? 0} ${datos?.meses.length === 1 ? 'mes' : 'meses'}`}
+            pie={
+              datos?.porGirar ? (
+                <span data-testid="proximos-giros">
+                  {rotuloDeProximosGiros(
+                    datos.porGirar.proximosGiros.desdeMes,
+                    datos.porGirar.proximosGiros.hastaMes,
+                  )}
+                  :{' '}
+                  <span className="font-mono tabular-nums">
+                    {formatCurrency(datos.porGirar.proximosGiros.totalCop)}
+                  </span>
                 </span>
-              </p>
-            ) : null}
-            <p className="mt-0.5 text-caption text-fg-muted">
-              {datos?.propietarios.length ?? 0}{' '}
-              {datos?.propietarios.length === 1 ? 'propietario' : 'propietarios'} ·{' '}
-              {datos?.meses.length ?? 0} {datos?.meses.length === 1 ? 'mes' : 'meses'}
-            </p>
-          </div>
-          <div className="p-4">
-            <p className="text-caption text-fg-muted">Ya girado</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg-muted">
-              {formatCurrency(datos?.totales.giradoCop ?? 0)}
-            </p>
-            <p className="mt-0.5 text-caption text-fg-muted">Dispersiones completadas</p>
-          </div>
-          <div className="p-4">
-            <p className="text-caption text-fg-muted">Neto liquidado</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg">
-              {formatCurrency(datos?.totales.netoCop ?? 0)}
-            </p>
-            <p className="mt-0.5 text-caption text-fg-muted">Girado más pendiente</p>
-          </div>
+              ) : undefined
+            }
+          />
+          <p className="text-caption text-fg-muted">
+            Ya girado:{' '}
+            <span className="font-mono tabular-nums">{formatCurrency(datos?.totales.giradoCop ?? 0)}</span> en
+            giros completados.
+          </p>
         </div>
 
         {/* Los meses que no se pudieron liquidar, con su porqué. */}
@@ -402,7 +387,8 @@ function FilasDelPropietario({
             href={`${rutaDelEstadoDeCuenta('propietario', propietario.propietarioId)}?volver=${encodeURIComponent(VOLVER_A)}`}
             data-testid="propietario-estado-de-cuenta"
             title={`Ver el estado de cuenta de ${propietario.nombre || 'este propietario'}`}
-            className="ml-6 mt-0.5 inline-block text-caption text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            // Ronda 26 (revisora r25, Por pagar #3): en gris; azul en cada fila eran N azules.
+            className="ml-6 mt-0.5 inline-block text-caption text-fg-muted underline underline-offset-4 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Estado de cuenta
           </Link>

@@ -17,6 +17,8 @@ import { act } from 'react'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
+// Ronda 26: la ayuda abre un cajón; el doble lo pinta como DOM plano.
+vi.mock('@/components/ui/sheet', async () => await import('@/components/ui/sheet-test-stub'))
 vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
@@ -47,7 +49,10 @@ afterEach(() => {
 describe('Por pagar a propietarios — qué se le gira', () => {
   it('🔴 dice «canon causado» con la convención compartida, no «lo recaudado»', () => {
     act(() => root.render(<CarteraPorPagarPage />))
-    const texto = container.querySelector('[data-testid="que-se-le-debe"]')?.textContent ?? ''
+    // Ronda 26: la explicación vive en la ayuda del encabezado («Qué se le gira»): se abre primero.
+    const ayuda = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Qué se le gira'))!
+    act(() => ayuda.click())
+    const texto = document.querySelector('[data-testid="que-se-le-debe"]')?.textContent ?? ''
 
     expect(texto).toContain('canon causado a su nombre')
     expect(texto).toContain(QUE_ES_EL_CANON_CAUSADO)

@@ -372,6 +372,8 @@ export default function MiCalificacionPage({
         )}
       </Seccion>
 
+      {/* Revisora r25: la tarjeta sólo cuando existe (antes «Esta parte todavía no está disponible»: espacio de nada). */}
+      {datos.consultas.disponible && (
       <Seccion titulo="Quién consultó tu calificación" descripcion="Cada vez que una inmobiliaria la mira, queda aquí.">
         {!datos.consultas.disponible ? (
           <p className="text-sm text-fg-muted">{tr('Esta parte todavía no está disponible.')}</p>
@@ -397,6 +399,7 @@ export default function MiCalificacionPage({
           </ul>
         )}
       </Seccion>
+      )}
 
       <Seccion titulo="Evaluaciones al terminar un contrato" descripcion="Lo que dijo la inmobiliaria cuando terminó tu contrato. Puedes responder una vez; tu respuesta se muestra al lado.">
         {!datos.evaluaciones.disponible || datos.evaluaciones.lista.length === 0 ? (
@@ -413,6 +416,8 @@ export default function MiCalificacionPage({
         )}
       </Seccion>
 
+      {/* Revisora r25: el certificado sólo cuando está a la venta o ya tienes uno (antes «todavía no está a la venta»). */}
+      {(datos.certificados.precioCop !== null || datos.certificados.lista.length > 0 || datos.certificados.pendienteId != null || sinConfirmar != null || revisando !== null) && (
       <Seccion
         titulo="Certificado para compartir"
         descripcion="Un código que cualquiera puede comprobar en Leasefy durante 60 días: sirve para mostrar tu calificación a una inmobiliaria que no está en Leasefy."
@@ -479,6 +484,7 @@ export default function MiCalificacionPage({
           )}
         </div>
       </Seccion>
+      )}
     </motion.div>
   );
 }

@@ -152,6 +152,8 @@ describe('Mi Calificación Leasefy: glow up 22-10', () => {
 
   it('sin calificación, el vacío dice de dónde sale', async () => {
     await montar({ ...DATOS, calificacion: undefined } as unknown as MiCalificacion)
-    expect(document.body.textContent).toContain('ni historial de arriendos en Leasefy ni un estudio de documentos reciente')
+    // Revisora r27: dice de dónde sale y cómo tenerla.
+    expect(document.body.textContent).toContain('Se arma con tu estudio y tus pagos en Leasefy')
+    expect(document.querySelector('a[href="/inquilino/aprobacion"]')).not.toBeNull()
   })
 })

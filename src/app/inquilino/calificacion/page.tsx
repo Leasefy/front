@@ -14,13 +14,14 @@ import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Certificate, CircleNotch, Eye, Handshake, ShareNetwork } from '@phosphor-icons/react';
+import { Certificate, CircleNotch, Eye, ShareNetwork } from '@phosphor-icons/react';
 import { Presence } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -112,11 +113,20 @@ function Autorizacion({ datos, alCambiar }: { datos: MiCalificacion; alCambiar: 
         </div>
       ) : (
         <div className="space-y-4">
+          {/* Revisora r27: la autorización plegada (≈150 px abierta a 1440 y una caja con su propio scroll a 390);
+              la casilla y el botón a la vista. Con una versión nueva, abierta: hay que leerla. El texto no cambia. */}
           {texto && (
-            <div className="max-h-48 overflow-y-auto rounded-md bg-surface-muted p-4 text-caption leading-relaxed text-fg-muted" data-lenis-prevent>
-              <p className="mb-1 font-medium text-fg">{texto.title}</p>
-              {texto.text}
-            </div>
+            <MasDetalles
+              etiqueta={tr('Leer la autorización')}
+              etiquetaAbierto={tr('Ocultar la autorización')}
+              abiertoAlInicio={a.hayVersionNueva}
+              montadoSiempre
+            >
+              <div className="rounded-md bg-surface-muted p-4 text-caption leading-relaxed text-fg-muted">
+                <p className="mb-1 font-medium text-fg">{texto.title}</p>
+                {texto.text}
+              </div>
+            </MasDetalles>
           )}
           {a.hayVersionNueva && (
             <p className="text-sm text-warning">{tr('El texto de la autorización cambió: léelo y vuelve a aceptarlo.')}</p>
@@ -319,6 +329,7 @@ export default function MiCalificacionPage({
 
   const contratos = datos.historial?.porContrato ?? [];
   const sinCalificacion = !datos.calificacion || datos.calificacion.estado === 'SIN_DATOS';
+  const sinEvaluaciones = !datos.evaluaciones.disponible || datos.evaluaciones.lista.length === 0;
 
   return (
     <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
@@ -327,19 +338,27 @@ export default function MiCalificacionPage({
       {datos.calificacion ? (
         <TarjetaDeCalificacion calificacion={datos.calificacion} deTu />
       ) : (
+        // Revisora r27: dice cómo tenerla (antes «Todavía no hay calificación · Todavía no hay datos…», sin salida).
         <EmptyState
           icon={Certificate}
-          title={tr('Todavía no hay calificación')}
-          description={tr('Todavía no hay datos para calificar: ni historial de arriendos en Leasefy ni un estudio de documentos reciente.')}
+          title={tr('Todavía no tienes calificación')}
+          description={tr('Se arma con tu estudio y tus pagos en Leasefy.')}
+          action={{ label: tr('Conocer mi tope'), href: '/inquilino/aprobacion' }}
         />
       )}
 
       <Autorizacion datos={datos} alCambiar={cargar} />
 
+      {/* Revisora r27: vacías no se pintan (eran ≈270 px de nada): sin arriendos ni evaluaciones, UNA línea. */}
+      {contratos.length === 0 && sinEvaluaciones ? (
+        <p className="text-body-sm text-fg-muted" data-testid="calificacion-sin-historial">
+          {tr('Cuando arriendes con Leasefy, aquí ves cada contrato con tus pagos a tiempo y lo que dijo la inmobiliaria al terminar.')}
+        </p>
+      ) : null}
+
+      {contratos.length > 0 && (
       <Seccion titulo="Tus arriendos en Leasefy" descripcion="Cada contrato que cuenta para tu historial, con cuántas cuotas pagaste a tiempo.">
-        {contratos.length === 0 ? (
-          <p className="text-sm text-fg-muted">{tr('Todavía no tienes arriendos con historial de pagos en Leasefy.')}</p>
-        ) : (
+        {(
           <div className="divide-y divide-border">
             {contratos.map((k) => (
               <div key={k.contractId} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -371,6 +390,7 @@ export default function MiCalificacionPage({
           </div>
         )}
       </Seccion>
+      )}
 
       {/* Revisora r25: la tarjeta sólo cuando existe (antes «Esta parte todavía no está disponible»: espacio de nada). */}
       {datos.consultas.disponible && (
@@ -401,20 +421,15 @@ export default function MiCalificacionPage({
       </Seccion>
       )}
 
+      {!sinEvaluaciones && (
       <Seccion titulo="Evaluaciones al terminar un contrato" descripcion="Lo que dijo la inmobiliaria cuando terminó tu contrato. Puedes responder una vez; tu respuesta se muestra al lado.">
-        {!datos.evaluaciones.disponible || datos.evaluaciones.lista.length === 0 ? (
-          <p className="flex items-center gap-2 text-sm text-fg-muted">
-            <Handshake className="h-4 w-4" aria-hidden />
-            {tr('No tienes evaluaciones todavía.')}
-          </p>
-        ) : (
-          <div>
-            {datos.evaluaciones.lista.map((e) => (
-              <Evaluacion key={e.id} e={e} alResponder={cargar} />
-            ))}
-          </div>
-        )}
+        <div>
+          {datos.evaluaciones.lista.map((e) => (
+            <Evaluacion key={e.id} e={e} alResponder={cargar} />
+          ))}
+        </div>
       </Seccion>
+      )}
 
       {/* Revisora r25: el certificado sólo cuando está a la venta o ya tienes uno (antes «todavía no está a la venta»). */}
       {(datos.certificados.precioCop !== null || datos.certificados.lista.length > 0 || datos.certificados.pendienteId != null || sinConfirmar != null || revisando !== null) && (

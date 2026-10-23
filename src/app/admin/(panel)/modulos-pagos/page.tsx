@@ -24,6 +24,7 @@
  * ningún módulo» / «Con …» por módulo, ordenar, Excel con quién y cuándo).
  */
 
+import { toast } from 'sonner'
 import { useMemo, useState } from 'react'
 import { SquaresFour } from '@phosphor-icons/react'
 import { Alert, Cifra, FranjaDeCifras } from '@leasefy/cadence'
@@ -68,6 +69,9 @@ export default function ModulosPagosPage() {
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [fallo, setFallo] = useState<string | null>(null)
   const [pendiente, setPendiente] = useState<CambioPendiente | null>(null)
+  // Ronda 26 (revisora r25): la fila abre su cajón con los módulos y ahí se prende o apaga (antes 35
+  // «Apagado» + 35 «Prender» en la tabla).
+  const [abierta, setAbierta] = useState<FilaDeLaMatriz | null>(null)
   const [motivo, setMotivo] = useState('')
 
   const catalogo = useMemo(() => data?.catalogo ?? [], [data])
@@ -77,17 +81,19 @@ export default function ModulosPagosPage() {
   function alternar(fila: FilaDeLaMatriz, modulo: string, nombreDelModulo: string) {
     setFallo(null)
     setMotivo('')
+    setAbierta(null)
     setPendiente({ fila, modulo, nombreDelModulo, prender: !fila.modulos[modulo]?.habilitado })
   }
 
   async function confirmarElCambio() {
     if (!pendiente || motivo.trim().length < 3) return
-    const { fila, modulo, prender } = pendiente
+    const { fila, modulo, prender, nombreDelModulo } = pendiente
     const llave = `${fila.agencyId}:${modulo}`
     setOcupado(llave)
     try {
       await fijarModulo(fila.agencyId, modulo, { habilitado: prender, motivo: motivo.trim() })
       setPendiente(null)
+      toast.success(`Listo: «${nombreDelModulo}» quedó ${prender ? 'prendido' : 'apagado'} para ${fila.nombre}.`)
       refetch()
     } catch (err) {
       setFallo(
@@ -107,7 +113,7 @@ export default function ModulosPagosPage() {
       { valor: 'sin-modulos', nombre: 'Sin ningún módulo', cumple: (a) => !tieneAlguno(a) },
       ...catalogo.map((c) => ({
         valor: c.modulo,
-        nombre: `Con ${c.nombre}`,
+        nombre: `Con ${c.nombre.charAt(0).toLowerCase()}${c.nombre.slice(1)}`,
         cumple: (a: FilaDeLaMatriz) => Boolean(a.modulos[c.modulo]?.habilitado),
       })),
     ],
@@ -135,43 +141,33 @@ export default function ModulosPagosPage() {
         texto: (a) => (a.modulos[c.modulo]?.habilitado ? 'Comprado' : 'Apagado'),
         cell: (a) => {
           const m = a.modulos[c.modulo]
-          const llave = `${a.agencyId}:${c.modulo}`
-          return (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <Pill tone={m?.habilitado ? 'ok' : 'muted'}>{m?.habilitado ? 'Comprado' : 'Apagado'}</Pill>
+          return m?.habilitado ? (
+            <div className="flex flex-col items-start gap-1">
+              <Pill tone="ok">Comprado</Pill>
               {/* 🔴 Quién y cuándo: es lo que hace auditable la venta. */}
-              {m?.habilitadoPorEmail ? (
-                <span className="order-last basis-full text-caption leading-tight text-fg-subtle">
+              {m.habilitadoPorEmail ? (
+                <span className="text-caption leading-tight text-fg-subtle">
                   {m.habilitadoPorEmail} · {m.habilitadoAt ? fmtFecha(m.habilitadoAt) : '—'}
-                  {m.motivo ? ` · ${m.motivo}` : ''}
                 </span>
               ) : null}
-              <Button
-                variant="outline"
-                size="sm"
-                hideArrow
-                disabled={ocupado === llave || !data?.disponible}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  alternar(a, c.modulo, c.nombre)
-                }}
-                data-testid={`modulo-${c.modulo}-${a.agencyId}`}
-              >
-                {ocupado === llave ? 'Guardando…' : m?.habilitado ? 'Apagar' : 'Prender'}
-              </Button>
             </div>
+          ) : (
+            <span className="text-fg-subtle" title="Apagado">
+              <span aria-hidden="true">—</span>
+              <span className="sr-only">Apagado</span>
+            </span>
           )
         },
       })),
     ],
-    [catalogo, data?.disponible, ocupado],
+    [catalogo],
   )
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Módulos"
-        description="Qué módulo de pago tiene comprado cada inmobiliaria, quién se lo prendió y cuándo."
+        description="Qué módulos de pago tiene cada inmobiliaria y, en los comprados, quién se los prendió y cuándo."
         ayuda={
           <ParaEntenderMas etiqueta="Qué es cada módulo" titulo="Los módulos de pago" variante="secundario">
             <div className="space-y-4 text-body-sm">
@@ -203,21 +199,28 @@ export default function ModulosPagosPage() {
               cifra={conAlguno.toLocaleString('es-CO')}
               contexto={`de ${agencias.length.toLocaleString('es-CO')} ${agencias.length === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
               tramos={[
-                { clave: 'con', etiqueta: 'Con algún módulo', monto: conAlguno, tono: 'exito', siempre: true },
-                { clave: 'sin', etiqueta: 'Sin módulos', monto: agencias.length - conAlguno, tono: 'neutro' },
+                { clave: 'con', etiqueta: 'Con algún módulo', monto: conAlguno, tono: 'exito', siempre: true, cifra: conAlguno.toLocaleString('es-CO') },
+                {
+                  clave: 'sin',
+                  etiqueta: 'Sin módulos',
+                  monto: agencias.length - conAlguno,
+                  tono: 'neutro',
+                  cifra: (agencias.length - conAlguno).toLocaleString('es-CO'),
+                },
               ]}
               total={agencias.length}
               data-testid="modulos-con-alguno"
             />
           </div>
-          {catalogo.length > 0 && catalogo.length <= 4 ? (
+          {/* Con un solo módulo, la franja repetía la cifra de arriba («Nómina 1»). */}
+          {catalogo.length > 1 && catalogo.length <= 4 ? (
             <FranjaDeCifras fila="md" columnas={catalogo.length} aria-label="Cuántas tienen cada módulo">
               {catalogo.map((c) => (
                 <Cifra
                   key={c.modulo}
                   etiqueta={c.nombre}
                   valor={agencias.filter((a) => a.modulos[c.modulo]?.habilitado).length}
-                  detalle="inmobiliarias"
+                  detalle={agencias.filter((a) => a.modulos[c.modulo]?.habilitado).length === 1 ? 'inmobiliaria' : 'inmobiliarias'}
                 />
               ))}
             </FranjaDeCifras>
@@ -243,7 +246,13 @@ export default function ModulosPagosPage() {
         emptyTitle="Sin inmobiliarias"
         emptyIcon={<SquaresFour weight="duotone" />}
         aria-label="Módulos de pago por inmobiliaria"
-        filaMarcada={(a) => a.agencyId === pendiente?.fila.agencyId}
+        filaMarcada={(a) => a.agencyId === (pendiente?.fila.agencyId ?? abierta?.agencyId)}
+        onRowClick={(a) => {
+          setFallo(null)
+          setAbierta(a)
+        }}
+        // Lo comprado primero (antes la única con Nómina quedaba en la página 2).
+        ordenInicial={catalogo.length > 0 ? { columna: 2, sentido: 'desc' } : undefined}
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar por nombre o NIT"
         segmentos={segmentos}
@@ -263,6 +272,49 @@ export default function ModulosPagosPage() {
           },
         ])}
       />
+
+      <Cajon abierto={abierta !== null && pendiente === null} onOpenChange={(v) => (v ? null : setAbierta(null))}>
+        <CajonCabecera
+          titulo={abierta ? `Módulos de ${abierta.nombre}` : 'Módulos'}
+          descripcion="Prender o apagar desde aquí es lo único que lo cambia; cada cambio pide un motivo."
+        />
+        <CajonCuerpo>
+          {abierta ? (
+            <ul className="divide-y divide-border">
+              {catalogo.map((c) => {
+                const m = abierta.modulos[c.modulo]
+                const llave = `${abierta.agencyId}:${c.modulo}`
+                return (
+                  <li key={c.modulo} className="flex items-start justify-between gap-4 py-3.5">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-body-sm font-medium text-fg">{c.nombre}</span>
+                        <Pill tone={m?.habilitado ? 'ok' : 'muted'}>{m?.habilitado ? 'Comprado' : 'Apagado'}</Pill>
+                      </div>
+                      {m?.habilitadoPorEmail ? (
+                        <p className="text-caption text-fg-subtle">
+                          {m.habilitadoPorEmail} · {m.habilitadoAt ? fmtFecha(m.habilitadoAt) : '—'}
+                          {m.motivo ? ` · ${m.motivo}` : ''}
+                        </p>
+                      ) : null}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      hideArrow
+                      disabled={ocupado === llave || !data?.disponible}
+                      onClick={() => alternar(abierta, c.modulo, c.nombre)}
+                      data-testid={`modulo-${c.modulo}-${abierta.agencyId}`}
+                    >
+                      {ocupado === llave ? 'Guardando…' : m?.habilitado ? 'Apagar' : 'Prender'}
+                    </Button>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : null}
+        </CajonCuerpo>
+      </Cajon>
 
       <Cajon abierto={pendiente !== null} onOpenChange={(abierto) => (abierto ? null : setPendiente(null))}>
         <CajonCabecera

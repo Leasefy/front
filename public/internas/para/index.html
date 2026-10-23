@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Para inmobiliarias | Leasefy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Soluciones de arriendo para inmobiliarias, propietarios, inquilinos y agentes inmobiliarios en Colombia.">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#FBFAF8">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_CO">
+<meta property="og:site_name" content="Leasefy">
+<meta property="og:title" content="Para inmobiliarias | Leasefy">
+<meta property="og:description" content="Soluciones de arriendo para inmobiliarias, propietarios, inquilinos y agentes inmobiliarios en Colombia.">
+<meta property="og:image" content="https://leasefy.co/opengraph-image">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:creator" content="@leasefy">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Host+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+<script src="/internas/para/js/00-arranque.js"></script>
+<style>
+/* Leasefy para cada quien: papel y tinta de la landing 2, voltaje como única chispa, un momento de medianoche por vista.
+   Cada vista conserva las secciones de su página en prod: héroe · el problema · la plataforma; FAQ y cierre compartidos. */
+:root{
+  --bg:#FBFAF8;--arena:#F3F1ED;--piedra:#E7E3DC;--filete:#ECE8E1;--sup:#FFFFFF;
+  --tinta:#121110;--grafito:#5B5751;--ceniza:#706B64;
+  --voltaje:#1A40FF;--voltaje-hover:#1535E6;--voltaje-txt:#1A40FF;--voltaje-dot:#1A40FF;--voltaje-suave:#E9EDFF;
+  --medianoche:#0A0F2C;--noche:#07080C;--noche-sup:#101116;--noche-filete:rgba(255,255,255,.08);
+  --exito:#2B7549;--exito-suave:#E3F1E8;--aviso:#9A6410;--aviso-dot:#D9911C;--aviso-suave:#FBF0DC;--peligro:#B8372A;--peligro-suave:#F8E4E1;
+  --sombra-flotante:0 50px 90px -40px rgba(18,17,16,.35),0 22px 40px -22px rgba(18,17,16,.18);
+  --sombra-tarjeta:0 30px 60px -30px rgba(18,17,16,.32),0 12px 24px -16px rgba(18,17,16,.14);
+  --estria-fondo:#FBFAF8;--estria-tinta:#1A40FF;--estria-oscuro:0;
+  --av1:#E9EDFF;--av1-tx:#1A40FF;--av2:#FBEFE6;--av2-tx:#A2531D;--av3:#E6F2EC;--av3-tx:#2B7549;--av4:#F1E9FB;--av4-tx:#6B3FB0;
+  --marco:#1C1C1E;--marco-filo:#3A3A3C;
+  --f:"Host Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --m:"DM Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --gutter:clamp(16px,4vw,56px);--max:1320px;--hdr:68px;--sel:56px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D0E13;--arena:#14161D;--piedra:#2A2D39;--filete:rgba(255,255,255,.09);--sup:#171922;
+  --tinta:#F3F1ED;--grafito:#B9BCD0;--ceniza:#8E93B0;
+  --voltaje:#1A40FF;--voltaje-hover:#3352FF;--voltaje-txt:#8FA2FF;--voltaje-dot:#4D6BFF;--voltaje-suave:#1A2147;
+  --noche:#05060A;--noche-sup:#0F1117;
+  --exito:#6CC793;--exito-suave:#15291D;--aviso:#E9B45A;--aviso-dot:#E2A84A;--aviso-suave:#2D2412;--peligro:#EE8774;--peligro-suave:#311A16;
+  --sombra-flotante:0 50px 90px -40px rgba(0,0,0,.75),0 22px 40px -22px rgba(0,0,0,.5);
+  --sombra-tarjeta:0 30px 60px -30px rgba(0,0,0,.7),0 12px 24px -16px rgba(0,0,0,.5);
+  --estria-fondo:#0D0E13;--estria-tinta:#4D6BFF;--estria-oscuro:1;
+  --av1:#1A2147;--av1-tx:#8FA2FF;--av2:#35231A;--av2-tx:#F0A97A;--av3:#15291D;--av3-tx:#7FD3A0;--av4:#2A1F3D;--av4-tx:#C3A6F0;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D0E13;--arena:#14161D;--piedra:#2A2D39;--filete:rgba(255,255,255,.09);--sup:#171922;
+  --tinta:#F3F1ED;--grafito:#B9BCD0;--ceniza:#8E93B0;
+  --voltaje:#1A40FF;--voltaje-hover:#3352FF;--voltaje-txt:#8FA2FF;--voltaje-dot:#4D6BFF;--voltaje-suave:#1A2147;
+  --noche:#05060A;--noche-sup:#0F1117;
+  --exito:#6CC793;--exito-suave:#15291D;--aviso:#E9B45A;--aviso-dot:#E2A84A;--aviso-suave:#2D2412;--peligro:#EE8774;--peligro-suave:#311A16;
+  --sombra-flotante:0 50px 90px -40px rgba(0,0,0,.75),0 22px 40px -22px rgba(0,0,0,.5);
+  --sombra-tarjeta:0 30px 60px -30px rgba(0,0,0,.7),0 12px 24px -16px rgba(0,0,0,.5);
+  --estria-fondo:#0D0E13;--estria-tinta:#4D6BFF;--estria-oscuro:1;
+  --av1:#1A2147;--av1-tx:#8FA2FF;--av2:#35231A;--av2-tx:#F0A97A;--av3:#15291D;--av3-tx:#7FD3A0;--av4:#2A1F3D;--av4-tx:#C3A6F0;
+  color-scheme:dark}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;overflow-x:clip}
+body{background:var(--bg);color:var(--tinta);font-family:var(--f);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:clip;min-width:320px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:70;background:var(--bg)}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+ul,ol{list-style:none}
+:focus-visible{outline:2px solid var(--voltaje-txt);outline-offset:3px;border-radius:6px}
+.wrap{width:100%;max-width:calc(var(--max) + 2*var(--gutter));margin:0 auto;padding-left:max(var(--gutter),env(safe-area-inset-left,0px));padding-right:max(var(--gutter),env(safe-area-inset-right,0px));position:relative}
+.mono{font-family:var(--m);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sq{corner-shape:superellipse(1.5)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ── tipografía (la de la landing) ── */
+.ceja{display:inline-flex;align-items:center;gap:10px;font-family:var(--m);font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--ceniza);line-height:1.3}
+.ceja i{width:8px;height:8px;background:var(--voltaje-dot);border-radius:2px;flex:none;display:inline-block}
+.ceja b{font-weight:500;color:var(--tinta)}
+.t-xl{font-weight:340;font-size:clamp(44px,6.6vw,100px);line-height:.98;letter-spacing:-.045em;text-wrap:balance}
+.t-l{font-weight:360;font-size:clamp(36px,4.9vw,72px);line-height:1.02;letter-spacing:-.04em;text-wrap:balance}
+.t-m{font-weight:420;font-size:clamp(24px,2.3vw,32px);line-height:1.15;letter-spacing:-.025em}
+.lead{font-size:clamp(17px,1.3vw,19.5px);line-height:1.55;color:var(--grafito);max-width:620px}
+.lead b{color:var(--tinta);font-weight:500}
+.acento{color:var(--voltaje-txt)}
+.pw{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.1em;margin-bottom:-.1em}
+.pwi{display:inline-block;will-change:transform}
+.mov [data-r]{opacity:0;transform:translateY(26px)}
+
+/* ── botones (radio completo + superelipse). Sin sombras; el resorte lo pone Motion ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:50px;padding:0 26px;border-radius:18px;font-size:16px;font-weight:500;letter-spacing:-.005em;white-space:nowrap;transition:transform .15s cubic-bezier(.3,1.5,.5,1),background-color .2s,color .2s}
+@supports (corner-shape:superellipse(1.5)){.btn{border-radius:999px;corner-shape:superellipse(1.5)}}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--voltaje);color:#fff}
+.btn-p:hover{background:var(--voltaje-hover)}
+.btn-s{background:var(--arena);color:var(--tinta)}
+.btn-s:hover{background:var(--piedra)}
+.btn-w{background:#fff;color:var(--medianoche)}
+.btn-w:hover{background:#E9EDFF}
+.btn-sm{height:38px;padding:0 16px;font-size:14px;border-radius:14px}
+.btn-xl{height:58px;padding:0 34px;font-size:18px}
+.con-motion :is(.btn,.mbtn,.sel-tabs a,.aviso a,.aviso button){transition:background-color .2s,color .2s,border-color .2s}
+.con-motion .btn:active{transform:none}
+@media (prefers-reduced-motion:reduce){.btn:active{transform:none}}
+.lnk{color:var(--voltaje-txt);font-weight:500}
+.lnk:hover{text-decoration:underline;text-underline-offset:4px}
+
+/* ── encabezado (el de la landing, con el reloj del día) ── */
+.hdr{position:fixed;inset:0 0 auto 0;z-index:60;height:calc(var(--hdr) + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+.hdr .wrap{display:flex;align-items:center;height:100%;gap:26px}
+.logo{display:flex;align-items:center;height:40px}
+.logo svg{height:21px;width:auto;fill:var(--tinta)}
+.nav{display:flex;gap:24px;font-size:15px;color:var(--grafito)}
+.nav a{display:inline-flex;align-items:center;gap:8px;transition:color .2s}
+.nav a:hover{color:var(--tinta)}
+.nav a i{width:7px;height:7px;border-radius:2px;background:var(--voltaje-dot)}
+.reloj{margin-left:auto;display:inline-flex;align-items:center;gap:10px;height:34px;padding:0 12px 0 10px;border-radius:12px;background:var(--arena);font-family:var(--m);font-size:13px;letter-spacing:.06em;color:var(--ceniza);corner-shape:superellipse(1.5)}
+.reloj b{color:var(--tinta);font-weight:500;min-width:3.2em}
+.reloj .pista{display:flex;gap:2px}
+.reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
+.reloj .pista i.on{background:var(--voltaje-dot)}
+.hdr-cta{display:flex;align-items:center;gap:10px}
+.mbtn{display:none;height:38px;padding:0 14px;border-radius:12px;background:var(--arena);font-size:14px;font-weight:500;corner-shape:superellipse(1.5)}
+.menu{position:fixed;inset:calc(var(--hdr) + env(safe-area-inset-top,0px)) 0 0 0;z-index:59;background:var(--bg);padding:24px max(var(--gutter),env(safe-area-inset-right,0px)) 24px max(var(--gutter),env(safe-area-inset-left,0px));display:none;flex-direction:column;gap:6px;overflow:auto}
+.menu-abierto .menu{display:flex}
+.menu a.it{display:flex;align-items:baseline;gap:14px;padding:14px 0;border-bottom:1px solid var(--filete);font-size:26px;font-weight:360;letter-spacing:-.02em}
+.menu a.it span{font-family:var(--m);font-size:13px;color:var(--ceniza)}
+.menu .acc{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+@media (max-width:1100px){.nav{display:none}.hdr-cta .pub{display:none}}
+@media (max-width:720px){
+  .hdr-cta{display:none}.mbtn{display:inline-flex;align-items:center}
+  .reloj{padding:0 10px}.reloj .dia,.reloj .pista{display:none}
+  .hdr .wrap{gap:12px}
+}
+
+/* ── el selector: a quién le habla esta página ── */
+.selector{position:sticky;top:calc(var(--hdr) + env(safe-area-inset-top,0px));z-index:55;margin-top:calc(var(--hdr) + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--filete);border-top:1px solid var(--filete)}
+.selector .wrap{display:flex;align-items:center;gap:18px;height:var(--sel)}
+.sel-rot{flex:none;display:inline-flex;align-items:center;gap:10px;font-family:var(--m);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ceniza)}
+.sel-rot i{width:8px;height:8px;border-radius:2px;background:var(--voltaje-dot)}
+.sel-tabs{display:flex;gap:2px;padding:3px;background:var(--arena);border-radius:14px;overflow-x:auto;scrollbar-width:none;min-width:0;corner-shape:superellipse(1.5)}
+.sel-tabs::-webkit-scrollbar{display:none}
+.sel-tabs a{flex:none;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:11px;font-size:14.5px;color:var(--grafito);white-space:nowrap;transition:background-color .2s,color .2s;corner-shape:superellipse(1.5)}
+.sel-tabs a:hover{color:var(--tinta)}
+.sel-tabs a i{width:7px;height:7px;border-radius:2px;background:var(--piedra);transition:background-color .2s}
+.sel-tabs a[aria-current="page"]{background:var(--sup);color:var(--tinta)}
+.sel-tabs a[aria-current="page"] i{background:var(--voltaje-dot)}
+.sel-ruta{margin-left:auto;font-family:var(--m);font-size:13px;color:var(--ceniza);white-space:nowrap}
+.sel-ruta b{color:var(--tinta);font-weight:400}
+@media (max-width:900px){.sel-ruta{display:none}}
+@media (max-width:560px){.sel-rot{display:none}.selector .wrap{gap:0}.sel-tabs{width:100%}.sel-tabs a{flex:1 0 auto;justify-content:center;padding:0 11px;font-size:13.5px;gap:6px}.sel-tabs a i{display:none}}
+
+/* ── marcos de la landing: portátil y celular ── */
+.disp{position:relative;will-change:transform}
+.disp .marco{position:relative;background:var(--marco)}
+.disp .pantalla{position:relative;overflow:hidden;background:#FBFAF8}
+.disp .pantalla img.cap{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center}
+.laptop .marco{border-radius:18px 18px 6px 6px;padding:1.15% 1.15% 1.55%;background:#0B0B0D;box-shadow:inset 0 0 0 1px #2B2B2F,0 0 0 1.5px #B4B4B9,var(--sombra-flotante)}
+.laptop .pantalla{aspect-ratio:16/10;border-radius:10px 10px 3px 3px}
+.laptop .isla{display:block;position:absolute;top:1.15%;left:50%;width:10.5%;height:3.3%;transform:translateX(-50%);background:#0B0B0D;border-radius:0 0 11px 11px;z-index:4}
+.laptop .camara{position:absolute;top:1.75%;left:50%;z-index:5;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:#1C2738;box-shadow:0 0 0 1.5px #121215}
+.laptop .base{display:block;position:relative;height:clamp(8px,1vw,14px);margin:0 -4.5%;background:linear-gradient(180deg,#ECECEF 0%,#D3D3D7 45%,#A9A9AE 100%);border-radius:3px 3px 40% 40%/3px 3px 100% 100%}
+.laptop .base::before{content:"";position:absolute;left:50%;top:0;width:12%;height:36%;transform:translateX(-50%);background:linear-gradient(180deg,#BEBEC3,#D1D1D5);border-radius:0 0 10px 10px}
+.celular .marco{border-radius:16%/7.4%;padding:3.4%;box-shadow:inset 0 0 0 1.5px var(--marco-filo),var(--sombra-flotante)}
+.celular .pantalla{aspect-ratio:390/844;border-radius:13%/6%}
+.celular .isla{position:absolute;top:4.1%;left:50%;width:27%;height:3.1%;transform:translateX(-50%);background:#000;border-radius:999px;z-index:5}
+
+/* ── la interfaz real armada en HTML (siempre en claro, como el producto) ── */
+.ui{position:absolute;left:0;top:0;transform-origin:0 0;background:#FBFAF8;color:#121110;font-family:var(--f);font-size:13px;line-height:1.4;text-align:left;overflow:hidden;color-scheme:light}
+.ui .m{font-family:var(--m);font-variant-numeric:tabular-nums}
+.appp{width:390px;height:844px}
+.p-top{display:flex;align-items:center;justify-content:space-between;height:56px;margin-top:44px;padding:0 20px;color:#5B5751}
+.p-top .lg{height:15px;width:auto;fill:#121110}
+.p-top .der{display:flex;align-items:center;gap:16px}
+.p-top .ic{width:19px;height:19px}
+.p-camp{position:relative;display:inline-flex}
+.p-camp::after{content:"";position:absolute;top:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:#1A40FF}
+.p-av{width:32px;height:32px;border-radius:50%;background:#0A0F2C;color:#fff;display:grid;place-items:center;font-size:12px;font-weight:500}
+.p-cont{padding:8px 18px 0;display:flex;flex-direction:column;gap:12px}
+.p-k{font-family:var(--m);font-size:10.5px;letter-spacing:.09em;color:#706B64;text-transform:uppercase}
+.p-saludo h3{font-size:27px;font-weight:420;letter-spacing:-.02em;line-height:1.15;margin-top:4px}
+.p-perfil{display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border:1px solid #ECE8E1;border-radius:20px;corner-shape:superellipse(1.5)}
+.p-perfil .ini{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:15px;font-weight:500;background:#E9EDFF;color:#1A40FF;flex:none;corner-shape:superellipse(1.5)}
+.p-perfil b{display:block;font-size:16px;font-weight:500}
+.p-perfil small{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#706B64}
+.p-perfil small i{width:7px;height:7px;border-radius:50%;background:#2B7549}
+.p-perfil .ok{margin-left:auto;color:#2B7549;width:20px;height:20px;stroke-width:2}
+.p-card{background:#fff;border:1px solid #ECE8E1;border-radius:20px;padding:16px;corner-shape:superellipse(1.5)}
+.p-card .fila{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.p-sube{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:7px;background:#E3F1E8;color:#2B7549;font-family:var(--m);font-size:11px}
+.p-big{display:block;font-family:var(--m);font-weight:400;font-size:34px;letter-spacing:-.02em;line-height:1.1;margin-top:8px}
+.p-sub{font-size:13px;color:#5B5751;margin-top:4px}
+.p-pase{background:#E9EDFF;border-color:#D5DDFF}
+.p-pase .p-k{color:#1A40FF}
+.p-pase .p-big{color:#0A0F2C}
+.p-dos,.p-tres{display:grid;gap:10px}
+.p-dos{grid-template-columns:1fr 1fr}.p-tres{grid-template-columns:1fr 1fr 1fr}
+.p-mini{background:#fff;border:1px solid #ECE8E1;border-radius:16px;padding:12px 14px;corner-shape:superellipse(1.5)}
+.p-mini b{display:block;font-family:var(--m);font-weight:400;font-size:22px;line-height:1.15;margin-top:4px}
+.p-tres .p-mini{text-align:center;padding:12px 6px}
+
+/* ── fotos en estrías de voltaje (se revelan a color) ── */
+.foto-estrias{position:relative;overflow:hidden;background:var(--piedra)}
+.foto-estrias img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.foto-estrias canvas{position:absolute;inset:0;width:100%;height:100%;transition:opacity .7s ease}
+.foto-estrias.revela:hover canvas,.foto-estrias.ver canvas{opacity:0}
+.foto-estrias.ver canvas{transition-delay:.25s}
+.rotulo{position:absolute;left:14px;bottom:14px;z-index:3;height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:10px;background:#fff;color:#121110;font-family:var(--m);font-size:13px;letter-spacing:.08em;text-transform:uppercase;max-width:calc(100% - 28px);overflow:hidden;white-space:nowrap;corner-shape:superellipse(1.5)}
+.rotulo::before{content:"";width:6px;height:6px;border-radius:2px;background:#1A40FF;flex:none}
+
+/* ── la corriente (PIX) ── */
+.corriente{position:absolute;display:block;pointer-events:none}
+.ciudad{position:relative;height:clamp(240px,30vw,420px);margin:0}
+.ciudad .rotulo{left:max(var(--gutter),env(safe-area-inset-left,0px));bottom:18px}
+
+/* ── secciones ── */
+section{position:relative;overflow-x:clip}
+.sec{padding-block:clamp(96px,12vw,170px)}
+.arena{background:var(--arena)}
+.vista[hidden]{display:none!important}
+
+/* ── héroe claro con la corriente que enmarca ── */
+.heroe{position:relative;overflow:hidden;padding-bottom:clamp(24px,3vw,40px)}
+.heroe-top{position:relative;padding-top:clamp(56px,7vw,104px);padding-bottom:clamp(8px,2vw,24px)}
+.heroe-pix{left:0;top:0;width:100%;height:100%;z-index:0;opacity:.95;-webkit-mask-image:radial-gradient(ellipse 40% 46% at 50% 47%,transparent 0%,transparent 62%,#000 100%),linear-gradient(to bottom,#000 0%,#000 60%,transparent 100%);-webkit-mask-composite:source-in;mask-image:radial-gradient(ellipse 40% 46% at 50% 47%,transparent 0%,transparent 62%,#000 100%),linear-gradient(to bottom,#000 0%,#000 60%,transparent 100%);mask-composite:intersect}
+@media (max-width:899px){.heroe-pix{-webkit-mask-image:radial-gradient(ellipse 96% 62% at 50% 44%,transparent 0%,transparent 70%,#000 100%),linear-gradient(to bottom,#000 0%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 96% 62% at 50% 44%,transparent 0%,transparent 70%,#000 100%),linear-gradient(to bottom,#000 0%,#000 50%,transparent 100%)}}
+.mov .heroe-pix{opacity:0}
+.heroe-txt{position:relative;z-index:2;text-align:center;max-width:1180px;margin:0 auto}
+.heroe h1{margin-top:24px;font-size:clamp(44px,6.2vw,96px)}
+.heroe .ceja{display:inline-block;max-width:100%;text-wrap:balance}
+.heroe .ceja i{margin-right:10px;vertical-align:1px}
+.heroe .lead{margin:22px auto 0;max-width:640px}
+.heroe-cta{display:flex;gap:12px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+.cifras{display:flex;justify-content:center;gap:0;margin:clamp(36px,4vw,52px) auto 0;max-width:760px;border-top:1px solid var(--piedra);border-bottom:1px solid var(--piedra)}
+.cifras div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:18px 10px}
+.cifras div+div{border-left:1px solid var(--piedra)}
+.cifras b{font-family:var(--m);font-weight:400;font-size:clamp(26px,2.6vw,38px);letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
+.cifras span{font-size:13.5px;color:var(--ceniza)}
+
+/* la escena: la foto de prod en estrías y, encima, la pieza del producto */
+.escena{position:relative;max-width:1180px;margin:clamp(44px,5vw,72px) auto 0;z-index:2}
+.banda{position:relative;height:clamp(440px,41vw,580px);border-radius:32px;overflow:hidden;background:var(--piedra);corner-shape:superellipse(1.5)}
+.banda > .foto-estrias{position:absolute;inset:0}
+.banda .disp.celular{position:absolute;left:50%;top:56px;width:300px;margin-left:-150px;z-index:2}
+.banda .disp.laptop{position:absolute;left:50%;top:60px;width:min(800px,70%);transform:translateX(-50%);z-index:2}
+.flota{position:absolute;z-index:4}
+.tres-d{position:absolute;z-index:5;pointer-events:none;width:clamp(120px,12vw,180px);right:-1.5%;top:-70px}
+.tres-d img{width:100%;height:auto;filter:drop-shadow(0 18px 24px rgba(18,17,16,.14))}
+.mov .tres-d img{animation:flotar 7s ease-in-out infinite}
+@keyframes flotar{0%,100%{transform:translate3d(0,0,0) rotate(0)}50%{transform:translate3d(0,-12px,0) rotate(2deg)}}
+/* tarjetas que flotan (el widget de prod, sin vidrio) */
+.tw{background:var(--sup);border-radius:24px;padding:18px;box-shadow:var(--sombra-tarjeta),0 0 0 1px var(--filete);corner-shape:superellipse(1.5)}
+.tw-cab{display:flex;align-items:center;gap:12px}
+.tw-cab .ini{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--medianoche);color:#fff;font-family:var(--m);font-size:13px;flex:none;corner-shape:superellipse(1.5)}
+.tw-cab b{display:block;font-size:15.5px;font-weight:450}
+.tw-cab small{display:block;font-size:13px;color:var(--ceniza)}
+.tw-cab .ok{margin-left:auto;width:20px;height:20px;color:var(--exito);stroke-width:2}
+.tw-cifra{margin-top:14px;padding:14px;border-radius:16px;background:var(--arena);corner-shape:superellipse(1.5)}
+.tw-cifra p{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--grafito)}
+.tw-cifra p .sube{color:var(--exito);font-family:var(--m)}
+.tw-cifra b{display:block;font-family:var(--m);font-weight:400;font-size:32px;letter-spacing:-.03em;line-height:1.1;margin-top:4px}
+.tw-tres{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.tw-tres div{border-radius:12px;padding:10px 4px;text-align:center;border:1px solid var(--filete);corner-shape:superellipse(1.5)}
+.tw-tres dd{font-family:var(--m);font-size:19px}
+.tw-tres dt{font-size:13px;color:var(--ceniza)}
+.nota-f{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 14px;background:var(--sup);border-radius:18px;box-shadow:var(--sombra-tarjeta),0 0 0 1px var(--filete);corner-shape:superellipse(1.5);white-space:nowrap}
+.nota-f .pt{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--exito-suave);color:var(--exito);flex:none;corner-shape:superellipse(1.5)}
+.nota-f .pt.az{background:var(--voltaje-suave);color:var(--voltaje-txt)}
+.nota-f .pt .ic{width:17px;height:17px;stroke-width:1.8}
+.nota-f b{display:block;font-size:14px;font-weight:500}
+.nota-f small{display:block;font-family:var(--m);font-size:13px;color:var(--ceniza)}
+.escena-cel .banda{height:clamp(420px,35vw,500px)}
+.escena-cel .banda .disp.celular{top:92px}
+.escena-cel .flota.nota-f{left:calc(50% - 150px - 290px);bottom:84px}
+.escena-cel .flota.lado{right:calc(50% - 150px - 300px);top:96px;max-width:250px;white-space:normal}
+.escena-lap .flota.tw{left:2%;top:26%;width:300px}
+.escena-lap .flota.nota-f{right:3%;bottom:13%}
+
+/* ── el problema ── */
+.cab{display:grid;grid-template-columns:7fr 5fr;gap:clamp(24px,4vw,64px);align-items:end}
+.cab h2{margin-top:22px}
+.cab .lead{justify-self:start}
+.prob3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:clamp(44px,5vw,76px)}
+.pf .foto-estrias{aspect-ratio:4/3;border-radius:28px;corner-shape:superellipse(1.5)}
+.pf h3{font-size:24px;font-weight:420;letter-spacing:-.02em;line-height:1.2;margin-top:20px}
+.pf p{font-size:15.5px;color:var(--grafito);margin-top:6px;max-width:400px}
+.pf .cifra{display:block;font-family:var(--m);font-weight:400;font-size:clamp(38px,3.7vw,54px);letter-spacing:-.04em;line-height:1;margin-top:24px;font-variant-numeric:tabular-nums}
+.pf .det{display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--tinta);margin-top:10px}
+.pf .det i{width:7px;height:7px;border-radius:2px;background:var(--voltaje-dot);flex:none}
+.prob2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+.tarjeta{background:var(--sup);border-radius:28px;border:1px solid var(--filete);corner-shape:superellipse(1.5)}
+.tp{display:flex;gap:28px;align-items:center;padding:28px}
+.tp .tx{flex:1;min-width:0}
+.tp h3{font-size:clamp(22px,1.9vw,26px);font-weight:420;letter-spacing:-.02em;line-height:1.2}
+.tp .tx p{font-size:15.5px;color:var(--grafito);margin-top:8px}
+.tp .k{font-family:var(--m);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ceniza);margin-bottom:12px;display:block}
+.tp.col{flex-direction:column;align-items:stretch;justify-content:space-between;gap:28px}
+.mini{flex:none;width:236px;padding:16px;border-radius:20px;background:var(--bg);border:1px solid var(--filete);position:relative;corner-shape:superellipse(1.5)}
+.mini .mcab{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--filete)}
+.mini .mcab b{display:block;font-size:13.5px;font-weight:500}
+.mini .mcab small{display:block;font-size:13px;color:var(--ceniza)}
+.mini dl{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.mini dl div{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.mini dt{color:var(--grafito)}
+.mini dd{font-family:var(--m);color:var(--ceniza)}
+.marca-p{position:absolute;top:-10px;right:-10px;height:26px;min-width:26px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;font-family:var(--m);font-size:13px;letter-spacing:.06em;text-transform:uppercase;corner-shape:superellipse(1.5)}
+.marca-p.av{background:var(--aviso-suave);color:var(--aviso)}
+.marca-p.pe{background:var(--peligro-suave);color:var(--peligro)}
+.ini-s{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--arena);color:var(--grafito);font-size:13px;font-weight:500;flex:none;corner-shape:superellipse(1.5)}
+.mes{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.mes li{display:flex;align-items:center;justify-content:space-between;font-size:13px}
+.mes li span{display:flex;align-items:center;gap:8px;color:var(--grafito)}
+.mes li i{width:8px;height:8px;border-radius:2px;background:var(--exito);flex:none}
+.mes li.no i{background:var(--peligro)}
+.mes li .v{font-family:var(--m);color:var(--tinta)}
+.mes li.no .v{color:var(--peligro)}
+.deuda{display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--filete);font-size:13px;color:var(--grafito)}
+.deuda b{font-family:var(--m);font-weight:400;color:var(--peligro)}
+.foto-nd{display:grid;place-items:center;aspect-ratio:16/10;border-radius:12px;background:var(--arena);font-size:13px;color:var(--ceniza);margin-bottom:12px;corner-shape:superellipse(1.5)}
+.docs{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.docs li{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--grafito)}
+.docs li i{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--piedra);display:grid;place-items:center;flex:none}
+.docs li i .ic{width:10px;height:10px;stroke-width:2.4;color:var(--exito)}
+.sistemas{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.sistemas span{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 11px;border-radius:10px;background:var(--arena);font-family:var(--m);font-size:13px;color:var(--grafito);corner-shape:superellipse(1.5)}
+.sistemas span i{width:7px;height:7px;border-radius:50%;background:var(--peligro)}
+.sistemas span:nth-child(n+2) i{background:var(--aviso-dot)}
+.sistemas small{font-size:14px;color:var(--grafito)}
+.escala{display:flex;align-items:center;gap:16px}
+.escala b{display:block;font-family:var(--m);font-weight:400;font-size:32px;line-height:1}
+.escala b.az{color:var(--voltaje-txt)}
+.escala small{display:block;font-size:13px;color:var(--ceniza);margin-top:6px}
+.escala .hilo-p{flex:1;min-width:40px;height:5px;background-image:linear-gradient(90deg,var(--voltaje-dot) 5px,transparent 5px);background-size:12px 5px;opacity:.85}
+.escala .der{text-align:right}
+/* agentes: el bento de los cuatro problemas */
+.bento-p{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;margin-top:clamp(44px,5vw,76px)}
+.bento-p .c7{grid-column:span 7}.bento-p .c5{grid-column:span 5}
+.bento-p .pf .foto-estrias{aspect-ratio:16/8}
+.bento-p .tp.col{justify-content:center;gap:32px}
+.sindatos{display:flex;flex-direction:column;gap:12px}
+.sindatos div{display:flex;align-items:center;gap:12px;font-size:13.5px}
+.sindatos dt{width:96px;flex:none;color:var(--grafito)}
+.sindatos dd{flex:1;display:flex;align-items:center;gap:12px;font-family:var(--m);font-size:13px;color:var(--ceniza)}
+.sindatos dd i{flex:1;height:6px;border-radius:99px;background:var(--arena)}
+.linea-c{display:flex;flex-direction:column;gap:8px}
+.linea-c li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--bg);border:1px solid var(--filete);corner-shape:superellipse(1.5)}
+.linea-c .tx{flex:1;min-width:0}
+.linea-c b{display:block;font-size:14px;font-weight:500}
+.linea-c .barra{display:block;height:4px;border-radius:99px;background:var(--arena);margin-top:6px;overflow:hidden}
+.linea-c .barra i{display:block;height:100%;background:var(--voltaje-dot)}
+.estado-c{font-family:var(--m);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ceniza);white-space:nowrap}
+.estado-c.ok{color:var(--exito)}.estado-c.es{color:var(--aviso)}
+
+/* ── la plataforma: el momento de medianoche de cada vista ── */
+.noche{overflow:clip;background:var(--noche);color:#F3F1ED;--tinta:#F3F1ED;--grafito:#B9BCD0;--ceniza:#8E93B0;--voltaje-dot:#4D6BFF;--voltaje-txt:#8FA2FF;--filete:var(--noche-filete);--piedra:rgba(255,255,255,.12);--exito:#7FD3A0;--aviso:#F0BE6A}
+.noche::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:soft-light;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.noche .wrap{z-index:1}
+.noche{border-top:1px solid var(--noche-filete)}
+.rayas-noche{position:absolute;right:-10%;top:-14%;width:min(540px,64vw);aspect-ratio:1;pointer-events:none;opacity:.32;-webkit-mask-image:radial-gradient(closest-side,#000 40%,transparent);mask-image:radial-gradient(closest-side,#000 40%,transparent)}
+.rayas-noche div{position:absolute;inset:0}
+.mov .rayas-noche div:nth-child(1){animation:deriva 14s linear infinite}
+.mov .rayas-noche div:nth-child(2){animation:deriva 9s linear infinite reverse}
+.mov .rayas-noche div:nth-child(3){animation:deriva 11s linear infinite}
+.mov .rayas-noche div:nth-child(4){animation:respira 6s ease-in-out infinite}
+@keyframes deriva{to{background-position:90px 0}}
+@keyframes respira{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.noche-pix{left:0;right:0;bottom:0;width:100%;height:42%;z-index:0;opacity:.8;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.6) 40%,transparent 95%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.6) 40%,transparent 95%)}
+.bento{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:clamp(44px,5vw,76px)}
+.bento .c7{grid-column:span 7}.bento .c5{grid-column:span 5}.bento .c6{grid-column:span 6}
+.nc{position:relative;display:flex;gap:24px;padding:28px;background:var(--noche-sup);border-radius:30px;box-shadow:0 0 0 1px var(--noche-filete);corner-shape:superellipse(1.5);min-width:0}
+.nc .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.nc .ico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.06);color:var(--voltaje-txt);margin-bottom:18px;corner-shape:superellipse(1.5)}
+.nc .ico .ic{width:18px;height:18px}
+.nc .ins{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.nc .ins b{font-family:var(--m);font-weight:400;font-size:20px;color:#F3F1ED}
+.nc .ins span{font-size:13.5px;color:var(--ceniza)}
+.nc h3{font-size:clamp(22px,1.9vw,27px);font-weight:420;letter-spacing:-.02em;line-height:1.18}
+.nc .tx > p{color:var(--grafito);font-size:15.5px;margin-top:8px;max-width:460px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.chips li{height:32px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:10px;background:rgba(255,255,255,.06);box-shadow:0 0 0 1px var(--noche-filete);font-family:var(--m);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#C9CCDD;corner-shape:superellipse(1.5)}
+.chips li::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--voltaje-dot)}
+.nc .tx .chips{margin-top:auto;padding-top:20px}
+.nc .pz{flex:none;width:230px;display:flex;flex-direction:column;justify-content:center}
+.pz-caja{border-radius:18px;background:rgba(255,255,255,.04);box-shadow:0 0 0 1px var(--noche-filete);padding:16px;corner-shape:superellipse(1.5)}
+.pz-k{display:flex;justify-content:space-between;font-size:13px;color:var(--ceniza)}
+.pz-k .sube{font-family:var(--m);color:#7FD3A0}
+.pz-n{display:block;font-family:var(--m);font-weight:400;font-size:30px;line-height:1.1;margin-top:4px;color:#F3F1ED}
+.pz-lista{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--noche-filete)}
+.pz-lista li{display:flex;align-items:center;gap:8px;font-size:13px;color:#F3F1ED}
+.pz-lista li i{width:7px;height:7px;border-radius:2px;flex:none}
+.pz-lista li span:last-child{margin-left:auto;color:var(--ceniza);font-size:13px}
+.medidor{display:flex;flex-direction:column;align-items:center;gap:6px}
+.medidor .num{font-family:var(--m);font-size:30px;line-height:1;color:#F3F1ED;margin-top:-6px}
+.medidor small{font-size:13px;color:#7FD3A0}
+.anillo{position:relative;width:76px;height:76px}
+.anillo svg{width:100%;height:100%;transform:rotate(-90deg)}
+.anillo b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--m);font-weight:400;font-size:21px;color:#F3F1ED}
+.ocup{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:140px;margin:0 auto}
+.ocup i{aspect-ratio:1;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:flex-end;padding:4px}
+.ocup i::after{content:"";display:block;width:100%;height:var(--h);border-radius:3px;background:var(--b,#4D6BFF)}
+.ocup-t{text-align:center;font-size:13px;color:var(--ceniza);margin-top:12px}
+.ocup-t b{font-family:var(--m);font-weight:400;color:#F3F1ED}
+.term{border-radius:16px;overflow:hidden;background:#0B0C12;box-shadow:0 0 0 1px var(--noche-filete);corner-shape:superellipse(1.5)}
+.term-b{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--noche-filete);font-family:var(--m);font-size:13px;color:var(--ceniza)}
+.term-b i{width:6px;height:6px;border-radius:2px;background:#4D6BFF}
+.term pre{margin:0;padding:12px;font-family:var(--m);font-size:13px;line-height:1.6;color:#B9BCD0;white-space:pre}
+.term .v{color:#7FD3A0}.term .n{color:#8FA2FF}
+.docu{display:flex;flex-direction:column;align-items:center;gap:8px}
+.docu .hoja{position:relative;width:72px;height:92px;border-radius:10px;background:rgba(255,255,255,.06);box-shadow:0 0 0 1px var(--noche-filete);padding:12px 11px;display:flex;flex-direction:column;gap:7px}
+.docu .hoja i{display:block;height:4px;border-radius:2px;background:rgba(255,255,255,.2)}
+.docu .hoja .ok{position:absolute;right:8px;bottom:8px;width:18px;height:18px;color:#8FA2FF;stroke-width:2}
+.docu small{font-size:13px;color:var(--ceniza)}
+.cubierto{text-align:center}
+.cubierto b{display:block;font-family:var(--m);font-weight:400;font-size:44px;line-height:1;color:#F3F1ED}
+.cubierto small{font-size:13px;color:var(--ceniza)}
+.enlace-c .fila{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.enlace-c .act{display:inline-flex;align-items:center;gap:6px;color:#7FD3A0;font-size:13px}
+.enlace-c .act i{width:6px;height:6px;border-radius:2px;background:#7FD3A0}
+.enlace-c .url{display:block;margin-top:10px;padding:7px 10px;border-radius:10px;box-shadow:0 0 0 1px var(--noche-filete);font-family:var(--m);font-size:13px;color:#8FA2FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.enlace-c dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.enlace-c dt{font-size:13px;color:var(--ceniza)}
+.enlace-c dd{font-family:var(--m);font-size:20px;color:#F3F1ED}
+.notis{display:flex;flex-direction:column;gap:8px}
+.notis li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);box-shadow:0 0 0 1px var(--noche-filete);font-size:13px;color:#F3F1ED;corner-shape:superellipse(1.5)}
+.notis li i{width:8px;height:8px;border-radius:2px;background:rgba(255,255,255,.2);flex:none}
+.notis li.on i{background:#4D6BFF}
+.notis li span{margin-left:auto;font-family:var(--m);font-size:13px;color:var(--ceniza)}
+.meta-b{height:6px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:6px}
+.meta-b i{display:block;height:100%;width:89%;border-radius:99px;background:#4D6BFF}
+.bento .c4{grid-column:span 4}.bento .c12{grid-column:span 12}
+.nc.con-foto{flex-direction:column;padding:12px 12px 28px}
+.nc.con-foto.horiz{flex-direction:row;align-items:stretch;padding:12px}
+.nc.con-foto.horiz .foto-estrias{flex:0 0 58%;aspect-ratio:auto;min-height:340px}
+.nc.con-foto.horiz .tx{padding:28px 28px 20px 20px;justify-content:center}
+.nc.con-foto.horiz .tx .chips{margin-top:0;padding-top:22px}
+.nc.con-foto .foto-estrias{aspect-ratio:16/8;border-radius:22px;corner-shape:superellipse(1.5)}
+.nc.con-foto .tx{padding:20px 16px 0}
+
+
+/* ── FAQ ── */
+.faq-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(40px,6vw,96px);align-items:start}
+.faq-izq{position:sticky;top:calc(var(--hdr) + var(--sel) + 40px)}
+.faq-izq h2{margin-top:22px}
+.faq-izq p:not(.ceja){font-size:18px;color:var(--grafito);margin-top:24px;max-width:340px}
+.faq-izq .acc{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:20px}
+.faq-izq .mail{font-family:var(--m);font-size:13px;color:var(--ceniza);user-select:all}
+.faq-lista{border-top:1px solid var(--piedra)}
+.faq-it{border-bottom:1px solid var(--piedra)}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 0;text-align:left;font-size:clamp(19px,1.7vw,24px);font-weight:400;letter-spacing:-.02em;line-height:1.25}
+.faq-x{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;flex:none;background:var(--arena);color:var(--tinta);transition:background-color .2s;corner-shape:superellipse(1.5)}
+.faq-q:hover .faq-x{background:var(--piedra)}
+.faq-x .ic{width:16px;height:16px;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.faq-it.abierto .faq-x{background:var(--voltaje);color:#fff}
+.faq-it.abierto .faq-x .ic{transform:rotate(45deg)}
+.faq-r{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s cubic-bezier(.2,.8,.2,1)}
+.faq-it.abierto .faq-r{grid-template-rows:1fr}
+.faq-r > div{overflow:hidden}
+.faq-r p{font-size:17px;color:var(--grafito);line-height:1.55;padding:0 56px 26px 0;max-width:640px}
+@media (prefers-reduced-motion:reduce){.faq-r,.faq-x .ic{transition:none}}
+
+/* ── el cierre (como el contacto de la landing) ── */
+.cierre{position:relative;text-align:center;padding:clamp(120px,14vw,200px) 0 clamp(220px,24vw,330px);overflow:hidden}
+.cierre .wrap{position:relative;z-index:2}
+.cierre h2{max-width:1180px;margin:24px auto 0}
+.cierre .lead{margin:24px auto 0}
+.fin-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:36px}
+.confia{display:flex;justify-content:center;flex-wrap:wrap;gap:12px 28px;margin-top:28px;font-size:15px;color:var(--grafito)}
+.confia li{display:inline-flex;align-items:center;gap:9px}
+.confia li i{width:7px;height:7px;border-radius:2px;background:var(--voltaje-dot)}
+.fin-pix{left:0;right:0;bottom:0;width:100%;height:42%;z-index:0;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%)}
+
+/* ── pie (el de la landing) ── */
+.pie{border-top:1px solid var(--filete);padding:64px 0 28px;background:var(--bg)}
+.pie-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}
+.pie-grid p{color:var(--grafito);font-size:15px;max-width:360px;margin-top:16px}
+.pie .estado{display:inline-flex;align-items:center;gap:8px;margin-top:18px;font-family:var(--m);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ceniza)}
+.pie .estado i{width:7px;height:7px;border-radius:50%;background:var(--exito)}
+.pie h4{font-family:var(--m);font-weight:400;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ceniza)}
+.pie ul{margin-top:14px;display:flex;flex-direction:column;gap:9px;font-size:15px}
+.pie ul a:hover{color:var(--voltaje-txt)}
+.marca-pie{position:relative;margin-top:64px}
+.marca-pie svg{width:100%;height:auto;display:block}
+.marca-pie .marca-pix{position:absolute;inset:0;width:100%;height:100%;display:block}
+.marca-pie.con-pix svg{visibility:hidden}
+.pie-base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:28px;padding-top:20px;border-top:1px solid var(--filete);font-size:13px;color:var(--ceniza)}
+.pie-base nav{display:flex;gap:18px}
+@media (max-width:899px){.pie-grid{grid-template-columns:1fr 1fr}.pie-grid>div:first-child{grid-column:1/-1}}
+
+/* ── la pastilla del marketplace (la de la landing, sin sombra) ── */
+.aviso{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:55;display:flex;align-items:center;gap:14px;max-width:calc(100vw - 32px);padding:8px 8px 8px 10px;background:#07080C;color:#F3F1ED;border-radius:16px;box-shadow:0 0 0 1px rgba(255,255,255,.08);font-size:13.5px;transform:translateY(160%);transition:transform .5s cubic-bezier(.2,.9,.2,1);corner-shape:superellipse(1.5)}
+.aviso.ver{transform:none}
+.aviso-fotos{display:flex;flex:none}
+.aviso-fotos img{width:34px;height:34px;object-fit:cover;border-radius:10px;box-shadow:0 0 0 2px #07080C;corner-shape:superellipse(1.5)}
+.aviso-fotos img+img{margin-left:-12px}
+.aviso-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.aviso-tx b{display:inline-flex;align-items:center;gap:6px;font-family:var(--m);font-weight:400;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#AFC0FF}
+.aviso-tx b i{width:6px;height:6px;border-radius:2px;background:#4D6BFF}
+.mov .aviso-tx b i{animation:avisoLate 1.6s ease-in-out infinite}
+@keyframes avisoLate{50%{opacity:.35}}
+.aviso-tx span{color:#B9BCD0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aviso a{background:var(--voltaje);color:#fff;height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font-size:13.5px;font-weight:500;white-space:nowrap;corner-shape:superellipse(1.5)}
+.aviso a:hover{background:#3352FF}
+.aviso button{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#8E93B0}
+.aviso button:hover{background:rgba(255,255,255,.08)}
+@media (max-width:560px){.aviso-tx span{display:none}}
+@media (max-width:430px){.aviso-fotos{display:none}.aviso{padding-left:14px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.aviso{transition:none}}
+
+/* ── el celular y la tableta ── */
+@media (max-width:1000px){
+  .bento .c7,.bento .c5,.bento .c6,.bento .c4{grid-column:span 12}
+  .nc.con-foto.horiz{flex-direction:column;padding:12px 12px 28px}
+  .nc.con-foto.horiz .foto-estrias{flex:none;aspect-ratio:16/9;min-height:0}
+  .nc.con-foto.horiz .tx{padding:20px 16px 0}
+  .escena-cel .flota.lado{display:none}
+}
+@media (max-width:899px){
+  .cab{grid-template-columns:1fr}
+  .prob3{grid-template-columns:1fr;gap:44px}
+  .prob2{grid-template-columns:1fr}
+  .bento-p .c7,.bento-p .c5{grid-column:span 12}
+  .bento-p{gap:36px 20px}
+  .faq-grid{grid-template-columns:1fr}
+  .faq-izq{position:relative;top:auto}
+  .banda{height:auto;aspect-ratio:3/4}
+  .escena-lap .banda{aspect-ratio:4/3.3}
+  .banda .disp.celular{width:62%;margin-left:-31%;top:34px}
+  .banda .disp.laptop{width:94%;top:42px}
+  .escena .flota{position:relative;left:auto;right:auto;top:auto;bottom:auto}
+  .escena-cel .banda{height:auto;aspect-ratio:1/1}
+  .escena-cel .banda .disp.celular{width:64%;margin-left:-32%;top:56px}
+  .escena-cel .flota.nota-f,.escena-lap .flota.nota-f,.escena-lap .flota.tw{left:auto;right:auto;top:auto;bottom:auto}
+  .escena-cel .flota.nota-f{margin:-30px auto 0;width:max-content;max-width:100%}
+  .escena-lap .flota.tw{margin:-44px auto 0;width:min(340px,100%)}
+  .escena-lap .flota.nota-f{margin:12px auto 0;width:max-content;max-width:100%}
+  .tres-d{width:96px;right:-6px;top:-44px}
+}
+@media (max-width:640px){
+  .tp{flex-direction:column;align-items:stretch;padding:24px}
+  .mini{width:100%}
+  .nc{flex-direction:column;padding:24px}
+  .nc .pz{width:100%}
+  .cifras b{font-size:24px}
+  .cifras span{font-size:13px;text-align:center}
+  .heroe-cta .btn{width:100%}
+  .fin-cta .btn{width:100%}
+  .faq-r p{padding-right:0}
+}
+@media (max-width:420px){.nota-f{white-space:normal}.escala b{font-size:26px}}
+.quieto .heroe-pix{opacity:.95}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="lfLogo"><path d="M8.58904 186C1.58904 186 -2.41096 178 1.58904 171L55.589 83C60.589 75 68.589 71 78.589 71H117.589C129.589 71 137.589 76 143.589 87L162.589 124C165.589 129 169.589 131 176.589 131H203.589C212.589 131 218.589 135 222.589 143L237.589 171C241.589 179 236.589 186 227.589 186H190.589C182.589 186 176.589 182 172.589 174L143.589 123C140.589 118 135.589 115 129.589 115H109.589C103.589 115 98.589 118 95.589 123L66.589 175C62.589 182 56.589 186 48.589 186H8.58904Z" /><path d="M276.62 65.3H315.04V77.54H276.62V65.3ZM307.73 157.95V65.3H322.18V156.42C322.18 162.54 323.37 166.847 325.75 169.34C328.243 171.833 332.267 173.193 337.82 173.42L356.35 174.61L355.5 187.19L335.27 186C328.47 185.547 323.03 184.413 318.95 182.6C314.983 180.787 312.093 177.897 310.28 173.93C308.58 169.963 307.73 164.637 307.73 157.95ZM423.204 175.29L439.524 175.8L439.014 187.19L418.954 186.85C403.654 186.623 392.547 183.11 385.634 176.31C378.72 169.51 375.264 159.99 375.264 147.75C375.264 139.363 377.02 131.94 380.534 125.48C384.16 118.907 389.034 113.75 395.154 110.01C401.387 106.27 408.47 104.4 416.404 104.4C424.11 104.4 430.797 105.987 436.464 109.16C442.13 112.22 446.494 116.81 449.554 122.93C452.727 128.937 454.314 136.473 454.314 145.54C454.314 146.787 454.257 147.92 454.144 148.94C454.03 149.96 453.917 150.867 453.804 151.66H382.574V140.78H445.984L440.034 144.86C440.034 134.66 437.88 127.293 433.574 122.76C429.267 118.227 423.544 115.96 416.404 115.96C411.417 115.96 406.884 117.207 402.804 119.7C398.837 122.08 395.607 125.593 393.114 130.24C390.734 134.887 389.544 140.553 389.544 147.24C389.544 153.473 390.677 158.63 392.944 162.71C395.21 166.79 398.837 169.85 403.824 171.89C408.81 173.93 415.27 175.063 423.204 175.29ZM497.028 175.8C500.088 175.8 503.091 175.403 506.038 174.61C509.098 173.703 512.498 172.23 516.238 170.19C519.978 168.037 524.284 165.09 529.158 161.35L527.798 174.78H526.268C521.281 178.86 516.124 181.977 510.798 184.13C505.584 186.17 499.918 187.19 493.798 187.19C486.771 187.19 480.991 185.263 476.458 181.41C472.038 177.557 469.828 172.003 469.828 164.75C469.828 159.65 470.678 155.457 472.378 152.17C474.191 148.883 477.138 146.333 481.218 144.52C485.298 142.593 490.851 141.233 497.878 140.44L531.198 136.53V146.05L500.428 150.13C496.008 150.697 492.608 151.603 490.228 152.85C487.848 154.097 486.261 155.627 485.468 157.44C484.674 159.253 484.278 161.35 484.278 163.73C484.278 167.583 485.298 170.587 487.338 172.74C489.491 174.78 492.721 175.8 497.028 175.8ZM541.568 166.11C541.568 169.51 542.021 171.777 542.928 172.91C543.834 174.043 545.704 174.723 548.538 174.95L556.188 175.46L555.168 186.68L547.178 186.34C541.398 186 536.978 184.98 533.918 183.28C530.971 181.467 528.931 178.633 527.798 174.78L527.288 170.87V131.09C527.288 127.69 526.721 125.027 525.588 123.1C524.454 121.173 522.358 119.757 519.298 118.85C516.351 117.943 512.101 117.49 506.548 117.49C503.374 117.49 499.294 117.773 494.308 118.34C489.434 118.793 484.164 119.473 478.498 120.38L476.968 108.65C482.974 107.63 488.584 106.893 493.798 106.44C499.011 105.873 503.431 105.59 507.058 105.59C515.898 105.59 522.811 106.497 527.798 108.31C532.784 110.123 536.298 112.9 538.338 116.64C540.491 120.38 541.568 125.31 541.568 131.43V166.11ZM643.101 163.9C643.101 168.433 641.741 172.513 639.021 176.14C636.301 179.767 631.995 182.713 626.101 184.98C620.321 187.133 612.841 188.21 603.661 188.21C598.675 188.21 593.518 187.927 588.191 187.36C582.865 186.907 576.915 186.057 570.341 184.81L572.551 172.4C578.558 173.647 584.338 174.61 589.891 175.29C595.558 175.857 600.205 176.14 603.831 176.14C613.238 176.14 619.641 175.12 623.041 173.08C626.555 170.927 628.311 168.207 628.311 164.92C628.311 162.2 627.348 159.99 625.421 158.29C623.495 156.477 619.415 154.833 613.181 153.36L598.391 149.96C591.138 148.147 585.641 146.22 581.901 144.18C578.161 142.14 575.611 139.76 574.251 137.04C573.005 134.207 572.381 130.977 572.381 127.35C572.381 120.777 575.328 115.393 581.221 111.2C587.115 106.893 596.861 104.74 610.461 104.74C614.201 104.74 618.735 105.023 624.061 105.59C629.501 106.157 634.771 106.893 639.871 107.8L637.831 120.21C632.505 118.963 627.405 118.057 622.531 117.49C617.771 116.923 613.691 116.64 610.291 116.64C604.285 116.64 599.581 117.093 596.181 118C592.895 118.793 590.571 119.927 589.211 121.4C587.965 122.76 587.341 124.347 587.341 126.16C587.341 127.86 587.681 129.39 588.361 130.75C589.155 131.997 590.628 133.13 592.781 134.15C594.935 135.17 598.108 136.247 602.301 137.38L616.921 140.78C624.175 142.48 629.671 144.407 633.411 146.56C637.151 148.6 639.701 151.037 641.061 153.87C642.421 156.703 643.101 160.047 643.101 163.9ZM710.975 175.29L727.295 175.8L726.785 187.19L706.725 186.85C691.425 186.623 680.318 183.11 673.405 176.31C666.492 169.51 663.035 159.99 663.035 147.75C663.035 139.363 664.792 131.94 668.305 125.48C671.932 118.907 676.805 113.75 682.925 110.01C689.158 106.27 696.242 104.4 704.175 104.4C711.882 104.4 718.568 105.987 724.235 109.16C729.902 112.22 734.265 116.81 737.325 122.93C740.498 128.937 742.085 136.473 742.085 145.54C742.085 146.787 742.028 147.92 741.915 148.94C741.802 149.96 741.688 150.867 741.575 151.66H670.345V140.78H733.755L727.805 144.86C727.805 134.66 725.652 127.293 721.345 122.76C717.038 118.227 711.315 115.96 704.175 115.96C699.188 115.96 694.655 117.207 690.575 119.7C686.608 122.08 683.378 125.593 680.885 130.24C678.505 134.887 677.315 140.553 677.315 147.24C677.315 153.473 678.448 158.63 680.715 162.71C682.982 166.79 686.608 169.85 691.595 171.89C696.582 173.93 703.042 175.063 710.975 175.29ZM758.959 120.04V107.8H833.079V120.04H758.959ZM785.649 96.92C785.649 89.5533 786.612 83.66 788.539 79.24C790.579 74.82 793.922 71.4767 798.569 69.21C803.216 66.9433 809.392 65.5833 817.099 65.13L838.859 63.77L839.879 76.18L818.629 77.71C811.376 78.1633 806.446 79.8633 803.839 82.81C801.232 85.6433 799.929 90.1767 799.929 96.41V113.41H800.099V186H785.649V113.41V96.92ZM851.823 106.95H868.143L898.233 180.9L895.683 194.33H889.053L851.823 106.95ZM895.003 206.91C893.076 211.557 890.866 215.127 888.373 217.62C885.993 220.113 883.159 221.87 879.873 222.89C876.699 223.91 873.016 224.59 868.823 224.93L850.123 225.78L849.783 213.37L865.763 212.52C868.936 212.407 871.486 212.01 873.413 211.33C875.453 210.763 877.039 209.857 878.173 208.61C879.419 207.363 880.553 205.663 881.573 203.51L891.433 181.58H892.113L921.863 106.95H937.333L895.003 206.91Z" /></g>
+    <pattern id="rayasPie" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="3.5" height="9" fill="#1A40FF"/></pattern>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5H9v5H5a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4M9 12h6M9 16h4"/></symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5L15 12l-2.5-.5L12 9z"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13l2-8h12l2 8v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13h5l1 2h4l1-2h5"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4.5 7.5l7.5 5.5 7.5-5.5"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M14.5 9.6c-.5-.9-1.4-1.4-2.5-1.4-1.4 0-2.5.8-2.5 1.9s1 1.6 2.5 1.9 2.5.8 2.5 1.9-1.1 2-2.5 2c-1.1 0-2-.5-2.5-1.4M12 6.6v1.6M12 15.8v1.6"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 5a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v15H7a2 2 0 0 1-2-2z"/><path d="M5 18a2 2 0 0 1 2-2h11"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19h16M7 15l4-4 3 3 5-6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4.5" y="5.5" width="15" height="14" rx="2"/><path d="M4.5 10h15M9 3.5v4M15 3.5v4"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M10 7l5 5-5 5"/></symbol>
+    <symbol id="i-chevl" viewBox="0 0 24 24"><path d="M14 7l-5 5 5 5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.5"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 5.8a3 3 0 0 1 0 6.2M17.5 19a5 5 0 0 0-2.2-4.2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 7h11M9 12h11M9 17h11M4.5 7h.01M4.5 12h.01M4.5 17h.01"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-in" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14"/></symbol>
+    <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="10" cy="9" r="3.5"/><path d="M4 19a6 6 0 0 1 12 0M18 8v6M15 11h6"/></symbol>
+    <symbol id="i-wa" viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 0-6.9 12L4 20l4.2-1.1A8 8 0 1 0 12 4z"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.5 4h3l1.5 4-2 1.5a10 10 0 0 0 5.5 5.5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15 15 0 0 1 4.5 6a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="6" height="6" rx="1.5"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.5"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.5"/><rect x="13.5" y="13.5" width="6" height="6" rx="1.5"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h11v4"/><path d="M4 7v10a2 2 0 0 0 2 2h13V9H6a2 2 0 0 1-2-2z"/><path d="M15.5 14h.01"/></symbol>
+    <symbol id="i-funnel" viewBox="0 0 24 24"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/><path d="M9.5 7H14a3 3 0 0 1 3 3v4.5"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16"/></symbol>
+    <symbol id="i-drive" viewBox="0 0 24 24"><path d="M8.5 4h7l5 9-3.5 6h-10L3.5 13z"/><path d="M3.5 13h17"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24"><path d="M4 9.5L12 5l8 4.5M5.5 10v7M9.5 10v7M14.5 10v7M18.5 10v7M4 19.5h16"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5l7 2.5v5.5c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></symbol>
+  </defs>
+</svg>
+
+<header class="hdr" id="hdr">
+  <div class="wrap">
+    <a href="/" class="logo" aria-label="Leasefy, inicio"><svg viewBox="0 0 947 235" aria-hidden="true"><use href="#lfLogo"/></svg></a>
+    <nav class="nav" aria-label="Principal">
+      <a href="/propiedades"><i aria-hidden="true"></i>Marketplace</a>
+      <a href="/#producto">Producto</a>
+      <a href="/#agentes">Agentes AI</a>
+      <a href="/#planes">Planes</a>
+      <a href="/avaluo">Avalúos</a>
+      <a href="/contacto">Contacto</a>
+    </nav>
+    <div class="reloj" aria-label="El día de una inmobiliaria, según dónde vas">
+      <span class="dia">JUE 23 OCT</span><b id="hora">07:02</b>
+      <span class="pista" id="pista" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </div>
+    <div class="hdr-cta">
+      <a class="btn btn-s btn-sm pub" href="/publica">Publicar gratis</a>
+      <a class="btn btn-s btn-sm" href="/auth">Entrar</a>
+      <a class="btn btn-p btn-sm" href="/auth?mode=register">Crear cuenta</a>
+    </div>
+    <button class="mbtn" id="mbtn" type="button" aria-expanded="false" aria-controls="menu">Menú</button>
+  </div>
+</header>
+<div class="menu" id="menu" aria-label="Menú">
+  <a class="it" href="/propiedades"><span>01</span>Marketplace</a>
+  <a class="it" href="/#producto"><span>02</span>Producto</a>
+  <a class="it" href="/#agentes"><span>03</span>Agentes AI</a>
+  <a class="it" href="/#planes"><span>04</span>Planes</a>
+  <a class="it" href="/avaluo"><span>05</span>Avalúos</a>
+  <a class="it" href="/contacto"><span>06</span>Contacto</a>
+  <div class="acc"><a class="btn btn-p" href="/auth?mode=register">Crear cuenta</a><a class="btn btn-s" href="/auth">Entrar</a><a class="btn btn-s" href="/publica">Publicar gratis</a></div>
+</div>
+
+<nav class="selector" id="arriba" aria-label="Leasefy para cada quien">
+  <div class="wrap">
+    <span class="sel-rot"><i aria-hidden="true"></i>Leasefy para</span>
+    <div class="sel-tabs">
+      <a href="/para/inmobiliarias" data-ir="inmobiliarias"><i aria-hidden="true"></i>Inmobiliarias</a>
+      <a href="/para/propietarios" data-ir="propietarios"><i aria-hidden="true"></i>Propietarios</a>
+      <a href="/para/inquilinos" data-ir="inquilinos"><i aria-hidden="true"></i>Inquilinos</a>
+      <a href="/para/agentes" data-ir="agentes"><i aria-hidden="true"></i>Agentes</a>
+    </div>
+    <span class="sel-ruta">leasefy.co/para/<b id="selRuta">inmobiliarias</b></span>
+  </div>
+</nav>
+
+<main>
+<!-- ═══════════════════════════ INMOBILIARIAS ═══════════════════════════ -->
+<div class="vista" data-vista="inmobiliarias" hidden>
+  <section class="heroe">
+    <div class="heroe-top">
+      <canvas class="corriente heroe-pix" data-corriente="papel" data-raton data-marco data-semilla="7" data-celda="3" data-fuerza=".95" aria-hidden="true"></canvas>
+      <div class="wrap heroe-txt">
+        <p class="ceja" data-r><i></i>Solución empresarial para inmobiliarias</p>
+        <h1 class="t-xl" data-palabras>Escala tu operación con <span class="acento">tecnología</span></h1>
+        <p class="lead" data-r>CRM de candidatos, scoring con IA, contratos digitales y API completa. <b>Todo integrado.</b></p>
+        <div class="heroe-cta" data-r><a class="btn btn-p" href="/auth">Empezar prueba gratis</a><a class="btn btn-s" href="/#planes">Ver planes</a></div>
+        <div class="cifras" data-r><div><b>$0</b><span>Publicar en el marketplace</span></div><div><b>Ley 820</b><span>Contratos digitales</span></div></div>
+      </div>
+    </div>
+    <div class="wrap">
+      <div class="escena escena-lap" data-r>
+        <div class="tres-d" data-px="-40"><img src="/internas/para/img/edificio-voltaje.webp" alt="" width="640" height="640" loading="lazy"></div>
+        <div class="banda">
+          <figure class="foto-estrias revela" data-paso="8"><img src="/internas/para/img/fotos/medellin-poblado.webp" alt="Torres de El Poblado, en Medellín"><canvas aria-hidden="true"></canvas></figure>
+          <div class="disp laptop" role="img" aria-label="El tablero financiero de Leasefy en el panel de la inmobiliaria">
+            <div class="marco"><span class="camara"></span><span class="isla"></span><div class="pantalla"><img class="cap" src="/internas/para/img/laptop-tablero.webp" alt="" loading="lazy"></div></div>
+            <span class="base"></span>
+          </div>
+        </div>
+        <div class="flota tw" aria-label="Resumen de la inmobiliaria">
+          <div class="tw-cab"><span class="ini">IB</span><span><b>Inmobiliaria Bogotá</b><small>Plan Flex</small></span><svg class="ic ok" aria-hidden="true"><use href="#i-check"/></svg></div>
+          <div class="tw-cifra"><p><span>Candidatos este mes</span><span class="sube">+28%</span></p><b>347</b></div>
+          <dl class="tw-tres"><div><dd>45</dd><dt>Propiedades</dt></div><div><dd>12</dd><dt>Agentes</dt></div><div><dd>89%</dd><dt>Ocupación</dt></div></dl>
+        </div>
+        <div class="flota nota-f"><span class="pt az"><svg class="ic"><use href="#i-bolt"/></svg></span><span><b>Scoring completado</b><small>Score: 87/100 · Bajo riesgo</small></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="cab">
+        <div><p class="ceja"><i></i>El problema</p><h2 class="t-l" data-palabras>Escalar una inmobiliaria no debería ser tan <span class="acento">complicado</span></h2></div>
+        <p class="lead" data-r>Procesos manuales, evaluaciones lentas y errores humanos limitan tu crecimiento. Es hora de automatizar.</p>
+      </div>
+      <div class="prob3">
+        <article class="pf" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-7.webp" alt="Sala de un apartamento en arriendo" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Problema #1</figcaption></figure><h3>Procesos manuales</h3><p>Excel, WhatsApp, papeles. Tu equipo pierde horas en tareas repetitivas.</p></article>
+        <article class="pf" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-2.webp" alt="Sala amplia de un apartamento" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Problema #2</figcaption></figure><h3>Evaluaciones lentas</h3><p>Días para evaluar un candidato. Los buenos inquilinos se van con la competencia.</p></article>
+        <article class="pf" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-3.webp" alt="Sala con ventanales de un apartamento" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Problema #3</figcaption></figure><h3>Impagos frecuentes</h3><p>Sin scoring predictivo, los impagos afectan tu rentabilidad.</p></article>
+      </div>
+      <div class="prob2">
+        <article class="tarjeta tp col" data-r>
+          <div class="tx"><span class="k">Problema #4</span><h3>Sin integración</h3><p>Tu ERP, CRM y sistemas de contabilidad no se hablan entre sí. Doble digitación y errores constantes.</p></div>
+          <div class="sistemas"><span><i></i>ERP</span><span><i></i>CRM</span><span><i></i>CONT</span><small>3 sistemas desconectados</small></div>
+        </article>
+        <article class="tarjeta tp col" data-r>
+          <div class="tx"><span class="k">Problema #5</span><h3>Escalabilidad limitada</h3><p>Cada 50 inmuebles nuevos, necesitas contratar más personal. Tu operación no escala eficientemente.</p></div>
+          <div class="escala"><div><b>50</b><small>inmuebles por persona</small></div><span class="hilo-p" aria-hidden="true"></span><div class="der"><b class="az">+</b><small>inmuebles, mismo equipo</small></div></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec noche">
+    <div class="rayas-noche" aria-hidden="true" data-motivo="rings"></div>
+    <canvas class="corriente noche-pix" data-corriente="negro" data-forma="horizonte" data-semilla="19" data-celda="3" data-fuerza=".5" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <div class="cab">
+        <div><p class="ceja"><i></i>La plataforma</p><h2 class="t-l" data-palabras>Todo lo que necesitas para <span class="acento">escalar</span></h2></div>
+        <p class="lead" data-r>Plataforma completa para gestionar candidatos, automatizar evaluaciones e integrar con tu operación.</p>
+      </div>
+      <div class="bento">
+        <article class="nc c7" data-r>
+          <div class="tx"><span class="ico"><svg class="ic"><use href="#i-users"/></svg></span><h3>CRM de Candidatos</h3><p>Gestiona todos tus candidatos desde un solo panel con historial completo.</p><ul class="chips"><li>Pipeline</li><li>Historial</li><li>Chat</li><li>Reportes</li></ul></div>
+          <div class="pz"><div class="pz-caja"><p class="pz-k"><span>Candidatos</span><span class="sube">+12%</span></p><b class="pz-n">247</b><ul class="pz-lista"><li><i style="background:#7FD3A0"></i><span>María L.</span><span>Aprobado</span></li><li><i style="background:#F0BE6A"></i><span>Nicolás R.</span><span>En revisión</span></li><li><i style="background:#4D6BFF"></i><span>Ana M.</span><span>Nuevo</span></li></ul></div></div>
+        </article>
+        <article class="nc c5" data-r>
+          <div class="tx"><span class="ico"><svg class="ic"><use href="#i-chart"/></svg></span><h3>Scoring con IA</h3><p>Evalúa candidatos en segundos, con el porqué de cada calificación.</p></div>
+          <div class="pz"><div class="medidor"><svg viewBox="0 0 100 60" width="120" height="72" aria-hidden="true"><path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8" stroke-linecap="round"/><path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="#4D6BFF" stroke-width="8" stroke-linecap="round" stroke-dasharray="126" stroke-dashoffset="16"/></svg><span class="num">87</span><small>Bajo riesgo</small></div></div>
+        </article>
+        <article class="nc c5" data-r>
+          <div class="tx"><span class="ico"><svg class="ic"><use href="#i-grid"/></svg></span><h3>Multi-Propiedad</h3><p>Gestiona cientos de inmuebles por sucursal.</p></div>
+          <div class="pz"><div class="ocup" aria-hidden="true"><i style="--h:55%"></i><i style="--h:53%"></i><i style="--h:58%"></i><i style="--h:45%;--b:rgba(77,107,255,.5)"></i><i style="--h:54%"></i><i style="--h:51%;--b:rgba(77,107,255,.5)"></i><i style="--h:47%;--b:rgba(77,107,255,.5)"></i><i style="--h:56%"></i><i style="--h:49%;--b:rgba(77,107,255,.5)"></i></div><p class="ocup-t"><b>91%</b> ocupación</p></div>
+        </article>
+        <article class="nc c7" data-r>
+          <div class="tx"><span class="ico"><svg class="ic"><use href="#i-sheet"/></svg></span><h3>API REST Completa</h3><p>Integra con tu ERP existente. Webhooks en tiempo real.</p><ul class="chips"><li>REST API</li><li>Webhooks</li><li>SDK</li><li>Sandbox</li></ul></div>
+          <div class="pz"><div class="term"><p class="term-b"><i></i>terminal</p><pre><span class="v">GET</span> /candidates
+{
+  "id": <span class="n">1247</span>,
+  "score": <span class="n">87</span>,
+  "risk": <span class="v">"low"</span>
+}</pre></div></div>
+        </article>
+        <article class="nc c6" data-r>
+          <div class="tx"><span class="ico"><svg class="ic"><use href="#i-doc"/></svg></span><h3>Contratos Digitales</h3><p>Firma electrónica con validez legal. Genera contratos desde plantillas.</p></div>
+          <div class="pz"><div class="docu"><span class="hoja" aria-hidden="true"><i></i><i style="width:75%"></i><i></i><i style="width:50%"></i><svg class="ic ok"><use href="#i-check"/></svg></span><small>Firmado</small></div></div>
+        </article>
+        <article class="nc c6" data-r>
+          <div class="tx"><span class="ico"><svg class="ic"><use href="#i-shield"/></svg></span><h3>Seguro de Arriendo</h3><p>Protección completa contra impagos. Cobertura desde el primer día.</p></div>
+          <div class="pz"><div class="cubierto"><b>100%</b><small>cubierto</small></div></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══════════════════════════ PROPIETARIOS ═══════════════════════════ -->
+<div class="vista" data-vista="propietarios" hidden>
+  <section class="heroe">
+    <div class="heroe-top">
+      <canvas class="corriente heroe-pix" data-corriente="papel" data-raton data-marco data-semilla="23" data-celda="3" data-fuerza=".95" aria-hidden="true"></canvas>
+      <div class="wrap heroe-txt">
+        <p class="ceja" data-r><i></i>Para propietarios en Colombia</p>
+        <h1 class="t-xl" data-palabras>Arrienda tu propiedad <span class="acento">sin comisiones</span></h1>
+        <p class="lead" data-r>Evaluación de inquilinos gratis, publicación en portales gratis, cobro automatizado. <b>Tú mantienes el control.</b></p>
+        <div class="heroe-cta" data-r><a class="btn btn-p" href="/auth">Comenzar gratis</a><a class="btn btn-s" href="/#planes">Ver precios</a></div>
+        <div class="cifras" data-r><div><b>$0</b><span>Costo de evaluación</span></div><div><b>Ley 820</b><span>Contratos digitales</span></div></div>
+      </div>
+    </div>
+    <div class="wrap">
+      <div class="escena escena-cel" data-r>
+        <div class="tres-d" data-px="-40"><img src="/internas/para/img/llaves-voltaje.webp" alt="" width="640" height="640" loading="lazy"></div>
+        <div class="banda">
+          <figure class="foto-estrias revela" data-paso="8"><img src="/internas/para/img/fotos/hero-7.webp" alt="Interior de un apartamento moderno"><canvas aria-hidden="true"></canvas></figure>
+          <div class="disp celular" role="img" aria-label="Lo que ve el propietario en Leasefy: sus ingresos del mes, sus inmuebles y la ocupación">
+            <div class="marco"><span class="isla"></span>
+              <div class="pantalla" data-w="390" data-h="844" aria-hidden="true">
+                <div class="ui appp">
+                  <div class="p-top"><svg class="lg" viewBox="0 0 947 235"><use href="#lfLogo"/></svg><span class="der"><span class="p-camp"><svg class="ic"><use href="#i-bell"/></svg></span><span class="p-av">JN</span></span></div>
+                  <div class="p-cont">
+                    <div class="p-perfil"><span class="ini">JN</span><span><b>Juan Nicolás M.</b><small><i></i>Propietario verificado</small></span></div>
+                    <div class="p-card"><p class="fila"><span class="p-k">Ingresos este mes</span><span class="p-sube">+12%</span></p><b class="p-big">$4.800.000</b></div>
+                    <div class="p-dos"><div class="p-mini"><span class="p-k">Propiedades</span><b>2</b></div><div class="p-mini"><span class="p-k">Ocupación</span><b>100%</b></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flota nota-f"><span class="pt"><svg class="ic"><use href="#i-check"/></svg></span><span><b>Pago recibido</b><small>$2.400.000 · Hace 2min</small></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="cab">
+        <div><p class="ceja"><i></i>El problema</p><h2 class="t-l" data-palabras>Arrendar no debería ser tan <span class="acento">difícil</span></h2></div>
+        <p class="lead" data-r>Impagos, vacancia, desalojos interminables. El proceso tradicional está roto. Pero no tiene que ser así.</p>
+      </div>
+      <div class="prob3">
+        <article class="pf" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-7.webp" alt="Interior moderno" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Impago</figcaption></figure><b class="cifra">$18M</b><p class="det"><i></i>pérdida promedio por impago</p><p>Sin verificación real, el riesgo lo asume completo el propietario</p></article>
+        <article class="pf" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-2.webp" alt="Espacio moderno" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Vacancia</figcaption></figure><b class="cifra">47 días</b><p class="det"><i></i>promedio para arrendar</p><p>Documentos, visitas, negociaciones... un proceso del siglo pasado</p></article>
+        <article class="pf" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-3.webp" alt="Habitación moderna" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Desalojo</figcaption></figure><b class="cifra">14 meses</b><p class="det"><i></i>proceso legal promedio</p><p>Sin contrato sólido, recuperar tu inmueble es una pesadilla</p></article>
+      </div>
+      <div class="prob2">
+        <article class="tarjeta tp" data-r>
+          <div class="tx"><h3>«Elegir a ciegas»</h3><p>Sin datos reales, seleccionar inquilinos es apostar. Un mal candidato puede costarte millones.</p></div>
+          <div class="mini"><span class="marca-p av">?</span>
+            <div class="mcab"><span class="ini-s">C1</span><span><b>Candidato #1</b><small>Sin verificar</small></span></div>
+            <dl><div><dt>Ingresos</dt><dd>— — —</dd></div><div><dt>Historial</dt><dd>— — —</dd></div><div><dt>Score</dt><dd>— — —</dd></div></dl>
+          </div>
+        </article>
+        <article class="tarjeta tp" data-r>
+          <div class="tx"><h3>«4 meses sin cobrar arriendo»</h3><p>Sin verificación real, el propietario asume todo el riesgo de impago. Y recuperarlo puede tomar más de un año.</p></div>
+          <div class="mini"><span class="marca-p pe">4 meses</span>
+            <div class="mcab"><span><b>Cuenta de arriendo</b><small class="mono">2024</small></span></div>
+            <ul class="mes"><li><span><i></i>Ene</span><span class="v">$2.5M</span></li><li><span><i></i>Feb</span><span class="v">$2.5M</span></li><li class="no"><span><i></i>Mar<span class="sr"> sin pagar</span></span><span class="v">$2.5M</span></li><li class="no"><span><i></i>Abr<span class="sr"> sin pagar</span></span><span class="v">$2.5M</span></li></ul>
+            <p class="deuda"><span>Deuda acumulada:</span><b>$5.0M</b></p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec noche">
+    <div class="rayas-noche" aria-hidden="true" data-motivo="rings"></div>
+    <canvas class="corriente noche-pix" data-corriente="negro" data-forma="horizonte" data-semilla="29" data-celda="3" data-fuerza=".5" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <div class="cab">
+        <div><p class="ceja"><i></i>La plataforma</p><h2 class="t-l" data-palabras>Todo lo que necesitas para <span class="acento">arrendar con confianza</span></h2></div>
+        <p class="lead" data-r>Evaluación, cobro automático, contratos digitales y publicación en múltiples portales. Todo desde una sola plataforma.</p>
+      </div>
+      <div class="bento">
+        <article class="nc c4" data-r><div class="tx"><span class="ico"><svg class="ic"><use href="#i-users"/></svg></span><h3>Evaluación de Inquilinos</h3><p>Verificamos capacidad de pago, historial crediticio y referencias. Tú eliges con datos, no con corazonadas.</p><ul class="chips"><li>Score de riesgo IA</li><li>Verificación de identidad</li><li>Historial crediticio</li></ul></div></article>
+        <article class="nc c4" data-r><div class="tx"><span class="ico"><svg class="ic"><use href="#i-wallet"/></svg></span><h3>Cobro Automático</h3><p>Recibe el pago puntual cada mes. Sin perseguir a nadie, sin excusas.</p><ul class="chips"><li>PSE y tarjeta</li><li>Recordatorios</li><li>Reporte mensual</li></ul></div></article>
+        <article class="nc c4" data-r><div class="tx"><span class="ico"><svg class="ic"><use href="#i-doc"/></svg></span><h3>Contratos Digitales</h3><p>Firma electrónica con validez legal. Todo conforme a la Ley 820 de Colombia.</p><ul class="chips"><li>Firma electrónica</li><li>Plantillas legales</li><li>Descarga PDF</li></ul></div></article>
+        <article class="nc c12 con-foto horiz" data-r>
+          <figure class="foto-estrias revela" data-tono="noche"><img src="/internas/para/img/fotos/hero-5.webp" alt="Propiedad moderna" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Publicación multi-portal</figcaption></figure>
+          <div class="tx"><h3>Publicación Multi-Portal</h3><p>Un clic y tu inmueble aparece en FincaRaíz, Metrocuadrado y más. Candidatos pre-filtrados, sin comisión.</p><ul class="chips"><li>4 portales</li><li>Fotos optimizadas</li><li>Sin comisión</li></ul></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══════════════════════════ INQUILINOS ═══════════════════════════ -->
+<div class="vista" data-vista="inquilinos" hidden>
+  <section class="heroe">
+    <div class="heroe-top">
+      <canvas class="corriente heroe-pix" data-corriente="papel" data-raton data-marco data-semilla="31" data-celda="3" data-fuerza=".95" aria-hidden="true"></canvas>
+      <div class="wrap heroe-txt">
+        <p class="ceja" data-r><i></i>Inmuebles verificados</p>
+        <h1 class="t-xl" data-palabras>Encuentra tu hogar <span class="acento">sin estrés</span></h1>
+        <p class="lead" data-r>Inmuebles verificados, postulación simple, contratos claros. <b>Cero estafas, cero sorpresas.</b></p>
+        <div class="heroe-cta" data-r><a class="btn btn-p" href="/propiedades">Ver inmuebles</a><a class="btn btn-s" href="/auth">Crear perfil gratis</a></div>
+        <div class="cifras" data-r><div><b>$0</b><span>Crear tu perfil</span></div><div><b>Ley 820</b><span>Contratos claros</span></div></div>
+      </div>
+    </div>
+    <div class="wrap">
+      <div class="escena escena-cel" data-r>
+        <div class="tres-d" data-px="-40"><img src="/internas/para/img/lupa_estudio-voltaje.webp" alt="" width="640" height="640" loading="lazy"></div>
+        <div class="banda">
+          <figure class="foto-estrias revela" data-paso="8"><img src="/internas/para/img/fotos/hero-2.webp" alt="Interior de un apartamento moderno"><canvas aria-hidden="true"></canvas></figure>
+          <div class="disp celular" role="img" aria-label="Lo que ve la inquilina en Leasefy: su Arriendo Pass de 60 días, sus aplicaciones y sus favoritos">
+            <div class="marco"><span class="isla"></span>
+              <div class="pantalla" data-w="390" data-h="844" aria-hidden="true">
+                <div class="ui appp">
+                  <div class="p-top"><svg class="lg" viewBox="0 0 947 235"><use href="#lfLogo"/></svg><span class="der"><span class="p-camp"><svg class="ic"><use href="#i-bell"/></svg></span><span class="p-av">ML</span></span></div>
+                  <div class="p-cont">
+                    <div class="p-perfil"><span class="ini">ML</span><span><b>María López</b><small><i></i>Inquilina verificada</small></span></div>
+                    <div class="p-card p-pase"><p class="fila"><span class="p-k">Arriendo Pass</span><span class="p-sube">60 días</span></p><b class="p-big" style="font-size:26px">Aplicaciones ilimitadas</b></div>
+                    <div class="p-dos"><div class="p-mini"><span class="p-k">Aplicaciones</span><b>12</b></div><div class="p-mini"><span class="p-k">Favoritos</span><b>3</b></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flota nota-f"><span class="pt az"><svg class="ic"><use href="#i-home"/></svg></span><span><b>¡Nuevo inmueble!</b><small>Chapinero · $1.8M/mes</small></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="cab">
+        <div><p class="ceja"><i></i>El problema</p><h2 class="t-l" data-palabras>Buscar arriendo es <span class="acento">agotador</span></h2></div>
+        <p class="lead" data-r>Estafas, rechazos sin explicación, procesos interminables. El sistema actual no está de tu lado.</p>
+      </div>
+      <div class="prob3">
+        <article class="pf" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-7.webp" alt="Interior moderno" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Estafas</figcaption></figure><b class="cifra">8 de 10</b><p class="det"><i></i>han visto anuncios falsos</p><p>Fotos robadas, precios irreales, inmuebles que no existen</p></article>
+        <article class="pf" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-4.webp" alt="Espacio moderno" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Rechazos</figcaption></figure><b class="cifra">3 veces</b><p class="det"><i></i>rechazado sin explicación</p><p>Criterios subjetivos y sesgos que nadie explica</p></article>
+        <article class="pf" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-6.webp" alt="Habitación moderna" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Tiempo</figcaption></figure><b class="cifra">47 días</b><p class="det"><i></i>promedio para encontrar</p><p>Documentos, visitas, negociaciones interminables</p></article>
+      </div>
+      <div class="prob2">
+        <article class="tarjeta tp" data-r>
+          <div class="tx"><h3>«Precio demasiado bueno»</h3><p>Anuncios falsos con precios irreales para capturar tu dinero. Sin verificación, estás solo.</p></div>
+          <div class="mini"><span class="marca-p pe">!</span>
+            <div class="foto-nd">Foto no disponible</div>
+            <p class="deuda" style="margin-top:0;padding-top:0;border:0;color:var(--tinta)"><span>Apto Chapinero</span><span style="font-family:var(--m);font-size:13px;color:var(--peligro)">¿Real?</span></p>
+            <p class="deuda" style="margin-top:6px;padding-top:0;border:0"><b style="font-size:18px">$800.000</b><s class="mono" style="font-size:13px;color:var(--ceniza)">$2.5M valor real</s></p>
+          </div>
+        </article>
+        <article class="tarjeta tp" data-r>
+          <div class="tx"><h3>«Necesitas un codeudor»</h3><p>Requisitos infinitos que varían en cada propiedad. Un proceso diseñado para excluir.</p></div>
+          <div class="mini"><span class="marca-p av">+15 más</span>
+            <div class="mcab"><span><b>Documentos requeridos</b></span></div>
+            <ul class="docs"><li><i><svg class="ic"><use href="#i-check"/></svg></i>Carta laboral</li><li><i><svg class="ic"><use href="#i-check"/></svg></i>Extractos bancarios</li><li><i></i>Referencias personales</li><li><i></i>Codeudor con finca raíz</li><li><i></i>Declaración de renta</li></ul>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec noche">
+    <div class="rayas-noche" aria-hidden="true" data-motivo="rings"></div>
+    <canvas class="corriente noche-pix" data-corriente="negro" data-forma="horizonte" data-semilla="37" data-celda="3" data-fuerza=".5" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <div class="cab">
+        <div><p class="ceja"><i></i>La plataforma</p><h2 class="t-l" data-palabras>Todo pensado para <span class="acento">encontrar tu hogar</span></h2></div>
+        <p class="lead" data-r>Búsqueda con IA, inmuebles verificados, postulación simple y contratos claros. Todo desde una app.</p>
+      </div>
+      <div class="bento">
+        <article class="nc c4" data-r><div class="tx"><span class="ico"><svg class="ic"><use href="#i-search"/></svg></span><h3>Búsqueda con IA</h3><p>Describe lo que buscas en lenguaje natural. Nuestra IA encuentra inmuebles que realmente te interesan.</p><ul class="chips"><li>Filtros inteligentes</li><li>Alertas automáticas</li><li>Mapa interactivo</li></ul></div></article>
+        <article class="nc c4" data-r><div class="tx"><span class="ico"><svg class="ic"><use href="#i-check"/></svg></span><h3>Arriendo Pass</h3><p>Paga una vez, postúlate sin límite por 60 días. Sin repetir documentos.</p><ul class="chips"><li>Aplicaciones ilimitadas</li><li>60 días</li><li>Sin repetir docs</li></ul></div></article>
+        <article class="nc c4" data-r><div class="tx"><span class="ico"><svg class="ic"><use href="#i-shield"/></svg></span><h3>100% Verificado</h3><p>Cada inmueble verificado. Fotos reales, precios reales, cero estafas.</p><ul class="chips"><li>Fotos verificadas</li><li>Visitas reales</li><li>Cero estafas</li></ul></div></article>
+        <article class="nc c12 con-foto horiz" data-r>
+          <figure class="foto-estrias revela" data-tono="noche"><img src="/internas/para/img/fotos/hero-7.webp" alt="Espacio moderno" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Contratos digitales</figcaption></figure>
+          <div class="tx"><h3>Contratos Digitales</h3><p>Firma desde tu celular con validez legal. Sabes exactamente qué firmas, sin letra pequeña.</p><ul class="chips"><li>Firma electrónica</li><li>Ley 820</li><li>100% legal</li></ul></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══════════════════════════ AGENTES ═══════════════════════════ -->
+<div class="vista" data-vista="agentes" hidden>
+  <section class="heroe">
+    <div class="heroe-top">
+      <canvas class="corriente heroe-pix" data-corriente="papel" data-raton data-marco data-semilla="41" data-celda="3" data-fuerza=".95" aria-hidden="true"></canvas>
+      <div class="wrap heroe-txt">
+        <p class="ceja" data-r><i></i>100% gratis para agentes</p>
+        <h1 class="t-xl" data-palabras>Cierra más arriendos más <span class="acento">rápido</span></h1>
+        <p class="lead" data-r>Genera tu enlace, compártelo por WhatsApp y recibe evaluaciones profesionales. <b>Sin costo para ti.</b></p>
+        <div class="heroe-cta" data-r><a class="btn btn-p" href="/auth?role=agent">Crear cuenta gratis</a><a class="btn btn-s" href="/#como-funciona">Ver cómo funciona</a></div>
+        <div class="cifras" data-r><div><b>$0</b><span>Costo para ti</span></div><div><b>1 enlace</b><span>Por cada inmueble</span></div></div>
+      </div>
+    </div>
+    <div class="wrap">
+      <div class="escena escena-cel" data-r>
+        <div class="tres-d" data-px="-40"><img src="/internas/para/img/portapapeles-voltaje.webp" alt="" width="640" height="640" loading="lazy"></div>
+        <div class="banda">
+          <figure class="foto-estrias revela" data-paso="8"><img src="/internas/para/img/fotos/hero-6.webp" alt="Sala de un inmueble listo para mostrar"><canvas aria-hidden="true"></canvas></figure>
+          <div class="disp celular" role="img" aria-label="Lo que ve la agente en Leasefy: sus comisiones del mes, sus cierres, sus candidatos y su conversión">
+            <div class="marco"><span class="isla"></span>
+              <div class="pantalla" data-w="390" data-h="844" aria-hidden="true">
+                <div class="ui appp">
+                  <div class="p-top"><svg class="lg" viewBox="0 0 947 235"><use href="#lfLogo"/></svg><span class="der"><span class="p-camp"><svg class="ic"><use href="#i-bell"/></svg></span><span class="p-av">JR</span></span></div>
+                  <div class="p-cont">
+                    <div class="p-perfil"><span class="ini">JR</span><span><b>Juliana Rodríguez</b><small><i></i>Agente verificada</small></span><svg class="ic ok"><use href="#i-check"/></svg></div>
+                    <div class="p-card"><p class="fila"><span class="p-k">Comisiones este mes</span><span class="p-sube">+45%</span></p><b class="p-big">$8.900.000</b></div>
+                    <div class="p-tres"><div class="p-mini"><span class="p-k">Cierres</span><b>12</b></div><div class="p-mini"><span class="p-k">Candidatos</span><b>28</b></div><div class="p-mini"><span class="p-k">Conversión</span><b>43%</b></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flota nota-f"><span class="pt"><svg class="ic"><use href="#i-check"/></svg></span><span><b>Evaluación lista</b><small>Score: 87/100 · Aprobado</small></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="cab">
+        <div><p class="ceja"><i></i>El problema</p><h2 class="t-l" data-palabras>Los agentes pierden tiempo en <span class="acento">procesos manuales</span></h2></div>
+        <p class="lead" data-r>Llamadas, WhatsApps, verificaciones manuales. Cada candidato consume horas que podrías usar cerrando más arriendos.</p>
+      </div>
+      <div class="bento-p">
+        <article class="pf c7" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/agente-en-el-escritorio.webp" alt="Agente inmobiliario revisando documentos" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Problema #1</figcaption></figure><h3>Horas en verificaciones manuales</h3><p>Llamar referencias, verificar empleo, revisar historial crediticio... Por cada candidato.</p></article>
+        <article class="tarjeta tp col c5" data-r>
+          <div class="tx"><span class="k">Problema #2</span><h3>Sin datos para decidir</h3><p>Presentas candidatos al propietario sin saber realmente si pueden pagar.</p></div>
+          <dl class="sindatos"><div><dt>Ingresos</dt><dd><i aria-hidden="true"></i>Sin datos</dd></div><div><dt>Crédito</dt><dd><i aria-hidden="true"></i>Sin datos</dd></div><div><dt>Referencias</dt><dd><i aria-hidden="true"></i>Sin datos</dd></div></dl>
+        </article>
+        <article class="tarjeta tp col c5" data-r>
+          <div class="tx"><span class="k">Problema #3</span><h3>Candidatos que se pierden</h3><p>Mientras verificas uno, otros 3 ya encontraron otro apartamento.</p></div>
+          <ul class="linea-c">
+            <li><span class="ini-s">MG</span><span class="tx"><b>María González</b><span class="barra"><i style="width:100%"></i></span></span><span class="estado-c ok">Cerrado</span></li>
+            <li><span class="ini-s">NR</span><span class="tx"><b>Nicolás Ruiz</b><span class="barra"><i style="width:60%;opacity:.6"></i></span></span><span class="estado-c es">Esperando</span></li>
+            <li><span class="ini-s">AP</span><span class="tx"><b>Ana Pérez</b><span class="barra"><i style="width:20%;opacity:.35"></i></span></span><span class="estado-c">Perdido</span></li>
+          </ul>
+        </article>
+        <article class="pf c7" data-r><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/agente-con-familia.webp" alt="Agente presentando un inmueble a sus clientes" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Problema #4</figcaption></figure><h3>Te ves poco profesional</h3><p>Los propietarios esperan reportes formales, no «yo creo que este candidato está bien».</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec noche">
+    <div class="rayas-noche" aria-hidden="true" data-motivo="rings"></div>
+    <canvas class="corriente noche-pix" data-corriente="negro" data-forma="horizonte" data-semilla="43" data-celda="3" data-fuerza=".5" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <div class="cab">
+        <div><p class="ceja"><i></i>Las herramientas</p><h2 class="t-l" data-palabras>Herramientas para <span class="acento">cerrar más</span></h2></div>
+        <p class="lead" data-r>Todo lo que necesitas para impresionar a tus clientes propietarios y cerrar arriendos más rápido. 100% gratis para ti.</p>
+      </div>
+      <div class="bento">
+        <article class="nc c7" data-r>
+          <div class="tx"><p class="ins"><b>GRATIS</b><span>para ti</span></p><h3>Enlace de evaluación</h3><p>Genera un enlace único para cada inmueble. Compártelo por WhatsApp y recibe el reporte.</p><ul class="chips"><li>WhatsApp</li><li>Email</li><li>SMS</li><li>QR</li></ul></div>
+          <div class="pz"><div class="pz-caja enlace-c"><p class="fila"><span>Apto 302</span><span class="act"><i></i>Activo</span></p><span class="url">arriendo.co/ch302</span><dl><div><dt>Visitas</dt><dd>24</dd></div><div><dt>Aplicaciones</dt><dd>8</dd></div></dl></div></div>
+        </article>
+        <article class="nc c5" data-r>
+          <div class="tx"><p class="ins"><b>$24.900</b><span>paga el candidato</span></p><h3>Evaluación completa</h3><p>Verificación de identidad, historial crediticio y score de riesgo con IA.</p></div>
+          <div class="pz"><div class="medidor"><span class="anillo"><svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="5"/><circle cx="30" cy="30" r="25" fill="none" stroke="#4D6BFF" stroke-width="5" stroke-linecap="round" stroke-dasharray="142.9 157.1"/></svg><b>91</b></span><small>Bajo riesgo</small></div></div>
+        </article>
+        <article class="nc c5" data-r>
+          <div class="tx"><span class="ico"><svg class="ic"><use href="#i-phone"/></svg></span><h3>App móvil</h3><p>Notificaciones en tiempo real cuando alguien se postula. iOS y Android.</p></div>
+          <div class="pz"><ul class="notis"><li class="on"><i></i>Nueva postulación<span>Ahora</span></li><li><i></i>Contrato firmado<span>1h</span></li><li><i></i>Reporte listo<span>2h</span></li></ul></div>
+        </article>
+        <article class="nc c7" data-r>
+          <div class="tx"><p class="ins"><b>Incluido</b><span>sin costo extra</span></p><h3>Dashboard de comisiones</h3><p>Rastrea tus cierres, mide tu rendimiento y alcanza tus metas mensuales.</p><ul class="chips"><li>Métricas</li><li>Metas</li><li>Histórico</li><li>Exportar</li></ul></div>
+          <div class="pz"><div class="pz-caja"><p class="pz-k"><b class="pz-n" style="margin:0">$8.9M</b><span class="sube">+23%</span></p><p class="pz-k" style="margin-top:2px"><span>Comisiones este mes</span></p><p class="pz-k" style="margin-top:14px"><span>Meta</span><span class="mono" style="color:#F3F1ED">89%</span></p><div class="meta-b"><i></i></div></div></div>
+        </article>
+        <article class="nc c6" data-r>
+          <div class="tx"><span class="ico"><svg class="ic"><use href="#i-doc"/></svg></span><h3>Contratos digitales</h3><p>Firma electrónica con validez legal. Genera contratos desde plantillas.</p></div>
+          <div class="pz"><div class="docu"><span class="hoja" aria-hidden="true"><i></i><i style="width:75%"></i><i></i><i style="width:50%"></i><svg class="ic ok"><use href="#i-check"/></svg></span><small>Firmado</small></div></div>
+        </article>
+        <article class="nc c6" data-r>
+          <div class="tx"><span class="ico"><svg class="ic"><use href="#i-chart"/></svg></span><h3>Reportes profesionales</h3><p>PDFs con tu marca para impresionar a propietarios.</p></div>
+          <div class="pz"><div class="medidor"><span class="anillo"><svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="5"/><circle cx="30" cy="30" r="25" fill="none" stroke="#4D6BFF" stroke-width="5" stroke-linecap="round" stroke-dasharray="136.7 157.1"/></svg><b>87</b></span><small>Aprobado</small></div></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══════════════ FAQ y cierre: los mismos en las cuatro páginas de prod ═══════════════ -->
+<section class="sec" id="faq">
+  <div class="wrap faq-grid">
+    <div class="faq-izq">
+      <p class="ceja"><i></i>FAQ</p>
+      <h2 class="t-l" data-palabras>Preguntas frecuentes</h2>
+      <p data-r>¿Tienes más preguntas? Nuestro equipo está feliz de ayudar.</p>
+      <div class="acc" data-r><a class="btn btn-s" href="mailto:hola@leasefy.co">Contáctanos</a><span class="mail">hola@leasefy.co</span></div>
+    </div>
+    <div class="faq-lista" data-r>
+      <div class="faq-it abierto"><button class="faq-q" type="button" aria-expanded="true" aria-controls="faq-r0" id="faq-q0">¿Cómo funciona el proceso de arriendo?<span class="faq-x" aria-hidden="true"><svg class="ic"><use href="#i-plus"/></svg></span></button><div class="faq-r" id="faq-r0" role="region" aria-labelledby="faq-q0"><div><p>Comenzamos con una consulta para entender tus necesidades, áreas preferidas y presupuesto. Nuestro equipo luego selecciona propiedades personalizadas, coordina visitas y te guía en el proceso de aplicación. Cada paso es apoyado con claridad y transparencia.</p></div></div></div>
+      <div class="faq-it"><button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-r1" id="faq-q1">¿Qué es el scoring de riesgo AI?<span class="faq-x" aria-hidden="true"><svg class="ic"><use href="#i-plus"/></svg></span></button><div class="faq-r" id="faq-r1" role="region" aria-labelledby="faq-q1"><div><p>Nuestro sistema de scoring AI evalúa múltiples factores del inquilino potencial: capacidad de pago, historial crediticio, referencias y estabilidad laboral. El resultado es un score de A a D que te ayuda a tomar decisiones informadas.</p></div></div></div>
+      <div class="faq-it"><button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-r2" id="faq-q2">¿Cuánto tiempo toma el proceso?<span class="faq-x" aria-hidden="true"><svg class="ic"><use href="#i-plus"/></svg></span></button><div class="faq-r" id="faq-r2" role="region" aria-labelledby="faq-q2"><div><p>El tiempo varía según el tipo de propiedad y la documentación del inquilino. En promedio, el proceso completo desde la búsqueda hasta la firma del contrato toma entre 1 y 2 semanas.</p></div></div></div>
+      <div class="faq-it"><button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-r3" id="faq-q3">¿Ofrecen visitas virtuales?<span class="faq-x" aria-hidden="true"><svg class="ic"><use href="#i-plus"/></svg></span></button><div class="faq-r" id="faq-r3" role="region" aria-labelledby="faq-q3"><div><p>Sí. Ofrecemos tours virtuales en HD, recorridos en video en vivo y consultas remotas para clientes que no pueden visitar en persona.</p></div></div></div>
+      <div class="faq-it"><button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-r4" id="faq-q4">¿Cuáles son los costos del servicio?<span class="faq-x" aria-hidden="true"><svg class="ic"><use href="#i-plus"/></svg></span></button><div class="faq-r" id="faq-r4" role="region" aria-labelledby="faq-q4"><div><p>Para inquilinos, nuestro servicio de búsqueda es gratuito. Para propietarios, manejamos diferentes planes según el nivel de servicio requerido.</p></div></div></div>
+    </div>
+  </div>
+</section>
+
+<div id="ciudad"><figure class="ciudad foto-estrias revela" data-paso="8"><img src="/internas/para/img/fotos/medellin-valle.webp" alt="El valle de Medellín de día" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Medellín · Envigado · Sabaneta · Itagüí · Bello</figcaption></figure></div>
+
+<section class="cierre" id="cierre">
+  <canvas class="corriente fin-pix" data-corriente="papel" data-forma="horizonte" data-semilla="11" data-celda="4" data-velocidad="1.6" data-fuerza=".72" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="ceja" data-r><i></i>Empieza hoy</p>
+    <h2 class="t-xl" data-palabras>Administra más <span class="acento">con menos esfuerzo</span></h2>
+    <p class="lead" data-r>Sube tu portafolio, activa los agentes de IA, y deja que la plataforma haga el trabajo pesado por ti.</p>
+    <div class="fin-cta" data-r><a class="btn btn-p btn-xl" href="/auth?mode=register&amp;role=agency">Empezar gratis</a><a class="btn btn-s btn-xl" href="/#planes">Ver precios</a></div>
+    <ul class="confia" data-r><li><i></i>Sin compromiso</li><li><i></i>Activo en 5 min</li><li><i></i>Plan gratis disponible</li></ul>
+  </div>
+</section>
+</main>
+
+<footer class="pie">
+  <div class="wrap">
+    <div class="pie-grid">
+      <div><a href="/" class="logo" aria-label="Leasefy, inicio"><svg viewBox="0 0 947 235" aria-hidden="true"><use href="#lfLogo"/></svg></a><p>El sistema operativo inteligente para inmobiliarias: CRM, ERP y agentes AI para operar arriendos de punta a punta.</p><span class="estado"><i></i>Operando con normalidad</span></div>
+      <div><h4>Producto</h4><ul><li><a href="/productos/crm">CRM inmobiliario</a></li><li><a href="/productos/erp">ERP de arriendos</a></li><li><a href="/productos/asegurabilidad">Asegurabilidad</a></li><li><a href="/productos/inquilino">Buró y validación</a></li><li><a href="/productos/matching">Afinidad</a></li><li><a href="/productos/cobranza">Cobranza</a></li></ul></div>
+      <div><h4>Empresa</h4><ul><li><a href="/contacto">Contacto</a></li><li><a href="mailto:hola@leasefy.co">Soporte</a></li></ul></div>
+      <div><h4>Escríbenos</h4><ul><li><a href="mailto:hola@leasefy.co">hola@leasefy.co</a></li><li>Medellín, Colombia</li></ul></div>
+    </div>
+    <div class="marca-pie" aria-hidden="true"><svg viewBox="0 0 947 235"><use href="#lfLogo" fill="url(#rayasPie)"/></svg><canvas class="marca-pix"></canvas></div>
+    <div class="pie-base"><span>© 2026 Leasefy. Todos los derechos reservados.</span><nav><a href="/terminos">Términos</a><a href="/privacidad">Privacidad</a></nav><span>Medellín, Colombia · CRM · ERP · Agentes AI</span><a href="#arriba" class="lnk">Volver arriba</a></div>
+  </div>
+</footer>
+
+<div class="aviso" id="aviso" role="status"><span class="aviso-fotos" aria-hidden="true"><img src="/internas/para/img/fotos/m01.webp" alt=""><img src="/internas/para/img/fotos/m04.webp" alt=""><img src="/internas/para/img/fotos/m02.webp" alt=""></span><span class="aviso-tx"><b><i aria-hidden="true"></i>Marketplace</b><span>Arriendos en Medellín y el Valle de Aburrá</span></span><a href="/propiedades">Ver inmuebles</a><button type="button" id="avisoX" aria-label="Cerrar el aviso del marketplace"><svg class="ic"><use href="#i-x"/></svg></button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/motion@12.23.12/dist/motion.js"></script>
+<script src="/internas/para/js/01-piezas.js"></script>
+<script src="/internas/para/js/02-corriente.js"></script>
+<script src="/internas/para/js/03-pagina.js"></script>
+<script src="/internas/para/js/04-marca-del-pie.js"></script>
+<script src="/internas/para/js/05-botones.js"></script>
+</body>
+</html>

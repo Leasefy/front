@@ -198,12 +198,14 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
 
   return (
     <>
+      {/* Ronda 30 (a 390 tarjetas, regla de la casa): arriba la aseguradora y si está activa para tu inmobiliaria;
+          abajo su estado y las acciones. Lo demás (modo, prioridades, lo global) desde md. */}
       <TableRow
-        className={trClass}
+        className={`${trClass} max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-3 max-md:gap-y-2 max-md:px-4 max-md:py-3.5`}
         data-has-override={row.hasOverride ? 'true' : undefined}
       >
         {/* Name + Route — sticky first column */}
-        <TableCell className="px-4 py-3 text-sm sticky left-0 bg-surface z-10">
+        <TableCell className="px-4 py-3 text-sm sticky left-0 bg-surface z-10 max-md:static max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
           <div className="flex flex-col gap-0.5">
             <span className="font-medium text-fg capitalize">
               {row.global.name}
@@ -221,7 +223,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         </TableCell>
 
         {/* Mode — global / tenant */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:hidden">
           <div className="flex flex-col gap-0.5">
             <span className="text-fg">{enPalabras(NOMBRE_DEL_MODO, row.global.mode)}</span>
             {row.override?.mode != null ? (
@@ -235,7 +237,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         </TableCell>
 
         {/* Global Enabled */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:hidden">
           <Badge
             variant="outline"
             className={globalEnabled ? 'text-success border-success/30' : 'text-fg-muted'}
@@ -245,7 +247,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         </TableCell>
 
         {/* Tenant Enabled — interactive Switch */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
           <Switch
             checked={tenantEnabled ?? globalEnabled}
             onCheckedChange={handleToggle}
@@ -255,12 +257,12 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         </TableCell>
 
         {/* Global Priority */}
-        <TableCell className="px-4 py-3 text-sm text-fg">
+        <TableCell className="px-4 py-3 text-sm text-fg max-md:hidden">
           {row.global.priority}
         </TableCell>
 
         {/* Tenant Priority */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:hidden">
           {tenantPriority != null ? (
             <span className="text-fg">{tenantPriority}</span>
           ) : (
@@ -271,14 +273,14 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         </TableCell>
 
         {/* Breach Status */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
           <Badge variant="outline" className={`text-caption ${breachClass}`}>
             {enPalabras(NOMBRE_DEL_ESTADO, row.global.breachStatus)}
           </Badge>
         </TableCell>
 
         {/* Actions — kebab menu */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:col-start-2 max-md:row-start-2 max-md:block max-md:justify-self-end max-md:p-0">
           <DropdownList open={kebabOpen} onOpenChange={setKebabOpen}>
             <DropdownListTrigger asChild>
               <Button
@@ -454,8 +456,8 @@ export function CarrierRegistryTable({
           </div>
         </div>
       ) : null}
-      <Table className="min-w-full divide-y divide-border">
-        <TableHeader className="bg-surface-muted/60">
+      <Table className="min-w-full divide-y divide-border max-md:block">
+        <TableHeader className="bg-surface-muted/60 max-md:hidden">
           <TableRow>
             <TableHead className="px-4 py-3 text-left sticky left-0 bg-surface-muted z-10">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colName')}
@@ -483,7 +485,7 @@ export function CarrierRegistryTable({
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="divide-y divide-border">{cuerpo}</TableBody>
+        <TableBody className="divide-y divide-border max-md:block">{cuerpo}</TableBody>
       </Table>
 
       {shouldPaginate && !isLoading && !error && (

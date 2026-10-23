@@ -198,7 +198,7 @@ describe('deterioro de cartera', () => {
   it('🔴 dice que lo que se asienta es el movimiento, no el saldo', async () => {
     await pintar();
     expect(document.body.textContent).toContain('DIFERENCIA con la del mes anterior');
-    expect(texto('cifra-provision')).toContain('NO es lo que se asienta');
+    expect(texto('cifra-provision')).toContain('No es lo que se asienta');
   });
 
   it('avisa cuando lo que se ve ya no es lo que está guardado', async () => {

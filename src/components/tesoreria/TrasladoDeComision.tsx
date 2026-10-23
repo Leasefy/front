@@ -542,7 +542,7 @@ function FilaDelTraslado({
       ) : null}
       {traslado.estado === 'APROBADO' && traslado.asientoId === null ? (
         <p className="text-caption text-warning">
-          Quedó aprobado SIN asiento contable: falta decir cuál cuenta del PUC es la de recaudo y
+          Quedó aprobado sin asiento contable: falta decir cuál cuenta del PUC es la de recaudo y
           cuál la propia, en la configuración de tesorería.
         </p>
       ) : null}

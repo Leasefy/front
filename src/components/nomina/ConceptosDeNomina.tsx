@@ -194,7 +194,7 @@ export function ConceptosDeNominaPanel() {
                 avisos={datos.sinCuenta.map(
                   (c) => `${c.codigo} — ${c.nombre}: le falta ${c.falta}.`,
                 )}
-                titulo={`${datos.sinCuenta.length} concepto${datos.sinCuenta.length === 1 ? '' : 's'} sin cuenta: la nómina se liquida pero NO se asienta`}
+                titulo={`${datos.sinCuenta.length} concepto${datos.sinCuenta.length === 1 ? '' : 's'} sin cuenta: la nómina se liquida pero no se asienta`}
                 testId="conceptos-sin-cuenta"
               />
             ) : null}

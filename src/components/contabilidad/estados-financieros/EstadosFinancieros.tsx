@@ -549,7 +549,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                     = pasivo + patrimonio + resultado
                     {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? ' (con el de años anteriores)' : ''}{' '}
                     <Monto valor={totalDelOtroLado(balance)} />
-                    {balance.cuadra ? ' · cuadra' : ' · NO cuadra'}
+                    {balance.cuadra ? ' · cuadra' : ' · no cuadra'}
                   </span>
                 }
                 pie={

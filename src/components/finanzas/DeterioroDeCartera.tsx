@@ -436,7 +436,7 @@ export function DeterioroDeCarteraPanel() {
                 </p>
                 <p data-testid="cifra-provision">
                   <span className="text-fg">Provisión al cierre</span>: el saldo acumulado que queda en la
-                  cuenta correctora después de este mes. NO es lo que se asienta.
+                  cuenta correctora después de este mes. No es lo que se asienta.
                 </p>
                 <p>
                   <span className="text-fg">Provisión del mes anterior</span>: la última aprobada. Es el

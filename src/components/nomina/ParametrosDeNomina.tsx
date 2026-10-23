@@ -112,7 +112,7 @@ const GRUPOS: {
   {
     titulo: 'Prestaciones sociales',
     explicacion:
-      'El porcentaje MENSUAL que se provisiona. La base de vacaciones NO lleva auxilio de transporte ni horas extras (CST art. 192); las otras tres sí. Eso no se configura: es ley.',
+      'El porcentaje mensual que se provisiona. La base de vacaciones no lleva auxilio de transporte ni horas extras (CST art. 192); las otras tres sí. Eso no se configura: es ley.',
     campos: [
       { campo: 'primaBps', etiqueta: 'Prima de servicios', unidad: 'bps' },
       { campo: 'cesantiasBps', etiqueta: 'Cesantías', unidad: 'bps' },
@@ -329,7 +329,7 @@ function Formulario({
       <section className="space-y-3">
         <TituloDeBloque
           titulo={`Las cifras que fija el Estado en ${anio}`}
-          explicacion="Leasefy NO las mantiene: el salario mínimo y el auxilio de transporte salen del decreto de diciembre y la UVT de la resolución de la DIAN. Las carga esta inmobiliaria, con el documento a la vista."
+          explicacion="Leasefy no las mantiene: el salario mínimo y el auxilio de transporte salen del decreto de diciembre y la UVT de la resolución de la DIAN. Las carga esta inmobiliaria, con el documento a la vista."
         />
 
         {/*
@@ -341,7 +341,7 @@ function Formulario({
 
           Cargar y confirmar son dos actos distintos y se muestran por separado:
           cargar es teclear el decreto, confirmar es que un contador diga que
-          está bien. Guardar de nuevo NO reconfirma.
+          está bien. Guardar de nuevo no reconfirma.
         */}
         <div
           className="rounded-lg border border-border bg-surface p-4 text-caption leading-relaxed text-fg-muted"
@@ -476,7 +476,7 @@ function Formulario({
       <section className="space-y-3">
         <TituloDeBloque
           titulo="Exoneración del art. 114-1 del Estatuto Tributario"
-          explicacion="Exonera de salud del empleador, SENA e ICBF por los empleados que devengan menos de 10 salarios mínimos, pero sólo para ciertos contribuyentes. Viene APAGADA: prenderla sin confirmarlo calcularía aportes de menos, y pagar de menos a la seguridad social se corrige con intereses."
+          explicacion="Exonera de salud del empleador, SENA e ICBF por los empleados que devengan menos de 10 salarios mínimos, pero sólo para ciertos contribuyentes. Viene apagada: prenderla sin confirmarlo calcularía aportes de menos, y pagar de menos a la seguridad social se corrige con intereses."
         />
         <div className="flex items-center gap-3">
           <Checkbox id="exoneracion1141" checked={valores.exoneracion1141 === 'si'} onCheckedChange={(marcada: boolean) =>

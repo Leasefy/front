@@ -661,4 +661,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Buscar propietario": "Search owner",
   "propietario": "owner",
   "propietarios": "owners",
+  // Panel (ronda 26, 2.º agente)
+  "Ver el detalle": "See the details",
+  "Ocultar el detalle": "Hide the details",
+  "cosa más": "more thing",
+  "cosas más": "more things",
 }

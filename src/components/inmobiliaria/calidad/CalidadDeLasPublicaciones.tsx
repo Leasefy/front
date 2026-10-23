@@ -38,6 +38,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowSquareOut, Power, Sparkle } from '@phosphor-icons/react';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 
@@ -419,13 +420,21 @@ function FilaDeInmueble({
   onDecidir: (p: PropuestaDeCalidad, d: DecisionDeCalidad) => void;
 }) {
   const { t } = useI18n();
+  const tr = useTr();
   const donde = [i.barrio, i.ciudad].filter(Boolean).join(', ');
+  /*
+   * Revisora r25: cada inmueble se pintaba abierto con «Qué falta», «Problemas», «Fotos señaladas» y «Propuestas»
+   * (con 300 inmuebles, miles de px). La fila queda compacta —inmueble, puntaje, la ficha y UNA línea con lo más
+   * grave— y el detalle, plegado debajo (montado siempre: las propuestas se deciden igual que antes).
+   */
+  const loMasGrave = i.problemas[0]?.texto ?? i.falta[0]?.que ?? null;
+  const cuantosDetalles = i.falta.length + i.problemas.length + i.fotosSenaladas.length + i.propuestas.length;
   const motivo = t(`${K}.motivo.${i.motivo}`);
   const negocio = t(`${K}.negocio.${i.tipoDeNegocio}`);
   const puntaje = Math.max(0, Math.min(100, i.puntaje));
 
   return (
-    <li className="space-y-4 px-4 py-4" data-testid={`calidad-inmueble-${i.propertyId}`}>
+    <li className="space-y-2 px-4 py-4" data-testid={`calidad-inmueble-${i.propertyId}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-0.5">
           <p className="font-medium text-fg">
@@ -465,6 +474,26 @@ function FilaDeInmueble({
         </div>
       ) : null}
 
+      {loMasGrave ? (
+        <p className="text-body-sm text-fg" data-testid={`calidad-lo-mas-grave-${i.propertyId}`}>
+          {loMasGrave}
+          {cuantosDetalles > 1 ? (
+            <span className="text-fg-muted">
+              {' · '}
+              {cuantosDetalles - 1} {cuantosDetalles - 1 === 1 ? tr('cosa más') : tr('cosas más')}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
+
+      {cuantosDetalles > 0 ? (
+      <MasDetalles
+        etiqueta={tr('Ver el detalle')}
+        etiquetaAbierto={tr('Ocultar el detalle')}
+        montadoSiempre
+        classNameDelContenido="space-y-4 pt-3"
+        data-testid={`calidad-detalle-${i.propertyId}`}
+      >
       {i.falta.length > 0 ? (
         <Bloque titulo={t(`${K}.queFalta`)}>
           <ul className="list-disc space-y-0.5 pl-5 text-body-sm text-fg">
@@ -519,6 +548,8 @@ function FilaDeInmueble({
             ))}
           </ul>
         </Bloque>
+      ) : null}
+      </MasDetalles>
       ) : null}
     </li>
   );

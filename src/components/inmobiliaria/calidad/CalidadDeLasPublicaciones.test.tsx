@@ -284,6 +284,16 @@ describe('Niti prendido', () => {
     );
   });
 
+  it('revisora r25: la fila es compacta —lo más grave en una línea— y el detalle va plegado (montado)', async () => {
+    await montar();
+    const id = ITEM.propertyId;
+    expect(contenedor.querySelector(`[data-testid="calidad-lo-mas-grave-${id}"]`)?.textContent).toBeTruthy();
+    const detalle = contenedor.querySelector(`[data-testid="calidad-detalle-${id}"]`)!;
+    expect(detalle).not.toBeNull();
+    // Plegado: lo de adentro está en la página, oculto.
+    expect(detalle.querySelector('[hidden]')).not.toBeNull();
+  });
+
   it('pide la primera página con «todos» y pinta lo del contrato tal cual', async () => {
     await montar();
     expect(h.api.inmuebles).toHaveBeenCalledWith('agencia-1', { page: 1, limit: 20, filtro: 'todos' });

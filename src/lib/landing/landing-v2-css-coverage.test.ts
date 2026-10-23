@@ -27,6 +27,12 @@ const DOCUMENTED_EXCEPTIONS = [
   'html.contact-open body',
   'html.blog-open body',
   'html.product-open body',
+  // Ronda 30: la transición de página (Reunión Portofino 21-10, «sin flash negro al entrar al
+  // marketplace») vive en los pseudo-elementos del documento: no se pueden poner bajo .lv2.
+  '::view-transition-old(root)',
+  '::view-transition-new(root)',
+  '::view-transition-group(root)',
+  '::view-transition-image-pair(root)',
 ]
 
 function stripComments(css: string): string {

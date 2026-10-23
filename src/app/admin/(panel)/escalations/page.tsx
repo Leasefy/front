@@ -188,7 +188,8 @@ export default function EscalationsPage() {
       <PageHeader
         title="Escalaciones"
         description="Los casos que un agente le pasó a una persona. Toca uno para tomarlo o resolverlo."
-        acciones={cambiarVista}
+        // Ronda 30 (revisora r27): sin escalaciones, el selector «Tabla | Tablero» no tiene nada que cambiar.
+        acciones={data && data.length > 0 ? cambiarVista : undefined}
       />
 
       {/* Glow up 22-10: LA RESPUESTA (cuántas esperan a alguien) en una cifra con la barra abiertas · en curso ·
@@ -226,7 +227,12 @@ export default function EscalationsPage() {
           emptyTitle={data && data.length > 0 ? 'Nada por atender' : 'No hay escalaciones'}
           // Revisora r27 (T9): nada por atender es una buena noticia: la esfera verde, no la azul.
           emptyTono={data && data.length > 0 ? 'exito' : undefined}
-          emptyHint="Cuando un agente le pase un caso a una persona, aparece aquí."
+          // Ronda 30 (revisora r27: el cero dicho cuatro veces): con historia, el vacío dice dónde está lo resuelto.
+          emptyHint={
+            data && data.length > 0
+              ? 'Lo resuelto en los últimos 7 días está en «Resueltas».'
+              : 'Cuando un agente le pase un caso a una persona, aparece aquí.'
+          }
           aria-label="Escalaciones"
           onRowClick={(r) => abrir(r.id)}
           queSon={['escalación', 'escalaciones']}
@@ -244,7 +250,7 @@ export default function EscalationsPage() {
       ) : isLoading ? (
         <LoadingBlock filas={6} />
       ) : error ? (
-        <ErrorBlock error={error} onReintentar={refetch} />
+        <ErrorBlock error={error} onReintentar={refetch} titulo="No pudimos cargar las escalaciones" />
       ) : (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
           <Columna title="Abiertas" sub="Sin nadie asignado" rows={open} vacio="Nada abierto." onAbrir={abrir} />

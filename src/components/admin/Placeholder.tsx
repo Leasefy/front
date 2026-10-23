@@ -21,12 +21,14 @@ export function Placeholder() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <PageHeader title={pantalla?.nombre ?? 'Pantalla en construcción'} description={pantalla?.queHay} />
+      {/* Ronda 30: una dirección que no es del menú no está «en construcción»: no existe (antes decía que
+          todavía no estaba lista también para una dirección mal escrita). */}
+      <PageHeader title={pantalla?.nombre ?? 'Esta página no existe'} description={pantalla?.queHay} />
       <EmptyBlock
         icono={<Hammer weight="duotone" />}
         tono="neutro"
-        title="Esta pantalla todavía no está lista"
-        hint="Mientras tanto, lo de hoy está en el Resumen."
+        title={pantalla ? 'Esta pantalla todavía no está lista' : 'No hay nada en esta dirección'}
+        hint={pantalla ? 'Mientras tanto, lo de hoy está en el Resumen.' : 'Revisa la dirección o vuelve al Resumen.'}
         accion={
           <Button asChild size="sm" variant="outline" hideArrow>
             <Link href="/admin">Ir al Resumen</Link>

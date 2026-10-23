@@ -174,6 +174,7 @@ export default function TenantsPage() {
     },
     {
       header: 'Equipo',
+      enCelular: false, // Ronda 30 (revisora r27, T16): a 390 la tarjeta lleva nombre, plan, contratos e inmuebles.
       align: 'right',
       orden: (r) => r.equipo ?? 0,
       ordenPrimero: 'desc',
@@ -182,6 +183,7 @@ export default function TenantsPage() {
     },
     {
       header: 'Cobranza por voz',
+      enCelular: false, // Ronda 30 (revisora r27, T16): a 390 la tarjeta lleva nombre, plan, contratos e inmuebles.
       orden: (r) => (r.en_cobranza_por_voz ? r.debtor_count : null),
       ordenPrimero: 'desc',
       texto: (r) =>
@@ -204,6 +206,7 @@ export default function TenantsPage() {
     },
     {
       header: 'Se registró',
+      enCelular: false, // Ronda 30 (revisora r27, T16): a 390 la tarjeta lleva nombre, plan, contratos e inmuebles.
       align: 'right',
       orden: (r) => r.created_at,
       ordenPrimero: 'desc',
@@ -215,6 +218,19 @@ export default function TenantsPage() {
   ]
 
 
+  // Ronda 30 (revisora r27, T15): una columna que dice «—» en todas las filas no informa; sale de la tabla
+  // (va al Excel) y vuelve en cuanto una inmobiliaria tenga algo.
+  const vacia: Record<string, (r: InmobiliariaDeLaLista) => boolean> = {
+    Contratos: (r) => !r.contratos_activos && !r.contratos,
+    Inmuebles: (r) => !r.inmuebles,
+    Equipo: (r) => !r.equipo,
+    'Cobranza por voz': (r) => r.en_cobranza_por_voz === false,
+  }
+  const filasDeLaTabla = todas ?? []
+  const columnasCalladas = filasDeLaTabla.length > 0
+    ? columns.filter((c) => vacia[c.header] && filasDeLaTabla.every(vacia[c.header]))
+    : []
+  const columnasALaVista = columns.filter((c) => !columnasCalladas.includes(c))
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
@@ -270,7 +286,7 @@ export default function TenantsPage() {
       ) : null}
 
       <DataTable
-        columns={columns}
+        columns={columnasALaVista}
         rows={todas}
         getKey={(r) => r.tenant_id}
         isLoading={tenants.isLoading}
@@ -287,10 +303,11 @@ export default function TenantsPage() {
         segmentos={SEGMENTOS}
         filtrar={filtrar}
         filtrosEnLaUrl={['voz', 'migracion', 'origen']}
-        ordenInicial={{ columna: 6, sentido: 'desc' }}
+        ordenInicial={{ columna: Math.max(0, columnasALaVista.findIndex((c) => c.header === 'Se registró')), sentido: 'desc' }}
         cifraDelCelular="Contratos"
         exportar="inmobiliarias"
         masEnElExcel={[
+          ...columnasCalladas.map((c) => ({ header: c.header, texto: c.texto! })),
           { header: 'NIT', texto: (r) => r.nit },
           { header: 'Ciudad', texto: (r) => r.ciudad },
           { header: 'Correo', texto: (r) => r.correo ?? r.primary_contact_email },

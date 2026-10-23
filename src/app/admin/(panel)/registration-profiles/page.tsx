@@ -180,7 +180,7 @@ export default function RegistrationProfilesPage() {
       )}
 
       {/* Load error that is NOT a 404 */}
-      {error && !notReady ? <ErrorBlock error={error} onReintentar={refetch} /> : null}
+      {error && !notReady ? <ErrorBlock error={error} onReintentar={refetch} titulo="No pudimos cargar los perfiles" /> : null}
 
       {/* Action error (toggle failed / guard) */}
       {actionError && (
@@ -196,9 +196,9 @@ export default function RegistrationProfilesPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-body font-medium text-fg">{row.label}</span>
-                  <Pill tone={row.enabled ? 'ok' : 'muted'}>
-                    {row.enabled ? 'Encendido' : 'Apagado'}
-                  </Pill>
+                  {/* Ronda 30 (revisora r27: el estado una vez): sin la insignia «Encendido», lo dice el interruptor;
+                      apagado sí se nombra (un interruptor gris se lee menos). */}
+                  {row.enabled ? null : <Pill tone="muted">Apagado</Pill>}
                 </div>
                 <p className="text-body-sm text-fg-muted mt-1">{row.description}</p>
                 {/* Revisora r27: el cambio sólo cuando alguien lo cambió (antes «Nadie lo ha cambiado» ×3). */}

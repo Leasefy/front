@@ -392,8 +392,10 @@ export function CobranzaPorVoz({
           getKey={(e) => e.id}
           onRowClick={(e) => router.push(`/admin/escalations/${e.id}`)}
           queSon={['escalación', 'escalaciones']}
-          paginar={false}
+          // Ronda 30 (mandato: toda tabla con buscador y paginación; antes sin los dos).
+          buscar="Deudor o inmobiliaria"
           emptyTitle="Nada escalado"
+          emptyTono="exito"
           emptyHint="Ningún caso espera a una persona."
           emptyIcon={<CheckCircle weight="duotone" />}
         />

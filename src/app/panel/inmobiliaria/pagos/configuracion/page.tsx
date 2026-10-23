@@ -9,7 +9,9 @@
  * Backend serves all 6 agents' autonomia since F6.
  */
 
+import Link from 'next/link'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
@@ -21,13 +23,17 @@ function PagosConfiguracion() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
-        </p>
-      </header>
+      {/* GLOW UP 3.ª vuelta · el encabezado común, como el de Conciliación (antes un h1 suelto). */}
+      <div className="space-y-3">
+        <Link href="/panel/inmobiliaria/pagos/agente" className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
+          Agente de pagos
+        </Link>
+        <EncabezadoDePantalla
+          seccion="Agente de pagos"
+          titulo={t('inmobiliaria.ai.workspace.pages.comun.configTitle')}
+          descripcion={t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
+        />
+      </div>
 
       <AutonomiaPanel data={data} isLoading={isLoading} error={error} />
     </div>

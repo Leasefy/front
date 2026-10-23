@@ -12,7 +12,7 @@
 import { useState } from 'react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecibosDeCajaDeLaInmobiliaria } from '@/components/recibos/RecibosDeCajaDeLaInmobiliaria';
 import { EgresosAPropietarios } from '@/components/recibos/EgresosAPropietarios';
@@ -28,13 +28,13 @@ export default function RecibosPage() {
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <SectionLabel>Pagos</SectionLabel>
-          <h1 className="text-h2 text-fg">Recibos</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Los recibos de caja de cada pago que entró y, aparte, lo que se les giró a los propietarios.
-          </p>
-        </header>
+        {/* Revisora r24 (Recibos): el encabezado común y la misma sección que sus hermanas del
+            grupo «Cobrar a inquilinos» (Deuda del mes, Recaudo, Cartera). */}
+        <EncabezadoDePantalla
+          seccion="Pagos · inquilinos"
+          titulo="Recibos"
+          descripcion="Los recibos de caja de cada pago que entró y, aparte, lo que se les giró a los propietarios."
+        />
 
         {veLosEgresos ? (
           <Tabs value={pestana} onValueChange={(v) => setPestana(v as Pestana)}>

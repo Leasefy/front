@@ -62,6 +62,7 @@ import {
   NOMBRE_DEL_ESTADO,
   fallasDelProceso,
   resultadoDelProceso,
+  sinEnviarDelProceso,
   textoDelProceso,
   avanceEnPalabras,
   estaActivo,
@@ -160,7 +161,7 @@ export function FilaDeProceso({
   const IconoTipo = ICONO_DEL_TIPO[p.tipo] ?? (p.archivo?.tipo === 'application/zip' ? FileZip : FileArrowDown)
 
   const resultadoFinal = resultadoDelProceso(p)
-  const fallas = fallasDelProceso(p)
+  const fallas = resultadoFinal === 'sin-enviar' ? sinEnviarDelProceso(p) : fallasDelProceso(p)
   const estadoEnPalabras = p.interrumpido
     ? 'Se interrumpió'
     : p.cancelacionPedida && activo
@@ -169,11 +170,13 @@ export function FilaDeProceso({
         ? 'Deteniendo…'
         : resultadoFinal === 'con-fallas'
           ? 'Terminó con fallas'
+          : resultadoFinal === 'sin-enviar'
+            ? 'Terminó sin enviar'
           : resultadoFinal === 'nada-salio'
             ? NOMBRE_DEL_ESTADO.FALLO
             : NOMBRE_DEL_ESTADO[p.estado]
   const colorDelEstado =
-    resultadoFinal === 'con-fallas'
+    resultadoFinal === 'con-fallas' || resultadoFinal === 'sin-enviar'
       ? 'text-warning-700 dark:text-warning-100'
       : resultadoFinal === 'nada-salio'
         ? COLOR_DEL_ESTADO.FALLO
@@ -278,7 +281,7 @@ export function FilaDeProceso({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <p className="min-w-0 flex-1 truncate text-body-sm font-medium text-fg" title={textoDelProceso(p.titulo)}>
+          <p className="min-w-0 flex-1 text-body-sm font-medium text-fg max-sm:line-clamp-2 sm:truncate" title={textoDelProceso(p.titulo)}>
             {textoDelProceso(p.titulo)}
           </p>
           <span
@@ -401,9 +404,11 @@ export function FilaDeProceso({
             </AccionSuave>
           )}
           <AccionSuave onClick={verDetalle} testId="ver-detalle-proceso" icono={ListBullets}>
-            {resultadoFinal !== 'limpio' && fallas > 0
-              ? `Ver ${fallas === 1 ? 'el que falló' : `los ${fallas} que fallaron`}`
-              : 'Ver detalle'}
+            {resultadoFinal === 'sin-enviar' && fallas > 0
+              ? `Ver ${fallas === 1 ? 'el que no salió' : `los ${fallas} que no salieron`}`
+              : resultadoFinal !== 'limpio' && fallas > 0
+                ? `Ver ${fallas === 1 ? 'el que falló' : `los ${fallas} que fallaron`}`
+                : 'Ver detalle'}
           </AccionSuave>
         </div>
       </div>
@@ -414,8 +419,10 @@ export function FilaDeProceso({
   )
 }
 
+// Ronda 30 (revisora r27): la misma altura y el mismo molde que «Descargar» (Button sm outline); antes un chip h-7
+// redondo al lado de un botón h-9: dos moldes en la misma fila.
 const CLASE_ACCION_SUAVE =
-  'inline-flex h-7 items-center gap-1 rounded-full border border-border bg-surface px-2.5 text-caption font-medium text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-60'
+  'inline-flex h-9 items-center gap-1.5 rounded-[13px] border border-border bg-surface px-4 text-[14px] font-medium text-fg transition-colors hover:bg-surface-muted disabled:opacity-60 [&_svg]:size-4 [@media(pointer:coarse)]:min-h-11'
 
 function AccionSuave({
   onClick,

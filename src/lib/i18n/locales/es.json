@@ -1857,12 +1857,12 @@
       },
       "team": {
         "title": "Equipo",
-        "activeAgents": "{{count}} agentes activos",
+        "activeAgents": "{{count}} asesores activos",
         "closedThisMonth": "{{count}} cerrados este mes",
         "closedThisMonthLabel": "Cerrados este mes",
         "avgDaysToClose": "Promedio días cierre",
         "days": "{{count}} días",
-        "activeAgentsUno": "1 agente activo",
+        "activeAgentsUno": "1 asesor activo",
         "closedThisMonthUno": "1 cerrado este mes"
       },
       "quickActions": {

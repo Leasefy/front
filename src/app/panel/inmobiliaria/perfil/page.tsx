@@ -1,4 +1,5 @@
 'use client';
+import { documentoLegible } from '@/components/mantenimientos/TablaDeProveedores';
 import { CambiarCorreoDeEntrada } from '@/components/cuenta/CambiarCorreoDeEntrada';
 
 import { useState, useRef, useEffect } from 'react';
@@ -440,9 +441,14 @@ export default function InmobiliariaPerfilPage() {
   // Shared field shells (DS tokens, rounded-md)
   const fieldDisplay = 'flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-md';
   // Un campo vacío dice «Sin registrar», en gris (revisora r25: cuatro «—»).
-  const dato = (v: string | null | undefined) =>
+  // Ronda 30 (revisora r27): el teléfono se lee «320 523 4056» (antes «3205234056» de corrido).
+  const telefonoLegible = (v: string) => {
+    const d = v.replace(/\D/g, '');
+    return d.length === 10 ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : v;
+  };
+  const dato = (v: string | null | undefined, comoSeLee?: (v: string) => string) =>
     v ? (
-      <span className="text-sm text-fg">{v}</span>
+      <span className="text-sm text-fg">{comoSeLee ? comoSeLee(v) : v}</span>
     ) : (
       <span className="text-sm text-fg-subtle">{locale === 'es' ? 'Sin registrar' : 'Not set'}</span>
     );
@@ -646,7 +652,7 @@ export default function InmobiliariaPerfilPage() {
                       <div>
                         <p className="text-sm font-medium text-fg">{agency.name}</p>
                         <p className="text-caption text-fg-muted">
-                          {agency.nit ? `NIT: ${agency.nit}` : (locale === 'es' ? 'Agencia actual' : 'Current agency')}
+                          {agency.nit ? `NIT ${documentoLegible(agency.nit)}` : (locale === 'es' ? 'Agencia actual' : 'Current agency')}
                         </p>
                       </div>
                     </div>
@@ -762,7 +768,7 @@ export default function InmobiliariaPerfilPage() {
                   ) : (
                     <div className={fieldDisplay}>
                       <Phone className="w-4 h-4 text-fg-muted" />
-                      {dato(formData.phone)}
+                      {dato(formData.phone, telefonoLegible)}
                     </div>
                   )}
                 </div>
@@ -863,7 +869,11 @@ export default function InmobiliariaPerfilPage() {
                   «irreversible» aquí y «se recupera si inicias sesión» dos
                   clics después es contarle dos cosas distintas a la misma
                   persona. */}
-              <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>
+              {/* Ronda 30 (revisora r27): primero qué pasa al eliminarla; después cómo se recupera. */}
+              <p className="text-sm text-fg-muted mb-4">
+                {locale === 'es' ? 'Se cierra tu acceso a Leasefy. ' : 'Your access to Leasefy is closed. '}
+                {deletionCopy.recovery}
+              </p>
               <Button variant="destructive" hideArrow onClick={handleOpenDeleteModal}>
                 {locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'}
               </Button>

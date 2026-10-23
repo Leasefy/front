@@ -18,6 +18,8 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { MagnifyingGlass } from '@phosphor-icons/react'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
@@ -94,6 +96,19 @@ export function HistorialDeProcesos() {
 
   const hayMas = !sinMas && lista.length >= POR_PAGINA
 
+  /*
+   * Ronda 30 (revisora r27, R6): la lista lleva buscador (regla de Nico: toda tabla con buscador). El historial
+   * no acepta búsqueda en el servidor; busca en lo cargado (con «Cargar los anteriores» se busca más atrás).
+   */
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const plano = (v?: string | null) =>
+      (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const q = plano(busqueda.trim())
+    if (!q) return lista
+    return lista.filter((p) => [p.titulo, p.mensaje, p.lanzadoPor?.nombre].some((v) => plano(v).includes(q)))
+  }, [lista, busqueda])
+
   const cargarMas = async () => {
     const ultimo = lista[lista.length - 1]
     if (!ultimo) return
@@ -128,6 +143,18 @@ export function HistorialDeProcesos() {
 
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
         <div className="flex flex-wrap items-center gap-2 border-b border-border-faint px-4 py-3">
+          <div className="relative w-full sm:w-64">
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+            <Input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar un proceso"
+              aria-label="Buscar en los procesos cargados"
+              className="h-9 pl-9"
+              data-testid="buscar-proceso"
+            />
+          </div>
           <Filtro etiqueta="Filtrar por tipo" valor={tipo} onCambio={setTipo} testId="filtro-tipo">
             <SelectItem value={TODOS}>Todos los tipos</SelectItem>
             {Object.entries(NOMBRE_DEL_TIPO)
@@ -162,22 +189,24 @@ export function HistorialDeProcesos() {
         {/* Esqueleto → vacío → lista con un fundido; al filtrar o al llegar
             un proceso nuevo, las filas entran escalonadas y las que sobran
             salen. */}
-        <CrossFade swapKey={!data && centro.cargando ? 'cargando' : lista.length === 0 ? 'vacio' : 'lista'}>
+        <CrossFade swapKey={!data && centro.cargando ? 'cargando' : visibles.length === 0 ? 'vacio' : 'lista'}>
         {!data && centro.cargando ? (
           <ul className="space-y-2 p-4" aria-busy="true">
             {[0, 1, 2].map((i) => (
               <li key={i} className="h-14 animate-pulse rounded-md bg-surface-muted" />
             ))}
           </ul>
-        ) : lista.length === 0 ? (
+        ) : visibles.length === 0 ? (
           <p className="px-4 py-10 text-center text-body-sm text-fg-muted" data-testid="historial-vacio">
-            {tipo !== TODOS || estado !== TODOS || persona !== TODOS
+            {busqueda.trim() && lista.length > 0
+              ? 'Ningún proceso cargado coincide con lo que buscaste.'
+              : tipo !== TODOS || estado !== TODOS || persona !== TODOS
               ? 'Ningún proceso con estos filtros.'
               : 'Todavía no hay procesos. Cuando generes un archivo, emitas facturas, reproceses asientos o importes inmuebles desde Inmuebles, aparecen aquí. La migración no: sus cargas se ven en cada paso de la Puesta en marcha.'}
           </p>
         ) : (
           <Stagger as="ul" layout={false} className="divide-y divide-border-faint">
-            {lista.map((p) => (
+            {visibles.map((p) => (
               <StaggerItem as="li" key={p.id}>
                 <FilaDeProceso as="div" proceso={p} onCambio={() => void centro.refetch()} />
               </StaggerItem>

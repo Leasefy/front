@@ -234,10 +234,11 @@ afterEach(async () => {
 // Los que abren su vista en el cajón. Los extractos no: se arman por propietario y su fila lleva
 // a dispersiones (glow up 21-10).
 const TITULOS = [
-  'Cartera por edades', 'Comisiones por agente',
+  // Ronda 30 (revisora r27): «asesor», no «agente» (el agente es la IA), a propósito.
+  'Cartera por edades', 'Comisiones por asesor',
   // 20-09: el catálogo se escribió sin tildes («Ocupacion», «Analisis de mora
   // segmentado por antiguedad», «proximos 90 dias») y se lee así en pantalla.
-  'Ocupación del portafolio', 'Vencimientos de contratos', 'Rendimiento de agentes',
+  'Ocupación del portafolio', 'Vencimientos de contratos', 'Rendimiento de los asesores',
   'Flujo de caja', 'Rentabilidad por inmueble',
 ]
 
@@ -467,7 +468,7 @@ describe('«Reportes» — cada fila dice con qué fechas sale (glow up 21-10)',
     expect(saleCon('Vencimientos de contratos')).toBe(`Hoy, ${dia} ${MESES[mes - 1]}`)
     expect(saleCon('Flujo de caja')).toBe('Últimos 6 meses')
     expect(saleCon('Rentabilidad por inmueble')).toBe(`${MESES[mes - 1]} ${anio}`)
-    expect(saleCon('Comisiones por agente')).toBe(`${MESES[mes - 1]} ${anio}`)
+    expect(saleCon('Comisiones por asesor')).toBe(`${MESES[mes - 1]} ${anio}`)
   })
 
   it('el selector del período vive en el grupo de los dos que lo usan, y al tocarlo cambian sólo esos', async () => {
@@ -487,7 +488,7 @@ describe('«Reportes» — cada fila dice con qué fechas sale (glow up 21-10)',
   it('con un período de varios meses, las comisiones avisan que salen de a un mes', async () => {
     await montar()
     await act(async () => { radio('Último trimestre')!.click() })
-    const aviso = filaDe('Comisiones por agente')!.querySelector('[data-testid="aviso-de-fechas"]')
+    const aviso = filaDe('Comisiones por asesor')!.querySelector('[data-testid="aviso-de-fechas"]')
     expect(aviso?.textContent).toBe('Sale de a un mes: el primero del período.')
     expect(saleCon('Rentabilidad por inmueble')).toMatch(/^[a-z]{3} – [a-z]{3} \d{4}$|^[a-z]{3} \d{4} – [a-z]{3} \d{4}$/)
   })
@@ -514,7 +515,7 @@ describe('«Reportes» — cada fila dice con qué fechas sale (glow up 21-10)',
   it('sin el plan Pro: los avanzados lo dicen y llevan a hablar con Leasefy; no entran en «Bajar todos»', async () => {
     plan.hasAdvancedReports = false
     await montar()
-    for (const titulo of ['Comisiones por agente', 'Flujo de caja', 'Rendimiento de agentes']) {
+    for (const titulo of ['Comisiones por asesor', 'Flujo de caja', 'Rendimiento de los asesores']) {
       expect(saleCon(titulo), titulo).toBe('Viene con el plan Pro')
       expect(filaDe(titulo)!.querySelector('a[href="/panel/inmobiliaria/upgrade"]')?.textContent).toBe('Hablar con Leasefy')
       expect(filaDe(titulo)!.textContent).not.toContain('Bajar CSV')

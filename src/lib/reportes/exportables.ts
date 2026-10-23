@@ -83,7 +83,7 @@ const CATALOGO: Record<ReportId, Exportable> = {
   // decir que todavía no está que entregar el equivocado.
   'rendimiento-agentes': {
     disponible: false,
-    motivo: 'Todavía no lo generamos. Mientras tanto, Comisiones por agente trae el detalle por persona.',
+    motivo: 'Todavía no lo generamos. Mientras tanto, Comisiones por asesor trae el detalle por persona.',
     dondeSiHay: undefined,
   },
 }

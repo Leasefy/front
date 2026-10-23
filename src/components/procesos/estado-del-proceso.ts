@@ -86,7 +86,17 @@ export function quienLoLanzo(p: Pick<Proceso, 'lanzadoPor' | 'esMio'>): string {
  *   · `con-fallas`: algo salió y algo no → «Terminó con fallas» (ámbar);
  *   · `nada-salio`: no salió ninguno → «Falló» (rojo).
  */
-export type ResultadoDelProceso = 'limpio' | 'con-fallas' | 'nada-salio'
+export type ResultadoDelProceso = 'limpio' | 'con-fallas' | 'nada-salio' | 'sin-enviar'
+
+/**
+ * Ronda 30 (revisora r27, Procesos): «Extractos de septiembre… · 0 enviados · 2 sin enviar» decía «Listo» en verde.
+ * Lo que quedó sin enviar no es una falla del proceso (no hubo error), pero tampoco está listo: «Terminó sin enviar»,
+ * en ámbar, con «Ver los 2».
+ */
+export function sinEnviarDelProceso(p: Pick<Proceso, 'mensaje'>): number {
+  const m = p.mensaje?.match(/(\d+(?:\.\d{3})*)\s+sin enviar/i)
+  return m ? Number(m[1].replace(/\./g, '')) : 0
+}
 
 export function fallasDelProceso(p: Pick<Proceso, 'mensaje'>): number {
   const m = p.mensaje?.match(/(\d+(?:\.\d{3})*)\s+(?:fallaron|falló)/i)
@@ -96,7 +106,7 @@ export function fallasDelProceso(p: Pick<Proceso, 'mensaje'>): number {
 export function resultadoDelProceso(p: Pick<Proceso, 'estado' | 'mensaje' | 'total'>): ResultadoDelProceso {
   if (p.estado !== 'TERMINADO') return 'limpio'
   const fallas = fallasDelProceso(p)
-  if (fallas === 0) return 'limpio'
+  if (fallas === 0) return sinEnviarDelProceso(p) > 0 ? 'sin-enviar' : 'limpio'
   const todas = p.total != null && p.total > 0 && fallas >= p.total
   const ningunaSalio = /(^|[^\d.,])0 (?:enviad|aplicad|emitid|generad|aprobad|cread|invitad|de \d)/i.test(p.mensaje ?? '')
   return todas || ningunaSalio ? 'nada-salio' : 'con-fallas'

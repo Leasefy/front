@@ -6,7 +6,8 @@ import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
 import { Kanban, UserCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Avatar, Cifra, CrossFade, FranjaDeCifras, StatusBadge } from '@leasefy/cadence';
+import { Avatar, Cifra, CrossFade, FranjaDeCifras } from '@leasefy/cadence';
+import { Badge } from '@/components/ui/badge';
 import { Button, EmptyState } from '@/components/ui';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
@@ -28,6 +29,7 @@ import {
 import { SIN_MEDIR, tasaMedida, tasaEnPantalla } from '@/lib/tasas';
 import { BASE_POR_DEFECTO, claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis';
 import { plataPareja } from '@/lib/format';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
@@ -48,7 +50,8 @@ function PipelineMiniCard({ item }: { item: PipelineItem }) {
         <p className="truncate text-body-sm font-medium text-fg">{item.candidateName}</p>
         <p className="truncate text-caption text-fg-muted">{item.propertyTitle}</p>
       </div>
-      {stageInfo?.labelEs ? <StatusBadge tone="neutral">{stageInfo.labelEs}</StatusBadge> : null}
+      {/* Ronda 30 (revisora r27): el estado en tipo oración («Evaluación»), como en Prospección (antes «● EVALUACIÓN»). */}
+      {stageInfo?.labelEs ? <Badge variant="secondary">{stageInfo.labelEs}</Badge> : null}
     </li>
   );
 }
@@ -213,13 +216,9 @@ function ResumenDelNegocio() {
    * que es el mismo primitivo que el back ya tenía (`contar(n, 'cuota')`).
    * La clave de i18n se queda para el inglés, que no tiene este problema.
    */
-  const arrendadasYDisponibles =
-    locale === 'es'
-      ? `${contar(kpis.propertiesRented, 'arrendada')} · ${contar(kpis.propertiesAvailable, 'disponible')}`
-      : t('inmobiliaria.dashboard.kpi.rentedAndAvailable', {
-          rented: miles(kpis.propertiesRented),
-          available: miles(kpis.propertiesAvailable),
-        });
+  // Ronda 30: sólo los disponibles (los arrendados los dice Ocupación).
+  const disponiblesEnPalabras =
+    locale === 'es' ? contar(kpis.propertiesAvailable, 'disponible') : `${miles(kpis.propertiesAvailable)} available`;
 
   /*
    * 🔴 SIN MES ANTERIOR NO HAY FLECHA (21-09-2026).
@@ -280,7 +279,18 @@ function ResumenDelNegocio() {
   const carteraDelMes = kpisData?.deuda?.delMes;
   // Toda la deuda viva: el número de cuotas de la pantalla de Cartera.
   const deudaTotal = kpisData?.deuda?.total;
-  const avisosDeLaDeuda = kpisData?.deuda?.avisos ?? [];
+  /*
+   * Ronda 30 (revisora r27): los avisos los escribe el back («…su deuda NO está sumada acá. Se arma generando sus
+   * cuotas.»). Mientras Víctor los reescribe, se pintan serenos: sin mayúsculas de énfasis, «aquí» y «cuotas» en vez
+   * de «tabla de amortización». Sólo presentación.
+   */
+  const avisosDeLaDeuda = (kpisData?.deuda?.avisos ?? []).map((aviso) =>
+    sinMayusculasDeEnfasis(aviso)
+      .replace(/(?<![\wáéíóú])acá(?![\wáéíóú])/g, 'aquí')
+      .replace(/todavía no tienen tabla de amortización/g, 'no tienen cuotas')
+      .replace(/todavía no tiene tabla de amortización/g, 'no tiene cuotas')
+      .replace(/tabla de amortización/g, 'cuotas'),
+  );
   const enMoraDelMes = Math.min(kpis.lateCollections, Math.max(0, kpis.expectedRevenue - kpis.collectedRevenue));
   const porVencer = Math.max(0, kpis.expectedRevenue - kpis.collectedRevenue - enMoraDelMes);
   const plata = plataPareja([kpis.collectedRevenue, kpis.expectedRevenue, porVencer, enMoraDelMes]);
@@ -494,9 +504,12 @@ function ResumenDelNegocio() {
              * entero: sin decir cuántos quedaron fuera, «2.655 · 725 arrendadas · 74 disponibles» no cierra
              * y parece un error de cuentas.
              */
+            /* Ronda 30 (revisora r27): un dato por celda. Los arrendados los dice Ocupación («744 arrendados de
+               828»); aquí, lo que el total tiene fuera del catálogo, o los disponibles si no hay nada fuera
+               (antes «744 arrendadas · 84 disponibles · 2 fu…», cortado, y el 744 dos veces en dos géneros). */
             fueraDelCatalogo > 0
-              ? `${arrendadasYDisponibles} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
-              : arrendadasYDisponibles
+              ? t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })
+              : disponiblesEnPalabras
           }
         />
         <Cifra
@@ -505,8 +518,8 @@ function ResumenDelNegocio() {
           detalle={
             // El número dice QUÉ cuenta: nunca un porcentaje suelto.
             // El número dice QUÉ cuenta: nunca un porcentaje suelto (regla fijada en tasas-sin-medir).
-            fueraDelCatalogo > 0
-              ? `${t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: miles(kpis.propertiesRented), total: miles(enCatalogo) })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
+            locale === 'es'
+              ? `${contar(kpis.propertiesRented, 'arrendado')} de ${miles(enCatalogo)} en catálogo`
               : t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: miles(kpis.propertiesRented), total: miles(enCatalogo) })
           }
         />
@@ -591,7 +604,7 @@ function ResumenDelNegocio() {
           ) : activeAgents.length === 0 ? (
             <EmptyState
               icon={UserCircle}
-              title="Todavía no hay agentes activos"
+              title="Todavía no hay asesores activos"
               description="Invita a alguien del equipo desde Configuración › Equipo y aquí vas a ver su carga y sus cierres."
             />
           ) : (

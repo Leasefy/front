@@ -140,3 +140,14 @@ describe('Cobros a 390 px — el resumen', () => {
     expect(c).toContain('sm:flex-row')
   })
 })
+
+describe('Cobros — la respuesta de arriba es la cifra del back', () => {
+  it('🔴 «Por cobrar» es `totalPending` tal cual (el back ya incluye la mora): no se le suma `totalLate`', () => {
+    expect(PAGINA).toContain('cifra={formatCurrency(resumen.totalPending)}')
+    expect(PAGINA).not.toMatch(/totalPending\s*\+\s*resumen\.totalLate/)
+  })
+
+  it('el tramo «Pendiente» es lo que falta sin la mora (el mismo dato de la tarjeta vieja)', () => {
+    expect(PAGINA).toContain('monto: Math.max(0, resumen.totalPending - resumen.totalLate)')
+  })
+})

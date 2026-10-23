@@ -618,7 +618,9 @@ function CobrosContent() {
             // con la tasa en 36 px, caja de ícono y tres tarjetas que no sumaban la cifra.
             <CifraHeroe
               rotulo="Por cobrar"
-              cifra={formatCurrency(resumen.totalPending + resumen.totalLate)}
+              // El back manda en `totalPending` TODO lo que falta cobrar, mora incluida
+              // (`totalLate` es la parte de los cobros en mora): la cifra es la suya, tal cual.
+              cifra={formatCurrency(resumen.totalPending)}
               contexto={`de ${formatCurrency(resumen.totalExpected)} emitidos en ${mesEnLaFrase}`}
               total={resumen.totalExpected}
               cuandoEsCero={`No hay cobros emitidos en ${mesEnLaFrase}.`}
@@ -649,12 +651,14 @@ function CobrosContent() {
                 {
                   clave: 'pendiente',
                   etiqueta: `Pendiente · ${resumen.cobrosPending.toLocaleString('es-CO')}`,
-                  monto: resumen.totalPending,
+                  // Lo que falta y todavía NO está en mora: el mismo dato de la tarjeta vieja
+                  // (CobroResumen), para no contar la mora dos veces en la barra.
+                  monto: Math.max(0, resumen.totalPending - resumen.totalLate),
                   tono: 'neutro',
                   siempre: true,
                   cifra: (
                     <button type="button" className="font-mono tabular-nums underline-offset-2 hover:underline" onClick={handleViewPending} data-testid="cobros-ver-pendientes">
-                      {formatCurrency(resumen.totalPending)}
+                      {formatCurrency(Math.max(0, resumen.totalPending - resumen.totalLate))}
                     </button>
                   ),
                   'data-testid': 'cobros-tramo-pendiente',

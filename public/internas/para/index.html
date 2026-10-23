@@ -556,6 +556,86 @@ section{position:relative;overflow-x:clip}
 @media (max-width:420px){.nota-f{white-space:normal}.escala b{font-size:26px}}
 .quieto .heroe-pix{opacity:.95}
 </style>
+<style id="barra-de-la-home">
+/* La barra de la home, igual en todas las páginas (Nico 23-10). */
+.con-motion :is(.btn,.boleto,.mbtn,.aviso a,.aviso button){transition:background-color .2s,color .2s,border-color .2s}
+.hdr{position:fixed;inset:0 0 auto 0;z-index:60;height:var(--hdr);background:var(--bg);border-bottom:1px solid transparent;transition:border-color .3s}
+.hdr.con-filete{border-color:var(--filete)}
+.hdr .wrap{display:flex;align-items:center;height:100%;gap:26px}
+.logo{display:flex;align-items:center;height:40px}
+.logo svg{height:21px;width:auto;fill:var(--tinta)}
+.nav{display:flex;gap:24px;font-size:15px;color:var(--grafito)}
+.nav a{display:inline-flex;align-items:center;gap:8px;transition:color .2s}
+.nav a:hover{color:var(--tinta)}
+.nav a i{width:7px;height:7px;border-radius:2px;background:var(--voltaje-dot)}
+.reloj{margin-left:auto;display:inline-flex;align-items:center;gap:10px;height:34px;padding:0 12px 0 10px;border-radius:12px;background:var(--arena);font-family:var(--m);font-size:12px;letter-spacing:.06em;color:var(--ceniza);corner-shape:superellipse(1.5)}
+.reloj b{color:var(--tinta);font-weight:500;min-width:3.2em}
+.reloj .pista{display:flex;gap:2px}
+.reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
+.reloj .pista i.on{background:var(--voltaje-dot)}
+.hdr-cta{display:flex;align-items:center;gap:10px}
+.mbtn{display:none;height:38px;padding:0 14px;border-radius:12px;background:var(--arena);font-size:14px;font-weight:500;corner-shape:superellipse(1.5)}
+.menu{position:fixed;inset:var(--hdr) 0 0 0;z-index:59;background:var(--bg);padding:24px var(--gutter);display:none;flex-direction:column;gap:6px;overflow:auto}
+.menu-abierto .menu{display:flex}
+.menu a.it{display:flex;align-items:baseline;gap:14px;padding:14px 0;border-bottom:1px solid var(--filete);font-size:26px;font-weight:360;letter-spacing:-.02em}
+.menu a.it span{font-family:var(--m);font-size:12px;color:var(--ceniza)}
+.menu .acc{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+@media (min-width:1101px) and (max-width:1320px){.reloj .dia,.reloj .pista{display:none}
+.hdr .wrap{gap:20px}
+.nav{gap:20px}}
+@media (min-width:1101px) and (max-width:1200px){.hdr-cta .pub{display:none}}
+@media (max-width:1100px){.nav{display:none}
+.hdr-cta .pub{display:none}
+.mbtn{display:inline-flex;align-items:center}}
+@media (max-width:720px){.hdr-cta{display:none}
+.mbtn{display:inline-flex;align-items:center}
+.reloj{padding:0 10px}
+.reloj .dia,.reloj .pista{display:none}
+.hdr .wrap{gap:12px}}
+.reloj .ap{display:none;color:var(--voltaje-txt);font-weight:500}
+.autopiloto-on .reloj{background:var(--voltaje-suave)}
+.autopiloto-on .reloj .dia{display:none}
+.autopiloto-on .reloj .ap{display:inline}
+.autopiloto-on .reloj b{color:var(--voltaje-txt)}
+.autopiloto-on .reloj .pista i{background:#C7D1FF}
+.mov.autopiloto-on .reloj .pista i{animation:barrida 1.4s ease-in-out infinite}
+@media (max-width:720px){.autopiloto-on .reloj .ap{display:none}}
+.pm{display:flex;align-items:center}
+.pm-btn{display:inline-flex;align-items:center;gap:6px;height:40px;font-size:15px;color:var(--grafito);transition:color .2s}
+.pm-btn:hover,.pm-abierto .pm-btn{color:var(--tinta)}
+.pm-btn .ic{width:14px;height:14px;transition:transform .2s}
+.pm-abierto .pm-btn .ic{transform:rotate(180deg)}
+.pm-panel{position:fixed;left:0;right:0;top:var(--hdr);z-index:58;background:var(--bg);border-top:1px solid var(--filete);border-bottom:1px solid var(--filete);color:var(--tinta);visibility:hidden;opacity:0;transform:translateY(-6px);transition:opacity .18s ease,transform .22s cubic-bezier(.2,.8,.2,1),visibility 0s linear .22s}
+.pm-abierto .pm-panel{visibility:visible;opacity:1;transform:none;transition:opacity .18s ease,transform .22s cubic-bezier(.2,.8,.2,1),visibility 0s}
+@media (prefers-reduced-motion:reduce){.pm-panel,.pm-abierto .pm-panel{transition:none;transform:none}
+.pm-btn .ic{transition:none}}
+.pm-grid{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:18px 40px;padding-top:28px;padding-bottom:22px}
+.pm-k{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-family:var(--m);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ceniza);line-height:1.3}
+.pm-k i{width:8px;height:8px;border-radius:2px;background:var(--voltaje-dot);flex:none}
+.pm-sis{display:flex;flex-direction:column;gap:10px}
+.nav .pm-big{display:grid;grid-template-columns:auto 1fr;column-gap:14px;row-gap:2px;align-items:baseline;padding:16px 18px;border-radius:18px;background:var(--arena);color:var(--tinta);corner-shape:superellipse(1.5);transition:background-color .2s}
+.nav .pm-big:hover{background:var(--piedra)}
+.pm-big .pm-n{grid-row:1/4;font-family:var(--m);font-size:13px;color:var(--voltaje-txt)}
+.pm-big b{font-size:17px;font-weight:500;letter-spacing:-.01em}
+.pm-big span:not(.pm-n){font-size:14px;color:var(--grafito);line-height:1.4}
+.pm-big em{margin-top:6px;font-style:normal;font-size:14px;font-weight:500;color:var(--voltaje-txt)}
+.pm-lista{display:grid;gap:2px}
+.pm-dos{grid-template-columns:1fr 1fr;column-gap:8px}
+.nav .pm-it{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:14px;color:var(--tinta);corner-shape:superellipse(1.5);transition:background-color .2s}
+.nav .pm-it:hover{background:var(--arena)}
+.pm-it b{font-size:15px;font-weight:500;color:var(--tinta)}
+.pm-it span{font-size:14px;color:var(--grafito);line-height:1.35}
+.pm-pie{grid-column:1/-1;display:flex;gap:24px;padding-top:14px;border-top:1px solid var(--filete);font-size:14px}
+.menu .pm-m-btn{display:flex;align-items:baseline;gap:14px;width:100%;padding:14px 0;border-bottom:1px solid var(--filete);font-size:26px;font-weight:360;letter-spacing:-.02em;text-align:left}
+.menu .pm-m-btn span{font-family:var(--m);font-size:12px;color:var(--ceniza)}
+.menu .pm-m-btn .ic{width:20px;height:20px;margin-left:auto;align-self:center;transition:transform .2s}
+.menu .pm-m-btn[aria-expanded="true"] .ic{transform:rotate(180deg)}
+.pm-m{padding:6px 0 18px;border-bottom:1px solid var(--filete)}
+.pm-m[hidden]{display:none}
+.pm-m .pm-k{margin:16px 0 4px}
+.pm-m .pm-it{display:flex;flex-direction:column;gap:2px;padding:10px 0}
+.pm-m-pie{display:inline-block;margin-top:14px;font-size:15px}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -604,16 +684,26 @@ section{position:relative;overflow-x:clip}
 
 <header class="hdr" id="hdr">
   <div class="wrap">
-    <a href="/" class="logo" aria-label="Leasefy, inicio"><svg viewBox="0 0 947 235" aria-hidden="true"><use href="#lfLogo"/></svg></a>
+    <a href="/#inicio" class="logo" aria-label="Leasefy, inicio"><svg viewBox="0 0 947 235" aria-hidden="true"><use href="#lfLogo"/></svg></a>
     <nav class="nav" aria-label="Principal">
       <a href="/propiedades"><i aria-hidden="true"></i>Marketplace</a>
-      <a href="/#producto">Producto</a>
+      <div class="pm" id="pm">
+        <button type="button" class="pm-btn" id="pmBtn" aria-expanded="false" aria-controls="pmPanel">Producto<svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></button>
+        <div class="pm-panel" id="pmPanel" role="region" aria-label="Producto: el sistema, los agentes y para quién es">
+          <div class="wrap pm-grid">
+            <div class="pm-col pm-sis"><p class="pm-k"><i aria-hidden="true"></i>El sistema</p><a class="pm-big" href="/productos/crm"><span class="pm-n" aria-hidden="true">01</span><b>CRM inmobiliario</b><span>Tu comercial de punta a punta</span><em>Ver producto →</em></a><a class="pm-big" href="/productos/erp"><span class="pm-n" aria-hidden="true">02</span><b>ERP de arriendos</b><span>La plata en orden, sola</span><em>Ver producto →</em></a></div>
+            <div class="pm-col pm-ag"><p class="pm-k"><i aria-hidden="true"></i>Agentes AI</p><ul class="pm-lista pm-dos"><li><a class="pm-it" href="/productos/cobranza"><b>Cobranza</b><span>La mora se persigue sola</span></a></li><li><a class="pm-it" href="/productos/inquilino"><b>Estudio del inquilino</b><span>Verificación en minutos</span></a></li><li><a class="pm-it" href="/productos/avaluos"><b>Avalúos</b><span>El precio correcto</span></a></li><li><a class="pm-it" href="/productos/conciliacion"><b>Conciliación</b><span>Cuadre contra el banco</span></a></li><li><a class="pm-it" href="/productos/matching"><b>Matching</b><span>Opciones el mismo día</span></a></li><li><a class="pm-it" href="/productos/asegurabilidad"><b>Asegurabilidad</b><span>Contratos protegidos</span></a></li></ul></div>
+            <div class="pm-col pm-pub"><p class="pm-k"><i aria-hidden="true"></i>Para quién</p><ul class="pm-lista"><li><a class="pm-it" href="/para/inmobiliarias"><b>Inmobiliarias</b><span>Escala tu operación con tecnología e IA</span></a></li><li><a class="pm-it" href="/para/propietarios"><b>Propietarios</b><span>Arrienda tu propiedad sin comisiones</span></a></li><li><a class="pm-it" href="/para/inquilinos"><b>Inquilinos</b><span>Encuentra y aplica a propiedades verificadas</span></a></li><li><a class="pm-it" href="/para/agentes"><b>Agentes inmobiliarios</b><span>Herramientas para cerrar más arriendos</span></a></li></ul></div>
+            <div class="pm-pie"><a class="lnk" href="/#producto">Visión general en el home ↓</a></div>
+          </div>
+        </div>
+      </div>
       <a href="/#planes">Planes</a>
       <a href="/avaluo">Avalúos</a>
       <a href="/contacto">Contacto</a>
     </nav>
     <div class="reloj" aria-label="El día de una inmobiliaria, según dónde vas">
-      <span class="dia">JUE 23 OCT</span><b id="hora">07:02</b>
+      <span class="dia">JUE 22 OCT</span><span class="ap">PILOTO AUTOMÁTICO</span><b id="hora">07:02</b>
       <span class="pista" id="pista" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
     </div>
     <div class="hdr-cta">
@@ -621,12 +711,18 @@ section{position:relative;overflow-x:clip}
       <a class="btn btn-s btn-sm" href="/auth">Entrar</a>
       <a class="btn btn-p btn-sm" href="/auth?mode=register">Crear cuenta</a>
     </div>
-    <button class="mbtn" id="mbtn" type="button" aria-expanded="false" aria-controls="menu">Menú</button>
+    <button class="mbtn" id="mbtn" aria-expanded="false" aria-controls="menu">Menú</button>
   </div>
 </header>
-<div class="menu" id="menu" aria-label="Menú">
+<div class="menu" id="menu" aria-label="Menú" data-lenis-prevent>
   <a class="it" href="/propiedades"><span>01</span>Marketplace</a>
-  <a class="it" href="/#producto"><span>02</span>Producto</a>
+  <button type="button" class="it pm-m-btn" id="pmMBtn" aria-expanded="false" aria-controls="pmM"><span>02</span>Producto<svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></button>
+  <div class="pm-m" id="pmM" hidden>
+    <p class="pm-k"><i aria-hidden="true"></i>El sistema</p><ul class="pm-lista"><li><a class="pm-it" href="/productos/crm"><b>CRM inmobiliario</b><span>Tu comercial de punta a punta</span></a></li><li><a class="pm-it" href="/productos/erp"><b>ERP de arriendos</b><span>La plata en orden, sola</span></a></li></ul>
+    <p class="pm-k"><i aria-hidden="true"></i>Agentes AI</p><ul class="pm-lista"><li><a class="pm-it" href="/productos/cobranza"><b>Cobranza</b><span>La mora se persigue sola</span></a></li><li><a class="pm-it" href="/productos/inquilino"><b>Estudio del inquilino</b><span>Verificación en minutos</span></a></li><li><a class="pm-it" href="/productos/avaluos"><b>Avalúos</b><span>El precio correcto</span></a></li><li><a class="pm-it" href="/productos/conciliacion"><b>Conciliación</b><span>Cuadre contra el banco</span></a></li><li><a class="pm-it" href="/productos/matching"><b>Matching</b><span>Opciones el mismo día</span></a></li><li><a class="pm-it" href="/productos/asegurabilidad"><b>Asegurabilidad</b><span>Contratos protegidos</span></a></li></ul>
+    <p class="pm-k"><i aria-hidden="true"></i>Para quién</p><ul class="pm-lista"><li><a class="pm-it" href="/para/inmobiliarias"><b>Inmobiliarias</b><span>Escala tu operación con tecnología e IA</span></a></li><li><a class="pm-it" href="/para/propietarios"><b>Propietarios</b><span>Arrienda tu propiedad sin comisiones</span></a></li><li><a class="pm-it" href="/para/inquilinos"><b>Inquilinos</b><span>Encuentra y aplica a propiedades verificadas</span></a></li><li><a class="pm-it" href="/para/agentes"><b>Agentes inmobiliarios</b><span>Herramientas para cerrar más arriendos</span></a></li></ul>
+    <a class="lnk pm-m-pie" href="/#producto">Visión general en el home ↓</a>
+  </div>
   <a class="it" href="/#planes"><span>03</span>Planes</a>
   <a class="it" href="/avaluo"><span>04</span>Avalúos</a>
   <a class="it" href="/contacto"><span>05</span>Contacto</a>
@@ -1089,5 +1185,6 @@ section{position:relative;overflow-x:clip}
 <script src="/internas/para/js/03-pagina.js"></script>
 <script src="/internas/para/js/04-marca-del-pie.js"></script>
 <script src="/internas/para/js/05-botones.js"></script>
+<script src="/landing/js/08-mega-menu.js" defer></script>
 </body>
 </html>

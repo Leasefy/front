@@ -241,7 +241,7 @@ function FlexCalculator() {
                   <span className="-ml-2 block w-4 h-4 bg-foreground rounded-full" />
                 </motion.div>
               </div>
-              <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
+              <div className="flex justify-between mt-1 text-[12px] text-muted-foreground">
                 <span>10</span>
                 <span>100</span>
                 <span>250</span>
@@ -284,7 +284,7 @@ function FlexCalculator() {
                 </div>
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-muted-foreground">1% del canon administrado</span>
-                  <span className="text-foreground font-semibold font-mono tabular-nums">${monthlyFee.toLocaleString('es-CO')}</span>
+                  <span className="text-foreground font-medium font-mono tabular-nums">${monthlyFee.toLocaleString('es-CO')}</span>
                 </div>
               </div>
               <p className="text-[13px] text-muted-foreground/70 mt-3 leading-relaxed">
@@ -494,7 +494,7 @@ export default function PricingPage() {
                   <Shield className="w-4 h-4 text-primary" />
                 </div>
                 <div className="mt-auto">
-                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">
+                  <h3 className="text-[17px] font-heading font-[420] text-foreground mb-1">
                     Administración completa
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Nosotros cobramos y gestionamos todo</p>
@@ -526,7 +526,7 @@ export default function PricingPage() {
                   <House className="w-4 h-4 text-foreground" />
                 </div>
                 <div className="mt-auto">
-                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">
+                  <h3 className="text-[17px] font-heading font-[420] text-foreground mb-1">
                     Yo administro
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Herramientas profesionales para ti</p>
@@ -558,7 +558,7 @@ export default function PricingPage() {
                   <UserCheck className="w-4 h-4 text-success" />
                 </div>
                 <div className="mt-auto">
-                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">
+                  <h3 className="text-[17px] font-heading font-[420] text-foreground mb-1">
                     Evaluar inquilino
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Crédito, identidad, antecedentes</p>
@@ -591,7 +591,7 @@ export default function PricingPage() {
                   <Briefcase className="w-4 h-4 text-sand-700" />
                 </div>
                 <div className="mt-auto">
-                  <h3 className="text-[17px] font-mono uppercase font-normal text-sand-900 mb-1">
+                  <h3 className="text-[17px] font-heading font-[420] text-sand-900 mb-1">
                     Inmobiliarias
                   </h3>
                   <p className="text-[13px] text-sand-700 mb-3">Escala tu negocio con tecnología</p>
@@ -1034,13 +1034,13 @@ export default function PricingPage() {
           >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-md bg-warning/10 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-md border border-border flex items-center justify-center">
                   <Buildings className="w-6 h-6 text-warning" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-semibold text-foreground">¿Eres inmobiliaria o agente?</h3>
+                  <h3 className="text-[15px] font-medium text-foreground">¿Eres inmobiliaria o agente?</h3>
                   <p className="text-[13px] text-muted-foreground">
-                    Con el plan Pro pagas solo <span className="font-semibold font-mono tabular-nums text-warning">$21.000/evaluación</span> (50% off). Con Flex son <span className="font-semibold text-warning">ilimitadas y gratis</span>.
+                    Con el plan Pro pagas solo <span className="font-medium font-mono tabular-nums text-warning">$21.000/evaluación</span> (50% off). Con Flex son <span className="font-medium text-warning">ilimitadas y gratis</span>.
                   </p>
                 </div>
               </div>
@@ -1058,7 +1058,7 @@ export default function PricingPage() {
           >
             <div className="flex items-center justify-center gap-2 mb-8">
               <span className="w-2 h-2 rounded-full bg-primary" />
-              <h3 className="text-[15px] font-semibold text-foreground">
+              <h3 className="text-[15px] font-medium text-foreground">
                 ¿Cómo funciona?
               </h3>
             </div>
@@ -1076,7 +1076,7 @@ export default function PricingPage() {
                   <div className="w-12 h-12 bg-primary text-primary-foreground rounded-md flex items-center justify-center mx-auto mb-4">
                     <span className="text-[15px] font-medium font-mono tabular-nums">{step.num}</span>
                   </div>
-                  <h4 className="font-semibold text-foreground text-[14px] mb-1">{step.title}</h4>
+                  <h4 className="font-medium text-foreground text-[14px] mb-1">{step.title}</h4>
                   <p className="text-[13px] text-muted-foreground leading-relaxed">{step.desc}</p>
                 </StaggerItem>
               ))}
@@ -1088,7 +1088,7 @@ export default function PricingPage() {
             className="mt-8 text-center"
           >
             <p className="text-[14px] text-muted-foreground">
-              <span className="font-semibold text-foreground">Resultados en minutos</span> — Verificaciones powered by DataCrédito y fuentes oficiales colombianas.
+              <span className="font-medium text-foreground">Resultados en minutos</span> — Verificaciones powered by DataCrédito y fuentes oficiales colombianas.
             </p>
           </Appear>
         </div>
@@ -1121,10 +1121,10 @@ export default function PricingPage() {
             >
 
               <div className="flex flex-col h-full relative z-10">
-                <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center mb-4">
+                <div className="w-10 h-10 rounded-md border border-border flex items-center justify-center mb-4">
                   <Shield className="w-5 h-5 text-success" />
                 </div>
-                <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
+                <h3 className="text-[18px] font-heading font-[420] text-foreground mb-2">
                   Seguridad garantizada
                 </h3>
                 <p className="text-[13px] text-muted-foreground leading-relaxed mb-5">
@@ -1147,10 +1147,10 @@ export default function PricingPage() {
             <Appear inView distance="md" duration="slow" delay={0.1}
               className="md:col-span-3 lg:col-span-4 rounded-lg p-6 bg-surface border border-border-faint"
             >
-              <div className="w-10 h-10 rounded-md bg-warning-soft flex items-center justify-center mb-4">
+              <div className="w-10 h-10 rounded-md border border-border flex items-center justify-center mb-4">
                 <Lightning className="w-5 h-5 text-warning" />
               </div>
-              <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
+              <h3 className="text-[18px] font-heading font-[420] text-foreground mb-2">
                 Proceso rápido
               </h3>
               <p className="text-[13px] text-muted-foreground leading-relaxed mb-5">
@@ -1164,7 +1164,7 @@ export default function PricingPage() {
                     className="flex items-center gap-3"
                   >
                     <div className={cn(
-                      'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
+                      'w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-medium',
                       i === 2 ? 'bg-success text-white' : 'bg-surface-muted text-muted-foreground'
                     )}>
                       {i + 1}
@@ -1183,7 +1183,7 @@ export default function PricingPage() {
               <div className="w-10 h-10 rounded-md bg-surface flex items-center justify-center mb-4">
                 <Headphones className="w-5 h-5 text-foreground" />
               </div>
-              <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
+              <h3 className="text-[18px] font-heading font-[420] text-foreground mb-2">
                 Soporte experto
               </h3>
               <p className="text-[13px] text-muted-foreground leading-relaxed">

@@ -116,14 +116,14 @@ export function PricingDetailSheet({
             {/* Limits */}
             <div className="flex gap-3">
               <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-md">
-                <Buildings className="w-4 h-4 text-primary" />
+                <Buildings className="w-4 h-4 text-fg-subtle" aria-hidden="true" />
                 <span className="text-[13px] font-medium font-mono tabular-nums text-foreground">
                   {plan.limits.properties === 'ilimitadas' ? '∞' : plan.limits.properties}
                 </span>
                 <span className="text-[13px] text-muted-foreground">inmuebles</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-md">
-                <Users className="w-4 h-4 text-primary" />
+                <Users className="w-4 h-4 text-fg-subtle" aria-hidden="true" />
                 <span className="text-[13px] font-medium font-mono tabular-nums text-foreground">
                   {plan.limits.users === 'ilimitados' ? '∞' : plan.limits.users}
                 </span>
@@ -141,7 +141,7 @@ export function PricingDetailSheet({
               {plan.highlights.map((h) => (
                 <span
                   key={h}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium rounded-full bg-primary/10 text-primary"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium rounded-full border border-border text-fg"
                 >
                   <Lightning className="w-3 h-3" weight="fill" />
                   {h}

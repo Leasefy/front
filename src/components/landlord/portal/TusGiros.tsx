@@ -95,52 +95,20 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
           </span>
         }
         contexto={giros.estado === 'fallo' ? 'No se pudo consultar ahora' : 'Lo que ya llegó a tu cuenta'}
-        tramos={[
-          ...(conBarra
-            ? [{ clave: 'girado', etiqueta: 'Ya girado', monto: girado, tono: 'exito' as const }]
-            : []),
-          {
-            clave: 'ultimo',
-            etiqueta: 'Último giro',
-            monto: 0,
-            tono: sello?.tono === 'exito' ? 'exito' : sello?.tono === 'aviso' ? 'aviso' : sello?.tono === 'peligro' ? 'critico' : 'neutro',
-            siempre: true,
-            cifra: giros.estado === 'cargando' ? '…' : ultimo ? formatCurrency(ultimo.valorCop) : '—',
-            extra: (
-              <p className="text-caption text-fg-muted">
-                {ultimo && sello
-                  ? `${nombreDelMes(ultimo.mes)} · ${sello.texto}`
-                  : giros.estado === 'listo'
-                    ? 'Todavía no te han girado'
-                    : giros.estado === 'fallo'
-                      ? 'No se pudo consultar ahora'
-                      : null}
-              </p>
-            ),
-            'data-testid': 'cifra-ultimo-giro',
-          },
-          ...(doc.proximaCuota !== undefined
+        /*
+          Revisora r27 (§3, «una cifra grande con 3+ datos chicos»): la leyenda lleva SÓLO lo que pinta la barra —ya
+          girado y por girar—; el último giro y el próximo van en renglones del pie (antes tres tramos con cifra
+          propia y su línea, dos de ellos con monto 0 fuera de la barra).
+        */
+        tramos={
+          conBarra && doc.porGirar
             ? [
-                {
-                  clave: 'proximo',
-                  etiqueta: 'Próximo giro',
-                  monto: 0,
-                  tono: 'neutro' as const,
-                  siempre: true,
-                  cifra: doc.proximaCuota ? formatCurrency(doc.proximaCuota.monto) : '—',
-                  extra: <p className="text-caption text-fg-muted">{doc.proximaCuota ? `El ${fechaCorta(doc.proximaCuota.fecha)}` : 'Nada por vencer'}</p>,
-                  'data-testid': 'cifra-proximo-giro',
-                },
-              ]
-            : []),
-          ...(doc.porGirar && porGirarCop > 0
-            ? [
+                { clave: 'girado', etiqueta: 'Ya girado', monto: girado, tono: 'exito' as const, cifra: formatCurrency(girado) },
                 {
                   clave: 'por-girar',
                   etiqueta: 'Por girar',
-                  monto: conBarra ? porGirarCop : 0,
+                  monto: porGirarCop,
                   tono: 'aviso' as const,
-                  siempre: true,
                   cifra: formatCurrency(doc.porGirar.porGirarCop),
                   extra: (
                     <p className="text-caption text-fg-muted">
@@ -152,14 +120,47 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
                   'data-testid': 'cifra-por-girar',
                 },
               ]
-            : []),
-        ]}
-        /* Revisora r25: los contratos no se cuentan otra vez como una cifra (la lista de abajo ya los
-           muestra): aquí sólo se dice de cuántos sale lo girado. */
+            : undefined
+        }
         pie={
-          <span data-testid="cifra-contratos-vigentes">
-            {doc.contratos.length === 1 ? 'De 1 contrato' : `De ${doc.contratos.length} contratos`},{' '}
-            {vigentes === 1 ? '1 vigente' : `${vigentes} vigentes`}
+          <span className="block space-y-1">
+            <span className="block" data-testid="cifra-ultimo-giro">
+              Último giro:{' '}
+              <span className="font-mono tabular-nums text-fg">
+                {giros.estado === 'cargando' ? '…' : ultimo ? formatCurrency(ultimo.valorCop) : '—'}
+              </span>
+              {' · '}
+              {ultimo && sello
+                ? `${nombreDelMes(ultimo.mes)} · ${sello.texto}`
+                : giros.estado === 'listo'
+                  ? 'Todavía no te han girado'
+                  : giros.estado === 'fallo'
+                    ? 'No se pudo consultar ahora'
+                    : null}
+            </span>
+            {doc.proximaCuota !== undefined ? (
+              <span className="block" data-testid="cifra-proximo-giro">
+                Próximo giro:{' '}
+                <span className="font-mono tabular-nums text-fg">{doc.proximaCuota ? formatCurrency(doc.proximaCuota.monto) : '—'}</span>
+                {' · '}
+                {doc.proximaCuota ? `El ${fechaCorta(doc.proximaCuota.fecha)}` : 'Nada por vencer'}
+              </span>
+            ) : null}
+            {!conBarra && doc.porGirar && porGirarCop > 0 ? (
+              <span className="block" data-testid="cifra-por-girar">
+                Por girar:{' '}
+                <span className="font-mono tabular-nums text-fg">{formatCurrency(doc.porGirar.porGirarCop)}</span>
+                {' · '}
+                {doc.porGirar.deduccionesCop > 0
+                        ? `Con ${formatCurrency(doc.porGirar.deduccionesCop)} descontados`
+                        : `Hasta ${nombreDelMes(doc.porGirar.hastaMes)}`}
+              </span>
+            ) : null}
+            {/* Revisora r25: los contratos no se cuentan otra vez como una cifra (la lista de abajo ya los muestra). */}
+            <span className="block" data-testid="cifra-contratos-vigentes">
+              {doc.contratos.length === 1 ? 'De 1 contrato' : `De ${doc.contratos.length} contratos`},{' '}
+              {vigentes === 1 ? '1 vigente' : `${vigentes} vigentes`}
+            </span>
           </span>
         }
       />

@@ -97,7 +97,9 @@ describe('TusGiros', () => {
       }),
     );
     expect(document.querySelector('[data-testid="cifra-por-girar"]')).toBeNull();
-    expect(document.querySelectorAll('[data-testid="tus-giros"] li').length).toBe(2);
+    // Revisora r27: la leyenda lleva sólo lo de la barra; sin barra no hay leyenda, y los contratos van al pie.
+    expect(document.querySelectorAll('[data-testid="tus-giros"] li').length).toBe(0);
+    expect(document.querySelector('[data-testid="cifra-contratos-vigentes"]')?.closest('li')).toBeNull();
   });
 
   it('con deducciones lo dice; sin próximo giro dice «Nada por vencer»', async () => {

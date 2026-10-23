@@ -736,11 +736,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       { key: 'facturacion', labelKey: 'inmobiliaria.nav.facturacion', href: r('/facturacion'), icon: Receipt, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
       // Conciliación (la Sala de su agente) se mudó a «Agentes IA» el 2026-09-16.
       { key: 'contabilidad', labelKey: 'inmobiliaria.nav.contabilidadCorta', href: r('/contabilidad'), icon: BookOpenText, module: null, roles: CONTABILIDAD_ROLES, scope: 'finanzas' },
-      // 🔴 NÓMINA es un módulo de PAGO (Nico, 17-09): `moduloPago` hace que la
-      // fila no exista para quien no lo compró — ni siquiera un instante mientras
-      // cargan los permisos, porque el gate falla cerrado. Y `CONTADOR_ROLES`
-      // porque «la ven sólo administrador y contador».
-      { key: 'nomina', labelKey: 'inmobiliaria.nav.nomina', href: r('/nomina'), icon: IdentificationBadge, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', moduloPago: 'nomina' },
+      // 🔴 NÓMINA es un módulo de PAGO. Decisión 29 de Nico (22-10, cambia la del 17-09): «debe de aparecer y si
+      // la inmobiliaria lo quiere, que lo pague». La fila se ve siempre (para administrador y contador); sin el
+      // módulo, la pantalla dice que es de pago y ofrece el plan. `moduloPago` sigue en el filtro para otros.
+      { key: 'nomina', labelKey: 'inmobiliaria.nav.nomina', href: r('/nomina'), icon: IdentificationBadge, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
     ],
   },
 

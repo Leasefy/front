@@ -30,6 +30,9 @@ import {
   type CajonDelInmueble,
 } from '@/lib/inmobiliaria/cajon-del-inmueble';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { useTr } from '@/lib/i18n/use-tr';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface ConsignacionFiltersState {
   search: string;
@@ -116,6 +119,13 @@ export function ConsignacionFilters({
   conteoComercial,
 }: ConsignacionFiltersProps) {
   const { t } = useI18n();
+  const tr = useTr();
+  /**
+   * Revisora r24 (Inmuebles #1): a 390 el primer inmueble quedaba fuera de la primera pantalla (tres renglones de
+   * filtros). En el celular, Propietario y Ciudad entran en «Filtros (n)», junto al buscador, y los cajones van en un
+   * riel de un renglón que se desliza de lado.
+   */
+  const enElCelular = useIsMobile();
 
   // Extract unique cities from consignaciones
   const uniqueCities = useMemo(() => {
@@ -144,7 +154,10 @@ export function ConsignacionFilters({
   };
 
   /** Cuántos de los filtros del botón «Filtros» están puestos (decisión 25). */
-  const filtrosEnElBoton = (filters.agenteId !== 'all' ? 1 : 0) + (filters.propertyType !== 'all' ? 1 : 0);
+  const filtrosEnElBoton =
+    (filters.agenteId !== 'all' ? 1 : 0) +
+    (filters.propertyType !== 'all' ? 1 : 0) +
+    (enElCelular ? (filters.propietarioId !== 'all' ? 1 : 0) + (filters.city !== 'all' ? 1 : 0) : 0);
 
   const clearAllFilters = () => {
     onFiltersChange({
@@ -180,6 +193,43 @@ export function ConsignacionFilters({
     return option ? t(option.labelKey) : t('inmobiliaria.consignaciones.filters.typeLabel');
   };
 
+  const propietarioYCiudad = (
+    <>
+          {/* Propietario Dropdown */}
+          <Select
+            value={filters.propietarioId}
+            onValueChange={(v) => updateFilter('propietarioId', v as ConsignacionFiltersState['propietarioId'])}
+          >
+            <SelectTrigger className={cn('w-full gap-2', !enElCelular && 'sm:w-auto sm:max-w-[160px]')}>
+              <span className="truncate">{getPropietarioLabel()}</span>
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              <SelectItem value="all">{t('inmobiliaria.consignaciones.filters.allOwners')}</SelectItem>
+              {propietarios.map((prop) => (
+                <SelectItem key={prop.id} value={prop.id}>{prop.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* City Dropdown */}
+          <Select
+            value={filters.city}
+            onValueChange={(v) => updateFilter('city', v as ConsignacionFiltersState['city'])}
+          >
+            <SelectTrigger className={cn('w-full gap-2', !enElCelular && 'sm:w-auto sm:min-w-[110px] sm:max-w-[160px]')}>
+              <span className="truncate">{getCityLabel()}</span>
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              <SelectItem value="all">{t('inmobiliaria.consignaciones.filters.allCities')}</SelectItem>
+              {uniqueCities.map((city) => (
+                <SelectItem key={city} value={city}>{city}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+    </>
+  );
+
   /*
    * IN-03 (QA 04-10): el filtro «Tipo» caía solo a un segundo renglón a 1440
    * px: los seis chips, el separador y los cuatro desplegables no cabían en una
@@ -190,12 +240,16 @@ export function ConsignacionFilters({
   return (
     <div className="p-4 space-y-3 border-b border-border">
       {/* Fila 1: buscador + desplegables */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center" data-testid="filtros-fila-1">
-        <div className="relative w-full lg:max-w-md lg:flex-1">
+      <div
+        className={cn('flex gap-3', enElCelular ? 'flex-row items-center gap-2' : 'flex-col lg:flex-row lg:items-center')}
+        data-testid="filtros-fila-1"
+      >
+        <div className={cn('relative', enElCelular ? 'min-w-0 flex-1' : 'w-full lg:max-w-md lg:flex-1')}>
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
           <Input
             type="text"
-            placeholder={t('inmobiliaria.consignaciones.filters.searchPlaceholder')}
+            // Revisora r24 (Inmuebles #6): a 390 el texto largo se cortaba («…propietario, inquili…»).
+            placeholder={enElCelular ? tr('Código, dirección o propietario') : t('inmobiliaria.consignaciones.filters.searchPlaceholder')}
             aria-label={t('inmobiliaria.consignaciones.filters.searchPlaceholder')}
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
@@ -215,49 +269,23 @@ export function ConsignacionFilters({
           </Presence>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:flex-nowrap" data-testid="filtros-desplegables">
-          {/* Propietario Dropdown */}
-          <Select
-            value={filters.propietarioId}
-            onValueChange={(v) => updateFilter('propietarioId', v as ConsignacionFiltersState['propietarioId'])}
-          >
-            <SelectTrigger className="w-full sm:w-auto sm:max-w-[160px] gap-2">
-              <span className="truncate">{getPropietarioLabel()}</span>
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              <SelectItem value="all">{t('inmobiliaria.consignaciones.filters.allOwners')}</SelectItem>
-              {propietarios.map((prop) => (
-                <SelectItem key={prop.id} value={prop.id}>{prop.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* City Dropdown */}
-          <Select
-            value={filters.city}
-            onValueChange={(v) => updateFilter('city', v as ConsignacionFiltersState['city'])}
-          >
-            <SelectTrigger className="w-full sm:w-auto sm:min-w-[110px] sm:max-w-[160px] gap-2">
-              <span className="truncate">{getCityLabel()}</span>
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              <SelectItem value="all">{t('inmobiliaria.consignaciones.filters.allCities')}</SelectItem>
-              {uniqueCities.map((city) => (
-                <SelectItem key={city} value={city}>{city}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div
+          className={cn(enElCelular ? 'flex shrink-0 items-center gap-1' : 'grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:flex-nowrap')}
+          data-testid="filtros-desplegables"
+        >
+          {enElCelular ? null : propietarioYCiudad}
 
           {/* Decisión 25 de Nico (22-10): en la fila, el buscador, Propietario y Ciudad; Asesor y Tipo van en
               «Filtros (n)», con cuántos de esos dos están puestos. */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" hideArrow className="w-full gap-2 sm:w-auto" data-testid="filtros-mas">
+              <Button variant="outline" size="sm" hideArrow className={cn('gap-2', enElCelular ? 'shrink-0' : 'w-full sm:w-auto')} data-testid="filtros-mas">
                 <Faders className="h-4 w-4" aria-hidden="true" />
                 {filtrosEnElBoton > 0 ? `Filtros (${filtrosEnElBoton})` : 'Filtros'}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-72 space-y-3" data-testid="filtros-mas-contenido">
+              {enElCelular ? propietarioYCiudad : null}
               {/* Agente Dropdown */}
               <Select
                 value={filters.agenteId}
@@ -308,7 +336,7 @@ export function ConsignacionFilters({
 
           {/* Clear Filters */}
           {/* «Limpiar» aparece con el primer filtro y se va al limpiarlos. */}
-          <Presence show={Boolean(hasAnyFilter)} direction="none" className="col-span-2 flex items-center sm:col-span-1">
+          <Presence show={Boolean(hasAnyFilter)} direction="none" className={cn('flex items-center', enElCelular ? 'shrink-0' : 'col-span-2 sm:col-span-1')}>
             <Button
               variant="ghost"
               size="sm"
@@ -316,15 +344,22 @@ export function ConsignacionFilters({
               onClick={clearAllFilters}
               className="gap-1.5 text-danger hover:bg-danger-soft hover:text-danger"
             >
-              <X className="w-4 h-4" />
-              {t('inmobiliaria.consignaciones.filters.clear')}
+              <X className="w-4 h-4" aria-hidden="true" />
+              {/* En el celular sólo la equis (el buscador necesita el ancho); el nombre sigue para el lector. */}
+              <span className={cn(enElCelular && 'sr-only')}>{t('inmobiliaria.consignaciones.filters.clear')}</span>
             </Button>
           </Presence>
         </div>
       </div>
 
       {/* Fila 2: los cajones, con su número EN el chip */}
-      <div className="flex flex-wrap items-center gap-1.5" data-testid="filtros-cajones">
+      <div
+        className={cn(
+          'flex items-center gap-1.5',
+          enElCelular ? '-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&>*]:shrink-0' : 'flex-wrap',
+        )}
+        data-testid="filtros-cajones"
+      >
         <Chip
           selected={filters.cajon === 'all'}
           onClick={() => updateFilter('cajon', 'all')}

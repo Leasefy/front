@@ -24,7 +24,8 @@ import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { COMISION_SIN_DEFINIR, textoCortoDeLaComision, textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { useTr } from '@/lib/i18n/use-tr';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
@@ -73,6 +74,7 @@ export function ConsignacionCard({
   comercial,
 }: ConsignacionCardProps) {
   const { t, locale } = useI18n();
+  const tr = useTr();
 
   // Availability status colors
   const AVAILABILITY_COLORS: Record<PropertyAvailability, { bg: string; text: string; label: string }> = useMemo(() => ({
@@ -81,9 +83,10 @@ export function ConsignacionCard({
       text: 'text-success',
       label: t('inmobiliaria.portafolio.card.availability.available'),
     },
+    // Revisora r24 (Inmuebles #3): «Arrendado» en neutro, como en la tabla (el azul es la acción).
     rented: {
-      bg: 'bg-primary-soft',
-      text: 'text-primary',
+      bg: 'bg-surface-muted',
+      text: 'text-fg-muted',
       label: t('inmobiliaria.portafolio.card.availability.rented'),
     },
     in_process: {
@@ -269,14 +272,21 @@ export function ConsignacionCard({
 
           {/* El canon (en venta, la comisión de venta: nunca «$ 0/mes», §A.2) y la comisión UNA vez (IN-03). */}
           {consignacion.listingType === 'sale' ? (
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="font-mono text-xl tabular-nums text-fg">{textoDeLaComision(consignacion)}</span>
-              <span className="text-body-sm text-fg-muted">{t('inmobiliaria.portafolio.card.saleCommission')}</span>
-              {/* Nico 14-10: la venta que entró sin precio. */}
-              {consignacion.canonPorConfirmar ? (
-                <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} esVenta />
-              ) : null}
-            </div>
+            // Revisora r24 (Inmuebles #3): sin comisión de venta no se pinta el renglón («— comisión de venta»), como en la tabla.
+            textoDeLaComision(consignacion) !== '—' || consignacion.canonPorConfirmar ? (
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                {textoDeLaComision(consignacion) !== '—' ? (
+                  <>
+                    <span className="font-mono text-xl tabular-nums text-fg">{textoDeLaComision(consignacion)}</span>
+                    <span className="text-body-sm text-fg-muted">{t('inmobiliaria.portafolio.card.saleCommission')}</span>
+                  </>
+                ) : null}
+                {/* Nico 14-10: la venta que entró sin precio. */}
+                {consignacion.canonPorConfirmar ? (
+                  <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} esVenta />
+                ) : null}
+              </div>
+            ) : null
           ) : (
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="font-mono text-xl tabular-nums text-fg">
@@ -295,7 +305,12 @@ export function ConsignacionCard({
                   + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.portafolio.card.admin')}
                 </span>
               )}
-              <span className="text-caption text-fg-muted">· {textoDeLaComision(consignacion)}</span>
+              {/* Revisora r24 (Inmuebles #4): el mismo nombre que la tabla («sin definir») y el «·» pegado a su texto. */}
+              <span className="whitespace-nowrap text-caption text-fg-muted" title={textoCortoDeLaComision(consignacion).explicacion}>
+                {textoCortoDeLaComision(consignacion).texto === COMISION_SIN_DEFINIR
+                  ? `· ${tr('Comisión sin definir')}`
+                  : `· ${tr('{comision} de comisión', { comision: textoDeLaComision(consignacion) })}`}
+              </span>
             </div>
           )}
 

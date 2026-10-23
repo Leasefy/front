@@ -1,5 +1,4 @@
 'use client';
-import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -623,20 +622,7 @@ function PortafolioContent() {
               },
             ]}
           />
-          <span className="text-sm text-fg-muted tabular-nums">
-            {/* «1 inmueble» / «N inmuebles»: el singular es su propia clave
-                (`…Uno`, como el resto del diccionario); antes decía
-                «1 inmuebles» (QA con avatares, 04-10). */}
-            {sePudoContar
-              ? t(
-                  filteredConsignaciones.length === 1
-                    ? 'inmobiliaria.portafolio.stats.propertyCountUno'
-                    : 'inmobiliaria.portafolio.stats.propertyCount',
-                  // Revisora r23 (Inmuebles #2): con separador de miles («2.923», VOZ §4).
-                  { count: filteredConsignaciones.length.toLocaleString(localeDeLasCifras()) },
-                )
-              : t('inmobiliaria.portafolio.stats.propertyCountSinContar')}
-          </span>
+          {/* Revisora r24 (Inmuebles #2): sin «2.923 inmuebles» aquí: lo dicen «Todos 2.923» y el pie de la tabla. */}
         </div>
 
         {/* Filters - Second */}

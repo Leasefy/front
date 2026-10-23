@@ -400,7 +400,7 @@ export function ConsignacionTable({
             <SortableHeader field="availability">
               {t('inmobiliaria.consignaciones.table.status')}
             </SortableHeader>
-            <SortableHeader field="monthlyRent">
+            <SortableHeader field="monthlyRent" className="text-right [&>button]:ml-auto">
               {t('inmobiliaria.consignaciones.table.rent')} · {t('inmobiliaria.consignaciones.table.commission')}
             </SortableHeader>
             {/* Sin ordenamiento: el `TH` del DS ya viste la etiqueta (mono 11px
@@ -574,8 +574,9 @@ export function ConsignacionTable({
                   otra cifra, así que aquí el número manda sobre el ancho — para
                   eso la tabla tiene su propio scroll horizontal.
                 */}
-                <TableCell className="px-3 py-3 whitespace-nowrap">
-                  <div>
+                {/* Revisora r24 (Inmuebles #5): el canon a la derecha, como en Contratos. */}
+                <TableCell className="px-3 py-3 whitespace-nowrap text-right">
+                  <div className="flex flex-col items-end">
                     {/*
                       contract-addendum-2.md §A.10 — CORRECTION: this used to
                       say only a `sinMandato` row could be a SALE listing.

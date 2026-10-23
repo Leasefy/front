@@ -336,4 +336,8 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Por dónde buscar": "Where to look",
   "La cuenta, renglón por renglón": "The math, line by line",
   "Qué es «{nombre}»": "What “{nombre}” is",
+  // Revisora r24, Inmuebles (filtros y tarjeta)
+  "Código, dirección o propietario": "Code, address or owner",
+  "Comisión sin definir": "Commission not set",
+  "{comision} de comisión": "{comision} commission",
 }

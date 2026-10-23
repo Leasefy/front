@@ -547,19 +547,26 @@ function ConciliacionConexiones() {
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-body font-medium text-fg">Conexiones registradas</h2>
-            <p className="text-caption text-fg-muted">
-              De aquí salen los movimientos que la conciliación atribuye a un origen.
-            </p>
           </div>
-          <Button
-            hideArrow
-            className="shrink-0"
-            onClick={() => setRegistrando(true)}
-            data-testid="conexiones-abrir-registro"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            Registrar una conexión
-          </Button>
+          {/* Revisora r25 (Conexiones, prevenir): con el servicio caído el formulario
+              fallaría; el botón se apaga y dice por qué, como «Conciliar N movimientos». */}
+          <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+            <Button
+              hideArrow
+              onClick={() => setRegistrando(true)}
+              disabled={backendUnavailable}
+              aria-describedby={backendUnavailable ? 'conexiones-por-que-no' : undefined}
+              data-testid="conexiones-abrir-registro"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Registrar una conexión
+            </Button>
+            {backendUnavailable ? (
+              <p id="conexiones-por-que-no" className="text-caption text-fg-muted" data-testid="conexiones-por-que-no">
+                Se podrá registrar cuando el servicio de conciliación responda.
+              </p>
+            ) : null}
+          </div>
         </div>
         <EstadoDeDatos
           cargando={isLoading && items.length === 0}

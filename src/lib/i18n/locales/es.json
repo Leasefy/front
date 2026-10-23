@@ -11469,7 +11469,7 @@
     },
     "properties": {
       "title": "Mis inmuebles",
-      "subtitle": "Gestiona tus inmuebles publicados",
+      "subtitle": "Tus inmuebles publicados, cómo va cada uno y quién se postuló.",
       "newProperty": "Nuevo inmueble",
       "totalProperties": "Total inmuebles",
       "available": "Disponibles",
@@ -11747,7 +11747,7 @@
     },
     "visits": {
       "title": "Visitas",
-      "subtitle": "Gestiona las visitas programadas a tus inmuebles",
+      "subtitle": "Quién quiere ver tus inmuebles y cuándo: confirma o reprograma cada visita.",
       "scheduleButton": "Agendar visita",
       "totalVisits": "Total visitas",
       "pendingVisits": "Pendientes",
@@ -11833,8 +11833,8 @@
       "visitStatusNoShow": "No asistió"
     },
     "leases": {
-      "title": "Arriendos Activos",
-      "subtitle": "Gestiona tus inmuebles arrendados y seguimiento de pagos",
+      "title": "Arriendos",
+      "subtitle": "Tus inmuebles arrendados y cómo va el pago de cada uno.",
       "activeLeases": "Arriendos activos",
       "activeLeasesSubLabel": "Inmuebles arrendados",
       "monthlyIncome": "Ingresos mensuales",

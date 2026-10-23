@@ -128,7 +128,8 @@ export default function PropiedadesPage() {
           titulo={t('landlord.properties.title')}
           descripcion={t('landlord.properties.subtitle')}
           accionPrincipal={
-            <Button asChild hideArrow>
+            // Revisora r25: a 390 el botón a lo ancho dice lo que hace (antes un «+» solo en un botón azul ancho).
+            <Button asChild size="sm" hideArrow className="max-lg:flex-1">
               <Link
                 href="/publicar?from=panel"
                 aria-label={t('landlord.properties.newProperty')}
@@ -136,7 +137,7 @@ export default function PropiedadesPage() {
                 data-testid="nueva-propiedad"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">{t('landlord.properties.newProperty')}</span>
+                <span>{t('landlord.properties.newProperty')}</span>
               </Link>
             </Button>
           }

@@ -82,13 +82,14 @@ describe('Mis propiedades — carga, error y vacío', () => {
 });
 
 describe('Mis propiedades — a 390 px', () => {
-  it('«Nueva Propiedad» lleva su nombre y en pantallas chicas sólo el «+» (el texto, desde sm)', () => {
+  // Revisora r25: a 390 el botón va a lo ancho, así que dice lo que hace (antes un «+» solo en un botón azul ancho).
+  it('«Nuevo inmueble» lleva su nombre, también en pantallas chicas', () => {
     pintar({});
     const boton = $('[data-testid="nueva-propiedad"]') as HTMLAnchorElement;
     expect(boton.getAttribute('aria-label')).toBe(T.newProperty);
     const texto = boton.querySelector('span');
-    expect(texto?.className).toContain('hidden');
-    expect(texto?.className).toContain('sm:inline');
+    expect(texto?.textContent).toBe(T.newProperty);
+    expect(texto?.className ?? '').not.toContain('hidden');
   });
 
   it('el filtro de estado se desplaza dentro de su riel, no la página', () => {

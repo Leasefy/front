@@ -18,7 +18,7 @@
 import { useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
-import { Eyebrow } from '@leasefy/cadence'
+import { LeasefyLogotype } from '@/components/brand'
 import { useAvaluoStatus } from '@/lib/hooks/use-avaluo-status'
 import { AvaluoEstadoCard } from '@/components/avaluo/AvaluoEstadoCard'
 import { readCapToken } from '@/lib/api/avaluo.service'
@@ -67,14 +67,17 @@ export default function AvaluoEstadoPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <main className="min-h-screen bg-bg py-16 px-4">
-      <div className="mx-auto max-w-xl space-y-8">
-        {/* Header */}
-        <div className="space-y-1">
-          <Eyebrow>Avalúo comercial</Eyebrow>
-          <h1 className="text-h2">Estado de tu avalúo</h1>
+    <main className="min-h-screen bg-bg px-4 pb-16 pt-6 sm:pt-10">
+      <div className="mx-auto max-w-xl space-y-6">
+        <LeasefyLogotype className="h-5 w-auto text-fg" title="Leasefy" />
+        {/* El encabezado de la casa: rótulo, título liviano y la referencia. */}
+        <div className="space-y-2">
+          <p className="text-caption text-fg-subtle">Avalúo comercial</p>
+          <h1 className="text-balance font-heading text-[26px] font-[420] leading-[1.12] tracking-[-0.025em] text-fg sm:text-[30px]">
+            Estado de tu avalúo
+          </h1>
           {submissionId && (
-            <p className="text-sm text-fg-muted font-mono tabular-nums">
+            <p className="break-all font-mono text-caption tabular-nums text-fg-muted">
               Referencia: {submissionId}
             </p>
           )}

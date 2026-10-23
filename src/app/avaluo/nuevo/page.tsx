@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 
 /**
  * /avaluo/nuevo — RETIRED in-app wizard.
@@ -17,12 +19,18 @@ export default function NuevoAvaluoRedirectPage() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-8 text-center">
-      <p className="text-sm text-fg-muted">
-        {AVALUO_WIZARD_URL
-          ? 'Redirigiendo a la solicitud de avalúo…'
-          : 'La solicitud de avalúo no está disponible por ahora.'}
-      </p>
+    <main className="flex min-h-screen items-center justify-center bg-bg p-8 text-center">
+      {AVALUO_WIZARD_URL ? (
+        <CargaDeMarca tamano="md" disposicion="apilada" texto="Abriendo la solicitud de avalúo…" className="flex" />
+      ) : (
+        // Sin la solicitud disponible, una salida: la portada de avalúos.
+        <div className="space-y-3">
+          <p className="text-body-sm text-fg-muted">La solicitud de avalúo no está disponible por ahora.</p>
+          <Link href="/avaluo" className="text-body-sm text-fg underline underline-offset-4">
+            Volver a Avalúos
+          </Link>
+        </div>
+      )}
     </main>
   );
 }

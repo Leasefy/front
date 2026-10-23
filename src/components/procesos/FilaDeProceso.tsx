@@ -60,6 +60,9 @@ import { useDetenerEnElNavegador } from './detener-en-el-navegador'
 import { DetalleDelProceso } from './DetalleDelProceso'
 import {
   NOMBRE_DEL_ESTADO,
+  fallasDelProceso,
+  resultadoDelProceso,
+  textoDelProceso,
   avanceEnPalabras,
   estaActivo,
   etapaYMensaje,
@@ -156,13 +159,25 @@ export function FilaDeProceso({
   const reintentar = p.estado === 'FALLO' ? reintentoDirecto(p) : null
   const IconoTipo = ICONO_DEL_TIPO[p.tipo] ?? (p.archivo?.tipo === 'application/zip' ? FileZip : FileArrowDown)
 
+  const resultadoFinal = resultadoDelProceso(p)
+  const fallas = fallasDelProceso(p)
   const estadoEnPalabras = p.interrumpido
     ? 'Se interrumpió'
     : p.cancelacionPedida && activo
       ? 'Deteniendo…'
       : deteniendo
         ? 'Deteniendo…'
-        : NOMBRE_DEL_ESTADO[p.estado]
+        : resultadoFinal === 'con-fallas'
+          ? 'Terminó con fallas'
+          : resultadoFinal === 'nada-salio'
+            ? NOMBRE_DEL_ESTADO.FALLO
+            : NOMBRE_DEL_ESTADO[p.estado]
+  const colorDelEstado =
+    resultadoFinal === 'con-fallas'
+      ? 'text-warning-700 dark:text-warning-100'
+      : resultadoFinal === 'nada-salio'
+        ? COLOR_DEL_ESTADO.FALLO
+        : COLOR_DEL_ESTADO[p.estado]
 
   const descargar = async () => {
     setBajando(true)
@@ -244,6 +259,11 @@ export function FilaDeProceso({
         >
           {p.estado === 'CORRIENDO' ? (
             <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent motion-safe:animate-spin" />
+          ) : p.estado === 'TERMINADO' && resultadoFinal !== 'limpio' ? (
+            <WarningCircle
+              weight="fill"
+              className={cn('h-4 w-4', resultadoFinal === 'nada-salio' ? 'text-danger' : 'text-warning-500')}
+            />
           ) : p.estado === 'TERMINADO' ? (
             <CheckCircle weight="fill" className="h-4 w-4 text-success" />
           ) : p.estado === 'FALLO' ? (
@@ -258,12 +278,13 @@ export function FilaDeProceso({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <p className="min-w-0 flex-1 truncate text-body-sm font-medium text-fg" title={p.titulo}>
-            {p.titulo}
+          <p className="min-w-0 flex-1 truncate text-body-sm font-medium text-fg" title={textoDelProceso(p.titulo)}>
+            {textoDelProceso(p.titulo)}
           </p>
           <span
-            className={cn('shrink-0 text-caption font-medium', COLOR_DEL_ESTADO[p.estado])}
+            className={cn('shrink-0 text-caption font-medium', colorDelEstado)}
             data-testid="estado-del-proceso"
+            data-resultado={resultadoFinal}
           >
             {estadoEnPalabras}
           </span>
@@ -322,7 +343,7 @@ export function FilaDeProceso({
             title={compacta ? mensaje : undefined}
             data-testid="mensaje-del-proceso"
           >
-            {mensaje}
+            {textoDelProceso(mensaje)}
           </p>
         )}
 
@@ -337,6 +358,7 @@ export function FilaDeProceso({
             <Button
               type="button"
               size="sm"
+              variant="outline"
               hideArrow
               onClick={() => void descargar()}
               disabled={bajando}
@@ -379,7 +401,9 @@ export function FilaDeProceso({
             </AccionSuave>
           )}
           <AccionSuave onClick={verDetalle} testId="ver-detalle-proceso" icono={ListBullets}>
-            Ver detalle
+            {resultadoFinal !== 'limpio' && fallas > 0
+              ? `Ver ${fallas === 1 ? 'el que falló' : `los ${fallas} que fallaron`}`
+              : 'Ver detalle'}
           </AccionSuave>
         </div>
       </div>

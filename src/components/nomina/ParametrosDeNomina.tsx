@@ -46,6 +46,9 @@ import { SIN_MEDIR } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Avisos, ParaValidar, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 
 /** Las tres cifras que fija el Estado: plata, con su tope (🔁 el del back). */
 type CifraDelEstado = keyof typeof TOPE_DE_LAS_CIFRAS_DEL_ESTADO;
@@ -281,8 +284,26 @@ function Formulario({
   const referencia = datos.propuesta?.referencia ?? null;
   const cargado = datos.guardado;
 
+  const cifrasDelEstado = ['salarioMinimoCop', 'auxilioTransporteCop', 'uvtCop'] as const;
+  const cargadas = cifrasDelEstado.filter((c) => cargado?.[c] != null).length;
+
   return (
     <div className="space-y-6">
+      {/* GLOW UP 3.ª vuelta · LA RESPUESTA: si las cifras del año están para liquidar, y quién
+          las confirmó. Los factores de ley, que casi nunca se tocan, quedan plegados abajo. */}
+      <CifraHeroe
+        rotulo={`Cifras del Estado para ${anio}`}
+        cifra={`${cargadas} de 3`}
+        contexto={
+          !cargado
+            ? 'sin cargar todavía: sin ellas no se liquida'
+            : cargado.confirmadoAt
+              ? `cargadas y confirmadas por el contador el ${fechaCorta(cargado.confirmadoAt.slice(0, 10))}`
+              : 'cargadas, sin confirmar por el contador'
+        }
+        data-testid="cifra-de-parametros"
+      />
+
       {!datos.completos ? (
         <Avisos
           avisos={[
@@ -330,7 +351,7 @@ function Formulario({
             <>
               <p>
                 <strong className="text-fg">Cargadas</strong> el{' '}
-                {cargado.cargadoAt.slice(0, 10)}
+                {fechaCorta(cargado.cargadoAt.slice(0, 10))}
                 {datos.cargadoPor?.nombre
                   ? ` por ${datos.cargadoPor.nombre}`
                   : ' (no se pudo resolver quién)'}
@@ -340,7 +361,7 @@ function Formulario({
                 {cargado.confirmadoAt ? (
                   <>
                     <strong className="text-fg">Confirmadas</strong> el{' '}
-                    {cargado.confirmadoAt.slice(0, 10)}
+                    {fechaCorta(cargado.confirmadoAt.slice(0, 10))}
                     {datos.confirmadoPor?.nombre
                       ? ` por ${datos.confirmadoPor.nombre}`
                       : ''}
@@ -410,6 +431,12 @@ function Formulario({
       ) : null}
 
       {/* ── Los factores ─────────────────────────────────────────────────── */}
+      <MasDetalles
+        etiqueta="Los factores de ley: horas extras, seguridad social y prestaciones"
+        etiquetaAbierto="Ocultar los factores"
+        montadoSiempre
+        classNameDelContenido="space-y-6"
+      >
       {GRUPOS.map((g) => (
         <section key={g.titulo} className="space-y-3">
           <TituloDeBloque titulo={g.titulo} explicacion={g.explicacion} />
@@ -443,6 +470,7 @@ function Formulario({
           </div>
         </section>
       ))}
+      </MasDetalles>
 
       {/* ── La exoneración ───────────────────────────────────────────────── */}
       <section className="space-y-3">
@@ -483,6 +511,7 @@ function Formulario({
         <ErrorDelCampo id="notas-de-parametros-error" mensaje={errores.delServidor.notas} />
         <div className="flex flex-wrap gap-2">
           <Button
+            size="sm"
             onClick={() => void guardar(false)}
             disabled={guardando}
             data-testid="guardar-parametros"
@@ -490,6 +519,7 @@ function Formulario({
             Guardar
           </Button>
           <Button
+            size="sm"
             variant="outline"
             onClick={() => void guardar(true)}
             disabled={guardando}
@@ -497,7 +527,7 @@ function Formulario({
           >
             Guardar y marcar como confirmados por el contador
           </Button>
-          <Button variant="ghost" onClick={reset} disabled={guardando}>
+          <Button size="sm" variant="ghost" onClick={reset} disabled={guardando}>
             Deshacer los cambios
           </Button>
         </div>

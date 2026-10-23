@@ -143,7 +143,7 @@ export default function FirmaDelMandatoPage() {
 
   // Los tres pasos de siempre, a la vista: dónde va y cuántos le faltan.
   const pasos: PasoDelEnlace[] = [
-    { titulo: 'Lee y acepta el mandato', estado: enviado || acepto ? 'hecho' : 'actual' },
+    { titulo: 'Lee y acepta', estado: enviado || acepto ? 'hecho' : 'actual' },
     { titulo: 'Pide el código', estado: enviado ? 'hecho' : acepto ? 'actual' : 'pendiente' },
     { titulo: 'Firma', estado: enviado ? 'actual' : 'pendiente' },
   ];

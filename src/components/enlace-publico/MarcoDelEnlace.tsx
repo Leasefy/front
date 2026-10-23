@@ -162,39 +162,58 @@ export interface PasoDelEnlace {
 }
 
 /**
- * Los pasos de un trámite por enlace, en una fila: dónde va la persona y
- * cuántos le faltan (el mandato: leerlo → pedir el código → firmar).
+ * Los pasos de un trámite por enlace: dónde va la persona y cuántos le faltan
+ * (el mandato: leerlo → pedir el código → firmar). Columnas iguales —el
+ * círculo y la línea arriba, el nombre debajo—, así no se parte a medias ni a
+ * 1440 ni a 390.
  */
 export function PasosDelEnlace({ pasos, etiqueta }: { pasos: PasoDelEnlace[]; etiqueta: string }) {
   return (
-    <ol aria-label={etiqueta} className="flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="pasos-del-enlace">
+    <ol
+      aria-label={etiqueta}
+      className="grid gap-x-2"
+      style={{ gridTemplateColumns: `repeat(${pasos.length}, minmax(0, 1fr))` }}
+      data-testid="pasos-del-enlace"
+    >
       {pasos.map((paso, i) => (
         <li
           key={paso.titulo}
           aria-current={paso.estado === 'actual' ? 'step' : undefined}
-          className={cn(
-            'flex items-center gap-2 text-caption',
-            paso.estado === 'actual' ? 'text-fg' : paso.estado === 'hecho' ? 'text-fg-muted' : 'text-fg-subtle',
-          )}
+          className="flex min-w-0 flex-col gap-1.5"
         >
+          <div className="flex items-center gap-2" aria-hidden="true">
+            <span
+              className={cn(
+                'flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-caption leading-none tabular-nums transition-colors duration-slow ease-standard',
+                paso.estado === 'actual'
+                  ? 'bg-fg text-bg'
+                  : paso.estado === 'hecho'
+                    ? 'bg-success-soft text-success'
+                    : 'border border-border text-fg-subtle',
+              )}
+            >
+              {paso.estado === 'hecho' ? <CheckCircle className="h-4 w-4" weight="fill" /> : i + 1}
+            </span>
+            {i < pasos.length - 1 ? (
+              <span
+                className={cn(
+                  'h-px flex-1 transition-colors duration-slow ease-standard',
+                  paso.estado === 'hecho' ? 'bg-success/40' : 'bg-border',
+                )}
+              />
+            ) : null}
+          </div>
           <span
-            aria-hidden="true"
             className={cn(
-              'flex h-5 min-w-5 items-center justify-center rounded-full px-1 font-mono text-caption leading-none tabular-nums',
-              paso.estado === 'actual'
-                ? 'bg-fg text-bg'
-                : paso.estado === 'hecho'
-                  ? 'bg-success-soft text-success'
-                  : 'border border-border text-fg-subtle',
+              'text-caption leading-snug',
+              paso.estado === 'actual' ? 'text-fg' : paso.estado === 'hecho' ? 'text-fg-muted' : 'text-fg-subtle',
             )}
           >
-            {paso.estado === 'hecho' ? <CheckCircle className="h-3.5 w-3.5" weight="fill" /> : i + 1}
-          </span>
-          <span>
-            <span className="sr-only">{paso.estado === 'hecho' ? 'Hecho: ' : paso.estado === 'actual' ? 'Ahora: ' : 'Después: '}</span>
+            <span className="sr-only">
+              {paso.estado === 'hecho' ? 'Hecho: ' : paso.estado === 'actual' ? 'Ahora: ' : 'Después: '}
+            </span>
             {paso.titulo}
           </span>
-          {i < pasos.length - 1 ? <span aria-hidden="true" className="h-px w-4 bg-border" /> : null}
         </li>
       ))}
     </ol>

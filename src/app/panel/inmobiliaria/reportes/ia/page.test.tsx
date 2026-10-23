@@ -226,7 +226,7 @@ describe('🔴 QA-IA-95 (IA95-08): los agentes con manos tienen tarjeta', () => 
   it('sin poder leerlo, lo dice (no pinta ceros)', async () => {
     conManos.valor = { data: { disponible: false, dias: 30, recortado: false, agentes: [] }, isLoading: false, error: null, sinLaRuta: false, refetch: () => {} }
     await render()
-    expect(container.querySelector('[data-testid="desempeno-con-manos-sin-dato"]')?.textContent).toContain('No pudimos leer')
+    expect(container.querySelector('[data-testid="desempeno-con-manos-sin-dato"]')?.textContent).toContain('Todavía no se puede contar') // Ronda 30, a propósito: sin primera persona
   })
 })
 

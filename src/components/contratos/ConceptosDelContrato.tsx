@@ -417,23 +417,23 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             </RadioCardGroup>
           </div>
 
+          {/* Nico 22-10: el calendario sale apenas se elige «En los meses que
+              elijo», también sin concepto (los meses son los del contrato; el
+              concepto sólo dice de quién son las cuotas ya pagadas, y al elegirlo
+              se vuelven a leer sin perder los meses marcados). */}
           <Presence show={cuando === 'MESES'} direction="down">
-            {elegido ? (
-              <MesesDelConcepto
-                contractId={contract.id}
-                paga={catalogoActivo.find((c) => c.clave === elegido)?.paga ?? 'INQUILINO'}
-                total={Number(valor) || 0}
-                conCentavos={conCentavos}
-                valor={meses}
-                onCambiar={(m) => {
-                  setMeses(m)
-                  setErrorDeLosMeses(null)
-                }}
-                error={errorDeLosMeses}
-              />
-            ) : (
-              <p className="text-caption text-muted-foreground">Elige primero el concepto: de quién lo paga depende qué cuotas se miran.</p>
-            )}
+            <MesesDelConcepto
+              contractId={contract.id}
+              paga={catalogoActivo.find((c) => c.clave === elegido)?.paga ?? 'INQUILINO'}
+              total={Number(valor) || 0}
+              conCentavos={conCentavos}
+              valor={meses}
+              onCambiar={(m) => {
+                setMeses(m)
+                setErrorDeLosMeses(null)
+              }}
+              error={errorDeLosMeses}
+            />
           </Presence>
 
           <div className="flex gap-2">

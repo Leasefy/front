@@ -22,7 +22,14 @@ import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { contractsApi, type ConceptoDelContrato, type MesParaUnConcepto } from '@/lib/api/contracts.service'
-import { enPartesIguales, mesCorto, mesEnPalabras, sumaDeLasPartes, sumanElTotal } from '@/lib/contratos/meses-del-concepto'
+import {
+  calendarioDeMeses,
+  enPartesIguales,
+  mesEnPalabras,
+  nombreCortoDelMes,
+  sumaDeLasPartes,
+  sumanElTotal,
+} from '@/lib/contratos/meses-del-concepto'
 
 export interface MesElegido {
   mes: string
@@ -100,6 +107,8 @@ export function MesesDelConcepto({
   }, [total])
 
   const elegidos = useMemo(() => new Set(valor.map((v) => v.mes)), [valor])
+  const porMes = useMemo(() => new Map((meses ?? []).map((m) => [m.mes, m])), [meses])
+  const calendario = useMemo(() => calendarioDeMeses((meses ?? []).map((m) => m.mes)), [meses])
   const noSePueden = useMemo(() => new Map((meses ?? []).filter((m) => !m.sePuede).map((m) => [m.mes, m.porQue ?? 'PAGADA'])), [meses])
   /** Repartir el total en partes iguales entre estos meses (en orden). */
   const repartir = (lista: string[]) => onCambiar(enPartesIguales(total > 0 ? total : 0, [...lista].sort(), conCentavos))
@@ -163,31 +172,65 @@ export function MesesDelConcepto({
         </Button>
       </div>
 
-      <div className="space-y-1">
-        <p className="text-caption text-muted-foreground">O elige los meses (seguidos o sueltos):</p>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Meses del contrato">
-          {meses.map((m) => {
-            const activo = elegidos.has(m.mes)
-            return (
-              <button
-                key={m.mes}
-                type="button"
-                aria-pressed={activo}
-                title={m.sePuede ? mesEnPalabras(m.mes) : `${mesEnPalabras(m.mes)}: ${m.porQue === 'VENCIDA' ? 'ya venció' : 'ya está pagado'}; el valor pasa a la próxima cuota sin pagar`}
-                onClick={() => alternar(m.mes)}
-                className={cn(
-                  'rounded-full border px-2.5 py-1 text-caption tabular-nums transition-colors',
-                  activo ? 'border-primary bg-primary-soft text-foreground' : 'border-border text-muted-foreground hover:text-foreground',
-                  !m.sePuede && !activo && 'border-dashed',
-                )}
-                data-testid={`mes-${m.mes}`}
-              >
-                {mesCorto(m.mes)}
-                {!m.sePuede ? <span className="ml-1 text-[10px]">· {m.porQue === 'VENCIDA' ? 'vencido' : 'pagado'}</span> : null}
-              </button>
-            )
-          })}
+      {/* Nico 22-10: «no veo un calendario que deje elegir los meses». Cada año
+          con sus 12 meses; los de fuera del contrato quedan en gris. */}
+      <div className="space-y-1.5">
+        <p className="text-caption text-muted-foreground">O marca en el calendario los meses en que se cobra (seguidos o sueltos):</p>
+        <div
+          className="space-y-3 rounded-md border border-border p-3"
+          role="group"
+          aria-label="Calendario de los meses del contrato"
+          data-testid="calendario-de-meses"
+        >
+          {calendario.map(({ anio, meses: delAnio }) => (
+            <div key={anio} className="space-y-1.5">
+              <p className="text-caption font-medium tabular-nums text-foreground">{anio}</p>
+              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6">
+                {delAnio.map((mes) => {
+                  const m = porMes.get(mes)
+                  if (!m) {
+                    return (
+                      <span
+                        key={mes}
+                        aria-hidden="true"
+                        className="flex h-11 items-center justify-center rounded-md text-caption text-muted-foreground/40"
+                        data-testid={`fuera-${mes}`}
+                      >
+                        {nombreCortoDelMes(mes)}
+                      </span>
+                    )
+                  }
+                  const activo = elegidos.has(mes)
+                  const estado = m.sePuede ? null : m.porQue === 'VENCIDA' ? 'vencido' : 'pagado'
+                  return (
+                    <button
+                      key={mes}
+                      type="button"
+                      aria-pressed={activo}
+                      aria-label={estado ? `${mesEnPalabras(mes)}, ${estado}` : mesEnPalabras(mes)}
+                      title={estado ? `${mesEnPalabras(mes)}: ${estado === 'vencido' ? 'ya venció' : 'ya está pagado'}; el valor pasa a la próxima cuota sin pagar` : mesEnPalabras(mes)}
+                      onClick={() => alternar(mes)}
+                      className={cn(
+                        'flex h-11 flex-col items-center justify-center rounded-md border text-caption leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        activo
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-background text-foreground hover:border-primary/60 hover:bg-primary-soft',
+                        !m.sePuede && !activo && 'border-dashed text-muted-foreground',
+                      )}
+                      data-testid={`mes-${mes}`}
+                    >
+                      <span className="font-medium">{nombreCortoDelMes(mes)}</span>
+                      {estado ? <span className="text-[10px] opacity-80">{estado}</span> : null}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
+        <p className="text-caption text-muted-foreground">
+          En gris, los meses fuera del contrato. Si marcas uno pagado o vencido, su valor va en la próxima cuota sin pagar.
+        </p>
       </div>
 
       <Presence show={valor.length > 0} direction="down">

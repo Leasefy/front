@@ -93,6 +93,21 @@ describe('MesesDelConcepto', () => {
     expect(container.textContent).toContain('Ya está pagado: va en la próxima cuota sin pagar.')
   })
 
+  it('es un calendario: cada año con sus 12 meses, los de fuera del contrato en gris y sin botón', async () => {
+    await montar(600_000)
+    const cal = q('[data-testid="calendario-de-meses"]')!
+    expect(cal.textContent).toContain('2026')
+    expect(cal.textContent).toContain('2027')
+    // 2026 y 2027 completos: 24 casillas, 6 del contrato (botones) y 18 fuera.
+    expect(cal.querySelectorAll('button[data-testid^="mes-"]').length).toBe(6)
+    expect(cal.querySelectorAll('[data-testid^="fuera-"]').length).toBe(18)
+    expect(q('[data-testid="fuera-2026-01"]')?.textContent).toBe('Ene')
+    expect(q('[data-testid="mes-2026-12"]')?.textContent).toBe('Dic')
+    // Marcado se ve presionado; diferir pinta los meses en el mismo calendario.
+    await clic('[data-testid="mes-2026-12"]')
+    expect(q('[data-testid="mes-2026-12"]')?.getAttribute('aria-pressed')).toBe('true')
+  })
+
   it('sin la actualización de Leasefy lo dice y no deja elegir', async () => {
     h.meses.mockResolvedValue({ disponible: false, meses: [] })
     await montar(300_000)

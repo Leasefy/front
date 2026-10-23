@@ -316,7 +316,7 @@ function RequestsTable({
                 </Link>
                 {/* La cédula sólo existe hasheada; ver `cedulaRef`. */}
                 <p
-                  className="mt-0.5 font-mono text-[11px] uppercase tracking-wide text-fg-subtle"
+                  className="mt-0.5 font-mono text-caption uppercase tracking-wide text-fg-subtle"
                   title={t(`${NS}.table.refHint`)}
                 >
                   {t(`${NS}.table.ref`)} {row.cedulaRef}
@@ -597,7 +597,7 @@ function BandejaArco() {
                 {t(`${NS}.tab.${tab}`)}
                 <Badge
                   variant={hasOverdue ? 'destructive' : 'secondary'}
-                  className="px-1.5 py-0.5 font-mono text-[11px] tabular-nums"
+                  className="px-1.5 py-0.5 font-mono text-caption tabular-nums"
                 >
                   <AnimatedNumber value={count} format={(n) => String(Math.round(n))} />
                 </Badge>

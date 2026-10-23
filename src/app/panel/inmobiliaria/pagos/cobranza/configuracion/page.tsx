@@ -41,7 +41,7 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { ArrowLeft, Warning, FloppyDisk, LockSimple } from '@phosphor-icons/react'
+import { Warning, FloppyDisk, LockSimple } from '@phosphor-icons/react'
 import { CrossFade, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -551,7 +551,6 @@ function CobranzaConfiguracionContent() {
         {volverA === 'acuerdos' && (
           <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2 mb-2">
             <Link href={`${COBRANZA_BASE}/acuerdos`}>
-              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
               Volver a Acuerdos de pago
             </Link>
           </Button>
@@ -560,9 +559,14 @@ function CobranzaConfiguracionContent() {
           seccion="Cobranza"
           titulo="Configuración de cobranza"
           descripcion={
-            !canEdit ? (
-              <span data-testid="readonly-banner">Tu rol solo tiene acceso de lectura a esta configuración.</span>
-            ) : undefined
+            <>
+              Cómo cobra el agente: con qué sistemas habla, cuánto decide solo, en qué horario y cómo te reporta.
+              {!canEdit ? (
+                <span data-testid="readonly-banner" className="block">
+                  Tu rol solo tiene acceso de lectura a esta configuración.
+                </span>
+              ) : null}
+            </>
           }
         />
       </div>
@@ -584,7 +588,7 @@ function CobranzaConfiguracionContent() {
           aria-labelledby="heading-comercial"
         >
           <div>
-            <h2 id="heading-comercial" className="text-xl font-medium text-foreground">
+            <h2 id="heading-comercial" className="text-lg font-normal text-foreground">
               Facturación e integraciones
             </h2>
             <p className="text-sm text-fg-muted mt-1">
@@ -685,7 +689,7 @@ function CobranzaConfiguracionContent() {
         aria-labelledby="heading-autonomia"
       >
         <div>
-          <h2 id="heading-autonomia" className="text-xl font-medium text-foreground">
+          <h2 id="heading-autonomia" className="text-lg font-normal text-foreground">
             Autonomía
           </h2>
           <p className="text-sm text-fg-muted mt-1">
@@ -776,7 +780,7 @@ function CobranzaConfiguracionContent() {
         aria-labelledby="heading-horario"
       >
         <div>
-          <h2 id="heading-horario" className="text-xl font-medium text-foreground">
+          <h2 id="heading-horario" className="text-lg font-normal text-foreground">
             Horario y frecuencia
           </h2>
           <p className="text-sm text-fg-muted mt-1">
@@ -810,7 +814,7 @@ function CobranzaConfiguracionContent() {
         aria-labelledby="heading-reporte"
       >
         <div>
-          <h2 id="heading-reporte" className="text-xl font-medium text-foreground">
+          <h2 id="heading-reporte" className="text-lg font-normal text-foreground">
             Reporte diario
           </h2>
           <p className="text-sm text-fg-muted mt-1">

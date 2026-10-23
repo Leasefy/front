@@ -30,6 +30,7 @@ import { useArcoGate } from '@/lib/hooks/cobranza/use-arco-gate'
 import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdownBadge'
 import { ArcoStatusBadge } from '@/components/inmobiliaria/cobranza/ArcoStatusBadge'
 import { BackButton } from '@/components/ui/back-button'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
@@ -955,28 +956,28 @@ function DetalleArco(props: ArcoDetailPageProps) {
       {/* El estado va acá arriba y no sólo en la bandeja: al abrir una
           solicitud no había forma de ver en qué estado está — había que
           deducirlo del último evento del timeline. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.arco.detail.title')}
-          </h1>
-          <ArcoStatusBadge status={detail.status} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {detail.status === 'pending_admin_triage' && (
-            <TriageButton requestId={params.id} detailRefetch={detailRefetch} t={t} />
-          )}
-          {/* Una sola prórroga, y sólo mientras el término siga corriendo. */}
-          {!detail.isClosed && detail.slaExtensionDays == null && (
-            <ExtendDialog
-              requestId={params.id}
-              type={detail.type}
-              detailRefetch={detailRefetch}
-              t={t}
-            />
-          )}
-        </div>
-      </div>
+      <EncabezadoDePantalla
+        seccion="Cobranza · Solicitudes ARCO"
+        titulo={t('inmobiliaria.ai.arco.detail.title')}
+        descripcion="Lo que pidió la persona, en qué va y lo que falta para responderle dentro del término."
+        junto={<ArcoStatusBadge status={detail.status} />}
+        acciones={
+          <>
+            {detail.status === 'pending_admin_triage' && (
+              <TriageButton requestId={params.id} detailRefetch={detailRefetch} t={t} />
+            )}
+            {/* Una sola prórroga, y sólo mientras el término siga corriendo. */}
+            {!detail.isClosed && detail.slaExtensionDays == null && (
+              <ExtendDialog
+                requestId={params.id}
+                type={detail.type}
+                detailRefetch={detailRefetch}
+                t={t}
+              />
+            )}
+          </>
+        }
+      />
 
       {/* Two-column layout: left (timeline + resolve panel), right (sidebar) */}
       {/* `[&>*]:min-w-0`: a 390 px las columnas no se encogían y la ficha se salía (QA-AGENTES 16-10). */}

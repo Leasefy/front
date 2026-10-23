@@ -561,13 +561,13 @@ function ReportesPropietariosContent() {
         <EncabezadoDePantalla
           seccion="Cobranza"
           titulo="Reportes a propietarios"
-          descripcion="Resúmenes de gestión de cobranza por propietario: estado de mora, gestiones realizadas y recomendación, listos para que los revises y envíes al dueño del inmueble."
+          descripcion="Lo que se le cuenta a cada propietario de la cobranza de su inmueble —la mora, lo que se hizo y lo que recomendamos—: revísalo y envíaselo."
         />
         <NuevoReporte isGenerating={isGenerating} onGenerar={onGenerarParaDeudor} />
       </header>
 
       {/* Antes: «Intenta de nuevo» fijo ante cualquier fallo. */}
-      <Presence as="p" show={Boolean(generateError)} className="text-sm text-danger" role="alert" data-testid="reporte-generar-error">
+      <Presence as="p" show={Boolean(generateError)} className="text-body-sm text-danger" role="alert" data-testid="reporte-generar-error">
           {mensajeDeLaAccion(
             { error: generateError, fallo: generateFallo },
             { porDefecto: 'No pudimos generar el reporte.', accion: 'generar el reporte' },

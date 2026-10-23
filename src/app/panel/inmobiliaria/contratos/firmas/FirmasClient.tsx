@@ -29,7 +29,8 @@ import Link from 'next/link'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Signature } from '@phosphor-icons/react'
-import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CrossFade, Presence, Stagger, StaggerItem, StatusBadge } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
@@ -174,28 +175,43 @@ export function FirmasClient() {
               cuántas corren solas— en vez de cuatro cifras grandes que casi siempre están en
               cero. Los grupos de abajo dicen cada estado con su «qué hacer».
             */}
-            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm" data-testid="franja-firmas">
-              {(() => {
-                const teTocan = vencidas.length + recordatorios.length;
-                const corren = porVencer.length + aTiempo.length;
-                return (
-                  <>
-                    <span className={teTocan > 0 ? 'inline-flex items-center gap-2 font-medium text-fg' : 'text-fg-muted'} data-testid="cifra-vencidas">
-                      {teTocan > 0 ? <span className="h-1.5 w-1.5 rounded-full bg-danger" aria-hidden="true" /> : null}
-                      <span className="font-mono tabular-nums">{teTocan}</span> {teTocan === 1 ? 'te toca' : 'te tocan'}
-                    </span>
-                    <span className="text-fg-subtle" aria-hidden="true">·</span>
-                    <span className="text-fg-muted" data-testid="cifra-a-tiempo">
-                      <span className="font-mono tabular-nums">{corren}</span> {corren === 1 ? 'corre sola' : 'corren solas'} (el Piloto las vence a tiempo)
-                    </span>
-                  </>
-                );
-              })()}
-            </p>
+            {/* Glow up 22-10 (la vara de Deuda del mes): LA RESPUESTA en una cifra —cuántas te
+                tocan— y la barra con los cuatro estados; lo que corre solo, en la leyenda. */}
+            {(() => {
+              const teTocan = vencidas.length + recordatorios.length
+              const total = teTocan + porVencer.length + aTiempo.length
+              return (
+                <section className="rounded-lg border border-border bg-card px-5 py-5" data-testid="franja-firmas">
+                  <CifraHeroe
+                    rotulo="Te tocan"
+                    cifra={<span data-testid="cifra-vencidas">{teTocan}</span>}
+                    contexto={
+                      total === 1
+                        ? 'de 1 invitación sin firmar'
+                        : `de ${total} invitaciones sin firmar`
+                    }
+                    tramos={[
+                      { clave: 'vencidas', etiqueta: 'Se vencieron', monto: vencidas.length, tono: 'critico', cifra: String(vencidas.length) },
+                      { clave: 'recordatorios', etiqueta: 'Recordatorio por mandar', monto: recordatorios.length, tono: 'aviso', cifra: String(recordatorios.length) },
+                      { clave: 'por-vencer', etiqueta: 'Se les pasó el plazo', monto: porVencer.length, tono: 'neutro', cifra: String(porVencer.length) },
+                      { clave: 'a-tiempo', etiqueta: 'A tiempo', monto: aTiempo.length, tono: 'exito', cifra: String(aTiempo.length) },
+                    ]}
+                    pie={
+                      <span data-testid="cifra-a-tiempo">
+                        {porVencer.length + aTiempo.length === 1
+                          ? '1 corre sola: el Piloto la vence a tiempo.'
+                          : `${porVencer.length + aTiempo.length} corren solas: el Piloto las vence a tiempo.`}
+                      </span>
+                    }
+                  />
+                </section>
+              )
+            })()}
 
             {vencidas.length > 0 ? (
               <Grupo
-                titulo={`Se vencieron (${vencidas.length})`}
+                titulo="Se vencieron"
+                cuantos={vencidas.length}
                 queHacer="Te toca: cancelar la invitación o volver a mandarla desde la ficha del contrato. El inmueble sigue reservado mientras tanto."
                 teToca
                 data-testid="vencidas"
@@ -290,7 +306,8 @@ export function FirmasClient() {
 
             {recordatorios.length > 0 ? (
               <Grupo
-                titulo={`Recordatorios por mandar (${recordatorios.length})`}
+                titulo="Recordatorios por mandar"
+                cuantos={recordatorios.length}
                 queHacer="Te toca: mandarle el recordatorio a cada uno o llamarlo. Esta pantalla no envía: arma el texto y deja la constancia."
                 teToca
                 data-testid="recordatorios"
@@ -320,7 +337,8 @@ export function FirmasClient() {
                 vence el Piloto según su modo; aquí se ve mientras tanto. */}
             {porVencer.length > 0 ? (
               <Grupo
-                titulo={`Se les pasó el plazo (${porVencer.length})`}
+                titulo="Se les pasó el plazo"
+                cuantos={porVencer.length}
                 queHacer="Nadie firmó a tiempo. El Piloto las vence según su modo: en Automático devuelve el contrato a borrador solo, en Copiloto te espera en la Bandeja del Piloto con un clic y en Manual te lo propone. El inmueble sigue reservado."
                 data-testid="por-vencer"
               >
@@ -345,7 +363,8 @@ export function FirmasClient() {
                 de firmar». */}
             {aTiempo.length > 0 ? (
               <Grupo
-                titulo={`A tiempo (${aTiempo.length})`}
+                titulo="A tiempo"
+                cuantos={aTiempo.length}
                 queHacer="No tienes que hacer nada: el sistema manda los dos recordatorios solo."
                 data-testid="a-tiempo"
               >
@@ -404,12 +423,14 @@ const ESTADOS = [
 /** Un grupo de la lista: su título, lo que se espera de ti y sus filas. */
 function Grupo({
   titulo,
+  cuantos,
   queHacer,
   teToca = false,
   children,
   'data-testid': testId,
 }: {
   titulo: string
+  cuantos: number
   queHacer: string
   teToca?: boolean
   children: React.ReactNode
@@ -419,12 +440,9 @@ function Grupo({
     <Card data-testid={testId}>
       <CardHeader className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-base">{titulo}</CardTitle>
-          {teToca ? (
-            <span className="rounded-full bg-warning-soft px-2 py-0.5 text-caption font-medium text-fg">
-              Te toca
-            </span>
-          ) : null}
+          <CardTitle className="text-base font-medium">{titulo}</CardTitle>
+          <span className="font-mono text-caption tabular-nums text-fg-muted">{cuantos}</span>
+          {teToca ? <StatusBadge tone="warning">Te toca</StatusBadge> : null}
         </div>
         <p className="text-body-sm text-fg-muted">{queHacer}</p>
       </CardHeader>

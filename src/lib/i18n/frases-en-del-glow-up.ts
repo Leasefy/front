@@ -468,4 +468,7 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Inactivos': 'Inactive',
   // app/inquilino/calificacion
   'Se ven las 20 más recientes de {n} consultas.': 'Showing the 20 most recent of {n} lookups.',
+  // Propietarios › Cuenta de cobro (5.º agente panel)
+  'Propietarios': "Owners",
+  'Lo que el propietario le debe a la inmobiliaria, listo para imprimir o guardar en PDF.': "What the owner owes the agency, ready to print or save as PDF.",
 }

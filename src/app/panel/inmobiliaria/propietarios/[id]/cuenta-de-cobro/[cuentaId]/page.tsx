@@ -10,9 +10,8 @@
  */
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Printer } from '@phosphor-icons/react';
+import { Printer } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
@@ -21,11 +20,14 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { CuentaDeCobroDelPropietario } from '@/components/cobros/cuenta-de-cobro/CuentaDeCobroDelPropietario';
 import { deduccionesApi } from '@/lib/api/deducciones.service';
 import { useI18n } from '@/lib/i18n';
-import { CrossFade } from '@leasefy/cadence';
+import { BackButton, CrossFade } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { useTr } from '@/lib/i18n/use-tr';
 import type { CuentaDeCobroDelPropietario as Cuenta } from '@/lib/types/deducciones';
 
 function Contenido() {
   const { t } = useI18n();
+  const tr = useTr();
   const k = (s: string) => `inmobiliaria.deducciones.cuentaDeCobro.${s}`;
   const params = useParams<{ id: string; cuentaId: string }>();
   const ficha = `/panel/inmobiliaria/propietarios/${params.id}`;
@@ -52,26 +54,21 @@ function Contenido() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8" data-cuenta-pagina>
-      <div
-        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-        data-cuenta-barra
-      >
-        <Button asChild variant="ghost" hideArrow className="w-fit">
-          <Link href={ficha}>
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            {t(k('volver'))}
-          </Link>
-        </Button>
-        <Button
-          variant="secondary"
-          hideArrow
-          onClick={() => window.print()}
-          disabled={!cuenta}
-          data-testid="imprimir"
-        >
-          <Printer className="h-4 w-4" aria-hidden="true" />
-          {t(k('imprimir'))}
-        </Button>
+      {/* Glow up 22-10: el encabezado común (sección, título y para qué sirve) con la vuelta
+          arriba y «Imprimir» como la única principal. Todo esto se esconde al imprimir. */}
+      <div className="space-y-3" data-cuenta-barra>
+        <BackButton href={ficha} label={t(k('volver'))} />
+        <EncabezadoDePantalla
+          seccion={tr('Propietarios')}
+          titulo={t(k('titulo'))}
+          descripcion={tr('Lo que el propietario le debe a la inmobiliaria, listo para imprimir o guardar en PDF.')}
+          accionPrincipal={
+            <Button size="sm" hideArrow onClick={() => window.print()} disabled={!cuenta} data-testid="imprimir">
+              <Printer className="h-4 w-4" aria-hidden="true" />
+              {t(k('imprimir'))}
+            </Button>
+          }
+        />
       </div>
 
       {/* Cargando → la cuenta de cobro (o el fallo): se cruzan. `popLayout`:

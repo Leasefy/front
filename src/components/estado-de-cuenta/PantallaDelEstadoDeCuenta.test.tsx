@@ -457,4 +457,21 @@ describe('la barra de filtros vive pegada a las tablas', () => {
       true,
     );
   });
+
+  it('glow up 22-10: el vacío del portal lleva su salida y, sin documento, «Imprimir» no se pinta', async () => {
+    const sinContratosError = Object.assign(new Error('sin contratos'), { status: 404, code: 'SIN_CONTRATOS', detalle: { code: 'SIN_CONTRATOS' } });
+    const cargar = vi.fn().mockRejectedValue(sinContratosError);
+    await montar(
+      <PantallaDelEstadoDeCuenta
+        cargar={cargar}
+        hoy={HOY}
+        encabezado={{ seccion: 'Mi arriendo', descripcion: 'Cada cuota.' }}
+        textosSinContratos={{ titulo: 'Todavía no tienes un contrato de arriendo', detalle: 'Cuando tu inmobiliaria lo firme…', accion: { label: 'Ver inmuebles para mí', href: '/inquilino/para-ti' } }}
+      />,
+    );
+    expect(host.querySelector('[data-testid="estado-sin-contratos-pantalla"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="estado-sin-contratos-pantalla"] a[href="/inquilino/para-ti"]')?.textContent).toBe('Ver inmuebles para mí');
+    expect(host.querySelector('[data-testid="imprimir-estado"]')).toBeNull();
+  });
 });
+

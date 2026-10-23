@@ -98,7 +98,8 @@ export interface PantallaProps {
    * mira (el portal le habla a ella: «todavía no tienes…»). Sin esto, el texto
    * del panel («Este cliente no tiene contratos»).
    */
-  textosSinContratos?: { titulo: string; detalle: string };
+  /** `accion` (glow up 22-10, portal): la salida del vacío, p. ej. «Ver inmuebles para mí». */
+  textosSinContratos?: { titulo: string; detalle: string; accion?: { label: string; href: string } };
   /**
    * A dónde se configuran las reglas de mora. Sólo el PANEL lo pasa: con él,
    * las cuotas en mora sin intereses dicen por qué y llevan a configurarlas.
@@ -324,20 +325,22 @@ export function PantallaDelEstadoDeCuenta({
               (lineaDelCliente ? <span data-testid="estado-subtitulo">{lineaDelCliente}</span> : undefined)
             }
             acciones={
-              <>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  hideArrow
-                  onClick={imprimir}
-                  disabled={!vista}
-                  data-testid="imprimir-estado"
-                >
-                  <Printer className="h-4 w-4" aria-hidden="true" />
-                  {t('estadoDeCuenta.imprimir')}
-                </Button>
-                {vista && acciones ? acciones(vista, nota, filtros) : null}
-              </>
+              /* Revisora r24: sin documento, «Imprimir» no se pinta (antes, apagado y sin porqué). */
+              vista ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    hideArrow
+                    onClick={imprimir}
+                    data-testid="imprimir-estado"
+                  >
+                    <Printer className="h-4 w-4" aria-hidden="true" />
+                    {t('estadoDeCuenta.imprimir')}
+                  </Button>
+                  {acciones ? acciones(vista, nota, filtros) : null}
+                </>
+              ) : undefined
             }
           />
         </div>
@@ -427,6 +430,13 @@ export function PantallaDelEstadoDeCuenta({
           <p className="mt-1 text-body-sm text-fg-muted">
             {textosSinContratos?.detalle ?? t('estadoDeCuenta.sinContratosDetalle')}
           </p>
+          {textosSinContratos?.accion ? (
+            <Button asChild variant="outline" size="sm" hideArrow className="mt-4">
+              <Link href={textosSinContratos.accion.href} data-testid="estado-sin-contratos-accion">
+                {textosSinContratos.accion.label}
+              </Link>
+            </Button>
+          ) : null}
         </div>
       ) : error ? (
         <FalloDeCarga

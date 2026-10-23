@@ -31,9 +31,11 @@ export default function MiEstadoDeCuentaPage() {
       }}
       // Revisora r23 (portal del inquilino): el vacío le habla a quien mira, no «Este cliente no tiene contratos»
       // (el texto del panel). Lo mismo que el portal del propietario.
+      // Revisora r24: una sola voz («tu inmobiliaria», sin «con nosotros») y la salida del vacío.
       textosSinContratos={{
-        titulo: 'Todavía no tienes un contrato de arriendo con nosotros',
-        detalle: 'Cuando la inmobiliaria firme tu contrato, aquí vas a ver cada cuota, lo que pagaste y lo que te falta.',
+        titulo: 'Todavía no tienes un contrato de arriendo',
+        detalle: 'Cuando tu inmobiliaria lo firme, aquí ves cada cuota, lo que pagaste y lo que te falta.',
+        accion: { label: 'Ver inmuebles para mí', href: '/inquilino/para-ti' },
       }}
       acciones={(doc, nota) => (
         <BotonDescargarPDF doc={doc} hoy={doc.fecha} nota={nota} />

@@ -15,7 +15,7 @@ import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { sinElNumeroRepetido } from '@/lib/pantalla/pestanas-sin-repetir';
 
 import { useI18n } from '@/lib/i18n';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableHeader, TableBodyAnimado, TableRow, TableRowAnimada, TableHead, TableCell } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
@@ -183,30 +183,31 @@ function PqrsContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          {/* La vuelta va arriba a la izquierda: es de dónde viene la persona,
-              no una acción de la pantalla. */}
-          {rutaDeVuelta !== '' && (
-            <Link
-              href={rutaDeVuelta}
-              className="inline-flex items-center gap-1.5 text-caption text-fg-muted hover:text-fg"
-              data-testid="pqrs-volver"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              {VUELVE_A[lugarDeRegreso(rutaDeVuelta)]}
-            </Link>
-          )}
-          <SectionLabel>{t(k('label'))}</SectionLabel>
-          <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
-          <p className="text-body text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
-        </div>
-        <Button onClick={() => setNuevaOpen(true)} hideArrow className="shrink-0" data-testid="pqrs-nueva">
-          <Plus className="w-4 h-4" weight="bold" />
-          {t(k('new'))}
-        </Button>
-      </header>
+      {/* Ronda 30 (revisora r27, R4): el encabezado común —sección del menú «Operación» (antes «PQRS», que no es una
+          sección), el título y UNA línea de para qué (antes dos renglones a 1440 y cortada a 390)—. La vuelta, arriba. */}
+      <div className="space-y-2">
+        {rutaDeVuelta !== '' && (
+          <Link
+            href={rutaDeVuelta}
+            className="inline-flex items-center gap-1.5 text-caption text-fg-muted hover:text-fg"
+            data-testid="pqrs-volver"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            {VUELVE_A[lugarDeRegreso(rutaDeVuelta)]}
+          </Link>
+        )}
+        <EncabezadoDePantalla
+          seccion="Operación"
+          titulo={t(k('title'))}
+          descripcion="Radica, asigna y responde cada solicitud dentro de su plazo."
+          accionPrincipal={
+            <Button onClick={() => setNuevaOpen(true)} hideArrow className="shrink-0" data-testid="pqrs-nueva">
+              <Plus className="w-4 h-4" weight="bold" />
+              {t(k('new'))}
+            </Button>
+          }
+        />
+      </div>
 
       {/*
         🔴 I-02: lo que el agente detectó y espera confirmación. Va ARRIBA del
@@ -250,7 +251,10 @@ function PqrsContent() {
         {/* Revisión de Operación (21-10): ocho cifras grandes —siete en cero— pasan a pestañas
             de estado con su conteo; las en cero no salen (salvo «Todas» y la elegida), y la de
             vencidas lleva el punto. Mientras carga o si falló, sin números: nunca un 0 inventado. */}
-        <div className="border-b border-border px-4 py-3 empty:hidden" data-testid="pqrs-por-estado">
+        {/* Ronda 30 (revisora r27): pestañas y buscador en UNA barra a 1440 (antes el buscador iba solo en su
+            renglón, con media fila vacía); a 390, uno debajo del otro. */}
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 empty:hidden" data-testid="pqrs-por-estado">
           <PestanasDeEstado
             etiqueta="Filtrar por plazo y estado"
             valor={filtros.estado}
@@ -269,7 +273,7 @@ function PqrsContent() {
           />
           {!isLoading && error ? <p className="mt-2 text-caption text-fg-muted">No se pudo traer el resumen.</p> : null}
         </div>
-        <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">
           <SearchInput
             value={filtros.texto}
             onChange={(e) => setFiltros((f) => ({ ...f, texto: e.target.value }))}
@@ -284,6 +288,7 @@ function PqrsContent() {
               {solicitudes.length} de {todas.length}
             </span>
           )}
+        </div>
         </div>
 
         {/* El vacío vive dentro del <TableBody> para que se sigan viendo los

@@ -129,14 +129,21 @@ export function ConceptosYLiquidacion() {
       {/* Revisora r25: bajo lg la liquidación queda debajo de todo el formulario (≈1.100 px a 390). La respuesta
           va pegada abajo, encima de la barra del celular, y «Ver por qué» baja a la liquidación entera. */}
       <div
-        className="sticky bottom-20 z-10 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-sm lg:hidden"
+        className="sticky bottom-20 z-10 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 lg:hidden"
         data-testid="liquidacion-pegada"
       >
-        <p className="min-w-0 text-body-sm text-fg">
-          Paga <span className="font-mono tabular-nums">{formatCurrency(cuenta.totalAPagarCop)}</span>
-          <span className="text-fg-subtle"> · </span>
-          Recibe <span className="font-mono tabular-nums">{formatCurrency(cuenta.netoQueRecibeCop)}</span>
-        </p>
+        {/* Ronda 30 (revisora r27): las dos cifras apiladas a la izquierda (antes «Paga $ … · Recibe / $ …» se
+            partía en dos renglones) y sin sombra (Cadence 2). */}
+        <dl className="min-w-0 space-y-0.5 text-body-sm text-fg">
+          <div className="flex items-baseline gap-2">
+            <dt className="w-14 text-fg-muted">Paga</dt>
+            <dd className="font-mono tabular-nums">{formatCurrency(cuenta.totalAPagarCop)}</dd>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <dt className="w-14 text-fg-muted">Recibe</dt>
+            <dd className="font-mono tabular-nums">{formatCurrency(cuenta.netoQueRecibeCop)}</dd>
+          </div>
+        </dl>
         <Button
           type="button"
           variant="ghost"
@@ -331,7 +338,8 @@ function Fila({
     <div className="flex items-baseline justify-between gap-3">
       <dt className={atenuado ? 'text-muted-foreground' : 'text-foreground/80'}>{etiqueta}</dt>
       <dd
-        className={`shrink-0 tabular-nums ${
+        // Ronda 30 (revisora r27, R5): la plata en mono, como en la barra pegada de 390 y en el Valor.
+        className={`shrink-0 font-mono tabular-nums ${
           fuerte ? 'text-base font-medium text-foreground' : 'text-foreground'
         }`}
         data-testid={testId}

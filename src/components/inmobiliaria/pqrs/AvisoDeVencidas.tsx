@@ -74,11 +74,11 @@ export function AvisoDeVencidas({ vencidas, porVencer, onVer }: Props) {
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="pqrs-sin-escalamiento">
               <p className="text-fg-muted">Nadie recibe las PQRS vencidas.</p>
               <Button asChild size="sm" variant="secondary">
-                <Link href="/panel/inmobiliaria/configuracion/sla-de-pqrs">Elegir a quién se escalan</Link>
+                <Link href="/panel/inmobiliaria/configuracion/sla-de-pqrs">Elegir a quién le pasan las vencidas</Link>
               </Button>
             </div>
           ) : sla?.escalarANombre && vencidas > 0 ? (
-            <p className="text-fg-muted">Las vencidas se le escalan a {sla.escalarANombre}.</p>
+            <p className="text-fg-muted">Las vencidas le pasan a {sla.escalarANombre}.</p>
           ) : null}
         </div>
       </div>

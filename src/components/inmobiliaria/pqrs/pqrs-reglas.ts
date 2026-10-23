@@ -134,7 +134,8 @@ export function textoSla(
 ): TextoSla {
   if (ESTADOS_TERMINALES.includes(estado)) return { texto: '—', vencido: false }
   const dias = diasParaElSla(slaVenceAt, ahora)
-  if (dias > 0) return { texto: dias === 1 ? '1 día' : `${dias} días`, vencido: false }
+  // Ronda 30 (revisora r27, VOZ §4): bajo «Vence», «en 17 días» (antes «17 días» suelto).
+  if (dias > 0) return { texto: dias === 1 ? 'en 1 día' : `en ${dias} días`, vencido: false }
   if (dias === 0) return { texto: 'Hoy', vencido: true }
   const atras = Math.abs(dias)
   return { texto: atras === 1 ? 'Vencido hace 1 día' : `Vencido hace ${atras} días`, vencido: true }

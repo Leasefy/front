@@ -1,10 +1,11 @@
 'use client';
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import { AnimatedNumber, CrossFade, MotionIndicator, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, StaggerItem } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import {
   Bell,
   Check,
@@ -152,7 +153,6 @@ export default function NotificacionesPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [hideRead, setHideRead] = useState(false);
   // La píldora del filtro activo se desliza al nuevo (antes saltaba).
-  const idDelFiltro = useId();
 
   // 02-10-2026 · Antes, cualquier fallo decía el mismo texto fijo. Ahora por
   // el traductor: un 4xx dice qué pasó, un 5xx que fue nuestro (con la
@@ -186,6 +186,8 @@ export default function NotificacionesPage() {
     return TENANT_CATEGORIES[category] || TENANT_CATEGORIES.system;
   };
 
+  const cuantosDe = (c: string) => visibleNotifications.filter((n) => n.category === c).length;
+
   const filters = [
     { id: 'all', label: locale === 'es' ? 'Todas' : 'All' },
     { id: 'unread', label: locale === 'es' ? 'Sin leer' : 'Unread', count: unreadCount },
@@ -204,16 +206,11 @@ export default function NotificacionesPage() {
           className="mb-8"
           seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'}
           titulo={locale === 'es' ? 'Notificaciones' : 'Notifications'}
+          // Revisora r25: el conteo de sin leer vive en su pestaña (antes también aquí: «5 sin leer» dos veces).
           descripcion={
-            notifications.length > 0 ? (
-              unreadCount > 0
-                      ? locale === 'es'
-                        ? `${unreadCount} sin leer`
-                        : `${unreadCount} unread`
-                      : locale === 'es'
-                      ? 'Todas leídas'
-                      : 'All read'
-            ) : undefined
+            locale === 'es'
+              ? 'Lo que pasó con tu arriendo, tus pagos y tus postulaciones.'
+              : 'What happened with your rental, your payments and your applications.'
           }
           acciones={
             <>
@@ -225,9 +222,8 @@ export default function NotificacionesPage() {
                   onClick={handleMarkAllAsRead}
                 >
                   <Checks className="w-4 h-4" />
-                  <span className="hidden sm:inline">
-                    {locale === 'es' ? 'Marcar todo' : 'Mark all'}
-                  </span>
+                  {/* Revisora r25: con su palabra también a 390 (antes sólo el ícono). */}
+                  <span>{locale === 'es' ? 'Marcar todo' : 'Mark all'}</span>
                 </Button>
               )}
               <IconButton
@@ -241,51 +237,25 @@ export default function NotificacionesPage() {
           }
         />
 
-        {/* Filtros — solo con notificaciones. Seis pestañas para filtrar nada
-            es andamiaje alrededor de un vacío. */}
+        {/* Revisora r25 (una sola pieza con el propietario): los filtros son las pestañas de estado de la casa, con su
+            conteo y DENTRO de la tarjeta de la lista; una categoría sin avisos no aparece. */}
+        <div className="rounded-lg border border-border bg-surface overflow-hidden">
         {notifications.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id as FilterType)}
-                className={cn(
-                  'relative isolate flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
-                  filter === f.id
-                    ? 'text-white'
-                    : 'bg-surface-muted text-fg-muted hover:bg-surface-muted'
-                )}
-              >
-                {/* El fondo oscuro del activo es un `MotionIndicator`: se desliza al filtro nuevo. */}
-                {filter === f.id && (
-                  <MotionIndicator
-                    layoutId={`${idDelFiltro}-filtro`}
-                    className="inset-0 -z-10 rounded-full bg-ink"
-                  />
-                )}
-                {f.label}
-                {f.count !== undefined && f.count > 0 && (
-                  <span
-                    className={cn(
-                      'font-mono text-caption tabular-nums px-1.5 py-0.5 rounded-full',
-                      filter === f.id
-                        ? 'bg-surface text-fg'
-                        : 'bg-surface text-fg-muted'
-                    )}
-                  >
-                    <AnimatedNumber value={f.count} />
-                  </span>
-                )}
-              </button>
-            ))}
+          <div className="border-b border-border px-4 py-3 sm:px-5">
+            <PestanasDeEstado
+              etiqueta={locale === 'es' ? 'Filtrar notificaciones' : 'Filter notifications'}
+              valor={filter}
+              onCambio={(v) => setFilter(v)}
+              pestanas={filters.map((f) => ({
+                valor: f.id as FilterType,
+                etiqueta: f.label,
+                cuantos: f.id === 'all' ? visibleNotifications.length : f.id === 'unread' ? unreadCount : cuantosDe(f.id),
+                fija: f.id === 'all',
+                tono: f.id === 'unread' ? ('aviso' as const) : undefined,
+              }))}
+            />
           </div>
-        </div>
         )}
-
-        {/* Notifications List — cargando → lista, cambiar de filtro o quedar
-            vacío cruzan el contenido; dentro de un mismo filtro, marcar o
-            borrar saca la fila y las demás se corren. */}
         <CrossFade
           swapKey={
             isLoading
@@ -323,7 +293,7 @@ export default function NotificacionesPage() {
                 />
               </div>
             ) : (
-              <div className="relative rounded-lg border border-border bg-surface overflow-hidden divide-y divide-border">
+              <div className="relative divide-y divide-border">
                 <AnimatePresence initial={false} mode="popLayout">
                 {filteredNotifications.map((notification) => {
                   const IconComponent = getNotificationIcon(notification.type);
@@ -358,17 +328,20 @@ export default function NotificacionesPage() {
                         >
                           {notification.title}
                         </p>
-                        <p className="text-sm text-fg-muted mt-0.5 line-clamp-1">
+                        <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 sm:line-clamp-1">
                           {notification.message}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-caption text-fg-subtle">
                             {formatRelativeTime(notification.createdAt, locale)}
                           </span>
-                          <span className="w-1 h-1 rounded-full bg-surface-muted" />
-                          <span className="text-caption text-fg-subtle">
-                            {categoryConfig.label}
-                          </span>
+                          {/* Revisora r25: «Sistema» en cada fila no informa; la categoría sólo cuando dice algo. */}
+                          {notification.category !== 'system' && (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-surface-muted" />
+                              <span className="text-caption text-fg-subtle">{categoryConfig.label}</span>
+                            </>
+                          )}
                           {!notification.read && (
                             <span className="sr-only">{locale === 'es' ? 'Nueva' : 'New'}</span>
                           )}
@@ -433,6 +406,7 @@ export default function NotificacionesPage() {
               </div>
             )}
         </CrossFade>
+        </div>
 
         {/* El pie en una línea (antes, una caja). «Limpiar leídas» sólo las escondía y no había cómo volver a
             verlas: ahora se ocultan y se muestran. */}

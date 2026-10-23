@@ -11,7 +11,8 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { IconButton, Chip, CrossFade, StaggerItem } from '@leasefy/cadence';
+import { IconButton, CrossFade, StaggerItem } from '@leasefy/cadence';
+import { PestanasDeEstado, type PestanaDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLandlordNotifications } from '@/lib/hooks/useNotifications';
 import { LANDLORD_CATEGORIES } from '@/lib/types/notification';
@@ -89,7 +90,7 @@ function NotificationSkeleton() {
 }
 
 export default function NotificacionesPage() {
-  const { t, formatRelativeDate } = useI18n();
+  const { t, formatRelativeDate, locale } = useI18n();
   const router = useRouter();
   const administrados = useContratosAdministrados();
   const deInmobiliaria = administrados.doc !== null;
@@ -131,20 +132,25 @@ export default function NotificacionesPage() {
     }
   };
 
+  const cuantosDe = (c: string) => visibleNotifications.filter((n) => n.category === c || (c === 'payment' && n.category === 'alert')).length;
+
   const getCategoryConfig = (category: LandlordNotificationCategory) => {
     return LANDLORD_CATEGORIES[category] || LANDLORD_CATEGORIES.system;
   };
 
   return (
     // GLOW UP (21-10-2026): el contenedor y el encabezado común del portal (el mismo de las del inquilino).
-    <div className="max-w-4xl p-6 lg:p-8">
+    <div className="p-6 lg:p-8">
       {/* Header — QA-PROP-95 (PO-24): a 390 px «Marcar todo como leído» baja de
           renglón (el encabezado común envuelve sus acciones). */}
       <EncabezadoDePantalla
         className="mb-6"
         titulo={t('landlord.notifications.title')}
+        // Revisora r25: el conteo de sin leer vive en su pestaña (antes también aquí: «3 sin leer» dos veces).
         descripcion={
-          unreadCount > 0 ? t('landlord.notifications.unreadCount', { count: unreadCount }) : t('landlord.notifications.allRead')
+          locale === 'es'
+            ? 'Lo que pasó con tus inmuebles, tus candidatos y tus pagos.'
+            : 'What happened with your properties, your candidates and your payments.'
         }
         acciones={
           <>
@@ -164,40 +170,36 @@ export default function NotificacionesPage() {
         }
       />
 
-      {/* Filters */}
-      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border overflow-x-auto">
-        {[
-          { id: 'all', label: t('landlord.notifications.filterAll') },
-          { id: 'unread', label: t('landlord.notifications.filterUnread'), count: unreadCount },
-          { id: 'payment', label: t('landlord.notifications.filterPayments') },
-          { id: 'application', label: t('landlord.notifications.filterCandidates'), soloIndependiente: true },
-          { id: 'contract', label: t('landlord.notifications.filterContracts') },
-          { id: 'lease', label: t('landlord.notifications.filterLeases'), soloIndependiente: true },
-          { id: 'visit', label: t('landlord.notifications.filterVisits'), soloIndependiente: true },
-          { id: 'property', label: t('landlord.notifications.filterProperties'), soloIndependiente: true },
-        ]
-          // QA-PROP-95: candidatos, arriendos, visitas y propiedades son del
-          // propietario independiente; a quien administra una inmobiliaria no le sirven.
-          .filter((f) => !(deInmobiliaria && 'soloIndependiente' in f && f.soloIndependiente))
-          .map((f) => (
-          <Chip
-            key={f.id}
-            selected={filter === f.id}
-            onClick={() => setFilter(f.id as FilterType)}
-            className="whitespace-nowrap"
-          >
-            {f.label}
-            {'count' in f && f.count !== undefined && f.count > 0 && (
-              <span className="ml-1 tabular-nums">{f.count}</span>
-            )}
-          </Chip>
-        ))}
-      </div>
-
+      {/* Revisora r25 (una sola pieza con el inquilino): los filtros son las pestañas de estado de la casa, con su
+          conteo y DENTRO de la tarjeta; una categoría sin avisos no aparece (antes ocho pastillas, seis vacías). */}
       {/* Notifications List — cargando → lista, cambiar de filtro o quedar
           vacío cruzan el contenido; dentro de un filtro, marcar o borrar saca
           la fila y las demás se corren (lo que ya estaba no se anima). */}
       <div className="bg-surface rounded-lg border border-border overflow-hidden">
+        {notifications.length > 0 && (
+          <div className="border-b border-border px-4 py-3 sm:px-5">
+            <PestanasDeEstado
+              etiqueta={t('landlord.notifications.title')}
+              valor={filter}
+              onCambio={(v) => setFilter(v)}
+              pestanas={(
+                [
+                  { valor: 'all', etiqueta: t('landlord.notifications.filterAll'), cuantos: visibleNotifications.length, fija: true },
+                  { valor: 'unread', etiqueta: t('landlord.notifications.filterUnread'), cuantos: unreadCount, tono: 'aviso' },
+                  { valor: 'payment', etiqueta: t('landlord.notifications.filterPayments'), cuantos: cuantosDe('payment') },
+                  { valor: 'application', etiqueta: t('landlord.notifications.filterCandidates'), cuantos: cuantosDe('application'), soloIndependiente: true },
+                  { valor: 'contract', etiqueta: t('landlord.notifications.filterContracts'), cuantos: cuantosDe('contract') },
+                  { valor: 'lease', etiqueta: t('landlord.notifications.filterLeases'), cuantos: cuantosDe('lease'), soloIndependiente: true },
+                  { valor: 'visit', etiqueta: t('landlord.notifications.filterVisits'), cuantos: cuantosDe('visit'), soloIndependiente: true },
+                  { valor: 'property', etiqueta: t('landlord.notifications.filterProperties'), cuantos: cuantosDe('property'), soloIndependiente: true },
+                ] as Array<PestanaDeEstado<FilterType> & { soloIndependiente?: boolean }>
+              )
+                // QA-PROP-95: candidatos, arriendos, visitas e inmuebles son del propietario independiente.
+                .filter((f) => !(deInmobiliaria && f.soloIndependiente))
+                .map(({ soloIndependiente: _solo, ...f }) => f)}
+            />
+          </div>
+        )}
         <CrossFade
           className="relative"
           swapKey={
@@ -265,21 +267,20 @@ export default function NotificacionesPage() {
                     >
                       {notification.title}
                     </p>
-                    <p className="text-sm text-fg-muted mt-0.5 line-clamp-1">
+                    <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 sm:line-clamp-1">
                       {notification.message}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-caption text-fg-subtle">
                         {formatRelativeDate(notification.createdAt)}
                       </span>
-                      <span className="text-fg-subtle">
-                        •
-                      </span>
-                      <span
-                        className="text-caption text-fg-subtle"
-                      >
-                        {categoryConfig.label}
-                      </span>
+                      {/* Revisora r25: «Sistema» en cada fila no informa; la categoría sólo cuando dice algo. */}
+                      {notification.category !== 'system' && (
+                        <>
+                          <span className="text-fg-subtle">•</span>
+                          <span className="text-caption text-fg-subtle">{categoryConfig.label}</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -344,12 +345,12 @@ export default function NotificacionesPage() {
             {t('landlord.notifications.showingCount', { filtered: filteredNotifications.length, total: notifications.length })}
           </span>
           {notifications.length > 0 && (
-            <Button
-              variant="link"
-              size="sm"
-              onClick={() => setHideRead(true)}
-            >
-              {t('landlord.notifications.clearRead')}
+            // Revisora r25: el mismo nombre que en el inquilino («Ocultar las leídas»), sin el azul de enlace, y se
+            // puede deshacer.
+            <Button variant="ghost" size="sm" hideArrow onClick={() => setHideRead((v) => !v)} data-testid="ocultar-las-leidas">
+              {hideRead
+                ? locale === 'es' ? 'Mostrar las leídas' : 'Show read'
+                : locale === 'es' ? 'Ocultar las leídas' : 'Hide read'}
             </Button>
           )}
         </div>

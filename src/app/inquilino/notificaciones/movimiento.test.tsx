@@ -99,16 +99,17 @@ describe('Notificaciones del inquilino — movimiento', () => {
     expect(container.textContent).toContain('Tu postulación avanzó')
   })
 
+  // Glow up r26 (revisora r25): los filtros son las pestañas de estado de la casa (PestanasDeEstado), como en el
+  // portal del propietario; la marca del activo es su `aria-pressed`, una sola, y se va al filtro elegido.
   it('la marca del filtro activo es una sola y se va al filtro elegido', async () => {
-    const marcas = () => container.querySelectorAll('button > span.pointer-events-none.absolute[aria-hidden="true"]')
+    const marcas = () => container.querySelectorAll('[role="group"] button[aria-pressed="true"]')
     expect(marcas()).toHaveLength(1)
-    expect(boton('Todas')!.contains(marcas()[0])).toBe(true)
+    expect(marcas()[0]).toBe(boton('Todas'))
 
     await act(async () => boton('Sin leer')!.click())
 
     expect(marcas()).toHaveLength(1)
-    expect(boton('Sin leer')!.contains(marcas()[0])).toBe(true)
-    expect(boton('Todas')!.contains(marcas()[0])).toBe(false)
+    expect(marcas()[0]).toBe(boton('Sin leer'))
   })
 
   it('el «sin leer» del filtro cuenta hacia el número nuevo al marcar una como leída', async () => {

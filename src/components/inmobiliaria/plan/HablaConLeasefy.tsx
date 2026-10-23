@@ -1,9 +1,10 @@
 'use client';
 
-import { ChatCircleText, Buildings } from '@phosphor-icons/react';
+import { ChatCircleText } from '@phosphor-icons/react';
 import { Presence } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 
 /**
@@ -40,22 +41,25 @@ export function HablaConLeasefy() {
   const { currentPlan, subscriptionStatus, indeterminate } = useAgencySubscription();
   const asunto = encodeURIComponent('Cambio de plan de mi inmobiliaria');
   return (
-    <div className="mx-auto max-w-2xl space-y-4 p-6" data-testid="habla-con-leasefy">
+    // Ronda 30: el contenedor y el encabezado común del panel (antes una caja centrada con su h1 propio y el ícono
+    // del edificio): sección, título liviano y UNA línea de para qué; la tarjeta dice el plan y la única salida.
+    <div className="space-y-6 p-6 lg:p-8" data-testid="habla-con-leasefy">
       <BackButton />
+      <EncabezadoDePantalla
+        seccion="Tu cuenta"
+        titulo="Habla con Leasefy"
+        descripcion="El plan de tu inmobiliaria lo cambia el equipo de Leasefy: desde aquí no se escoge ni se paga."
+      />
       <Presence show>
-        <div className="space-y-4 rounded-lg border border-border bg-surface p-6">
-          <div className="flex items-center gap-3">
-            <Buildings className="h-6 w-6 text-fg-muted" aria-hidden />
-            <h1 className="text-lg font-semibold text-fg">Habla con Leasefy</h1>
-          </div>
+        <div className="max-w-2xl space-y-4 rounded-lg border border-border bg-surface p-6">
           {!indeterminate && (
-            <p className="text-sm text-fg" data-testid="habla-con-leasefy-plan">
+            <p className="text-sm font-medium text-fg" data-testid="habla-con-leasefy-plan">
               {textoDelEstadoDelPlan({ nombre: currentPlan?.name ?? null, estado: subscriptionStatus })}
             </p>
           )}
           <p className="text-sm text-fg-muted">
-            El plan de tu inmobiliaria lo cambia el equipo de Leasefy: desde aquí no se escoge ni se paga. Cuéntanos qué
-            necesitas (más inmuebles, más personas en el equipo o el Piloto automático) y lo ajustamos contigo.
+            Cuéntanos qué necesitas (más inmuebles, más personas en el equipo o el Piloto automático) y lo ajustamos
+            contigo.
           </p>
           <Button hideArrow asChild>
             <a href={`mailto:${CORREO_DE_LEASEFY}?subject=${asunto}`} data-testid="habla-con-leasefy-correo">

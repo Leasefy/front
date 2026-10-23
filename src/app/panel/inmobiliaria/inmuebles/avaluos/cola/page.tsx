@@ -23,7 +23,7 @@ import {
   motionEase,
   usePrefersReducedMotion,
 } from '@leasefy/cadence'
-import { ArrowSquareOut, FileMagnifyingGlass } from '@phosphor-icons/react'
+import { ArrowSquareOut, FileMagnifyingGlass, WarningCircle } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { Badge } from '@/components/ui/badge'
@@ -200,10 +200,16 @@ function AvaluosCola() {
           cuandoVacio={
             servicioCaido ? (
               // Revisora r25: el fallo con su «Reintentar» (antes texto plano, sin salida).
-              <div className="flex flex-col items-center gap-3 px-4 py-8 text-center" data-testid="avaluos-cola-sin-servicio">
-                <p className="text-body-sm text-fg-muted">{t(`${NS}.colaSinServicio`)}</p>
+              // Ronda 30 (revisora r27): el fallo con la forma del de la casa —ícono, título, qué pasó y la salida—, sin
+              // primera persona (antes una frase suelta «No pudimos leer…» y un botón).
+              <div className="flex flex-col items-center gap-3 px-6 py-12 text-center" data-testid="avaluos-cola-sin-servicio">
+                <WarningCircle className="h-8 w-8 text-fg-subtle" aria-hidden="true" />
+                <p className="text-body font-medium text-fg">No se pudieron leer tus solicitudes</p>
+                <p className="max-w-md text-body-sm text-fg-muted">
+                  El servicio de avalúos no responde. Lo demás de Leasefy sigue funcionando.
+                </p>
                 <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()} data-testid="avaluos-cola-reintentar">
-                  Reintentar
+                  Intentar de nuevo
                 </Button>
               </div>
             ) : (

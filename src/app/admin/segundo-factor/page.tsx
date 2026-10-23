@@ -248,7 +248,8 @@ function SegundoFactor() {
             ¿Perdiste el celular? Pide a otra persona del equipo de Leasefy que te lo restablezca desde «Equipo Leasefy».
           </p>
         ) : null}
-        <Button type="button" variant="link" size="sm" hideArrow onClick={() => void cerrarSesion()}>
+        {/* Ronda 28 (revisora r27): alineado con el borde del texto (el relleno del enlace lo corría ≈16 px). */}
+        <Button type="button" variant="link" size="sm" hideArrow className="h-auto px-0" onClick={() => void cerrarSesion()}>
           Cerrar sesión
         </Button>
       </div>

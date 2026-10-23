@@ -525,14 +525,16 @@ export function CarteraPorConcepto() {
                     ancho entre nueve columnas y «Fabián Correa Gallego» se
                     parte en tres renglones, que es exactamente el amontonamiento
                     que Nico señaló. */}
-                <TableHead className="min-w-[14rem] whitespace-nowrap">Inquilino</TableHead>
+                {/* Ronda 30 (revisora r27): anchos mínimos más justos para que la tabla quepa a 1440 y la columna
+                    fija «Debe» no tape «Sin desglose». */}
+                <TableHead className="min-w-[12rem] whitespace-nowrap">Inquilino</TableHead>
                 {conceptos.map((c) => (
                   <TableHead key={c} className="whitespace-nowrap text-right">
                     {NOMBRE_DEL_CONCEPTO[c]}
                   </TableHead>
                 ))}
                 {haySinDesglose ? (
-                  <TableHead className="min-w-[9rem] whitespace-nowrap text-right">Sin desglose</TableHead>
+                  <TableHead className="min-w-[7.5rem] whitespace-nowrap pr-6 text-right">Sin desglose</TableHead>
                 ) : null}
                 <TableHead className="whitespace-nowrap text-right" title={t(CLAVE_DE_MORA.explicacion)}>
                   {t(CLAVE_DE_MORA.columnaMoraLiquidadaHoy)}

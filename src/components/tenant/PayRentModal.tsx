@@ -300,7 +300,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
               <p className="text-sm font-medium text-fg">{monthName}</p>
               <div className="border-t border-border-faint my-3" />
               <MonoLabel className="block tracking-wider mb-1 text-fg-muted">Monto a pagar</MonoLabel>
-              <p className="text-3xl font-bold text-fg font-mono tabular-nums">
+              <p className="text-3xl font-normal text-fg font-mono tabular-nums">
                 {formatCurrency(paymentInfo.monthlyRent)}
               </p>
             </div>
@@ -359,7 +359,7 @@ function Row({ label, value, mono = false }: { label: string; value: string; mon
       <span
         className={cn(
           'text-fg font-medium text-right break-all',
-          mono && 'font-mono tabular-nums text-[11px]'
+          mono && 'font-mono tabular-nums text-caption'
         )}
       >
         {value || '—'}

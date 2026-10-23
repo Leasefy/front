@@ -147,7 +147,7 @@ export function TenantDashboardEmpty() {
   ];
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
           seccion={locale === 'es' ? 'Inicio' : 'Home'}

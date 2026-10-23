@@ -218,7 +218,7 @@ export default function ParaTiPage() {
         <div className="max-w-6xl mx-auto px-6 py-8">
           <FalloDeCarga
             error={errorRecomendaciones}
-            queEs="las propiedades que te caben"
+            queEs="los inmuebles que te caben"
             onReintentar={recargarRecomendaciones}
           />
         </div>
@@ -380,8 +380,8 @@ export default function ParaTiPage() {
               <span className="text-sm text-white/80 lg:max-w-[8.5rem]">
                 {locale === 'es'
                   ? cuantasCaben === 1
-                    ? 'propiedad cabe en tu tope'
-                    : 'propiedades caben en tu tope'
+                    ? 'inmueble cabe en tu tope'
+                    : 'inmuebles caben en tu tope'
                   : cuantasCaben === 1
                     ? 'property fits your cap'
                     : 'properties fit your cap'}
@@ -418,9 +418,9 @@ export default function ParaTiPage() {
               icon={Lightning}
             />
             <PlanStatsCard
-              label={locale === 'es' ? 'Mejor match' : 'Best match'}
+              label={locale === 'es' ? 'El que más te calza' : 'Best match'}
               value={`${stats.topMatch}%`}
-              sublabel={locale === 'es' ? 'Tu top propiedad' : 'Your top property'}
+              sublabel={locale === 'es' ? 'Tu inmueble más afín' : 'Your top property'}
               icon={Trophy}
             />
             <PlanStatsCard

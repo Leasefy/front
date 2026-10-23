@@ -27,7 +27,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
-import { Handshake, Info } from '@phosphor-icons/react';
+import { Handshake } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -128,7 +128,7 @@ export function SolicitarPlanPagoModal({
             accion: 'enviar tu solicitud',
             porDefecto:
               locale === 'es'
-                ? 'No pudimos enviar tu solicitud. Intenta de nuevo.'
+                ? 'No se pudo enviar tu solicitud. Intenta de nuevo.'
                 : 'We could not submit your request. Please try again.',
           }),
         );
@@ -153,21 +153,12 @@ export function SolicitarPlanPagoModal({
           </DialogTitle>
           <DialogDescription>
             {locale === 'es'
-              ? 'Propones el plan; tu inmobiliaria lo revisa y aprueba.'
+              ? 'Tú lo propones; los términos los define y los aprueba tu inmobiliaria.'
               : 'You propose the plan; your agency reviews and approves it.'}
           </DialogDescription>
         </DialogHeader>
 
-        {/* T-323 notice — the tenant proposes; the agency sets and approves terms. */}
-        <div className="rounded-[14px] border border-primary/20 bg-primary-soft p-4 flex items-start gap-3">
-          <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-sm text-fg">
-            {locale === 'es'
-              ? 'Estás proponiendo un plan de pago. Los términos los define y aprueba tu inmobiliaria.'
-              : 'You are proposing a payment plan. The terms are set and approved by your agency.'}
-          </p>
-        </div>
-
+        {/* Ronda 30: sin la caja azul que repetía la descripción (T-323 lo dice ella: propones tú, decide tu inmobiliaria). */}
         {/* Read-only summary of which arriendo the request is for */}
         <div>
           <span className="block text-sm font-medium text-fg mb-1.5">
@@ -191,7 +182,7 @@ export function SolicitarPlanPagoModal({
             <div className="rounded-[14px] border border-border bg-surface-hover p-4">
               <p className="text-sm text-fg-muted">
                 {locale === 'es'
-                  ? 'No encontramos un arriendo activo asociado a tu cuenta.'
+                  ? 'Tu cuenta no tiene un arriendo activo.'
                   : 'We could not find an active lease on your account.'}
               </p>
             </div>

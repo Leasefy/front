@@ -134,7 +134,7 @@ export default function ApplicationDetailPage() {
           </h2>
           <p className="text-fg-muted mb-6 max-w-sm">
             {error || (locale === 'es'
-              ? 'No pudimos encontrar esta postulación. Es posible que haya sido eliminada o el enlace sea incorrecto.'
+              ? 'No se encontró esta postulación: puede que la hayan retirado o que el enlace esté mal.'
               : 'We couldn\'t find this application. It may have been deleted or the link is incorrect.')}
           </p>
           <Button onClick={() => router.push('/inquilino/aplicaciones')}>
@@ -256,14 +256,12 @@ export default function ApplicationDetailPage() {
             <div className="relative w-full lg:w-[400px] h-48 sm:h-64 lg:h-auto flex-shrink-0">
               <Image
                 src={property?.thumbnail || '/placeholder-property.svg'}
-                alt={property?.title || 'Propiedad'}
+                alt={property?.title || 'Inmueble'}
                 fill
                 className="object-cover"
                 priority
               />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-surface-muted/80 hidden lg:block" />
-              <div className="absolute inset-0 bg-gradient-to-t from-surface-muted/80 via-transparent to-transparent lg:hidden" />
+              {/* Ronda 30 (Cadence 2): la foto sin velos degradados. */}
             </div>
 
             {/* Content */}

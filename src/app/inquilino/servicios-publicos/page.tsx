@@ -8,14 +8,12 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Lightning } from '@phosphor-icons/react';
 import { CrossFade, StatusBadge } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
-import { SinDatos } from '@/components/estado/SinDatos';
+import { SinArriendoTodavia } from '@/components/tenant/SinArriendoTodavia';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -115,20 +113,12 @@ export default function ServiciosPublicosDelInquilino() {
           {!datos ? (
             <EsqueletoTabla columnas={3} filas={3} />
           ) : vigentes.length === 0 ? (
-            <div className="rounded-lg border border-border bg-card">
-              <SinDatos
-                queSon="arriendos"
-                icono={Lightning}
-                ilustracion="casa"
-                titulo="No tienes un arriendo vigente"
-                descripcion="Cuando tengas un arriendo vigente, aquí subes cada mes la factura de servicios que pagaste."
-                accion={
-                  <Button asChild variant="outline" hideArrow>
-                    <Link href="/inquilino">Ir a mi arriendo</Link>
-                  </Button>
-                }
-              />
-            </div>
+            // Ronda 30 (r27 CA): el mismo vacío de «Mi arriendo» (antes «No tienes un arriendo vigente» en tarjeta y
+            // «Ir a mi arriendo», que llevaba al Inicio de quien no arrienda).
+            <SinArriendoTodavia
+              queVaAqui="Cuando arriendes, aquí subes cada mes la factura de servicios que pagaste."
+              whatGoesHere="Once you rent, this is where you upload each month's utility bill."
+            />
           ) : (
             <div className="space-y-4">
               {vigentes.map((c) => (

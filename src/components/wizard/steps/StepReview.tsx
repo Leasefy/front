@@ -134,21 +134,21 @@ export function StepReview() {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">{rotuloDelIngreso(employment.employmentStatus).corto}:</span>
-            <span className="font-medium text-foreground">
-              {income.monthlySalary ? formatCurrency(income.monthlySalary) : '-'}
+            <span className="font-mono tabular-nums text-foreground">
+              {income.monthlySalary ? formatCurrency(income.monthlySalary) : '—'}
             </span>
           </div>
           {income.additionalIncome !== undefined && income.additionalIncome > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Adicional:</span>
-              <span className="font-medium text-foreground">
+              <span className="font-mono tabular-nums text-foreground">
                 {formatCurrency(income.additionalIncome)}
               </span>
             </div>
           )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Obligaciones:</span>
-            <span className="font-medium text-danger">
+            <span className="font-mono tabular-nums text-foreground">
               {income.monthlyObligations !== undefined
                 ? formatCurrency(income.monthlyObligations)
                 : '-'}
@@ -156,8 +156,8 @@ export function StepReview() {
           </div>
           <div className="border-t border-border pt-2 flex justify-between">
             <span className="text-foreground font-medium">Disponible:</span>
-            <span className="font-medium text-success">
-              {income.availableForRent ? formatCurrency(income.availableForRent) : '-'}
+            <span className="font-mono tabular-nums text-foreground">
+              {income.availableForRent ? formatCurrency(income.availableForRent) : '—'}
             </span>
           </div>
         </div>

@@ -111,9 +111,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
       ) : (
       <div className="flex items-center justify-between border-b border-border pb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Shield className="h-6 w-6 text-primary" />
-          </div>
+          <Shield className="h-6 w-6 shrink-0 text-fg-muted" aria-hidden="true" />
           <div>
             <h3 className="font-medium text-fg text-base">
               Certificado de Autenticidad Digital
@@ -277,7 +275,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
             {variant === 'full' && (
               <p className="text-caption text-fg-muted mt-2 leading-relaxed">
                 Para verificar la autenticidad de este documento, escanee el código QR o visite
-                <span className="font-mono text-primary ml-1">verify.leasefy.co/{certificateId}</span>
+                <span className="font-mono text-fg ml-1">verify.leasefy.co/{certificateId}</span>
               </p>
             )}
           </div>

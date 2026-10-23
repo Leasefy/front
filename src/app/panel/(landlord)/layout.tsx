@@ -170,7 +170,14 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
               ? [...AGENCY_OWNER_NAV_ITEMS, PORTAL_DEL_INQUILINO]
               : AGENCY_OWNER_NAV_ITEMS
             : propietarioGratis
-              ? LANDLORD_NAV_ITEMS.map((f) => (abiertaParaElPropietarioGratis(f.href) ? f : { ...f, tag: 'Demo' }))
+              ? // Ronda 30 (revisora r27 CE): «Demo» sólo en la fila cuyas pestañas son TODAS venta (antes «Solicitudes»
+                // decía Demo aunque «Por decidir» es real).
+                LANDLORD_NAV_ITEMS.map((f) =>
+                  abiertaParaElPropietarioGratis(f.href) ||
+                  (seccionDelIndependiente(f.href)?.pestanas ?? []).some((p) => abiertaParaElPropietarioGratis(p.href))
+                    ? f
+                    : { ...f, tag: 'Demo' },
+                )
               : LANDLORD_NAV_ITEMS,
           unreadCount,
         )}

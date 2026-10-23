@@ -376,7 +376,7 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
         <BackLink locale={locale} />
         <EmptyState
           icon={XCircle}
-          title={locale === 'es' ? 'No pudimos cargar el acuerdo' : "We couldn't load the agreement"}
+          title={locale === 'es' ? 'No se pudo cargar el acuerdo' : "We couldn't load the agreement"}
           description={error}
           /* «Volver» ya está arriba: aquí, volver a pedir (antes, el mismo «Volver a Acuerdos» dos veces). */
           action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', onClick: () => void refetch() }}

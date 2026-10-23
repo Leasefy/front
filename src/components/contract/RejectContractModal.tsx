@@ -145,7 +145,7 @@ export function RejectContractModal({
             placeholder={
               type === 'MODIFICATIONS'
                 ? 'Ej: El depósito es muy alto, propongo reducirlo a 1 mes de renta.'
-                : 'Ej: Decidí no continuar con esta propiedad.'
+                : 'Ej.: decidí no seguir con este inmueble.'
             }
             rows={4}
             maxLength={REASON_MAX}

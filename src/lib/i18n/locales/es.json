@@ -11329,8 +11329,8 @@
         "publicar": "Publicar",
         "calidad": "Calidad"
       },
-      "seccion": "Agentes IA",
-      "titulo": "Calidad de publicaciones · Niti",
+      "seccion": "Agentes IA · Niti",
+      "titulo": "Calidad de publicaciones",
       "listaAria": "Inmuebles auditados, de peor a mejor",
       "descripcion": "Revisa tus inmuebles con la misma regla de «mínimo para publicar» de Portales, le suma lo suyo y propone arreglos. En Automático arregla sola la ficha con lo que ya tiene (con tu tiempo para deshacerlo); despublicar o publicar en un portal siempre espera tu clic. Nunca le escribe al propietario.",
       "ultimaPasada": "Última pasada: {{fecha}}",
@@ -11351,7 +11351,7 @@
       "filtro": {
         "todos": "Todos",
         "con_problemas": "Con algo por arreglar",
-        "posible_tomado": "Posible tomado",
+        "posible_tomado": "Quizás ya se arrendó",
         "fotos": "Fotos señaladas"
       },
       "conteoUno": "1 inmueble",

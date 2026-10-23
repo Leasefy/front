@@ -451,4 +451,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Con plan activo": "With an active plan",
   "Sin atender": "Unattended",
   "Aparte:": "Separately:",
+  "Lo que le falta a cada publicación para salir bien en los portales.": "What each listing is missing to show up well on the portals.",
+  "fotos revisadas este mes": "photos reviewed this month",
 }

@@ -11294,8 +11294,8 @@
         "publicar": "Publish",
         "calidad": "Quality"
       },
-      "seccion": "AI agents",
-      "titulo": "Listing quality · Niti",
+      "seccion": "AI agents · Niti",
+      "titulo": "Listing quality",
       "listaAria": "Audited properties, from worst to best",
       "descripcion": "Reviews your properties with the same «minimum to publish» rule as Portals, adds its own checks and suggests fixes. In Automatic it fixes the listing on its own with what it already has (with time for you to undo it); unpublishing or publishing on a portal always waits for your click. It never writes to the owner.",
       "ultimaPasada": "Last run: {{fecha}}",
@@ -11316,7 +11316,7 @@
       "filtro": {
         "todos": "All",
         "con_problemas": "Something to fix",
-        "posible_tomado": "Possibly taken",
+        "posible_tomado": "May already be rented",
         "fotos": "Flagged photos"
       },
       "conteoUno": "1 property",

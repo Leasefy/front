@@ -75,10 +75,15 @@ const nombreDelMes = (clave: string | null | undefined) => {
  * fuentes de ingreso: la mensualidad del plan con sus cobros, y lo que se le
  * cobra por la cobranza por voz (estimado con la fórmula de su factura).
  */
+const FALLO_DE_LA_FORMA = new Error(
+  'El servidor mandó los ingresos sin la lista de inmobiliarias: esta parte del admin todavía no está al día en el servidor.',
+)
+
 export default function IngresosPage() {
   const router = useRouter()
   const ingresos = useApiQuery<RespuestaDeIngresos>((signal) => adminApi('/billing', { signal }), [])
   const d = ingresos.data
+  const formaVieja = Boolean(d) && !Array.isArray(d?.inmobiliarias)
   const t = d?.totales
   const mes = d?.mes ? nombreDelMes(d.mes) : ''
 
@@ -223,18 +228,21 @@ export default function IngresosPage() {
         </div>
       ) : null}
 
+      {/* Ronda 28 (revisora r27): si la respuesta no trae la lista, es un fallo, no un vacío (antes «Todavía no
+          hay inmobiliarias» con 5 registradas: el servidor mandaba la forma vieja). */}
       {d && !d.vozDisponible ? (
         <Alert variant="warning">No se pudo leer la base de los agentes: lo de la cobranza por voz no aparece (no es cero).</Alert>
       ) : null}
 
       <DataTable
         columns={columnas}
-        rows={d?.inmobiliarias}
+        rows={formaVieja ? undefined : d?.inmobiliarias}
         getKey={(f) => f.tenant_id}
         isLoading={ingresos.isLoading}
-        error={ingresos.error}
+        error={ingresos.error ?? (formaVieja ? FALLO_DE_LA_FORMA : null)}
         onReintentar={ingresos.refetch}
         emptyTitle="Todavía no hay inmobiliarias"
+        emptyHint="Cuando una inmobiliaria se registre, aparece aquí con lo que factura."
         emptyIcon={<ChartLineUp weight="duotone" />}
         aria-label="Ingresos por inmobiliaria"
         onRowClick={(f) => router.push(`/admin/tenants/${f.tenant_id}`)}
@@ -242,7 +250,7 @@ export default function IngresosPage() {
         buscar="Buscar inmobiliaria"
         segmentos={SEGMENTOS}
         // Ronda 26 (revisora r25): lo pendiente primero. Abre en «En mora» si hay alguna, y ordena por «Por cobrar».
-        segmentoInicial={(d?.inmobiliarias ?? []).some((f) => SEGMENTOS[2].cumple(f)) ? 'mora' : 'todas'}
+        segmentoInicial={(formaVieja ? [] : d?.inmobiliarias ?? []).some((f) => SEGMENTOS[2].cumple(f)) ? 'mora' : 'todas'}
         ordenInicial={{ columna: 3, sentido: 'desc' }}
         cifraDelCelular={`Cobrado en ${mes || 'el mes'}`}
         exportar={`ingresos-${d?.mes ?? ''}`}

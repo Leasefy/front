@@ -14,14 +14,17 @@
  * disabled while a decision is in flight and hidden entirely for users without
  * certify permission (OPERATOR+).
  *
- * Styling vocabulary mirrors components/beta/DecisionCard.tsx (left accent bar,
- * neutral hairline, brand success/danger tokens) and the brand heading font
- * (font-heading / Satoshi), never a serif.
+ * Glow up 22-10-2026 (Cadence 2): tokens de la casa en vez de hex, el estado
+ * en una pastilla (`Badge`) y el tipo y el agente en una línea gris (antes
+ * tres pastillas de color y una barra de color a la izquierda); letra de 13 px
+ * como mínimo (los #temas iban a 10 px); «Certificar» de borde: en la lista hay
+ * una por lección y el azul de la pantalla es uno solo.
  */
 
-import { CheckCircle, ArrowCounterClockwise, Check, X, Robot } from '@phosphor-icons/react'
+import { ArrowCounterClockwise, Check, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import type {
   ChatLesson,
   ChatLessonAgent,
@@ -43,7 +46,7 @@ const AGENT_LABEL: Record<ChatLessonAgent, string> = {
   cobranza: 'Cobranza',
   cotizador: 'Asegurabilidad',
   estudio: 'Estudio',
-  matching: 'Matching',
+  matching: 'Afinidad',
   avaluo: 'Avalúos',
   conciliacion: 'Conciliación',
   pagos: 'Pagos',
@@ -52,13 +55,6 @@ const AGENT_LABEL: Record<ChatLessonAgent, string> = {
 function agentLabel(agent: ChatLesson['pattern']['agent']): string {
   if (!agent) return 'General'
   return AGENT_LABEL[agent as ChatLessonAgent] ?? agent
-}
-
-/** Brand accent per status (left bar), mirroring DecisionCard's token set. */
-const STATUS_ACCENT: Record<ChatLesson['status'], string> = {
-  candidate: 'border-l-[#1A40FF]',
-  certified: 'border-l-[#2C7A53]',
-  rejected: 'border-l-neutral-300',
 }
 
 /** Relative "última vez" without a date-fns dependency (Intl semantics). */
@@ -105,73 +101,46 @@ export function ChatLessonCard({
       data-testid="chat-lesson-card"
       data-status={lesson.status}
       className={cn(
-        'rounded-lg border border-neutral-200/70',
-        'border-l-[3px]',
-        STATUS_ACCENT[lesson.status],
-        'bg-white',
+        'rounded-lg border border-border bg-card',
         'transition-opacity duration-base ease-standard',
         isRejected && 'opacity-60',
         className,
       )}
     >
       <div className="p-4 sm:p-5">
-        {/* Header: kind + agent badges, status chip */}
+        {/* Tipo y agente en una línea gris; el estado en su pastilla */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center rounded-md bg-[#EEF1FF] px-2 py-0.5 text-[11px] font-medium text-[#1A40FF]">
-            {KIND_LABEL[lesson.kind]}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
-            <Robot weight="duotone" className="h-3 w-3" />
-            {agentLabel(lesson.pattern.agent)}
-          </span>
+          <p className="text-caption text-fg-muted">
+            {KIND_LABEL[lesson.kind]} · {agentLabel(lesson.pattern.agent)}
+          </p>
 
           <div className="ml-auto">
-            {isCertified && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F3EC] px-2 py-0.5 text-[11px] font-medium text-[#2C7A53]">
-                <CheckCircle weight="fill" className="h-3.5 w-3.5" />
-                Certificada
-              </span>
-            )}
-            {isRejected && (
-              <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
-                Descartada
-              </span>
-            )}
-            {isCandidate && (
-              <span className="inline-flex items-center rounded-full bg-[#F8F0E0] px-2 py-0.5 text-[11px] font-medium text-[#B7791F]">
-                Candidata
-              </span>
-            )}
+            {isCertified && <Badge variant="success">Certificada</Badge>}
+            {isRejected && <Badge variant="secondary">Descartada</Badge>}
+            {isCandidate && <Badge variant="warning">Candidata</Badge>}
           </div>
         </div>
 
         {/* Recommendation — the primary text (brand heading font) */}
-        <p className="mt-3 font-heading text-[15px] font-medium leading-snug text-neutral-900">
+        <p className="mt-2 text-body leading-snug text-fg">
           {lesson.recommendation}
         </p>
 
         {/* Tags */}
         {lesson.pattern.tags.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <p className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-caption text-fg-muted">
             {lesson.pattern.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] text-neutral-500"
-              >
-                #{tag}
-              </span>
+              <span key={tag}>#{tag}</span>
             ))}
-          </div>
+          </p>
         )}
 
         {/* Evidence */}
-        <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-neutral-500">
+        <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-fg-muted">
           <div className="flex items-center gap-1">
             <dt className="sr-only">Observaciones</dt>
             <dd className="tabular-nums">
-              <span className="font-medium text-fg">
-                {lesson.evidence.support}
-              </span>{' '}
+              <span className="text-fg">{lesson.evidence.support}</span>{' '}
               {lesson.evidence.support === 1 ? 'observación' : 'observaciones'}
             </dd>
           </div>
@@ -182,12 +151,14 @@ export function ChatLessonCard({
               <div className="flex items-center gap-1">
                 <dt className="sr-only">Aprobadas / rechazadas</dt>
                 <dd className="tabular-nums">
-                  <span className="text-[#2C7A53]">
-                    {lesson.evidence.approved ?? 0} aprob.
+                  <span className="text-success-700 dark:text-success-100">
+                    {lesson.evidence.approved ?? 0}{' '}
+                    {(lesson.evidence.approved ?? 0) === 1 ? 'aprobada' : 'aprobadas'}
                   </span>
                   {' · '}
-                  <span className="text-[#C4503B]">
-                    {lesson.evidence.rejected ?? 0} rech.
+                  <span className="text-danger">
+                    {lesson.evidence.rejected ?? 0}{' '}
+                    {(lesson.evidence.rejected ?? 0) === 1 ? 'rechazada' : 'rechazadas'}
                   </span>
                 </dd>
               </div>
@@ -201,7 +172,7 @@ export function ChatLessonCard({
 
         {/* Sample question */}
         {lesson.evidence.sampleQuestion && (
-          <p className="mt-2 border-l-2 border-neutral-200 pl-2.5 text-caption italic text-neutral-500">
+          <p className="mt-2 border-l-2 border-border pl-2.5 text-caption italic text-fg-muted">
             “{lesson.evidence.sampleQuestion}”
           </p>
         )}
@@ -213,7 +184,7 @@ export function ChatLessonCard({
               <>
                 <Button
                   size="sm"
-                  variant="default"
+                  variant="outline"
                   isLoading={isBusy}
                   disabled={isBusy}
                   hideArrow
@@ -224,7 +195,7 @@ export function ChatLessonCard({
                 </Button>
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   disabled={isBusy}
                   onClick={() => onDecide(lesson.id, 'rejected')}
                 >

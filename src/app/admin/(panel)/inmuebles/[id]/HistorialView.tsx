@@ -92,7 +92,8 @@ function Seccion({
  * calculado por el back y lo pinta. 🔴 Interno de Leasefy — la inmobiliaria no
  * ve nada de esto (Nico, 2026-09-12). Sin estado propio: se prueba sin red.
  */
-export function HistorialView({ historial }: { historial: HistorialDelInmueble }) {
+/** `enCajon` (ronda 26): dentro del cajón de la lista, sin encabezado (el título del cajón ya dice cuál es). */
+export function HistorialView({ historial, enCajon = false }: { historial: HistorialDelInmueble; enCajon?: boolean }) {
   const { inmueble, contratos, ocupacion, reparaciones, canon, riesgo } = historial
 
   const columnasDeContratos: Column<ContratoDelHistorial>[] = [
@@ -186,16 +187,25 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
   ]
 
   return (
-    <div className="space-y-6 p-6 lg:p-8">
-      <BackButton href="/admin/inmuebles" label="Volver a inmuebles" />
+    <div className={enCajon ? 'space-y-5' : 'space-y-6 p-6 lg:p-8'}>
+      {enCajon ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone="neutral">{ESTADO_DE_INMUEBLE[inmueble.status]}</Pill>
+          <span className="text-caption text-fg-muted">Interno de Leasefy: la inmobiliaria no lo ve.</span>
+        </div>
+      ) : (
+        <>
+          <BackButton href="/admin/inmuebles" label="Volver a inmuebles" />
 
-      <PageHeader
-        title={`#${inmueble.code}${inmueble.externalId ? ` · ${inmueble.externalId} en la inmobiliaria` : ''}`}
-        description={`${inmueble.address} · ${inmueble.city}${inmueble.agencia ? ` · ${inmueble.agencia.name}` : ''}`}
-        junto={<Pill tone="neutral">{ESTADO_DE_INMUEBLE[inmueble.status]}</Pill>}
-      />
+          <PageHeader
+            title={`#${inmueble.code}${inmueble.externalId ? ` · ${inmueble.externalId} en la inmobiliaria` : ''}`}
+            description={`${inmueble.address} · ${inmueble.city}${inmueble.agencia ? ` · ${inmueble.agencia.name}` : ''}`}
+            junto={<Pill tone="neutral">{ESTADO_DE_INMUEBLE[inmueble.status]}</Pill>}
+          />
 
-      <p className="-mt-2 text-caption text-fg-muted">Interno de Leasefy: la inmobiliaria no ve esta pantalla.</p>
+          <p className="-mt-2 text-caption text-fg-muted">Interno de Leasefy: la inmobiliaria no ve esta pantalla.</p>
+        </>
+      )}
 
       {/* Medidor de riesgo, con cada señal y sus puntos a la vista */}
       <Card className="p-5" data-testid="riesgo">

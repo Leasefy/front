@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useCallback, useRef } from 'react'
 import { Robot } from '@phosphor-icons/react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
@@ -9,6 +9,9 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { nombreDelModelo, proveedor } from '@/lib/admin/textos-del-admin'
+import { CajonDeLaFicha, useFichaEnLaUrl } from '@/components/admin/screen/CajonDeLaFicha'
+import { confirmar } from '@/components/ui/confirmar'
+import { DetalleDelAgente } from './DetalleDelAgente'
 
 /** Minimal Vapi assistant shape returned by GET /agents (BACK.md §8.2). */
 interface Agent {
@@ -24,7 +27,26 @@ interface Agent {
 
 /** /admin/agents — Vapi assistant list (FRONT.md §6.2 · BACK.md §8.2). */
 export default function AgentsPage() {
-  const router = useRouter()
+  // Ronda 26 (revisora r25): las instrucciones se editan en un cajón ancho sobre la lista (antes otra
+  // página). Con cambios sin guardar, cerrar pregunta primero.
+  const { ver, abrir } = useFichaEnLaUrl()
+  const sucio = useRef(false)
+  const alEnsuciar = useCallback((v: boolean) => {
+    sucio.current = v
+  }, [])
+  const cerrar = async () => {
+    if (sucio.current) {
+      const ok = await confirmar({
+        titulo: '¿Cerrar sin guardar las instrucciones?',
+        descripcion: 'Los cambios que hiciste en este agente se pierden.',
+        accion: 'Cerrar sin guardar',
+        cancelar: 'Seguir editando',
+      })
+      if (!ok) return
+    }
+    sucio.current = false
+    abrir(null)
+  }
   const agents = useApiQuery<Agent[]>(
     (signal) => adminApi('/agents', { signal }),
     [],
@@ -98,7 +120,7 @@ export default function AgentsPage() {
         emptyIcon={<Robot weight="duotone" />}
         onReintentar={agents.refetch}
         aria-label="Agentes de voz"
-        onRowClick={(r) => router.push(`/admin/agents/${r.id}`)}
+        onRowClick={(r) => abrir(r.id)}
         queSon={['agente', 'agentes']}
         buscar="Nombre, modelo o voz"
         ordenInicial={{ columna: 4, sentido: 'desc' }}
@@ -108,6 +130,15 @@ export default function AgentsPage() {
           { header: 'Proveedor del modelo', texto: (r) => r.model?.provider ?? '' },
         ]}
       />
+      <CajonDeLaFicha
+        ver={ver}
+        onCerrar={cerrar}
+        titulo={agents.data?.find((a) => a.id === ver)?.name ?? 'El agente'}
+        enlace={`/admin/agents/${ver}`}
+        tamano="xl"
+      >
+        <DetalleDelAgente key={ver} id={ver} enCajon onSucio={alEnsuciar} />
+      </CajonDeLaFicha>
     </div>
   )
 }

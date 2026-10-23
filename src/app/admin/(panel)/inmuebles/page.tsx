@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { House } from '@phosphor-icons/react'
 import { listarInmuebles, ESTADO_DE_INMUEBLE, type InmuebleAdminRow } from '@/lib/admin/inmuebles'
 import { traerTodasLasPaginas } from '@/lib/admin/api'
@@ -10,6 +9,8 @@ import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import type { Paginated, PillTone } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { CajonDeLaFicha, useFichaEnLaUrl } from '@/components/admin/screen/CajonDeLaFicha'
+import { DetalleDelInmueble } from './DetalleDelInmueble'
 import { BarraDeFiltros, Buscador, Filtro, SelectorDeInmobiliaria } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
@@ -41,8 +42,9 @@ function Cero({ titulo }: { titulo: string }) {
 }
 
 export default function InmueblesPage() {
-  const router = useRouter()
   const { get, page, setFilters, setPage } = useUrlFilters()
+  // Ronda 26 (revisora r25, «cajón ✗»): el historial se abre en un cajón sobre la lista (antes otra página).
+  const { ver, abrir } = useFichaEnLaUrl()
   const q = get('q')
   const agencyId = get('agencyId')
   const [busqueda, setBusqueda] = useState(q)
@@ -63,6 +65,7 @@ export default function InmueblesPage() {
     (signal) => listarInmuebles({ q, agencyId, page }, signal),
     [q, agencyId, page],
   )
+  const abierto = ver ? data?.data.find((r) => r.id === ver) ?? null : null
 
   const columns: Column<InmuebleAdminRow>[] = [
     // Ronda 26 (revisora r25): el consecutivo de Leasefy y el código de la inmobiliaria ya no son columnas
@@ -162,7 +165,7 @@ export default function InmueblesPage() {
         columns={columns}
         rows={data?.data}
         getKey={(r) => r.id}
-        onRowClick={(r) => router.push(`/admin/inmuebles/${r.id}`)}
+        onRowClick={(r) => abrir(r.id)}
         isLoading={isLoading}
         error={error}
         onReintentar={refetch}
@@ -203,6 +206,15 @@ export default function InmueblesPage() {
         }
       />
       <p className="text-caption text-fg-subtle">Primero los que más contratos han tenido.</p>
+      <CajonDeLaFicha
+        ver={ver}
+        onCerrar={() => abrir(null)}
+        titulo={abierto ? `#${abierto.code}` : 'El inmueble'}
+        descripcion={abierto?.address}
+        enlace={`/admin/inmuebles/${ver}`}
+      >
+        <DetalleDelInmueble key={ver} id={ver} enCajon />
+      </CajonDeLaFicha>
     </div>
   )
 }

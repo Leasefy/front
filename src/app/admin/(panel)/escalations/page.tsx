@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Card, MonoLabel, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
@@ -13,6 +12,8 @@ import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { urgencia } from '@/lib/admin/textos-del-admin'
+import { CajonDeLaFicha, useFichaEnLaUrl } from '@/components/admin/screen/CajonDeLaFicha'
+import { DetalleDeLaEscalacion } from './DetalleDeLaEscalacion'
 
 // Board rows are a slim projection (LIMIT 200, bare array — no pagination
 // envelope). Full detail (assignee, resolution, call) lives in /escalations/:id.
@@ -27,11 +28,17 @@ interface EscalationRow {
   legal_name: string | null
 }
 
-function EscalationCard({ row }: { row: EscalationRow }) {
+function EscalationCard({ row, onAbrir }: { row: EscalationRow; onAbrir: (id: string) => void }) {
   const u = urgencia(row.urgency)
   return (
+    // El enlace queda (abrir en otra pestaña); el clic normal abre el cajón sin dejar el tablero.
     <Link
       href={`/admin/escalations/${row.id}`}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+        e.preventDefault()
+        onAbrir(row.id)
+      }}
       className="group block rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card interactive className="space-y-1.5 p-4">
@@ -54,12 +61,14 @@ function Columna({
   rows,
   vacio,
   apagada = false,
+  onAbrir,
 }: {
   title: string
   sub: string
   rows: EscalationRow[]
   vacio: string
   apagada?: boolean
+  onAbrir: (id: string) => void
 }) {
   return (
     <Card variant="muted" className="flex flex-col gap-3 p-3">
@@ -78,7 +87,7 @@ function Columna({
         <Stagger className={`space-y-2 ${apagada ? 'opacity-75' : ''}`}>
           {rows.map((r) => (
             <StaggerItem key={r.id}>
-              <EscalationCard row={r} />
+              <EscalationCard row={r} onAbrir={onAbrir} />
             </StaggerItem>
           ))}
         </Stagger>
@@ -100,8 +109,10 @@ const RANGO_DE_URGENCIA: Record<string, number> = { live: 0, high: 1, medium: 2,
  * (buscar, pestañas, orden, Excel) y el tablero de 3 columnas como otra vista.
  */
 export default function EscalationsPage() {
-  const router = useRouter()
   const { get, setFilters } = useUrlFilters()
+  // Ronda 26 (revisora r25): tomarla o resolverla en un cajón sobre la lista (antes otra página). `ver` ya
+  // es la vista (tabla/tablero): el caso abierto va en `caso`.
+  const { ver: caso, abrir } = useFichaEnLaUrl('caso')
   const vista = get('ver') === 'tablero' ? 'tablero' : 'tabla'
   const { data, isLoading, error, refetch } = useApiQuery<EscalationRow[]>(
     (signal) => adminApi('/escalations', { signal }),
@@ -109,6 +120,7 @@ export default function EscalationsPage() {
   )
 
   const rows = data ?? []
+  const abierta = caso ? rows.find((r) => r.id === caso) ?? null : null
   const open = rows.filter((r) => r.status === 'open')
   const assigned = rows.filter((r) => r.status === 'assigned')
   const resolved = rows.filter((r) => r.status === 'resolved')
@@ -214,7 +226,7 @@ export default function EscalationsPage() {
           emptyTitle={data && data.length > 0 ? 'Nada por atender' : 'No hay escalaciones'}
           emptyHint="Cuando un agente le pase un caso a una persona, aparece aquí."
           aria-label="Escalaciones"
-          onRowClick={(r) => router.push(`/admin/escalations/${r.id}`)}
+          onRowClick={(r) => abrir(r.id)}
           queSon={['escalación', 'escalaciones']}
           buscar="Deudor o inmobiliaria"
           segmentos={[
@@ -233,11 +245,20 @@ export default function EscalationsPage() {
         <ErrorBlock error={error} onReintentar={refetch} />
       ) : (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-          <Columna title="Abiertas" sub="Sin nadie asignado" rows={open} vacio="Nada abierto." />
-          <Columna title="En curso" sub="Alguien las tiene" rows={assigned} vacio="Nadie está atendiendo una ahora." />
-          <Columna title="Resueltas" sub="Últimos 7 días" rows={resolved} vacio="Ninguna resuelta esta semana." apagada />
+          <Columna title="Abiertas" sub="Sin nadie asignado" rows={open} vacio="Nada abierto." onAbrir={abrir} />
+          <Columna title="En curso" sub="Alguien las tiene" rows={assigned} vacio="Nadie está atendiendo una ahora." onAbrir={abrir} />
+          <Columna title="Resueltas" sub="Últimos 7 días" rows={resolved} vacio="Ninguna resuelta esta semana." apagada onAbrir={abrir} />
         </div>
       )}
+      <CajonDeLaFicha
+        ver={caso}
+        onCerrar={() => abrir(null)}
+        titulo={abierta?.debtor_name ?? 'La escalación'}
+        descripcion={abierta?.legal_name ?? undefined}
+        enlace={`/admin/escalations/${caso}`}
+      >
+        <DetalleDeLaEscalacion key={caso} id={caso} enCajon alCambiar={refetch} />
+      </CajonDeLaFicha>
     </div>
   )
 }

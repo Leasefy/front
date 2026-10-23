@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { PhoneCall, Waveform } from '@phosphor-icons/react'
 import { adminApi, traerTodasLasPaginas } from '@/lib/admin/api'
 import type { Paginated } from '@/lib/admin/types'
@@ -10,6 +9,8 @@ import { fmtDateTime, fmtDuration } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
+import { CajonDeLaFicha, useFichaEnLaUrl } from '@/components/admin/screen/CajonDeLaFicha'
+import { DetalleDeLaLlamada } from './DetalleDeLaLlamada'
 import { BarraDeFiltros, Buscador, Desplegable, Filtro, SelectorDeInmobiliaria } from '@/components/admin/screen/Filtros'
 import { RESULTADOS_DE_LLAMADA, resultadoDeLaLlamada, tonoDelResultado } from '@/lib/admin/textos-del-admin'
 
@@ -29,8 +30,9 @@ interface CallRow {
 
 /** /calls — cross-tenant call log (FRONT.md §6.6 · BACK.md §8.4). */
 export default function CallsPage() {
-  const router = useRouter()
   const { get, page, setFilters, setPage } = useUrlFilters()
+  // Ronda 26 (revisora r25): la llamada se oye en un cajón sin perder la lista (antes otra página).
+  const { ver, abrir } = useFichaEnLaUrl()
   const tenant = get('tenant')
   const outcome = get('outcome')
   const q = get('q')
@@ -39,6 +41,8 @@ export default function CallsPage() {
     (signal) => adminApi('/calls', { query: { tenant, outcome, q, page }, signal }),
     [tenant, outcome, q, page],
   )
+
+  const abierta = ver ? calls.data?.data.find((r) => r.id === ver) ?? null : null
 
   const columns: Column<CallRow>[] = [
     { header: 'Deudor', texto: (r) => r.debtor_name, cell: (r) => <span className="font-medium text-fg">{r.debtor_name ?? '—'}</span> },
@@ -90,7 +94,7 @@ export default function CallsPage() {
         emptyHint={tenant || outcome || q ? 'Prueba con otra inmobiliaria u otro resultado.' : 'Cuando Mori haga la primera, aparece aquí.'}
         emptyIcon={<PhoneCall weight="duotone" />}
         aria-label="Llamadas"
-        onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}
+        onRowClick={(r) => abrir(r.id)}
         barra={
           // Los filtros viven en la URL: se comparten y sobreviven a recargar.
           <BarraDeFiltros>
@@ -126,6 +130,15 @@ export default function CallsPage() {
         exportar="llamadas"
         traerTodoParaElExcel={() => traerTodasLasPaginas<CallRow>('/calls', { tenant, outcome, q })}
       />
+      <CajonDeLaFicha
+        ver={ver}
+        onCerrar={() => abrir(null)}
+        titulo={abierta?.debtor_name ?? 'La llamada'}
+        descripcion={abierta ? [abierta.legal_name, fmtDateTime(abierta.initiated_at)].filter(Boolean).join(' · ') : undefined}
+        enlace={`/admin/calls/${ver}`}
+      >
+        <DetalleDeLaLlamada key={ver} id={ver} enCajon />
+      </CajonDeLaFicha>
     </div>
   )
 }

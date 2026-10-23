@@ -1257,7 +1257,9 @@ export function HubDeContabilidad() {
           {gruposDeDestinos.map((g) => (
             <div key={g.titulo} className="flex min-w-0 items-baseline gap-3">
               <h3 className="w-[5.5rem] shrink-0 text-caption font-medium text-fg-subtle lg:w-auto">{g.titulo}</h3>
-              <ul className="flex min-w-0 gap-x-4 overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
+              {/* Ronda 30 (revisora r27): a 390 el borde derecho se desvanece (como el riel del portal) para que
+                  se lea que hay más al deslizar, en vez de cortarse seco. */}
+              <ul className="flex min-w-0 gap-x-4 overflow-x-auto whitespace-nowrap pr-6 [scrollbar-width:none] max-lg:[mask-image:linear-gradient(to_right,black_80%,transparent)] lg:pr-0">
                 {g.destinos.map((d) => (
                   <li key={d.href}>
                     <Link

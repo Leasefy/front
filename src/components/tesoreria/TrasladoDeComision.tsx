@@ -21,6 +21,7 @@
  */
 
 import { nombreDelMes } from '@/lib/recaudo/meses';
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { ArrowsLeftRight, CheckCircle, Prohibit, XCircle } from '@phosphor-icons/react';
 
@@ -256,6 +257,19 @@ export function TrasladoDeComisionPanel() {
                 </li>
               ))}
             </ul>
+            {/* Revisora r25 (Traslados #1): la cifra que se aprueba y el total de abajo no se hablaban
+                (quien aprueba 916 mil no sabía por qué abajo dice 133,9 millones). UNA línea los une. */}
+            {propuesta && propuesta.disponible && propuesta.totalCop > 0 ? (
+              <p className="text-body-sm text-fg-muted" data-testid="traslado-y-lo-que-queda">
+                {lista.propuestos.some((t) => t.periodo === propuesta.periodo)
+                  ? <>Además de éste, en {nombreDelMes(propuesta.periodo)} quedan{' '}</>
+                  : <>En {nombreDelMes(propuesta.periodo)} hay{' '}</>}
+                <span className="font-mono tabular-nums text-fg">{plata(propuesta.totalCop)}</span> por proponer.{' '}
+                <a href="#propuesta-del-traslado" className="text-fg underline underline-offset-4 hover:text-fg-muted">
+                  Ver el cálculo
+                </a>
+              </p>
+            ) : null}
           </section>
         ) : null}
 
@@ -427,7 +441,8 @@ function Propuesta({
           número salía cuatro veces. Ahora el total va grande ENCIMA del desglose, que
           suma y explica renglón por renglón. */}
       <section
-        className="overflow-hidden rounded-2xl border border-border bg-surface"
+        id="propuesta-del-traslado"
+        className="scroll-mt-24 overflow-hidden rounded-lg border border-border bg-surface"
         data-testid="propuesta-del-traslado"
       >
         <CifraHeroe
@@ -472,7 +487,7 @@ function Propuesta({
                   <p className={`shrink-0 font-mono text-body-sm tabular-nums ${r.valorCop < 0 ? 'text-warning-ink' : 'text-fg'}`}>
                     {r.valorCop === 0 ? '—' : r.valorCop < 0 ? `− ${plata(Math.abs(r.valorCop))}` : plata(r.valorCop)}
                   </p>
-                  <p className="col-span-2 text-caption leading-relaxed text-fg-muted">{porQueDelRenglon(r.concepto, r.porQue)}</p>
+                  <p className="col-span-2 text-caption leading-relaxed text-fg-muted">{sinMayusculasDeEnfasis(porQueDelRenglon(r.concepto, r.porQue))}</p>
                 </li>
               ))}
             </ol>

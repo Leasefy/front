@@ -400,7 +400,8 @@ describe('🔴 el traslado muestra su desglose ANTES del botón', () => {
     const tabla = contenedor.querySelector('[data-testid="renglones-del-traslado"]');
     expect(tabla).not.toBeNull();
     expect(tabla?.textContent).toContain('Comisión de administración');
-    expect(tabla?.textContent).toContain('NO la recibió');
+    // C6 (revisora r25): el porqué del back se lee sin mayúsculas de énfasis.
+    expect(tabla?.textContent).toContain('la inmobiliaria no la recibió');
     expect(contenedor.querySelector('[data-testid="proponer-traslado"]')).not.toBeNull();
   });
 
@@ -459,6 +460,27 @@ describe('🔴 el traslado muestra su desglose ANTES del botón', () => {
     expect(
       document.body.querySelector('[data-testid="confirmar-rechazo"]')?.className,
     ).toContain('bg-danger');
+  });
+
+  it('r25 (Traslados #1): bajo lo que espera aprobación, UNA línea dice cuánto más queda por proponer en ese mes', async () => {
+    h.propuestaDeTraslado.mockResolvedValue({ ...propuesta, totalCop: 133_905_651 });
+    h.listarTraslados.mockResolvedValue({
+      disponible: true,
+      propuestos: [
+        {
+          id: 't-2', origen: 'MES', loteId: null, periodo: '2026-08', comisionCop: 800_000, ivaComisionCop: 116_300,
+          retencionesComisionCop: 0, interesesCop: 0, gastosDeCobranzaCop: 0, totalCop: 916_300, estado: 'PROPUESTO',
+          fecha: null, comprobanteNumero: null, asientoId: null, motivo: null, propuestoPorUserId: null,
+          aprobadoPorUserId: null, aprobadoAt: null, createdAt: '2026-09-01T00:00:00.000Z',
+        },
+      ],
+      recientes: [],
+    });
+    await pintar(<TrasladoDeComisionPanel />);
+    const linea = contenedor.querySelector('[data-testid="traslado-y-lo-que-queda"]');
+    expect(linea?.textContent).toContain('Además de éste, en agosto de 2026 quedan');
+    expect(linea?.textContent).toContain('133.905.651');
+    expect(linea?.querySelector('a')?.getAttribute('href')).toBe('#propuesta-del-traslado');
   });
 });
 

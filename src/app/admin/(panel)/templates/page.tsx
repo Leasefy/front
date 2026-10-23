@@ -85,6 +85,18 @@ export default function PlantillasPage() {
     }
   }
 
+  // Las variables que el aviso abierto usa hoy (en su texto original): ésas son las que el envío llena.
+  const variables = abierta
+    ? Array.from(
+        new Set(
+          [abierta.pushTitulo ?? '', abierta.pushTexto ?? '']
+            .join(' ')
+            .match(/\{\{\s*([\w.]+)\s*\}\}/g)
+            ?.map((m) => m.replace(/[{}\s]/g, '')) ?? [],
+        ),
+      )
+    : []
+
   const columnas: Column<PlantillaDelAviso>[] = [
     {
       header: 'Aviso',
@@ -124,7 +136,7 @@ export default function PlantillasPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        title="Plantillas"
+        title="Avisos"
         description="Los avisos que manda Leasefy. Toca uno para editar lo que dice la campana."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo funciona" titulo="Los avisos de Leasefy" variante="secundario">
@@ -170,7 +182,7 @@ export default function PlantillasPage() {
               <div className="rounded-lg border border-border bg-surface-muted px-4 py-3 text-caption text-fg-muted">
                 <div className="font-medium text-fg">Asunto del correo</div>
                 {abierta.correo.asunto}
-                <div className="mt-1 text-fg-subtle">El correo se cambia en el código (con un despliegue).</div>
+                <div className="mt-1 text-fg-subtle">El correo no se edita aquí: lo cambia el equipo técnico.</div>
               </div>
             ) : null}
             <div className="space-y-1.5">
@@ -180,7 +192,21 @@ export default function PlantillasPage() {
             <div className="space-y-1.5">
               <label htmlFor="push-texto" className="text-body-sm font-medium text-fg">Texto de la notificación</label>
               <Textarea id="push-texto" rows={3} value={texto} maxLength={500} onChange={(e) => setTexto(e.target.value)} />
-              <p className="text-caption text-fg-subtle">Las {'{{variables}}'} se llenan solas al mandarlo.</p>
+              {/* Ronda 26 (revisora r25): cuáles hay, no «las {{variables}}» a secas. */}
+              {variables.length > 0 ? (
+                <p className="text-caption text-fg-subtle">
+                  Se llenan solas al mandarlo:{' '}
+                  {variables.map((v, i) => (
+                    <span key={v}>
+                      {i > 0 ? ', ' : ''}
+                      <span className="font-mono">{`{{${v}}}`}</span>
+                    </span>
+                  ))}
+                  .
+                </p>
+              ) : (
+                <p className="text-caption text-fg-subtle">Este aviso no usa datos que se llenen solos.</p>
+              )}
             </div>
             <label className="flex items-center gap-2.5 text-body-sm text-fg">
               <Switch checked={activa} onCheckedChange={setActiva} aria-label="Aviso activo" />

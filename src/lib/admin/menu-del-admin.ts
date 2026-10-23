@@ -108,7 +108,7 @@ export const PANTALLAS_DEL_ADMIN: Record<string, DatosDeLaPantalla> = {
   '/admin/chat-feedback': { seccion: 'agentes', icono: ThumbsUp, nombre: 'Pulgares del chat', queHay: 'Dónde falla el chat' },
   '/admin/qa': { seccion: 'agentes', icono: ListChecks, nombre: 'Calidad de llamadas', queHay: 'Puntaje y alertas de cada llamada' },
   '/admin/ab-tests': { seccion: 'agentes', icono: Flask, nombre: 'Experimentos', queHay: 'Pruebas A/B de los agentes' },
-  '/admin/templates': { seccion: 'agentes', icono: ChatText, nombre: 'Plantillas', queHay: 'Plantillas de WhatsApp por idioma' },
+  '/admin/templates': { seccion: 'agentes', icono: ChatText, nombre: 'Avisos', queHay: 'Lo que dicen las notificaciones y los correos de Leasefy' },
 
   '/admin/calls': { seccion: 'cobranza', icono: PhoneCall, nombre: 'Llamadas', queHay: 'Todas las llamadas, de todas las inmobiliarias' },
   '/admin/cartera': { seccion: 'cobranza', icono: Wallet, nombre: 'Cartera', queHay: 'La cartera por etapa de cobro' },

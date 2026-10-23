@@ -20,7 +20,14 @@ interface Entrada {
   titulo: string;
 }
 
-export function IndiceDeLosTerminos({ children }: { children: ReactNode }) {
+export function IndiceDeLosTerminos({
+  children,
+  etiqueta = 'Contenido de los términos',
+}: {
+  children: ReactNode;
+  /** Nombre accesible del índice (Privacidad usa esta misma pieza: revisora r25). */
+  etiqueta?: string;
+}) {
   const raiz = useRef<HTMLDivElement>(null);
   const [entradas, setEntradas] = useState<Entrada[]>([]);
   const [abierto, setAbierto] = useState(false);
@@ -43,7 +50,7 @@ export function IndiceDeLosTerminos({ children }: { children: ReactNode }) {
   return (
     <>
       {entradas.length >= 3 ? (
-        <nav aria-label="Contenido de los términos" className="mb-10 rounded-lg border border-border bg-surface">
+        <nav aria-label={etiqueta} className="mb-10 rounded-lg border border-border bg-surface">
           <button
             type="button"
             onClick={() => setAbierto((v) => !v)}

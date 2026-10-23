@@ -26,7 +26,9 @@
 
 import { useMemo, useState } from 'react'
 import { SquaresFour } from '@phosphor-icons/react'
-import { Alert, Card, Eyebrow } from '@leasefy/cadence'
+import { Alert, Cifra, FranjaDeCifras } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
@@ -70,6 +72,7 @@ export default function ModulosPagosPage() {
 
   const catalogo = useMemo(() => data?.catalogo ?? [], [data])
   const agencias = data?.agencias
+  const conAlguno = (agencias ?? []).filter((a) => catalogo.some((c) => a.modulos[c.modulo]?.habilitado)).length
 
   function alternar(fila: FilaDeLaMatriz, modulo: string, nombreDelModulo: string) {
     setFallo(null)
@@ -168,8 +171,59 @@ export default function ModulosPagosPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Módulos"
-        description="Qué módulo de pago tiene comprado cada inmobiliaria, quién se lo prendió y cuándo. Prender o apagar desde aquí es lo único que lo cambia: ninguna inmobiliaria puede activárselo sola."
+        description="Qué módulo de pago tiene comprado cada inmobiliaria, quién se lo prendió y cuándo."
+        ayuda={
+          <ParaEntenderMas etiqueta="Qué es cada módulo" titulo="Los módulos de pago" variante="secundario">
+            <div className="space-y-4 text-body-sm">
+              <p className="text-fg-muted">
+                Prender o apagar desde aquí es lo único que lo cambia: ninguna inmobiliaria puede activárselo sola. Cada
+                cambio pide un motivo y queda guardado con tu correo y la fecha.
+              </p>
+              {catalogo.length > 0 ? (
+                <dl className="space-y-3">
+                  {catalogo.map((c) => (
+                    <div key={c.modulo}>
+                      <dt className="font-medium text-fg">{c.nombre}</dt>
+                      <dd className="leading-relaxed text-fg-muted">{c.descripcion}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+            </div>
+          </ParaEntenderMas>
+        }
       />
+
+      {/* Glow up 22-10: LA RESPUESTA (cuántas tienen algún módulo) y, debajo, cuántas tiene cada módulo. */}
+      {agencias && agencias.length > 0 ? (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo="Con algún módulo de pago"
+              cifra={conAlguno.toLocaleString('es-CO')}
+              contexto={`de ${agencias.length.toLocaleString('es-CO')} ${agencias.length === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
+              tramos={[
+                { clave: 'con', etiqueta: 'Con algún módulo', monto: conAlguno, tono: 'exito', siempre: true },
+                { clave: 'sin', etiqueta: 'Sin módulos', monto: agencias.length - conAlguno, tono: 'neutro' },
+              ]}
+              total={agencias.length}
+              data-testid="modulos-con-alguno"
+            />
+          </div>
+          {catalogo.length > 0 && catalogo.length <= 4 ? (
+            <FranjaDeCifras fila="md" columnas={catalogo.length} aria-label="Cuántas tienen cada módulo">
+              {catalogo.map((c) => (
+                <Cifra
+                  key={c.modulo}
+                  etiqueta={c.nombre}
+                  valor={agencias.filter((a) => a.modulos[c.modulo]?.habilitado).length}
+                  detalle="inmobiliarias"
+                />
+              ))}
+            </FranjaDeCifras>
+          ) : null}
+        </div>
+      ) : null}
 
       {data && !data.disponible ? <Alert variant="warning">{data.motivo}</Alert> : null}
       {fallo && !pendiente ? <Alert variant="danger">{fallo}</Alert> : null}
@@ -187,7 +241,7 @@ export default function ModulosPagosPage() {
         error={error}
         onReintentar={refetch}
         emptyTitle="Sin inmobiliarias"
-        emptyIcon={<SquaresFour weight="bold" />}
+        emptyIcon={<SquaresFour weight="duotone" />}
         aria-label="Módulos de pago por inmobiliaria"
         filaMarcada={(a) => a.agencyId === pendiente?.fila.agencyId}
         queSon={['inmobiliaria', 'inmobiliarias']}
@@ -209,20 +263,6 @@ export default function ModulosPagosPage() {
           },
         ])}
       />
-
-      {catalogo.length > 0 ? (
-        <Card className="p-4">
-          <Eyebrow className="mb-2">Qué es cada módulo</Eyebrow>
-          <dl className="space-y-2">
-            {catalogo.map((c) => (
-              <div key={c.modulo}>
-                <dt className="text-sm text-fg">{c.nombre}</dt>
-                <dd className="text-caption leading-relaxed text-fg-muted">{c.descripcion}</dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
-      ) : null}
 
       <Cajon abierto={pendiente !== null} onOpenChange={(abierto) => (abierto ? null : setPendiente(null))}>
         <CajonCabecera

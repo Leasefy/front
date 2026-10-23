@@ -108,6 +108,9 @@ export default function ApprovalsPage() {
     {
       // Revisora r27: UNA columna «Espera» (antes «Esperando 6,2 días» y «Desde 16 oct» decían lo mismo).
       header: 'Espera',
+      // Ronda 30 (revisora r27, T16): a 390 la tarjeta lleva la decisión, el deudor y el valor; la espera y su
+      // fecha, al cajón (antes ≈255 px con 4 rótulos).
+      enCelular: false,
       orden: (r) => r.created_at,
       ordenPrimero: 'desc',
       texto: (r) => `${esperaEnPalabras(diasDe(r))} · desde ${fmtFecha(r.created_at)}`,
@@ -237,7 +240,8 @@ export default function ApprovalsPage() {
         buscar="Deudor, inmobiliaria o detalle"
         textoExtra={(r) => `${r.legal_name ?? ''} ${r.model_used}`}
         segmentos={segmentos}
-        cifraDelCelular="Esperando"
+        // Ronda 30: la columna se llama «Valor» (la cifra del celular apuntaba a «Esperando», que ya no existe).
+        cifraDelCelular="Valor"
         filtrosEnLaUrl={['type']}
         ordenInicial={{ columna: 2, sentido: 'asc' }}
         exportar="aprobaciones-pendientes"

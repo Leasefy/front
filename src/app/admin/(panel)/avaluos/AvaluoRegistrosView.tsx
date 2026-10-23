@@ -126,7 +126,9 @@ export function AvaluoRegistrosView({
               type="button"
               size="sm"
               hideArrow
-              variant={activeState === tab.value ? 'default' : 'outline'}
+              // Ronda 30 (mandato: UNA sola acción azul): el estado puesto en contorno y los demás fantasma (antes
+              // el puesto en azul, un segundo azul en la pantalla).
+              variant={activeState === tab.value ? 'outline' : 'ghost'}
               aria-pressed={activeState === tab.value}
               onClick={() => onStateChange(tab.value)}
             >

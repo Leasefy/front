@@ -26,6 +26,8 @@ import { PhotoDescriptionsEditor } from './PhotoDescriptionsEditor'
 import { SignatureCanvas } from './SignatureCanvas'
 import { Alert, Card, MonoLabel } from '@leasefy/cadence'
 import { metodoDelAvaluo, suficiencia, tipoObservado } from '@/lib/admin/textos-del-admin'
+// Ronda 30: faltaba la importación (al quedar resuelto, «Este avalúo quedó …» se caía con un ReferenceError).
+import { avaluoStateMeta } from '@/lib/admin/avaluo-states'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -137,11 +139,11 @@ export default function AvaluoDetailPage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         // "illegal transition ..." → another admin already decided
-        setSubmitError('Este avalúo ya fue revisado por otro admin. Actualizando…')
+        setSubmitError('Otra persona del equipo ya revisó este avalúo. Te mostramos cómo quedó…')
         queue.refetch()
       } else if (err instanceof ApiError && err.status === 422) {
         // The only 422 on signoff is an invalid signature image payload.
-        setSubmitError('La firma dibujada no es válida. Limpiala y vuelve a dibujarla.')
+        setSubmitError('La firma dibujada no sirve. Bórrala y vuelve a dibujarla.')
       } else {
         setSubmitError(mensajeDelAdmin(err, { accion: 'registrar la decisión del avalúo' }))
       }
@@ -393,7 +395,7 @@ export default function AvaluoDetailPage() {
               <Meta label="tope legal" value={fmtCOP(item.canonLey820.topeLegalCop)} mono />
               {item.canonLey820.capped && (
                 <div className="mb-2">
-                  <Pill tone="warn">tope aplicado</Pill>
+                  <Pill tone="warn">Tope aplicado</Pill>
                 </div>
               )}
               <p className="text-caption text-fg-muted mt-1">{item.canonLey820.incrementoMaxNote}</p>

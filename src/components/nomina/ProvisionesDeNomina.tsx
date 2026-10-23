@@ -24,6 +24,8 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { SinDatos } from '@/components/estado/SinDatos';
+import Link from 'next/link';
 import {
   Dialog,
   DialogContent,
@@ -190,9 +192,19 @@ export function ProvisionesDeNominaPanel() {
                 explicacion="Lo que se le debe a cada uno, por prestación."
               />
               {provisiones.porPersona.length === 0 ? (
-                <p className="rounded-lg border border-border bg-surface p-5 text-body-sm text-fg-muted">
-                  Todavía no hay provisiones: se escriben al aprobar un período en Liquidación.
-                </p>
+                // Ronda 30 (revisora r27, C5): el vacío de la casa con su salida (antes una línea gris).
+                <div className="rounded-lg border border-border bg-surface">
+                  <SinDatos
+                    queSon="provisiones"
+                    titulo="Todavía no hay provisiones"
+                    descripcion="Se escriben solas al aprobar un período de nómina."
+                    accion={
+                      <Button asChild size="sm" variant="secondary" hideArrow>
+                        <Link href="/panel/inmobiliaria/nomina/periodos">Ir a Liquidación</Link>
+                      </Button>
+                    }
+                  />
+                </div>
               ) : (
                 <div className="overflow-hidden rounded-lg border border-border bg-surface">
                   <Table data-testid="provisiones-por-persona" className="max-md:block">

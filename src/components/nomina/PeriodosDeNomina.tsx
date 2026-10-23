@@ -310,12 +310,8 @@ export function PeriodosDeNominaPanel() {
                   queSon="períodos"
                   icono={CalendarBlank}
                   titulo="Todavía no hay períodos liquidados"
+                  // Ronda 30 (revisora r27): sin botón: el formulario para armarlo está justo arriba.
                   descripcion="Arma el primero arriba: elige el mes y la periodicidad."
-                  accion={
-                    <Button size="sm" variant="secondary" hideArrow onClick={() => document.getElementById('mes-a-liquidar')?.focus()}>
-                      Elegir el mes
-                    </Button>
-                  }
                 />
               </div>
             ) : (

@@ -23,6 +23,7 @@
  */
 
 import { SinDatos } from '@/components/estado/SinDatos';
+import { cn } from '@/lib/utils';
 import { FileText } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { sinElEquipoEnLaFrase } from '@/lib/contabilidad/plata';
@@ -168,7 +169,9 @@ export function NominaElectronicaPanel() {
             ) : null}
 
             <section className="overflow-hidden rounded-lg border border-border bg-surface" aria-label="Documentos">
-              <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
+              {/* Ronda 30 (revisora r27): sin documentos (y sin período elegido) no hay barra: «Período: Todos»
+                  sobre una lista vacía no filtra nada. */}
+              <div className={cn('flex flex-wrap items-center gap-3 border-b border-border px-4 py-3', datos.documentos.length === 0 && !periodo && 'hidden')}>
                 {datos.documentos.length > 0 ? (
                   <PestanasDeEstado
                     etiqueta="Estado de los documentos"

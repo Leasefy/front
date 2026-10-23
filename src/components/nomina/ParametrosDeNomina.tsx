@@ -311,10 +311,10 @@ function Formulario({
       {!datos.completos ? (
         <p className="max-w-3xl text-body-sm text-fg-muted" data-testid="faltan-cifras">
           Falta {datos.queFalta.join(', ')}.{' '}
-          {sinMayusculasDeEnfasis(
-            datos.propuesta?.motivoSiFalta ??
-              'El salario mínimo y el auxilio de transporte los decreta el Gobierno cada diciembre; la UVT la fija la DIAN por resolución. Leasefy no los inventa.',
-          )}
+          {/* Ronda 30 (revisora r27): siempre la frase del front; la del back («No vienen sembrados…») decía
+              lo mismo con jerga y, debajo, el bloque lo repetía. */}
+          El salario mínimo y el auxilio de transporte los decreta el Gobierno cada diciembre; la UVT la fija la DIAN
+          por resolución. Leasefy no los inventa.
         </p>
       ) : null}
 
@@ -331,7 +331,7 @@ function Formulario({
       <section className="space-y-3">
         <TituloDeBloque
           titulo={`Las cifras que fija el Estado en ${anio}`}
-          explicacion="Leasefy no las mantiene: el salario mínimo y el auxilio de transporte salen del decreto de diciembre y la UVT de la resolución de la DIAN. Las carga esta inmobiliaria, con el documento a la vista."
+          explicacion="Las carga esta inmobiliaria, con el documento a la vista."
         />
 
         {/*

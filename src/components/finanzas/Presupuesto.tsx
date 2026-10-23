@@ -205,8 +205,8 @@ export function PresupuestoPanel() {
         <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
           <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">
             {comparacion
-              ? `Presupuesto vs. real vs. ${nombreDelMes(comparacion.mesDelAnioAnterior)}`
-              : 'Presupuesto vs. real'}
+              ? `Contra lo real y contra ${nombreDelMes(comparacion.mesDelAnioAnterior)}` // Ronda 30 (revisora r27)
+              : 'Contra lo real'}
           </h2>
           <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
             <SelectorDeMes mes={mes} onCambiar={setMes} />

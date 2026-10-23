@@ -14,9 +14,10 @@
  * exactamente igual en una factura; la diferencia sólo existe si está escrita.
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Info, Receipt } from '@phosphor-icons/react'
 
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MoneyInput } from '@/components/ui/money-input'
@@ -48,6 +49,7 @@ const ETIQUETA_RENGLON: Record<string, string> = {
 
 export function ConceptosYLiquidacion() {
   const [conceptoId, setConceptoId] = useState('canon-arrendamiento')
+  const liquidacionRef = useRef<HTMLDivElement>(null)
   const [valor, setValor] = useState(2_000_000)
   const [uso, setUso] = useState<UsoDelInmueble>('VIVIENDA')
   const [paga, setPaga] = useState<PerfilTributario>(perfilPorDefecto('NATURAL'))
@@ -124,8 +126,31 @@ export function ConceptosYLiquidacion() {
         <Perfil titulo="Quién recibe" perfil={recibe} onCambio={setRecibe} />
       </Card>
 
+      {/* Revisora r25: bajo lg la liquidación queda debajo de todo el formulario (≈1.100 px a 390). La respuesta
+          va pegada abajo, encima de la barra del celular, y «Ver por qué» baja a la liquidación entera. */}
+      <div
+        className="sticky bottom-20 z-10 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-sm lg:hidden"
+        data-testid="liquidacion-pegada"
+      >
+        <p className="min-w-0 text-body-sm text-fg">
+          Paga <span className="font-mono tabular-nums">{formatCurrency(cuenta.totalAPagarCop)}</span>
+          <span className="text-fg-subtle"> · </span>
+          Recibe <span className="font-mono tabular-nums">{formatCurrency(cuenta.netoQueRecibeCop)}</span>
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          hideArrow
+          className="shrink-0"
+          onClick={() => liquidacionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        >
+          Ver por qué
+        </Button>
+      </div>
+
       {/* Lo que sale */}
-      <Card className="space-y-4 p-5" data-testid="liquidacion">
+      <Card ref={liquidacionRef} className="space-y-4 p-5 max-lg:scroll-mt-24" data-testid="liquidacion">
         <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Receipt className="h-4 w-4 text-muted-foreground" />
           Liquidación

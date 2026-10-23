@@ -114,6 +114,7 @@ import { comoSeConecta } from '@/lib/portales/como-se-conecta'
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { cn } from '@/lib/utils'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 /** Cómo se lee cada estado, y con qué tono. */
 const ROTULO: Record<
@@ -1098,44 +1099,35 @@ export function PortalesClient() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-h2 tracking-tight">Publicación en portales</h1>
-          <p className="text-sm text-fg-muted">
-            Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene
-            cuenta, y mira en un solo lugar cuáles están publicados y dónde.
-          </p>
-          {/* 🔴 Esto NO se fue al modal a propósito: no es «cómo se usa», es qué
-              hace y qué no hace la herramienta. Escondido, alguien esperaría que
-              el aviso saliera solo. Una línea en vez de cinco. */}
-          <p className="text-sm text-fg-muted" data-testid="aviso-sin-api">
-            Hoy el aviso lo subes tú al portal:{' '}
-            <span className="font-medium text-fg">
-              todavía no publicamos solos en ninguno
-            </span>
-            .
-          </p>
-          {/* Calidad vive sólo en «Agentes IA» (Nico, 08-10): acá queda el camino. */}
-          <p className="text-sm">
-            <Link
-              href="/panel/inmobiliaria/inmuebles/calidad-de-publicaciones"
-              className="font-medium text-primary hover:underline"
-              data-testid="enlace-a-calidad"
+      {/* Glow up 22-10: el encabezado común. La línea de qué NO hace la herramienta se queda a la vista a
+          propósito (escondida, alguien esperaría que el aviso saliera solo); la calidad, como secundaria. */}
+      <div className="space-y-2">
+        <EncabezadoDePantalla
+          seccion="Inmuebles"
+          titulo="Publicación en portales"
+          descripcion="Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene cuenta, y mira en un solo lugar dónde están."
+          ayuda={
+            <ParaEntenderMas
+              etiqueta="Cómo se publica un inmueble"
+              titulo="Cómo se publica un inmueble"
+              descripcion="Cuatro pasos. Los dos últimos los hace una persona, y aquí está por qué."
             >
-              Ver la calidad de tus avisos (Niti)
-            </Link>
-          </p>
-        </div>
-        <ParaEntenderMas
-          etiqueta="Cómo se publica un inmueble"
-          titulo="Cómo se publica un inmueble"
-          descripcion="Cuatro pasos. Los dos últimos los hace una persona, y aquí está por qué."
-          variante="secundario"
-          className="self-start shrink-0"
-        >
-          <ComoFunciona />
-        </ParaEntenderMas>
-      </header>
+              <ComoFunciona />
+            </ParaEntenderMas>
+          }
+          acciones={
+            <Button asChild variant="outline" size="sm" hideArrow>
+              {/* Calidad vive sólo en «Agentes IA» (Nico, 08-10): acá queda el camino. */}
+              <Link href="/panel/inmobiliaria/inmuebles/calidad-de-publicaciones" data-testid="enlace-a-calidad">
+                Ver la calidad de tus avisos
+              </Link>
+            </Button>
+          }
+        />
+        <p className="text-caption text-fg-muted" data-testid="aviso-sin-api">
+          Hoy el aviso lo subes tú al portal: <span className="font-medium text-fg">todavía no publicamos solos en ninguno</span>.
+        </p>
+      </div>
 
       {/* ── 1 · Las cuentas ──────────────────────────────────────────────── */}
       <Card>

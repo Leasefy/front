@@ -32,6 +32,7 @@ import { useContracts } from '@/lib/hooks/useContracts';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
 import type { Property } from '@/lib/types/property';
 import type { Contract } from '@/lib/types/contract';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 // ─── Status display ──────────────────────────────────────────────────────────
 
@@ -380,7 +381,7 @@ function CandidatosContent() {
             parte del panel estás (Nico: «ni se entiende y no tiene navegación
             para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
         <BackButton href="/panel/inmobiliaria/inmuebles" label="Inmuebles" />
-        <h1 className="text-h2 text-fg">Candidatos</h1>
+        <EncabezadoDePantalla seccion="Inmuebles" titulo="Candidatos" />
         <FalloDeCarga
           error={error}
           queEs="ese inmueble"
@@ -394,27 +395,26 @@ function CandidatosContent() {
 
   return (
     <CrossFade swapKey="lista">
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div className="space-y-4">
         <BackButton
-          label="Volver a propiedades"
+          label="Volver a inmuebles"
           onClick={() => router.push('/panel/inmobiliaria/inmuebles')}
         />
 
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-h2 text-fg">Candidatos</h1>
-            {property && (
-              <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-                {/* QA-IA-A: sin barrio salía «· , Medellín». */}
-                {[property.title, [property.neighborhood, property.city].filter((v) => v && String(v).trim()).join(', ')]
+        <EncabezadoDePantalla
+          seccion="Inmuebles"
+          titulo="Candidatos"
+          descripcion={
+            property
+              ? // QA-IA-A: sin barrio salía «· , Medellín».
+                [property.title, [property.neighborhood, property.city].filter((v) => v && String(v).trim()).join(', ')]
                   .filter(Boolean)
-                  .join(' · ')}
-              </p>
-            )}
-          </div>
-        </div>
+                  .join(' · ')
+              : undefined
+          }
+        />
       </div>
 
       {/* Recorrido del inquilino: acá se comparan (paso 9) y se decide (10).

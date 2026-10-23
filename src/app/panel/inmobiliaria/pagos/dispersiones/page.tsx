@@ -862,8 +862,9 @@ function DispersionesContent() {
 
       {/* Unified Card - View Toggle + Filters + Content + Pagination */}
       <div className="rounded-lg border border-border bg-card">
-        {/* View Toggle Header - FIRST (Primary hierarchy) */}
-        <div className="flex items-center justify-end border-b border-border px-4 py-3">
+        {/* Revisora r25 (Giros paso 2): la cabecera del selector tabla/tarjetas (oculto) era una franja
+            vacía de ≈25 px encima del buscador: el control queda montado, sin su franja. */}
+        <div className="hidden">
           <SegmentedControl
             className="hidden"
             aria-label={t('inmobiliaria.dispersiones.viewTable')}

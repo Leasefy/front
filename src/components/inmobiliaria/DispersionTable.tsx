@@ -460,33 +460,11 @@ export function DispersionTable({
             */}
             <TableRow className="border-t border-border hover:bg-transparent">
               <TableCell colSpan={variosMeses ? 3 : 2} className="p-4">
-                <div className="flex items-center gap-4">
-                  <span className="font-semibold text-foreground">
-                    {t('inmobiliaria.dispersiones.tableView.totalCount', { count: dispersiones.length })}
-                  </span>
-                  <div className="flex items-center gap-3 text-caption">
-                    {summary.pending > 0 && (
-                      <Badge variant="warning" className="tabular-nums">
-                        {t('inmobiliaria.dispersiones.tableView.pendingAbbr', { count: summary.pending })}
-                      </Badge>
-                    )}
-                    {summary.processing > 0 && (
-                      <Badge variant="default" className="tabular-nums">
-                        {t('inmobiliaria.dispersiones.tableView.processingAbbr', { count: summary.processing })}
-                      </Badge>
-                    )}
-                    {summary.completed > 0 && (
-                      <Badge variant="secondary" className="tabular-nums">
-                        {t('inmobiliaria.dispersiones.tableView.completedAbbr', { count: summary.completed })}
-                      </Badge>
-                    )}
-                    {summary.failed > 0 && (
-                      <Badge variant="destructive" className="tabular-nums">
-                        {t('inmobiliaria.dispersiones.tableView.failedAbbr', { count: summary.failed })}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+                {/* Revisora r25 (Giros paso 2): el pie sólo con la plata. Cuántos y en qué estado ya lo
+                    dicen las pestañas, el resumen y «Mostrando 1–N de N» (era el 2 cuatro veces). */}
+                <span className="font-medium text-foreground" data-testid="pie-de-los-giros">
+                  {tr('Total')}
+                </span>
               </TableCell>
               <TableCell className="p-4">
                 <span className="font-mono tabular-nums text-fg">

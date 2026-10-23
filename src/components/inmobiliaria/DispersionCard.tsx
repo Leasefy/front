@@ -23,6 +23,7 @@ import { conSigno } from '@/lib/plata/escribir-plata';
 import { ROTULO_DEL_CANON } from '@/lib/propietarios/base-del-canon';
 import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
 import { useTr, useLocaleDeFechas } from '@/lib/i18n/use-tr';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 
 interface DispersionCardProps {
   dispersion: Dispersion;
@@ -156,7 +157,10 @@ export function DispersionCard({
   // el estado (punto + palabra, como la tabla), el neto en mono y debajo, en ceniza, el banco y el desglose.
   const fechaDelGiro =
     dispersion.status === 'completed' && dispersion.processedAt
-      ? new Date(dispersion.processedAt).toLocaleDateString(fechas, { day: 'numeric', month: 'short', year: 'numeric' })
+      ? // Revisora r25 (Giros paso 2): «17 oct 2026», el día de Colombia, como la tabla de 1440.
+        fechas === 'es-CO'
+        ? fechaCorta(diaEnColombia(dispersion.processedAt))
+        : new Date(dispersion.processedAt).toLocaleDateString(fechas, { day: 'numeric', month: 'short', year: 'numeric' })
       : null;
   return (
     <Pressable

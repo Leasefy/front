@@ -224,7 +224,7 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
     <article
       data-cuenta-hoja
       className={cn(
-        'mx-auto w-full max-w-[800px] rounded-lg border border-border bg-surface px-8 py-10 shadow-sm sm:px-12 sm:py-12',
+        'mx-auto w-full max-w-[800px] rounded-lg border border-border bg-surface px-8 py-10 sm:px-12 sm:py-12',
         className,
       )}
       aria-label={t('cuentaDeCobro.titulo')}

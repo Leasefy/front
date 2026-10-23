@@ -563,7 +563,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       {/* ── Acciones ────────────────────────────────────────────────────── */}
       {acciones.length > 0 && (
         <section
-          className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-4 shadow-sm"
+          className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-4"
           data-testid="acciones-del-lote"
         >
           {acciones.includes('pedirAprobacion') && (
@@ -663,7 +663,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
       {/* ── Datos del cierre ────────────────────────────────────────────── */}
       {(vista.origen || lote.formatoArchivo || lote.referenciaBanco) && (
-        <section className="grid gap-3 rounded-lg border border-border bg-surface p-4 text-sm shadow-sm sm:grid-cols-3">
+        <section className="grid gap-3 rounded-lg border border-border bg-surface p-4 text-sm sm:grid-cols-3">
           {vista.origen && (
             <div data-testid="origen-del-lote">
               <p className="text-caption text-fg-muted">Se gira desde</p>
@@ -1031,7 +1031,7 @@ function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
 
   return (
     <ol
-      className="grid grid-cols-5 gap-1 rounded-lg border border-border bg-surface p-4 shadow-sm"
+      className="grid grid-cols-5 gap-1 rounded-lg border border-border bg-surface p-4"
       aria-label="Estado del lote"
       data-testid="linea-de-tiempo"
     >

@@ -191,7 +191,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
         <Card>
           <div className="p-5">
             <p className="mb-4 text-sm text-fg-muted">
-              Cada paso del ciclo del pago: link generado, enviado y abierto, intentos, pago
+              Cada paso del ciclo del pago: enlace generado, enviado y abierto, intentos, pago
               recibido, conciliación, notificaciones, cambios de estado, errores y ajustes.
             </p>
             <TrazaCaso entries={traza} agente={item.agente} />

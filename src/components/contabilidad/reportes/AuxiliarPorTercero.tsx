@@ -260,8 +260,8 @@ export function AuxiliarPorTercero() {
               </p>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+                <Table className="max-md:block">
+                  <TableHeader className="max-md:hidden">
                     <TableRow>
                       <TableHead>Tercero</TableHead>
                       <TableHead>Tipo</TableHead>
@@ -272,13 +272,14 @@ export function AuxiliarPorTercero() {
                       <TableHead />
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="max-md:block">
                     {auxiliar.terceros.map((t) => (
                       <TableRow
                         key={`${t.terceroTipo}-${t.terceroId}`}
                         data-testid={`tercero-${t.terceroId}`}
+                        className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
                       >
-                        <TableCell className="max-w-[16rem]">
+                        <TableCell className="max-w-[16rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                           <p className="truncate text-sm text-fg">
                             {t.nombre ?? 'Sin nombre en el sistema'}
                           </p>
@@ -286,23 +287,23 @@ export function AuxiliarPorTercero() {
                             {t.documento ?? 'sin documento'}
                           </p>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-caption text-fg-muted">
+                        <TableCell className="whitespace-nowrap text-caption text-fg-muted max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
                           {t.terceroTipo}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Débitos">
                           <Monto valor={t.debitosCop} vacioSiCero className="text-sm" />
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Créditos">
                           <Monto valor={t.creditosCop} vacioSiCero className="text-sm" />
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                           {/* El signo importa y se dice: positivo = nos debe. */}
-                          <Monto valor={t.saldoCop} className="text-sm font-medium" />
+                          <Monto valor={t.saldoCop} className="text-sm text-fg" />
                         </TableCell>
-                        <TableCell className="text-caption text-fg-muted">
+                        <TableCell className="text-caption text-fg-muted max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
                           {t.cuentas.map((c) => c.codigo).join(', ')}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
                           <Button variant="link" size="sm" hideArrow asChild>
                             <Link
                               href={`/panel/inmobiliaria/contabilidad/reportes?informe=tercero&terceroTipo=${encodeURIComponent(t.terceroTipo)}&terceroId=${encodeURIComponent(t.terceroId)}`}

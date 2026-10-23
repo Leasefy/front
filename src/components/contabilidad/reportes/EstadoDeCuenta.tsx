@@ -342,8 +342,8 @@ export function EstadoDeCuenta() {
           }
         >
           <div className={cn(cargando && 'opacity-60')} aria-busy={cargando || undefined}>
-            <Table>
-              <TableHeader>
+            <Table className="max-md:block">
+              <TableHeader className="max-md:hidden">
                 <TableRow>
                   <TableHead>Fecha</TableHead>
                   <TableHead numeric>Asiento</TableHead>
@@ -354,10 +354,10 @@ export function EstadoDeCuenta() {
                   <TableHead numeric>Saldo</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="max-md:block">
                 {!listo || vacio ? (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={COLUMNAS} className="p-0">
+                  <TableRow className="hover:bg-transparent max-md:block">
+                    <TableCell colSpan={COLUMNAS} className="p-0 max-md:block">
                       <SinDatos
                         queSon="movimientos"
                         icono={UserList}
@@ -373,24 +373,27 @@ export function EstadoDeCuenta() {
                 ) : (
                   <>
                     {page === 1 && estado ? (
-                      <TableRow className="hover:bg-transparent">
-                        <TableCell colSpan={6} muted className="whitespace-nowrap">
+                      <TableRow className="hover:bg-transparent max-md:flex max-md:items-baseline max-md:justify-between max-md:border-b max-md:border-border max-md:px-4 max-md:py-3">
+                        <TableCell colSpan={6} muted className="whitespace-nowrap max-md:block max-md:p-0">
                           Saldo inicial
                         </TableCell>
-                        <TableCell numeric className="whitespace-nowrap">
+                        <TableCell numeric className="whitespace-nowrap max-md:block max-md:p-0">
                           <Monto valor={estado.saldoInicialCop} />
                         </TableCell>
                       </TableRow>
                     ) : null}
                     {pageItems.map((r, i) => (
-                      <TableRow key={`${r.asientoId}-${i}`}>
-                        <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+                      <TableRow
+                        key={`${r.asientoId}-${i}`}
+                        className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3 max-md:last:border-0"
+                      >
+                        <TableCell className="whitespace-nowrap tabular-nums text-fg-muted max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption">
                           {diaLegible(r.fecha)}
                         </TableCell>
-                        <TableCell numeric className="whitespace-nowrap font-mono">
+                        <TableCell numeric className="whitespace-nowrap font-mono max-md:col-start-1 max-md:row-start-4 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted max-md:before:mr-1.5 max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Asiento N.º">
                           {r.numero}
                         </TableCell>
-                        <TableCell className="max-w-[260px]">
+                        <TableCell className="max-w-[260px] max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0 max-md:text-caption">
                           <span className="flex items-baseline gap-1.5">
                             <span className="shrink-0 font-mono text-caption tabular-nums text-fg-muted">
                               {r.codigo}
@@ -400,7 +403,7 @@ export function EstadoDeCuenta() {
                             </span>
                           </span>
                         </TableCell>
-                        <TableCell className="max-w-[300px]">
+                        <TableCell className="max-w-[300px] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                           <span className="flex items-baseline gap-1.5">
                             <span className="truncate text-fg" title={r.descripcionAsiento}>
                               {r.descripcionAsiento}
@@ -415,13 +418,13 @@ export function EstadoDeCuenta() {
                             ) : null}
                           </span>
                         </TableCell>
-                        <TableCell numeric className="whitespace-nowrap">
+                        <TableCell numeric className="whitespace-nowrap max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:before:mr-1.5 max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Débito">
                           <Monto valor={r.debitoCop} vacioSiCero />
                         </TableCell>
-                        <TableCell numeric className="whitespace-nowrap">
+                        <TableCell numeric className="whitespace-nowrap max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption max-md:before:mr-1.5 max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Crédito">
                           <Monto valor={r.creditoCop} vacioSiCero />
                         </TableCell>
-                        <TableCell numeric className="whitespace-nowrap">
+                        <TableCell numeric className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                           <Monto valor={r.saldoCop} />
                         </TableCell>
                       </TableRow>
@@ -430,19 +433,19 @@ export function EstadoDeCuenta() {
                 )}
               </TableBody>
               {listo && estado && !vacio ? (
-                <TableFooter>
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={4} className="whitespace-nowrap text-sm font-medium text-fg">
+                <TableFooter className="max-md:block">
+                  <TableRow className="hover:bg-transparent max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:px-4 max-md:py-3">
+                    <TableCell colSpan={4} className="whitespace-nowrap text-sm font-medium text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                       Totales del período
                     </TableCell>
-                    <TableCell numeric className="whitespace-nowrap">
-                      <Monto valor={estado.debitosCop} className="font-medium" />
+                    <TableCell numeric className="whitespace-nowrap max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:before:mr-1.5 max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Débitos">
+                      <Monto valor={estado.debitosCop} className="text-fg" />
                     </TableCell>
-                    <TableCell numeric className="whitespace-nowrap">
-                      <Monto valor={estado.creditosCop} className="font-medium" />
+                    <TableCell numeric className="whitespace-nowrap max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption max-md:before:mr-1.5 max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Créditos">
+                      <Monto valor={estado.creditosCop} className="text-fg" />
                     </TableCell>
-                    <TableCell numeric className="whitespace-nowrap">
-                      <Monto valor={estado.saldoFinalCop} className="font-medium" />
+                    <TableCell numeric className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:before:mr-1.5 max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Saldo final">
+                      <Monto valor={estado.saldoFinalCop} className="text-fg" />
                     </TableCell>
                   </TableRow>
                 </TableFooter>

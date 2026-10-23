@@ -221,8 +221,10 @@ export function LibroMayor() {
               </p>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+                {/* GLOW UP 3.ª vuelta · a 390 cada cuenta es una tarjeta con sus cuatro cifras; el
+                    detalle mes a mes queda en la pantalla ancha y en la descarga. */}
+                <Table className="max-md:block">
+                  <TableHeader className="max-md:hidden">
                     <TableRow>
                       <TableHead className="sticky left-0 bg-surface">Cuenta</TableHead>
                       <TableHead className="text-right">Saldo anterior</TableHead>
@@ -254,27 +256,31 @@ export function LibroMayor() {
                       </TableRow>
                     ) : null}
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="max-md:block">
                     {mayor.filas.map((f) => (
-                      <TableRow key={f.codigo} data-testid={`mayor-${f.codigo}`}>
-                        <TableCell className="sticky left-0 whitespace-nowrap bg-surface">
+                      <TableRow
+                        key={f.codigo}
+                        data-testid={`mayor-${f.codigo}`}
+                        className="max-md:grid max-md:grid-cols-2 max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
+                      >
+                        <TableCell className="sticky left-0 whitespace-nowrap bg-surface max-md:static max-md:col-span-2 max-md:block max-md:whitespace-normal max-md:p-0">
                           <span className="font-mono text-caption">{f.codigo}</span> {f.nombre}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Saldo anterior">
                           <Monto valor={f.saldoAnteriorCop} vacioSiCero className="text-sm" />
                         </TableCell>
                         {meses.map((m) => {
                           const delMes = f.porMes.find((p) => p.mes === m);
                           return (
                             <Fragment key={m}>
-                              <TableCell className="text-right">
+                              <TableCell className="text-right max-md:hidden">
                                 <Monto
                                   valor={delMes?.debitosCop ?? 0}
                                   vacioSiCero
                                   className="text-sm"
                                 />
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-right max-md:hidden">
                                 <Monto
                                   valor={delMes?.creditosCop ?? 0}
                                   vacioSiCero
@@ -284,14 +290,14 @@ export function LibroMayor() {
                             </Fragment>
                           );
                         })}
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Débitos">
                           <Monto valor={f.debitosCop} vacioSiCero className="text-sm" />
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Créditos">
                           <Monto valor={f.creditosCop} vacioSiCero className="text-sm" />
                         </TableCell>
-                        <TableCell className="text-right">
-                          <Monto valor={f.saldoFinalCop} className="text-sm font-medium" />
+                        <TableCell className="text-right max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Saldo final">
+                          <Monto valor={f.saldoFinalCop} className="text-sm text-fg" />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -312,7 +318,7 @@ export function LibroMayor() {
                   anclada, así que desplazarse funciona — lo que faltaba era
                   avisar que hay algo más allá del borde. */}
               {meses.length > 2 ? (
-                <span data-testid="el-mayor-se-desplaza">
+                <span data-testid="el-mayor-se-desplaza" className="max-md:hidden">
                   {' '}· {meses.length} meses: la tabla se desplaza de lado, con la cuenta fija.
                 </span>
               ) : null}

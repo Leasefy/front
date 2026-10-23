@@ -22,7 +22,6 @@ import {
   rotuloDeProximosGiros,
   type PorGirarDelBack,
 } from '@/lib/propietarios/por-girar';
-import { plataPareja } from '@/lib/format';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 /**
@@ -49,8 +48,10 @@ export function PorGirarDeLaInmobiliaria({ mesGirado, nombreDelMes }: { mesGirad
     };
   }, []);
 
-  // Ronda 19: los mismos decimales en las cifras de la franja.
-  const plataDeLaFranja = plataPareja(cifra ? [cifra.porGirarCop, cifra.proximosGiros.totalCop] : []);
+  // Revisora r25 (Giros #1, C9): cada cifra con SUS decimales, como el neto y la tabla de al
+  // lado. Con `plataPareja` (ronda 19) los centavos de «próximos giros» le ponían «,00» a
+  // «Por girar» y la vista decía «$ 2.371.800,00» junto a «$ 6.783.700».
+  const plataDeLaFranja = (v: number) => formatCurrency(v);
   return (
     <Presence show={cifra !== null} initial={false}>
       {cifra ? (

@@ -86,7 +86,7 @@ function EditarAcuerdoGeneral() {
           <FalloDeCarga
             error={error}
             queEs="el acuerdo"
-            onReintentar={() => void refetch()}
+            onReintentar={() => refetch()}
             volverA={{ label: 'Volver a Acuerdos de pago', href: VOLVER }}
           />
         </Marco>

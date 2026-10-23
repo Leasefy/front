@@ -76,7 +76,7 @@ function ThresholdsContent() {
           (antes la frase cruda y la pantalla en blanco debajo). Con datos, una
           línea: lo que se ve sigue valiendo. */}
       {error && !active && !isLoading ? (
-        <FalloDeCarga error={falloDelTexto(error)} queEs="los umbrales" onReintentar={() => void refetch()} />
+        <FalloDeCarga error={falloDelTexto(error)} queEs="los umbrales" onReintentar={() => refetch()} />
       ) : null}
       <Presence show={Boolean(error) && Boolean(active)} role="status" className="rounded-lg bg-warning-soft px-3 py-2 text-body-sm text-fg">
           {locale.startsWith('es')

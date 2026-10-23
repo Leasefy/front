@@ -142,7 +142,7 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
         {/* Un fallo NO es un vacío (guardián cuatro-estados): si los inmuebles no llegaron, se dice y se reintenta;
             nunca «no hay inmuebles dentro de tu tope» sobre un dato que no llegó. */}
         {errorCrudo ? (
-          <FalloDeCarga error={errorCrudo} queEs="los inmuebles que puedes tomar" onReintentar={() => void refetch()} />
+          <FalloDeCarga error={errorCrudo} queEs="los inmuebles que puedes tomar" onReintentar={() => refetch()} />
         ) : !isLoading && ordenadas.length === 0 ? (
           /* Sin nada dentro del tope no se rellena con cosas que no puede
              tomar: se dice, y se ofrece la salida. */

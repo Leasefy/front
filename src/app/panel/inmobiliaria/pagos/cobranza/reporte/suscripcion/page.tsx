@@ -132,7 +132,7 @@ function SuscripcionContent() {
       {/* Revisora r25 (#1): si la lectura falla, el fallo de la casa con su
           reintento (antes la pantalla quedaba en blanco bajo el título). */}
       {!isLoading && !data && canAccess('cobranza', 'subscribe-daily-report') && (
-        <FalloDeCarga error={falloDelTexto(error) ?? 'fetch_failed'} queEs="tu suscripción al reporte" onReintentar={() => void refetch()} />
+        <FalloDeCarga error={falloDelTexto(error) ?? 'fetch_failed'} queEs="tu suscripción al reporte" onReintentar={() => refetch()} />
       )}
 
       {data && (

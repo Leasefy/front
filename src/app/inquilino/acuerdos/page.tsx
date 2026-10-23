@@ -162,7 +162,7 @@ export default function AcuerdosPage() {
             seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
             titulo={locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
           />
-          <FalloDeCarga error={error} queEs="tus acuerdos de pago" onReintentar={() => void refetch()} />
+          <FalloDeCarga error={error} queEs="tus acuerdos de pago" onReintentar={() => refetch()} />
         </div>
       </div>
     );

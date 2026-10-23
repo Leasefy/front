@@ -145,17 +145,10 @@ const EN_PANTALLA: Record<string, Promesa> = {
       '`un-contrato-sin-back-se-declara.test.ts`. El micro cotiza; no hay ruta para ' +
       'tomar una cotización y seguir.',
   },
-  'components/inmobiliaria/pagos/PagoFallidoTabla.tsx': {
-    estado: 'HONESTO',
-    de: 'back',
-    nota:
-      'La acción de la fila es la primera que DECLARA el WorkItem del back. Sin ' +
-      'acción declarada, el botón queda apagado en vez de fingir (T-323).',
-  },
   'components/inmobiliaria/pagos/PrioridadInbox.tsx': {
     estado: 'HONESTO',
     de: 'back',
-    nota: 'Igual que `PagoFallidoTabla`: la acción sale del WorkItem o no hay botón.',
+    nota: 'La acción sale del WorkItem del back o no hay botón (como hacía `PagoFallidoTabla`, que ya no promete nada desde la ronda 26).',
   },
   'components/landlord/portal/PortalPlaceholder.tsx': {
     estado: 'HONESTO',

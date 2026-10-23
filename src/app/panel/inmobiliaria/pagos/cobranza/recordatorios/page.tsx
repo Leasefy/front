@@ -419,7 +419,7 @@ function PagosRecordatorios() {
           titulo="Recordatorios"
           descripcion="Cuándo se le avisa a quien debe y a quién le llega cada aviso."
         />
-        <FalloDeCarga error={falloDelTexto(error)} queEs="los recordatorios" onReintentar={() => void cargar()} />
+        <FalloDeCarga error={falloDelTexto(error)} queEs="los recordatorios" onReintentar={() => cargar()} />
       </div>
       </CrossFade>
     )

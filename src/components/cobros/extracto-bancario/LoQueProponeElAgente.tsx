@@ -253,7 +253,7 @@ export function LoQueProponeElAgente({
                 </section>
                 {analisis!.descartadas.length > 0 && (
                   <details className="text-body-sm text-fg-muted">
-                    <summary className="cursor-pointer">Lo que el agente descartó ({analisis!.descartadas.length})</summary>
+                    <summary className="relative hit-area-44 cursor-pointer">Lo que el agente descartó ({analisis!.descartadas.length})</summary>
                     <ul className="mt-2 space-y-1">
                       {analisis!.descartadas.map((d, i) => (
                         <li key={`${d.titulo}-${i}`}>

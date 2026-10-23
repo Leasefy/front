@@ -294,7 +294,7 @@ export function CierreDelMes({ cuentaId, onCambio }: { cuentaId: string; onCambi
 
       {bitacora.length > 0 && (
         <details className="text-caption text-fg-muted" data-testid="bitacora-del-cierre">
-          <summary className="cursor-pointer">Bitácora de cierres y reaperturas</summary>
+          <summary className="relative hit-area-44 cursor-pointer">Bitácora de cierres y reaperturas</summary>
           <ul className="mt-2 space-y-1">
             {bitacora.slice(0, 20).map((e) => (
               <li key={e.id}>

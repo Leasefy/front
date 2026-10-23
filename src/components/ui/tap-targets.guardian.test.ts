@@ -61,6 +61,13 @@ const SITES: Array<[file: string, anchor: string]> = [
   ['src/app/panel/inmobiliaria/agenda/page.tsx', "aria-label=\"Semana siguiente\""],
   ['src/app/panel/inmobiliaria/agenda/page.tsx', "relative h-auto rounded-md px-3 py-1.5"],
   ['src/components/contabilidad/reportes/BalanceDePrueba.tsx', "htmlFor=\"balance-solo-con-movimiento\""],
+  // WU-8: <summary> toggles
+  ['src/components/inmobiliaria/piloto/mando/tendencias.tsx', "<summary className="],
+  ['src/components/contratos/EscenarioTributario.tsx', "<summary className=\""],
+  ['src/components/cobros/extracto-bancario/CierreDelMes.tsx', "<summary className=\""],
+  ['src/components/cobros/extracto-bancario/LoQueProponeElAgente.tsx', "<summary className=\""],
+  ['src/components/cobros/extracto-bancario/RelacionDeAseguradora.tsx', "<summary className=\""],
+  ['src/components/inmobiliaria/cobranza/CobranzaImportCard.tsx', "<summary className=\""],
 ];
 
 describe('standalone controls opt into a 44 px touch target', () => {

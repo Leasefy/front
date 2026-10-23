@@ -370,7 +370,7 @@ export function CobranzaImportCard({
 
           {summary.errores.length > 0 && (
             <details className="rounded-md border border-border bg-surface-muted px-3 py-2.5">
-              <summary className="cursor-pointer text-sm font-medium text-foreground">
+              <summary className="relative hit-area-44 cursor-pointer text-sm font-medium text-foreground">
                 {summary.errores.length} {tr("fila")}
                 {summary.errores.length === 1 ? '' : 's'} {tr("con error")}
               </summary>

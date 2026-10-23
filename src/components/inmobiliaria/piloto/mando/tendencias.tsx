@@ -224,7 +224,7 @@ export function TarjetaDelNegocio({ ind, datos, className }: { ind: IndicadoresD
                     </p>
                     {ind.horas.estimadas === null && <p className="text-caption text-fg-subtle">{T.horasSinEstimar}</p>}
                     <details className="group text-caption text-fg-muted">
-                      <summary className="w-fit cursor-pointer rounded-sm underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                      <summary className="relative hit-area-44 w-fit cursor-pointer rounded-sm underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary">
                         {T.supuesto}
                       </summary>
                       <p className="mt-1 max-w-prose text-fg-muted">{ind.horas.supuesto}</p>

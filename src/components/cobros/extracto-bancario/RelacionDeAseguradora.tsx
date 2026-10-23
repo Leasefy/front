@@ -301,7 +301,7 @@ export function RelacionDeAseguradora({ puedeConciliar, onCambio }: { puedeConci
 
       {anteriores.length > 0 && (
         <details className="text-caption text-fg-muted">
-          <summary className="cursor-pointer">Relaciones cargadas ({anteriores.length})</summary>
+          <summary className="relative hit-area-44 cursor-pointer">Relaciones cargadas ({anteriores.length})</summary>
           <ul className="mt-2 space-y-1">
             {anteriores.slice(0, 10).map((r) => (
               <li key={r.id} className="flex flex-wrap items-center gap-2">

@@ -115,7 +115,8 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 23-10 tarde: 305 con el glow up de Configuración › Reparaciones y Terminaciones con el propietario.
 // 23-10 tarde: 296 con el glow up de Mantenimiento (proveedor de la solicitud, quién la hace, importar proveedores).
 // 23-10 tarde: 291 con el glow up del portal del propietario (las que hago yo, terminaciones por decidir, descuento por partes).
-const CUANTOS_HABIA = 291;
+// 23-10 tarde: 283 con el glow up de Pagos del inquilino (pagar varios inmuebles y escoger de qué inmueble).
+const CUANTOS_HABIA = 283;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

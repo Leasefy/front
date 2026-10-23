@@ -13,7 +13,7 @@
  */
 import { useId, useMemo, useState } from 'react';
 import { AnimatedNumber, Collapse, Presence } from '@leasefy/cadence';
-import { ArrowUpRight, CaretDown, Clock, CreditCard, House, WarningCircle } from '@phosphor-icons/react';
+import { ArrowUpRight, CaretDown, Clock, House, WarningCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -106,19 +106,12 @@ export function PagarTusArriendos({ arriendos, dentroDeLaCifra = false }: Props)
   return (
     <section
       data-testid="pagar-tus-arriendos"
-      className={dentroDeLaCifra ? undefined : 'rounded-xl border border-primary/30 bg-primary-soft p-4 sm:p-6'}
+      // Glow up 23-10: fuera de la cifra, una tarjeta de la casa (antes un bloque azul con su ícono en un
+      // cuadro de color). Adentro de la cifra, sin tarjeta propia.
+      className={dentroDeLaCifra ? undefined : 'rounded-lg border border-border bg-card p-4 sm:p-6'}
     >
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        {dentroDeLaCifra ? (
-          <h2 className="text-body font-medium text-fg">Selecciona qué vas a pagar</h2>
-        ) : (
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface">
-              <CreditCard className="h-5 w-5 text-primary" />
-            </div>
-            <h2 className="text-sm font-medium text-primary">Selecciona qué vas a pagar</h2>
-          </div>
-        )}
+        <h2 className="text-body font-medium text-fg">Selecciona qué vas a pagar</h2>
         {cuantasHay > 1 && (
           <button
             type="button"
@@ -127,13 +120,13 @@ export function PagarTusArriendos({ arriendos, dentroDeLaCifra = false }: Props)
               setConfirmando(false);
               setMarcado(estanTodas ? {} : todas);
             }}
-            className="text-sm text-primary hover:underline"
+            className="text-body-sm text-primary underline-offset-4 hover:underline"
           >
             {estanTodas ? 'Quitar todo' : 'Marcar todo'}
           </button>
         )}
       </div>
-      <p className="mb-4 text-sm text-fg-muted">
+      <p className="mb-4 text-body-sm text-fg-muted">
         {arriendos.length > 1
           ? 'Puedes pagar cuotas de varios inmuebles en un solo pago. En cada uno se paga de la cuota más vieja a la más nueva.'
           : hayVencidas
@@ -149,28 +142,27 @@ export function PagarTusArriendos({ arriendos, dentroDeLaCifra = false }: Props)
               cuantas={Math.min(marcado[a.leaseId] ?? 0, a.cuotas.length)}
               onTocar={(i) => tocar(a.leaseId, i)}
               mostrarInmobiliaria={variasInmobiliarias}
-              dentroDeLaCifra={dentroDeLaCifra}
             />
           </li>
         ))}
       </ul>
 
-      <div className={`mt-4 flex items-baseline justify-between gap-3 border-t pt-4 ${dentroDeLaCifra ? 'border-border' : 'border-primary/30'}`}>
-        <span className="text-sm text-fg-muted">
+      <div className="mt-4 flex items-baseline justify-between gap-3 border-t border-border pt-4">
+        <span className="text-body-sm text-fg-muted">
           Total a pagar
-          {cuantas > 0 && <span className="ml-1 whitespace-nowrap font-mono text-xs">· {cuantas} {cuantas === 1 ? 'cuota' : 'cuotas'}</span>}
+          {cuantas > 0 && <span className="ml-1 whitespace-nowrap font-mono text-caption">· {cuantas} {cuantas === 1 ? 'cuota' : 'cuotas'}</span>}
         </span>
-        <span data-testid="total-a-pagar" className="font-mono text-2xl font-bold text-fg">
+        <span data-testid="total-a-pagar" className="font-mono text-2xl font-medium tabular-nums text-fg">
           <AnimatedNumber value={total} format={(n) => formatCurrency(n)} />
         </span>
       </div>
-      <p className="mt-1 text-xs text-fg-muted">Pagas exactamente esto: la comisión de la pasarela la asume la inmobiliaria.</p>
+      <p className="mt-1 text-caption text-fg-muted">Pagas exactamente esto: la comisión de la pasarela la asume la inmobiliaria.</p>
 
       <Presence show={confirmando && cuantas > 0} initial={false}>
         {confirmando && cuantas > 0 && (
-          <div data-testid="confirmar-pago" className="mt-4 rounded-lg bg-surface p-4 text-sm text-fg">
+          <div data-testid="confirmar-pago" className="mt-4 rounded-lg bg-surface-muted p-4 text-body-sm text-fg">
             <p>
-              Vas a pagar <span className="font-mono font-semibold">{formatCurrency(total)}</span> por{' '}
+              Vas a pagar <span className="font-mono font-medium tabular-nums">{formatCurrency(total)}</span> por{' '}
               {loQueVasAPagar(arriendos, marcado)}. Te llevamos a Wompi para pagar con PSE, tarjeta o Nequi.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -200,26 +192,23 @@ function InmuebleConSusCuotas({
   cuantas,
   onTocar,
   mostrarInmobiliaria,
-  dentroDeLaCifra = false,
 }: {
   arriendo: ArriendoQueSePuedePagar;
   cuantas: number;
   onTocar: (i: number) => void;
   mostrarInmobiliaria: boolean;
-  dentroDeLaCifra?: boolean;
 }) {
   const { formatCurrency } = useI18n();
   const enVerificacion = a.enVerificacion;
   const direccion = [a.inmueble.direccion, a.inmueble.ciudad].filter(Boolean).join(', ');
   return (
-    <div data-testid={`inmueble-${a.leaseId}`} className={`rounded-lg p-4 ${dentroDeLaCifra ? 'bg-surface-muted' : 'bg-surface'}`}>
+    // Cada inmueble en arena (dentro y fuera de la cifra) y su casa como ícono suelto, sin cuadro de color.
+    <div data-testid={`inmueble-${a.leaseId}`} className="rounded-lg bg-surface-muted p-4">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary-soft">
-          <House className="h-4 w-4 text-primary" />
-        </div>
+        <House className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-fg">{nombreDelInmueble(a)}</p>
-          <p className="text-xs text-fg-muted">
+          <p className="text-body-sm font-medium text-fg">{nombreDelInmueble(a)}</p>
+          <p className="text-caption text-fg-muted">
             {a.inmueble.titulo && direccion ? <span className="break-words">{direccion}</span> : null}
             {a.contratoNumero !== null && (
               <span className="whitespace-nowrap">
@@ -233,7 +222,7 @@ function InmuebleConSusCuotas({
 
       <Presence show={Boolean(enVerificacion)} initial={false}>
         {enVerificacion && (
-          <div data-testid="pago-en-verificacion" className="mt-3 flex gap-2 rounded-lg border border-warning/30 bg-warning-soft p-3 text-sm text-fg">
+          <div data-testid="pago-en-verificacion" className="mt-3 flex gap-2 rounded-lg bg-warning-soft p-3 text-body-sm text-fg">
             <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
             {enVerificacion.conTransaccion === false && enVerificacion.puedesReintentarDesde ? (
               <span data-testid="pago-sin-terminar">
@@ -252,7 +241,7 @@ function InmuebleConSusCuotas({
       </Presence>
       <Presence show={!enVerificacion && Boolean(a.ultimoRechazo)} initial={false}>
         {a.ultimoRechazo && (
-          <div data-testid="pago-rechazado" className="mt-3 flex gap-2 rounded-lg border border-danger/30 bg-danger-soft p-3 text-sm text-fg">
+          <div data-testid="pago-rechazado" className="mt-3 flex gap-2 rounded-lg bg-danger-soft p-3 text-body-sm text-fg">
             <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-danger" />
             <span>
               Tu último pago de <span className="font-mono">{formatCurrency(a.ultimoRechazo.valorCop)}</span> fue rechazado por la pasarela. No
@@ -263,7 +252,7 @@ function InmuebleConSusCuotas({
       </Presence>
 
       {a.cuotas.length === 0 ? (
-        <p className="mt-3 text-sm text-fg-muted">De este inmueble no tienes cuotas por pagar ahora.</p>
+        <p className="mt-3 text-body-sm text-fg-muted">De este inmueble no tienes cuotas por pagar ahora.</p>
       ) : (
         <ul className="mt-3 space-y-1" aria-label={`Cuotas de ${nombreDelInmueble(a)}`}>
           {a.cuotas.map((c, i) => (
@@ -299,7 +288,7 @@ function FilaDeCuota({
   const abonado = c.abonadoCop ?? 0;
   const conDesglose = lineas.length > 0 || abonado > 0 || c.interesCop > 0;
   return (
-    <li data-testid={`cuota-${c.mes}`} className={cn('rounded-lg px-3 py-2 transition-colors', marcada ? 'bg-primary-soft/60' : 'hover:bg-surface-muted')}>
+    <li data-testid={`cuota-${c.mes}`} className={cn('rounded-lg px-3 py-2 transition-colors', marcada ? 'bg-primary-soft/60' : 'hover:bg-surface')}>
       <div className="flex items-center gap-3">
         <Checkbox
           id={id}
@@ -309,13 +298,13 @@ function FilaDeCuota({
           aria-describedby={`${id}-vence`}
         />
         <label htmlFor={id} className={cn('min-w-0 flex-1', deshabilitada ? 'cursor-not-allowed opacity-60' : 'cursor-pointer')}>
-          <span className="block text-sm font-medium text-fg">Cuota de {mesEnPalabras(c.mes)}</span>
-          <span id={`${id}-vence`} className={cn('block text-xs', c.vencida ? 'text-danger' : 'text-fg-muted')}>
+          <span className="block text-body-sm text-fg">Cuota de {mesEnPalabras(c.mes)}</span>
+          <span id={`${id}-vence`} className={cn('block text-caption', c.vencida ? 'text-danger' : 'text-fg-muted')}>
             {c.vencida ? `Vencida desde el ${diaEnPalabras(c.vence)}` : `Vence el ${diaEnPalabras(c.vence)}`}
             {c.interesCop > 0 ? ` · incluye ${formatCurrency(c.interesCop)} de intereses` : ''}
           </span>
         </label>
-        <span className="font-mono text-sm text-fg">{formatCurrency(c.valorCop)}</span>
+        <span className="font-mono text-body-sm tabular-nums text-fg">{formatCurrency(c.valorCop)}</span>
       </div>
       {conDesglose && (
         <>
@@ -325,13 +314,13 @@ function FilaDeCuota({
             aria-expanded={abierta}
             aria-controls={`${id}-desglose`}
             data-testid={`ver-desglose-${c.mes}`}
-            className="ml-8 mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            className="ml-8 mt-1 inline-flex items-center gap-1 text-caption text-primary underline-offset-4 hover:underline"
           >
             {abierta ? 'Ocultar de qué es' : 'Ver de qué es'}
             <CaretDown className={cn('h-3 w-3 transition-transform duration-fast ease-enter', abierta && 'rotate-180')} />
           </button>
           <Collapse open={abierta}>
-            <dl id={`${id}-desglose`} data-testid={`desglose-${c.mes}`} className="ml-8 mt-2 space-y-1 border-l border-border pl-3 text-xs">
+            <dl id={`${id}-desglose`} data-testid={`desglose-${c.mes}`} className="ml-8 mt-2 space-y-1 border-l border-border pl-3 text-caption">
               {lineas.map((l, k) => (
                 <div key={`${l.nombre}-${k}`} className="flex items-baseline justify-between gap-3">
                   <dt className="min-w-0 text-fg-muted">{l.nombre}</dt>

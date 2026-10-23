@@ -94,7 +94,7 @@ export default function GuardadosPage() {
           titulo={t('saved.title')}
           descripcion={
             displayCount === 0
-              ? (locale === 'es' ? 'Guarda los inmuebles que te interesen para compararlos después.' : 'Save the homes you like to compare them later.')
+              ? (locale === 'es' ? 'Los inmuebles que guardaste, para volver a ellos.' : 'The homes you saved, to come back to them.')
               : displayCount === 1
                 ? (locale === 'es' ? '1 inmueble guardado: ábrelo para ver la ficha y postularte.' : '1 saved home: open it to see the details and apply.')
                 : (locale === 'es' ? `${displayCount} inmuebles guardados: abre uno para ver la ficha y postularte.` : `${displayCount} saved homes: open one to see the details and apply.`)
@@ -175,8 +175,8 @@ export default function GuardadosPage() {
                     ? 'Se arrendaron o las quitaron del catálogo. Busca otras y vuelve a guardar las que te sirvan.'
                     : 'They were rented or removed from the catalog. Browse others and save the ones you like.'
                   : locale === 'es'
-                    ? 'Abre un inmueble y toca el corazón para guardarlo: aquí los encuentras para compararlos.'
-                    : 'Open a property and tap the heart to save it: you will find them here to compare.'
+                    ? 'Abre un inmueble y toca el corazón para guardarlo: aquí lo encuentras después.'
+                    : 'Open a property and tap the heart to save it: you will find it here later.'
               }
               action={{
                 label: locale === 'es' ? 'Ver inmuebles para mí' : 'See homes for me',

@@ -830,8 +830,8 @@ export default function DocumentosPage() {
                 icon={FolderOpen}
                 title={locale === 'es' ? 'Todavía no tienes documentos' : 'No documents yet'}
                 description={locale === 'es'
-                  ? 'Aquí van a estar tu contrato firmado y el recibo de cada pago, y los documentos que subas al postularte a un inmueble.'
-                  : 'Your signed lease and the receipt for each payment will be here, along with the documents you upload when you apply.'}
+                  ? 'Aquí van tu contrato firmado, tus recibos y lo que subiste al postularte.'
+                  : 'Your signed lease, your receipts and what you uploaded when you applied go here.'}
                 action={{ label: locale === 'es' ? 'Ver inmuebles para mí' : 'See homes for me', href: '/inquilino/para-ti' }}
               />
             </div>

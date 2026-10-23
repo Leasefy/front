@@ -214,8 +214,8 @@ export default function SolicitudesPage() {
               ? `Tienes ${abiertas} solicitudes abiertas: van primero, con la fecha en que te responden.`
               : `You have ${abiertas} open requests: they come first, with the date you will hear back.`
             : locale === 'es'
-              ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS, en un solo lugar.'
-              : 'Open and track your maintenance requests and PQRS, all in one place.'
+              ? 'Abre y sigue tus solicitudes de mantenimiento y tus quejas o reclamos, en un solo lugar.'
+              : 'Open and track your maintenance requests and your complaints, all in one place.'
       }
       // Revisora r25: sin contrato vigente el botón no se pinta (antes, apagado y a lo ancho a 390); el porqué lo
       // dice el vacío, con su salida.

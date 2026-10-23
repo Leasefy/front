@@ -32,7 +32,6 @@ import { VistasDeLaPestana, VISTAS_DE_SOLICITUDES } from '@/components/portales/
 import { AvisoDeFuentesCaidas } from '@/components/portales/AvisoDeFuentesCaidas';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AnimatedNumber } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   CreditCard,
@@ -47,7 +46,6 @@ import {
 } from '@phosphor-icons/react';
 
 import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
-import { useTenantNotifications } from '@/lib/hooks/useNotifications';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { useI18n } from '@/lib/i18n';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
@@ -150,7 +148,6 @@ export default function CasosPage() {
   const { cases, isLoading: isCasesLoading, error, fuentesQueFallaron, todasFallaron, puedeRadicar, refetch } = useTenantCases();
   // CASO-03: in-app notifications are already real; surface the unread count as a
   // subtle badge. This hook owns its own existing poll — no new poller is added here.
-  const { unreadCount } = useTenantNotifications();
 
   // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
   const entrada = useEntradaTrasCargar(isOnboardingLoading || isCasesLoading);
@@ -240,20 +237,7 @@ export default function CasosPage() {
 
         <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={refetch} className="mb-6" />
 
-        {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). Glow up 22-10:
-            una línea bajo el encabezado, no una tarjeta con su campana del mismo peso que los casos. */}
-        {/* Revisora r25: una línea corta (antes ≈110 caracteres que repetían la campana). Sólo con avisos sin leer. */}
-        {unreadCount > 0 && (
-          <p className="mb-6 text-sm text-fg-muted" data-testid="aviso-de-notificaciones">
-            {/* El conteo llega por sondeo: cuando cambia, cuenta. */}
-            <span className="font-mono tabular-nums text-fg"><AnimatedNumber value={unreadCount} /></span>{' '}
-            {locale === 'es' ? (unreadCount === 1 ? 'aviso sin leer' : 'avisos sin leer') : unreadCount === 1 ? 'unread notice' : 'unread notices'}
-            {' · '}
-            <Link href="/inquilino/notificaciones" className="font-medium text-fg underline underline-offset-4 hover:text-primary">
-              {locale === 'es' ? 'Ver' : 'View'}
-            </Link>
-          </p>
-        )}
+        {/* Revisora r27: los avisos sin leer son trabajo de la campana (ya tiene su punto): aquí no se repiten. */}
 
         {/* Case list (CASO-01) — real rows, or an honest neutral "todo al día" empty */}
         <section className="mb-10">
@@ -267,9 +251,10 @@ export default function CasosPage() {
             <EmptyState
               icon={CheckCircle}
               title={locale === 'es' ? 'Todo al día' : 'All caught up'}
+              // Revisora r27: un solo nombre para lo mismo (antes «casos» bajo el título «Solicitudes»).
               description={locale === 'es'
-                ? 'No tienes casos abiertos por ahora.'
-                : 'You have no open cases right now.'}
+                ? 'No tienes nada en curso por ahora.'
+                : 'You have nothing in progress right now.'}
             />
           )}
         </section>

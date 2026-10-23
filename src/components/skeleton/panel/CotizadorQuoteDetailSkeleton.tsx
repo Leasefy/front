@@ -26,16 +26,12 @@ export function CotizadorQuoteDetailSkeleton() {
       aria-label="Cargando cotización"
       className="flex flex-col min-h-screen animate-pulse"
     >
-      {/* Sticky header — mirrors QuoteHeader sticky bar */}
-      <div className="sticky top-0 z-10 border-b border-border bg-card px-4 py-4 sm:px-6 flex items-center justify-between">
-        <div className="space-y-1">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-4 w-48" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-28 rounded-md" />
-          <Skeleton className="h-9 w-28 rounded-md" />
-        </div>
+      {/* El encabezado común (vuelta, sección, título de 40 px y su línea) — como QuoteHeader. */}
+      <div className="space-y-3 px-6 pt-6 lg:px-8 lg:pt-8">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-4 w-80 max-w-full" />
       </div>
 
       {/* Content area — max-w-6xl mirrors real page main */}

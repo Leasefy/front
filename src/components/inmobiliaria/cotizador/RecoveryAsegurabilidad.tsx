@@ -120,7 +120,7 @@ function RecoveryMenuButton({
         {icon}
         <span className="text-sm font-medium truncate">{label}</span>
       </span>
-      <span className="text-[10px] font-normal text-fg-muted shrink-0">
+      <span className="text-caption font-normal text-fg-muted shrink-0">
         {proximamenteLabel}
       </span>
     </Button>
@@ -390,7 +390,7 @@ function CondicionadoBlock({
             title={t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
           >
             {t('inmobiliaria.ai.cotizador.detail.condiciones.resolver')}
-            <span className="text-[11px] font-normal opacity-70">
+            <span className="text-caption font-normal opacity-70">
               · {t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
             </span>
           </Button>

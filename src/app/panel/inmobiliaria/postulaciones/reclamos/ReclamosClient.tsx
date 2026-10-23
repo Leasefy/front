@@ -32,6 +32,9 @@ import { ChatCircleDots, Eye, ShieldWarning, Clock } from '@phosphor-icons/react
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { toast } from '@/components/ui/toast'
@@ -40,8 +43,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   EmptyState,
   Textarea,
 } from '@/components/ui'
@@ -61,9 +62,9 @@ type Estado = ReclamoDelEstudio['estado']
 
 const ROTULO: Record<
   Estado,
-  { texto: string; variant: 'default' | 'secondary' | 'outline' }
+  { texto: string; variant: 'warning' | 'secondary' | 'outline' }
 > = {
-  ABIERTO: { texto: 'Sin responder', variant: 'default' },
+  ABIERTO: { texto: 'Sin responder', variant: 'warning' },
   EN_REVISION: { texto: 'La estás viendo tú', variant: 'outline' },
   RESUELTO: { texto: 'Respondido', variant: 'secondary' },
 }
@@ -83,7 +84,8 @@ const NO_SE_PUEDE = [
 function fecha(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })
+  // «17 oct 2026» (la fecha de la casa), en hora de Colombia.
+  return fechaCorta(diaEnColombia(iso))
 }
 
 export function ReclamosClient() {
@@ -166,14 +168,25 @@ export function ReclamosClient() {
         seccion="Captación y arriendo"
         titulo="Reclamos de candidatos"
         descripcion="Lo que escribe quien no pasó el estudio —pidiendo detalle o avisando que un dato está mal— y su respuesta."
-        junto={
-          sinResponder > 0 ? (
-            <Badge variant="warning" data-testid="sin-responder">
-              {sinResponder} sin responder
-            </Badge>
-          ) : null
-        }
       />
+
+      {/* Glow up 22-10 (la vara de Deuda del mes): LA RESPUESTA en una cifra —cuántos esperan
+          respuesta— con la barra de los tres estados. Antes lo mismo se decía tres veces: la
+          pastilla junto al título, la línea de la tarjeta y los botones de filtro. */}
+      {reclamos.length > 0 && !datos.noHabilitado ? (
+        <section className="rounded-lg border border-border bg-card px-5 py-5" data-testid="sin-responder">
+          <CifraHeroe
+            rotulo="Esperan respuesta"
+            cifra={String(sinResponder)}
+            contexto={reclamos.length === 1 ? 'de 1 reclamo' : `de ${reclamos.length} reclamos`}
+            tramos={[
+              { clave: 'ABIERTO', etiqueta: ROTULO.ABIERTO.texto, monto: cuenta.ABIERTO, tono: 'aviso', cifra: String(cuenta.ABIERTO) },
+              { clave: 'EN_REVISION', etiqueta: ROTULO.EN_REVISION.texto, monto: cuenta.EN_REVISION, tono: 'neutro', cifra: String(cuenta.EN_REVISION) },
+              { clave: 'RESUELTO', etiqueta: 'Respondidos', monto: cuenta.RESUELTO, tono: 'exito', cifra: String(cuenta.RESUELTO) },
+            ]}
+          />
+        </section>
+      ) : null}
 
       {/* ── La regla, antes de escribir y no dentro del formulario ───────── */}
       <section
@@ -215,44 +228,25 @@ export function ReclamosClient() {
         </div>
       </section>
 
-      <Card>
-        <CardHeader className="gap-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <CardTitle className="text-base">Los reclamos</CardTitle>
-              <p className="text-sm text-fg-muted">
-                {sinResponder > 0
-                  ? `${sinResponder} ${sinResponder === 1 ? 'espera' : 'esperan'} respuesta.`
-                  : 'Un renglón por reclamo, sin responder primero.'}
-              </p>
-            </div>
-            {reclamos.length > 0 ? (
-              <div className="flex flex-wrap gap-2" data-testid="filtro-estados">
-                <Button
-                  size="sm"
-                  variant={filtro === null ? 'default' : 'outline'}
-                  onClick={() => setFiltro(null)}
-                >
-                  Todos {reclamos.length}
-                </Button>
-                {(Object.keys(ROTULO) as Estado[]).map((e) =>
-                  cuenta[e] > 0 ? (
-                    <Button
-                      key={e}
-                      size="sm"
-                      variant={filtro === e ? 'default' : 'outline'}
-                      onClick={() => setFiltro(e)}
-                      data-testid={`filtro-${e}`}
-                    >
-                      {ROTULO[e].texto} {cuenta[e]}
-                    </Button>
-                  ) : null,
-                )}
-              </div>
-            ) : null}
+      <Card className="overflow-hidden p-0">
+        {/* Las pestañas de estado con su conteo, DENTRO de la tarjeta; sin responder, primero. */}
+        {reclamos.length > 0 ? (
+          <div className="border-b border-border px-4 py-2.5">
+            <PestanasDeEstado<Estado | 'TODOS'>
+              etiqueta="Estado de los reclamos"
+              valor={filtro ?? 'TODOS'}
+              onCambio={(v) => setFiltro(v === 'TODOS' ? null : v)}
+              data-testid="filtro-estados"
+              pestanas={[
+                { valor: 'TODOS', etiqueta: 'Todos', cuantos: reclamos.length, fija: true },
+                { valor: 'ABIERTO', etiqueta: ROTULO.ABIERTO.texto, cuantos: cuenta.ABIERTO, tono: 'aviso', testid: 'filtro-ABIERTO' },
+                { valor: 'EN_REVISION', etiqueta: ROTULO.EN_REVISION.texto, cuantos: cuenta.EN_REVISION, testid: 'filtro-EN_REVISION' },
+                { valor: 'RESUELTO', etiqueta: 'Respondidos', cuantos: cuenta.RESUELTO, testid: 'filtro-RESUELTO' },
+              ]}
+            />
           </div>
-        </CardHeader>
-        <CardContent>
+        ) : null}
+        <CardContent className="p-4">
           {datos.noHabilitado ? (
             <p className="text-sm text-fg-muted" data-testid="reclamos-no-habilitados">
               {motivoEnCristiano(datos.noHabilitado)}

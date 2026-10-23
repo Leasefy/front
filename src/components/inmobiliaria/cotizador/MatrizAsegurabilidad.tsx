@@ -143,7 +143,7 @@ function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMo
 function RecomendadaChip() {
   const { t } = useI18n()
   return (
-    <Badge className="gap-1 px-2 py-0.5 text-[10px] font-medium">
+    <Badge className="gap-1 px-2 py-0.5 text-caption font-medium">
       <Star weight="fill" className="w-3 h-3" />
       {t('inmobiliaria.ai.cotizador.detail.matriz.recomendada')}
     </Badge>
@@ -247,7 +247,7 @@ function MatrizTable({
                           {prima}
                         </span>
                         {isPriced && carrier.isStub && (
-                          <span className="text-[10px] text-fg-muted">
+                          <span className="text-caption text-fg-muted">
                             {t('inmobiliaria.ai.cotizador.detail.fuente.estimado')}
                           </span>
                         )}

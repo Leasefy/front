@@ -13,6 +13,7 @@
  */
 
 import { FolderOpen, CheckCircle, XCircle, Eye } from '@phosphor-icons/react';
+import { CifraHeroe, type TonoDelTramo } from '@/components/pantalla/CifraHeroe';
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Badge, Button } from '@/components/ui';
@@ -152,37 +153,35 @@ export function DocumentReviewQueueView({
         }
       />
 
-      {/* El resumen: una cifra que es trabajo, y el resto acompañando. */}
-      <div
-        className="flex flex-wrap items-baseline gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-5 py-4"
+      {/* Glow up 22-10 (la vara de Deuda del mes): LA RESPUESTA en una CifraHeroe —lo que falta
+          revisar— con la barra de cómo va la cola; los otros tres acompañan en la leyenda. Con la
+          consulta caída o cargando, «—»: no se afirma un cero que nadie trajo. */}
+      <section
+        className="rounded-lg border border-border bg-card px-5 py-5"
         data-testid="resumen-de-la-cola"
       >
-        <p className="flex items-baseline gap-2">
-          <span
-            className="text-2xl font-medium tabular-nums text-fg"
-            data-testid="count-pending"
-          >
-            {/* Con la consulta caída, `counts` viene en ceros: afirmar «0
-                pendientes» sobre un dato que nadie trajo es inventar. Mientras
-                carga tampoco se sabe todavía. */}
-            {isLoading || error ? '—' : <AnimatedNumber value={counts.pending} format={enteroTalCual} />}
-          </span>
-          <span className="text-sm text-fg">
-            {counts.pending === 1 ? 'soporte por revisar' : 'soportes por revisar'}
-          </span>
-        </p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
-          {SECUNDARIOS.map(({ key, label, icon: CardIcon }) => (
-            <span key={key} className="flex items-center gap-1.5" data-testid={`count-${key}`}>
-              <CardIcon className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
-              <span className="tabular-nums">
-                {isLoading || error ? '—' : <AnimatedNumber value={counts[key]} format={enteroTalCual} />}
-              </span>
-              {label}
+        <CifraHeroe
+          rotulo="Por revisar"
+          cifra={
+            <span data-testid="count-pending">
+              {isLoading || error ? '—' : <AnimatedNumber value={counts.pending} format={enteroTalCual} />}
             </span>
-          ))}
-        </div>
-      </div>
+          }
+          contexto={counts.pending === 1 ? 'soporte por revisar' : 'soportes por revisar'}
+          tramos={[
+            { clave: 'pending', etiqueta: 'Por revisar', monto: isLoading || error ? 0 : counts.pending, tono: 'aviso' as const },
+            ...SECUNDARIOS.map(({ key, label }) => ({
+              clave: key,
+              etiqueta: label.charAt(0).toUpperCase() + label.slice(1),
+              monto: isLoading || error ? 0 : counts[key],
+              tono: (key === 'approved' ? 'exito' : key === 'rejected' ? 'critico' : 'neutro') as TonoDelTramo,
+              siempre: true,
+              'data-testid': `count-${key}`,
+              cifra: isLoading || error ? '—' : <AnimatedNumber value={counts[key]} format={enteroTalCual} />,
+            })),
+          ].filter((t) => t.clave !== 'pending' || t.monto > 0)}
+        />
+      </section>
 
       {/* Body: esqueleto → tabla (o → fallo) con un fundido. */}
       <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : 'tabla'}>
@@ -196,8 +195,9 @@ export function DocumentReviewQueueView({
         />
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-hidden">
-          <Table>
-            <TableHeader>
+          {/* En el celular cada soporte es una tarjeta (patrón de Deuda del mes). */}
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 {COLUMNAS.map((c, i) => (
                   <TableHead
@@ -211,14 +211,14 @@ export function DocumentReviewQueueView({
             </TableHeader>
             {/* Tomar, aprobar o rechazar: la fila que sale de la cola se va y
                 las demás suben. */}
-            <TableBodyAnimado>
+            <TableBodyAnimado className="max-md:block">
               {filas.length === 0 ? (
                 /* Sin filtros en esta pantalla: acá el vacío es siempre «todavía no
                    llegó nada», nunca «filtraste mal». Y no se crea desde aquí — los
                    soportes los sube quien se postula—, así que la salida útil es ir a
                    ver las postulaciones. */
-                <TableRowAnimada key="vacio">
-                  <TableCell colSpan={COLUMNAS.length} className="p-0">
+                <TableRowAnimada key="vacio" className="max-md:block">
+                  <TableCell colSpan={COLUMNAS.length} className="p-0 max-md:block">
                     <SinDatos
                       queSon="soportes por revisar"
                       icono={FolderOpen}
@@ -239,22 +239,26 @@ export function DocumentReviewQueueView({
                   const showApprove = doc.reviewStatus !== 'APPROVED';
                   const showReject = doc.reviewStatus !== 'REJECTED';
                   return (
-                    <TableRowAnimada key={doc.id} data-testid="review-doc">
-                      <TableCell className="align-top">
+                    <TableRowAnimada
+                      key={doc.id}
+                      data-testid="review-doc"
+                      className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                    >
+                      <TableCell className="align-top max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                         <p className="font-medium text-fg truncate">{item.tenant.fullName}</p>
                         {item.property?.title ? (
                           <p className="text-sm text-fg-muted truncate">{item.property.title}</p>
                         ) : null}
                       </TableCell>
 
-                      <TableCell className="max-w-[320px] align-top">
+                      <TableCell className="max-w-[320px] align-top max-md:col-span-2 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="text-fg truncate">{docTypeLabel(doc.type)}</p>
                         <p className="text-caption text-fg-muted truncate">
                           {doc.originalName} · {formatSize(doc.size)}
                         </p>
                       </TableCell>
 
-                      <TableCell className="align-top">
+                      <TableCell className="align-top max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                         <Badge variant={reviewStatusBadgeVariant(doc.reviewStatus)}>
                           {getReviewStatusLabel(doc.reviewStatus)}
                         </Badge>
@@ -265,9 +269,9 @@ export function DocumentReviewQueueView({
                         )}
                       </TableCell>
 
-                      <TableCell className="align-top">
+                      <TableCell className="align-top max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0">
                         {canReview && (
-                          <div className="flex flex-wrap items-center justify-end gap-2">
+                          <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
                             {showTake && (
                               <Button
                                 size="sm"
@@ -282,6 +286,7 @@ export function DocumentReviewQueueView({
                             {showApprove && (
                               <Button
                                 size="sm"
+                                variant="secondary"
                                 hideArrow
                                 disabled={busy}
                                 isLoading={busy}
@@ -293,8 +298,9 @@ export function DocumentReviewQueueView({
                             {showReject && (
                               <Button
                                 size="sm"
-                                variant="destructive"
+                                variant="ghost"
                                 hideArrow
+                                className="text-danger hover:text-danger"
                                 disabled={busy}
                                 onClick={() => onReject(item, doc)}
                               >

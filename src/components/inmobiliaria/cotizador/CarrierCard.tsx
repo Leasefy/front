@@ -136,7 +136,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
         <div className="flex items-center gap-2 shrink-0">
           <span
             className={[
-              'rounded-full uppercase tracking-wide text-[10px] font-medium px-2 py-0.5',
+              'rounded-full uppercase tracking-wide text-caption font-medium px-2 py-0.5',
               colors.badge,
             ].join(' ')}
           >

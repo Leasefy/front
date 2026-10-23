@@ -295,7 +295,7 @@ export function CarrierCardExpandible({
           title={t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
         >
           {t('inmobiliaria.ai.cotizador.detail.carrierCard.avanzarAction')}
-          <span className="text-[10px] font-normal opacity-70">
+          <span className="text-caption font-normal opacity-70">
             · {t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
           </span>
         </Button>
@@ -327,7 +327,7 @@ export function CarrierCardExpandible({
           </span>
           <span
             className={cn(
-              'rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide',
+              'rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wide',
               tokens.chip,
             )}
           >

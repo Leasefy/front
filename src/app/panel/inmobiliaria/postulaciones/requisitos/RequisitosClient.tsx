@@ -45,6 +45,7 @@ import {
   FileArrowUp,
   TextAa,
   Handshake,
+  Info,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
@@ -575,14 +576,7 @@ export function RequisitosClient() {
       <EncabezadoDePantalla
         seccion="Captación y arriendo"
         titulo="Requisitos por tipo de inquilino"
-        descripcion={
-          <span data-testid="requisitos-como-se-usa">
-            Los papeles que le pides a cada perfil: es la política de riesgo de
-            esta inmobiliaria, y la defines tú. Hoy el formulario de postulación
-            le pide a todos la cédula y el extracto bancario; lo demás de esta
-            lista se lo pides al candidato con «Pedir info» desde su ficha.
-          </span>
-        }
+        descripcion="Los papeles que le pides a cada perfil: es la política de riesgo de esta inmobiliaria."
         accionPrincipal={
           puedeEditar && !esElPreset && perfiles.length > 0 ? (
             <Button size="sm" onClick={() => setAgregando(true)} data-testid="abrir-agregar">
@@ -668,8 +662,18 @@ export function RequisitosClient() {
                 )}
               </div>
             ) : null}
+            {/* Glow up 22-10: la descripción del encabezado queda en UNA línea; cómo se usa
+                hoy la lista (QA-IA-A) se dice una vez, aquí, pegado a ella. */}
+            <p
+              className="flex items-start gap-2 border-b border-border bg-surface-muted/60 px-6 py-2.5 text-caption text-fg-muted"
+              data-testid="requisitos-como-se-usa"
+            >
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              Hoy el formulario de postulación le pide a todos la cédula y el extracto bancario; lo demás
+              de esta lista se lo pides al candidato con «Pedir info» desde su ficha.
+            </p>
             <CardHeader>
-              <CardTitle className="text-base">
+              <CardTitle className="text-base font-medium">
                 {perfil
                   ? (perfiles.find((p) => p.perfil === perfil)?.nombre ?? perfil)
                   : 'Todos los perfiles'}

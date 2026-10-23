@@ -6,7 +6,10 @@
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { useI18n } from '@/lib/i18n'
 import { relativeTime } from '@/lib/cartera'
-import { ChartLineUp } from '@phosphor-icons/react'
+import type * as React from 'react'
+import { StatusBadge } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 interface QuoteHeaderProps {
@@ -56,79 +59,73 @@ export function QuoteHeader({
       }).format(canonCop)
     : '—'
 
+  // Glow up 22-10 (la vara de Deuda del mes): el encabezado común. Antes era una
+  // barra pegajosa con «Cotizador / Cotización #…» en mono chico y el costo en
+  // una pastilla azul (un segundo azul en la pantalla). Ahora: la vuelta a la
+  // lista, la sección, el nombre del candidato como título, UNA línea con lo que
+  // se cotizó y el estado al lado del título; el costo de la consulta, en mono
+  // y sin color, en esa misma línea.
+  const estado = isConnected
+    ? t('inmobiliaria.ai.cotizador.detail.header.liveLabel')
+    : terminada
+      ? locale === 'es' ? 'Completa' : 'Complete'
+      : t('inmobiliaria.ai.cotizador.detail.header.disconnectedLabel')
+  const tituloDelCaso =
+    nombre ?? `${t('inmobiliaria.ai.cotizador.detail.header.breadcrumbQuote')} #${quoteId.slice(0, 8)}`
+
+  const datos: React.ReactNode[] = [
+    <span key="cedula" className="font-mono">{maskedCedula}</span>,
+  ]
+  if (canonCop !== null) {
+    datos.push(
+      <span key="canon">
+        {t('inmobiliaria.ai.cotizador.detail.header.canon')} <span className="font-mono text-fg">{canonFormatted}</span>
+      </span>,
+    )
+  }
+  if (ciudad) datos.push(<span key="ciudad">{ciudad}</span>)
+  if (tipo) datos.push(<span key="tipo">{tipo}</span>)
+  if (codeudores !== null) {
+    datos.push(
+      <span key="codeudores">
+        {t('inmobiliaria.ai.cotizador.detail.header.codeudores')}: <span className="font-mono">{codeudores}</span>
+      </span>,
+    )
+  }
+  datos.push(<span key="cuando">{relativeTime(timestamp, locale)}</span>)
+
   return (
-    <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
-      <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-
-        {/* Left: breadcrumb + inputs summary */}
-        <div className="min-w-0 space-y-0.5">
-          <div className="flex items-center gap-1.5 text-caption text-muted-foreground font-mono">
-            <span>Cotizador</span>
-            <span>/</span>
-            <span className="text-foreground font-medium">
-              {t('inmobiliaria.ai.cotizador.detail.header.breadcrumbQuote')} #{quoteId.slice(0, 8)}
+    <div className="space-y-3" data-testid="quote-header">
+      <VolverALaLista
+        href="/panel/inmobiliaria/postulaciones/asegurabilidad"
+        label={t('inmobiliaria.ai.nav.cotizador')}
+      />
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        titulo={<span data-testid={nombre ? 'quote-header-nombre' : undefined}>{tituloDelCaso}</span>}
+        junto={
+          <StatusBadge tone={isConnected ? 'info' : terminada ? 'success' : 'neutral'} pulse={isConnected}>
+            {estado}
+          </StatusBadge>
+        }
+        descripcion={
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm">
+            {datos.map((d, i) => (
+              <span key={i} className="inline-flex items-center gap-2">
+                {i > 0 ? <span aria-hidden="true" className="text-fg-subtle">·</span> : null}
+                {d}
+              </span>
+            ))}
+            <span className="inline-flex items-center gap-2">
+              <span aria-hidden="true" className="text-fg-subtle">·</span>
+              <span>
+                {t('inmobiliaria.ai.cotizador.detail.header.totalCost')}{' '}
+                <span className="font-mono text-fg">{formatCurrency(totalCostCop)}</span>
+              </span>
             </span>
-          </div>
-          <div className="flex items-center gap-3 text-caption text-muted-foreground flex-wrap">
-            {nombre && <span className="font-medium text-foreground" data-testid="quote-header-nombre">{nombre}</span>}
-            <span className="font-mono">{maskedCedula}</span>
-            {canonCop !== null && (
-              <span>
-                <span className="opacity-60">{t('inmobiliaria.ai.cotizador.detail.header.canon')}: </span>
-                {canonFormatted}
-              </span>
-            )}
-            {ciudad && (
-              <span>
-                <span className="opacity-60">{t('inmobiliaria.ai.cotizador.detail.header.ciudad')}: </span>
-                {ciudad}
-              </span>
-            )}
-            {tipo && (
-              <span>
-                <span className="opacity-60">{t('inmobiliaria.ai.cotizador.detail.header.tipo')}: </span>
-                {tipo}
-              </span>
-            )}
-            {codeudores !== null && (
-              <span>
-                <span className="opacity-60">{t('inmobiliaria.ai.cotizador.detail.header.codeudores')}: </span>
-                {codeudores}
-              </span>
-            )}
-            <span className="opacity-50">{relativeTime(timestamp, locale)}</span>
-          </div>
-        </div>
-
-        {/* Right: live cost pill + connection status */}
-        <div className="flex flex-col items-end gap-0.5">
-          <div className="flex items-center gap-2 bg-primary-soft border border-primary/30 rounded-full px-3 py-1">
-            <ChartLineUp
-              weight="regular"
-              className="w-3.5 h-3.5 text-primary shrink-0"
-            />
-            <span className="font-mono text-numeric text-sm text-primary">
-              {formatCurrency(totalCostCop)}
-            </span>
-            <span
-              className={[
-                'w-2 h-2 rounded-full shrink-0',
-                isConnected
-                  ? 'bg-success animate-pulse'
-                  : 'bg-muted-foreground/40',
-              ].join(' ')}
-              aria-hidden="true"
-            />
-          </div>
-          <span className="text-[10px] text-muted-foreground font-mono pr-1">
-            {isConnected
-              ? t('inmobiliaria.ai.cotizador.detail.header.liveLabel')
-              : terminada
-                ? locale === 'es' ? 'Completa' : 'Complete'
-                : t('inmobiliaria.ai.cotizador.detail.header.disconnectedLabel')}
           </span>
-        </div>
-      </div>
-    </header>
+        }
+      />
+    </div>
   )
 }

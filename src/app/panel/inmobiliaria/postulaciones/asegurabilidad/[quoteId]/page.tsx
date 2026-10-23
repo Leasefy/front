@@ -333,8 +333,8 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
   return (
     <CrossFade swapKey="cotizacion">
-    <div className="min-h-screen bg-background">
-      {/* Sticky header */}
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* Glow up 22-10: el encabezado común (vuelta, sección, el candidato y el estado). */}
       <QuoteHeader
         quoteId={quoteId}
         cedula={metadata?.cedulaHashPrefix8 ?? quoteId.slice(0, 8)}
@@ -351,7 +351,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
       {/* Main content — ficha del caso en 3 columnas (visión #14):
           contexto (izq) | comparación + acciones (centro) | recomendación (der). */}
-      <div className="px-4 py-6">
+      <div>
         {/* ARIA live region — announces carrier verdict transitions to SR */}
         <div
           role="status"

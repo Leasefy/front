@@ -549,13 +549,8 @@ export default function InquilinoPage() {
                         se conecte al motor (ver el handoff de Víctor).
                       */}
 
-                      {/* Heart - Glass effect */}
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-[transform,background-color] backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-surface/30 cursor-pointer"
-                      >
-                        <Heart className="w-4 h-4 text-white drop-" />
-                      </div>
+                      {/* Revisora r24 (bloqueante): aquí había un corazón de «guardar» que no hacía nada (sólo
+                          detenía el clic). Un control muerto promete lo que no existe: fuera. */}
                     </div>
 
                     <div className="p-4">

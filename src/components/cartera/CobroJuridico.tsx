@@ -354,6 +354,7 @@ export function CobroJuridico() {
 
   const porPagar = honorarios.filter((h) => h.estado === 'POR_PAGAR_AL_ABOGADO');
   const enJuridico = casos.filter((c) => c.estado === 'EN_JURIDICO');
+  const todoEnCero = sugeridos.length === 0 && enJuridico.length === 0 && porPagar.length === 0;
 
   return (
     <EstadoDeDatos cargando={cargando} error={error} queEs="el cobro jurídico" onReintentar={cargar}>
@@ -370,29 +371,43 @@ export function CobroJuridico() {
                   ? 'ningún contrato cumple hoy'
                   : `en ${sugeridos.length} ${sugeridos.length === 1 ? 'contrato' : 'contratos'} con 90 días o más de mora y sin póliza`
               }
-              // C3 (revisora r25): sin contratos que cumplan, UNA línea y no «$ 0».
+              // C3 (revisora r25): sin contratos que cumplan, UNA línea y no «$ 0». Revisora r25
+              // (Jurídico #1): con todo en cero, esa línea lo dice todo y no hay tarjetas debajo.
               esCero={sugeridos.length === 0}
-              cuandoEsCero="Hoy ningún contrato cumple para jurídico: 90 días o más de mora y sin póliza."
+              cuandoEsCero={
+                todoEnCero
+                  ? 'Nadie para jurídico hoy: ningún contrato con 90 días o más de mora sin póliza y ningún caso con abogado.'
+                  : 'Hoy ningún contrato cumple para jurídico: 90 días o más de mora y sin póliza.'
+              }
               data-testid="cifra-del-juridico"
             />
-            <FranjaDeCifras aria-label="Lo que ya está en jurídico">
-              <Cifra
-                etiqueta="En jurídico"
-                valor={enJuridico.length}
-                detalle={enJuridico.length === 1 ? 'caso con abogado' : 'casos con abogado'}
-              />
-              <Cifra
-                etiqueta="Por pagar a los abogados"
-                valor={formatCurrency(porPagar.reduce((t, h) => t + h.honorarioCop, 0))}
-                detalle={`${porPagar.length} ${porPagar.length === 1 ? 'honorario' : 'honorarios'}`}
-                tono={porPagar.length > 0 ? 'aviso' : undefined}
-              />
-            </FranjaDeCifras>
+            {/* Revisora r25 (Jurídico #1): cada cifra sólo con algo adentro (antes «0 casos» y «$ 0 · 0
+                honorarios» encima de «Ningún caso…» y «No hay honorarios…»). */}
+            {enJuridico.length > 0 || porPagar.length > 0 ? (
+              <FranjaDeCifras aria-label="Lo que ya está en jurídico">
+                {enJuridico.length > 0 ? (
+                  <Cifra
+                    etiqueta="En jurídico"
+                    valor={enJuridico.length}
+                    detalle={enJuridico.length === 1 ? 'caso con abogado' : 'casos con abogado'}
+                  />
+                ) : null}
+                {porPagar.length > 0 ? (
+                  <Cifra
+                    // Revisora r25 (Jurídico #3): «Por pagar a los abogados» se cortaba a 390.
+                    etiqueta="Honorarios por pagar"
+                    valor={formatCurrency(porPagar.reduce((t, h) => t + h.honorarioCop, 0))}
+                    detalle={`${porPagar.length} ${porPagar.length === 1 ? 'honorario del abogado' : 'honorarios de los abogados'}`}
+                    tono="aviso"
+                  />
+                ) : null}
+              </FranjaDeCifras>
+            ) : null}
           </div>
         ) : null}
 
-        {/* Sugeridos */}
-        {!esAbogadoExterno && (
+        {/* Sugeridos (r25 #1: sólo con algo adentro; vacío, la cifra de arriba ya lo dice) */}
+        {!esAbogadoExterno && sugeridos.length > 0 && (
         <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="sugeridos">
           <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Sugeridos para jurídico</p>
           <p className="mt-1 text-body-sm text-fg-muted">
@@ -464,7 +479,15 @@ export function CobroJuridico() {
         </section>
         )}
 
-        {/* Casos en jurídico */}
+        {/* El abogado externo no tiene la cifra de arriba: sin casos ni honorarios, UNA línea. */}
+        {esAbogadoExterno && enJuridico.length === 0 && porPagar.length === 0 ? (
+          <p className="text-body-sm text-fg-muted" data-testid="juridico-sin-nada">
+            No tienes casos en jurídico ni honorarios por cobrar.
+          </p>
+        ) : null}
+
+        {/* Casos en jurídico (r25 #1: sólo con algo adentro) */}
+        {enJuridico.length > 0 ? (
         <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="casos">
           <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">En jurídico</p>
           {enJuridico.length === 0 ? (
@@ -525,7 +548,10 @@ export function CobroJuridico() {
           )}
         </section>
 
-        {/* Cuenta por pagar al abogado */}
+        ) : null}
+
+        {/* Cuenta por pagar al abogado (r25 #1: sólo con algo adentro) */}
+        {porPagar.length > 0 ? (
         <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="honorarios">
           <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Por pagar a los abogados</p>
           <p className="mt-1 text-body-sm text-fg-muted">
@@ -569,6 +595,7 @@ export function CobroJuridico() {
             </Stagger>
           )}
         </section>
+        ) : null}
         <AlertDialog
           open={cerrando !== null}
           onOpenChange={(abierto) => {

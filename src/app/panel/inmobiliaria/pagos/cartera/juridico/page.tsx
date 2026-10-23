@@ -11,7 +11,7 @@
 import { useTr } from '@/lib/i18n/use-tr';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import Link from 'next/link';
+import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { CobroJuridico } from '@/components/cartera/CobroJuridico';
 
@@ -21,12 +21,9 @@ export default function CobroJuridicoPage() {
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        {/* La vuelta va arriba, como en toda sub-pantalla (antes era un enlace
-            al final de la descripción, fácil de no ver). */}
-        <div className="space-y-3">
-          <Link href="/panel/inmobiliaria/pagos/cartera" className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
-            Cartera
-          </Link>
+        {/* Revisora r25 (Jurídico #2): Jurídico es una pestaña de Cartera → lleva su riel, como las
+            hermanas (antes sólo una vuelta «Cartera» arriba). */}
+        <div className="space-y-6">
           <EncabezadoDePantalla
             seccion={tr('Cobrar a inquilinos')}
             titulo="Cobro jurídico"
@@ -41,6 +38,7 @@ export default function CobroJuridicoPage() {
               </ParaEntenderMas>
             }
           />
+          <PestanasDeCartera />
         </div>
         <CobroJuridico />
       </div>

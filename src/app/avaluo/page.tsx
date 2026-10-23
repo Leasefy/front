@@ -76,15 +76,31 @@ export default function AvaluoPage() {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
-          <Button asChild size="lg">
-            <a href={AVALUO_WIZARD_URL} target="_blank" rel="noopener noreferrer">
-              Solicitar avalúo
-            </a>
-          </Button>
+          {AVALUO_WIZARD_URL ? (
+            <Button asChild size="lg">
+              <a href={AVALUO_WIZARD_URL} target="_blank" rel="noopener noreferrer">
+                Solicitar avalúo
+              </a>
+            </Button>
+          ) : (
+            // Revisora r25 (R8): sin la dirección de la solicitud el botón no
+            // lleva a ningún lado; se apaga y dice por qué y qué hacer.
+            <div className="flex flex-col items-center gap-2" data-testid="avaluo-en-pausa">
+              <Button size="lg" disabled>
+                Solicitar avalúo
+              </Button>
+              <p className="text-body-sm text-fg-muted">
+                La solicitud está en pausa ·{" "}
+                <a href="mailto:avaluos@leasefy.co" className="text-fg underline underline-offset-4">
+                  escríbenos a avaluos@leasefy.co
+                </a>
+              </p>
+            </div>
+          )}
         </div>
 
         <p className="mt-5 text-caption text-fg-muted">
-          100% en línea · Sin visita al inmueble · Si no se emite, te devolvemos el pago
+          100 % en línea · Sin visita al inmueble · Si no se emite, te devolvemos el pago
         </p>
       </section>
 

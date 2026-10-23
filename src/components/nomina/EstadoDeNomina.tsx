@@ -14,9 +14,10 @@
  *      botón; con todo listo se pliega en una línea.
  *   2. La nómina del mes, paso a paso (`PasosDeLaTarea`): liquidar → revisar y
  *      aprobar → asentar y pagar, leído del período real.
- *   3. Lo que cuesta el mes, en una franja de cifras.
+ *   3. Lo que cuesta el mes (glow up 22-10: ARRIBA, en UNA cifra con el neto
+ *      al lado y las tres partes debajo; sólo con las cifras del año).
  *   4. Las pantallas de nómina, agrupadas por cuándo se usan, y lo que Leasefy
- *      no hace, plegado.
+ *      no hace, las dos plegadas.
  *
  * ── Lo que esta pantalla se niega a hacer ───────────────────────────────────
  *
@@ -42,9 +43,9 @@ import {
   PiggyBank,
   UsersThree,
 } from '@phosphor-icons/react';
-import { Cifra, FranjaDeCifras } from '@leasefy/cadence';
 
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ListaParaEmpezar, type Requisito } from '@/components/pantalla/ListaParaEmpezar';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
@@ -59,6 +60,7 @@ import type {
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
+import { traducir, useTr, type Tr } from '@/lib/i18n/use-tr';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Avisos } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
@@ -99,20 +101,31 @@ export function EstadoDeNominaPanel() {
   // 🔴 Y sólo con las cifras del año: sin ellas armar el borrador es un 422
   // («falta salario mínimo…»). La lista de arriba dice cómo cargarlas.
   const sePuedeLiquidar = puedeLiquidar(carga.datos?.estado);
+  const tr = useTr();
+  const estado = carga.datos?.estado;
+  const requisitos = useMemo(() => (estado ? requisitosParaLiquidar(estado, tr) : []), [estado, tr]);
+  // Glow up 22-10 (r24 #3): con algo pendiente, «Personas» ya está en la lista
+  // de lo que falta; arriba sólo sale con todo listo, como puerta de cada mes.
+  const todoListo = requisitos.length > 0 && requisitos.every((r) => r.estado === 'listo');
 
   return (
     <div className="space-y-6">
       <EncabezadoDePantalla
-        seccion="Nómina"
-        titulo="Nómina"
-        descripcion="Empleados, asesores, contratistas y aprendices: liquidar cada período, aprobarlo, asentarlo y pagarlo."
+        seccion={tr('Dinero')}
+        titulo={tr('Nómina')}
+        descripcion={tr('Liquida, aprueba, asienta y paga la nómina de cada período.')}
         acciones={
-          abierta ? (
-            <Button asChild size="sm" variant="outline" hideArrow>
-              <Link href={`${PANEL}/personas`} data-testid="ir-a-personas">
-                Personas
-              </Link>
-            </Button>
+          abierta && sePuedeLiquidar ? (
+            <>
+              <SelectorDeMes mes={mes} onCambiar={setMes} />
+              {todoListo ? (
+                <Button asChild size="sm" variant="outline" hideArrow>
+                  <Link href={`${PANEL}/personas`} data-testid="ir-a-personas">
+                    Personas
+                  </Link>
+                </Button>
+              ) : null}
+            </>
           ) : undefined
         }
         accionPrincipal={
@@ -127,7 +140,7 @@ export function EstadoDeNominaPanel() {
         data-testid="encabezado-de-nomina"
       />
       <Cargado estado={carga} queEs="el estado de nómina" queSeEspera="usar nómina">
-        {(datos) => <Contenido {...datos} mes={mes} onMes={setMes} />}
+        {(datos) => <Contenido {...datos} mes={mes} requisitos={requisitos} />}
       </Cargado>
     </div>
   );
@@ -138,117 +151,46 @@ function Contenido({
   resumen,
   periodos,
   mes,
-  onMes,
-}: DatosDeLaPortada & { mes: string; onMes: (m: string) => void }) {
-  const requisitos = useMemo(() => requisitosParaLiquidar(estado), [estado]);
+  requisitos,
+}: DatosDeLaPortada & { mes: string; requisitos: Requisito[] }) {
+  const tr = useTr();
   const aprendices = estado.personas.cuotaDeAprendices?.aviso;
+  const listo = puedeLiquidar(estado);
 
   return (
     <div className="space-y-8">
+      {/* Glow up 22-10: con las cifras del año, LA RESPUESTA arriba —lo que cuesta
+          la nómina del mes—; mientras falten, la portada es SÓLO la lista de lo
+          que falta (sin pasos ni cifras en $ 0 que no pueden moverse). */}
+      {listo ? <CostoDelMes resumen={resumen} mes={mes} /> : null}
+
       <div className="space-y-3">
         <ListaParaEmpezar
           paraQue={`liquidar y asentar la nómina de ${estado.anio}`}
           requisitos={requisitos}
           recordarComo="nomina"
+          // Configurando, el paso que sigue es LA acción azul de la pantalla;
+          // ya liquidando, la lista se pliega en una línea y el azul es «Liquidar».
+          siguienteEnAzul={!listo}
+          plegadaAlInicio={listo}
           data-testid="lista-para-liquidar"
         />
         {aprendices ? <Avisos avisos={[aprendices]} testId="cuota-de-aprendices" /> : null}
       </div>
 
-      {/* 22-10 (revisión de Dinero): mientras falte configurar, la portada es SÓLO la
-          lista de lo que falta —sin pasos ni cifras en $ 0 que no pueden moverse—. */}
-      {!puedeLiquidar(estado) ? null : (
-      <>
-      <NominaDelMes mes={mes} periodos={periodos} sePuedeLiquidar={puedeLiquidar(estado)} />
+      {listo ? <NominaDelMes mes={mes} periodos={periodos} sePuedeLiquidar={listo} /> : null}
 
-      <section className="space-y-3" aria-labelledby="costo-de-la-nomina">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="min-w-0 space-y-0.5">
-            <h2 id="costo-de-la-nomina" className="text-sm font-medium text-fg">
-              Lo que cuesta la nómina de {nombreDelMes(mes)}
-            </h2>
-            <p className="text-caption text-fg-muted">
-              Sólo cuenta los períodos aprobados o pagados.
-            </p>
-          </div>
-          <SelectorDeMes mes={mes} onCambiar={onMes} />
-        </div>
-        {resumen.disponible && resumen.costoTotalCop === 0 && (resumen.netoCop ?? 0) === 0 ? (
-          <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="costo-de-la-nomina">
-            Todavía no hay períodos aprobados en {nombreDelMes(mes)}: el costo aparece cuando apruebes el primero.
-          </p>
-        ) : resumen.disponible ? (
-          <>
-            <FranjaDeCifras fila="xl" aria-label="El costo de la nómina" data-testid="costo-de-la-nomina">
-              <Cifra
-                etiqueta="Costo total"
-                valor={formatCurrency(resumen.costoTotalCop)}
-                detalle="Devengado + aportes + provisiones"
-                data-testid="cifra-costo"
-              />
-              <Cifra
-                etiqueta="Devengado"
-                valor={formatCurrency(resumen.devengadoCop)}
-                detalle="Lo reconocido a las personas"
-                data-testid="cifra-devengado"
-              />
-              <Cifra
-                etiqueta="Aportes del empleador"
-                valor={formatCurrency(resumen.aportesCop)}
-                detalle="A cargo de la inmobiliaria"
-                data-testid="cifra-aportes"
-              />
-              <Cifra
-                etiqueta="Neto girado"
-                valor={resumen.netoCop != null ? formatCurrency(resumen.netoCop) : '—'}
-                detalle={
-                  resumen.netoCop != null
-                    ? 'Lo que se les paga'
-                    : 'Sin períodos aprobados este mes'
-                }
-                data-testid="cifra-neto"
-              />
-            </FranjaDeCifras>
-            <MasDetalles etiqueta="Qué cuenta cada cifra" etiquetaAbierto="Ocultar" data-testid="que-cuenta-cada-cifra">
-              <dl className="grid gap-x-6 gap-y-3 text-caption sm:grid-cols-2">
-                {DEFINICIONES.map((d) => (
-                  <div key={d.que} className="space-y-0.5">
-                    <dt className="font-medium text-fg">{d.que}</dt>
-                    <dd className="leading-relaxed text-fg-muted">{d.es}</dd>
-                  </div>
-                ))}
-              </dl>
-              {resumen.porSede.length > 1 ? (
-                <div className="mt-4 space-y-2" data-testid="costo-por-sede">
-                  <p className="text-caption font-medium text-fg">Por centro de costo (sede)</p>
-                  <ul className="divide-y divide-border-faint rounded-lg border border-border">
-                    {resumen.porSede.map((s) => (
-                      <li key={s.sedeId ?? 'sin-sede'} className="flex justify-between gap-4 px-3 py-2 text-caption">
-                        <span className="min-w-0 truncate text-fg-muted">{s.sedeId ?? 'Sin sede asignada'}</span>
-                        <span className="font-mono tabular-nums text-fg">
-                          {formatCurrency(s.devengadoCop + s.aportesCop + s.provisionesCop)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </MasDetalles>
-          </>
-        ) : (
-          <Avisos
-            avisos={[resumen.motivo ?? 'El resumen del mes todavía no está disponible.']}
-            testId="resumen-no-disponible"
-          />
-        )}
-      </section>
-      </>
-      )}
-
-      <PantallasDeNomina />
+      <MasDetalles
+        etiqueta={tr('Todas las pantallas de nómina')}
+        etiquetaAbierto={tr('Ocultar las pantallas de nómina')}
+        montadoSiempre
+        data-testid="pantallas-de-nomina"
+      >
+        <PantallasDeNomina />
+      </MasDetalles>
 
       <MasDetalles etiqueta="Lo que Leasefy no hace en nómina" etiquetaAbierto="Ocultar" data-testid="lo-que-no-hace">
-        <ul className="space-y-2 text-sm text-fg-muted">
+        <ul className="space-y-2 text-caption text-fg-muted">
           {[
             estado.avisos.pila,
             estado.nominaElectronica.aviso ??
@@ -260,6 +202,95 @@ function Contenido({
           ))}
         </ul>
       </MasDetalles>
+    </div>
+  );
+}
+
+/**
+ * Lo que cuesta la nómina del mes, en UNA cifra: el costo total (devengado +
+ * aportes + provisiones), con el neto girado al lado —son dos números distintos
+ * y los dos se ven— y las tres partes debajo, en mono y sin negrilla.
+ */
+function CostoDelMes({ resumen, mes }: { resumen: ResumenDelMes; mes: string }) {
+  const tr = useTr();
+  if (!resumen.disponible) {
+    return (
+      <Avisos
+        avisos={[resumen.motivo ?? 'El resumen del mes todavía no está disponible.']}
+        testId="resumen-no-disponible"
+      />
+    );
+  }
+  const sinAprobados = resumen.costoTotalCop === 0 && (resumen.netoCop ?? 0) === 0;
+  const plata = (valor: number, testId: string) => (
+    <span className="font-mono tabular-nums text-fg" data-testid={testId}>
+      {formatCurrency(valor)}
+    </span>
+  );
+
+  return (
+    <div className="space-y-3">
+      <CifraHeroe
+        rotulo={tr('Costo de la nómina de {mes}', { mes: nombreDelMes(mes) })}
+        cifra={<span data-testid="cifra-costo">{formatCurrency(resumen.costoTotalCop)}</span>}
+        contexto={
+          sinAprobados ? (
+            tr('todavía no hay períodos aprobados: el costo aparece cuando apruebes el primero')
+          ) : resumen.netoCop != null ? (
+            <>
+              {tr('neto girado')} {plata(resumen.netoCop, 'cifra-neto')}
+            </>
+          ) : (
+            <span data-testid="cifra-neto">{tr('sin neto girado este mes')}</span>
+          )
+        }
+        pie={
+          sinAprobados ? undefined : (
+            <div className="space-y-1">
+              <ul className="flex flex-wrap gap-x-5 gap-y-1">
+                <li>
+                  {tr('Devengado')} {plata(resumen.devengadoCop, 'cifra-devengado')}
+                </li>
+                <li>
+                  {tr('Aportes del empleador')} {plata(resumen.aportesCop, 'cifra-aportes')}
+                </li>
+                <li>
+                  {tr('Provisiones')} {plata(resumen.provisionesCop, 'cifra-provisiones')}
+                </li>
+              </ul>
+              <p>{tr('Sólo cuenta los períodos aprobados o pagados.')}</p>
+            </div>
+          )
+        }
+        data-testid="costo-de-la-nomina"
+      />
+      {sinAprobados ? null : (
+        <MasDetalles etiqueta="Qué cuenta cada cifra" etiquetaAbierto="Ocultar" data-testid="que-cuenta-cada-cifra">
+          <dl className="grid gap-x-6 gap-y-3 text-caption sm:grid-cols-2">
+            {DEFINICIONES.map((d) => (
+              <div key={d.que} className="space-y-0.5">
+                <dt className="font-medium text-fg">{d.que}</dt>
+                <dd className="leading-relaxed text-fg-muted">{d.es}</dd>
+              </div>
+            ))}
+          </dl>
+          {resumen.porSede.length > 1 ? (
+            <div className="mt-4 space-y-2" data-testid="costo-por-sede">
+              <p className="text-caption font-medium text-fg">Por centro de costo (sede)</p>
+              <ul className="divide-y divide-border-faint rounded-lg border border-border">
+                {resumen.porSede.map((s) => (
+                  <li key={s.sedeId ?? 'sin-sede'} className="flex justify-between gap-4 px-3 py-2 text-caption">
+                    <span className="min-w-0 truncate text-fg-muted">{s.sedeId ?? 'Sin sede asignada'}</span>
+                    <span className="font-mono tabular-nums text-fg">
+                      {formatCurrency(s.devengadoCop + s.aportesCop + s.provisionesCop)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </MasDetalles>
+      )}
     </div>
   );
 }
@@ -281,7 +312,10 @@ function Ir({ href, children, testId, variant = 'outline' }: { href: string; chi
  * (la tabla todavía no existe) va como `desconocido`: no cuenta como hecho, y la
  * lista no dice «Todo listo».
  */
-export function requisitosParaLiquidar(e: Estado): Requisito[] {
+export function requisitosParaLiquidar(
+  e: Estado,
+  tr: Tr = (es, vars) => traducir(es, 'es', vars),
+): Requisito[] {
   const P = e.parametros;
   const C = e.conceptos;
   const lista: Requisito[] = [];
@@ -306,7 +340,9 @@ export function requisitosParaLiquidar(e: Estado): Requisito[] {
             'Todavía no hay ninguna: salario mínimo, auxilio de transporte y UVT. Los fijan el Gobierno y la DIAN cada año.'
           : `Falta ${P.queFalta.join(', ')}. Los fijan el Gobierno y la DIAN cada año.`,
       estado: P.completos ? 'listo' : 'falta',
-      accion: <Ir href={`${PANEL}/configuracion`} testId="requisito-cargar-cifras">Cargarlas</Ir>,
+      accion: <Ir href={`${PANEL}/configuracion`} testId="requisito-cargar-cifras">
+          {tr('Cargar las cifras de {anio}', { anio: e.anio })}
+        </Ir>,
       accionListo: <Ir href={`${PANEL}/configuracion`} testId="requisito-ver-cifras" variant="ghost">Ver</Ir>,
     });
     lista.push({
@@ -456,7 +492,7 @@ export function pasosDelPeriodo(foco: Foco, sePuedeLiquidar = true): PasoDeLaTar
       bloqueadoPorque: 'Después de aprobarlo.',
       contenido: p ? (
         <div className="space-y-3">
-          <ul className="space-y-1 text-sm" data-testid="asiento-y-pago">
+          <ul className="space-y-1 text-caption" data-testid="asiento-y-pago">
             <li className="text-fg">
               Asiento contable:{' '}
               <span className="text-fg-muted">{p.asientoId ? 'hecho.' : 'falta.'}</span>
@@ -561,14 +597,11 @@ const GRUPOS: { titulo: string; pantallas: { href: string; titulo: string; que: 
 
 function PantallasDeNomina() {
   return (
-    <section className="space-y-3" aria-labelledby="pantallas-de-nomina">
-      <h2 id="pantallas-de-nomina" className="text-sm font-medium text-fg">
-        Todas las pantallas de nómina
-      </h2>
+    <section className="space-y-3">
       <nav aria-label="Secciones de nómina" className="grid gap-x-5 gap-y-5 lg:grid-cols-2">
         {GRUPOS.map((g) => (
           <div key={g.titulo} className="min-w-0 space-y-2">
-            <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">
+            <h3 className="text-caption font-medium text-fg-subtle">
               {g.titulo}
             </h3>
             <ul className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border bg-surface">

@@ -369,4 +369,18 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Preparar visitas": "Prepare visits",
   "Lo que le falta a cada visita para poder hacerse. El calendario completo está en Agenda.": "What each visit still needs before it can happen. The full calendar is in Agenda.",
   "Ver la agenda": "View the agenda",
+  // Nómina (portada, 22-10)
+  "Dinero": "Money",
+  "Liquida, aprueba, asienta y paga la nómina de cada período.": "Run, approve, post and pay the payroll of each period.",
+  "Todas las pantallas de nómina": "All payroll screens",
+  "Ocultar las pantallas de nómina": "Hide the payroll screens",
+  "Costo de la nómina de {mes}": "Payroll cost for {mes}",
+  "todavía no hay períodos aprobados: el costo aparece cuando apruebes el primero": "no approved periods yet: the cost shows up when you approve the first one",
+  "neto girado": "net paid",
+  "sin neto girado este mes": "nothing net paid this month",
+  "Devengado": "Earned",
+  "Aportes del empleador": "Employer contributions",
+  "Provisiones": "Provisions",
+  "Sólo cuenta los períodos aprobados o pagados.": "Only approved or paid periods count.",
+  "Cargar las cifras de {anio}": "Load the {anio} figures",
 }

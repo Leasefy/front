@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, TrendUp, Shield, SealCheck, Funnel, CaretLeft, CaretRight, Lightning, Target, Trophy } from '@phosphor-icons/react';
+import { TrendUp, Shield, SealCheck, Funnel, CaretLeft, CaretRight, Lightning, Target, Trophy } from '@phosphor-icons/react';
 import { ArrowUpRight } from '@phosphor-icons/react';
 
 import { IconButton } from '@leasefy/cadence';
@@ -298,14 +298,7 @@ export default function ParaTiPage() {
   return (
     <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Back Link */}
-        <Link
-          href="/inquilino"
-          className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}
-        </Link>
+        {/* Glow up 22-10: sin «Volver a Inicio» (es una pestaña del riel, como sus hermanas). */}
 
         {/*
           * Hero de marca.
@@ -691,10 +684,11 @@ export default function ParaTiPage() {
         </div>
 
         {/* Improve Profile CTA */}
-        <div className="mt-6 bg-primary-soft border border-border rounded-lg p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* En arena y con su botón de borde: el azul de esta pantalla ya es el de la marca de arriba. */}
+        <div className="mt-6 bg-surface-muted rounded-lg p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-testid="mejorar-el-perfil">
           <div>
             <h3 className="font-medium text-plan-primary mb-0.5">
-              {locale === 'es' ? '¿Quieres acceder a más propiedades?' : 'Want to access more properties?'}
+              {locale === 'es' ? '¿Quieres que más inmuebles quepan en tu tope?' : 'Want more homes to fit your cap?'}
             </h3>
             <p className="text-sm text-plan-secondary">
               {locale === 'es' ? 'Mejora tu perfil agregando documentación adicional o un codeudor' : 'Improve your profile by adding additional documentation or a co-signer'}
@@ -702,9 +696,9 @@ export default function ParaTiPage() {
           </div>
           {/* Botón del DS: píldora, sentence case. Antes era un <Link> con
               `bg-primary text-white` a mano — en oscuro ese par mide 2,48:1. */}
-          <Button asChild className="shrink-0">
+          <Button asChild variant="outline" size="sm" hideArrow className="shrink-0">
             <Link href="/inquilino/perfil">
-              {locale === 'es' ? 'Mejorar perfil' : 'Improve profile'}
+              {locale === 'es' ? 'Completar mi perfil' : 'Complete my profile'}
             </Link>
           </Button>
         </div>

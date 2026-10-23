@@ -130,6 +130,15 @@ describe('hero de Propiedades para ti', () => {
     expect(hero().textContent).not.toContain('%')
   })
 
+  it('sin «Volver a Inicio» y con un solo azul: la tarjeta de mejorar el perfil va en arena', async () => {
+    recomendaciones.actuales = [propiedad('p1', 1_800_000)]
+    await pintar()
+    expect(host.textContent).not.toContain('Volver a Inicio')
+    const mejorar = host.querySelector('[data-testid="mejorar-el-perfil"]') as HTMLElement
+    expect(mejorar.className).toContain('bg-surface-muted')
+    expect(mejorar.className).not.toContain('bg-primary-soft')
+  })
+
   it('con catálogo vacío dice cero en vez de presumir', async () => {
     await pintar()
 

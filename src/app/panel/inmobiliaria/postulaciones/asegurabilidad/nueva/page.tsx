@@ -549,9 +549,10 @@ export default function NuevaCotizacionPage() {
             <div
               role="region"
               aria-label={t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.ariaLabel')}
-              className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary-soft px-4 py-3"
+              className="mb-4 flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-4 py-3"
             >
-              <p className="text-sm text-primary">
+              {/* Ronda 30: el aviso en arena (antes un bloque azul voltaje: el azul es la acción). */}
+              <p className="text-sm text-fg">
                 {t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.message')}
               </p>
               <Button

@@ -93,6 +93,7 @@ import { invalidar } from '@/lib/api/refresco-de-datos'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { useCrm } from '@/lib/hooks/use-crm'
 import { cn } from '@/lib/utils'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Clase = 'DOCUMENTO' | 'DATO' | 'ACCION'
 
@@ -207,20 +208,19 @@ function DialogoDeRequisito({
         >
           <div className="space-y-1.5">
             <Label htmlFor="req-perfil">¿A qué perfil se lo pides?</Label>
-            <select
-              id="req-perfil"
-              value={perfil}
-              onChange={(e) => setPerfil(e.target.value)}
-              className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"
-              data-testid="req-perfil"
-              {...aria('perfil')}
-            >
-              {perfiles.map((p) => (
-                <option key={p.perfil} value={p.perfil}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
+            {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). */}
+            <Select value={perfil} onValueChange={setPerfil}>
+              <SelectTrigger id="req-perfil" className="w-full" data-testid="req-perfil" {...aria('perfil')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {perfiles.map((p) => (
+                  <SelectItem key={p.perfil} value={p.perfil}>
+                    {p.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <ErrorDelCampo id="req-perfil-error" mensaje={errores.perfil} className="mt-0" />
           </div>
 

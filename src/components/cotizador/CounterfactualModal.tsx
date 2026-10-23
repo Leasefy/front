@@ -35,6 +35,7 @@ import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import { AnimatedNumber, CrossFade, MotionIndicator } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { TIPOS_DE_INMUEBLE_DEL_COTIZADOR, tipoDeInmuebleEnPalabras, tipoQueViaja } from '@/lib/cotizador/tipo-de-inmueble'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -340,21 +341,28 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               <label className="block text-sm font-medium mb-1">
                 {t('inmobiliaria.ai.cotizador.askWhy.variableLabels.ciudad')}
               </label>
-              <select
-                data-testid="cf-ciudad-select"
+              {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). */}
+              <Select
                 value={draftValues.ciudad}
-                aria-disabled={isReadonly('ciudad') ? 'true' : 'false'}
                 disabled={isReadonly('ciudad') || capExhausted}
-                onChange={e => activate('ciudad', e.currentTarget.value)}
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                onValueChange={v => activate('ciudad', v)}
               >
-                {!CIUDAD_OPTIONS.includes(originalInputs.ciudad as (typeof CIUDAD_OPTIONS)[number]) && (
-                  <option value={originalInputs.ciudad}>{originalInputs.ciudad}</option>
-                )}
-                {CIUDAD_OPTIONS.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+                <SelectTrigger
+                  data-testid="cf-ciudad-select"
+                  aria-disabled={isReadonly('ciudad') ? 'true' : 'false'}
+                  className="w-full"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {!CIUDAD_OPTIONS.includes(originalInputs.ciudad as (typeof CIUDAD_OPTIONS)[number]) && (
+                    <SelectItem value={originalInputs.ciudad}>{originalInputs.ciudad}</SelectItem>
+                  )}
+                  {CIUDAD_OPTIONS.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Tipo button group */}

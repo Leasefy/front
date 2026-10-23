@@ -178,7 +178,7 @@ export function RegistrosContables({
       setCuentas((previo) => previo ?? []);
       setFalloDeCuentas(true);
       setError(
-        mensajeDeContabilidad(c.reason, "No pudimos leer el plan de cuentas."),
+        mensajeDeContabilidad(c.reason, "No se pudo leer el plan de cuentas."),
       );
     }
     if (a.status === "fulfilled") {
@@ -239,7 +239,7 @@ export function RegistrosContables({
             <div className="flex min-w-0 items-start gap-2">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <p className="text-sm text-fg">
-                No pudimos leer lo que ya está cargado. Reintenta antes de
+                No se pudo leer lo que ya está cargado. Reintenta antes de
                 registrar nada: sin esa lista podrías cargar dos veces la misma
                 apertura.
               </p>
@@ -307,7 +307,7 @@ export function RegistrosContables({
            * dónde. Ahora lo dice, y un solo botón lo reconoce.
            */}
           <section
-            className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
+            className="space-y-4 rounded-lg border border-border-faint bg-surface p-6"
             data-testid="contables-guia"
           >
             <div>
@@ -416,7 +416,7 @@ export function RegistrosContables({
            * (glow-up 30-09) — antes el segmentado y su texto flotaban entre
            * dos islas.
            */}
-          <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
+          <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="text-sm font-medium text-fg">
                 O elige a mano dónde va

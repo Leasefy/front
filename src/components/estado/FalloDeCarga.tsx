@@ -259,7 +259,7 @@ export function FalloDeCarga({
           {descripcion}
         </p>
         {conReferencia && (
-          <p className="text-xs text-fg-subtle">
+          <p className="text-caption text-fg-subtle">
             {tr("Referencia:")} <span className="font-mono tabular-nums">{referencia}</span>
           </p>
         )}

@@ -72,6 +72,7 @@ export default function BanderasPage() {
     }
   }
 
+  const algunaEnPausa = (data?.inmobiliarias ?? []).some((f) => f.pausada)
   const columnas: Column<BanderasDeLaInmobiliaria>[] = [
     { header: 'Inmobiliaria', orden: (f) => f.nombre, texto: (f) => f.nombre, cell: (f) => <span className="font-medium text-fg">{f.nombre}</span> },
     {
@@ -97,22 +98,19 @@ export default function BanderasPage() {
         )
       },
     },
-    {
-      header: 'Pausa de emergencia',
-      orden: (f) => (f.pausada ? 0 : 1),
-      texto: (f) => (f.pausada ? 'En pausa' : 'No'),
-      cell: (f) => (f.pausada ? <Pill tone="bad" dot>En pausa</Pill> : <span className="text-caption text-fg-subtle">No</span>),
-    },
-    {
-      header: '',
-      align: 'right',
-      cell: (f) =>
-        f.lista === null ? null : (
-          <Button size="sm" variant="outline" hideArrow onClick={() => { setAbierta(f); setCambio(null); setMotivo(''); setFallo(null) }}>
-            Ver sus agentes
-          </Button>
-        ),
-    },
+    // Ronda 26 (revisora r25): la columna «Pausa de emergencia» sólo cuando alguna está en pausa (antes «No» en
+    // todas); al Excel va siempre. Sin «Ver sus agentes» por fila: tocar la fila hace lo mismo.
+    ...(algunaEnPausa
+      ? [
+          {
+            header: 'Pausa de emergencia',
+            orden: (f: BanderasDeLaInmobiliaria) => (f.pausada ? 0 : 1),
+            texto: (f: BanderasDeLaInmobiliaria) => (f.pausada ? 'En pausa' : 'No'),
+            cell: (f: BanderasDeLaInmobiliaria) =>
+              f.pausada ? <Pill tone="bad" dot>En pausa</Pill> : <span className="text-fg-subtle">—</span>,
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -171,10 +169,15 @@ export default function BanderasPage() {
         buscar="Buscar inmobiliaria"
         segmentos={SEGMENTOS}
         exportar="banderas"
-        masEnElExcel={(data?.agentes ?? []).map((a) => ({
+        masEnElExcel={[
+          ...(algunaEnPausa
+            ? []
+            : [{ header: 'Pausa de emergencia', texto: (f: BanderasDeLaInmobiliaria) => (f.pausada ? 'En pausa' : 'No') }]),
+          ...(data?.agentes ?? []).map((a) => ({
           header: a.nombre,
           texto: (f: BanderasDeLaInmobiliaria) => (f.lista === null ? '' : Boolean(f.encendidos[a.agente])),
-        }))}
+          })),
+        ]}
       />
 
       <Cajon abierto={abierta !== null} onOpenChange={(a) => (a ? null : setAbierta(null))}>

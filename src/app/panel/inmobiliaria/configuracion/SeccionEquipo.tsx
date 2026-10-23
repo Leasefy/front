@@ -60,7 +60,15 @@ export function SeccionEquipo() {
    * no se pide la lista.
    */
   const puedeVerElPadron = isAdmin || canAccess('configuracion', 'view');
-  const [vistaElegida, setVista] = useState<Vista>('miembros');
+  // Ronda 30 (DESIGN §25.1, 6b): la vista queda en la URL (`?vista=ranking`): se comparte y vuelve igual.
+  const [vistaElegida, setVistaElegida] = useState<Vista>(() => {
+    const v = searchParams.get('vista');
+    return v === 'ranking' || v === 'carga' || v === 'captaciones' || v === 'miembros' ? v : 'miembros';
+  });
+  const setVista = (v: Vista) => {
+    setVistaElegida(v);
+    router.replace(`${RAIZ_CONFIGURACION}/equipo${v === 'miembros' ? '' : `?vista=${v}`}`, { scroll: false });
+  };
   const vista: Vista = !puedeVerElPadron && vistaElegida === 'miembros' ? 'ranking' : vistaElegida;
   // 🔴 22-09 noche · «Permisos de esta persona». Las rutas del back son sólo
   // del ADMIN (`ensureAdmin`), así que el gate es `isAdmin` y no el de invitar.

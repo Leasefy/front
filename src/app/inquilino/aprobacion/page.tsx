@@ -25,6 +25,9 @@
  */
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { StatusBadge } from '@leasefy/cadence';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCallback } from 'react'
 
 import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
@@ -38,12 +41,10 @@ import {
   EnvelopeSimple,
   Hourglass,
   Info,
-  SealCheck,
   WarningOctagon,
 } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/format'
@@ -67,10 +68,20 @@ export default function AprobacionPage() {
   const { current, estado, isLoading, error, refetch } = usePreScoringCurrent()
 
   if (isLoading) {
+    // Glow up 22-10: el esqueleto con la forma de la pantalla (encabezado y la cifra), no un spinner centrado.
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3">
-        <Spinner size="md" variant="muted" />
-        <p className="text-sm text-fg-muted">{tf(`${NS}.cargando`, 'Cargando tu aprobación...')}</p>
+      <div className="space-y-6 p-6 lg:p-8" aria-busy="true" data-testid="aprobacion-cargando">
+        <span className="sr-only">{tf(`${NS}.cargando`, 'Cargando tu aprobación...')}</span>
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-8 w-60" />
+          <Skeleton className="h-4 w-80 max-w-full" />
+        </div>
+        <div className="space-y-3 rounded-lg border border-border bg-surface p-8">
+          <Skeleton className="h-3 w-36" />
+          <Skeleton className="h-12 w-64" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
       </div>
     )
   }
@@ -141,31 +152,47 @@ function AprobadoView({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-5">
-        <div className="flex items-center gap-2 text-success">
-          <SealCheck className="w-5 h-5" weight="fill" aria-hidden="true" />
-          <span className="text-sm font-medium">{tf(`${NS}.aprobado.badge`, 'Aprobado')}</span>
-        </div>
+      {/* GLOW UP (22-10): LA RESPUESTA en una CifraHeroe con su estado (punto y palabra) y los datos del buró en
+          una línea al pie, en vez de dos tarjetas con borde dentro de la tarjeta. */}
+      <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-6">
+        <StatusBadge tone="success">{tf(`${NS}.aprobado.badge`, 'Aprobado')}</StatusBadge>
 
         {tieneTope ? (
-          <div className="space-y-2">
-            <p className="text-sm text-fg-muted">
-              {tf(`${NS}.aprobado.label`, 'Estás aprobado hasta')}
-            </p>
-            <p className="font-mono tabular-nums text-4xl sm:text-5xl font-normal text-fg leading-none">
-              {formatCurrency(tope, locale)}
-            </p>
-            <p className="text-sm text-fg-muted leading-relaxed max-w-lg pt-1">
-              {tf(
-                `${NS}.aprobado.ayuda`,
-                'Puedes postularte a cualquier propiedad con un canon hasta ese valor. Y a todas las que quieras: con esta aprobación no vuelves a pagar.',
-              )}
-            </p>
-          </div>
+          <CifraHeroe
+            rotulo={tf(`${NS}.aprobado.label`, 'Estás aprobado hasta')}
+            cifra={formatCurrency(tope, locale)}
+            contexto={locale === 'es' ? 'de canon al mes' : 'monthly rent'}
+            pie={
+              <span className="block space-y-2">
+                <span className="block max-w-lg leading-relaxed">
+                  {tf(
+                    `${NS}.aprobado.ayuda`,
+                    'Puedes postularte a cualquier propiedad con un canon hasta ese valor. Y a todas las que quieras: con esta aprobación no vuelves a pagar.',
+                  )}
+                </span>
+                {tieneDatosDeBuro && (
+                  <span className="flex flex-wrap gap-x-4 gap-y-1" data-testid="datos-del-buro">
+                    {bureau!.minimumScore !== null && (
+                      <span>
+                        {tf(`${NS}.aprobado.scoreBuro`, 'Puntaje del buró')}{' '}
+                        <span className="font-mono tabular-nums text-fg">{bureau!.minimumScore}</span>
+                      </span>
+                    )}
+                    {bureau!.monthlyCapacity !== null && (
+                      <span>
+                        {tf(`${NS}.aprobado.capacidadMensual`, 'Capacidad de pago mensual')}{' '}
+                        <span className="font-mono tabular-nums text-fg">{formatCurrency(bureau!.monthlyCapacity, locale)}</span>
+                      </span>
+                    )}
+                  </span>
+                )}
+              </span>
+            }
+          />
         ) : (
           /* Aprobado pero sin el número: se dice que falta. Nunca se inventa. */
           <div className="space-y-2">
-            <p className="text-2xl font-medium text-fg">
+            <p className="text-h3 font-light text-fg">
               {tf(`${NS}.aprobado.sinTope.title`, 'Estás aprobado')}
             </p>
             <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
@@ -174,38 +201,29 @@ function AprobadoView({
                 'Estamos terminando de calcular hasta cuánto podemos respaldarte. Te avisamos apenas esté listo.',
               )}
             </p>
-          </div>
-        )}
-
-        {tieneDatosDeBuro && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {bureau!.minimumScore !== null && (
-              <div className="rounded-lg border border-border bg-surface-muted p-4">
-                <p className="font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle">
-                  {tf(`${NS}.aprobado.scoreBuro`, 'Puntaje del buró')}
-                </p>
-                <p className="font-mono text-xl font-normal tabular-nums text-fg">
-                  {bureau!.minimumScore}
-                </p>
-              </div>
-            )}
-            {bureau!.monthlyCapacity !== null && (
-              <div className="rounded-lg border border-border bg-surface-muted p-4">
-                <p className="font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle">
-                  {tf(`${NS}.aprobado.capacidadMensual`, 'Capacidad de pago mensual')}
-                </p>
-                <p className="font-mono text-xl font-normal tabular-nums text-fg">
-                  {formatCurrency(bureau!.monthlyCapacity, locale)}
-                </p>
-              </div>
+            {tieneDatosDeBuro && (
+              <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted" data-testid="datos-del-buro">
+                {bureau!.minimumScore !== null && (
+                  <span>
+                    {tf(`${NS}.aprobado.scoreBuro`, 'Puntaje del buró')}{' '}
+                    <span className="font-mono tabular-nums text-fg">{bureau!.minimumScore}</span>
+                  </span>
+                )}
+                {bureau!.monthlyCapacity !== null && (
+                  <span>
+                    {tf(`${NS}.aprobado.capacidadMensual`, 'Capacidad de pago mensual')}{' '}
+                    <span className="font-mono tabular-nums text-fg">{formatCurrency(bureau!.monthlyCapacity, locale)}</span>
+                  </span>
+                )}
+              </p>
             )}
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-1">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button asChild>
             <Link href="/inquilino/para-ti">
-              {tf(`${NS}.aprobado.cta`, 'Ver mis propiedades')}
+              {tf(`${NS}.aprobado.cta`, 'Ver mis inmuebles')}
             </Link>
           </Button>
           <Button asChild variant="secondary">
@@ -316,9 +334,9 @@ function RechazadoView({
         >
           <Info className="w-6 h-6 text-info" weight="bold" aria-hidden="true" />
         </div>
-        <h1 className="text-h2 text-fg">
+        <h2 className="text-h2 text-fg">
           {tf(`${NS}.rechazado.title`, 'Por ahora no podemos aprobarte')}
-        </h1>
+        </h2>
         <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
           {carriers.length > 0
             ? `Ninguna de las ${carriers.length} aseguradoras que consultamos respaldó tu solicitud esta vez.`

@@ -528,7 +528,11 @@ function AvaluosSala() {
           </div>
         ) : null}
 
-        {servicioCaido ? (
+        {servicioCaido && !servicioConfigurado ? (
+          // Revisora r25: sin la conexión, el aviso de arriba ya lo dice («no están activos»);
+          // la lista no agrega un segundo porqué distinto («no responde»).
+          null
+        ) : servicioCaido ? (
           // IA-C-03 (QA 04-10) + revisora r24 #1: una caída, dicha una sola vez y con su salida. No dice
           // «vuelve en unos minutos» ni «pide que lo activen»: está activo y no responde.
           <div className="flex flex-col items-start gap-3 px-5 py-6 sm:flex-row sm:items-center sm:justify-between" data-testid="avaluos-lista-sin-servicio">

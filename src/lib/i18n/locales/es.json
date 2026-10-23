@@ -9203,7 +9203,7 @@
             "salaTitulo": "Avalúos",
             "salaDesc": "Pide un avalúo sin visita: lo firma un revisor de Leasefy.",
             "colaTitle": "Mis solicitudes de avalúo",
-            "colaDesc": "Cada avalúo que pediste, paso a paso: lo pides, un revisor de Leasefy lo revisa, lo firma y se entrega. Ves cuándo lo pediste, cuándo se firmó y el certificado apenas esté. No se realiza visita física.",
+            "colaDesc": "Cada avalúo que pediste y en qué paso va.",
             "colaKpiLabel": "Activas",
             "colaEmptyTitle": "Aún no tienes solicitudes",
             "colaEmptyHint": "Pide tu primer avalúo desde Avalúos: generas el enlace, se hace la estimación y aquí sigues cada paso hasta el certificado firmado.",

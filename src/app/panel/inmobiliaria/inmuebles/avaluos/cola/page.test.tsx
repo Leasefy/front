@@ -148,8 +148,9 @@ describe('Mis solicitudes de avalúo — los avalúos de verdad', () => {
       'No pudimos leer tus solicitudes',
     )
     expect(container.textContent).not.toContain('Aún no tienes solicitudes')
-    expect(container.querySelector('[data-testid="avaluos-activas"]')?.textContent).toContain('—')
-    expect(container.querySelector('[data-testid="avaluos-activas"]')?.textContent).not.toMatch(/\d/)
+    // Sin el conteo no se inventa uno: junto al título no va nada (antes «— activas»).
+    expect(container.querySelector('[data-testid="avaluos-activas"]')).toBeNull()
+    expect(container.querySelector('[data-testid="avaluos-cola-reintentar"]')).not.toBeNull()
   })
 
   it('con el servicio y sin avalúos, sí dice que aún no hay y ofrece pedir el primero', async () => {

@@ -27,6 +27,7 @@ import { ArrowSquareOut, FileMagnifyingGlass } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { TablePagination } from '@/components/ui/pagination'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
@@ -179,10 +180,13 @@ function AvaluosCola() {
         titulo={t(`${NS}.colaTitle`)}
         descripcion={t(`${NS}.colaDesc`)}
         junto={
-          <span className="text-caption text-fg-muted" data-testid="avaluos-activas">
-            <span className="font-mono tabular-nums text-fg">{activasSeSaben ? borradores.total + enRevision.total : '—'}</span>{' '}
-            {t(`${NS}.colaKpiLabel`).toLowerCase()}
-          </span>
+          // Revisora r25: sin el conteo, nada (antes «— activas»).
+          activasSeSaben ? (
+            <span className="text-caption text-fg-muted" data-testid="avaluos-activas">
+              <span className="font-mono tabular-nums text-fg">{borradores.total + enRevision.total}</span>{' '}
+              {t(`${NS}.colaKpiLabel`).toLowerCase()}
+            </span>
+          ) : undefined
         }
       />
 
@@ -195,9 +199,13 @@ function AvaluosCola() {
           onReintentar={refetch}
           cuandoVacio={
             servicioCaido ? (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground" data-testid="avaluos-cola-sin-servicio">
-                {t(`${NS}.colaSinServicio`)}
-              </p>
+              // Revisora r25: el fallo con su «Reintentar» (antes texto plano, sin salida).
+              <div className="flex flex-col items-center gap-3 px-4 py-8 text-center" data-testid="avaluos-cola-sin-servicio">
+                <p className="text-body-sm text-fg-muted">{t(`${NS}.colaSinServicio`)}</p>
+                <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()} data-testid="avaluos-cola-reintentar">
+                  Reintentar
+                </Button>
+              </div>
             ) : (
               <SinDatos
                 hayFiltros={false}

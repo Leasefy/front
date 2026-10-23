@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url';
 
 /**
@@ -12,29 +12,21 @@ import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url';
  * land on the flow. The former authenticated wizard (email pre-fill via
  * AuthContext + AvaluoWizardShell) is no longer mounted — the micro front owns
  * the intake now.
+ *
+ * Revisora r25: sin `AVALUO_WIZARD_URL` (falta `NEXT_PUBLIC_AVALUO_API_URL`)
+ * era una frase suelta en el centro, sin encabezado ni porqué. Ahora va a
+ * Avalúos, que ya explica el estado con su encabezado y su salida.
  */
 export default function PanelNuevoAvaluoRedirectPage() {
+  if (!AVALUO_WIZARD_URL) redirect('/panel/inmobiliaria/inmuebles/avaluos');
+
   useEffect(() => {
     if (AVALUO_WIZARD_URL) window.location.replace(AVALUO_WIZARD_URL);
   }, []);
 
-  // Sin `AVALUO_WIZARD_URL` (falta `NEXT_PUBLIC_AVALUO_API_URL`) esto era un
-  // callejón: una frase suelta, sin volver a ningún lado. Ahora tiene salida.
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center">
-      <p className="text-sm text-fg-muted">
-        {AVALUO_WIZARD_URL
-          ? 'Redirigiendo a la solicitud de avalúo…'
-          : 'La solicitud de avalúo no está disponible por ahora.'}
-      </p>
-      {!AVALUO_WIZARD_URL && (
-        <Link
-          href="/panel/inmobiliaria/inmuebles/avaluos"
-          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-        >
-          Volver a Avalúos
-        </Link>
-      )}
+    <div className="flex min-h-[60vh] items-center justify-center p-8 text-center">
+      <p className="text-body-sm text-fg-muted">Abriendo la solicitud de avalúo…</p>
     </div>
   );
 }

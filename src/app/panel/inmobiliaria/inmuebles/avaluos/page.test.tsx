@@ -205,7 +205,10 @@ describe('Avalúos — la pantalla no se contradice', () => {
     const { ApiError } = await import('@/lib/api/client')
     _lista.errorCrudo = new ApiError(502, 'Avaluo service unreachable', 'SERVICIO_NO_DISPONIBLE', { servicio: 'avaluos' })
     await montar()
-    expect(container.querySelector('[data-testid="avaluos-lista-sin-servicio"]')).not.toBeNull()
+    // Revisora r25: sin la conexión (sin origen) el aviso de arriba lo dice UNA vez; la lista no
+    // agrega un segundo porqué distinto.
+    expect(container.querySelector(BANNER)).not.toBeNull()
+    expect(container.querySelector('[data-testid="avaluos-lista-sin-servicio"]')).toBeNull()
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
     expect(container.textContent).not.toContain('unos minutos')
     expect(container.textContent).not.toContain('Todavía no hay avalúos')

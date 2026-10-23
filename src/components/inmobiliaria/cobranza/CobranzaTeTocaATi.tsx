@@ -37,6 +37,7 @@
  * el título nunca vuelva a quedar suelto sobre otra tarjeta.
  */
 
+import { useEffect } from 'react'
 import { formatRelativeTime } from '@/lib/format'
 import Link from 'next/link'
 import { CheckCircle, Clock, Siren, Warning } from '@phosphor-icons/react'
@@ -142,9 +143,11 @@ export interface CobranzaTeTocaATiProps {
   enMora: number
   /** Casos que el agente trabajó hoy. */
   gestionados: number
+  /** Cuántas decisiones esperan, para la acción principal del encabezado («Atender N»). */
+  onTotalQueEspera?: (n: number | null) => void
 }
 
-export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProps) {
+export function CobranzaTeTocaATi({ enMora, gestionados, onTotalQueEspera }: CobranzaTeTocaATiProps) {
   const tr = useTr();
   const { t } = useI18n()
   const { items, isLoading, error } = usePendientes()
@@ -172,6 +175,9 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
   }
 
   const totalQueEspera = items.length
+  useEffect(() => {
+    onTotalQueEspera?.(isLoading ? null : totalQueEspera)
+  }, [onTotalQueEspera, isLoading, totalQueEspera])
 
   // Mientras todavía se está contando NO se afirma nada. «Nada espera tu
   // aprobación» sobre una lista que aún no llegó es una afirmación falsa

@@ -9301,7 +9301,7 @@
             }
           },
           "cobranza": {
-            "salaDesc": "El agente trabaja la mora estándar por ti — llamadas, WhatsApp y cartas cumpliendo la ley — y te escala solo los casos críticos.",
+            "salaDesc": "El agente trabaja la mora por ti —llamadas, WhatsApp y cartas, dentro de la ley— y le pasa a una persona sólo lo que pide una decisión.",
             "accionTitle": "Revisar escalaciones pendientes",
             "accionDesc": "Los casos que el agente no puede resolver solo llegan aquí para tu decisión.",
             "comoFunciona": {

@@ -9266,7 +9266,7 @@
             }
           },
           "cobranza": {
-            "salaDesc": "The agent works standard delinquency for you — calls, WhatsApp and letters within the law — and escalates only the critical cases.",
+            "salaDesc": "The agent works delinquency for you —calls, WhatsApp and letters, within the law— and hands a person only what needs a decision.",
             "accionTitle": "Review pending escalations",
             "accionDesc": "Cases the agent can't resolve on its own land here for your decision.",
             "comoFunciona": {

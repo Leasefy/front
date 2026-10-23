@@ -45,7 +45,8 @@ describe('CarteraPorEtapa', () => {
     expect($('cartera-barra')?.querySelectorAll('[data-etapa]')).toHaveLength(1)
     expect($('cartera-sin-casos')?.textContent).toContain('Pre-vencimiento')
     expect($('cartera-sin-casos')?.textContent).not.toContain('pre-jurídica')
-    expect($('cartera-por-etapa')?.textContent).toContain('1 caso en cobranza')
+    // La cifra es «En mora» (todo menos Pre-vencimiento): el mismo caso de S3.
+    expect($('cartera-en-mora')?.textContent).toMatch(/En mora\s*1\s*inquilino/)
   })
 
   it('cada tramo de la barra mide su parte del total', () => {

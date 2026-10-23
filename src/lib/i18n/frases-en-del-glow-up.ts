@@ -542,4 +542,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Ninguna solicitud con este filtro": "No request matches this filter",
   "Cambia la pestaña, el tipo o la búsqueda para ver las demás.": "Change the tab, the type or the search to see the rest.",
   "Llegó el": "Received",
+  // Cobranza (ronda 26, 2.º agente)
+  "Atender {n}": "Handle {n}",
 }

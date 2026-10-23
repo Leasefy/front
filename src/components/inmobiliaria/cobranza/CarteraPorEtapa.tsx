@@ -22,6 +22,7 @@
 import { ArrowDown, ArrowUp, CaretRight } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { CARTERA_STAGES, STAGE_LABELS_EN, STAGE_LABELS_ES, type CarteraStage } from '@/lib/cartera'
 
 export interface EtapaDeLaCartera {
@@ -61,6 +62,8 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
   const conCasos = filas.filter((f) => f.count > 0)
   const sinCasos = filas.filter((f) => f.count <= 0)
   const total = conCasos.reduce((s, f) => s + f.count, 0)
+  const porVencer = filas.find((f) => f.stage === 'S0')?.count ?? 0
+  const enMora = total - porVencer
   const nombre = (stage: CarteraStage) => etiquetas[stage].split(' · ')[0]!
   const rango = (stage: CarteraStage) => etiquetas[stage].split(' · ')[1] ?? null
   const dias = (n: number) => `${n} ${n === 1 ? tx('día', 'day') : tx('días', 'days')}`
@@ -90,10 +93,35 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-surface" data-testid="cartera-por-etapa">
       <div className="space-y-3 px-4 pb-4 pt-4 sm:px-5">
-        <p className="text-body-sm text-fg-muted">
-          <span className="font-mono text-h3 tabular-nums text-fg">{total}</span>{' '}
-          {total === 1 ? tx('caso en cobranza', 'case in collections') : tx('casos en cobranza', 'cases in collections')}
-        </p>
+        {/* Revisora r25 (Resumen #1): LA RESPUESTA en una CifraHeroe y con la
+            MISMA cuenta de «Te toca a ti»: en mora es todo menos
+            Pre-vencimiento. Antes «N casos en cobranza» en text-h3, con S0
+            adentro: dos totales distintos en la misma pantalla. La plata en
+            mora no llega del panorama (para Víctor). */}
+        <CifraHeroe
+          data-testid="cartera-en-mora"
+          tamano="mediana"
+          rotulo={tx('En mora', 'Past due')}
+          cifra={enMora.toLocaleString(en ? 'en-US' : 'es-CO')}
+          contexto={
+            <>
+              {enMora === 1 ? tx('inquilino', 'tenant') : tx('inquilinos', 'tenants')}
+              {porVencer > 0 ? (
+                <span className="text-fg-subtle">
+                  {' · '}
+                  {porVencer === 1
+                    ? tx('1 más con la cuota por vencer', '1 more with a payment coming due')
+                    : tx(`${porVencer} más con la cuota por vencer`, `${porVencer} more with a payment coming due`)}
+                </span>
+              ) : null}
+            </>
+          }
+          esCero={enMora === 0}
+          cuandoEsCero={tx(
+            `Nadie en mora: ${porVencer === 1 ? '1 caso tiene' : `${porVencer} casos tienen`} la cuota por vencer.`,
+            `No one past due: ${porVencer} with a payment coming due.`,
+          )}
+        />
         {/* La barra: un tramo por etapa con casos, ancho = su parte del total. */}
         <div
           className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-surface-muted"

@@ -106,6 +106,9 @@ export default function CobranzaOverviewPage() {
     if (sinDeudores) router.replace('/panel/inmobiliaria/pagos/cobranza/deudores')
   }, [sinDeudores, router])
 
+  // «Atender N» (revisora r25, Resumen #2): cuántas decisiones esperan, de «Te toca a ti».
+  const [queEspera, setQueEspera] = useState<number | null>(null)
+
   // Local state for realtime-prepended transitions
   const [realtimeTransitions, setRealtimeTransitions] = useState<StageTransitionEvent[]>([])
 
@@ -159,15 +162,24 @@ export default function CobranzaOverviewPage() {
     [router]
   )
 
-  // GLOW UP 21-10: el encabezado común, el mismo en el fallo y en el panorama.
-  // Sin acción principal a propósito: lo que te toca hacer vive en «Te toca a
-  // ti», con su botón en cada fila; «¿Cómo funciona?» va donde iría la acción.
+  // GLOW UP 21-10: el encabezado común, el mismo en el vacío, el fallo y el
+  // panorama. Revisora r25 (Resumen #2): la acción principal es «Atender N»,
+  // en azul, y lleva a lo pendiente; sin nada que atender no se pinta.
   const encabezado = (
     <EncabezadoDePantalla
       seccion={t('inmobiliaria.ai.nav.cobranza')}
       titulo={t('inmobiliaria.ai.cobranza.overview.title')}
       descripcion={t(`${PAGES_NS}.salaDesc`)}
       ayuda={<ComoFuncionaCobranza />}
+      accionPrincipal={
+        queEspera && queEspera > 0 ? (
+          <Button asChild size="sm" hideArrow data-testid="cobranza-atender">
+            <Link href="/panel/inmobiliaria/pagos/cobranza/pendientes">
+              {tr('Atender {n}', { n: queEspera.toLocaleString('es-CO') })}
+            </Link>
+          </Button>
+        ) : undefined
+      }
       data-testid="cobranza-encabezado"
     />
   )
@@ -189,6 +201,8 @@ export default function CobranzaOverviewPage() {
     return (
       <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-4">
+        {/* Revisora r25 (Resumen #5): el vacío también lleva el encabezado. */}
+        {encabezado}
         <section className="rounded-lg border border-border bg-surface">
           <EmptyState
             icon={FolderOpen}
@@ -282,7 +296,7 @@ export default function CobranzaOverviewPage() {
           mueve entre etapas, y quiénes pesan más. Las tres respondían la misma
           pregunta desde tres lugares distintos de la página. */}
       <section className="space-y-4" aria-labelledby="cobranza-cartera">
-        <h2 id="cobranza-cartera" className="text-lg font-normal text-fg">
+        <h2 id="cobranza-cartera" className="text-body font-normal text-fg">
           {tr("Tu cartera")}
         </h2>
 
@@ -307,7 +321,7 @@ export default function CobranzaOverviewPage() {
           la fila de 4 tarjetas, la tarjeta «Revisar escalaciones» y la lista
           «Qué necesita tu atención hoy» — con el mismo número repetido cuatro
           veces y la lista, lo único accionable, al final. */}
-      <CobranzaTeTocaATi enMora={enMora} gestionados={data?.kpis.llamadasHoy ?? 0} />
+      <CobranzaTeTocaATi enMora={enMora} gestionados={data?.kpis.llamadasHoy ?? 0} onTotalQueEspera={setQueEspera} />
 
       {/* Revisora r24 (Cobranza #3): lo que hizo el agente es de consulta: plegado, después de la cartera. */}
       <MasDetalles etiqueta={tr("Lo que hizo el agente")} etiquetaAbierto={tr("Ocultar lo que hizo el agente")} montadoSiempre data-testid="lo-que-hizo-el-agente-plegado">
@@ -337,11 +351,12 @@ export default function CobranzaOverviewPage() {
         <CobranzaAnaliticaResumen />
       </section>
 
-      </MasDetalles>
+      {/* Revisora r25 (Resumen #4): la actividad es de consulta: va plegada
+          con lo que hizo el agente, no abierta al fondo. */}
 
       {/* ═══ 4. ACTIVIDAD ══════════════════════════════════════════════════ */}
       <section className="space-y-4" aria-labelledby="cobranza-actividad">
-        <h2 id="cobranza-actividad" className="text-lg font-medium text-fg">
+        <h2 id="cobranza-actividad" className="text-body font-normal text-fg">
           {tr("Actividad")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -353,6 +368,7 @@ export default function CobranzaOverviewPage() {
           </div>
         </div>
       </section>
+      </MasDetalles>
 
     </div>
     </CrossFade>

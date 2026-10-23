@@ -61,31 +61,31 @@ export function RecibosDeCaja({
 
   return (
     <div data-testid="recibos-de-caja">
-      <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">Recibos de caja</p>
-      <p className="text-xs text-fg-muted dark:text-fg-subtle mb-3">
+      <p className="text-caption text-fg-subtle uppercase tracking-wider mb-1">Recibos de caja</p>
+      <p className="text-caption text-fg-muted mb-3">
         Los que te emitió tu inmobiliaria por cada pago. Son comprobantes de pago; la factura electrónica la emite la
         inmobiliaria por separado.
       </p>
       {error ? (
         <FalloDeCarga error={error} queEs="tus recibos" onReintentar={onReintentar} />
       ) : recibos.length === 0 ? (
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">Todavía no tienes recibos de caja.</p>
+        <p className="text-sm text-fg-muted">Todavía no tienes recibos de caja.</p>
       ) : (
         <div className="space-y-2">
           {recibos.map((r) => (
             <div
               key={r.id}
               data-testid={`recibo-${r.numero}`}
-              className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted"
+              className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface"
             >
-              <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-                <Money className="w-5 h-5 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
+              <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
+                <Money className="w-5 h-5 text-fg-muted" aria-hidden="true" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-fg dark:text-white">
+                <p className="text-sm font-medium text-fg">
                   Recibo de caja N.º {r.numero} · {conceptoDelRecibo(r)}
                 </p>
-                <p className="text-xs text-fg-muted dark:text-fg-subtle">
+                <p className="text-caption text-fg-muted">
                   <span className="font-mono tabular-nums">{formatCurrency(r.valorCop)}</span> · {r.medio} ·{' '}
                   {fechaLarga(r.fecha)}
                 </p>

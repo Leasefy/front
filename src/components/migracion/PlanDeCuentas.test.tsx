@@ -126,6 +126,21 @@ async function pintar(sinPaso5 = false) {
     root.render(<PlanDeCuentas sinPaso5={sinPaso5} />);
   });
   await act(async () => {});
+  await abrirTodo();
+}
+
+/**
+ * Revisora r25 (escala): el árbol abre con las clases CERRADAS. Las pruebas que
+ * editan una cuenta de adentro la abren primero, como lo haría la persona.
+ */
+async function abrirTodo() {
+  for (let vuelta = 0; vuelta < 10; vuelta++) {
+    const cerrados = [...document.body.querySelectorAll<HTMLButtonElement>('[data-testid="puc-arbol"] [aria-expanded="false"]')];
+    if (cerrados.length === 0) return;
+    await act(async () => {
+      for (const b of cerrados) b.click();
+    });
+  }
 }
 
 function q(testid: string) {
@@ -216,6 +231,14 @@ describe('la semilla', () => {
     // El árbol, con la cuenta pendiente adentro.
     expect(q('puc-arbol')).not.toBeNull();
     expect(q('puc-nodo-1')).not.toBeNull();
+    // Revisora r25 (escala): el árbol abre en las clases cerradas; la cuenta
+    // pendiente se encuentra buscándola (o abriendo su clase).
+    expect(q('puc-nodo-511580')).toBeNull();
+    await act(async () => {
+      const el = q('puc-buscar') as HTMLInputElement;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, '511580');
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     expect(q('puc-nodo-511580')).not.toBeNull();
     expect(q('puc-resumen')?.textContent).toContain('8 cuentas');
 
@@ -229,6 +252,9 @@ describe('la semilla', () => {
     expect(fila?.textContent).toContain('4x1000');
     expect(fila?.textContent).toContain('Editar');
     expect(fila?.textContent).toContain('Desactivar');
+    // Revisora r25: el aviso es UNA línea con «Ver»; lo de adentro queda en la página, plegado.
+    expect(fila?.closest('[hidden]')).not.toBeNull();
+    expect(pendientes?.querySelector('button[aria-expanded="false"]')?.textContent).toContain('Ver');
 
     // Con cuentas, se puede seguir al paso 5.
     expect(q('puc-continuar')?.getAttribute('href')).toBe('/panel/inmobiliaria/migracion/contables');

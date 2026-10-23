@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
 import { ReportesContables, informeDe } from '@/components/contabilidad/reportes/ReportesContables';
 import { ROLES_DE_LA_CONTABILIDAD } from '@/lib/auth/roles-de-la-contabilidad';
 
@@ -15,21 +15,27 @@ export default function ReportesContablesPage() {
   return (
     <PageGuard module="reportes" roles={ROLES_DE_LA_CONTABILIDAD} seccion="Contabilidad">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
+        <div className="space-y-3">
           <Link
             href="/panel/inmobiliaria/contabilidad"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+            className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-h2 text-fg">Reportes contables</h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            Todo sale de los movimientos, sin saldos guardados aparte: lo que se ve es lo que hay en
-            el libro.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Dinero"
+            titulo="Reportes contables"
+            descripcion="El libro como lo pide el contador: balance de prueba, mayor, auxiliares y cartera."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">
+                  Todo sale de los movimientos, sin saldos guardados aparte: lo que se ve es lo que hay
+                  en el libro. Cada informe se baja en el formato que pide el contador.
+                </p>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         {/* `key`: si se llega de nuevo a esta ruta con otro `informe`, Next no
             remonta la página y la pestaña se quedaría en la anterior. */}
         <ReportesContables key={informe} inicial={informe} />

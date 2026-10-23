@@ -153,7 +153,7 @@ export function TablaDeSiniestros({
                   {/* El interés de la reclamación, aparte del capital. */}
                   {interesPendiente(i) > 0 ? (
                     <div
-                      className="text-xs font-normal text-danger"
+                      className="text-caption font-normal text-danger"
                       data-testid="siniestro-intereses"
                     >
                       {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesPendiente(i)) })}
@@ -189,7 +189,7 @@ export function EnSiniestro({ siniestros }: { siniestros: CarteraSiniestros }) {
         <div>
           <p
             id="en-siniestro"
-            className="flex items-center gap-1.5 text-xs text-fg-muted"
+            className="flex items-center gap-1.5 text-caption text-fg-muted"
           >
             <ShieldWarning className="h-3.5 w-3.5" />
             En siniestro
@@ -200,14 +200,14 @@ export function EnSiniestro({ siniestros }: { siniestros: CarteraSiniestros }) {
           >
             {formatCurrency(totalCop)}
           </p>
-          <p className="text-xs text-fg-muted" data-testid="siniestro-cantidad">
+          <p className="text-caption text-fg-muted" data-testid="siniestro-cantidad">
             {cantidad === 0
               ? 'Ningún caso'
               : `${cantidad} ${cantidad === 1 ? 'caso' : 'casos'}`}
           </p>
         </div>
         {/* La regla, dicha: sin esto el número aparece un día sin explicación. */}
-        <p className="max-w-sm text-xs text-fg-muted" data-testid="siniestro-regla">
+        <p className="max-w-sm text-caption text-fg-muted" data-testid="siniestro-regla">
           {reglaDeSiniestro(diasParaSiniestro)}
         </p>
       </Card>

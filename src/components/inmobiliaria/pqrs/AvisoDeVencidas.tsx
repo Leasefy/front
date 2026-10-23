@@ -8,6 +8,7 @@
  * contadores no tenían «Vencidas» y ninguna pantalla decía que nadie recibía el
  * escalamiento (el cron de la 1:00 p. m. no escalaba nada sin esa persona).
  */
+import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { WarningCircle } from '@phosphor-icons/react'
@@ -69,16 +70,13 @@ export function AvisoDeVencidas({ vencidas, porVencer, onVer }: Props) {
             </p>
           ) : null}
           {sinJefe ? (
-            <p className="text-fg-muted" data-testid="pqrs-sin-escalamiento">
-              Nadie recibe las PQRS vencidas: elige a quién se escalan en{' '}
-              <Link
-                href="/panel/inmobiliaria/configuracion/sla-de-pqrs"
-                className="font-medium text-fg underline underline-offset-2"
-              >
-                Configuración → Plazo de PQRS
-              </Link>
-              .
-            </p>
+            // GLOW UP (21-10): la frase dice qué pasa y el botón lo arregla (no un enlace dentro del párrafo).
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="pqrs-sin-escalamiento">
+              <p className="text-fg-muted">Nadie recibe las PQRS vencidas.</p>
+              <Button asChild size="sm" variant="secondary">
+                <Link href="/panel/inmobiliaria/configuracion/sla-de-pqrs">Elegir a quién se escalan</Link>
+              </Button>
+            </div>
           ) : sla?.escalarANombre && vencidas > 0 ? (
             <p className="text-fg-muted">Las vencidas se le escalan a {sla.escalarANombre}.</p>
           ) : null}

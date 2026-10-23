@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Users, MagnifyingGlass, Buildings, UserCheck, UserMinus, Eye, FileText, Chat, Warning, Question, CaretDown, Shield, Briefcase, CreditCard, House, Scales, UserPlus, Clock, CheckCircle, XCircle } from '@phosphor-icons/react';
+import { Users, MagnifyingGlass, Buildings, UserCheck, UserMinus, Chat, Warning, Question, CaretDown, Shield, Briefcase, CreditCard, House, Scales, UserPlus, CheckCircle, XCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
@@ -17,8 +17,12 @@ import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/pla
 import { PlanRiskBadge, PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import { useI18n } from '@/lib/i18n';
-import { Button, Spinner, Card, Badge } from '@/components/ui';
-import { PageHeader, KpiCard, SearchInput, SegmentedControl, MonoLabel } from '@leasefy/cadence';
+import { Button, Card } from '@/components/ui';
+import { FranjaDeCifras, KpiCard, SearchInput, SegmentedControl, MonoLabel } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { PanelEnPausa, esElPanelEnPausa } from '@/components/portales/PanelEnPausa';
 import type { Candidate } from '@/lib/types/candidate';
 import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
@@ -62,7 +66,8 @@ function ScoringGuide() {
 
   const RISK_LEVEL_DETAILS = [
     { level: 'A', labelKey: 'landlord.candidates.riskExcellent', range: '85–100', color: 'bg-success', textColor: 'text-success', bgColor: 'bg-success-soft', descKey: 'landlord.candidates.riskExcellentDesc' },
-    { level: 'B', labelKey: 'landlord.candidates.riskGood', range: '70–84', color: 'bg-primary', textColor: 'text-primary', bgColor: 'bg-primary-soft', descKey: 'landlord.candidates.riskGoodDesc' },
+    // Revisora r25: el nivel B en tinta, no en voltaje (el azul es la acción, no un dato).
+    { level: 'B', labelKey: 'landlord.candidates.riskGood', range: '70–84', color: 'bg-fg', textColor: 'text-fg', bgColor: 'bg-surface-muted', descKey: 'landlord.candidates.riskGoodDesc' },
     { level: 'C', labelKey: 'landlord.candidates.riskFair', range: '50–69', color: 'bg-warning', textColor: 'text-warning', bgColor: 'bg-warning-soft', descKey: 'landlord.candidates.riskFairDesc' },
     { level: 'D', labelKey: 'landlord.candidates.riskPoor', range: '0–49', color: 'bg-danger', textColor: 'text-danger', bgColor: 'bg-danger-soft', descKey: 'landlord.candidates.riskPoorDesc' },
   ];
@@ -74,7 +79,7 @@ function ScoringGuide() {
         variant="outline"
         hideArrow
         onClick={() => setOpen(!open)}
-        className={cn('gap-2.5 rounded-lg', open && 'bg-primary-soft border-primary/30 text-primary')}
+        className={cn('gap-2.5 rounded-lg', open && 'bg-surface-muted')}
       >
         <Question className="w-4 h-4" />
         <span>{t('landlord.candidates.scoringGuideToggle')}</span>
@@ -85,7 +90,7 @@ function ScoringGuide() {
         <div className="mt-4 bg-surface rounded-lg border border-border overflow-hidden">
           {/* Header */}
           <div className="px-6 py-5 border-b border-border-faint bg-surface-muted">
-            <h3 className="text-base font-semibold text-fg">{t('landlord.candidates.scoringGuideTitle')}</h3>
+            <h3 className="text-base font-medium text-fg">{t('landlord.candidates.scoringGuideTitle')}</h3>
             <p className="text-sm text-fg-muted mt-1">
               {t('landlord.candidates.scoringGuideDescription')}
             </p>
@@ -100,15 +105,13 @@ function ScoringGuide() {
                   const Icon = cat.icon;
                   return (
                     <div key={cat.labelKey} className="flex gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-primary" />
-                      </div>
+                      <Icon className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
                           <span className="text-sm font-medium text-fg">{t(cat.labelKey)}</span>
-                          <span className="text-xs text-fg-subtle">{t('landlord.candidates.weight', { weight: cat.weight })}</span>
+                          <span className="text-caption text-fg-subtle">{t('landlord.candidates.weight', { weight: cat.weight })}</span>
                         </div>
-                        <p className="text-xs text-fg-muted mt-0.5 leading-relaxed">{t(cat.descKey)}</p>
+                        <p className="text-caption text-fg-muted mt-0.5 leading-relaxed">{t(cat.descKey)}</p>
                       </div>
                     </div>
                   );
@@ -123,21 +126,21 @@ function ScoringGuide() {
                 {RISK_LEVEL_DETAILS.map((risk) => (
                   <div key={risk.level} className={cn('p-3 rounded-lg', risk.bgColor)}>
                     <div className="flex items-center gap-3 mb-1">
-                      <span className={cn('w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white', risk.color)}>
+                      <span className={cn('w-7 h-7 rounded-md flex items-center justify-center text-caption font-medium text-white', risk.color)}>
                         {risk.level}
                       </span>
                       <div>
-                        <span className={cn('text-sm font-semibold', risk.textColor)}>{t(risk.labelKey)}</span>
-                        <span className="text-xs text-fg-subtle ml-2">{t('landlord.candidates.scoreRange', { range: risk.range })}</span>
+                        <span className={cn('text-sm font-medium', risk.textColor)}>{t(risk.labelKey)}</span>
+                        <span className="text-caption text-fg-subtle ml-2">{t('landlord.candidates.scoreRange', { range: risk.range })}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-fg-muted leading-relaxed ml-10">{t(risk.descKey)}</p>
+                    <p className="text-caption text-fg-muted leading-relaxed ml-10">{t(risk.descKey)}</p>
                   </div>
                 ))}
               </div>
 
               <div className="mt-4 p-3 bg-warning-soft rounded-lg">
-                <p className="text-xs text-warning leading-relaxed">
+                <p className="text-caption text-warning leading-relaxed">
                   <strong>{t('landlord.candidates.scoringNoteLabel')}</strong> {t('landlord.candidates.scoringNote')}
                 </p>
               </div>
@@ -152,14 +155,14 @@ function ScoringGuide() {
 export default function CandidatosPage() {
   const router = useRouter();
   const { t } = useI18n();
-  const [statusFunnel, setStatusFunnel] = useState<StatusFunnel>('all');
+  const [statusElegido, setStatusElegido] = useState<StatusFunnel | null>(null);
   const [riskFunnel, setRiskFunnel] = useState<RiskFunnel>('all');
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Fetch candidates from API
-  const { candidates: landlordCandidates, stats, isLoading, error, refetch } = useCandidates();
+  const { candidates: landlordCandidates, stats, isLoading, error, errorCrudo, refetch } = useCandidates();
   const { decide } = useCandidateDecision();
 
   // Map to Candidate type for display (extend with default values for full Candidate fields)
@@ -200,6 +203,15 @@ export default function CandidatosPage() {
     hasBankStatements: false,
     _status: STATUS_TO_FUNNEL[lc.status] || 'new',
   }));
+
+  /*
+   * Lo pendiente primero (glow up, 21-10-2026): el trabajo de esta pantalla es
+   * revisar a los que se postularon. Si hay nuevos, se entra en «Nuevos»;
+   * cuando la persona elige otro estado, manda el suyo.
+   */
+  const hayNuevos = allCandidates.some((c) => c._status === 'new');
+  const statusFunnel: StatusFunnel = statusElegido ?? (hayNuevos ? 'new' : 'all');
+  const setStatusFunnel = (valor: StatusFunnel) => setStatusElegido(valor);
 
   // Apply filters
   const filteredCandidates = allCandidates.filter(c => {
@@ -294,7 +306,7 @@ export default function CandidatosPage() {
               variant={row.numericScore >= 70 ? 'success' : row.numericScore >= 50 ? 'warning' : 'danger'}
             />
           </div>
-          <span className="text-xs text-fg-muted">{row.numericScore}</span>
+          <span className="text-caption text-fg-muted">{row.numericScore}</span>
         </div>
       ),
     },
@@ -420,7 +432,7 @@ export default function CandidatosPage() {
           <div className="flex items-center justify-between">
             <PlanRiskBadge level={candidate.riskLevel} />
             <div className="text-right">
-              <span className="text-2xl font-bold font-mono tabular-nums text-fg">{candidate.numericScore}</span>
+              <span className="text-h3 font-normal font-mono tabular-nums text-fg">{candidate.numericScore}</span>
               <span className="text-sm text-fg-muted">/100</span>
             </div>
           </div>
@@ -433,7 +445,7 @@ export default function CandidatosPage() {
             <div className="space-y-2 pt-2">
               {candidate.riskScore.categories.map(cat => (
                 <div key={cat.name}>
-                  <div className="flex justify-between text-xs mb-1">
+                  <div className="flex justify-between text-caption mb-1">
                     <span className="text-fg-muted">{cat.label}</span>
                     <span className="font-medium text-fg">{cat.score}%</span>
                   </div>
@@ -467,7 +479,7 @@ export default function CandidatosPage() {
           </div>
           <div className="flex justify-between py-2 bg-success-soft px-3 -mx-3 rounded-md">
             <span className="text-sm text-success">{t('landlord.candidates.availableForRent')}</span>
-            <span className="text-sm font-semibold text-success">{formatCurrencyOrDash(candidate.availableForRent)}</span>
+            <span className="font-mono text-sm tabular-nums text-success">{formatCurrencyOrDash(candidate.availableForRent)}</span>
           </div>
         </div>
       ),
@@ -508,14 +520,14 @@ export default function CandidatosPage() {
                 'flex items-start gap-2 p-3 text-sm rounded-md',
                 flag.severity === 'high' ? 'bg-danger-soft text-danger' :
                 flag.severity === 'medium' ? 'bg-warning-soft text-warning' :
-                'bg-primary-soft text-primary'
+                'bg-surface-muted text-fg'
               )}
             >
               <Warning className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <div>
                 <p>{flag.message}</p>
                 {flag.suggestion && (
-                  <p className="text-xs opacity-75 mt-1">{flag.suggestion}</p>
+                  <p className="text-caption opacity-75 mt-1">{flag.suggestion}</p>
                 )}
               </div>
             </div>
@@ -534,41 +546,61 @@ export default function CandidatosPage() {
     { id: 'rejected', label: t('landlord.candidates.tabRejected'), count: statusCounts.rejected },
   ];
 
-  return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <PageHeader
-          title={t('landlord.candidates.title')}
-          subtitle={t('landlord.candidates.subtitle')}
+  // Cargando o con error, la pantalla lo dice sola: antes se veían a la vez la
+  // ruedita (o el error) y la tabla vacía diciendo que no había candidatos.
+  if (isLoading) {
+    return (
+      <div className="p-6 lg:p-8">
+        <EsqueletoDePagina variante="list" />
+      </div>
+    );
+  }
+  // Revisora r25: con el fallo, el encabezado se queda (antes el h1 desaparecía y no se sabía dónde se estaba).
+  if (error) {
+    return (
+      <div className="p-6 lg:p-8">
+        <EncabezadoDePantalla
           className="mb-6"
+          seccion="Mis inmuebles"
+          titulo={t('landlord.candidates.title')}
+          descripcion={t('landlord.candidates.subtitle')}
+        />
+        {/* Ronda 28 (revisora r27): la pausa, con la misma voz que en Mis inmuebles (antes «Fue un problema nuestro… Referencia»). */}
+        {esElPanelEnPausa(errorCrudo) ? (
+          <PanelEnPausa />
+        ) : (
+          <FalloDeCarga error={error} queEs="tus candidatos" onReintentar={refetch} />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="p-6 lg:p-8">
+        <EncabezadoDePantalla
+          className="mb-6"
+          seccion="Mis inmuebles"
+          titulo={t('landlord.candidates.title')}
+          descripcion={t('landlord.candidates.subtitle')}
         />
 
         {/* Scoring Guide — prominent placement */}
         <ScoringGuide />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Las cifras en la franja común; la de «nuevos» dice que toca revisarlos. */}
+        <FranjaDeCifras className="mb-6" data-testid="cifras-de-los-candidatos">
           <KpiCard
             label={t('landlord.candidates.totalCandidates')}
             value={String(statusCounts.all)}
             icon={<Users className="w-5 h-5" />}
           />
-
-          <Card className="p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
-                <UserPlus className="w-5 h-5 text-primary" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-fg">{statusCounts.new}</p>
-            <p className="text-sm text-fg-muted">{t('landlord.candidates.newCandidates')}</p>
-            {statusCounts.new > 0 && (
-              <Badge variant="default" className="mt-2">
-                {t('landlord.candidates.toReview')}
-              </Badge>
-            )}
-          </Card>
+          <KpiCard
+            label={t('landlord.candidates.newCandidates')}
+            value={String(statusCounts.new)}
+            sublabel={statusCounts.new > 0 ? t('landlord.candidates.toReview') : undefined}
+            icon={<UserPlus className="w-5 h-5" />}
+          />
 
           <KpiCard
             label={t('landlord.candidates.approvedCandidates')}
@@ -581,7 +613,7 @@ export default function CandidatosPage() {
             value={String(statusCounts.rejected)}
             icon={<XCircle className="w-5 h-5" />}
           />
-        </div>
+        </FranjaDeCifras>
 
         {/* Status funnel — exclusive selector → SegmentedControl */}
         <div className="mb-6">
@@ -596,7 +628,7 @@ export default function CandidatosPage() {
                 <span className="flex items-center gap-2">
                   {tab.label}
                   {tab.count !== undefined && tab.count > 0 && (
-                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-surface-muted text-fg-muted tabular-nums">
+                    <span className="text-caption px-1.5 py-0.5 rounded-full bg-surface-muted text-fg-muted tabular-nums">
                       {tab.count}
                     </span>
                   )}
@@ -638,26 +670,10 @@ export default function CandidatosPage() {
           </div>
         </Card>
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-16">
-            <Spinner size="lg" />
-          </div>
-        )}
-
-        {/* Error state */}
-        {error && !isLoading && (
-          <div className="rounded-lg border border-danger/30 bg-danger-soft p-6 text-center">
-            <p className="text-sm text-danger">{error}</p>
-            <Button variant="link" hideArrow onClick={refetch} className="mt-3 h-auto p-0 text-danger hover:text-danger">
-              Reintentar
-            </Button>
-          </div>
-        )}
-
         {/* Table with Pagination */}
-        {!isLoading && !error && allCandidates.length === 0 ? (
+        {allCandidates.length === 0 ? (
           <EmptyState
+            ilustracion="casa"
             icon={Users}
             title={t('landlord.candidates.emptyTitle')}
             description={t('landlord.candidates.emptyDescription')}

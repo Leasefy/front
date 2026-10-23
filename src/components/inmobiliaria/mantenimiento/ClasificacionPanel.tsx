@@ -71,7 +71,7 @@ export function ClasificacionPanel({ clasificacion, responsableProbable }: Clasi
 
         {/* Score + bucket */}
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-fg-muted">
+          <div className="flex items-center justify-between text-caption text-fg-muted">
             <span>
               {t(`${ROOT}.card.score`)} · {t(`${ROOT}.enums.bucket.${bucketKey(clasificacion.bucket)}`)}
             </span>
@@ -89,7 +89,7 @@ export function ClasificacionPanel({ clasificacion, responsableProbable }: Clasi
           data-testid="responsable-hipotesis"
           className="rounded-lg bg-surface-muted border border-border p-3"
         >
-          <p className="text-xs font-medium text-fg-muted mb-1.5">
+          <p className="text-caption font-medium text-fg-muted mb-1.5">
             {t(`${ROOT}.detalle.responsableHipotesis`)}
           </p>
           <Badge variant="secondary">{t(`${ROOT}.enums.responsable.${responsableProbable}`)}</Badge>

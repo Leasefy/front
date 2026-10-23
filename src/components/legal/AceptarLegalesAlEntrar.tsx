@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,8 @@ export function AceptarLegalesAlEntrar() {
   const [error, setError] = useState<string | null>(null);
   /** Nada delante durante `LATIDOS_EN_CALMA` latidos seguidos. Abierta, ya no se vuelve a mirar. */
   const [enCalma, setEnCalma] = useState(false);
+  /** Ronda 28 (CD de la r27): el foco inicial va en «Acepto», nunca en «Salir» (Enter cerraba la sesión). */
+  const aceptoRef = useRef<HTMLButtonElement>(null);
   const userId = user?.id ?? null;
   const fuera = rutaSinVentanaLegal(ruta);
   const enElHome = !fuera && Boolean(user) && esElHome(ruta, getUserHomeRoute(user, activeContext, agencyRole));
@@ -126,6 +128,12 @@ export function AceptarLegalesAlEntrar() {
         className="z-[1100]"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
+        // Ronda 28 (CD de la r27): Radix ponía el foco en el primer botón, «Salir», y Enter cerraba la
+        // sesión. Abierta, el foco va a «Acepto»: la acción que la persona vino a hacer.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          aceptoRef.current?.focus();
+        }}
         data-testid="aceptar-legales"
       >
         {/* QA 11-10: quien nunca aceptó nada (el propietario que entra por la
@@ -170,7 +178,7 @@ export function AceptarLegalesAlEntrar() {
           <Button variant="outline" hideArrow disabled={enviando} onClick={() => void signOut()} data-testid="aceptar-legales-salir">
             Salir
           </Button>
-          <Button hideArrow isLoading={enviando} disabled={enviando} onClick={() => void aceptar()} data-testid="aceptar-legales-acepto">
+          <Button ref={aceptoRef} hideArrow isLoading={enviando} disabled={enviando} onClick={() => void aceptar()} data-testid="aceptar-legales-acepto">
             Acepto
           </Button>
         </DialogFooter>

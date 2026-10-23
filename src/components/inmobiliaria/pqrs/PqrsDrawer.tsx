@@ -72,7 +72,7 @@ const ESTADO_DEL_MANTENIMIENTO: Record<string, string> = {
 function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) {
   return (
     <div className="space-y-0.5">
-      <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">{etiqueta}</dt>
+      <dt className="text-caption font-medium uppercase tracking-wide text-fg-muted">{etiqueta}</dt>
       <dd className="text-sm text-fg">{children}</dd>
     </div>
   )
@@ -303,7 +303,7 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
             ) : null}
 
             {/* PI-28 (Nico, 05-10): la reparación del portal llega también a
-                Mantenimiento; desde acá se va a su solicitud, o se crea si una
+                Mantenimiento; desde aquí se va a su solicitud, o se crea si una
                 reparación vieja no la tiene (una sola por PQRS). */}
             {detalle?.mantenimiento ? (
               <section className="space-y-1.5 rounded-lg border border-border p-4" data-testid="pqrs-mantenimiento">

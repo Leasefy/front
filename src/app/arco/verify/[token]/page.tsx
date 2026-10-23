@@ -32,30 +32,27 @@ function ArcoVerifyInner() {
   return (
     <main
       id="main-content"
-      className="min-h-screen flex flex-col items-center justify-center py-16 px-4 bg-background"
+      className="min-h-screen flex flex-col items-center justify-center py-16 px-4 bg-bg"
     >
-      <div className="w-full max-w-md rounded-[22px] border border-border bg-surface p-8 text-center">
-        <CheckCircle
-          weight="duotone"
-          className="h-12 w-12 text-success mx-auto mb-4"
-        />
-        <h1 className="text-xl font-semibold font-heading text-fg">
+      <div className="w-full max-w-md rounded-lg border border-border bg-surface p-6 text-center shadow-xs sm:p-8">
+        <CheckCircle weight="fill" className="mx-auto mb-4 h-10 w-10 text-success" aria-hidden="true" />
+        <h1 className="text-balance font-heading text-[24px] font-[420] leading-[1.15] tracking-[-0.02em] text-fg">
           {t('inmobiliaria.ai.arco.verify.confirmed')}
         </h1>
-        <p className="text-sm text-fg-subtle mt-2">
+        <p className="mt-2 text-body-sm text-fg-muted">
           {t('inmobiliaria.ai.arco.verify.sla')}
         </p>
         <Link
           href="/"
-          className="text-xs text-[#1A40FF] hover:text-[#1A40FF] transition-colors mt-6 block"
+          className="mt-6 block text-body-sm text-fg underline underline-offset-4 transition-colors hover:text-fg-muted"
         >
           Volver al inicio
         </Link>
-        <p className="text-xs text-fg-subtle mt-4">
+        <p className="text-caption text-fg-subtle mt-4">
           ¿Tienes dudas? Consulta nuestra{' '}
           <Link
             href="/privacidad"
-            className="text-[#1A40FF] hover:text-[#1A40FF] transition-colors"
+            className="text-fg underline underline-offset-2 transition-colors hover:text-fg-muted"
           >
             política de privacidad
           </Link>

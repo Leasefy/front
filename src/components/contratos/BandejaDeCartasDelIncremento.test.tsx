@@ -132,10 +132,13 @@ describe('<BandejaDeCartasDelIncremento> — el tablero (D6)', () => {
    * 🔴 22-10-2026 (Portofino): la cola se volvió Contratos → Incrementos. Cada
    * loseta abre «lo de ahora» (`mes=proximos`, lo MISMO que cuenta: así el
    * número de la loseta y la lista cuadran) ya filtrada; «Ver los incrementos
-   * por mes» abre la pantalla en su mes.
+   * por mes» abre la pantalla en su mes. Una carta de cada estado: en cero, la
+   * loseta no sale (revisora r25).
    */
   it('cada loseta es un CAMINO a los incrementos ya filtrados', async () => {
-    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
+    api.bandejaDeCartas.mockResolvedValue(
+      bandeja([carta(), carta({ contractId: 'c2', estado: 'VENCIDA_SIN_CONSTANCIA', alertaRoja: true }), carta({ contractId: 'c3', estado: 'ENVIADA' })]),
+    );
     await montar();
     const RUTA = '/panel/inmobiliaria/contratos/incrementos';
     expect($('loseta-sin-constancia')?.getAttribute('href')).toBe(`${RUTA}?mes=proximos&estado=sin-constancia`);
@@ -155,10 +158,12 @@ describe('<BandejaDeCartasDelIncremento> — el tablero (D6)', () => {
     expect(loseta.className).toContain('destructive');
   });
 
-  it('en cero, la loseta roja no grita', async () => {
-    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()], { vencidasSinConstancia: 0 }));
+  it('en cero, la loseta no sale (revisora r25: dos ceros que repetían la cola)', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()], { vencidasSinConstancia: 0, enviadas: 0 }));
     await montar();
-    expect($('loseta-sin-constancia')!.className).not.toContain('destructive');
+    expect($('loseta-sin-constancia')).toBeNull();
+    expect($('loseta-enviadas')).toBeNull();
+    expect($('loseta-por-enviar')!.textContent).toContain('1');
   });
 
   it('sin migración lo dice, sin esconder el tablero', async () => {

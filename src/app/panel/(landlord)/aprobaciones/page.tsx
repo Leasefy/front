@@ -17,7 +17,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Siren, Hourglass, Wrench } from '@phosphor-icons/react';
+import { CheckCircle, XCircle, Wrench } from '@phosphor-icons/react';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Presence } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
@@ -127,15 +130,15 @@ function Pendiente({
     <Card className="p-5 space-y-3" data-testid="aprobacion-pendiente">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {aprobacion.inmobiliaria} · {aprobacion.inmueble}
           </p>
-          <h3 className="text-base font-semibold text-fg">{aprobacion.reparacion.titulo}</h3>
+          <h3 className="text-base font-medium text-fg">{aprobacion.reparacion.titulo}</h3>
           {aprobacion.reparacion.descripcion && (
             <p className="text-sm text-fg-muted">{aprobacion.reparacion.descripcion}</p>
           )}
         </div>
-        <p className="shrink-0 font-mono tabular-nums text-lg font-semibold text-fg">
+        <p className="shrink-0 font-mono tabular-nums text-lg font-medium text-fg">
           {formatCurrency(aprobacion.valorCop)}
         </p>
       </div>
@@ -151,7 +154,7 @@ function Pendiente({
       {aprobacion.diferidaEn?.length ? (
         // Portofino 22-10: la inmobiliaria la difirió: se le descuenta por partes.
         <div className="space-y-1.5" data-testid="aprobacion-diferida">
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Si la apruebas, no se te descuenta de una vez: se te descuenta de tus giros {planEnFrase(aprobacion.diferidaEn)}. Pedida el {fecha(aprobacion.pedidaAt)}.
           </p>
           <ul className="flex flex-wrap gap-1.5">
@@ -168,7 +171,7 @@ function Pendiente({
           </ul>
         </div>
       ) : (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Si la apruebas, el valor se descuenta de tu próxima liquidación sin pagar. Pedida el {fecha(aprobacion.pedidaAt)}.
         </p>
       )}
@@ -300,10 +303,20 @@ export default function AprobarReparacionesPage() {
   return (
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1">
-          <h1 className="text-h2 text-fg">Aprobar reparaciones</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">Las reparaciones a tu cargo las apruebas tú, o las haces tú mismo si no son urgentes. Nada se te descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día.</p>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Solicitudes"
+          titulo="Aprobar reparaciones"
+          descripcion="Las reparaciones a tu cargo: apruébalas, recházalas o hazlas tú mismo si no son urgentes."
+          ayuda={
+            <ParaEntenderMas etiqueta="¿Cuándo se me descuenta?" titulo="Nada se te descuenta sin tu aprobación">
+              {/* Revisora r25: salió de la descripción (2 renglones). */}
+              <p className="text-body-sm text-fg">
+                Las reparaciones a tu cargo las apruebas tú, o las haces tú mismo si no son urgentes. Nada se te
+                descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día.
+              </p>
+            </ParaEntenderMas>
+          }
+        />
         <EstadoDeDatos
           cargando={cargando}
           error={error}
@@ -313,19 +326,21 @@ export default function AprobarReparacionesPage() {
             !datos || (datos.pendientes.length === 0 && datos.historial.length === 0 && queHagoYo.length === 0)
           }
           cuandoVacio={
-            <Card className="p-6">
-              <p className="text-sm text-fg-muted" data-testid="aprobaciones-vacio">
-                No tienes reparaciones por aprobar. Cuando tu inmobiliaria necesite tu aprobación para descontarte una
-                reparación, va a aparecer acá.
-              </p>
-            </Card>
+            <section className="rounded-lg border border-border bg-surface" data-testid="aprobaciones-vacio">
+              <EmptyState
+                icon={Wrench}
+                ilustracion="escudo"
+                title="No tienes reparaciones por aprobar"
+                description="Cuando tu inmobiliaria necesite tu aprobación para descontarte una reparación, va a aparecer aquí."
+              />
+            </section>
           }
         >
           {/* Nico, 11-10: el costo final que pasa lo aprobado vuelve a pedirte aprobación. */}
           <SobrecostosPorAprobar alCambiar={() => void cargar()} />
           {datos && datos.pendientes.length > 0 && (
             <section className="space-y-3" aria-label="Por aprobar">
-              <h2 className="text-sm font-semibold text-fg">Por aprobar</h2>
+              <h2 className="text-sm font-medium text-fg">Por aprobar</h2>
               {datos.pendientes.map((a) => (
                 <Pendiente key={a.id} aprobacion={a} onDecidida={() => void cargar()} />
               ))}

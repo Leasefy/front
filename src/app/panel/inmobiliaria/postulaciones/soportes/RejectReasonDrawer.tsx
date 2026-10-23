@@ -58,9 +58,7 @@ export function RejectReasonDrawer({
       <SheetContent side="right" size="sm" aria-describedby={undefined}>
         <SheetHeader
           leading={
-            <div className="w-9 h-9 rounded-md bg-danger-soft flex items-center justify-center flex-shrink-0">
-              <WarningCircle className="w-5 h-5 text-danger" />
-            </div>
+            <WarningCircle className="w-5 h-5 text-danger shrink-0" aria-hidden="true" />
           }
           title="Rechazar documento"
           description={documentName ? <span className="block truncate">{documentName}</span> : undefined}

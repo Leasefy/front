@@ -976,7 +976,7 @@ export function StickyCTA({
         </div>
 
         {/*
-          Acá iba «Última postulación hace 12 minutos», con un punto verde
+          Aquí iba «Última postulación hace 12 minutos», con un punto verde
           pulsando para que pareciera un dato en vivo. Estaba escrito a mano:
           los mismos 12 minutos en TODAS las propiedades, para siempre, incluso
           en una que nadie tocó nunca. Urgencia inventada.

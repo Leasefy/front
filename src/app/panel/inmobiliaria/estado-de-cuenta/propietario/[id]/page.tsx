@@ -87,6 +87,9 @@ function Contenido() {
           : { ...doc, cliente: { ...doc.cliente, tipoDocumento: ficha.documentType } };
       }}
       volverA={{ href: volver }}
+        /* Glow up de Dinero (3.ª vuelta): el encabezado común del panel, con el cliente como su
+           línea y el regreso arriba como texto. */
+        encabezado={{ seccion: 'Propietarios', conRegreso: true }}
       // SO-09 (04-10): el soporte de cada descuento, con la ruta de la inmobiliaria.
       abrirSoporteDeLaDeduccion={async (deduccionId) => (await deduccionesApi.urlDelSoporte(id, deduccionId)).url}
       acciones={(doc, nota, filtros) => (

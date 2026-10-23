@@ -185,7 +185,7 @@ describe('Propiedades.csv: los valores', () => {
     expect(sinEstrato.stratum).toBeUndefined();
   });
 
-  it('«Venta y Arriendo» llega crudo: lo resuelve la revisión, no se adivina acá', () => {
+  it('«Venta y Arriendo» llega crudo: lo resuelve la revisión, no se adivina aquí', () => {
     const [ambos] = mapRowsToProperties(
       [{ ...FILA_INVENTADA, Servicio: 'Venta y Arriendo', 'Valor Venta': '$240,000,000.00' }],
       mapeo,

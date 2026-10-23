@@ -259,17 +259,15 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
   return (
     <section
       data-testid="autopago"
-      className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4"
+      className="rounded-lg border border-border bg-surface p-6 space-y-4"
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-          <ArrowsClockwise className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-        </div>
+        <ArrowsClockwise className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
         <div>
-          <h2 className="text-lg font-semibold text-fg dark:text-white">
+          <h2 className="text-h3 text-fg">
             Cobro automático del canon
           </h2>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             Tu arriendo se paga solo el día que elijas, hasta el tope que autorices.
           </p>
         </div>
@@ -291,8 +289,8 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
 
         {estado?.disponible && estado.autopago && (
           <div className="space-y-4" data-testid="autopago-activo">
-            <div className="rounded-lg border border-border dark:border-border-strong p-4 space-y-2">
-              <p className="flex items-center gap-2 font-medium text-fg dark:text-white">
+            <div className="rounded-lg border border-border p-4 space-y-2">
+              <p className="flex items-center gap-2 font-medium text-fg">
                 {estado.activo ? (
                   <CheckCircle className="w-4 h-4 text-success" />
                 ) : (
@@ -300,12 +298,12 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
                 )}
                 {estado.activo ? 'Activo' : 'Pausado'}
               </p>
-              <p className="flex items-center gap-2 text-sm text-fg-muted dark:text-fg-subtle">
+              <p className="flex items-center gap-2 text-sm text-fg-muted">
                 <CreditCard className="w-4 h-4" />
                 {estado.autopago.marca ?? estado.autopago.metodo}{' '}
                 {estado.autopago.medioEnmascarado ?? ''}
               </p>
-              <p className="flex items-center gap-2 text-sm text-fg-muted dark:text-fg-subtle">
+              <p className="flex items-center gap-2 text-sm text-fg-muted">
                 <CalendarDots className="w-4 h-4" />
                 Cada día {estado.autopago.diaDelMes}, hasta {pesos(estado.autopago.topeCop)}
                 {estado.activo && estado.autopago.proximoCobro
@@ -343,7 +341,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
             {estado.cobros.length > 0 && (
               <ul className="space-y-1.5" data-testid="autopago-cobros">
                 {estado.cobros.map((c) => (
-                  <li key={c.id} className="text-sm text-fg-muted dark:text-fg-subtle">
+                  <li key={c.id} className="text-sm text-fg-muted">
                     {c.mes} · {pesos(c.montoCop)} ·{' '}
                     {ESTADO_EN_PALABRAS[c.estado] ?? c.estado}
                     {c.motivo ? ` — ${c.motivo}` : ''}
@@ -356,7 +354,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
 
         {estado?.disponible && !estado.autopago && !formulario && (
           <div className="space-y-3">
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               Todavía no tienes cobro automático. Puedes activarlo con una tarjeta y cancelarlo
               cuando quieras.
             </p>
@@ -372,7 +370,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
               Activar cobro automático
             </Button>
             {tokenizacion && !tokenizacion.disponible && (
-              <p className="text-sm text-fg-muted dark:text-fg-subtle">{tokenizacion.motivo}</p>
+              <p className="text-sm text-fg-muted">{tokenizacion.motivo}</p>
             )}
           </div>
         )}
@@ -381,7 +379,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
           <div className="space-y-4" data-testid="autopago-formulario">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="space-y-1">
-                <span className="text-sm text-fg-muted dark:text-fg-subtle">Día del cobro</span>
+                <span className="text-sm text-fg-muted">Día del cobro</span>
                 <Input
                   id="autopago-dia"
                   inputMode="numeric"
@@ -401,7 +399,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-fg-muted dark:text-fg-subtle">
+                <span className="text-sm text-fg-muted">
                   Hasta cuánto autorizas por mes
                 </span>
                 <Input
@@ -426,11 +424,11 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="space-y-1 sm:col-span-2">
-                <span className="text-sm text-fg-muted dark:text-fg-subtle">Nombre en la tarjeta</span>
+                <span className="text-sm text-fg-muted">Nombre en la tarjeta</span>
                 <Input id="autopago-nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
               </label>
               <label className="space-y-1 sm:col-span-2">
-                <span className="text-sm text-fg-muted dark:text-fg-subtle">Número</span>
+                <span className="text-sm text-fg-muted">Número</span>
                 <Input
                   id="autopago-numero"
                   inputMode="numeric"
@@ -440,7 +438,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-fg-muted dark:text-fg-subtle">Vence (MM / AAAA)</span>
+                <span className="text-sm text-fg-muted">Vence (MM / AAAA)</span>
                 <div className="flex gap-2">
                   <Input
                     id="autopago-mes"
@@ -457,7 +455,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
                 </div>
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-fg-muted dark:text-fg-subtle">CVC</span>
+                <span className="text-sm text-fg-muted">CVC</span>
                 <Input
                   id="autopago-cvc"
                   inputMode="numeric"
@@ -467,17 +465,17 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
               </label>
             </div>
 
-            <p className="flex items-start gap-2 rounded-lg bg-surface-muted dark:bg-border px-4 py-3 text-xs text-fg-muted dark:text-fg-subtle">
+            <p className="flex items-start gap-2 rounded-lg bg-surface-muted px-4 py-3 text-caption text-fg-muted">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 Los datos de tu tarjeta viajan directo a la pasarela de pagos. No pasan por
-                Leasefy ni quedan guardados acá: sólo guardamos los cuatro últimos dígitos para
+                Leasefy ni quedan guardados aquí: sólo guardamos los cuatro últimos dígitos para
                 que reconozcas tu medio.
               </span>
             </p>
 
             {/* 🔴 El texto que se autoriza lo manda el SERVIDOR y se muestra literal. */}
-            <label className="flex items-start gap-3 text-sm text-fg dark:text-white">
+            <label className="flex items-start gap-3 text-sm text-fg">
               <Checkbox id="autopago-acepta" checked={acepta} onCheckedChange={(marcada: boolean) => setAcepta(marcada)} className="mt-1" />
               <span data-testid="autopago-autorizacion">{tokenizacion.textoDeAutorizacion}</span>
             </label>

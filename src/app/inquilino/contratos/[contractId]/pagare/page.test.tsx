@@ -85,6 +85,8 @@ describe('<MiFirmaDelPagarePage>', () => {
     miFirma.mockResolvedValueOnce(datos({ miEstado: 'FIRMADO', urlDeFirma: null }));
     await montar();
     expect(container.querySelector('[data-testid="mi-firma-firmado"]')).not.toBeNull();
+    // Glow up 22-10: un hecho en una línea, no un bloque verde con borde.
+    expect(container.querySelector('[data-testid="mi-firma-firmado"]')?.className).not.toContain('bg-success-soft');
     expect(container.querySelector('[data-testid="ir-a-firmar-pagare"]')).toBeNull();
   });
 

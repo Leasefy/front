@@ -423,7 +423,14 @@ mejor cada cosa y más bonito». Toda explicación de cómo funciona algo (pasos
 
 ### Sidebar / Layout
 The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the canonical layout. Use as-is.
-- **Unified shell background:** sidebar, page body, and header all share the cadence page bg
+- **La barra lateral es una hoja de arena** (decisión 18 de Nico, 22-10-2026; reemplaza lo de abajo para la barra): el
+  `aside` y el cajón del celular van en `bg-surface-muted` con `border-r border-border`; la página y el encabezado siguen en
+  papel. Dentro de la barra la fila activa es una TARJETA BLANCA con filete (`--menu-activa` se pisa a `var(--surface)` sólo
+  dentro de la barra, decisión 19) y el texto y el ícono en voltaje: el azul de la activa vive en la letra. Filas de 32 px en
+  tinta de 14 px con el ícono en ceniza; rótulos de sección en DM Mono 10,5 de 12 letras como mucho («CAPTACIÓN», decisión 20);
+  sin guía vertical: logo, buscador, «＋», rótulos e íconos caen en el mismo borde; el azul sólo en la activa («Nueva
+  consignación» secondary, «IA» y contadores en gris mono). Plan completo: memory/archivos/glow-up-qa-21-10/plan-sidebar-22-10.md.
+- **Unified shell background (página y encabezado):** sidebar, page body, and header all share the cadence page bg
   `--bg` (`#FBFAF9` light / `#141310` dark). Separation comes from hairline borders (`border-r` /
   `border-b`), not a bg-color step. Cards/KPIs sit on `bg-surface` for elevation against
   the shell. Body is driven by `--plan-page-bg` (kept = `--bg` in both modes: `#FBFAF9` / `#141310`);
@@ -1484,6 +1491,156 @@ Cada agente se pinta con **`<OrbeDeAgente agente="cobranza" estado="pensando" ta
   `AgentIntroModal` (vista: `PresentacionDelAgente`) y `PilotoNovedad`.
 
 ---
+
+## 23. Pantallas por tarea — el GLOW UP (Nico, 20-10-2026)
+
+> Nico: «cada caso de uso tiene que optimizar el flujo desde lo que haría un usuario al inicio para
+> que entienda todo lo que debe de hacer desde el inicio hasta que ya tiene información y lo que
+> puede seguir haciendo […] minimizando carga cognitiva […] usa patrones de diseño para esconder
+> información irrelevante en la misma pantalla […] utiliza bien la información superior con las
+> acciones principales o secundarias».
+
+Cada pantalla del panel se lee de arriba abajo en el orden en que se trabaja. Las piezas viven en
+`src/components/pantalla/`:
+
+| Capa | Qué dice | Pieza |
+|---|---|---|
+| 1 · Encabezado | Dónde estoy, qué es (una línea) y qué se hace aquí | `EncabezadoDePantalla` — a la derecha, de lo más callado a lo más fuerte: la ayuda (`ParaEntenderMas`), las secundarias (`outline`) y la principal (cobalto). Todos los botones `size="sm"`. |
+| 2 · Lo que falta para empezar | Lo que se deja listo UNA vez, en orden y con su botón | `ListaParaEmpezar` — «Para facturar te faltan 2 pasos», el primero que falta lleva «Sigue», lo opcional lleva su rótulo y no cuenta, lo que no se pudo revisar (`desconocido`) nunca deja decir «Todo listo». Con todo listo se pliega en una línea. |
+| 2b · Una tarea en pasos | Configurar → subir → revisar → aprobar | `PasosDeLaTarea` — riel numerado: el paso actual abierto, los hechos con su resumen y «Cambiar», los que vienen con la razón por la que todavía no. |
+| 3 · Lo que toca hoy | El estado en UNA frase con sus cifras | Una `<p>` (el molde de §Pagos: «el resumen es una frase, no fichas»). Las cifras no prometen lo que un botón apagado no hace. |
+| 4 · El trabajo | La tabla, con pestañas, filtros y búsqueda dentro de la tarjeta | Lo de siempre: tabla paginada + cajón por fila. |
+| 5 · Lo demás | Lo que se toca una vez al año o se consulta poco | Su propia vista con «Volver», `MasDetalles` («Ver detalles»), un cajón, o una pestaña al final. Nunca un listado infinito al fondo. |
+
+Reglas que salen de ahí:
+
+- **Un aviso, una vez.** Si la lista de arriba dice que falta algo, no se repite en la pestaña ni en la
+  tabla; al lado de un botón apagado queda la razón en corto, con su salida.
+- **Pocas pestañas, por trabajo.** Ocho pestañas del mismo peso se leen como ocho cosas por hacer:
+  agrupar por lo que se viene a hacer (Facturación pasó de 8 a 5) y meter las variantes en un
+  `SegmentedControl` dentro de la pestaña.
+- **Lo de configurar una vez es un botón que abre su cajón ahí mismo**, no una pestaña adonde hay que ir.
+- **Los textos nuevos pasan por `tr()`** (`useTr`) y su inglés va en `lib/i18n/frases-en-del-glow-up.ts`.
+- **Cada pantalla se mide antes y después** con los 10 principios de Nielsen (la página de revisión
+  del glow up los lleva por módulo).
+
+Ejemplo hecho: Facturación (`app/panel/inmobiliaria/facturacion/page.tsx`,
+`components/facturacion/LoQueNecesitasParaFacturar.tsx`).
+
+---
+
+## 24. Cadence 2 — la identidad y cómo se construye el front (Nico, 20 → 21-10-2026)
+
+> «Quiero nuestra propia marca, que no se sienta que es IA… la UX debe ser perfecta, los flujos de trabajo al 100 %
+> optimizados para la tarea, y la UI hermosa.» Identidad completa: `@leasefy/cadence` → `docs/IDENTIDAD.md`;
+> página viva https://claude.ai/artifact/E1o95TDQhSza4djDLQk5jn. Skills: `cadence-identidad` (Cadence) y
+> `leasefy-diseno` + `pantalla-por-tarea` (front).
+
+**Fundamentos.** Papel `#FBFAF8` · arena `#F3F1ED` · piedra `#E7E3DC` · tinta `#121110` · grafito `#5B5751` · ceniza `#706B64` ·
+**voltaje `#1A40FF` = la única chispa** · medianoche `#0A0F2C`. Host Grotesk (títulos livianos) + DM Mono (cifras, etiquetas,
+MAYÚSCULAS cortas). Esquina superelipse 1.5 en todo lo redondeado.
+
+**Íconos.** La familia propia de Leasefy (trazo 1,5, esquinas suavizadas, corte en los cruces). Se sigue importando de
+`@phosphor-icons/react` (o `<Icono nombre>` de Cadence): `next.config.mjs` (`aliasDeIconos`) y `vitest.config.ts` apuntan ese
+paquete al puente `@leasefy/cadence/phosphor`, que dibuja con nuestra familia los 307 nombres que usa la plataforma. Un
+nombre nuevo de Phosphor que no esté en el mapa sale con el dibujo de Phosphor: agrégalo a la familia (Cadence,
+`scripts/iconos/familia.py`). Nunca Lucide.
+
+**Ilustraciones 3D.** `<Ilustracion nombre="casa|alcancia|billetera|escudo|monedas" tono="voltaje|grafito|auto" />`
+(archivos en `public/ilustraciones/`). Para vacíos grandes, éxitos y momentos de bienvenida. Uno por pantalla.
+
+**Las piezas y cuándo.**
+- **Botón**: una acción azul por pantalla (la que más se hace ahí); secundarias en arena; «decidir» (aprobar, girar) en
+  `ink`; cancelar en `ghost`; lo irreversible en `destructive`. `loading` conserva el ancho; `count` nunca muestra 0.
+  sm en tablas y barras, md en todo lo demás, lg sólo en la entrada y formularios de una columna.
+- **Tabla**: la barra (buscar · vista · filtros · densidad · acción de la tabla) va DENTRO de la tarjeta
+  (`<Table toolbar footer>`); cifras en mono a la derecha; la fila abre el cajón; paginación en el pie.
+- **Cifras**: varias cifras de una pantalla van JUNTAS en una `FranjaDeCifras` (una tarjeta con líneas finas entre ellas),
+  nunca en una fila de `KpiCard` sueltos con su ícono; un `KpiCard` dentro de la franja se vuelve celda solo. La cifra que
+  filtra la lista es `<Cifra onClick activa>` (botón con `aria-pressed`) y, si filtra una tabla, la franja va DENTRO de la
+  tarjeta de la tabla, arriba de la búsqueda — y entonces no lleva además un selector con los mismos estados. Punto de
+  estado (`tono`) sólo cuando la cifra pide atención. `fila="xl"` cuando son montos largos que con el menú abierto no caben.
+- **Página larga** (más de tres pantallas de alto, como Configuración · Perfil): `IndiceDeLaPagina`
+  (components/pantalla) pegado arriba con «En esta sección»; cada bloque lleva `id` + `data-indice="Nombre"`.
+  Si la página pasa de ~10 bloques, la pregunta es si deberían ser secciones aparte.
+- **Cajón**: ver o editar una cosa sin perder la lista. **Modal**: decidir algo que no puede esperar o no se deshace.
+  **Página**: una tarea de más de 3 pasos o algo que se comparte con un enlace.
+- **Modal**: título = la pregunta; el porqué en una línea con la cifra o el nombre que importa; botones que dicen lo que
+  hacen; lo irreversible se confirma escribiendo (`ConfirmarEscribiendo`); lo que se deshace no lleva modal sino aviso
+  con «Deshacer».
+- **Aviso (toast)**: tarjeta clara con punto de estado, título + una línea, acción opcional.
+- **Avatar**: personas en superelipse con su tono (`kind="persona"`, el tono sale del nombre); agentes en círculo con su
+  orbe (`kind="agente"`); inmuebles con su foto. Nunca iniciales hechas a mano en una pantalla.
+- **Vacío**: ilustración (grande) o esfera con ícono (chico) + qué falta + el siguiente paso como botón.
+- **Formularios**: etiqueta arriba; la ayuda dice qué va; el error dice CÓMO arreglarlo con un ejemplo; un campo apagado
+  dice por qué; lo verificado lleva su chulo verde y de dónde salió.
+
+## 25. Medir la UX — antes y después de cada pantalla
+
+Cada pantalla que se toca se puntúa ANTES y DESPUÉS (0–10 por principio) y el puntaje queda en la página de revisión.
+
+**Los 10 de Nielsen**, en preguntas concretas para Leasefy:
+1. *Visibilidad del estado*: ¿se sabe qué está pasando (cargando, guardado, enviado, en cola) sin adivinar?
+2. *Mundo real*: ¿dice «canon», «propietario», «liquidación», «día de pago» — no «entity», «payload», «sync»?
+3. *Control y libertad*: ¿hay «Deshacer», «Volver», «Cancelar» a la mano, y Esc cierra?
+4. *Consistencia*: ¿las mismas piezas de Cadence, el mismo lugar para la acción principal, los mismos nombres?
+5. *Prevenir errores*: ¿se valida antes, se bloquea lo imposible y se explica por qué está apagado?
+6. *Reconocer antes que recordar*: ¿lo que hace falta está a la vista (no hay que ir a otra pantalla a mirar un dato)?
+7. *Flexibilidad*: ¿atajos, filtros guardados, acciones masivas para quien hace esto 50 veces al día?
+8. *Minimalismo*: ¿cada bloque se gana su lugar?; lo de consulta, plegado en «Más detalles».
+9. *Errores que ayudan*: ¿el error dice qué pasó, por qué y cómo arreglarlo, en palabras de la inmobiliaria?
+10. *Ayuda*: ¿hay una línea que explica para qué es la pantalla y un «¿Cómo funciona?» donde la tarea es nueva?
+
+**Leyes que se revisan siempre**: Hick (menos opciones a la vez: una principal, pocas secundarias, el resto en «Más»),
+Fitts (lo frecuente grande y cerca; lo destructivo lejos de lo frecuente), Jakob (como lo hacen las herramientas que ya
+usan: tablas, cajones, filtros), Miller (agrupar de a 5–7), Tesler (la complejidad la absorbe el sistema, no el usuario),
+proximidad y región común (lo que va junto, junto: la barra de la tabla dentro de la tabla), Doherty (respuesta < 400 ms o
+un esqueleto con la forma de lo que llega), Von Restorff (sólo UNA cosa destaca: la acción principal).
+
+**El flujo completo** (Nico: «desde que ingresa hasta que sigue gestionando»): para cada pantalla escribir el trabajo en
+una línea («Registrar los pagos que llegaron hoy») y recorrerlo: 1) al entrar, ¿se entiende en 5 segundos para qué es y qué
+toca primero? 2) ¿la acción principal está arriba a la derecha y es la única azul? 3) ¿cada paso dice qué falta y por
+qué? 4) al terminar, ¿se confirma el resultado (aviso, resumen) y se ofrece lo siguiente? 5) ¿al volver mañana, la pantalla
+muestra lo pendiente primero? Si algún punto falla, la pantalla no está lista.
+
+### 25.1 La vara del 9,5 (Nico, 21-10-2026: «mínimo 9,5 en cada pantalla… y todos los casos de uso de cada sección»)
+
+El puntaje NO es a ojo: cada principio se mide con su lista de chequeo y cada punto lleva evidencia (captura a 390 y
+1440, una prueba o la línea de código). Puntaje del principio = 10 × cumplidos / aplicables; el de la pantalla, el
+promedio. **9,5 = a lo sumo un punto fallado en toda la pantalla, y ningún bloqueante.**
+
+**Bloqueantes** (con uno solo, la pantalla no pasa de 7): un botón que no hace nada · un estado sin salida (carga, vacío o
+fallo sin «Volver») · algo que se corre de lado a 390 · un código, id, slug o inglés a la vista · un dato inventado.
+
+| # | Principio | La pantalla cumple si… |
+|---|-----------|------------------------|
+| 1a | Estado | mientras carga hay un esqueleto con la forma de lo que llega (nunca la tabla vacía, ceros ni «0 de 0») |
+| 1b | Estado | toda acción que tarda dice que está en curso y no se puede disparar dos veces |
+| 1c | Estado | al terminar, un aviso dice QUÉ pasó (con «Deshacer» si se puede) y ofrece lo siguiente |
+| 1d | Estado | el estado de cada registro se lee en palabras, no sólo por color |
+| 2a | Mundo real | palabras de la inmobiliaria; plata en COP, cifras en mono, fechas legibles en español |
+| 3a | Control | toda sub-pantalla tiene la vuelta arriba (`BackButton`), también en carga, vacío y fallo |
+| 3b | Control | cajón y modal cierran con Esc y ✕; un formulario a medias no se pierde sin avisar |
+| 3c | Control | lo destructivo pide confirmar o se puede deshacer |
+| 4a | Consistencia | `EncabezadoDePantalla` + contenedor `p-6 lg:p-8`; UNA acción principal, arriba a la derecha |
+| 4b | Consistencia | tabla con su barra adentro, filtros a la vista y tarjetas bajo 768 px |
+| 4c | Consistencia | piezas de Cadence (Avatar, EmptyState, FalloDeCarga, Badge…), nada armado a mano |
+| 5a | Prevenir | se valida en el campo antes de enviar, con los topes del back |
+| 5b | Prevenir | un botón apagado dice qué falta; lo que no se puede (permiso, estado) no se ofrece |
+| 6a | Reconocer | lo pendiente primero: orden, pestaña o filtro por defecto |
+| 6b | Reconocer | el dato para decidir está en la misma pantalla; filtros y pestaña quedan en la URL |
+| 7a | Flexibilidad | acciones masivas donde se hace lo mismo a muchos; buscar y exportar donde hay listas |
+| 8a | Minimalismo | cada bloque se gana su lugar; lo de consulta, plegado o en su pestaña; nada se dice dos veces |
+| 8b | Minimalismo | a 390 lo importante cabe en la primera pantalla |
+| 9a | Errores | un fallo de lectura usa `FalloDeCarga` (qué pasó, reintentar, salida) |
+| 9b | Errores | un error de acción va bajo su campo, en palabras, con qué hacer |
+| 9c | Errores | un vacío dice por qué está vacío y qué hacer, con la acción |
+| 10a | Ayuda | una línea dice para qué es la pantalla; «¿Cómo funciona?» donde la tarea es nueva |
+
+**Casos de uso**: cada sección lista sus trabajos (p. ej. Contratos: crear, buscar, renovar, terminar, cambiar de
+inquilino, incremento, firmar, invitar al portal, documentos) y cada uno se recorre con los 5 puntos del flujo de arriba,
+en 390 y 1440. Un caso de uso pasa si los 5 puntos pasan. El resultado (antes/después, puntaje por principio y por caso
+de uso) va a la página de revisión del glow up.
 
 ## 22. When in Doubt
 

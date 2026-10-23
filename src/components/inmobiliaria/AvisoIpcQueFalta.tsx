@@ -57,29 +57,32 @@ export function AvisoIpcQueFalta() {
   const uno = contratos === 1;
 
   return (
+    // 21-10 (revisión de Operación): un renglón, no una franja de dos párrafos. El IPC del
+    // año lo publica el DANE en enero: hasta entonces es un aviso para tener presente.
     <div
       role="status"
       data-testid="aviso-ipc-que-falta"
-      className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
+      className="flex flex-col gap-1.5 rounded-[16px] bg-warning-soft px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
     >
-      <Warning className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-      <div>
-        <p className="text-sm font-medium text-warning">
-          <span className="tabular-nums">{contratos.toLocaleString(localeDeLasCifras())}</span>{' '}
-          {uno ? 'contrato se renueva' : 'contratos se renuevan'} sin incremento: falta el IPC {dato.anioDelIpc}
-        </p>
-        <p className="text-body-sm text-fg-muted mt-0.5">
-          {uno ? 'Rige' : 'Rigen'} en {dato.anioQueRige} y la ley toma el IPC de {dato.anioDelIpc}, que Leasefy
-          todavía no tiene. Cárgalo cuando el DANE lo publique.{' '}
-          <Link
-            href={`${hrefDeSeccion('perfil')}#${ANCLA_IPC_POR_ANIO}`}
-            className="font-medium text-primary underline-offset-4 hover:underline"
-            data-testid="aviso-ipc-que-falta-enlace"
-          >
-            Cargar el IPC en Configuración → Perfil
-          </Link>
-        </p>
-      </div>
+      <p className="flex min-w-0 items-start gap-2 text-body-sm">
+        <Warning className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" weight="duotone" aria-hidden="true" />
+        <span>
+          <span className="font-medium text-warning">
+            <span className="tabular-nums">{contratos.toLocaleString(localeDeLasCifras())}</span>{' '}
+            {uno ? 'contrato se renueva' : 'contratos se renuevan'} sin incremento: falta el IPC {dato.anioDelIpc}
+          </span>
+          <span className="text-fg-muted">
+            {' '}· {uno ? 'Rige' : 'Rigen'} en {dato.anioQueRige} y la ley toma el IPC de {dato.anioDelIpc}, que el DANE publica en enero.
+          </span>
+        </span>
+      </p>
+      <Link
+        href={`${hrefDeSeccion('perfil')}#${ANCLA_IPC_POR_ANIO}`}
+        className="shrink-0 pl-6 text-body-sm font-medium text-primary underline-offset-4 hover:underline sm:pl-0"
+        data-testid="aviso-ipc-que-falta-enlace"
+      >
+        Cargar el IPC
+      </Link>
     </div>
   );
 }

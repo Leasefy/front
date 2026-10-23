@@ -47,7 +47,7 @@ const boton = (t: string) => [...cont.querySelectorAll('button')].find((b) => b.
 describe('LinksFallidosDeCobri — COBRI-13', () => {
   it('sin marcar nada los botones están apagados; la fila dice quién la sigue', () => {
     pintar()
-    expect(boton('Reenviar links').disabled).toBe(true)
+    expect(boton('Reenviar los enlaces').disabled).toBe(true)
     expect(cont.textContent).toContain('En seguimiento · Ana Asesora')
   })
 

@@ -82,8 +82,18 @@ export function contratosConCartera(
   )
 }
 
-export function ProponerCastigo({ onListo }: { onListo: () => void }) {
-  const [abierto, setAbierto] = useState(false)
+export function ProponerCastigo({
+  onListo,
+  enCajon = false,
+}: {
+  onListo: () => void
+  /**
+   * Ronda 26 (revisora r25, Castigada #2): dentro del cajón que abre «Proponer un castigo» ya está abierto,
+   * sin su propio desplegable ni tarjeta.
+   */
+  enCajon?: boolean
+}) {
+  const [abierto, setAbierto] = useState(enCajon)
   const [contratos, setContratos] = useState<ContratoConCartera[] | null>(null)
   const [elegido, setElegido] = useState<ContratoConCartera | null>(null)
   const [candidatas, setCandidatas] = useState<CandidatasACastigo | null>(null)
@@ -190,37 +200,12 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
     }
   }
 
-  return (
-    <Card className="p-0" data-testid="proponer-castigo">
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 px-4 py-3 text-left"
-        aria-expanded={abierto}
-        onClick={() => setAbierto((v) => !v)}
-        data-testid="abrir-proponer-castigo"
-      >
-        {/* Un solo caret que gira con la curva de los paneles. */}
-        <CaretRight
-          className={cn(
-            'h-4 w-4 text-fg-muted transition-transform duration-slow ease-emphasis',
-            abierto && 'rotate-90',
-        )}
-          aria-hidden="true"
-        />
-        <Scales className="h-4 w-4 text-fg-muted" aria-hidden="true" />
-        <span className="text-sm font-medium text-fg">Proponer un castigo</span>
-        <span className="text-xs text-fg-muted">
-          Lo aprueban el administrador y el contador, dos personas distintas.
-        </span>
-      </button>
-
-      {/* Se abre y se cierra con `Collapse` (altura + fundido). */}
-      <Collapse open={abierto}>
-        <div className="space-y-4 border-t border-border p-4">
+  const cuerpo = (
+        <div className={cn('space-y-4', !enCajon && 'border-t border-border p-4')}>
           {/* ── 1. De quién ──────────────────────────────────────────── */}
           {!elegido && (
             <div className="space-y-2">
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Los contratos que hoy tienen cartera, del atraso más viejo al más
                 reciente.
               </p>
@@ -256,7 +241,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
                           <span className="block truncate text-sm text-fg">
                             {c.inquilino}
                           </span>
-                          <span className="block truncate text-xs text-fg-muted">
+                          <span className="block truncate text-caption text-fg-muted">
                             {c.inmueble}
                           </span>
                         </span>
@@ -264,7 +249,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
                           <span className="block font-mono text-sm tabular-nums text-fg">
                             {formatCurrency(c.carteraCop)}
                           </span>
-                          <span className="block text-xs text-fg-muted">
+                          <span className="block text-caption text-fg-muted">
                             {c.diasDeLaMasVieja === 1
                               ? '1 día de mora'
                               : `${c.diasDeLaMasVieja} días de mora`}
@@ -284,7 +269,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-fg">
                   {candidatas?.inquilino ?? elegido.inquilino}
-                  <span className="ml-2 text-xs text-fg-muted">{elegido.inmueble}</span>
+                  <span className="ml-2 text-caption text-fg-muted">{elegido.inmueble}</span>
                 </p>
                 <Button
                   hideArrow
@@ -336,7 +321,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
                                 {formatCurrency(c.capitalCop)}
                               </span>
                             </span>
-                            <span className="block text-xs text-fg-muted">
+                            <span className="block text-caption text-fg-muted">
                               {c.diasDeMora === 1
                                 ? '1 día de mora'
                                 : `${c.diasDeMora} días de mora`}
@@ -347,7 +332,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
                             {/* 🔴 El motivo, no la ausencia. */}
                             {c.porQueNo && (
                               <span
-                                className="block text-xs text-warning"
+                                className="block text-caption text-warning"
                                 data-testid="por-que-no-se-castiga"
                               >
                                 {c.porQueNo}
@@ -402,6 +387,37 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
             </div>
           )}
         </div>
+  )
+
+  if (enCajon) return <div data-testid="proponer-castigo">{cuerpo}</div>
+
+  return (
+    <Card className="p-0" data-testid="proponer-castigo">
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 px-4 py-3 text-left"
+        aria-expanded={abierto}
+        onClick={() => setAbierto((v) => !v)}
+        data-testid="abrir-proponer-castigo"
+      >
+        {/* Un solo caret que gira con la curva de los paneles. */}
+        <CaretRight
+          className={cn(
+            'h-4 w-4 text-fg-muted transition-transform duration-slow ease-emphasis',
+            abierto && 'rotate-90',
+        )}
+          aria-hidden="true"
+        />
+        <Scales className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+        <span className="text-sm font-medium text-fg">Proponer un castigo</span>
+        <span className="text-caption text-fg-muted">
+          Lo aprueban el administrador y el contador, dos personas distintas.
+        </span>
+      </button>
+
+      {/* Se abre y se cierra con `Collapse` (altura + fundido). */}
+      <Collapse open={abierto}>
+        {cuerpo}
       </Collapse>
     </Card>
   )

@@ -22,7 +22,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ClipboardText } from '@phosphor-icons/react'
+import { ClipboardText, DownloadSimple, Funnel } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -40,12 +40,13 @@ import {
   enlaceDeLaEntidad,
   entidadLegible,
 } from '@/lib/cobranza/vocabulario-de-la-auditoria'
-import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
-import { EmptyState } from '@/components/data-display/EmptyState'
-import { Badge, CrossFade, MonoLabel, Presence } from '@leasefy/cadence'
+import { Card, CrossFade, Presence } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Spinner } from '@/components/ui/spinner'
+import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Select,
   SelectContent,
@@ -69,10 +70,11 @@ import {
 import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
-// D-34-08 + 34-04 (extended): audit action enum dropdown values.
-// Plan note: free-text override allowed for forward compat. Implemented via
-// a "Other..." option that swaps the select for a text input.
+// D-34-08 + 34-04: las acciones que se pueden filtrar. Glow up r26 (bloqueante):
+// se quitó el «Otro…» que abría un campo para escribir el «código de la acción»:
+// pedía un código interno. Lo que no está en la lista se ve con «Todas».
 const ACTION_OPTIONS = [
   'pii_reveal',
   'intervention',
@@ -110,13 +112,12 @@ function daysAgoYmd(n: number): string {
 }
 
 function AuditContent() {
-  const { t, locale } = useI18n()
+  const { t, formatDate } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? ''
 
   const [actor, setActor] = useState<string | undefined>(undefined)
   const [action, setAction] = useState<string | undefined>(undefined)
-  const [actionMode, setActionMode] = useState<'enum' | 'custom'>('enum')
   const [from, setFrom] = useState<string>(daysAgoYmd(7))
   const [to, setTo] = useState<string>(todayYmd())
   const [qInput, setQInput] = useState<string>('')
@@ -125,6 +126,7 @@ function AuditContent() {
   const esCedula = /^\d{5,15}$/.test(qInput.replace(/[.\s-]/g, ''))
   const qValid = qInput.length === 0 || esCedula || qInput.length >= 8
   const [isExportingCsv, setIsExportingCsv] = useState(false)
+  const [exportFallo, setExportFallo] = useState(false)
 
   // Stable filter object: only re-fire fetch when ALL inputs stabilize
   const filters = useMemo<AuditLogFilters>(
@@ -138,12 +140,11 @@ function AuditContent() {
     [actor, action, from, to, qInput, qValid],
   )
 
-  const { items, isLoading, isLoadingMore, error, hasMore, loadMore } =
+  const { items, isLoading, isLoadingMore, error, fallo, hasMore, loadMore, refetch } =
     useAuditLog(filters)
 
-  // Load agency members once for the actor dropdown
   // N-15 (QA-PAGOS-95): la lista del equipo es `configuracion:view`; sin él (el
-  // contador) era un 403 en cada visita. Sin la lista, el filtro sigue por correo.
+  // contador) era un 403 en cada visita. Sin la lista, el filtro de «Quién» no se ofrece.
   const { canAccess, isLoading: permisosCargando } = usePermissionsContext()
   const veElEquipo = !permisosCargando && canAccess('configuracion', 'view')
   const [members, setMembers] = useState<AgencyUser[]>([])
@@ -156,25 +157,23 @@ function AuditContent() {
         if (!cancelled) setMembers(list)
       })
       .catch(() => {
-        /* swallow — actor filter degrades to free-text */
+        /* sin la lista, el filtro de «Quién» no se ofrece */
       })
     return () => {
       cancelled = true
     }
   }, [veElEquipo])
 
-  const onResetActor = useCallback(() => setActor(undefined), [])
-
-  // Phase 38-07 (D-38-10): export CSV via fetch + blob + anchor download.
-  // Cannot use a plain anchor download because the agent backend requires
-  // Bearer-token auth (see src/lib/api/agent-auth.ts) — a bare <a download>
-  // would not include the Authorization header. UX is identical (browser
-  // save dialog) but the request is authenticated end-to-end.
+  // Phase 38-07 (D-38-10): el CSV se baja con fetch + blob (el micro pide el
+  // Bearer: un <a download> pelado no lo manda). Glow up r26: si falla, se dice
+  // con «Intentar de nuevo» (antes sólo quedaba en la consola) y el archivo se
+  // llama en español.
   const exportCsv = useCallback(async () => {
     if (isExportingCsv) return
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
     if (!agentUrl || !agencyId) return
     setIsExportingCsv(true)
+    setExportFallo(false)
     try {
       const qs = new URLSearchParams({ from, to })
       if (action) qs.set('kind', action)
@@ -185,360 +184,283 @@ function AuditContent() {
       const objectUrl = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = objectUrl
-      anchor.download = `audit-log-${from}-to-${to}.csv`
+      anchor.download = `bitacora-de-cobranza-${from}-a-${to}.csv`
       document.body.appendChild(anchor)
       anchor.click()
       document.body.removeChild(anchor)
       URL.revokeObjectURL(objectUrl)
     } catch (err) {
       console.error('[exportCsv] failed:', err)
+      setExportFallo(true)
     } finally {
       setIsExportingCsv(false)
     }
   }, [isExportingCsv, agencyId, from, to, action])
 
-  // Phase 38-05a: skeleton only as early-return on first load (no custom
-  // filters set). EmptyState stays inline below so users keep access to
-  // filter controls + can adjust criteria.
-  const hasCustomFilters =
+  const cuantosFiltros = [actor, action].filter(Boolean).length
+  const hayFiltros =
     filters.actor !== undefined || filters.action !== undefined || filters.q !== undefined
-  // Movimiento: esqueleto → bitácora en un `CrossFade` (el mismo nodo en las
-  // dos ramas); filtrar cambia cargando/vacío/tabla con su fundido.
-  if (isLoading && items.length === 0 && !hasCustomFilters) {
-    return (
-      <CrossFade swapKey="esqueleto">
-        <PageSkeleton variant="list" />
-      </CrossFade>
-    )
+  const limpiarFiltros = () => {
+    setActor(undefined)
+    setAction(undefined)
+    setQInput('')
   }
 
+  const cuando = (iso: string) => {
+    const d = new Date(iso)
+    return Number.isNaN(d.getTime())
+      ? cuandoPaso(iso)
+      : formatDate(d, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  }
+
+  const estado =
+    isLoading && items.length === 0 ? 'cargando' : error && items.length === 0 ? 'fallo' : items.length === 0 ? 'vacio' : 'tabla'
+
   return (
-    <CrossFade swapKey="bitacora">
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-h2 font-heading text-foreground mt-2">
-            {t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
-          </h1>
-          <p className="mt-1 text-caption text-muted-foreground">
-            {locale.startsWith('es')
-              ? 'Lo que pasó en la cobranza, quién lo hizo y cuándo. Es sólo lectura y los datos personales no se muestran aquí.'
-              : 'Forensic read-only view — PII is never revealable on this page.'}
-          </p>
-        </div>
-        {/* Phase 38-07 (D-38-10): export CSV button. Visible only when data
-            exists per D-38-04 ("export CTA appears when data exists"). */}
-        {items.length > 0 && agencyId && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { void exportCsv() }}
-            disabled={isExportingCsv}
-            hideArrow
-            aria-label={t('inmobiliaria.ai.cobranza.compliance.audit.exportCsv')}
-          >
-            {isExportingCsv
-              ? (locale.startsWith('es') ? 'Generando...' : 'Generating...')
-              : t('inmobiliaria.ai.cobranza.compliance.audit.exportCsv')}
-          </Button>
-        )}
-      </div>
-
-      {/* Filters grid */}
-      <div className="rounded-lg border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Actor */}
-        <div>
-          <label htmlFor="audit-actor" className="block mb-1">
-            <MonoLabel className="text-xs text-muted-foreground">
-              {t('inmobiliaria.ai.cobranza.compliance.filters.actor')}
-            </MonoLabel>
-          </label>
-          <Select
-            value={actor ?? '__all__'}
-            onValueChange={(v) => setActor(v === '__all__' ? undefined : v)}
-          >
-            <SelectTrigger id="audit-actor">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{locale.startsWith('es') ? 'Todos' : 'All'}</SelectItem>
-              {members.map((m) => (
-                <SelectItem key={m.id} value={m.email}>
-                  {m.name} ({m.email})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {actor && (
+    <div className="p-6 lg:p-8 space-y-6">
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
+        descripcion="Lo que pasó en la cobranza, quién lo hizo y cuándo. Es sólo lectura y los datos personales no se muestran aquí."
+        acciones={
+          items.length > 0 && agencyId ? (
             <Button
-              variant="link"
+              variant="outline"
               size="sm"
-              onClick={onResetActor}
+              onClick={() => { void exportCsv() }}
+              isLoading={isExportingCsv}
+              disabled={isExportingCsv}
               hideArrow
-              className="mt-1 h-auto p-0 text-caption"
+              data-testid="auditoria-exportar"
             >
-              {locale.startsWith('es') ? 'limpiar' : 'clear'}
+              <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+              {isExportingCsv ? 'Preparando el archivo…' : t('inmobiliaria.ai.cobranza.compliance.audit.exportCsv')}
             </Button>
-          )}
-        </div>
-
-        {/* Action */}
-        <div>
-          <label htmlFor="audit-action" className="block mb-1">
-            <MonoLabel className="text-xs text-muted-foreground">
-              {t('inmobiliaria.ai.cobranza.compliance.filters.action')}
-            </MonoLabel>
-          </label>
-          {actionMode === 'enum' ? (
-            <Select
-              value={action ?? '__all__'}
-              onValueChange={(v) => {
-                if (v === '__custom__') {
-                  setActionMode('custom')
-                  setAction(undefined)
-                } else {
-                  setAction(v === '__all__' ? undefined : v)
-                }
-              }}
-            >
-              <SelectTrigger id="audit-action">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">{locale.startsWith('es') ? 'Todas' : 'All'}</SelectItem>
-                {ACTION_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {accionLegible(opt)}
-                  </SelectItem>
-                ))}
-                <SelectItem value="__custom__">
-                  {locale.startsWith('es') ? 'Otro...' : 'Other...'}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          ) : (
-            <div className="flex gap-1">
-              <Input
-                id="audit-action"
-                type="text"
-                value={action ?? ''}
-                onChange={(e) => setAction(e.target.value || undefined)}
-                placeholder={locale.startsWith('es') ? 'código de la acción' : 'action code'}
-                className="flex-1 font-mono"
-              />
-              <Button
-                variant="link"
-                size="sm"
-                onClick={() => {
-                  setActionMode('enum')
-                  setAction(undefined)
-                }}
-                hideArrow
-                className="h-auto p-0 px-2 text-caption"
-              >
-                {locale.startsWith('es') ? 'lista' : 'list'}
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Date range */}
-        <div className="sm:col-span-2 md:col-span-1">
-          <MonoLabel className="block text-xs text-muted-foreground mb-1">
-            {t('inmobiliaria.ai.cobranza.compliance.filters.dateRange')}
-          </MonoLabel>
-          <div className="flex gap-1">
-            <CampoDeDia
-              id="auditoria-desde"
-              value={from}
-              onChange={(v) => setFrom(v)}
-              max={to}
-              placeholder="Desde"
-              className="flex-1 font-mono"
-            />
-            <CampoDeDia
-              id="auditoria-hasta"
-              value={to}
-              onChange={(v) => setTo(v)}
-              min={from}
-              max={todayYmd()}
-              placeholder="Hasta"
-              className="flex-1 font-mono"
-            />
-          </div>
-        </div>
-
-        {/* Search q */}
-        <div>
-          <label htmlFor="audit-q" className="block mb-1">
-            <MonoLabel className="text-xs text-muted-foreground">
-              {t('inmobiliaria.ai.cobranza.compliance.filters.search')}
-            </MonoLabel>
-          </label>
-          <Input
-            id="audit-q"
-            type="text"
-            value={qInput}
-            onChange={(e) => setQInput(e.target.value)}
-            placeholder={locale.startsWith('es') ? 'Ej.: 1.017.234.567' : 'e.g. 1017234567'}
-            className="w-full font-mono"
-          />
-          {!qValid && (
-            <p className="mt-1 text-caption text-warning">
-              {locale.startsWith('es')
-                ? 'Escribe la cédula completa o al menos 8 caracteres de la referencia.'
-                : 'Type the full ID number or at least 8 characters of the reference.'}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Loading state (only for filter-triggered refetch — first load handled by early return) */}
-      <CrossFade
-        swapKey={
-          isLoading && items.length === 0 && hasCustomFilters
-            ? 'cargando'
-            : !isLoading && items.length === 0 && !error
-              ? 'vacio'
-              : items.length > 0
-                ? 'tabla'
-                : 'nada'
+          ) : null
         }
-        className="space-y-6"
-      >
-      {isLoading && items.length === 0 && hasCustomFilters && (
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="md" variant="default" />
-        </div>
-      )}
+      />
 
-      {/* Error state */}
-      <Presence show={Boolean(error)} className="rounded-lg bg-danger-soft text-danger">
-          Error: {error}
+      <Presence
+        show={exportFallo}
+        role="alert"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-body-sm text-danger"
+      >
+        <span>No pudimos preparar el archivo de la bitácora.</span>
+        <Button variant="outline" size="sm" hideArrow onClick={() => void exportCsv()} data-testid="auditoria-exportar-reintentar">
+          Intentar de nuevo
+        </Button>
       </Presence>
 
-      {/* Empty state — Phase 38-05a: EmptyState primitive */}
-      {!isLoading && items.length === 0 && !error && (
-        <EmptyState
-          icon={ClipboardText}
-          title={t('inmobiliaria.ai.cobranza.compliance.audit.empty.title')}
-          description={t('inmobiliaria.ai.cobranza.compliance.audit.empty.description')}
-        />
-      )}
+      <Card className="overflow-hidden">
+        {/* La barra de filtros, DENTRO de la tarjeta de la tabla (antes una grilla de cuatro selects aparte). */}
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:flex-wrap lg:items-center">
+          <div className="relative w-full lg:w-72">
+            <Input
+              id="audit-q"
+              type="search"
+              value={qInput}
+              onChange={(e) => setQInput(e.target.value)}
+              placeholder="Buscar por cédula (Ej.: 1.017.234.567)"
+              aria-label={t('inmobiliaria.ai.cobranza.compliance.filters.search')}
+              aria-invalid={!qValid ? true : undefined}
+              aria-describedby={!qValid ? 'audit-q-pista' : undefined}
+              className="w-full"
+              data-testid="auditoria-buscar"
+            />
+          </div>
+          {/* Revisora r27 (Auditoría): a la vista sólo el buscador y el rango de días, cada día con su etiqueta
+              (antes «Desde» y «Hasta» como texto de ejemplo: al elegir la fecha se perdía cuál era). Persona y
+              acción van en «Filtros (n)», como en Llamadas (antes cinco controles en la barra). */}
+          <div className="flex items-end gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="auditoria-desde" className="text-caption text-fg-muted">Desde</Label>
+              <CampoDeDia id="auditoria-desde" value={from} onChange={(v) => setFrom(v)} max={to} className="w-40" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="auditoria-hasta" className="text-caption text-fg-muted">Hasta</Label>
+              <CampoDeDia id="auditoria-hasta" value={to} onChange={(v) => setTo(v)} min={from} max={todayYmd()} className="w-40" />
+            </div>
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" hideArrow className="shrink-0 self-start lg:self-auto" data-testid="auditoria-filtros">
+                <Funnel className="h-4 w-4" aria-hidden="true" />
+                Filtros
+                {cuantosFiltros > 0 ? <span className="font-mono text-caption tabular-nums">({cuantosFiltros})</span> : null}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 space-y-4 p-4">
+              {members.length > 0 ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="audit-actor" className="text-caption text-fg-muted">Quién</Label>
+                  <Select value={actor ?? '__all__'} onValueChange={(v) => setActor(v === '__all__' ? undefined : v)}>
+                    <SelectTrigger id="audit-actor" aria-label={t('inmobiliaria.ai.cobranza.compliance.filters.actor')} className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Cualquier persona</SelectItem>
+                      {members.map((m) => (
+                        <SelectItem key={m.id} value={m.email}>
+                          {m.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="audit-action" className="text-caption text-fg-muted">Qué hizo</Label>
+                <Select value={action ?? '__all__'} onValueChange={(v) => setAction(v === '__all__' ? undefined : v)}>
+                  <SelectTrigger id="audit-action" aria-label={t('inmobiliaria.ai.cobranza.compliance.filters.action')} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Todas las acciones</SelectItem>
+                    {ACTION_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {accionLegible(opt)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </PopoverContent>
+          </Popover>
+          {hayFiltros ? (
+            <Button variant="ghost" size="sm" hideArrow onClick={limpiarFiltros} data-testid="auditoria-limpiar">
+              Limpiar filtros
+            </Button>
+          ) : null}
+        </div>
+        {!qValid ? (
+          <p id="audit-q-pista" className="border-b border-border px-4 py-2 text-caption text-warning">
+            Escribe la cédula completa o al menos 8 caracteres de la referencia.
+          </p>
+        ) : null}
 
-      {/* Table */}
-      {items.length > 0 && (
-        <div className="rounded-lg border border-border bg-card overflow-x-auto">
-          <Table className="w-full text-sm">
-            <TableHeader className="bg-muted/30">
-              <TableRow>
-                <TableHead>{locale.startsWith('es') ? 'Cuándo' : 'When'}</TableHead>
-                <TableHead>{locale.startsWith('es') ? 'Quién' : 'Who'}</TableHead>
-                <TableHead>{locale.startsWith('es') ? 'Qué pasó' : 'What happened'}</TableHead>
-                <TableHead>{locale.startsWith('es') ? 'Sobre qué' : 'On what'}</TableHead>
-                <TableHead>{locale.startsWith('es') ? 'Detalles' : 'Details'}</TableHead>
-              </TableRow>
-            </TableHeader>
-            {/* «Cargar más» o una fila nueva: entran escalonadas (techo 320 ms). */}
-            <TableBodyAnimado>
-              {items.map((row) => {
-                // Detect cedula-shaped field in details (server already
-                // redacts to "XXXXXXXX50" shape). Render via Mask so the
-                // PII forensic invariant holds even for unexpected payload
-                // shapes that include a raw cedula key.
-                const details = row.details ?? {}
-                const cedulaMasked =
-                  typeof (details as Record<string, unknown>)['cedula_raw'] === 'string'
-                    ? ((details as Record<string, unknown>)['cedula_raw'] as string)
-                    : typeof (details as Record<string, unknown>)['cedula_masked'] === 'string'
-                      ? ((details as Record<string, unknown>)['cedula_masked'] as string)
-                      : null
-                return (
-                  <TableRowAnimada key={row.id} className="align-top">
-                    {/* MORI-26 (QA-AGENTES 16-10): el día en palabras, la acción y
-                        «sobre qué» en español, con enlace al caso o al acuerdo. */}
-                    <TableCell className="px-3 py-2 text-caption text-foreground whitespace-nowrap">
-                      {cuandoPaso(row.occurred_at)}
-                    </TableCell>
-                    <TableCell className="px-3 py-2 text-caption text-foreground whitespace-nowrap">
-                      {/* Sin `actor_id` la celda quedaba en blanco bajo el
-                          encabezado «Actor». No actuó nadie: actuó el sistema,
-                          y `actor_type` lo dice. */}
-                      {actorLegible(row.actor_id) ?? ACTOR_SISTEMA[row.actor_type] ?? row.actor_type}
-                    </TableCell>
-                    <TableCell className="px-3 py-2 text-caption">
-                      {accionConNombre(row.action) ? (
-                        <span className="text-foreground">{accionLegible(row.action)}</span>
-                      ) : (
-                        <Badge variant="primary">{row.action}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="px-3 py-2 text-caption text-muted-foreground whitespace-nowrap">
-                      <div>{entidadLegible(row.entity_type)}</div>
-                      {/* `entity_id` es nullable en el contrato: hay acciones
-                          que no apuntan a una entidad. El tipo escrito a mano
-                          lo declaraba `string` y esto reventaba. */}
-                      {(() => {
-                        const href = enlaceDeLaEntidad(row.entity_type, row.entity_id)
-                        if (href) {
-                          return (
-                            <Link href={href} className="text-primary underline-offset-2 hover:underline">
+        <CrossFade swapKey={estado}>
+          {estado === 'cargando' ? (
+            <EsqueletoTabla columnas={5} filas={6} />
+          ) : estado === 'fallo' ? (
+            <FalloDeCarga error={fallo ?? new TypeError('Failed to fetch')} queEs="la bitácora" onReintentar={refetch} enmarcado={false} />
+          ) : estado === 'vacio' ? (
+            <div className="flex flex-col items-center gap-2 px-6 py-14 text-center" data-testid="auditoria-vacia">
+              <ClipboardText className="h-8 w-8 text-fg-subtle" weight="duotone" aria-hidden="true" />
+              <p className="text-body font-medium text-fg">
+                {hayFiltros ? 'Nada con esos filtros' : t('inmobiliaria.ai.cobranza.compliance.audit.empty.title')}
+              </p>
+              <p className="max-w-md text-body-sm text-fg-muted">
+                {hayFiltros
+                  ? 'Cambia las fechas o limpia los filtros para ver lo demás.'
+                  : t('inmobiliaria.ai.cobranza.compliance.audit.empty.description')}
+              </p>
+              {hayFiltros ? (
+                <Button variant="outline" size="sm" hideArrow onClick={limpiarFiltros} className="mt-2">
+                  Limpiar filtros
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="overflow-x-auto max-md:overflow-visible">
+              <Table className="w-full max-md:block">
+                <TableHeader className="max-md:hidden">
+                  <TableRow>
+                    <TableHead>Cuándo</TableHead>
+                    <TableHead>Quién</TableHead>
+                    <TableHead>Qué pasó</TableHead>
+                    <TableHead>Sobre qué</TableHead>
+                    <TableHead>Detalles</TableHead>
+                  </TableRow>
+                </TableHeader>
+                {/* «Cargar los siguientes» o un filtro: las filas entran escalonadas (techo 320 ms). */}
+                <TableBodyAnimado className="max-md:block">
+                  {items.map((row) => {
+                    // El servidor ya redacta la cédula («XXXXXXXX50»); se pinta con Mask
+                    // sin poder revelarla (invariante forense T-34-07-01).
+                    const details = row.details ?? {}
+                    const cedulaMasked =
+                      typeof (details as Record<string, unknown>)['cedula_raw'] === 'string'
+                        ? ((details as Record<string, unknown>)['cedula_raw'] as string)
+                        : typeof (details as Record<string, unknown>)['cedula_masked'] === 'string'
+                          ? ((details as Record<string, unknown>)['cedula_masked'] as string)
+                          : null
+                    const href = enlaceDeLaEntidad(row.entity_type, row.entity_id)
+                    const detalles = detallesLegibles(details)
+                    return (
+                      <TableRowAnimada
+                        key={row.id}
+                        className="align-top max-md:grid max-md:grid-cols-1 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                      >
+                        {/* MORI-26: el día en palabras, la acción y «sobre qué» en español, con enlace al caso o al acuerdo. */}
+                        <TableCell className="whitespace-nowrap font-mono tabular-nums text-body-sm text-fg-muted max-md:order-3 max-md:block max-md:p-0 max-md:text-caption">
+                          {cuando(row.occurred_at)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-body-sm text-fg max-md:order-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
+                          {/* Sin `actor_id` actuó el sistema; un tipo que no conocemos se dice «Sistema», nunca el código. */}
+                          {actorLegible(row.actor_id) ?? ACTOR_SISTEMA[row.actor_type] ?? 'Sistema'}
+                        </TableCell>
+                        <TableCell className="text-body-sm text-fg max-md:order-1 max-md:block max-md:p-0 max-md:font-medium">
+                          {accionConNombre(row.action) ? accionLegible(row.action) : 'Otra acción del sistema'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-body-sm text-fg-muted max-md:order-4 max-md:block max-md:p-0 max-md:text-caption">
+                          <span>{entidadLegible(row.entity_type)}</span>
+                          {/* `entity_id` es nullable; el id suelto no se muestra (bloqueante r25: «a0f5dcc3…»). */}
+                          {href ? (
+                            <Link href={href} className="ml-2 text-fg underline underline-offset-2 hover:no-underline md:ml-0 md:block">
                               {row.entity_type === 'debtor' ? 'Ver el caso' : 'Ver el acuerdo'}
                             </Link>
-                          )
-                        }
-                        return row.entity_id ? (
-                          <div className="font-mono text-[11px] opacity-70">{row.entity_id.slice(0, 8)}…</div>
-                        ) : null
-                      })()}
-                    </TableCell>
-                    <TableCell className="px-3 py-2 max-w-md">
-                      {cedulaMasked && (
-                        <div className="mb-1">
-                          <Mask
-                            field="cedula"
-                            value={cedulaMasked}
-                            onReveal={undefined}
-                          />
-                        </div>
-                      )}
-                      {/* N-09 (QA-PAGOS-95): los detalles en renglones «clave: valor»,
-                          no JSON crudo. Siguen siendo TEXTO plano — NUNCA HTML
-                          (T-34-07-02). */}
-                      <dl className="text-[11px] text-muted-foreground max-h-32 overflow-y-auto space-y-0.5" data-testid="detalles-de-la-auditoria">
-                        {detallesLegibles(details).map((d, i) => (
-                          <div key={`${d.clave}-${i}`} className="flex flex-wrap gap-x-1">
-                            <dt className="font-medium text-fg-muted">{d.clave}:</dt>
-                            <dd className="break-words">{d.valor}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </TableCell>
-                  </TableRowAnimada>
-                )
-              })}
-            </TableBodyAnimado>
-          </Table>
-          {hasMore && (
-            <div className="p-3 border-t border-border bg-muted/20 text-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void loadMore()}
-                disabled={isLoadingMore}
-                hideArrow
-              >
-                {isLoadingMore
-                  ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'
-                  : locale.startsWith('es') ? 'Cargar más' : 'Load more'}
-              </Button>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="max-w-md max-md:order-5 max-md:block max-md:p-0">
+                          {cedulaMasked && (
+                            <div className="mb-1">
+                              <Mask field="cedula" value={cedulaMasked} onReveal={undefined} />
+                            </div>
+                          )}
+                          {/* N-09 (QA-PAGOS-95): renglones «clave: valor» en TEXTO plano — NUNCA HTML (T-34-07-02). */}
+                          {detalles.length > 0 ? (
+                            <dl className="max-h-32 space-y-0.5 overflow-y-auto text-caption text-fg-muted" data-testid="detalles-de-la-auditoria">
+                              {detalles.map((d, i) => (
+                                <div key={`${d.clave}-${i}`} className="flex flex-wrap gap-x-1">
+                                  <dt className="font-medium text-fg-muted">{d.clave}:</dt>
+                                  <dd className="break-words">{d.valor}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          ) : (
+                            <span className="text-caption text-fg-subtle max-md:hidden">—</span>
+                          )}
+                        </TableCell>
+                      </TableRowAnimada>
+                    )
+                  })}
+                </TableBodyAnimado>
+              </Table>
             </div>
           )}
-        </div>
-      )}
-      </CrossFade>
+        </CrossFade>
+
+        {estado === 'tabla' && error ? (
+          <FalloDeCarga error={fallo ?? new TypeError('Failed to fetch')} queEs="lo que sigue de la bitácora" onReintentar={loadMore} enmarcado={false} />
+        ) : null}
+
+        {estado === 'tabla' && hasMore ? (
+          <div className="border-t border-border px-4 py-3 text-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void loadMore()}
+              isLoading={isLoadingMore}
+              disabled={isLoadingMore}
+              hideArrow
+              data-testid="auditoria-cargar-mas"
+            >
+              Cargar los siguientes
+            </Button>
+          </div>
+        ) : null}
+      </Card>
     </div>
-    </CrossFade>
   )
 }
 

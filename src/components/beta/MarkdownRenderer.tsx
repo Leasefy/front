@@ -157,7 +157,7 @@ const markdownComponents: Components = {
     <li className="leading-relaxed">{children}</li>
   ),
   strong: ({ children }) => (
-    <strong className="font-semibold">{children}</strong>
+    <strong className="font-medium">{children}</strong>
   ),
   em: ({ children }) => (
     <em className="italic">{children}</em>
@@ -182,7 +182,7 @@ const markdownComponents: Components = {
       return (
         <code
           className={cn(
-            'bg-muted/70 dark:bg-muted/50 p-3 rounded-md text-[14px] font-mono',
+            'bg-muted/70 p-3 rounded-md text-[14px] font-mono',
             'overflow-x-auto block',
             className
           )}
@@ -195,7 +195,7 @@ const markdownComponents: Components = {
     // Inline code
     return (
       <code
-        className="bg-muted/70 dark:bg-muted/50 px-1.5 py-0.5 rounded text-[14px] font-mono"
+        className="bg-muted/70 px-1.5 py-0.5 rounded text-[14px] font-mono"
         {...props}
       >
         {children}
@@ -214,7 +214,7 @@ const markdownComponents: Components = {
     <thead className="border-b border-border">{children}</thead>
   ),
   th: ({ children }) => (
-    <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">
+    <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">
       {children}
     </th>
   ),
@@ -230,13 +230,13 @@ const markdownComponents: Components = {
     <hr className="border-border my-3" />
   ),
   h1: ({ children }) => (
-    <h3 className="font-semibold text-[17.5px] mb-1.5">{children}</h3>
+    <h3 className="font-medium text-[17.5px] mb-1.5">{children}</h3>
   ),
   h2: ({ children }) => (
-    <h3 className="font-semibold text-[17px] mb-1.5">{children}</h3>
+    <h3 className="font-medium text-[17px] mb-1.5">{children}</h3>
   ),
   h3: ({ children }) => (
-    <h3 className="font-semibold text-[16px] mb-1">{children}</h3>
+    <h3 className="font-medium text-[16px] mb-1">{children}</h3>
   ),
 };
 
@@ -295,7 +295,7 @@ export function MarkdownRenderer({
   return (
     <div
       className={cn(
-        'prose dark:prose-invert max-w-none',
+        'prose max-w-none',
         // Override prose defaults for chat context
         'prose-p:my-0 prose-headings:my-0',
         'prose-ul:my-0 prose-ol:my-0 prose-li:my-0',

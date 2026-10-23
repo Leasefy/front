@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DownloadSimple, MagnifyingGlass, Prohibit, Scroll, X } from '@phosphor-icons/react'
+import { DotsThreeVertical, DownloadSimple, MagnifyingGlass, Prohibit, Scroll, X } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,12 +27,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import {
   Table,
   TableBodyAnimado,
@@ -61,8 +62,8 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { formatCurrency } from '@/lib/format'
 import { diaLegible } from '@/lib/mandato/textos'
 import { nombreDelMes } from '@/lib/utils/mes'
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 import { cn } from '@/lib/utils'
-import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const POR_PAGINA = [25, 50, 100]
 const ESTADOS: Array<{ id: EstadoDeLosRecibos; nombre: string }> = [
@@ -131,22 +132,24 @@ export function RecibosDeCajaDeLaInmobiliaria() {
 
   const resumen = useMemo(() => {
     if (!datos) return null
-    const n = datos.total
-    return `${n.toLocaleString(localeDeLasCifras())} ${n === 1 ? 'recibo' : 'recibos'} · ${formatCurrency(datos.totalCop)} recibidos${
-      estado === 'anulados' ? '' : ' (sin contar los anulados)'
-    }`
+    // Ronda 26 (revisora r25, Recibos #1): el conteo va en la pestaña; aquí, la plata de esa pestaña.
+    return estado === 'anulados'
+      ? `${formatCurrency(datos.totalCop)} anulados`
+      : `${formatCurrency(datos.totalCop)} recibidos${estado === 'todos' ? ' (sin contar los anulados)' : ''}`
   }, [datos, estado])
 
   return (
     <div className="space-y-4" data-testid="recibos-de-caja-de-la-inmobiliaria">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      {/* GLOW UP (21-10): UNA tarjeta — la barra (buscar, qué recibos, cuántos) es parte de la tabla. */}
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-md">
           <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-fg-muted" />
           <Input
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por número, inquilino, documento, inmueble o referencia"
+            placeholder="Buscar recibo o inquilino"
             aria-label="Buscar recibos"
             className="pl-9 pr-9"
             data-testid="buscar-recibos"
@@ -162,18 +165,21 @@ export function RecibosDeCajaDeLaInmobiliaria() {
             />
           )}
         </div>
-        <Select value={estado} onValueChange={(v) => setEstado(v as EstadoDeLosRecibos)}>
-          <SelectTrigger className="h-10 w-full sm:w-44" aria-label="Qué recibos ver" data-testid="estado-de-los-recibos">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ESTADOS.map((e) => (
-              <SelectItem key={e.id} value={e.id}>
-                {e.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Ronda 26 (revisora r25, Recibos #1): el estado en pestañas DENTRO de la tarjeta (antes un Select
+            «Estado: Todos»). El back cuenta sólo lo que se pide: el número va en la abierta. */}
+        <PestanasDeEstado
+          etiqueta="Qué recibos ver"
+          valor={estado}
+          onCambio={(v) => setEstado(v)}
+          data-testid="estado-de-los-recibos"
+          pestanas={ESTADOS.map((e) => ({
+            valor: e.id,
+            etiqueta: e.nombre,
+            cuantos: e.id === estado && datos ? datos.total : null,
+            fija: true,
+            testid: `recibos-${e.id}`,
+          }))}
+        />
         {resumen && (
           <p className="text-sm text-fg-muted sm:ml-auto" data-testid="resumen-de-los-recibos">
             {resumen}
@@ -182,9 +188,11 @@ export function RecibosDeCajaDeLaInmobiliaria() {
       </div>
 
       {error && !datos ? (
-        <FalloDeCarga error={error} queEs="los recibos de caja" onReintentar={cargar} />
+        <div className="p-4">
+          <FalloDeCarga error={error} queEs="los recibos de caja" onReintentar={cargar} />
+        </div>
       ) : cargando && !datos ? (
-        <EsqueletoTabla columnas={7} />
+        <EsqueletoTabla columnas={5} />
       ) : datos && datos.recibos.length === 0 ? (
         <SinDatos
           hayFiltros={hayFiltros}
@@ -202,61 +210,82 @@ export function RecibosDeCajaDeLaInmobiliaria() {
           }}
         />
       ) : datos ? (
-        <div className={cn('overflow-x-auto rounded-lg border border-border', cargando && 'opacity-70')}>
-          <Table>
-            <TableHeader>
+        // 22-10 (revisión, 390): en el celular son tarjetas; el desplazamiento lateral sólo desde md.
+        <div className={cn('md:overflow-x-auto', cargando && 'opacity-70')}>
+          {/* GLOW UP (revisión de Dinero, 22-10-2026): cinco columnas —el recibo con su
+              fecha, quién y dónde, el medio, el valor y las acciones— y, bajo 768,
+              una tarjeta por recibo. */}
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
-                <TableHead className="w-20">N.º</TableHead>
-                <TableHead>Fecha</TableHead>
+                <TableHead className="w-36">Recibo</TableHead>
                 <TableHead>Inquilino</TableHead>
-                <TableHead>Inmueble</TableHead>
                 <TableHead>Medio</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="w-24" />
+                <TableHead className="w-32" />
               </TableRow>
             </TableHeader>
-            <TableBodyAnimado>
+            <TableBodyAnimado className="max-md:block">
               {datos.recibos.map((r) => (
-                <TableRowAnimada key={r.id} className={cn(r.anulado && 'text-fg-muted')} data-testid={`recibo-${r.numero}`}>
-                  <TableCell className="font-mono tabular-nums">
-                    {r.numero}
+                <TableRowAnimada
+                  key={r.id}
+                  className={cn(
+                    'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4',
+                    r.anulado && 'text-fg-muted',
+                  )}
+                  data-testid={`recibo-${r.numero}`}
+                >
+                  <TableCell className="md:whitespace-nowrap max-md:col-span-2 max-md:row-start-2 max-md:block max-md:p-0">
+                    {/* Ronda 12 (390): «N.º 11 · 15 oct 2026» siempre en un renglón; la cuota debajo. */}
+                    <span className="font-mono text-body-sm tabular-nums">N.º {r.numero}</span>
+                    <span className="text-caption text-fg-muted md:hidden"> · {fechaCorta(r.fecha)}</span>
                     {r.anulado && (
                       <Badge variant="outline" className="ml-2 border-danger/40 text-danger">
                         Anulado
                       </Badge>
                     )}
+                    <p className="text-caption text-fg-muted">
+                      <span className="max-md:hidden">
+                        {fechaCorta(r.fecha)}
+                        {r.mes ? ' · ' : ''}
+                      </span>
+                      {r.mes ? `cuota de ${nombreDelMes(r.mes)}` : ''}
+                    </p>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {diaLegible(r.fecha)}
-                    {r.mes && <p className="text-caption text-fg-muted">Cuota de {nombreDelMes(r.mes)}</p>}
-                  </TableCell>
-                  <TableCell>
-                    <span className={cn(!r.inquilino && 'text-fg-muted')}>{r.inquilino ?? 'Sin nombre registrado'}</span>
-                    {r.documento && <p className="text-caption text-fg-muted">{r.documento}</p>}
-                  </TableCell>
-                  <TableCell className="max-w-[18rem]">
-                    <span className="line-clamp-1">{r.inmueble ?? '—'}</span>
-                    {r.contrato && (
-                      <p className="text-caption text-fg-muted">
+                  <TableCell className="max-w-[22rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
+                    <span className={cn('font-medium', !r.inquilino && 'font-normal text-fg-muted')}>{r.inquilino ?? 'Sin nombre registrado'}</span>
+                    {r.documento ? <p className="font-mono text-caption tabular-nums text-fg-subtle max-md:hidden">{r.documento}</p> : null}
+                    <p className="line-clamp-1 text-caption text-fg-muted" title={r.inmueble ?? undefined}>
+                      {r.inmueble ?? '—'}
+                    </p>
+                    {r.contrato ? (
+                      <p className="text-caption text-fg-subtle">
                         Contrato #{r.contrato.numero}
-                        {r.contrato.externalId && r.contrato.externalId !== String(r.contrato.numero)
-                          ? ` · ${r.contrato.externalId} en su sistema`
-                          : ''}
+                        {r.contrato.externalId && r.contrato.externalId !== String(r.contrato.numero) ? (
+                          <span className="max-md:hidden"> · {r.contrato.externalId} en su sistema</span>
+                        ) : null}
                       </p>
-                    )}
+                    ) : null}
                     {r.anulado && r.motivoDeLaAnulacion && (
                       <p className="text-caption text-danger">Anulado: {r.motivoDeLaAnulacion}</p>
                     )}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">
+                  <TableCell className="max-w-[15rem] max-md:col-span-2 max-md:row-start-3 max-md:block max-md:max-w-none max-md:p-0 max-md:text-caption max-md:text-fg-muted">
                     {r.medioLegible}
-                    {r.referencia && <p className="text-caption text-fg-muted">Ref. {r.referencia}</p>}
+                    {/* La referencia INTERNA («cobro-<uuid>», la del pago en línea) no se muestra;
+                        la del banco sí, en un renglón y entera al pasar el cursor. */}
+                    {r.referencia && !/^cobro-[0-9a-f]{8}-/i.test(r.referencia) && (
+                      // Ronda 26 (revisora r25, Recibos UI): a 390 la tarjeta tenía 7 renglones; la referencia, sólo desde md.
+                      <p className="truncate text-caption text-fg-muted max-md:hidden" title={`Ref. ${r.referencia}`}>
+                        Ref. {r.referencia}
+                      </p>
+                    )}
                   </TableCell>
-                  <TableCell className={cn('text-right font-mono tabular-nums', r.anulado ? 'line-through' : 'text-fg')}>
+                  <TableCell className={cn('text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0', r.anulado ? 'line-through' : 'text-fg')}>
                     {formatCurrency(r.valorCop)}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
+                  <TableCell className="text-right max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
+                    <div className="flex justify-end gap-1 max-md:-ml-2 max-md:justify-start">
                       <IconButton
                         variant="ghost"
                         size="sm"
@@ -268,15 +297,29 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                         icon={<DownloadSimple className="h-4 w-4" />}
                       />
                       {puedeAnular && !r.anulado && (
-                        <IconButton
-                          variant="ghost"
-                          size="sm"
-                          aria-label={`Anular el recibo ${r.numero}`}
-                          title="Anular"
-                          onClick={() => setAAnular(r)}
-                          data-testid={`anular-recibo-${r.numero}`}
-                          icon={<Prohibit className="h-4 w-4" />}
-                        />
+                        // Ronda 26 (revisora r25, Recibos #2): anular es destructivo y del administrador: va en el
+                        // «⋯» de la fila, no al mismo peso que bajar el PDF. Abre la confirmación de siempre.
+                        <DropdownList>
+                          <DropdownListTrigger asChild>
+                            <IconButton
+                              variant="ghost"
+                              size="sm"
+                              aria-label={`Más acciones del recibo ${r.numero}`}
+                              data-testid={`acciones-del-recibo-${r.numero}`}
+                              icon={<DotsThreeVertical className="h-4 w-4" weight="bold" />}
+                            />
+                          </DropdownListTrigger>
+                          <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
+                            <DropdownListItem
+                              onSelect={() => setAAnular(r)}
+                              data-testid={`anular-recibo-${r.numero}`}
+                              className="text-danger"
+                            >
+                              <Prohibit className="h-4 w-4" aria-hidden="true" />
+                              Anular el recibo
+                            </DropdownListItem>
+                          </DropdownListContent>
+                        </DropdownList>
                       )}
                     </div>
                   </TableCell>
@@ -296,6 +339,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
           </div>
         </div>
       ) : null}
+      </div>
 
       <AnularElRecibo
         recibo={aAnular}

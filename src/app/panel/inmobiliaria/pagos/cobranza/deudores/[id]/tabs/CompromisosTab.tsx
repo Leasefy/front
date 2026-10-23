@@ -79,7 +79,7 @@ const PROVEEDOR_DE_PAGO: Record<string, string> = {
 
 const CARTA_TIPO: Record<string, string> = {
   pre_judicial_letter: 'Carta prejurídica',
-  pre_bureau_notification: 'Notificación a centrales de riesgo',
+  pre_bureau_notification: 'Aviso antes del reporte a centrales',
 }
 
 /** Nunca el slug con guiones: si el mapa no lo conoce, al menos se lee. */
@@ -189,7 +189,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
           {t('inmobiliaria.ai.cobranza.detail.compromisos.empty')}
         </p>
         <p className="text-caption text-fg-muted">
-          Acá aparecen las promesas de pago, los planes, los siniestros y las
+          Aquí aparecen las promesas de pago, los planes, los siniestros y las
           cartas del caso. Este todavía no tiene ninguno.
         </p>
       </div>
@@ -202,7 +202,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
     <div className="space-y-5">
       {delEquipo.length > 0 && (
         <section data-testid="compromisos-del-equipo">
-          <h3 className="text-sm font-semibold text-fg mb-2">Promesas que registró tu equipo</h3>
+          <h3 className="text-sm font-medium text-fg mb-2">Promesas que registró tu equipo</h3>
           <Stagger as="ul" className="space-y-2">
             {delEquipo.map((g) => (
               <StaggerItem as="li" key={g.id} className="rounded-sm border border-border bg-surface p-3">
@@ -224,7 +224,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
       )}
       {promesas.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-fg mb-2">
+          <h3 className="text-sm font-medium text-fg mb-2">
             Promesas de pago
           </h3>
           <Stagger as="ul" className="space-y-2">
@@ -291,7 +291,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
 
       {paymentPlans.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-fg mb-2">
+          <h3 className="text-sm font-medium text-fg mb-2">
             {t('inmobiliaria.ai.cobranza.detail.compromisos.paymentPlans')}
           </h3>
           <Stagger as="ul" className="space-y-2">
@@ -322,7 +322,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
 
       {claims.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-fg mb-2">
+          <h3 className="text-sm font-medium text-fg mb-2">
             {t('inmobiliaria.ai.cobranza.detail.compromisos.insuranceClaims')}
           </h3>
           <Stagger as="ul" className="space-y-2">
@@ -355,7 +355,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
 
       {legals.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-fg mb-2">
+          <h3 className="text-sm font-medium text-fg mb-2">
             {t('inmobiliaria.ai.cobranza.detail.compromisos.legalArtifacts')}
           </h3>
           <Stagger as="ul" className="space-y-2">

@@ -46,7 +46,7 @@ import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
  * manda; lo que nunca pasa es que la pantalla se quede sin decirlo.
  */
 export const LEYENDA_DEL_CANON =
-  'El canon recaudado NO es ingreso de la inmobiliaria: es plata del propietario y vive en la 2815, que es una cuenta de pasivo. Acá sólo aparece lo propio — la comisión de administración, los recargos y los gastos de la inmobiliaria (CTCP 2020-0678).';
+  'El canon recaudado NO es ingreso de la inmobiliaria: es plata del propietario y vive en la 2815, que es una cuenta de pasivo. Aquí sólo aparece lo propio — la comisión de administración, los recargos y los gastos de la inmobiliaria (CTCP 2020-0678).';
 
 /**
  * CB-C-09 (QA-FACT-CONTA-95 r2): un P&G sin gastos en el mes lo dice y dice
@@ -56,7 +56,8 @@ export const LEYENDA_DEL_CANON =
  */
 export function notaSinGastosDelMes(gastosMesCop: number): string | null {
   if (gastosMesCop !== 0) return null;
-  return 'Este mes no tiene gastos asentados: la utilidad sale igual a los ingresos. Los gastos propios de la inmobiliaria (el arriendo de la oficina, la luz, el contador) entran al P&G cuando registras y causas sus facturas en Gastos.';
+  // Ronda 26 (revisora r25, Estados financieros): una línea (antes dos frases con ejemplos).
+  return 'Este mes no tiene gastos asentados: la utilidad sale igual a los ingresos hasta que causes sus facturas en Gastos.';
 }
 
 /** Adónde lleva la nota de arriba. */
@@ -347,7 +348,7 @@ export function ladosDelBalance(balance: BalanceGeneral): LadoDibujable[] {
  * dice al lado de la cifra: sin esta frase parece un error de clasificación.
  */
 export const POR_QUE_EL_RESULTADO_VA_APARTE =
-  'El resultado del ejercicio se calcula (ingresos menos gastos del año) y va aparte del patrimonio porque el cierre anual que lo traslada lo hace el contador, no el sistema. Hasta que lo haga, el balance cuadra sumándolo acá.';
+  'El resultado del ejercicio se calcula (ingresos menos gastos del año) y va aparte del patrimonio porque el cierre anual que lo traslada lo hace el contador, no el sistema. Hasta que lo haga, el balance cuadra sumándolo aquí.';
 
 /**
  * 🔴 El balance de una inmobiliaria NUEVA no cuadra, y no es un defecto de esta

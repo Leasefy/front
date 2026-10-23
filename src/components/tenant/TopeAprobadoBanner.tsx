@@ -12,10 +12,12 @@
  * diagnóstico — y fue explícito en la reunión que poder navegar importa.
  */
 
+import type React from 'react'
 import Link from 'next/link'
 import { Hourglass, SealCheck, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { useTf } from '@/lib/i18n/use-tf'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -35,10 +37,17 @@ export function TopeAprobadoBanner({
   vigente,
   className,
   detalle = { href: '/inquilino/aprobacion', label: 'Ver detalle' },
+  tamano = 'banda',
 }: {
   aprobacion: Aprobacion | null
   vigente: boolean
   className?: string
+  /**
+   * `banda` (la de siempre: catálogo, marketplace, la ficha) o `heroe`: el inicio de quien busca, donde el
+   * tope ES la respuesta de la pantalla («hasta cuánto puedo arrendar») y va grande, con su rótulo en mono.
+   * Los textos, los estados y a dónde lleva cada botón son los mismos en las dos.
+   */
+  tamano?: 'banda' | 'heroe'
   /**
    * A dónde lleva el botón de la derecha.
    *
@@ -55,12 +64,28 @@ export function TopeAprobadoBanner({
   detalle?: { href: string; label: string; variant?: 'default' | 'secondary' }
 }) {
   const tf = useTf()
+  const heroe = tamano === 'heroe'
+  const rotulo = tf(`${NS}.heroe.rotulo`, 'Tu tope')
 
   /*
    * En proceso: no invita ni regaña, informa. Mandarlo a "Conoce tu tope"
    * cuando ya lo pidió lo haría empezar de nuevo algo que ya está corriendo.
    */
   if (aprobacion?.estado === 'en_proceso') {
+    if (heroe)
+      return (
+        <TopeEnGrande
+          className={className}
+          rotulo={rotulo}
+          titulo={tf(`${NS}.proceso.titulo`, 'Estamos consultando a las aseguradoras')}
+          texto={tf(`${NS}.proceso.texto`, 'Te avisamos apenas sepamos hasta cuánto podemos respaldarte.')}
+          accion={
+            <Button asChild variant="secondary" size="sm" hideArrow>
+              <Link href="/inquilino/aprobacion">{tf(`${NS}.cta.verEstado`, 'Ver estado')}</Link>
+            </Button>
+          }
+        />
+      )
     return (
       <div
         className={cn(
@@ -94,6 +119,20 @@ export function TopeAprobadoBanner({
    * (mejorar perfil, esperar, o que alguien se postule por él).
    */
   if (aprobacion?.estado === 'rechazado') {
+    if (heroe)
+      return (
+        <TopeEnGrande
+          className={className}
+          rotulo={rotulo}
+          titulo={tf(`${NS}.rechazado.titulo`, 'Por ahora no podemos aprobarte')}
+          texto={tf(`${NS}.rechazado.texto`, 'No es un no definitivo. Hay caminos para seguir adelante.')}
+          accion={
+            <Button asChild variant="secondary" size="sm" hideArrow>
+              <Link href="/inquilino/aprobacion">{tf(`${NS}.cta.queHacer`, 'Ver qué puedes hacer')}</Link>
+            </Button>
+          }
+        />
+      )
     return (
       <div
         className={cn(
@@ -120,6 +159,28 @@ export function TopeAprobadoBanner({
 
   // Sin aprobación: la banda invita, no regaña.
   if (!aprobacion || !vigente) {
+    if (heroe)
+      return (
+        <TopeEnGrande
+          className={className}
+          rotulo={rotulo}
+          titulo={
+            aprobacion?.estado === 'aprobado'
+              ? tf(`${NS}.vencida`, 'Tu aprobación venció')
+              : tf(`${NS}.sinTope`, 'Todavía no sabes hasta cuánto puedes arrendar')
+          }
+          texto={tf(`${NS}.invita`, 'Con tu aprobación te mostramos solo los inmuebles que van contigo.')}
+          accion={
+            <Button asChild size="sm">
+              <Link href="/aprobacion">
+                {aprobacion?.estado === 'aprobado'
+                  ? tf(`${NS}.cta.renovar`, 'Renovar')
+                  : tf(`${NS}.cta.conocer`, 'Conoce tu tope')}
+              </Link>
+            </Button>
+          }
+        />
+      )
     return (
       <div
         className={cn(
@@ -134,7 +195,7 @@ export function TopeAprobadoBanner({
               : tf(`${NS}.sinTope`, 'Todavía no sabes hasta cuánto puedes arrendar')}
           </p>
           <p className="text-sm text-fg-muted mt-0.5">
-            {tf(`${NS}.invita`, 'Con tu aprobación te mostramos solo las propiedades que van contigo.')}
+            {tf(`${NS}.invita`, 'Con tu aprobación te mostramos solo los inmuebles que van contigo.')}
           </p>
         </div>
         <Button asChild className="shrink-0">
@@ -152,6 +213,67 @@ export function TopeAprobadoBanner({
   const dias = diasParaVencer(aprobacion.vigenteHasta)
   const vig: EstadoVigencia | null = estadoVigencia(dias)
   const ref: Referencia | null = referenciaCanon(aprobacion)
+
+  if (heroe) {
+    const vence =
+      dias !== null && vig
+        ? dias > 1
+          ? `${tf(`${NS}.venceEn`, 'Vence en')} ${dias} ${tf(`${NS}.dias`, 'días')}`
+          : dias === 1
+            ? tf(`${NS}.venceManana`, 'Vence mañana')
+            : tf(`${NS}.venceHoy`, 'Vence hoy')
+        : null
+    return (
+      <section
+        className={cn(
+          'flex flex-col gap-5 rounded-lg border border-border bg-surface p-6 sm:flex-row sm:items-end sm:justify-between',
+          className,
+        )}
+        data-testid="tope-en-grande"
+      >
+        {ref ? (
+          <CifraHeroe
+            className="min-w-0"
+            // Un tope es un techo («hasta»); un canon consultado es un punto confirmado («para»).
+            rotulo={ref.tipo === 'tope' ? tf(`${NS}.aprobadoHasta`, 'Estás aprobado hasta') : tf(`${NS}.aprobadoPara`, 'Estás aprobado para')}
+            cifra={formatCurrency(ref.valorCop)}
+            contexto={
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>{tf(`${NS}.porMes`, '/mes')}</span>
+                {vence && (
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.08em]',
+                      vig === 'vigente' && 'text-fg-muted',
+                      vig === 'por_vencer' && 'text-warning',
+                      vig === 'vencida' && 'text-danger',
+                    )}
+                  >
+                    <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {vence}
+                  </span>
+                )}
+              </span>
+            }
+            pie={
+              aprobacion.condicionada ? (
+                <span className="text-warning">{tf(`${NS}.condicionada`, 'Con condiciones por resolver')}</span>
+              ) : undefined
+            }
+          />
+        ) : (
+          /* Aprobado sin número: se dice, no se inventa. */
+          <div className="min-w-0 space-y-1.5">
+            <p className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">{rotulo}</p>
+            <p className="text-h3 font-light text-fg">{tf(`${NS}.calculando`, 'Estamos calculando tu tope')}</p>
+          </div>
+        )}
+        <Button asChild size="sm" variant={detalle.variant ?? 'secondary'} hideArrow className="shrink-0 self-start sm:self-end">
+          <Link href={detalle.href}>{detalle.label}</Link>
+        </Button>
+      </section>
+    )
+  }
 
   return (
     <div
@@ -184,7 +306,7 @@ export function TopeAprobadoBanner({
             <p className="text-sm text-fg">{tf(`${NS}.calculando`, 'Estamos calculando tu tope')}</p>
           )}
           {aprobacion.condicionada && (
-            <p className="text-xs text-warning mt-0.5">
+            <p className="text-caption text-warning mt-0.5">
               {tf(`${NS}.condicionada`, 'Con condiciones por resolver')}
             </p>
           )}
@@ -195,7 +317,7 @@ export function TopeAprobadoBanner({
         {dias !== null && vig && (
           <span
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium',
               vig === 'vigente' && 'bg-surface-muted text-fg-muted',
               vig === 'por_vencer' && 'bg-warning-soft text-warning',
               vig === 'vencida' && 'bg-danger-soft text-danger',
@@ -221,6 +343,38 @@ export function TopeAprobadoBanner({
   )
 }
 
+/** El tope en grande cuando todavía no hay cifra: rótulo en mono, la frase como título liviano y su botón. */
+function TopeEnGrande({
+  rotulo,
+  titulo,
+  texto,
+  accion,
+  className,
+}: {
+  rotulo: string
+  titulo: string
+  texto: string
+  accion: React.ReactNode
+  className?: string
+}) {
+  return (
+    <section
+      className={cn(
+        'flex flex-col gap-5 rounded-lg border border-border bg-surface p-6 sm:flex-row sm:items-end sm:justify-between',
+        className,
+      )}
+      data-testid="tope-en-grande"
+    >
+      <div className="min-w-0 space-y-1.5">
+        <p className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">{rotulo}</p>
+        <h2 className="text-h3 font-light text-balance text-fg">{titulo}</h2>
+        <p className="text-sm text-fg-muted">{texto}</p>
+      </div>
+      <div className="shrink-0">{accion}</div>
+    </section>
+  )
+}
+
 /**
  * Marca sobre una tarjeta cuyo canon se pasa de la referencia.
  * No la esconde ni la deshabilita: la explica.
@@ -238,7 +392,7 @@ export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null
     // Superficie sólida, sin `backdrop-blur`: el glass morphism sobre contenido
     // está prohibido en Cadence (DESIGN.md §1 y §9). La marca se lee igual.
     <div className="absolute inset-x-0 bottom-0 z-10 rounded-b-lg border-t border-border bg-surface-muted px-3 py-2">
-      <p className="flex items-center gap-1 text-xs font-medium text-fg">
+      <p className="flex items-center gap-1 text-caption font-medium text-fg">
         {esTope
           ? tf(`${NS}.overlay.sobreTope`, 'Supera lo que podemos respaldarte')
           : tf(`${NS}.overlay.sobreConsultado`, 'Por encima de lo que consultaste')}
@@ -272,7 +426,7 @@ export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null
         )}
       </p>
       {referencia && (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {esTope ? tf(`${NS}.aprobadoHasta`, 'Estás aprobado hasta') + ' ' : tf(`${NS}.overlay.consultaste`, 'Consultaste') + ' '}
           <span className="font-mono tabular-nums">{formatCurrency(referencia.valorCop)}</span>
           {!esTope && ` — ${tf(`${NS}.overlay.asesorRevisa`, 'un asesor puede revisarlo')}`}
@@ -309,7 +463,7 @@ export function SobreTopeAlert({
     <div
       role="alert"
       className={cn(
-        'flex items-start gap-3 rounded-lg border border-[hsl(var(--warning-500)/0.3)] bg-[hsl(var(--warning-50))] p-4 dark:bg-[hsl(var(--warning-500)/0.12)]',
+        'flex items-start gap-3 rounded-lg border border-[hsl(var(--warning-500)/0.3)] bg-[hsl(var(--warning-50))] p-4',
         className,
       )}
     >
@@ -319,7 +473,7 @@ export function SobreTopeAlert({
           {tf(`${NS}.overlay.sobreTope`, 'Supera lo que podemos respaldarte')}
         </p>
         <p className="mt-1 text-sm text-fg-muted">
-          {tf(`${NS}.alerta.canon`, 'El canon de esta propiedad')}
+          {tf(`${NS}.alerta.canon`, 'El canon de este inmueble')}
           {' ('}
           <span className="font-mono tabular-nums">{formatCurrency(monthlyRent)}</span>
           {tf(`${NS}.porMes`, '/mes')}

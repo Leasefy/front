@@ -63,14 +63,14 @@ export function CaptacionesYArriendos({
     <section className={className} data-testid="captaciones-y-arriendos">
       <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-base font-semibold text-foreground">Captaciones y arriendos</h3>
+          <h3 className="text-base font-medium text-foreground">Captaciones y arriendos</h3>
           <p className="text-sm text-muted-foreground">
             Quién trajo el mandato y quién cerró el arriendo. Lo que gana cada asesor está en
             Captación y arriendo › Comisiones y metas.
           </p>
         </div>
         <div className="flex items-end gap-2">
-          <label className="text-xs text-muted-foreground">
+          <label className="text-caption text-muted-foreground">
             Desde
             <CampoDeDia
               id="captaciones-y-arriendos-fecha-1"
@@ -80,7 +80,7 @@ export function CaptacionesYArriendos({
               className="mt-1"
             />
           </label>
-          <label className="text-xs text-muted-foreground">
+          <label className="text-caption text-muted-foreground">
             Hasta
             <CampoDeDia
               id="captaciones-y-arriendos-fecha-2"
@@ -103,7 +103,7 @@ export function CaptacionesYArriendos({
         {datos ? (
           <div className="space-y-6">
             <div className="rounded-lg border border-border overflow-hidden">
-              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2 bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2 bg-muted/30 text-caption uppercase tracking-wide text-muted-foreground">
                 <span>Asesor</span>
                 <span className="text-right">Captados</span>
                 <span className="text-right">Arrendados</span>
@@ -192,7 +192,7 @@ function Lista({
 }) {
   return (
     <div className="space-y-2">
-      <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+      <h4 className="flex items-center gap-2 text-sm font-medium text-foreground">
         {icono}
         {titulo} ({filas.length})
       </h4>
@@ -204,9 +204,9 @@ function Lista({
             <li key={f.id} className="flex items-baseline justify-between gap-3 text-sm">
               <span className="min-w-0">
                 <span className="text-foreground">{f.principal}</span>
-                <span className="block text-xs text-muted-foreground">{f.secundario}</span>
+                <span className="block text-caption text-muted-foreground">{f.secundario}</span>
               </span>
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
+              <span className="text-caption text-muted-foreground whitespace-nowrap">
                 {diaLegible(f.fecha)}
               </span>
             </li>

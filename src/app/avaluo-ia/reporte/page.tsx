@@ -11,25 +11,32 @@
  *
  * No panel chrome, no auth — renders standalone for review. Mock data: the
  * El Poblado rent appraisal, owner Carlos Restrepo.
+ *
+ * Glow up 22-10-2026: los colores salen de los tokens de Cadence (nada de
+ * hexadecimales sueltos), la plata en mono sin negrilla, la letra desde 13 px,
+ * íconos sueltos sin cajas de color y un solo azul (el botón de aceptar).
+ * Pendiente de Nico: es una maqueta (datos de ejemplo y botones sin acción).
  */
 
 import {
-  ShieldCheck,
-  ArrowUp,
-  ArrowDown,
   Check,
-  WhatsappLogo,
-  Sparkle,
   Lightning,
+  Minus,
+  Plus,
   Scales,
+  ShieldCheck,
   Trophy,
+  WhatsappLogo,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
+import type { ReactNode } from 'react'
 
-import { BrandMark, BrandContour } from '@leasefy/cadence'
+import { BrandContour, BrandMark, StatusBadge } from '@leasefy/cadence'
+import { LeasefyLogotype } from '@/components/brand'
+import { Button } from '@/components/ui/button'
 
 // ── Brand constants ───────────────────────────────────────────────────────────
-const BLUE = '#1A40FF'
+// La tinta de la marca (Cadence 2): el héroe de la cifra va sobre tinta.
 const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
 const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 const fmt = (n: number) => COP.format(n)
@@ -56,184 +63,172 @@ const COMPARABLES = [
   { dir: 'Cl. 7 #43-20', specs: '75 m² · 2 hab', canon: 3_300_000 },
 ]
 
+/** El título de cada bloque: liviano, sin negrilla. */
+function TituloDeBloque({ children }: { children: ReactNode }) {
+  return <h2 className="text-body font-medium text-fg">{children}</h2>
+}
+
 export default function ReporteAvaluoPage() {
   return (
-    <div className="min-h-screen bg-surface-muted">
-      {/* ── Brand bar ──────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-10 bg-surface/85 backdrop-blur border-b border-border">
-        <div className="mx-auto max-w-[560px] px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BrandMark size={26} />
-            <span className="text-[15px] font-semibold tracking-[-0.01em] text-foreground">Leasefy</span>
-          </div>
-          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-fg-subtle">
-            <Sparkle className="w-3 h-3" weight="fill" style={{ color: BLUE }} />
-            Avalúo IA
-          </span>
+    <div className="min-h-screen bg-bg">
+      {/* ── La marca ───────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-10 border-b border-border bg-surface">
+        <div className="mx-auto flex h-14 max-w-[560px] items-center justify-between px-4">
+          <LeasefyLogotype className="h-5 w-auto text-fg" title="Leasefy" />
+          <span className="text-caption text-fg-subtle">Avalúo IA</span>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[560px] px-4 py-8 space-y-5">
-        {/* ── Greeting ─────────────────────────────────────────────────── */}
+      <main className="mx-auto max-w-[560px] space-y-5 px-4 py-8">
+        {/* ── Saludo ───────────────────────────────────────────────────── */}
         <div className="space-y-2">
-          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">
+          <h1 className="font-heading text-[26px] font-[420] leading-[1.12] tracking-[-0.025em] text-fg">
             Hola, Carlos
           </h1>
-          <p className="text-[14.5px] text-fg-muted leading-relaxed">
+          <p className="text-body-sm leading-relaxed text-fg-muted">
             Este es el avalúo de arriendo de tu inmueble en{' '}
-            <span className="font-medium text-foreground">Cra. 43 #5-20, El Poblado</span>.
+            <span className="text-fg">Cra. 43 #5-20, El Poblado</span>.
           </p>
-          <p className="text-[12.5px] text-fg-subtle">
+          <p className="text-caption text-fg-subtle">
             Preparado por Inmobiliaria Demo con Leasefy IA · 17 jun 2026
           </p>
         </div>
 
-        {/* ── The number (ink hero) ────────────────────────────────────── */}
+        {/* ── LA cifra, sobre tinta ────────────────────────────────────── */}
         <section
-          className="relative overflow-hidden rounded-2xl px-6 py-7 text-center"
-          style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(20, 19, 15,0.5)' }}
+          className="relative overflow-hidden rounded-lg px-6 py-7 text-center"
+          style={{ background: INK_GRADIENT }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[52%] h-[42%] text-white/[0.10]">
             <BrandContour />
           </div>
           <div className="relative space-y-1.5">
-            <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-white/55">
-              Canon recomendado
-            </span>
-            <div className="text-[40px] font-semibold tracking-[-0.025em] text-white tabular-nums leading-none pt-1">
+            <span className="text-caption text-white/60">Canon recomendado</span>
+            <div className="pt-1 font-mono text-[40px] font-normal leading-none tracking-[-0.02em] tabular-nums text-white">
               {fmt(RECOMENDADO)}
             </div>
-            <div className="text-[13px] text-white/55">por mes</div>
-            <div className="inline-flex items-center gap-1.5 mt-3 px-2.5 h-6 rounded-full bg-white/10 text-[11.5px] font-medium text-white/85">
-              <ShieldCheck className="w-3.5 h-3.5" weight="fill" style={{ color: '#5FD08A' }} />
+            <div className="text-caption text-white/60">por mes</div>
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-caption text-white/85">
+              <ShieldCheck className="h-3.5 w-3.5 text-white/85" weight="fill" aria-hidden="true" />
               Basado en 12 inmuebles similares cerca
             </div>
           </div>
         </section>
 
         {/* ── Por qué este precio ──────────────────────────────────────── */}
-        <section className="rounded-2xl border border-border bg-surface p-5">
-          <h2 className="text-[15px] font-semibold text-foreground mb-3.5">Por qué este precio</h2>
-
-          <p className="text-[12.5px] font-medium text-fg-muted mb-2">Tu inmueble juega a favor</p>
-          <ul className="space-y-2 mb-4">
-            {PROS.map((p) => (
-              <li key={p} className="flex items-center gap-2.5">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0" style={{ background: '#E9F3EE', color: '#22663F' }}>
-                  <ArrowUp className="w-3.5 h-3.5" weight="bold" />
-                </span>
-                <span className="text-[13.5px] text-foreground">{p}</span>
-              </li>
-            ))}
-          </ul>
-
-          <p className="text-[12.5px] font-medium text-fg-muted mb-2">Y juega en contra</p>
-          <ul className="space-y-2">
-            {CONTRAS.map((c) => (
-              <li key={c} className="flex items-center gap-2.5">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0" style={{ background: '#FBF3E2', color: '#8A5A12' }}>
-                  <ArrowDown className="w-3.5 h-3.5" weight="bold" />
-                </span>
-                <span className="text-[13.5px] text-foreground">{c}</span>
-              </li>
-            ))}
-          </ul>
+        <section className="space-y-4 rounded-lg border border-border bg-surface p-5">
+          <TituloDeBloque>Por qué este precio</TituloDeBloque>
+          <div className="space-y-2">
+            <p className="text-caption text-fg-muted">Tu inmueble juega a favor</p>
+            <ul className="space-y-2">
+              {PROS.map((p) => (
+                <li key={p} className="flex items-start gap-2.5 text-body-sm text-fg">
+                  <Plus className="mt-0.5 h-4 w-4 shrink-0 text-success" weight="bold" aria-hidden="true" />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="space-y-2">
+            <p className="text-caption text-fg-muted">Y juega en contra</p>
+            <ul className="space-y-2">
+              {CONTRAS.map((c) => (
+                <li key={c} className="flex items-start gap-2.5 text-body-sm text-fg">
+                  <Minus className="mt-0.5 h-4 w-4 shrink-0 text-warning" weight="bold" aria-hidden="true" />
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
 
         {/* ── Qué pasa según el precio ─────────────────────────────────── */}
-        <section className="rounded-2xl border border-border bg-surface p-5">
-          <h2 className="text-[15px] font-semibold text-foreground mb-1">Qué pasa según el precio</h2>
-          <p className="text-[13px] text-fg-muted mb-4 leading-relaxed">
-            Mientras más alto el canon, más tarda en arrendarse. Este es el balance:
-          </p>
+        <section className="space-y-4 rounded-lg border border-border bg-surface p-5">
+          <div className="space-y-1">
+            <TituloDeBloque>Qué pasa según el precio</TituloDeBloque>
+            <p className="text-body-sm leading-relaxed text-fg-muted">
+              Mientras más alto el canon, más tarda en arrendarse. Este es el balance:
+            </p>
+          </div>
           <ul className="space-y-2">
             {ESCENARIOS.map((e) => {
               const EIcon = e.icon
               return (
                 <li
                   key={e.label}
-                  className="flex items-center gap-3 rounded-xl p-3 border"
-                  style={e.reco ? { borderColor: BLUE, background: '#F7F9FF' } : { borderColor: 'rgba(0,0,0,0.08)' }}
+                  className={
+                    e.reco
+                      ? 'flex items-center gap-3 rounded-md border border-fg/50 bg-surface-muted p-3'
+                      : 'flex items-center gap-3 rounded-md border border-border p-3'
+                  }
                 >
-                  <span
-                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0"
-                    style={{ background: e.reco ? '#EAEEFF' : '#F1F3F6', color: e.reco ? BLUE : '#525B6B' }}
-                  >
-                    <EIcon className="w-[18px] h-[18px]" weight="duotone" />
+                  <EIcon className="h-5 w-5 shrink-0 text-fg-subtle" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2 text-body-sm text-fg">
+                      {e.label}
+                      {e.reco ? <StatusBadge tone="neutral">Recomendado</StatusBadge> : null}
+                    </span>
+                    <span className="block text-caption text-fg-muted">Se arrienda en {e.dias}</span>
                   </span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[13.5px] font-medium text-foreground">{e.label}</span>
-                    <span className="block text-[12px] text-fg-muted">Se arrienda en {e.dias}</span>
-                  </span>
-                  <span className="text-[15px] font-semibold text-foreground tabular-nums">{fmt(e.valor)}</span>
+                  <span className="shrink-0 font-mono text-body-sm tabular-nums text-fg">{fmt(e.valor)}</span>
                 </li>
               )
             })}
           </ul>
-          <p className="mt-3.5 flex items-start gap-2 text-[13px] text-foreground leading-relaxed">
-            <Sparkle className="w-4 h-4 mt-0.5 shrink-0" weight="fill" style={{ color: BLUE }} />
-            <span>Recomendamos <span className="font-semibold">{fmt(RECOMENDADO)}</span>: el mejor equilibrio entre lo que ganas y la rapidez para arrendar.</span>
+          <p className="text-body-sm leading-relaxed text-fg">
+            Recomendamos <span className="font-mono tabular-nums">{fmt(RECOMENDADO)}</span>: el mejor equilibrio entre
+            lo que ganas y la rapidez para arrendar.
           </p>
         </section>
 
         {/* ── Si esperabas más (expectation §11) ───────────────────────── */}
-        <section
-          className="rounded-2xl p-5 border"
-          style={{ borderColor: '#F0E2C4', background: '#FCF7EC' }}
-        >
-          <h2 className="text-[14.5px] font-semibold mb-1.5" style={{ color: '#8A5A12' }}>
-            Si tenías otro número en mente
-          </h2>
-          <p className="text-[13.5px] leading-relaxed" style={{ color: '#6B4E13' }}>
-            Sabemos que pensabas en cerca de <span className="font-semibold">{fmt(OWNER_EXPECTATION)}</span>.
-            A ese precio, inmuebles como el tuyo suelen tardar <span className="font-semibold">más de 90 días</span> en
+        <section className="space-y-1.5 rounded-lg bg-warning-soft p-5">
+          <TituloDeBloque>Si tenías otro número en mente</TituloDeBloque>
+          <p className="text-body-sm leading-relaxed text-fg">
+            Sabemos que pensabas en cerca de <span className="font-mono tabular-nums">{fmt(OWNER_EXPECTATION)}</span>.
+            A ese precio, inmuebles como el tuyo suelen tardar <span className="font-medium">más de 90 días</span> en
             arrendarse — o no arrendarse. Preferimos ser honestos contigo y ayudarte a decidir con datos reales.
           </p>
         </section>
 
         {/* ── Inmuebles parecidos ──────────────────────────────────────── */}
-        <section className="rounded-2xl border border-border bg-surface p-5">
-          <h2 className="text-[15px] font-semibold text-foreground mb-1">Inmuebles parecidos cerca</h2>
-          <p className="text-[13px] text-fg-muted mb-3.5">Lo que se cobra hoy por propiedades como la tuya.</p>
-          <ul className="space-y-2">
+        <section className="space-y-4 rounded-lg border border-border bg-surface p-5">
+          <div className="space-y-1">
+            <TituloDeBloque>Inmuebles parecidos cerca</TituloDeBloque>
+            <p className="text-body-sm text-fg-muted">Lo que se cobra hoy por propiedades como la tuya.</p>
+          </div>
+          <ul className="divide-y divide-border-faint">
             {COMPARABLES.map((c) => (
-              <li key={c.dir} className="flex items-center justify-between gap-3 rounded-xl bg-surface-muted px-3.5 py-2.5">
+              <li key={c.dir} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                 <span className="min-w-0">
-                  <span className="block text-[13.5px] font-medium text-foreground truncate">{c.dir}</span>
-                  <span className="block text-[12px] text-fg-muted">{c.specs}</span>
+                  <span className="block truncate text-body-sm text-fg">{c.dir}</span>
+                  <span className="block text-caption text-fg-muted">{c.specs}</span>
                 </span>
-                <span className="text-[13.5px] font-semibold text-foreground tabular-nums shrink-0">{fmt(c.canon)}/mes</span>
+                <span className="shrink-0 font-mono text-body-sm tabular-nums text-fg">{fmt(c.canon)}/mes</span>
               </li>
             ))}
           </ul>
         </section>
 
-        {/* ── CTA ──────────────────────────────────────────────────────── */}
+        {/* ── La decisión: un solo azul ─────────────────────────────────── */}
         <section className="space-y-2.5 pt-1">
-          <button
-            type="button"
-            className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl text-white text-[15px] font-medium transition-colors"
-            style={{ background: BLUE }}
-          >
-            <Check className="w-5 h-5" weight="bold" />
+          <Button type="button" size="lg" hideArrow className="w-full">
+            <Check className="h-5 w-5" weight="bold" aria-hidden="true" />
             Acepto, publiquen a {fmt(RECOMENDADO)}
-          </button>
-          <button
-            type="button"
-            className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl border border-border bg-surface text-foreground text-[15px] font-medium hover:bg-surface-muted transition-colors"
-          >
-            <WhatsappLogo className="w-5 h-5" weight="fill" style={{ color: '#25D366' }} />
+          </Button>
+          <Button type="button" size="lg" variant="outline" hideArrow className="w-full">
+            <WhatsappLogo className="h-5 w-5 text-success" weight="fill" aria-hidden="true" />
             Quiero hablarlo con un asesor
-          </button>
+          </Button>
         </section>
 
-        {/* ── Footer ───────────────────────────────────────────────────── */}
-        <footer className="pt-3 pb-2 text-center space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 text-[12px] text-fg-subtle">
+        {/* ── Pie ──────────────────────────────────────────────────────── */}
+        <footer className="space-y-1.5 pb-2 pt-3 text-center">
+          <div className="inline-flex items-center gap-1.5 text-caption text-fg-subtle">
             <BrandMark size={16} variant="bare" className="text-fg-subtle" />
             Generado por Leasefy IA
           </div>
-          <p className="text-[11px] text-fg-subtle leading-relaxed max-w-xs mx-auto">
+          <p className="mx-auto max-w-xs text-caption leading-relaxed text-fg-subtle">
             Este avalúo es una estimación basada en datos de mercado y no constituye un avalúo comercial certificado.
           </p>
         </footer>

@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import {
@@ -41,7 +42,7 @@ import {
   DropdownListItem,
   DropdownListSeparator,
 } from '@/components/ui/dropdown-menu';
-import { IconButton, Chip, SegmentedControl, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Avatar, IconButton, Chip, SegmentedControl, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
@@ -98,13 +99,22 @@ function ConChip({ etiqueta, cuantos }: { etiqueta: string; cuantos: number }) {
     <span className="inline-flex items-center gap-1.5">
       {etiqueta}
       <span
-        className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums"
+        className="rounded bg-muted px-1.5 py-0.5 text-caption tabular-nums"
         data-testid={`conteo-${etiqueta.toLowerCase().replace(/\s+/g, '-')}`}
       >
         {NUMERO.format(cuantos)}
       </span>
     </span>
   );
+}
+
+/**
+ * El formato de la plata de la página (ronda 19: la franja decía «$ 2.466.800,00» y la fila
+ * «$ 2.466.800»). Sin él, el de siempre. Igual que `FormatoDeLaPlata` de Inquilinos.
+ */
+const FormatoDeLaPlata = React.createContext<((n: number) => string) | null>(null);
+function usePlata(): (n: number) => string {
+  return React.useContext(FormatoDeLaPlata) ?? ((n: number) => formatCurrency(n));
 }
 
 interface PropietarioTableProps {
@@ -146,6 +156,21 @@ interface PropietarioTableProps {
    */
   soloBarra?: boolean;
   /**
+   * GLOW UP 21-10: la página trae la cifra «Con giros atrasados» que filtra la lista (en la franja,
+   * dentro de la tarjeta). Con esto la barra no repite el mismo filtro como chip.
+   */
+  filtroDeSaldoAfuera?: boolean;
+  /**
+   * Pestañas por tarea (Nico, 22-10-2026): la página trae «Por girar · Por completar · Con
+   * inmuebles · Todos» arriba y «Persona / Empresa» pasa al panel de «Filtros», que abre el botón
+   * de la barra. El panel queda montado (escondido) para el lector de pantalla y las pruebas.
+   */
+  tipoEnFiltros?: boolean;
+  /** El formato de la plata de la página (el mismo de la franja de cifras). */
+  formato?: (n: number) => string;
+  /** Lo que se dice cuando la pestaña o la búsqueda no deja a nadie (lo arma la página). */
+  vacio?: React.ReactNode;
+  /**
    * Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas.
    * Lo marcado y lo que se hace con ello lo lleva la página.
    */
@@ -170,10 +195,16 @@ export function PropietarioTable({
   onExport,
   plataOculta = false,
   soloBarra = false,
+  filtroDeSaldoAfuera = false,
+  tipoEnFiltros = false,
+  vacio,
+  formato,
   marcadas,
   onMarcar,
 }: PropietarioTableProps) {
   const { t, locale } = useI18n();
+  const plataDelContexto = usePlata();
+  const plata = formato ?? plataDelContexto;
   /*
    * P-22 (QA de Propietarios, 03-10): a 390 px la tabla se corría de lado y
    * sólo se veía el nombre. En el celular cada propietario es una TARJETA con
@@ -239,8 +270,38 @@ export function PropietarioTable({
   };
 
   const activeFiltersCount = [filterPending, filterType !== 'all'].filter(Boolean).length;
+  const [filtrosAbiertos, setFiltrosAbiertos] = React.useState(false);
+  const idDelPanel = `filtros-de-propietarios-${React.useId().replace(/:/g, '')}`;
+
+  /* «Persona · Empresa» con su número: en la barra (como siempre) o en el panel de «Filtros». */
+  const selectorDeTipo = (
+    <div className="min-w-0 max-w-full overflow-x-auto">
+      <SegmentedControl<FiltrosDePropietarios['tipo']>
+        value={filterType}
+        onChange={setFilterType}
+        options={[
+          {
+            value: 'all',
+            label: <ConChip etiqueta={t('inmobiliaria.propietario.table.all')} cuantos={conteos.todos} />,
+            ariaLabel: `${t('inmobiliaria.propietario.table.all')}: ${conteos.todos}`,
+          },
+          {
+            value: 'person',
+            label: <ConChip etiqueta={t('inmobiliaria.propietario.table.person')} cuantos={conteos.persona} />,
+            ariaLabel: `${t('inmobiliaria.propietario.table.person')}: ${conteos.persona}`,
+          },
+          {
+            value: 'company',
+            label: <ConChip etiqueta={t('inmobiliaria.propietario.table.company')} cuantos={conteos.empresa} />,
+            ariaLabel: `${t('inmobiliaria.propietario.table.company')}: ${conteos.empresa}`,
+          },
+        ]}
+      />
+    </div>
+  );
 
   return (
+    <FormatoDeLaPlata.Provider value={formato ?? null}>
     <div>
       {/* Search and Filters Bar */}
       <div className="p-4 space-y-4 border-b border-border">
@@ -268,19 +329,52 @@ export function PropietarioTable({
             )}
           </div>
 
-          {/* Export */}
-          {onExport && (
-            <Button
-              variant="secondary"
-              hideArrow
-              onClick={onExport}
-              className="gap-2"
-            >
-              <Export className="w-4 h-4" />
-              <span className="text-sm">{t('inmobiliaria.propietario.table.export')}</span>
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {tipoEnFiltros && (
+              <Button
+                variant="secondary"
+                hideArrow
+                // Ronda 21: a la altura del buscador (44 px).
+                className="h-11 gap-2"
+                aria-expanded={filtrosAbiertos}
+                aria-controls={idDelPanel}
+                onClick={() => setFiltrosAbiertos((v) => !v)}
+                data-testid="propietarios-filtros"
+              >
+                <Funnel className="h-4 w-4" aria-hidden />
+                {t('inmobiliaria.propietario.table.filtros')}
+                {activeFiltersCount > 0 ? (
+                  <span className="font-mono text-caption tabular-nums">({activeFiltersCount})</span>
+                ) : null}
+              </Button>
+            )}
+
+            {/* Export */}
+            {onExport && (
+              <Button
+                variant="secondary"
+                hideArrow
+                onClick={onExport}
+                className="h-11 gap-2"
+              >
+                <Export className="w-4 h-4" />
+                <span className="text-sm">{t('inmobiliaria.propietario.table.export')}</span>
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* El panel de «Filtros»: montado siempre, visible sólo al abrirlo. */}
+        {tipoEnFiltros && (
+          <div
+            id={idDelPanel}
+            className={cn('flex-wrap items-center gap-2 rounded-lg bg-surface-muted/60 p-3', filtrosAbiertos ? 'flex' : 'hidden')}
+            data-testid="propietarios-panel-de-filtros"
+          >
+            <span className="text-body-sm text-fg-muted">{t('inmobiliaria.propietario.table.tipoDePersona')}</span>
+            {selectorDeTipo}
+          </div>
+        )}
 
         {/* Row 2: Inline Filters */}
         <div className="flex flex-wrap items-center gap-3">
@@ -292,33 +386,11 @@ export function PropietarioTable({
               clickear, no el total de la inmobiliaria. */}
           {/* P-22: a 390 px los tres chips con su número miden más que la
               tarjeta: se desplazan dentro de su riel, nunca fuera del borde. */}
-          <div className="min-w-0 max-w-full overflow-x-auto">
-          <SegmentedControl<FiltrosDePropietarios['tipo']>
-            value={filterType}
-            onChange={setFilterType}
-            options={[
-              {
-                value: 'all',
-                label: <ConChip etiqueta={t('inmobiliaria.propietario.table.all')} cuantos={conteos.todos} />,
-                ariaLabel: `${t('inmobiliaria.propietario.table.all')}: ${conteos.todos}`,
-              },
-              {
-                value: 'person',
-                label: <ConChip etiqueta={t('inmobiliaria.propietario.table.person')} cuantos={conteos.persona} />,
-                ariaLabel: `${t('inmobiliaria.propietario.table.person')}: ${conteos.persona}`,
-              },
-              {
-                value: 'company',
-                label: <ConChip etiqueta={t('inmobiliaria.propietario.table.company')} cuantos={conteos.empresa} />,
-                ariaLabel: `${t('inmobiliaria.propietario.table.company')}: ${conteos.empresa}`,
-              },
-            ]}
-          />
-          </div>
+          {!tipoEnFiltros && selectorDeTipo}
 
           {/* P-21: sin la plata, «Con saldo pendiente 0» sería otra afirmación
               falsa (el saldo llega en null y se lee 0). No se ofrece. */}
-          {!plataOculta && (
+          {!plataOculta && !filtroDeSaldoAfuera && (
             <>
               {/* Separator */}
               <div className="hidden sm:block w-px h-6 bg-border" />
@@ -359,9 +431,10 @@ export function PropietarioTable({
             </Button>
           )}
 
-          {/* Results Count */}
-          <span className="ml-auto text-sm text-muted-foreground tabular-nums">
-            <AnimatedNumber value={totalFiltrado} format={(n) => String(Math.round(n))} /> {t('inmobiliaria.propietario.table.of')} {total}
+          {/* Results Count — con las pestañas, sólo cuando algo achica la pestaña (su número ya lo dice). */}
+          <span className={cn('ml-auto text-sm text-muted-foreground tabular-nums', tipoEnFiltros && activeFiltersCount === 0 && !searchQuery && 'hidden')}>
+            {/* Ronda 13: con separador de miles («1.751 de 1.751»). */}
+            <AnimatedNumber value={totalFiltrado} format={(n) => Math.round(n).toLocaleString('es-CO')} /> {t('inmobiliaria.propietario.table.of')} {total.toLocaleString('es-CO')}
           </span>
         </div>
 
@@ -434,16 +507,11 @@ export function PropietarioTable({
                   {/* Propietario */}
                   <TableCell className="p-4">
                     <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                          isCompany
-                            ? 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
-                            : 'bg-primary-soft text-primary'
-                        )}
-                      >
-                        {isCompany ? <Buildings className="w-5 h-5" /> : <User className="w-5 h-5" />}
-                      </div>
+                      {/* GLOW UP 21-10: su Avatar (iniciales y su tono, que sale del nombre); antes el mismo
+                          muñequito azul para todos. La empresa conserva su edificio adentro. */}
+                      <Avatar name={propietario.name} size="md" className="shrink-0">
+                        {isCompany ? <Buildings className="size-5" /> : undefined}
+                      </Avatar>
                       <div className="min-w-0">
                         <p className="font-medium text-foreground truncate">
                           {propietario.name}
@@ -469,17 +537,21 @@ export function PropietarioTable({
                   {/* Properties */}
                   <TableCell className="p-4">
                     <div>
-                      <span className="font-semibold text-foreground tabular-nums">
-                        {propietario.propertyCount}
+                      {/* La cifra arriba en mono; cuántas están arrendadas, debajo (antes se partía «0 (0 / arrendadas)»). */}
+                      {/* Glow up 22-10: sin inmuebles, «—» atenuado (no «0 / 0 arrendadas» en cada fila). */}
+                      <span className={cn('font-mono tabular-nums', propietario.propertyCount === 0 ? 'text-fg-subtle' : 'text-foreground')}>
+                        {propietario.propertyCount === 0 ? '—' : propietario.propertyCount}
                       </span>
-                      <span className="text-muted-foreground ml-1">
-                        ({arrendadas(t, propietario.activeLeases)})
-                      </span>
+                      {propietario.propertyCount > 0 ? (
+                        <span className="block whitespace-nowrap text-caption text-muted-foreground">
+                          {arrendadas(t, propietario.activeLeases)}
+                        </span>
+                      ) : null}
                       {/* El minoritario existe: sus copropiedades van aparte
                           del conteo de mandatos donde es principal. */}
                       {(propietario.copropiedadesCount ?? 0) > 0 && (
                         <span
-                          className="block text-xs text-muted-foreground tabular-nums"
+                          className="block text-caption text-muted-foreground tabular-nums"
                           data-testid="copropiedades-del-propietario"
                         >
                           {t('inmobiliaria.propietario.table.copropiedades', { n: propietario.copropiedadesCount ?? 0 })}
@@ -493,8 +565,8 @@ export function PropietarioTable({
                     {sinPlata ? (
                       <SinAccesoALaPlata texto={sinAcceso} />
                     ) : (
-                      <span className="font-semibold text-foreground tabular-nums">
-                        {formatCurrency(propietario.totalMonthlyRent)}
+                      <span className={cn('font-mono tabular-nums', propietario.totalMonthlyRent ? 'text-foreground' : 'text-fg-subtle')}>
+                        {propietario.totalMonthlyRent ? plata(propietario.totalMonthlyRent) : '—'}
                       </span>
                     )}
                   </TableCell>
@@ -505,9 +577,9 @@ export function PropietarioTable({
                       <SinAccesoALaPlata texto={sinAcceso} />
                     ) : hasPending ? (
                       <>
-                        <Badge variant="warning" className="gap-1 tabular-nums">
+                        <Badge variant="warning" className="gap-1 font-mono tabular-nums">
                           <Warning className="w-3.5 h-3.5" />
-                          {formatCurrency(propietario.pendingBalance)}
+                          {plata(propietario.pendingBalance)}
                         </Badge>
                         <LineasDelGiro propietario={propietario} />
                       </>
@@ -518,7 +590,8 @@ export function PropietarioTable({
                       </span>
                     ) : (
                       <>
-                        <span className="text-primary text-sm font-medium">
+                        {/* «Al día» en tinta suave: no pide nada (el azul es sólo de la acción principal). */}
+                        <span className="text-fg-muted text-sm">
                           {t('inmobiliaria.propietario.table.upToDate')}
                         </span>
                         <LineasDelGiro propietario={propietario} />
@@ -532,12 +605,15 @@ export function PropietarioTable({
                       <SinAccesoALaPlata texto={sinAcceso} />
                     ) : (
                     <span className="text-muted-foreground text-sm tabular-nums">
+                      {/* Ronda 20: «17 oct 2026», la fecha corta de la casa (sin los «de»). */}
                       {propietario.lastPaymentDate
-                        ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })
+                        ? new Date(propietario.lastPaymentDate)
+                            .toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                            .replace(/ de /g, ' ')
                         : '—'}
                     </span>
                     )}
@@ -555,11 +631,14 @@ export function PropietarioTable({
 
         {/* Empty State — se mira el total con filtros, no las filas de ESTA
             página: son cosas distintas en cuanto hay paginación. */}
-        <Presence show={totalFiltrado === 0} initial={false} className="p-12 text-center">
+        <Presence show={totalFiltrado === 0 && Boolean(vacio)} initial={false} className="px-6 py-10">
+          {vacio}
+        </Presence>
+        <Presence show={totalFiltrado === 0 && !vacio} initial={false} className="p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <User className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
+          <h3 className="text-lg font-medium text-foreground mb-1">
             {t('inmobiliaria.propietario.table.noResults')}
           </h3>
           <p className="text-muted-foreground">
@@ -570,6 +649,7 @@ export function PropietarioTable({
         </Presence>
       </div>
     </div>
+    </FormatoDeLaPlata.Provider>
   );
 }
 
@@ -661,6 +741,7 @@ function MenuDeLaFila({
  * decir (o sin la plata), no pinta nada.
  */
 function LineasDelGiro({ propietario }: { propietario: Propietario }) {
+  const plata = usePlata();
   const { t } = useI18n();
   const giros = girosDelPropietario(propietario);
   if (giros.oculto) return null;
@@ -672,7 +753,7 @@ function LineasDelGiro({ propietario }: { propietario: Propietario }) {
       {detalle ? <span className="block tabular-nums">{detalle}</span> : null}
       {generado > 0 ? (
         <span className="block tabular-nums" data-testid="generado-sin-girar">
-          {t('inmobiliaria.propietario.giros.generado', { monto: formatCurrency(generado) })}
+          {t('inmobiliaria.propietario.giros.generado', { monto: plata(generado) })}
         </span>
       ) : null}
     </span>
@@ -696,6 +777,7 @@ function TarjetasDePropietarios({
   onView: (propietario: Propietario) => void;
   menu: (propietario: Propietario) => React.ReactNode;
 }) {
+  const plata = usePlata();
   const { t } = useI18n();
   const sinAcceso = t('inmobiliaria.propietario.table.sinAccesoALaPlata');
   return (
@@ -718,16 +800,10 @@ function TarjetasDePropietarios({
               className="block w-full min-w-0 rounded-md pr-10 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <span className="flex items-start gap-3">
-                <span
-                  className={cn(
-                    'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
-                    isCompany
-                      ? 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
-                      : 'bg-primary-soft text-primary'
-                  )}
-                  aria-hidden="true"
-                >
-                  {isCompany ? <Buildings className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                <span className="mt-0.5 shrink-0" aria-hidden="true">
+                  <Avatar name={propietario.name} size="sm">
+                    {isCompany ? <Buildings className="size-4" /> : undefined}
+                  </Avatar>
                 </span>
                 <span className="min-w-0">
                   {/* El nombre se ajusta en dos renglones; nunca «Constructora Ñan…». */}
@@ -737,45 +813,60 @@ function TarjetasDePropietarios({
                   </span>
                 </span>
               </span>
-              <span className="mt-2.5 flex items-start justify-between gap-3">
-                <span className="min-w-0 text-sm text-fg-muted">
-                  <span className="font-semibold tabular-nums text-fg">{propietario.propertyCount}</span>{' '}
-                  {propietario.propertyCount === 1
-                    ? t('inmobiliaria.propietarios.card.property')
-                    : t('inmobiliaria.propietarios.card.properties')}{' '}
-                  <span className="whitespace-nowrap">({arrendadas(t, propietario.activeLeases)})</span>
+              {/* Revisora r22 (Propietarios #2): «1 inmueble · 1 arrendado» y «Canon $ …» en un renglón; lo atrasado y
+                  sus giros, a lo ancho debajo (antes la columna de la plata partía «1 / inmueble / (1 arrendado)»). */}
+              {/* Ronda 23, B2: a 390 los dos lados son `whitespace-nowrap` y no cabían en un renglón: «1 inmueble ·
+                  1 arrendado» se montaba encima del canon. Con `flex-wrap`, si no caben, el canon baja al siguiente. */}
+              <span className="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span className="text-sm text-fg-muted">
+                  {propietario.propertyCount === 0 ? (
+                    <span className="text-fg-subtle">Sin inmuebles</span>
+                  ) : (
+                    <span className="whitespace-nowrap">
+                      <span className="font-mono tabular-nums text-fg">{propietario.propertyCount}</span>{' '}
+                      {propietario.propertyCount === 1
+                        ? t('inmobiliaria.propietarios.card.property')
+                        : t('inmobiliaria.propietarios.card.properties')}{' '}
+                      · {arrendadas(t, propietario.activeLeases)}
+                    </span>
+                  )}
                   {copropiedades > 0 && (
                     <span className="block text-caption tabular-nums">
                       {t('inmobiliaria.propietario.table.copropiedades', { n: copropiedades })}
                     </span>
                   )}
                 </span>
-                <span className="flex shrink-0 flex-col items-end gap-1 text-right">
-                  {sinPlata ? (
-                    <SinAccesoALaPlata texto={sinAcceso} />
-                  ) : (
-                    <>
-                      <span className="whitespace-nowrap font-mono text-sm font-semibold tabular-nums text-fg">
-                        {formatCurrency(propietario.totalMonthlyRent)}
+                {sinPlata ? null : (
+                  <span className="shrink-0 whitespace-nowrap text-right text-sm">
+                    <span className="text-caption text-fg-subtle">Canon </span>
+                    <span className={cn('font-mono tabular-nums', propietario.totalMonthlyRent ? 'text-fg' : 'text-fg-subtle')}>
+                      {propietario.totalMonthlyRent ? plata(propietario.totalMonthlyRent) : '—'}
+                    </span>
+                  </span>
+                )}
+              </span>
+              <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                {sinPlata ? (
+                  <SinAccesoALaPlata texto={sinAcceso} />
+                ) : (
+                  <>
+                    {hasPending ? (
+                      <Badge variant="warning" className="gap-1 font-mono tabular-nums">
+                        <Warning className="h-3.5 w-3.5" aria-hidden="true" />
+                        {plata(propietario.pendingBalance)}
+                      </Badge>
+                    ) : girosDelPropietario(propietario).sinDiaDeGiro ? (
+                      <span className="text-caption text-fg-muted" data-testid="sin-dia-de-giro">
+                        {t('inmobiliaria.propietario.giros.sinDiaDeGiro')}
                       </span>
-                      {hasPending ? (
-                        <Badge variant="warning" className="gap-1 tabular-nums">
-                          <Warning className="h-3.5 w-3.5" aria-hidden="true" />
-                          {formatCurrency(propietario.pendingBalance)}
-                        </Badge>
-                      ) : girosDelPropietario(propietario).sinDiaDeGiro ? (
-                        <span className="text-caption text-fg-muted" data-testid="sin-dia-de-giro">
-                          {t('inmobiliaria.propietario.giros.sinDiaDeGiro')}
-                        </span>
-                      ) : (
-                        <span className="text-caption font-medium text-primary">
-                          {t('inmobiliaria.propietario.table.upToDate')}
-                        </span>
-                      )}
-                      <LineasDelGiro propietario={propietario} />
-                    </>
-                  )}
-                </span>
+                    ) : (
+                      <span className="text-caption text-fg-muted">
+                        {t('inmobiliaria.propietario.table.upToDate')}
+                      </span>
+                    )}
+                    <LineasDelGiro propietario={propietario} />
+                  </>
+                )}
               </span>
             </button>
             <DatosPorCompletar pendientes={datosPendientesDelPropietario(propietario)} className="mt-2 flex flex-wrap items-center gap-2" />

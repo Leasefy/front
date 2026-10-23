@@ -45,6 +45,7 @@ import type {
 import { useI18n } from '@/lib/i18n'
 import type { TranslationParams } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Textarea } from '@/components/ui/textarea'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
@@ -196,6 +197,25 @@ export const ACTION_KIND_VARIANT: Record<
 }
 
 /** Maps a severidad to a Cadence StatusBadge tone (BRAND-CONTRACT §2). */
+/**
+ * Glow up 22-10 (un solo azul): en la FILA de la cola las acciones van calladas
+ * —la principal en secundario y la que rechaza en fantasma rojo—; con diez casos
+ * eran diez azules y diez rojos llenos. El detalle del caso (AccionSugerida)
+ * sigue con `ACTION_KIND_VARIANT`: ahí sí hay una sola principal.
+ */
+const VARIANTE_EN_LA_FILA: Record<WorkItemAction['kind'], 'secondary' | 'ghost' | 'outline'> = {
+  primary: 'secondary',
+  danger: 'ghost',
+  neutral: 'outline',
+}
+
+/** Las banderas con su punto (StatusBadge), como la severidad. */
+const TONO_DE_LA_BANDERA: Record<WorkItemFlag, SemanticTone> = {
+  necesita_humano: 'warning',
+  t323: 'critical',
+  en_espera: 'neutral',
+}
+
 export const SEVERIDAD_TONE: Record<Severidad, SemanticTone> = {
   critica: 'critical',
   alta: 'critical',
@@ -334,7 +354,11 @@ function FilaDeCaso({
     <>
       <TableRowAnimada
         data-testid={`work-item-${item.id}`}
-        className={abrible ? 'cursor-pointer' : undefined}
+        className={cn(
+          // En el celular cada caso es una tarjeta (patrón de Deuda del mes).
+          'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4',
+          abrible && 'cursor-pointer',
+        )}
         onClick={abrible ? () => onOpen?.(item) : undefined}
         onKeyDown={
           abrible
@@ -350,10 +374,10 @@ function FilaDeCaso({
         aria-label={abrible ? t(`${WORKSPACE_NS}.acciones.abrir`, { titulo: item.titulo }) : undefined}
       >
         {/* Caso: el título, lo que el agente propone y con qué evidencia. */}
-        <TableCell className="max-w-[420px] align-top">
+        <TableCell className="max-w-[420px] align-top max-md:col-span-2 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
           <p className="font-medium text-fg">{item.titulo}</p>
 
-          <p className="mt-0.5 flex items-baseline gap-2 text-xs">
+          <p className="mt-0.5 flex items-baseline gap-2 text-caption">
             <span className="font-medium text-fg-muted">{item.accionSugerida.label}</span>
             {typeof item.accionSugerida.confianza === 'number' && (
               <span className="shrink-0 tabular-nums text-fg-subtle">
@@ -364,7 +388,7 @@ function FilaDeCaso({
             )}
           </p>
 
-          <p className="mt-0.5 text-xs leading-relaxed text-fg-muted line-clamp-2">
+          <p className="mt-0.5 text-caption leading-relaxed text-fg-muted line-clamp-2">
             {item.accionSugerida.razon}
           </p>
 
@@ -372,8 +396,8 @@ function FilaDeCaso({
             <dl className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
               {item.accionSugerida.evidencia.map((e, i) => (
                 <div key={`${e.label}-${i}`} className="flex items-center gap-1">
-                  <dt className="text-[11px] text-fg-subtle">{e.label}:</dt>
-                  <dd className="text-[11px] font-medium tabular-nums text-fg-muted">{e.value}</dd>
+                  <dt className="text-caption text-fg-subtle">{e.label}:</dt>
+                  <dd className="text-caption tabular-nums text-fg-muted">{e.value}</dd>
                 </div>
               ))}
             </dl>
@@ -381,7 +405,7 @@ function FilaDeCaso({
         </TableCell>
 
         {/* Severidad + banderas: por qué esto está arriba en la cola. */}
-        <TableCell className="align-top">
+        <TableCell className="align-top max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <StatusBadge
               tone={SEVERIDAD_TONE[item.severidad] ?? 'warning'}
@@ -393,27 +417,22 @@ function FilaDeCaso({
               // Una bandera fuera de contrato se salta en silencio.
               const meta = FLAG_META[flag] ?? null
               if (!meta) return null
-              const Icon = meta.icon
               return (
-                <span
-                  key={flag}
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ring-1 ${meta.cls}`}
-                >
-                  <Icon className="h-3 w-3" aria-hidden="true" />
+                <StatusBadge key={flag} tone={TONO_DE_LA_BANDERA[flag] ?? 'neutral'}>
                   {flagLabel(t, flag)}
-                </span>
+                </StatusBadge>
               )
             })}
           </div>
         </TableCell>
 
-        <TableCell className="align-top">
-          <span className="inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-muted ring-1 ring-border">
+        <TableCell className="align-top max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
+          <StatusBadge tone="neutral" dot={false}>
             {estadoLabel(t, item.estado, agente)}
-          </span>
+          </StatusBadge>
         </TableCell>
 
-        <TableCell className="whitespace-nowrap align-top tabular-nums text-fg-muted">
+        <TableCell className="whitespace-nowrap align-top tabular-nums text-fg-muted max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right max-md:text-caption">
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3 w-3" aria-hidden="true" />
             {relativeTime(item.createdAt, t)}
@@ -423,19 +442,20 @@ function FilaDeCaso({
         {/* Los botones viven en la fila pero no la abren: un clic en «Aprobar»
             que además navegue al detalle es un clic que hace dos cosas. */}
         <TableCell
-          className="align-top"
+          className="align-top max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0"
           onClick={(ev) => ev.stopPropagation()}
           onKeyDown={(ev) => ev.stopPropagation()}
         >
           {item.actions.length > 0 && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
               {item.actions.map((action) => (
                 <Button
                   key={action.id}
                   type="button"
-                  variant={ACTION_KIND_VARIANT[action.kind]}
+                  variant={VARIANTE_EN_LA_FILA[action.kind]}
                   size="sm"
                   hideArrow
+                  className={action.kind === 'danger' ? 'text-danger hover:text-danger' : undefined}
                   disabled={busyActionId !== null}
                   aria-pressed={pideAlgo(action) ? reasonForActionId === action.id : undefined}
                   onClick={() => handleClick(action)}
@@ -487,7 +507,7 @@ function FilaDeCaso({
         {accionSinCampos && (
           <TableCell colSpan={columnas} className="bg-surface-muted/40">
             <div className="space-y-1.5">
-              <label className="text-[11px] text-fg-muted" htmlFor={`reason-${item.id}`}>
+              <label className="text-caption text-fg-muted" htmlFor={`reason-${item.id}`}>
                 {t(`${WORKSPACE_NS}.acciones.motivoPara`, {
                   accion: accionSinCampos.label.toLowerCase(),
                 })}
@@ -500,7 +520,7 @@ function FilaDeCaso({
                   setErrorDelMotivo(null)
                 }}
                 rows={2}
-                className="w-full max-w-2xl resize-none text-xs"
+                className="w-full max-w-2xl resize-none text-caption"
                 placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
                 {...(errorDelMotivo
                   ? { 'aria-describedby': `${motivoId}-error`, 'aria-invalid': true as const }
@@ -607,8 +627,8 @@ export function ColaHumana({
   return (
     <CrossFade swapKey="cola">
     <div className="overflow-hidden rounded-lg border border-border bg-card" data-testid="cola-humana">
-      <Table>
-        <TableHeader>
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             {COLUMNAS.map((c) => (
               <TableHead
@@ -622,12 +642,12 @@ export function ColaHumana({
         </TableHeader>
         {/* Resolver un caso lo saca de la cola con su animación; paginar o
             un caso nuevo hace entrar las filas escalonadas (techo 320 ms). */}
-        <TableBodyAnimado>
+        <TableBodyAnimado className="max-md:block">
           {sorted.length === 0 ? (
             // El vacío vive DENTRO del cuerpo para que los encabezados se
             // sigan viendo: la tabla existe, lo que no hay son casos.
-            <TableRowAnimada key="vacio" data-testid="cola-humana-empty">
-              <TableCell colSpan={COLUMNAS.length} className="p-0">
+            <TableRowAnimada key="vacio" data-testid="cola-humana-empty" className="max-md:block">
+              <TableCell colSpan={COLUMNAS.length} className="p-0 max-md:block">
                 <SinDatos
                   queSon="casos"
                   icono={CheckCircle}

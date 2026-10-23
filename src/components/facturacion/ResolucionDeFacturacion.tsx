@@ -270,10 +270,10 @@ export function ResolucionDeFacturacion({
           >
             {/* 🔴 La cabecera de la tabla es donde vive lo que se puede hacer
                 con la tabla. Antes «Cargar una resolución» era un formulario
-                entero puesto abajo, y desde acá no se veía que existiera. */}
+                entero puesto abajo, y desde aquí no se veía que existiera. */}
             <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h3 className="text-body font-semibold text-fg">
+                <h3 className="text-body font-medium text-fg">
                   Resoluciones cargadas
                 </h3>
                 <p className="text-caption text-fg-muted">
@@ -311,7 +311,7 @@ export function ResolucionDeFacturacion({
                         <SinDatos
                           queSon="resoluciones de facturación"
                           icono={Certificate}
-                          descripcion="Acá queda cada resolución que cargues, con los números que lleva usados y su vigencia."
+                          descripcion="Aquí queda cada resolución que cargues, con los números que lleva usados y su vigencia."
                         />
                       </TableCell>
                     </TableRow>

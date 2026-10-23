@@ -353,7 +353,7 @@ export function EventoAgendaDrawer({
             {/* 🔴 Un evento SIN acciones no lleva el rótulo «Qué haces con
                 esta tarea» encima de la nada (Nico, 18-09-2026). Un
                 vencimiento, una firma pendiente o una inspección los deriva el
-                sistema de otra cosa: no se marcan acá, se resuelven en su
+                sistema de otra cosa: no se marcan aquí, se resuelven en su
                 ficha. Así que el pie dice eso y ofrece el camino. */}
             {!tieneAcciones(evento) ? (
               <CajonPie>

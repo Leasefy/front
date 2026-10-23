@@ -30,6 +30,7 @@ import { useArcoGate } from '@/lib/hooks/cobranza/use-arco-gate'
 import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdownBadge'
 import { ArcoStatusBadge } from '@/components/inmobiliaria/cobranza/ArcoStatusBadge'
 import { BackButton } from '@/components/ui/back-button'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
@@ -138,7 +139,7 @@ function StatusTimeline({ transitions, requestId, t }: StatusTimelineProps) {
 
   return (
     <Card className="p-5">
-      <h2 className="text-lg font-semibold text-fg">
+      <h2 className="text-h3 text-fg">
         {t('inmobiliaria.ai.arco.detail.timeline.title')}
       </h2>
 
@@ -151,7 +152,7 @@ function StatusTimeline({ transitions, requestId, t }: StatusTimelineProps) {
           <Timeline entries={entries} className="mt-4" />
           <Link
             href={`/panel/inmobiliaria/pagos/cobranza/compliance/audit?arco_request_id=${requestId}`}
-            className="mt-4 inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline"
+            className="mt-4 inline-flex items-center gap-1 text-caption text-primary underline-offset-4 hover:underline"
           >
             <ArrowSquareOut className="h-3 w-3" weight="regular" aria-hidden="true" />
             {t('inmobiliaria.ai.arco.detail.viewAudit')}
@@ -220,7 +221,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
     return (
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="arco-url" className="text-xs font-medium text-fg-muted">
+          <label htmlFor="arco-url" className="text-caption font-medium text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.acceso.url')}
           </label>
           <Input
@@ -233,7 +234,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="arco-expires" className="text-xs font-medium text-fg-muted">
+          <label htmlFor="arco-expires" className="text-caption font-medium text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.acceso.expires_at')}
           </label>
           {/* Nico, 10-10-2026: con los campos de Cadence, no el
@@ -265,7 +266,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
     return (
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="arco-rows" className="text-xs font-medium text-fg-muted">
+          <label htmlFor="arco-rows" className="text-caption font-medium text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.rectificacion.affectedRows')}
           </label>
           <Input
@@ -278,7 +279,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="arco-fields" className="text-xs font-medium text-fg-muted">
+          <label htmlFor="arco-fields" className="text-caption font-medium text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.rectificacion.fieldsModified')}
           </label>
           <Input
@@ -296,7 +297,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
   // cancelacion | oposicion
   return (
     <div className="space-y-1.5">
-      <label htmlFor="arco-reason" className="text-xs font-medium text-fg-muted">
+      <label htmlFor="arco-reason" className="text-caption font-medium text-fg-muted">
         {t(`inmobiliaria.ai.arco.detail.resolve.fields.${type}.reason`)}
       </label>
       <Textarea
@@ -389,7 +390,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
   return (
     <Card>
       <div className="space-y-4 p-5">
-        <h2 className="text-lg font-semibold text-fg">
+        <h2 className="text-h3 text-fg">
           {t('inmobiliaria.ai.arco.detail.resolve.title')}
         </h2>
 
@@ -433,7 +434,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
             {/* El motivo queda en el `resolutionPayload` de la solicitud: es el
                 sustento de por qué se rechazó. El back lo acepta opcional. */}
             <div className="space-y-1.5">
-              <label htmlFor="arco-reject-reason" className="text-xs font-medium text-fg-muted">
+              <label htmlFor="arco-reject-reason" className="text-caption font-medium text-fg-muted">
                 {t('inmobiliaria.ai.arco.rejectDialog.reasonLabel')}
               </label>
               <Textarea
@@ -647,7 +648,7 @@ function ExtendDialog({
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="arco-extend-days" className="text-xs font-medium text-fg-muted">
+            <label htmlFor="arco-extend-days" className="text-caption font-medium text-fg-muted">
               {t(`${NS}.daysLabel`).replace('{max}', String(maxDays))}
             </label>
             <Input
@@ -667,7 +668,7 @@ function ExtendDialog({
             <ErrorDelCampo id="arco-extend-days-error" mensaje={errorDeLosDias} />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="arco-extend-reason" className="text-xs font-medium text-fg-muted">
+            <label htmlFor="arco-extend-reason" className="text-caption font-medium text-fg-muted">
               {t(`${NS}.reasonLabel`)}
             </label>
             <Textarea
@@ -745,7 +746,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
 
   const fecha = (iso: string | null) =>
     iso ? (
-      <span className="font-mono text-xs tabular-nums">
+      <span className="font-mono text-caption tabular-nums">
         {shortDateTime.format(new Date(iso))}
       </span>
     ) : (
@@ -770,7 +771,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
       value: verifiedAt ? (
         fecha(verifiedAt)
       ) : (
-        <span className="text-xs text-fg-subtle">
+        <span className="text-caption text-fg-subtle">
           {t('inmobiliaria.ai.arco.detail.requester.pending')}
         </span>
       ),
@@ -790,7 +791,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
 
   return (
     <Card className="space-y-4 p-5">
-      <h2 className="text-lg font-semibold text-fg">
+      <h2 className="text-h3 text-fg">
         {t('inmobiliaria.ai.arco.detail.requester.title')}
       </h2>
 
@@ -802,12 +803,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
           {detail.requesterName}
         </p>
         <p className="break-all text-caption text-fg-muted">{detail.requesterEmail}</p>
-        {/* La cédula sólo existe hasheada (se hashea al recibir la solicitud y
-            el valor crudo no se vuelve a usar), así que se muestra una
-            referencia corta, no un enmascarado que fingiría ser la cédula. */}
-        <MonoLabel title={t('inmobiliaria.ai.arco.table.refHint')}>
-          {t('inmobiliaria.ai.arco.table.ref')} {detail.cedulaRef}
-        </MonoLabel>
+        {/* Revisora r25: la «Ref.» sacada del hash de la cédula no identifica a nadie; se quitó. */}
       </div>
 
       <KeyValueList items={items} compact />
@@ -829,7 +825,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
             {detail.slaExtendedAt && (
               <span className="text-fg-muted">
                 {' · '}
-                <span className="font-mono text-xs tabular-nums">
+                <span className="font-mono text-caption tabular-nums">
                   {shortDateTime.format(new Date(detail.slaExtendedAt))}
                 </span>
               </span>
@@ -915,7 +911,7 @@ function DetalleArco(props: ArcoDetailPageProps) {
   if (error) {
     return (
       <CrossFade swapKey="fallo">
-      <div className="p-4 md:p-6">
+      <div className="p-6 lg:p-8">
         <Alert variant="destructive">
           <AlertTitle>{t('common.error')}</AlertTitle>
           <AlertDescription className="flex items-center justify-between gap-4">
@@ -944,7 +940,7 @@ function DetalleArco(props: ArcoDetailPageProps) {
 
   return (
     <CrossFade swapKey="solicitud">
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Volver: primitivo del DS (`backButtonVariants` de Cadence), no un
           Link con una flecha escrita a mano. */}
       <BackButton
@@ -955,28 +951,28 @@ function DetalleArco(props: ArcoDetailPageProps) {
       {/* El estado va acá arriba y no sólo en la bandeja: al abrir una
           solicitud no había forma de ver en qué estado está — había que
           deducirlo del último evento del timeline. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.arco.detail.title')}
-          </h1>
-          <ArcoStatusBadge status={detail.status} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {detail.status === 'pending_admin_triage' && (
-            <TriageButton requestId={params.id} detailRefetch={detailRefetch} t={t} />
-          )}
-          {/* Una sola prórroga, y sólo mientras el término siga corriendo. */}
-          {!detail.isClosed && detail.slaExtensionDays == null && (
-            <ExtendDialog
-              requestId={params.id}
-              type={detail.type}
-              detailRefetch={detailRefetch}
-              t={t}
-            />
-          )}
-        </div>
-      </div>
+      <EncabezadoDePantalla
+        seccion="Cobranza · Solicitudes ARCO"
+        titulo={t('inmobiliaria.ai.arco.detail.title')}
+        descripcion="Lo que pidió la persona, en qué va y lo que falta para responderle dentro del término."
+        junto={<ArcoStatusBadge status={detail.status} />}
+        acciones={
+          <>
+            {detail.status === 'pending_admin_triage' && (
+              <TriageButton requestId={params.id} detailRefetch={detailRefetch} t={t} />
+            )}
+            {/* Una sola prórroga, y sólo mientras el término siga corriendo. */}
+            {!detail.isClosed && detail.slaExtensionDays == null && (
+              <ExtendDialog
+                requestId={params.id}
+                type={detail.type}
+                detailRefetch={detailRefetch}
+                t={t}
+              />
+            )}
+          </>
+        }
+      />
 
       {/* Two-column layout: left (timeline + resolve panel), right (sidebar) */}
       {/* `[&>*]:min-w-0`: a 390 px las columnas no se encogían y la ficha se salía (QA-AGENTES 16-10). */}

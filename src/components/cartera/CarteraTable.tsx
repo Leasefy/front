@@ -83,17 +83,20 @@ import {
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 import { nombreDelMes } from '@/lib/utils/mes'
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 import { GRAVEDAD, gravedadDe } from '@/lib/cartera/edades'
 import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
 import { CajonDeGestiones } from '@/components/cobranza-manual/CajonDeGestiones'
 import {
-  RUTA_DE_REGLAS_DE_MORA,
   CLAVE_DE_MORA,
   interesDe,
   totalConInteres,
+  interesPendiente,
 } from './interes-de-mora'
+import { cn } from '@/lib/utils'
+import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha'
 
 /** A dónde vuelve el estado de cuenta que se abra desde esta tabla. */
 const VOLVER_A = '/panel/inmobiliaria/pagos/cartera'
@@ -125,7 +128,7 @@ export function siguienteOrden(
 }
 
 /** Cuántas columnas tiene la tabla: el vacío las abarca todas. */
-export const COLUMNAS_DE_CARTERA = 9
+export const COLUMNAS_DE_CARTERA = 7
 
 /**
  * Qué tan grave está una fila, como UN número comparable.
@@ -209,9 +212,14 @@ export interface CarteraTableProps {
    */
   marcadas?: ReadonlySet<string>
   onMarcar?: (ids: readonly string[], si: boolean) => void
+  /**
+   * El formato de la plata de la página (revisión, ronda 11: la franja decía
+   * «,00» y la tabla no). Sin él, el de siempre.
+   */
+  formato?: (n: number | null | undefined) => string
 }
 
-export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave, marcadas, onMarcar }: CarteraTableProps) {
+export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave, marcadas, onMarcar, formato }: CarteraTableProps) {
   const conCasillas = Boolean(marcadas && onMarcar)
   const { t } = useI18n()
   /*
@@ -268,8 +276,8 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
 
   return (
     <>
-    <Table className="min-w-[1220px]" data-testid="cartera-tabla">
-      <TableHeader>
+    <Table className="max-md:block md:min-w-[960px] xl:min-w-0 md:[&_td]:px-3 md:[&_th]:px-3" data-testid="cartera-tabla">
+      <TableHeader className="max-md:hidden">
         <TableRow>
           {conCasillas && marcadas && onMarcar && (
             <TableHead className="w-10 pl-4 pr-0">
@@ -282,8 +290,6 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
             </TableHead>
           )}
           <Ordenable campo="inquilino">{t('cartera.tabla.inquilino')}</Ordenable>
-          <TableHead className="whitespace-nowrap">{t('cartera.tabla.inmueble')}</TableHead>
-          <TableHead className="whitespace-nowrap">{t('cartera.tabla.propietario')}</TableHead>
           <Ordenable campo="mes">{t('cartera.tabla.mes')}</Ordenable>
           <Ordenable campo="estado">{t('cartera.tabla.mora')}</Ordenable>
           <Ordenable campo="debe" alineado="right">
@@ -295,11 +301,11 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
           <Ordenable campo="total" alineado="right">
             {t(CLAVE_DE_MORA.columnaTotal)}
           </Ordenable>
-          <TableHead className="w-24" />
+          <TableHead className="w-[76px]" />
         </TableRow>
       </TableHeader>
       {/* Movimiento (ola 2, 03-10-2026): filas escalonadas con techo. */}
-      <TableBodyAnimado key={clave}>
+      <TableBodyAnimado key={clave} className="max-md:block">
         {ordenados.length === 0 && vacio ? (
           <TableRowAnimada key="vacio">
             <TableCell colSpan={COLUMNAS_DE_CARTERA + (conCasillas ? 1 : 0)} className="p-0">
@@ -321,6 +327,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
                 ) : undefined
               }
               item={item}
+              formato={formato}
               onVerCobro={onVerCobro ? () => onVerCobro(item) : undefined}
               onGestiones={() => setGestionesDe(item)}
             />
@@ -346,17 +353,20 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
 function FilaDeCartera({
   casilla,
   item,
+  formato,
   onVerCobro,
   onGestiones,
 }: {
   /** La casilla de las acciones masivas, si la tabla las tiene. */
   casilla?: React.ReactNode
   item: CarteraItem
+  formato?: (n: number | null | undefined) => string
   onVerCobro?: () => void
   /** Abrir las gestiones de cobro de la persona (COBRANZA-MANUAL). */
   onGestiones?: () => void
 }) {
-  const { t, locale, formatCurrency, formatDate } = useI18n()
+  const { t, locale, formatCurrency: formatoDeSiempre, formatDate } = useI18n()
+  const formatCurrency = formato ?? formatoDeSiempre
 
   const inmueble = item.propertyAddress ?? item.propertyTitle
   const whatsapp = item.tenantPhone
@@ -365,16 +375,21 @@ function FilaDeCartera({
 
   return (
     <TableRowAnimada
-      className="cursor-pointer"
+      // 22-10 (revisión, 390): bajo 768 cada deuda es una tarjeta —cada dato con su
+      // rótulo a la izquierda (data-rotulo) y la cifra a la derecha—.
+      className={cn('cursor-pointer max-md:relative max-md:flex max-md:flex-col max-md:gap-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3', casilla !== undefined && 'max-md:pl-12')}
       onClick={onVerCobro}
       data-testid="cartera-fila"
       data-cuota-id={item.cuotaId}
       data-cajon={item.cajon}
     >
-      {casilla !== undefined && <TableCell className="w-10 pl-4 pr-0 align-middle">{casilla}</TableCell>}
+      {/* Ronda 17 (390): la casilla en el renglón del nombre (antes sola en su renglón). */}
+      {casilla !== undefined && (
+        <TableCell className="w-10 pl-4 pr-0 align-middle max-md:absolute max-md:left-4 max-md:top-3.5 max-md:w-auto max-md:p-0">{casilla}</TableCell>
+      )}
       {/* Inquilino: quién debe y por dónde se le habla. */}
-      <TableCell className="align-middle">
-        <div className="min-w-0 max-w-[12rem]">
+      <TableCell className="align-middle max-md:block max-md:p-0">
+        <div className="min-w-0 max-w-[15rem]">
           {item.tenantName ? (
             refDelInquilino({ documento: item.tenantDocument }) ? (
               <Link
@@ -396,8 +411,27 @@ function FilaDeCartera({
               {t('cartera.tabla.sinInquilino')}
             </p>
           )}
+          {/* Ronda 11 de la revisión (22-10): el inmueble y su propietario —a quién le
+              estamos quedando mal— van en una línea bajo el nombre, sin columna
+              propia: así la tabla cabe a 1440 y el Total no sale cortado. */}
+          <p
+            className="mt-0.5 truncate text-caption text-fg-muted"
+            title={[inmueble, item.propietarioName].filter(Boolean).join(' · ') || undefined}
+          >
+            {inmueble ? (
+              <span className="text-fg">{sinMayusculasSostenidas(inmueble)}</span>
+            ) : (
+              <span className="text-warning">{t('cartera.tabla.sinDireccion')}</span>
+            )}
+            {' · '}
+            {item.propietarioName ? (
+              <span data-testid="propietario-de-la-deuda">{item.propietarioName}</span>
+            ) : (
+              <span className="text-warning">{t('cartera.tabla.sinPropietario')}</span>
+            )}
+          </p>
           {item.tenantPhone ? (
-            <span className="mt-0.5 flex items-center gap-2 text-xs text-fg-muted">
+            <span className="mt-0.5 flex items-center gap-2 text-caption text-fg-muted">
               <a
                 href={`tel:${item.tenantPhone}`}
                 onClick={(e) => e.stopPropagation()}
@@ -423,42 +457,24 @@ function FilaDeCartera({
           ) : (
             /* Sin teléfono no hay llamada ni WhatsApp: es la deuda que sólo se
                puede cobrar por correo, y hay que saberlo antes de intentarlo. */
-            <span className="mt-0.5 block text-xs text-warning">
+            <span className="mt-0.5 block text-caption text-warning">
               {t('cartera.tabla.sinTelefono')}
             </span>
           )}
         </div>
       </TableCell>
 
-      {/* Inmueble */}
-      <TableCell className="align-middle">
-        {inmueble ? (
-          <span className="block max-w-[11rem] truncate text-fg-muted">{inmueble}</span>
-        ) : (
-          <span className="text-warning">{t('cartera.tabla.sinDireccion')}</span>
-        )}
-      </TableCell>
-
-      {/* Propietario — a quién le estamos quedando mal. */}
-      <TableCell className="align-middle">
-        {item.propietarioName ? (
-          <span className="block max-w-[9rem] truncate text-fg-muted">
-            {item.propietarioName}
-          </span>
-        ) : (
-          <span className="text-warning">{t('cartera.tabla.sinPropietario')}</span>
-        )}
-      </TableCell>
-
       {/* Período + vencimiento apilado: la fecha exacta es lo que se discute
           con el inquilino, y no cabía como columna aparte. */}
-      <TableCell className="align-middle">
+      <TableCell className="align-middle max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t('cartera.tabla.mes')}>
         <div className="whitespace-nowrap">
           {/* «2026-09» es el identificador del mes, no cómo se lee: la casa
               lo escribe con letras (`nombreDelMes`, ver DispersionCard). */}
           <div className="whitespace-nowrap text-fg">{nombreDelMes(item.month, locale)}</div>
-          <div className="font-mono text-xs tabular-nums text-fg-subtle">
-            {t('cartera.tabla.vence', { fecha: formatDate(item.vence) })}
+          {/* Ronda 12 (390): en el celular el chip de días ya lo dice. */}
+          <div className="text-caption tabular-nums text-fg-subtle max-md:hidden">
+            {/* Revisora r25 (Cartera #5): «1 ago 2026», como escribe la casa (VOZ §4). */}
+            {t('cartera.tabla.vence', { fecha: locale === 'en' ? formatDate(item.vence) : fechaCorta(item.vence) })}
           </div>
         </div>
       </TableCell>
@@ -468,7 +484,7 @@ function FilaDeCartera({
           🔴 El badge NO dice «al día» cuando no hay mora: una cuota que venció
           hace dos días con tres de plazo no está al día, está dentro del plazo
           —y la diferencia es justo la que decide si la cobranza la toca—. */}
-      <TableCell className="align-middle">
+      <TableCell className="align-middle max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t('cartera.tabla.mora')}>
         <div className="space-y-1">
           <Badge
             variant={
@@ -501,7 +517,7 @@ function FilaDeCartera({
           {/* El plazo se dice sólo donde explica algo: es la razón por la que
               una cuota vencida todavía no es cartera. */}
           {item.cajon === 'VENCIDA_EN_PLAZO' && item.diasDePlazo > 0 ? (
-            <div className="whitespace-nowrap text-xs text-fg-subtle">
+            <div className="whitespace-nowrap text-caption text-fg-subtle">
               {t(
                 item.diasDePlazo === 1
                   ? 'cartera.tabla.unDiaDePlazo'
@@ -510,7 +526,7 @@ function FilaDeCartera({
               )}
             </div>
           ) : null}
-          <div className="whitespace-nowrap text-xs text-fg-subtle">
+          <div className="whitespace-nowrap text-caption text-fg-subtle max-md:hidden">
             {/* Tres estados, no dos. `null` es «no hay cobro emitido desde el
                 cual escribirle»; un 0 es un cero VERDADERO («no le hemos
                 escrito»). Taparlos con el mismo texto los vuelve el mismo
@@ -530,13 +546,14 @@ function FilaDeCartera({
       </TableCell>
 
       {/* Saldo: el pendiente manda; el abono va debajo sólo si lo hubo. */}
-      <TableCell className="align-middle text-right">
+      {/* Ronda 12 (390): sin intereses, «Debe» es igual al Total: en el celular sólo el Total. */}
+      <TableCell className={cn('align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left', interesPendiente(item) === 0 && item.paidAmount === 0 && 'max-md:hidden')} data-rotulo={t('cartera.tabla.debe')}>
         <div className="whitespace-nowrap">
           <div className="font-mono font-medium tabular-nums text-fg">
             {formatCurrency(item.pendingAmount)}
           </div>
           {item.paidAmount > 0 && (
-            <div className="font-mono text-xs tabular-nums text-fg-subtle">
+            <div className="font-mono text-caption tabular-nums text-fg-subtle">
               {t('cartera.tabla.abonado', { monto: formatCurrency(item.paidAmount) })}
             </div>
           )}
@@ -544,12 +561,12 @@ function FilaDeCartera({
       </TableCell>
 
       {/* Intereses: aparte del capital. Nunca un $0 mudo. */}
-      <TableCell className="align-middle text-right" data-testid="cartera-intereses">
-        <InteresDeLaFila item={item} />
+      <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t(CLAVE_DE_MORA.columnaIntereses)} data-testid="cartera-intereses">
+        <InteresDeLaFila item={item} formato={formato} />
       </TableCell>
 
       {/* Total: capital + interés, lo que hay que pagar hoy por esta cuota. */}
-      <TableCell className="align-middle text-right" data-testid="cartera-total">
+      <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:pr-20 max-md:text-left" data-rotulo={t(CLAVE_DE_MORA.columnaTotal)} data-testid="cartera-total">
         <div className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
           {interesDe(item)
             ? formatCurrency(totalConInteres(item, item.pendingAmount))
@@ -557,12 +574,13 @@ function FilaDeCartera({
         </div>
       </TableCell>
 
-      <TableCell className="align-middle text-right">
+      {/* Ronda 18 (390): los dos íconos en el renglón del Total, a la derecha (no en un renglón propio). */}
+      <TableCell className="align-middle text-right max-md:absolute max-md:bottom-2 max-md:right-2 max-md:p-0">
         <div className="flex items-center justify-end gap-1">
         {onGestiones ? (
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             hideArrow
             title="Registrar gestión"
             onClick={(e) => {
@@ -580,7 +598,7 @@ function FilaDeCartera({
             🔴 Sin cobro emitido no hay cobro que abrir: el enlace va al
             CONTRATO, que es de donde nace la deuda. Un `?cobro=null` era una
             pestaña en blanco. */}
-        <Button asChild variant="ghost" size="sm" hideArrow>
+        <Button asChild variant="ghost" size="icon" hideArrow>
           <Link
             href={aDondeLleva(item)}
             onClick={(e) => e.stopPropagation()}
@@ -610,8 +628,15 @@ function FilaDeCartera({
  *  · Sin mora: un guion. No hay nada que liquidar.
  *  · El back no lo mandó: un guion con el porqué en el `title`, nunca $0.
  */
-function InteresDeLaFila({ item }: { item: CarteraItem }) {
-  const { t, formatCurrency } = useI18n()
+function InteresDeLaFila({
+  item,
+  formato,
+}: {
+  item: CarteraItem
+  formato?: (n: number | null | undefined) => string
+}) {
+  const { t, formatCurrency: formatoDeSiempre } = useI18n()
+  const formatCurrency = formato ?? formatoDeSiempre
   const interes = interesDe(item)
 
   if (!interes) {
@@ -633,37 +658,31 @@ function InteresDeLaFila({ item }: { item: CarteraItem }) {
           {formatCurrency(interes.pendienteCop)}
         </div>
         {interes.abonadoCop > 0 && (
-          <div className="font-mono text-xs tabular-nums text-fg-subtle">
+          <div className="font-mono text-caption tabular-nums text-fg-subtle">
             {t(CLAVE_DE_MORA.abonado, { monto: formatCurrency(interes.abonadoCop) })}
           </div>
         )}
         {interes.pagadaEnMora && (
-          <div className="text-xs text-fg-subtle">{t(CLAVE_DE_MORA.pagadaEnMora)}</div>
+          <div className="text-caption text-fg-subtle">{t(CLAVE_DE_MORA.pagadaEnMora)}</div>
         )}
       </div>
     )
   }
 
   if (interes.motivo && interes.sinReglas) {
+    // Revisora r25 (Cartera #3): el «sin reglas · configúralas» va UNA vez, en el aviso de arriba
+    // de la tabla; la celda dice «—» (y su porqué, para el lector de pantalla y al pasar el ratón).
     return (
-      <div className="whitespace-nowrap text-xs" title={interes.motivo}>
-        <div className="text-warning" data-testid="cartera-sin-reglas">
-          {t(CLAVE_DE_MORA.sinReglas)}
-        </div>
-        <Link
-          href={RUTA_DE_REGLAS_DE_MORA}
-          onClick={(e) => e.stopPropagation()}
-          className="text-fg-muted underline underline-offset-4 hover:text-fg"
-        >
-          {t(CLAVE_DE_MORA.configurar)}
-        </Link>
-      </div>
+      <span className="text-fg-subtle" title={interes.motivo} data-testid="cartera-sin-reglas">
+        <span aria-hidden="true">—</span>
+        <span className="sr-only">{t(CLAVE_DE_MORA.sinReglas)}</span>
+      </span>
     )
   }
 
   if (interes.motivo) {
     return (
-      <span className="whitespace-nowrap text-xs text-fg-muted" title={interes.motivo}>
+      <span className="block max-w-[11rem] text-caption leading-snug text-fg-muted" title={interes.motivo}>
         {t(CLAVE_DE_MORA.sinInteres)}
       </span>
     )

@@ -175,8 +175,8 @@ export function EventosDeGasto({
 
           <div className="overflow-hidden rounded-lg border border-border bg-surface">
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+              <Table className="max-md:block">
+                <TableHeader className="max-md:hidden">
                   <TableRow>
                     <TableHead className="min-w-[240px]">Evento</TableHead>
                     <TableHead>Lado</TableHead>
@@ -184,21 +184,25 @@ export function EventosDeGasto({
                     <TableHead>Propuesta</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBodyAnimado>
+                <TableBodyAnimado className="max-md:block">
                   {lista.map((e) => (
-                    <TableRowAnimada key={e.evento} data-testid={`evento-de-gasto-${e.evento}`}>
-                      <TableCell className="max-w-[320px]">
+                    <TableRowAnimada
+                      key={e.evento}
+                      data-testid={`evento-de-gasto-${e.evento}`}
+                      className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                    >
+                      <TableCell className="max-w-[320px] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="font-medium text-fg">{e.nombre}</p>
                         {/* CB-05: una línea, y «Leer completo» la abre en su lugar. */}
                         <ExplicacionDelEvento texto={e.explicacion} testId={`explicacion-gasto-${e.evento}`} />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                         <Badge variant={e.lado === 'DEBE' ? 'secondary' : 'outline'}>
                           {NOMBRE_DEL_LADO[e.lado]}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex max-w-[26rem] items-center gap-2">
+                      <TableCell className="max-md:col-span-2 max-md:row-start-2 max-md:block max-md:p-0">
+                        <div className="flex max-w-[26rem] items-center gap-2 max-md:max-w-none">
                           <SelectorDeCuenta
                             cuentas={cuentas}
                             value={e.cuenta?.id ?? ''}
@@ -229,7 +233,7 @@ export function EventosDeGasto({
                           mensaje={errores?.[e.evento]}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0">
                         {/* 🔴 CB-05: la propuesta repetía, fila por fila, la cuenta que ya
                             estaba elegida. Sólo se dice cuando DIFIERE (o no hay cuenta). */}
                         {e.cuenta && !propuestaQueSirve(e, e.cuenta.id) ? (

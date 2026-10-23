@@ -352,9 +352,10 @@ describe('quién cargó las cifras y cuándo', () => {
     h.parametros.mockResolvedValue(guardadas());
     await montar();
     const bloque = contenedor.querySelector('[data-testid="quien-y-cuando"]');
-    expect(bloque?.textContent).toContain('2026-01-05');
+    // Glow up, 3.ª vuelta: las fechas en palabras («5 ene 2026»), el mismo dato.
+    expect(bloque?.textContent).toContain('5 ene 2026');
     expect(bloque?.textContent).toContain('Ana Gómez');
-    expect(bloque?.textContent).toContain('2026-01-07');
+    expect(bloque?.textContent).toContain('7 ene 2026');
     expect(bloque?.textContent).toContain('Carlos Ruiz');
   });
 
@@ -381,16 +382,16 @@ describe('quién cargó las cifras y cuándo', () => {
     );
     await montar();
     const bloque = contenedor.querySelector('[data-testid="quien-y-cuando"]');
-    expect(bloque?.textContent).toContain('2026-01-05');
+    expect(bloque?.textContent).toContain('5 ene 2026');
     expect(bloque?.textContent).toContain('no se pudo resolver quién');
   });
 
-  it('sin nada cargado, lo dice', async () => {
+  it('sin nada cargado, lo dice UNA vez (r25 #1): la línea de lo que falta, sin el bloque de quién y cuándo', async () => {
     h.parametros.mockResolvedValue(sinCargar());
     await montar();
-    expect(
-      contenedor.querySelector('[data-testid="quien-y-cuando"]')?.textContent,
-    ).toContain('Todavía nadie ha cargado');
+    expect(contenedor.querySelector('[data-testid="faltan-cifras"]')?.textContent).toContain('Falta el salario mínimo del año');
+    expect(contenedor.querySelector('[data-testid="quien-y-cuando"]')).toBeNull();
+    expect(contenedor.textContent).not.toContain('Todavía nadie ha cargado');
   });
 
   it('🔴 con cifras YA cargadas, la referencia del año conocido SIGUE a la vista', async () => {

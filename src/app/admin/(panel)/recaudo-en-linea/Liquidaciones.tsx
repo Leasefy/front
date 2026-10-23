@@ -13,16 +13,22 @@
  */
 
 import { useState } from 'react'
+import { Funnel } from '@phosphor-icons/react'
 import { Collapse, Presence } from '@leasefy/cadence'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Desplegable } from '@/components/admin/screen/Filtros'
+import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
+import { useEstadoDeLaTabla } from '@/lib/admin/use-estado-de-la-tabla'
 import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
 
 import { Pill } from '@/components/admin/Pill'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
 import { Pagination } from '@/components/admin/screen/Pagination'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
-import { fmtDateTime } from '@/lib/admin/format'
+import { fmtDateTime, fmtFecha } from '@/lib/admin/format'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+
+/** «generada» → «Generada» (los estados viven en minúscula para ir dentro de una frase). */
+const conMayuscula = (t: string) => t.charAt(0).toLocaleUpperCase('es-CO') + t.slice(1)
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { aFechaIso, hoyLocal } from '@/lib/fechas-locales'
 import {
@@ -60,16 +66,34 @@ export function Liquidaciones({
   inmobiliarias,
   giroDisponible,
   version,
+  generando,
+  alPedirGenerar,
 }: {
   inmobiliarias: InmobiliariaDelRecaudo[]
   giroDisponible: boolean
   /** Sube cuando otra parte de la pantalla cambió algo (importar un reporte). */
   version: number
+  /** «Generar liquidaciones» se abre desde el encabezado de la pantalla (la acción principal). */
+  generando: boolean
+  /** La misma acción, desde el vacío (ronda 26: la salida del vacío va en el vacío). */
+  alPedirGenerar?: () => void
 }) {
-  const [filtros, setFiltros] = useState<FiltrosDeLiquidaciones>({})
-  const [pagina, setPagina] = useState(0)
+  // Ronda 26 (revisora r25): los filtros y la página viven en la URL (antes en el estado de la pestaña: una
+  // lista filtrada no se compartía con el enlace ni sobrevivía a recargar). Sin enrutador (una prueba), en memoria.
+  const url = useEstadoDeLaTabla()
+  const estadoDeLaUrl = url.get('estado')
+  const filtros: FiltrosDeLiquidaciones = {
+    agencyId: url.get('inmobiliaria') || undefined,
+    desde: url.get('desde') || undefined,
+    hasta: url.get('hasta') || undefined,
+    estado: (['generada', 'girada', 'conciliada'].includes(estadoDeLaUrl) ? estadoDeLaUrl : undefined) as
+      | EstadoDeLaLiquidacion
+      | undefined,
+  }
+  const pagina = Number(url.get('pagina')) || 0
+  const setPagina = (p: number) => url.setFilters({ pagina: p <= 0 ? undefined : p })
   const [abierta, setAbierta] = useState<string | null>(null)
-  const [generando, setGenerando] = useState(false)
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
   const rangoInvertido = !!filtros.desde && !!filtros.hasta && filtros.desde > filtros.hasta
 
   const { data, isLoading, error, refetch } = useApiQuery(
@@ -79,75 +103,27 @@ export function Liquidaciones({
   )
 
   const cambiar = (cambio: Partial<FiltrosDeLiquidaciones>) => {
-    setFiltros((f) => ({ ...f, ...cambio }))
-    setPagina(0)
+    const clave: Record<keyof FiltrosDeLiquidaciones, string> = {
+      agencyId: 'inmobiliaria',
+      desde: 'desde',
+      hasta: 'hasta',
+      estado: 'estado',
+    } as Record<keyof FiltrosDeLiquidaciones, string>
+    const patch: Record<string, string | undefined> = { pagina: undefined }
+    for (const [k, v] of Object.entries(cambio)) patch[clave[k as keyof FiltrosDeLiquidaciones] ?? k] = (v as string | undefined) || undefined
+    url.setFilters(patch)
     setAbierta(null)
   }
+  const hayFiltros = Boolean(filtros.agencyId || filtros.desde || filtros.hasta || filtros.estado)
+  const filtrosPuestos = [filtros.agencyId, filtros.desde || filtros.hasta, filtros.estado].filter(Boolean).length
 
   return (
     <div data-testid="liquidaciones">
-      <Card className="p-5">
-        <div className="flex flex-wrap items-end gap-4">
-          <label className="block min-w-[14rem]">
-            <Etiqueta>inmobiliaria</Etiqueta>
-            <Desplegable
-              value={filtros.agencyId ?? ''}
-              onChange={(v) => cambiar({ agencyId: v || undefined })}
-              todas="Todas"
-              aria-label="Inmobiliaria"
-              data-testid="filtro-inmobiliaria"
-              className="mt-1"
-              opciones={inmobiliarias.map((i) => ({ valor: i.id, nombre: i.nombre }))}
-            />
-          </label>
-          <label className="block">
-            <Etiqueta>giro desde</Etiqueta>
-            <div className="mt-1 w-44">
-              <CampoDeFecha id="filtro-desde" testid="filtro-desde" value={filtros.desde ?? ''} onChange={(v) => cambiar({ desde: v || undefined })} />
-            </div>
-          </label>
-          <label className="block">
-            <Etiqueta>giro hasta</Etiqueta>
-            <div className="mt-1 w-44">
-              <CampoDeFecha id="filtro-hasta" testid="filtro-hasta" value={filtros.hasta ?? ''} onChange={(v) => cambiar({ hasta: v || undefined })} />
-            </div>
-          </label>
-          <label className="block">
-            <Etiqueta>estado</Etiqueta>
-            <Desplegable
-              value={filtros.estado ?? ''}
-              onChange={(v) => cambiar({ estado: (v || undefined) as EstadoDeLaLiquidacion | undefined })}
-              todas="Todos"
-              aria-label="Estado"
-              data-testid="filtro-estado"
-              className="mt-1"
-              opciones={[
-                { valor: 'generada', nombre: 'Generada' },
-                { valor: 'girada', nombre: 'Girada' },
-                { valor: 'conciliada', nombre: 'Conciliada en el banco' },
-              ]}
-            />
-          </label>
-          <div className="ml-auto">
-            <Button hideArrow type="button"
-              
-              onClick={() => setGenerando((g) => !g)}
-              aria-expanded={generando}
-              data-testid="abrir-generar"
-            >
-              {generando ? 'Cerrar' : 'Generar liquidaciones'}
-            </Button>
-          </div>
-        </div>
-        {rangoInvertido ? (
-          <p className="text-body-sm text-danger mt-3" data-testid="rango-invertido">
-            La fecha «desde» va antes de la fecha «hasta».
-          </p>
-        ) : null}
-      </Card>
-
+      {/* Ronda 28 (revisora r27): primero lo que se genera y LA RESPUESTA; después UNA tarjeta con los filtros
+          DENTRO (antes la barra suelta, «selects por ahí tirados») y la lista. A 390 los filtros van detrás de
+          «Filtros (n)». */}
       <Collapse open={generando}>
-        <div className="pt-4">
+        <div className="pb-4">
           <GenerarLiquidaciones
             inmobiliarias={inmobiliarias}
             alGenerar={() => {
@@ -159,29 +135,144 @@ export function Liquidaciones({
       </Collapse>
 
       {data && data.disponible && data.total > 0 ? (
-        <div className="grid grid-cols-3 gap-4 mt-4" data-testid="totales-de-liquidaciones">
-          <Card className="p-4">
-            <Cifra nombre="liquidaciones" valor={data.totales.liquidaciones} />
-          </Card>
-          <Card className="p-4">
-            <Cifra nombre="bruto" valor={pesos(data.totales.brutoCop)} />
-          </Card>
-          <Card className="p-4">
-            <Cifra nombre="neto que se gira" valor={pesos(data.totales.netoCop)} />
-          </Card>
+        // LA RESPUESTA: cuánto se gira con estos filtros y cuánto se quedó en el camino (Wompi y Leasefy).
+        <div className="mb-4 rounded-lg border border-border bg-surface p-5 sm:p-6" data-testid="totales-de-liquidaciones">
+          <CifraHeroe
+            rotulo="Neto que se gira"
+            cifra={pesos(data.totales.netoCop)}
+            contexto={`en ${data.totales.liquidaciones === 1 ? '1 liquidación' : `${data.totales.liquidaciones} liquidaciones`}, de ${pesos(data.totales.brutoCop)} que pagaron los inquilinos`}
+            tramos={[
+              { clave: 'neto', etiqueta: 'Se gira', monto: data.totales.netoCop, tono: 'exito', cifra: pesos(data.totales.netoCop) },
+              {
+                clave: 'descontado',
+                etiqueta: 'Descontado (Wompi y Leasefy)',
+                monto: Math.max(0, data.totales.brutoCop - data.totales.netoCop),
+                tono: 'neutro',
+                cifra: pesos(Math.max(0, data.totales.brutoCop - data.totales.netoCop)),
+              },
+            ]}
+            total={data.totales.brutoCop}
+          />
         </div>
       ) : null}
 
-      <div className="mt-4">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+        <div className="space-y-3 border-b border-border p-4">
+          <Button
+            variant="secondary"
+            size="sm"
+            hideArrow
+            type="button"
+            className="w-full gap-2 sm:hidden"
+            aria-expanded={filtrosAbiertos}
+            onClick={() => setFiltrosAbiertos((v) => !v)}
+            data-testid="liquidaciones-boton-filtros"
+          >
+            <Funnel className="h-4 w-4" aria-hidden />
+            Filtros{filtrosPuestos > 0 ? ` (${filtrosPuestos})` : ''}
+          </Button>
+          <div className={filtrosAbiertos ? 'block' : 'hidden sm:block'}>
+        <BarraDeFiltros>
+          <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria-recaudo">
+            <Desplegable
+              id="filtro-inmobiliaria-recaudo"
+              value={filtros.agencyId ?? ''}
+              onChange={(v) => cambiar({ agencyId: v || undefined })}
+              todas="Todas las inmobiliarias"
+              aria-label="Inmobiliaria"
+              data-testid="filtro-inmobiliaria"
+              opciones={inmobiliarias.map((i) => ({ valor: i.id, nombre: i.nombre }))}
+            />
+          </Filtro>
+          <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Fecha del giro">
+            <span className="w-full shrink-0 whitespace-nowrap text-caption text-fg-muted sm:w-auto">Fecha del giro</span>
+            <label htmlFor="filtro-desde" className="sr-only">
+              Desde
+            </label>
+            <div className="min-w-0 flex-1 sm:w-[9.5rem] sm:flex-none">
+              <CampoDeFecha id="filtro-desde" testid="filtro-desde" value={filtros.desde ?? ''} onChange={(v) => cambiar({ desde: v || undefined })} />
+            </div>
+            <span aria-hidden="true" className="text-fg-subtle">
+              –
+            </span>
+            <label htmlFor="filtro-hasta" className="sr-only">
+              Hasta
+            </label>
+            <div className="min-w-0 flex-1 sm:w-[9.5rem] sm:flex-none">
+              <CampoDeFecha id="filtro-hasta" testid="filtro-hasta" value={filtros.hasta ?? ''} onChange={(v) => cambiar({ hasta: v || undefined })} />
+            </div>
+          </div>
+          <Filtro etiqueta="Estado" htmlFor="filtro-estado-recaudo">
+            <Desplegable
+              id="filtro-estado-recaudo"
+              value={filtros.estado ?? ''}
+              onChange={(v) => cambiar({ estado: (v || undefined) as EstadoDeLaLiquidacion | undefined })}
+              todas="Todos los estados"
+              aria-label="Estado"
+              data-testid="filtro-estado"
+              opciones={[
+                { valor: 'generada', nombre: 'Generada' },
+                { valor: 'girada', nombre: 'Girada' },
+                { valor: 'conciliada', nombre: 'Conciliada en el banco' },
+              ]}
+            />
+          </Filtro>
+          {hayFiltros ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
+              onClick={() => cambiar({ agencyId: undefined, desde: undefined, hasta: undefined, estado: undefined })}
+            >
+              Limpiar filtros
+            </Button>
+          ) : null}
+        </BarraDeFiltros>
+          </div>
+          {rangoInvertido ? (
+            <p className="text-body-sm text-danger" data-testid="rango-invertido">
+              La fecha «desde» va antes de la fecha «hasta».
+            </p>
+          ) : null}
+        </div>
+      <div className="p-4">
         {isLoading ? (
           <LoadingBlock label="cargando liquidaciones" />
         ) : error ? (
-          <ErrorBlock error={error} />
+          <ErrorBlock error={error} onReintentar={refetch} />
         ) : !data || data.data.length === 0 ? (
-          <EmptyBlock
-            title="Ninguna liquidación con estos filtros"
-            hint="Genera las de un rango de fechas con «Generar liquidaciones»: la frecuencia del giro está por definir."
-          />
+          // Ronda 26 (T7): «con estos filtros» sólo con filtros puestos; sin filtros, la acción va en el vacío.
+          hayFiltros ? (
+            <EmptyBlock
+              title="Ninguna liquidación con estos filtros"
+              hint="Quita algún filtro para ver más."
+              accion={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  hideArrow
+                  type="button"
+                  onClick={() => cambiar({ agencyId: undefined, desde: undefined, hasta: undefined, estado: undefined })}
+                >
+                  Limpiar filtros
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyBlock
+              title="Todavía no hay liquidaciones"
+              // Ronda 28 (revisora r27): sin repetir «la frecuencia… por definir» (va arriba) y sin un segundo azul.
+              hint="Elige un rango de fechas y se arma la de cada inmobiliaria."
+              accion={
+                alPedirGenerar && !generando ? (
+                  <Button size="sm" variant="outline" hideArrow type="button" onClick={alPedirGenerar}>
+                    Generar liquidaciones
+                  </Button>
+                ) : undefined
+              }
+            />
+          )
         ) : (
           <div className="space-y-px" data-testid="lista-de-liquidaciones">
             {data.data.map((l) => (
@@ -197,6 +288,7 @@ export function Liquidaciones({
           </div>
         )}
         {data ? <Pagination page={pagina} total={data.total} pageSize={POR_PAGINA} onPage={setPagina} /> : null}
+      </div>
       </div>
     </div>
   )
@@ -217,28 +309,44 @@ function FilaDeLiquidacion({
 }) {
   return (
     <Card data-testid={`liquidacion-${l.numero}`}>
+      {/* Glow up 22-10: la fila responde «¿cuánto se le gira, a quién y cuándo?» —el neto grande a la derecha—;
+          el desglose (bruto y cada descuento) va en UNA línea callada, no en 8 cifras del mismo peso. */}
       <button
         type="button"
-        className="w-full text-left p-4 hover:bg-surface-hover transition-colors"
+        className="w-full rounded-lg p-4 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
         onClick={alAbrir}
         aria-expanded={abierta}
         data-testid={`abrir-${l.numero}`}
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-sm text-fg">{l.numero}</span>
-          <Pill tone={TONO_DEL_ESTADO[l.estado]}>{NOMBRE_DEL_ESTADO[l.estado]}</Pill>
-          <span className="text-sm text-fg-muted">{l.inmobiliaria ?? 'Sin nombre'}</span>
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-body font-medium text-fg">{l.inmobiliaria ?? 'Sin nombre'}</span>
+              <Pill tone={TONO_DEL_ESTADO[l.estado]}>{conMayuscula(NOMBRE_DEL_ESTADO[l.estado])}</Pill>
+            </div>
+            <p className="text-caption text-fg-muted">
+              <span className="font-mono">{l.numero}</span> · giro del{' '}
+              <span className="font-mono tabular-nums">{l.fechaDelGiro ? fmtFecha(l.fechaDelGiro) : '—'}</span> ·{' '}
+              {l.cantidadDePagos === 1 ? '1 pago' : `${l.cantidadDePagos} pagos`}
+            </p>
+          </div>
+          <div className="text-right">
+            <MonoLabel className="block">Neto que se gira</MonoLabel>
+            <span className="font-mono text-subtitle tabular-nums text-fg">{pesos(l.netoCop)}</span>
+          </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mt-3">
-          <Cifra nombre="fecha del giro" valor={l.fechaDelGiro ?? '—'} />
-          <Cifra nombre="pagos" valor={l.cantidadDePagos} />
-          <Cifra nombre="bruto" valor={pesos(l.brutoCop)} />
-          <Cifra nombre="comisión" valor={pesos(l.comisionCop)} />
-          <Cifra nombre="iva" valor={pesos(l.ivaCop)} />
-          <Cifra nombre="retenciones" valor={pesos(l.retencionesCop)} />
-          <Cifra nombre="otros de leasefy" valor={pesos(l.otrosDescuentosCop)} />
-          <Cifra nombre="neto" valor={pesos(l.netoCop)} tono="bien" />
-        </div>
+        <p className="mt-2 text-caption text-fg-muted">
+          Bruto <span className="font-mono tabular-nums text-fg">{pesos(l.brutoCop)}</span> · comisión{' '}
+          <span className="font-mono tabular-nums">{pesos(l.comisionCop)}</span> · IVA{' '}
+          <span className="font-mono tabular-nums">{pesos(l.ivaCop)}</span> · retenciones{' '}
+          <span className="font-mono tabular-nums">{pesos(l.retencionesCop)}</span>
+          {l.otrosDescuentosCop ? (
+            <>
+              {' '}
+              · otros de Leasefy <span className="font-mono tabular-nums">{pesos(l.otrosDescuentosCop)}</span>
+            </>
+          ) : null}
+        </p>
       </button>
       <Collapse open={abierta}>
         <DetalleDeLiquidacion id={l.id} giroDisponible={giroDisponible} alCambiar={alCambiar} />
@@ -293,7 +401,7 @@ function DetalleDeLiquidacion({
       <div className="grid gap-4 sm:grid-cols-2 pt-4">
         <div>
           <Etiqueta>la inmobiliaria</Etiqueta>
-          <p className="text-sm text-fg mt-1">
+          <p className="text-body-sm text-fg mt-1">
             {l.inmobiliaria ?? 'Sin nombre'} · NIT {l.nit ?? 'sin registrar'}
           </p>
           <p className="text-body-sm text-fg-muted mt-1">
@@ -310,7 +418,7 @@ function DetalleDeLiquidacion({
           <ul className="mt-1 space-y-0.5 text-body-sm" data-testid="descuentos">
             <li className="flex justify-between gap-3">
               <span className="text-fg">Recaudado (bruto)</span>
-              <span className="tabular-nums">{pesos(l.brutoCop)}</span>
+              <span className="font-mono tabular-nums">{pesos(l.brutoCop)}</span>
             </li>
             {l.descuentos.map((d, i) => (
               <li key={`${d.concepto}-${i}`} className="flex justify-between gap-3">
@@ -320,12 +428,12 @@ function DetalleDeLiquidacion({
                     {d.fuente === 'leasefy' ? 'leasefy' : 'reporte de wompi'}
                   </MonoLabel>
                 </span>
-                <span className="tabular-nums">−{pesos(d.valorCop)}</span>
+                <span className="font-mono tabular-nums">−{pesos(d.valorCop)}</span>
               </li>
             ))}
             <li className="flex justify-between gap-3 border-t border-border pt-1 font-medium">
               <span className="text-fg">Neto que se gira</span>
-              <span className="tabular-nums">{pesos(l.netoCop)}</span>
+              <span className="font-mono tabular-nums">{pesos(l.netoCop)}</span>
             </li>
           </ul>
         </div>
@@ -397,15 +505,15 @@ function DetalleDeLiquidacion({
             <TableBody>
               {l.pagos.map((p) => (
                 <TableRow key={p.transaccionId}>
-                  <TableCell className="px-2 py-1.5">{p.fecha ?? '—'}</TableCell>
+                  <TableCell className="px-2 py-1.5 font-mono tabular-nums">{p.fecha ? fmtFecha(p.fecha) : '—'}</TableCell>
                   <TableCell className="px-2 py-1.5 font-mono">{p.transaccionId}</TableCell>
                   <TableCell className="px-2 py-1.5 font-mono">{p.referencia ?? '—'}</TableCell>
                   <TableCell className="px-2 py-1.5 font-mono">{p.reciboNumero ?? '—'}</TableCell>
-                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.brutoCop)}</TableCell>
-                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.comisionCop)}</TableCell>
-                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.ivaCop)}</TableCell>
-                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.retencionesCop)}</TableCell>
-                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.netoCop)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right font-mono tabular-nums">{pesos(p.brutoCop)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right font-mono tabular-nums">{pesos(p.comisionCop)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right font-mono tabular-nums">{pesos(p.ivaCop)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right font-mono tabular-nums">{pesos(p.retencionesCop)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right font-mono tabular-nums">{pesos(p.netoCop)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -429,7 +537,7 @@ function EstadoEnPalabras({ l }: { l: DetalleDeLaLiquidacion }) {
   if (l.estado === 'girada') {
     return (
       <p className="text-body-sm text-fg mt-2" data-testid="estado-en-palabras">
-        Leasefy la giró el {l.giradaEl ?? '—'}
+        Leasefy la giró el {l.giradaEl ? fmtFecha(l.giradaEl) : '—'}
         {l.giradaPor ? ` (marcó ${l.giradaPor})` : ''}
         {l.referenciaBancariaDelGiro ? ` · comprobante ${l.referenciaBancariaDelGiro}` : ''}. Falta que la
         línea aparezca en el extracto de la inmobiliaria.
@@ -496,7 +604,7 @@ function MarcarGirada({
       ) : null}
       <Presence show={abierto}>
         <Card className="p-4 " data-testid="confirmar-girada">
-          <p className="text-sm text-fg">
+          <p className="text-body-sm text-fg">
             Esto deja dicho que Leasefy ya le transfirió {pesos(l.netoCop)} a {(l.inmobiliaria ?? 'la inmobiliaria').replace(/\.+$/, '')}.
             ¿Ya salió la plata?
           </p>
@@ -613,9 +721,9 @@ function DesmarcarGirada({
       ) : null}
       <Presence show={abierto}>
         <Card className="p-4 " data-testid="confirmar-desmarcar">
-          <p className="text-sm text-fg">
+          <p className="text-body-sm text-fg">
             La liquidación {l.numero} vuelve a «generada»: deja de decir que Leasefy le giró {pesos(l.netoCop)} a{' '}
-            {l.inmobiliaria ?? 'la inmobiliaria'} el {l.giradaEl ?? '—'}. Queda escrito en la bitácora del giro con tu
+            {l.inmobiliaria ?? 'la inmobiliaria'} el {l.giradaEl ? fmtFecha(l.giradaEl) : '—'}. Queda escrito en la bitácora del giro con tu
             motivo.
           </p>
           <label className="block mt-3">
@@ -670,7 +778,7 @@ function HistoriaDelGiro({ historia }: { historia: MovimientoDelGiro[] }) {
           <li key={`${h.accion}-${h.at ?? i}`} className="text-fg">
             {h.accion === 'marcada' ? (
               <>
-                Marcada como girada el {h.giradaEl ?? '—'}
+                Marcada como girada el {h.giradaEl ? fmtFecha(h.giradaEl) : '—'}
                 {h.referenciaBancaria ? ` (comprobante ${h.referenciaBancaria})` : ''}
               </>
             ) : (
@@ -683,7 +791,7 @@ function HistoriaDelGiro({ historia }: { historia: MovimientoDelGiro[] }) {
               · {h.por}
               {h.at ? `, ${fmtDateTime(h.at)}` : ''}
               {h.fechaDelGiroAntes && h.fechaDelGiroDespues && h.fechaDelGiroAntes !== h.fechaDelGiroDespues
-                ? ` · fecha del giro ${h.fechaDelGiroAntes} → ${h.fechaDelGiroDespues}`
+                ? ` · fecha del giro ${fmtFecha(h.fechaDelGiroAntes)} → ${fmtFecha(h.fechaDelGiroDespues)}`
                 : ''}
             </span>
           </li>

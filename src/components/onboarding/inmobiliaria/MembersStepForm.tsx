@@ -5,7 +5,7 @@ import { Controller, useFieldArray, useForm, type FieldPath } from 'react-hook-f
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { aplicarErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
-import { ArrowRight, Check, Copy, EnvelopeSimple, Plus, Trash, WarningCircle } from '@phosphor-icons/react'
+import { Check, Copy, EnvelopeSimple, Plus, Trash, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -265,7 +265,6 @@ function MembersInviteLinksScreen({
         data-testid="members-invite-continue"
       >
         Continuar
-        <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
       </Button>
     </div>
   )
@@ -406,7 +405,7 @@ export function MembersStepForm({
             className="space-y-3 rounded-md border border-border bg-bg p-4"
           >
             <div className="flex items-center justify-between gap-3">
-              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+              <span className="text-caption text-fg-subtle">
                 Miembro {index + 1}
               </span>
               <Button
@@ -426,7 +425,7 @@ export function MembersStepForm({
             {/* 12rem: «Asesor comercial», el rol más largo, cabe en UNA línea. */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
               <div>
-                <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-caption font-semibold text-fg">
+                <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-caption font-medium text-fg">
                   Correo
                 </label>
                 <Input
@@ -449,7 +448,7 @@ export function MembersStepForm({
               </div>
 
               <div>
-                <label htmlFor={`members.${index}.role`} className="mb-1.5 block text-caption font-semibold text-fg">
+                <label htmlFor={`members.${index}.role`} className="mb-1.5 block text-caption font-medium text-fg">
                   Rol
                 </label>
                 <Controller
@@ -488,7 +487,7 @@ export function MembersStepForm({
             <div>
               {/* Opcional: sin nombre, el equipo muestra el correo hasta que
                   la persona se registre. No se deriva del correo. */}
-              <label htmlFor={`members.${index}.nombre`} className="mb-1.5 block text-caption font-semibold text-fg">
+              <label htmlFor={`members.${index}.nombre`} className="mb-1.5 block text-caption font-medium text-fg">
                 Nombre y apellido <span className="font-normal text-fg-subtle">(opcional)</span>
               </label>
               <Input
@@ -549,7 +548,6 @@ export function MembersStepForm({
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

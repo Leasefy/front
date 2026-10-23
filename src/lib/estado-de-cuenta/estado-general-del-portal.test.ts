@@ -27,6 +27,17 @@ describe('estadoGeneralDelArriendo', () => {
   it('sin el estado de cuenta no afirma «Al día»', () => {
     expect(estadoGeneralDelArriendo('APPROVED', null)?.etiqueta).not.toBe('Al día');
   });
+  it('GLOW UP 21-10: sin comprobante del período pero sin nada vencido dice «Al día» y la próxima cuota (como Pagos)', () => {
+    const e = estadoGeneralDelArriendo('NONE', { ...alDia, proxima: { valor: 1_845_151, fecha: '2026-11-01', diasQueFaltan: 11 } });
+    expect(e).toEqual({ etiqueta: 'Al día', detalle: 'Próxima cuota el 1 nov 2026', tono: 'ok' });
+    expect(estadoGeneralDelArriendo('NONE', alDia)?.detalle).toBe('Sin cuotas vencidas');
+  });
+  it('sin comprobante del período y CON vencido sigue diciendo el saldo vencido', () => {
+    expect(estadoGeneralDelArriendo('NONE', conVencido)?.etiqueta).toBe('Con saldo vencido');
+  });
+  it('sin comprobante del período y sin las cuotas queda «Pendiente» (no se afirma nada más)', () => {
+    expect(estadoGeneralDelArriendo('NONE', null)).toEqual({ etiqueta: 'Pendiente', detalle: 'Pago del período pendiente', tono: 'neutro' });
+  });
   it('un pago en validación se muestra como tal y nombra lo vencido', () => {
     const e = estadoGeneralDelArriendo('PENDING_VALIDATION', conVencido);
     expect(e?.etiqueta).toBe('En verificación');

@@ -31,7 +31,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -54,7 +53,7 @@ import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { DescargarElInforme } from './DescargarElInforme';
 import { tablasDelAuxiliarPorTercero } from '@/lib/contabilidad/tablas-de-los-informes';
-import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
+import { Bloqueos, Nota, TarjetaDeInforme, EsqueletoDeTabla } from '../piezas';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Los tipos de tercero que el libro usa, tal como se asientan. */
@@ -119,6 +118,7 @@ export function AuxiliarPorTercero() {
         <>
         <div className="sm:col-span-2">
           <RangoDeFechas
+            atajos
             desde={rango.desde}
             hasta={rango.hasta}
             onChange={(r) => {
@@ -185,10 +185,7 @@ export function AuxiliarPorTercero() {
       }
     >
       {cargando && !auxiliar ? (
-        <div className="flex flex-col items-center gap-3 py-16">
-          <Spinner size="lg" />
-          <p className="text-sm text-fg-muted">Buscando los terceros…</p>
-        </div>
+        <EsqueletoDeTabla queEs="Buscando los terceros…" />
       ) : error && !auxiliar ? (
         <div className="p-4">
           <FalloDeCarga error={error} queEs="el auxiliar por tercero" onReintentar={cargar} />
@@ -197,7 +194,7 @@ export function AuxiliarPorTercero() {
         <>
           {/* Que este informe no cuadre contra el libro invalida los saldos.
               🔴 CB-18: con `libro` del back se dice contra qué cuadra o, si se
-              puede saber desde acá (todos los terceros a la vista), cuánto falta. */}
+              puede saber desde aquí (todos los terceros a la vista), cuánto falta. */}
           {auxiliar.cuadraConElLibro ? (
             auxiliar.libro ? (
               <p
@@ -263,8 +260,8 @@ export function AuxiliarPorTercero() {
               </p>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+                <Table className="max-md:block">
+                  <TableHeader className="max-md:hidden">
                     <TableRow>
                       <TableHead>Tercero</TableHead>
                       <TableHead>Tipo</TableHead>
@@ -275,13 +272,14 @@ export function AuxiliarPorTercero() {
                       <TableHead />
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="max-md:block">
                     {auxiliar.terceros.map((t) => (
                       <TableRow
                         key={`${t.terceroTipo}-${t.terceroId}`}
                         data-testid={`tercero-${t.terceroId}`}
+                        className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
                       >
-                        <TableCell className="max-w-[16rem]">
+                        <TableCell className="max-w-[16rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                           <p className="truncate text-sm text-fg">
                             {t.nombre ?? 'Sin nombre en el sistema'}
                           </p>
@@ -289,23 +287,23 @@ export function AuxiliarPorTercero() {
                             {t.documento ?? 'sin documento'}
                           </p>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-caption text-fg-muted">
+                        <TableCell className="whitespace-nowrap text-caption text-fg-muted max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
                           {t.terceroTipo}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Débitos">
                           <Monto valor={t.debitosCop} vacioSiCero className="text-sm" />
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Créditos">
                           <Monto valor={t.creditosCop} vacioSiCero className="text-sm" />
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                           {/* El signo importa y se dice: positivo = nos debe. */}
-                          <Monto valor={t.saldoCop} className="text-sm font-medium" />
+                          <Monto valor={t.saldoCop} className="text-sm text-fg" />
                         </TableCell>
-                        <TableCell className="text-caption text-fg-muted">
+                        <TableCell className="text-caption text-fg-muted max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
                           {t.cuentas.map((c) => c.codigo).join(', ')}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
                           <Button variant="link" size="sm" hideArrow asChild>
                             <Link
                               href={`/panel/inmobiliaria/contabilidad/reportes?informe=tercero&terceroTipo=${encodeURIComponent(t.terceroTipo)}&terceroId=${encodeURIComponent(t.terceroId)}`}

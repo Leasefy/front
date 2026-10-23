@@ -20,6 +20,7 @@ import type { ReactNode } from 'react';
 import { AnimatedNumber, Presence } from '@leasefy/cadence';
 import { WarningCircle } from '@phosphor-icons/react';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import type { PrimerCanon } from '@/lib/contratos/primer-canon';
 import { cn } from '@/lib/utils';
 
@@ -92,7 +93,7 @@ export function ResumenDelContratoNuevo({
       className={cn('rounded-lg border border-border bg-card p-5 shadow-sm', className)}
       data-testid="resumen-del-contrato"
     >
-      <h2 id="resumen-del-contrato-titulo" className="text-base font-semibold text-fg">
+      <h2 id="resumen-del-contrato-titulo" className="text-h3 text-fg">
         Resumen
       </h2>
 
@@ -121,9 +122,10 @@ export function ResumenDelContratoNuevo({
         <Fila etiqueta="Vigencia" testId="resumen-vigencia">
           {inicio && fin ? (
             <>
-              <span className="whitespace-nowrap">{formatDate(inicio)}</span>
+              {/* Ronda 20: el formato corto de Contratos, «22 oct 2026 → 21 oct 2027»: a 390 cabe en un renglón. */}
+              <span className="whitespace-nowrap">{fechaCorta(inicio)}</span>
               <span className="text-fg-subtle"> → </span>
-              <span className="whitespace-nowrap">{formatDate(fin)}</span>
+              <span className="whitespace-nowrap">{fechaCorta(fin)}</span>
               {cuantosMeses > 0 ? <span className="block text-caption text-fg-muted">{meses(cuantosMeses)}</span> : null}
             </>
           ) : (

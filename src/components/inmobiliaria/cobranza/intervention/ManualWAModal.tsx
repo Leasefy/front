@@ -354,7 +354,7 @@ export function ManualWAModal({
         ) : (
           <div className="space-y-3">
             <label className="block">
-              <span className="text-xs font-medium text-fg-subtle">
+              <span className="text-caption font-medium text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.templateLabel')}
               </span>
               <Select value={selectedId} onValueChange={setSelectedId}>
@@ -377,12 +377,12 @@ export function ManualWAModal({
             <CrossFade swapKey={selectedId} mode="popLayout" direction="none">
             {vistaPrevia && (
               <div>
-                <p className="mb-1 text-xs font-medium text-fg-subtle">
+                <p className="mb-1 text-caption font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.previewLabel')}
                 </p>
                 <div
                   data-testid="wa-preview"
-                  className="whitespace-pre-wrap rounded-[14px] border border-border bg-surface-hover px-3 py-2.5 text-xs leading-relaxed text-fg"
+                  className="whitespace-pre-wrap rounded-[14px] border border-border bg-surface-hover px-3 py-2.5 text-caption leading-relaxed text-fg"
                 >
                   {vistaPrevia.texto}
                 </div>
@@ -397,7 +397,7 @@ export function ManualWAModal({
 
             {selectedTemplate && selectedTemplate.variables.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-fg-subtle">
+                <p className="text-caption font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.variablesLabel')}
                 </p>
                 <p className="mb-2 mt-0.5 text-[11px] leading-relaxed text-fg-muted">
@@ -414,7 +414,7 @@ export function ManualWAModal({
                             y sirve para reportar un problema — pero no es lo
                             que se le pide leer al operador. */}
                         <span className="flex items-baseline gap-2">
-                          <span className="text-xs font-medium text-fg">
+                          <span className="text-caption font-medium text-fg">
                             {etiqueta ?? v}
                           </span>
                           {etiqueta && (
@@ -444,13 +444,13 @@ export function ManualWAModal({
         )}
         </CrossFade>
 
-        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-caption text-danger" data-testid="intervencion-error">
             {error}
         </Presence>
 
         {/* CB-10: lo que el micro pregunta antes de mandar (fuera del horario de
             ley o por encima del tope del día). Nada sale hasta que se confirma. */}
-        <Presence as="div" show={Boolean(confirmacion)} role="status" className="space-y-2 rounded-md border border-warning/40 bg-warning-soft p-3 text-xs text-fg" data-testid="wa-confirmar">
+        <Presence as="div" show={Boolean(confirmacion)} role="status" className="space-y-2 rounded-md border border-warning/40 bg-warning-soft p-3 text-caption text-fg" data-testid="wa-confirmar">
           <p>{confirmacion?.pregunta}</p>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" hideArrow onClick={() => setConfirmacion(null)} disabled={submitting}>

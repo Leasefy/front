@@ -37,6 +37,8 @@
  * el título nunca vuelva a quedar suelto sobre otra tarjeta.
  */
 
+import { useEffect } from 'react'
+import { formatRelativeTime } from '@/lib/format'
 import Link from 'next/link'
 import { CheckCircle, Clock, Siren, Warning } from '@phosphor-icons/react'
 import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -77,15 +79,9 @@ const TIPO_FICHA: Record<string, string> = {
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
 
+// C7 (r25): «hace 3 horas», no «hace 3h» (VOZ §4).
 function haceCuanto(iso: string, en = false): string {
-  const seg = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000))
-  const hace = (x: string) => (en ? `${x} ago` : `hace ${x}`)
-  if (seg < 60) return hace(`${seg}s`)
-  const min = Math.round(seg / 60)
-  if (min < 60) return hace(`${min}m`)
-  const hr = Math.round(min / 60)
-  if (hr < 24) return hace(`${hr}h`)
-  return hace(`${Math.round(hr / 24)}d`)
+  return formatRelativeTime(iso, en ? 'en' : 'es')
 }
 
 const COP = plataEnPantalla(localeDeLasCifras, {
@@ -120,7 +116,7 @@ function Ficha({ item }: { item: PendienteItem }) {
         className="group block rounded-lg border border-border bg-card px-2.5 py-2 transition-colors hover:bg-surface-muted"
       >
         <p className="text-sm font-medium text-fg truncate">{titulo}</p>
-        <p className="flex items-center gap-1 text-xs text-fg-muted truncate">
+        <p className="flex items-center gap-1 text-caption text-fg-muted truncate">
           <span className="truncate">{meta.join(' · ')}</span>
           <span className="ml-auto inline-flex items-center gap-1 tabular-nums shrink-0">
             <Clock className="w-3 h-3" aria-hidden="true" />
@@ -130,7 +126,7 @@ function Ficha({ item }: { item: PendienteItem }) {
         {/* El motivo textual (lo último que escribió el deudor, la razón de la
             escalación) — solo cuando no es ya el título. */}
         {item.titulo && item.reason && (
-          <p className="text-xs text-fg-muted truncate mt-0.5">{item.reason}</p>
+          <p className="text-caption text-fg-muted truncate mt-0.5">{item.reason}</p>
         )}
       </Link>
     </StaggerItem>
@@ -147,9 +143,11 @@ export interface CobranzaTeTocaATiProps {
   enMora: number
   /** Casos que el agente trabajó hoy. */
   gestionados: number
+  /** Cuántas decisiones esperan, para la acción principal del encabezado («Atender N»). */
+  onTotalQueEspera?: (n: number | null) => void
 }
 
-export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProps) {
+export function CobranzaTeTocaATi({ enMora, gestionados, onTotalQueEspera }: CobranzaTeTocaATiProps) {
   const tr = useTr();
   const { t } = useI18n()
   const { items, isLoading, error } = usePendientes()
@@ -177,6 +175,9 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
   }
 
   const totalQueEspera = items.length
+  useEffect(() => {
+    onTotalQueEspera?.(isLoading ? null : totalQueEspera)
+  }, [onTotalQueEspera, isLoading, totalQueEspera])
 
   // Mientras todavía se está contando NO se afirma nada. «Nada espera tu
   // aprobación» sobre una lista que aún no llegó es una afirmación falsa
@@ -200,7 +201,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
         className="rounded-lg border border-border bg-card p-3 sm:p-4 space-y-3"
       >
         <div className="space-y-0.5">
-          <h2 id="cobranza-te-toca-titulo" className="text-base font-semibold text-fg">
+          <h2 id="cobranza-te-toca-titulo" className="text-base font-medium text-fg">
             {tr("Te toca a ti")}
           </h2>
           <p className="text-sm text-fg-muted max-w-2xl">
@@ -269,7 +270,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
               aria-hidden="true"
             />
             <p className="text-sm font-medium text-fg">{t(`${NS}.vacio`)}</p>
-            <p className="text-xs text-fg-muted">{t(`${NS}.vacioHint`)}</p>
+            <p className="text-caption text-fg-muted">{t(`${NS}.vacioHint`)}</p>
           </div>
         )}
 
@@ -286,7 +287,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
                     data-testid={`te-toca-col-${col.id}`}
                     className="rounded-lg bg-surface-muted p-2.5 space-y-2 min-w-0"
                   >
-                    <p className="flex items-center gap-1.5 px-0.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+                    <p className="flex items-center gap-1.5 px-0.5 text-caption font-medium uppercase tracking-wide text-fg-muted">
                       {col.id === 'siniestros' ? (
                         <Siren
                           className={`w-3.5 h-3.5 ${vacia ? '' : col.tinte}`}
@@ -308,13 +309,13 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
                     </p>
 
                     {col.id === 'siniestros' && !vacia && (
-                      <p className="px-0.5 text-xs text-fg-muted">
+                      <p className="px-0.5 text-caption text-fg-muted">
                         {tr("Sin tu firma no se radican ante la aseguradora.")}
                       </p>
                     )}
 
                     {vacia ? (
-                      <p className="px-0.5 py-6 text-center text-xs text-fg-muted">
+                      <p className="px-0.5 py-6 text-center text-caption text-fg-muted">
                         {tr("Nada pendiente")}
                       </p>
                     ) : (
@@ -344,7 +345,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
                     key={`${a.code}-${i}`}
                     role="alert"
                     className={[
-                      'flex items-center gap-2 text-xs px-1',
+                      'flex items-center gap-2 text-caption px-1',
                       a.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
                     ].join(' ')}
                   >

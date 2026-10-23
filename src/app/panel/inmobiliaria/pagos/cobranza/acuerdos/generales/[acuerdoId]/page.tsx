@@ -11,9 +11,14 @@
 import { useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { BackButton } from '@/components/ui/back-button'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { Button, Spinner } from '@/components/ui'
+import { Button } from '@/components/ui'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { SinDatos } from '@/components/estado/SinDatos'
 import {
   AcuerdoGeneralForm,
   borradorDesde,
@@ -25,6 +30,23 @@ import {
 import { CrossFade } from '@leasefy/cadence'
 
 const VOLVER = '/panel/inmobiliaria/pagos/cobranza/acuerdos'
+
+/**
+ * GLOW UP 3.ª vuelta · cargando, falló y ya no existe con el MISMO encabezado que el formulario
+ * (la vuelta, la sección y el título), y el estado debajo con las piezas de la casa. Antes cada
+ * uno pintaba su propio h1 de 20 px suelto, sin sección ni vuelta común.
+ */
+function Marco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-6 p-6 lg:p-8">
+      <div>
+        <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
+        <EncabezadoDePantalla className="mt-3" seccion="Cobranza · Acuerdos" titulo={titulo} />
+      </div>
+      {children}
+    </div>
+  )
+}
 
 function EditarAcuerdoGeneral() {
   const params = useParams<{ acuerdoId: string }>()
@@ -45,9 +67,14 @@ function EditarAcuerdoGeneral() {
   if (isLoading && !acuerdo && !error) {
     return (
       <CrossFade swapKey="cargando">
-      <div className="flex items-center justify-center p-16">
-        <Spinner size="md" />
-      </div>
+        <Marco titulo="Acuerdo general">
+          <div className="space-y-4" aria-busy="true">
+            <span className="sr-only">Cargando el acuerdo…</span>
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-lg bg-surface-muted" aria-hidden="true" />
+            ))}
+          </div>
+        </Marco>
       </CrossFade>
     )
   }
@@ -55,18 +82,19 @@ function EditarAcuerdoGeneral() {
   if (error) {
     return (
       <CrossFade swapKey="fallo">
-      <div className="p-6 lg:p-8 max-w-xl space-y-3">
-        <h1 className="text-xl font-semibold text-fg">No pudimos cargar el acuerdo</h1>
-        <p className="text-sm text-fg-muted">{error}</p>
-        <div className="flex gap-2">
-          <Button hideArrow onClick={() => void refetch()}>
-            Reintentar
-          </Button>
-          <Button asChild variant="ghost" hideArrow>
-            <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
-          </Button>
+        {/* El fallo ocupa la pantalla: su propia salida arriba, a la vista (guardián el-fallo-de-una-ficha-tiene-salida). */}
+        <div className="space-y-6 p-6 lg:p-8">
+          <div>
+            <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
+            <EncabezadoDePantalla className="mt-3" seccion="Cobranza · Acuerdos" titulo="Acuerdo general" />
+          </div>
+          <FalloDeCarga
+            error={error}
+            queEs="el acuerdo"
+            onReintentar={() => refetch()}
+            volverA={{ label: 'Volver a Acuerdos de pago', href: VOLVER }}
+          />
         </div>
-      </div>
       </CrossFade>
     )
   }
@@ -74,15 +102,18 @@ function EditarAcuerdoGeneral() {
   if (!acuerdo) {
     return (
       <CrossFade swapKey="no-existe">
-      <div className="p-6 lg:p-8 max-w-xl space-y-3">
-        <h1 className="text-xl font-semibold text-fg">Ese acuerdo general ya no existe</h1>
-        <p className="text-sm text-fg-muted">
-          Puede que alguien lo haya borrado. Los demás siguen en Acuerdos de pago.
-        </p>
-        <Button asChild hideArrow>
-          <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
-        </Button>
-      </div>
+        <Marco titulo="Acuerdo general">
+          <SinDatos
+            queSon="acuerdos"
+            titulo="Ese acuerdo general ya no existe"
+            descripcion="Puede que alguien lo haya borrado. Los demás siguen en Acuerdos de pago."
+            accion={
+              <Button asChild size="sm" hideArrow>
+                <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
+              </Button>
+            }
+          />
+        </Marco>
       </CrossFade>
     )
   }

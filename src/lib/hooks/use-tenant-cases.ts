@@ -163,12 +163,26 @@ function applicationToCase(app: TenantApplicationView): TenantCase {
   };
 }
 
+/** De dónde salen los casos; la pantalla dice cuál no se pudo traer. */
+export type FuenteDeCasos = 'pagos' | 'arriendo' | 'postulaciones' | 'solicitudes' | 'acuerdos';
+
 export interface UseTenantCasesResult {
   cases: TenantCase[];
   openCasesCount: number;
   primaryLease: Lease | null;
   isLoading: boolean;
   error: string | null;
+  /**
+   * GLOW UP (21-10-2026): las fuentes que fallaron. Con el asistente caído
+   * (503 de `cartera/payment-plans/mine`) la lista entera decía «Error al
+   * cargar tus casos» y escondía los pagos y las solicitudes que sí llegaron.
+   * Ahora la pantalla muestra lo que llegó y dice qué faltó.
+   */
+  fuentesQueFallaron: FuenteDeCasos[];
+  /** Todas las fuentes fallaron: ahí sí no hay nada que mostrar. */
+  todasFallaron: boolean;
+  /** Se puede radicar una solicitud (hay contrato vigente). Lo dice `useTenantPqrs`: ninguna llamada nueva. */
+  puedeRadicar: boolean;
   refetch: () => Promise<void>;
 }
 
@@ -209,6 +223,7 @@ export function useTenantCases(options?: { skip?: boolean }): UseTenantCasesResu
     items: pqrsRows,
     isLoading: pqrsLoading,
     error: pqrsError,
+    disponible: pqrsDisponible,
     refetch: refetchPqrs,
   } = useTenantPqrs({ skip });
 
@@ -285,6 +300,14 @@ export function useTenantCases(options?: { skip?: boolean }): UseTenantCasesResu
     acuerdosError ??
     null;
 
+  const fuentesQueFallaron: FuenteDeCasos[] = [];
+  if (requestsError) fuentesQueFallaron.push('pagos');
+  if (leasesError || paymentInfoError) fuentesQueFallaron.push('arriendo');
+  if (applicationsError) fuentesQueFallaron.push('postulaciones');
+  if (pqrsError) fuentesQueFallaron.push('solicitudes');
+  if (acuerdosError) fuentesQueFallaron.push('acuerdos');
+  const todasFallaron = fuentesQueFallaron.length === 5;
+
   const refetch = useCallback(async () => {
     await Promise.all([
       refetchRequests(),
@@ -319,6 +342,11 @@ export function useTenantCases(options?: { skip?: boolean }): UseTenantCasesResu
     primaryLease: primaryLease ?? null,
     isLoading,
     error,
+    fuentesQueFallaron,
+    todasFallaron,
+    // Revisora r25: «Nueva solicitud» sólo si se puede radicar (sin contrato vigente el back dice `disponible: false`).
+    // Es el mismo dato de `useTenantPqrs` que ya se pedía: ninguna llamada nueva.
+    puedeRadicar: pqrsDisponible !== false,
     refetch,
   };
 }

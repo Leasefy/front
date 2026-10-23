@@ -4,7 +4,6 @@ import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  CaretLeft,
   UploadSimple,
   FileText,
   X,
@@ -39,6 +38,8 @@ import {
 import type { InsuranceTier, UpdateContractDto } from '@/lib/api/contracts.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import Link from 'next/link';
 import { isPermissionError } from '@/lib/contratos/fallo-de-accion';
 import { MENSAJES_DEL_CONTRATO, revisarTerminosDelContrato } from '@/lib/contratos/limites-del-contrato';
 import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos';
@@ -300,7 +301,7 @@ function EditarContratoContent() {
             parte del panel estás (Nico: «ni se entiende y no tiene navegación
             para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
         <BackButton href="/panel/inmobiliaria/contratos" label="Contratos" />
-        <h1 className="text-h2 text-fg">Editar el contrato</h1>
+        <EncabezadoDePantalla seccion="Contratos" titulo="Editar el contrato" />
         {/*
           🔴 C27 (auditoría 2026-09-13): sin `onReintentar`, un corte de red
           dejaba «Volver» como única salida — se perdía el camino y había que
@@ -323,7 +324,7 @@ function EditarContratoContent() {
         <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
+            <p className="font-medium text-danger">No se pudo cargar el contrato</p>
             <p className="text-sm text-danger mt-1">{error ?? 'Contrato no encontrado'}</p>
           </div>
         </div>
@@ -333,20 +334,14 @@ function EditarContratoContent() {
 
   if (!canEdit) {
     return (
-      <div className="max-w-2xl mx-auto p-8 space-y-4">
-        <Button
-          onClick={() => router.back()}
-          variant="link"
-          hideArrow
-          className="h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
-        >
-          <CaretLeft className="w-4 h-4" /> Volver
-        </Button>
-        <div className="rounded-lg border border-warning/30 bg-warning-soft p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+      <div className="space-y-6 p-6 lg:p-8">
+        <BackButton href={`/panel/inmobiliaria/contratos/${contractId}`} label="El contrato" />
+        <EncabezadoDePantalla seccion="Contratos" titulo="Editar el contrato" />
+        <div className="flex max-w-3xl items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft p-5">
+          <WarningCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
           <div>
-            <p className="font-semibold text-warning">Este contrato no se puede editar</p>
-            <p className="text-sm text-warning mt-1">
+            <p className="font-medium text-warning">Este contrato no se puede editar</p>
+            <p className="mt-1 text-sm text-warning">
               Solo se permite editar contratos en borrador, pendientes de firma del propietario,
               o cuando el inquilino solicitó modificaciones.
             </p>
@@ -356,36 +351,42 @@ function EditarContratoContent() {
     );
   }
 
-  return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <Button
-          onClick={() => router.back()}
-          variant="link"
-          hideArrow
-          className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
-        >
-          <CaretLeft className="w-4 h-4" /> Volver
-        </Button>
-        <h1 className="text-h2 text-fg">Editar contrato</h1>
-        <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl">
-          Inquilino: <span className="font-medium text-foreground">{contract.tenantName}</span> ·
-          Propiedad: <span className="font-medium text-foreground">{contract.propertyAddress}</span>
-        </p>
-      </div>
+  /*
+   * GLOW UP 21-10. Lo que pasa al guardar, dicho en el lugar donde se decide.
+   * El back (`contracts.service.ts` → `updateContract`) anula LAS DOS firmas en
+   * cualquier edición y deja el contrato en PENDING_TENANT_SIGNATURE. Antes el
+   * botón decía «Guardar y firmar» (guardar no firma) y el aviso de arriba,
+   * sólo con la firma del propietario, «tendrás que volver a firmar» (quien
+   * firma primero es el inquilino).
+   */
+  const yaTieneFirma = Boolean(contract.landlordSignature || contract.tenantSignature);
 
+  return (
+    <div className="space-y-6 p-6 lg:p-8">
+      <BackButton href={`/panel/inmobiliaria/contratos/${contractId}`} label="El contrato" />
+      <EncabezadoDePantalla
+        seccion="Contratos"
+        titulo="Editar el contrato"
+        descripcion={
+          <>
+            Inquilino: <span className="font-medium text-fg">{contract.tenantName}</span> · Propiedad:{' '}
+            <span className="font-medium text-fg">{contract.propertyAddress}</span>
+          </>
+        }
+      />
+
+      <div className="max-w-3xl space-y-6">
       {/* Rejection context — show latest tenant requests when editing after rejection */}
       {rejections.length > 0 && contract.status === 'rejected_pending_modifications' && (
         <RejectionsHistory rejections={rejections} />
       )}
 
-      {/* Warning about signature invalidation */}
-      {contract.landlordSignature && (
-        <div className="rounded-lg border border-warning/30 bg-warning-soft p-4 flex items-start gap-2">
-          <Info className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+      {yaTieneFirma && (
+        <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft p-4" data-testid="editar-anula-las-firmas">
+          <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
           <p className="text-sm text-warning">
-            Al guardar cambios, tu firma previa se invalida. Tendrás que volver a firmar el contrato.
+            Este contrato ya tiene firma. Al guardar los cambios se anula, y el inquilino tendrá que firmar
+            el documento corregido.
           </p>
         </div>
       )}
@@ -396,8 +397,8 @@ function EditarContratoContent() {
           <section className="rounded-lg border border-border bg-card p-5 space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <h2 className="text-base font-medium text-foreground">PDF del contrato</h2>
+                <p className="text-caption text-muted-foreground mt-0.5">
                   Reemplaza el PDF sólo si cambiaste el documento. Si no, déjalo como está.
                 </p>
               </div>
@@ -410,7 +411,7 @@ function EditarContratoContent() {
                     if (!checked) updateForm('pdfFile', null);
                   }}
                 />
-                <span className="text-xs font-medium text-foreground">Reemplazar PDF</span>
+                <span className="text-caption font-medium text-foreground">Reemplazar PDF</span>
               </label>
             </div>
 
@@ -420,7 +421,7 @@ function EditarContratoContent() {
                   <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
-                    <p className="text-xs text-muted-foreground">{(form.pdfFile.size / 1024).toFixed(0)} KB</p>
+                    <p className="text-caption text-muted-foreground">{(form.pdfFile.size / 1024).toFixed(0)} KB</p>
                   </div>
                   <IconButton
                     variant="ghost"
@@ -449,7 +450,7 @@ function EditarContratoContent() {
                   <p className="text-sm text-foreground">
                     <span className="font-medium">Haz click para subir</span> o arrastra un PDF aquí
                   </p>
-                  <p className="text-xs text-muted-foreground">Máx 10 MB</p>
+                  <p className="text-caption text-muted-foreground">Máx 10 MB</p>
                   <input
                     id="pdf-replace"
                     type="file"
@@ -476,7 +477,7 @@ function EditarContratoContent() {
 
         {/* Terms */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-          <h2 className="text-base font-semibold text-foreground">Términos</h2>
+          <h2 className="text-base font-medium text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
               <CampoDeDia
@@ -582,7 +583,7 @@ function EditarContratoContent() {
               <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
                 {PREGUNTA_DEL_PRORRATEO}
               </label>
-              <p className="text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
+              <p className="text-caption text-muted-foreground" data-testid="explicacion-del-prorrateo">
                 {form.prorratearPrimerMes ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
               </p>
             </div>
@@ -602,26 +603,29 @@ function EditarContratoContent() {
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            hideArrow
-            onClick={() => router.back()}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            hideArrow
-            disabled={!isValid || actions.isSubmitting}
-            className="gap-2"
-          >
-            {actions.isSubmitting ? <Spinner size="sm" variant="current" /> : <CheckCircle className="w-4 h-4" />}
-            Guardar y firmar
-          </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <p className="text-caption text-fg-muted sm:mr-auto" data-testid="al-guardar">
+            {isValid
+              ? 'Al guardar, el contrato queda esperando la firma del inquilino.'
+              : 'Revisa los campos marcados para poder guardar.'}
+          </p>
+          <div className="flex items-center justify-end gap-2">
+            <Button asChild variant="secondary" hideArrow>
+              <Link href={`/panel/inmobiliaria/contratos/${contractId}`}>Cancelar</Link>
+            </Button>
+            <Button
+              type="submit"
+              hideArrow
+              disabled={!isValid || actions.isSubmitting}
+              className="gap-2"
+            >
+              {actions.isSubmitting ? <Spinner size="sm" variant="current" /> : <CheckCircle className="w-4 h-4" />}
+              Guardar los cambios
+            </Button>
+          </div>
         </div>
       </form>
+      </div>
     </div>
   );
 }

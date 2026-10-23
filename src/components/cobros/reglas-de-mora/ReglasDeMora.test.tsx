@@ -637,7 +637,9 @@ describe('ReglasDeMora — sugerencias con reglas ya creadas y el aviso del moto
     listarMock.mockResolvedValueOnce([]);
     motorDeCobrosV2 = undefined;
     await montar();
-    expect($('[data-testid="aviso-motor"]').textContent).toContain('Se aplican sólo con el motor');
+    // Revisora r25 (#1): sin «motor».
+    expect($('[data-testid="aviso-motor"]').textContent).toContain('Se aplican sólo con el cobro con reglas prendido');
+    expect($('[data-testid="aviso-motor"]').textContent).not.toContain('motor');
     motorDeCobrosV2 = true;
   });
 });

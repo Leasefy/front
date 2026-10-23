@@ -3,7 +3,7 @@
  * lo que dicen.
  *
  * Reventaba con «reading 'bank'» al leer `bankAccount` de la lista de
- * propietarios (que llega con el banco plano); «Enviar por Email» esperaba un
+ * propietarios (que llega con el banco plano); «Enviar por correo» esperaba un
  * segundo de mentira y decía «enviado» sin mandar nada; «Descargar PDF» decía
  * «descargado» antes de que bajara.
  */
@@ -178,7 +178,7 @@ describe('<ExtractoPropietario>', () => {
     expect(description).toMatch(/conexión/);
   });
 
-  it('«Enviar por Email» manda de verdad y sólo dice «enviado» si el envío resolvió', async () => {
+  it('«Enviar por correo» manda de verdad y sólo dice «enviado» si el envío resolvió', async () => {
     const onEmail = vi.fn(async () => { throw new Error('El propietario no tiene correo registrado'); });
     await render({ onEmail });
     await clickTestId('extracto-enviar');

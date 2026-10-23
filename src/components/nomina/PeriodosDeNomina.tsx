@@ -25,9 +25,10 @@
  *   navegador, que ignora el tema y algunos navegadores suprimen del todo.
  */
 
+import { SinDatos } from '@/components/estado/SinDatos';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Prohibit } from '@phosphor-icons/react';
+import { CalendarBlank, Prohibit } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -41,7 +42,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CampoDeMes } from '@/components/ui/campo-de-mes';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableCell,
@@ -61,10 +64,15 @@ import {
   Avisos,
   EstadoDelPeriodo,
   LeyendaDeEstados,
-  TituloDeBloque,
   etiquetaDelPeriodo,
 } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+
+type VistaDePeriodos = 'todos' | 'BORRADOR' | 'APROBADO' | 'PAGADO' | 'ANULADO';
 
 const PANEL = '/panel/inmobiliaria/nomina';
 
@@ -77,6 +85,8 @@ export function PeriodosDeNominaPanel() {
   const [anulando, setAnulando] = useState<PeriodoDeNomina | null>(null);
   const [enviandoAnulacion, setEnviandoAnulacion] = useState(false);
   const [motivo, setMotivo] = useState('');
+  const [vista, setVista] = useState<VistaDePeriodos>('todos');
+  const hayBorrador = (estado.datos?.periodos ?? []).some((p) => p.estado === 'BORRADOR');
 
   const armar = async () => {
     setArmando(true);
@@ -187,38 +197,49 @@ export function PeriodosDeNominaPanel() {
     <div className="space-y-6">
       <Avisos avisos={avisos} testId="avisos-de-liquidacion" />
 
-      <section className="space-y-3">
-        <TituloDeBloque
-          titulo="Armar el borrador de un período"
-          explicacion="Entran las personas ACTIVAS con esa periodicidad, más las que se retiraron dentro del período (hay que pagarles sus días). Los contratistas de prestación de servicios NO entran: no son nómina laboral, se les paga por cuenta de cobro. Volver a armar un BORRADOR lo recalcula; sobre uno aprobado se niega."
-        />
+      {/* ── Armar el borrador: el paso que arranca un período ──────────────
+          GLOW UP 3.ª vuelta: el formulario en su tarjeta, el mes con su selector
+          de mes (antes un texto «2026-03») y lo que pasa al armar y al aprobar,
+          plegado: se consulta, no se lee cada vez. */}
+      <section className="space-y-3 rounded-lg border border-border bg-surface p-4" aria-labelledby="armar-un-periodo">
+        <h2 id="armar-un-periodo" className="text-[17px] font-[460] tracking-[-0.01em] text-fg">
+          Armar el borrador de un período
+        </h2>
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="mes-a-liquidar">Mes</Label>
-            <Input
+            {/* El campo de mes de la casa (guardián fechas-con-cadence). */}
+            <CampoDeMes
               id="mes-a-liquidar"
-              className="w-36"
+              className="w-44"
               value={mes}
-              onChange={(e) => setMes(e.target.value)}
-              placeholder="2026-03"
-              data-testid="mes-a-liquidar"
+              onChange={setMes}
+              testid="mes-a-liquidar"
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="quincena-a-liquidar">Periodicidad</Label>
-            <select
-              id="quincena-a-liquidar"
-              className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-              value={quincena}
-              onChange={(e) => setQuincena(e.target.value as '' | '1' | '2')}
-              data-testid="quincena-a-liquidar"
+            {/* Revisora r25 (C4): el Select de la casa. Radix no acepta el valor '': «mensual»
+                es el '' de siempre (lo que viaja no cambia). */}
+            <Select
+              value={quincena === '' ? 'mensual' : quincena}
+              onValueChange={(v) => setQuincena(v === 'mensual' ? '' : (v as '1' | '2'))}
             >
-              <option value="">Mensual</option>
-              <option value="1">Quincenal · primera</option>
-              <option value="2">Quincenal · segunda</option>
-            </select>
+              <SelectTrigger id="quincena-a-liquidar" className="w-52" data-testid="quincena-a-liquidar">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mensual">Mensual</SelectItem>
+                <SelectItem value="1">Quincenal · primera</SelectItem>
+                <SelectItem value="2">Quincenal · segunda</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          {/* Un solo azul: con un borrador esperando, lo que sigue es aprobarlo (en su fila).
+              Revisora r25 (Liquidación, UI): del alto de los dos campos (antes «sm», más bajo que ellos). */}
           <Button
+            variant={hayBorrador ? 'outline' : 'default'}
+            className="h-11"
             onClick={() => void armar()}
             disabled={armando}
             data-testid="armar-borrador"
@@ -226,18 +247,27 @@ export function PeriodosDeNominaPanel() {
             {armando ? 'Armando…' : 'Armar borrador'}
           </Button>
         </div>
-        <p className="text-caption text-fg-muted">
-          🔴 <strong>Aprobar le manda a cada persona su desprendible en PDF por
-          correo</strong>, con constancia de a qué dirección salió. Si un correo
-          falla, el período queda aprobado igual y se puede reenviar desde el
-          desprendible: deshacer una aprobación borraría provisiones ya
-          contabilizadas.
-        </p>
-        <p className="text-caption text-fg-muted">
-          La contabilidad siempre cierra el mes completo: las dos quincenas de un
-          mes comparten su asiento del gasto, y la retención se calcula sobre el
-          mes — la segunda quincena ajusta lo que retuvo la primera.
-        </p>
+        <MasDetalles etiqueta="Quién entra y qué pasa al aprobar" etiquetaAbierto="Ocultar" montadoSiempre>
+          <div className="max-w-3xl space-y-2 text-body-sm leading-relaxed text-fg-muted">
+            <p>
+              Entran las personas activas con esa periodicidad, más las que se retiraron dentro del
+              período (hay que pagarles sus días). Los contratistas de prestación de servicios no
+              entran: no son nómina laboral, se les paga por cuenta de cobro. Volver a armar un
+              borrador lo recalcula; sobre uno aprobado se niega.
+            </p>
+            <p>
+              <strong className="font-medium text-fg">Aprobar le manda a cada persona su desprendible en PDF por
+              correo</strong>, con constancia de a qué dirección salió. Si un correo falla, el período
+              queda aprobado igual y se puede reenviar desde el desprendible: deshacer una aprobación
+              borraría provisiones ya contabilizadas.
+            </p>
+            <p>
+              La contabilidad siempre cierra el mes completo: las dos quincenas de un mes comparten su
+              asiento del gasto, y la retención se calcula sobre el mes; la segunda quincena ajusta lo
+              que retuvo la primera.
+            </p>
+          </div>
+        </MasDetalles>
       </section>
 
       <Cargado
@@ -245,20 +275,67 @@ export function PeriodosDeNominaPanel() {
         queEs="los períodos de nómina"
         queSeEspera="liquidar la nómina"
       >
-        {(datos) => (
-          <section className="space-y-3">
-            <TituloDeBloque
-              titulo="Los períodos"
-              explicacion="Lo que ya se liquidó, con su estado y su plata."
-            />
+        {(datos) => {
+          const deEstado = (e: string) => datos.periodos.filter((p) => p.estado === e);
+          const aprobados = deEstado('APROBADO');
+          const borradores = deEstado('BORRADOR');
+          const pagados = deEstado('PAGADO');
+          const neto = (ps: readonly PeriodoDeNomina[]) => ps.reduce((t, p) => t + p.totalNetoCop, 0);
+          const visibles = vista === 'todos' ? datos.periodos : deEstado(vista);
+          const cifras = localeDeLasCifras();
+          return (
+          <section className="space-y-5">
+            {/* LA RESPUESTA: lo aprobado que todavía no se le ha pagado a la gente. */}
+            {datos.periodos.length > 0 ? (
+              <CifraHeroe
+                rotulo="Neto aprobado sin pagar"
+                cifra={formatCurrency(neto(aprobados))}
+                contexto={
+                  aprobados.length === 0
+                    ? 'ningún período aprobado espera el pago'
+                    : `en ${aprobados.length.toLocaleString(cifras)} ${aprobados.length === 1 ? 'período aprobado' : 'períodos aprobados'}`
+                }
+                tramos={[
+                  { clave: 'borrador', etiqueta: `En borrador · ${borradores.length.toLocaleString(cifras)}`, monto: neto(borradores), tono: 'neutro', cifra: formatCurrency(neto(borradores)) },
+                  { clave: 'aprobado', etiqueta: `Aprobado sin pagar · ${aprobados.length.toLocaleString(cifras)}`, monto: neto(aprobados), tono: 'aviso', cifra: formatCurrency(neto(aprobados)) },
+                  { clave: 'pagado', etiqueta: `Pagado · ${pagados.length.toLocaleString(cifras)}`, monto: neto(pagados), tono: 'exito', cifra: formatCurrency(neto(pagados)) },
+                ]}
+                data-testid="cifra-de-periodos"
+              />
+            ) : null}
             {datos.periodos.length === 0 ? (
-              <p className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted">
-                Todavía no hay períodos liquidados.
-              </p>
+              // Revisora r25 (C5): el vacío con su salida (antes una línea gris).
+              <div className="rounded-lg border border-border bg-surface">
+                <SinDatos
+                  queSon="períodos"
+                  icono={CalendarBlank}
+                  titulo="Todavía no hay períodos liquidados"
+                  descripcion="Arma el primero arriba: elige el mes y la periodicidad."
+                  accion={
+                    <Button size="sm" variant="secondary" hideArrow onClick={() => document.getElementById('mes-a-liquidar')?.focus()}>
+                      Elegir el mes
+                    </Button>
+                  }
+                />
+              </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table data-testid="tabla-de-periodos">
-                  <TableHeader>
+              <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                <div className="border-b border-border px-4 py-3 empty:hidden">
+                  <PestanasDeEstado
+                    etiqueta="Estado de los períodos"
+                    valor={vista}
+                    onCambio={setVista}
+                    pestanas={[
+                      { valor: 'todos', etiqueta: 'Todos', cuantos: datos.periodos.length, fija: true },
+                      { valor: 'BORRADOR', etiqueta: 'Borradores', cuantos: borradores.length, tono: borradores.length > 0 ? 'aviso' : undefined },
+                      { valor: 'APROBADO', etiqueta: 'Aprobados', cuantos: aprobados.length },
+                      { valor: 'PAGADO', etiqueta: 'Pagados', cuantos: pagados.length },
+                      { valor: 'ANULADO', etiqueta: 'Anulados', cuantos: deEstado('ANULADO').length },
+                    ]}
+                  />
+                </div>
+                <Table data-testid="tabla-de-periodos" className="max-md:block">
+                  <TableHeader className="max-md:hidden">
                     <TableRow>
                       <TableHead>Período</TableHead>
                       <TableHead>Estado</TableHead>
@@ -271,41 +348,58 @@ export function PeriodosDeNominaPanel() {
                       <TableHead />
                     </TableRow>
                   </TableHeader>
-                  <TableBodyAnimado>
-                    {datos.periodos.map((p) => (
-                      <TableRowAnimada key={p.id} data-testid={`periodo-${p.id}`}>
-                        <TableCell>
+                  <TableBodyAnimado className="max-md:block">
+                    {visibles.length === 0 ? (
+                      <TableRowAnimada key="vacio" className="max-md:block">
+                        <TableCell colSpan={9} className="py-8 text-center text-body-sm text-fg-muted max-md:block">
+                          Ningún período en esta pestaña.{' '}
+                          <button type="button" className="text-primary underline-offset-4 hover:underline" onClick={() => setVista('todos')}>
+                            Ver todos
+                          </button>
+                        </TableCell>
+                      </TableRowAnimada>
+                    ) : null}
+                    {visibles.map((p) => (
+                      <TableRowAnimada
+                        key={p.id}
+                        data-testid={`periodo-${p.id}`}
+                        className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                      >
+                        <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                           <Link
-                            className="font-medium text-brand underline"
+                            className="font-medium text-fg underline-offset-4 hover:underline"
                             href={`${PANEL}/periodos/${p.id}`}
                           >
                             {etiquetaDelPeriodo(p.mes, p.quincena)}
                           </Link>
+                          <span className="block text-caption text-fg-muted md:hidden">
+                            {p.personas} {p.personas === 1 ? 'persona' : 'personas'} · {p.asientoId ? 'asentado' : 'sin asiento'}
+                          </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                           <EstadoDelPeriodo estado={p.estado} />
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="text-right tabular-nums max-md:hidden">
                           {p.personas}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-right font-mono tabular-nums max-md:hidden">
                           {formatCurrency(p.totalDevengadoCop)}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-right font-mono tabular-nums max-md:hidden">
                           {formatCurrency(p.totalDeduccionesCop)}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                           {formatCurrency(p.totalNetoCop)}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-right font-mono tabular-nums max-md:hidden">
                           {formatCurrency(p.totalAportesCop)}
                         </TableCell>
-                        <TableCell className="text-caption text-fg-muted">
+                        <TableCell className="text-caption text-fg-muted max-md:hidden">
                           {p.asientoId ? 'Asentado' : 'Sin asiento'}
                           {p.loteDeEgresosId ? ' · con lote de egresos' : ''}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap justify-end gap-1.5">
+                        <TableCell className="max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0">
+                          <div className="flex flex-wrap justify-end gap-1.5 max-md:justify-start">
                             {p.estado === 'BORRADOR' ? (
                               <Button
                                 size="sm"
@@ -356,9 +450,12 @@ export function PeriodosDeNominaPanel() {
                 </Table>
               </div>
             )}
-            <LeyendaDeEstados />
+            <MasDetalles etiqueta="Qué significa cada estado" etiquetaAbierto="Ocultar" montadoSiempre>
+              <LeyendaDeEstados />
+            </MasDetalles>
           </section>
-        )}
+          );
+        }}
       </Cargado>
 
       <AlertDialog

@@ -157,7 +157,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'ocupacion-portafolio',
     title: 'Ocupación del portafolio',
-    description: 'Porcentaje de ocupación por zona y tipo de propiedad',
+    description: 'Porcentaje de ocupación por zona y tipo de inmueble',
     icon: 'ChartPie',
     category: 'operativo',
     // Decía `pdf`, y por esa sola etiqueta la descarga caía en la rama «PDF en
@@ -180,7 +180,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'rendimiento-agentes',
     title: 'Rendimiento de agentes',
-    description: 'KPIs comparativos de desempeño del equipo comercial',
+    description: 'Cierres, comisiones y tiempos de cada asesor, comparados',
     icon: 'ChartBar',
     category: 'agentes',
     format: 'pdf',
@@ -190,7 +190,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'flujo-caja',
     title: 'Flujo de caja',
-    description: 'Ingresos vs dispersiones con proyección mensual',
+    description: 'Lo que entró y lo que se giró, con la proyección del mes',
     icon: 'CurrencyDollar',
     category: 'financiero',
     format: 'excel',
@@ -202,7 +202,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     // «Descargar CSV» baja el mismo rango que muestra el back.
     id: 'rentabilidad-inmueble',
     title: 'Rentabilidad por inmueble',
-    description: 'Esperado vs recaudado, comisión, gastos, neto al propietario y ocupación por inmueble',
+    description: 'Lo esperado y lo recaudado, la comisión, los gastos, el neto al propietario y la ocupación de cada inmueble',
     icon: 'ChartLineUp',
     category: 'financiero',
     format: 'excel',

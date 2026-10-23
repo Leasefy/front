@@ -694,7 +694,7 @@ export default function PreviewDSPage() {
             <QuickActionChips
               chips={[
                 { id: 'owner',    label: 'Nuevo propietario',  icon: <UserCircle /> },
-                { id: 'listing',  label: 'Nueva consignación', icon: <Buildings /> },
+                { id: 'listing',  label: 'Nuevo mandato', icon: <Buildings /> },
                 { id: 'payment',  label: 'Registrar pago',     icon: <CurrencyDollar /> },
                 { id: 'reports',  label: 'Ver reportes',       icon: <ChartLine /> },
                 { id: 'more',     label: 'Más',                icon: <Plus /> },

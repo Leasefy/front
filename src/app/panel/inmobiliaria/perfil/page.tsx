@@ -3,7 +3,7 @@ import { CambiarCorreoDeEntrada } from '@/components/cuenta/CambiarCorreoDeEntra
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { User, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { Button, Input, Spinner } from '@/components/ui';
-import { AnimatedNumber, CrossFade, IconButton, motionDuration, motionEase } from '@leasefy/cadence';
+import { Avatar, CrossFade, IconButton } from '@leasefy/cadence';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,8 @@ import {
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import {
   enfocarCampoPersonal,
   idDelCampoPersonal,
@@ -176,6 +178,26 @@ export default function InmobiliariaPerfilPage() {
       completed: !!(user?.emergencyContactName && user?.emergencyContactPhone),
     },
   ];
+
+  /** Abre la sección donde se completa el paso y la trae a la vista. */
+  const irA = (seccion: 'personal' | 'emergency', id: string) => {
+    setEditingSection(seccion);
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+  const accionDelPaso = (id: string) => {
+    const etiqueta = locale === 'es' ? 'Completar' : 'Complete';
+    if (id === 'emergency-contact') {
+      return <Button size="sm" variant="secondary" hideArrow onClick={() => irA('emergency', 'perfil-emergencia')}>{etiqueta}</Button>;
+    }
+    if (id === 'agency-info') {
+      return (
+        <Button asChild size="sm" variant="secondary" hideArrow>
+          <Link href="/panel/inmobiliaria/configuracion/perfil">{etiqueta}</Link>
+        </Button>
+      );
+    }
+    return <Button size="sm" variant="secondary" hideArrow onClick={() => irA('personal', 'perfil-personal')}>{etiqueta}</Button>;
+  };
 
   const completedSteps = setupSteps.filter(s => s.completed).length;
   const totalSteps = setupSteps.length;
@@ -417,142 +439,41 @@ export default function InmobiliariaPerfilPage() {
 
   // Shared field shells (DS tokens, rounded-md)
   const fieldDisplay = 'flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-md';
+  // Un campo vacío dice «Sin registrar», en gris (revisora r25: cuatro «—»).
+  const dato = (v: string | null | undefined) =>
+    v ? (
+      <span className="text-sm text-fg">{v}</span>
+    ) : (
+      <span className="text-sm text-fg-subtle">{locale === 'es' ? 'Sin registrar' : 'Not set'}</span>
+    );
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+      {/* Revisora r25: el contenedor y el encabezado de las demás pantallas
+          del panel (antes `max-w-7xl p-4` y un h1 a mano, 8 px corrido). */}
+      <div className="space-y-6 p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'}
+          titulo={locale === 'es' ? 'Mi perfil' : 'My profile'}
+          descripcion={locale === 'es' ? 'Tus datos, tu foto y tu horario de visitas.' : 'Your details, your photo and your visiting hours.'}
+        />
 
-        {/* Header */}
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            {locale === 'es' ? 'Mi perfil' : 'My profile'}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {locale === 'es' ? 'Gestiona tu información personal y preferencias' : 'Manage your personal information and preferences'}
-          </p>
-        </div>
-
-        {/* Setup Progress Section — hidden once the profile is 100% complete */}
+        {/* Lo que falta del perfil (Cadence 2, «Lo que falta para empezar»): antes el avance salía
+            TRES veces —barra, anillo de 60 % y cinco tarjetas—; ahora es una lista con lo que falta
+            arriba, cada cosa con el botón que la resuelve. Se esconde con el perfil completo. */}
         {completionPercentage < 100 && (
-        <section className="rounded-lg bg-primary-soft border border-border p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            {/* Progress Info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-lg bg-card flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-primary" weight="duotone" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-fg">
-                    {locale === 'es' ? 'Completar perfil' : 'Complete profile'}
-                  </h2>
-                  <p className="text-sm text-primary">
-                    {locale === 'es'
-                      ? `${completedSteps} de ${totalSteps} pasos completados`
-                      : `${completedSteps} of ${totalSteps} steps completed`}
-                  </p>
-                </div>
-              </div>
-              <div className="h-2 bg-card/60 rounded-full overflow-hidden">
-                {/* Avanza con `translateX` (sólo transform; el extremo redondo
-                    no se deforma como con `scaleX`), con la curva del sistema. */}
-                <motion.div
-                  initial={{ x: '-100%' }}
-                  animate={{ x: `${completionPercentage - 100}%` }}
-                  transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                  className="h-full w-full bg-primary rounded-full"
-                />
-              </div>
-              <p className="text-xs text-fg-muted mt-2">
-                {completionPercentage === 100
-                  ? (locale === 'es' ? '¡Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
-                  : (locale === 'es' ? 'Completa tu perfil para acceder a todas las funciones' : 'Complete your profile to access all features')}
-              </p>
-            </div>
-
-            {/* Percentage Badge */}
-            <div className="flex items-center justify-center">
-              <div className="relative w-24 h-24">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    className="text-card"
-                  />
-                  <motion.circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    className="text-primary"
-                    initial={{ strokeDasharray: '0 251.2' }}
-                    animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {/* Cuenta junto con el anillo; si cambia, desde la anterior. */}
-                  <AnimatedNumber
-                    value={completionPercentage}
-                    from={0}
-                    format={(n) => `${Math.round(n)}%`}
-                    className="text-2xl font-semibold tabular-nums text-fg"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Steps List — iconography step pattern (DS, duotone icons) */}
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {setupSteps.map((step) => {
-              const Icon = step.icon;
-              return (
-                <div
-                  key={step.id}
-                  className={cn(
-                    'rounded-lg p-4 transition-colors',
-                    step.completed
-                      ? 'bg-card'
-                      : 'bg-card border border-dashed border-primary/30'
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      'w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0',
-                      step.completed
-                        ? 'bg-success-soft text-success'
-                        : 'bg-primary-soft text-primary'
-                    )}>
-                      {step.completed ? (
-                        <CheckCircle className="w-4 h-4" weight="fill" />
-                      ) : (
-                        <Icon className="w-4 h-4" weight="duotone" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-fg truncate">
-                        {step.label}
-                      </p>
-                      {step.completed ? (
-                        <span className="text-xs text-success">{locale === 'es' ? 'Completado' : 'Completed'}</span>
-                      ) : (
-                        <span className="text-xs text-fg-muted">{locale === 'es' ? 'Pendiente' : 'Pending'}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+          <ListaParaEmpezar
+            paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
+            recordarComo="perfil"
+            data-testid="lo-que-falta-del-perfil"
+            requisitos={setupSteps.map((step) => ({
+              id: step.id,
+              titulo: step.label,
+              detalle: step.completed ? undefined : step.description,
+              estado: step.completed ? 'listo' : 'falta',
+              accion: accionDelPaso(step.id),
+            }))}
+          />
         )}
 
         {/* Visit hours — each agent sets their own schedule for visits */}
@@ -562,8 +483,8 @@ export default function InmobiliariaPerfilPage() {
           {/* Profile Card */}
           <div className="lg:col-span-1 space-y-6">
             {/* Avatar Card */}
-            <div className="rounded-lg border border-border bg-card overflow-hidden">
-              <div className="relative bg-primary-soft h-28">
+            {/* Sin la portada gris de adorno de 110 px (revisora r25). */}
+            <div className="relative rounded-lg border border-border bg-card overflow-hidden">
                 {editingSection !== 'avatar' && (
                   <IconButton
                     variant="ghost"
@@ -573,12 +494,11 @@ export default function InmobiliariaPerfilPage() {
                       setEditingSection('avatar');
                     }}
                     aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                    className="absolute top-3 right-3 bg-card/70 hover:bg-card backdrop-blur-sm text-fg"
+                    className="absolute top-3 right-3 text-fg"
                     icon={<Pencil className="w-4 h-4" />}
                   />
                 )}
-              </div>
-              <div className="px-6 pb-6">
+              <div className="p-6">
                 {/* Hidden file input */}
                 <input
                   ref={fileInputRef}
@@ -592,10 +512,10 @@ export default function InmobiliariaPerfilPage() {
                   className="hidden"
                 />
 
-                <div className="relative -mt-14 mb-4">
+                <div className="relative mb-4">
                   <div
                     className={cn(
-                      "w-28 h-28 rounded-full border-4 border-card overflow-hidden",
+                      "w-28 h-28 rounded-[30%] border-4 border-card overflow-hidden",
                       editingSection === 'avatar' && "cursor-pointer"
                     )}
                     onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
@@ -609,9 +529,12 @@ export default function InmobiliariaPerfilPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-4xl">
-                        {(formData.firstName || user?.email || '?').charAt(0).toUpperCase()}
-                      </div>
+                      // Cadence 2: la persona con su tono (sale del nombre: el mismo que en el resto).
+                      <Avatar
+                        name={[formData.firstName, formData.lastName].filter(Boolean).join(' ') || user?.email || '?'}
+                        size="xl"
+                        className="!size-full [&>span]:!size-full [&>span]:!rounded-none [&>span]:!text-[40px]"
+                      />
                     )}
                   </div>
                   {editingSection === 'avatar' && (
@@ -656,7 +579,7 @@ export default function InmobiliariaPerfilPage() {
                             <p className="text-sm font-medium text-fg">
                               {locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}
                             </p>
-                            <p className="text-xs text-fg-muted">
+                            <p className="text-caption text-fg-muted">
                               {locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}
                             </p>
                           </div>
@@ -675,15 +598,13 @@ export default function InmobiliariaPerfilPage() {
                       </div>
                     ) : (
                       <>
-                        <div className="w-12 h-12 rounded-md bg-surface-muted flex items-center justify-center mx-auto mb-3">
-                          <Upload className="w-6 h-6 text-fg-muted" />
-                        </div>
+                        <Upload className="w-6 h-6 text-fg-muted shrink-0 mx-auto" aria-hidden="true" />
                         <p className="text-sm font-medium text-fg">
                           {isDragging
                             ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here')
                             : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
                         </p>
-                        <p className="text-xs text-fg-muted mt-1">
+                        <p className="text-caption text-fg-muted mt-1">
                           {locale === 'es' ? 'Arrastra o haz clic — JPG, PNG (máx. 5MB)' : 'Drag or click - JPG, PNG (max 5MB)'}
                         </p>
                       </>
@@ -694,9 +615,15 @@ export default function InmobiliariaPerfilPage() {
                 <h2 className="text-base font-semibold text-fg">
                   {[formData.firstName, formData.lastName].filter(Boolean).join(' ') || user?.email || '—'}
                 </h2>
-                <p className="text-sm text-fg-muted mt-1">
-                  {memberRole ? (AGENCY_ROLE_LABELS[memberRole] ?? memberRole) : '—'}
-                </p>
+                {/* El rol UNA vez (antes tres: aquí, «Rol: …» y «Rol en la agencia»). */}
+                {memberRole ? (
+                  <>
+                    <p className="text-sm text-fg-muted mt-1">{AGENCY_ROLE_LABELS[memberRole] ?? memberRole}</p>
+                    {AGENCY_ROLE_DESC[memberRole] ? (
+                      <p className="text-caption text-fg-subtle mt-1">{AGENCY_ROLE_DESC[memberRole]}</p>
+                    ) : null}
+                  </>
+                ) : null}
 
                 {/* Save/Cancel buttons for avatar section */}
                 {editingSection === 'avatar' && (
@@ -711,35 +638,20 @@ export default function InmobiliariaPerfilPage() {
                   </div>
                 )}
 
-                {/* Quick Stats */}
+                {/* La inmobiliaria en la que estás */}
+                {agency?.name && (
                 <div className="mt-6 pt-6 border-t border-border space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
-                      <Buildings className="w-5 h-5 text-success" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-fg">
-                        {memberRole ? `Rol: ${AGENCY_ROLE_LABELS[memberRole] ?? memberRole}` : '—'}
-                      </p>
-                      <p className="text-xs text-fg-muted">
-                        {memberRole ? (AGENCY_ROLE_DESC[memberRole] ?? '') : ''}
-                      </p>
-                    </div>
-                  </div>
-                  {agency?.name && (
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-                        <Briefcase className="w-5 h-5 text-primary" />
-                      </div>
+                      <Briefcase className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
                       <div>
                         <p className="text-sm font-medium text-fg">{agency.name}</p>
-                        <p className="text-xs text-fg-muted">
+                        <p className="text-caption text-fg-muted">
                           {agency.nit ? `NIT: ${agency.nit}` : (locale === 'es' ? 'Agencia actual' : 'Current agency')}
                         </p>
                       </div>
                     </div>
-                  )}
                 </div>
+                )}
               </div>
             </div>
 
@@ -748,14 +660,14 @@ export default function InmobiliariaPerfilPage() {
                 system in the backend, so nothing else is shown as verified. */}
             {emailVerified && (
               <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-base font-semibold text-fg mb-4 flex items-center gap-2">
+                <h3 className="text-base font-medium text-fg mb-4 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-fg-muted" />
                   {locale === 'es' ? 'Estado de verificación' : 'Verification status'}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-2.5 px-3 rounded-md bg-surface-muted">
-                    <span className="text-sm font-medium text-fg">Email</span>
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
+                    <span className="text-sm font-medium text-fg">{locale === 'es' ? 'Correo' : 'Email'}</span>
+                    <span className="flex items-center gap-1.5 text-caption font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
                       <CheckCircle className="w-3.5 h-3.5" />
                       {locale === 'es' ? 'Verificado' : 'Verified'}
                     </span>
@@ -768,9 +680,9 @@ export default function InmobiliariaPerfilPage() {
           {/* Profile Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information */}
-            <div className="rounded-lg border border-border bg-card p-6">
+            <div id="perfil-personal" className="scroll-mt-6 rounded-lg border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-base font-semibold text-fg">
+                <h3 className="text-base font-medium text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
                 </h3>
                 {/* «Editar» ⇄ «Cancelar / Guardar» se cruzan en su lugar. */}
@@ -807,7 +719,7 @@ export default function InmobiliariaPerfilPage() {
                   ) : (
                     <div className={fieldDisplay}>
                       <User className="w-4 h-4 text-fg-muted" />
-                      <span className="text-sm text-fg">{formData.firstName || '—'}</span>
+                      {dato(formData.firstName)}
                     </div>
                   )}
                 </div>
@@ -825,14 +737,15 @@ export default function InmobiliariaPerfilPage() {
                   ) : (
                     <div className={fieldDisplay}>
                       <User className="w-4 h-4 text-fg-muted" />
-                      <span className="text-sm text-fg">{formData.lastName || '—'}</span>
+                      {dato(formData.lastName)}
                     </div>
                   )}
                 </div>
 
                 {/* Email — read-only */}
                 <div>
-                  <label className="block text-sm font-medium text-fg mb-2">Email</label>
+                  <label className="block text-sm font-medium text-fg mb-2">{locale === 'es' ? 'Correo' : 'Email'}</label>
+                  {/* El correo de entrada, con su «Cambiar» (21-10-2026). */}
                   <CambiarCorreoDeEntrada correo={formData.email} className={fieldDisplay} />
                 </div>
 
@@ -849,22 +762,9 @@ export default function InmobiliariaPerfilPage() {
                   ) : (
                     <div className={fieldDisplay}>
                       <Phone className="w-4 h-4 text-fg-muted" />
-                      <span className="text-sm text-fg">{formData.phone || '—'}</span>
+                      {dato(formData.phone)}
                     </div>
                   )}
-                </div>
-
-                {/* Rol — read-only, definido por la agencia */}
-                <div>
-                  <label className="block text-sm font-medium text-fg mb-2">
-                    {locale === 'es' ? 'Rol en la agencia' : 'Agency role'}
-                  </label>
-                  <div className={fieldDisplay}>
-                    <Briefcase className="w-4 h-4 text-fg-muted" />
-                    <span className="text-sm text-fg">
-                      {memberRole ? (AGENCY_ROLE_LABELS[memberRole] ?? memberRole) : '—'}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Dirección */}
@@ -880,7 +780,7 @@ export default function InmobiliariaPerfilPage() {
                   ) : (
                     <div className={fieldDisplay}>
                       <MapPin className="w-4 h-4 text-fg-muted" />
-                      <span className="text-sm text-fg">{formData.address || '—'}</span>
+                      {dato(formData.address)}
                     </div>
                   )}
                 </div>
@@ -888,9 +788,9 @@ export default function InmobiliariaPerfilPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="rounded-lg border border-border bg-card p-6">
+            <div id="perfil-emergencia" className="scroll-mt-6 rounded-lg border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-base font-semibold text-fg">
+                <h3 className="text-base font-medium text-fg">
                   {locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}
                 </h3>
                 {/* «Editar» ⇄ «Cancelar / Guardar» se cruzan en su lugar. */}
@@ -928,7 +828,7 @@ export default function InmobiliariaPerfilPage() {
                   ) : (
                     <div className={fieldDisplay}>
                       <UserPlus className="w-4 h-4 text-fg-muted" />
-                      <span className="text-sm text-fg">{formData.emergencyContactName || '—'}</span>
+                      {dato(formData.emergencyContactName)}
                     </div>
                   )}
                 </div>
@@ -946,7 +846,7 @@ export default function InmobiliariaPerfilPage() {
                   ) : (
                     <div className={fieldDisplay}>
                       <Phone className="w-4 h-4 text-fg-muted" />
-                      <span className="text-sm text-fg">{formData.emergencyContactPhone || '—'}</span>
+                      {dato(formData.emergencyContactPhone)}
                     </div>
                   )}
                 </div>
@@ -955,12 +855,12 @@ export default function InmobiliariaPerfilPage() {
 
             {/* Danger Zone */}
             <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-6">
-              <h3 className="text-base font-semibold text-danger mb-2 flex items-center gap-2">
+              <h3 className="text-base font-medium text-danger mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
               {/* Lo que dice la copia canónica: hay 30 días para volver. Decir
-                  «irreversible» acá y «se recupera si inicias sesión» dos
+                  «irreversible» aquí y «se recupera si inicias sesión» dos
                   clics después es contarle dos cosas distintas a la misma
                   persona. */}
               <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>
@@ -1081,7 +981,7 @@ export default function InmobiliariaPerfilPage() {
                       ))}
                     </ul>
                   </div>
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     {locale === 'es'
                       ? 'No vas a poder darte de baja si tienes contratos de arriendo activos a tu nombre o si eres el único administrador de la inmobiliaria.'
                       : 'You cannot delete your account while you have active leases in your name, or while you are the agency’s only administrator.'}

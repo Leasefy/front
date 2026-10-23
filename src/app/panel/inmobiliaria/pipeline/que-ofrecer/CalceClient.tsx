@@ -43,16 +43,19 @@
  * pesos se ven y no se editan acá; y se elige por nombre, nunca por UUID.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { ArrowRight, Copy, MagicWand, Users, House } from '@phosphor-icons/react'
 import { SegmentedControl } from '@leasefy/cadence'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
-import { usePipelineItems } from '@/lib/hooks/useInmobiliaria'
+import { useConsignaciones, usePipelineItems } from '@/lib/hooks/useInmobiliaria'
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
+import { PIPELINE_STAGES, type PipelineItem } from '@/lib/types/inmobiliaria'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Badge,
@@ -83,11 +86,12 @@ function Puntaje({ valor }: { valor: number }) {
     <span className="flex items-center gap-2" aria-label={tr('Calce del {n} por ciento', { n: acotado })}>
       <span className="bg-surface-muted h-1.5 w-16 overflow-hidden rounded-full" aria-hidden="true">
         <span
-          className="bg-primary block h-full rounded-full"
+          // Ronda 22: el azul es para la acción; el puntaje del calce va en grafito.
+          className="bg-fg-muted block h-full rounded-full"
           style={{ width: `${acotado}%` }}
         />
       </span>
-      <span className="text-fg-muted font-mono text-xs tabular-nums">{acotado}%</span>
+      <span className="text-fg-muted font-mono text-caption tabular-nums">{acotado}%</span>
     </span>
   )
 }
@@ -160,12 +164,106 @@ async function copiar(texto: string, tr: Tr = (es) => es) {
   }
 }
 
+/**
+ * Revisora r22 (Qué ofrecer #3): el orden del buscador de interesados. Primero los que ya avanzaron (visita,
+ * postulación, evaluación…), después los recién llegados y al final los cerrados o perdidos: a quien ya vio un
+ * inmueble es a quien más sirve ofrecerle otro.
+ */
+const ORDEN_DE_LA_ETAPA: Record<string, number> = {
+  visit_scheduled: 0, visit_done: 0, application: 0, evaluation: 0, approved: 0, contract: 1, handover: 1,
+  lead: 2, completed: 3, lost: 3,
+}
+
+/** El nombre de cada peso del calce (la llave del back, en palabras). */
+const NOMBRE_DEL_PESO: Record<string, string> = {
+  zona: 'Zona',
+  fecha: 'Fecha de entrada',
+  habitaciones: 'Habitaciones',
+  tipo: 'Tipo',
+  holgura: 'Holgura en el presupuesto',
+}
+
+export function opcionesDeInteresados(items: readonly PipelineItem[], en = false): ComboboxOption[] {
+  const etapa = (st: string) => PIPELINE_STAGES.find((x) => x.stage === st)
+  return [...items]
+    .sort(
+      (a, b) =>
+        (ORDEN_DE_LA_ETAPA[a.stage] ?? 2) - (ORDEN_DE_LA_ETAPA[b.stage] ?? 2) ||
+        (a.candidateName ?? '').localeCompare(b.candidateName ?? ''),
+    )
+    .map((l) => {
+      const e = etapa(l.stage)
+      return {
+        value: l.id,
+        // El teléfono va en la etiqueta para que también se busque por él.
+        label: [l.candidateName, l.candidatePhone, l.propertyTitle, e ? (en ? e.labelEn : e.labelEs) : null]
+          .filter(Boolean)
+          .join(' · '),
+      }
+    })
+}
+
+/**
+ * Revisora r22 (Qué ofrecer #5): «Se liberó un inmueble» ofrece los DISPONIBLES del portafolio (en arriendo,
+ * vigentes y sin arrendar), aunque nadie los esté mirando todavía —justo ese es el que se libera sin nadie
+ * detrás—, y además los que miran los interesados del tablero. Primero los disponibles.
+ */
+export function opcionesDeInmuebles(
+  disponibles: readonly { propertyId: string; propertyTitle?: string | null; propertyAddress?: string | null; propertyCode?: number | null }[],
+  delTablero: readonly { id: string; titulo: string }[],
+  interesadosPorInmueble: ReadonlyMap<string, number>,
+  textos: { disponible: string; interesados: (n: number) => string; sinTitulo: string },
+): ComboboxOption[] {
+  const vistos = new Set<string>()
+  const opciones: ComboboxOption[] = []
+  const conInteresados = (id: string) => {
+    const n = interesadosPorInmueble.get(id) ?? 0
+    return n > 0 ? textos.interesados(n) : null
+  }
+  // Por título; los que no tienen ni título ni dirección, al final.
+  const clave = (c: (typeof disponibles)[number]) => c.propertyTitle || c.propertyAddress || '\uffff'
+  for (const c of [...disponibles].sort((a, b) => clave(a).localeCompare(clave(b)))) {
+    if (!c.propertyId || vistos.has(c.propertyId)) continue
+    vistos.add(c.propertyId)
+    opciones.push({
+      value: c.propertyId,
+      label: [
+        c.propertyCode != null ? `#${c.propertyCode}` : null,
+        c.propertyTitle || c.propertyAddress || textos.sinTitulo,
+        textos.disponible,
+        conInteresados(c.propertyId),
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    })
+  }
+  for (const i of delTablero) {
+    if (!i.id || vistos.has(i.id)) continue
+    vistos.add(i.id)
+    opciones.push({ value: i.id, label: [i.titulo || textos.sinTitulo, conInteresados(i.id)].filter(Boolean).join(' · ') })
+  }
+  return opciones
+}
+
 export function CalceClient() {
   const tr = useTr();
   const en = useLocaleDelPanel() === 'en';
   const [direccion, setDireccion] = useState<Direccion>('interesado')
   const [leadId, setLeadId] = useState('')
   const [propertyId, setPropertyId] = useState('')
+  // Ronda 22: se llega con el interesado (o el inmueble) ya elegido: `?interesado=` / `?inmueble=`.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const interesado = p.get('interesado')
+    const inmueble = p.get('inmueble')
+    if (interesado) {
+      setDireccion('interesado')
+      setLeadId(interesado)
+    } else if (inmueble) {
+      setDireccion('inmueble')
+      setPropertyId(inmueble)
+    }
+  }, [])
 
   /*
    * Los leads del tablero, para poder elegir por NOMBRE en vez de por UUID.
@@ -189,6 +287,31 @@ export function CalceClient() {
     [leadsDelTablero],
   )
 
+  // Los disponibles del portafolio (quien no tiene `portafolio:view` recibe un 403: queda la lista del tablero).
+  const { consignaciones } = useConsignaciones()
+  const disponibles = useMemo(
+    () =>
+      consignaciones.filter(
+        (c) => c.status === 'active' && c.availability !== 'rented' && c.listingType !== 'sale' && Boolean(c.propertyId),
+      ),
+    [consignaciones],
+  )
+  const interesadosPorInmueble = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const l of leadsDelTablero) if (l.propertyId && l.stage !== 'lost') m.set(l.propertyId, (m.get(l.propertyId) ?? 0) + 1)
+    return m
+  }, [leadsDelTablero])
+  const opcionesDelInteresado = useMemo(() => opcionesDeInteresados(leadsDelTablero, en), [leadsDelTablero, en])
+  const opcionesDelInmueble = useMemo(
+    () =>
+      opcionesDeInmuebles(disponibles, inmuebles, interesadosPorInmueble, {
+        disponible: tr('Disponible'),
+        interesados: (n) => (n === 1 ? tr('1 interesado') : tr('{n} interesados', { n })),
+        sinTitulo: tr('Inmueble sin título'),
+      }),
+    [disponibles, inmuebles, interesadosPorInmueble, tr],
+  )
+
   const config = useCrm(() => matchingApi.pesos(), [], [])
   const delLead = useCrm(
     () => (leadId.trim() ? matchingApi.paraElLead(leadId.trim()) : Promise.resolve(null)),
@@ -207,13 +330,53 @@ export function CalceClient() {
   const nombreDelInteresado = delLead.datos?.lead.nombre ?? ''
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{tr("Qué ofrecer")}</h1>
-        <p className="text-fg-muted text-sm">
-          {tr("A un interesado, los inmuebles que le sirven. A un inmueble que se libera, los interesados a los que les sirve — con el porqué listo para mandar.")}
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* Ronda 22: el encabezado de todas las pantallas. */}
+      <EncabezadoDePantalla
+        seccion={tr('Captación y arriendo')}
+        titulo={tr("Qué ofrecer")}
+        descripcion={tr("Los inmuebles que le sirven a un interesado, con el mensaje listo para mandar.")}
+        // Revisora r23 (Qué ofrecer #1): «Cómo se decide» arriba a la derecha, en la ayuda; antes iba aislado al pie.
+        ayuda={
+            <ParaEntenderMas
+              etiqueta={tr("Cómo se decide")}
+              titulo={tr("Cómo se decide un calce")}
+              descripcion={tr("Dos cosas distintas: lo que un inmueble tiene que cumplir para aparecer, y cuánto pesa cada coincidencia en el orden.")}
+            >
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium">{tr("Requisitos (no se configuran)")}</p>
+                  <ul className="text-fg-muted list-disc pl-5 text-sm">
+                    {(enSuIdioma(en, config.datos?.requisitos, config.datos?.requisitosEn) ?? []).map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+                {config.datos?.pesos ? (
+                  <div>
+                    <p className="text-sm font-medium">
+                      {tr("Pesos")} {config.datos.configurados ? '' : tr('(los de por defecto)')}
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {/* Revisora r23 (Qué ofrecer #2): cada peso con su nombre, no la llave cruda («zona: 40»). */}
+                      {Object.entries(config.datos.pesos).map(([k, v]) => (
+                        <Badge key={k} variant="secondary">
+                          {tr(NOMBRE_DEL_PESO[k] ?? k)} {v} %
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <p className="text-fg-muted text-caption">
+                  {tr("Los pesos se cambian en la configuración de la inmobiliaria, no aquí: moverlos desde la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno quería vender.")}{' '}
+                  <Link href="/panel/inmobiliaria/configuracion" className="text-primary underline">
+                    {tr("Ir a configuración")}
+                  </Link>
+                </p>
+              </div>
+            </ParaEntenderMas>
+        }
+      />
 
       {/* Las dos direcciones son la MISMA pregunta mirada desde los dos lados. */}
       <SegmentedControl<Direccion>
@@ -225,8 +388,10 @@ export function CalceClient() {
             value: 'interesado',
             label: (
               <span className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                {tr("Tengo un interesado")}
+                <Users className="h-4 w-4 shrink-0" />
+                {/* Ronda 22 (390): la frase entera no cabía en su mitad del control y se salía. */}
+                <span className="sm:hidden">{tr('Un interesado')}</span>
+                <span className="hidden sm:inline">{tr("Tengo un interesado")}</span>
               </span>
             ),
             ariaLabel: 'Tengo un interesado',
@@ -235,8 +400,9 @@ export function CalceClient() {
             value: 'inmueble',
             label: (
               <span className="flex items-center gap-2">
-                <House className="h-4 w-4" />
-                {tr("Se liberó un inmueble")}
+                <House className="h-4 w-4 shrink-0" />
+                <span className="sm:hidden">{tr('Un inmueble libre')}</span>
+                <span className="hidden sm:inline">{tr("Se liberó un inmueble")}</span>
               </span>
             ),
             ariaLabel: tr('Se liberó un inmueble'),
@@ -248,27 +414,20 @@ export function CalceClient() {
         <Card>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-1.5">
-              <Label htmlFor="lead-id">{tr("¿A quién le vas a ofrecer?")}</Label>
-              <select
-                id="lead-id"
-                value={leadId}
-                onChange={(e) => setLeadId(e.target.value)}
-                data-testid="input-lead"
+              <Label>{tr("¿A quién le vas a ofrecer?")}</Label>
+              {/* Revisora r22 (#3): el buscador de Crear contrato en vez del `<select>` nativo (con 300 interesados
+                  era una lista del navegador sin buscar). */}
+              <Combobox
+                value={leadId || undefined}
+                onChange={(id) => setLeadId(id ?? '')}
+                options={opcionesDelInteresado}
+                placeholder={tr(leadsDelTablero.length === 0
+                  ? 'Todavía no hay interesados en el tablero'
+                  : 'Nombre, teléfono o inmueble')}
+                searchPlaceholder={tr('Nombre, teléfono o inmueble')}
                 disabled={leadsDelTablero.length === 0}
-                className="border-border bg-background h-10 w-full rounded-md border px-3 text-sm"
-              >
-                <option value="">
-                  {tr(leadsDelTablero.length === 0
-                    ? 'Todavía no hay leads en el tablero'
-                    : 'Elige un interesado…')}
-                </option>
-                {leadsDelTablero.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.candidateName}
-                    {l.propertyTitle ? ` · ${l.propertyTitle}` : ''}
-                  </option>
-                ))}
-              </select>
+                data-testid="input-lead"
+              />
             </div>
 
             {leadsDelTablero.length === 0 ? (
@@ -276,15 +435,15 @@ export function CalceClient() {
               <EmptyState
                 icon={Users}
                 title={tr("Todavía no hay a quién ofrecerle")}
-                description={tr("Cuando entre un interesado al tablero, acá te digo qué inmuebles le sirven.")}
+                description={tr("Cuando entre un interesado al tablero, aquí te digo qué inmuebles le sirven.")}
                 action={{
-                  label: 'Ir al pipeline',
+                  label: 'Ir a Prospección',
                   href: '/panel/inmobiliaria/pipeline',
                 }}
               />
             ) : !leadId.trim() ? (
               <p className="text-fg-muted text-sm">
-                {tr("Elige un interesado y te muestro qué inmuebles le calzan, y por qué.")}
+                {tr("Elige un interesado y te muestro qué inmuebles le sirven, y por qué.")}
               </p>
             ) : delLead.noHabilitado ? (
               <p className="text-fg-muted text-sm" data-testid="calce-no-habilitado">
@@ -295,7 +454,7 @@ export function CalceClient() {
                 principal
                 cargando={delLead.cargando}
                 error={delLead.errorCrudo}
-                queEs="el calce del lead"
+                queEs="lo que calza con el interesado"
                 onReintentar={delLead.refetch}
                 conservarContenido
                 esqueleto={<EsqueletoTabla filas={3} columnas={2} />}
@@ -348,8 +507,8 @@ export function CalceClient() {
                         title={tr("Ningún inmueble le calza hoy")}
                         description={tr(
                           sinTope(delLead.datos.busca.topeAsegurableCop)
-                            ? 'Con su presupuesto, nada del portafolio le entra hoy. Cuando se libere uno que sí, aparece acá.'
-                            : 'Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece acá.',
+                            ? 'Con su presupuesto, nada del portafolio le entra hoy. Cuando se libere uno que sí, aparece aquí.'
+                            : 'Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece aquí.',
                         )}
                       />
                     ) : (
@@ -363,7 +522,8 @@ export function CalceClient() {
                           >
                             <div className="min-w-0 flex-1">
                               <p className="font-medium">
-                                {o.inmueble?.title ?? o.propertyId}
+                                {/* Ronda 22: nunca el id interno: el título, si no la dirección. */}
+                                {o.inmueble?.title || (o.inmueble as { address?: string } | undefined)?.address || tr('Inmueble sin título')}
                                 <span className="text-fg-muted ml-2 text-sm font-normal">
                                   {[o.inmueble?.neighborhood, o.inmueble?.city]
                                     .filter(Boolean)
@@ -420,34 +580,27 @@ export function CalceClient() {
         <Card>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-1.5">
-              <Label htmlFor="property-id">{tr("¿Cuál inmueble se liberó?")}</Label>
-              <select
-                id="property-id"
-                value={propertyId}
-                onChange={(e) => setPropertyId(e.target.value)}
+              <Label>{tr("¿Cuál inmueble se liberó?")}</Label>
+              <Combobox
+                value={propertyId || undefined}
+                onChange={(id) => setPropertyId(id ?? '')}
+                options={opcionesDelInmueble}
+                placeholder={tr(opcionesDelInmueble.length === 0
+                  ? 'Todavía no hay inmuebles disponibles'
+                  : 'Buscar por código, título o dirección')}
+                searchPlaceholder={tr('Código, título o dirección')}
+                disabled={opcionesDelInmueble.length === 0}
                 data-testid="input-inmueble"
-                disabled={inmuebles.length === 0}
-                className="border-border bg-background h-10 w-full rounded-md border px-3 text-sm"
-              >
-                <option value="">
-                  {tr(inmuebles.length === 0
-                    ? 'Todavía no hay inmuebles en el tablero'
-                    : 'Elige un inmueble…')}
-                </option>
-                {inmuebles.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.titulo}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
-            {inmuebles.length === 0 ? (
+            {opcionesDelInmueble.length === 0 ? (
               <EmptyState
                 icon={House}
-                title={tr("Todavía no hay inmuebles en el tablero")}
-                description={tr("Los inmuebles de esta lista salen de los leads del pipeline: son los que alguien está mirando.")}
-                action={{ label: 'Ir al pipeline', href: '/panel/inmobiliaria/pipeline' }}
+                ilustracion="casa"
+                title={tr("Todavía no hay inmuebles disponibles")}
+                description={tr("Aquí salen los inmuebles disponibles de tu portafolio y los que miran los interesados de Prospección.")}
+                action={{ label: tr('Ir a Inmuebles'), href: '/panel/inmobiliaria/inmuebles' }}
               />
             ) : !propertyId.trim() ? (
               <p className="text-fg-muted text-sm">
@@ -457,7 +610,7 @@ export function CalceClient() {
               <EstadoDeDatos
                 cargando={delInmueble.cargando}
                 error={delInmueble.errorCrudo}
-                queEs="los leads que calzan"
+                queEs="los interesados que calzan"
                 onReintentar={delInmueble.refetch}
                 conservarContenido
                 esqueleto={<EsqueletoTabla filas={3} columnas={2} />}
@@ -473,7 +626,7 @@ export function CalceClient() {
                   ) : leads.length === 0 ? (
                     <EmptyState
                       icon={MagicWand}
-                      title={tr("A ningún lead abierto le calza")}
+                      title={tr("A ningún interesado abierto le calza")}
                       description={tr("Ninguno de los interesados abiertos pasa los requisitos para este inmueble.")}
                     />
                   ) : (
@@ -526,47 +679,6 @@ export function CalceClient() {
         </Card>
       )}
 
-      {/* 🔴 Cómo se decide un calce: se consulta una vez, no cada vez que se
-          abre la pantalla. Era un `<details>` al pie —y abierto empujaba las
-          opciones hacia abajo, que es justo lo que la persona vino a mirar—;
-          desde el 21-09 se abre encima con `ParaEntenderMas` y la devuelve
-          intacta al cerrarla. */}
-      <ParaEntenderMas
-        etiqueta={tr("Cómo se decide")}
-        titulo={tr("Cómo se decide un calce")}
-        descripcion={tr("Dos cosas distintas: lo que un inmueble tiene que cumplir para aparecer, y cuánto pesa cada coincidencia en el orden.")}
-      >
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm font-medium">{tr("Requisitos (no se configuran)")}</p>
-            <ul className="text-fg-muted list-disc pl-5 text-sm">
-              {(enSuIdioma(en, config.datos?.requisitos, config.datos?.requisitosEn) ?? []).map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
-          </div>
-          {config.datos?.pesos ? (
-            <div>
-              <p className="text-sm font-medium">
-                {tr("Pesos")} {config.datos.configurados ? '' : tr('(los de por defecto)')}
-              </p>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {Object.entries(config.datos.pesos).map(([k, v]) => (
-                  <Badge key={k} variant="secondary">
-                    {k}: {v}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <p className="text-fg-muted text-xs">
-            {tr("Los pesos se cambian en la configuración de la inmobiliaria, no acá: moverlos desde la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno quería vender.")}{' '}
-            <Link href="/panel/inmobiliaria/configuracion" className="text-primary underline">
-              {tr("Ir a configuración")}
-            </Link>
-          </p>
-        </div>
-      </ParaEntenderMas>
     </div>
   )
 }

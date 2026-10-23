@@ -116,8 +116,8 @@ export function AsignarAgente({
                 <Briefcase className="h-6 w-6" weight="duotone" aria-hidden="true" />
               </span>
               <p className="text-sm font-medium text-fg">No tienes asesores activos</p>
-              <p className="mt-1 text-xs text-fg-muted">
-                Invita a alguien a tu equipo y después vuelve a asignarlo acá.
+              <p className="mt-1 text-caption text-fg-muted">
+                Invita a alguien a tu equipo y después vuelve a asignarlo aquí.
               </p>
               <Button asChild size="sm" className="mt-4" data-testid="asignar-agente-invitar">
                 <Link href="/panel/inmobiliaria/configuracion/equipo?invitar=1">Invitar a alguien</Link>
@@ -143,7 +143,7 @@ export function AsignarAgente({
                       guardando !== null && !esActual && 'opacity-60',
                     )}
                   >
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-soft text-sm font-semibold text-primary">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-soft text-sm font-medium text-primary">
                       {nombre.charAt(0).toUpperCase()}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -156,9 +156,9 @@ export function AsignarAgente({
                       </span>
                     </span>
                     {esActual ? (
-                      <span className="shrink-0 text-xs font-medium text-primary">Actual</span>
+                      <span className="shrink-0 text-caption font-medium text-primary">Actual</span>
                     ) : guardando === agente.userId ? (
-                      <span className="shrink-0 text-xs text-fg-muted">Asignando…</span>
+                      <span className="shrink-0 text-caption text-fg-muted">Asignando…</span>
                     ) : (
                       <Check className="h-4 w-4 shrink-0 text-fg-subtle" />
                     )}

@@ -76,7 +76,7 @@ const CATALOGO: Record<ReportId, Exportable> = {
   'extractos-propietarios': {
     disponible: false,
     motivo: 'El extracto se arma por propietario, desde la dispersión de su mes.',
-    dondeSiHay: { label: 'Ir a dispersiones', href: '/panel/inmobiliaria/pagos/dispersiones' },
+    dondeSiHay: { label: 'Ir a Giros a propietarios', href: '/panel/inmobiliaria/pagos/dispersiones' },
   },
 
   // Tenía el mapeo a `comisiones-agente`, que devuelve otro reporte. Mejor
@@ -209,6 +209,54 @@ export function parametrosDelPeriodo(
         nota: 'Es la foto de hoy: el período elegido no aplica a este reporte.',
       }
   }
+}
+
+/**
+ * GLOW UP 21-10 · Con qué fechas sale cada archivo, dicho ANTES de bajarlo.
+ *
+ * La `nota` de `parametrosDelPeriodo` lo contaba después, en el aviso de la descarga: quien elegía
+ * agosto se enteraba al final de que la cartera es «la foto de hoy». Esto es la misma regla en
+ * datos, para que la fila del reporte lo diga al lado del botón.
+ */
+export type ComoSale =
+  /** Un rango de meses (`YYYY-MM`); `desde === hasta` es un solo mes. */
+  | { modo: 'meses'; desde: string; hasta: string }
+  /** Un mes (`YYYY-MM`). `abarcaMas`: el período elegido tiene más meses y sólo sale el primero. */
+  | { modo: 'un-mes'; mes: string; abarcaMas: boolean }
+  /** Una ventana fija contada hacia atrás desde hoy. */
+  | { modo: 'ultimos-meses'; meses: number }
+  | { modo: 'mes-en-curso' }
+  /** La foto de hoy: el período no aplica. */
+  | { modo: 'hoy' }
+
+export function comoSale(tipo: TipoDeExport, periodo?: PeriodoDeReportes | null): ComoSale {
+  const { params } = parametrosDelPeriodo(tipo, periodo)
+  switch (tipo) {
+    case 'rentabilidad-inmueble':
+      return params.desde && params.hasta
+        ? { modo: 'meses', desde: params.desde, hasta: params.hasta }
+        : { modo: 'ultimos-meses', meses: 12 }
+    case 'comisiones-agente': {
+      if (!params.month) return { modo: 'mes-en-curso' }
+      const hasta = periodo?.end?.match(MES_DE_LA_FECHA)?.[1]
+      return { modo: 'un-mes', mes: params.month, abarcaMas: Boolean(hasta && hasta !== params.month) }
+    }
+    case 'flujo-caja':
+      return { modo: 'ultimos-meses', meses: 6 }
+    case 'cartera-edades':
+    case 'vencimientos':
+    case 'ocupacion-portafolio':
+      return { modo: 'hoy' }
+  }
+}
+
+/** Cómo lo afecta el período elegido: es como se agrupan en la pantalla. */
+export type RelacionConElPeriodo = 'del-periodo' | 'de-hoy' | 'ventana-propia'
+
+export function relacionConElPeriodo(tipo: TipoDeExport): RelacionConElPeriodo {
+  if (tipo === 'rentabilidad-inmueble' || tipo === 'comisiones-agente') return 'del-periodo'
+  if (tipo === 'flujo-caja') return 'ventana-propia'
+  return 'de-hoy'
 }
 
 /**

@@ -127,7 +127,7 @@ describe('ExogenaAdminPage', () => {
     await clic(q('sembrar-2026')!)
 
     const resultado = q('resultado-de-la-semilla')!
-    expect(resultado.textContent).toContain('40 conceptos sembrados')
+    expect(resultado.textContent).toContain('40 conceptos cargados')
     expect(resultado.textContent).toContain('no la resolución')
     expect(q('sin-sugerencia')!.textContent).toContain('519595')
   })
@@ -188,7 +188,7 @@ describe('ExogenaAdminPage', () => {
     expect(publicarAnio).not.toHaveBeenCalled()
   })
 
-  it('🔴 un tope mal escrito frena el guardado acá, con el porqué', async () => {
+  it('🔴 un tope mal escrito frena el guardado aquí, con el porqué', async () => {
     listarAnios.mockResolvedValue({ disponible: true, anios: [] })
     await pintar()
 

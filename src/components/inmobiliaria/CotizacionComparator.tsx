@@ -3,24 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
-import {
-  Check,
-  Phone,
-  Clock,
-  CurrencyDollar,
-  TrendDown,
-  TrendUp,
-  Star,
-  Plus,
-  Buildings,
-  MapPin,
-  Wrench,
-  CheckCircle,
-  Crown,
-  Lightning,
-  CalendarBlank,
-  ArrowRight,
-} from '@phosphor-icons/react';
+import { Check, Phone, Clock, CurrencyDollar, TrendDown, TrendUp, Star, Plus, Buildings, MapPin, Wrench, CheckCircle, Crown, Lightning, CalendarBlank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -60,7 +43,7 @@ interface QuoteAnalysis {
 
 function formatDate(dateString: string, loc: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
+  return date.toLocaleDateString(loc === 'es' ? 'es-CO' : 'en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -168,7 +151,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
       {/* Provider Info */}
       <div className="p-3 space-y-3">
         <div>
-          <h4 className="font-semibold text-foreground">{quote.providerName}</h4>
+          <h4 className="font-medium text-foreground">{quote.providerName}</h4>
           <a
             href={`tel:${quote.providerPhone}`}
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -181,14 +164,14 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
         {/* Price */}
         <div className="space-y-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">
+            <span className="text-2xl font-medium text-foreground">
               {formatCurrency(quote.amount)}
             </span>
           </div>
           {priceDeviation !== 0 && (
             <div
               className={cn(
-                'inline-flex items-center gap-1 text-xs font-medium',
+                'inline-flex items-center gap-1 text-caption font-medium',
                 priceDeviation < 0
                   ? 'text-success'
                   : 'text-danger'
@@ -239,7 +222,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
               }}
             />
           </div>
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-caption text-muted-foreground text-center">
             {t('inmobiliaria.finance.quotes.priceCompetitiveness')}
           </p>
         </div>
@@ -289,7 +272,7 @@ export function CotizacionComparator({
           <CurrencyDollar className="w-7 h-7 text-muted-foreground" />
         </div>
         <div>
-          <h4 className="font-semibold text-foreground">{t('inmobiliaria.finance.quotes.noQuotes')}</h4>
+          <h4 className="font-medium text-foreground">{t('inmobiliaria.finance.quotes.noQuotes')}</h4>
           <p className="text-sm text-muted-foreground mt-1">
             {t('inmobiliaria.finance.quotes.noQuotesDesc')}
           </p>
@@ -312,7 +295,7 @@ export function CotizacionComparator({
         <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
-              <h4 className="font-semibold text-foreground">{quote.providerName}</h4>
+              <h4 className="font-medium text-foreground">{quote.providerName}</h4>
               <a
                 href={`tel:${quote.providerPhone}`}
                 className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -330,10 +313,10 @@ export function CotizacionComparator({
               </div>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-medium text-foreground">
                 {formatCurrency(quote.amount)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-caption text-muted-foreground mt-1">
                 {formatDate(quote.createdAt, locale)}
               </p>
             </div>
@@ -371,7 +354,7 @@ export function CotizacionComparator({
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xl">{typeInfo?.icon}</span>
-            <h3 className="font-semibold text-foreground">{solicitud.title}</h3>
+            <h3 className="font-medium text-foreground">{solicitud.title}</h3>
           </div>
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5" />
@@ -391,27 +374,27 @@ export function CotizacionComparator({
         <div className="p-3 rounded-lg bg-success-soft border border-success/30">
           <div className="flex items-center gap-2 text-success">
             <TrendDown className="w-4 h-4" weight="bold" />
-            <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.cheapest')}</span>
+            <span className="text-caption font-medium">{t('inmobiliaria.finance.quotes.cheapest')}</span>
           </div>
-          <p className="text-lg font-bold text-success mt-1">
+          <p className="text-lg font-medium text-success mt-1">
             {formatCurrency(Math.min(...solicitud.quotes.map((q) => q.amount)))}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-primary-soft border border-primary/30">
           <div className="flex items-center gap-2 text-primary">
             <Lightning className="w-4 h-4" weight="fill" />
-            <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.fastest')}</span>
+            <span className="text-caption font-medium">{t('inmobiliaria.finance.quotes.fastest')}</span>
           </div>
-          <p className="text-lg font-bold text-primary mt-1">
+          <p className="text-lg font-medium text-primary mt-1">
             {Math.min(...solicitud.quotes.map((q) => q.estimatedDays))} {t('inmobiliaria.finance.quotes.days')}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-warning-soft border border-warning/30">
           <div className="flex items-center gap-2 text-warning">
             <Crown className="w-4 h-4" weight="fill" />
-            <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.bestValue')}</span>
+            <span className="text-caption font-medium">{t('inmobiliaria.finance.quotes.bestValue')}</span>
           </div>
-          <p className="text-lg font-bold text-warning mt-1">
+          <p className="text-lg font-medium text-warning mt-1">
             {solicitud.quotes.find((q) => q.id === analysis.bestValueId)?.providerName?.split(' ')[0] || '-'}
           </p>
         </div>
@@ -421,7 +404,7 @@ export function CotizacionComparator({
       <div className="relative">
         {/* Las cotizaciones entran escalonadas; una nueva se suma y las demás
             se corren a su lugar. */}
-        <Stagger className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-[#D5D1CA] dark:scrollbar-thumb-[#4D4A45] scrollbar-track-transparent">
+        <Stagger className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-[#D5D1CA] scrollbar-track-transparent">
             {solicitud.quotes.map((quote) => (
               <StaggerItem key={quote.id} className="flex shrink-0">
               <QuoteCard
@@ -465,7 +448,6 @@ export function CotizacionComparator({
             </div>
             <div className="flex items-center gap-2 text-sm text-success font-medium">
               <span>{t('inmobiliaria.finance.quotes.continueToApproval')}</span>
-              <ArrowRight className="w-4 h-4" />
             </div>
           </div>
       </Presence>

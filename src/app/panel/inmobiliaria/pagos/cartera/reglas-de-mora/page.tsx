@@ -8,12 +8,13 @@
  * pantalla los respeta.
  */
 
+import { useTr } from '@/lib/i18n/use-tr';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
 import { ReglasDeMora } from '@/components/cobros/reglas-de-mora/ReglasDeMora';
 import { destinoDeVolver } from './volver';
 
@@ -25,7 +26,6 @@ function EnlaceDeVolver({ href, label }: { href: string; label: string }) {
       href={href}
       className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
     >
-      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
       {label}
     </Link>
   );
@@ -43,35 +43,45 @@ function VolverDesde() {
 }
 
 export default function ReglasDeMoraPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          {/* La vuelta va ARRIBA A LA IZQUIERDA, como el «Volver al portafolio»
-              del importador: es de dónde viene la persona, no una acción de la
-              pantalla. A la derecha parecía el botón principal (Nico, 2026-09-01). */}
+        <div className="space-y-3">
+          {/* La vuelta va ARRIBA A LA IZQUIERDA: es de dónde viene la persona,
+              no una acción de la pantalla (Nico, 2026-09-01). */}
           <Suspense fallback={<EnlaceDeVolver {...VOLVER_A_COBROS} />}>
             <VolverDesde />
           </Suspense>
-          <SectionLabel>Pagos · inquilinos</SectionLabel>
-          <h1 className="text-h2 text-fg">Reglas de mora</h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            Se aplican en orden, de arriba abajo, sobre cada cobro vencido: primero corre el interés
-            pasados los días de plazo y después, si la regla existe, el gasto administrativo. Lo que
-            cada una agrega queda como línea propia en el estado de cuenta del inquilino.
-          </p>
-          {/* 🔴 El techo (17-09). El interés que se configura acá no puede pasar
-              de la usura del mes en que corre (art. 884 del Código de Comercio),
-              y esa serie se carga en su propia pantalla: sin ella el interés
-              sale SIN topear. Por eso el enlace vive al lado de las reglas. */}
-          <Link
-            href="/panel/inmobiliaria/pagos/cartera/usura"
-            className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
-            data-testid="ir-a-la-usura"
-          >
-            Ver la tasa de usura que las topea
-          </Link>
-        </header>
+          {/* 🔴 El techo (17-09): el interés no puede pasar de la usura del mes
+              (art. 884 del Código de Comercio); por eso la usura va al lado. */}
+          <EncabezadoDePantalla
+            seccion={tr('Cobrar a inquilinos')}
+            titulo="Reglas de mora"
+            descripcion="Lo que se le suma a cada cobro vencido: primero el interés, pasados los días de plazo, y después el gasto administrativo."
+            ayuda={
+              <ParaEntenderMas etiqueta="Cómo se aplican" titulo="Cómo se aplican las reglas de mora" variante="secundario">
+                <p className="text-body-sm text-fg-muted">
+                  Se aplican en orden, de arriba abajo, sobre cada cobro vencido: primero corre el
+                  interés pasados los días de plazo y después, si la regla existe, el gasto
+                  administrativo. Lo que cada una agrega queda como línea propia en el estado de
+                  cuenta del inquilino. El interés nunca pasa de la tasa de usura del mes.
+                </p>
+              </ParaEntenderMas>
+            }
+            acciones={
+              <Link
+                href="/panel/inmobiliaria/pagos/cartera/usura"
+                // Revisora r25 (Reglas de mora #5): gris y subrayado, no un azul suelto en el encabezado.
+                className="inline-flex h-8 items-center text-body-sm text-fg-muted underline underline-offset-4 hover:text-fg"
+                data-testid="ir-a-la-usura"
+              >
+                Ver la tasa de usura que las topea
+              </Link>
+            }
+          />
+        </div>
 
         <ReglasDeMora />
       </div>

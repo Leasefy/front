@@ -8,17 +8,24 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AnimatedNumber,
+  Avatar,
+  Cifra,
   CrossFade,
+  FranjaDeCifras,
+  MonoLabel,
   Presence,
   StaggerItem,
+  StatusBadge,
   motionDuration,
   motionEase,
+  type TonoDeCifra,
 } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, Chat, XCircle, Prohibit, ArrowsClockwise } from '@phosphor-icons/react';
+import { MapPin, Calendar, FileText, Download, CreditCard, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, Receipt, Buildings, Wallet, Chat, XCircle, Prohibit, ArrowsClockwise, Bank, DeviceMobile, Money } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { BackButton } from '@/components/ui/back-button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { cn } from '@/lib/utils';
@@ -60,6 +67,24 @@ const MONTH_NAMES_EN = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+/** El ícono de la familia de cada medio de pago (antes, un emoji). */
+const ICONO_DEL_MEDIO: Record<string, typeof CreditCard> = {
+  pse: Bank,
+  credit_card: CreditCard,
+  debit_card: CreditCard,
+  nequi: DeviceMobile,
+  daviplata: DeviceMobile,
+  cash: Money,
+};
+
+/** El tono del StatusBadge de cada pago, desde el color que ya decide `getStatusInfo`. */
+const TONO_DEL_PAGO: Record<string, 'success' | 'warning' | 'critical' | 'neutral'> = {
+  'text-success': 'success',
+  'text-warning': 'warning',
+  'text-danger': 'critical',
+  'text-fg-muted': 'neutral',
+};
+
 export default function LeaseDetailPage() {
   const { t, locale, formatCurrency } = useI18n();
   const params = useParams();
@@ -90,7 +115,7 @@ export default function LeaseDetailPage() {
 
   if (leaseLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
       </div>
@@ -119,10 +144,8 @@ export default function LeaseDetailPage() {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <motion.div {...entrada} className="text-center">
-          <div className="w-20 h-20 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-6">
-            <House className="w-10 h-10 text-fg-subtle" />
-          </div>
-          <h2 className="text-xl font-semibold text-fg mb-2">
+          <House className="w-10 h-10 text-fg-subtle mx-auto mb-4" aria-hidden="true" />
+          <h2 className="text-h3 text-fg mb-2">
             {locale === 'es' ? 'Arriendo no encontrado' : 'Rental not found'}
           </h2>
           <p className="text-fg-muted mb-6">
@@ -276,7 +299,14 @@ export default function LeaseDetailPage() {
         };
     }
   })();
-  const AccountStatusIcon = accountStatus.icon;
+  // El punto del estado de cuenta en la franja (el ícono en su caja se fue con el glow up de los portales).
+  const tonoDelEstado: TonoDeCifra | undefined = accountStatus.iconClass.includes('danger')
+    ? 'peligro'
+    : accountStatus.iconClass.includes('warning')
+      ? 'aviso'
+      : accountStatus.iconClass.includes('success')
+        ? 'exito'
+        : undefined;
 
   const handlePaid = () => {
     refetchRequests();
@@ -319,19 +349,20 @@ export default function LeaseDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="bg-bg">
+      <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* Back Button */}
         <div className="mb-6">
-          <BackButton label={locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'} />
+          <BackButton href="/inquilino/arriendo" label={locale === 'es' ? 'Volver a Mi arriendo' : 'Back to My rental'} />
         </div>
 
         {/* Hero Section - Property Card */}
-        <div className="rounded-xl border border-border bg-surface overflow-hidden mb-8">
+        <div className="rounded-lg border border-border bg-surface overflow-hidden mb-8">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
-            <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
+            {/* En el celular la foto más baja: lo del arriendo se ve sin bajar tanto. */}
+            <div className="relative w-full lg:w-[400px] h-48 sm:h-64 lg:h-auto flex-shrink-0">
               {/* Sin foto, «Sin fotos» y no `<Image src={null}>`, que tumbaba la pantalla (QA 22-09). */}
               <PortadaDelInmueble
                 property={{ thumbnailUrl: lease.propertyThumbnail }}
@@ -339,60 +370,58 @@ export default function LeaseDetailPage() {
                 sizes="(max-width: 1024px) 100vw, 400px"
                 priority
               />
-              {/* Status Badge Overlay */}
-              <div className="absolute top-4 left-4">
-                <span className={cn(
-                  'px-3 py-1.5 text-xs font-medium rounded-full backdrop-blur-sm',
-                  lease.status === 'ending_soon'
-                    ? 'bg-warning-soft/90 text-warning'
-                    : 'bg-success-soft/90 text-success'
-                )}>
-                  {lease.status === 'ending_soon'
-                    ? (locale === 'es' ? 'Termina pronto' : 'Ending soon')
-                    : (locale === 'es' ? 'Contrato Activo' : 'Active Contract')}
-                </span>
-              </div>
             </div>
 
-            {/* Property Info */}
+            {/* Property Info — glow up de los portales (22-10): el estado con su punto y su palabra, el título
+                liviano como en el panel, la plata en mono sin negrilla y las etiquetas en DM Mono. */}
             <div className="flex-1 p-6 lg:p-8">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-                <div>
-                  <h1 className="text-2xl lg:text-3xl font-semibold text-fg tracking-tight">
-                    {lease.propertyTitle}
+                <div className="min-w-0 space-y-2">
+                  <StatusBadge tone={lease.status === 'ending_soon' ? 'warning' : 'success'} data-testid="estado-del-arriendo">
+                    {lease.status === 'ending_soon'
+                      ? (locale === 'es' ? 'Termina pronto' : 'Ending soon')
+                      : (locale === 'es' ? 'Contrato activo' : 'Active contract')}
+                  </StatusBadge>
+                  <h1 className="text-h2 text-fg [text-wrap:balance]">
+                    {/* QA 21-10: un inmueble sin título dejaba el h1 vacío; la dirección lo nombra. */}
+                    {lease.propertyTitle || lease.propertyAddress}
                   </h1>
-                  <p className="text-fg-muted mt-2 flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" />
+                  <p className="text-body-sm text-fg-muted flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
                     {lease.propertyAddress}, {lease.propertyCity}
                   </p>
                 </div>
-                <div className="text-left sm:text-right">
-                  <p className="text-3xl lg:text-4xl font-bold text-fg tracking-tight">
+                <div className="shrink-0 text-left sm:text-right">
+                  <p className="font-mono text-h2 tabular-nums text-fg">
                     {formatCurrency(lease.monthlyRent + (lease.adminFee ?? 0))}
                   </p>
-                  <p className="text-sm text-fg-muted">/{locale === 'es' ? 'mes' : 'mo'}</p>
+                  <p className="text-caption text-fg-muted">
+                    {(lease.adminFee ?? 0) > 0
+                      ? (locale === 'es' ? 'al mes, con la administración' : 'per month, with the HOA fee')
+                      : (locale === 'es' ? 'al mes' : 'per month')}
+                  </p>
                 </div>
               </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-y border-border-faint">
-                <div className="text-center sm:text-left">
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Arriendo' : 'Rent'}</p>
-                  <p className="text-lg font-semibold text-fg">{formatCurrency(lease.monthlyRent)}</p>
+              {/* Las cuatro cifras del arriendo: etiqueta en DM Mono, cifra en mono sin negrilla. */}
+              <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-5 py-5 border-y border-border-faint" data-testid="cifras-del-arriendo">
+                <div className="min-w-0 space-y-1">
+                  <dt><MonoLabel className="text-fg-subtle">{locale === 'es' ? 'Canon' : 'Rent'}</MonoLabel></dt>
+                  <dd className="font-mono text-body tabular-nums text-fg">{formatCurrency(lease.monthlyRent)}</dd>
                 </div>
-                <div className="text-center sm:text-left">
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">Admin</p>
-                  <p className="text-lg font-semibold text-fg">{formatCurrency(lease.adminFee ?? 0)}</p>
+                <div className="min-w-0 space-y-1">
+                  <dt><MonoLabel className="text-fg-subtle">{locale === 'es' ? 'Administración' : 'HOA fee'}</MonoLabel></dt>
+                  <dd className="font-mono text-body tabular-nums text-fg">{(lease.adminFee ?? 0) > 0 ? formatCurrency(lease.adminFee ?? 0) : '—'}</dd>
                 </div>
-                <div className="text-center sm:text-left">
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
-                  <p className="text-lg font-semibold text-fg">{diaDePagoLegible(lease.paymentDay) ?? (locale === 'es' ? 'Sin definir' : 'Not set')}</p>
+                <div className="min-w-0 space-y-1">
+                  <dt><MonoLabel className="text-fg-subtle">{locale === 'es' ? 'Día de pago' : 'Payment day'}</MonoLabel></dt>
+                  <dd className="text-body text-fg">{diaDePagoLegible(lease.paymentDay) ?? (locale === 'es' ? 'Sin definir' : 'Not set')}</dd>
                 </div>
-                <div className="text-center sm:text-left">
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Restante' : 'Remaining'}</p>
-                  <p className="text-lg font-semibold text-fg">{daysRemaining} {locale === 'es' ? 'días' : 'days'}</p>
+                <div className="min-w-0 space-y-1">
+                  <dt><MonoLabel className="text-fg-subtle">{locale === 'es' ? 'Te quedan' : 'Remaining'}</MonoLabel></dt>
+                  <dd className="font-mono text-body tabular-nums text-fg">{daysRemaining.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')} {locale === 'es' ? (daysRemaining === 1 ? 'día' : 'días') : (daysRemaining === 1 ? 'day' : 'days')}</dd>
                 </div>
-              </div>
+              </dl>
 
               {/* Contract Timeline */}
               <div className="pt-5">
@@ -435,8 +464,8 @@ export default function LeaseDetailPage() {
                     </div>
                   </motion.div>
                 </div>
-                <p className="text-xs text-fg-muted mt-2 text-center">
-                  <AnimatedNumber value={leaseProgress} from={0} format={(n) => String(Math.round(n))} />% {locale === 'es' ? 'del contrato transcurrido' : 'of contract elapsed'}
+                <p className="text-caption text-fg-muted mt-2 text-center">
+                  <span className="font-mono tabular-nums"><AnimatedNumber value={leaseProgress} from={0} format={(n) => String(Math.round(n))} /> %</span> {locale === 'es' ? 'del contrato ya pasó' : 'of the contract has gone by'}
                 </p>
               </div>
             </div>
@@ -447,123 +476,16 @@ export default function LeaseDetailPage() {
           {/* Main Content - 2 columns */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Renewal — request / awaiting proposal / accept, or ending-soon prompt.
-
-                🔴 Con un aviso de no renovación ya dado, TODO este bloque se
-                cambia por el aviso: ofrecer «Aceptar renovación» al lado de
-                «avisaste que no vas a renovar» son dos pantallas distintas
-                peleando en el mismo lugar. */}
-            {claveDeRenovacion && (
-            // Pedir la renovación o avisar que no cambia el bloque entero:
-            // el viejo sale y el nuevo entra (CrossFade), no un salto seco.
-            <CrossFade swapKey={claveDeRenovacion}>
-            {avisoNoRenovar ? (
-              <NoVoyARenovar lease={lease} onCambio={refetchLease} />
-            ) : lease.renovacion ? (
-              <div className="rounded-xl border border-primary/30 bg-primary-soft/40 p-6 lg:p-8">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowsClockwise className="w-5 h-5 text-primary" />
-                  <span className="text-sm font-medium text-primary">
-                    {locale === 'es' ? 'Tu contrato está en proceso de renovación' : 'Your contract is up for renewal'}
-                  </span>
-                </div>
-
-                {lease.renovacion.status === 'RENOV_PENDING' && !lease.renovacion.tenantAcceptedAt ? (
-                  // Requested, but the agency hasn't proposed terms yet.
-                  <p className="text-sm text-fg-muted max-w-lg">
-                    {locale === 'es'
-                      ? 'Le avisamos a tu inmobiliaria que quieres continuar. Están preparando la propuesta con el nuevo canon; te avisaremos apenas esté lista.'
-                      : 'We told your agency you want to continue. They are preparing the proposal with the new rent; we will notify you as soon as it is ready.'}
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-fg-muted text-sm mb-1">
-                      {locale === 'es' ? 'Nuevo canon propuesto' : 'Proposed new rent'}
-                    </p>
-                    <p className="text-3xl font-bold text-fg tracking-tight">
-                      {formatCurrency(lease.renovacion.proposedRent + (lease.renovacion.proposedAdminFee ?? 0))}
-                      <span className="text-base font-normal text-fg-muted">/{locale === 'es' ? 'mes' : 'mo'}</span>
-                    </p>
-                    {lease.renovacion.newEndDate && (
-                      <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4" />
-                        {locale === 'es' ? 'Nueva vigencia hasta ' : 'New term until '}
-                        {formatFullDate(lease.renovacion.newEndDate)}
-                      </p>
-                    )}
-                    {lease.renovacion.tenantAcceptedAt ? (
-                      <p className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-success">
-                        <CheckCircle className="w-5 h-5" weight="fill" />
-                        {locale === 'es' ? 'Aceptaste la renovación' : 'You accepted the renewal'}
-                      </p>
-                    ) : (
-                      <Button
-                        type="button"
-                        size="lg"
-                        hideArrow
-                        onClick={handleAcceptRenovacion}
-                        disabled={acceptingRenovacion}
-                        className="mt-4"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                        {locale === 'es' ? 'Aceptar renovación' : 'Accept renewal'}
-                      </Button>
-                    )}
-                  </>
-                )}
-              </div>
-            ) : lease.status === 'ending_soon' ? (
-              <div className="rounded-xl border border-warning/30 bg-warning-soft p-6 lg:p-8">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
-                      <ArrowsClockwise className="w-5 h-5 text-warning" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-warning">
-                        {locale === 'es' ? 'Tu contrato termina pronto' : 'Your contract is ending soon'}
-                      </p>
-                      <p className="text-sm text-fg-muted mt-1 max-w-md">
-                        {locale === 'es'
-                          ? '¿Quieres continuar? Avísale a tu inmobiliaria y prepararán la propuesta de renovación.'
-                          : 'Want to continue? Let your agency know and they will prepare the renewal proposal.'}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    size="lg"
-                    hideArrow
-                    onClick={handleRequestRenovacion}
-                    disabled={requestingRenovacion}
-                    className="flex-shrink-0"
-                  >
-                    <ArrowsClockwise className="w-5 h-5" />
-                    {locale === 'es' ? 'Quiero renovar' : 'I want to renew'}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-            </CrossFade>
-            )}
-
-            {/* La otra mitad de la decisión. Va debajo y en voz baja —una línea,
-                sin tarjeta— porque no es lo que la mayoría viene a hacer; pero
-                tiene que estar SIEMPRE que haya contrato vivo, no sólo cuando
-                está por vencer: avisar con cinco meses es justo lo que la ley
-                premia, y esconderlo hasta el último mes empuja a avisar tarde. */}
-            {isActive && !avisoNoRenovar ? (
-              <NoVoyARenovar lease={lease} onCambio={refetchLease} />
-            ) : null}
-
-            {/* Pay Rent CTA — visible cuando lease está activo y se puede pagar */}
+            {/* Pay Rent CTA — visible cuando lease está activo y se puede pagar.
+                GLOW UP (21-10-2026): es lo que más se viene a hacer; va primero,
+                antes de la renovación. */}
             {/* La info del período llega en su propia consulta: si llega
                 después del arriendo, la tarjeta entra; si ya estaba, no. */}
             <Presence
               show={Boolean(isActive && paymentInfo)}
               initial={false}
               className={cn(
-                'rounded-xl border p-6 lg:p-8 transition-colors duration-base',
+                'rounded-lg border p-6 lg:p-8 transition-colors duration-base',
                 periodStatus === 'PENDING_VALIDATION'
                   ? 'bg-warning-soft border-warning/30'
                   : periodStatus === 'APPROVED'
@@ -607,7 +529,7 @@ export default function LeaseDetailPage() {
                         </>
                       )}
                     </CrossFade>
-                    <p className="text-4xl font-bold tracking-tight text-fg">
+                    <p className="font-mono text-h2 tabular-nums text-fg">
                       {formatCurrency(paymentInfo.monthlyRent)}
                     </p>
                     <p className="text-fg-muted mt-1 flex items-center gap-1.5 capitalize">
@@ -615,7 +537,7 @@ export default function LeaseDetailPage() {
                       {formatPeriod(paymentInfo.currentPeriod.month, paymentInfo.currentPeriod.year)}
                     </p>
                     {periodStatus === 'REJECTED' && paymentInfo.currentPeriodRejectionReason && (
-                      <p className="text-xs text-danger mt-2 italic max-w-md">
+                      <p className="text-caption text-danger mt-2 max-w-md">
                         {paymentInfo.currentPeriodRejectionReason}
                       </p>
                     )}
@@ -626,63 +548,153 @@ export default function LeaseDetailPage() {
                       size="lg"
                       hideArrow
                       onClick={() => setPayModalOpen(true)}
-                      className="px-8 py-4"
                     >
                       <Wallet className="w-5 h-5" />
                       {periodStatus === 'REJECTED'
                         ? (locale === 'es' ? 'Reintentar' : 'Retry')
                         : (locale === 'es' ? 'Pagar arriendo' : 'Pay rent')}
-                      <ArrowUpRight className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
               )}
             </Presence>
 
-            {/* Quick Stats — las cifras cuentan cuando cambian (un pago aprobado). */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="rounded-xl bg-surface-muted p-5">
-                <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-3">
-                  <TrendUp className="w-5 h-5 text-success" />
+
+            {/* Renewal — request / awaiting proposal / accept, or ending-soon prompt.
+
+                🔴 Con un aviso de no renovación ya dado, TODO este bloque se
+                cambia por el aviso: ofrecer «Aceptar renovación» al lado de
+                «avisaste que no vas a renovar» son dos pantallas distintas
+                peleando en el mismo lugar. */}
+            {claveDeRenovacion && (
+            // Pedir la renovación o avisar que no cambia el bloque entero:
+            // el viejo sale y el nuevo entra (CrossFade), no un salto seco.
+            <CrossFade swapKey={claveDeRenovacion}>
+            {avisoNoRenovar ? (
+              <NoVoyARenovar lease={lease} onCambio={refetchLease} />
+            ) : lease.renovacion ? (
+              <div className="rounded-lg border border-primary/30 bg-primary-soft/40 p-6 lg:p-8">
+                <div className="flex items-center gap-2 mb-2">
+                  <ArrowsClockwise className="w-5 h-5 text-primary" />
+                  <span className="text-sm font-medium text-primary">
+                    {locale === 'es' ? 'Tu contrato está en proceso de renovación' : 'Your contract is up for renewal'}
+                  </span>
                 </div>
-                <p className="text-2xl font-bold text-fg">
-                  <AnimatedNumber value={totalPaid} format={plataQueLlega(totalPaid, formatCurrency)} />
-                </p>
-                <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Total pagado' : 'Total paid'}</p>
+
+                {lease.renovacion.status === 'RENOV_PENDING' && !lease.renovacion.tenantAcceptedAt ? (
+                  // Requested, but the agency hasn't proposed terms yet.
+                  <p className="text-sm text-fg-muted max-w-lg">
+                    {locale === 'es'
+                      ? 'Le avisamos a tu inmobiliaria que quieres continuar. Están preparando la propuesta con el nuevo canon; te avisaremos apenas esté lista.'
+                      : 'We told your agency you want to continue. They are preparing the proposal with the new rent; we will notify you as soon as it is ready.'}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-fg-muted text-sm mb-1">
+                      {locale === 'es' ? 'Nuevo canon propuesto' : 'Proposed new rent'}
+                    </p>
+                    <p className="font-mono text-h2 tabular-nums text-fg">
+                      {formatCurrency(lease.renovacion.proposedRent + (lease.renovacion.proposedAdminFee ?? 0))}
+                      <span className="text-base font-normal text-fg-muted">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                    </p>
+                    {lease.renovacion.newEndDate && (
+                      <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" />
+                        {locale === 'es' ? 'Nueva vigencia hasta ' : 'New term until '}
+                        {formatFullDate(lease.renovacion.newEndDate)}
+                      </p>
+                    )}
+                    {lease.renovacion.tenantAcceptedAt ? (
+                      <p className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-success">
+                        <CheckCircle className="w-5 h-5" weight="fill" />
+                        {locale === 'es' ? 'Aceptaste la renovación' : 'You accepted the renewal'}
+                      </p>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="lg"
+                        hideArrow
+                        onClick={handleAcceptRenovacion}
+                        disabled={acceptingRenovacion}
+                        className="mt-4"
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                        {locale === 'es' ? 'Aceptar renovación' : 'Accept renewal'}
+                      </Button>
+                    )}
+                  </>
+                )}
               </div>
-              <div className="rounded-xl bg-surface-muted p-5">
-                <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-3">
-                  <Receipt className="w-5 h-5 text-primary" />
+            ) : lease.status === 'ending_soon' ? (
+              <div className="rounded-lg border border-warning/30 bg-warning-soft p-6 lg:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div>
+                      <p className="text-body font-medium text-fg">
+                        {locale === 'es' ? 'Tu contrato termina pronto' : 'Your contract is ending soon'}
+                      </p>
+                      <p className="text-sm text-fg-muted mt-1 max-w-md">
+                        {locale === 'es'
+                          ? '¿Quieres continuar? Avísale a tu inmobiliaria y prepararán la propuesta de renovación.'
+                          : 'Want to continue? Let your agency know and they will prepare the renewal proposal.'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="lg"
+                    hideArrow
+                    onClick={handleRequestRenovacion}
+                    disabled={requestingRenovacion}
+                    className="flex-shrink-0"
+                  >
+                    <ArrowsClockwise className="w-5 h-5" />
+                    {locale === 'es' ? 'Quiero renovar' : 'I want to renew'}
+                  </Button>
                 </div>
-                <p className="text-2xl font-bold text-fg">
-                  <AnimatedNumber value={amortizacion?.pagadas ?? 0} />
-                  {amortizacion ? (
-                    <span className="text-base font-medium text-fg-muted"> {locale === 'es' ? 'de' : 'of'} {amortizacion.total}</span>
-                  ) : null}
-                </p>
-                <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Cuotas pagadas' : 'Installments paid'}</p>
               </div>
-              <div className={cn('rounded-xl p-5 col-span-2 sm:col-span-1', accountStatus.cardClass)}>
-                <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-3">
-                  <AccountStatusIcon className={cn('w-5 h-5', accountStatus.iconClass)} />
-                </div>
-                <p className="text-2xl font-bold text-fg">{accountStatus.label}</p>
-                <p className={cn('text-sm mt-1', accountStatus.captionClass)}>{lovencido ?? (locale === 'es' ? 'Estado de cuenta' : 'Account status')}</p>
-              </div>
-            </div>
+            ) : null}
+            </CrossFade>
+            )}
+
+            {/* La otra mitad de la decisión. Va debajo y en voz baja —una línea,
+                sin tarjeta— porque no es lo que la mayoría viene a hacer; pero
+                tiene que estar SIEMPRE que haya contrato vivo, no sólo cuando
+                está por vencer: avisar con cinco meses es justo lo que la ley
+                premia, y esconderlo hasta el último mes empuja a avisar tarde. */}
+            {isActive && !avisoNoRenovar ? (
+              <NoVoyARenovar lease={lease} onCambio={refetchLease} />
+            ) : null}
+
+
+            {/* Las tres cifras del arriendo en la franja de Cadence (glow up de los portales, 22-10): cuentan cuando
+                cambian (un pago aprobado), sin cajas de ícono; el estado de cuenta lleva su punto. */}
+            <FranjaDeCifras fila="lg" aria-label={locale === 'es' ? 'Cómo vas con tu arriendo' : 'How your rental is going'} data-testid="resumen-del-arriendo">
+              <Cifra
+                etiqueta={locale === 'es' ? 'Total pagado' : 'Total paid'}
+                valor={totalPaid}
+                format={plataQueLlega(totalPaid, formatCurrency)}
+              />
+              <Cifra
+                etiqueta={locale === 'es' ? 'Cuotas pagadas' : 'Installments paid'}
+                valor={amortizacion ? `${amortizacion.pagadas} ${locale === 'es' ? 'de' : 'of'} ${amortizacion.total}` : 0}
+              />
+              <Cifra
+                etiqueta={locale === 'es' ? 'Estado de cuenta' : 'Account status'}
+                valor={accountStatus.label}
+                tono={tonoDelEstado}
+                detalle={lovencido ?? undefined}
+              />
+            </FranjaDeCifras>
 
             {/* Payment History */}
-            <div className="rounded-xl border border-border bg-surface overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
-                    <Receipt className="w-5 h-5 text-fg-muted" />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-fg">{locale === 'es' ? 'Historial de Pagos' : 'Payment History'}</h2>
-                    <p className="text-sm text-fg-muted"><AnimatedNumber value={requests.length} /> {locale === 'es' ? 'transacciones' : 'transactions'}</p>
-                  </div>
-                </div>
+            <div className="rounded-lg border border-border bg-surface overflow-hidden">
+              <div className="flex items-baseline justify-between gap-3 px-6 py-4 border-b border-border-faint">
+                <h2 className="text-h3 text-fg">{locale === 'es' ? 'Historial de pagos' : 'Payment history'}</h2>
+                <p className="text-body-sm text-fg-muted">
+                  <span className="font-mono tabular-nums"><AnimatedNumber value={requests.length} /></span>{' '}
+                  {locale === 'es' ? (requests.length === 1 ? 'pago' : 'pagos') : (requests.length === 1 ? 'payment' : 'payments')}
+                </p>
               </div>
 
               {/* Vacío → primer pago: se cruzan. Lo que ya estaba al llegar no se
@@ -694,7 +706,6 @@ export default function LeaseDetailPage() {
                   <AnimatePresence initial={false} mode="popLayout">
                   {requests.map((request) => {
                     const statusInfo = getRequestStatusInfo(request.status);
-                    const StatusIcon = statusInfo.icon;
                     // QA-INQ-95: la misma regla que «Pagos» (rechazado/cancelado no «vencen»).
                     const dateText = fechaDeLaSolicitud(request, locale, formatDate);
 
@@ -703,42 +714,33 @@ export default function LeaseDetailPage() {
                         key={request.id}
                         className="flex items-center gap-4 px-6 py-4 hover:bg-surface-muted transition-colors"
                       >
-                        <div className={cn(
-                          'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0',
-                          statusInfo.bgColor
-                        )}>
-                          <StatusIcon className={cn('w-5 h-5', statusInfo.textColor)} />
-                        </div>
-
+                        {/* Glow up de los portales (22-10): sin el ícono en su caja de color; el estado con su
+                            punto y su palabra (StatusBadge), la plata en mono sin negrilla. */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <p className="font-medium text-fg">
                               {locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span>
                             </p>
-                            <span className={cn(
-                              'text-xs px-2 py-0.5 rounded-full font-medium',
-                              statusInfo.bgColor,
-                              statusInfo.textColor
-                            )}>
+                            <StatusBadge tone={TONO_DEL_PAGO[statusInfo.textColor] ?? 'neutral'}>
                               {statusInfo.label}
-                            </span>
+                            </StatusBadge>
                           </div>
                           <p className="text-sm text-fg-muted">
                             {dateText}
                             {request.bankName && <> · {request.bankName}</>}
                           </p>
                           {request.referenceNumber && (
-                            <p className="text-xs text-fg-subtle mt-1">Ref: {request.referenceNumber}</p>
+                            <p className="text-caption text-fg-subtle mt-1">Ref. <span className="font-mono">{request.referenceNumber}</span></p>
                           )}
                           {request.rejectionReason && (
-                            <p className="text-xs text-danger mt-1 italic">
+                            <p className="text-caption text-danger mt-1">
                               {request.rejectionReason}
                             </p>
                           )}
                         </div>
 
                         <div className="text-right flex-shrink-0">
-                          <p className="text-lg font-semibold text-fg">
+                          <p className="font-mono text-body tabular-nums text-fg">
                             {formatCurrency(request.amount)}
                           </p>
                         </div>
@@ -748,12 +750,15 @@ export default function LeaseDetailPage() {
                   </AnimatePresence>
                 </div>
               ) : (
-                <div className="py-16 text-center">
-                  <div className="w-16 h-16 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4">
-                    <Receipt className="w-8 h-8 text-fg-subtle" />
-                  </div>
-                  <p className="text-fg-muted">{locale === 'es' ? 'No hay historial de pagos' : 'No payment history'}</p>
-                </div>
+                <EmptyState
+                  icon={Receipt}
+                  title={locale === 'es' ? 'Todavía no hay pagos' : 'No payments yet'}
+                  description={
+                    locale === 'es'
+                      ? 'Cuando pagues el arriendo, cada pago aparece aquí con su estado.'
+                      : 'When you pay the rent, each payment shows up here with its status.'
+                  }
+                />
               )}
               </CrossFade>
             </div>
@@ -763,22 +768,22 @@ export default function LeaseDetailPage() {
           <div className="space-y-6">
 
             {/* Contract Info Card */}
-            <div className="rounded-xl border border-border bg-surface overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint">
-                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
-                <h2 className="font-semibold text-fg">{locale === 'es' ? 'Contrato' : 'Contract'}</h2>
+            <div className="rounded-lg border border-border bg-surface overflow-hidden">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-border-faint">
+                <h2 className="text-h3 text-fg">{locale === 'es' ? 'Contrato' : 'Contract'}</h2>
               </div>
               <div className="p-6 space-y-5">
                 <div>
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Vigencia' : 'Term'}</p>
+                  <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Vigencia' : 'Term'}</MonoLabel>
                   <p className="text-sm text-fg font-medium">
                     {formatFullDate(lease.startDate)} — {formatFullDate(lease.endDate)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Garantía' : 'Guarantee'}</p>
+                {/* QA 21-10: el back todavía no manda la garantía en el arriendo; sin dato, el
+                    bloque mostraba la etiqueta y un escudo solos. */}
+                {lease.guaranteeType ? (
+                <div data-testid="garantia-del-arriendo">
+                  <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Garantía' : 'Guarantee'}</MonoLabel>
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-success" />
                     <p className="text-sm text-fg font-medium">
@@ -787,19 +792,20 @@ export default function LeaseDetailPage() {
                        lease.guaranteeType}
                     </p>
                   </div>
-                  <p className="text-xs text-fg-muted mt-1 ml-6">{lease.guaranteeDetails}</p>
+                  {lease.guaranteeDetails ? <p className="text-caption text-fg-muted mt-1 ml-6">{lease.guaranteeDetails}</p> : null}
                 </div>
+                ) : null}
 
                 {/* Documents */}
                 <div className="pt-4 border-t border-border-faint space-y-2">
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-3">{t('documents.title')}</p>
+                  <MonoLabel className="mb-3 block text-fg-subtle">{t('documents.title')}</MonoLabel>
 
                   {lease.contractUrl && (
                     <a
                       href={lease.contractUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg hover:bg-surface-hover transition-colors group"
                     >
                       <FileText className="w-4 h-4 text-fg-muted" />
                       <span className="text-sm text-fg flex-1">{locale === 'es' ? 'Contrato de arriendo' : 'Lease agreement'}</span>
@@ -812,7 +818,7 @@ export default function LeaseDetailPage() {
                       href={lease.insuranceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg hover:bg-surface-hover transition-colors group"
                     >
                       <Shield className="w-4 h-4 text-fg-muted" />
                       <span className="text-sm text-fg flex-1">{locale === 'es' ? 'Póliza de seguro' : 'Insurance policy'}</span>
@@ -825,87 +831,108 @@ export default function LeaseDetailPage() {
                       href={lease.inventoryUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg hover:bg-surface-hover transition-colors group"
                     >
                       <Buildings className="w-4 h-4 text-fg-muted" />
                       <span className="text-sm text-fg flex-1">{locale === 'es' ? 'Inventario' : 'Inventory'}</span>
                       <Download className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted transition-colors" />
                     </a>
                   )}
+
+                  {/* QA 21-10: sin ningún enlace aquí, el bloque quedaba con la etiqueta sola.
+                      Los documentos del contrato viven en «Contrato y documentos». */}
+                  {!lease.contractUrl && !lease.insuranceUrl && !lease.inventoryUrl ? (
+                    <Link
+                      href="/inquilino/contratos"
+                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg hover:bg-surface-hover transition-colors"
+                      data-testid="ver-contrato-y-documentos"
+                    >
+                      <FileText className="w-4 h-4 text-fg-muted" />
+                      <span className="text-sm text-fg flex-1">
+                        {locale === 'es' ? 'Ver tu contrato y documentos' : 'See your contract and documents'}
+                      </span>
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             </div>
 
             {/* Landlord Contact Card */}
-            <div className="rounded-xl border border-border bg-surface overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint">
-                <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
-                  <User className="w-5 h-5 text-fg-muted" />
-                </div>
-                <h2 className="font-semibold text-fg">{locale === 'es' ? 'Propietario' : 'Landlord'}</h2>
+            <div className="rounded-lg border border-border bg-surface overflow-hidden">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-border-faint">
+                {/* QA 21-10: en un contrato de inmobiliaria esta persona es de la inmobiliaria, no el
+                    dueño; el arriendo no dice cuál es, así que el título vale para los dos. */}
+                <h2 className="text-h3 text-fg">{locale === 'es' ? 'Quién administra tu arriendo' : 'Who manages your rental'}</h2>
               </div>
               <div className="p-6">
                 <div className="flex items-center gap-4 mb-5">
-                  <div className="w-14 h-14 rounded-full bg-primary-soft flex items-center justify-center text-primary text-xl font-semibold">
-                    {lease.landlordName.charAt(0)}
-                  </div>
+                  {/* Cadence 2: el Avatar del sistema, nunca iniciales a mano. */}
+                  <Avatar name={lease.landlordName || 'Propietario'} size="lg" />
                   <div>
-                    <p className="font-semibold text-fg">{lease.landlordName}</p>
-                    <p className="text-sm text-fg-muted">{locale === 'es' ? 'Propietario verificado' : 'Verified landlord'}</p>
+                    <p className="font-medium text-fg">{lease.landlordName || (locale === 'es' ? 'Sin nombre registrado' : 'No name on file')}</p>
+                    {/* Antes: «Propietario verificado», una verificación que nadie hace. */}
+                    <p className="text-sm text-fg-muted">{locale === 'es' ? 'Escríbele por Mensajes' : 'Write to them in Messages'}</p>
                   </div>
                 </div>
 
                 <div className="space-y-2 mb-5">
-                  <a
-                    href={`mailto:${lease.landlordEmail}`}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted hover:text-fg bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors"
-                  >
-                    <Envelope className="w-4 h-4 text-fg-subtle" />
-                    {lease.landlordEmail}
-                  </a>
-                  <a
-                    href={`tel:${lease.landlordPhone}`}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted hover:text-fg bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors"
-                  >
-                    <Phone className="w-4 h-4 text-fg-subtle" />
-                    {lease.landlordPhone}
-                  </a>
+                  {/* QA 21-10: sin teléfono (o sin correo) la fila quedaba vacía, con su ícono solo. */}
+                  {lease.landlordEmail ? (
+                    <a
+                      href={`mailto:${lease.landlordEmail}`}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted hover:text-fg bg-surface-muted rounded-lg hover:bg-surface-hover transition-colors"
+                      data-testid="contacto-correo"
+                    >
+                      <Envelope className="w-4 h-4 text-fg-subtle" />
+                      {lease.landlordEmail}
+                    </a>
+                  ) : null}
+                  {lease.landlordPhone ? (
+                    <a
+                      href={`tel:${lease.landlordPhone}`}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted hover:text-fg bg-surface-muted rounded-lg hover:bg-surface-hover transition-colors"
+                      data-testid="contacto-telefono"
+                    >
+                      <Phone className="w-4 h-4 text-fg-subtle" />
+                      {lease.landlordPhone}
+                    </a>
+                  ) : null}
                 </div>
 
-                <Link
-                  href="/inquilino/mensajes"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-primary text-primary-fg rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors"
-                >
-                  <Chat className="w-4 h-4" />
-                  {locale === 'es' ? 'Enviar mensaje' : 'Send message'}
-                  <ArrowUpRight className="w-4 h-4" />
-                </Link>
+                {/* Una sola acción azul por pantalla (pagar el arriendo): escribir va en secundaria y sin flecha. */}
+                <Button asChild variant="secondary" hideArrow className="w-full">
+                  <Link href="/inquilino/mensajes">
+                    <Chat className="w-4 h-4" />
+                    {locale === 'es' ? 'Escribirle un mensaje' : 'Send a message'}
+                  </Link>
+                </Button>
               </div>
             </div>
 
             {/* Payment Methods Card */}
-            <div className="rounded-xl border border-border bg-surface overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint">
-                <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-success" />
-                </div>
-                <h2 className="font-semibold text-fg">{locale === 'es' ? 'Métodos de pago' : 'Payment methods'}</h2>
+            <div className="rounded-lg border border-border bg-surface overflow-hidden">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-border-faint">
+                <h2 className="text-h3 text-fg">{locale === 'es' ? 'Métodos de pago' : 'Payment methods'}</h2>
               </div>
               <div className="p-4 space-y-2">
                 {PAYMENT_METHODS.filter(m => m.enabled).slice(0, 4).map((method) => (
                   <div
                     key={method.id}
-                    className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl"
+                    className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg"
                   >
-                    <span className="text-xl">{method.icon}</span>
-                    <div className="flex-1">
+                    {/* Íconos de la familia, no emojis (glow up de los portales, 22-10). */}
+                    {(() => {
+                      const Icono = ICONO_DEL_MEDIO[method.id] ?? CreditCard;
+                      return <Icono className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />;
+                    })()}
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-fg">{method.name}</p>
-                      <p className="text-xs text-fg-muted">{method.processingTime}</p>
+                      <p className="text-caption text-fg-muted">{method.processingTime}</p>
                     </div>
                     {method.fee && method.fee > 0 ? (
-                      <span className="text-xs text-fg-muted bg-surface px-2 py-1 rounded-md">+{method.fee}%</span>
+                      <span className="font-mono text-caption tabular-nums text-fg-muted">+{method.fee} %</span>
                     ) : (
-                      <span className="text-xs text-success bg-success-soft px-2 py-1 rounded-md font-medium">{locale === 'es' ? 'Gratis' : 'Free'}</span>
+                      <StatusBadge tone="success">{locale === 'es' ? 'Gratis' : 'Free'}</StatusBadge>
                     )}
                   </div>
                 ))}

@@ -127,7 +127,7 @@ export function HistorialDeProcesos() {
       </p>
 
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
-        <div className="flex flex-wrap items-end gap-3 border-b border-border-faint px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border-faint px-4 py-3">
           <Filtro etiqueta="Filtrar por tipo" valor={tipo} onCambio={setTipo} testId="filtro-tipo">
             <SelectItem value={TODOS}>Todos los tipos</SelectItem>
             {Object.entries(NOMBRE_DEL_TIPO)
@@ -212,14 +212,14 @@ function Filtro({
   children: React.ReactNode
 }) {
   return (
-    <label className="flex min-w-[180px] flex-col gap-1">
-      <span className="text-caption text-fg-muted">{etiqueta}</span>
-      <Select value={valor} onValueChange={onCambio}>
-        <SelectTrigger className="h-9" data-testid={testId} aria-label={etiqueta}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>{children}</SelectContent>
-      </Select>
-    </label>
+    // Revisora r25: sin el rótulo encima flotando; el valor ya dice qué
+    // filtra («Todos los tipos», «Todos los estados»), y el nombre queda
+    // para el lector de pantalla.
+    <Select value={valor} onValueChange={onCambio}>
+      <SelectTrigger className="h-9 w-auto min-w-[168px] gap-2 max-sm:flex-1" data-testid={testId} aria-label={etiqueta}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>{children}</SelectContent>
+    </Select>
   )
 }

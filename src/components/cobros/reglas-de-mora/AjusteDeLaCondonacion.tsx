@@ -14,7 +14,8 @@
 import * as React from 'react';
 import { Banner } from '@leasefy/cadence';
 
-import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import {
@@ -107,25 +108,45 @@ export function AjusteDeLaCondonacion() {
           {OPCIONES.map((o) => {
             const elegida = ajuste.alcanceDelTotal === o.valor;
             return (
-              <Button
+              // Revisora r25 (Reglas de mora #3): un radio con borde azul y fondo suave, no un
+              // botón primario lleno (era el segundo azul de la pantalla).
+              <button
                 key={o.valor}
                 type="button"
-                variant={elegida ? 'default' : 'outline'}
-                hideArrow
                 role="radio"
                 aria-checked={elegida}
                 disabled={!isAdmin || !ajuste.disponible || guardando !== null}
-                isLoading={guardando === o.valor}
+                aria-busy={guardando === o.valor || undefined}
                 onClick={() => void elegir(o.valor)}
-                className="h-auto flex-col items-start whitespace-normal py-3 text-left normal-case"
+                className={cn(
+                  'flex items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  'disabled:cursor-not-allowed disabled:opacity-60',
+                  elegida ? 'border-primary bg-primary-soft' : 'border-border bg-surface hover:bg-surface-muted',
+                )}
                 data-testid={`condonacion-${o.valor}`}
               >
-                <span className="font-medium">
-                  {o.titulo}
-                  {o.valor === 'LO_DE_HOY' && !ajuste.elegidoPorLaInmobiliaria ? ' (el de siempre)' : ''}
+                <span
+                  className={cn(
+                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                    elegida ? 'border-primary' : 'border-border-strong',
+                  )}
+                  aria-hidden="true"
+                >
+                  {guardando === o.valor ? (
+                    <Spinner size="xs" />
+                  ) : elegida ? (
+                    <span className="h-2 w-2 rounded-full bg-primary" />
+                  ) : null}
                 </span>
-                <span className="text-caption opacity-80">{o.explicacion}</span>
-              </Button>
+                <span className="min-w-0 space-y-0.5">
+                  <span className="block text-body-sm font-medium text-fg">
+                    {o.titulo}
+                    {o.valor === 'LO_DE_HOY' && !ajuste.elegidoPorLaInmobiliaria ? ' (el de siempre)' : ''}
+                  </span>
+                  <span className="block text-caption text-fg-muted">{o.explicacion}</span>
+                </span>
+              </button>
             );
           })}
         </div>

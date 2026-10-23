@@ -234,7 +234,7 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
     >
       <div className="flex items-center gap-2 text-foreground">
         <ArrowsClockwise className="w-5 h-5 text-fg-muted" weight="duotone" />
-        <h3 id="renovacion-automatica-titulo" className="text-base font-semibold">
+        <h3 id="renovacion-automatica-titulo" className="text-base font-medium">
           Renovación automática
         </h3>
       </div>
@@ -244,12 +244,12 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
           <label htmlFor="renovacion-automatica-switch" className="block text-sm font-medium text-foreground">
             Prorrogar los contratos vencidos solos
           </label>
-          <p className="text-xs text-muted-foreground" data-testid="renovacion-automatica-hint">
+          <p className="text-caption text-muted-foreground" data-testid="renovacion-automatica-hint">
             {prendida
               ? 'Al día siguiente del vencimiento, si nadie avisó que no renueva, el contrato se prorroga solo: vivienda por el mismo término (Ley 820, art. 6), local comercial por lo pactado o mes a mes. Se extienden sus cuotas y el canon sube en el aniversario. Con aviso de no renovación queda en alerta para que decidas. Ningún correo sale solo: la carta del incremento se manda desde la bandeja de cartas.'
               : 'Apagado: el contrato se prorroga igual por ley, pero Leasefy no extiende sus cuotas solo. Se prorroga a mano desde la ficha del contrato.'}
           </p>
-          {!canEdit && <p className="text-xs text-muted-foreground">Sólo un administrador puede cambiar esto.</p>}
+          {!canEdit && <p className="text-caption text-muted-foreground">Sólo un administrador puede cambiar esto.</p>}
         </div>
         <Switch
           id="renovacion-automatica-switch"
@@ -300,7 +300,7 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
 
       {hayMovimiento && pronostico && (
         <p
-          className="flex items-start gap-2 rounded-lg border border-border bg-surface-muted p-3 text-xs text-fg-muted"
+          className="flex items-start gap-2 rounded-lg border border-border bg-surface-muted p-3 text-caption text-fg-muted"
           data-testid="renovacion-pronostico"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" weight="duotone" />

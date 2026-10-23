@@ -28,19 +28,16 @@
  */
 
 import { use, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { StatusBadge } from '@leasefy/cadence';
 import { useEntradaTrasCargar, type EntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Scroll,
-  CaretLeft,
   CheckCircle,
   Clock,
-  Warning,
   SealCheck,
   MagnifyingGlass,
   XCircle,
-  type Icon,
 } from '@phosphor-icons/react';
 
 import { useTenantAcuerdos } from '@/lib/hooks/use-tenant-acuerdos';
@@ -55,8 +52,8 @@ import { PagarCuota } from '@/components/tenant/PagarCuota';
 import { AvisoDelPagoDelAcuerdo } from '@/components/tenant/AvisoDelPagoDelAcuerdo';
 import { transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Badge } from '@/components/ui/badge';
-import type { BadgeProps } from '@/components/ui/badge';
+import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 
@@ -64,10 +61,11 @@ import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/Pl
 // Neutral tone → badge (capped at `warning`; no alarm level at all — Ley 1480)
 // ============================================================================
 
-const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>; icon: Icon }> = {
-  neutral: { variant: 'secondary', icon: CheckCircle },
-  info: { variant: 'default', icon: Clock },
-  attention: { variant: 'warning', icon: Warning },
+// GLOW UP (22-10): el estado con su punto y su palabra (StatusBadge), sin ícono en la pastilla; nunca rojo.
+const TONO_DEL_ESTADO: Record<CaseTone, 'neutral' | 'info' | 'warning'> = {
+  neutral: 'neutral',
+  info: 'info',
+  attention: 'warning',
 };
 
 /** Long es-CO / en-US date, or empty when the timestamp is invalid. */
@@ -103,21 +101,17 @@ function nextPayableCuota(installments: AcuerdoInstallment[]): AcuerdoInstallmen
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">{children}</div>
+    <div className="bg-bg">
+      <div className="max-w-3xl p-6 lg:p-8">{children}</div>
     </div>
   );
 }
 
 function BackLink({ locale }: { locale: string }) {
   return (
-    <Link
-      href="/inquilino/acuerdos"
-      className="inline-flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white transition-colors mb-6"
-    >
-      <CaretLeft className="w-4 h-4" aria-hidden="true" />
-      {locale === 'es' ? 'Volver a Acuerdos' : 'Back to Agreements'}
-    </Link>
+    <div className="mb-6" data-testid="acuerdo-volver">
+      <BackButton href="/inquilino/acuerdos" label={locale === 'es' ? 'Volver a Acuerdos' : 'Back to Agreements'} />
+    </div>
   );
 }
 
@@ -139,8 +133,7 @@ function AcuerdoDetailView({
 }) {
   const { formatCurrency } = useI18n();
   const es = locale === 'es';
-  const badge = TONE_BADGE[tonoDelAcuerdo(plan)];
-  const ToneIcon = badge.icon;
+  const tono = TONO_DEL_ESTADO[tonoDelAcuerdo(plan)];
 
   // Qué se hace con la firma (03-10-2026): sólo se firma lo que la inmobiliaria aprobó.
   const firma = estadoDeLaFirma(plan);
@@ -181,43 +174,41 @@ function AcuerdoDetailView({
     });
   }
 
+  // GLOW UP (21-10-2026): en el orden del trabajo. Vienes a firmar el acuerdo
+  // o a pagar la cuota que sigue: eso va arriba, debajo del encabezado; el plan
+  // de cuotas se consulta después y el historial va al final.
+  const aceptado = !saldado && firma === 'aceptado';
+
   return (
     <motion.div {...entrada} className="space-y-6">
-      {/* Header — title + neutral status badge */}
-      <header className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-          <Scroll className="w-6 h-6 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-medium text-fg dark:text-white tracking-tight">
-            {es ? 'Acuerdo de pago' : 'Payment agreement'}
-          </h1>
-          <div className="mt-2">
-            <Badge variant={badge.variant} className="inline-flex items-center gap-1">
-              <ToneIcon className="w-3 h-3" aria-hidden="true" />
-              {etiquetaDelAcuerdo(plan)}
-            </Badge>
-          </div>
-        </div>
-      </header>
-
-      {/* Total — rendered VERBATIM from the record (no saldo/total math) */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
-        <p className="text-xs text-fg-subtle dark:text-fg-muted">
-          {es ? 'Total del acuerdo' : 'Agreement total'}
-        </p>
-        <p className="mt-1 text-2xl font-mono tabular-nums font-semibold text-fg dark:text-white">
-          {formatCurrency(plan.totalDueCop)}
-        </p>
-      </section>
-
-      {/* Cuota plan — verbatim installments (CuotaPlanTable) */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
-        <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
-          {es ? 'Plan de cuotas' : 'Installment plan'}
-        </h2>
-        <CuotaPlanTable installments={plan.installments} locale={locale} acuerdoCerrado={cerrado} />
-      </section>
+      <EncabezadoDePantalla
+        seccion={es ? 'Mi arriendo' : 'My rental'}
+        titulo={es ? 'Acuerdo de pago' : 'Payment agreement'}
+        junto={
+          <StatusBadge tone={tono} data-testid="acuerdo-estado">
+            {etiquetaDelAcuerdo(plan)}
+          </StatusBadge>
+        }
+        descripcion={
+          /* Total — rendered VERBATIM from the record (no saldo/total math) */
+          <span data-testid="acuerdo-total">
+            {es ? 'Total del acuerdo: ' : 'Agreement total: '}
+            <span className="font-mono tabular-nums text-fg">{formatCurrency(plan.totalDueCop)}</span>
+            {plan.installments.length > 0 ? (
+              <>
+                {' · '}
+                {plan.installments.length === 1
+                  ? es
+                    ? '1 cuota'
+                    : '1 installment'
+                  : es
+                    ? `${plan.installments.length} cuotas`
+                    : `${plan.installments.length} installments`}
+              </>
+            ) : null}
+          </span>
+        }
+      />
 
       {/* Accept-by-signing (ACUE-02) — only while OFFERED, APPROVED and unaccepted; else a factual state.
           Un acuerdo cancelado (la inmobiliaria lo rechazó) o roto ya no se acepta: el back
@@ -226,15 +217,15 @@ function AcuerdoDetailView({
       {saldado ? (
         <section
           data-testid="acuerdo-saldado"
-          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         >
           <div className="flex items-start gap-3">
             <SealCheck className="w-5 h-5 text-success flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <p className="font-semibold text-fg dark:text-white">
+              <p className="font-medium text-fg">
                 {es ? 'Hoy no debes nada vencido' : 'You owe nothing overdue today'}
               </p>
-              <p className="mt-1 text-sm text-fg-muted dark:text-fg-subtle">
+              <p className="mt-1 text-sm text-fg-muted">
                 {es
                   ? 'Lo que financiaba este acuerdo ya está pagado, así que sus cuotas pendientes no se cobran. Si crees que es un error, escríbele a tu inmobiliaria.'
                   : 'What this agreement financed is already paid, so its pending installments are not charged. If you think this is a mistake, write to your agency.'}
@@ -243,21 +234,24 @@ function AcuerdoDetailView({
           </div>
         </section>
       ) : firma === 'firmar' ? (
-        <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
+        <section
+          data-testid="acuerdo-firmar"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
+        >
           <AcuerdoAcceptPanel planId={plan.planId} onAccepted={onAccepted} />
         </section>
       ) : firma === 'por-aprobar' ? (
         <section
           data-testid="acuerdo-por-aprobar"
-          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         >
           <div className="flex items-start gap-3">
-            <Clock className="w-5 h-5 text-fg-muted dark:text-fg-subtle flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <Clock className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <p className="font-semibold text-fg dark:text-white">
+              <p className="font-medium text-fg">
                 {es ? 'Tu inmobiliaria lo está revisando' : 'Your agency is reviewing it'}
               </p>
-              <p className="mt-1 text-sm text-fg-muted dark:text-fg-subtle">
+              <p className="mt-1 text-sm text-fg-muted">
                 {es
                   ? 'Este acuerdo todavía no está aprobado. Cuando tu inmobiliaria lo apruebe, aquí mismo lo podrás firmar para aceptarlo.'
                   : 'This agreement is not approved yet. Once your agency approves it, you can sign it here to accept it.'}
@@ -268,47 +262,64 @@ function AcuerdoDetailView({
       ) : firma === 'no-aceptable' ? (
         <section
           data-testid="acuerdo-no-aceptable"
-          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         >
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             {es
               ? 'Este acuerdo ya no se puede aceptar. Si quieres un acuerdo de pago, pídelo a tu inmobiliaria desde Acuerdos.'
               : 'This agreement can no longer be accepted. If you want a payment agreement, request one from your agency in Agreements.'}
           </p>
         </section>
-      ) : (
-        <section className="rounded-xl border border-success/30 bg-success-soft p-5 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-success flex items-center justify-center flex-shrink-0">
-              <SealCheck className="w-5 h-5 text-white" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="font-semibold text-success">
-                {es ? 'Acuerdo aceptado' : 'Agreement accepted'}
-              </p>
-              <p className="text-sm text-success">
-                {es
-                  ? `Aceptaste este acuerdo el ${formatLongDate(plan.acceptedAt ?? '', locale)}.`
-                  : `You accepted this agreement on ${formatLongDate(plan.acceptedAt ?? '', locale)}.`}
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
+      ) : null}
 
       {/* Pagar cuota (ACUE-03) — por la sesión de pago de la ruta; sólo con el plan aceptado */}
       {nextCuota && (
-        <PagarCuota
-          planId={plan.planId}
-          cuota={nextCuota}
-          locale={locale}
-          pagoPendienteDeRevision={plan.pagoPendienteDeRevision === true}
-        />
+        <div data-testid="acuerdo-pagar">
+          <PagarCuota
+            planId={plan.planId}
+            cuota={nextCuota}
+            locale={locale}
+            pagoPendienteDeRevision={plan.pagoPendienteDeRevision === true}
+          />
+        </div>
       )}
 
+      {/* Cuota plan — verbatim installments (CuotaPlanTable) */}
+      <section
+        data-testid="acuerdo-plan"
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
+      >
+        <h2 className="text-h3 text-fg mb-4">
+          {es ? 'Plan de cuotas' : 'Installment plan'}
+        </h2>
+        <CuotaPlanTable installments={plan.installments} locale={locale} acuerdoCerrado={cerrado} />
+      </section>
+
+      {/* Aceptado: un hecho que se consulta, no algo por hacer — va con el historial. */}
+      {aceptado ? (
+        <section
+          data-testid="acuerdo-aceptado"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
+        >
+          {/* Un hecho en una línea, con el ícono suelto (antes, una caja verde con el ícono en otra caja verde). */}
+          <p className="flex items-start gap-2 text-sm text-fg">
+            <SealCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" />
+            <span>
+              <span className="font-medium">{es ? 'Acuerdo aceptado. ' : 'Agreement accepted. '}</span>
+              {es
+                ? `Aceptaste este acuerdo el ${formatLongDate(plan.acceptedAt ?? '', locale)}.`
+                : `You accepted this agreement on ${formatLongDate(plan.acceptedAt ?? '', locale)}.`}
+            </span>
+          </p>
+        </section>
+      ) : null}
+
       {/* State timeline — source-timestamp-only events */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
-        <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
+      <section
+        data-testid="acuerdo-historial"
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
+      >
+        <h2 className="text-h3 text-fg mb-4">
           {es ? 'Historial' : 'Timeline'}
         </h2>
         <PlanActivityTimeline
@@ -350,7 +361,7 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
   // Loading gate — never flash a fake not-found while the source is in flight.
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-3xl" />
       </div>
@@ -365,9 +376,10 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
         <BackLink locale={locale} />
         <EmptyState
           icon={XCircle}
-          title={locale === 'es' ? 'Error al cargar el acuerdo' : 'Error loading agreement'}
+          title={locale === 'es' ? 'No pudimos cargar el acuerdo' : "We couldn't load the agreement"}
           description={error}
-          action={{ label: locale === 'es' ? 'Volver a Acuerdos' : 'Back to Agreements', href: '/inquilino/acuerdos' }}
+          /* «Volver» ya está arriba: aquí, volver a pedir (antes, el mismo «Volver a Acuerdos» dos veces). */
+          action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', onClick: () => void refetch() }}
         />
       </PageShell>
     );

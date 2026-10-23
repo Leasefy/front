@@ -431,7 +431,7 @@ describe('ResolucionDeFacturacion', () => {
     expect(q('[data-testid="resolucion-guardar"]')).not.toBeNull();
   });
 
-  it('🔴 «Nueva factura» manda acá con el cajón ya abierto, no a buscar el botón', async () => {
+  it('🔴 «Nueva factura» manda aquí con el cajón ya abierto, no a buscar el botón', async () => {
     host = document.createElement('div');
     document.body.appendChild(host);
     root = createRoot(host);

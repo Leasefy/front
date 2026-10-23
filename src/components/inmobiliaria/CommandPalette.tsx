@@ -91,7 +91,7 @@ import {
 } from '@phosphor-icons/react';
 
 import { AspaDeCierre, Dialog, DialogBody, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Spinner } from '@/components/ui/spinner';
+import { Badge } from '@/components/ui/badge';
 import {
   IconButton,
   Kbd,
@@ -201,11 +201,11 @@ function retardoDeFila(posicion: number): number {
  * Lo neutro —un canon, un rol, «3 prop»— es texto gris: pintarle una cápsula a
  * cada dato convierte la fila en un semáforo y deja de leerse.
  */
-const FONDO_DE_CHIP: Record<Exclude<ColorDeChip, 'neutral'>, string> = {
-  green: 'bg-success-soft text-success',
-  amber: 'bg-warning-soft text-warning',
-  red: 'bg-danger-soft text-danger',
-  violet: 'bg-primary-soft text-primary',
+const VARIANTE_DEL_CHIP: Record<Exclude<ColorDeChip, 'neutral'>, 'success' | 'warning' | 'destructive' | 'default'> = {
+  green: 'success',
+  amber: 'warning',
+  red: 'destructive',
+  violet: 'default',
 };
 
 function ChipDeFila({ label, color }: { label: string; color: ColorDeChip }) {
@@ -214,15 +214,11 @@ function ChipDeFila({ label, color }: { label: string; color: ColorDeChip }) {
       <span className="hidden flex-shrink-0 whitespace-nowrap text-caption text-fg-subtle sm:inline">{label}</span>
     );
   }
+  // El estado en la pastilla de la casa (13 px; antes una a mano de 11 px).
   return (
-    <span
-      className={cn(
-        'inline-flex h-5 flex-shrink-0 items-center whitespace-nowrap rounded-full px-2 text-[11px] font-medium',
-        FONDO_DE_CHIP[color],
-      )}
-    >
+    <Badge variant={VARIANTE_DEL_CHIP[color]} className="flex-shrink-0 whitespace-nowrap">
       {label}
-    </span>
+    </Badge>
   );
 }
 
@@ -235,24 +231,26 @@ function EncabezadoDeGrupo({ titulo, cantidad }: { titulo: string; cantidad?: nu
       animate={{ opacity: 1 }}
       transition={MOVIMIENTO.aparece}
     >
-      <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-fg-subtle">{titulo}</span>
+      {/* 13 px (antes 11 px mono en mayúsculas y el conteo a 10 px en cápsula). */}
+      <span className="text-caption text-fg-muted">{titulo}</span>
       {cantidad != null && (
-        <span className="rounded-full bg-surface-muted px-1.5 py-px font-mono text-[10px] font-medium tabular-nums text-fg-muted">
-          {cantidad}
-        </span>
+        <span className="text-caption tabular-nums text-fg-subtle">{cantidad}</span>
       )}
     </motion.div>
   );
 }
 
-/** El cuadrito del ícono (34 px y radio 11 en la referencia → 32 px y 10 acá). */
+/**
+ * El lugar del ícono: 32 px para que los títulos queden alineados, con el
+ * ícono SUELTO (glow up 22-10: antes iba en un cuadrito gris con borde).
+ */
 function CuadroDeIcono({ activo, children }: { activo?: boolean; children: ReactNode }) {
   return (
     <span
       aria-hidden="true"
       className={cn(
-        'relative grid h-8 w-8 flex-shrink-0 place-items-center rounded-[10px] border transition-colors duration-150',
-        activo ? 'border-border bg-surface text-fg shadow-xs' : 'border-transparent bg-surface-muted text-fg-muted',
+        'relative grid h-8 w-8 flex-shrink-0 place-items-center transition-colors duration-150',
+        activo ? 'text-fg' : 'text-fg-muted',
       )}
     >
       {children}
@@ -267,7 +265,7 @@ function TituloResaltado({ texto, consulta }: { texto: string; consulta: string 
     <>
       {tramos.map((tramo, i) =>
         tramo.coincide ? (
-          <mark key={i} className="rounded-[3px] bg-transparent font-semibold text-primary">
+          <mark key={i} className="rounded-[3px] bg-transparent font-medium text-primary">
             {tramo.texto}
           </mark>
         ) : (
@@ -885,19 +883,11 @@ export function CommandPalette() {
                       comía el final del texto escrito. 64 px de alto en móvil
                       para que la ✕ (36 px) quede centrada con el campo. */}
                   <div className="relative flex h-16 flex-shrink-0 items-center gap-3 border-b border-border pl-4 pr-14 md:h-[60px] md:pl-5 md:pr-4">
+                    {/* La lupa queda quieta: mientras busca, lo dicen el hilo del
+                        filete de abajo y las filas fantasma (antes además una
+                        rueda en lugar de la lupa). */}
                     <span className="relative grid h-5 w-5 flex-shrink-0 place-items-center text-fg-subtle">
-                      <AnimatePresence initial={false}>
-                        <motion.span
-                          key={buscando ? 'cargando' : 'lupa'}
-                          className="absolute inset-0 grid place-items-center"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          transition={MOVIMIENTO.cambio}
-                        >
-                          {buscando ? <Spinner size="xs" variant="muted" /> : <MagnifyingGlass className="h-5 w-5" />}
-                        </motion.span>
-                      </AnimatePresence>
+                      <MagnifyingGlass className="h-5 w-5" />
                     </span>
                     {/* allowlist: input pelado de un combobox ⌘K (sin borde, transparente,
                         role=combobox + navegación por flechas). El Input de cadence trae

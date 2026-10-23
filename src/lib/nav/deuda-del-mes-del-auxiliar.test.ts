@@ -24,9 +24,10 @@ describe('la Deuda del mes del auxiliar de cartera', () => {
   });
 
   it('pero no Liquidaciones ni nada de lo que sale a los propietarios', () => {
-    const liquidaciones = pestanasDelModulo(pagos).find((p) => p.href.endsWith('/pagos/liquidaciones'))!;
-    expect(liquidaciones).toBeTruthy();
-    expect(pasaGateDeFila(liquidaciones, AUXILIAR)).toBe(false);
+    // Giros a propietarios (22-10-2026): Liquidaciones y Dispersiones son una entrada.
+    const giros = pestanasDelModulo(pagos).find((p) => p.href.endsWith('/pagos/giros'))!;
+    expect(giros).toBeTruthy();
+    expect(pasaGateDeFila(giros, AUXILIAR)).toBe(false);
   });
 
   it('el asesor sigue sin verla (no mueve plata)', () => {

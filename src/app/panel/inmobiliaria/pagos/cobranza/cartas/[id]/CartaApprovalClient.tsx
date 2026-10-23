@@ -41,6 +41,8 @@ import {
   type RejectReasonSlug,
 } from '@/components/inmobiliaria/cobranza/approval/RechazarForm'
 import { Collapse, CrossFade, Presence } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { BackButton } from '@/components/ui/back-button'
 
 void React
 
@@ -167,7 +169,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
   if (envMissing) {
     return (
       <CrossFade swapKey="sin-agente">
-      <div className="p-4 lg:p-8">
+      <div className="p-6 lg:p-8">
         <div className="rounded-md border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           {t('inmobiliaria.ai.cobranza.cartas.envMissing')}
         </div>
@@ -201,32 +203,32 @@ export default function CartaApprovalClient({ artifactId }: Props) {
 
   return (
     <CrossFade swapKey="carta">
-    <div className="p-4 lg:p-8 space-y-6">
-      {/* Back */}
-      <div className="flex items-center justify-between">
-        <Button
-          variant="link"
-          size="sm"
-          hideArrow
-          data-testid="carta-back"
-          onClick={() => router.back()}
-          className="h-auto p-0 font-normal text-fg-muted hover:text-fg"
-        >
-          ← {t('inmobiliaria.ai.cobranza.cartas.back')}
-        </Button>
-      </div>
-      <header>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cobranza.cartas.title')}
-        </h1>
-      </header>
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* La vuelta a la lista de cartas (guardián fichas-con-vuelta). */}
+      <BackButton href="/panel/inmobiliaria/pagos/cobranza/cartas" label="Cartas" variant="subtle" />
+      <EncabezadoDePantalla
+        seccion="Cobranza · Cartas"
+        titulo={t('inmobiliaria.ai.cobranza.cartas.title')}
+        descripcion="Lee la carta, elige cómo se entrega y apruébala o recházala."
+        acciones={
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
+            data-testid="carta-back"
+            onClick={() => router.back()}
+          >
+            {t('inmobiliaria.ai.cobranza.cartas.back')}
+          </Button>
+        }
+      />
 
       {/* PDF preview iframe */}
       <section
         aria-label={t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
         className="space-y-2"
       >
-        <h2 className="text-sm font-medium text-fg-muted">
+        <h2 className="text-body font-medium text-fg">
           {t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
         </h2>
         <iframe
@@ -234,7 +236,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           title={t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
           src={pdfBlobUrl ?? 'about:blank'}
           loading="lazy"
-          className="w-full h-96 rounded border border-border"
+          className="w-full h-[28rem] rounded-md border border-border bg-surface-muted max-md:h-[70vh]"
         />
         <Presence show={pdfError} className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.cartas.pdfPreview.error')}
@@ -245,7 +247,8 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       {/* `bg-white` fijo: en oscuro era una caja blanca en medio de la
           pantalla, sobre la que además hay que decidir si se manda una carta
           prejurídica. `bg-card` sigue el tema. */}
-      <section className="space-y-3 rounded-md border border-border bg-card p-4">
+      <section className="space-y-3 rounded-md border border-border bg-card p-4 sm:p-5">
+        <h2 className="text-body font-medium text-fg">Cómo se entrega</h2>
         <div className="space-y-1">
           <span className="block text-sm font-medium text-fg-muted">
             {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}{' '}
@@ -380,28 +383,29 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       {/* Post-approve download card */}
       <Presence as="section" show={Boolean(approveResult && pdfDownloadUrl)}
           data-testid="carta-download-card"
-          className="space-y-3 rounded-md border-l-4 border-warning bg-warning-soft p-4"
+          className="space-y-3 rounded-md border border-border bg-card p-4 sm:p-5"
         >
-          <h2 className="text-sm font-semibold text-warning">
+          <h2 className="text-body font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.success.title')}
           </h2>
           <p
             data-testid="carta-legal-notice"
-            className="text-sm text-warning"
+            className="text-body-sm text-fg-muted"
           >
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.legalNotice')}
           </p>
-          <a
-            href={pdfDownloadUrl ?? undefined}
-            download
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="carta-download-link"
-            className="inline-flex items-center rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-          >
-            {t('inmobiliaria.ai.cobranza.cartas.aprobar.download.label')} →
-          </a>
-          <div className="text-xs text-warning">
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <a
+              href={pdfDownloadUrl ?? undefined}
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="carta-download-link"
+            >
+              {t('inmobiliaria.ai.cobranza.cartas.aprobar.download.label')}
+            </a>
+          </Button>
+          <div className="text-caption text-fg-muted">
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.download.ttl', {
               days: daysRemaining,
             })}

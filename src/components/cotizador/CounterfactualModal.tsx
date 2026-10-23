@@ -24,7 +24,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 void React
-import { Minus, Plus, Spinner } from '@phosphor-icons/react'
+import { Minus, Plus } from '@phosphor-icons/react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useI18n } from '@/lib/i18n'
 import { CarrierCard } from '@/components/inmobiliaria/cotizador/CarrierCard'
@@ -290,7 +290,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               role="alert"
               aria-live="assertive"
               data-testid="cf-cap-banner"
-              className="rounded-lg border border-[#B7791F]/30 bg-[#F8F0E0] px-4 py-3 text-sm text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:border-[#B7791F]/30"
+              className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning-700 dark:text-warning-100"
             >
               {t('inmobiliaria.ai.cotizador.askWhy.capExhausted.body', {
                 cap: error && error.code === 429 ? error.cap : capCount,
@@ -308,7 +308,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             <div>
               <label className="block text-sm font-medium mb-1">
                 {t('inmobiliaria.ai.cotizador.askWhy.variableLabels.canon')}
-                <span className="ml-2 font-mono text-xs text-muted-foreground">
+                <span className="ml-2 font-mono text-caption text-muted-foreground">
                   {formatCop(draftValues.canon)}
                 </span>
               </label>
@@ -328,7 +328,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               />
               <div
                 data-testid="cf-canon-slider"
-                className="text-[10px] text-muted-foreground font-mono flex justify-between"
+                className="text-caption text-muted-foreground font-mono flex justify-between"
               >
                 <span>{formatCop(canonMin)}</span>
                 <span>{formatCop(canonMax)}</span>
@@ -381,7 +381,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                       disabled={ro}
                       onClick={() => activate('tipo', tipo)}
                       className={[
-                        'relative isolate rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors',
+                        'relative isolate rounded-lg border px-2 py-1.5 text-caption font-medium transition-colors',
                         isActive
                           ? 'border-primary text-primary'
                           : 'border-border bg-card text-foreground hover:bg-muted',
@@ -421,11 +421,11 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                         aria-disabled={ro || draftValues.codeudores <= minC ? 'true' : 'false'}
                         disabled={ro || draftValues.codeudores <= minC}
                         onClick={() => activate('codeudores', draftValues.codeudores - 1)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Minus size={16} />
                       </button>
-                      <span className="min-w-[2rem] text-center text-base font-semibold font-mono tabular-nums">
+                      <span className="min-w-[2rem] text-center text-base font-medium font-mono tabular-nums">
                         <AnimatedNumber value={draftValues.codeudores} format={(n) => String(Math.round(n))} />
                       </span>
                       <button
@@ -434,7 +434,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                         aria-disabled={ro || draftValues.codeudores >= maxC ? 'true' : 'false'}
                         disabled={ro || draftValues.codeudores >= maxC}
                         onClick={() => activate('codeudores', draftValues.codeudores + 1)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Plus size={16} />
                       </button>
@@ -449,7 +449,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
           <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Original */}
             <div className="space-y-2 opacity-60">
-              <h3 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <h3 className="text-caption font-mono uppercase tracking-wide text-muted-foreground">
                 {t('inmobiliaria.ai.cotizador.askWhy.originalColumn')}
               </h3>
               {originalCarriers.map((c, i) => (
@@ -460,7 +460,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             </div>
             {/* Hypothetical */}
             <div className="space-y-2">
-              <h3 className="text-xs font-mono uppercase tracking-wide text-foreground">
+              <h3 className="text-caption font-mono uppercase tracking-wide text-foreground">
                 {t('inmobiliaria.ai.cotizador.askWhy.hypotheticalColumn')}
               </h3>
               {/* Esperando → consultando → el resultado hipotético: cada
@@ -471,17 +471,22 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                 className="space-y-2"
               >
               {isLoading && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Spinner weight="bold" className="w-4 h-4 animate-spin" />
+                // Esqueleto con la forma de la tarjeta de la aseguradora
+                // (antes una rueda): el resultado entra donde estaba.
+                <div className="space-y-2" aria-busy="true">
+                  {originalCarriers.slice(0, 2).map((c, i) => (
+                    <div key={`s-${c.carrier}-${i}`} className="h-20 rounded-lg bg-muted animate-pulse" />
+                  ))}
+                  {originalCarriers.length === 0 && <div className="h-20 rounded-lg bg-muted animate-pulse" />}
                   {tardando && (
-                    <span className="text-caption">
+                    <p className="text-caption text-muted-foreground">
                       {t('inmobiliaria.ai.cotizador.askWhy.tardando')}
-                    </span>
+                    </p>
                   )}
                 </div>
               )}
               {!isLoading && !result && !error && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   {t('inmobiliaria.ai.cotizador.askWhy.noResultPlaceholder')}
                 </p>
               )}
@@ -516,7 +521,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               </p>
             )}
             {result && !isLoading && result.modo === 'recotizar' && props.onRecotizarConElCambio && (
-              <Button size="sm" hideArrow onClick={recotizarConElCambio} className="mt-3" data-testid="cf-recotizar">
+              <Button size="sm" variant="outline" onClick={recotizarConElCambio} className="mt-3" data-testid="cf-recotizar">
                 {t('inmobiliaria.ai.cotizador.askWhy.recotizar') === 'inmobiliaria.ai.cotizador.askWhy.recotizar'
                   ? 'Re-cotizar con este cambio'
                   : t('inmobiliaria.ai.cotizador.askWhy.recotizar')}
@@ -527,40 +532,42 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             {/* Error UX (D-33-13) */}
             {error && error.code === 'timeout' && (
               <div className="mt-2 space-y-2">
-                <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+                <p role="alert" className="text-sm text-danger">
                   {/* La frase del hook, ya en español y por el traductor (02-10-2026). */}
                   {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
-                <button
+                <Button
                   type="button"
+                  size="sm"
+                  variant="outline"
                   data-testid="cf-retry"
                   aria-label={t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                   onClick={() => { void handleSubmit() }}
-                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted"
                 >
                   {t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
-                </button>
+                </Button>
               </div>
             )}
             {error && (error.code === 500 || error.code === 'network') && (
               <div className="mt-2 space-y-2">
-                <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+                <p role="alert" className="text-sm text-danger">
                   {/* 5xx: «de nuestro lado» + referencia; la red: la conexión. */}
                   {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
-                <button
+                <Button
                   type="button"
+                  size="sm"
+                  variant="outline"
                   data-testid="cf-retry"
                   aria-label={t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                   onClick={() => { void handleSubmit() }}
-                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted"
                 >
                   {t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
-                </button>
+                </Button>
               </div>
             )}
             {error && error.code === 400 && (
-              <p role="alert" className="mt-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
+              <p role="alert" className="mt-2 text-sm text-danger">
                 {/* Lo que el micro dijo que está mal, en español; nunca su `error` en inglés. */}
                 {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.error400Prefix') + error.message}
               </p>
@@ -569,7 +576,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
 
           {/* Footer + Submit */}
           <footer className="space-y-2 border-t border-border pt-3">
-            <p data-testid="cf-footer" className="text-xs text-muted-foreground">
+            <p data-testid="cf-footer" className="text-caption text-muted-foreground">
               {footerText}
             </p>
             <div
@@ -579,7 +586,10 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   : undefined
               }
             >
-              <button
+              {/* El botón de la casa (antes uno pintado a mano); sigue con
+                  `aria-disabled` y no `disabled` para que el `title` del tope
+                  se vea al pasar el mouse. */}
+              <Button
                 type="button"
                 data-testid="cf-submit"
                 aria-disabled={!canSubmit ? 'true' : 'false'}
@@ -588,15 +598,10 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   if (!canSubmit) return
                   void handleSubmit()
                 }}
-                className={[
-                  'w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors',
-                  canSubmit
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    : 'bg-muted text-muted-foreground cursor-not-allowed',
-                ].join(' ')}
+                className={!canSubmit ? 'w-full cursor-not-allowed opacity-50' : 'w-full'}
               >
                 {t('inmobiliaria.ai.cotizador.askWhy.submitButton')}
-              </button>
+              </Button>
             </div>
           </footer>
         </div>

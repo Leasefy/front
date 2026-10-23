@@ -101,7 +101,7 @@ export function RespuestaDelArriendo({ estado, tope }: Props) {
                 Estamos validando tus datos
               </h2>
               <p className="mt-1 text-sm text-fg-muted">
-                Consultamos a las aseguradoras para {arriendo.titulo}. Apenas tengamos la respuesta la verás acá.
+                Consultamos a las aseguradoras para {arriendo.titulo}. Apenas tengamos la respuesta la verás aquí.
               </p>
             </div>
           </div>

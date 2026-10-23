@@ -1,24 +1,84 @@
 'use client'
 
+import { createContext, useContext } from 'react'
 import { SearchInput } from '@leasefy/cadence'
 
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useTenantOptions } from '@/lib/admin/use-tenant-options'
+import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
 
 /**
  * Las piezas de la barra de filtros de las tablas del admin, con los controles
  * de Cadence: el buscador (`SearchInput`), los desplegables (`Select`) y la
  * fila que los acomoda (en el celular, uno debajo del otro).
+ *
+ * 🔴 21-10-2026 (Nico: «mira esos selects por ahí tirados»): cada filtro ponía
+ * su rótulo ARRIBA y la fila alineaba por abajo, así que los desplegables
+ * quedaban flotando en dos o tres renglones sobre el buscador. Ahora todo va en
+ * UNA línea, a la misma altura: el desplegable lleva su rótulo ADENTRO
+ * («Migración: Todas»), y una fecha o un texto lo lleva a la izquierda, en la
+ * misma línea (skill `revisor-de-diseno`, «Filtros de una lista»).
  */
+
+/** El rótulo del filtro, para que el control lo pinte adentro. */
+const EtiquetaDelFiltro = createContext<string | null>(null)
 
 /** La fila de filtros: va en el `barra` del `DataTable`. */
 export function BarraDeFiltros({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end', className)}>{children}</div>
+  // Entre un filtro y el siguiente, más aire que entre un rótulo y su control (proximidad).
+  return <div className={cn('flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4', className)}>{children}</div>
 }
 
-/** Un filtro con su rótulo arriba. */
+/**
+ * Un rango de fechas como UN filtro: «Fecha [desde] – [hasta]». Antes eran dos
+ * filtros sueltos («Desde», «Hasta»), cada uno con su rótulo y su ancho fijo.
+ */
+export function FiltroDeFechas({
+  desde,
+  hasta,
+  onDesde,
+  onHasta,
+  etiqueta = 'Fecha',
+  idDesde = 'filtro-desde',
+  idHasta = 'filtro-hasta',
+}: {
+  desde: string
+  hasta: string
+  onDesde: (valor: string) => void
+  onHasta: (valor: string) => void
+  etiqueta?: string
+  idDesde?: string
+  idHasta?: string
+}) {
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label={etiqueta}>
+      <span className="shrink-0 whitespace-nowrap text-caption text-fg-muted">{etiqueta}</span>
+      <Label htmlFor={idDesde} className="sr-only">
+        Desde
+      </Label>
+      <div className="w-[9.5rem]">
+        <CampoDeFecha id={idDesde} value={desde} onChange={onDesde} placeholder="Desde" />
+      </div>
+      <span aria-hidden="true" className="text-fg-subtle">
+        –
+      </span>
+      <Label htmlFor={idHasta} className="sr-only">
+        Hasta
+      </Label>
+      <div className="w-[9.5rem]">
+        <CampoDeFecha id={idHasta} value={hasta} onChange={onHasta} placeholder="Hasta" />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Un filtro con su rótulo. Un desplegable o un buscador lo muestran ADENTRO
+ * (marcan `data-etiqueta-adentro` y el rótulo de acá queda sólo para el lector
+ * de pantalla); una fecha o un texto lo muestran a la izquierda, en la línea.
+ */
 export function Filtro({
   etiqueta,
   htmlFor,
@@ -31,11 +91,16 @@ export function Filtro({
   className?: string
 }) {
   return (
-    <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
-      <Label htmlFor={htmlFor} className="text-caption text-fg-muted">
+    <div
+      className={cn(
+        'flex min-w-0 items-center gap-2 [&:has([data-etiqueta-adentro])>label]:sr-only',
+        className,
+      )}
+    >
+      <Label htmlFor={htmlFor} className="shrink-0 whitespace-nowrap text-caption text-fg-muted">
         {etiqueta}
       </Label>
-      {children}
+      <EtiquetaDelFiltro.Provider value={etiqueta}>{children}</EtiquetaDelFiltro.Provider>
     </div>
   )
 }
@@ -56,9 +121,11 @@ export function Buscador({
   id?: string
   'aria-label'?: string
 }) {
+  const enUnFiltro = useContext(EtiquetaDelFiltro) !== null
   return (
     <SearchInput
       id={id}
+      data-etiqueta-adentro={enUnFiltro && placeholder !== 'Buscar…' ? '' : undefined}
       inputSize="md"
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -97,10 +164,26 @@ export function Desplegable({
   'aria-label'?: string
   'data-testid'?: string
 }) {
+  const etiqueta = useContext(EtiquetaDelFiltro)
   return (
     <Select value={value || (todas !== null ? TODAS : undefined)} onValueChange={(v) => onChange(v === TODAS ? '' : v)}>
-      <SelectTrigger id={id} aria-label={ariaLabel} data-testid={testId} className={cn('w-full sm:w-56', className)}>
-        <SelectValue placeholder={todas ?? 'Elegir'} />
+      <SelectTrigger
+        id={id}
+        aria-label={ariaLabel ?? etiqueta ?? undefined}
+        data-testid={testId}
+        data-etiqueta-adentro={etiqueta ? '' : undefined}
+        data-activo={value ? '' : undefined}
+        className={cn(
+          etiqueta ? 'w-full gap-1.5 sm:w-auto sm:min-w-[10rem] sm:max-w-[20rem]' : 'w-full sm:w-56',
+          // Un filtro puesto se nota sin abrirlo.
+          value && 'border-fg/30 font-medium text-fg',
+          className,
+        )}
+      >
+        {etiqueta ? <span className="shrink-0 text-fg-muted">{etiqueta}:</span> : null}
+        <span className="min-w-0 truncate">
+          <SelectValue placeholder={todas ?? 'Elegir'} />
+        </span>
       </SelectTrigger>
       <SelectContent>
         {todas !== null ? <SelectItem value={TODAS}>{todas}</SelectItem> : null}

@@ -84,11 +84,11 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
           </DialogDescription>
         </DialogHeader>
 
-        <p className="text-xs text-warning">
+        <p className="text-caption text-warning">
           {t('inmobiliaria.ai.cobranza.detail.pii.auditNote')}
         </p>
 
-        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="pii-reveal-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-caption text-danger" data-testid="pii-reveal-error">
             {error}
         </Presence>
 

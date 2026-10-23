@@ -133,7 +133,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     get.mockResolvedValue(pagina(LOS_CINCO));
     await montar(<LinksDePago mes="2026-10" />);
     const palabras: Record<string, string> = {
-      ninguno: 'Sin link',
+      ninguno: 'Sin enlace',
       enviado: 'Enviado',
       pagado: 'Pagado',
       vencido: 'Vencido',
@@ -248,7 +248,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     get.mockResolvedValue(pagina([link({})]));
     await montar(<LinksDePago mes="2026-10" />);
     expect(fila('c1')?.textContent).toContain('$\u00a01.500.000');
-    expect(fila('c1')?.textContent).toContain('5 de oct de 2026');
+    expect(fila('c1')?.textContent).toContain('5 oct 2026');
     expect(fila('c1')?.textContent).toContain('Contrato #43');
   });
 
@@ -330,7 +330,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     );
     await montar(<LinksDePago mes="2026-10" />);
     expect(fila('c-pagado')?.querySelector('[data-testid="pago-sin-aplicar"]')?.textContent).toBe(
-      `El pago entró por el link, pero no se aplicó a la cuota y sigue debiéndose: ${motivo}`,
+      `El pago entró por el enlace, pero no se aplicó a la cuota y sigue debiéndose: ${motivo}`,
     );
     // Un «Pagado» verde encima de «sigue debiéndose» se contradecía.
     const pastilla = fila('c-pagado')?.querySelector('[data-testid="estado-del-link"]');
@@ -367,7 +367,8 @@ describe('LinksDePago — filtros y páginas', () => {
     await act(async () => (contenedor.querySelector('[aria-label="Página siguiente"]') as HTMLButtonElement).click());
     expect(ultimaRuta()).toBe('/inmobiliaria/cobros/links?mes=2026-10&page=2&limit=20');
 
-    await act(async () => (q('[data-opcion="vencido"]') as HTMLButtonElement).click());
+    // r25: el estado es una pestaña dentro de la tarjeta (antes un Select).
+    await act(async () => (q('[data-testid="filtro-del-link-vencido"]') as HTMLButtonElement).click());
     expect(ultimaRuta()).toBe('/inmobiliaria/cobros/links?mes=2026-10&estado=vencido&page=1&limit=20');
     // 🔴 Nunca se pidió la página 2 del estado nuevo.
     expect(get.mock.calls.map((c) => String(c[0]))).not.toContain(
@@ -392,6 +393,15 @@ describe('LinksDePago — filtros y páginas', () => {
     );
   });
 
+  it('r25: las pestañas de estado llevan el conteo en la abierta (Todas al abrir)', async () => {
+    get.mockResolvedValue(pagina(LOS_CINCO, { total: 60 }));
+    await montar(<LinksDePago mes="2026-10" />);
+    const todas = q('[data-testid="filtro-del-link-todos"]');
+    expect(todas?.getAttribute('aria-pressed')).toBe('true');
+    expect(todas?.textContent).toContain('60');
+    expect(q('[data-testid="filtro-del-link-vencido"]')?.textContent).not.toMatch(/\d/);
+  });
+
   it('no avanza más allá del mes siguiente al corriente', async () => {
     get.mockResolvedValue(pagina(LOS_CINCO));
     const [y, m] = mesActual().split('-').map(Number);
@@ -413,7 +423,7 @@ describe('LinksDePago — vacío y fallo', () => {
     get.mockResolvedValue(pagina(LOS_CINCO));
     await montar(<LinksDePago mes="2026-10" />);
     get.mockResolvedValue(pagina([]));
-    await act(async () => (q('[data-opcion="fallido"]') as HTMLButtonElement).click());
+    await act(async () => (q('[data-testid="filtro-del-link-fallido"]') as HTMLButtonElement).click());
     expect(contenedor.textContent).toContain('Ningún resultado');
     expect(contenedor.textContent).not.toContain('No hay cuotas que venzan');
   });

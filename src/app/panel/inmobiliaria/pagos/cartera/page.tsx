@@ -12,33 +12,27 @@
  * Permiso: `cobros`/view, el mismo con el que el back protege el reporte.
  */
 
-import { SectionLabel } from '@/components/ui/section-label'
+import { useTr } from '@/lib/i18n/use-tr'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CarteraCompleta } from '@/components/cartera/CarteraCompleta'
 import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
 import { IrALaCobranza } from '@/components/cartera/IrALaCobranza'
 
 export default function CarteraPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1.5">
-            <SectionLabel>Pagos · inquilinos</SectionLabel>
-            <h1 className="text-h2 text-fg">
-              Cartera
-            </h1>
-            {/* 🔴 Las mismas palabras que la franja y que «Cartera por
-                concepto»: deuda no es cartera, y vencer no es estar en mora. */}
-            <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
-              La deuda del contrato, partida en tres: lo que todavía no vence, lo
-              vencido dentro del plazo y la cartera. Sólo la cartera se persigue.
-            </p>
-          </div>
-          {/* Quién la persigue. Cobranza es un agente y vive en «Agentes IA»
-              (2026-09-16): desde acá se llega con un enlace, no con una card. */}
-          <IrALaCobranza />
-        </header>
+        {/* GLOW UP (22-10): el encabezado común; una línea de para qué sirve. Quién
+            la persigue (Cobranza, un agente) es un enlace en las acciones. */}
+        <EncabezadoDePantalla
+          seccion={tr('Cobrar a inquilinos')}
+          titulo="Cartera"
+          descripcion="Lo que pasó el plazo y se persigue, separado de lo que todavía no vence."
+          acciones={<IrALaCobranza />}
+        />
 
         {/* Las otras dos lecturas de la misma plata: por concepto y por pagar. */}
         <PestanasDeCartera />

@@ -116,16 +116,16 @@ export function CostoResponsabilidadCard({
   }
 
   return (
-    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6 space-y-4">
+    <section className="rounded-lg border border-border bg-surface p-5 sm:p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Scales className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-fg dark:text-white">
+        <h2 className="text-sm font-semibold text-fg">
           {locale === 'es' ? 'Responsabilidad del costo' : 'Cost responsibility'}
         </h2>
       </div>
 
       {/* Ley 820 outcome — backend-sourced factual label (primary-soft idiom). */}
-      <div className="rounded-xl bg-primary-soft border border-primary/30 p-3">
+      <div className="rounded-lg bg-primary-soft border border-primary/30 p-3">
         <p className="text-sm text-primary/90">{locale === 'es' ? copy.es : copy.en}</p>
       </div>
 
@@ -134,17 +134,17 @@ export function CostoResponsabilidadCard({
         <div className="space-y-3">
           {typeof solicitud.cotizacionMonto === 'number' && (
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-xs text-fg-subtle dark:text-fg-muted">
+              <span className="text-caption text-fg-subtle">
                 {locale === 'es' ? 'Valor de la cotización' : 'Quote amount'}
               </span>
-              <span className="text-base font-semibold text-fg dark:text-white tabular-nums">
+              <span className="text-base font-semibold text-fg tabular-nums">
                 {formatCurrency(solicitud.cotizacionMonto)}
               </span>
             </div>
           )}
 
           {alreadyApproved ? (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               {locale === 'es'
                 ? `Aprobada el ${formatLongDate(solicitud.cotizacionAprobadaAt!, locale)}`
                 : `Approved on ${formatLongDate(solicitud.cotizacionAprobadaAt!, locale)}`}
@@ -159,7 +159,7 @@ export function CostoResponsabilidadCard({
               >
                 {locale === 'es' ? 'Aprobar cotización' : 'Approve quote'}
               </Button>
-              <p className="text-xs text-fg-subtle dark:text-fg-muted">
+              <p className="text-caption text-fg-subtle">
                 {locale === 'es'
                   ? 'Tu aprobación autoriza la ejecución. Solo tú apruebas; no fijas el monto ni cambias el estado.'
                   : 'Your approval authorizes the work. You only approve; you do not set the amount or change the status.'}
@@ -171,7 +171,7 @@ export function CostoResponsabilidadCard({
 
       {/* Read-only confirmation once approved but no longer awaiting a quote. */}
       {isTenantCost && !awaitingQuote && alreadyApproved && (
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">
+        <p className="text-sm text-fg-muted">
           {locale === 'es'
             ? `Cotización aprobada el ${formatLongDate(solicitud.cotizacionAprobadaAt!, locale)}`
             : `Quote approved on ${formatLongDate(solicitud.cotizacionAprobadaAt!, locale)}`}

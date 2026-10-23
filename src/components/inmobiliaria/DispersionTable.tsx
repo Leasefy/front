@@ -10,7 +10,6 @@ import {
   PaperPlaneTilt,
   CheckCircle,
   Warning,
-  User,
   Bank,
   ArrowsClockwise,
   DownloadSimple,
@@ -36,11 +35,13 @@ import {
   DropdownListItem,
 } from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
 import { baseDeLasDispersiones, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
 import { useTr } from '@/lib/i18n/use-tr';
+import { conSigno } from '@/lib/plata/escribir-plata';
 
 /**
  * 🔴 N-39 (QA-PAGOS-95 r2): lo que se GIRA de una dispersión — entero o nada.
@@ -130,7 +131,7 @@ export function DispersionTable({
   clave,
 }: DispersionTableProps) {
   const tr = useTr();
-  const { t, formatDate, formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const baseDelCanon = useMemo(() => baseDeLasDispersiones(dispersiones), [dispersiones]);
   const [sortField, setSortField] = useState<SortField>('month');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -243,7 +244,7 @@ export function DispersionTable({
       {/*
         allowlist: disparador de orden — Cadence no trae uno (DataTable no
         ordena). El botón HEREDA el tratamiento del encabezado del DS
-        (`font: inherit`), en vez de traer el suyo: antes ponía `text-xs
+        (`font: inherit`), en vez de traer el suyo: antes ponía `text-caption
         font-semibold`, que reemplaza la mono 11px en mayúsculas del `TH` por
         otra tipografía. Por eso esta tabla se leía distinta de todas las demás.
       */}
@@ -257,13 +258,17 @@ export function DispersionTable({
     </TableHead>
   );
 
+  // Revisora r22 (Giros #7): la pantalla ya tiene UN selector de mes; la columna «Mes» repetía el mismo en
+  // todas las filas. Sólo aparece si la lista trae más de un mes.
+  const variosMeses = new Set(dispersiones.map((d) => d.month)).size > 1;
+
   return (
     <div className="overflow-x-auto">
       <Table className="min-w-[1000px]">
         <TableHeader>
           <TableRow className="border-b border-border">
             <SortableHeader field="propietarioName">{t('inmobiliaria.dispersiones.tableView.propietario')}</SortableHeader>
-            <SortableHeader field="month">{t('inmobiliaria.dispersiones.tableView.month')}</SortableHeader>
+            {variosMeses && <SortableHeader field="month">{t('inmobiliaria.dispersiones.tableView.month')}</SortableHeader>}
             <SortableHeader field="properties">{t('inmobiliaria.dispersiones.tableView.properties')}</SortableHeader>
             <SortableHeader field="totalCollected">{t(COLUMNA_DEL_CANON[baseDelCanon])}</SortableHeader>
             <SortableHeader field="totalCommission">{t('inmobiliaria.dispersiones.tableView.commission')}</SortableHeader>
@@ -294,14 +299,12 @@ export function DispersionTable({
                 {/* Propietario */}
                 <TableCell className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
-                      <User className="w-5 h-5 text-primary" />
-                    </div>
+                    {/* Sin el ícono en una caja azul (Cadence: nada de íconos dentro de cajas de color). */}
                     <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate max-w-[180px]">
+                      <p className="font-medium text-foreground truncate max-w-[280px] xl:max-w-[340px]">
                         {dispersion.propietarioName}
                       </p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[180px]">
+                      <div className="flex items-center gap-1 text-caption text-muted-foreground truncate max-w-[280px] xl:max-w-[340px]">
                         <Bank className="w-3 h-3" />
                         <span>
                           {/* N-07 (QA-PAGOS-95): enmascarada en la lista; completa en el detalle. */}
@@ -314,12 +317,14 @@ export function DispersionTable({
                 </TableCell>
 
                 {/* Month */}
+                {variosMeses && (
                 <TableCell className="p-4">
                   {/* N-14 (QA-PAGOS-95): sin `capitalize` («Oct De 2026»). */}
                   <span className="text-foreground">
                     {mesEnTitulo(dispersion.month, 'es', 'short')}
                   </span>
                 </TableCell>
+                )}
 
                 {/* Properties Count */}
                 <TableCell className="p-4">
@@ -330,11 +335,11 @@ export function DispersionTable({
 
                 {/* Canon (causado o recaudado, según la base de la fila) */}
                 <TableCell className="p-4">
-                  <span className="font-semibold text-foreground tabular-nums">
+                  <span className="font-mono tabular-nums text-fg">
                     {formatCurrency(dispersion.totalCollected)}
                   </span>
                   {baseDelCanon === 'MIXTA' && (
-                    <span className="block text-xs text-muted-foreground" data-testid="dispersion-base-de-la-fila">
+                    <span className="block text-caption text-muted-foreground" data-testid="dispersion-base-de-la-fila">
                       {t(
                         dispersion.baseDelCanon === 'RECAUDADO'
                           ? 'inmobiliaria.dispersiones.tableView.filaRecaudado'
@@ -345,19 +350,20 @@ export function DispersionTable({
                 </TableCell>
 
                 {/* Commission */}
+                {/* Ronda 21: neutra, en mono y con su «−», como en los pasos 1 y 3 (era azul de enlace). */}
                 <TableCell className="p-4">
-                  <span className="font-medium text-primary tabular-nums">
-                    {formatCurrency(dispersion.totalCommission)}
+                  <span className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
+                    {conSigno('−', formatCurrency(dispersion.totalCommission))}
                   </span>
                 </TableCell>
 
                 {/* Net Amount: lo que se gira (N-39: nunca un negativo). */}
                 <TableCell className="p-4">
-                  <span className="font-bold text-foreground tabular-nums">
+                  <span className="font-mono font-medium tabular-nums text-fg">
                     {formatCurrency(loQueSeGira(dispersion).aGirarCop)}
                   </span>
                   {loQueSeGira(dispersion).enContraCop > 0 && (
-                    <span className="block text-xs text-muted-foreground tabular-nums" data-testid="dispersion-en-contra">
+                    <span className="block text-caption text-muted-foreground tabular-nums" data-testid="dispersion-en-contra">
                       {t('inmobiliaria.dispersiones.tableView.enContra', {
                         monto: formatCurrency(loQueSeGira(dispersion).enContraCop),
                       })}
@@ -381,10 +387,8 @@ export function DispersionTable({
                     <div className="flex items-center gap-1.5 text-foreground">
                       <CheckCircle className="w-4 h-4" weight="fill" />
                       <span className="text-sm tabular-nums">
-                        {formatDate(dispersion.processedAt, {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
+                        {/* Revisora r24 (Giros #4): «17 oct 2026», el día de Colombia. */}
+                        {fechaCorta(diaEnColombia(dispersion.processedAt))}
                       </span>
                     </div>
                   ) : dispersion.status === 'failed' ? (
@@ -450,52 +454,30 @@ export function DispersionTable({
           <TableFooter>
             {/*
               Una sola línea, no tres. El `TFoot` del DS ya trae su fondo y su
-              separador, y la última fila del cuerpo trae el suyo: sumarle acá
+              separador, y la última fila del cuerpo trae el suyo: sumarle aquí
               un `border-t-2` y otro tinte apilaba tres rayas al pie de la
               tabla. El pie se distingue por el peso de la tipografía.
             */}
             <TableRow className="border-t border-border hover:bg-transparent">
-              <TableCell colSpan={3} className="p-4">
-                <div className="flex items-center gap-4">
-                  <span className="font-semibold text-foreground">
-                    {t('inmobiliaria.dispersiones.tableView.totalCount', { count: dispersiones.length })}
-                  </span>
-                  <div className="flex items-center gap-3 text-xs">
-                    {summary.pending > 0 && (
-                      <Badge variant="warning" className="tabular-nums">
-                        {t('inmobiliaria.dispersiones.tableView.pendingAbbr', { count: summary.pending })}
-                      </Badge>
-                    )}
-                    {summary.processing > 0 && (
-                      <Badge variant="default" className="tabular-nums">
-                        {t('inmobiliaria.dispersiones.tableView.processingAbbr', { count: summary.processing })}
-                      </Badge>
-                    )}
-                    {summary.completed > 0 && (
-                      <Badge variant="secondary" className="tabular-nums">
-                        {t('inmobiliaria.dispersiones.tableView.completedAbbr', { count: summary.completed })}
-                      </Badge>
-                    )}
-                    {summary.failed > 0 && (
-                      <Badge variant="destructive" className="tabular-nums">
-                        {t('inmobiliaria.dispersiones.tableView.failedAbbr', { count: summary.failed })}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+              <TableCell colSpan={variosMeses ? 3 : 2} className="p-4">
+                {/* Revisora r25 (Giros paso 2): el pie sólo con la plata. Cuántos y en qué estado ya lo
+                    dicen las pestañas, el resumen y «Mostrando 1–N de N» (era el 2 cuatro veces). */}
+                <span className="font-medium text-foreground" data-testid="pie-de-los-giros">
+                  {tr('Total')}
+                </span>
               </TableCell>
               <TableCell className="p-4">
-                <span className="font-bold text-foreground tabular-nums">
+                <span className="font-mono tabular-nums text-fg">
                   {formatCurrency(summary.totalCollected)}
                 </span>
               </TableCell>
               <TableCell className="p-4">
-                <span className="font-bold text-primary tabular-nums">
-                  {formatCurrency(summary.totalCommissions)}
+                <span className="whitespace-nowrap font-mono font-medium tabular-nums text-fg-muted">
+                  {conSigno('−', formatCurrency(summary.totalCommissions))}
                 </span>
               </TableCell>
               <TableCell className="p-4">
-                <span className="font-bold text-foreground tabular-nums">
+                <span className="font-mono font-medium tabular-nums text-fg">
                   {formatCurrency(summary.totalToDisburse)}
                 </span>
               </TableCell>
@@ -514,7 +496,7 @@ export function DispersionTable({
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <PaperPlaneTilt className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
+          <h3 className="text-lg font-medium text-foreground mb-1">
             {t('inmobiliaria.dispersiones.tableView.emptyTitle')}
           </h3>
           <p className="text-muted-foreground">

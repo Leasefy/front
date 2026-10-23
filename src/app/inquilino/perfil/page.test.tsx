@@ -320,3 +320,35 @@ describe('Perfil del inquilino — la zona de peligro', () => {
     expect(texto).toContain('sólo el soporte de Leasefy puede recuperarla')
   })
 })
+
+describe('Perfil del inquilino — glow up 22-10', () => {
+  beforeEach(() => {
+    useAuthMock.mockReturnValue({
+      user: { id: 'u-1', email: 'laura@example.com', firstName: 'Laura', lastName: 'Gómez', emailConfirmedAt: '2026-01-01T00:00:00Z' },
+      updateProfile: vi.fn(),
+      refreshUser: vi.fn(),
+      signOut: vi.fn(),
+    })
+  })
+
+  it('la foto se cambia con un botón con su nombre, sin la franja azul ni el lápiz de vidrio', async () => {
+    await renderPage()
+    const cambiar = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Cambiar foto'))
+    expect(cambiar).toBeTruthy()
+    expect(container.querySelector('.bg-primary-soft.h-28')).toBeNull()
+    expect(container.innerHTML).not.toContain('backdrop-blur')
+  })
+
+  it('ronda 28: la foto es un renglón de «Información personal» y el chulo del correo va junto al correo (sin tarjetas aparte)', async () => {
+    await renderPage()
+    const foto = container.querySelector('[data-testid="perfil-foto"]')
+    expect(foto).not.toBeNull()
+    // La foto ya no repite el nombre: el nombre sale una vez, en sus campos.
+    expect(foto?.textContent).not.toContain('Laura')
+    // El renglón del correo de entrada (con su «Cambiar», 21-10) lleva el chulo pegado al correo.
+    const correo = container.querySelector('[data-testid="correo-de-entrada"]')
+    expect(correo?.textContent).toContain('laura@example.com')
+    expect(correo?.textContent).toContain('profile.verification.verified')
+    expect(container.textContent).not.toContain('profile.verification.title')
+  })
+})

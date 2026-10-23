@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import {
-  Buildings,
-  CheckCircle,
-  XCircle,
-  Warning,
-  SpinnerGap,
-} from '@phosphor-icons/react';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+  AvisoDelEnlace,
+  CargandoElEnlace,
+  DatoDelEnlace,
+  MarcoDelEnlace,
+  TituloDelEnlace,
+} from '@/components/enlace-publico/MarcoDelEnlace';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useInvitation } from '@/lib/hooks/useInvitation';
 import { apiClient } from '@/lib/api/client';
@@ -33,69 +33,48 @@ const ROLE_LABELS: Record<string, string> = {
 
 function formatExpiry(isoDate: string): string {
   try {
-    return new Date(isoDate).toLocaleDateString('es-CO', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
+    // «17 oct 2026», la fecha de la casa (antes «17 de octubre de 2026»).
+    return new Date(isoDate)
+      .toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+      .replace(/\./g, '')
+      .replace(/ de /g, ' ');
   } catch {
     return isoDate;
   }
 }
 
 // ============================================================================
-// State Views
+// State Views (el marco común de las pantallas por enlace)
 // ============================================================================
-
-/** Spinner while validating token */
-function LoadingView() {
-  return (
-    <CargaDeMarca tamano="lg" disposicion="apilada" texto="Validando invitación…" />
-  );
-}
 
 /** Token not found */
 function InvalidView() {
   return (
-    <div className="flex flex-col items-center gap-4 text-center">
-      <div className="rounded-xl bg-danger-soft p-4">
-        <XCircle weight="duotone" className="h-10 w-10 text-danger" />
+    <AvisoDelEnlace tono="invalido" titulo="Invitación no encontrada">
+      <p>Este enlace no es válido o ya fue usado. Pídele una invitación nueva a tu inmobiliaria.</p>
+      <div className="pt-2">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/">Ir al inicio</Link>
+        </Button>
       </div>
-      <div>
-        <h2 className="text-lg font-semibold text-fg">
-          Invitación no encontrada
-        </h2>
-        <p className="mt-1 text-sm text-fg-muted">
-          Este enlace no es válido o ya fue usado. Solicita una nueva invitación a tu agencia.
-        </p>
-      </div>
-      <Link
-        href="/"
-        className="mt-2 rounded-xl bg-fg px-6 py-2.5 text-sm font-medium text-bg hover:opacity-90 transition-opacity"
-      >
-        Ir al inicio
-      </Link>
-    </div>
+    </AvisoDelEnlace>
   );
 }
 
 /** Token expired */
 function ExpiredView() {
   return (
-    <div className="flex flex-col items-center gap-4 text-center">
-      <div className="rounded-xl bg-warning-soft p-4">
-        <Warning weight="duotone" className="h-10 w-10 text-warning" />
+    <AvisoDelEnlace tono="vencido" titulo="Esta invitación venció">
+      <p>
+        El enlace ya no está vigente. Pídele al administrador de la inmobiliaria que te mande una
+        invitación nueva: te llega al mismo correo.
+      </p>
+      <div className="pt-2">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/">Ir al inicio</Link>
+        </Button>
       </div>
-      <div>
-        <h2 className="text-lg font-semibold text-fg">
-          Invitación expirada
-        </h2>
-        <p className="mt-1 text-sm text-fg-muted">
-          Este enlace de invitación ya no está vigente. Pide al administrador de la agencia que te
-          envíe una nueva invitación.
-        </p>
-      </div>
-    </div>
+    </AvisoDelEnlace>
   );
 }
 
@@ -110,7 +89,7 @@ function ExpiredView() {
  * Login is required to accept the invitation.
  *
  * States:
- *   loading  → spinner
+ *   loading  → la carga con la marca, dentro del marco del enlace
  *   invalid  → not found message + go home (sólo el 404)
  *   error    → no se pudo validar (500, red caída) + reintentar
  *   expired  → alert with re-invite suggestion
@@ -239,12 +218,14 @@ export default function InvitacionPage() {
     router.push('/');
   }
 
+  const rol = ROLE_LABELS[invitation?.role ?? ''] ?? invitation?.role;
+
   // ---- Loading state (while auth or token are resolving) ----
   if (authLoading || status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg p-4">
-        <LoadingView />
-      </div>
+      <MarcoDelEnlace vista="cargando">
+        <CargandoElEnlace texto="Validando invitación…" />
+      </MarcoDelEnlace>
     );
   }
 
@@ -253,227 +234,181 @@ export default function InvitacionPage() {
   // se pudo validar y se deja reintentar; «no encontrada» es sólo el 404.
   if (status === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg p-4">
-        <div className="w-full max-w-md">
-          <FalloDeCarga error={invitationError} queEs="la invitación" onReintentar={reintentar} />
-        </div>
-      </div>
+      <MarcoDelEnlace vista="fallo">
+        <FalloDeCarga
+          error={invitationError}
+          queEs="la invitación"
+          onReintentar={reintentar}
+          enmarcado={false}
+        />
+      </MarcoDelEnlace>
     );
   }
 
   if (status === 'invalid') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg p-4">
-        <div className="w-full max-w-md">
-          <InvalidView />
-        </div>
-      </div>
+      <MarcoDelEnlace vista="invalida">
+        <InvalidView />
+      </MarcoDelEnlace>
     );
   }
 
   if (status === 'expired') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg p-4">
-        <div className="w-full max-w-md">
-          <ExpiredView />
-        </div>
-      </div>
+      <MarcoDelEnlace vista="vencida">
+        <ExpiredView />
+      </MarcoDelEnlace>
     );
   }
 
   // ---- Valid invitation ----
+  // Glow up 22-10: el marco común del enlace (logo + «De parte de»), arriba LA
+  // RESPUESTA —a qué inmobiliaria y con qué rol— y la ficha de la invitación;
+  // un solo botón azul (antes el ícono en una caja azul, el rol en otra caja
+  // azul y los botones pintados a mano con hex).
+  const nombre = user ? user.firstName || user.name : null;
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg p-4">
-      <div className="w-full max-w-md space-y-6">
+    <MarcoDelEnlace de={invitation?.agencyName} vista="invitacion">
+      <TituloDelEnlace
+        rotulo="Invitación al equipo"
+        titulo={`Te invitaron a ${invitation?.agencyName ?? 'una inmobiliaria'}`}
+        descripcion={
+          user
+            ? `${nombre ? `Hola ${nombre}: ` : ''}entras como ${rol}. Acepta para empezar a trabajar en el panel de la inmobiliaria.`
+            : invitation?.cuentaSinEstrenar && !needsOnboarding
+              ? `Entras como ${rol}. Primero crea tu contraseña: te mandamos el enlace al correo de la invitación.`
+              : `Entras como ${rol}. Inicia sesión con el correo de la invitación para aceptarla.`
+        }
+      />
 
-        {/* Header */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-4">
-            <Buildings weight="duotone" className="h-10 w-10 text-[#1A40FF] dark:text-[#5570FF]" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-fg">
-              {invitation?.agencyName}
-            </h1>
-            {invitation?.agencyCity && (
-              <p className="text-sm text-fg-muted">
-                {invitation.agencyCity}
+      <dl className="grid gap-4 border-t border-border-faint pt-5 sm:grid-cols-2">
+        <DatoDelEnlace rotulo="Inmobiliaria">
+          {invitation?.agencyName}
+          {invitation?.agencyCity ? <span className="text-fg-muted"> · {invitation.agencyCity}</span> : null}
+        </DatoDelEnlace>
+        <DatoDelEnlace rotulo="Rol asignado">{rol}</DatoDelEnlace>
+        {invitation?.invitedEmail ? (
+          <DatoDelEnlace rotulo="Invitación para">{invitation.invitedEmail}</DatoDelEnlace>
+        ) : null}
+        {invitation?.expiresAt ? (
+          <DatoDelEnlace rotulo="Válida hasta">{formatExpiry(invitation.expiresAt)}</DatoDelEnlace>
+        ) : null}
+      </dl>
+
+      {/* Error message */}
+      {actionError && (
+        <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3">
+          <p className="text-sm text-danger">{actionError}</p>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="space-y-3">
+        {user ? (
+          // Logged in with full profile: accept / decline
+          <>
+            <Button
+              className="w-full"
+              onClick={handleAccept}
+              disabled={accepting || declining}
+              isLoading={accepting}
+            >
+              {accepting ? 'Aceptando…' : 'Aceptar invitación'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-danger hover:text-danger"
+              onClick={handleDecline}
+              disabled={accepting || declining}
+              isLoading={declining}
+            >
+              {declining ? 'Rechazando…' : 'Rechazar invitación'}
+            </Button>
+          </>
+        ) : needsOnboarding ? (
+          // Supabase session exists but no backend profile yet → complete registration
+          <>
+            <Button asChild className="w-full">
+              <Link href={registerUrl}>Completar registro para unirme</Link>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-danger hover:text-danger"
+              onClick={handleDecline}
+              disabled={declining}
+              isLoading={declining}
+            >
+              {declining ? 'Rechazando…' : 'Rechazar invitación'}
+            </Button>
+          </>
+        ) : invitation?.cuentaSinEstrenar ? (
+          // La cuenta existe pero nunca entró: primero su contraseña (Portofino 21-10).
+          enlaceEnviado ? (
+            <div
+              role="status"
+              data-testid="enlace-para-crear-contrasena"
+              className="rounded-lg border border-border bg-surface-muted px-4 py-3 text-body-sm text-fg"
+            >
+              <p className="font-medium">Revisa tu correo</p>
+              <p className="mt-1 text-fg-muted">
+                Te mandamos a {invitation?.invitedEmail} un enlace para crear tu contraseña. Ábrelo en este
+                mismo navegador; después vuelves aquí a aceptar la invitación.
               </p>
-            )}
-          </div>
-        </div>
-
-        {/* Invitation Info Card */}
-        <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
-          {user ? (
-            // Logged in state
-            <>
-              <div className="flex items-center gap-3">
-                <CheckCircle weight="fill" className="h-5 w-5 text-success shrink-0" />
-                <p className="text-sm text-fg-muted">
-                  Hola <span className="font-medium">{user.firstName || user.name}</span>, te han
-                  invitado a unirte como
-                </p>
-              </div>
-              <div className="rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-4 py-3 text-center">
-                <p className="text-lg font-semibold text-[#1A40FF] dark:text-[#5570FF]">
-                  {ROLE_LABELS[invitation?.role ?? ''] ?? invitation?.role}
-                </p>
-                <p className="text-xs text-fg-muted mt-0.5">
-                  en {invitation?.agencyName}
-                </p>
-              </div>
-            </>
+            </div>
           ) : (
-            // Not logged in state
             <>
-              <div>
-                <p className="text-sm text-fg-muted font-medium uppercase tracking-wide text-xs mb-1">
-                  Rol asignado
-                </p>
-                <p className="text-base font-semibold text-fg">
-                  {ROLE_LABELS[invitation?.role ?? ''] ?? invitation?.role}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-fg-muted font-medium uppercase tracking-wide text-xs mb-1">
-                  Invitado como
-                </p>
-                <p className="text-sm text-fg-muted">
-                  {invitation?.invitedEmail}
-                </p>
-              </div>
+              <Button
+                className="w-full"
+                onClick={() => void pedirEnlaceParaCrearContrasena()}
+                disabled={pidiendoEnlace}
+                isLoading={pidiendoEnlace}
+                data-testid="crear-mi-contrasena"
+              >
+                {pidiendoEnlace ? 'Enviando el enlace…' : 'Crear mi contraseña'}
+              </Button>
+              <Button asChild variant="outline" className="w-full">
+                <Link href={loginUrl}>Ya tengo contraseña: iniciar sesión</Link>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full text-danger hover:text-danger"
+                onClick={handleDecline}
+                disabled={declining}
+                isLoading={declining}
+              >
+                {declining ? 'Rechazando…' : 'Rechazar invitación'}
+              </Button>
             </>
-          )}
-
-          {/* Expiry date */}
-          {invitation?.expiresAt && (
-            <p className="text-xs text-fg-subtle border-t border-border-faint pt-3">
-              Válida hasta el {formatExpiry(invitation.expiresAt)}
-            </p>
-          )}
-        </div>
-
-        {/* Error message */}
-        {actionError && (
-          <div role="alert" className="rounded-md bg-danger-soft border border-danger/30 px-4 py-3">
-            <p className="text-sm text-danger">{actionError}</p>
-          </div>
+          )
+        ) : (
+          // Not logged in: login / register / decline
+          <>
+            <Button asChild className="w-full">
+              <Link href={loginUrl}>Iniciar sesión para aceptar</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link href={registerUrl}>Crear una cuenta nueva</Link>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-danger hover:text-danger"
+              onClick={handleDecline}
+              disabled={declining}
+              isLoading={declining}
+            >
+              {declining ? 'Rechazando…' : 'Rechazar invitación'}
+            </Button>
+          </>
         )}
-
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          {user ? (
-            // Logged in with full profile: accept / decline
-            <>
-              <button
-                onClick={handleAccept}
-                disabled={accepting || declining}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1A40FF] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed px-6 py-3 text-sm font-medium text-white transition-colors"
-              >
-                {accepting && <SpinnerGap className="h-4 w-4 animate-spin" />}
-                {accepting ? 'Aceptando…' : 'Aceptar invitación'}
-              </button>
-              <button
-                onClick={handleDecline}
-                disabled={accepting || declining}
-                className="w-full rounded-xl border border-danger/30 px-6 py-3 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-              >
-                {declining ? 'Rechazando…' : 'Rechazar invitación'}
-              </button>
-            </>
-          ) : needsOnboarding ? (
-            // Supabase session exists but no backend profile yet → complete registration
-            <>
-              <Link
-                href={registerUrl}
-                className="block w-full text-center rounded-xl bg-[#1A40FF] hover:opacity-90 px-6 py-3 text-sm font-medium text-white transition-colors"
-              >
-                Completar registro para unirme
-              </Link>
-              <button
-                onClick={handleDecline}
-                disabled={declining}
-                className="w-full text-center text-sm text-danger hover:text-danger disabled:opacity-60 py-1 transition-colors"
-              >
-                {declining ? 'Rechazando…' : 'Rechazar invitación'}
-              </button>
-            </>
-          ) : invitation?.cuentaSinEstrenar ? (
-            // La cuenta existe pero nunca entró: primero su contraseña.
-            enlaceEnviado ? (
-              <div
-                role="status"
-                data-testid="enlace-para-crear-contrasena"
-                className="rounded-xl border border-border bg-surface-muted px-4 py-3 text-sm text-fg"
-              >
-                <p className="font-medium">Revisa tu correo</p>
-                <p className="mt-1 text-fg-muted">
-                  Te mandamos a {invitation?.invitedEmail} un enlace para crear tu contraseña. Ábrelo en este
-                  mismo navegador; después vuelves aquí a aceptar la invitación.
-                </p>
-              </div>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void pedirEnlaceParaCrearContrasena()}
-                  disabled={pidiendoEnlace}
-                  data-testid="crear-mi-contrasena"
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1A40FF] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed px-6 py-3 text-sm font-medium text-white transition-colors"
-                >
-                  {pidiendoEnlace && <SpinnerGap className="h-4 w-4 animate-spin" />}
-                  {pidiendoEnlace ? 'Enviando el enlace…' : 'Crear mi contraseña'}
-                </button>
-                <Link
-                  href={loginUrl}
-                  className="block w-full text-center rounded-xl border border-border px-6 py-3 text-sm font-medium text-fg-muted hover:bg-surface-muted transition-colors"
-                >
-                  Ya tengo contraseña: iniciar sesión
-                </Link>
-                <button
-                  onClick={handleDecline}
-                  disabled={declining}
-                  className="w-full text-center text-sm text-danger hover:text-danger disabled:opacity-60 py-1 transition-colors"
-                >
-                  {declining ? 'Rechazando…' : 'Rechazar invitación'}
-                </button>
-              </>
-            )
-          ) : (
-            // Not logged in: login / register / decline
-            <>
-              <Link
-                href={loginUrl}
-                className="block w-full text-center rounded-xl bg-[#1A40FF] hover:opacity-90 px-6 py-3 text-sm font-medium text-white transition-colors"
-              >
-                Iniciar sesión para aceptar
-              </Link>
-              <Link
-                href={registerUrl}
-                className="block w-full text-center rounded-xl border border-border px-6 py-3 text-sm font-medium text-fg-muted hover:bg-surface-muted transition-colors"
-              >
-                Crear cuenta nueva
-              </Link>
-              <button
-                onClick={handleDecline}
-                disabled={declining}
-                className="w-full text-center text-sm text-danger hover:text-danger disabled:opacity-60 py-1 transition-colors"
-              >
-                {declining ? 'Rechazando…' : 'Rechazar invitación'}
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-fg-subtle">
-          ¿Necesitas ayuda?{' '}
-          <Link href="/ayuda" className="underline hover:text-fg-muted">
-            Visita el centro de ayuda
-          </Link>
-        </p>
       </div>
-    </div>
+
+      {/* Footer */}
+      <p className="text-center text-caption text-fg-subtle">
+        ¿Necesitas ayuda?{' '}
+        <Link href="/ayuda" className="underline hover:text-fg-muted">
+          Visita el centro de ayuda
+        </Link>
+      </p>
+    </MarcoDelEnlace>
   );
 }

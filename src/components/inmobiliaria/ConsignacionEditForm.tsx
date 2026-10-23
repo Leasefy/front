@@ -282,7 +282,7 @@ function InputWrapper({
       {id ? (
         <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={helper} />
       ) : (
-        helper && <p className="text-xs text-fg-muted dark:text-fg-subtle">{helper}</p>
+        helper && <p className="text-caption text-fg-muted dark:text-fg-subtle">{helper}</p>
       )}
     </div>
   );
@@ -305,7 +305,7 @@ function Seccion({
         <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
           <Icon className="w-4 h-4 text-primary" />
         </div>
-        <h3 className="font-semibold text-fg">{titulo}</h3>
+        <h3 className="font-medium text-fg">{titulo}</h3>
       </div>
       {children}
     </section>
@@ -777,7 +777,7 @@ export function ConsignacionEditForm({
                     value={value}
                     data-testid={`tipo-${value}`}
                     label={
-                      <span className="inline-flex flex-col items-center gap-1.5 text-center text-xs font-medium">
+                      <span className="inline-flex flex-col items-center gap-1.5 text-center text-caption font-medium">
                         <Icon className="w-5 h-5" />
                         {t(`inmobiliaria.consignaciones.propertyType.${value}`)}
                       </span>
@@ -1219,7 +1219,7 @@ export function ConsignacionEditForm({
                 <label className="flex items-start justify-between gap-4 rounded-md border border-border bg-surface p-4 cursor-pointer">
                   <span className="min-w-0">
                     <span className="block text-sm font-medium text-fg">{tf('publicado')}</span>
-                    <span className="block text-xs text-fg-muted mt-0.5">{tf('publicadoHelper')}</span>
+                    <span className="block text-caption text-fg-muted mt-0.5">{tf('publicadoHelper')}</span>
                   </span>
                   <Switch
                     checked={valores.publicado}

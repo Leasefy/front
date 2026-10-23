@@ -143,7 +143,7 @@ function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMo
 function RecomendadaChip() {
   const { t } = useI18n()
   return (
-    <Badge className="gap-1 px-2 py-0.5 text-[10px] font-semibold">
+    <Badge className="gap-1 px-2 py-0.5 text-caption font-medium">
       <Star weight="fill" className="w-3 h-3" />
       {t('inmobiliaria.ai.cotizador.detail.matriz.recomendada')}
     </Badge>
@@ -243,11 +243,11 @@ function MatrizTable({
                   <TableCell className="px-4 py-3 text-right">
                     {prima ? (
                       <span className="inline-flex flex-col items-end">
-                        <span className="font-mono tabular-nums text-sm font-semibold text-fg">
+                        <span className="font-mono tabular-nums text-sm font-medium text-fg">
                           {prima}
                         </span>
                         {isPriced && carrier.isStub && (
-                          <span className="text-[10px] text-fg-muted">
+                          <span className="text-caption text-fg-muted">
                             {t('inmobiliaria.ai.cotizador.detail.fuente.estimado')}
                           </span>
                         )}
@@ -332,7 +332,7 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
         <div>
           <h2
             id="matriz-heading"
-            className="text-base font-semibold text-fg"
+            className="text-base font-medium text-fg"
           >
             {t('inmobiliaria.ai.cotizador.detail.matriz.titulo')}
           </h2>
@@ -345,7 +345,7 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
 
       {/* Prevalidación disclaimer line — honest framing for the whole matriz. */}
       {anyEstimado && (
-        <p className="flex items-start gap-1.5 text-xs text-fg-muted leading-relaxed">
+        <p className="flex items-start gap-1.5 text-caption text-fg-muted leading-relaxed">
           <Info weight="regular" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           {t('inmobiliaria.ai.cotizador.detail.matriz.prevalidacionNote')}
         </p>

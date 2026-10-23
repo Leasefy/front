@@ -1,8 +1,11 @@
 'use client'
 
+import { toast } from 'sonner'
 import { useState } from 'react'
 import { Target } from '@phosphor-icons/react'
-import { Alert } from '@leasefy/cadence'
+import { Alert, Cifra, FranjaDeCifras } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -75,6 +78,8 @@ export default function MetasPage() {
     try {
       const cuerpo = Object.fromEntries(CAMPOS.map((c) => [c.clave, valores[c.clave] === '' ? null : Number(valores[c.clave])]))
       await adminApi(`/metas/${editando.mes}`, { method: 'PUT', body: cuerpo })
+      // Ronda 26 (T10): aviso al terminar, con lo que cambió.
+      toast.success(`Listo: quedaron las metas de ${nombreDelMes(editando.mes).toLowerCase()}`)
       setEditando(null)
       refetch()
     } catch (err) {
@@ -84,6 +89,8 @@ export default function MetasPage() {
     }
   }
 
+  const enCurso = data?.meses.find((m) => m.enCurso) ?? null
+
   const columnas: Column<MesDeMetas>[] = [
     {
       header: 'Mes',
@@ -92,7 +99,7 @@ export default function MetasPage() {
       cell: (m) => (
         <div className="flex items-center gap-2">
           <span className="font-medium text-fg">{nombreDelMes(m.mes)}</span>
-          {m.enCurso ? <Pill tone="info">Este mes</Pill> : null}
+          {m.enCurso ? <Pill tone="neutral">Este mes</Pill> : null}
         </div>
       ),
     },
@@ -107,9 +114,11 @@ export default function MetasPage() {
         const real = m.real[c.clave]
         const llego = meta != null && real != null && real >= meta
         return (
-          <div className="whitespace-nowrap tabular-nums">
-            <div className={llego ? 'text-success' : 'text-fg'}>{cifra(real, c.plata)}</div>
-            <div className="text-caption text-fg-subtle">Meta {cifra(meta, c.plata)}</div>
+          <div className="whitespace-nowrap">
+            <div className={`font-mono tabular-nums ${llego ? 'text-success' : 'text-fg'}`}>{cifra(real, c.plata)}</div>
+            <div className="text-caption text-fg-muted">
+              Meta <span className="font-mono tabular-nums">{cifra(meta, c.plata)}</span>
+            </div>
           </div>
         )
       },
@@ -129,23 +138,95 @@ export default function MetasPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Metas"
-        description="Lo que Leasefy se propone cada mes contra lo que pasó. Las inmobiliarias nuevas se cuentan en cualquier mes; el ingreso de planes, los contratos y los inmuebles sólo se saben hoy, así que se comparan en el mes en curso."
+        description="Lo que Leasefy se propone cada mes contra lo que pasó."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo se cuentan" titulo="Las metas del mes" variante="secundario">
+            <p className="text-body-sm text-fg-muted">
+              Las inmobiliarias nuevas se cuentan en cualquier mes; el ingreso de planes, los contratos y los inmuebles
+              sólo se saben hoy, así que se comparan en el mes en curso. Deja vacío lo que no quieras medir.
+            </p>
+          </ParaEntenderMas>
+        }
+        principal={
+          enCurso && data?.disponible ? (
+            <Button size="sm" hideArrow onClick={() => abrir(enCurso)}>
+              {enCurso.meta ? 'Cambiar las metas del mes' : 'Poner las metas del mes'}
+            </Button>
+          ) : undefined
+        }
       />
       {data && !data.disponible ? (
-        <Alert variant="warning" title="Falta la tabla de metas en esta base">
-          La crea la migración 20261019230000. Mientras tanto se ve lo real, pero no se pueden poner metas.
+        <Alert variant="warning" title="Todavía no se pueden poner metas">
+          Falta preparar la base para las metas. Mientras tanto se ve lo real.
         </Alert>
       ) : null}
+
+      {/* Glow up 22-10: LA RESPUESTA arriba —cómo va el mes en curso contra su meta— y las otras tres cifras. */}
+      {enCurso ? (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo={`Inmobiliarias nuevas · ${nombreDelMes(enCurso.mes).toLowerCase()}`}
+              cifra={cifra(enCurso.real.inmobiliariasNuevas)}
+              contexto={
+                enCurso.meta?.inmobiliariasNuevas != null
+                  ? `de una meta de ${fmtNumero(enCurso.meta.inmobiliariasNuevas)}`
+                  : 'sin meta para este mes'
+              }
+              tramos={
+                enCurso.meta?.inmobiliariasNuevas
+                  ? [
+                      {
+                        clave: 'van',
+                        etiqueta: 'Van',
+                        monto: Math.min(enCurso.real.inmobiliariasNuevas ?? 0, enCurso.meta.inmobiliariasNuevas),
+                        tono: 'exito',
+                        cifra: cifra(enCurso.real.inmobiliariasNuevas),
+                        siempre: true,
+                      },
+                      {
+                        clave: 'faltan',
+                        etiqueta: 'Faltan',
+                        monto: Math.max(0, enCurso.meta.inmobiliariasNuevas - (enCurso.real.inmobiliariasNuevas ?? 0)),
+                        tono: 'neutro',
+                        cifra: fmtNumero(Math.max(0, enCurso.meta.inmobiliariasNuevas - (enCurso.real.inmobiliariasNuevas ?? 0))),
+                      },
+                    ]
+                  : []
+              }
+              total={enCurso.meta?.inmobiliariasNuevas ?? undefined}
+              data-testid="metas-del-mes"
+            />
+          </div>
+          <FranjaDeCifras fila="lg" columnas={3} aria-label="Las otras metas del mes">
+            {CAMPOS.filter((c) => c.clave !== 'inmobiliariasNuevas').map((c) => {
+              const meta = enCurso.meta?.[c.clave] ?? null
+              const real = enCurso.real[c.clave]
+              return (
+                <Cifra
+                  key={c.clave}
+                  etiqueta={c.nombre}
+                  valor={cifra(real, c.plata)}
+                  detalle={meta != null ? `meta ${cifra(meta, c.plata)}` : 'sin meta'}
+                  tono={meta != null && real != null && real >= meta ? 'exito' : undefined}
+                />
+              )
+            })}
+          </FranjaDeCifras>
+        </div>
+      ) : null}
+
       <DataTable
+        errorTitulo="No pudimos cargar las metas"
         columns={columnas}
         rows={data?.meses}
         getKey={(m) => m.mes}
         isLoading={isLoading}
         error={error}
         onReintentar={refetch}
-        rowClassName={(m) => (m.enCurso ? 'bg-primary/5' : undefined)}
+        rowClassName={(m) => (m.enCurso ? 'bg-surface-muted' : undefined)}
         emptyTitle="Sin meses"
-        emptyIcon={<Target weight="bold" />}
+        emptyIcon={<Target weight="duotone" />}
         aria-label="Metas por mes"
         queSon={['mes', 'meses']}
         exportar="metas-de-leasefy"
@@ -166,7 +247,7 @@ export default function MetasPage() {
                 <Input
                   id={`meta-${c.clave}`}
                   inputMode="numeric"
-                  className="tabular-nums"
+                  className="font-mono tabular-nums"
                   value={valores[c.clave]}
                   onChange={(e) => setValores((v) => ({ ...v, [c.clave]: e.target.value.replace(/[^\d]/g, '') }))}
                 />
@@ -179,7 +260,7 @@ export default function MetasPage() {
           <Button variant="outline" hideArrow onClick={() => setEditando(null)}>
             Cancelar
           </Button>
-          <Button hideArrow disabled={guardando} onClick={() => void guardar()}>
+          <Button hideArrow disabled={guardando} isLoading={guardando} onClick={() => void guardar()}>
             {guardando ? 'Guardando…' : 'Guardar las metas'}
           </Button>
         </CajonPie>

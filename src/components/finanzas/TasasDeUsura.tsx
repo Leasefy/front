@@ -137,34 +137,6 @@ export function TasasDeUsuraPanel() {
 
   return (
     <div className="space-y-5" data-testid="tasas-de-usura">
-      {/* ── Rango y alta ───────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="usura-desde">Desde</Label>
-            <CampoDeMes
-              id="usura-desde"
-              value={desde}
-              onChange={(v) => esMesValido(v) && setDesde(v)}
-              className="w-52"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="usura-hasta">Hasta</Label>
-            <CampoDeMes
-              id="usura-hasta"
-              value={hasta}
-              onChange={(v) => esMesValido(v) && setHasta(v)}
-              className="w-52"
-            />
-          </div>
-        </div>
-        <Button hideArrow disabled={!disponible} onClick={() => setEditando('nueva')}>
-          <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
-          Cargar una tasa
-        </Button>
-      </div>
-
       {/* ── 🔴 Los meses sin tope ──────────────────────────────────────── */}
       {aviso ? (
         <div
@@ -177,23 +149,66 @@ export function TasasDeUsuraPanel() {
         </div>
       ) : null}
 
-      <EstadoDeDatos
-        cargando={cargando && !datos}
-        error={error}
-        queEs="las tasas de usura"
-        onReintentar={cargar}
-        conservarContenido={Boolean(datos)}
-      >
-        {datos ? (
-          <div className="space-y-4">
-            {!datos.disponible ? (
-              <SinLaMigracion motivo={datos.motivo} queSeEspera="cargar las tasas de usura" />
-            ) : null}
+      {/* Revisora r25 (Usura #2): el rango y «Cargar una tasa» viven en la barra de la tabla,
+          sin rótulo flotante encima (el «De … a …» dice qué filtran; el label sigue para el
+          lector de pantalla). */}
+      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+          <div className="flex flex-wrap items-center gap-2 text-body-sm text-fg-muted">
+            <Label htmlFor="usura-desde" className="sr-only">
+              Desde
+            </Label>
+            <span aria-hidden="true">De</span>
+            <CampoDeMes
+              id="usura-desde"
+              value={desde}
+              onChange={(v) => esMesValido(v) && setDesde(v)}
+              className="w-44"
+            />
+            <Label htmlFor="usura-hasta" className="sr-only">
+              Hasta
+            </Label>
+            <span aria-hidden="true">a</span>
+            <CampoDeMes
+              id="usura-hasta"
+              value={hasta}
+              onChange={(v) => esMesValido(v) && setHasta(v)}
+              className="w-44"
+            />
+          </div>
+          <Button size="sm" hideArrow disabled={!disponible} onClick={() => setEditando('nueva')}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Cargar una tasa
+          </Button>
+        </div>
 
-            <div className="overflow-hidden rounded-lg border border-border">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+        <EstadoDeDatos
+          cargando={cargando && !datos}
+          error={error}
+          queEs="las tasas de usura"
+          onReintentar={cargar}
+          conservarContenido={Boolean(datos)}
+        >
+          {datos ? (
+            <div>
+              {!datos.disponible ? (
+                <div className="p-4">
+                  <SinLaMigracion motivo={datos.motivo} queSeEspera="cargar las tasas de usura" />
+                </div>
+              ) : null}
+
+              {tasas.length === 0 ? (
+                /* Revisora r25 (Usura #1): el aviso de arriba ya dice que sin tasa no hay techo;
+                   la tabla vacía se pliega en una línea y no lo repite. */
+                <p className="px-4 py-6 text-body-sm text-fg-muted" data-testid="sin-tasas-en-el-rango">
+                  {aviso
+                    ? `Ninguna tasa cargada de ${nombreDelMes(desde)} a ${nombreDelMes(hasta)}.`
+                    : `No hay ninguna tasa cargada de ${nombreDelMes(desde)} a ${nombreDelMes(hasta)}. Mientras no la haya, el interés de mora se liquida sin techo.`}
+                </p>
+              ) : (
+                /* A 390 px cada mes es una TARJETA (el patrón `max-md:grid` de CuotasDelMesTabla). */
+                <Table className="max-md:block">
+                  <TableHeader className="max-md:hidden">
                     <TableRow>
                       <TableHead>Mes</TableHead>
                       <TableHead className="text-right">Efectiva anual</TableHead>
@@ -203,69 +218,69 @@ export function TasasDeUsuraPanel() {
                       <TableHead className="text-right">&nbsp;</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {tasas.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted">
-                          No hay ninguna tasa cargada en este rango. Mientras no la haya, el interés
-                          de mora se liquida sin techo.
+                  <TableBody className="max-md:block">
+                    {tasas.map((t) => (
+                      <TableRow
+                        key={t.id}
+                        data-testid={`tasa-${t.mes}`}
+                        className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                      >
+                        <TableCell className="text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
+                          {nombreDelMes(t.mes)}
                         </TableCell>
-                      </TableRow>
-                    ) : (
-                      tasas.map((t) => (
-                        <TableRow key={t.id} data-testid={`tasa-${t.mes}`}>
-                          <TableCell className="font-medium text-fg">{nombreDelMes(t.mes)}</TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {porcentaje(t.efectivaAnualPct)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {porcentaje(t.diariaPct, 4)}
-                          </TableCell>
-                          <TableCell className="text-fg-muted">{t.fuente || '—'}</TableCell>
-                          <TableCell className="text-fg-muted">
-                            {t.esDeLaAgencia ? 'Tuya (pisa a la general)' : 'General de Colombia'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
+                        <TableCell className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
+                          {porcentaje(t.efectivaAnualPct)}
+                          <span className="font-sans text-caption text-fg-muted md:hidden"> anual</span>
+                        </TableCell>
+                        <TableCell className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
+                          {porcentaje(t.diariaPct, 4)}
+                          <span className="font-sans md:hidden"> diaria</span>
+                        </TableCell>
+                        <TableCell className="text-fg-muted max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption">
+                          {t.fuente || '—'}
+                        </TableCell>
+                        <TableCell className="text-fg-muted max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption">
+                          {t.esDeLaAgencia ? 'Tuya (pisa a la general)' : 'General de Colombia'}
+                        </TableCell>
+                        <TableCell className="text-right max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              hideArrow
+                              disabled={!disponible}
+                              onClick={() => setEditando(t)}
+                            >
+                              Editar
+                            </Button>
+                            {t.esDeLaAgencia ? (
                               <Button
                                 variant="ghost"
-                                size="sm"
-                                hideArrow
+                                size="icon"
+                                aria-label={`Borrar la tasa de ${nombreDelMes(t.mes)}`}
                                 disabled={!disponible}
-                                onClick={() => setEditando(t)}
+                                onClick={() => setBorrando(t)}
                               >
-                                Editar
+                                <Trash className="h-4 w-4" aria-hidden="true" />
                               </Button>
-                              {t.esDeLaAgencia ? (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  aria-label={`Borrar la tasa de ${nombreDelMes(t.mes)}`}
-                                  disabled={!disponible}
-                                  onClick={() => setBorrando(t)}
-                                >
-                                  <Trash className="h-4 w-4" aria-hidden="true" />
-                                </Button>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
+                            ) : null}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
-              </div>
+              )}
             </div>
+          ) : null}
+        </EstadoDeDatos>
+      </section>
 
-            <p className="text-caption leading-relaxed text-fg-muted">
-              La <strong>efectiva anual</strong> es la que certifica la Superfinanciera cada mes; la{' '}
-              <strong>equivalente diaria</strong> es la que el sistema aplica día por día sobre el
-              capital en mora, y la calcula el back con la misma fórmula del tope. Tu tasa pisa a la
-              general de Colombia en el mes en que la cargues.
-            </p>
-          </div>
-        ) : null}
-      </EstadoDeDatos>
+      <p className="text-caption leading-relaxed text-fg-muted">
+        La efectiva anual es la que certifica la Superfinanciera cada mes; la equivalente diaria es
+        la que el sistema aplica día por día sobre el capital en mora, y Leasefy la calcula con la
+        misma fórmula del tope. Tu tasa pisa a la general de Colombia en el mes en que la cargues.
+      </p>
 
       <EditorDeTasa
         abierto={editando !== null}
@@ -289,7 +304,7 @@ export function TasasDeUsuraPanel() {
                 {borrando ? porcentaje(borrando.efectivaAnualPct) : ''}
               </span>{' '}
               efectiva anual y ese mes vuelve a regirse por la tasa general de Colombia. Si no hay
-              general para ese mes, el interés de mora de ese mes pasa a liquidarse SIN topear.
+              general para ese mes, el interés de mora de ese mes pasa a liquidarse sin topear.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

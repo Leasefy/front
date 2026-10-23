@@ -93,7 +93,7 @@ describe('DocumentsSection', () => {
     expect(container.querySelector('button[disabled]')).toBeNull()
   })
 
-  it('elegir un PDF lo sube y recarga la ficha; algo que no es PDF no sale de acá', async () => {
+  it('elegir un PDF lo sube y recarga la ficha; algo que no es PDF no sale de aquí', async () => {
     subirContrato.mockReset().mockResolvedValue({ consignmentContractUrl: 'https://s/firmada' })
     const onActualizado = vi.fn()
     act(() => root.render(<DocumentsSection consignacion={base} onActualizado={onActualizado} />))

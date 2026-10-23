@@ -43,7 +43,7 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
           de la landing (Nico, 03-10-2026; antes, azul en claro). */}
       <div className="flex items-center gap-2.5">
         <LeasefyMark className="w-7 h-auto shrink-0 text-fg" />
-        <span className="text-sm font-bold text-fg tracking-tight">
+        <span className="text-sm font-medium text-fg tracking-tight">
           Leasefy
           <span className="text-primary ml-1">AI</span>
         </span>

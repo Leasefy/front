@@ -14,9 +14,10 @@
  */
 
 import { useMemo } from 'react'
-import { ShieldCheck, Info } from '@phosphor-icons/react'
+import { Info } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
 import type { Respaldo, ErroresDeRespaldo } from '@/lib/inmobiliaria/respaldo'
 import type { ProtectionOption } from '@/lib/api/applications.types'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
@@ -69,15 +70,13 @@ export function RespaldoDelArriendo({
 
   return (
     <section className={cn('space-y-4', className)} data-testid="respaldo-del-arriendo">
-      <div className="flex items-start gap-2.5">
-        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" weight="duotone" aria-hidden="true" />
-        <div>
-          <h3 className="text-sm font-semibold text-fg">Respaldo del arriendo</h3>
-          <p className="mt-0.5 text-sm text-fg-muted">
-            Queda en el contrato. Sin el número de la póliza no hay a quién
-            reclamarle si algo pasa.
-          </p>
-        </div>
+      {/* Revisora r22 (Crear contrato #3): como las otras secciones del formulario, sin ícono ni sangría. */}
+      <div>
+        <h3 className="text-h3 text-fg">Respaldo del arriendo</h3>
+        <p className="mt-0.5 text-sm text-fg-muted">
+          Queda en el contrato. Sin el número de la póliza no hay a quién
+          reclamarle si algo pasa.
+        </p>
       </div>
 
       {aprobadas.length > 0 ? (
@@ -106,19 +105,19 @@ export function RespaldoDelArriendo({
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-fg">{o.carrier}</span>
-                    <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-muted">
+                    <span className="rounded-full bg-surface-muted px-2 py-0.5 text-caption text-fg-muted">
                       {o.productType === 'fianza' ? 'Fianza' : 'Seguro'}
                     </span>
                     {o.isDemo && (
                       // Si el precio es de mentira hay que decirlo donde se lee,
                       // no en un comentario del código.
-                      <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning">
+                      <span className="rounded-full bg-warning-soft px-2 py-0.5 text-caption font-medium text-warning">
                         Precio de ejemplo
                       </span>
                     )}
                   </span>
                   {o.monthlyPremiumCop !== null && (
-                    <span className="mt-0.5 block font-mono text-xs text-fg-subtle">
+                    <span className="mt-0.5 block font-mono text-caption text-fg-subtle">
                       {moneda(o.monthlyPremiumCop)} / mes
                     </span>
                   )}
@@ -218,28 +217,34 @@ function Campo({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-xs font-medium text-fg">
+      <label htmlFor={id} className="block text-caption font-medium text-fg">
         {etiqueta}
         {/* El espacio va en el TEXTO, no sólo en el margen: el lector de
             pantalla y el texto copiado decían «Vigencia desde(opcional)». */}
         {opcional && <span className="font-normal text-fg-subtle">{' '}(opcional)</span>}
       </label>
-      <Input
-        id={id}
-        type={tipo}
-        value={valor}
-        onChange={(e) => onCambio(e.target.value)}
-        placeholder={placeholder}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : ayuda ? `${id}-ayuda` : undefined}
-        className={cn(error && 'border-danger')}
-      />
+      {tipo === 'date' ? (
+        // Glow up 22-10: el calendario de Cadence, como las demás fechas de la pantalla
+        // (antes el campo nativo del navegador, «dd/mm/yyyy»).
+        <CampoDeFecha id={id} value={valor} onChange={onCambio} invalido={Boolean(error)} testid={`${id}-campo`} />
+      ) : (
+        <Input
+          id={id}
+          type={tipo}
+          value={valor}
+          onChange={(e) => onCambio(e.target.value)}
+          placeholder={placeholder}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : ayuda ? `${id}-ayuda` : undefined}
+          className={cn(error && 'border-danger')}
+        />
+      )}
       {error ? (
-        <p id={`${id}-error`} className="text-xs text-danger">
+        <p id={`${id}-error`} className="text-caption text-danger">
           {error}
         </p>
       ) : ayuda ? (
-        <p id={`${id}-ayuda`} className="text-xs text-fg-subtle">
+        <p id={`${id}-ayuda`} className="text-caption text-fg-subtle">
           {ayuda}
         </p>
       ) : null}

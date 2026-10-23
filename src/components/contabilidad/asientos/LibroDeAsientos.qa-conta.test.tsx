@@ -140,3 +140,11 @@ describe('<LibroDeAsientos> · CB-22, tarjetas en el celular', () => {
     expect(host.querySelector('[data-testid="tarjetas-de-asientos"]')).toBeNull();
   });
 });
+
+describe('<LibroDeAsientos> · glow up 21-10, la tabla', () => {
+  it('débitos y créditos van en UNA columna, el valor; y no hay columna de estado vacía', async () => {
+    await montar();
+    const cabeceras = [...host.querySelectorAll('th')].map((th) => th.textContent);
+    expect(cabeceras).toEqual(['N.º', 'Fecha', 'Descripción', 'Origen', 'Valor']);
+  });
+});

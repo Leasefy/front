@@ -117,7 +117,7 @@ function abrir(d: Dispersion) {
     root.render(<DispersionDetail isOpen onClose={() => {}} dispersion={d} />);
   });
   const desplegar = Array.from(document.querySelectorAll('button[aria-expanded="false"]')).find((b) =>
-    b.textContent?.includes('propiedad'),
+    b.textContent?.toLowerCase().includes('inmueble'), // manual de voz (22-10): «inmueble»
   );
   if (!desplegar) throw new Error('No está el desglose por inmueble');
   act(() => {

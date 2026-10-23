@@ -139,7 +139,7 @@ export function TarjetaDePlan({
       {p.cita && <p className="font-body text-[14px] leading-snug text-fg-muted">{t('beta.enElChat.plan.loQuePediste', { cita: p.cita })}</p>}
       {p.estado === 'propuesto' && esperando && p.porQue && (
         <p className="mt-1.5 font-body text-[15px] leading-relaxed text-fg">
-          {p.porQue} <strong className="font-semibold">{p.pregunta}</strong>
+          {p.porQue} <strong className="font-medium">{p.pregunta}</strong>
         </p>
       )}
       <ol aria-label={t('beta.enElChat.plan.pasos')} data-testid="pasos-del-plan" className="mt-3 space-y-4">

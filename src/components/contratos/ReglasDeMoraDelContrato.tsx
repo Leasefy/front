@@ -124,7 +124,7 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Gavel className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-foreground">Reglas de mora</h3>
+          <h3 className="text-base font-medium text-foreground">Reglas de mora</h3>
         </div>
         {/* Ghost y sin icono se leía como un texto suelto, no como un botón
             (Nico, 2026-09-08). El icono es el nuestro: sin la flecha del DS. */}
@@ -158,7 +158,7 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
         <div className="space-y-2">
           <p className="text-caption text-muted-foreground">
             Las reglas son de la inmobiliaria y rigen para todos los contratos.
-            Acá se ajustan sólo para este.
+            Aquí se ajustan sólo para este.
           </p>
           {reglas.map((r) => (
             <FilaDeRegla
@@ -229,7 +229,7 @@ function FilaDeRegla({
             ) : null}
             {fila.esPropio ? (
               <span
-                className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary"
+                className="rounded-full bg-surface-muted px-2 py-0.5 text-caption font-medium text-fg"
                 data-testid={`propio-${regla.id}`}
               >
                 propio
@@ -408,7 +408,7 @@ function CampoPropio({
       </div>
       <ErrorDelCampo id={`${testId}-error`} mensaje={error} className="mt-0" />
       {esPropio ? (
-        <p className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-1 text-caption text-muted-foreground">
           <span>La inmobiliaria cobra {formatear(deLaAgencia)}.</span>
           <button
             type="button"

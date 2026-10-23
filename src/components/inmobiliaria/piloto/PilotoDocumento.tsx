@@ -130,7 +130,7 @@ export function PilotoDocumento({ artifactId, onClose, hrefCompleto }: PilotoDoc
         <SheetBody className="flex flex-col bg-bg p-4 dark:bg-surface-hover">
           {faltaEntorno ? (
             <Mensaje
-              titulo="No se puede abrir el documento acá"
+              titulo="No se puede abrir el documento aquí"
               texto="Falta la conexión con el servicio de agentes en este entorno. La carta sigue disponible en su pantalla completa."
             />
           ) : estado === 'error' ? (

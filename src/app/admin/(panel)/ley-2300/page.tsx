@@ -1,17 +1,19 @@
 'use client'
 
-import { Buildings, PhoneCall, Scales, Users, WarningOctagon } from '@phosphor-icons/react'
+import { Scales } from '@phosphor-icons/react'
 import { MonoLabel } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { canal, eventoDeCumplimiento, resumenDeLosDatos } from '@/lib/admin/textos-del-admin'
 
 
 // ─── Types (co-located, per FRONT.md §6.19) ────────────────────────────────
@@ -126,12 +128,17 @@ function HeatmapCell({
   return (
     <div
       title={tooltip}
-      className="flex h-7 w-7 items-center justify-center rounded-[6px] font-mono text-[10px] tabular-nums text-fg"
+      className="flex h-7 w-7 items-center justify-center rounded-[6px] font-mono text-caption tabular-nums text-fg"
       style={{ background }}
     >
       {n > 0 ? n : ''}
     </div>
   )
+}
+
+/** Los detalles en palabras (sólo lo que tiene nombre; ids y códigos, al cajón y al Excel). */
+function resumenDeLosDetalles(detalles: unknown): string {
+  return resumenDeLosDatos(detalles) || 'Ábrelo para ver los detalles'
 }
 
 /** /ley-2300 — Compliance window monitoring (BACK.md §8.15 + §7.2 · FRONT.md §6.19). */
@@ -160,20 +167,17 @@ export default function Ley2300Page() {
     {
       header: 'Tipo',
       orden: (v) => v.event_type,
-      texto: (v) => legible(v.event_type),
-      cell: (v) => <Pill tone={v.event_type.includes('inbound') ? 'muted' : 'bad'}>{legible(v.event_type)}</Pill>,
+      texto: (v) => eventoDeCumplimiento(v.event_type),
+      cell: (v) => <Pill tone={v.event_type.includes('inbound') ? 'muted' : 'bad'}>{eventoDeCumplimiento(v.event_type)}</Pill>,
     },
-    { header: 'Canal', orden: (v) => v.channel, texto: (v) => (v.channel ? legible(v.channel) : ''), cell: (v) => <span className="text-fg-muted">{v.channel ? legible(v.channel) : '—'}</span> },
+    { header: 'Canal', orden: (v) => v.channel, texto: (v) => (v.channel ? canal(v.channel) : ''), cell: (v) => <span className="text-fg-muted">{v.channel ? canal(v.channel) : '—'}</span> },
     { header: 'Deudor', orden: (v) => v.debtor_name, texto: (v) => v.debtor_name, cell: (v) => <span className="block max-w-[180px] truncate">{v.debtor_name ?? '—'}</span> },
     { header: 'Inmobiliaria', orden: (v) => v.legal_name, texto: (v) => v.legal_name, cell: (v) => <span className="block max-w-[160px] truncate text-fg-muted">{v.legal_name ?? '—'}</span> },
     {
       header: 'Detalles',
       texto: (v) => (v.details ? JSON.stringify(v.details) : ''),
-      cell: (v) => (
-        <span className="block max-w-[260px] truncate font-mono text-caption text-fg-muted" title={v.details ? JSON.stringify(v.details) : undefined}>
-          {v.details ? JSON.stringify(v.details).slice(0, 100) : '—'}
-        </span>
-      ),
+      // Glow up 22-10: en palabras en la fila; el JSON completo va al Excel.
+      cell: (v) => <span className="block max-w-[260px] truncate text-caption text-fg-muted">{resumenDeLosDetalles(v.details)}</span>,
     },
   ]
 
@@ -181,7 +185,15 @@ export default function Ley2300Page() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Ley 2300"
-        description="Las ventanas de contacto de la Ley 2300 de 2023 (art. 7): lunes a viernes de 7:00 a 19:00, sábados de 8:00 a 15:00; domingos y festivos, nunca. Últimos 30 días."
+        description="Si los agentes respetaron las ventanas de contacto de la Ley 2300 en 30 días."
+        ayuda={
+          <ParaEntenderMas etiqueta="Qué dice la ley" titulo="Ley 2300 de 2023, art. 7" variante="secundario">
+            <p className="text-body-sm text-fg-muted">
+              Lunes a viernes de 7:00 a 19:00 y sábados de 8:00 a 15:00; domingos y festivos, nunca. Un intento por
+              fuera de esas ventanas, o más de los permitidos, es una falta.
+            </p>
+          </ParaEntenderMas>
+        }
       />
 
       {isLoading && <LoadingBlock filas={6} />}
@@ -189,25 +201,51 @@ export default function Ley2300Page() {
 
       {data && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard icon={<PhoneCall />} label="Llamadas · 30 días" value={Number(data.stats.total_calls) || 0} hint="Todas" />
-            <KpiCard
-              icon={<WarningOctagon />}
-              label="Por fuera de la ley · 30 días"
-              value={Number(data.stats.total_violations) || 0}
-              hint="Por horario o por frecuencia"
-              tone={Number(data.stats.total_violations) > 0 ? 'bad' : 'ok'}
-            />
-            <KpiCard icon={<Users />} label="Deudores afectados" value={Number(data.stats.debtors_affected) || 0} hint="Con al menos una" />
-            <KpiCard
-              icon={<Buildings />}
-              label="Inmobiliarias afectadas"
-              value={Number(data.stats.tenants_affected) || 0}
-              hint="Con al menos una"
-              tone={Number(data.stats.tenants_affected) > 0 ? 'warn' : 'ok'}
+          {/* Glow up 22-10: LA RESPUESTA (cuántas faltas hubo) en una cifra; después el trabajo (las faltas) y el
+              mapa de calor plegado. Antes, 4 tarjetas del mismo peso y el mapa antes de la lista. */}
+          {/* Ronda 26 (T6): sin faltas, UNA línea (antes «0 en 0 llamadas · 0 deudores y 0 inmobiliarias»). */}
+          {(Number(data.stats.total_violations) || 0) === 0 ? (
+            <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="ley-2300-faltas">
+              Ninguna falta a la Ley 2300 en los últimos 30 días
+              {(Number(data.stats.total_calls) || 0) > 0 ? `, en ${(Number(data.stats.total_calls) || 0).toLocaleString('es-CO')} llamadas.` : '.'}
+            </p>
+          ) : (
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo="Faltas a la Ley 2300 · 30 días"
+              cifra={(Number(data.stats.total_violations) || 0).toLocaleString('es-CO')}
+              contexto={`en ${(Number(data.stats.total_calls) || 0).toLocaleString('es-CO')} llamadas · ${(Number(data.stats.debtors_affected) || 0).toLocaleString('es-CO')} deudores y ${(Number(data.stats.tenants_affected) || 0).toLocaleString('es-CO')} inmobiliarias afectadas`}
+              data-testid="ley-2300-faltas"
             />
           </div>
+          )}
 
+          {/* Revisora r27: sin faltas, la línea de arriba ya lo dice: sin el título «Faltas recientes» ni el vacío que lo repetía. */}
+          {(Number(data.stats.total_violations) || 0) > 0 || violations.length > 0 ? (
+          <section className="space-y-3" aria-label="Faltas recientes">
+            <h2 className="text-subtitle font-medium text-fg">Faltas recientes</h2>
+            <DataTable
+              columns={violationColumns}
+              rows={violations}
+              getKey={(v) => v.id}
+              emptyTitle="Ninguna falta: todo dentro del horario"
+              emptyIcon={<Scales weight="duotone" />}
+              emptyTono="exito"
+              aria-label="Faltas a la Ley 2300"
+              queSon={['falta', 'faltas']}
+              buscar="Deudor, inmobiliaria o tipo"
+              segmentos={[
+                { valor: 'todas', nombre: 'Todas', cumple: () => true },
+                { valor: 'salientes', nombre: 'Contactos fuera de horario', cumple: (v) => !v.event_type.includes('inbound') },
+                { valor: 'entrantes', nombre: 'Entrantes', cumple: (v) => v.event_type.includes('inbound') },
+              ]}
+              ordenInicial={{ columna: 0, sentido: 'desc' }}
+              exportar="faltas-ley-2300"
+            />
+          </section>
+          ) : null}
+
+          <MasDetalles etiqueta="Ver los intentos por día y hora" etiquetaAbierto="Ocultar el mapa de intentos">
           <Tarjeta titulo="Intentos por día y hora" descripcion="Hora de Bogotá, últimos 30 días.">
             <div className="overflow-x-auto" data-lenis-prevent>
               <table className="border-separate border-spacing-[3px] text-caption">
@@ -217,7 +255,7 @@ export default function Ley2300Page() {
                       <MonoLabel>Día / hora</MonoLabel>
                     </th>
                     {HOURS.map((h) => (
-                      <th key={h} className="w-7 pb-1 text-center font-mono text-[10px] font-normal tabular-nums text-fg-subtle">
+                      <th key={h} className="w-7 pb-1 text-center font-mono text-caption font-normal tabular-nums text-fg-muted">
                         {String(h).padStart(2, '0')}
                       </th>
                     ))}
@@ -261,30 +299,7 @@ export default function Ley2300Page() {
               </span>
             </div>
           </Tarjeta>
-
-          <section className="space-y-3" aria-label="Faltas recientes">
-            <MonoLabel className="block">
-              <Scales className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" aria-hidden="true" />
-              Faltas recientes · 30 días ({violations.length.toLocaleString('es-CO')})
-            </MonoLabel>
-            <DataTable
-              columns={violationColumns}
-              rows={violations}
-              getKey={(v) => v.id}
-              emptyTitle="Ninguna falta: todo dentro del horario"
-              emptyIcon={<Scales weight="bold" />}
-              aria-label="Faltas a la Ley 2300"
-              queSon={['falta', 'faltas']}
-              buscar="Deudor, inmobiliaria o tipo"
-              segmentos={[
-                { valor: 'todas', nombre: 'Todas', cumple: () => true },
-                { valor: 'salientes', nombre: 'Contactos fuera de horario', cumple: (v) => !v.event_type.includes('inbound') },
-                { valor: 'entrantes', nombre: 'Entrantes', cumple: (v) => v.event_type.includes('inbound') },
-              ]}
-              ordenInicial={{ columna: 0, sentido: 'desc' }}
-              exportar="faltas-ley-2300"
-            />
-          </section>
+          </MasDetalles>
         </>
       )}
     </div>

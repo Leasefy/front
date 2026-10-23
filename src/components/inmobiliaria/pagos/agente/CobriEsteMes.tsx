@@ -21,9 +21,9 @@
  * No hay «Enviar link»: Nico eligió el cron, no el pedido manual.
  */
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { ArrowRight, ChatCircleText, HandPalm, WarningCircle } from '@phosphor-icons/react'
+import { ArrowRight, HandPalm } from '@phosphor-icons/react'
 
 import {
   PildoraDelAgente,
@@ -34,8 +34,11 @@ import { LinksDePago } from '@/components/inmobiliaria/pagos/payu/LinksDePago'
 import { Button } from '@/components/ui/button'
 import { useCobrosEnLaBandeja } from '@/lib/hooks/use-cobros-en-la-bandeja'
 import { useResumenDePayu, type Lectura } from '@/lib/hooks/use-payu'
-import { fraseDelMesDePayu } from '@/lib/payu/frases'
-import { mesActual } from '@/lib/recaudo/meses'
+import { loQueLaCifraDeCobriNoDice } from '@/lib/payu/frases'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { formatCurrency } from '@/lib/format'
+import { mesActual, nombreDelMes } from '@/lib/recaudo/meses'
 import type { ResumenDeLinksDePago } from '@/lib/types/payu'
 
 export function estadoDeCobri(lectura: Lectura<ResumenDeLinksDePago>): EstadoDelAgente {
@@ -70,29 +73,50 @@ function CuandoEscribe() {
         ))}
       </ol>
       <p className="mt-3 max-w-2xl text-body-sm text-fg-muted">
-        Son máximo tres mensajes por cuota y siempre el mismo link. Después del tercero ya no escribe: la sigue
-        cobranza.
+        Son máximo tres mensajes por cuota y siempre el mismo enlace, el mismo que va en los correos de aviso de
+        cobro. Después del tercero ya no escribe: la sigue cobranza.
       </p>
     </div>
   )
 }
 
 function FraseDelMes({ lectura }: { lectura: Lectura<ResumenDeLinksDePago> }) {
+  const estado = estadoDeCobri(lectura)
   if (lectura.data) {
+    const d = lectura.data
+    const conEnlaceSinPagar = Math.max(0, d.linksEnviados - d.pagadosPorLink)
+    const sinEnlace = Math.max(0, d.cuotas - d.pagadosPorLink - conEnlaceSinPagar)
+    // Revisora r24 (Agente de pagos #1): LA RESPUESTA en una cifra —lo pagado por enlace en el mes, de cuántas
+    // cuotas— con su barra; la frase de siempre queda debajo. Antes, seis cifras en un renglón.
     return (
-      <div className="flex items-start gap-3">
-        <ChatCircleText className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
-        <p className="text-body text-fg" data-testid="frase-de-cobri">
-          {fraseDelMesDePayu(lectura.data)}
-        </p>
-      </div>
+      <CifraHeroe
+        rotulo={`Pagadas por enlace en ${nombreDelMes(d.mes)}`}
+        cifra={formatCurrency(d.montoCobradoPorLinkCop)}
+        contexto={`${d.pagadosPorLink} de ${d.cuotas} ${d.cuotas === 1 ? 'cuota' : 'cuotas'}`}
+        total={d.cuotas}
+        tamano="mediana"
+        tramos={[
+          { clave: 'pagadas', etiqueta: 'Pagadas por enlace', monto: d.pagadosPorLink, tono: 'exito', cifra: d.pagadosPorLink, siempre: true },
+          { clave: 'enviadas', etiqueta: 'Con enlace, sin pagar', monto: conEnlaceSinPagar, tono: 'aviso', cifra: conEnlaceSinPagar },
+          { clave: 'sin-enlace', etiqueta: 'Sin enlace todavía', monto: sinEnlace, tono: 'neutro', cifra: sinEnlace },
+        ]}
+        pie={
+          // Revisora r25 (Agente de pagos #1 y #2): el estado de Cobri en el pie de la cifra, y la frase
+          // sólo con lo que la cifra no dice (antes repetía «$ 2.230.000» y «de 10 cuotas»).
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1" data-testid="frase-de-cobri">
+            <PildoraDelAgente estado={estado} data-testid="estado-de-cobri" />
+            <span>{loQueLaCifraDeCobriNoDice(d)}</span>
+          </p>
+        }
+        data-testid="cifra-de-cobri"
+      />
     )
   }
   if (lectura.error) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-3" data-testid="frase-de-cobri-fallo">
-        <p className="flex items-start gap-3 text-body-sm text-fg-muted">
-          <WarningCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">
+          <PildoraDelAgente estado={estado} data-testid="estado-de-cobri" />
           No se pudo leer el resumen de Cobri, así que no sabemos si está prendido.
         </p>
         <Button variant="outline" size="sm" hideArrow onClick={() => lectura.recargar()}>
@@ -132,8 +156,8 @@ function EsperanTuAprobacion({ ids }: { ids: readonly string[] }) {
       <p className="flex items-start gap-3 text-body-sm text-fg">
         <HandPalm className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
         {total === 1
-          ? 'Un link de pago espera tu aprobación para salir: Cobri no lo manda sin tu clic.'
-          : `${total} links de pago esperan tu aprobación para salir: Cobri no los manda sin tu clic.`}
+          ? 'Un enlace de pago espera tu aprobación para salir: Cobri no lo manda sin tu clic.'
+          : `${total} enlaces de pago esperan tu aprobación para salir: Cobri no los manda sin tu clic.`}
       </p>
       <Link
         href={href}
@@ -146,38 +170,46 @@ function EsperanTuAprobacion({ ids }: { ids: readonly string[] }) {
   )
 }
 
-export function CobriEsteMes() {
+export function CobriEsteMes({ debajoDeLaCifra }: { debajoDeLaCifra?: ReactNode } = {}) {
   const [mes, setMes] = useState(() => mesActual())
   const resumen = useResumenDePayu(mes)
   const enLaBandeja = useCobrosEnLaBandeja()
 
   return (
-    <section aria-labelledby="cobri-este-mes" className="space-y-4" data-testid="cobri-este-mes">
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h2 id="cobri-este-mes" className="text-subtitle text-fg">
-            Cobri · el link de pago de cada cuota
-          </h2>
-          <PildoraDelAgente estado={estadoDeCobri(resumen)} data-testid="estado-de-cobri" />
-        </div>
-        <p className="max-w-2xl text-body-sm text-fg-muted">
-          Le manda al inquilino por WhatsApp el link de pago de su cuota más vieja con saldo, por el valor exacto. Es
-          el mismo link que va en los correos de aviso de cobro.
-        </p>
+    <>
+      {/* Revisora r25 (Agente de pagos #1): LA RESPUESTA pegada al encabezado (antes dentro de la tabla,
+          debajo de «Qué necesita para trabajar», del título de Cobri y de «Cuándo escribe»: y≈600 a 1440). */}
+      <div data-testid="cobri-la-respuesta">
+        <FraseDelMes lectura={resumen} />
       </div>
 
-      <CuandoEscribe />
+      {debajoDeLaCifra}
 
-      <EsperanTuAprobacion ids={enLaBandeja.ids} />
+      <section aria-labelledby="cobri-este-mes" className="space-y-4" data-testid="cobri-este-mes">
+        <div className="space-y-1">
+          <h2 id="cobri-este-mes" className="text-subtitle text-fg">
+            Cobri · el enlace de pago de cada cuota
+          </h2>
+          <p className="max-w-2xl text-body-sm text-fg-muted">
+            Le manda al inquilino por WhatsApp el enlace de pago de su cuota más vieja con saldo, por el valor exacto.
+          </p>
+        </div>
 
-      <LinksDePago
-        mes={mes}
-        onCambiarMes={setMes}
-        titulo="El link de cada cuota"
-        descripcion={null}
-        resumen={<FraseDelMes lectura={resumen} />}
-        esperanEnLaBandeja={enLaBandeja.porCuota}
-      />
-    </section>
+        {/* Revisora r24 (Agente de pagos #2): «Cuándo escribe» se consulta; plegado, no ~600 px abiertos a 390. */}
+        <MasDetalles etiqueta="Cuándo escribe Cobri" etiquetaAbierto="Ocultar" montadoSiempre>
+          <CuandoEscribe />
+        </MasDetalles>
+
+        <EsperanTuAprobacion ids={enLaBandeja.ids} />
+
+        <LinksDePago
+          mes={mes}
+          onCambiarMes={setMes}
+          titulo="El enlace de cada cuota"
+          descripcion={null}
+          esperanEnLaBandeja={enLaBandeja.porCuota}
+        />
+      </section>
+    </>
   )
 }

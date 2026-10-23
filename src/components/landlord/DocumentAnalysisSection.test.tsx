@@ -88,7 +88,7 @@ describe('DocumentAnalysisSection — el fallo al cargar', () => {
     await montar();
 
     expect(fallo()).toBeNull();
-    expect(container.textContent).toContain('Inicia el analisis para verificar los documentos');
+    expect(container.textContent).toContain('Inicia el análisis para verificar los documentos');
     expect(botonAnalizar()).toBeTruthy();
   });
 
@@ -102,7 +102,7 @@ describe('DocumentAnalysisSection — el fallo al cargar', () => {
     expect(fallo()?.textContent).not.toMatch(/conexi[oó]n/i);
     expect(botonReintentar()).not.toBeNull();
     // Ni el texto crudo a la vista ni el «Inicia el análisis» de cuando no hay nada.
-    expect(container.textContent).not.toContain('Inicia el analisis');
+    expect(container.textContent).not.toContain('Inicia el análisis');
     // No se ofrece analizar a ciegas: no sabemos si ya hay un análisis.
     expect(botonAnalizar()).toBeUndefined();
   });
@@ -133,6 +133,6 @@ describe('DocumentAnalysisSection — el fallo al cargar', () => {
     expect(api.getResults).toHaveBeenLastCalledWith('app-1');
     expect(fallo()).toBeNull();
     expect(container.textContent).toContain('Cedula');
-    expect(container.textContent).toContain('Score: 80/100');
+    expect(container.textContent).toContain('Puntaje: 80/100');
   });
 });

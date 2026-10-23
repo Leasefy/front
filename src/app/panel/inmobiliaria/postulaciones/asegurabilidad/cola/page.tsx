@@ -14,9 +14,8 @@ import { useRouter } from 'next/navigation'
 
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
-import { SectionLabel } from '@/components/ui/section-label'
-import { MonoLabel } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 export default function CotizadorColaPage() {
   const router = useRouter()
@@ -28,27 +27,24 @@ export default function CotizadorColaPage() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa; a la derecha, el único número real de la
           pantalla: cuántos casos esperan. */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1.5">
-          <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
-          <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.cotizador.colaTitle')}</h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
+      {/* Glow up 22-10: el encabezado común; lo pendiente junto al título (antes una caja de KPI aparte). */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t('inmobiliaria.ai.workspace.pages.cotizador.colaTitle')}
+        descripcion={
+          <>
             {t('inmobiliaria.ai.workspace.pages.cotizador.colaDescPre')}{' '}
-            <strong>{t('inmobiliaria.ai.workspace.pages.cotizador.colaDescStrong')}</strong>{' '}
+            <strong className="font-medium text-fg">{t('inmobiliaria.ai.workspace.pages.cotizador.colaDescStrong')}</strong>{' '}
             {t('inmobiliaria.ai.workspace.pages.cotizador.colaDescPost')}
-          </p>
-        </div>
-
-        {/* Pending KPI */}
-        <div className="shrink-0 rounded-lg border border-border bg-surface px-4 py-3 text-center">
-          <p className="text-2xl font-semibold text-fg tabular-nums">
-            {isLoading ? '—' : total}
-          </p>
-          <MonoLabel>
-            {t('inmobiliaria.ai.workspace.pages.cotizador.porRevisar')}
-          </MonoLabel>
-        </div>
-      </header>
+          </>
+        }
+        junto={
+          <span className="text-caption text-fg-muted">
+            <span className="font-mono tabular-nums text-fg">{isLoading ? '—' : total}</span>{' '}
+            {t('inmobiliaria.ai.workspace.pages.cotizador.porRevisar').toLowerCase()}
+          </span>
+        }
+      />
 
       {/* Cola humana (transversal component) — read-only triage, deep-links to detail */}
       <ColaHumana

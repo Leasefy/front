@@ -63,7 +63,7 @@ describe('/postulaciones/estudio/nuevo', () => {
     act(() => root.render(<EstudioNuevoPage />));
     const aviso = container.querySelector('[data-testid="estudio-nuevo-aviso"]');
     expect(aviso).not.toBeNull();
-    expect(aviso!.textContent).toContain('nada de lo que escribas acá se guarda');
+    expect(aviso!.textContent).toContain('nada de lo que escribas aquí se guarda');
     expect(aviso!.querySelector('a[href="/panel/inmobiliaria/postulaciones"]')).not.toBeNull();
   });
 

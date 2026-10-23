@@ -79,7 +79,7 @@ function QueHacer({ estado }: { estado: EstadoAnteLaDian }) {
   return permisos?.isAdmin ? (
     <Link
       href={RUTA_DE_LOS_PASOS}
-      className="text-caption font-semibold text-primary underline-offset-2 hover:underline"
+      className="text-caption font-medium text-primary underline-offset-2 hover:underline"
       data-testid="dian-ver-pasos"
     >
       Ver los pasos
@@ -111,7 +111,7 @@ export function BannerDeLaDian({ textoDeAntes }: { textoDeAntes: { titulo: strin
     >
       <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
       <div className="min-w-0 space-y-1">
-        <p className="text-caption font-semibold text-primary">
+        <p className="text-caption font-medium text-primary">
           {enPruebas ? 'Transmitiendo en el ambiente de pruebas de la DIAN' : titulo}
         </p>
         <p className="text-caption text-primary/90">{descripcion}</p>
@@ -175,7 +175,7 @@ export function PasosParaTransmitir() {
               <Warning className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
             )}
             <div className="space-y-0.5">
-              <p className="text-body font-semibold text-fg">{estado.titulo}</p>
+              <p className="text-body font-medium text-fg">{estado.titulo}</p>
               <p className="text-caption text-fg-muted">{estado.descripcion}</p>
             </div>
           </div>
@@ -208,7 +208,7 @@ export function PasosParaTransmitir() {
                   {paso.accion && (
                     <Link
                       href={paso.accion.href}
-                      className="inline-block text-caption font-semibold text-primary underline-offset-2 hover:underline"
+                      className="inline-block text-caption font-medium text-primary underline-offset-2 hover:underline"
                       data-testid={`paso-accion-${paso.id}`}
                     >
                       {paso.accion.texto}

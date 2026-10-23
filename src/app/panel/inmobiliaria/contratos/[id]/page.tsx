@@ -15,8 +15,8 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { leerRespaldo, etiquetaDeTipo } from '@/lib/inmobiliaria/respaldo';
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import Link from 'next/link';
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
 import {
-  CaretLeft,
   PaperPlaneTilt,
   UserPlus,
   PencilSimpleLine,
@@ -101,6 +101,7 @@ import {
   bloqueoDelError,
   type BloqueoPorInventario as BloqueoPorInventarioDatos,
 } from '@/lib/inventario/bloqueo-por-inventario';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -382,7 +383,7 @@ function ContratoDetalleContent() {
     return (
       <div className="space-y-6 p-6 lg:p-8" data-testid="contrato-fallo">
         <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
-        <h1 className="text-h2 text-fg">Contrato</h1>
+        <EncabezadoDePantalla seccion="Contratos" titulo="Contrato" />
         {/* La tarjeta no ocupa el ancho de la pantalla: tres renglones
             centrados en una caja de 1.900 px se leen como una pantalla rota.
             El encabezado sí va a ancho completo, como en todas. */}
@@ -456,87 +457,195 @@ function ContratoDetalleContent() {
                 ? 'fallo'
                 : 'vacio';
 
-  return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <Button
-            asChild
-            variant="link"
-            hideArrow
-            className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
-          >
-            <Link href={rutaDeVuelta}>
-              <CaretLeft className="w-4 h-4" /> {etiquetaDeVuelta}
-            </Link>
-          </Button>
-          {/*
-            T-0040 — el número es el nombre del contrato: va en el título, no
-            en una línea debajo de un título genérico. El UUID vuelve tal cual
-            cuando no hay número —sólo un `back` anterior a T-0040 lo
-            produce—. Sin `#0` ni `#undefined`: o el número, o el id.
+  // La pestaña de documentos: primera mientras se firma, cuarta después.
+  const pestanaDocumentos = {
+    id: 'documentos' as const,
+    etiqueta: 'Documentos',
+    contenido: (
+      <>
+        <section className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+            <FileText className="w-4 h-4 text-muted-foreground" />
+            <h3 className="text-base font-medium text-foreground">Documento</h3>
+          </div>
+          <CrossFade swapKey={ramaDelDocumento} className="p-5">
+            {/* Cuando hay firma(s), el iframe usa la URL de /pdf (con estampado actualizado).
+                Si está cargando o no hay firmas, cae al /preview (HTML o PDF original). */}
+            {hasAnySignature && (isLoadingSignedPdf || signedPdfUrl) ? (
+              <div className="space-y-3">
+                {contract.tenantSignature && !contract.landlordSignature && (
+                  <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2">
+                    <Info className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                    <p className="text-caption text-warning">
+                      Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
+                      Firma abajo para completar el contrato.
+                    </p>
+                  </div>
+                )}
+                {contract.tenantSignature && contract.landlordSignature && (
+                  <div className="rounded-lg border border-success/30 bg-success-soft px-4 py-2.5 flex items-start gap-2">
+                    <Info className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                    <p className="text-caption text-success">
+                      PDF final con <strong>ambas firmas</strong>, certificado completo y hash SHA-256.
+                    </p>
+                  </div>
+                )}
+                <CrossFade swapKey={isLoadingSignedPdf ? 'cargando' : 'listo'}>
+                  {isLoadingSignedPdf ? (
+                    <div className="py-20 flex items-center justify-center">
+                      <Spinner size="default" variant="muted" />
+                    </div>
+                  ) : (
+                    <iframe
+                      src={signedPdfUrl!}
+                      className="w-full h-[720px] rounded-md border border-border bg-surface"
+                      title="Contrato"
+                    />
+                  )}
+                </CrossFade>
+                <p className="text-caption text-muted-foreground flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5" />
+                  Enlace válido por tiempo limitado. Si caduca, recarga la página.
+                </p>
+              </div>
+            ) : isLoadingPreview ? (
+              <div className="py-20 flex items-center justify-center">
+                <Spinner size="sm" variant="muted" />
+              </div>
+            ) : preview?.origin === 'UPLOADED_PDF' ? (
+              <div className="space-y-3">
+                <iframe
+                  src={preview.pdfUrl}
+                  className="w-full h-[720px] rounded-md border border-border bg-surface"
+                  title="Contrato"
+                />
+                <p className="text-caption text-muted-foreground flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5" />
+                  Enlace válido por tiempo limitado. Si caduca, recarga la página.
+                </p>
+              </div>
+            ) : preview?.origin === 'GENERATED' ? (
+              <div
+                className="prose prose-sm max-w-none dark:prose-invert"
+                {...sanitizeContractHtml(preview.html)}
+              />
+            ) : sinDocumento ? (
+              /*
+                🔴 Nico, 2026-09-12: un contrato migrado NO tiene documento
+                en Leasefy —se cargó desde el archivo de la inmobiliaria, ya
+                firmado en papel— y el 400 del preview pintaba un cartel rojo
+                en los 1.836 contratos de la migración. No es un fallo: se
+                dice de frente y sin alarma.
 
-            🔴 Nico, 2026-09-12: para un contrato MIGRADO el número que se lee
-            es el de SU sistema anterior (1686), no nuestro consecutivo
-            (#1839) — lo buscó en su archivo y era otra persona. El nuestro va
-            debajo, nombrado, para que se sepa cuál es cuál
-            (`numero-del-contrato.ts`).
-          */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-h2 text-fg">{tituloDelContrato(contract)}</h1>
+                El PDF firmado NO reemplaza el documento (el PATCH devolvería
+                un contrato VIGENTE a PENDING_TENANT_SIGNATURE): se sube como
+                documento del contrato, en «Documentos subidos» justo debajo
+                (Nico, 10-10-2026).
+              */
+              <p className="text-sm text-muted-foreground py-2" data-testid="contrato-sin-documento">
+                Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy.
+              </p>
+            ) : falloDelDocumento ? (
+              /* Un 400 con OTRO motivo, o un 500: eso sí es un fallo. */
+              <FalloDeCarga
+                error={falloDelDocumento}
+                queEs="el documento del contrato"
+                onReintentar={recargarDocumento}
+                enmarcado={false}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground py-2">
+                Todavía no hay documento para este contrato.
+              </p>
+            )}
+          </CrossFade>
+          {/* 🔴 Nico, 10-10-2026: «el usuario debería de poder agregar
+              documentos al contrato». En el migrado es donde va el contrato
+              firmado en papel; en cualquiera, otrosíes, inventario, pagaré… */}
+          <div className="border-t border-border p-5">
+            <DocumentosDelContrato contractId={contract.id} puedeEditar={canEditContracts} migrado={sinDocumento} />
+          </div>
+        </section>
+        {/*
+          🔴 Nico, 2026-09-12: el inventario y el historial del inmueble se
+          ven también desde el contrato, no sólo desde la ficha del inmueble.
+          🔴 Nico, 2026-09-13: «desde el contrato también debería de agregar
+          todo lo que se pueda agregar del inventario» — el mismo componente
+          de la ficha del inmueble, sobre la misma consignación.
+          Sin inmueble se dice ahí mismo en vez de dejar un hueco: el
+          inventario es del inmueble y este contrato todavía no tiene uno.
+        */}
+        <InmuebleDelContrato
+          key={contract.propertyId ?? 'sin-inmueble'}
+          propertyId={contract.propertyId}
+          contratoId={contract.id}
+        />
+      </>
+    ),
+  };
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-6 p-6 lg:p-8">
+      {/* Glow up 22-10: el encabezado común. T-0040 — el número es el nombre del contrato: va en el título.
+          Sin número (sólo un back anterior a T-0040) vuelve el UUID. 🔴 Nico 12-09: para un contrato MIGRADO el
+          número que se lee es el de SU sistema anterior; el nuestro va debajo, nombrado (`numero-del-contrato.ts`). */}
+      <div className="space-y-3">
+        <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
+        <EncabezadoDePantalla
+          seccion="Contratos"
+          titulo={tituloDelContrato(contract)}
+          junto={
             <Badge variant={statusVariant} title={estadoDelChip.titulo} data-testid="estado-del-contrato">
               {statusLabel}
             </Badge>
-          </div>
-          {numero.principal == null ? (
-            <p className="text-sm text-muted-foreground mt-1">ID: {contract.id}</p>
-          ) : null}
-          {numero.esDeLaInmobiliaria ? (
-            <p className="text-sm text-muted-foreground mt-1" data-testid="numero-de-leasefy">
-              {numero.principal} es el número de tu sistema anterior.
-            </p>
-          ) : null}
-          {/* De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino. */}
-          <p className="text-sm text-muted-foreground mt-1">
-            {[
+          }
+          descripcion={
+            // De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino.
+            [
               [contract.propertyAddress, contract.propertyCity].filter(Boolean).join(', ') || null,
               contract.tenantName || null,
             ]
               .filter(Boolean)
-              .join(' · ') || 'Arrendamiento'}
+              .join(' · ') || 'Arrendamiento'
+          }
+          acciones={
+            <>
+              {/* T-0109 contract.md §3.1.B/§3.2 — se oculta sola cuando el back no manda `documentoFirmado`
+                  (viejo), es legacy (null) o el contrato todavía no tiene versión FINAL (parcial). */}
+              <SealStatusBadge
+                contractId={contract.id}
+                documentoFirmado={contract.documentoFirmado}
+                canEdit={canEditContracts}
+                onReintentado={() => void refetch()}
+              />
+              {/* 🔴 QA-CONT-95 (CR-15, B-06): el migrado SIN documento no ofrece «Descargar PDF». */}
+              {!sinDocumento && (
+                <DownloadContractPdfButton
+                  contractId={contract.id}
+                  contractStatus={contract.status}
+                  variant="secondary"
+                  numero={numero.principal}
+                />
+              )}
+              {chatHref && (
+                <Button asChild variant="outline" size="sm" hideArrow className="gap-2">
+                  <Link href={chatHref}>
+                    <ChatCircle className="h-4 w-4" aria-hidden="true" />
+                    Abrir chat
+                  </Link>
+                </Button>
+              )}
+            </>
+          }
+        />
+        {numero.principal == null ? (
+          <p className="text-caption text-fg-muted">ID: <span className="font-mono">{contract.id}</span></p>
+        ) : null}
+        {numero.esDeLaInmobiliaria ? (
+          <p className="text-caption text-fg-muted" data-testid="numero-de-leasefy">
+            {numero.principal} es el número de tu sistema anterior.
           </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-          {/* T-0109 contract.md §3.1.B/§3.2 — se oculta sola cuando el back
-              no manda `documentoFirmado` (viejo), es legacy (null) o el
-              contrato todavía no tiene versión FINAL (parcial). */}
-          <SealStatusBadge
-            contractId={contract.id}
-            documentoFirmado={contract.documentoFirmado}
-            canEdit={canEditContracts}
-            onReintentado={() => void refetch()}
-          />
-          {/* 🔴 QA-CONT-95 (CR-15, B-06): el migrado SIN documento no ofrece
-              «Descargar PDF» — rebotaba con 400 y un toast. La sección
-              «Documento» ya dice que se cargó desde el sistema anterior. */}
-          {!sinDocumento && (
-            <DownloadContractPdfButton
-              contractId={contract.id}
-              contractStatus={contract.status}
-              variant="secondary"
-              numero={numero.principal}
-            />
-          )}
-          {chatHref && (
-            <Button asChild variant="secondary" hideArrow className="gap-2">
-              <Link href={chatHref}>
-                <ChatCircle className="w-4 h-4" />
-                Abrir chat
-              </Link>
-            </Button>
-          )}
-        </div>
+        ) : null}
       </div>
 
       {/*
@@ -553,7 +662,8 @@ function ContratoDetalleContent() {
       <EscenarioDelArchivoPorRevisar contract={contract} />
 
       {/* Portofino 22-10: la terminación que espera el sí del propietario va
-          arriba: mientras espera, es lo primero que hay que saber del contrato. */}
+          arriba, antes de las pestañas: mientras espera, es lo primero que hay
+          que saber del contrato. */}
       {(contract.status === 'active' || contract.status === 'signed') && (
         <TerminacionConElPropietarioAviso
           contractId={contract.id}
@@ -562,42 +672,7 @@ function ContratoDetalleContent() {
         />
       )}
 
-      <ArriendoDelContrato
-        contract={contract}
-        vigencia={vigencia}
-        hoy={hoy}
-        {...(canEditContracts
-          ? decisionesDelContrato({
-              contract,
-              isSubmitting: actions.isSubmitting,
-              pendingAction,
-              latestRejectionReason: rejections[0]?.reason,
-              canCancel,
-              vigencia,
-              onSend: handleSend,
-              onActivate: handleActivate,
-              onRemind: handleRemind,
-              onSign: () => router.push(`/panel/inmobiliaria/contratos/${contract.id}/firmar`),
-              onEdit: () => router.push(`/panel/inmobiliaria/contratos/${contract.id}/editar`),
-              onCancelRequest: () => setIsCancelModalOpen(true),
-              onTerminar: () => setTerminarAbierto(true),
-              onCeder: () => setCesionAbierta(true),
-              onCambiarInquilino: () => setCambioDeInquilinoAbierto(true),
-              onIrAInvitar: canInviteTenant ? irAInvitarAlInquilino : undefined,
-              noFirma,
-            })
-          : {})}
-      />
 
-      {/* 17-09: contrato vencido con el inquilino adentro → renovar, nunca prórroga automática. */}
-      {canEditContracts && contract.status === 'active' && (
-        <RenovarContratoVencido contractId={contract.id} onRenovado={() => void refetch()} />
-      )}
-
-      {/* 17-09: incrementos del canon (vivienda al IPC, local comercial digitado) y su carta. */}
-      {(contract.status === 'active' || contract.status === 'signed') && (
-        <IncrementosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
-      )}
 
 
       {canEditContracts && (
@@ -641,10 +716,6 @@ function ContratoDetalleContent() {
         </>
       )}
 
-      {/* Rejection history — visible whenever there have been rejections */}
-      {rejections.length > 0 && (
-        <RejectionsHistory rejections={rejections} />
-      )}
 
       {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
 
@@ -667,375 +738,329 @@ function ContratoDetalleContent() {
         <p className="text-sm text-danger">{actionError}</p>
       </Presence>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left — info cards */}
-        <div className="lg:col-span-1 space-y-4">
-          <InfoCard title="Partes" icon={User}>
-            {/* Todos los dueños con su porcentaje y su parte del canon, y
-                todos los inquilinos con su DOCUMENTO (Nico, 2026-09-12). */}
-            <PartesDelContrato
-              contract={contract}
-              /* QA-CONT-95 (B-16): un contrato CANCELADO no se edita ni invita. */
-              puedeInvitar={canInviteTenant && contract.status !== 'cancelled'}
-              puedeEditar={canEditContracts && contract.status !== 'cancelled'}
-              onActualizado={(c) => setContract(c)}
-              onConflicto={() => void refetch()}
-            />
-            {/* QA-INQ-95 r2 (Nico): quien salió por un cambio de inquilino, con el
-                certificado de que no debe nada por su tiempo. */}
-            <CertificadosDeSuTiempo contractId={contract.id} puedeEmitir={canAccess('documentos', 'create')} />
-          </InfoCard>
-
-          <InfoCard title="Inmueble" icon={Buildings}>
-            {contract.propertyId === null && (
-              /* Sin inmueble no hay consignación, y sin consignación no hay
-                 cobros: todo lo demás de esta pantalla se queda escrito. El
-                 mismo permiso que exige el back (`contratos:create`). */
-              <div className="space-y-2 pb-1">
-                <p className="text-sm text-muted-foreground">
-                  Sin inmueble vinculado: este contrato no genera cobros.
-                </p>
-                <VincularInmueble
+      {/*
+        GLOW UP (21-10-2026, Nico eligió «Pestañas por tarea»): lo que se
+        consulta aparte de lo que se configura. Resumen (estado, partes, cobros) ·
+        Cobro y reglas (lo configurable) · Garantías · Documentos · Historial.
+        Mientras se firma, el documento manda (Nico, 2026-09): «Documentos» va
+        primero. Todas las pestañas se montan: cada bloque carga y avisa como antes.
+      */}
+      <PestanasDeLaFicha
+        etiqueta="Secciones del contrato"
+        pestanas={[
+          ...(esPreFirma ? [pestanaDocumentos] : []),
+          {
+            id: 'resumen',
+            etiqueta: 'Resumen',
+            contenido: (
+              <>
+                <ArriendoDelContrato
                   contract={contract}
-                  puedeVincular={canInviteTenant}
-                  onActualizado={(c) => {
-                    setContract(c);
-                    toast.success('Inmueble vinculado. Los próximos cobros salen sobre su consignación.');
-                  }}
+                  vigencia={vigencia}
+                  hoy={hoy}
+                  {...(canEditContracts
+                    ? decisionesDelContrato({
+                        contract,
+                        isSubmitting: actions.isSubmitting,
+                        pendingAction,
+                        latestRejectionReason: rejections[0]?.reason,
+                        canCancel,
+                        vigencia,
+                        onSend: handleSend,
+                        onActivate: handleActivate,
+                        onRemind: handleRemind,
+                        onSign: () => router.push(`/panel/inmobiliaria/contratos/${contract.id}/firmar`),
+                        onEdit: () => router.push(`/panel/inmobiliaria/contratos/${contract.id}/editar`),
+                        onCancelRequest: () => setIsCancelModalOpen(true),
+                        onTerminar: () => setTerminarAbierto(true),
+                        onCeder: () => setCesionAbierta(true),
+                        onCambiarInquilino: () => setCambioDeInquilinoAbierto(true),
+                        onIrAInvitar: canInviteTenant ? irAInvitarAlInquilino : undefined,
+                        noFirma,
+                      })
+                    : {})}
                 />
-              </div>
-            )}
-            <InfoRow label="Dirección" value={contract.propertyAddress} />
-            <InfoRow label="Ciudad" value={contract.propertyCity} />
-            {contract.propertyId ? (
-              /* La dirección de arriba es la que dice el contrato (no se pisa
-                 al vincular); la ficha del inmueble es donde se ve cuál quedó. */
-              <Link
-                href={conRegreso(
-                  `/panel/inmobiliaria/inmuebles/${contract.propertyId}?por=inmueble`,
-                  `/panel/inmobiliaria/contratos/${contract.id}`,
+                {/* 17-09: contrato vencido con el inquilino adentro → renovar, nunca prórroga automática. */}
+                {canEditContracts && contract.status === 'active' && (
+                  <RenovarContratoVencido contractId={contract.id} onRenovado={() => void refetch()} />
                 )}
-                className="inline-block text-sm font-medium text-primary hover:underline"
-                data-testid="ver-inmueble"
-              >
-                Ver la ficha del inmueble →
-              </Link>
-            ) : null}
-          </InfoCard>
-
-          {/* La vigencia —inicio, fin y cuánto va— vive en el bloque del
-              arriendo, arriba. Esta tarjeta la repetía con otro formato de
-              fecha y otra barra. */}
-
-          {/* Uso, periodicidad y comisión. Se guardaban desde la migración y no
-              se veían en ninguna pantalla — y el uso decide si hay IVA. */}
-          <AdministracionDelContrato
-            contract={contract}
-            puedeEditar={canEditContracts && contract.status !== 'cancelled'}
-            onActualizado={(c) => setContract((anterior) => fundirContrato(anterior, c))}
-            pedidoDeCorregir={pedidoDeCorregir}
-          />
-
-          {/* Cómo se llama la situación tributaria que forman las dos partes y
-              qué genera (Nico, 2026-09-12: «los contratos no están mostrando la
-              información sobre el escenario que se da en ese contrato»). Va
-              pegado a Administración porque los datos que lo definen —el uso
-              del inmueble y el perfil del inquilino— se corrigen justo arriba. */}
-          <EscenarioTributario
-            contract={contract}
-            // QA-CONT-95 B-32: si el escenario del archivo choca con la ficha
-            // del propietario, quien edita contratos confirma cuál rige.
-            puedeEditar={canEditContracts && contract.status !== 'cancelled'}
-            onConfirmado={() => void refetch()}
-            // (08-10-2026, Nico) «Confirmar» lleva a donde se declara.
-            onConfirmarEnElContrato={() => setPedidoDeCorregir((n) => n + 1)}
-            fichaDelPropietario={
-              contract.propietarioDeLaConsignacion?.id
-                ? conRegreso(
-                    `/panel/inmobiliaria/propietarios/${contract.propietarioDeLaConsignacion.id}`,
-                    `/panel/inmobiliaria/contratos/${contract.id}`,
-                  )
-                : null
-            }
-          />
-
-          {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
-              contrato sin respaldo registrado no es un contrato sin respaldo,
-              pero tampoco se puede afirmar que lo tiene. */}
-          {respaldo ? (
-            <InfoCard title="Respaldo del arriendo" icon={ShieldCheck}>
-              <InfoRow label="Aseguradora" value={respaldo.aseguradora} />
-              <InfoRow label="Tipo" value={etiquetaDeTipo(respaldo.tipo)} />
-              <InfoRow label="Número" value={respaldo.identificador} />
-              {(respaldo.vigenciaDesde || respaldo.vigenciaHasta) && (
-                <InfoRow
-                  label="Vigencia"
-                  value={[respaldo.vigenciaDesde, respaldo.vigenciaHasta]
-                    .filter(Boolean)
-                    .join(' → ')}
-                />
-              )}
-            </InfoCard>
-          ) : (
-            <InfoCard title="Respaldo del arriendo" icon={ShieldCheck}>
-              <p className="text-sm text-muted-foreground">
-                Este contrato no tiene registrada la aseguradora que aprobó ni el
-                número de la póliza. Sin eso no hay a quién reclamarle si algo pasa.
-              </p>
-            </InfoCard>
-          )}
-
-          {/* QA de Portofino (14-10-2026): la migración guarda las
-              «Observaciones» del sistema anterior (incrementos pactados,
-              cuentas de servicios, días de gracia…) y el origen del contrato
-              como cláusulas «(migrado)», y ninguna pantalla las mostraba:
-              1.686 contratos de Portofino con notas invisibles. */}
-          {(() => {
-            const delSistemaAnterior = (Array.isArray(contract.customClauses) ? contract.customClauses : [])
-              .filter((c): c is { title: string; content: string } =>
-                !!c && typeof c.title === 'string' && typeof c.content === 'string' &&
-                /\(migrado\)\s*$/i.test(c.title) && !/^escenario tributario/i.test(c.title) && c.content.trim() !== '')
-            return delSistemaAnterior.length > 0 ? (
-              <InfoCard title="De tu sistema anterior" icon={Clock}>
-                <dl className="space-y-3" data-testid="del-sistema-anterior">
-                  {delSistemaAnterior.map((c) => (
-                    <div key={c.title}>
-                      <dt className="text-caption text-muted-foreground">{c.title.replace(/\s*\(migrado\)\s*$/i, '')}</dt>
-                      <dd className="whitespace-pre-line text-sm text-foreground">{c.content.trim()}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </InfoCard>
-            ) : null
-          })()}
-
-          {contract.auditTrail && contract.auditTrail.length > 0 && (
-            <InfoCard title="Historial" icon={Clock}>
-              <AuditTrail contract={contract} rejections={rejections} />
-            </InfoCard>
-          )}
-        </div>
-
-        {/*
-          Derecha — la cuenta del contrato. Antes esta columna era sólo el
-          documento, y para un contrato activo eso es un iframe vacío ocupando
-          dos tercios de la pantalla mientras lo que se cobra y lo que se
-          cobró vivían abajo del pliegue en la columna angosta. El documento
-          manda mientras se firma; una vez activo, manda la plata.
-        */}
-        <div className="lg:col-span-2 space-y-6">
-          {!esPreFirma && (
-            <>
-              <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts && !esTerminado} />
-              {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
-              <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
-              {/*
-                🔴 D5 (Nico, 17-09): qué pasa cuando venza. Sin aviso de no
-                renovación se prorroga por el mismo término (vivienda, Ley 820
-                art. 6) o lo pactado / mes a mes (comercial); con aviso queda en
-                alerta para que una persona decida.
-              */}
-              <ProrrogaDelContrato
-                contract={contract}
-                puedeEditar={canEditContracts && !esTerminado}
-                puedeAvisar={(canEditContracts || canAccess('operaciones', 'edit')) && !esTerminado}
-                onCambio={() => void refetch()}
-              />
-              {/* D9 gastos de cobranza, seguro opcional, póliza y administración de la copropiedad. */}
-              <CondicionesDelContrato contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
-              {/* D10: la garantía de servicios públicos (anticipo del inquilino). */}
-              <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
-              {/* T-0109 contract.md §3.1.E — codeudores y su pagaré. Se ocultan
-                  solos contra un back sin WU-4 (404 en E1/E5). */}
-              {/* QA-CONT-95 (B-16): a un contrato cancelado o vencido no se le agregan codeudores ni pagarés. */}
-              <CodeudoresSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
-              <PagareSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado && !noFirma} />
-              {/* D-24: si su cartera está castigada (o propuesta), se dice acá, con que sigue debiéndose. */}
-              <CastigoDelContrato contractId={contract.id} />
-              <CobrosDelContrato
-                key={contract.propertyId ?? 'sin-inmueble'}
-                contract={contract}
-              />
-              {/*
-                La historia contable ANTERIOR a Leasefy: los comprobantes que
-                la inmobiliaria subió de su sistema viejo y que el back colgó
-                de este contrato. Va después de los cobros porque ése es el
-                orden real — arriba lo que se cobra hoy, abajo lo que quedó
-                registrado antes.
-
-                Sólo con el contrato ya firmado: la asociación del back exige
-                que el contrato estuviera VIGENTE en la fecha del comprobante,
-                así que uno que todavía se está firmando no puede tener
-                ninguno, y pedirlos sería una petición que siempre vuelve
-                vacía.
-
-                En tres pestañas —ingresos · egresos · facturas— porque una
-                sola lista mezclada no deja ver nada (Nico, 2026-09-12).
-              */}
-              {/* QA-CONT-95 (H-04): los comprobantes son de Contabilidad; quien no la
-                  lee (el de sólo lectura) no dispara un 403 en cada ficha.
-                  CB-E-14 (QA-FACT-CONTA-95 r2): la lectura de la contabilidad es el
-                  módulo `reportes` (ContabilidadLecturaGuard del back); `contabilidad`
-                  no existe en los permisos y escondía la sección hasta al contador. */}
-              {canAccess('reportes', 'view') && <ComprobantesDelSistemaAnterior contractId={contract.id} />}
-              {/* El seguimiento de PQRS del contrato (Nico, 2026-09-12). */}
-              <PqrsDelContrato contractId={contract.id} />
-              {/* 17-09: lo que la inmobiliaria le cobra al PROPIETARIO por
-                  arrendar (se descuenta de su primera liquidación) y la
-                  bitácora del mandato con sus anexos. */}
-              <CobrosAlArrendarDelContrato
-                contractId={contract.id}
-                puedeAplicar={canEditContracts && !esTerminado}
-              />
-              <BitacoraDelContrato contractId={contract.id} />
-            </>
-          )}
-
-          {/* 🔴 22-09: quién tocó ESTE contrato, con su rol —firmar, editar,
-              renovar, bajar el PDF, y lo que se intentó sin permiso—. No
-              reemplaza la bitácora del mandato de arriba: aquélla guarda las
-              DECISIONES con su anexo; ésta, cada movimiento de cada persona. Y
-              va fuera del bloque de «firmado» porque un contrato en firma
-              también tiene quién lo tocó. */}
-          <BitacoraDelRecurso tipo="contrato" id={contract.id} />
-
-          <section className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-              <FileText className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-base font-semibold text-foreground">Documento</h3>
-            </div>
-            <CrossFade swapKey={ramaDelDocumento} className="p-5">
-              {/* Cuando hay firma(s), el iframe usa la URL de /pdf (con estampado actualizado).
-                  Si está cargando o no hay firmas, cae al /preview (HTML o PDF original). */}
-              {hasAnySignature && (isLoadingSignedPdf || signedPdfUrl) ? (
-                <div className="space-y-3">
-                  {contract.tenantSignature && !contract.landlordSignature && (
-                    <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2">
-                      <Info className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-warning">
-                        Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
-                        Firma abajo para completar el contrato.
-                      </p>
-                    </div>
-                  )}
-                  {contract.tenantSignature && contract.landlordSignature && (
-                    <div className="rounded-lg border border-success/30 bg-success-soft px-4 py-2.5 flex items-start gap-2">
-                      <Info className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-success">
-                        PDF final con <strong>ambas firmas</strong>, certificado completo y hash SHA-256.
-                      </p>
-                    </div>
-                  )}
-                  <CrossFade swapKey={isLoadingSignedPdf ? 'cargando' : 'listo'}>
-                    {isLoadingSignedPdf ? (
-                      <div className="py-20 flex items-center justify-center">
-                        <Spinner size="default" variant="muted" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 space-y-4">
+                  <InfoCard title="Partes" icon={User}>
+                    {/* Todos los dueños con su porcentaje y su parte del canon, y
+                        todos los inquilinos con su DOCUMENTO (Nico, 2026-09-12). */}
+                    <PartesDelContrato
+                      contract={contract}
+                      /* QA-CONT-95 (B-16): un contrato CANCELADO no se edita ni invita. */
+                      puedeInvitar={canInviteTenant && contract.status !== 'cancelled'}
+                      puedeEditar={canEditContracts && contract.status !== 'cancelled'}
+                      onActualizado={(c) => setContract(c)}
+                      onConflicto={() => void refetch()}
+                    />
+                    {/* QA-INQ-95 r2 (Nico): quien salió por un cambio de inquilino, con el
+                        certificado de que no debe nada por su tiempo. */}
+                    <CertificadosDeSuTiempo contractId={contract.id} puedeEmitir={canAccess('documentos', 'create')} />
+                  </InfoCard>
+                  <InfoCard title="Inmueble" icon={Buildings}>
+                    {contract.propertyId === null && (
+                      /* Sin inmueble no hay consignación, y sin consignación no hay
+                         cobros: todo lo demás de esta pantalla se queda escrito. El
+                         mismo permiso que exige el back (`contratos:create`). */
+                      <div className="space-y-2 pb-1">
+                        <p className="text-sm text-muted-foreground">
+                          Sin inmueble vinculado: este contrato no genera cobros.
+                        </p>
+                        <VincularInmueble
+                          contract={contract}
+                          puedeVincular={canInviteTenant}
+                          onActualizado={(c) => {
+                            setContract(c);
+                            toast.success('Inmueble vinculado. Los próximos cobros salen sobre su consignación.');
+                          }}
+                        />
                       </div>
-                    ) : (
-                      <iframe
-                        src={signedPdfUrl!}
-                        className="w-full h-[720px] rounded-md border border-border bg-surface"
-                        title="Contrato"
+                    )}
+                    <InfoRow label="Dirección" value={contract.propertyAddress} />
+                    <InfoRow label="Ciudad" value={contract.propertyCity} />
+                    {contract.propertyId ? (
+                      /* La dirección de arriba es la que dice el contrato (no se pisa
+                         al vincular); la ficha del inmueble es donde se ve cuál quedó. */
+                      <Link
+                        href={conRegreso(
+                          `/panel/inmobiliaria/inmuebles/${contract.propertyId}?por=inmueble`,
+                          `/panel/inmobiliaria/contratos/${contract.id}`,
+                        )}
+                        className="inline-block text-sm font-medium text-primary hover:underline"
+                        data-testid="ver-inmueble"
+                      >
+                        Ver la ficha del inmueble →
+                      </Link>
+                    ) : null}
+                  </InfoCard>
+                </div>
+                <div className="lg:col-span-2 space-y-6">
+                  {!esPreFirma && (
+                  <CobrosDelContrato
+                    key={contract.propertyId ?? 'sin-inmueble'}
+                    contract={contract}
+                  />
+                  )}
+                </div>
+          </div>
+              </>
+            ),
+          },
+          {
+            id: 'cobro',
+            etiqueta: 'Cobro y reglas',
+            contenido: (
+              <>
+                {/* 17-09: incrementos del canon (vivienda al IPC, local comercial digitado) y su carta. */}
+                {(contract.status === 'active' || contract.status === 'signed') && (
+                  <IncrementosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
+                )}
+                {!esPreFirma ? (
+                  <>
+                    <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts && !esTerminado} />
+                    {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
+                    <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
+                    {/*
+                      🔴 D5 (Nico, 17-09): qué pasa cuando venza. Sin aviso de no
+                      renovación se prorroga por el mismo término (vivienda, Ley 820
+                      art. 6) o lo pactado / mes a mes (comercial); con aviso queda en
+                      alerta para que una persona decida.
+                    */}
+                    <ProrrogaDelContrato
+                      contract={contract}
+                      puedeEditar={canEditContracts && !esTerminado}
+                      puedeAvisar={(canEditContracts || canAccess('operaciones', 'edit')) && !esTerminado}
+                      onCambio={() => void refetch()}
+                    />
+                    {/* D9 gastos de cobranza, seguro opcional, póliza y administración de la copropiedad. */}
+                    <CondicionesDelContrato contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
+                    {/* D10: la garantía de servicios públicos (anticipo del inquilino). */}
+                    <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
+                    {/* 17-09: lo que la inmobiliaria le cobra al PROPIETARIO por
+                        arrendar (se descuenta de su primera liquidación) y la
+                        bitácora del mandato con sus anexos. */}
+                    <CobrosAlArrendarDelContrato
+                      contractId={contract.id}
+                      puedeAplicar={canEditContracts && !esTerminado}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
+                    {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
+                    <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
+                    {/* Se pactan antes de firmar: gastos de cobranza, seguro opcional, póliza, administración. */}
+                    <CondicionesDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
+                    {/* D10 al INICIO: la garantía se exige antes de activar, así que se registra acá. */}
+                    <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
+                    <CobrosDelContrato
+                      key={contract.propertyId ?? 'sin-inmueble'}
+                      contract={contract}
+                    />
+                  </>
+                )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Uso, periodicidad y comisión. Se guardaban desde la migración y no
+                      se veían en ninguna pantalla — y el uso decide si hay IVA. */}
+                  <AdministracionDelContrato
+                    contract={contract}
+                    puedeEditar={canEditContracts && contract.status !== 'cancelled'}
+                    onActualizado={(c) => setContract((anterior) => fundirContrato(anterior, c))}
+                    pedidoDeCorregir={pedidoDeCorregir}
+                  />
+                  {/* Cómo se llama la situación tributaria que forman las dos partes y
+                      qué genera (Nico, 2026-09-12: «los contratos no están mostrando la
+                      información sobre el escenario que se da en ese contrato»). Va
+                      pegado a Administración porque los datos que lo definen —el uso
+                      del inmueble y el perfil del inquilino— se corrigen justo arriba. */}
+                  <EscenarioTributario
+                    contract={contract}
+                    // QA-CONT-95 B-32: si el escenario del archivo choca con la ficha
+                    // del propietario, quien edita contratos confirma cuál rige.
+                    puedeEditar={canEditContracts && contract.status !== 'cancelled'}
+                    onConfirmado={() => void refetch()}
+                    // (08-10-2026, Nico) «Confirmar» lleva a donde se declara.
+                    onConfirmarEnElContrato={() => setPedidoDeCorregir((n) => n + 1)}
+                    fichaDelPropietario={
+                      contract.propietarioDeLaConsignacion?.id
+                        ? conRegreso(
+                            `/panel/inmobiliaria/propietarios/${contract.propietarioDeLaConsignacion.id}`,
+                            `/panel/inmobiliaria/contratos/${contract.id}`,
+                          )
+                        : null
+                    }
+                  />
+                </div>
+              </>
+            ),
+          },
+          {
+            id: 'garantias',
+            etiqueta: 'Garantías',
+            contenido: (
+              <>
+                {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
+                    contrato sin respaldo registrado no es un contrato sin respaldo,
+                    pero tampoco se puede afirmar que lo tiene. */}
+                {respaldo ? (
+                  <InfoCard title="Respaldo del arriendo" icon={ShieldCheck}>
+                    <InfoRow label="Aseguradora" value={respaldo.aseguradora} />
+                    <InfoRow label="Tipo" value={etiquetaDeTipo(respaldo.tipo)} />
+                    <InfoRow label="Número" value={respaldo.identificador} />
+                    {(respaldo.vigenciaDesde || respaldo.vigenciaHasta) && (
+                      <InfoRow
+                        label="Vigencia"
+                        value={[respaldo.vigenciaDesde, respaldo.vigenciaHasta]
+                          .filter(Boolean)
+                          .join(' → ')}
                       />
                     )}
-                  </CrossFade>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Info className="w-3.5 h-3.5" />
-                    Enlace válido por tiempo limitado. Si caduca, recarga la página.
-                  </p>
-                </div>
-              ) : isLoadingPreview ? (
-                <div className="py-20 flex items-center justify-center">
-                  <Spinner size="sm" variant="muted" />
-                </div>
-              ) : preview?.origin === 'UPLOADED_PDF' ? (
-                <div className="space-y-3">
-                  <iframe
-                    src={preview.pdfUrl}
-                    className="w-full h-[720px] rounded-md border border-border bg-surface"
-                    title="Contrato"
-                  />
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Info className="w-3.5 h-3.5" />
-                    Enlace válido por tiempo limitado. Si caduca, recarga la página.
-                  </p>
-                </div>
-              ) : preview?.origin === 'GENERATED' ? (
-                <div
-                  className="prose prose-sm max-w-none dark:prose-invert"
-                  {...sanitizeContractHtml(preview.html)}
-                />
-              ) : sinDocumento ? (
-                /*
-                  🔴 Nico, 2026-09-12: un contrato migrado NO tiene documento
-                  en Leasefy —se cargó desde el archivo de la inmobiliaria, ya
-                  firmado en papel— y el 400 del preview pintaba un cartel rojo
-                  en los 1.836 contratos de la migración. No es un fallo: se
-                  dice de frente y sin alarma.
+                  </InfoCard>
+                ) : (
+                  <InfoCard title="Respaldo del arriendo" icon={ShieldCheck}>
+                    <p className="text-sm text-muted-foreground">
+                      Este contrato no tiene registrada la aseguradora que aprobó ni el
+                      número de la póliza. Sin eso no hay a quién reclamarle si algo pasa.
+                    </p>
+                  </InfoCard>
+                )}
+                {!esPreFirma && (
+                  <>
+                    {/* T-0109 contract.md §3.1.E — codeudores y su pagaré. Se ocultan
+                        solos contra un back sin WU-4 (404 en E1/E5). */}
+                    {/* QA-CONT-95 (B-16): a un contrato cancelado o vencido no se le agregan codeudores ni pagarés. */}
+                    <CodeudoresSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
+                    <PagareSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado && !noFirma} />
+                    {/* D-24: si su cartera está castigada (o propuesta), se dice acá, con que sigue debiéndose. */}
+                    <CastigoDelContrato contractId={contract.id} />
+                  </>
+                )}
+              </>
+            ),
+          },
+          ...(esPreFirma ? [] : [pestanaDocumentos]),
+          {
+            id: 'historial',
+            etiqueta: 'Historial',
+            contenido: (
+              <>
+                {/* Rejection history — visible whenever there have been rejections */}
+                {rejections.length > 0 && (
+                  <RejectionsHistory rejections={rejections} />
+                )}
+                {contract.auditTrail && contract.auditTrail.length > 0 && (
+                  <InfoCard title="Historial" icon={Clock}>
+                    <AuditTrail contract={contract} rejections={rejections} />
+                  </InfoCard>
+                )}
+                {/* QA de Portofino (14-10-2026): la migración guarda las
+                    «Observaciones» del sistema anterior (incrementos pactados,
+                    cuentas de servicios, días de gracia…) y el origen del contrato
+                    como cláusulas «(migrado)», y ninguna pantalla las mostraba:
+                    1.686 contratos de Portofino con notas invisibles. */}
+                {(() => {
+                  const delSistemaAnterior = (Array.isArray(contract.customClauses) ? contract.customClauses : [])
+                    .filter((c): c is { title: string; content: string } =>
+                      !!c && typeof c.title === 'string' && typeof c.content === 'string' &&
+                      /\(migrado\)\s*$/i.test(c.title) && !/^escenario tributario/i.test(c.title) && c.content.trim() !== '')
+                  return delSistemaAnterior.length > 0 ? (
+                    <InfoCard title="De tu sistema anterior" icon={Clock}>
+                      <dl className="space-y-3" data-testid="del-sistema-anterior">
+                        {delSistemaAnterior.map((c) => (
+                          <div key={c.title}>
+                            <dt className="text-caption text-muted-foreground">{c.title.replace(/\s*\(migrado\)\s*$/i, '')}</dt>
+                            <dd className="whitespace-pre-line text-sm text-foreground">{c.content.trim()}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </InfoCard>
+                  ) : null
+                })()}
+                {!esPreFirma && (
+                  <>
+                    {/*
+                      La historia contable ANTERIOR a Leasefy: los comprobantes que
+                      la inmobiliaria subió de su sistema viejo y que el back colgó
+                      de este contrato. Va después de los cobros porque ése es el
+                      orden real — arriba lo que se cobra hoy, abajo lo que quedó
+                      registrado antes.
 
-                  El PDF firmado NO reemplaza el documento (el PATCH devolvería
-                  un contrato VIGENTE a PENDING_TENANT_SIGNATURE): se sube como
-                  documento del contrato, en «Documentos subidos» justo debajo
-                  (Nico, 10-10-2026).
-                */
-                <p className="text-sm text-muted-foreground py-2" data-testid="contrato-sin-documento">
-                  Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy.
-                </p>
-              ) : falloDelDocumento ? (
-                /* Un 400 con OTRO motivo, o un 500: eso sí es un fallo. */
-                <FalloDeCarga
-                  error={falloDelDocumento}
-                  queEs="el documento del contrato"
-                  onReintentar={recargarDocumento}
-                  enmarcado={false}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground py-2">
-                  Todavía no hay documento para este contrato.
-                </p>
-              )}
-            </CrossFade>
-            {/* 🔴 Nico, 10-10-2026: «el usuario debería de poder agregar
-                documentos al contrato». En el migrado es donde va el contrato
-                firmado en papel; en cualquiera, otrosíes, inventario, pagaré… */}
-            <div className="border-t border-border p-5">
-              <DocumentosDelContrato contractId={contract.id} puedeEditar={canEditContracts} migrado={sinDocumento} />
-            </div>
-          </section>
+                      Sólo con el contrato ya firmado: la asociación del back exige
+                      que el contrato estuviera VIGENTE en la fecha del comprobante,
+                      así que uno que todavía se está firmando no puede tener
+                      ninguno, y pedirlos sería una petición que siempre vuelve
+                      vacía.
 
-          {esPreFirma && (
-            <>
-              <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
-              {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
-              <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
-              {/* Se pactan antes de firmar: gastos de cobranza, seguro opcional, póliza, administración. */}
-              <CondicionesDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
-              {/* D10 al INICIO: la garantía se exige antes de activar, así que se registra acá. */}
-              <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
-              <CobrosDelContrato
-                key={contract.propertyId ?? 'sin-inmueble'}
-                contract={contract}
-              />
-            </>
-          )}
-
-          {/*
-            🔴 Nico, 2026-09-12: el inventario y el historial del inmueble se
-            ven también desde el contrato, no sólo desde la ficha del inmueble.
-            🔴 Nico, 2026-09-13: «desde el contrato también debería de agregar
-            todo lo que se pueda agregar del inventario» — el mismo componente
-            de la ficha del inmueble, sobre la misma consignación.
-            Sin inmueble se dice ahí mismo en vez de dejar un hueco: el
-            inventario es del inmueble y este contrato todavía no tiene uno.
-          */}
-          <InmuebleDelContrato
-            key={contract.propertyId ?? 'sin-inmueble'}
-            propertyId={contract.propertyId}
-            contratoId={contract.id}
-          />
-        </div>
-      </div>
+                      En tres pestañas —ingresos · egresos · facturas— porque una
+                      sola lista mezclada no deja ver nada (Nico, 2026-09-12).
+                    */}
+                    {/* QA-CONT-95 (H-04): los comprobantes son de Contabilidad; quien no la
+                        lee (el de sólo lectura) no dispara un 403 en cada ficha.
+                        CB-E-14 (QA-FACT-CONTA-95 r2): la lectura de la contabilidad es el
+                        módulo `reportes` (ContabilidadLecturaGuard del back); `contabilidad`
+                        no existe en los permisos y escondía la sección hasta al contador. */}
+                    {canAccess('reportes', 'view') && <ComprobantesDelSistemaAnterior contractId={contract.id} />}
+                    {/* El seguimiento de PQRS del contrato (Nico, 2026-09-12). */}
+                    <PqrsDelContrato contractId={contract.id} />
+                    <BitacoraDelContrato contractId={contract.id} />
+                  </>
+                )}
+                {/* 🔴 22-09: quién tocó ESTE contrato, con su rol —firmar, editar,
+                    renovar, bajar el PDF, y lo que se intentó sin permiso—. No
+                    reemplaza la bitácora del mandato de arriba: aquélla guarda las
+                    DECISIONES con su anexo; ésta, cada movimiento de cada persona. Y
+                    va fuera del bloque de «firmado» porque un contrato en firma
+                    también tiene quién lo tocó. */}
+                <BitacoraDelRecurso tipo="contrato" id={contract.id} />
+              </>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }
@@ -1310,7 +1335,7 @@ function decisionesDelContrato({
           titulo={`Vencido desde el ${fechaLegible(vigencia.vencidoDesde)}`}
           // QA-CONT CR-19: «sigue activo» a secas hacía creer que la prórroga
           // corría sola. No: espera a que alguien la confirme (o lo renueve).
-          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Sigue activo, pero la prórroga no se aplica sola: espera un clic en «Prórroga», acá abajo (o en la Bandeja del Piloto, si el proceso diario ya te la dejó ahí). También puedes renovarlo o terminar el arriendo.`}
+          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Sigue activo, pero la prórroga no se aplica sola: espera un clic en «Prórroga», aquí abajo (o en la Bandeja del Piloto, si el proceso diario ya te la dejó ahí). También puedes renovarlo o terminar el arriendo.`}
           principal={{
             label: 'Renovar contrato',
             icon: ArrowsClockwise,
@@ -1366,7 +1391,7 @@ function InfoCard({
     <section className="rounded-lg border border-border bg-card p-5 space-y-3">
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4 text-muted-foreground" />
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        <h3 className="text-base font-medium text-foreground">{title}</h3>
       </div>
       <div className="space-y-2">{children}</div>
     </section>

@@ -15,22 +15,28 @@
  * (rose=alta, amber=media, emerald=baja — mismos de EscalationCard).
  */
 
+import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
+import { formatRelativeTime } from '@/lib/format'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   CheckCircle,
   Clock,
-  Warning,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Spinner } from '@/components/ui'
-import { AnimatedNumber, Chip, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Badge, Button } from '@/components/ui'
+import { useTr } from '@/lib/i18n/use-tr'
+import { Card, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { Input } from '@/components/ui/input'
 import {
   usePendientes,
   type PendienteCta,
@@ -38,35 +44,20 @@ import {
   type PendienteItem,
   type PendientePrioridad,
 } from '@/lib/hooks/cobranza/use-pendientes'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
 const ESTADOS_NS = 'inmobiliaria.ai.cobranza.estados'
 
-// ── Tokens de prioridad — COLOR_SYSTEM.md (mismos de EscalationCard) ─────────
+// ── Nombre de cada prioridad ─────────────────────────────────────────────────
 
-const PRIORIDAD_TOKEN: Record<
-  PendientePrioridad,
-  { bg: string; text: string; ring: string; labelKey: string }
-> = {
-  alta: {
-    bg: 'bg-danger-soft',
-    text: 'text-danger',
-    ring: 'ring-danger',
-    labelKey: `${NS}.prioridadAlta`,
-  },
-  media: {
-    bg: 'bg-warning-soft',
-    text: 'text-warning',
-    ring: 'ring-warning',
-    labelKey: `${NS}.prioridadMedia`,
-  },
-  baja: {
-    bg: 'bg-success-soft',
-    text: 'text-success',
-    ring: 'ring-success',
-    labelKey: `${NS}.prioridadBaja`,
-  },
+const PRIORIDAD_TOKEN: Record<PendientePrioridad, { labelKey: string }> = {
+  alta: { labelKey: `${NS}.prioridadAlta` },
+  media: { labelKey: `${NS}.prioridadMedia` },
+  baja: { labelKey: `${NS}.prioridadBaja` },
 }
 
 // ── Labels por grupo / CTA (keys del contrato) ───────────────────────────────
@@ -97,10 +88,31 @@ const CTA_KEY: Record<PendienteCta, string> = {
   responder: `${NS}.responder`,
 }
 
+/**
+ * El botón dice el verbo y el objeto (revisora r25, Pendientes #3): antes cada
+ * tarjeta decía «Acción sugerida» y un botón «Aprobar» suelto. Con el nombre de
+ * quien se trata cuando lo hay; las escalaciones traen un id enmascarado, no un
+ * nombre, y no se lo pegan.
+ */
+const ACCION_DEL_GRUPO: Record<PendienteGrupo, { conNombre: string; sinNombre: string }> = {
+  escalaciones: { conNombre: 'Resolver el caso', sinNombre: 'Resolver el caso' },
+  cartas: { conNombre: 'Aprobar la carta de {n}', sinNombre: 'Aprobar la carta' },
+  siniestros: { conNombre: 'Aprobar el siniestro de {n}', sinNombre: 'Aprobar el siniestro' },
+  planes: { conNombre: 'Revisar el acuerdo de {n}', sinNombre: 'Revisar el acuerdo' },
+  promesas: { conNombre: 'Seguir la promesa de {n}', sinNombre: 'Seguir la promesa' },
+  conversaciones: { conNombre: 'Responder a {n}', sinNombre: 'Responder la conversación' },
+}
+
+const VARIANTE_DE_LA_PRIORIDAD: Record<PendientePrioridad, 'destructive' | 'warning' | 'outline'> = {
+  alta: 'destructive',
+  media: 'warning',
+  baja: 'outline',
+}
+
 // Cartas: label por kind — patrón inline es/en de cartas/page.tsx (KIND_LABELS).
 const KIND_LABELS: Record<string, { es: string; en: string }> = {
   pre_judicial_letter: { es: 'Carta prejurídica', en: 'Pre-judicial letter' },
-  pre_bureau_notification: { es: 'Notificación a centrales', en: 'Bureau notification' },
+  pre_bureau_notification: { es: 'Aviso antes del reporte a centrales', en: 'Notice before the credit bureau report' },
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -109,16 +121,9 @@ function truncate(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s
 }
 
+// C7 (r25): «hace 3 horas», no «hace 3h» (VOZ §4).
 function relative(iso: string, locale: string): string {
-  const then = new Date(iso).getTime()
-  const deltaSec = Math.max(0, Math.round((Date.now() - then) / 1000))
-  if (deltaSec < 60) return locale.startsWith('es') ? `hace ${deltaSec}s` : `${deltaSec}s ago`
-  const deltaMin = Math.round(deltaSec / 60)
-  if (deltaMin < 60) return locale.startsWith('es') ? `hace ${deltaMin}m` : `${deltaMin}m ago`
-  const deltaHr = Math.round(deltaMin / 60)
-  if (deltaHr < 24) return locale.startsWith('es') ? `hace ${deltaHr}h` : `${deltaHr}h ago`
-  const deltaDay = Math.round(deltaHr / 24)
-  return locale.startsWith('es') ? `hace ${deltaDay}d` : `${deltaDay}d ago`
+  return formatRelativeTime(iso, locale.startsWith('en') ? 'en' : 'es')
 }
 
 /** Parse seguro de fechas DATE (YYYY-MM-DD) sin corrimiento de zona horaria. */
@@ -164,53 +169,38 @@ function PendienteCard({ item }: { item: PendienteItem }) {
     }
   }, [item, t, formatCurrency, formatDate])
 
+  const tr = useTr()
+  const nombre = item.grupo !== 'escalaciones' && item.titulo ? item.titulo : null
+  const accion = nombre
+    ? tr(ACCION_DEL_GRUPO[item.grupo].conNombre, { n: nombre })
+    : tr(ACCION_DEL_GRUPO[item.grupo].sinNombre)
+
   // Un `StaggerItem`: filtrar por grupo, paginar o resolver un pendiente hace
   // entrar los que llegan (escalonados, techo 320 ms) y salir los que sobran.
+  // UI (revisora r25): una fila de la lista DENTRO de la tarjeta (antes tarjetas
+  // sueltas en `max-w-3xl`), la prioridad con su insignia y el grupo sin MAYÚSCULAS.
   return (
     <StaggerItem
       as="li"
-      className="rounded-lg border border-border bg-card p-4 space-y-2.5"
+      className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5"
       data-testid={`pendiente-item-${item.key}`}
     >
-      {/* Header: pill prioridad + grupo + tiempo relativo */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span
-            className={`inline-flex items-center text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
-          >
-            {t(token.labelKey)}
-          </span>
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground truncate">
-            {t(GRUPO_KEY[item.grupo])}
+      <div className="min-w-0 space-y-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Badge variant={VARIANTE_DE_LA_PRIORIDAD[item.prioridad]}>{t(token.labelKey)}</Badge>
+          <span className="text-caption text-fg-muted">{t(GRUPO_KEY[item.grupo])}</span>
+          <span className="inline-flex items-center gap-1 text-caption text-fg-subtle">
+            <Clock className="h-3 w-3" aria-hidden="true" />
+            {relative(item.fecha, locale)}
           </span>
         </div>
-        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums shrink-0">
-          <Clock className="w-3 h-3" aria-hidden="true" />
-          {relative(item.fecha, locale)}
-        </span>
+        <p className="text-body-sm font-medium text-fg">{titulo}</p>
+        {motivo ? <p className="text-caption leading-relaxed text-fg-muted">{motivo}</p> : null}
       </div>
-
-      {/* Quién/qué + motivo */}
-      <div className="space-y-0.5">
-        <p className="text-sm font-semibold text-foreground">{titulo}</p>
-        {motivo && (
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            <span className="font-medium">{t(`${NS}.motivo`)}:</span> {motivo}
-          </p>
-        )}
-      </div>
-
-      {/* Footer: acción sugerida + CTA */}
-      <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5">
-        <span className="text-xs text-muted-foreground">
-          {t(`${NS}.accionSugerida`)}
-        </span>
-        <Button asChild size="sm">
-          <Link href={item.href}>
-            {t(CTA_KEY[item.cta])}
-          </Link>
-        </Button>
-      </div>
+      {/* En una lista de muchas, cada acción va en secundaria: un solo azul por pantalla. */}
+      <Button asChild variant="outline" size="sm" hideArrow className="shrink-0 max-sm:w-full">
+        <Link href={item.href} data-testid={`pendiente-accion-${item.key}`}>{accion}</Link>
+      </Button>
     </StaggerItem>
   )
 }
@@ -229,28 +219,42 @@ function PendientesContent() {
   const effectiveFilter =
     grupoFilter && counts[grupoFilter] > 0 ? grupoFilter : null
 
-  const visibleItems = useMemo(
-    () =>
-      effectiveFilter ? items.filter((i) => i.grupo === effectiveFilter) : items,
-    [items, effectiveFilter],
-  )
+  // Revisora r27 (K3): buscador por nombre o motivo, como las demás tablas.
+  const [busqueda, setBusqueda] = useState('')
+  const visibleItems = useMemo(() => {
+    const delGrupo = effectiveFilter ? items.filter((i) => i.grupo === effectiveFilter) : items
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return delGrupo
+    return delGrupo.filter((i) =>
+      [i.titulo, i.reason].some((v) => (v ?? '').toLocaleLowerCase('es').includes(q)),
+    )
+  }, [items, effectiveFilter, busqueda])
 
   // La lista compone CINCO fuentes (escalaciones, cartas, siniestros, planes y
   // promesas) sin tope: se pintaba entera. El pie es el mismo de las tablas del
   // panel; el chip de grupo manda a la página 1.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibleItems, { resetKey: effectiveFilter ?? 'todos' })
+    useTablePagination(visibleItems, { resetKey: `${effectiveFilter ?? 'todos'}|${busqueda}` })
 
   // ── Primer load ────────────────────────────────────────────────────────────
   // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
   // pendientes, → «todo al día»); lo que ya estaba al montarse no se anima.
+  const encabezado = (
+    <EncabezadoDePantalla
+      seccion="Cobranza"
+      titulo={<>{t(`${NS}.pageTitle`)}</>}
+      descripcion={<>{t(`${NS}.desc`)}</>}
+    />
+  )
+
   if (isLoading && items.length === 0 && !error) {
     return (
       <CrossFade swapKey="cargando">
-      <div className="p-6 lg:p-8">
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="md" />
-        </div>
+      {/* C6 (r25): esqueleto con la forma de lo que viene, no una rueda; con
+          el encabezado (revisora r25, Pendientes #1). */}
+      <div className="p-6 lg:p-8 space-y-6" aria-busy="true">
+        {encabezado}
+        <EsqueletoTarjetas cantidad={4} />
       </div>
       </CrossFade>
     )
@@ -261,14 +265,7 @@ function PendientesContent() {
     return (
       <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-6">
-        <header>
-          <h1 className="text-h2 text-fg">
-            {t(`${NS}.pageTitle`)}
-          </h1>
-          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-            {t(`${NS}.desc`)}
-          </p>
-        </header>
+        {encabezado}
         <EmptyState
           icon={CheckCircle}
           title={t(`${NS}.vacio`)}
@@ -282,63 +279,90 @@ function PendientesContent() {
   return (
     <CrossFade swapKey="pendientes">
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-h2 text-fg">
-            {t(`${NS}.pageTitle`)}
-          </h1>
-          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-            {t(`${NS}.desc`)}
-          </p>
-        </div>
-      </header>
+      {encabezado}
 
       {/* Error total — solo cuando ninguna fuente rindió datos */}
-      <Presence
-          show={Boolean(error && items.length === 0)}
-          role="alert"
-          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
-        >
-          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>Error: {error}</span>
-      </Presence>
+      {/* C5 (r25): FalloDeCarga con «Intentar de nuevo», nunca el error crudo pegado a la frase. */}
+      {error && items.length === 0 ? (
+        <FalloDeCarga error={falloDelTexto(error)} queEs="lo pendiente" onReintentar={() => refetch()} />
+      ) : null}
 
-      {/* Chips de conteo por grupo — click = filtro */}
+      {/* C3 (r25): LA RESPUESTA, las pestañas y la lista en UNA tarjeta. La
+          barra va por PRIORIDAD y las pestañas por GRUPO: dos cuentas distintas,
+          ninguna repite a la otra. */}
       {items.length > 0 && (
-        <div className="flex flex-wrap gap-2" role="group" aria-label={t(`${NS}.pageTitle`)}>
-          {GRUPOS.map((grupo) => {
-            const active = effectiveFilter === grupo
-            const count = counts[grupo]
-            return (
-              <Chip
-                key={grupo}
-                size="sm"
-                disabled={count === 0}
-                selected={active}
-                onClick={() => setGrupoFilter(active ? null : grupo)}
-                data-testid={`pendientes-chip-${grupo}`}
-              >
-                {t(GRUPO_KEY[grupo])}
-                <span className="tabular-nums">
-                  <AnimatedNumber value={count} format={(n) => String(Math.round(n))} />
-                </span>
-              </Chip>
-            )
-          })}
-        </div>
-      )}
+        <Card className="overflow-hidden">
+          <CifraHeroe
+            className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+            data-testid="pendientes-cuantos"
+            tamano="mediana"
+            rotulo="Te esperan"
+            cifra={items.length.toLocaleString('es-CO')}
+            contexto={items.length === 1 ? 'decisión' : 'decisiones'}
+            total={items.length}
+            tramos={(['alta', 'media', 'baja'] as const).map((pr) => {
+              const n = items.filter((i) => i.prioridad === pr).length
+              return {
+                clave: pr,
+                etiqueta: t(PRIORIDAD_TOKEN[pr].labelKey),
+                monto: n,
+                tono: pr === 'alta' ? ('critico' as const) : pr === 'media' ? ('aviso' as const) : ('neutro' as const),
+                cifra: n.toLocaleString('es-CO'),
+              }
+            })}
+          />
 
-      {/* Lista priorizada — Alta → Media → Baja, fecha DESC dentro */}
-      {visibleItems.length > 0 && (
-        <div className="max-w-3xl">
-          <Stagger as="ul" className="space-y-3" aria-label={t(`${NS}.pageTitle`)}>
-            {pageItems.map((item) => (
-              <PendienteCard key={item.key} item={item} />
-            ))}
-          </Stagger>
+          {/* Los grupos, con su conteo: filtran la lista */}
+          <div className="border-b border-border px-4 py-3 empty:hidden">
+            <PestanasDeEstado<string>
+              pestanas={[
+                { valor: 'todos', etiqueta: 'Todo', cuantos: items.length, fija: true },
+                ...GRUPOS.map((grupo) => ({
+                  valor: grupo,
+                  etiqueta: t(GRUPO_KEY[grupo]),
+                  cuantos: counts[grupo],
+                  testid: `pendientes-chip-${grupo}`,
+                })),
+              ]}
+              valor={effectiveFilter ?? 'todos'}
+              onCambio={(v) => setGrupoFilter(v === 'todos' ? null : (v as PendienteGrupo))}
+              etiqueta={t(`${NS}.pageTitle`)}
+            />
+          </div>
+
+          <div className="border-b border-border px-4 py-3">
+            <div className="relative w-full sm:w-72">
+              <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+              <Input
+                type="search"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar nombre o motivo"
+                aria-label="Buscar en lo pendiente por nombre o motivo"
+                className="pl-9"
+                data-testid="pendientes-buscar"
+              />
+            </div>
+          </div>
+
+          {/* Lista priorizada — Alta → Media → Baja, fecha DESC dentro */}
+          {visibleItems.length === 0 && busqueda.trim() ? (
+            <EmptyState
+              icon={MagnifyingGlass}
+              title="Nada pendiente coincide con la búsqueda"
+              description="Revisa el nombre o el motivo, o borra la búsqueda."
+              primaryCta={{ label: 'Borrar la búsqueda', onClick: () => setBusqueda('') }}
+            />
+          ) : (
+            <Stagger as="ul" className="divide-y divide-border" aria-label={t(`${NS}.pageTitle`)}>
+              {pageItems.map((item) => (
+                <PendienteCard key={item.key} item={item} />
+              ))}
+            </Stagger>
+          )}
 
           {shouldPaginate && (
-            <div className="border-t border-border px-4 py-3 mt-3">
+            <div className="border-t border-border px-4 py-3">
               <TablePagination
                 total={total}
                 page={page}
@@ -349,7 +373,7 @@ function PendientesContent() {
               />
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
     </CrossFade>

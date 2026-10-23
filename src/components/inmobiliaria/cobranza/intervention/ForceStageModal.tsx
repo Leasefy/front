@@ -191,20 +191,20 @@ export function ForceStageModal({
                   desde dónde se mueve — y «S2 → S1» y «S5 → S1» no son lo
                   mismo ni de lejos. */}
               <div className="rounded-[14px] border border-border px-3 py-2.5">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
+                <p className="text-caption text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.currentLabel')}
                 </p>
                 <p className="mt-0.5 text-sm font-medium text-fg">
                   {stageDisplayName(currentStage, locale)}
-                  <span className="ml-1.5 font-mono text-xs text-fg-subtle">{currentStage}</span>
+                  <span className="ml-1.5 font-mono text-caption text-fg-subtle">{currentStage}</span>
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-fg-muted">
+                <p className="mt-1 text-caption leading-relaxed text-fg-muted">
                   {stageAgentPlan(currentStage, locale)}
                 </p>
               </div>
 
               <label className="block">
-                <span className="text-xs font-medium text-fg-subtle">
+                <span className="text-caption font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetLabel')}
                 </span>
                 <Select
@@ -236,9 +236,9 @@ export function ForceStageModal({
                         <SelectItem key={s} value={s}>
                           <span className="flex items-baseline gap-2">
                             <span>{stageDisplayName(s, locale)}</span>
-                            <span className="font-mono text-[11px] text-fg-subtle">{s}</span>
+                            <span className="font-mono text-caption text-fg-subtle">{s}</span>
                             {rango && (
-                              <span className="text-[11px] text-fg-subtle">· {rango}</span>
+                              <span className="text-caption text-fg-subtle">· {rango}</span>
                             )}
                           </span>
                         </SelectItem>
@@ -257,14 +257,16 @@ export function ForceStageModal({
                   se cruza al cambiarlo. */}
               <Collapse open={Boolean(target)}>
               {targetVisible && (
-                <div className="rounded-md border border-primary/25 bg-primary-soft px-3 py-2.5">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-primary">
+                // En gris (antes una caja azul con el rótulo azul, que competía
+                // con el único azul de la pantalla: «Cambiar etapa»).
+                <div className="rounded-md border border-border bg-surface-muted px-3 py-2.5">
+                  <p className="text-caption text-fg-muted">
                     {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.effectLabel')}
                   </p>
-                  <CrossFade as="p" swapKey={targetVisible} mode="popLayout" direction="none" className="mt-1 text-xs leading-relaxed text-fg">
+                  <CrossFade as="p" swapKey={targetVisible} mode="popLayout" direction="none" className="mt-1 text-caption leading-relaxed text-fg">
                     {stageAgentPlan(targetVisible, locale)}
                   </CrossFade>
-                  <p className="mt-1.5 text-[11px] leading-relaxed text-fg-muted">
+                  <p className="mt-1.5 text-caption leading-relaxed text-fg-muted">
                     {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.effectNote')}
                   </p>
                 </div>
@@ -272,7 +274,7 @@ export function ForceStageModal({
               </Collapse>
 
               <label className="block">
-                <span className="text-xs font-medium text-fg-subtle">
+                <span className="text-caption font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonLabel')}
                 </span>
                 <Textarea
@@ -296,7 +298,7 @@ export function ForceStageModal({
             </div>
           ))}
 
-        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-caption text-danger" data-testid="intervencion-error">
             {error}
         </Presence>
 

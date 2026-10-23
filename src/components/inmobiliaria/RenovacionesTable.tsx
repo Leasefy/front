@@ -52,7 +52,6 @@ import {
   ArrowsClockwise,
   CaretRight,
   MagnifyingGlass,
-  Warning,
   TrendUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -79,14 +78,17 @@ import {
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Chip, Presence } from '@leasefy/cadence';
+import { Presence } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { textoLegible } from '@/lib/renovaciones/texto-legible';
+import { diasParaVencer } from '@/lib/renovaciones/dias-para-vencer';
+import type { ReactNode } from 'react';
 
 import type { Renovacion, RenovacionStatus } from '@/lib/types/inmobiliaria';
 import {
   formatCurrency,
   getRenovacionStatusColor,
   getRenovacionStatusLabel,
-  getUrgencyColor,
 } from '@/lib/types/inmobiliaria';
 
 /** Una renovación cerrada ya no espera nada: sale de «Todos los estados». */
@@ -131,6 +133,14 @@ interface RenovacionesTableProps {
    * un menú termina ofreciendo cinco acciones que no existen.
    */
   onAbrir?: (renovacion: Renovacion) => void;
+  /**
+   * El último renglón de la tarjeta, antes de la paginación: las acciones
+   * masivas (revisora r25: «Marca renovaciones…» quedaba suelto debajo de la
+   * tabla; en Contratos va en su pie).
+   */
+  pie?: ReactNode;
+  /** Qué día es hoy, para contar los días que faltan; sólo las pruebas lo fijan. */
+  hoy?: Date;
   /** Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas. */
   marcadas?: ReadonlySet<string>;
   onMarcar?: (ids: readonly string[], si: boolean) => void;
@@ -200,7 +210,20 @@ const ORDEN_DE_ESTADO: Record<RenovacionStatus, number> = {
   completed: 6,
 };
 
-const COLUMNAS = 9;
+const COLUMNAS = 6;
+
+/**
+ * B1 (revisora r25): «vence hoy» salía también en los contratos que vencieron
+ * hace tres días (`<= 0`). Hoy es hoy; antes, «venció hace N días».
+ */
+export function cuantoFalta(dias: number): string {
+  if (dias === 0) return 'vence hoy';
+  if (dias < 0) {
+    const n = Math.abs(dias);
+    return `venció hace ${n} ${n === 1 ? 'día' : 'días'}`;
+  }
+  return `en ${dias} ${dias === 1 ? 'día' : 'días'}`;
+}
 
 function FilasDeCarga() {
   return (
@@ -226,6 +249,8 @@ export function RenovacionesTable({
   onAbrir,
   marcadas,
   onMarcar,
+  pie,
+  hoy,
 }: RenovacionesTableProps) {
   const conCasillas = Boolean(marcadas && onMarcar);
   const { t, locale } = useI18n();
@@ -285,8 +310,8 @@ export function RenovacionesTable({
           bVal = b.propietarioName.toLowerCase();
           break;
         case 'daysUntilExpiry':
-          aVal = a.daysUntilExpiry;
-          bVal = b.daysUntilExpiry;
+          aVal = diasParaVencer(a, hoy);
+          bVal = diasParaVencer(b, hoy);
           break;
         case 'currentRent':
           aVal = a.currentRent;
@@ -302,7 +327,7 @@ export function RenovacionesTable({
       return 0;
     });
     return result;
-  }, [visibles, bucketFilter, statusFilter, busqueda, sortField, sortDirection]);
+  }, [visibles, bucketFilter, statusFilter, busqueda, sortField, sortDirection, hoy]);
 
   /*
    * Paginado de presentación: `useRenovaciones()` trae todas y crecen con la
@@ -323,8 +348,8 @@ export function RenovacionesTable({
 
   const SortIcon = sortDirection === 'asc' ? SortAscending : SortDescending;
 
-  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <TableHead className="whitespace-nowrap">
+  const SortableHeader = ({ field, children, derecha = false }: { field: SortField; children: React.ReactNode; derecha?: boolean }) => (
+    <TableHead className={cn('whitespace-nowrap', derecha && 'text-right')}>
       {/*
         allowlist: disparador de orden — no hay primitiva en Cadence. El
         `<button>` no hereda las mayúsculas del `TH` (el navegador fuerza
@@ -334,7 +359,10 @@ export function RenovacionesTable({
       <button
         type="button"
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg"
+        className={cn(
+          'flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg',
+          derecha && 'ml-auto flex-row-reverse',
+        )}
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -350,63 +378,50 @@ export function RenovacionesTable({
     setBusqueda('');
   };
 
-  const chip = (valor: BucketFilter, etiqueta: string, tono: string) => (
-    <Chip selected={bucketFilter === valor} onClick={() => setBucketFilter(valor)}>
-      {etiqueta}
-      <span
-        className={cn(
-          'ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums',
-          bucketFilter === valor && valor !== 'all' ? tono : 'bg-muted',
-        )}
-      >
-        {bucketCounts[valor]}
-      </span>
-    </Chip>
-  );
+  /*
+   * Revisora r25 (T2): las cubetas eran chips rectangulares de colores hechos a
+   * mano, con «Próximas» en azul. Ahora son las pestañas de estado de la casa:
+   * conteo en mono, sin ceros (salvo «Todas») y el punto ámbar en «Críticas».
+   */
+  const pestanasDeUrgencia = [
+    { valor: 'all' as const, etiqueta: t('inmobiliaria.finance.renewals.all'), cuantos: bucketCounts.all, fija: true },
+    { valor: '0-30' as const, etiqueta: t('inmobiliaria.finance.renewals.critical'), cuantos: bucketCounts['0-30'], tono: 'aviso' as const },
+    { valor: '31-60' as const, etiqueta: t('inmobiliaria.finance.renewals.urgent'), cuantos: bucketCounts['31-60'] },
+    { valor: '61-90' as const, etiqueta: t('inmobiliaria.finance.renewals.upcoming'), cuantos: bucketCounts['61-90'] },
+    // El cuarto, para que los de al lado sumen lo que dice «Todas»; en cero no sale.
+    { valor: '90+' as const, etiqueta: 'Más de 90 días', cuantos: bucketCounts['90+'] },
+  ];
+
+  /*
+   * Revisora r25: «Propuesto» decía «—» en las diez filas y «Estado»
+   * «Pendiente» en las diez. Una columna que dice lo mismo en todas las filas
+   * no informa: «Propuesto» sale sólo si alguna tiene propuesta, y el estado,
+   * si todas van en el mismo, se dice UNA vez al pie.
+   */
+  const hayPropuestas = visibles.some((r) => Boolean(r.negotiatedRent || r.proposedRent));
+  const estadoUnico =
+    visibles.length > 1 && visibles.every((r) => r.status === visibles[0].status) ? visibles[0].status : null;
+  const columnas = 4 + (hayPropuestas ? 1 : 0) + (estadoUnico ? 0 : 1);
 
   return (
     <section
       className="rounded-lg border border-border bg-card overflow-hidden"
       data-testid="renovaciones-tabla"
     >
-      {/* Encabezado de la tarjeta — el mismo de Contratos. Sin filtros
-          adentro: el `Select` de estado vivía acá arriba a la derecha y los
-          cajones abajo en otra franja, o sea dos controles que hacen lo mismo
-          en dos lugares y con dos formas. Ahora los filtros están todos en la
-          franja de abajo, pegados a la tabla. */}
-      <div className="flex flex-col gap-3 p-5 border-b border-border sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
-            <ArrowsClockwise className="w-[18px] h-[18px] text-fg-muted" weight="duotone" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-foreground">
-              {t('inmobiliaria.nav.renovaciones')}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Toca una renovación para abrir su cajón: ahí se manda la propuesta,
-              se registra la respuesta del inquilino y se sube el contrato firmado.
-            </p>
-          </div>
-        </div>
-      </div>
-
+      {/* Sin encabezado propio (revisión de Operación, 21-10): la página ya dice
+          «Renovaciones» y cómo se abre una; repetirlo arriba de la tabla era ruido. */}
       {/* 🔴 UNA franja de filtros, pegada a la tabla: los cajones de urgencia
           (0-30 críticas, 31-60 urgentes, 61-90 próximas — el preaviso de la
           Ley 820 son 90 días), el estado, y el buscador. */}
       <div className="flex flex-col gap-3 border-b border-border px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          {chip('all', t('inmobiliaria.finance.renewals.all'), 'bg-muted')}
-          {chip('0-30', t('inmobiliaria.finance.renewals.critical'), 'bg-danger-soft text-danger')}
-          {chip('31-60', t('inmobiliaria.finance.renewals.urgent'), 'bg-warning-soft text-warning')}
-          {chip('61-90', t('inmobiliaria.finance.renewals.upcoming'), 'bg-primary-soft text-primary')}
-          {/* El cuarto, para que los tres de al lado sumen lo que dice «Todas».
-              Sólo aparece si de verdad hay alguna: en la mayoría de las
-              inmobiliarias la lista se corta en 90 días y un chip en cero
-              sería una puerta a un cuarto vacío. */}
-          {bucketCounts['90+'] > 0
-            ? chip('90+', 'Más de 90 días', 'bg-muted text-muted-foreground')
-            : null}
+        <div className="flex flex-wrap items-center gap-2 empty:hidden">
+          <PestanasDeEstado
+            pestanas={pestanasDeUrgencia}
+            valor={bucketFilter}
+            onCambio={setBucketFilter}
+            etiqueta="Cuánto le falta a cada contrato para vencer"
+            data-testid="pestanas-de-renovaciones"
+          />
           <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border lg:block" />
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <SelectTrigger
@@ -427,6 +442,13 @@ export function RenovacionesTable({
               <SelectItem value="terminated">{t('inmobiliaria.finance.renewals.statusTerminated')}</SelectItem>
             </SelectContent>
           </Select>
+          {/* El estado, UNA vez y al lado de su filtro, cuando todas van en el
+              mismo (revisora r27: suelto en el pie, sobre la paginación, sobraba). */}
+          {estadoUnico && filtradas.length > 0 ? (
+            <span className="text-caption text-fg-muted" data-testid="estado-de-todas">
+              {visibles.length === data.length ? 'Todas' : `Las ${visibles.length} abiertas`} en «{getRenovacionStatusLabel(estadoUnico)}»
+            </span>
+          ) : null}
         </div>
 
         <div className="relative w-full lg:max-w-xs">
@@ -452,7 +474,7 @@ export function RenovacionesTable({
         initial={false}
         distance="xs"
         as="p"
-        className="border-b border-border px-5 py-2 text-xs text-fg-muted"
+        className="border-b border-border px-5 py-2 text-caption text-fg-muted"
         data-testid="alcance-de-renovaciones"
       >
         {filtradas.length} de {data.length}{' '}
@@ -467,22 +489,26 @@ export function RenovacionesTable({
         </button>
       </Presence>
 
-      <Table>
-        <TableHeader>
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             {marcadas && onMarcar && (
               <TableHead className="w-10 pl-4 pr-0">
                 <CasillaDeLaPagina ids={pageItems.map((r) => r.id)} marcadas={marcadas} onMarcar={onMarcar} queSon="renovaciones" />
               </TableHead>
             )}
+            {/* 21-10 (revisión de Operación): de 9 columnas a 6 — se corría a 1440 y a 390.
+                El inquilino va bajo el inmueble; «Vencimiento» y «Días» son una sola
+                columna; el propietario y el teléfono, en el cajón (y en el `title`). */}
             <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.renewals.property')}</SortableHeader>
-            <SortableHeader field="tenantName">{t('inmobiliaria.finance.renewals.tenant')}</SortableHeader>
-            <SortableHeader field="propietarioName">{t('inmobiliaria.finance.renewals.owner')}</SortableHeader>
-            <TableHead className="whitespace-nowrap">{t('inmobiliaria.finance.renewals.expiration')}</TableHead>
-            <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.renewals.days')}</SortableHeader>
-            <SortableHeader field="currentRent">{t('inmobiliaria.finance.renewals.currentRent')}</SortableHeader>
-            <TableHead className="whitespace-nowrap">{t('inmobiliaria.finance.renewals.proposed')}</TableHead>
-            <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>
+            <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.renewals.expiration')}</SortableHeader>
+            <SortableHeader field="currentRent" derecha>{t('inmobiliaria.finance.renewals.currentRent')}</SortableHeader>
+            {hayPropuestas ? (
+              <TableHead className="whitespace-nowrap text-right">{t('inmobiliaria.finance.renewals.proposed')}</TableHead>
+            ) : null}
+            {estadoUnico ? null : (
+              <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>
+            )}
             <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
@@ -494,7 +520,7 @@ export function RenovacionesTable({
               está al día sin haberlo podido verificar. */}
           {!isLoading && Boolean(error) && (
             <TableRow>
-              <TableCell colSpan={COLUMNAS + (conCasillas ? 1 : 0)} className="p-0">
+              <TableCell colSpan={columnas + (conCasillas ? 1 : 0)} className="p-0">
                 <FalloDeCarga error={error} queEs="las renovaciones" onReintentar={onReintentar} />
               </TableCell>
             </TableRow>
@@ -502,14 +528,14 @@ export function RenovacionesTable({
 
           {!isLoading && !error && filtradas.length === 0 && (
             <TableRow>
-              <TableCell colSpan={COLUMNAS + (conCasillas ? 1 : 0)} className="p-0">
+              <TableCell colSpan={columnas + (conCasillas ? 1 : 0)} className="p-0">
                 <SinDatos
                   queSon="renovaciones"
                   icono={ArrowsClockwise}
                   hayFiltros={hayFiltros}
                   onLimpiarFiltros={limpiarFiltros}
                   titulo="Sin renovaciones en curso"
-                  descripcion="Cuando un contrato entre en sus últimos 90 días, aparece acá solo, con su inquilino y su canon."
+                  descripcion="Cuando un contrato entre en sus últimos 90 días, aparece aquí solo, con su inquilino y su canon."
                 />
               </TableCell>
             </TableRow>
@@ -519,9 +545,9 @@ export function RenovacionesTable({
         {/* Las filas de datos en su propio cuerpo animado: entran escalonadas
             (techo de 320 ms) y, al filtrar o buscar, las que se van salen en
             su lugar (`key` = el id). */}
-        <TableBodyAnimado>
+        <TableBodyAnimado className="max-md:block">
           {pageItems.map((item) => {
-            const esCritica = item.urgencyBucket === '0-30';
+            const dias = diasParaVencer(item, hoy);
             const propuesto = item.negotiatedRent || item.proposedRent;
             const incremento =
               propuesto && item.currentRent > 0
@@ -533,85 +559,89 @@ export function RenovacionesTable({
                 key={item.id}
                 onClick={() => onAbrir?.(item)}
                 className={cn(
-                  'border-b border-border last:border-0 transition-colors',
+                  'border-b border-border last:border-0 transition-colors max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-3 max-md:gap-y-1.5 max-md:px-4 max-md:py-3.5',
                   onAbrir && 'cursor-pointer hover:bg-muted/40',
                 )}
                 data-testid={`renovacion-${item.id}`}
               >
                 {marcadas && onMarcar && (
-                  <TableCell className="w-10 pl-4 pr-0">
+                  <TableCell className="w-10 pl-4 pr-0 max-md:hidden">
                     <CasillaDeLaFila id={item.id} nombre={`la renovación de ${item.tenantName}`} marcadas={marcadas} onMarcar={onMarcar} />
                   </TableCell>
                 )}
-                <TableCell className="px-5 py-4 max-w-[240px]">
-                  <p className="font-medium text-foreground truncate">{item.propertyTitle}</p>
-                  {/* 🔴 El número del contrato: es como la inmobiliaria nombra
-                      las cosas («el 1686») y era el único dato de la fila por
-                      el que no se podía buscar porque no se mostraba. */}
-                  <p className="text-xs text-muted-foreground truncate">
-                    {item.propertyAddress}
+                {/* El inmueble y quién vive. 🔴 El número del contrato: es como la
+                    inmobiliaria nombra las cosas («el 1686») y se busca por él. */}
+                {/* A 390 (revisora r27), cada cosa en su sitio: arriba el inmueble
+                    (a lo ancho si no hay estado) y el estado; abajo la fecha y, a
+                    la derecha, el canon. Antes el canon caía donde lo dejara la
+                    rejilla, a media tarjeta, y cortaba el nombre a 14 letras. */}
+                <TableCell
+                  className={cn(
+                    'max-w-[320px] px-5 py-4 max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0',
+                    estadoUnico && 'max-md:col-span-2',
+                  )}
+                  title={[item.propertyAddress, item.propietarioName ? `Propietario: ${item.propietarioName}` : null, item.tenantPhone].filter(Boolean).join(' · ')}
+                >
+                  <p className="truncate font-medium text-foreground">{textoLegible(item.propertyTitle)}</p>
+                  <p className="truncate text-caption text-muted-foreground">
+                    {textoLegible(item.tenantName) || '—'}
                     {rotuloDelContrato(item) ? ` · ${rotuloDelContrato(item)}` : ''}
                   </p>
                 </TableCell>
 
-                <TableCell className="px-5 py-4 max-w-[200px]">
-                  <p className="text-foreground truncate">{item.tenantName || '—'}</p>
-                  {item.tenantPhone ? (
-                    <p className="text-xs text-muted-foreground truncate">{item.tenantPhone}</p>
-                  ) : null}
-                </TableCell>
-
-                <TableCell className="px-5 py-4 max-w-[160px]">
-                  <span className="text-foreground truncate block">{item.propietarioName}</span>
-                </TableCell>
-
-                <TableCell className="px-5 py-4 whitespace-nowrap text-muted-foreground tabular-nums">
-                  {fechaCorta(item.leaseEndDate, locale)}
-                </TableCell>
-
-                <TableCell className="px-5 py-4 whitespace-nowrap">
+                {/* Vence: la fecha y cuánto falta. Rojo sólo a 7 días o menos; ámbar hasta 30. */}
+                <TableCell className="whitespace-nowrap px-5 py-4 tabular-nums max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption">
+                  <span className="text-foreground">{fechaCorta(item.leaseEndDate, locale)}</span>
+                  <span className="md:hidden"> · </span>
                   <span
                     className={cn(
-                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium tabular-nums',
-                      getUrgencyColor(item.urgencyBucket),
+                      'text-caption md:block',
+                      dias <= 7
+                        ? 'font-medium text-danger'
+                        : dias <= 30
+                          ? 'font-medium text-warning'
+                          : 'text-muted-foreground',
                     )}
                   >
-                    {esCritica && <Warning className="w-3.5 h-3.5" weight="fill" />}
-                    {item.daysUntilExpiry} {item.daysUntilExpiry === 1 ? 'día' : 'días'}
+                    {cuantoFalta(dias)}
                   </span>
                 </TableCell>
 
-                <TableCell className="px-5 py-4 whitespace-nowrap tabular-nums font-mono text-foreground">
+                <TableCell className="whitespace-nowrap px-5 py-4 text-right font-mono tabular-nums text-foreground max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0">
                   {formatCurrency(item.currentRent)}
                 </TableCell>
 
-                <TableCell className="px-5 py-4 whitespace-nowrap tabular-nums font-mono">
+                {hayPropuestas ? (
+                <TableCell className="whitespace-nowrap px-5 py-4 text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0">
                   {propuesto ? (
-                    <div className="flex flex-col">
+                    <div className="flex flex-col items-end">
                       <span className="text-foreground">{formatCurrency(propuesto)}</span>
                       {incremento ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-success font-sans">
-                          <TrendUp className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-1 font-sans text-caption text-success">
+                          <TrendUp className="h-3 w-3" />
                           {Number(incremento) >= 0 ? '+' : ''}
                           {incremento}%
                         </span>
                       ) : null}
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground max-md:hidden">—</span>
                   )}
                 </TableCell>
+                ) : null}
 
-                <TableCell className="px-5 py-4 whitespace-nowrap">
+                {estadoUnico ? null : (
+                <TableCell className="whitespace-nowrap px-5 py-4 max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                   <span
                     className={cn(
-                      'inline-flex px-2.5 py-1 rounded-full text-xs font-medium',
+                      'inline-flex rounded-full px-2.5 py-1 text-caption font-medium',
                       getRenovacionStatusColor(item.status),
                     )}
                   >
                     {getRenovacionStatusLabel(item.status)}
                   </span>
                 </TableCell>
+                )}
 
                 {/* 🔴 Acá vivía un menú con CINCO items —«Ver detalle»,
                     «Notificar al inquilino», «Iniciar negociación», «Calcular
@@ -619,7 +649,7 @@ export function RenovacionesTable({
                     al MISMO `openWorkflow`: cinco rótulos, una conducta. Y la
                     fila entera ya abría ese cajón. Queda lo único cierto:
                     esta fila se abre. */}
-                <TableCell className="px-3 py-4 text-right">
+                <TableCell className="px-3 py-4 text-right max-md:hidden">
                   <CaretRight
                     className="ml-auto h-4 w-4 text-fg-subtle"
                     aria-hidden="true"
@@ -631,6 +661,8 @@ export function RenovacionesTable({
           })}
         </TableBodyAnimado>
       </Table>
+
+      {pie}
 
       {/* Pie: sólo si hay más de una página. */}
       {shouldPaginate && (

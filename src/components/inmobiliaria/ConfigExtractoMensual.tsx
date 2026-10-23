@@ -245,7 +245,7 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
     >
       <div className="flex items-center gap-2 text-foreground">
         <EnvelopeSimple className="w-5 h-5 text-fg-muted" weight="duotone" />
-        <h3 id="extracto-mensual-titulo" className="text-base font-semibold">
+        <h3 id="extracto-mensual-titulo" className="text-base font-medium">
           {t('inmobiliaria.config.extractoMensual.title')}
         </h3>
       </div>
@@ -256,13 +256,13 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
           <label htmlFor="extracto-mensual-automatico" className="block text-sm font-medium text-foreground">
             {t('inmobiliaria.config.extractoMensual.switchLabel')}
           </label>
-          <p className="text-xs text-muted-foreground" data-testid="extracto-mensual-hint">
+          <p className="text-caption text-muted-foreground" data-testid="extracto-mensual-hint">
             {automatico
               ? t('inmobiliaria.config.extractoMensual.hintPrendido', { dia: diaGuardado })
               : t('inmobiliaria.config.extractoMensual.hintApagado')}
           </p>
           {!canEdit && (
-            <p className="text-xs text-muted-foreground">{t('inmobiliaria.config.extractoMensual.soloAdmin')}</p>
+            <p className="text-caption text-muted-foreground">{t('inmobiliaria.config.extractoMensual.soloAdmin')}</p>
           )}
         </div>
         <Switch
@@ -310,7 +310,7 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
 
       {/* Último mes */}
       <div className="rounded-lg bg-muted/50 p-4 space-y-3" data-testid="extracto-mensual-ultimo-mes">
-        <div className="text-xs text-muted-foreground">{t('inmobiliaria.config.extractoMensual.ultimoMes')}</div>
+        <div className="text-caption text-muted-foreground">{t('inmobiliaria.config.extractoMensual.ultimoMes')}</div>
 
         {cargandoResumen && (
           <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
@@ -333,7 +333,7 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
               </p>
             ) : (
               <p className="text-sm text-foreground">
-                <span className="font-semibold">{mesTitulo}</span>
+                <span className="font-medium">{mesTitulo}</span>
                 {': '}
                 <span className="tabular-nums">{t('inmobiliaria.config.extractoMensual.enviados', { n: resumen.enviados })}</span>
                 {' · '}
@@ -354,7 +354,7 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
                 )}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {resumen.propietariosConActividad === 1
                 ? t('inmobiliaria.config.extractoMensual.conActividadUno')
                 : t('inmobiliaria.config.extractoMensual.conActividad', { n: resumen.propietariosConActividad })}
@@ -387,7 +387,7 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
             role="status"
           >
             <p className="text-sm text-foreground">
-              <span className="font-semibold">
+              <span className="font-medium">
                 {t('inmobiliaria.config.extractoMensual.resultadoTitle', { mes: mesTitulo })}
               </span>
               {': '}
@@ -400,7 +400,7 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
             </p>
             <button
               type="button"
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:underline"
               data-testid="extracto-mensual-ver-en-el-centro"
               onClick={() => abrirCentroDeProcesos({ procesoId: ultimoEnvio.procesoId })}
             >

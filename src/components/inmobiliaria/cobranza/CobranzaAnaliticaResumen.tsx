@@ -92,7 +92,7 @@ export function CobranzaAnaliticaResumen() {
   if (error && !isLoading) {
     return (
       <section aria-label={tr("Cómo lo está logrando")} className="space-y-3">
-        <h2 className="text-base font-semibold text-fg">{tr("Cómo lo está logrando")}</h2>
+        <h2 className="text-base font-medium text-fg">{tr("Cómo lo está logrando")}</h2>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-sm text-fg-muted">
             {tr("No pudimos traer la analítica del agente.")}
@@ -114,7 +114,7 @@ export function CobranzaAnaliticaResumen() {
 
   return (
     <section aria-label={tr("Cómo lo está logrando")} className="space-y-3">
-      <h2 className="text-base font-semibold text-fg">{tr("Cómo lo está logrando")}</h2>
+      <h2 className="text-base font-medium text-fg">{tr("Cómo lo está logrando")}</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 [&>*:only-child]:md:col-span-2">
         {hayRecuperacion && (

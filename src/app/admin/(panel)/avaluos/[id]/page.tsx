@@ -1,7 +1,8 @@
 'use client'
 
+import { PageHeader } from '@/components/admin/screen/PageHeader';
+import { BackButton } from '@/components/ui/back-button';
 import { useState } from 'react'
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -23,7 +24,8 @@ import {
 import { CertificatePdfViewer } from './CertificatePdfViewer'
 import { PhotoDescriptionsEditor } from './PhotoDescriptionsEditor'
 import { SignatureCanvas } from './SignatureCanvas'
-import { Card, MonoLabel } from '@leasefy/cadence'
+import { Alert, Card, MonoLabel } from '@leasefy/cadence'
+import { metodoDelAvaluo, suficiencia, tipoObservado } from '@/lib/admin/textos-del-admin'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -31,7 +33,7 @@ function Meta({ label, value, mono = false }: { label: string; value: string; mo
   return (
     <div className="mb-2 last:mb-0">
       <MonoLabel className="block">{label}</MonoLabel>
-      <div className={`text-sm text-fg mt-0.5 ${mono ? 'font-mono tabular-nums' : ''}`}>{value}</div>
+      <div className={`text-body-sm text-fg mt-0.5 ${mono ? 'font-mono tabular-nums' : ''}`}>{value}</div>
     </div>
   )
 }
@@ -64,14 +66,10 @@ function AdjustmentsList({ adjustments }: { adjustments: Adjustment[] }) {
 type Mode = 'approve' | 'reject'
 
 const MODE_LABELS: Record<Mode, string> = {
-  approve: '✓ Firmar certificado',
-  reject: '✗ Rechazar avalúo',
+  approve: 'Firmar el certificado',
+  reject: 'Rechazar el avalúo',
 }
 
-const MODE_ACTIVE_CLASS: Record<Mode, string> = {
-  approve: 'bg-success text-white border-success',
-  reject: 'bg-danger text-white border-danger',
-}
 
 /**
  * /admin/avaluos/:id — revisión de la propuesta + firma/rechazo.
@@ -156,39 +154,26 @@ export default function AvaluoDetailPage() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      {/* Header */}
-      <div>
-        <Link
-          href="/admin/avaluos"
-          className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle hover:text-fg"
-        >
-          ← Cola
-        </Link>
-        <h1 className="text-h2 text-fg mt-2">
-          {pending ? 'Revisar y firmar.' : done === 'rechazado' ? 'Avalúo rechazado.' : 'Avalúo resuelto.'}
-        </h1>
-        <p className="text-sm text-fg-muted mt-1">
-          <span className="font-mono">{item?.slug ?? id}</span>
-          {item?.method ? ` · ${item.method}` : ''}
-        </p>
-      </div>
+      {/* GLOW UP 21-10: la vuelta y el encabezado de las demás pantallas del admin. */}
+      <BackButton href="/admin/avaluos" label="Cola de avalúos" />
+      <PageHeader
+        title={pending ? 'Revisar y firmar' : done === 'rechazado' ? 'Avalúo rechazado' : 'Avalúo resuelto'}
+        description={
+          <>
+            Certificado <span className="font-mono">{item?.slug ?? 'sin número'}</span>
+            {item?.method ? ` · ${metodoDelAvaluo(item.method)}` : ''}
+          </>
+        }
+      />
 
       {/* Resolved / not-pending banner */}
       {!pending && (
-        <div
-          className={
-            'card p-4 border-l-4 ' + (done === 'rechazado' ? '' : '')
-          }
+        <Alert
+          variant={done === 'rechazado' ? 'danger' : done ? 'success' : 'info'}
+          title={done ? `Este avalúo quedó ${avaluoStateMeta(done).label.toLowerCase()}` : 'Ya no está en la cola de firma'}
         >
-          <MonoLabel className="block">estado</MonoLabel>
-          <div className="text-sm text-fg mt-1">
-            {done ? (
-              <Pill tone={done === 'rechazado' ? 'bad' : 'ok'}>{done}</Pill>
-            ) : (
-              'Este avalúo ya no está en la cola de firma (fue resuelto o no está en revisión).'
-            )}
-          </div>
-        </div>
+          {done ? 'La decisión quedó en la bitácora.' : 'Fue resuelto o no está en revisión.'}
+        </Alert>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -212,7 +197,7 @@ export default function AvaluoDetailPage() {
                     }
                     mono
                   />
-                  <Meta label="método" value={item.method || '—'} />
+                  <Meta label="método" value={item.method ? metodoDelAvaluo(item.method) : '—'} />
                   <Meta
                     label="confianza"
                     value={
@@ -228,7 +213,7 @@ export default function AvaluoDetailPage() {
                     <MonoLabel className="block mb-1">
                       narrativa
                     </MonoLabel>
-                    <p className="text-sm text-fg-muted leading-relaxed">{item.narrativaEs}</p>
+                    <p className="text-body-sm text-fg-muted leading-relaxed">{item.narrativaEs}</p>
                   </div>
                 )}
 
@@ -238,11 +223,103 @@ export default function AvaluoDetailPage() {
                 <AdjustmentsList adjustments={item.adjustments} />
               </>
             ) : (
-              <p className="text-sm text-fg-muted">
+              <p className="text-body-sm text-fg-muted">
                 La propuesta de valor sólo está disponible mientras el avalúo está en revisión.
               </p>
             )}
           </Card>
+
+          {/* Glow up 22-10: la decisión justo debajo de la propuesta (antes al final, debajo del PDF). */}
+      {pending && (
+        <Card className="p-5 ">
+          <MonoLabel className="block mb-3">tu decisión</MonoLabel>
+
+          <div className="flex gap-2 mb-4 flex-wrap" role="group" aria-label="Qué hacer con el avalúo">
+            {(['approve', 'reject'] as Mode[]).map((m) => (
+              <Button
+                key={m}
+                type="button"
+                size="sm"
+                variant={mode === m ? 'secondary' : 'outline'}
+                aria-pressed={mode === m}
+                hideArrow
+                onClick={() => setMode(m)}
+              >
+                {MODE_LABELS[m]}
+              </Button>
+            ))}
+          </div>
+
+          {mode && (
+            <>
+              {mode === 'approve' && (
+                <div className="mb-4">
+                  <MonoLabel>
+                    firma (opcional · Ley 527 — firma electrónica)
+                  </MonoLabel>
+                  <div className="mt-2">
+                    <SignatureCanvas onChange={setSignatureImage} disabled={submitting} />
+                  </div>
+                </div>
+              )}
+
+              {mode === 'reject' && (
+                <label className="block">
+                  <MonoLabel>
+                    motivo del rechazo (obligatorio · queda en la bitácora) · {reason.length} / 2.000
+                  </MonoLabel>
+                  <Textarea
+                    className="mt-2 min-h-[100px]"
+                    placeholder="Explica por qué se rechaza el avalúo"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                </label>
+              )}
+
+              {reasonTooLong && (
+                <p className="text-body-sm text-danger mt-1">El motivo no puede superar 2 000 caracteres.</p>
+              )}
+              {rejectNeedsReason && (
+                <p className="text-body-sm text-warning mt-1">Indica el motivo del rechazo antes de confirmar.</p>
+              )}
+
+              {submitError && (
+                <Alert variant="danger" className="mt-3">
+                  {submitError}
+                </Alert>
+              )}
+
+              <div className="flex gap-2 mt-4">
+                <Button
+                  hideArrow
+                  type="button"
+                  variant={mode === 'reject' ? 'destructive' : 'default'}
+                  onClick={onSubmit}
+                  disabled={!canSubmit}
+                  isLoading={submitting}
+                >
+                  {submitting ? 'Guardando…' : mode === 'approve' ? 'Firmar' : 'Rechazar'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  hideArrow
+                  onClick={() => {
+                    setMode(null)
+                    setReason('')
+                    setSignatureImage(null)
+                    setSubmitError(null)
+                  }}
+                  disabled={submitting}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </>
+          )}
+        </Card>
+      )}
 
           {/* Detail: comparables */}
           <Card className="p-5">
@@ -256,8 +333,8 @@ export default function AvaluoDetailPage() {
                 {d!.comparables.map((c) => (
                   <div key={c.id} className="pb-3 border-b border-border last:border-0 last:pb-0">
                     <div className="flex items-baseline justify-between mb-1">
-                      <span className="text-sm text-fg">{c.observedType}</span>
-                      <span className="font-mono tabular-nums text-sm text-fg">
+                      <span className="text-body-sm text-fg">{tipoObservado(c.observedType)}</span>
+                      <span className="font-mono tabular-nums text-body-sm text-fg">
                         {fmtCOP(c.observedValue)}
                       </span>
                     </div>
@@ -295,20 +372,20 @@ export default function AvaluoDetailPage() {
               </>
             ) : (
               <div className="mb-2">
-                <Pill tone="bad">valuación rechazada (REFUSED)</Pill>
+                <Pill tone="bad">El modelo no pudo dar una banda</Pill>
               </div>
             )}
             {d?.sufficiency && (
               <>
-                <Meta label="suficiencia" value={d.sufficiency.status} />
-                <Meta label="score" value={fmtBps(d.sufficiency.scoreBps)} mono />
-                <Meta label="comps usados" value={String(d.sufficiency.compCount)} mono />
+                <Meta label="suficiencia" value={suficiencia(d.sufficiency.status)} />
+                <Meta label="puntaje" value={fmtBps(d.sufficiency.scoreBps)} mono />
+                <Meta label="comparables usados" value={String(d.sufficiency.compCount)} mono />
               </>
             )}
           </Card>
 
           {item?.canonLey820 && (
-            <div className={'card p-5 ' + (item.canonLey820.capped ? '' : '')}>
+            <Card className="p-5">
               <MonoLabel className="block mb-3">
                 canon Ley 820
               </MonoLabel>
@@ -320,7 +397,7 @@ export default function AvaluoDetailPage() {
                 </div>
               )}
               <p className="text-caption text-fg-muted mt-1">{item.canonLey820.incrementoMaxNote}</p>
-            </div>
+            </Card>
           )}
         </div>
       </div>
@@ -333,86 +410,6 @@ export default function AvaluoDetailPage() {
         <CertificatePdfViewer id={id} />
       </Card>
 
-      {/* Action — only while pending */}
-      {pending && (
-        <Card className="p-5 ">
-          <MonoLabel className="block mb-3">acción</MonoLabel>
-
-          <div className="flex gap-2 mb-4 flex-wrap">
-            {(['approve', 'reject'] as Mode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={'btn ' + (mode === m ? MODE_ACTIVE_CLASS[m] : '')}
-              >
-                {MODE_LABELS[m]}
-              </button>
-            ))}
-          </div>
-
-          {mode && (
-            <>
-              {mode === 'approve' && (
-                <div className="mb-4">
-                  <MonoLabel>
-                    firma (opcional · Ley 527 — firma electrónica)
-                  </MonoLabel>
-                  <div className="mt-2">
-                    <SignatureCanvas onChange={setSignatureImage} disabled={submitting} />
-                  </div>
-                </div>
-              )}
-
-              {mode === 'reject' && (
-                <label className="block">
-                  <MonoLabel>
-                    motivo del rechazo (obligatorio · queda en audit trail) · {reason.length} / 2000
-                  </MonoLabel>
-                  <Textarea
-                    className="mt-2 min-h-[100px]"
-                    placeholder="Explica por qué se rechaza el avalúo"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                  />
-                </label>
-              )}
-
-              {reasonTooLong && (
-                <p className="text-sm text-danger mt-1">El motivo no puede superar 2 000 caracteres.</p>
-              )}
-              {rejectNeedsReason && (
-                <p className="text-sm text-warning mt-1">Indica el motivo del rechazo antes de confirmar.</p>
-              )}
-
-              {submitError && (
-                <Card className="p-3 border-danger/40 mt-3">
-                  <p className="text-sm text-danger">{submitError}</p>
-                </Card>
-              )}
-
-              <div className="flex gap-2 mt-4">
-                <Button hideArrow type="button" onClick={onSubmit} disabled={!canSubmit}>
-                  {submitting ? 'Guardando…' : mode === 'approve' ? 'Firmar' : 'Rechazar'}
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode(null)
-                    setReason('')
-                    setSignatureImage(null)
-                    setSubmitError(null)
-                  }}
-                  disabled={submitting}
-                  className="btn"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </>
-          )}
-        </Card>
-      )}
     </div>
   )
 }

@@ -145,7 +145,9 @@ describe('PreScoringConfigCard', () => {
     getMock.mockRejectedValue(new ApiError(502, 'Micro de agentes inalcanzable'))
     await mount()
 
-    expect(container.textContent).toContain('Micro de agentes inalcanzable')
+    // Ronda 26 (T1): un 5xx no muestra el texto del servidor; dice que falló de nuestro lado.
+    expect(container.textContent).toMatch(/falló de nuestro lado/)
+    expect(container.textContent).not.toContain('Micro de agentes inalcanzable')
     // No renderiza los inputs cuando no pudo cargar.
     expect(container.querySelector('#prescoring-reuse-ttl')).toBeNull()
   })

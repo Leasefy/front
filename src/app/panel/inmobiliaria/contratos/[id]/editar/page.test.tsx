@@ -167,3 +167,25 @@ describe('Editar contrato — el error en su campo y la regla de oro', () => {
     expect(contenedor.textContent).not.toContain('de nuestro lado')
   })
 })
+
+describe('GLOW UP 21-10: lo que pasa al guardar, dicho donde se decide', () => {
+  it('el botón dice lo que hace («Guardar los cambios»): guardar no firma', async () => {
+    await act(async () => {
+      raiz.render(<EditarContratoPage />)
+    })
+    const boton = contenedor.querySelector<HTMLButtonElement>('button[type="submit"]')
+    expect(boton?.textContent).toContain('Guardar los cambios')
+    expect(contenedor.textContent).not.toContain('Guardar y firmar')
+    expect(contenedor.querySelector('[data-testid="al-guardar"]')?.textContent).toContain(
+      'el contrato queda esperando la firma del inquilino',
+    )
+  })
+
+  it('volver y cancelar llevan a la ficha del contrato, no a «la página anterior»', async () => {
+    await act(async () => {
+      raiz.render(<EditarContratoPage />)
+    })
+    const enlaces = Array.from(contenedor.querySelectorAll('a')).map((a) => a.getAttribute('href'))
+    expect(enlaces.filter((h) => h === "/panel/inmobiliaria/contratos/c-1").length).toBeGreaterThanOrEqual(2)
+  })
+})

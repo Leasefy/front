@@ -9,11 +9,12 @@
  * inmueble no la enlazaba nadie.
  */
 
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Users, ArrowRight } from '@phosphor-icons/react';
+import { Users } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { AnimatedNumber, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Avatar, Stagger, StaggerItem } from '@leasefy/cadence';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
@@ -24,19 +25,19 @@ import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/app
 /** Mismos rótulos que la tabla de Postulaciones: una postulación, un nombre. */
 const ESTADO: Record<LandlordApplicationStatus, { label: string; bg: string; text: string }> = {
   DRAFT: { label: 'Borrador', bg: 'bg-surface-muted', text: 'text-fg-muted' },
-  SUBMITTED: { label: 'Postulado', bg: 'bg-primary-soft', text: 'text-primary' },
-  UNDER_REVIEW: { label: 'En revisión', bg: 'bg-primary-soft', text: 'text-primary' },
+  SUBMITTED: { label: 'Postulado', bg: 'bg-surface-muted', text: 'text-fg' },
+  UNDER_REVIEW: { label: 'En revisión', bg: 'bg-surface-muted', text: 'text-fg' },
   APPROVED: { label: 'Aprobado', bg: 'bg-success-soft', text: 'text-success' },
   REJECTED: { label: 'Rechazado', bg: 'bg-danger-soft', text: 'text-danger' },
   NEEDS_INFO: { label: 'Pide info', bg: 'bg-warning-soft', text: 'text-warning' },
   WITHDRAWN: { label: 'Retirado', bg: 'bg-surface-muted', text: 'text-fg-muted' },
   CONTRACT_FAILED: { label: 'Contrato fallido', bg: 'bg-danger-soft', text: 'text-danger' },
   NO_ADJUDICADO: { label: 'No adjudicado', bg: 'bg-surface-muted', text: 'text-fg-muted' },
-  PREAPPROVED: { label: 'Preaprobado', bg: 'bg-primary-soft', text: 'text-primary' },
+  PREAPPROVED: { label: 'Preaprobado', bg: 'bg-success-soft', text: 'text-success' },
 };
 
 /** Los que todavía esperan una decisión — es el número que importa. */
-const ESPERANDO: LandlordApplicationStatus[] = ['SUBMITTED', 'UNDER_REVIEW', 'NEEDS_INFO'];
+export const ESPERANDO: LandlordApplicationStatus[] = ['SUBMITTED', 'UNDER_REVIEW', 'NEEDS_INFO'];
 
 /** Cuántos se enseñan acá: la lista entera vive en su pantalla. */
 const CUANTOS_SE_MUESTRAN = 3;
@@ -111,15 +112,13 @@ export function CandidatosDelInmueble({
     : null;
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+    <div className={SUPERFICIE_DE_LA_FICHA}>
+      <div className="flex items-center justify-between gap-3 border-b border-border-faint px-6 pb-4 pt-5 dark:border-border-strong">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-surface-muted">
-            <Users className="h-4 w-4 text-fg-muted" />
-          </span>
+          <Users className="h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden="true" />
           <div>
-            <h3 className="text-sm font-semibold text-fg">Candidatos</h3>
-            <p className="text-xs text-fg-muted">
+            <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Candidatos</h3>
+            <p className="text-caption text-fg-muted">
               {!propertyId
                 ? 'Sin inmueble asociado'
                 : candidatos === null
@@ -134,12 +133,6 @@ export function CandidatosDelInmueble({
             </p>
           </div>
         </div>
-        {candidatos !== null && candidatos.length > 0 && (
-          <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
-            {/* Cuenta cuando llega uno nuevo o se relee después de decidir. */}
-            <AnimatedNumber value={candidatos.length} format={(n) => String(Math.round(n))} />
-          </span>
-        )}
       </div>
 
       {/* F7: un mandato migrado de cartera nace sin inmueble, y a los
@@ -150,7 +143,7 @@ export function CandidatosDelInmueble({
           queSon="candidatos"
           icono={Users}
           titulo="Esta consignación no tiene un inmueble asociado"
-          descripcion="Los candidatos se postulan a un inmueble: cuando le asocies uno, aparecen acá."
+          descripcion="Los candidatos se postulan a un inmueble: cuando le asocies uno, aparecen aquí."
           className="py-8"
         />
       )}
@@ -171,7 +164,7 @@ export function CandidatosDelInmueble({
       {ordenados !== null && ordenados.length > 0 && (
         <Stagger as="ul" className="divide-y divide-border">
           {/* Tres y el enlace: la lista completa vive en su pantalla, con
-              comparador y acciones. Repetirla acá sería tener dos. */}
+              comparador y acciones. Repetirla aquí sería tener dos. */}
           {ordenados.slice(0, CUANTOS_SE_MUESTRAN).map((c) => {
             const est = ESTADO[c.status] ?? ESTADO.SUBMITTED;
             return (
@@ -185,23 +178,21 @@ export function CandidatosDelInmueble({
                   aria-label={`Ver la postulación de ${c.tenantName || 'este candidato'}`}
                   className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-muted"
                 >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-medium text-primary">
-                    {(c.tenantName || '?').charAt(0).toUpperCase()}
-                  </span>
+                  <Avatar name={c.tenantName || '?'} size="sm" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm text-fg">{c.tenantName}</span>
-                    <span className="block truncate text-xs text-fg-muted">{c.tenantEmail}</span>
+                    <span className="block truncate text-caption text-fg-muted">{c.tenantEmail}</span>
                     {/* 🔴 El estudio es opcional (Nico, 04-10-2026). */}
                     <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} className="mt-1" />
                   </span>
                   {c.riskScore && (
-                    <span className="shrink-0 font-mono text-xs tabular-nums text-fg-muted">
+                    <span className="shrink-0 font-mono text-caption tabular-nums text-fg-muted">
                       {c.riskScore.totalScore} · {c.riskScore.level}
                     </span>
                   )}
                   <span
                     className={cn(
-                      'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                      'shrink-0 rounded-full px-2.5 py-0.5 text-caption font-medium',
                       est.bg,
                       est.text,
                     )}
@@ -215,7 +206,8 @@ export function CandidatosDelInmueble({
         </Stagger>
       )}
 
-      {propertyId && (
+      {/* Con cero candidatos, «Ver candidatos» llevaba a una lista vacía (revisión 21-10). */}
+      {propertyId && (candidatos?.length ?? 0) > 0 && (
         <Link
           href={href}
           className="flex items-center justify-center gap-1.5 border-t border-border px-5 py-3 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
@@ -223,7 +215,6 @@ export function CandidatosDelInmueble({
           {candidatos && candidatos.length > CUANTOS_SE_MUESTRAN
             ? `Ver los ${candidatos.length} candidatos`
             : 'Ver candidatos'}
-          <ArrowRight className="h-4 w-4" />
         </Link>
       )}
 

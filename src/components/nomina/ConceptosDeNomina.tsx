@@ -27,6 +27,7 @@
  */
 
 import { useState } from 'react';
+import { ListBullets } from '@phosphor-icons/react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,13 @@ import type { ClaseDeConcepto, Conceptos } from '@/lib/api/nomina.types';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Avisos, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis';
+import { SinDatos } from '@/components/estado/SinDatos';
+
+type VistaDeConceptos = 'todos' | 'sin-cuenta' | ClaseDeConcepto;
 
 /**
  * «Por qué hay DOS marcas y no una» — era una caja de texto puesta sobre el
@@ -62,7 +70,8 @@ import { Cargado, useCargaDeNomina } from './usar-nomina';
 export function PorQueDosMarcas() {
   return (
     <ParaEntenderMas
-      etiqueta="Por qué hay dos marcas"
+      // Revisora r25 (Conceptos, UI): la etiqueta dice de qué marcas habla.
+      etiqueta="Por qué hay dos marcas: salarial y prestacional"
       titulo="Por qué hay DOS marcas y no una"
       descripcion="«Salarial» y «Prestacional» miden cosas distintas, y un concepto puede tener una sin la otra."
       variante="secundario"
@@ -71,17 +80,17 @@ export function PorQueDosMarcas() {
         <StaggerItem>
           <dl className="grid gap-3">
             <div className="rounded-lg border border-border bg-surface-muted p-4">
-              <dt className="text-body-sm font-semibold text-fg">«Salarial»</dt>
+              <dt className="text-body-sm font-medium text-fg">«Salarial»</dt>
               <dd className="mt-1 text-body-sm text-fg-muted">Significa que entra al IBC de seguridad social.</dd>
             </div>
             <div className="rounded-lg border border-border bg-surface-muted p-4">
-              <dt className="text-body-sm font-semibold text-fg">«Prestacional»</dt>
+              <dt className="text-body-sm font-medium text-fg">«Prestacional»</dt>
               <dd className="mt-1 text-body-sm text-fg-muted">Significa que entra a la base de prima y cesantías.</dd>
             </div>
           </dl>
         </StaggerItem>
         <StaggerItem className="space-y-1.5">
-          <h3 className="text-body-sm font-semibold text-fg">El caso que las separa: el auxilio de transporte</h3>
+          <h3 className="text-body-sm font-medium text-fg">El caso que las separa: el auxilio de transporte</h3>
           <p className="text-body-sm text-fg-muted">
             <strong className="text-fg">No es salario</strong> (Ley 15 de 1959 art. 2) pero{' '}
             <strong className="text-fg">sí es base de prima y cesantías</strong> (CST art. 249) —
@@ -107,6 +116,7 @@ export function ConceptosDeNominaPanel() {
   const estado = useCargaDeNomina<Conceptos>(() => nominaApi.conceptos(), []);
   const [sembrando, setSembrando] = useState(false);
   const [editando, setEditando] = useState<Record<string, string>>({});
+  const [vista, setVista] = useState<VistaDeConceptos>('todos');
 
   const sembrar = async () => {
     setSembrando(true);
@@ -121,7 +131,7 @@ export function ConceptosDeNominaPanel() {
       );
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudieron sembrar los conceptos.', accion: 'sembrar los conceptos' }));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudieron cargar los conceptos sugeridos.', accion: 'cargar los conceptos sugeridos' }));
     } finally {
       setSembrando(false);
     }
@@ -148,15 +158,53 @@ export function ConceptosDeNominaPanel() {
         queEs="el catálogo de conceptos"
         queSeEspera="configurar los conceptos de nómina"
       >
-        {(datos) => (
+        {(datos) => {
+          const sinCuenta = new Set(datos.sinCuenta.map((c) => c.codigo));
+          const total = datos.conceptos.length;
+          /** Sin ningún concepto todavía: sólo el vacío con su acción (r25). */
+          const vacio = datos.sembrados === 0 && total === 0;
+          const conCuenta = datos.conceptos.filter((c) => !sinCuenta.has(c.codigo)).length;
+          const cifras = localeDeLasCifras();
+          const clases = (Object.keys(NOMBRE_DE_CLASE) as ClaseDeConcepto[]).filter(
+            (clase) => vista === 'todos' || vista === 'sin-cuenta' || vista === clase,
+          );
+          return (
           <>
-            {datos.sembrados === 0 ? (
-              <Avisos
-                avisos={[
-                  'El catálogo está vacío. Siémbralo: trae los conceptos que el motor calcula, con las cuentas del Decreto 2650 como SUGERENCIA. Es idempotente — sembrar dos veces no duplica y no pisa lo que edites.',
+            {/* GLOW UP 3.ª vuelta · LA RESPUESTA: cuántos conceptos ya saben a qué cuenta van. Sin
+                cuenta, la nómina se liquida pero no se asienta. */}
+            {total > 0 ? (
+              <CifraHeroe
+                rotulo="Conceptos con su cuenta del PUC"
+                cifra={`${conCuenta.toLocaleString(cifras)} de ${total.toLocaleString(cifras)}`}
+                contexto={sinCuenta.size === 0 ? 'la nómina se asienta completa' : 'los que faltan no dejan asentar la nómina'}
+                total={total}
+                tramos={[
+                  { clave: 'con', etiqueta: 'Con cuenta', monto: conCuenta, tono: 'exito', cifra: conCuenta.toLocaleString(cifras) },
+                  { clave: 'sin', etiqueta: 'Sin cuenta', monto: total - conCuenta, tono: 'aviso', cifra: (total - conCuenta).toLocaleString(cifras) },
                 ]}
-                testId="catalogo-vacio"
+                data-testid="cifra-de-conceptos"
               />
+            ) : null}
+
+            {/* Revisora r25 (Conceptos #1): el vacío es el vacío de la casa, con su acción, y la nota del
+                Decreto 2650 debajo en gris (antes un aviso ámbar y, debajo, «El catálogo» diciendo lo mismo). */}
+            {vacio ? (
+              <div className="space-y-2" data-testid="catalogo-vacio">
+                <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                  <SinDatos
+                    queSon="conceptos"
+                    icono={ListBullets}
+                    titulo="Todavía no hay conceptos"
+                    descripcion="Carga los que Leasefy sugiere: cargarlos dos veces no duplica nada ni pisa lo que hayas editado."
+                    accion={
+                      <Button onClick={() => void sembrar()} disabled={sembrando} data-testid="sembrar-conceptos">
+                        Cargar los conceptos sugeridos
+                      </Button>
+                    }
+                  />
+                </div>
+                <p className="max-w-3xl text-caption text-fg-muted">{sinMayusculasDeEnfasis(datos.avisoDeCuentas)}</p>
+              </div>
             ) : null}
 
             {datos.sinCuenta.length > 0 ? (
@@ -164,40 +212,61 @@ export function ConceptosDeNominaPanel() {
                 avisos={datos.sinCuenta.map(
                   (c) => `${c.codigo} — ${c.nombre}: le falta ${c.falta}.`,
                 )}
-                titulo={`${datos.sinCuenta.length} concepto${datos.sinCuenta.length === 1 ? '' : 's'} sin cuenta: la nómina se liquida pero NO se asienta`}
+                titulo={`${datos.sinCuenta.length} concepto${datos.sinCuenta.length === 1 ? '' : 's'} sin cuenta: la nómina se liquida pero no se asienta`}
                 testId="conceptos-sin-cuenta"
               />
             ) : null}
 
+            {vacio ? null : (
             <section className="space-y-3">
               <TituloDeBloque
                 titulo="El catálogo"
-                explicacion={datos.avisoDeCuentas}
+                explicacion={sinMayusculasDeEnfasis(datos.avisoDeCuentas)}
                 accion={
                   <Button
-                    variant="outline"
+                    size="sm"
+                    variant={datos.sembrados === 0 ? 'default' : 'outline'}
                     onClick={() => void sembrar()}
                     disabled={sembrando}
                     data-testid="sembrar-conceptos"
                   >
                     {datos.sembrados === 0
-                      ? 'Sembrar el catálogo'
+                      ? 'Cargar los conceptos sugeridos'
                       : 'Volver a sembrar (no pisa lo editado)'}
                   </Button>
                 }
               />
 
-              {(Object.keys(NOMBRE_DE_CLASE) as ClaseDeConcepto[]).map((clase) => {
-                const lista = datos.conceptos.filter((c) => c.clase === clase);
+              {total > 0 ? (
+                <PestanasDeEstado
+                  etiqueta="Qué conceptos ver"
+                  valor={vista}
+                  onCambio={setVista}
+                  pestanas={[
+                    { valor: 'todos', etiqueta: 'Todos', cuantos: total, fija: true },
+                    { valor: 'sin-cuenta', etiqueta: 'Sin cuenta', cuantos: sinCuenta.size, tono: 'aviso' },
+                    ...(Object.keys(NOMBRE_DE_CLASE) as ClaseDeConcepto[]).map((clase) => ({
+                      valor: clase as VistaDeConceptos,
+                      etiqueta: NOMBRE_DE_CLASE[clase],
+                      cuantos: datos.conceptos.filter((c) => c.clase === clase).length,
+                    })),
+                  ]}
+                />
+              ) : null}
+
+              {clases.map((clase) => {
+                const lista = datos.conceptos.filter(
+                  (c) => c.clase === clase && (vista !== 'sin-cuenta' || sinCuenta.has(c.codigo)),
+                );
                 if (lista.length === 0) return null;
                 return (
                   <div key={clase} className="space-y-2">
-                    <h3 className="text-sm font-medium text-fg">
+                    <h3 className="text-body-sm font-medium text-fg">
                       {NOMBRE_DE_CLASE[clase]}
                     </h3>
-                    <div className="overflow-x-auto">
-                      <Table data-testid={`conceptos-${clase}`}>
-                        <TableHeader>
+                    <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                      <Table data-testid={`conceptos-${clase}`} className="max-md:block">
+                        <TableHeader className="max-md:hidden">
                           <TableRow>
                             <TableHead>Código</TableHead>
                             <TableHead>Nombre</TableHead>
@@ -207,13 +276,17 @@ export function ConceptosDeNominaPanel() {
                             <TableHead>Contrapartida</TableHead>
                           </TableRow>
                         </TableHeader>
-                        <TableBodyAnimado>
+                        <TableBodyAnimado className="max-md:block">
                           {lista.map((c) => (
-                            <TableRowAnimada key={c.id} data-testid={`concepto-${c.codigo}`}>
-                              <TableCell className="font-mono text-caption">
+                            <TableRowAnimada
+                              key={c.id}
+                              data-testid={`concepto-${c.codigo}`}
+                              className="max-md:grid max-md:grid-cols-2 max-md:gap-x-3 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
+                            >
+                              <TableCell className="font-mono text-caption max-md:col-span-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-fg-muted">
                                 {c.codigo}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="max-md:col-span-2 max-md:row-start-2 max-md:block max-md:p-0">
                                 <span className="text-fg">{c.nombre}</span>
                                 {c.notas ? (
                                   <p className="text-caption leading-relaxed text-fg-muted">
@@ -222,18 +295,18 @@ export function ConceptosDeNominaPanel() {
                                 ) : null}
                               </TableCell>
                               <TableCell
-                                className="text-caption"
+                                className="text-caption max-md:row-start-3 max-md:block max-md:p-0 max-md:text-fg-muted max-md:before:content-['Salarial:_']"
                                 data-testid={`salarial-${c.codigo}`}
                               >
                                 {c.constitutivoSalario ? 'Sí' : 'No'}
                               </TableCell>
                               <TableCell
-                                className="text-caption"
+                                className="text-caption max-md:row-start-3 max-md:block max-md:p-0 max-md:text-fg-muted max-md:before:content-['Prestacional:_']"
                                 data-testid={`prestacional-${c.codigo}`}
                               >
                                 {c.basePrestacional ? 'Sí' : 'No'}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="max-md:row-start-4 max-md:block max-md:p-0 max-md:before:mb-1 max-md:before:block max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-['Cuenta_del_PUC']">
                                 <Input
                                   className="w-28 font-mono text-caption"
                                   defaultValue={c.cuentaPuc ?? ''}
@@ -253,7 +326,7 @@ export function ConceptosDeNominaPanel() {
                                   data-testid={`cuenta-${c.codigo}`}
                                 />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="max-md:row-start-4 max-md:block max-md:p-0 max-md:before:mb-1 max-md:before:block max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-['Contrapartida']">
                                 {clase === 'APORTE_EMPLEADOR' ||
                                 clase === 'PROVISION' ||
                                 c.codigo === 'SUELDO' ? (
@@ -295,8 +368,10 @@ export function ConceptosDeNominaPanel() {
                 );
               })}
             </section>
+            )}
           </>
-        )}
+          );
+        }}
       </Cargado>
     </div>
   );

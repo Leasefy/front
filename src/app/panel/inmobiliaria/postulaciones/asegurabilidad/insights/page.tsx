@@ -10,8 +10,8 @@ import { PrimaDistributionChart } from '@/components/inmobiliaria/cotizador/Prim
 import { InsightsMonthlyCostPreview } from '@/components/inmobiliaria/cotizador/InsightsMonthlyCostPreview'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
-import { SectionLabel } from '@/components/ui/section-label'
 import { CrossFade } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 /**
  * Cuatro widgets, los cuatro con dato detrás. Había dos más —«Calidad de
@@ -46,15 +46,11 @@ export default function CotizadorInsightsPage() {
     <CrossFade swapKey="insights">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
-      <header className="space-y-1.5">
-        <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cotizador.insights.title')}
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-          {t('inmobiliaria.ai.cotizador.insights.subtitle')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t('inmobiliaria.ai.cotizador.insights.title')}
+        descripcion={t('inmobiliaria.ai.cotizador.insights.subtitle')}
+      />
 
       {/* El fallo reemplaza los datos, no se apila debajo de ellos: cuatro
           gráficos vacíos con un cartel rojo arriba afirman y desmienten a la
@@ -69,7 +65,7 @@ export default function CotizadorInsightsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Widget 1 — Approval Rate Monthly (full-row at md) */}
           <section className="rounded-lg border border-border bg-surface p-6 space-y-4 md:col-span-2">
-            <h2 className="text-base font-semibold text-fg">
+            <h2 className="text-base font-medium text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.approvalRate')}
             </h2>
             <ApprovalRateMonthlyChart
@@ -80,7 +76,7 @@ export default function CotizadorInsightsPage() {
 
           {/* Widget 2 — Prima Distribution */}
           <section className="rounded-lg border border-border bg-surface p-6 space-y-4">
-            <h2 className="text-base font-semibold text-fg">
+            <h2 className="text-base font-medium text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.primaDistribution')}
             </h2>
             <PrimaDistributionChart
@@ -99,7 +95,7 @@ export default function CotizadorInsightsPage() {
 
           {/* Widget 4 — Monthly Cost Preview */}
           <section className="rounded-lg border border-border bg-surface p-6 space-y-4">
-            <h2 className="text-base font-semibold text-fg">
+            <h2 className="text-base font-medium text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.costTrend')}
             </h2>
             <InsightsMonthlyCostPreview

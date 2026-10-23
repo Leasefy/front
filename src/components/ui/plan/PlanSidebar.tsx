@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
-import { CaretDown, SignOut, Question, TrendUp, X, SidebarSimple } from '@phosphor-icons/react';
+import { CaretDown, SignOut, Question, TrendUp, X, SidebarSimple, MagnifyingGlass } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 import { motionDuration, motionEase } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
@@ -122,6 +122,16 @@ function useEsMac(): boolean {
   return useSyncExternalStore(sinSuscripcion, () => esMac(), () => false);
 }
 
+/** «⌘K» (o «Ctrl K») a la derecha del buscador abierto: la tecla que abre la paleta, a la vista. */
+function AtajoDelBuscador() {
+  const mac = useEsMac();
+  return (
+    <span className="pointer-events-none absolute right-5 top-[calc(50%-2px)] -translate-y-1/2" aria-hidden="true">
+      <Kbd size="sm">{mac ? '⌘K' : 'Ctrl K'}</Kbd>
+    </span>
+  );
+}
+
 export interface NavItem {
   label: string;
   href: string;
@@ -167,7 +177,7 @@ function displayLabel(item: NavItem): string {
  * ("Próximamente"). Returns undefined when the row carries neither, so
  * SidebarItem keeps rendering its numeric `count` untouched.
  */
-function TrailingPills({ item, enLaActiva = false }: { item: NavItem; enLaActiva?: boolean }) {
+function TrailingPills({ item }: { item: NavItem }) {
   const tr = useTr();
   if (!item.ai && !item.tag) return null;
   return (
@@ -175,10 +185,8 @@ function TrailingPills({ item, enLaActiva = false }: { item: NavItem; enLaActiva
       {item.ai && (
         <span
           className={cn(
-            'text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full',
-            // Sobre la píldora azul de la activa, la «IA» azul se perdía (mismo
-            // fondo): ahí va en la superficie, con la tinta de la activa.
-            enLaActiva ? 'bg-surface text-[color:var(--menu-activa-tinta)]' : 'bg-primary-soft text-primary',
+            // C2 (plan de la barra, 22-10): el azul sólo en la fila activa; la «IA» en gris mono con filete.
+            'rounded-[6px] border border-border px-1 py-px font-mono text-[9.5px] font-medium uppercase leading-none tracking-[0.06em] text-fg-subtle',
           )}
         >
           {tr('IA')}
@@ -235,6 +243,9 @@ export interface PlanSidebarProps {
   /** Slot right under the search box — the panel's starting point (the agency
    *  passes its «Nuevo» launcher here). Hidden while collapsed, like search. */
   belowSearch?: React.ReactNode;
+  /** El mismo punto de partida en la barra PLEGADA (C8, 22-10): un botón cuadrado de 40 px
+   *  (la agencia pasa `<BotonNuevo compacto />`). Va debajo de «Buscar». */
+  belowSearchPlegado?: React.ReactNode;
   /** Placeholder for the cadence SidebarSearch field. */
   searchPlaceholder?: string;
   /** Workspace name shown in the static header brand row (defaults to `logo.title`). */
@@ -350,7 +361,8 @@ function useDespuesDelPrimerPintado(): boolean {
 const ResalteConFundido = createContext(false);
 
 /** La píldora de la activa: el azul del menú (`--menu-activa`, globals.css), radio del DS. */
-const PILDORA_DE_LA_ACTIVA = 'pointer-events-none absolute inset-0 rounded-[12px] bg-[color:var(--menu-activa)]';
+// Decisión 19 de Nico (22-10): en la barra la activa es una tarjeta blanca con filete; el azul va en el texto y el ícono.
+const PILDORA_DE_LA_ACTIVA = 'pointer-events-none absolute inset-0 rounded-[12px] bg-[color:var(--menu-activa)] ring-1 ring-inset ring-border dark:ring-0';
 
 /** Texto e ícono de la activa (`--menu-activa-tinta`). */
 const TINTA_DE_LA_ACTIVA = 'text-[color:var(--menu-activa-tinta)]';
@@ -481,28 +493,56 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
   // Collapsed icon-rail row: SidebarItem has no icon-only/collapsed mode, so the
   // rail row stays composed (see ## Gaps). title + data-tour-target preserved.
   if (isCollapsed) {
+    // C8 (plan de la barra, 22-10): botón de 40 × 40 con su nombre en un tooltip de tinta a la derecha
+    // (antes un `title` del navegador, lento y gris); el nombre accesible va en `aria-label`.
+    // Los pendientes, como un punto: el número se lee en el tooltip.
+    const conPendientes = item.badge !== undefined && item.badge > 0;
+    const nombre = displayLabel(item);
     return (
-      <div className="relative">
+      <div className="relative mx-auto h-10 w-10">
         {/* La misma píldora azul de la barra abierta, deslizándose (`ResalteDelRiel`). */}
         {isActive && <ResalteDelRiel />}
-        <Link
-          href={item.href}
-          onClick={onClick}
-          aria-current={isActive ? 'page' : undefined}
-          data-tour-target={item.dataTourTarget}
-          title={`${displayLabel(item)}${item.ai ? ' — IA' : ''}${item.tag ? ` — ${item.tag}` : ''}`}
-          className={cn(
-            'relative z-[1] flex items-center justify-center px-2.5 py-2.5 rounded-[12px] transition-colors',
-            isActive
-              ? TINTA_DE_LA_ACTIVA
-              : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
-          )}
-        >
-          <Icon
-            weight={isActive ? 'fill' : 'regular'}
-            className={cn('w-[18px] h-[18px]', isActive ? TINTA_DE_LA_ACTIVA : 'text-fg-muted')}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href={item.href}
+              onClick={onClick}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={`${nombre}${conPendientes ? ` (${item.badge})` : ''}${item.ai ? ' — IA' : ''}${item.tag ? ` — ${item.tag}` : ''}`}
+              data-tour-target={item.dataTourTarget}
+              className={cn(
+                'relative z-[1] grid h-10 w-10 place-items-center rounded-[12px] transition-colors',
+                'outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                isActive
+                  ? TINTA_DE_LA_ACTIVA
+                  : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+              )}
+            >
+              <Icon
+                weight={isActive ? 'fill' : 'regular'}
+                className={cn('w-[18px] h-[18px]', isActive ? TINTA_DE_LA_ACTIVA : 'text-fg-muted')}
+              />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent
+            side="right"
+            sideOffset={8}
+            className="flex items-center gap-2 bg-fg text-bg"
+            data-testid="tooltip-del-riel"
+          >
+            <span>{nombre}</span>
+            {conPendientes ? <span className="font-mono tabular-nums opacity-70">{item.badge}</span> : null}
+            {item.ai ? <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] opacity-70">IA</span> : null}
+            {item.tag ? <span className="opacity-70">{item.tag}</span> : null}
+          </TooltipContent>
+        </Tooltip>
+        {conPendientes ? (
+          <span
+            aria-hidden="true"
+            data-testid="punto-de-pendientes"
+            className="pointer-events-none absolute right-2 top-2 z-[2] h-1.5 w-1.5 rounded-full bg-fg"
           />
-        </Link>
+        ) : null}
       </div>
     );
   }
@@ -541,7 +581,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         count={item.badge !== undefined && item.badge > 0 ? item.badge : undefined}
         // `badge` takes a node and renders it as-is (see SidebarItemProps), so
         // the IA / Próximamente pills ride here without forking the DS row.
-        badge={item.ai || item.tag ? <TrailingPills item={item} enLaActiva={isActive} /> : undefined}
+        badge={item.ai || item.tag ? <TrailingPills item={item} /> : undefined}
         depth={depth}
         onClick={navegar}
         onMouseEnter={precargar}
@@ -550,11 +590,10 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         // poder deslizarse): la fila va transparente y POR ENCIMA de él (`z-[1]`),
         // también al pasar el mouse. tailwind-merge pisa con estas clases la
         // píldora del DS (`bg-primary-soft`, saturada en oscuro) y su tinta.
-        className="z-[1] hover:bg-surface-hover data-[active]:bg-transparent data-[active]:hover:bg-transparent data-[active]:font-medium data-[active]:text-[color:var(--menu-activa-tinta)]"
+        // C3 (plan de la barra, 22-10): filas de 32 px en tinta de 14 px con el ícono en ceniza; la activa, en voltaje.
+        className="py-[6px] text-[14px] text-fg [&_svg]:text-fg-subtle z-[1] hover:bg-surface-hover data-[active]:bg-transparent data-[active]:hover:bg-transparent data-[active]:font-medium data-[active]:text-[color:var(--menu-activa-tinta)] data-[active]:[&_svg]:text-[color:var(--menu-activa-tinta)]"
         // SidebarItem fija su padding con `style` y esparce los props DESPUÉS,
         // así que este `style` gana: dentro de una sección el aire es de 8/6 px.
-        style={enSeccion ? { paddingLeft: 8, paddingRight: 6 } : undefined}
-        title={enSeccion ? displayLabel(item) : undefined}
       />
   );
 
@@ -606,32 +645,22 @@ function NavSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Secciones plegables (Nico, 2026-09-22: «no se distingue muy bien entre la
-// sección y las opciones; deberíamos volverlas secciones con dropdown porque
-// tenemos mucha información»).
+// sección y las opciones; deberíamos volverlas secciones con dropdown»).
 //
-// Antes la cabecera era el `SidebarSection` de Cadence: mono, 11 px, MAYÚSCULAS,
-// en `text-fg-subtle` (#726E68) — y las filas iban en `text-fg-muted`
-// (#6E6A63). Mismo gris con 2 puntos de diferencia: la jerarquía la cargaba
-// sólo el tamaño. Ahora la cabecera es un CONTROL:
-//   · tinta plena (`text-fg`) y semibold, contra filas en gris con ícono;
-//   · en sentence case, porque en Cadence los controles van así (los eyebrows
-//     mono en mayúsculas son rótulos, y esto ya no es un rótulo: se aprieta);
-//   · un chevron que gira, y un fondo al pasar el mouse — forma de botón;
-//   · las filas cuelgan de una guía vertical (la raya de la izquierda) y la
-//     fila activa enciende su tramo.
-// Plegada, la cabecera sigue diciendo lo que adentro importa: la suma de los
-// contadores y, si la página actual vive ahí, la cabecera va en el azul.
+// Cómo es hoy (plan de la barra C1–C9, 22-10; revisora r23):
+//   · la barra es una hoja de ARENA y la fila activa una tarjeta BLANCA con el
+//     texto y el ícono en voltaje (decisiones 18 y 19 de Nico);
+//   · la cabecera de cada sección es un RÓTULO en mono MAYÚSCULA (como los de
+//     todo el panel), con su chevron: plegada, se ve; abierta, sólo al pasar el
+//     mouse o con el foco;
+//   · las filas caen en el mismo borde que Inicio (sin la guía vertical de
+//     antes) y van a 33 px una de otra;
+//   · plegada, la cabecera sigue diciendo lo que adentro importa: la suma de
+//     los contadores y, si la página actual vive ahí, la cabecera en el azul.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Sangría + guía. La raya cae a 11 px, justo donde empieza el texto de la
- * cabecera (10 px): se lee como «esto cuelga de eso». La sangría es corta a
- * propósito —la fila recorta su propio aire de 10 a 8 px a la izquierda y a
- * 6 a la derecha— porque cada píxel sale del ancho de la etiqueta: con 15 px
- * de sangría «Solicitudes · PQRS» + la píldora IA se cortaba en «PQ…»
- * (captura del 22-09). Ningún nombre se corta al ancho normal de 240 px.
- */
-const GUIA_DE_SECCION = 'ml-[11px] border-l border-border pl-[3px]';
+/** El espacio de las filas de una sección: el mismo borde que Inicio, 33 px entre filas. */
+const GUIA_DE_SECCION = 'mt-0.5 space-y-px';
 
 interface SeccionPlegableProps {
   bloque: Extract<BloqueDelMenu<NavItem>, { tipo: 'seccion' }>;
@@ -650,14 +679,14 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
   const marcada = contieneLaActiva && !abierta;
 
   return (
-    <div data-seccion={bloque.clave} className="pt-1">
+    <div data-seccion={bloque.clave} className="mt-4">
       <button
         type="button"
         onClick={onAlternar}
         aria-expanded={abierta}
         aria-controls={idFilas}
         className={cn(
-          'group/seccion flex w-full items-center gap-2 rounded-[12px] px-[10px] py-[7px] text-left',
+          'group/seccion flex h-7 w-full items-center gap-2 rounded-[10px] px-[10px] text-left',
           // El mismo tinte al pasar que las filas (`surface-hover`): en oscuro
           // `surface-muted` era más claro que la fila activa y la competía.
           'transition-colors duration-fast hover:bg-surface-hover',
@@ -670,7 +699,7 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
             // La cabecera de sección habla con la voz de las etiquetas de la
             // casa (mono, MAYÚSCULA, espaciada — la de `SectionLabel`): se
             // distingue de las filas sin competir con ellas (Nico, 23-09).
-            'min-w-0 flex-1 truncate font-mono text-[11px] font-medium uppercase tracking-[0.1em]',
+            'min-w-0 flex-1 truncate font-mono text-[10.5px] font-medium uppercase tracking-[0.08em]',
             // Plegada con la página actual adentro: en la tinta de la activa
             // (el azul del menú, ver `ResalteDeLaFilaActiva`), como antes del
             // 02-10.
@@ -683,13 +712,14 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
 
         {/* Sin marca de «IA» en el resumen, a propósito (22-09, medido en la
             vitrina): un punto azul se confundía con la cabecera azul de «estás
-            acá», y la píldora «IA» + el contador cortaban «Captación y
+            aquí», y la píldora «IA» + el contador cortaban «Captación y
             arriendo» en «Captación y arrie…». El contador es lo que no se
             puede perder al plegar; la IA se ve al abrir. */}
         {mostrarResumen && pendientes > 0 && (
           <span
             data-testid="resumen-de-seccion"
-            className="rounded-full bg-surface-muted px-1.5 py-px font-mono text-[11px] font-medium tabular-nums text-fg-muted group-hover/seccion:bg-surface"
+            // C2: el contador en mono gris, sin píldora (la barra ya es arena).
+            className="font-mono text-[11px] font-medium tabular-nums text-fg-subtle"
           >
             {pendientes}
             <span className="sr-only"> pendientes</span>
@@ -700,9 +730,10 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
           aria-hidden="true"
           weight="bold"
           className={cn(
-            'h-3 w-3 shrink-0 text-fg-subtle transition-transform duration-base ease-enter group-hover/seccion:text-fg',
+            'h-3 w-3 shrink-0 text-fg-subtle transition-[transform,opacity] duration-base ease-enter group-hover/seccion:text-fg',
             'motion-reduce:transition-none',
-            !abierta && '-rotate-90',
+            // Revisora r23 (barra C3): abierta, el chevron sólo al pasar el mouse o con el foco; plegada se ve siempre.
+            abierta ? 'opacity-0 group-hover/seccion:opacity-100 group-focus-visible/seccion:opacity-100' : '-rotate-90',
           )}
         />
       </button>
@@ -720,7 +751,7 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
         inert={!abierta}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className={cn(GUIA_DE_SECCION, 'mb-1 mt-0.5 space-y-0.5')}>
+          <div className={cn(GUIA_DE_SECCION, 'mb-1 mt-0.5 space-y-px')}>
             {bloque.filas.map((item) => (
               <NavItemComponent
                 key={item.href}
@@ -759,7 +790,7 @@ function GrupoDelRiel({
   const etiqueta = bloque.tipo === 'seccion' ? bloque.cabecera.label : undefined;
   return (
     <div role={etiqueta ? 'group' : undefined} aria-label={etiqueta} className="space-y-0.5">
-      {!primero && <div className="mx-2 my-2 border-t border-border" aria-hidden="true" />}
+      {!primero && <div className="mx-auto my-2 h-px w-5 bg-border" aria-hidden="true" />}
       {bloque.filas.map((item) => (
         <NavItemComponent key={item.href} item={item} isActive={isActive(item)} isCollapsed onClick={onItemClick} />
       ))}
@@ -825,6 +856,7 @@ interface SidebarContentProps {
   profileCompletion?: ProfileCompletionConfig;
   aboveNav?: React.ReactNode;
   belowSearch?: React.ReactNode;
+  belowSearchPlegado?: React.ReactNode;
   loading?: boolean;
   onSearchClick?: () => void;
   searchPlaceholder?: string;
@@ -861,6 +893,7 @@ export function SidebarContent({
   profileCompletion,
   aboveNav,
   belowSearch,
+  belowSearchPlegado,
   loading = false,
   onSearchClick,
   searchPlaceholder,
@@ -950,9 +983,12 @@ export function SidebarContent({
     // `reducedMotion="user"`: con «reducir movimiento» el resaltado de la fila
     // activa salta en vez de deslizarse.
     <ResalteConFundido.Provider value={resalteConFundido}>
-    <div className="flex flex-col h-full bg-bg relative">
+    {/* Decisión 18 de Nico (22-10): la barra es una hoja de arena; la página sigue en papel. `--menu-activa` se pisa SÓLO
+        aquí (blanca en claro): la barra del celular y las pestañas siguen con el celeste de globals.css.
+        (Ronda 23, B1: era un comentario `//` dentro del JSX y se pintaba como texto encima de la barra.) */}
+    <div className="relative flex h-full flex-col bg-surface-muted [--menu-activa:var(--surface)] dark:[--menu-activa:rgba(110,135,255,0.2)]">
       {/* Header — cadence §Navigation workspace switcher (expanded) or the
-          brand mark on the collapsed rail. El botón de plegar vive acá (Nico,
+          brand mark on the collapsed rail. El botón de plegar vive aquí (Nico,
           02-10-2026): abierta, a la derecha del logo; plegada, debajo del
           símbolo, a la vista para volver a abrirla. Antes era una media luna
           de 24 px pegada al borde entre la barra y el contenido. */}
@@ -983,6 +1019,16 @@ export function SidebarContent({
             )}
           </Link>
           {showCollapseButton && <BotonDeLaBarra plegada onAlternar={onCollapse} />}
+          {/* C8 (plan de la barra, 22-10): plegada también se busca y se empieza algo nuevo,
+              en botones de 40 px con su nombre en el tooltip (como cada fila del riel). */}
+          {(onSearchClick || belowSearchPlegado) && (
+            <TooltipProvider delayDuration={150}>
+              <div className="mt-1 flex flex-col items-center gap-1.5">
+                {onSearchClick ? <BuscarDelRiel onBuscar={onSearchClick} placeholder={tr(searchPlaceholder ?? 'Buscar')} /> : null}
+                {belowSearchPlegado}
+              </div>
+            </TooltipProvider>
+          )}
         </motion.div>
       ) : (
         // Firma del PRODUCTO, no del cliente: el lockup de Leasefy solo, sin
@@ -1007,7 +1053,7 @@ export function SidebarContent({
           transition={FUNDIDO_DE_LA_BARRA}
         >
           {/* Del ancho del logo y no de la fila (`mr-auto`, no `flex-1`): en
-              el cajón del celular el foco cae acá al abrir, y con la fila
+              el cajón del celular el foco cae aquí al abrir, y con la fila
               entera el anillo pasaba por debajo de la ✕. */}
           <Link
             ref={refDelInicio}
@@ -1025,17 +1071,21 @@ export function SidebarContent({
       {/* Search — cadence SidebarSearch opens the command palette (⌘K).
           Falls back to the aboveNav slot for layouts that don't wire it. */}
       {!isCollapsed && (onSearchClick || aboveNav) && (
-        <div className="px-3 pb-1" data-tour-target="buscador">
+        <div className="relative px-3 pb-1" data-tour-target="buscador">
           {onSearchClick ? (
-            <SidebarSearch
-              readOnly
-              placeholder={tr(searchPlaceholder ?? 'Buscar')}
-              className="cursor-pointer"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                onSearchClick();
-              }}
-            />
+            <>
+              <SidebarSearch
+                readOnly
+                placeholder={tr(searchPlaceholder ?? 'Buscar')}
+                className="cursor-pointer pr-14"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onSearchClick();
+                }}
+              />
+              {/* Revisora r23 (barra C4): el atajo también con la barra abierta, no sólo en el riel plegado. */}
+              <AtajoDelBuscador />
+            </>
           ) : (
             aboveNav
           )}
@@ -1061,6 +1111,7 @@ export function SidebarContent({
           <NavSkeleton isCollapsed={isCollapsed} />
         ) : (
           isCollapsed ? (
+            <TooltipProvider delayDuration={150}>
             <motion.div key="riel" initial={entraAlCambiar} animate={{ opacity: 1 }} transition={FUNDIDO_DE_LA_BARRA}>
               {bloques.map((bloque, i) => (
                 <GrupoDelRiel
@@ -1072,6 +1123,7 @@ export function SidebarContent({
                 />
               ))}
             </motion.div>
+            </TooltipProvider>
           ) : (
             <motion.div
               key="abierta"
@@ -1097,7 +1149,7 @@ export function SidebarContent({
                   // raya que las separa de la última sección.
                   <div
                     key={`sueltas-${i}`}
-                    className={cn('space-y-0.5', i > 0 && 'mt-2 border-t border-border pt-2', i === 0 && 'mb-2')}
+                    className={cn('space-y-px', i > 0 && 'mt-4')}
                   >
                     {bloque.filas.map((item) => (
                       <NavItemComponent
@@ -1171,14 +1223,15 @@ export function SidebarContent({
           )}
           {/* Ayuda y tema comparten fila: son los dos ajustes de chrome, y así
               el pie no crece una línea más por cada uno. */}
-          <div className="flex items-center gap-2">
+          {/* C7 (plan de la barra, 22-10): el pie en la misma retícula del menú, con la esquina de la casa. */}
+          <div className="flex items-center gap-2 border-t border-border-faint pt-2">
             {ayudaHref ? (
               <Link
                 href={ayudaHref}
                 onClick={onItemClick}
-                className="flex flex-1 items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+                className="flex h-8 flex-1 items-center gap-[10px] rounded-[12px] px-[10px] text-[14px] text-fg transition-colors hover:bg-surface-hover"
               >
-                <Question className="w-[18px] h-[18px]" />
+                <Question className="h-4 w-4 text-fg-subtle" />
                 <span>{tr('Ayuda')}</span>
               </Link>
             ) : (
@@ -1250,6 +1303,34 @@ function BotonDeLaBarra({ plegada, onAlternar }: { plegada: boolean; onAlternar:
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+/** «Buscar» del riel plegado: abre la misma paleta que el buscador de la barra abierta (⌘K). */
+function BuscarDelRiel({ onBuscar, placeholder }: { onBuscar: () => void; placeholder: string }) {
+  const mac = useEsMac();
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onBuscar}
+          aria-label={placeholder}
+          aria-keyshortcuts={mac ? 'Meta+K' : 'Control+K'}
+          data-testid="buscar-del-riel"
+          className={cn(
+            'grid h-10 w-10 place-items-center rounded-[12px] text-fg-muted transition-colors',
+            'hover:bg-surface-hover hover:text-fg outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          )}
+        >
+          <MagnifyingGlass className="h-[18px] w-[18px]" aria-hidden="true" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={8} className="flex items-center gap-2 bg-fg text-bg">
+        <span>{placeholder}</span>
+        <Kbd size="sm">{mac ? '⌘K' : 'Ctrl K'}</Kbd>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -1338,6 +1419,7 @@ export function PlanSidebar({
   profileCompletion,
   aboveNav,
   belowSearch,
+  belowSearchPlegado,
   loading = false,
   onSearchClick,
   searchPlaceholder,
@@ -1413,7 +1495,7 @@ export function PlanSidebar({
         ref={asideRef}
         className={cn(
           'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0',
-          'bg-bg border-r border-border',
+          'bg-surface-muted border-r border-border',
           // Plegar la barra cambia su ancho (el contenido se reacomoda): se
           // nombra la propiedad en vez de `transition-all`.
           'transition-[width] duration-base ease-emphasis',
@@ -1432,6 +1514,7 @@ export function PlanSidebar({
           profileCompletion={profileCompletion}
           aboveNav={aboveNav}
           belowSearch={belowSearch}
+          belowSearchPlegado={belowSearchPlegado}
           loading={loading}
           onSearchClick={onSearchClick}
           searchPlaceholder={searchPlaceholder}
@@ -1451,7 +1534,7 @@ export function PlanSidebar({
         <SheetContent
           side="left"
           // Flotante como todo cajón; la barra arma su propio layout.
-          className="w-[280px] bg-bg"
+          className="w-[280px] bg-surface-muted"
           layout="manual"
           aria-describedby={undefined}
           onOpenAutoFocus={alAbrirElCajon}
@@ -1474,6 +1557,7 @@ export function PlanSidebar({
             profileCompletion={profileCompletion}
             aboveNav={aboveNav}
             belowSearch={belowSearch}
+            belowSearchPlegado={belowSearchPlegado}
             loading={loading}
             onSearchClick={
               onSearchClick

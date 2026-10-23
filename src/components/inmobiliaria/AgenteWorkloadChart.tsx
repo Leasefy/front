@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { Stagger, StaggerItem, Avatar } from '@leasefy/cadence';
 import {
   ChartBar,
   Buildings,
@@ -78,15 +78,6 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
   // Get max for scaling (at least OVERLOADED_THRESHOLD for consistent scale)
   const scaleMax = Math.max(stats.max, OVERLOADED_THRESHOLD);
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
 
   return (
     <div className={cn('rounded-lg border border-border bg-card overflow-hidden', className)}>
@@ -98,7 +89,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
               <ChartBar className="w-5 h-5 text-primary" weight="fill" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-foreground">
+              <h2 className="text-base font-medium text-foreground">
                 {t('inmobiliaria.agente.workload')}
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -133,22 +124,22 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       {/* Stats Row */}
       <div className="px-5 py-3 border-b border-border bg-muted/10 grid grid-cols-4 gap-4">
         <div>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.agentsLabel')}</p>
-          <p className="text-lg font-bold text-foreground">{sortedAgentes.length}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.agente.agentsLabel')}</p>
+          <p className="text-lg font-medium text-foreground">{sortedAgentes.length}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.propertiesLabel')}</p>
-          <p className="text-lg font-bold text-foreground">{stats.total}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.agente.propertiesLabel')}</p>
+          <p className="text-lg font-medium text-foreground">{stats.total}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.averageLabel')}</p>
-          <p className="text-lg font-bold text-foreground" data-testid="carga-promedio">
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.agente.averageLabel')}</p>
+          <p className="text-lg font-medium text-foreground" data-testid="carga-promedio">
             {stats.avg === null ? SIN_MEDIR : stats.avg.toFixed(1)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.recommendedMax')}</p>
-          <p className="text-lg font-bold text-foreground">{RECOMMENDED_MAX}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.agente.recommendedMax')}</p>
+          <p className="text-lg font-medium text-foreground">{RECOMMENDED_MAX}</p>
         </div>
       </div>
 
@@ -176,26 +167,14 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                 >
                   <div className="flex items-center gap-4 mb-2">
                     {/* Avatar */}
-                    {agente.avatar ? (
-                      <img
-                        src={agente.avatar}
-                        alt={agente.name}
-                        className="w-8 h-8 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-                        <span className="text-xs font-semibold text-primary">
-                          {getInitials(agente.name)}
-                        </span>
-                      </div>
-                    )}
+                    <Avatar name={agente.name} src={agente.avatar || undefined} size="sm" />
 
                     {/* Name and Zone */}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground text-sm truncate">
                         {agente.name}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-caption text-muted-foreground truncate">
                         {agente.zone || t('inmobiliaria.agente.allZones')}
                       </p>
                     </div>
@@ -203,10 +182,10 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                     {/* Property Count */}
                     <div className="flex items-center gap-2 shrink-0">
                       <Buildings className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-bold text-sm text-foreground tabular-nums">
+                      <span className="font-medium text-sm text-foreground tabular-nums">
                         {propertyCount}
                       </span>
-                      <span className={cn('text-xs font-medium', color)}>
+                      <span className={cn('text-caption font-medium', color)}>
                         {workloadLabels[level]}
                       </span>
                     </div>
@@ -250,7 +229,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       </div>
 
       {/* Legend Footer */}
-      <div className="px-5 py-3 border-t border-border bg-muted/10 flex flex-wrap items-center gap-4 text-xs">
+      <div className="px-5 py-3 border-t border-border bg-muted/10 flex flex-wrap items-center gap-4 text-caption">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-primary" />
           <span className="text-muted-foreground">{t('inmobiliaria.agente.legendNormal')}</span>

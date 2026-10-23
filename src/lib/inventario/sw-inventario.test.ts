@@ -214,7 +214,7 @@ describe('qué hace el worker con cada pedido', () => {
     );
   });
 
-  it('lo que no es GET pasa de largo: subir una foto no se guarda acá', () => {
+  it('lo que no es GET pasa de largo: subir una foto no se guarda aquí', () => {
     expect(
       sw.queHacerCon(pedido(ORIGEN + '/panel/inmobiliaria/inmuebles/c-1', 'navigate', 'POST'), ORIGEN),
     ).toBe('nada');

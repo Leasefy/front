@@ -13,6 +13,7 @@
  * 403, 5xx y red = fallo con reintento.
  */
 
+import { enviarFormulario } from './ciclo-de-vida.service'
 import { ApiError, apiClient } from '@/lib/api/client'
 
 const BASE = '/inmobiliaria'
@@ -640,6 +641,28 @@ export interface DocumentoDelMandato {
   createdAt: string
 }
 
+/** Un papel que falta (o venció). `propietarioId`: de qué dueño, en un inmueble con varios. */
+export interface PapelQueFalta {
+  tipo: string
+  nombre: string
+  porQue: string
+  detalle: string
+  propietarioId?: string | null
+}
+
+/** El mandato firmado tiene su propio bloque (la firma): no se cuenta también como papel (22-10). */
+export const PAPEL_DE_LA_FIRMA = 'MANDATO_FIRMADO'
+export function papelesSinLaFirma<T extends { tipo: string }>(falta: readonly T[]): T[] {
+  return falta.filter((f) => f.tipo !== PAPEL_DE_LA_FIRMA)
+}
+
+/** «la cédula del propietario, el RUT y el certificado de tradición» — los papeles nombrados, sin repetir. */
+export function papelesEnPalabras(falta: readonly { nombre: string }[]): string {
+  const nombres = [...new Set(falta.map((f) => f.nombre.trim()))].map((n) => n.charAt(0).toLowerCase() + n.slice(1))
+  if (nombres.length <= 1) return nombres[0] ?? ''
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`
+}
+
 export interface DocumentosDelMandato {
   disponible: boolean
   motivo: string | null
@@ -647,11 +670,11 @@ export interface DocumentosDelMandato {
   documentos: DocumentoDelMandato[]
   paraPublicar: {
     completo: boolean
-    falta: { tipo: string; nombre: string; porQue: string; detalle: string }[]
+    falta: PapelQueFalta[]
   }
   paraElPrimerGiro: {
     completo: boolean
-    falta: { tipo: string; nombre: string; porQue: string; detalle: string }[]
+    falta: PapelQueFalta[]
   }
   /**
    * IN-14 (QA 04-10): si ya se le giró a alguno de los dueños del mandato. Con
@@ -719,11 +742,27 @@ export const captacionApi = {
       `${BASE}/captacion/mandatos/${consignacionId}/documentos`,
     ),
 
+  /**
+   * Sube un papel del mandato (POST multipart, campo `archivo`; PDF o imagen de
+   * hasta 10 MB). El certificado de tradición exige `expedidoEl` (AAAA-MM-DD).
+   */
+  subirDocumento: (
+    consignacionId: string,
+    datos: { tipo: string; propietarioId?: string | null; expedidoEl?: string; archivo: File },
+  ) => {
+    const formulario = new FormData()
+    formulario.append('tipo', datos.tipo)
+    if (datos.propietarioId) formulario.append('propietarioId', datos.propietarioId)
+    if (datos.expedidoEl) formulario.append('expedidoEl', datos.expedidoEl)
+    formulario.append('archivo', datos.archivo)
+    return enviarFormulario<unknown>(`${BASE}/captacion/mandatos/${consignacionId}/documentos`, formulario)
+  },
+
   urlDelDocumento: (id: string) =>
     apiClient.get<{ url: string }>(`${BASE}/captacion/documentos/${id}/url`),
 
   sePuedePublicar: (consignacionId: string) =>
-    apiClient.get<{ puede: boolean; sinMigracion: boolean; motivo: string | null }>(
+    apiClient.get<{ puede: boolean; sinMigracion: boolean; motivo: string | null; falta?: PapelQueFalta[] }>(
       `${BASE}/captacion/mandatos/${consignacionId}/se-puede-publicar`,
     ),
 

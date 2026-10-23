@@ -21,7 +21,7 @@
  * todas las filas aunque tuviera los tres datos.
  *
  * FAIL-SOFT: si el backend no está desplegado (404 / red caída), el hook degrada
- * a status 'unavailable' y este card muestra "Próximamente — requiere despliegue"
+ * a status 'unavailable' y este card dice que la cartera entra sola cada noche
  * sin romper la pantalla. El empty-state que lo envuelve sigue intacto.
  *
  * DS: tokens (sin hex), <Button> del DS, controles rounded-md, una sola acción
@@ -178,7 +178,7 @@ export function CobranzaImportCard({
           />
         </div>
         <div className="flex-1 min-w-0 space-y-0.5">
-          <h2 className="text-base font-semibold text-foreground">
+          <h2 className="text-base font-medium text-foreground">
             {tr("Importar cartera")}
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -209,7 +209,7 @@ export function CobranzaImportCard({
               <span className="text-fg-muted">{tr("Elige el archivo de tu cartera (Excel o CSV)")}</span>
             )}
           </span>
-          <span className="shrink-0 text-xs font-medium text-primary">{file ? 'Cambiar' : 'Buscar archivo'}</span>
+          <span className="shrink-0 text-caption font-medium text-primary">{file ? 'Cambiar' : 'Buscar archivo'}</span>
           {/* allowlist: hidden type=file behind a custom dropzone (playbook file-input allowlist) */}
           <input
             ref={inputRef}
@@ -273,11 +273,16 @@ export function CobranzaImportCard({
         </>
       )}
 
-      {/* Estado "Próximamente" cuando el backend no está desplegado (fail-soft) */}
+      {/* Sin el import desplegado (fail-soft). Revisora r27 (bloqueante): antes
+          «Próximamente — requiere despliegue del backend». Ahora dice lo cierto y
+          qué pasa sin el archivo: la cartera entra sola cada noche. */}
       {status === 'unavailable' && (
-        <div className="mt-3 rounded-md border border-border bg-surface-muted px-3 py-2.5 text-sm text-muted-foreground">
-          {message ?? 'Próximamente — requiere despliegue del backend.'}
-        </div>
+        <p
+          data-testid="cartera-import-no-disponible"
+          className="mt-3 text-sm text-fg-muted"
+        >
+          {tr("Todavía no puedes subir la cartera desde aquí: entra sola cada noche desde las cuotas vencidas.")}
+        </p>
       )}
 
       {/* Error real (un 4xx, un 5xx, la red) — `message` ya es la frase entera
@@ -309,7 +314,7 @@ export function CobranzaImportCard({
             />
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {summary.totalRecibidos} {tr("fila")}
             {summary.totalRecibidos === 1 ? '' : 's'} {tr("recibida")}
             {summary.totalRecibidos === 1 ? '' : 's'}
@@ -337,7 +342,7 @@ export function CobranzaImportCard({
                 <p className="text-sm font-medium text-warning">
                   {tr("Revisa el formato de las fechas")}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-caption text-muted-foreground mt-0.5">
                   {tr("Leímos «")}{summary.vencimiento.columna}{tr("» como")}{' '}
                   {summary.vencimiento.orden === 'dmy'
                     ? 'día/mes/año'
@@ -360,7 +365,7 @@ export function CobranzaImportCard({
                     {summary.sinVencimiento} {tr("fila")}
                     {summary.sinVencimiento === 1 ? '' : 's'} {tr("con saldo pero sin fecha de vencimiento")}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-caption text-muted-foreground mt-0.5">
                     {summary.sinVencimiento === 1 ? 'Entró' : 'Entraron'} {tr("como deudor, pero sin vencimiento no hay días de mora que calcular, así que no")}{' '}
                     {summary.sinVencimiento === 1 ? 'pasa' : 'pasan'} {tr("a cobranza. Vuelve a subir el archivo y escribe desde qué fecha deben.")}
                   </p>
@@ -378,7 +383,7 @@ export function CobranzaImportCard({
                 {summary.errores.slice(0, 50).map((e) => (
                   <li
                     key={e.rowIndex}
-                    className="text-xs text-muted-foreground"
+                    className="text-caption text-muted-foreground"
                   >
                     {/* La fila del ARCHIVO, no el índice dentro de lo enviado. */}
                     {tr("Fila")} {enviadas[e.rowIndex]?.fila ?? e.rowIndex + 1}: {e.error}
@@ -392,7 +397,7 @@ export function CobranzaImportCard({
             summary.actualizados === 0 &&
             summary.errores.length > 0 &&
             summary.errores[0]?.error?.toLowerCase().includes('migr') && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {tr("La importación aún no está disponible: requiere desplegar la migración del backend.")}
               </p>
             )}
@@ -434,8 +439,8 @@ function ImportStat({
           : 'text-muted-foreground'
   return (
     <div className="rounded-lg border border-border bg-surface-muted px-3 py-2.5">
-      <p className={'text-lg font-semibold ' + toneClasses}>{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={'text-lg font-medium ' + toneClasses}>{value}</p>
+      <p className="text-caption text-muted-foreground">{label}</p>
     </div>
   )
 }

@@ -138,7 +138,7 @@ export function GarantiaDeServiciosDelContrato({
   return (
     <section className="space-y-4 rounded-lg border border-border bg-card p-5" data-testid="garantia-de-servicios">
       <div>
-        <h3 className="text-base font-semibold">Garantía de servicios públicos</h3>
+        <h3 className="text-base font-medium">Garantía de servicios públicos</h3>
         <p className="text-caption text-muted-foreground">
           Plata del inquilino para las facturas de servicios que lleguen después de la entrega. Se exige{' '}
           {datos.momento === 'INICIO'
@@ -277,7 +277,7 @@ function Cuenta({ datos, onSoporte }: { datos: GarantiaDeServicios; onSoporte: (
         ))}
         <div>
           <dt className="text-muted-foreground">Saldo del inquilino</dt>
-          <dd className="font-semibold" data-testid="garantia-saldo">
+          <dd className="font-medium" data-testid="garantia-saldo">
             {PESOS.format(c.saldoCop)}
           </dd>
         </div>

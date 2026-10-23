@@ -114,6 +114,8 @@ import { comoSeConecta } from '@/lib/portales/como-se-conecta'
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { cn } from '@/lib/utils'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 
 /** Cómo se lee cada estado, y con qué tono. */
 const ROTULO: Record<
@@ -289,7 +291,7 @@ function DialogoDeCuenta({
             id="cuenta-etiqueta-error"
             mensaje={errores.etiqueta}
             pista={
-              <span className="text-xs text-fg-subtle">
+              <span className="text-caption text-fg-subtle">
                 Para reconocerla si mañana tienes más de una. Opcional.
               </span>
             }
@@ -323,14 +325,14 @@ function DialogoDeCuenta({
             id="cuenta-identificador-error"
             mensaje={errores.identificadorEnElPortal}
             pista={
-              <span className="text-xs text-fg-subtle">
+              <span className="text-caption text-fg-subtle">
                 No guardamos contraseñas. Esto es sólo para que el equipo sepa con
                 qué usuario cargar el archivo.
               </span>
             }
           />
           {conexion.cuidado && (
-            <p className="text-xs text-warning" data-testid="cuidado-del-portal">
+            <p className="text-caption text-warning" data-testid="cuidado-del-portal">
               {conexion.cuidado}
             </p>
           )}
@@ -343,11 +345,11 @@ function DialogoDeCuenta({
               · la explicación estaba a DOS clics —abrir el diálogo de la
                 cuenta y después desplegarla— cuando sirve justo antes de
                 decidir si conectar ese portal, o sea en la tarjeta;
-              · y un modal encima de un modal no funciona, así que acá dentro
+              · y un modal encima de un modal no funciona, así que aquí dentro
                 no se podía aplicar la regla nueva (la explicación va detrás de
                 un botón que abre un modal, no plegada dentro de la pantalla).
 
-            Lo que sí quedó acá es `conexion.cuidado`, arriba, junto al campo
+            Lo que sí quedó aquí es `conexion.cuidado`, arriba, junto al campo
             que lo necesita: eso no es explicación, es una advertencia sobre el
             dato que la persona está escribiendo en este instante. */}
         <div className="space-y-1.5">
@@ -430,6 +432,7 @@ function DialogoDePublicar({
   portales,
   onCerrar,
   onPublicado,
+  onAnotarCuenta,
 }: {
   inmuebles: InmuebleParaPublicar[]
   /**
@@ -442,6 +445,13 @@ function DialogoDePublicar({
   portales: PortalConCuenta[]
   onCerrar: () => void
   onPublicado: () => void
+  /**
+   * Revisora r27: con 0 cuentas al día el diálogo decía «Anota abajo la que ya
+   * pagas y vuelve», sin botón, y «abajo» ya no existía (las cuentas quedaron
+   * plegadas detrás del diálogo). Con esto el callejón tiene su salida: anotar
+   * la cuenta de un portal ahí mismo.
+   */
+  onAnotarCuenta?: (portal: PortalConCuenta) => void
 }) {
   const [busqueda, setBusqueda] = useState('')
   const [elegido, setElegido] = useState<InmuebleParaPublicar | null>(null)
@@ -569,7 +579,7 @@ function DialogoDePublicar({
                             </span>
                           ) : null}
                         </span>
-                        <span className="block truncate text-xs text-fg-muted">
+                        <span className="block truncate text-caption text-fg-muted">
                           {i.donde}
                         </span>
                       </span>
@@ -584,7 +594,7 @@ function DialogoDePublicar({
             <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-fg">{elegido.titulo}</p>
-                <p className="truncate text-xs text-fg-muted">{elegido.donde}</p>
+                <p className="truncate text-caption text-fg-muted">{elegido.donde}</p>
               </div>
               <Button
                 variant="ghost"
@@ -642,8 +652,8 @@ function DialogoDePublicar({
                       <li>{revision.ocupacion.motivo ?? revision.ocupacion.porQue}</li>
                     ) : null}
                   </ul>
-                  <p className="text-xs text-fg-subtle">
-                    Complétalo en la ficha del inmueble y vuelve acá.
+                  <p className="text-caption text-fg-subtle">
+                    Complétalo en la ficha del inmueble y vuelve aquí.
                   </p>
                 </div>
               )
@@ -653,13 +663,34 @@ function DialogoDePublicar({
             {/* ── En qué portales ────────────────────────────────────── */}
             {puedeSalir ? (
               conCuenta.length === 0 ? (
-                <p
-                  className="rounded-lg border border-border bg-surface p-3 text-sm text-fg-muted"
+                <div
+                  className="space-y-3 rounded-lg border border-border bg-surface p-3"
                   data-testid="sin-cuentas-para-publicar"
                 >
-                  No tienes ninguna cuenta de portal al día. Anota abajo la que ya
-                  pagas y vuelve: sin cuenta activa el portal no recibe el aviso.
-                </p>
+                  <p className="text-sm text-fg-muted">
+                    Todavía no tienes ninguna cuenta de portal al día, y sin ella el
+                    portal no recibe el aviso. Anota la que ya pagas: al guardarla
+                    vuelves aquí a publicar.
+                  </p>
+                  {onAnotarCuenta ? (
+                    <div className="flex flex-wrap gap-2">
+                      {portales
+                        .filter((p) => p.portal !== EL_CATALOGO_DE_LEASEFY && !p.cuenta?.activa)
+                        .map((p) => (
+                          <Button
+                            key={p.portal}
+                            variant="outline"
+                            size="sm"
+                            hideArrow
+                            onClick={() => onAnotarCuenta(p)}
+                            data-testid={`anotar-desde-publicar-${p.portal}`}
+                          >
+                            Anotar la cuenta de {p.nombre}
+                          </Button>
+                        ))}
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 <fieldset className="space-y-2">
                   <legend className="mb-1 text-sm font-medium text-fg">
@@ -776,7 +807,7 @@ function TarjetaDePortal({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-fg">{p.nombre}</p>
-          <p className="mt-0.5 text-xs">
+          <p className="mt-0.5 text-caption">
             {alDia ? (
               <span className="text-success">● Lista para publicar</span>
             ) : enPausa ? (
@@ -792,7 +823,7 @@ function TarjetaDePortal({
         {esNuestro ? (
           <>
             Es nuestro propio catálogo.{' '}
-            <span className="font-medium text-fg">Se publica automático</span>,
+            <span className="font-medium text-fg">Se publica solo</span>,
             sin archivos ni trámites.
           </>
         ) : !p.cuenta ? (
@@ -827,7 +858,7 @@ function TarjetaDePortal({
           'Los avisos se publican y se bajan automático.'
         ) : (
           <>
-            Se publica con archivo: lo descargas de acá y lo subes en la página
+            Se publica con archivo: lo descargas de aquí y lo subes en la página
             del portal
             {p.cuenta.identificadorEnElPortal
               ? `, con el usuario ${p.cuenta.identificadorEnElPortal}`
@@ -902,7 +933,7 @@ function TarjetaDePortal({
                   <li key={linea}>· {linea}</li>
                 ))}
               </ul>
-              <p className="text-xs text-fg-subtle">
+              <p className="text-caption text-fg-subtle">
                 Verificado el 19-09-2026 — {conexion.fuente}
               </p>
             </div>
@@ -950,7 +981,7 @@ const PASOS: PasoExplicado[] = [
     icono: DownloadSimple,
     titulo: 'Descarga el archivo y súbelo al portal',
     explicacion:
-      'Lo descargas de acá y lo cargas en la página del portal, con tu usuario. Este paso lo hace una persona.',
+      'Lo descargas de aquí y lo cargas en la página del portal, con tu usuario. Este paso lo hace una persona.',
     quien: 'tu',
     tuParte: 'usa «Descargar archivo» en la tarjeta del portal y súbelo en su página.',
   },
@@ -1012,9 +1043,13 @@ export function PortalesClient() {
   const [bajando, setBajando] = useState<string | null>(null)
   const [cuentaAbierta, setCuentaAbierta] = useState<PortalConCuenta | null>(null)
   const [publicando, setPublicando] = useState(false)
+  /** La cuenta se abrió desde «Publicar un inmueble»: al cerrarla se vuelve allá. */
+  const [volverAPublicar, setVolverAPublicar] = useState(false)
 
   const filas = tablero.datos?.filas ?? []
   const portales = cuentas.datos?.portales ?? []
+  /** Cuántos portales tienen la cuenta anotada y activa (la misma regla de «al día» de la tarjeta). */
+  const cuentasAlDia = portales.filter((p) => p.cuenta?.activa === true).length
 
   /** Cuántos avisos esperan que una persona los suba, por portal. Es lo que
    *  decide si «Descargar archivo» sirve para algo. */
@@ -1098,108 +1133,57 @@ export function PortalesClient() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Publicación en portales</h1>
-          <p className="text-sm text-fg-muted">
-            Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene
-            cuenta, y mira en un solo lugar cuáles están publicados y dónde.
-          </p>
-          {/* 🔴 Esto NO se fue al modal a propósito: no es «cómo se usa», es qué
-              hace y qué no hace la herramienta. Escondido, alguien esperaría que
-              el aviso saliera solo. Una línea en vez de cinco. */}
-          <p className="text-sm text-fg-muted" data-testid="aviso-sin-api">
-            Hoy el aviso lo subes tú al portal:{' '}
-            <span className="font-medium text-fg">
-              todavía no publicamos solos en ninguno
-            </span>
-            .
-          </p>
-          {/* Calidad vive sólo en «Agentes IA» (Nico, 08-10): acá queda el camino. */}
-          <p className="text-sm">
-            <Link
-              href="/panel/inmobiliaria/inmuebles/calidad-de-publicaciones"
-              className="font-medium text-primary hover:underline"
-              data-testid="enlace-a-calidad"
+      {/* Glow up 22-10: el encabezado común. La línea de qué NO hace la herramienta se queda a la vista a
+          propósito (escondida, alguien esperaría que el aviso saliera solo); la calidad, como secundaria. */}
+      <div className="space-y-2">
+        <EncabezadoDePantalla
+          seccion="Captación y arriendo"
+          titulo="Publicación en portales"
+          descripcion="Publica tus inmuebles en los portales donde ya tienes cuenta."
+          ayuda={
+            <ParaEntenderMas
+              etiqueta="Cómo se publica un inmueble"
+              titulo="Cómo se publica un inmueble"
+              descripcion="Cuatro pasos. Los dos últimos los hace una persona, y aquí está por qué."
             >
-              Ver la calidad de tus avisos (Niti)
-            </Link>
-          </p>
-        </div>
-        <ParaEntenderMas
-          etiqueta="Cómo se publica un inmueble"
-          titulo="Cómo se publica un inmueble"
-          descripcion="Cuatro pasos. Los dos últimos los hace una persona, y acá está por qué."
-          variante="secundario"
-          className="self-start shrink-0"
-        >
-          <ComoFunciona />
-        </ParaEntenderMas>
-      </header>
+              <ComoFunciona />
+            </ParaEntenderMas>
+          }
+          acciones={
+            <Button asChild variant="outline" size="sm" hideArrow>
+              {/* Calidad vive sólo en «Agentes IA» (Nico, 08-10): acá queda el camino. */}
+              <Link href="/panel/inmobiliaria/inmuebles/calidad-de-publicaciones" data-testid="enlace-a-calidad">
+                Ver la calidad de tus avisos
+              </Link>
+            </Button>
+          }
+          // Revisora r25 (§25.1 4a): la acción principal arriba a la derecha (antes dentro de la segunda tarjeta,
+          // a ≈1.900 px a 390).
+          accionPrincipal={
+            puedeEditar ? (
+              <Button size="sm" hideArrow onClick={() => setPublicando(true)} data-testid="abrir-publicar">
+                <Plus className="mr-1.5 h-4 w-4" />
+                Publicar un inmueble
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
 
-      {/* ── 1 · Las cuentas ──────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Tus cuentas de portal</CardTitle>
-          <p className="text-sm text-fg-muted">
-            Nosotros no vendemos estas cuentas. Publicamos con las que tu inmobiliaria
-            ya tiene contratadas: acá sólo nos dices cuáles son.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {cuentas.noHabilitado ? (
-            <p className="text-sm text-fg-muted" data-testid="cuentas-no-habilitadas">
-              {motivoEnCristiano(cuentas.noHabilitado)}
-            </p>
-          ) : (
-            <EstadoDeDatos
-              cargando={cuentas.cargando}
-              error={cuentas.errorCrudo}
-              queEs="las cuentas de portal"
-              onReintentar={cuentas.refetch}
-              conservarContenido
-              esqueleto={<EsqueletoTabla filas={4} columnas={3} />}
-            >
-              <div
-                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
-                data-testid="lista-de-portales"
-              >
-                {portales.map((p) => (
-                  <TarjetaDePortal
-                    key={p.portal}
-                    portal={p}
-                    porSubir={porSubir.get(p.portal) ?? 0}
-                    puedeEditar={puedeEditar}
-                    onAnotar={() => setCuentaAbierta(p)}
-                  />
-                ))}
-              </div>
-            </EstadoDeDatos>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ── 2 · Las publicaciones ────────────────────────────────────────── */}
+      {/* ── 1 · Las publicaciones (el trabajo, primero) ────────────────────────────────────────── */}
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">Qué está publicado dónde</CardTitle>
-            <p className="text-sm text-fg-muted">
+            {/* Revisora r25: la línea de qué NO hace la herramienta, junto al trabajo (antes una tercera línea bajo
+                la descripción del encabezado). Sigue a la vista: escondida, alguien esperaría que el aviso saliera solo. */}
+            <p className="text-sm text-fg-muted" data-testid="aviso-sin-api">
               {pendientes > 0
-                ? `${pendientes} ${pendientes === 1 ? 'aviso espera' : 'avisos esperan'} que alguien los suba o los baje en el panel del portal.`
-                : 'Un renglón por inmueble y portal, con el estado de su aviso.'}
+                ? `${pendientes} ${pendientes === 1 ? 'aviso espera' : 'avisos esperan'} que alguien los suba o los baje en el panel del portal. `
+                : null}
+              Hoy el aviso lo subes tú al portal: <span className="font-medium text-fg">todavía no publicamos solos en ninguno</span>.
             </p>
           </div>
-          {puedeEditar ? (
-            <Button
-              size="sm"
-              onClick={() => setPublicando(true)}
-              data-testid="abrir-publicar"
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              Publicar un inmueble
-            </Button>
-          ) : null}
         </CardHeader>
         <CardContent>
           {tablero.noHabilitado ? (
@@ -1219,7 +1203,7 @@ export function PortalesClient() {
                 <EmptyState
                   icon={CloudArrowUp}
                   title="Todavía no has publicado ningún inmueble"
-                  description="Usa «Publicar un inmueble» para elegir cuál y en qué portales. Acá vas a ver el estado de cada publicación y qué te falta hacer."
+                  description="Usa «Publicar un inmueble» para elegir cuál y en qué portales. Aquí vas a ver el estado de cada publicación y qué te falta hacer."
                 />
               }
             >
@@ -1269,12 +1253,12 @@ export function PortalesClient() {
                           <td className="py-2 pr-4">
                             <Badge variant={rotulo.variant}>{rotulo.texto}</Badge>
                             {f.ultimoError ? (
-                              <div className="mt-1 text-xs text-destructive">
+                              <div className="mt-1 text-caption text-destructive">
                                 {f.ultimoError}
                               </div>
                             ) : null}
                             {f.exportadaEl && f.estado === 'POR_EXPORTAR' ? (
-                              <div className="mt-1 text-xs text-fg-muted">
+                              <div className="mt-1 text-caption text-fg-muted">
                                 Archivo descargado el {f.exportadaEl.slice(0, 10)}
                               </div>
                             ) : null}
@@ -1326,13 +1310,74 @@ export function PortalesClient() {
         </CardContent>
       </Card>
 
+      {/* ── 2 · Las cuentas (se configuran una vez: plegadas, revisora r25) ──────────────────────────────────────────────── */}
+      <Card data-testid="tarjeta-de-cuentas">
+        <CardHeader>
+          <CardTitle className="text-base">Tus cuentas de portal</CardTitle>
+          <p className="text-sm text-fg-muted" data-testid="cuentas-configuradas">
+            {cuentas.cargando && portales.length === 0
+              ? 'Las cuentas con las que publicas.'
+              : `${cuentasAlDia} de ${portales.length} con cuenta anotada. Publicamos con las que tu inmobiliaria ya tiene contratadas: nosotros no las vendemos.`}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {cuentas.noHabilitado ? (
+            <p className="text-sm text-fg-muted" data-testid="cuentas-no-habilitadas">
+              {motivoEnCristiano(cuentas.noHabilitado)}
+            </p>
+          ) : (
+            <EstadoDeDatos
+              cargando={cuentas.cargando}
+              error={cuentas.errorCrudo}
+              queEs="las cuentas de portal"
+              onReintentar={cuentas.refetch}
+              conservarContenido
+              esqueleto={<EsqueletoTabla filas={4} columnas={3} />}
+            >
+              <MasDetalles
+                etiqueta="Ver las cuentas"
+                etiquetaAbierto="Ocultar las cuentas"
+                montadoSiempre
+                classNameDelContenido="pt-3"
+                data-testid="cuentas-plegadas"
+              >
+              <div
+                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                data-testid="lista-de-portales"
+              >
+                {portales.map((p) => (
+                  <TarjetaDePortal
+                    key={p.portal}
+                    portal={p}
+                    porSubir={porSubir.get(p.portal) ?? 0}
+                    puedeEditar={puedeEditar}
+                    onAnotar={() => setCuentaAbierta(p)}
+                  />
+                ))}
+              </div>
+              </MasDetalles>
+            </EstadoDeDatos>
+          )}
+        </CardContent>
+      </Card>
+
       {cuentaAbierta ? (
         <DialogoDeCuenta
           portal={cuentaAbierta}
-          onCerrar={() => setCuentaAbierta(null)}
+          onCerrar={() => {
+            setCuentaAbierta(null)
+            if (volverAPublicar) {
+              setVolverAPublicar(false)
+              setPublicando(true)
+            }
+          }}
           onGuardado={() => {
             setCuentaAbierta(null)
             void cuentas.refetch()
+            if (volverAPublicar) {
+              setVolverAPublicar(false)
+              setPublicando(true)
+            }
           }}
         />
       ) : null}
@@ -1343,6 +1388,11 @@ export function PortalesClient() {
           cargandoInmuebles={cargandoInmuebles}
           portales={portales}
           onCerrar={() => setPublicando(false)}
+          onAnotarCuenta={(p) => {
+            setPublicando(false)
+            setVolverAPublicar(true)
+            setCuentaAbierta(p)
+          }}
           onPublicado={() => {
             setPublicando(false)
             void tablero.refetch()

@@ -11,28 +11,36 @@
  * (`GET /inmobiliaria/autopago`, `payu-api-front.md`).
  */
 
+import { useTr } from '@/lib/i18n/use-tr';
 import Link from 'next/link';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AutopagosDeLaInmobiliaria } from '@/components/inmobiliaria/pagos/autopago/AutopagosDeLaInmobiliaria';
-import { SectionLabel } from '@/components/ui/section-label';
 
 export default function AutopagoPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   return (
     <PageGuard module="cobros" action="view">
-      <div className="space-y-6 p-4 md:p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <SectionLabel>Pagos · inquilinos</SectionLabel>
-          <h1 className="text-h2 text-fg">Autopago</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Los inquilinos que inscribieron el cobro automático de su cuota, con el tope que pusieron y cómo salió el
-            último intento. Acá sólo se mira: el autopago lo inscribe, lo pausa o lo cancela el inquilino desde su
-            portal.{' '}
-            <Link className="underline" href="/panel/inmobiliaria/pagos/recaudo">
-              Volver a Recaudo
-            </Link>
-          </p>
-        </header>
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* Ronda 26 (revisora r25, Autopago): la vuelta ARRIBA a la izquierda, como en las demás
+            sub-pantallas (navegar no es una acción); la descripción en una línea (lo de que lo inscribe
+            el inquilino desde su portal ya lo dice el vacío). */}
+        <div className="space-y-3">
+          <Link
+            href="/panel/inmobiliaria/pagos/recaudo"
+            className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+            data-testid="volver-a-recaudo"
+          >
+            Volver a Recaudo
+          </Link>
+          <EncabezadoDePantalla
+            seccion={tr('Cobrar a inquilinos')}
+            titulo="Autopago"
+            descripcion="Los inquilinos con cobro automático, su tope y el último intento."
+          />
+        </div>
         <AutopagosDeLaInmobiliaria />
       </div>
     </PageGuard>

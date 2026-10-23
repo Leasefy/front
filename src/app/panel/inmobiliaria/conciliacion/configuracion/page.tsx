@@ -19,7 +19,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { AlertaAccionable } from '@/components/ui/alerta-accionable'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { FloppyDisk } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -54,6 +54,7 @@ import {
   AlertDialogSection,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // ── Per-domain copy (string literal ES — sin keys t() nuevas) ──────────────
 
@@ -66,11 +67,11 @@ const DOMAIN_META: Record<
     description: 'Conciliar automáticamente los pagos de arriendo de inquilinos contra las facturas.',
   },
   dispersion: {
-    title: 'Dispersión a propietarios',
+    title: 'Giros a propietarios',
     description: 'Conciliar automáticamente los giros de canon enviados a los propietarios.',
   },
   ap: {
-    title: 'Cuentas por pagar (AP)',
+    title: 'Cuentas por pagar',
     description: 'Conciliar automáticamente los pagos a proveedores y servicios.',
   },
   comision: {
@@ -82,7 +83,7 @@ const DOMAIN_META: Record<
 // ── Auto-match policy block ─────────────────────────────────────────────────
 
 function PoliticaAutoMatch() {
-  const { data, isLoading, error, savePolicy } = useConciliacionPolicy()
+  const { data, isLoading, error, refetch, savePolicy } = useConciliacionPolicy()
 
   // Local draft (the switches mutate this; persistence is the explicit save).
   const [draftEnabled, setDraftEnabled] = useState<AutoMatchEnabled>(DEFAULT_AUTO_MATCH_ENABLED)
@@ -157,7 +158,7 @@ function PoliticaAutoMatch() {
       setConfirmOpen(false)
       setSavedOk(true)
     } else if (res.error === 'not_configured' || backendUnavailable) {
-      setSaveError('No se pudo guardar: esta función requiere el backend de conciliación desplegado.')
+      setSaveError('No se pudo guardar: la conciliación automática todavía no está disponible en tu cuenta.')
     } else {
       // Con la regla de oro: el umbral que el micro rechazó va a SU campo
       // (`policy_json.confidenceThresholds.<dominio>`); el resto, dicho para
@@ -188,6 +189,25 @@ function PoliticaAutoMatch() {
     return v === undefined ? '' : String(Math.round(v * 100))
   }
 
+  // FAIL-SOFT: con la consulta caída, UN estado (el fallo con su reintento), no el
+  // editor entero apagado con un aviso ámbar encima (revisora r25, Configuración #1).
+  if (!isLoading && backendUnavailable) {
+    return (
+      <section
+        className="space-y-3 rounded-lg border border-border bg-surface p-5"
+        aria-labelledby="seccion-automatch"
+        data-testid="conciliacion-automatch"
+      >
+        <h2 id="seccion-automatch" className="text-subtitle text-fg">
+          Conciliación automática, por tipo de movimiento
+        </h2>
+        <div data-testid="conciliacion-automatch-backend-warning">
+          <FalloDeCarga error={error} queEs="la conciliación automática" onReintentar={refetch} />
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section
       className="rounded-lg border border-border bg-surface p-5 space-y-5"
@@ -196,13 +216,15 @@ function PoliticaAutoMatch() {
     >
       {/* Header */}
       <div className="space-y-1">
-        <h2 id="seccion-automatch" className="text-base font-semibold text-fg">
-          Auto-match por dominio
+        <h2 id="seccion-automatch" className="text-subtitle text-fg">
+          Conciliación automática, por tipo de movimiento
         </h2>
-        <p className="text-sm text-fg-muted max-w-2xl">
-          Activa la conciliación automática solo donde quieras que el sistema confirme coincidencias
-          sin intervención humana. Mientras un dominio esté apagado, el sistema solo SUGIERE
-          (modo sombra) y toda coincidencia pasa por la cola de revisión.
+        {/* Revisora r25 (Configuración #2): una sola explicación. Antes eran tres
+            párrafos (éste, el aviso ámbar y el del pie) que decían lo mismo. */}
+        <p className="max-w-2xl text-body-sm text-fg-muted">
+          Con un tipo apagado, Leasefy sólo sugiere y cada cruce pasa por la cola de revisión.
+          Prenderlo autoriza a conciliar esos movimientos de plata sin que nadie los revise: nada
+          cambia hasta que guardes y confirmes.
         </p>
       </div>
 
@@ -210,7 +232,7 @@ function PoliticaAutoMatch() {
       {isLoading ? (
         <div className="h-12 rounded-lg border border-border bg-surface-muted animate-pulse" />
       ) : (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+        <div className="flex flex-wrap items-center gap-2 text-caption text-fg-muted">
           {data.source === 'stored' && data.version_number > 0 ? (
             <>
               <Badge variant="secondary">Versión activa v{data.version_number}</Badge>
@@ -222,21 +244,9 @@ function PoliticaAutoMatch() {
               )}
             </>
           ) : (
-            <Badge variant="warning">Sin política activa — modo sugerencia (sombra)</Badge>
+            <Badge variant="warning">Sin reglas guardadas: todo sólo sugiere</Badge>
           )}
         </div>
-      )}
-
-      {/* Aviso fail-soft: backend no disponible */}
-      {backendUnavailable && (
-        <AlertaAccionable
-          severidad="warning"
-          titulo="La conciliación automática no está disponible en tu cuenta todavía"
-          data-testid="conciliacion-automatch-backend-warning"
-        >
-          Lo que ves es el estado seguro: todo apagado, en modo sugerencia. No se pueden guardar cambios
-          hasta que el servicio esté activo — mientras tanto, los movimientos se concilian a mano desde Cobros.
-        </AlertaAccionable>
       )}
 
       {/* Switches por dominio */}
@@ -258,29 +268,29 @@ function PoliticaAutoMatch() {
                   >
                     {meta.title}
                   </Label>
-                  <p className="text-xs text-fg-muted">{meta.description}</p>
+                  <p className="text-caption text-fg-muted">{meta.description}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-fg-muted w-14 text-right">
-                    {on ? 'Automático' : 'Sugerencia'}
+                  <span className="min-w-[5.5rem] text-right text-caption text-fg-muted">
+                    {on ? 'Automático' : 'Sólo sugiere'}
                   </span>
                   <Switch
                     id={`automatch-${domain}`}
                     checked={on}
                     onCheckedChange={(checked) => toggleDomain(domain, checked)}
-                    aria-label={`Activar auto-match para ${meta.title}`}
+                    aria-label={`Conciliar solos los movimientos de ${meta.title}`}
                   />
                 </div>
               </div>
 
               {/* Umbral de confianza (opcional) — solo relevante con auto-match ON */}
               <div className="space-y-1">
-              <div className="flex items-center gap-2 pl-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-0">
                 <Label
                   htmlFor={`umbral-${domain}`}
-                  className="text-xs text-fg-muted"
+                  className="text-caption text-fg-muted"
                 >
-                  Umbral de confianza mínimo (%)
+                  Confianza mínima (%)
                 </Label>
                 <Input
                   id={`umbral-${domain}`}
@@ -298,7 +308,7 @@ function PoliticaAutoMatch() {
                     ? { 'aria-invalid': true as const, 'aria-describedby': `umbral-${domain}-error` }
                     : {})}
                 />
-                <span className="text-xs text-fg-muted">opcional</span>
+                <span className="text-caption text-fg-muted">opcional</span>
               </div>
               <ErrorDelCampo id={`umbral-${domain}-error`} mensaje={erroresDelUmbral[domain]} className="mt-0" />
               </div>
@@ -307,30 +317,24 @@ function PoliticaAutoMatch() {
         })}
       </div>
 
-      {/* T-323 callout */}
-      <div className="rounded-lg border border-warning/30 bg-warning-soft text-warning p-3">
-        <p className="text-xs">
-          Activar el auto-match es una decisión humana explícita: autoriza al sistema a confirmar
-          movimientos de dinero sin revisión. Los cambios no se aplican hasta que hagas clic en
-          &quot;Guardar política&quot; y confirmes.
-        </p>
-      </div>
+      {/* T-323: prender la conciliación automática es una decisión humana explícita.
+          La explicación vive arriba (una sola vez) y la confirmación, en el diálogo. */}
 
       {/* Confirmación de guardado */}
       {savedOk && !isDirty && (
-        <p className="text-xs text-success" role="status" data-testid="conciliacion-automatch-saved">
+        <p className="text-caption text-success" role="status" data-testid="conciliacion-automatch-saved">
           Política guardada. Se creó una nueva versión activa.
         </p>
       )}
       {saveError && (
-        <p className="text-xs text-danger" role="alert">
+        <p className="text-caption text-danger" role="alert">
           {saveError}
         </p>
       )}
 
       {/* CTA principal — guardar (abre confirmación) */}
       <div className="flex items-center justify-between gap-3 pt-1">
-        <span className="text-xs text-warning">
+        <span className="text-caption text-warning">
           {isDirty ? 'Tienes cambios sin guardar.' : ''}
         </span>
         <Button
@@ -356,11 +360,11 @@ function PoliticaAutoMatch() {
           icon={anyEnabled ? undefined : <FloppyDisk weight="bold" />}
         >
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar política de auto-match</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar la conciliación automática</AlertDialogTitle>
             <AlertDialogDescription>
               {anyEnabled
-                ? 'Vas a autorizar al sistema a conciliar automáticamente (sin revisión humana) los siguientes dominios:'
-                : 'Vas a dejar TODOS los dominios en modo sugerencia (sombra). El sistema seguirá proponiendo coincidencias, pero ninguna se confirmará automáticamente.'}
+                ? 'Vas a autorizar a Leasefy a conciliar solos, sin que nadie los revise, estos tipos de movimiento:'
+                : 'Vas a dejar todos los tipos de movimiento en «sólo sugiere»: Leasefy seguirá proponiendo cruces, pero no confirmará ninguno solo.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {anyEnabled && (
@@ -384,7 +388,7 @@ function PoliticaAutoMatch() {
               </ul>
             </AlertDialogSection>
           )}
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Se creará una nueva versión de la política. Las versiones anteriores se conservan.
           </p>
           {saveError && <p className="text-sm text-danger">{saveError}</p>}
@@ -411,21 +415,23 @@ function PoliticaAutoMatch() {
 
 function ConciliacionConfiguracion() {
   const { t } = useI18n()
-  const { data, isLoading, error } = useAgentAutonomia('conciliacion')
+  const { data, isLoading, error, refetch } = useAgentAutonomia('conciliacion')
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
-        <p className="text-body text-fg-muted max-w-2xl">
-          {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Conciliación bancaria"
+        titulo={t('inmobiliaria.ai.workspace.pages.comun.configTitle')}
+        descripcion={t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
+      />
 
-      <AutonomiaPanel data={data} isLoading={isLoading} error={error} />
+      <AutonomiaPanel data={data} isLoading={isLoading} error={error} onReintentar={refetch} />
 
-      <PoliticaAutoMatch />
+      {/* Revisora r25 (Configuración #1): con el asistente caído, UN estado —el
+          fallo con su reintento—, no el fallo arriba y el editor entero debajo
+          con un segundo aviso. */}
+      {error ? null : <PoliticaAutoMatch />}
     </div>
   )
 }

@@ -103,7 +103,7 @@ export function TicketCTAs({
       {motivoDeshabilitado && (
         <p
           data-testid="cta-motivo-deshabilitado"
-          className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-xs text-fg-muted"
+          className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-caption text-fg-muted"
         >
           {motivoDeshabilitado}
         </p>

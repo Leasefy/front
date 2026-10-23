@@ -1,5 +1,6 @@
 'use client';
 
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useMemo, useState } from 'react';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { Pressable } from '@leasefy/cadence';
@@ -99,7 +100,7 @@ export function CobroCard({
           <p className="font-medium text-fg truncate text-sm">
             {cobro.propertyTitle}
           </p>
-          <p className="text-xs text-fg-muted truncate">
+          <p className="text-caption text-fg-muted truncate">
             {cobro.tenantName} · {formatMonth(cobro.month)}
           </p>
         </div>
@@ -110,14 +111,14 @@ export function CobroCard({
             {formatCurrency(cobro.totalAmount)}
           </p>
           {cobro.status === 'partial' && (
-            <p className="text-xs text-primary font-mono tabular-nums">
+            <p className="text-caption text-primary font-mono tabular-nums">
               {formatCurrency(cobro.paidAmount)} {t('inmobiliaria.cobros.card.paid')}
             </p>
           )}
         </div>
 
         {/* Status badge */}
-        <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium shrink-0', statusColor)}>
+        <span className={cn('px-2.5 py-1 rounded-full text-caption font-medium shrink-0', statusColor)}>
           {statusLabel}
         </span>
 
@@ -125,7 +126,7 @@ export function CobroCard({
         {cobro.daysLate > 0 && (
           <div className="flex items-center gap-1 text-warning shrink-0">
             <Warning className="w-4 h-4" weight="fill" />
-            <span className="text-xs font-medium">{cobro.daysLate}d</span>
+            <span className="text-caption font-medium">{cobro.daysLate}d</span>
           </div>
         )}
       </Pressable>
@@ -151,7 +152,7 @@ export function CobroCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
               <HouseLine className="w-4 h-4 text-fg-subtle shrink-0" />
-              <h3 className="font-semibold text-fg line-clamp-1">
+              <h3 className="font-medium text-fg line-clamp-1">
                 {cobro.propertyTitle}
               </h3>
             </div>
@@ -159,7 +160,7 @@ export function CobroCard({
               {formatMonth(cobro.month)}
             </p>
           </div>
-          <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium shrink-0', statusColor)}>
+          <span className={cn('px-2.5 py-1 rounded-full text-caption font-medium shrink-0', statusColor)}>
             {statusLabel}
           </span>
         </div>
@@ -168,9 +169,7 @@ export function CobroCard({
       {/* Tenant Section */}
       <div className="px-5 py-4 border-b border-border-faint">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-            <User className="w-5 h-5 text-primary" />
-          </div>
+          <User className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <p className="font-medium text-fg truncate">
               {cobro.tenantName}
@@ -180,7 +179,7 @@ export function CobroCard({
                 <a
                   href={`tel:${cobro.tenantPhone}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 text-xs text-fg-muted hover:text-primary transition-colors"
+                  className="flex items-center gap-1 text-caption text-fg-muted hover:text-primary transition-colors"
                 >
                   <Phone className="w-3.5 h-3.5" />
                   {cobro.tenantPhone}
@@ -244,11 +243,10 @@ export function CobroCard({
           <CalendarBlank className="w-4 h-4 text-fg-subtle" />
           <span className="text-fg-muted">{t('inmobiliaria.cobros.card.dueDate')}</span>
           <span className="text-fg-muted font-mono tabular-nums">
-            {new Date(cobro.dueDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            })}
+            {/* «16 oct 2026», la fecha de la casa (como la tabla); antes «16 de oct de 2026». */}
+            {locale === 'es'
+              ? fechaCorta(cobro.dueDate)
+              : new Date(cobro.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
         </div>
 
@@ -269,7 +267,7 @@ export function CobroCard({
         {cobro.status === 'paid' && cobro.paidDate && (
           <div className="flex items-center gap-2 text-sm text-success">
             <CheckCircle className="w-4 h-4" weight="fill" />
-            <span>{t('inmobiliaria.cobros.card.paidOn', { date: new Date(cobro.paidDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+            <span>{t('inmobiliaria.cobros.card.paidOn', { date: new Date(cobro.paidDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
               day: 'numeric',
               month: 'short',
             }) })}</span>
@@ -289,8 +287,11 @@ export function CobroCard({
       <div className="px-5 py-4 flex items-center justify-between border-t border-border-faint">
         {cobro.status !== 'paid' && onRegisterPayment && (
           <div className="flex flex-col items-start gap-1">
+            {/* Revisora r25 (Cobros #4): un solo azul en la pantalla —«Hacer recibo de caja» del
+                encabezado—; el de cada tarjeta va con borde. */}
             <Button
               size="sm"
+              variant="secondary"
               hideArrow
               disabled={!puedeHacerRecibo}
               onClick={(e) => {
@@ -303,7 +304,7 @@ export function CobroCard({
               {t('recibos.hacerCorto')}
             </Button>
             {!puedeHacerRecibo && (
-              <span data-testid="motivo-sin-permiso-de-recibo" className="text-xs text-fg-muted">
+              <span data-testid="motivo-sin-permiso-de-recibo" className="text-caption text-fg-muted">
                 {MOTIVO_SIN_PERMISO_DE_RECIBO}
               </span>
             )}
@@ -312,7 +313,7 @@ export function CobroCard({
         {cobro.anuladoAt && (
           <div className="flex flex-col text-sm text-fg-muted" data-testid={`cobro-anulado-${cobro.id}`}>
             <span className="font-medium">{t('inmobiliaria.cobros.anular.anuladoBadge')}</span>
-            {cobro.motivoDeLaAnulacion && <span className="text-xs">{cobro.motivoDeLaAnulacion}</span>}
+            {cobro.motivoDeLaAnulacion && <span className="text-caption">{cobro.motivoDeLaAnulacion}</span>}
           </div>
         )}
         {onCobroAnulado && !cobro.anuladoAt && (
@@ -331,7 +332,7 @@ export function CobroCard({
               {t('inmobiliaria.cobros.anular.accion')}
             </Button>
             {!puedeAnular && (
-              <span className="text-xs text-fg-muted">{t('inmobiliaria.cobros.anular.sinPermiso')}</span>
+              <span className="text-caption text-fg-muted">{t('inmobiliaria.cobros.anular.sinPermiso')}</span>
             )}
           </div>
         )}

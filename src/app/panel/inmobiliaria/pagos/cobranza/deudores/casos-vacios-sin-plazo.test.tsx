@@ -30,6 +30,10 @@ vi.mock('@/lib/hooks/cobranza/use-debtor-list', () => ({
     refetch: vi.fn(),
   }),
 }))
+// El panorama de la cartera (la cifra de arriba) no es parte de este caso.
+vi.mock('@/lib/hooks/cobranza/use-cartera-overview', () => ({
+  useCarteraOverview: () => ({ data: null, isLoading: false, error: null, refetch: () => undefined }),
+}))
 vi.mock('@/lib/hooks/use-plazo-sin-fijar', () => ({ usePlazoSinFijar: () => h.sinFijar }))
 vi.mock('@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza', () => ({
   AvisoPlazoSinFijarEnCobranza: () => null,
@@ -89,7 +93,7 @@ describe('Cobranza → Casos vacía', () => {
     // COBRANZA-MANUAL (04-10-2026): «Cobranza se llena con la cartera de los
     // contratos». El vacío ya no manda a importar un CSV como única puerta.
     const vacio = container.querySelector('[data-testid="casos-vacio-de-la-cartera"]')
-    expect(vacio?.textContent).toContain('Todavía no hay deudores en Cobranza')
+    expect(vacio?.textContent).toContain('Todavía no hay casos de cobranza')
     expect(container.textContent).not.toContain('Importa una cartera CSV')
     const traer = container.querySelector('[data-testid="traer-la-cartera"]')
     const csv = container.querySelector('[data-testid="importar-cartera-csv"]')

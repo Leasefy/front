@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Check, Eye, ShareNetwork, ArrowRight, Sparkle, Buildings, MapPin, CurrencyDollar, UserPlus, WarningCircle } from '@phosphor-icons/react';
+import { Check, Eye, ShareNetwork, Sparkle, Buildings, MapPin, CurrencyDollar, UserPlus, WarningCircle } from '@phosphor-icons/react';
 import {
   Appear,
   Stagger,
@@ -19,6 +19,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { formatCurrency } from '@/lib/format';
 import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import confetti from 'canvas-confetti';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 
 /**
  * Las fotos que no subieron al publicar, cada una con su motivo (02-10-2026).
@@ -167,15 +168,13 @@ export function PublishSuccess() {
           hasta 0,5 s y duraciones sueltas. */}
       <Appear distance="md" duration="slow" className="max-w-lg w-full">
         {/* Success card */}
-        <div className="bg-surface rounded-xl border border-border overflow-hidden">
+        <div className="bg-surface rounded-lg border border-border overflow-hidden">
           {/* Header */}
           <div className="relative px-8 pt-14 pb-10 text-center overflow-hidden">
-            {/* Gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#1A40FF] via-[#1A40FF] to-[#1A40FF]" />
-            {/* Subtle mesh overlay */}
-            <div className="absolute inset-0 opacity-30" style={{
-              backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.15) 0%, transparent 50%)',
-            }} />
+            {/* El momento de marca (Cadence 2, 23-10): medianoche con la corriente de voltaje, como la landing
+                nueva. Antes un bloque azul sólido con brillos (el azul es sólo para la acción). */}
+            <div className="absolute inset-0 bg-[#07080C]" />
+            <CorrienteDeVoltaje className="absolute inset-0 h-full w-full opacity-90" fondo="noche" forma="corrientes" fuerza={0.6} semilla={5} />
             {/* Robottom fade into card */}
             <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-surface to-transparent" />
 
@@ -207,7 +206,7 @@ export function PublishSuccess() {
               </div>
 
               <Appear delay={0.2}>
-                <h1 className="text-2xl font-bold text-white mb-1.5 tracking-tight">
+                <h1 className="text-h2 text-white mb-1.5 tracking-tight">
                   ¡Publicación exitosa!
                 </h1>
                 <p className="text-white/70 text-[15px]">
@@ -225,7 +224,7 @@ export function PublishSuccess() {
             {draft.photos.length > 0 && (
               <StaggerItem
                 key="foto"
-                className="aspect-video rounded-xl overflow-hidden relative"
+                className="aspect-video rounded-lg overflow-hidden relative"
               >
                 <img
                   src={draft.photos[0]}
@@ -245,28 +244,28 @@ export function PublishSuccess() {
 
             {/* Quick stats */}
             <StaggerItem key="datos" className="grid grid-cols-3 gap-3">
-              <div className="bg-surface-muted p-3 rounded-xl text-center">
+              <div className="bg-surface-muted p-3 rounded-lg text-center">
                 <CurrencyDollar className="w-4 h-4 mx-auto text-fg-subtle mb-1" />
                 <p className="text-sm font-semibold text-fg">
                   {formatCurrency(draft.monthlyRent)}
                 </p>
-                <p className="text-xs text-fg-subtle">/mes</p>
+                <p className="text-caption text-fg-subtle">/mes</p>
               </div>
-              <div className="bg-surface-muted p-3 rounded-xl text-center">
+              <div className="bg-surface-muted p-3 rounded-lg text-center">
                 <Buildings className="w-4 h-4 mx-auto text-fg-subtle mb-1" />
                 <p className="text-sm font-semibold text-fg">
                   {draft.bedrooms} hab
                 </p>
-                <p className="text-xs text-fg-subtle">
+                <p className="text-caption text-fg-subtle">
                   {draft.bathrooms} {draft.bathrooms === 1 ? 'baño' : 'baños'}
                 </p>
               </div>
-              <div className="bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-3 rounded-xl text-center">
+              <div className="bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-3 rounded-lg text-center">
                 <Sparkle className="w-4 h-4 mx-auto text-[#1A40FF] dark:text-[#5570FF] mb-1" />
-                <p className="text-xs font-semibold text-fg">
+                <p className="text-caption font-semibold text-fg">
                   {draft.selectedPlan ? planLabels[draft.selectedPlan] ?? 'Plan' : 'Plan'}
                 </p>
-                <p className="text-xs text-fg-subtle">Activo</p>
+                <p className="text-caption text-fg-subtle">Activo</p>
               </div>
             </StaggerItem>
 
@@ -275,7 +274,7 @@ export function PublishSuccess() {
               {isAuthenticated ? (
                 <Link
                   href="/panel/propiedades"
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#1A40FF] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Ver mi propiedad en el panel
@@ -284,7 +283,7 @@ export function PublishSuccess() {
                 <button
                   type="button"
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#1A40FF] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
                   Ver mi propiedad en el panel
@@ -293,7 +292,7 @@ export function PublishSuccess() {
 
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3 border border-border text-fg-muted text-sm font-medium rounded-xl hover:border-border-strong hover:text-fg transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3 border border-border text-fg-muted text-sm font-medium rounded-lg hover:border-border-strong hover:text-fg transition-colors"
               >
                 <ShareNetwork className="w-4 h-4" />
                 Compartir anuncio
@@ -309,16 +308,15 @@ export function PublishSuccess() {
                 className="inline-flex items-center gap-2 text-sm text-fg-subtle hover:text-fg transition-colors"
               >
                 Publicar otro inmueble
-                <ArrowRight className="w-4 h-4" />
               </Link>
               {isAuthenticated ? (
                 hayFotosSinSubir ? null : (
-                  <span className="text-xs text-fg-subtle">
+                  <span className="text-caption text-fg-subtle">
                     Redirigiendo en {countdown}s...
                   </span>
                 )
               ) : (
-                <span className="text-xs text-fg-subtle">
+                <span className="text-caption text-fg-subtle">
                   Inicia sesion para acceder al panel
                 </span>
               )}

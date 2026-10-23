@@ -115,7 +115,7 @@ export function ReporteDeWompi({ alImportar }: { alImportar?: () => void }) {
         {resultado ? (
           <Card className="p-5 mt-4 " data-testid="resultado-del-reporte">
             <Eyebrow>Importado · {resultado.archivo}</Eyebrow>
-            <p className="text-sm text-fg mt-2">
+            <p className="text-body-sm text-fg mt-2">
               {resultado.importadas === 0
                 ? 'No había nada nuevo: el reporte ya estaba cargado igual.'
                 : `Se ${resultado.importadas === 1 ? 'importó 1 transacción' : `importaron ${resultado.importadas} transacciones`}.`}

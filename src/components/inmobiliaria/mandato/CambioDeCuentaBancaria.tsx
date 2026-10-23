@@ -499,7 +499,7 @@ export function CambioDeCuentaBancaria({
         <p className="text-sm text-muted-foreground">
           {tieneCuenta
             ? 'Cambiar la cuenta pide la certificación bancaria, la confirmación del propietario y la aprobación de un administrador.'
-            : 'La primera cuenta se registra en «Editar». Los cambios después pasan por acá.'}
+            : 'La primera cuenta se registra en «Editar». Los cambios después pasan por aquí.'}
         </p>
       ) : (
         <div className="space-y-3">
@@ -608,7 +608,7 @@ export function CambioDeCuentaBancaria({
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
                   {/* 🔴 23-09: quien pidió el cambio no lo aprueba si hay otro
-                      administrador. El back decide y dice por qué; acá el botón
+                      administrador. El back decide y dice por qué; aquí el botón
                       se apaga con ese mismo porqué, nunca un cable muerto. */}
                   <Button
                     size="sm"

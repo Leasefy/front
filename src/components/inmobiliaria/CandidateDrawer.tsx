@@ -414,13 +414,11 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
     <>
         <SheetHeader
           leading={
-            <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center flex-shrink-0">
-              <User className="w-5 h-5 text-primary" />
-            </div>
+            <User className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
           }
           title={<span className="block truncate">{candidate.tenantName || 'Candidato'}</span>}
         >
-          <p className="text-xs text-fg-muted truncate flex items-center gap-1.5">
+          <p className="text-caption text-fg-muted truncate flex items-center gap-1.5">
             <Envelope className="w-3 h-3" />
             {candidate.tenantEmail}
           </p>
@@ -431,7 +429,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
           {/* Status */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-fg-muted">{tr("Estado:")}</span>
-            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-foreground">
+            <span className="px-2.5 py-1 rounded-full text-caption font-medium bg-muted text-foreground">
               {tr(STATUS_LABELS[candidate.status])}
             </span>
             {/* 🔴 El estudio es opcional (Nico, 04-10-2026): qué falta, a la
@@ -444,16 +442,14 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
 
           {/* Contract CTA — shown FIRST when approved so the next step is obvious */}
           {candidate.status === 'APPROVED' && (
-            <section className="rounded-lg border border-success/30 bg-success-soft/60 dark:bg-success/20 p-5 space-y-3">
+            <section className="rounded-lg border border-success/30 bg-success-soft/60 p-5 space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-md bg-surface dark:bg-ink flex items-center justify-center flex-shrink-0">
-                  <CheckCircle className="w-5 h-5 text-success" />
-                </div>
+                <CheckCircle className="w-5 h-5 text-success shrink-0" aria-hidden="true" />
                 <div className="flex-1">
-                  <p className="font-semibold text-sm text-foreground">
+                  <p className="font-medium text-sm text-foreground">
                     {tr(existingContract ? 'Contrato en curso' : 'Candidato aprobado')}
                   </p>
-                  <p className="text-xs text-fg-muted mt-0.5">
+                  <p className="text-caption text-fg-muted mt-0.5">
                     {tr(existingContract
                       ? 'Ya hay un contrato creado para esta aplicación.'
                       : 'Ya puedes crear el contrato y enviarlo para firma.')}
@@ -463,18 +459,16 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               {existingContract ? (
                 <Link
                   href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
-                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-surface dark:bg-ink border border-success/30 hover:bg-success-soft text-success text-sm font-semibold transition-colors"
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-surface border border-success/30 hover:bg-success-soft text-success text-sm font-medium transition-colors"
                 >
                   {tr("Ver contrato")}
-                  <ArrowUpRight className="w-4 h-4" />
                 </Link>
               ) : (
                 <Link
                   href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}
-                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-success hover:bg-success text-white text-sm font-semibold transition-colors"
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-success hover:bg-success text-white text-sm font-medium transition-colors"
                 >
                   {tr("Crear contrato")}
-                  <ArrowUpRight className="w-4 h-4" />
                 </Link>
               )}
             </section>
@@ -484,12 +478,10 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
           {candidate.status === 'CONTRACT_FAILED' && (
             <section className="rounded-lg border border-danger/30 bg-danger-soft/60 p-5 space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-md bg-surface dark:bg-ink flex items-center justify-center flex-shrink-0">
-                  <XCircle className="w-5 h-5 text-danger" />
-                </div>
+                <XCircle className="w-5 h-5 text-danger shrink-0" aria-hidden="true" />
                 <div className="flex-1">
-                  <p className="font-semibold text-sm text-foreground">{tr("Proceso de contrato cerrado")}</p>
-                  <p className="text-xs text-fg-muted mt-0.5">
+                  <p className="font-medium text-sm text-foreground">{tr("Proceso de contrato cerrado")}</p>
+                  <p className="text-caption text-fg-muted mt-0.5">
                     {tr("El contrato se canceló o fue rechazado definitivamente. Para reintentar con este candidato, necesitas una nueva aplicación.")}
                   </p>
                 </div>
@@ -497,10 +489,9 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               {existingContract && (
                 <Link
                   href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
-                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-surface dark:bg-ink border border-danger/30 hover:bg-danger-soft text-danger text-sm font-semibold transition-colors"
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-surface border border-danger/30 hover:bg-danger-soft text-danger text-sm font-medium transition-colors"
                 >
                   {tr("Ver contrato cancelado")}
-                  <ArrowUpRight className="w-4 h-4" />
                 </Link>
               )}
             </section>
@@ -519,8 +510,8 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 <ShieldCheck className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">{tr("Estudio de asegurabilidad")}</h3>
-                <p className="text-xs text-fg-muted">{tr("El estudio con que se postuló, si lo hizo: es opcional")}</p>
+                <h3 className="font-medium text-sm text-foreground">{tr("Estudio de asegurabilidad")}</h3>
+                <p className="text-caption text-fg-muted">{tr("El estudio con que se postuló, si lo hizo: es opcional")}</p>
               </div>
             </div>
             <PreScoringStudyPanel study={candidate.preScoringStudy} />
@@ -542,12 +533,12 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             levelColor ? `${levelColor.bg} ${levelColor.border}` : 'bg-muted border-border'
           )}>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-md bg-surface dark:bg-ink flex items-center justify-center">
+              <div className="w-8 h-8 rounded-md bg-surface flex items-center justify-center">
                 <Robot className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">{tr("Análisis de riesgo con IA")}</h3>
-                <p className="text-xs text-fg-muted">{tr("Generado por el agente de evaluación de riesgo")}</p>
+                <h3 className="font-medium text-sm text-foreground">{tr("Análisis de riesgo con IA")}</h3>
+                <p className="text-caption text-fg-muted">{tr("Generado por el agente de evaluación de riesgo")}</p>
               </div>
             </div>
 
@@ -559,12 +550,12 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               <div className="rounded-lg bg-surface-muted p-3 border border-border">
                 {/* El puntaje no está prendido (Nico, 04-10-2026): no se
                     promete uno que no va a llegar. */}
-                <p className="text-xs text-fg-muted">{tr("Sin puntaje.")}</p>
+                <p className="text-caption text-fg-muted">{tr("Sin puntaje.")}</p>
               </div>
             ) : evaluacionDesactualizada(evaluation) ? (
               <AvisoDeEvaluacionDesactualizada />
             ) : aiError ? (
-              <div className="flex items-start gap-2 text-xs text-fg-muted">
+              <div className="flex items-start gap-2 text-caption text-fg-muted">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{aiError}</span>
               </div>
@@ -586,32 +577,32 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <div className="flex items-center gap-4">
                     <div
                       className={cn(
-                        'flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border',
+                        'flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border',
                         levelColor.bg,
                         levelColor.border,
                       )}
                     >
-                      <span className={cn('font-mono text-2xl font-bold', levelColor.text)}>
+                      <span className={cn('font-mono text-2xl font-medium', levelColor.text)}>
                         {level}
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-mono text-3xl font-semibold leading-none text-foreground tabular-nums">
+                      <p className="font-mono text-3xl leading-none text-foreground tabular-nums">
                         {totalScore}
                         <span className="ml-0.5 text-sm font-normal text-fg-muted">/100</span>
                       </p>
-                      <p className="mt-1.5 text-xs text-fg-muted">{tr(LEVEL_DESCRIPTIONS[level] ?? '')}</p>
+                      <p className="mt-1.5 text-caption text-fg-muted">{tr(LEVEL_DESCRIPTIONS[level] ?? '')}</p>
                     </div>
                   </div>
                 )}
 
                 {/* La misma advertencia va también al pie, junto a los botones.
-                    Acá se dice corto: el detalle está en las alertas de abajo. */}
+                    Aquí se dice corto: el detalle está en las alertas de abajo. */}
                 {requiresManualReview && (
-                  <p className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger">
+                  <p className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger">
                     <WarningCircle className="mt-px h-4 w-4 flex-shrink-0" />
                     <span>
-                      <span className="font-semibold">{tr("Pide revisión manual.")}</span> {tr("El agente encontró inconsistencias entre los documentos — están listadas abajo.")}
+                      <span className="font-medium">{tr("Pide revisión manual.")}</span> {tr("El agente encontró inconsistencias entre los documentos — están listadas abajo.")}
                     </span>
                   </p>
                 )}
@@ -688,10 +679,10 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <div className="rounded-lg bg-surface-muted p-3 flex items-start gap-2 border border-border">
                     <recommendation.icon className={cn('w-5 h-5 flex-shrink-0 mt-0.5', recommendation.color)} />
                     <div>
-                      <p className="text-xs text-fg-muted">{tr("Recomendación del agente")}</p>
-                      <p className={cn('text-sm font-semibold', recommendation.color)}>{tr(recommendation.label)}</p>
+                      <p className="text-caption text-fg-muted">{tr("Recomendación del agente")}</p>
+                      <p className={cn('text-sm font-medium', recommendation.color)}>{tr(recommendation.label)}</p>
                       {evaluation?.confidence !== undefined && (
-                        <p className="text-xs text-fg-muted mt-0.5">
+                        <p className="text-caption text-fg-muted mt-0.5">
                           {tr("Confianza:")} {Math.round(evaluation.confidence * 100)}%
                         </p>
                       )}
@@ -702,7 +693,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {/* Summary */}
                 {evaluation?.summary && (
                   <div className="rounded-lg bg-surface-muted p-3 border border-border">
-                    <p className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
+                    <p className="text-caption font-medium text-foreground mb-1 flex items-center gap-1">
                       <Sparkle className="w-3.5 h-3.5" />
                       {tr("Resumen")}
                     </p>
@@ -713,10 +704,10 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {/* Reasoning */}
                 {evaluation?.reasoning && evaluation.reasoning.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-foreground mb-2">{tr("Razonamiento")}</p>
+                    <p className="text-caption font-medium text-foreground mb-2">{tr("Razonamiento")}</p>
                     <ul className="space-y-1.5">
                       {evaluation.reasoning.map((r, i) => (
-                        <li key={i} className="text-xs text-fg-muted flex items-start gap-2">
+                        <li key={i} className="text-caption text-fg-muted flex items-start gap-2">
                           <span className="text-primary mt-0.5">•</span>
                           <span>{r}</span>
                         </li>
@@ -728,7 +719,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {/* Integrity flags — structured fraud/inconsistency signals */}
                 {evaluation?.integrity_flags && evaluation.integrity_flags.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+                    <p className="text-caption font-medium text-foreground flex items-center gap-1">
                       <WarningCircle className="w-3.5 h-3.5" />
                       {tr("Alertas de integridad")}
                     </p>
@@ -741,13 +732,13 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {/* Legacy flags fallback */}
                 {!evaluation?.integrity_flags && evaluation?.flags && evaluation.flags.length > 0 && (
                   <div className="rounded-lg bg-warning-soft border border-warning/30 p-3">
-                    <p className="text-xs font-semibold text-warning mb-2 flex items-center gap-1">
+                    <p className="text-caption font-medium text-warning mb-2 flex items-center gap-1">
                       <WarningCircle className="w-3.5 h-3.5" />
                       {tr("Alertas detectadas")}
                     </p>
                     <ul className="space-y-1">
                       {evaluation.flags.map((f, i) => (
-                        <li key={i} className="text-xs text-warning">• {f}</li>
+                        <li key={i} className="text-caption text-warning">• {f}</li>
                       ))}
                     </ul>
                   </div>
@@ -756,7 +747,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {/* Observations — soft non-blocking warnings */}
                 {evaluation?.observations && evaluation.observations.length > 0 && (
                   <div className="space-y-1.5">
-                    <p className="text-xs font-semibold text-foreground">{tr("Observaciones")}</p>
+                    <p className="text-caption font-medium text-foreground">{tr("Observaciones")}</p>
                     {evaluation.observations.map((obs, i) => (
                       <ObservationCard key={i} observation={obs} />
                     ))}
@@ -764,7 +755,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 )}
 
                 {!level && !evaluation && !aiError && (
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     {tr("Aún no hay análisis disponible.")}
                   </p>
                 )}
@@ -776,12 +767,12 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
           <section className="rounded-lg border border-border bg-card p-5 space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
-                  <MagnifyingGlass className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
+                <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
+                  <MagnifyingGlass className="w-4 h-4 text-fg-muted" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm text-foreground">{tr("Inmuebles compatibles")}</h3>
-                  <p className="text-xs text-fg-muted">{tr("Otras propiedades de tu portafolio que le podrían calzar")}</p>
+                  <h3 className="font-medium text-sm text-foreground">{tr("Inmuebles compatibles")}</h3>
+                  <p className="text-caption text-fg-muted">{tr("Otras propiedades de tu portafolio que le podrían calzar")}</p>
                 </div>
               </div>
               <Button
@@ -799,7 +790,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             </div>
 
             {matchingError && (
-              <div className="flex items-start gap-2 text-xs text-danger">
+              <div className="flex items-start gap-2 text-caption text-danger">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{matchingError}</span>
               </div>
@@ -808,8 +799,8 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             {matchingResults && (
               <>
                 {matchingResults.candidateProfile && (
-                  <div className="rounded-lg bg-muted p-3 text-xs space-y-1">
-                    <p className="font-semibold text-foreground">{tr("Perfil detectado del candidato:")}</p>
+                  <div className="rounded-lg bg-muted p-3 text-caption space-y-1">
+                    <p className="font-medium text-foreground">{tr("Perfil detectado del candidato:")}</p>
                     <p className="text-fg-muted">
                       {tr("Ingresos:")} <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.monthlyIncome)}</span> {tr("· Presupuesto máx:")} <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.maxBudget)}</span>
                     </p>
@@ -823,7 +814,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 )}
 
                 {matchingResults.results.length === 0 ? (
-                  <p className="text-xs text-fg-muted text-center py-4">
+                  <p className="text-caption text-fg-muted text-center py-4">
                     {matchingResults.message ?? 'No hay otras propiedades compatibles disponibles en tu portafolio.'}
                   </p>
                 ) : (
@@ -832,23 +823,23 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                       <Link
                         key={r.propertyId}
                         href={`/panel/inmobiliaria/inmuebles/${r.propertyId}?por=inmueble`}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-border dark:border-border-strong dark:hover:border-border dark:border-border-strong hover:bg-muted/50 transition-all group"
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-border hover:bg-muted/50 transition-all group"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors">
+                          <p className="text-sm font-medium text-foreground truncate group-hover:text-fg-muted transition-colors">
                             {r.property.title}
                           </p>
-                          <p className="text-xs text-fg-muted">
+                          <p className="text-caption text-fg-muted">
                             {r.property.neighborhood}, {r.property.city} · {r.property.bedrooms} {tr("hab ·")} {formatCurrency(r.property.monthlyRent)}{tr("/mes")}
                           </p>
                         </div>
                         <div className="flex flex-col items-center flex-shrink-0">
-                          <div className="px-2 py-0.5 rounded-full bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle text-xs font-bold">
+                          <div className="px-2 py-0.5 rounded-full bg-surface-muted text-fg-muted text-caption font-medium">
                             {r.compatibilityScore}%
                           </div>
-                          <p className="text-[10px] text-fg-muted mt-0.5">{tr("match")}</p>
+                          <p className="text-caption text-fg-muted mt-0.5">{tr("match")}</p>
                         </div>
-                        <ArrowUpRight className="w-4 h-4 text-fg-muted group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors" />
+                        <ArrowUpRight className="w-4 h-4 text-fg-muted group-hover:text-fg-muted transition-colors" />
                       </Link>
                     ))}
                   </div>
@@ -857,7 +848,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                     las manda solo, según el modo de Matching. Sin esta línea
                     el usuario cree que el correo ya salió. */}
                 {matchingResults.results.length > 0 && (
-                  <p className="text-xs text-fg-muted" data-testid="matching-a-donde-van">
+                  <p className="text-caption text-fg-muted" data-testid="matching-a-donde-van">
                     {tr("Si hay al menos un calce del 70 %, Matching le prepara las opciones al candidato: en copiloto quedan en")}{' '}
                     <Link href="/panel/inmobiliaria/postulaciones/matching/cola" className="font-medium text-fg underline-offset-2 hover:underline">
                       {tr("su cola")}
@@ -869,7 +860,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             )}
 
             {!matchingResults && !isMatching && !matchingError && (
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 {tr("Haz clic en “Buscar compatibles” para que el agente analice tu portafolio y te sugiera propiedades que le podrían calzar mejor a este candidato.")}
               </p>
             )}
@@ -885,15 +876,15 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 <FileText className="w-4 h-4 text-fg-muted" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">{tr("Documentos adjuntos")}</h3>
-                <p className="text-xs text-fg-muted">{tr("Archivos cargados por el candidato")}</p>
+                <h3 className="font-medium text-sm text-foreground">{tr("Documentos adjuntos")}</h3>
+                <p className="text-caption text-fg-muted">{tr("Archivos cargados por el candidato")}</p>
               </div>
             </div>
 
             {/* Integrity flags from the AI agent */}
             {evaluation?.integrity_flags && evaluation.integrity_flags.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <p className="text-caption font-medium text-foreground flex items-center gap-1.5">
                   <WarningCircle className="w-3.5 h-3.5 text-danger" />
                   {tr("Alertas del agente de verificación")}
                 </p>
@@ -901,7 +892,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <IntegrityFlagCard key={i} flag={flag} />
                 ))}
                 <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2">
-                  <p className="text-xs text-warning">
+                  <p className="text-caption text-warning">
                     {tr("La verificación final es responsabilidad de tu equipo. Revisa los documentos originales antes de tomar una decisión.")}
                   </p>
                 </div>
@@ -914,7 +905,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 <DSSpinner size="sm" variant="muted" />
               </div>
             ) : docsError ? (
-              <div className="flex items-start gap-2 text-xs text-fg-muted">
+              <div className="flex items-start gap-2 text-caption text-fg-muted">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{tr("No se pudieron cargar los documentos.")}</span>
               </div>
@@ -939,7 +930,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
 
           {/* Messages — chat with the candidate without leaving the drawer */}
           <section className="space-y-3">
-            <h3 className="font-semibold text-sm text-foreground">{tr("Mensajes")}</h3>
+            <h3 className="font-medium text-sm text-foreground">{tr("Mensajes")}</h3>
             <ChatThread applicationId={candidate.id} />
           </section>
 
@@ -1037,7 +1028,7 @@ export function AvisoDeEvaluacionDesactualizada() {
     >
       <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
       <span>
-        <span className="font-semibold">{tr("Hay que volver a evaluarlo.")}</span> {tr("El candidato cambió sus datos después del estudio, así que el puntaje anterior ya no vale. Pide un estudio nuevo; no se exige subir documentos otra vez.")}
+        <span className="font-medium">{tr("Hay que volver a evaluarlo.")}</span> {tr("El candidato cambió sus datos después del estudio, así que el puntaje anterior ya no vale. Pide un estudio nuevo; no se exige subir documentos otra vez.")}
       </span>
     </div>
   );
@@ -1049,7 +1040,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
   if (!study) {
     return (
       <div className="rounded-lg bg-surface-muted p-3 border border-border" data-testid="prescoring-panel-empty">
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {tr("El candidato se postuló sin un estudio de preescoring registrado para esta postulación.")}
         </p>
       </div>
@@ -1074,13 +1065,13 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
           data-testid="prescoring-rejected-note"
         >
           <XCircle className="w-3.5 h-3.5 text-danger flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-xs text-danger">
+          <p className="text-caption text-danger">
             {tr("Este estudio no encontró ninguna aseguradora que respalde al candidato.")}
           </p>
         </div>
         {carriers.length > 0 && (
           <div className="space-y-2">
-            <p className="text-caption font-semibold text-foreground">{tr("Aseguradoras evaluadas")}</p>
+            <p className="text-caption font-medium text-foreground">{tr("Aseguradoras evaluadas")}</p>
             {carriers.map((carrier) => (
               <div
                 key={carrier.name}
@@ -1110,7 +1101,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
         data-testid="prescoring-panel-in-progress"
       >
         <Info className="w-3.5 h-3.5 text-fg-muted flex-shrink-0 mt-0.5" aria-hidden="true" />
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {tr("El estudio de preescoring de este candidato está en curso. Todavía no hay resultado.")}
         </p>
       </div>
@@ -1125,7 +1116,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
       {isExpired && (
         <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2 flex items-start gap-2" data-testid="prescoring-expired-badge">
           <Info className="w-3.5 h-3.5 text-warning flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-xs text-warning">
+          <p className="text-caption text-warning">
             {tr("El estudio venció, pero el resultado sigue siendo válido para esta postulación.")}
           </p>
         </div>
@@ -1133,8 +1124,8 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
 
       {study.maxAsegurableCop != null ? (
         <div>
-          <p className="text-xs text-fg-muted">{tr("Monto máximo asegurable")}</p>
-          <p className="text-2xl font-bold text-foreground font-mono tabular-nums">
+          <p className="text-caption text-fg-muted">{tr("Monto máximo asegurable")}</p>
+          <p className="text-2xl font-medium text-foreground font-mono tabular-nums">
             {formatCurrency(study.maxAsegurableCop)}
           </p>
           {/*
@@ -1142,16 +1133,16 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
             DATO, no un bloqueo. Un canon por encima no frena la postulación; lo
             decide la inmobiliaria, sin registro ni aviso obligatorio.
           */}
-          <p className="text-xs text-fg-muted mt-1" data-testid="prescoring-tope-informativo">
+          <p className="text-caption text-fg-muted mt-1" data-testid="prescoring-tope-informativo">
             {tr("Dato informativo: si el canon del inmueble lo supera, la inmobiliaria decide si arrienda igual.")}
           </p>
         </div>
       ) : (
-        <p className="text-xs text-fg-muted">{tr("Este estudio no registró un monto máximo asegurable.")}</p>
+        <p className="text-caption text-fg-muted">{tr("Este estudio no registró un monto máximo asegurable.")}</p>
       )}
 
       {study.completedAt && (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {tr("Completado el")}{' '}
           {new Date(study.completedAt).toLocaleDateString(fechas, {
             day: 'numeric',
@@ -1163,7 +1154,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
 
       {carriers.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-caption font-semibold text-foreground">{tr("Aseguradoras evaluadas")}</p>
+          <p className="text-caption font-medium text-foreground">{tr("Aseguradoras evaluadas")}</p>
           {carriers.map((carrier) => (
             <div
               key={carrier.name}
@@ -1173,7 +1164,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
               <span className="text-caption text-foreground truncate">{carrier.name}</span>
               <div className="flex items-center gap-3 flex-shrink-0">
                 {carrier.maxAsegurableCop != null ? (
-                  <span className="text-xs font-semibold text-foreground tabular-nums font-mono">
+                  <span className="text-caption font-medium text-foreground tabular-nums font-mono">
                     {formatCurrency(carrier.maxAsegurableCop)}
                   </span>
                 ) : (
@@ -1182,14 +1173,14 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
                   // formatCurrency: it null-coalesces to 0 and renders a false "$0" ceiling,
                   // which reads as "will back you for zero pesos" instead of "will not back you".
                   <span
-                    className="inline-flex items-center gap-1 text-xs font-medium text-danger"
+                    className="inline-flex items-center gap-1 text-caption font-medium text-danger"
                     data-testid="prescoring-carrier-no-cover"
                   >
                     <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
                     {tr("Sin cobertura")}
                   </span>
                 )}
-                <span className={cn('inline-flex items-center gap-1 text-xs font-medium', carrier.viable ? 'text-success' : 'text-danger')}>
+                <span className={cn('inline-flex items-center gap-1 text-caption font-medium', carrier.viable ? 'text-success' : 'text-danger')}>
                   {carrier.viable ? (
                     <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
                   ) : (
@@ -1202,7 +1193,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
           ))}
         </div>
       ) : (
-        <p className="text-xs text-fg-muted" data-testid="prescoring-ceiling-only-note">
+        <p className="text-caption text-fg-muted" data-testid="prescoring-ceiling-only-note">
           {tr("El detalle por aseguradora no está disponible para este estudio; se muestra el monto máximo asegurable global.")}
         </p>
       )}
@@ -1233,13 +1224,13 @@ function FactorDelScore({
   return (
     <div>
       <div className="flex items-baseline gap-3">
-        <span className="min-w-0 flex-1 truncate text-xs text-foreground">{etiqueta}</span>
+        <span className="min-w-0 flex-1 truncate text-caption text-foreground">{etiqueta}</span>
         {peso !== undefined && (
-          <span className="shrink-0 text-[11px] text-fg-subtle">
+          <span className="shrink-0 text-caption text-fg-subtle">
             {tr("pesa")} <span className="font-mono tabular-nums">{peso}%</span>
           </span>
         )}
-        <span className="w-9 shrink-0 text-right font-mono text-sm font-semibold text-foreground tabular-nums">
+        <span className="w-9 shrink-0 text-right font-mono text-sm text-foreground tabular-nums">
           {valor}
         </span>
       </div>
@@ -1273,13 +1264,13 @@ function DetalleDeCredito({
     <div className="mt-2 ml-3 space-y-1.5 border-l border-border pl-3">
       {bureau && (
         <div className="flex items-baseline gap-2">
-          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">{tr("Buró de crédito")}</span>
+          <span className="min-w-0 flex-1 truncate text-caption text-fg-muted">{tr("Buró de crédito")}</span>
           {bureauUnavailable ? (
-            <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
+            <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-caption font-medium text-warning">
               {tr("Sin dato — el buró no respondió")}
             </span>
           ) : (
-            <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
+            <span className="shrink-0 font-mono text-caption tabular-nums text-foreground">
               {bureau.value}
             </span>
           )}
@@ -1287,14 +1278,14 @@ function DetalleDeCredito({
       )}
       {asegurabilidad && (
         <div className="flex items-baseline gap-2">
-          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">{tr("Asegurabilidad")}</span>
-          <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
+          <span className="min-w-0 flex-1 truncate text-caption text-fg-muted">{tr("Asegurabilidad")}</span>
+          <span className="shrink-0 font-mono text-caption tabular-nums text-foreground">
             {asegurabilidad.value}
           </span>
         </div>
       )}
       {bureauUnavailable && (
-        <p className="text-[11px] leading-snug text-warning">
+        <p className="text-caption leading-snug text-warning">
           {tr("El crédito se calculó con la mitad de la información, así que este puntaje está por debajo de lo que le corresponde.")}
         </p>
       )}
@@ -1439,7 +1430,7 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
 
   return (
     <div className={cn('rounded-md border px-3 py-2.5', tono.caja)}>
-      <p className={cn('flex items-start gap-1.5 text-xs font-semibold', tono.texto)}>
+      <p className={cn('flex items-start gap-1.5 text-caption font-medium', tono.texto)}>
         <Icono className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
         <span className="flex-1">{message}</span>
         {docLabel && <span className="font-normal whitespace-nowrap">— {docLabel}</span>}
@@ -1463,7 +1454,7 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
           {explicacion.caraACara.brecha && (
             <span
               className={cn(
-                'self-center rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums',
+                'self-center rounded-full border px-2 py-0.5 text-caption font-medium tabular-nums',
                 tono.texto,
                 'border-current/30',
               )}
@@ -1475,7 +1466,7 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
       )}
 
       {explicacion && (
-        <p className={cn('mt-1.5 ml-5 text-xs font-normal opacity-90', tono.texto)}>
+        <p className={cn('mt-1.5 ml-5 text-caption font-normal opacity-90', tono.texto)}>
           {explicacion.texto}
         </p>
       )}
@@ -1488,18 +1479,18 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
           <details className="mt-1 ml-5">
             <summary
               className={cn(
-                'cursor-pointer list-none text-[11px] underline underline-offset-2 opacity-70',
+                'cursor-pointer list-none text-caption underline underline-offset-2 opacity-70',
                 tono.texto,
               )}
             >
               {tr("Ver detalle técnico")}
             </summary>
-            <p className={cn('mt-1 font-mono text-[11px] leading-relaxed opacity-80', tono.texto)}>
+            <p className={cn('mt-1 font-mono text-caption leading-relaxed opacity-80', tono.texto)}>
               {flag.detail}
             </p>
           </details>
         ) : (
-          <p className={cn('mt-1 ml-5 text-xs font-normal opacity-90', tono.texto)}>{flag.detail}</p>
+          <p className={cn('mt-1 ml-5 text-caption font-normal opacity-90', tono.texto)}>{flag.detail}</p>
         ))}
     </div>
   );
@@ -1519,8 +1510,8 @@ function ValorEnfrentado({
     <div className={cn('rounded-md border border-current/20 bg-surface/60 px-2.5 py-1.5', tono)}>
       {/* Sin `uppercase`: el agente manda rótulos largos («nómina quincenal
           normalizada a mensual») y en mayúscula con tracking ocupan el doble. */}
-      <p className="text-[10px] leading-tight opacity-70 first-letter:uppercase">{rotulo}</p>
-      <p className="text-xs font-semibold tabular-nums">{valor}</p>
+      <p className="text-caption leading-tight opacity-70 first-letter:uppercase">{rotulo}</p>
+      <p className="text-caption font-medium tabular-nums">{valor}</p>
     </div>
   );
 }
@@ -1575,13 +1566,13 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
   }, [applicationId, doc.id]);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-surface-muted hover:border-primary/30 dark:hover:border-primary/30 transition-colors group">
+    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-surface-muted hover:border-primary/30 transition-colors group">
       <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
         <FileText className={cn('w-4 h-4', isPdf ? 'text-danger' : 'text-fg-muted')} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-foreground truncate">{label}</p>
-        <p className="text-[10px] text-fg-muted truncate">
+        <p className="text-caption font-medium text-foreground truncate">{label}</p>
+        <p className="text-caption text-fg-muted truncate">
           {doc.fileName ?? 'archivo'}
           {sizeKb && ` · ${sizeKb}`}
         </p>
@@ -1605,7 +1596,7 @@ function ObservationCard({ observation }: { observation: Observation }) {
   const isWarning = observation.severity === 'warning';
   return (
     <div className={cn(
-      'rounded-md px-3 py-2 border text-xs',
+      'rounded-md px-3 py-2 border text-caption',
       isWarning
         ? 'bg-warning-soft text-warning'
         : 'bg-muted border-border text-fg-muted'

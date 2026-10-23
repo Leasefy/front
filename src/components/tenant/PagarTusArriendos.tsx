@@ -43,9 +43,14 @@ import { conPunto, diaEnPalabras, horaEnColombia, mesEnPalabras } from './PagarL
 interface Props {
   /** Los arriendos que se ven (ya filtrados por el inmueble escogido arriba). */
   arriendos: ArriendoQueSePuedePagar[];
+  /**
+   * Dentro de la cifra de «Pagos» (glow up, revisora r25: el pago DENTRO de la respuesta,
+   * como `PagarLoVencido`): sin su propia tarjeta, para no quedar tarjeta dentro de tarjeta.
+   */
+  dentroDeLaCifra?: boolean;
 }
 
-export function PagarTusArriendos({ arriendos }: Props) {
+export function PagarTusArriendos({ arriendos, dentroDeLaCifra = false }: Props) {
   const { formatCurrency } = useI18n();
   const [marcado, setMarcado] = useState<LoMarcado>({});
   const [confirmando, setConfirmando] = useState(false);
@@ -99,14 +104,21 @@ export function PagarTusArriendos({ arriendos }: Props) {
   const hayVencidas = arriendos.some((a) => a.cuotas.some((c) => c.vencida));
 
   return (
-    <section data-testid="pagar-tus-arriendos" className="rounded-xl border border-primary/30 bg-primary-soft p-4 sm:p-6">
+    <section
+      data-testid="pagar-tus-arriendos"
+      className={dentroDeLaCifra ? undefined : 'rounded-xl border border-primary/30 bg-primary-soft p-4 sm:p-6'}
+    >
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface">
-            <CreditCard className="h-5 w-5 text-primary" />
+        {dentroDeLaCifra ? (
+          <h2 className="text-body font-medium text-fg">Selecciona qué vas a pagar</h2>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface">
+              <CreditCard className="h-5 w-5 text-primary" />
+            </div>
+            <h2 className="text-sm font-medium text-primary">Selecciona qué vas a pagar</h2>
           </div>
-          <h2 className="text-sm font-medium text-primary">Selecciona qué vas a pagar</h2>
-        </div>
+        )}
         {cuantasHay > 1 && (
           <button
             type="button"
@@ -137,12 +149,13 @@ export function PagarTusArriendos({ arriendos }: Props) {
               cuantas={Math.min(marcado[a.leaseId] ?? 0, a.cuotas.length)}
               onTocar={(i) => tocar(a.leaseId, i)}
               mostrarInmobiliaria={variasInmobiliarias}
+              dentroDeLaCifra={dentroDeLaCifra}
             />
           </li>
         ))}
       </ul>
 
-      <div className="mt-4 flex items-baseline justify-between gap-3 border-t border-primary/30 pt-4">
+      <div className={`mt-4 flex items-baseline justify-between gap-3 border-t pt-4 ${dentroDeLaCifra ? 'border-border' : 'border-primary/30'}`}>
         <span className="text-sm text-fg-muted">
           Total a pagar
           {cuantas > 0 && <span className="ml-1 whitespace-nowrap font-mono text-xs">· {cuantas} {cuantas === 1 ? 'cuota' : 'cuotas'}</span>}
@@ -187,17 +200,19 @@ function InmuebleConSusCuotas({
   cuantas,
   onTocar,
   mostrarInmobiliaria,
+  dentroDeLaCifra = false,
 }: {
   arriendo: ArriendoQueSePuedePagar;
   cuantas: number;
   onTocar: (i: number) => void;
   mostrarInmobiliaria: boolean;
+  dentroDeLaCifra?: boolean;
 }) {
   const { formatCurrency } = useI18n();
   const enVerificacion = a.enVerificacion;
   const direccion = [a.inmueble.direccion, a.inmueble.ciudad].filter(Boolean).join(', ');
   return (
-    <div data-testid={`inmueble-${a.leaseId}`} className="rounded-lg bg-surface p-4">
+    <div data-testid={`inmueble-${a.leaseId}`} className={`rounded-lg p-4 ${dentroDeLaCifra ? 'bg-surface-muted' : 'bg-surface'}`}>
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary-soft">
           <House className="h-4 w-4 text-primary" />

@@ -147,7 +147,7 @@ export const EQUIPO_DE_PAGOS: readonly Especialista[] = [
     queHace:
       'Antes de girarle al propietario, revisa cada liquidación del lote y marca la que hay que mirar: el inquilino no ha pagado, la cuenta del propietario cambió hace menos de 30 días, los impuestos del contrato no están confirmados o una reparación espera la aprobación del propietario. Nunca aprueba solo: aprobar pide «Ya lo revisé». Revisa cada lote, aunque el equipo esté apagado.',
     icon: HandCoins,
-    dondeSeVe: { nombre: 'Dispersiones › Lotes al banco', href: `${P}/pagos/dispersiones/lotes`, module: 'dispersiones' },
+    dondeSeVe: { nombre: 'Giros a propietarios › Lotes al banco', href: `${P}/pagos/dispersiones/lotes`, module: 'dispersiones' },
   },
   {
     // `noti.ts`: campana a quien puede ver cobros; correo a los administradores.

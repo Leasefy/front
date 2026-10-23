@@ -1101,7 +1101,7 @@ export function RegistrarPagoModal({
                         variant="link"
                         size="sm"
                         hideArrow
-                        className="h-auto p-0 text-xs"
+                        className="h-auto p-0 text-caption"
                         onClick={() => {
                           origenDelMonto.current = 'vencido';
                           setMonto(vencido);
@@ -1116,7 +1116,7 @@ export function RegistrarPagoModal({
                       variant="link"
                       size="sm"
                       hideArrow
-                      className="h-auto p-0 text-xs"
+                      className="h-auto p-0 text-caption"
                       onClick={() => {
                         origenDelMonto.current = 'todo';
                         setMonto(maximo);
@@ -1150,7 +1150,7 @@ export function RegistrarPagoModal({
                   aria-describedby="monto-recibo-error"
                   className="h-12 text-lg font-semibold"
                 />
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {/* Con anticipo habilitado NO es un máximo —se puede pagar de
                       más y queda a favor—: llamarlo «Máximo abonable» mentía. */}
                   {puedeGuardarAFavor && quienPaga.tipo !== 'ASEGURADORA'
@@ -1171,7 +1171,7 @@ export function RegistrarPagoModal({
                     estar dicho ANTES de emitir, no descubrirse en el recibo. */}
                 {/* A-21 (QA-PAGOS-95 r2): lo de una aseguradora por encima de lo vencido no adelanta: queda pendiente. */}
                 {quienPaga.tipo === 'ASEGURADORA' && montoValido && monto > vencido && (
-                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-pendiente-de-aplicar">
+                  <Appear as="p" direction="none" className="text-caption text-fg-muted" data-testid="aviso-pendiente-de-aplicar">
                     {t('recibos.form.aseguradoraPendiente', {
                       monto: formatCurrency(monto - vencido),
                       vencido: formatCurrency(vencido),
@@ -1179,7 +1179,7 @@ export function RegistrarPagoModal({
                   </Appear>
                 )}
                 {vencido > 0 && futuro > 0 && quienPaga.tipo !== 'ASEGURADORA' && (
-                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-adelanto-monto">
+                  <Appear as="p" direction="none" className="text-caption text-fg-muted" data-testid="aviso-adelanto-monto">
                     {t('recibos.form.adelantoDesde', {
                       vencido: formatCurrency(vencido),
                       futuro: formatCurrency(futuro),
@@ -1189,7 +1189,7 @@ export function RegistrarPagoModal({
                 {/* Decir a dónde va el excedente ANTES de emitir: si no, la
                     plata «desaparece» de la cartera y nadie sabe dónde quedó. */}
                 {esAjusteAlPeso && (
-                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-ajuste-al-peso">
+                  <Appear as="p" direction="none" className="text-caption text-fg-muted" data-testid="aviso-ajuste-al-peso">
                     {t('recibos.form.avisoAjusteAlPeso', {
                       monto: formatCurrency(excedente),
                       tope: formatCurrency(TOPE_DEL_AJUSTE_AL_PESO),
@@ -1197,7 +1197,7 @@ export function RegistrarPagoModal({
                   </Appear>
                 )}
                 {excedente > 0 && !esAjusteAlPeso && puedeGuardarAFavor && (
-                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-a-favor">
+                  <Appear as="p" direction="none" className="text-caption text-fg-muted" data-testid="aviso-a-favor">
                     {formatCurrency(excedente)} superan TODA la deuda de {cartera?.nombre ?? 'el cliente'}
                     {' '}—vencida y futura— y quedan a su favor: se aplican solos a las cuotas que
                     vayan apareciendo, de la más vieja a la más nueva.
@@ -1240,7 +1240,7 @@ export function RegistrarPagoModal({
               {ofrecerForma && quienPaga.tipo === 'CLIENTE' && (
                 <div className="space-y-2" data-testid="forma-del-adelanto">
                   <p className="text-sm font-medium text-fg">{t('recibos.form.forma.titulo')}</p>
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     {t('recibos.form.forma.ayuda', { meses: mesesDelAdelanto })}
                   </p>
                   <div
@@ -1282,7 +1282,7 @@ export function RegistrarPagoModal({
                         data-testid={`forma-${o.valor}`}
                       >
                         <p className="text-sm font-medium text-fg">{o.titulo}</p>
-                        <p className="mt-1 text-xs text-fg-muted">{o.ayuda}</p>
+                        <p className="mt-1 text-caption text-fg-muted">{o.ayuda}</p>
                       </button>
                     ))}
                   </div>
@@ -1456,7 +1456,7 @@ export function RegistrarPagoModal({
                 >
                   <Note className="h-4 w-4 text-fg-muted" />
                   {t('recibos.form.saludosLabel')}
-                  <span className="text-xs font-normal text-fg-muted">
+                  <span className="text-caption font-normal text-fg-muted">
                     ({t('recibos.form.opcional')})
                   </span>
                 </label>

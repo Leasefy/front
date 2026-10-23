@@ -33,6 +33,8 @@ export interface SubidaDeFotosProps {
   onArchivos: (archivos: File[]) => void;
   disabled?: boolean;
   variante: 'grande' | 'ficha';
+  /** Más baja (inmueble arrendado: las fotos no son lo urgente; revisión 21-10). */
+  compacta?: boolean;
   /** Si está pegado a la ventana, Ctrl/Cmd+V con una imagen en el portapapeles también sube. */
   aceptarPegado?: boolean;
 }
@@ -78,6 +80,7 @@ export function SubidaDeFotos({
   onArchivos,
   disabled = false,
   variante,
+  compacta = false,
   aceptarPegado = false,
 }: SubidaDeFotosProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -201,7 +204,8 @@ export function SubidaDeFotos({
         }}
         {...propsDeArrastre}
         className={cn(
-          'group flex cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed px-6 py-12 text-center transition-colors',
+          'group flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 text-center transition-colors',
+          compacta ? 'gap-2 py-5' : 'gap-4 py-12',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
           arrastrando
             ? 'border-primary bg-primary-soft'
@@ -210,7 +214,7 @@ export function SubidaDeFotos({
         )}
         data-testid="subida-fotos-grande"
         data-arrastrando={arrastrando || undefined}
-        aria-label={`Subir fotos: arrastralas acá o elígelas desde tu computador (hasta ${maximo})`}
+        aria-label={`Subir fotos: arrastralas aquí o elígelas desde tu computador (hasta ${maximo})`}
       >
         <div
           className={cn(
@@ -229,7 +233,7 @@ export function SubidaDeFotos({
         </div>
         <div className="space-y-1">
           <p className="text-base font-semibold text-fg">
-            {arrastrando ? 'Suelta las fotos acá' : 'Arrastra las fotos acá'}
+            {arrastrando ? 'Suelta las fotos aquí' : 'Arrastra las fotos aquí'}
           </p>
           <p className="text-sm text-fg-muted">
             o{' '}

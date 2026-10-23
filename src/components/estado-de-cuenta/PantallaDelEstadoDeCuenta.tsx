@@ -27,6 +27,7 @@ import { CrossFade } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { lugarDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
@@ -97,7 +98,10 @@ export interface PantallaProps {
    * mira (el portal le habla a ella: «todavía no tienes…»). Sin esto, el texto
    * del panel («Este cliente no tiene contratos»).
    */
-  textosSinContratos?: { titulo: string; detalle: string };
+  /** `accion` (glow up 22-10, portal): la salida del vacío, p. ej. «Ver inmuebles para mí». */
+  textosSinContratos?: { titulo: string; detalle: string; accion?: { label: string; href: string } };
+  /** El vacío entero, cuando el portal tiene el suyo (el inquilino: el de «Mi arriendo», revisora r27 CA). Gana sobre los textos. */
+  vacioSinContratos?: React.ReactNode;
   /**
    * A dónde se configuran las reglas de mora. Sólo el PANEL lo pasa: con él,
    * las cuotas en mora sin intereses dicen por qué y llevan a configurarlas.
@@ -119,6 +123,21 @@ export interface PantallaProps {
   className?: string;
   /** SO-09 (04-10): firma el soporte de un descuento del propietario. */
   abrirSoporteDeLaDeduccion?: (deduccionId: string) => Promise<string>;
+  /**
+   * Glow up de los portales (22-10): el encabezado de todas las pantallas (la sección del riel, el título y UNA
+   * línea de para qué sirve) en vez del «Volver a…» y la línea con el nombre del cliente, que en su portal es la
+   * misma persona que mira. Sin esto (el panel, el enlace), la cabecera de siempre.
+   */
+  encabezado?: {
+    seccion: string;
+    /** Sin ella (el panel), la línea del cliente: nombre · rol · contratos. */
+    descripcion?: string;
+    /**
+     * Glow up de Dinero (3.ª vuelta): en el panel el regreso sí va arriba (se llega desde una
+     * ficha), como texto y sin flecha, igual que en las demás pantallas del panel.
+     */
+    conRegreso?: boolean;
+  };
 }
 
 export function PantallaDelEstadoDeCuenta({
@@ -128,6 +147,8 @@ export function PantallaDelEstadoDeCuenta({
   hoy: hoyProp,
   sinFiltros = false,
   textosSinContratos,
+  vacioSinContratos,
+  encabezado,
   reglasDeMoraHref,
   conAnticipoDelContrato = false,
   filtrosIniciales,
@@ -288,6 +309,45 @@ export function PantallaDelEstadoDeCuenta({
       className={cn('relative mx-auto w-full max-w-[1200px] space-y-5 p-4 sm:p-6 lg:p-8', className)}
       data-estado-pagina
     >
+      {encabezado ? (
+        <div data-estado-barra className="space-y-3">
+          {encabezado.conRegreso && regreso ? (
+            <Link
+              href={regreso.href}
+              data-testid="estado-volver"
+              className="inline-flex items-center text-body-sm text-fg-muted transition-colors hover:text-fg"
+            >
+              {regreso.label}
+            </Link>
+          ) : null}
+          <EncabezadoDePantalla
+            seccion={encabezado.seccion}
+            titulo={t('estadoDeCuenta.titulo')}
+            descripcion={
+              encabezado.descripcion ??
+              (lineaDelCliente ? <span data-testid="estado-subtitulo">{lineaDelCliente}</span> : undefined)
+            }
+            acciones={
+              /* Revisora r24: sin documento, «Imprimir» no se pinta (antes, apagado y sin porqué). */
+              vista ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    hideArrow
+                    onClick={imprimir}
+                    data-testid="imprimir-estado"
+                  >
+                    <Printer className="h-4 w-4" aria-hidden="true" />
+                    {t('estadoDeCuenta.imprimir')}
+                  </Button>
+                  {acciones ? acciones(vista, nota, filtros) : null}
+                </>
+              ) : undefined
+            }
+          />
+        </div>
+      ) : (
       <div data-estado-barra className="space-y-3">
         {regreso && (
           <Link
@@ -327,6 +387,7 @@ export function PantallaDelEstadoDeCuenta({
           </div>
         </div>
       </div>
+      )}
 
       {/* Movimiento (ola 2, 03-10-2026): cargando → el documento / vacío /
           fallo se cruzan (`popLayout`: lo nuevo entra ya y el esqueleto se va
@@ -364,6 +425,9 @@ export function PantallaDelEstadoDeCuenta({
            cargar la manda a buscar por qué se borró algo que nunca se borró.
            Es un estado VACÍO, no un fallo: sin «Reintentar», que no arregla
            nada, y con el camino de vuelta intacto. */
+        vacioSinContratos ? (
+          <div data-testid="estado-sin-contratos-pantalla">{vacioSinContratos}</div>
+        ) : (
         <div
           data-testid="estado-sin-contratos-pantalla"
           className="rounded-lg border border-border bg-surface p-10 text-center"
@@ -372,7 +436,15 @@ export function PantallaDelEstadoDeCuenta({
           <p className="mt-1 text-body-sm text-fg-muted">
             {textosSinContratos?.detalle ?? t('estadoDeCuenta.sinContratosDetalle')}
           </p>
+          {textosSinContratos?.accion ? (
+            <Button asChild variant="outline" size="sm" hideArrow className="mt-4">
+              <Link href={textosSinContratos.accion.href} data-testid="estado-sin-contratos-accion">
+                {textosSinContratos.accion.label}
+              </Link>
+            </Button>
+          ) : null}
         </div>
+        )
       ) : error ? (
         <FalloDeCarga
           error={error}

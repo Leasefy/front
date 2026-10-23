@@ -140,7 +140,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                 {lease.propertyTitle}
               </h3>
               {isEndingSoon && (
-                <span className="text-xs px-2 py-0.5 bg-warning-soft text-warning rounded-full flex-shrink-0 font-medium">
+                <span className="text-caption px-2 py-0.5 bg-warning-soft text-warning rounded-full flex-shrink-0 font-medium">
                   Vence pronto
                 </span>
               )}
@@ -153,12 +153,12 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
           {/* Payment status indicators */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {lateCount > 0 && (
-              <span className="text-xs text-danger font-medium font-mono tabular-nums">
+              <span className="text-caption text-danger font-medium font-mono tabular-nums">
                 {lateCount} atrasado{lateCount > 1 ? 's' : ''}
               </span>
             )}
             {pendingCount > 0 && lateCount === 0 && (
-              <span className="text-xs text-warning font-medium font-mono tabular-nums">
+              <span className="text-caption text-warning font-medium font-mono tabular-nums">
                 {pendingCount} pendiente{pendingCount > 1 ? 's' : ''}
               </span>
             )}
@@ -166,10 +166,10 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
 
           {/* Rent amount */}
           <div className="text-right flex-shrink-0 mr-2">
-            <p className="text-lg font-semibold text-fg font-mono tabular-nums">
+            <p className="text-lg font-medium text-fg font-mono tabular-nums">
               {formatCurrency(lease.monthlyRent)}
             </p>
-            <p className="text-xs text-fg-muted">/mes</p>
+            <p className="text-caption text-fg-muted">/mes</p>
           </div>
 
           {/* Expand indicator */}
@@ -186,7 +186,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
           <div className="ml-[60px] grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Lease Details */}
             <Card className="rounded-[16px] p-5">
-              <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
+              <p className="text-caption font-medium text-fg-muted uppercase tracking-wider mb-4">
                 Detalles del arriendo
               </p>
               <div className="space-y-3.5">
@@ -218,7 +218,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
 
             {/* Card 2: Tenant Contact */}
             <Card className="rounded-[16px] p-5">
-              <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
+              <p className="text-caption font-medium text-fg-muted uppercase tracking-wider mb-4">
                 Arrendatario
               </p>
               <p className="text-sm font-medium text-fg mb-3">{lease.tenantName}</p>
@@ -241,7 +241,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
 
               {isEndingSoon && (
                 <p
-                  className="text-xs text-fg-muted pt-4 border-t border-border-faint leading-snug"
+                  className="text-caption text-fg-muted pt-4 border-t border-border-faint leading-snug"
                   data-testid="quien-renueva"
                 >
                   La renovación y el reajuste del canon los prepara tu inmobiliaria. Si no
@@ -289,7 +289,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
 
             {/* Card 3: Payment Summary */}
             <Card className="rounded-[16px] p-5">
-              <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
+              <p className="text-caption font-medium text-fg-muted uppercase tracking-wider mb-4">
                 Resumen de pagos
               </p>
               {paymentsLoading ? (
@@ -335,7 +335,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
           <div className="ml-[60px] mt-4">
             <div className="border border-border rounded-[16px] overflow-hidden bg-surface">
               <div className="px-5 py-3 bg-surface-muted border-b border-border">
-                <span className="text-xs font-medium text-fg-muted uppercase tracking-wider">
+                <span className="text-caption font-medium text-fg-muted uppercase tracking-wider">
                   Historial de pagos
                 </span>
               </div>
@@ -359,7 +359,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
               ) : (
                 <>
                   {/* Table header */}
-                  <div className="grid grid-cols-5 gap-4 px-5 py-3 text-xs text-fg-muted font-medium uppercase tracking-wider border-b border-border-faint">
+                  <div className="grid grid-cols-5 gap-4 px-5 py-3 text-caption text-fg-muted font-medium uppercase tracking-wider border-b border-border-faint">
                     <div>Vencimiento</div>
                     <div>Concepto</div>
                     <div className="text-right">Monto</div>

@@ -162,7 +162,7 @@ export function ResponseCard({
           de cualquier respuesta. Quién responde y el tipo de respuesta van en
           la cabecera del turno, arriba. */}
       {titulo && (
-        <h3 className="mb-1 text-[17px] font-semibold leading-snug tracking-[-0.01em] text-fg">{titulo}</h3>
+        <h3 className="mb-1 text-[17px] font-medium leading-snug tracking-[-0.01em] text-fg">{titulo}</h3>
       )}
       {meta.summary && (
         <p className="mb-2 text-[14px] leading-relaxed text-fg-muted">{meta.summary}</p>

@@ -51,7 +51,7 @@ export function MediosDePagoDeLaInmobiliaria() {
       {conMedios.map((bloque) => (
         <div key={bloque.agencyId} className="space-y-3">
           {conMedios.length > 1 && (
-            <p className="font-mono text-xs uppercase tracking-wide text-fg-muted">{bloque.agencyName}</p>
+            <p className="font-mono text-caption uppercase tracking-wide text-fg-muted">{bloque.agencyName}</p>
           )}
           {(bloque.referencias ?? []).length > 0 && (
             <dl className="flex flex-wrap gap-x-6 gap-y-2" data-testid="referencias-de-recaudo">
@@ -112,7 +112,7 @@ function TarjetaDeMedio({
         </div>
         <div className="min-w-0 flex-1 space-y-1">
           <p className="font-medium text-fg">{medio.nombre}</p>
-          <p className="text-xs font-mono uppercase tracking-wide text-fg-muted">{medio.tipoLegible}</p>
+          <p className="text-caption font-mono uppercase tracking-wide text-fg-muted">{medio.tipoLegible}</p>
           {(medio.banco || medio.tipoDeCuenta || numero || medio.titular) && (
             <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
               {medio.banco && (

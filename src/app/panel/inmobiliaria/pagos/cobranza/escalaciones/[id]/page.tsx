@@ -14,7 +14,7 @@
 import { useCallback, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Phone, FileText, User } from '@phosphor-icons/react'
+import { Phone, FileText, User } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -29,9 +29,10 @@ import { useEscalations } from '@/lib/hooks/cobranza/use-escalations'
 import { EscalationResolveModal } from '@/components/inmobiliaria/cobranza/EscalationResolveModal'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Badge } from '@/components/ui'
-import { CrossFade, MonoLabel, Presence } from '@leasefy/cadence'
+import { CrossFade, MonoLabel } from '@leasefy/cadence'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 /**
  * QA-AGENTES 16-10: la ficha decía «resolved», «resolved_at»,
@@ -118,18 +119,17 @@ function EscalationDetailContent() {
   if (!data) {
     return (
       <CrossFade swapKey="no-existe">
-      <div className="p-4 md:p-6">
+      <div className="p-6 lg:p-8">
         <Button
           variant="link"
           size="sm"
           hideArrow
           onClick={() => router.back()}
-          className="h-auto p-0 gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+          className="h-auto p-0 gap-1 text-caption font-medium text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
-          {t('inmobiliaria.ai.cobranza.escalaciones.kanbanColumns.open')}
+          {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
         </Button>
-        <div className="mt-4 rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
+        <div className="mt-4 rounded-lg bg-danger-soft border border-danger/30 p-3 text-body-sm text-danger">
           {error ?? t('inmobiliaria.ai.cobranza.escalaciones.errors.notFound')}
         </div>
       </div>
@@ -145,48 +145,68 @@ function EscalationDetailContent() {
 
   return (
     <CrossFade swapKey="escalacion">
-    <div className="p-4 md:p-6 space-y-6 max-w-4xl">
-      {/* Breadcrumb */}
-      <Link
-        href="/panel/inmobiliaria/pagos/cobranza/escalaciones"
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition font-medium"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
-        {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
-      </Link>
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-heading text-foreground">
-            {data.debtor_name ?? data.debtor_id_masked ?? data.debtor_id}
-          </h1>
-          <div className="mt-2 flex items-center gap-2">
-            <Badge variant="secondary">
-              {t(`inmobiliaria.ai.cobranza.escalaciones.urgency.${data.urgency}`)}
-            </Badge>
-            <Badge variant="secondary">
-              {locale.startsWith('es') ? ESTADO_DEL_ESCALAMIENTO[data.status] ?? data.status : data.status}
-            </Badge>
-          </div>
-        </div>
+    <div className="p-6 lg:p-8 space-y-6 max-w-4xl">
+      <div className="space-y-3">
+        <Link
+          href="/panel/inmobiliaria/pagos/cobranza/escalaciones"
+          className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition font-medium"
+        >
+          {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
+        </Link>
+        <EncabezadoDePantalla
+          seccion="Cobranza · Escalaciones"
+          titulo={data.debtor_name ?? data.debtor_id_masked ?? data.debtor_id}
+          descripcion={
+            locale.startsWith('es')
+              ? 'Por qué el agente lo subió a una persona, quién lo tiene y cómo se cierra.'
+              : 'Why the agent handed it to a person, who has it and how it closes.'
+          }
+          junto={
+            <div className="flex items-center gap-2">
+              <Badge variant={data.urgency === 'live' ? 'destructive' : data.urgency === 'high' ? 'warning' : 'secondary'}>
+                {t(`inmobiliaria.ai.cobranza.escalaciones.urgency.${data.urgency}`)}
+              </Badge>
+              <Badge variant={data.status === 'resolved' ? 'success' : 'secondary'}>
+                {locale.startsWith('es') ? ESTADO_DEL_ESCALAMIENTO[data.status] ?? data.status : data.status}
+              </Badge>
+            </div>
+          }
+          accionPrincipal={
+            canResolveThis ? (
+              <Button type="button" size="sm" onClick={() => setResolveOpen(true)} hideArrow>
+                {t('inmobiliaria.ai.cobranza.escalaciones.actions.resolve')}
+              </Button>
+            ) : undefined
+          }
+        />
       </div>
+
+      {/* Primero el porqué: es lo que se viene a leer. */}
+      <section className="rounded-lg border border-border bg-card p-4 space-y-2">
+        <MonoLabel className="text-caption text-muted-foreground flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+          {t('inmobiliaria.ai.cobranza.escalaciones.detail.reason')}
+        </MonoLabel>
+        <p className="text-body-sm text-foreground leading-relaxed whitespace-pre-wrap">
+          {escalationReasonLabel(data.reason) ?? data.reason}
+        </p>
+      </section>
 
       {/* Card 1 — Linked call (sólo si hay una) */}
       {data.linked_call && (
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
-        <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
+        <MonoLabel className="text-caption text-muted-foreground flex items-center gap-1.5">
           <Phone className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.linkedCall')}
         </MonoLabel>
         {data.linked_call ? (
           <Link
             href={`/panel/inmobiliaria/pagos/cobranza/llamadas/${data.linked_call.id}`}
-            className="block text-sm text-primary hover:underline"
+            className="block text-body-sm text-primary hover:underline"
           >
             <div className="space-y-1">
               <p className="font-medium">{locale.startsWith('es') ? 'Ver la llamada' : 'View call'}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {locale.startsWith('es')
                   ? cuandoPaso(data.linked_call.initiatedAt)
                   : new Date(data.linked_call.initiatedAt).toLocaleString(locale)}
@@ -198,53 +218,21 @@ function EscalationDetailContent() {
       </section>
       )}
 
-      {/* Card 2 — Reason */}
-      <section className="rounded-lg border border-border bg-card p-4 space-y-2">
-        <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-          {t('inmobiliaria.ai.cobranza.escalaciones.detail.reason')}
-        </MonoLabel>
-        <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-          {escalationReasonLabel(data.reason) ?? data.reason}
-        </p>
-      </section>
-
-      {/* Card 3 — Agent state trace (collapsible; sólo si el agente dejó una) */}
-      {data.state_trace_json != null && (
-      <section className="rounded-lg border border-border bg-card p-4 space-y-2">
-        <details>
-          <summary className="cursor-pointer list-none">
-            <MonoLabel className="text-xs text-muted-foreground hover:text-foreground transition">
-              {t('inmobiliaria.ai.cobranza.escalaciones.detail.stateTrace')}
-            </MonoLabel>
-          </summary>
-          <dl className="mt-3 space-y-1 text-sm">
-            {detallesLegibles(data.state_trace_json).map((d) => (
-              <div key={d.clave} className="flex flex-wrap gap-x-2">
-                <dt className="text-muted-foreground">{d.clave}:</dt>
-                <dd className="text-foreground">{d.valor}</dd>
-              </div>
-            ))}
-          </dl>
-        </details>
-      </section>
-      )}
-
       {/* Card 4 — Assignee + timing */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
-        <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
+        <MonoLabel className="text-caption text-muted-foreground flex items-center gap-1.5">
           <User className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.assignee')}
         </MonoLabel>
-        <dl className="grid grid-cols-2 gap-3 text-sm">
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-body-sm">
           <div>
-            <dt className="text-xs text-muted-foreground">
+            <dt className="text-caption text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.escalaciones.detail.assignee')}
             </dt>
             <dd className="text-foreground">{data.assignee_email ?? '—'}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">
+            <dt className="text-caption text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.escalaciones.detail.timing')}
             </dt>
             <dd className="text-foreground">
@@ -258,7 +246,7 @@ function EscalationDetailContent() {
           {data.resolved_at && (
             <>
               <div>
-                <dt className="text-xs text-muted-foreground">
+                <dt className="text-caption text-muted-foreground">
                   {locale.startsWith('es') ? 'Resuelta el' : 'Resolved at'}
                 </dt>
                 <dd className="text-foreground">
@@ -266,7 +254,7 @@ function EscalationDetailContent() {
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">
+                <dt className="text-caption text-muted-foreground">
                   {locale.startsWith('es') ? 'Cómo se resolvió' : 'Resolution'}
                 </dt>
                 <dd className="text-foreground">
@@ -277,9 +265,9 @@ function EscalationDetailContent() {
                 </dd>
               </div>
               {data.resolution_text && (
-                <div className="col-span-2">
-                  <dt className="text-xs text-muted-foreground">{locale.startsWith('es') ? 'Nota' : 'Note'}</dt>
-                  <dd className="text-foreground text-sm whitespace-pre-wrap">
+                <div className="sm:col-span-2">
+                  <dt className="text-caption text-muted-foreground">{locale.startsWith('es') ? 'Nota' : 'Note'}</dt>
+                  <dd className="text-foreground whitespace-pre-wrap">
                     {data.resolution_text}
                   </dd>
                 </div>
@@ -289,18 +277,26 @@ function EscalationDetailContent() {
         </dl>
       </section>
 
-      {/* Bottom action bar */}
-      <Presence show={canResolveThis} initial={false} className="sticky bottom-4 md:static">
-        <div className="sticky bottom-4 md:static flex justify-end">
-          <Button
-            type="button"
-            onClick={() => setResolveOpen(true)}
-            hideArrow
-          >
-            {t('inmobiliaria.ai.cobranza.escalaciones.actions.resolve')}
-          </Button>
-        </div>
-      </Presence>
+      {/* Card 3 — Agent state trace (collapsible; sólo si el agente dejó una) */}
+      {data.state_trace_json != null && (
+      <section className="rounded-lg border border-border bg-card p-4 space-y-2">
+        <details>
+          <summary className="cursor-pointer list-none">
+            <MonoLabel className="text-caption text-muted-foreground hover:text-foreground transition">
+              {t('inmobiliaria.ai.cobranza.escalaciones.detail.stateTrace')}
+            </MonoLabel>
+          </summary>
+          <dl className="mt-3 space-y-1 text-body-sm">
+            {detallesLegibles(data.state_trace_json).map((d) => (
+              <div key={d.clave} className="flex flex-wrap gap-x-2">
+                <dt className="text-muted-foreground">{d.clave}:</dt>
+                <dd className="text-foreground">{d.valor}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+      </section>
+      )}
 
       <EscalationResolveModal
         escalationId={resolveOpen ? escalationId : null}

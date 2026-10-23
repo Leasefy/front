@@ -108,6 +108,16 @@ describe('<LibroMayor>', () => {
     expect(fila).toContain('$1.200.000');
   });
 
+  it('a 390 la tarjeta trae también el detalle mes a mes, sólo con los meses con movimiento (Nico, 23-10)', async () => {
+    await pintar();
+    const mesAMes = q('mayor-5135-mes-a-mes');
+    expect(mesAMes).not.toBeNull();
+    const meses = [...mesAMes!.querySelectorAll('li')].map((li) => li.textContent ?? '');
+    expect(meses).toHaveLength(2);
+    expect(meses[0]).toContain('500.000');
+    expect(meses[1]).toContain('700.000');
+  });
+
   it('🔴 no dibuja los meses que todavía no llegaron', async () => {
     await pintar();
     const encabezados = [...q('libro-mayor')!.querySelectorAll('th')].map((t) => t.textContent);

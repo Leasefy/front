@@ -143,14 +143,14 @@ export function ChatLessonsPanel() {
   // lecciones, → fallo, → vacío); lo que ya estaba al montarse no se anima.
   if (!isAgentConfigured()) {
     return (
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-5 py-6">
+      <div className="rounded-lg border border-border bg-surface-muted px-5 py-6">
         <div className="flex items-start gap-3">
-          <Info weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
+          <Info className="h-5 w-5 text-fg-muted mt-0.5 flex-shrink-0" aria-hidden="true" />
           <div>
             <p className="text-sm font-medium text-fg">
               El servicio del asistente no está conectado en este entorno.
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+            <p className="text-sm text-fg-muted mt-0.5">
               Las lecciones aparecerán aquí cuando el asistente esté disponible.
             </p>
           </div>
@@ -211,10 +211,10 @@ export function ChatLessonsPanel() {
           show={!enabled && grouped.certified.length > 0}
           initial={false}
           role="status"
-          className="flex items-start gap-3 rounded-lg border border-[#B7791F]/30 bg-[#F8F0E0]/60 dark:border-[#B7791F]/40 dark:bg-[#B7791F]/10 px-4 py-3"
+          className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3"
         >
-          <Warning weight="duotone" className="h-5 w-5 text-[#B7791F] dark:text-[#D2992F] mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-[#7A5410] dark:text-[#D2992F]">
+          <Warning className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" aria-hidden="true" />
+          <p className="text-sm text-warning-700 dark:text-warning-100">
             <span className="font-medium">El aprendizaje está desactivado.</span>{' '}
             Tienes lecciones certificadas, pero todavía no influyen en el asistente.
             Se aplicarán cuando se active el aprendizaje para tu inmobiliaria.
@@ -223,9 +223,9 @@ export function ChatLessonsPanel() {
 
       {/* Read-only notice for VIEWER / CONTADOR with candidates waiting. */}
       {!canCertify && candidateCount > 0 && (
-        <div className="flex items-start gap-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-4 py-3">
-          <Lightning weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+        <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted px-4 py-3">
+          <Lightning className="h-5 w-5 text-fg-muted mt-0.5 flex-shrink-0" aria-hidden="true" />
+          <p className="text-sm text-fg-muted">
             Estás viendo las lecciones en modo lectura. Solo administradores y
             agentes pueden certificarlas.
           </p>
@@ -240,14 +240,14 @@ export function ChatLessonsPanel() {
             <div className="mb-3">
               <h2
                 id={`lessons-group-${status}`}
-                className="font-heading text-sm font-semibold text-neutral-900 dark:text-white"
+                className="font-heading text-sm font-medium text-fg"
               >
                 {GROUP_TITLE[status]}
-                <span className="ml-1.5 text-xs font-normal text-fg-muted tabular-nums">
+                <span className="ml-1.5 text-caption font-normal text-fg-muted tabular-nums">
                   <AnimatedNumber value={items.length} format={(n) => String(Math.round(n))} />
                 </span>
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="text-caption text-fg-muted">
                 {GROUP_HINT[status]}
               </p>
             </div>
@@ -272,7 +272,7 @@ export function ChatLessonsPanel() {
       {/* agency context guard — keeps the unused warning honest in builds where
           agency may be momentarily null without breaking the panel. */}
       {!agency && (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Selecciona una inmobiliaria para ver sus lecciones.
         </p>
       )}

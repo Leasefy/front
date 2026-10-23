@@ -87,9 +87,15 @@ describe('Cobri dentro de «Agente de pagos»', () => {
     expect(estado()?.textContent).toMatch(/Prendido/)
     const frase = q('[data-testid="frase-de-cobri"]')?.textContent ?? ''
     expect(frase).toMatch(/Cobri/)
-    expect(q('[data-testid="links-de-pago"]')?.contains(q('[data-testid="frase-de-cobri"]'))).toBe(true)
+    // Revisora r25 (#1): la cifra y su frase van ARRIBA, fuera de la tabla y antes de ella.
+    const frasePintada = q('[data-testid="frase-de-cobri"]')!
+    const tabla = q('[data-testid="links-de-pago"]')!
+    expect(tabla.contains(frasePintada)).toBe(false)
+    expect(frasePintada.compareDocumentPosition(tabla) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // Y no repite lo que la cifra ya dice («N de M cuotas»).
+    expect(frase).not.toMatch(/de \d+ cuotas/)
     // La tarjeta se titula por lo que muestra y va sin bajada: la cadencia ya se dijo arriba.
-    expect(h.links).toHaveBeenLastCalledWith(expect.objectContaining({ titulo: 'El link de cada cuota', descripcion: null }))
+    expect(h.links).toHaveBeenLastCalledWith(expect.objectContaining({ titulo: 'El enlace de cada cuota', descripcion: null }))
   })
 
   it('apagado en el servidor: lo dice, sin inventar números', () => {
@@ -124,7 +130,7 @@ describe('Cobri dentro de «Agente de pagos»', () => {
     h.enLaBandeja = { porCuota, ids: ['hold:d-1'], total: 1 }
     render()
     const aviso = q('[data-testid="cobri-espera-aprobacion"]')
-    expect(aviso?.textContent).toContain('Un link de pago espera tu aprobación')
+    expect(aviso?.textContent).toContain('Un enlace de pago espera tu aprobación')
     // Uno solo: el enlace abre ESE caso, no la Bandeja entera.
     expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/piloto?item=hold%3Ad-1')
     expect(aviso?.querySelector('a')?.textContent).toContain('Revisar y aprobar')
@@ -133,7 +139,7 @@ describe('Cobri dentro de «Agente de pagos»', () => {
     h.enLaBandeja = { porCuota, ids: ['hold:d-1', 'hold:d-2', 'hold:d-3'], total: 3 }
     render()
     const varios = q('[data-testid="cobri-espera-aprobacion"]')
-    expect(varios?.textContent).toContain('3 links de pago esperan tu aprobación')
+    expect(varios?.textContent).toContain('3 enlaces de pago esperan tu aprobación')
     expect(varios?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/piloto?bandeja=1')
     expect(varios?.querySelector('a')?.textContent).toContain('Abrir la Bandeja')
   })

@@ -48,7 +48,8 @@ describe('<LandingAuthCta>', () => {
     mockUseAuth.mockReturnValue({ user: null, isAuthenticated: false, isLoading: false })
     render({ variant: 'header' })
     const anchor = container.querySelector('a')!
-    expect(anchor.textContent).toBe('Iniciar sesión')
+    // Nico (23-10): el encabezado público dice «Entrar» (antes «Iniciar sesión»), como la landing nueva.
+    expect(anchor.textContent).toBe('Entrar')
     expect(anchor.getAttribute('href')).toBe('/auth')
     expect(anchor.getAttribute('target')).toBeNull()
   })

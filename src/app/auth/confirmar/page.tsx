@@ -184,7 +184,7 @@ function ConfirmarContent() {
               usado…): título, texto y botón se cruzan juntos. «Confirmando…»
               es el mismo estado que «listo» (sólo cambia el botón). */}
           <CrossFade swapKey={estado === 'confirmando' ? 'listo' : estado}>
-          <h1 className="text-xl font-semibold text-fg mb-2">{titulo}</h1>
+          <h1 className="text-xl font-medium text-fg mb-2">{titulo}</h1>
           <p className="text-sm text-fg-muted mb-6" role={estado === 'fallo' ? 'alert' : undefined}>
             {cuerpo}
           </p>

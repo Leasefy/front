@@ -62,7 +62,7 @@ export function AvisoDatosDeEjemplo({
             Esta pantalla muestra datos de ejemplo.
           </strong>{' '}
           {queEsInventado} no salen de tu inmobiliaria: están escritos a mano en
-          el código. No tomes decisiones con lo que ves acá.
+          el código. No tomes decisiones con lo que ves aquí.
         </p>
         {queFalta ? <p className="text-warning/90">{queFalta}</p> : null}
       </div>

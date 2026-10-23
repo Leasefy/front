@@ -9,12 +9,12 @@ import { fmtDateTime } from '@/lib/admin/format'
 import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { BarraDeFiltros, Buscador, Filtro } from '@/components/admin/screen/Filtros'
-import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
+import { BarraDeFiltros, Buscador, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
 import { Input } from '@/components/ui/input'
-import { accionDelAdmin, legible } from '@/lib/admin/textos-del-admin'
+import { accionDelAdmin, quienLoHizo, sobreQue } from '@/lib/admin/textos-del-admin'
 import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
 
+// El back fija 100 por página (`audit-log.service.ts`); 25 pide que acepte `pageSize` (para Víctor).
 const PAGE_SIZE = 100
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -33,17 +33,15 @@ interface AuditLogRow {
   legal_name: string | null
 }
 
-/** Quién deja el registro. */
-const ACTOR: Record<string, string> = {
-  admin: 'Equipo de Leasefy',
-  agent: 'Un agente',
-  system: 'El sistema',
-  user: 'Una persona de la inmobiliaria',
+/** El correo de quien lo hizo (sólo si es un correo: un id de cuenta no se muestra; va al Excel). */
+function correoDe(actorId: string | null | undefined): string | null {
+  return actorId && actorId.includes('@') ? actorId : null
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 /** /audit-explorer — audit_log search for SIC / SAGRILAFT audits (FRONT.md §6.24 · BACK.md §8.14). */
+
 export default function AuditExplorerPage() {
   const [abierta, setAbierta] = useState<AuditLogRow | null>(null)
   const { get, page, setFilters, setPage } = useUrlFilters()
@@ -73,11 +71,11 @@ export default function AuditExplorerPage() {
     },
     {
       header: 'Quién',
-      texto: (r) => r.actor_id || ACTOR[r.actor_type] || legible(r.actor_type),
+      texto: (r) => correoDe(r.actor_id) ?? quienLoHizo(r.actor_type),
       cell: (r) => (
         <div className="min-w-0 text-caption">
-          <div className="text-fg">{ACTOR[r.actor_type] ?? legible(r.actor_type)}</div>
-          {r.actor_id ? <div className="truncate text-fg-muted">{r.actor_id}</div> : null}
+          <div className="text-fg">{quienLoHizo(r.actor_type)}</div>
+          {correoDe(r.actor_id) ? <div className="truncate text-fg-muted">{correoDe(r.actor_id)}</div> : null}
         </div>
       ),
     },
@@ -87,36 +85,23 @@ export default function AuditExplorerPage() {
       cell: (r) => (
         <div className="min-w-0">
           <div className="text-body-sm text-fg">{accionDelAdmin(r.action)}</div>
-          <code className="font-mono text-caption text-fg-subtle">{r.action}</code>
         </div>
       ),
     },
     {
       header: 'Sobre qué',
-      texto: (r) => [r.entity_type ? legible(r.entity_type) : '', r.entity_id ?? ''].filter(Boolean).join(' · '),
+      // Ronda 28 (revisora r27, T16): a 390 la tarjeta lleva cuándo, quién y la acción; lo demás, en el cajón.
+      enCelular: false,
+      texto: (r) => (r.entity_type ? sobreQue(r.entity_type) : ''),
       cell: (r) => (
-        <div className="font-mono text-caption text-fg-subtle">
-          <div>{r.entity_type ? legible(r.entity_type) : '—'}</div>
-          <div>{r.entity_id ? `${r.entity_id.slice(0, 8)}…` : '—'}</div>
-        </div>
+        <span className="text-caption text-fg-muted">{r.entity_type ? sobreQue(r.entity_type) : '—'}</span>
       ),
     },
     {
       header: 'Inmobiliaria',
+      enCelular: false,
       texto: (r) => r.legal_name,
       cell: (r) => <span className="block max-w-[160px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
-    },
-    {
-      header: 'Datos',
-      texto: (r) => (r.payload ? JSON.stringify(r.payload) : ''),
-      cell: (r) => {
-        const full = r.payload ? JSON.stringify(r.payload) : null
-        return (
-          <span className="block max-w-[280px] truncate font-mono text-caption text-fg-muted" title={full ?? undefined}>
-            {full ? full.slice(0, 100) : '—'}
-          </span>
-        )
-      },
     },
   ]
 
@@ -124,7 +109,7 @@ export default function AuditExplorerPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Buscar en auditoría"
-        description="La bitácora completa (audit_log), que nunca se borra, para las auditorías de la SIC y SAGRILAFT."
+        description="La bitácora completa, que nunca se borra, para la SIC y SAGRILAFT."
       />
 
       <DataTable
@@ -149,43 +134,54 @@ export default function AuditExplorerPage() {
         }
         masEnElExcel={[
           { header: 'Código de la acción', texto: (r) => r.action },
+          { header: 'Quién (código)', texto: (r) => [r.actor_type, r.actor_id].filter(Boolean).join(' · ') },
+          { header: 'Sobre qué (código)', texto: (r) => r.entity_type ?? '' },
+          { header: 'Datos', texto: (r) => (r.payload ? JSON.stringify(r.payload) : '') },
+          { header: 'Id de lo afectado', texto: (r) => r.entity_id ?? '' },
           { header: 'Id', texto: (r) => r.id },
         ]}
+        // Ronda 28 (revisora r27, T13): el buscador SIEMPRE a la vista a 390 (antes detrás de «Filtros»);
+        // sólo los desplegables se pliegan.
+        buscadorPropio={
+          <Buscador
+            id="filtro-accion"
+            value={action}
+            onChange={(v) => setFilters({ action: v }, { resetPage: true })}
+            placeholder="Buscar una acción"
+            aria-label="Acción (contiene)"
+          />
+        }
         barra={
           <BarraDeFiltros>
-            <Filtro etiqueta="Acción (contiene)" htmlFor="filtro-accion" className="sm:min-w-56 sm:flex-1">
-              <Buscador
-                id="filtro-accion"
-                value={action}
-                onChange={(v) => setFilters({ action: v }, { resetPage: true })}
-                placeholder="p. ej. payment.recovered"
-              />
-            </Filtro>
-            <Filtro etiqueta="Cédula del deudor" htmlFor="filtro-cedula" className="sm:w-44">
+            {/* El rótulo de cada texto va ADENTRO, como en los desplegables (21-10). */}
+            <Filtro etiqueta="Cédula del deudor" htmlFor="filtro-cedula" className="sm:w-48">
               <Input
                 id="filtro-cedula"
-                className="font-mono"
+                className="font-mono placeholder:font-sans"
                 inputMode="numeric"
+                data-etiqueta-adentro=""
                 value={debtorDoc}
                 onChange={(e) => setFilters({ debtorDoc: e.target.value }, { resetPage: true })}
-                placeholder="1234567"
+                placeholder="Cédula del deudor"
               />
             </Filtro>
-            <Filtro etiqueta="Id de la entidad" htmlFor="filtro-entidad" className="sm:w-56">
+            <Filtro etiqueta="Número del registro afectado" htmlFor="filtro-entidad" className="sm:w-56">
               <Input
                 id="filtro-entidad"
-                className="font-mono"
+                className="font-mono placeholder:font-sans"
+                data-etiqueta-adentro=""
                 value={entityId}
                 onChange={(e) => setFilters({ entityId: e.target.value }, { resetPage: true })}
-                placeholder="UUID"
+                // Ronda 28 (revisora r27): corto, para que no se corte («Número del registro afe…»).
+                placeholder="Número del registro"
               />
             </Filtro>
-            <Filtro etiqueta="Desde" htmlFor="filtro-desde" className="sm:w-44">
-              <CampoDeFecha id="filtro-desde" value={from} onChange={(v) => setFilters({ from: v }, { resetPage: true })} />
-            </Filtro>
-            <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
-              <CampoDeFecha id="filtro-hasta" value={to} onChange={(v) => setFilters({ to: v }, { resetPage: true })} />
-            </Filtro>
+            <FiltroDeFechas
+              desde={from}
+              hasta={to}
+              onDesde={(v) => setFilters({ from: v }, { resetPage: true })}
+              onHasta={(v) => setFilters({ to: v }, { resetPage: true })}
+            />
           </BarraDeFiltros>
         }
       />
@@ -198,10 +194,10 @@ export default function AuditExplorerPage() {
         campos={
           abierta
             ? [
-                { nombre: 'Quién', valor: abierta.actor_id || ACTOR[abierta.actor_type] || legible(abierta.actor_type) },
-                { nombre: 'Tipo', valor: ACTOR[abierta.actor_type] ?? legible(abierta.actor_type) },
+                { nombre: 'Quién', valor: correoDe(abierta.actor_id) ?? quienLoHizo(abierta.actor_type) },
+                { nombre: 'Tipo', valor: quienLoHizo(abierta.actor_type) },
                 { nombre: 'Código', valor: <code className="font-mono">{abierta.action}</code> },
-                { nombre: 'Sobre qué', valor: abierta.entity_type ? legible(abierta.entity_type) : '—' },
+                { nombre: 'Sobre qué', valor: abierta.entity_type ? sobreQue(abierta.entity_type) : '—' },
                 { nombre: 'Id', valor: abierta.entity_id ? <code className="font-mono">{abierta.entity_id}</code> : '—' },
                 { nombre: 'Inmobiliaria', valor: abierta.legal_name ?? '—' },
                 { nombre: 'Registro', valor: <code className="font-mono">{abierta.id}</code> },

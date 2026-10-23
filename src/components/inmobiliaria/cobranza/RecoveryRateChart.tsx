@@ -168,7 +168,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
 
   return (
     <div>
-      <p className="text-xs font-medium text-fg-subtle mb-2">
+      <p className="text-caption font-medium text-fg-subtle mb-2">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
       </p>
       {chart}

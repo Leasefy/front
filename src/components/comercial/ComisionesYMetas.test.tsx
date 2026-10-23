@@ -160,3 +160,46 @@ describe('ComisionesYMetas', () => {
     expect(h.api.guardarMeta).toHaveBeenCalledWith({ asesorUserId: 'sara', mes: '2026-10', cierres: 5, captaciones: 6 });
   });
 });
+
+describe('revisora r22 (Comisiones #1, #4, #7)', () => {
+  it('el asesor sin nombre no se muestra por su correo: «Sin nombre» y el correo en gris', async () => {
+    h.isAdmin = true;
+    const base = comision();
+    h.api.comisiones.mockResolvedValue({ ...base, soloLaMia: false, asesores: [{ ...base.asesores[0], nombre: 'hola+agente@leasefy.co' }] });
+    await pintar();
+    const tarjeta = $('[data-testid="fila-del-asesor-sara"]');
+    expect(tarjeta?.textContent).toContain('Sin nombre');
+    expect(tarjeta?.textContent).toContain('hola+agente@leasefy.co');
+  });
+
+  it('sin meta, un solo renglón con los ceros en «—», y sin el pie que repetía el mes', async () => {
+    h.api.comisiones.mockResolvedValue(comision());
+    h.api.metas.mockResolvedValue({
+      ...METAS,
+      asesores: [{ userId: 'sara', nombre: 'Sara Gómez', meta: null, avance: { cierres: 0, captaciones: 2 } }],
+    });
+    await pintar();
+    const linea = $('[data-testid="sin-meta"]');
+    expect(linea?.textContent).toContain('Cierres —');
+    expect(linea?.textContent).toContain('Captaciones 2');
+    expect(contenedor.textContent?.match(/Sin meta este mes/g)?.length).toBe(1);
+    expect(contenedor.textContent).not.toContain('Captó = el asesor');
+  });
+});
+
+describe('revisora r22 (Comisiones #6): el gerente ve al equipo en una tabla', () => {
+  it('un asesor por fila con Ganado, Por causar, Cierres y Captaciones; el detalle y la meta en el cajón', async () => {
+    h.isAdmin = true;
+    h.api.comisiones.mockResolvedValue(comision({ soloLaMia: false }));
+    h.api.metas.mockResolvedValue({ ...METAS, soloLaMia: false });
+    await pintar();
+    const fila = $('[data-testid="fila-del-asesor-sara"]');
+    expect(fila?.textContent).toContain('Sara Gómez');
+    expect(fila?.textContent).toContain('$ 12.300');
+    expect(fila?.textContent).toContain('1 de 4');
+    expect(fila?.textContent).toContain('3 de 6');
+    // Sin las tarjetas sueltas de cada asesor ni la sección aparte de metas.
+    expect($('[data-testid="comision-sara"]')).toBeNull();
+    expect($('[data-testid="meta-sara"]')).toBeNull();
+  });
+});

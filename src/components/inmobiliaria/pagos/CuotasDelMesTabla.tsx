@@ -58,6 +58,7 @@
  * Sólo pinta. Cargando y fallo los resuelve `EstadoDeDatos` en el panel.
  */
 
+import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha'
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState } from 'react'
 import Link from 'next/link'
@@ -87,7 +88,7 @@ import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { rotuloDelContrato } from '@/lib/cartera/conceptos'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
-import { nombreDelMes } from '@/lib/utils/mes'
+import { plataPareja } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import type { FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
@@ -132,8 +133,8 @@ export interface CuotasDelMesTablaProps {
   vista?: string
 }
 
-/** Las seis de datos más la del kebab. */
-const COLUMNAS = 7
+/** Las cinco de datos más la del kebab. */
+const COLUMNAS = 5
 
 export function CuotasDelMesTabla({
   filas,
@@ -151,6 +152,9 @@ export function CuotasDelMesTabla({
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(filas, { initialPageSize: 10, resetKey: `${mes}|${hayFiltros}` })
 
+  // Los mismos decimales en cada columna de plata (revisión 22-10).
+  const plataDeLaColumna = plataPareja(pageItems.flatMap((f) => [f.totalCop, f.pendienteCop, f.pagadoCop, interesPendiente(f)]))
+
   return (
     <div
       className={cn(
@@ -159,19 +163,22 @@ export function CuotasDelMesTabla({
       )}
       data-testid="pagos-cuotas-tabla"
     >
-      <Table>
-        <TableHeader>
+      {/* GLOW UP (revisión de Dinero, 22-10-2026): cinco columnas —quién y dónde ·
+          cuándo vence · estado · falta · acciones—. «Se debe» se fue en la ronda 11:
+          repetía «Falta» en casi todas las filas; con abono, bajo «Falta» va
+          «entró $ X de $ Y», y pagada, «pagó $ Y». «Período» se fue:
+          la tabla ya es de UN mes (lo dice el selector y el pie), y repetirlo en
+          cada fila le quitaba a 1440 el ancho que necesitaban las cifras. Bajo
+          768 cada cuota es una tarjeta (la tabla encogida cortaba la plata). */}
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             <TableHead className="whitespace-nowrap">Inquilino</TableHead>
-            <TableHead className="whitespace-nowrap">Inmueble</TableHead>
-            <TableHead className="whitespace-nowrap">Período</TableHead>
-            <TableHead className="whitespace-nowrap" numeric>
-              Se debe
-            </TableHead>
-            <TableHead className="whitespace-nowrap" numeric>
-              Pagado / falta
-            </TableHead>
             <TableHead className="whitespace-nowrap">Vence</TableHead>
+            <TableHead className="whitespace-nowrap">Estado</TableHead>
+            <TableHead className="whitespace-nowrap" numeric>
+              Falta
+            </TableHead>
             {/* La del kebab. Sin rótulo: nombrar «Acciones» gasta ancho para
                 decir lo que el icono ya dice. */}
             <TableHead className="w-10" />
@@ -182,10 +189,10 @@ export function CuotasDelMesTabla({
             la cuota). Cambiar de pestaña, de mes o de página monta un cuerpo
             nuevo: entran las nuevas y la tabla no crece mientras salen las
             viejas. */}
-        <TableBodyAnimado key={`${mes}|${vista}|${page}|${pageSize}`}>
+        <TableBodyAnimado key={`${mes}|${vista}|${page}|${pageSize}`} className="max-md:block">
           {filas.length === 0 ? (
-            <TableRowAnimada key="vacio">
-              <TableCell colSpan={COLUMNAS} className="p-0">
+            <TableRowAnimada key="vacio" className="max-md:block">
+              <TableCell colSpan={COLUMNAS} className="p-0 max-md:block">
                 {/*
                   🔴 El vacío NO puede decir «todavía no hay cobros»: con
                   contratos vigentes SÍ hay deuda. Un mes sin ninguna cuota es
@@ -202,12 +209,14 @@ export function CuotasDelMesTabla({
               </TableCell>
             </TableRowAnimada>
           ) : (
-            pageItems.map((f) => (
+            pageItems.map((f) => {
+              const interes = interesPendiente(f)
+              return (
               <TableRowAnimada
                 key={f.cuotaId}
                 data-testid="cuota-fila"
                 onClick={() => setAbierta(f)}
-                className="cursor-pointer"
+                className="cursor-pointer max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
                 /* Con teclado también: una fila que sólo abre con el mouse deja
                    la pantalla sin su única salida al detalle. */
                 tabIndex={0}
@@ -220,94 +229,92 @@ export function CuotasDelMesTabla({
                   }
                 }}
               >
-                {/* 🔴 PG-15 (QA de Pagos, 03-10-2026): un nombre largo («Inversiones y
-                    Construcciones del Valle de Aburrá Hermanos Restrepo Londoño
-                    S.A.S.») se llevaba 594 px y la tabla no cabía a 1440 px
-                    («se corre a los lados», con «Pagado / falta» cortado). El
-                    nombre va en hasta DOS renglones dentro de un ancho fijo, con
-                    el nombre entero al pasar el puntero. */}
-                <TableCell>
+                {/* 🔴 PG-15 (QA de Pagos, 03-10-2026): un nombre largo se llevaba
+                    594 px y la tabla no cabía a 1440. El nombre va en hasta DOS
+                    renglones dentro de un ancho fijo, con el nombre entero al
+                    pasar el puntero; el inmueble y el documento, debajo. */}
+                <TableCell className="max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                   <p
-                    className="line-clamp-2 max-w-[16rem] break-words font-medium text-fg"
+                    className="line-clamp-2 max-w-[18rem] break-words font-medium text-fg max-md:max-w-none"
                     title={f.inquilino ?? undefined}
                   >
                     {f.inquilino ?? 'Sin nombre en el contrato'}
                   </p>
-                  <p className="max-w-[16rem] truncate text-caption text-fg-muted">
+                  <p className="max-w-[18rem] truncate text-caption text-fg-muted max-md:max-w-none" title={f.inmueble}>
+                    {sinMayusculasSostenidas(f.inmueble ?? '')}
+                  </p>
+                  <p className="max-w-[18rem] truncate text-caption text-fg-subtle max-md:hidden">
                     {/* N-01 (QA-PAGOS-95): el tipo real o «NIT/CC», como el estado de cuenta; nunca un «CC» inventado. */}
                     {documentoDelCliente(f) ?? ''}
                     {f.contrato ? rotuloDelContrato(f) : ''}
                   </p>
                 </TableCell>
-                <TableCell className="max-w-[240px]">
-                  <p className="truncate text-fg">{f.inmueble}</p>
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-fg-muted">
-                  {nombreDelMes(f.mes, idioma, 'short')}
-                </TableCell>
-                <TableCell className="whitespace-nowrap tabular-nums" numeric>
-                  <span className="font-medium text-fg">{formatCurrency(f.totalCop)}</span>
-                </TableCell>
-                <TableCell className="whitespace-nowrap tabular-nums" numeric>
-                  <span
-                    className={cn(
-                      'font-medium',
-                      f.pagadoCop > 0 ? 'text-success' : 'text-fg-muted',
-                    )}
-                  >
-                    {formatCurrency(f.pagadoCop)}
-                  </span>
-                  <p
-                    className={cn(
-                      'text-caption',
-                      f.enMora ? 'text-danger' : 'text-fg-muted',
-                    )}
-                  >
-                    {formatCurrency(f.pendienteCop)}
-                  </p>
-                  {/* 🔴 El interés, aparte del capital. Una cuota ya pagada que
-                      lo sigue debiendo tiene «falta $0» y esta línea. */}
-                  {interesPendiente(f) > 0 && (
-                    <p className="text-caption text-danger" data-testid="cuota-intereses">
-                      {t(CLAVE_DE_MORA.masIntereses, {
-                        monto: formatCurrency(interesPendiente(f)),
-                      })}
-                    </p>
-                  )}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <span className="block tabular-nums text-fg-muted">
-                    {fechaLocal(f.vence, idioma)}
-                  </span>
+                <TableCell className="whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
+                  <span className="block tabular-nums text-fg">{fechaLocal(f.vence, idioma)}</span>
                   {/*
-                    El cajón, con su matiz: la cartera dice cuántos días lleva
-                    y lo vencido en plazo dice cuántos días le quedan. Son dos
-                    hechos distintos y se escriben distinto.
+                    El matiz del cajón: la cartera dice cuántos días lleva y lo
+                    vencido en plazo dice cuántos días le quedan. Son dos hechos
+                    distintos y se escriben distinto.
                   */}
-                  {/* CR-31 y nota crédito: el rótulo con sus excepciones
-                      («Vencida» sin plazo fijado, «Saldada por nota crédito»). */}
-                  <Badge variant={varianteDeLaFila(f)} className="mt-1" data-testid="rotulo-de-la-cuota">
-                    {nombreDeLaFila(f)}
-                  </Badge>
                   {f.cajon === 'CARTERA' && (
-                    <p className="text-caption text-danger">
+                    <span className="block text-caption text-danger">
                       {f.diasDeMora} {f.diasDeMora === 1 ? 'día' : 'días'} de mora
-                    </p>
+                    </span>
                   )}
                   {f.cajon === 'VENCIDA_EN_PLAZO' && (
-                    <p className="text-caption text-fg-muted">
+                    <span className="block text-caption text-fg-muted">
                       {f.plazoSinFijar
                         ? 'sin plazo fijado: no corre mora'
                         : `plazo de ${f.diasDePlazo} ${f.diasDePlazo === 1 ? 'día' : 'días'}`}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="whitespace-nowrap max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
+                  {/* CR-31 y nota crédito: el rótulo con sus excepciones
+                      («Vencida» sin plazo fijado, «Saldada por nota crédito»). */}
+                  <Badge variant={varianteDeLaFila(f)} data-testid="rotulo-de-la-cuota">
+                    {nombreDeLaFila(f)}
+                  </Badge>
+                </TableCell>
+                <TableCell className="whitespace-nowrap font-mono tabular-nums max-md:col-start-2 max-md:row-span-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right" numeric>
+                  {/* Lo que falta es la cifra de la fila; en cero, la raya
+                      atenuada (manual de voz: un cero repetido no se lee). */}
+                  {f.pendienteCop > 0 ? (
+                    <span className={cn('font-medium', f.enMora ? 'text-danger' : 'text-fg')}>
+                      {plataDeLaColumna(f.pendienteCop)}
+                    </span>
+                  ) : (
+                    <span className="text-fg-subtle" aria-label="Nada">—</span>
+                  )}
+                  {/* 🔴 El interés, aparte del capital. Una cuota ya pagada que
+                      lo sigue debiendo tiene «falta —» y esta línea. */}
+                  {interes > 0 && (
+                    <p className="text-caption text-danger" data-testid="cuota-intereses">
+                      {t(CLAVE_DE_MORA.masIntereses, {
+                        monto: plataDeLaColumna(interes),
+                      })}
                     </p>
                   )}
+                  {f.pagadoCop > 0 && f.pendienteCop > 0 ? (
+                    // Ronda 12 (390): corto en el celular («entró $ X»); el «de $ Y» se encimaba
+                    // sobre el chip de la izquierda. Lo completo está en el cajón.
+                    <p className="text-caption text-fg-muted" data-testid="cuota-abono">
+                      entró {plataDeLaColumna(f.pagadoCop)}
+                      <span className="max-md:hidden"> de {plataDeLaColumna(f.totalCop)}</span>
+                    </p>
+                  ) : f.pendienteCop <= 0 && f.pagadoCop > 0 ? (
+                    <p className="text-caption text-fg-muted" data-testid="cuota-pagada">
+                      pagó {plataDeLaColumna(f.pagadoCop)}
+                    </p>
+                  ) : null}
                 </TableCell>
 
                 {/* 🔴 El kebab de acciones (Nico, 21-09). `stopPropagation` en
                     la celda: sin eso, abrir el menú abre TAMBIÉN el cajón —el
-                    clic sube a la fila— y el menú queda detrás. */}
+                    clic sube a la fila— y el menú queda detrás. En el celular
+                    la tarjeta entera abre el cajón, que trae las mismas salidas. */}
                 <TableCell
-                  className="w-10 align-top"
+                  className="w-10 align-top max-md:hidden"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <DropdownList>
@@ -348,12 +355,14 @@ export function CuotasDelMesTabla({
                   </DropdownList>
                 </TableCell>
               </TableRowAnimada>
-            ))
+              )
+            })
           )}
         </TableBodyAnimado>
       </Table>
 
-      {shouldPaginate && (
+      {/* 22-10: sin paginación cuando todas las filas caben en una página (el «1» azul sobraba). */}
+      {shouldPaginate && total > pageSize && (
         <div className="border-t border-border px-4 py-3" data-testid="pagos-cuotas-pie">
           <TablePagination
             total={total}

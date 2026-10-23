@@ -31,7 +31,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
 import {
-  CaretLeft,
   Check,
   DownloadSimple,
   FileText,
@@ -48,7 +47,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -69,7 +69,8 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -192,7 +193,7 @@ function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
           {r.candidatas > 0 && ` · de ${r.candidatas}`}
         </span>
         {r.numeros.length > 0 && (
-          <span className="block font-mono text-xs text-fg-muted">
+          <span className="block font-mono text-caption text-fg-muted">
             {r.numeros.slice(0, 8).join(' · ')}
             {r.numeros.length > 8 && ` +${r.numeros.length - 8}`}
           </span>
@@ -348,7 +349,18 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
    * mediana ya son cientos. El hook va acá arriba —antes de los retornos
    * tempranos— porque no se puede llamar condicionalmente.
    */
-  const pagos = useTablePagination(vista?.lote.items ?? SIN_PAGOS, { resetKey: id });
+  // GLOW UP 3.ª vuelta · los pagos por si entran al archivo del banco o no: «No entran» es lo
+  // que hay que mirar antes de aprobar (sin cuenta, o se cierran en $0).
+  const [vistaDePagos, setVistaDePagos] = useState<'todos' | 'entran' | 'no-entran'>('todos');
+  const todosLosPagos = vista?.lote.items ?? SIN_PAGOS;
+  const pagosVisibles = useMemo(
+    () =>
+      vistaDePagos === 'todos'
+        ? todosLosPagos
+        : todosLosPagos.filter((p) => (vistaDePagos === 'entran' ? p.motivoDeExclusion === null : p.motivoDeExclusion !== null)),
+    [todosLosPagos, vistaDePagos],
+  );
+  const pagos = useTablePagination(pagosVisibles, { resetKey: `${id}|${vistaDePagos}` });
 
   /*
    * 🔴 El archivo vive en el CENTRO DE PROCESOS (Nico, 22-09: «ese diseño de
@@ -373,8 +385,14 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
   if (cargando && !vista) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Spinner />
+      <div className="space-y-6" aria-busy="true">
+        <span className="sr-only">Cargando el lote…</span>
+        <div className="space-y-3" aria-hidden="true">
+          <Skeleton className="h-3.5 w-48 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-10 w-72 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-9 w-56 rounded-sm bg-surface-muted" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-lg bg-surface-muted" aria-hidden="true" />
       </div>
     );
   }
@@ -427,31 +445,31 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
   return (
     <div className="space-y-6" data-testid="detalle-del-lote" data-estado={lote.estado}>
-      <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2">
-        <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">
-          <CaretLeft className="h-4 w-4" />
-          Lotes al banco
-        </Link>
-      </Button>
+      <Link
+        href="/panel/inmobiliaria/pagos/dispersiones/lotes"
+        className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
+      >
+        Lotes al banco
+      </Link>
 
       {/* ── Encabezado ─────────────────────────────────────────────────── */}
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
-          <SectionLabel>Finanzas · Lote al banco</SectionLabel>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">
-              Lote de {nombreDelMes(lote.month)}
-            </h1>
-            <Badge variant={TONO_DEL_ESTADO[lote.estado]} data-testid="estado-del-lote">
-              {NOMBRE_DEL_ESTADO[lote.estado]}
-            </Badge>
-          </div>
-          <p className="max-w-2xl text-sm text-fg-muted">{QUE_SIGUE[lote.estado]}</p>
-        </div>
-        <p className="font-mono text-xs text-fg-muted">
-          Lote {lote.id.slice(0, 8)} · armado {formatDateTime(lote.createdAt)}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Giros a propietarios · Lotes al banco"
+        titulo={`Lote de ${nombreDelMes(lote.month)}`}
+        junto={
+          <Badge variant={TONO_DEL_ESTADO[lote.estado]} data-testid="estado-del-lote">
+            {NOMBRE_DEL_ESTADO[lote.estado]}
+          </Badge>
+        }
+        descripcion={
+          <>
+            {QUE_SIGUE[lote.estado]}
+            <span className="mt-1 block font-mono text-caption text-fg-subtle">
+              Lote {lote.id.slice(0, 8)} · armado {formatDateTime(lote.createdAt)}
+            </span>
+          </>
+        }
+      />
 
       {/* ── Avisos que cambian lo que se puede hacer ────────────────────── */}
       {lote.estado === 'ANULADO' && (
@@ -519,25 +537,28 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       <LineaDeTiempo lote={lote} />
 
       {/* ── Cifras ──────────────────────────────────────────────────────── */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Cifra etiqueta="Total a girar" valor={formatCurrency(lote.totalCop)} destacada />
-        <Cifra etiqueta="Pagos en el archivo" valor={String(lote.cantidad)} />
-        <Cifra
-          etiqueta="Excluidos"
-          valor={String(excluidos.length)}
-          tono={excluidos.length > 0 ? 'warning' : undefined}
-        />
-        <Cifra
-          etiqueta="Aprobado por"
-          valor={lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, vista.aprobadoPorNombre) : 'Nadie todavía'}
-          mono={false}
-          detalle={
-            lote.aprobadoAt
-              ? `${notaP4 ? 'Como administrador, en el mismo paso · ' : ''}${formatDateTime(lote.aprobadoAt)}`
-              : undefined
-          }
-        />
-      </section>
+      {/* LA RESPUESTA: cuánto sale en este lote y a cuántos. Quién lo aprobó va
+          en su línea (antes eran cuatro tarjetas del mismo peso). */}
+      <CifraHeroe
+        data-testid="total-del-lote"
+        rotulo="Total a girar"
+        cifra={formatCurrency(lote.totalCop)}
+        contexto={
+          `en ${lote.cantidad} ${lote.cantidad === 1 ? 'pago' : 'pagos'} del archivo` +
+          (excluidos.length > 0 ? ` · ${excluidos.length} ${excluidos.length === 1 ? 'excluido' : 'excluidos'}` : '')
+        }
+        pie={
+          <>
+            Aprobado por{' '}
+            <span className="text-fg">
+              {lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, vista.aprobadoPorNombre) : 'nadie todavía'}
+            </span>
+            {lote.aprobadoAt
+              ? ` · ${notaP4 ? 'Como administrador, en el mismo paso · ' : ''}${formatDateTime(lote.aprobadoAt)}`
+              : ''}
+          </>
+        }
+      />
 
       {/* ── Acciones ────────────────────────────────────────────────────── */}
       {acciones.length > 0 && (
@@ -655,30 +676,30 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
           {lote.formatoArchivo && (
             <div>
-              <p className="text-xs text-fg-muted">Formato del archivo</p>
+              <p className="text-caption text-fg-muted">Formato del archivo</p>
               <p className="font-mono text-fg">
                 {NOMBRE_DEL_FORMATO[lote.formatoArchivo] ?? lote.formatoArchivo}
               </p>
               {lote.archivoGeneradoAt && (
-                <p className="text-xs text-fg-muted">{formatDateTime(lote.archivoGeneradoAt)}</p>
+                <p className="text-caption text-fg-muted">{formatDateTime(lote.archivoGeneradoAt)}</p>
               )}
             </div>
           )}
           {lote.archivoHash && (
             <div className="min-w-0">
-              <p className="text-xs text-fg-muted">Hash del archivo</p>
-              <p className="truncate font-mono text-xs text-fg" title={lote.archivoHash}>
+              <p className="text-caption text-fg-muted">Hash del archivo</p>
+              <p className="truncate font-mono text-caption text-fg" title={lote.archivoHash}>
                 {lote.archivoHash}
               </p>
-              <p className="text-xs text-fg-muted">Para probar qué se subió al banco.</p>
+              <p className="text-caption text-fg-muted">Para probar qué se subió al banco.</p>
             </div>
           )}
           {lote.referenciaBanco && (
             <div>
-              <p className="text-xs text-fg-muted">Referencia del banco</p>
+              <p className="text-caption text-fg-muted">Referencia del banco</p>
               <p className="font-mono text-fg">{lote.referenciaBanco}</p>
               {lote.pagadoAt && (
-                <p className="text-xs text-fg-muted">Pagado {formatDateTime(lote.pagadoAt)}</p>
+                <p className="text-caption text-fg-muted">Pagado {formatDateTime(lote.pagadoAt)}</p>
               )}
             </div>
           )}
@@ -759,16 +780,30 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
       {/* ── Los pagos, con los datos congelados ─────────────────────────── */}
       <section className="space-y-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-fg">Pagos del lote</h2>
-          <p className="text-xs text-fg-muted">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Pagos del lote</h2>
+          <p className="text-caption text-fg-muted">
             Datos bancarios congelados al armar el lote: la plata va adonde se aprobó.
           </p>
         </div>
-        <div className="overflow-hidden rounded-lg border border-border">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
+          {todosLosPagos.some((p) => p.motivoDeExclusion !== null) ? (
+            <div className="border-b border-border px-4 py-3 empty:hidden">
+              <PestanasDeEstado
+                etiqueta="Qué pagos ver"
+                valor={vistaDePagos}
+                onCambio={setVistaDePagos}
+                pestanas={[
+                  { valor: 'todos', etiqueta: 'Todos', cuantos: todosLosPagos.length, fija: true },
+                  { valor: 'entran', etiqueta: 'Entran al archivo', cuantos: todosLosPagos.filter((p) => p.motivoDeExclusion === null).length },
+                  { valor: 'no-entran', etiqueta: 'No entran', cuantos: todosLosPagos.filter((p) => p.motivoDeExclusion !== null).length, tono: 'aviso' },
+                ]}
+              />
+            </div>
+          ) : null}
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+            <Table className="max-md:block">
+              <TableHeader className="max-md:hidden">
                 <TableRow>
                   <TableHead>Titular</TableHead>
                   <TableHead>Documento</TableHead>
@@ -779,16 +814,20 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                   {lotePagado ? <TableHead>Giro</TableHead> : null}
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="max-md:block">
                 {pagos.pageItems.map((item) => (
-                  <TableRow key={item.id} data-excluido={item.motivoDeExclusion !== null}>
-                    <TableCell>
+                  <TableRow
+                    key={item.id}
+                    data-excluido={item.motivoDeExclusion !== null}
+                    className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                  >
+                    <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                       {(() => {
                         const t = titularDelPago(item, vista.cuentasDeOtraPersona);
                         return (
                           <div data-testid={t.deOtraPersona ? 'pago-a-otra-persona' : undefined}>
                             <p className="font-medium text-fg">{t.titular}</p>
-                            {t.detalle ? <p className="text-xs text-fg-muted">{t.detalle}</p> : null}
+                            {t.detalle ? <p className="text-caption text-fg-muted">{t.detalle}</p> : null}
                             {(() => {
                               // GIRI (Nico 18-10): lo que hay que revisar antes de aprobar.
                               const giri = vista.revisarConGiri?.find((r) => r.dispersionId === item.dispersionId);
@@ -807,18 +846,25 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                         );
                       })()}
                     </TableCell>
-                    <TableCell className="font-mono text-xs">
+                    <TableCell className="font-mono text-caption max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-fg-muted">
                       {item.tipoDocumento} {item.documento || '—'}
                     </TableCell>
-                    <TableCell>{item.banco || '—'}</TableCell>
-                    <TableCell className="font-mono text-xs">
+                    <TableCell className="max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
+                      {item.banco || '—'}
+                      <span className="font-mono md:hidden">
+                        {' · '}
+                        {item.tipoDeCuenta ? `${item.tipoDeCuenta} ` : ''}
+                        {ultimos4(item.numeroDeCuenta)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-mono text-caption max-md:hidden">
                       {item.tipoDeCuenta ? `${item.tipoDeCuenta} ` : ''}
                       {ultimos4(item.numeroDeCuenta)}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                       {formatCurrency(item.valorCop)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                       {item.motivoDeExclusion === null ? (
                         <span className="inline-flex items-center gap-1 text-success">
                           <Check className="h-3.5 w-3.5" /> Sí
@@ -832,7 +878,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                       )}
                     </TableCell>
                     {lotePagado ? (
-                      <TableCell>
+                      <TableCell className="max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
                         {/* 🔴 PRUEBAS-PAGOS (03-10-2026): sólo lo que ENTRÓ al
                             archivo salió del banco y puede volver. A un pago
                             excluido (sin cuenta, o que se cierra en $0) se le
@@ -888,7 +934,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             </div>
           )}
         </div>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {/* QA-PAGOS-95: «Armado por ti», no «Armado por Tú». */}
           Armado por {soyElCreador ? 'ti' : nombreDe(lote.creadoPorUserId, vista.creadoPorNombre)} · {lote.items.length}{' '}
           {lote.items.length === 1 ? 'pago' : 'pagos'} en total.
@@ -965,38 +1011,6 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
 // ── Piezas ──────────────────────────────────────────────────────────────────
 
-function Cifra({
-  etiqueta,
-  valor,
-  detalle,
-  destacada = false,
-  mono = true,
-  tono,
-}: {
-  etiqueta: string;
-  valor: string;
-  detalle?: string;
-  destacada?: boolean;
-  mono?: boolean;
-  tono?: 'warning';
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <p className="text-xs text-fg-muted">{etiqueta}</p>
-      <p
-        className={cn(
-          'mt-1 truncate font-semibold text-fg',
-          destacada ? 'text-2xl' : 'text-lg',
-          mono && 'font-mono tabular-nums',
-          tono === 'warning' && 'text-warning',
-        )}
-      >
-        {valor}
-      </p>
-      {detalle && <p className="mt-0.5 text-xs text-fg-muted">{detalle}</p>}
-    </div>
-  );
-}
 
 /**
  * Los cinco pasos del camino, con la fecha en la que cada uno pasó. Un lote
@@ -1036,7 +1050,7 @@ function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
           >
             <span
               className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-full border text-xs font-mono',
+                'flex h-7 w-7 items-center justify-center rounded-full border text-caption font-mono',
                 hecho && 'border-primary bg-primary text-primary-fg',
                 actual && !hecho && !murioAca && 'border-primary text-primary',
                 murioAca && 'border-danger bg-danger-soft text-danger',
@@ -1048,14 +1062,14 @@ function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
             </span>
             <span
               className={cn(
-                'text-xs leading-tight',
+                'text-caption leading-tight',
                 actual || hecho ? 'font-medium text-fg' : 'text-fg-muted',
               )}
             >
               {porWompi && estado === 'ARCHIVO_GENERADO' ? 'En Wompi' : NOMBRE_DEL_ESTADO[estado]}
             </span>
             {(hecho || (actual && !anulado)) && fecha && (
-              <span className="font-mono text-[10px] text-fg-muted">{formatDateTime(fecha)}</span>
+              <span className="font-mono text-caption text-fg-muted">{formatDateTime(fecha)}</span>
             )}
           </li>
         );
@@ -1097,7 +1111,7 @@ function GiriAntesDeAprobar({
       </p>
       <ul className="space-y-1.5">
         {revisarConGiri.map((r) => (
-          <li key={r.dispersionId} className="text-xs text-fg-muted">
+          <li key={r.dispersionId} className="text-caption text-fg-muted">
             <span className="font-medium text-fg">{nombreDe(r.propietarioId)}:</span> {r.motivos.join(' ')}
           </li>
         ))}
@@ -1109,7 +1123,7 @@ function GiriAntesDeAprobar({
           checked={yaLoRevise}
           onCheckedChange={(v) => onCambio(v === true)}
         />
-        <span className="text-xs text-fg-muted">Ya lo revisé. En la bitácora del lote queda que fui yo.</span>
+        <span className="text-caption text-fg-muted">Ya lo revisé. En la bitácora del lote queda que fui yo.</span>
       </label>
     </div>
   );
@@ -1254,7 +1268,7 @@ function PedirAprobacionDialog({
                     <p className="text-fg-muted">{resultado.motivoDelCodigo}</p>
                   </DialogSection>
                   <div>
-                    <p className="text-xs text-fg-muted">Le llegó a</p>
+                    <p className="text-caption text-fg-muted">Le llegó a</p>
                     <ul className="mt-1 space-y-0.5 font-mono text-fg">
                       {resultado.enviadoA.map((correo) => (
                         <li key={correo}>{correo}</li>
@@ -1424,7 +1438,7 @@ function AprobarDialog({
                 autoFocus
               />
               <ErrorDelCampo id="codigo-de-aprobacion-error" mensaje={errorDelCodigo} />
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Te llegó por correo.{' '}
                 <span className="font-mono">{intentosRestantes}</span>{' '}
                 {intentosRestantes === 1 ? 'intento' : 'intentos'} antes de que el lote se bloquee.
@@ -1657,8 +1671,8 @@ function ArchivoDialog({
                   </Banner>
                   {archivo.pendienteDeConfirmar.length > 0 && (
                     <div className="rounded-[14px] border border-border p-3">
-                      <p className="text-xs font-medium text-fg">Qué falta confirmar contra el banco</p>
-                      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-fg-muted">
+                      <p className="text-caption font-medium text-fg">Qué falta confirmar contra el banco</p>
+                      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-caption text-fg-muted">
                         {archivo.pendienteDeConfirmar.map((p) => (
                           <li key={p}>{p}</li>
                         ))}
@@ -1674,20 +1688,20 @@ function ArchivoDialog({
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div>
-                  <p className="text-xs text-fg-muted">Archivo</p>
-                  <p className="break-all font-mono text-xs text-fg" data-testid="nombre-del-archivo">
+                  <p className="text-caption text-fg-muted">Archivo</p>
+                  <p className="break-all font-mono text-caption text-fg" data-testid="nombre-del-archivo">
                     {archivo.nombreArchivo}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-fg-muted">Pagos</p>
+                  <p className="text-caption text-fg-muted">Pagos</p>
                   <p className="font-mono text-fg">
                     {archivo.cantidad} · {formatCurrency(archivo.totalCop)}
                   </p>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-fg-muted">Hash</p>
-                  <p className="truncate font-mono text-xs text-fg" title={archivo.hash}>
+                  <p className="text-caption text-fg-muted">Hash</p>
+                  <p className="truncate font-mono text-caption text-fg" title={archivo.hash}>
                     {archivo.hash}
                   </p>
                 </div>
@@ -1701,7 +1715,7 @@ function ArchivoDialog({
                   >
                     Les falta un dato o no cuadra con el formato. Se pagan aparte o en el próximo lote.
                   </Banner>
-                  <ul className="space-y-0.5 rounded-lg border border-border p-3 text-xs text-fg-muted">
+                  <ul className="space-y-0.5 rounded-lg border border-border p-3 text-caption text-fg-muted">
                     {archivo.excluidos.map((e) => (
                       <li key={`${e.propietarioId}-${e.nombre}`}>
                         <span className="font-medium text-fg">{e.nombre}</span> — {e.motivo}
@@ -1713,8 +1727,8 @@ function ArchivoDialog({
 
               {archivo.advertencias.length > 0 && (
                 <div className="rounded-[14px] border border-border p-3">
-                  <p className="text-xs font-medium text-fg">Advertencias</p>
-                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-fg-muted">
+                  <p className="text-caption font-medium text-fg">Advertencias</p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-caption text-fg-muted">
                     {archivo.advertencias.map((a, i) => (
                       <li key={`${i}-${a}`}>{a}</li>
                     ))}
@@ -1868,7 +1882,7 @@ function MarcarPagadoDialog({
             autoFocus
           />
           <ErrorDelCampo id="referencia-del-banco-error" mensaje={errorDeReferencia} />
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Un lote pagado ya no se anula: si algo salió mal, se corrige con una contrapartida.
           </p>
 
@@ -1879,7 +1893,7 @@ function MarcarPagadoDialog({
               checked={facturarAhora}
               onCheckedChange={(v) => setFacturarAhora(v === true)}
             />
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               Facturarle ahora a los propietarios: se emite la comisión de la
               inmobiliaria sobre lo que este lote cierra —también a los que
               quedan en $0—, con su IVA y sus retenciones.{' '}
@@ -1891,7 +1905,7 @@ function MarcarPagadoDialog({
             </span>
           </label>
 
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Al marcarlo pagado, a cada propietario le sale un correo con el valor, la referencia y
             el aviso de que el banco puede tardar 2 días hábiles en reflejarlo. A los que quedan en $0
             les sale su extracto. Su estado de cuenta queda con la dispersión descontada.

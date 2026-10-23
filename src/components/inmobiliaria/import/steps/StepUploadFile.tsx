@@ -227,10 +227,10 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+        <h2 className="text-h3 text-fg mb-1">
           {t('inmobiliaria.import.steps.upload')}
         </h2>
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.import.upload.formats')}
         </p>
       </div>
@@ -238,7 +238,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       {/* Sheet Selector (shown when multi-sheet workbook) */}
       {hasFile && state.sheetNames.length > 1 && (
         <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-fg dark:text-fg-subtle shrink-0">
+          <label className="text-sm font-medium text-fg shrink-0">
             {t('inmobiliaria.import.upload.selectSheet')}
           </label>
           <Select value={state.selectedSheet} onValueChange={handleSheetChange}>
@@ -255,7 +255,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       )}
 
       {/* QA-MIGRACION-95 (MP-06): la hoja se elige arriba; la fila de los
-          encabezados, acá, por si se adivinó mal. */}
+          encabezados, aquí, por si se adivinó mal. */}
       {state.file && filaDeEncabezado && !isParsing ? (
         <ElegirDondeEstaLaTabla
           soloLaFila
@@ -289,7 +289,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
             {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}
             <input {...getInputProps()} />
             <Spinner size="lg" />
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               {t('inmobiliaria.import.upload.parsing')}
             </p>
           </div>
@@ -313,7 +313,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
             'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors duration-base',
             isDragActive
               ? 'border-primary/30 bg-primary-soft'
-              : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink'
+              : 'border-border hover:border-primary/30 hover:bg-surface-muted'
           )}
         >
           {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}
@@ -321,7 +321,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
           <div className="flex flex-col items-center gap-3">
             <UploadSimple className="w-16 h-16 text-fg-subtle" />
             <div>
-              <p className="font-medium text-fg dark:text-fg-subtle">
+              <p className="font-medium text-fg">
                 {t('inmobiliaria.import.upload.dragText')}
               </p>
               <p className="text-sm text-fg-subtle mt-1">
@@ -352,21 +352,21 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       {hasFile && state.headers.length > 0 && (
         <div className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-fg dark:text-white">
+            <h3 className="text-sm font-medium text-fg">
               Vista previa
             </h3>
-            <MonoLabel className="text-xs text-fg-muted bg-surface-muted dark:bg-ink px-2 py-1 rounded-sm">
+            <MonoLabel className="text-caption text-fg-muted bg-surface-muted px-2 py-1 rounded-sm">
               {t('inmobiliaria.import.upload.rowsDetected', { count: state.rawRows.length })}
             </MonoLabel>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-border dark:border-border-strong">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <Table className="text-sm">
               <TableHeader>
-                <TableRow className="bg-surface-muted dark:bg-ink">
+                <TableRow className="bg-surface-muted">
                   {state.headers.map((header) => (
                     <TableHead
                       key={header}
-                      className="px-3 py-2 text-left whitespace-nowrap border-b border-border dark:border-border-strong"
+                      className="px-3 py-2 text-left whitespace-nowrap border-b border-border"
                     >
                       {header}
                     </TableHead>
@@ -375,17 +375,17 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
               </TableHeader>
               <TableBody>
                 {state.rawRows.slice(0, 5).map((row) => (
-                  <TableRow key={row._rowIndex} className="border-b border-border-faint dark:border-border-strong last:border-0">
+                  <TableRow key={row._rowIndex} className="border-b border-border-faint last:border-0">
                     {state.headers.map((header) => {
                       const value = String(row[header] ?? '');
                       const truncated = value.length > 30 ? value.slice(0, 30) + '...' : value;
                       return (
                         <TableCell
                           key={header}
-                          className="px-3 py-2 text-fg dark:text-fg-subtle whitespace-nowrap"
+                          className="px-3 py-2 text-fg whitespace-nowrap"
                           title={value}
                         >
-                          {truncated || <span className="text-fg-subtle dark:text-fg-muted">—</span>}
+                          {truncated || <span className="text-fg-subtle">—</span>}
                         </TableCell>
                       );
                     })}
@@ -395,7 +395,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
             </Table>
           </div>
           {state.rawRows.length > 5 && (
-            <p className="text-xs text-fg-subtle mt-2 text-center">
+            <p className="text-caption text-fg-subtle mt-2 text-center">
               Mostrando 5 de {state.rawRows.length} filas
             </p>
           )}

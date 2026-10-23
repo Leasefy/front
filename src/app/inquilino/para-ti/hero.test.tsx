@@ -54,9 +54,11 @@ vi.mock('@/lib/hooks/use-aprobacion', () => ({
   useAprobacion: () => ({ aprobacion: null, vigente: false, cargando: false, error: null, recargar: () => {} }),
 }))
 
+const perfil = vi.hoisted(() => ({ verificado: true }))
+
 vi.mock('@/lib/context/TenantProfileContext', () => ({
   useTenantProfile: () => ({
-    hasVerifiedProfile: true,
+    hasVerifiedProfile: perfil.verificado,
     isLoading: false,
     profile: {
       fullName: 'María Restrepo',
@@ -105,6 +107,7 @@ const pintar = async () => {
 
 beforeEach(() => {
   recomendaciones.actuales = []
+  perfil.verificado = true
 })
 
 afterEach(async () => {
@@ -127,6 +130,15 @@ describe('hero de Propiedades para ti', () => {
     expect(hero().textContent).not.toContain('%')
   })
 
+  it('sin «Volver a Inicio» y con un solo azul: la tarjeta de mejorar el perfil va en arena', async () => {
+    recomendaciones.actuales = [propiedad('p1', 1_800_000)]
+    await pintar()
+    expect(host.textContent).not.toContain('Volver a Inicio')
+    const mejorar = host.querySelector('[data-testid="mejorar-el-perfil"]') as HTMLElement
+    expect(mejorar.className).toContain('bg-surface-muted')
+    expect(mejorar.className).not.toContain('bg-primary-soft')
+  })
+
   it('con catálogo vacío dice cero en vez de presumir', async () => {
     await pintar()
 
@@ -143,12 +155,16 @@ describe('hero de Propiedades para ti', () => {
     expect(hero().textContent).not.toContain('propiedades caben')
   })
 
-  it('pinta la marca con un cobalto que no cambia con el tema', async () => {
+  it('pinta la marca en medianoche, la misma en los dos temas (decisión de Nico, 23-10)', async () => {
     await pintar()
 
-    // `bg-primary` se vuelve #8A9FFF en oscuro y deja el blanco en 2,48:1.
-    expect(hero().className).toContain('bg-brand')
+    // El campo de marca de Cadence: #0A0F2C (`--ink`) con su grano; el azul queda
+    // para el botón. Nunca `bg-primary` (se vuelve #8A9FFF en oscuro) ni el cobalto.
+    expect(hero().getAttribute('data-testid')).toBe('para-ti-marca')
+    // CampoDeMedianoche pone el texto de tinta (`text-ink-fg`); su fondo va en `style`.
+    expect(hero().className).toContain('text-ink-fg')
     expect(hero().className).not.toContain('bg-primary')
+    expect(hero().className).not.toContain('bg-brand')
   })
 
   it('no usa acentos semánticos sobre el cobalto', async () => {
@@ -160,5 +176,18 @@ describe('hero de Propiedades para ti', () => {
       /(^|\s)text-primary(\s|$)/.test(el.className),
     )
     expect(infractores.map((el) => el.className)).toEqual([])
+  })
+})
+
+describe('Para ti sin aprobación ni perfil (glow up 22-10)', () => {
+  it('el encabezado de las demás pantallas y el marketplace en otra pestaña; sin «Volver a Inicio»', async () => {
+    perfil.verificado = false
+    await pintar()
+    const pantalla = host.querySelector('[data-testid="para-ti-sin-aprobacion"]')
+    expect(pantalla).not.toBeNull()
+    expect(host.querySelector('h1')?.textContent).toBe('Inmuebles para ti')
+    expect(host.textContent).not.toContain('Volver a Inicio')
+    const mk = host.querySelector('a[href="/propiedades"]')
+    expect(mk?.getAttribute('target')).toBe('_blank')
   })
 })

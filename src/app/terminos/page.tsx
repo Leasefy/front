@@ -3,6 +3,7 @@ import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { TerminosContenido } from "@/components/legal/TerminosContenido";
 import { SectionLabel } from "@/components/ui/section-label";
+import { IndiceDeLosTerminos } from "./IndiceDeLosTerminos";
 
 /**
  * Términos y Condiciones.
@@ -64,15 +65,17 @@ export const metadata: Metadata = {
 export default function TerminosPage() {
   return (
     <LandingChrome>
-      <main id="main-content" className="bg-background">
+      <main id="main-content" className="bg-bg">
         <section className="pt-32 pb-16 md:pt-40 md:pb-24">
           <div className="container-platform"><div className="max-w-[800px]">
             <SectionLabel className="mb-4">Legal</SectionLabel>
-            <h1 className="text-[2rem] md:text-[3rem] font-light text-foreground leading-[1.15] tracking-[-0.02em] italic mb-4">
+            <h1 className="mb-8 font-heading text-[32px] font-[420] leading-[1.08] tracking-[-0.03em] text-fg md:text-[44px]">
               Términos y condiciones
             </h1>
 
-            <TerminosContenido />
+            <IndiceDeLosTerminos>
+              <TerminosContenido />
+            </IndiceDeLosTerminos>
           </div></div>
         </section>
       </main>

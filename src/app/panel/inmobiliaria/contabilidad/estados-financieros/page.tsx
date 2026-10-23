@@ -13,10 +13,10 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
 import {
   EstadosFinancieros,
   informeFinancieroDe,
@@ -29,23 +29,24 @@ export default function EstadosFinancierosPage() {
   return (
     <PageGuard module="reportes" roles={ROLES_DE_LA_CONTABILIDAD} seccion="Contabilidad" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
+        <div className="space-y-3">
           <Link
             href="/panel/inmobiliaria/contabilidad"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+            className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-h2 text-fg">Estados financieros</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            El estado de resultados y el balance general, del mes y del acumulado del año, contra el
-            presupuesto y contra el año pasado. Los dos salen del libro: lo que no está asentado no
-            aparece, y el informe dice cuánto falta. El canon recaudado no es ingreso de la
-            inmobiliaria — es plata del propietario y vive en el pasivo.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Dinero"
+            titulo="Estados financieros"
+            descripcion="El estado de resultados y el balance general, del mes y del acumulado del año, contra el presupuesto y contra el año pasado."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">Los dos salen del libro: lo que no está asentado no aparece, y el informe dice cuánto falta. El canon recaudado no es ingreso de la inmobiliaria — es plata del propietario y vive en el pasivo.</p>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         <EstadosFinancieros key={informe} inicial={informe} />
       </div>
     </PageGuard>

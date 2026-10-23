@@ -61,9 +61,9 @@ function toggleInArray<T>(arr: T[] | undefined, item: T): T[] {
 }
 
 /** El rail de filtros es denso: se conserva la altura compacta sobre el skin del DS. */
-// `md:text-xs` es necesario: el adapter trae `text-base md:text-sm` y sin el breakpoint
+// `md:text-caption` es necesario: el adapter trae `text-base md:text-sm` y sin el breakpoint
 // propio tailwind-merge deja ganar al `md:` del adapter de 768px para arriba.
-const INPUT_CLASSES = 'h-9 px-3 text-xs md:text-xs'
+const INPUT_CLASSES = 'h-9 px-3 text-caption md:text-caption'
 
 export function InboxFilters({ value, onChange }: InboxFiltersProps) {
   const { t } = useI18n()
@@ -71,13 +71,13 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
   return (
     <div className="space-y-5" data-testid="inbox-filters">
-      <h2 className="text-sm font-semibold text-fg">
+      <h2 className="text-sm font-medium text-fg">
         {t('inmobiliaria.ai.mantenimiento.filters.title')}
       </h2>
 
       {/* Severidad */}
       <fieldset>
-        <legend className="text-xs font-medium text-fg-muted mb-2">
+        <legend className="text-caption font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.severidad')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -88,7 +88,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               aria-pressed={value.severidad?.includes(s) ?? false}
               onClick={() => set({ severidad: toggleInArray(value.severidad, s) })}
               className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                'px-2.5 py-1 text-caption font-medium rounded-full border transition-colors ' +
                 chipClasses(value.severidad?.includes(s) ?? false)
               }
             >
@@ -100,7 +100,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Categoría */}
       <fieldset>
-        <legend className="text-xs font-medium text-fg-muted mb-2">
+        <legend className="text-caption font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.categoria')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -111,7 +111,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               aria-pressed={value.categoria?.includes(c) ?? false}
               onClick={() => set({ categoria: toggleInArray(value.categoria, c) })}
               className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                'px-2.5 py-1 text-caption font-medium rounded-full border transition-colors ' +
                 chipClasses(value.categoria?.includes(c) ?? false)
               }
             >
@@ -123,7 +123,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Estado */}
       <fieldset>
-        <legend className="text-xs font-medium text-fg-muted mb-2">
+        <legend className="text-caption font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.estado')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -134,7 +134,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               aria-pressed={value.estado?.includes(e) ?? false}
               onClick={() => set({ estado: toggleInArray(value.estado, e) })}
               className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                'px-2.5 py-1 text-caption font-medium rounded-full border transition-colors ' +
                 chipClasses(value.estado?.includes(e) ?? false)
               }
             >
@@ -146,7 +146,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Responsable */}
       <fieldset>
-        <legend className="text-xs font-medium text-fg-muted mb-2">
+        <legend className="text-caption font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.responsable')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -157,7 +157,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               aria-pressed={value.responsable?.includes(r) ?? false}
               onClick={() => set({ responsable: toggleInArray(value.responsable, r) })}
               className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                'px-2.5 py-1 text-caption font-medium rounded-full border transition-colors ' +
                 chipClasses(value.responsable?.includes(r) ?? false)
               }
             >
@@ -170,7 +170,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
       {/* SLA + Aprobación — toggle chips (C7-03 declares no per-option labels;
           modeled as boolean toggles over the boolean InboxFilters fields). */}
       <fieldset>
-        <legend className="text-xs font-medium text-fg-muted mb-2">
+        <legend className="text-caption font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.sla')} ·{' '}
           {t('inmobiliaria.ai.mantenimiento.filters.aprobacion')}
         </legend>
@@ -181,7 +181,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
             aria-pressed={value.slaBreached === true}
             onClick={() => set({ slaBreached: value.slaBreached === true ? undefined : true })}
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-caption font-medium rounded-full border transition-colors ' +
               chipClasses(value.slaBreached === true)
             }
           >
@@ -195,7 +195,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               set({ requiereAprobacion: value.requiereAprobacion === true ? undefined : true })
             }
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-caption font-medium rounded-full border transition-colors ' +
               chipClasses(value.requiereAprobacion === true)
             }
           >
@@ -215,7 +215,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
             aria-pressed={value.hasPhotos === true}
             onClick={() => set({ hasPhotos: value.hasPhotos === true ? undefined : true })}
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-caption font-medium rounded-full border transition-colors ' +
               chipClasses(value.hasPhotos === true)
             }
           >
@@ -226,7 +226,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
             aria-pressed={value.reabierto === true}
             onClick={() => set({ reabierto: value.reabierto === true ? undefined : true })}
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-caption font-medium rounded-full border transition-colors ' +
               chipClasses(value.reabierto === true)
             }
           >
@@ -237,7 +237,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
             aria-pressed={value.retencionRiesgo === true}
             onClick={() => set({ retencionRiesgo: value.retencionRiesgo === true ? undefined : true })}
             className={
-              'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+              'px-2.5 py-1 text-caption font-medium rounded-full border transition-colors ' +
               chipClasses(value.retencionRiesgo === true)
             }
           >
@@ -248,7 +248,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Text filters: proveedor · propietario · inmueble · zona */}
       <fieldset className="space-y-2">
-        <legend className="text-xs font-medium text-fg-muted mb-1">
+        <legend className="text-caption font-medium text-fg-muted mb-1">
           {t('inmobiliaria.ai.mantenimiento.filters.proveedor')}
         </legend>
         <Input
@@ -287,7 +287,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Costo range: min / max */}
       <fieldset>
-        <legend className="text-xs font-medium text-fg-muted mb-2">
+        <legend className="text-caption font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.costo')}
         </legend>
         <div className="flex gap-2">
@@ -321,7 +321,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
         type="button"
         variant="link"
         onClick={() => onChange(EMPTY_FILTERS)}
-        className="h-auto p-0 text-xs font-medium text-primary"
+        className="h-auto p-0 text-caption font-medium text-primary"
       >
         {t('inmobiliaria.ai.mantenimiento.filters.limpiar')}
       </Button>

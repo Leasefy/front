@@ -43,7 +43,7 @@ function StatusBadge({ status, t }: { status: string; t: (k: string) => string }
   const key = statusKeyMap[status] ?? statusKeyMap.error
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[status] ?? STATUS_COLORS.error}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium ${STATUS_COLORS[status] ?? STATUS_COLORS.error}`}
     >
       {t(key)}
     </span>
@@ -143,7 +143,7 @@ export function CotizadorRecentQuotesFeed({
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={q.status} t={t} />
-                    <span className="text-xs text-fg-muted tabular-nums">
+                    <span className="text-caption text-fg-muted tabular-nums">
                       {q.approvedCount}/{q.totalCarriers}
                     </span>
                     <ArrowRight className="h-4 w-4 text-fg-subtle" />

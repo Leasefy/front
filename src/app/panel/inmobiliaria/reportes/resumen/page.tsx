@@ -4,32 +4,17 @@ import Link from 'next/link';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 // AVISO-TIPO-DOC (05-10-2026): los propietarios cuyo documento frena la factura por mandato.
 import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
-import {
-  Buildings,
-  Users,
-  CurrencyDollar,
-  TrendUp,
-  TrendDown,
-  ArrowRight,
-  ChartLine,
-  Kanban,
-  UserCircle,
-  Clock,
-  Warning,
-  CheckCircle,
-  CaretRight,
-  House,
-  Wallet,
-  FileText,
-} from '@phosphor-icons/react';
+import { Kanban, UserCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
-import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece';
-import { EmptyState } from '@/components/ui';
+import { Avatar, Cifra, CrossFade, FranjaDeCifras, StatusBadge } from '@leasefy/cadence';
+import { Button, EmptyState } from '@/components/ui';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { useTr } from '@/lib/i18n/use-tr';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { MonoLabel, BrandDot, BrandContour } from '@/components/brand';
+import { MonoLabel } from '@/components/brand';
 import { useI18n } from '@/lib/i18n';
 import { contar } from '@/lib/texto/plural';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -40,230 +25,64 @@ import {
   useCobros,
   useMantenimientos,
 } from '@/lib/hooks/useInmobiliaria';
-import { SIN_MEDIR, anchoDeBarra, tasaMedida, tasaEnPantalla } from '@/lib/tasas';
-import { claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
+import { SIN_MEDIR, tasaMedida, tasaEnPantalla } from '@/lib/tasas';
+import { BASE_POR_DEFECTO, claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import { plataPareja } from '@/lib/format';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
-
-/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
-const enteroTalCual = (n: number) => String(Math.round(n));
-
-/**
- * La cifra de una tarjeta: si es un número, cuenta cuando cambia (al
- * recargar); el texto final es el mismo de antes. Un texto queda igual.
- */
-function Cifra({ value }: { value: string | number }) {
-  return typeof value === 'number' ? <AnimatedNumber value={value} format={enteroTalCual} /> : <>{value}</>;
-}
-
-/**
- * KPI Card Component
- */
-interface KPICardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
-  icon: React.ElementType;
-  href?: string;
-  /** Ink hero variant — the single visual anchor of the grid. */
-  brandHero?: boolean;
-}
-
-function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }: KPICardProps) {
-  const { t } = useI18n();
-
-  if (brandHero) {
-    return (
-      <Link
-        href={href ?? '#'}
-        className="group relative h-full rounded-lg p-5 flex flex-col overflow-hidden"
-        style={{ background: 'linear-gradient(150deg, var(--ink) 58%, var(--ink-2) 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
-      >
-        {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
-        <div className="absolute -inset-x-1 top-[34%] h-[44%] text-ink-fg/[0.14] pointer-events-none">
-          <BrandContour />
-        </div>
-        <div className="flex items-start justify-between">
-          <MonoLabel className="text-[11px] font-medium text-ink-fg/55">{title}</MonoLabel>
-          <div className="rounded-lg p-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
-            <Icon weight="duotone" className="h-4 w-4 text-ink-fg/90" />
-          </div>
-        </div>
-        <p className="font-heading text-[28px] font-semibold text-ink-fg tracking-tight tabular-nums leading-none mt-3">
-          <Cifra value={value} />
-        </p>
-        {subtitle && <p className="font-sans text-[12px] text-ink-fg/70 mt-1">{subtitle}</p>}
-        <div className="flex-1 min-h-[8px]" />
-        {trend && (
-          <div className="mt-2.5 flex items-center gap-1">
-            {trend.isPositive ? (
-              <TrendUp weight="bold" className="h-3 w-3 text-ink-fg/80" />
-            ) : (
-              <TrendDown weight="bold" className="h-3 w-3 text-ink-fg/80" />
-            )}
-            <span className="font-sans text-[11.5px] font-medium tabular-nums text-ink-fg/90">
-              {trend.isPositive ? '+' : ''}{tasaEnPantalla(trend.value, Number.isInteger(trend.value) ? 0 : 1)}
-            </span>
-            <span className="font-sans text-[11.5px] text-ink-fg/60">{t('inmobiliaria.common.vsLastMonth')}</span>
-          </div>
-        )}
-      </Link>
-    );
-  }
-
-  const content = (
-    <div
-      className={cn(
-        'group relative h-full rounded-lg border border-border bg-card p-5 flex flex-col transition-colors',
-        href && 'hover:bg-surface-hover'
-      )}
-    >
-      <div className="flex items-start justify-between">
-        <MonoLabel>{title}</MonoLabel>
-        <div className="rounded-lg p-2.5 bg-surface-muted text-fg-muted">
-          <Icon weight="duotone" className="h-4 w-4" />
-        </div>
-      </div>
-      <p className="mt-3 font-heading text-2xl font-semibold text-fg tracking-tight tabular-nums leading-none">
-        <Cifra value={value} />
-      </p>
-      {subtitle && (
-        <p className="mt-1 text-xs text-fg-muted">{subtitle}</p>
-      )}
-      <div className="flex-1 min-h-[8px]" />
-      {trend ? (
-        <div className="mt-2.5 flex items-center gap-1">
-          {trend.isPositive ? (
-            <TrendUp weight="bold" className="h-3 w-3 text-fg-muted" />
-          ) : (
-            <TrendDown weight="bold" className="h-3 w-3 text-danger" />
-          )}
-          <span className={cn('text-xs font-medium tabular-nums', trend.isPositive ? 'text-fg-muted' : 'text-danger')}>
-            {trend.isPositive ? '+' : ''}{tasaEnPantalla(trend.value, Number.isInteger(trend.value) ? 0 : 1)}
-          </span>
-          <span className="text-xs text-fg-muted">{t('inmobiliaria.common.vsLastMonth')}</span>
-        </div>
-      ) : (
-        <div className="h-5" />
-      )}
-      {href && (
-        <CaretRight className="absolute bottom-4 right-4 h-3.5 w-3.5 text-fg-subtle group-hover:text-primary transition-colors" weight="bold" />
-      )}
-    </div>
-  );
-
-  if (href) {
-    return <Link href={href}>{content}</Link>;
-  }
-  return content;
-}
-
-/**
- * Secondary stat — neutral tile, Satoshi number, mono label (no rainbow).
- * `detalle` es una línea opcional debajo del rótulo: para decir qué cuenta el
- * número cuando el rótulo solo no alcanza.
- */
-function SecondaryStat({
-  icon: Icon,
-  value,
-  label,
-  detalle,
-  testId,
-}: {
-  icon: React.ElementType;
-  value: string | number;
-  label: string;
-  detalle?: string;
-  testId?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4" data-testid={testId}>
-      <div className="flex items-center gap-3">
-        <div className="rounded-md p-2 bg-surface-muted text-fg-muted">
-          <Icon weight="duotone" className="h-4 w-4" />
-        </div>
-        <div className="min-w-0">
-          <p className="font-heading text-lg font-semibold text-fg tabular-nums leading-none"><Cifra value={value} /></p>
-          <MonoLabel className="mt-1 block">{label}</MonoLabel>
-          {detalle && <p className="mt-1 text-xs text-fg-muted">{detalle}</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Quick Action Card
- */
-interface QuickActionProps {
-  title: string;
-  description: string;
-  href: string;
-  icon: React.ElementType;
-}
-
-function QuickAction({ title, description, href, icon: Icon }: QuickActionProps) {
-  return (
-    <Link
-      href={href}
-      className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:bg-surface-hover transition-colors"
-    >
-      <div className="rounded-md p-2.5 bg-surface-muted text-fg-muted">
-        <Icon weight="duotone" className="h-5 w-5" />
-      </div>
-      <div className="flex-1">
-        <p className="text-sm font-medium text-fg">{title}</p>
-        <p className="text-xs text-fg-muted">{description}</p>
-      </div>
-      <CaretRight className="h-3.5 w-3.5 text-fg-subtle group-hover:text-primary transition-colors" weight="bold" />
-    </Link>
-  );
-}
 
 /**
  * Pipeline Mini Card
  */
+/** Una fila de la prospección: lista con divisores (antes, tarjeta arena dentro de la tarjeta, con caja de ícono). */
 function PipelineMiniCard({ item }: { item: PipelineItem }) {
   const stageInfo = getPipelineStageInfo(item.stage);
 
   return (
-    <div className="flex items-center gap-3 rounded-md border border-border bg-surface-muted p-3">
-      {/* QA 20-10: sin foto, la caja era del mismo color que la fila y quedaba un
-          hueco vacío a la izquierda: sin foto va el ícono del inmueble. */}
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-surface">
-        {item.propertyThumbnail ? (
-          <img
-            src={item.propertyThumbnail}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <House weight="duotone" className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
-        )}
+    <li className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+      {item.propertyThumbnail ? (
+        <img src={item.propertyThumbnail} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" />
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-body-sm font-medium text-fg">{item.candidateName}</p>
+        <p className="truncate text-caption text-fg-muted">{item.propertyTitle}</p>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-fg truncate">
-          {item.candidateName}
-        </p>
-        <p className="text-xs text-fg-muted truncate">
-          {item.propertyTitle}
-        </p>
-      </div>
-      <span className={cn('px-2 py-1 rounded-full text-xs font-medium', stageInfo?.color)}>
-        {stageInfo?.labelEs}
-      </span>
-    </div>
+      {stageInfo?.labelEs ? <StatusBadge tone="neutral">{stageInfo.labelEs}</StatusBadge> : null}
+    </li>
   );
 }
 
-/**
- * Agent Mini Card
- */
+/** Una línea de «Para atender»: el asunto con su número y el enlace a donde se arregla. */
+function FilaParaAtender({
+  titulo,
+  href,
+  etiqueta,
+  tono,
+  testid,
+}: {
+  titulo: string;
+  href: string;
+  etiqueta: string;
+  tono: 'aviso' | 'info';
+  testid: string;
+}) {
+  return (
+    <li className="flex items-center justify-between gap-3 px-4 py-2.5" data-testid={testid}>
+      <span className="flex min-w-0 items-center gap-2.5">
+        <span
+          className={cn('h-1.5 w-1.5 shrink-0 rounded-full', tono === 'aviso' ? 'bg-warning-500' : 'bg-sand-400 dark:bg-neutral-500')}
+          aria-hidden="true"
+        />
+        <span className="text-body-sm text-fg">{titulo}</span>
+      </span>
+      <Link href={href} className="shrink-0 text-body-sm font-medium text-fg-muted underline-offset-4 hover:text-fg hover:underline">
+        {etiqueta}
+      </Link>
+    </li>
+  );
+}
+
 function AgentMiniCard({
   agent,
   t,
@@ -271,16 +90,17 @@ function AgentMiniCard({
   agent: Agente;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
+  // Revisora r25: un asesor sin nombre salía como su correo con el avatar «HO» (de «hola+…»).
+  const sinNombre = !agent.name || agent.name.includes('@');
   return (
     <div className="flex items-center gap-3">
-      <div className="h-9 w-9 rounded-full bg-surface-muted text-fg-muted flex items-center justify-center font-mono text-xs font-semibold">
-        {agent.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
-      </div>
+      <Avatar name={sinNombre ? '?' : agent.name} size="sm" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-fg truncate">
-          {agent.name}
+          {sinNombre ? 'Sin nombre' : agent.name}
         </p>
-        <p className="text-xs text-fg-muted">
+        {sinNombre && agent.name ? <p className="truncate text-caption text-fg-subtle">{agent.name}</p> : null}
+        <p className="text-caption text-fg-muted">
           {t(agent.metrics.closedThisMonth === 1 ? 'inmobiliaria.dashboard.team.closedThisMonthUno' : 'inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
         </p>
       </div>
@@ -288,7 +108,7 @@ function AgentMiniCard({
           Leasefy y ningún inmueble tenía asesor asignado, así que era un «$0»
           que se leía como un mal mes. Ahora: los inmuebles que tiene a cargo. */}
       <span
-        className="font-heading text-sm font-semibold text-fg tabular-nums"
+        className="font-mono text-body-sm text-fg tabular-nums"
         data-testid="agente-inmuebles"
         title="Inmuebles a cargo"
       >
@@ -338,6 +158,7 @@ function SinAcceso({ que }: { que: string }) {
 
 function ResumenDelNegocio() {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const { canAccess, isLoading: permLoading } = usePermissions();
 
   const {
@@ -367,6 +188,7 @@ function ResumenDelNegocio() {
    * se pinta con su rótulo, y la pantalla no divide nada.
    */
   const tasa = tasaDelTablero(kpis);
+  // Revisora r25 (T5): la misma cifra y su leyenda con y sin centavos; plata pareja en todo el bloque.
   const tasaDeRecaudo = tasa.pct;
   const rotuloDeLaTasa = t(claveDelRotulo(tasa.base));
   /*
@@ -459,6 +281,14 @@ function ResumenDelNegocio() {
   // Toda la deuda viva: el número de cuotas de la pantalla de Cartera.
   const deudaTotal = kpisData?.deuda?.total;
   const avisosDeLaDeuda = kpisData?.deuda?.avisos ?? [];
+  const enMoraDelMes = Math.min(kpis.lateCollections, Math.max(0, kpis.expectedRevenue - kpis.collectedRevenue));
+  const porVencer = Math.max(0, kpis.expectedRevenue - kpis.collectedRevenue - enMoraDelMes);
+  const plata = plataPareja([kpis.collectedRevenue, kpis.expectedRevenue, porVencer, enMoraDelMes]);
+  const hayParaAtender =
+    (carteraDelMes ? carteraDelMes.cuotasEnCartera > 0 : cobrosEnMora.length > 0) ||
+    avisosDeLaDeuda.length > 0 ||
+    kpis.pendingDispersions > 0 ||
+    pendingMaintenance.length > 0;
 
   // First load: distinguish "loading" from "empty agency" so the panel never
   // renders silent zeros while the KPIs are still in flight.
@@ -496,95 +326,211 @@ function ResumenDelNegocio() {
   return (
     <CrossFade swapKey="resumen">
     <div className="p-6 lg:p-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-1">
-        <span className="inline-flex items-center gap-2 mb-1">
-          <BrandDot />
-          <MonoLabel className="text-[11px] font-medium text-primary">
-            {t('inmobiliaria.dashboard.title')}
-          </MonoLabel>
-        </span>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.dashboard.subtitle')}
-        </h1>
+      {/* GLOW UP 21-10: el trabajo de esta pantalla es «ver cómo va el mes y
+          atender lo que se cae». Arriba lo que hay que atender; después las
+          cifras que deciden; al final lo que se consulta (captación y equipo).
+          Tres de los cuatro atajos que vivían en tarjetas al fondo suben al
+          encabezado; «Ver reportes» ya está en el resumen financiero. */}
+      {/* GLOW UP 22-10 (revisora r24 #4): la pantalla es para leer —fuera los tres atajos a otras pantallas
+          («Nuevo mandato» ya está en el menú)—; la única salida, «Ver reportes». */}
+      <EncabezadoDePantalla
+        seccion={tr('Reportes')}
+        titulo={t('inmobiliaria.nav.resumenDelNegocio')}
+        descripcion={tr('Cómo va el mes y qué atender primero.')}
+        acciones={
+          <Button size="sm" variant="outline" hideArrow asChild>
+            <Link href="/panel/inmobiliaria/reportes" data-testid="resumen-ver-reportes">
+              {t('inmobiliaria.dashboard.financial.viewFullReports')}
+            </Link>
+          </Button>
+        }
+      />
+
+      {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA del mes en una cifra —lo recaudado
+          de lo esperado, con su barra (recaudado · por cobrar) y la mora en la leyenda—, con la tasa y su
+          fórmula debajo. Antes eran trece cifras: cuatro tarjetas grandes, cuatro chicas y un resumen
+          financiero de cinco. Debajo, UNA franja de cuatro (inmuebles, comisiones, cuotas pendientes,
+          contratos en curso); lo de captación vive en su tarjeta. */}
+      <div className="rounded-lg border border-border bg-card p-5" data-testid="resumen-recaudo-del-mes">
+        <CifraHeroe
+          rotulo={t('inmobiliaria.dashboard.kpi.monthlyCollection')}
+          cifra={plata(kpis.collectedRevenue)}
+          contexto={
+            <>
+              {tr('de {esperado} esperados', { esperado: plata(kpis.expectedRevenue) })} · {currentMonthLabel}
+              {(() => {
+                const v = laVariacion(kpis.collectedRevenue, kpis.collectionTrend);
+                return v ? (
+                  <span className={v.isPositive ? 'text-fg-muted' : 'text-danger'} data-testid="resumen-variacion">
+                    {' · '}
+                    {v.isPositive ? '+' : ''}
+                    {tasaEnPantalla(v.value, Number.isInteger(v.value) ? 0 : 1)} {t('inmobiliaria.common.vsLastMonth')}
+                  </span>
+                ) : null;
+              })()}
+            </>
+          }
+          total={kpis.expectedRevenue}
+          tramos={[
+            { clave: 'recaudado', etiqueta: t('inmobiliaria.dashboard.financial.collected'), monto: kpis.collectedRevenue, tono: 'exito', cifra: plata(kpis.collectedRevenue), siempre: true },
+            /* Revisora r24 #2: la barra ES la leyenda —cada tramo con su monto (lo que falta = por vencer + en
+               mora)— y los giros, que son un conteo, se fueron a «Para atender». */
+            { clave: 'pendiente', etiqueta: tr('Por vencer'), monto: porVencer, tono: 'neutro', cifra: plata(porVencer), siempre: true },
+            { clave: 'mora', etiqueta: t('inmobiliaria.dashboard.financial.late'), monto: enMoraDelMes, tono: 'critico', cifra: plata(enMoraDelMes), siempre: enMoraDelMes > 0 },
+          ]}
+          pie={
+            /* El pie: la tasa, con qué fórmula y sobre qué cifras se midió (la base puede ser lo emitido,
+               que no es lo esperado de arriba). El enlace a reportes subió al encabezado. */
+            <div className="border-t border-border-faint pt-3">
+              <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                {/* Con qué fórmula se midió: «Recaudo sobre lo causado» y «Pagado de lo emitido» son
+                    dos números distintos. */}
+                <span>
+                  <span className="font-mono tabular-nums text-fg" data-testid="resumen-tasa-de-recaudo">
+                    {tasaEnPantalla(tasaDeRecaudo)}
+                  </span>
+                  {' · '}
+                  <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
+                </span>
+                {/* Revisora r25: sobre lo causado, las cifras repetían las de arriba («$ X abonados de
+                    $ Y causados» bajo «$ X de $ Y esperados»); sólo se dicen si la base es otra. */}
+                {tasa.base !== BASE_POR_DEFECTO ? (
+                  <span className="tabular-nums" data-testid="resumen-cifras-de-la-tasa">
+                    {fraseDeLasCifras(tasa, t, plata)}
+                  </span>
+                ) : null}
+              </p>
+            </div>
+          }
+          data-testid="resumen-cifra-del-mes"
+        />
       </div>
 
-      {/* Main KPIs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          title={t('inmobiliaria.dashboard.kpi.monthlyCollection')}
-          value={formatCurrency(kpis.collectedRevenue)}
-          subtitle={t('inmobiliaria.dashboard.kpi.collectionRateLabel', {
-            rate: tasaEnPantalla(tasaDeRecaudo),
-            rotulo: rotuloDeLaTasa,
-          })}
-          trend={laVariacion(kpis.collectedRevenue, kpis.collectionTrend)}
-          icon={CurrencyDollar}
-          href="/panel/inmobiliaria/pagos/cartera/cobros"
-          brandHero
-        />
-        <KPICard
-          title={t('inmobiliaria.dashboard.kpi.totalProperties')}
-          value={kpis.totalProperties}
-          subtitle={
+      {/* GLOW UP 22-10 (revisora r24 #1): lo que hay que atender, debajo de LA RESPUESTA y en UNA lista
+          compacta —una línea por asunto con su «Ver»—; antes eran cuatro avisos de ancho completo (≈520 px)
+          encima de la cifra. Los giros por hacer salen de la leyenda de plata y vienen aquí. */}
+      {hayParaAtender ? (
+      <section aria-label={tr('Para atender')} className="rounded-lg border border-border bg-card" data-testid="resumen-para-atender">
+        <h2 className="border-b border-border-faint px-4 py-2.5 font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">
+          {tr('Para atender')}
+        </h2>
+        <ul className="divide-y divide-border-faint">
+          {/* 🔴 La cartera sale de las CUOTAS del contrato, no de los cobros (16-09, agencia de QA: «5 cobros
+              en mora» con 97 cuotas en cartera). Los cobros quedan sólo para un back que no manda `deuda`. */}
+          {carteraDelMes ? (
+            carteraDelMes.cuotasEnCartera > 0 && (
+              <FilaParaAtender
+                tono="aviso"
+                titulo={t(carteraDelMes.cuotasEnCartera === 1 ? 'inmobiliaria.dashboard.alerts.carteraDelMesUna' : 'inmobiliaria.dashboard.alerts.carteraDelMes', {
+                  count: carteraDelMes.cuotasEnCartera,
+                  amount: formatCurrency(carteraDelMes.carteraCop),
+                })}
+                etiqueta={t('inmobiliaria.dashboard.alerts.verCartera')}
+                href="/panel/inmobiliaria/pagos/cartera"
+                testid="alerta-cartera-del-mes"
+              />
+            )
+          ) : cobrosEnMora.length > 0 && (
+            <FilaParaAtender
+              tono="aviso"
+              titulo={t('inmobiliaria.dashboard.alerts.latePayments', {
+                count: cobrosEnMora.length,
+                amount: formatCurrency(cobrosEnMora.reduce((sum, c) => sum + c.pendingAmount, 0)),
+              })}
+              etiqueta={t('inmobiliaria.dashboard.alerts.viewPayments')}
+              href="/panel/inmobiliaria/pagos/cartera/cobros?status=late"
+              testid="alerta-cobros-en-mora"
+            />
+          )}
+          {/* Lo que el back vio raro en la plata, ya dicho en palabras (p. ej. recibos que no bajaron cuotas). */}
+          {avisosDeLaDeuda.map((aviso) => (
+            <FilaParaAtender
+              key={aviso}
+              tono="info"
+              titulo={aviso}
+              etiqueta={t('inmobiliaria.dashboard.alerts.verRecaudo')}
+              href="/panel/inmobiliaria/pagos/recaudo"
+              testid="aviso-de-la-deuda"
+            />
+          ))}
+          {kpis.pendingDispersions > 0 ? (
+            <FilaParaAtender
+              tono="info"
+              titulo={kpis.pendingDispersions === 1 ? tr('1 giro por hacer a propietarios') : tr('{n} giros por hacer a propietarios', { n: miles(kpis.pendingDispersions) })}
+              etiqueta={tr('Ver')}
+              href="/panel/inmobiliaria/pagos/dispersiones"
+              testid="resumen-giros-por-hacer"
+            />
+          ) : null}
+          {pendingMaintenance.length > 0 && (
+            <FilaParaAtender
+              tono="info"
+              titulo={t(pendingMaintenance.length === 1 ? 'inmobiliaria.dashboard.alerts.pendingMaintenanceUno' : 'inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
+              etiqueta={t('inmobiliaria.dashboard.alerts.viewRequests')}
+              href="/panel/inmobiliaria/mantenimientos"
+              testid="alerta-mantenimientos"
+            />
+          )}
+        </ul>
+        {/* AVISO-TIPO-DOC: sólo para quien puede completarlo; se va solo con la última ficha. */}
+        <div className="empty:hidden [&>*]:rounded-none [&>*]:border-0 [&>*]:border-t [&>*]:border-border-faint">
+          <AvisoTipoDeDocumento />
+        </div>
+      </section>
+
+      ) : (
+        <div className="empty:hidden"><AvisoTipoDeDocumento /></div>
+      )}
+
+      {/* Revisora r25: los detalles se cortaban («744 arrendadas · 84 disponibles · 2 fu…»): de a
+          dos hasta 1280 px, para que la explicación que hace cuadrar las cifras se lea entera. */}
+      <FranjaDeCifras aria-label={tr('El negocio')} data-testid="resumen-el-negocio" fila="xl">
+        <Cifra
+          etiqueta={t('inmobiliaria.dashboard.kpi.totalProperties')}
+          valor={miles(kpis.totalProperties)}
+          detalle={
             /*
-             * `propertiesRented` y `propertiesAvailable` son del CATÁLOGO, y
-             * el total es el portafolio entero: sin decir cuántos quedaron
-             * fuera, «2.655 · 725 arrendadas · 74 disponibles» no cierra y
-             * parece un error de cuentas.
+             * `propertiesRented` y `propertiesAvailable` son del CATÁLOGO, y el total es el portafolio
+             * entero: sin decir cuántos quedaron fuera, «2.655 · 725 arrendadas · 74 disponibles» no cierra
+             * y parece un error de cuentas.
              */
             fueraDelCatalogo > 0
               ? `${arrendadasYDisponibles} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
               : arrendadasYDisponibles
           }
-          icon={Buildings}
-          href="/panel/inmobiliaria/inmuebles"
         />
-        <KPICard
-          title={t('inmobiliaria.dashboard.kpi.commissions')}
-          value={formatCurrency(kpis.totalCommissions)}
-          subtitle={t('inmobiliaria.dashboard.kpi.commissionsGenerated')}
-          trend={laVariacion(kpis.totalCommissions, kpis.commissionsTrend)}
-          icon={Wallet}
-        />
-        <KPICard
-          title={t('inmobiliaria.dashboard.kpi.occupancy')}
-          value={tasaEnPantalla(tasaDeOcupacion)}
-          subtitle={
+        <Cifra
+          etiqueta={t('inmobiliaria.dashboard.kpi.occupancy')}
+          valor={tasaEnPantalla(tasaDeOcupacion)}
+          detalle={
             // El número dice QUÉ cuenta: nunca un porcentaje suelto.
+            // El número dice QUÉ cuenta: nunca un porcentaje suelto (regla fijada en tasas-sin-medir).
             fueraDelCatalogo > 0
               ? `${t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: miles(kpis.propertiesRented), total: miles(enCatalogo) })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
               : t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: miles(kpis.propertiesRented), total: miles(enCatalogo) })
           }
-          icon={House}
         />
-      </div>
-
-      {/* Secondary KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SecondaryStat icon={Kanban} value={kpis.activeLeads} label={t('inmobiliaria.dashboard.kpi.activeLeads')} />
-        <SecondaryStat icon={Clock} value={kpis.scheduledVisits} label={t('inmobiliaria.dashboard.kpi.scheduledVisits')} />
-        <SecondaryStat icon={FileText} value={kpis.contractsInProgress} label={t('inmobiliaria.dashboard.kpi.contractsInProgress')} />
+        <Cifra
+          etiqueta={t('inmobiliaria.dashboard.kpi.commissions')}
+          valor={formatCurrency(kpis.totalCommissions)}
+          detalle={t('inmobiliaria.dashboard.kpi.commissionsGenerated')}
+        />
         {/*
-          🔴 Decía «34 cobros pendientes»: los cobros que alguien alcanzó a
-          emitir. Lo pendiente sale de las CUOTAS del contrato, y el número es
-          el de Cartera —todas las cuotas con saldo, venzan cuando venzan
-          (`deuda.total.cuotas`, mismo criterio que el informe de cartera)—,
-          con cuántas ya son cartera. Un back que no manda `deuda` no tiene ese
-          número: se dice, en vez de contar cobros con el rótulo de cuotas.
+          🔴 Lo pendiente sale de las CUOTAS del contrato, y el número es el de Cartera —todas las cuotas
+          con saldo, venzan cuando venzan (`deuda.total.cuotas`)—, con cuántas ya son cartera. Un back que no
+          manda `deuda` no tiene ese número: se dice, en vez de contar cobros con el rótulo de cuotas.
         */}
-        <SecondaryStat
-          icon={Warning}
-          value={deudaTotal ? miles(deudaTotal.cuotas) : SIN_MEDIR}
-          label={t('inmobiliaria.dashboard.kpi.cuotasPendientes')}
+        <Cifra
+          etiqueta={t('inmobiliaria.dashboard.kpi.cuotasPendientes')}
+          valor={deudaTotal ? miles(deudaTotal.cuotas) : SIN_MEDIR}
           detalle={
             deudaTotal
               ? t('inmobiliaria.dashboard.kpi.cuotasPendientesDetalle', { enCartera: miles(deudaTotal.cuotasEnCartera) })
               : t('inmobiliaria.dashboard.kpi.cuotasPendientesSinDato')
           }
-          testId="resumen-cuotas-pendientes"
+          data-testid="resumen-cuotas-pendientes"
         />
-      </div>
+      </FranjaDeCifras>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -592,32 +538,33 @@ function ResumenDelNegocio() {
         <div className="lg:col-span-2 rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.pipeline.title')}</h2>
+              <h2 className="text-base font-medium text-fg tracking-tight">{t('inmobiliaria.dashboard.pipeline.title')}</h2>
               <p className="text-sm text-fg-muted mt-0.5">{t('inmobiliaria.dashboard.pipeline.subtitle')}</p>
+              {/* Revisora r24 #3: fuera la línea «N interesados · 0 visitas · 0 contratos», que contradecía los
+                  estados de la lista de abajo: la lista ya los muestra. */}
             </div>
             <Link
               href="/panel/inmobiliaria/pipeline"
               className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
               {t('inmobiliaria.common.viewAll')}
-              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
           {activePipeline.length > 0 ? (
-            <div className="space-y-3">
+            <ul className="divide-y divide-border-faint">
               {activePipeline.map((item) => (
                 <PipelineMiniCard key={item.id} item={item} />
               ))}
-            </div>
+            </ul>
           ) : vePipeline ? (
             <EmptyState
               icon={Kanban}
               title={t('inmobiliaria.dashboard.pipeline.empty')}
-              description="Los candidatos en proceso aparecerán aquí a medida que avancen en el pipeline."
+              description="Los candidatos en proceso aparecerán aquí a medida que avancen en Prospección."
             />
           ) : (
-            <SinAcceso que="el pipeline" />
+            <SinAcceso que="la prospección" />
           )}
         </div>
 
@@ -625,7 +572,7 @@ function ResumenDelNegocio() {
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.team.title')}</h2>
+              <h2 className="text-base font-medium text-fg tracking-tight">{t('inmobiliaria.dashboard.team.title')}</h2>
               <p className="text-sm text-fg-muted mt-0.5">{t(activeAgents.length === 1 ? 'inmobiliaria.dashboard.team.activeAgentsUno' : 'inmobiliaria.dashboard.team.activeAgents', { count: activeAgents.length })}</p>
             </div>
             <Link
@@ -633,7 +580,6 @@ function ResumenDelNegocio() {
               className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
               {t('inmobiliaria.common.viewAllM')}
-              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -646,7 +592,7 @@ function ResumenDelNegocio() {
             <EmptyState
               icon={UserCircle}
               title="Todavía no hay agentes activos"
-              description="Invita a alguien del equipo desde Configuración › Equipo y acá vas a ver su carga y sus cierres."
+              description="Invita a alguien del equipo desde Configuración › Equipo y aquí vas a ver su carga y sus cierres."
             />
           ) : (
             <div className="space-y-4">
@@ -656,192 +602,23 @@ function ResumenDelNegocio() {
             </div>
           )}
 
-          <div className="mt-5 pt-4 border-t border-border">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-fg-muted">{t('inmobiliaria.dashboard.team.closedThisMonthLabel')}</span>
-              <span className="font-semibold text-fg">{kpis.closedThisMonth}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm mt-2">
-              <span className="text-fg-muted">{t('inmobiliaria.dashboard.team.avgDaysToClose')}</span>
-              {/* Sin un solo cierre el promedio es 0 y se leía «0 días»: una
-                  inmobiliaria que cierra en el acto. Mismo criterio que
-                  AgenteMetrics, que ya escondía el dato sin cierres. */}
-              <span className="font-semibold text-fg" data-testid="resumen-dias-al-cierre">
-                {kpis.avgDaysToClose > 0
-                  ? t('inmobiliaria.dashboard.team.days', { count: kpis.avgDaysToClose })
-                  : SIN_MEDIR}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight mb-4"><BrandDot />{t('inmobiliaria.dashboard.quickActions.title')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <QuickAction
-            title={t('inmobiliaria.dashboard.quickActions.newOwner')}
-            description={t('inmobiliaria.dashboard.quickActions.newOwnerDesc')}
-            href="/panel/inmobiliaria/propietarios?nuevo=true"
-            icon={UserCircle}
-          />
-          <QuickAction
-            title={t('inmobiliaria.dashboard.quickActions.newConsignment')}
-            description={t('inmobiliaria.dashboard.quickActions.newConsignmentDesc')}
-            href="/panel/inmobiliaria/inmuebles/nuevo"
-            icon={Buildings}
-          />
-          <QuickAction
-            title={t('recibos.hacer')}
-            description={t('recibos.queEs')}
-            href="/panel/inmobiliaria/pagos/cartera/cobros?status=pending"
-            icon={CurrencyDollar}
-          />
-          <QuickAction
-            title={t('inmobiliaria.dashboard.quickActions.viewReports')}
-            description={t('inmobiliaria.dashboard.quickActions.viewReportsDesc')}
-            href="/panel/inmobiliaria/reportes"
-            icon={ChartLine}
-          />
-        </div>
-      </div>
-
-      {/* Alertas: una por asunto, cada una con el número, qué hacer y el botón.
-
-          🔴 La cartera sale de las CUOTAS del contrato, no de los cobros. Visto
-          en vivo el 16-09 en la agencia de QA: la alerta decía «5 cobros en mora
-          por $11.705.223» con 97 cuotas del mes en cartera por $321.945.650 —el
-          número estaba en `kpis.deuda` y nadie lo leía—. Los cobros quedan sólo
-          para un back que todavía no manda `deuda`. */}
-      {carteraDelMes ? (
-        carteraDelMes.cuotasEnCartera > 0 && (
-          <AlertaAccionable
-            severidad="warning"
-            titulo={t(carteraDelMes.cuotasEnCartera === 1 ? 'inmobiliaria.dashboard.alerts.carteraDelMesUna' : 'inmobiliaria.dashboard.alerts.carteraDelMes', {
-              count: carteraDelMes.cuotasEnCartera,
-              amount: formatCurrency(carteraDelMes.carteraCop),
-            })}
-            accion={{ label: t('inmobiliaria.dashboard.alerts.verCartera'), href: '/panel/inmobiliaria/pagos/cartera' }}
-            data-testid="alerta-cartera-del-mes"
-          >
-            {t('inmobiliaria.dashboard.alerts.carteraDelMesDetalle')}
-          </AlertaAccionable>
-        )
-      ) : cobrosEnMora.length > 0 && (
-        <AlertaAccionable
-          severidad="warning"
-          titulo={t('inmobiliaria.dashboard.alerts.latePayments', {
-            count: cobrosEnMora.length,
-            amount: formatCurrency(cobrosEnMora.reduce((sum, c) => sum + c.pendingAmount, 0)),
-          })}
-          accion={{ label: t('inmobiliaria.dashboard.alerts.viewPayments'), href: '/panel/inmobiliaria/pagos/cartera/cobros?status=late' }}
-          data-testid="alerta-cobros-en-mora"
-        >
-          {t('inmobiliaria.dashboard.alerts.latePaymentsDetalle')}
-        </AlertaAccionable>
-      )}
-      {/* Lo que el back vio raro en la plata y ya viene dicho en palabras. El
-          caso que lo pidió: «Recaudo del mes $0» con $8.200.000 en recibos de
-          caja que no bajaron ninguna cuota; sin el aviso el cero era
-          inexplicable. */}
-      {avisosDeLaDeuda.map((aviso) => (
-        <AlertaAccionable
-          key={aviso}
-          severidad="info"
-          titulo={aviso}
-          accion={{ label: t('inmobiliaria.dashboard.alerts.verRecaudo'), href: '/panel/inmobiliaria/pagos/recaudo' }}
-          data-testid="aviso-de-la-deuda"
-        />
-      ))}
-      {/* AVISO-TIPO-DOC: sólo para quien puede completarlo (administrador, o
-          contador que edita propietarios); se va solo con la última ficha. */}
-      <AvisoTipoDeDocumento />
-      {pendingMaintenance.length > 0 && (
-        <AlertaAccionable
-          severidad="info"
-          titulo={t(pendingMaintenance.length === 1 ? 'inmobiliaria.dashboard.alerts.pendingMaintenanceUno' : 'inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
-          accion={{ label: t('inmobiliaria.dashboard.alerts.viewRequests'), href: '/panel/inmobiliaria/mantenimientos' }}
-          data-testid="alerta-mantenimientos"
-        >
-          {t('inmobiliaria.dashboard.alerts.pendingMaintenanceDetalle')}
-        </AlertaAccionable>
-      )}
-
-      {/* Financial Summary */}
-      <div className="rounded-lg border border-border bg-card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>
-            <p className="text-sm text-fg-muted mt-0.5">{currentMonthLabel}</p>
-          </div>
-          <Link
-            href="/panel/inmobiliaria/reportes"
-            className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            {t('inmobiliaria.dashboard.financial.viewFullReports')}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.expected')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
-              {formatCurrency(kpis.expectedRevenue)}
-            </p>
-          </div>
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.collected')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
-              {formatCurrency(kpis.collectedRevenue)}
-            </p>
-          </div>
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingLabel')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
-              {formatCurrency(kpis.pendingCollections)}
-            </p>
-          </div>
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.late')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-danger tabular-nums tracking-tight leading-none">
-              {formatCurrency(kpis.lateCollections)}
-            </p>
-          </div>
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingDispersions')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
-              {kpis.pendingDispersions}
-            </p>
-          </div>
-        </div>
-
-        {/* Collection Rate Progress */}
-        <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-700">
-          <div className="flex items-center justify-between text-sm mb-2">
-            {/* Con qué fórmula se midió: «Recaudo sobre lo causado» y «Pagado de lo
-                emitido» son dos números distintos. */}
-            <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
-            <span className="font-heading font-semibold text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
-              {tasaEnPantalla(tasaDeRecaudo)}
+          {/* Revisora r24 #6: los cierres en UNA línea (antes un bloque casi todo en ceros). Sin un solo
+              cierre el promedio es 0 y se leería «0 días»: va «—» (mismo criterio que AgenteMetrics). */}
+          <p className="mt-5 border-t border-border pt-4 text-body-sm text-fg-muted">
+            {kpis.closedThisMonth === 0
+              ? tr('Ningún cierre este mes')
+              : t('inmobiliaria.dashboard.team.closedThisMonthLabel') + ' ' + miles(kpis.closedThisMonth)}
+            {' · '}
+            {tr('días al cierre')}{' '}
+            <span className="font-mono tabular-nums text-fg" data-testid="resumen-dias-al-cierre">
+              {kpis.avgDaysToClose > 0
+                ? t('inmobiliaria.dashboard.team.days', { count: kpis.avgDaysToClose })
+                : SIN_MEDIR}
             </span>
-          </div>
-          <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
-            {/* Crece desde la izquierda al aparecer (`scaleX`); el ancho es el
-                dato y ya no se anima (`transition-all` movía el layout). */}
-            <BarraQueCrece
-              eje="x"
-              className="h-full rounded-full bg-primary"
-              // Topada al 100: con sobre-recaudo la barra se salía del riel.
-              style={{ width: anchoDeBarra(tasaDeRecaudo) }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-fg-muted tabular-nums" data-testid="resumen-cifras-de-la-tasa">
-            {fraseDeLasCifras(tasa, t, formatCurrency)}
           </p>
         </div>
       </div>
+
     </div>
     </CrossFade>
   );

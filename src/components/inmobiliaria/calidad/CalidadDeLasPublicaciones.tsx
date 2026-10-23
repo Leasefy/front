@@ -4,8 +4,8 @@
  * Niti · calidad (26-09-2026). Vive en DOS lugares con el mismo cuerpo:
  *   · `variante="pagina"` — su fila en «Agentes IA»
  *     (`/inmuebles/calidad-de-publicaciones`): el margen del panel, el
- *     encabezado de las demás pantallas (Eyebrow, `h1`, bajada) y la píldora
- *     de estado, como «Agente de pagos».
+ *     encabezado común (`EncabezadoDePantalla`, desde el 22-10) con la píldora
+ *     de estado junto al título, como «Agente de pagos».
  *   · `variante="pestana"` (por defecto) — la pestaña «Calidad» de Inmuebles ›
  *     Portales, que ya pone su propio `h1` y su margen.
  *
@@ -32,10 +32,15 @@
  *   · Sin `portafolio:edit` no hay botones de escribir (como en «Publicar»).
  */
 
+import { useTr } from '@/lib/i18n/use-tr';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowSquareOut, Power, Sparkle } from '@phosphor-icons/react';
-import { Eyebrow, SegmentedControl } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
@@ -45,9 +50,7 @@ import { PildoraDelAgente, estadoDeLaLectura } from '@/components/inmobiliaria/a
 import { Badge, Button } from '@/components/ui';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { TablePagination } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/toast';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
 import { useInmueblesDeNiti, useResumenDeNiti } from '@/lib/hooks/use-niti';
@@ -171,17 +174,17 @@ export function CalidadDeLasPublicaciones({ variante = 'pestana' }: CalidadDeLas
 
       {activo ? (
         <section
-          className="rounded-lg border border-border bg-surface"
+          className="overflow-hidden rounded-lg border border-border bg-card"
           aria-label={t(`${K}.listaAria`)}
           data-testid="calidad-lista"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <FiltroDeLaLista filtro={filtro} onCambiar={setFiltro} />
-            {lista.data ? (
-              <span className="text-caption tabular-nums text-fg-muted" data-testid="calidad-conteo">
-                {total === 1 ? t(`${K}.conteoUno`) : t(`${K}.conteoVarios`, { total })}
-              </span>
-            ) : null}
+          <div className="border-b border-border px-4 py-3">
+            <FiltroDeLaLista
+              filtro={filtro}
+              onCambiar={setFiltro}
+              resumen={r ?? null}
+              totalDeLaLista={lista.data ? total : null}
+            />
           </div>
 
           <EstadoDeDatos
@@ -248,25 +251,46 @@ function Cabecera({
   resumen: ResumenDeCalidad | null;
 }) {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const loc = locale === 'en' ? 'en' : 'es';
-  const esPagina = variante === 'pagina';
-  const Titulo = esPagina ? 'h1' : 'h2';
+  // Revisora r24 (Calidad #3): sin el estado leído no hay píldora —el cartel del fallo ya lo dice—;
+  // mientras pregunta, «Consultando…»; leído, prendido o apagado.
+  const pildora = estado === 'sin-verificar' ? null : <PildoraDelAgente estado={estado} data-testid="estado-de-niti" />;
+  // Sólo cuando hubo pasada: «todavía no pasó» lo dice la lista vacía.
+  const ultima = resumen?.ultimaPasada ? (
+    <p className="text-caption text-fg-muted" data-testid="calidad-ultima-pasada">
+      {t(`${K}.ultimaPasada`, { fecha: formatDateTime(resumen.ultimaPasada, loc) })}
+    </p>
+  ) : null;
+
+  if (variante === 'pagina') {
+    // GLOW UP 22-10 (revisora r24, Calidad #1–#2): el encabezado común; el agente en el sobretítulo y el
+    // h1 = el riel; una línea de para qué sirve y la regla de los modos en «¿Cómo funciona?».
+    return (
+      <div className="space-y-2" data-testid="calidad-encabezado">
+        <EncabezadoDePantalla
+          seccion={t(`${K}.seccion`)}
+          titulo={t(`${K}.titulo`)}
+          descripcion={tr('Lo que le falta a cada publicación para salir bien en los portales.')}
+          junto={pildora}
+          ayuda={
+            <ParaEntenderMas etiqueta={tr('¿Cómo funciona?')} titulo={t(`${K}.titulo`)}>
+              <p className="text-sm leading-relaxed text-fg-muted">{t(`${K}.descripcion`)}</p>
+            </ParaEntenderMas>
+          }
+        />
+        {ultima}
+      </div>
+    );
+  }
   return (
     <header className="space-y-1" data-testid="calidad-encabezado">
-      {esPagina ? <Eyebrow>{t(`${K}.seccion`)}</Eyebrow> : null}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Titulo className={esPagina ? 'text-h2 text-fg' : 'text-subtitle text-fg'}>
-          {esPagina ? t(`${K}.titulo`) : t('inmobiliaria.ai.workspace.agente.calidad')}
-        </Titulo>
-        <PildoraDelAgente estado={estado} data-testid="estado-de-niti" />
+        <h2 className="text-subtitle text-fg">{t('inmobiliaria.ai.workspace.agente.calidad')}</h2>
+        {pildora}
       </div>
       <p className="max-w-2xl text-sm text-fg-muted">{t(`${K}.descripcion`)}</p>
-      {/* Sólo cuando hubo pasada: «todavía no pasó» lo dice la lista vacía. */}
-      {resumen?.ultimaPasada ? (
-        <p className="text-caption text-fg-muted" data-testid="calidad-ultima-pasada">
-          {t(`${K}.ultimaPasada`, { fecha: formatDateTime(resumen.ultimaPasada, loc) })}
-        </p>
-      ) : null}
+      {ultima}
     </header>
   );
 }
@@ -279,9 +303,7 @@ function Apagado({ variante }: { variante: VarianteDeCalidad }) {
   return (
     <section className="rounded-lg border border-border bg-surface p-6" data-testid="calidad-apagado">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-muted">
-          <Power className="h-5 w-5 text-fg-muted" weight="bold" aria-hidden="true" />
-        </span>
+        <Power className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" aria-hidden="true" />
         <div className="min-w-0 space-y-1">
           <Titulo className="text-subtitle text-fg">{t(`${K}.apagadoTitulo`)}</Titulo>
           <p className="max-w-2xl text-body-sm text-fg-muted">{t(`${K}.apagadoDescripcion`)}</p>
@@ -291,126 +313,86 @@ function Apagado({ variante }: { variante: VarianteDeCalidad }) {
   );
 }
 
-// ── La franja de cifras (el molde de la de Contratos) ───────────────────────
-
-function Cifra({
-  etiqueta,
-  children,
-  className,
-  testid,
-}: {
-  etiqueta: string;
-  children: React.ReactNode;
-  className?: string;
-  testid?: string;
-}) {
-  return (
-    <div className={cn('min-w-0 px-5 py-4', className)} data-testid={testid}>
-      <dt className="text-caption text-fg-muted">{etiqueta}</dt>
-      <dd className="mt-1.5 text-fg">{children}</dd>
-    </div>
-  );
-}
+// ── La cifra: cuántas publicaciones hay que arreglar ───────────────────────
 
 function Cifras({ resumen }: { resumen: ResumenDeCalidad }) {
-  const { t, locale } = useI18n();
-  const loc = locale === 'en' ? 'en' : 'es';
-  const usd = (n: number) =>
-    new Intl.NumberFormat(loc === 'en' ? 'en-US' : 'es-CO', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(n);
+  const { t } = useI18n();
+  const tr = useTr();
   const conFotos = resumen.fotosIA.activo;
   const promedio = resumen.puntajePromedio === null ? null : Math.max(0, Math.min(100, resumen.puntajePromedio));
 
+  const sinProblemas = Math.max(0, resumen.inmueblesAuditados - resumen.conProblemas);
+  /*
+   * GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA en una cifra —cuántos inmuebles tienen
+   * algo por arreglar, de los auditados—, con su barra (por arreglar · bien). Revisora r24 (Calidad #4 y
+   * #6): el pie en UNA línea —puntaje promedio · fotos revisadas— y sin el gasto en dólares (es el costo de
+   * Leasefy; no cambia ninguna decisión de la inmobiliaria, y Nico: ninguna pantalla con dólares).
+   */
   return (
-    /*
-     * Dos columnas a 390 px (la tercera baja a su propia fila, entera) y tres
-     * desde `sm`. Los números en mono y tabulares: sólo ahí, nunca en la frase
-     * de abajo (la coma se ensancha).
-     */
-    <dl
-      className={cn(
-        'grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-surface',
-        conFotos && 'sm:grid-cols-3',
-      )}
-      data-testid="calidad-cifras"
-    >
-      <Cifra etiqueta={t(`${K}.puntajePromedio`)}>
-        {promedio === null ? (
-          <span className="font-mono text-2xl font-medium tabular-nums text-fg-subtle">—</span>
-        ) : (
-          <>
-            <span className="whitespace-nowrap">
-              <span className="font-mono text-2xl font-medium tabular-nums">{promedio}</span>
-              <span className="text-sm text-fg-muted">/100</span>
+    <section className="rounded-lg border border-border bg-card px-5 py-5" data-testid="calidad-cifras">
+      <CifraHeroe
+        rotulo={t(`${K}.porArreglar`)}
+        cifra={resumen.conProblemas}
+        contexto={t(`${K}.porArreglarDe`, { total: resumen.inmueblesAuditados })}
+        total={resumen.inmueblesAuditados}
+        tramos={[
+          { clave: 'por-arreglar', etiqueta: t(`${K}.porArreglar`), monto: resumen.conProblemas, tono: 'aviso' },
+          { clave: 'bien', etiqueta: tr('Sin nada por arreglar'), monto: sinProblemas, tono: 'exito' },
+        ]}
+        pie={
+          <span className="flex flex-wrap gap-x-1.5">
+            <span>
+              {t(`${K}.puntajePromedio`)}{' '}
+              <span className="font-mono tabular-nums text-fg">{promedio === null ? '—' : `${promedio}/100`}</span>
             </span>
-            <span className="mt-2 block h-1.5 w-full max-w-[8rem] overflow-hidden rounded-full bg-surface-muted" aria-hidden="true">
-              <span className={cn('block h-full rounded-full', tonoDelPuntaje(promedio))} style={{ width: `${promedio}%` }} />
-            </span>
-          </>
-        )}
-      </Cifra>
-      <Cifra etiqueta={t(`${K}.porArreglar`)} className="border-l border-border">
-        <span className="font-mono text-2xl font-medium tabular-nums">{resumen.conProblemas}</span>{' '}
-        <span className="text-sm text-fg-muted">{t(`${K}.porArreglarDe`, { total: resumen.inmueblesAuditados })}</span>
-      </Cifra>
-      {conFotos ? (
-        <Cifra
-          etiqueta={t(`${K}.fotosIA`)}
-          className="col-span-2 border-t border-border sm:col-span-1 sm:border-l sm:border-t-0"
-          testid="calidad-fotos-ia"
-        >
-          <span className="font-mono text-2xl font-medium tabular-nums">{resumen.fotosIA.revisadasEsteMes}</span>{' '}
-          <span className="text-sm text-fg-muted">{t(`${K}.fotosIARevisadas`)}</span>
-          <span className="mt-0.5 block text-caption text-fg-muted">
-            {t(`${K}.fotosIAGasto`, {
-              gasto: usd(resumen.fotosIA.gastoEstimadoUsdEsteMes),
-              tope: usd(resumen.fotosIA.topeUsdMes),
-            })}
+            {conFotos ? (
+              <span data-testid="calidad-fotos-ia">
+                · <span className="font-mono tabular-nums text-fg">{resumen.fotosIA.revisadasEsteMes}</span>{' '}
+                {tr('fotos revisadas este mes')}
+              </span>
+            ) : null}
           </span>
-        </Cifra>
-      ) : null}
-    </dl>
+        }
+      />
+    </section>
   );
 }
 
-// ── El filtro: segmentos en escritorio, un select en el teléfono ────────────
+// ── El filtro: las pestañas de estado de la casa, dentro de la tarjeta ────────
 
-function FiltroDeLaLista({ filtro, onCambiar }: { filtro: FiltroDeCalidad; onCambiar: (f: FiltroDeCalidad) => void }) {
+/**
+ * Revisora r24 (Calidad #5): `PestanasDeEstado` con su conteo donde el resumen lo sabe (todos y con algo
+ * por arreglar); las otras dos sin número (el back no las cuenta) salvo la activa, que lleva el total de
+ * la lista. A 390 se deslizan en su riel: ya no hace falta el `Select` del celular.
+ */
+function FiltroDeLaLista({
+  filtro,
+  onCambiar,
+  resumen,
+  totalDeLaLista,
+}: {
+  filtro: FiltroDeCalidad;
+  onCambiar: (f: FiltroDeCalidad) => void;
+  resumen: ResumenDeCalidad | null;
+  totalDeLaLista: number | null;
+}) {
   const { t } = useI18n();
-  const esMovil = useIsMobile();
-  const opciones = FILTROS_DE_CALIDAD.map((f) => ({ value: f, label: t(`${K}.filtro.${f}`) }));
-  /*
-   * Cuatro segmentos («Con algo por arreglar», «Fotos señaladas»…) miden más
-   * que 390 px: en el teléfono va el mismo filtro en un select, como el estado
-   * de los links de Cobri.
-   */
-  if (esMovil) {
-    return (
-      <Select value={filtro} onValueChange={(v) => onCambiar(v as FiltroDeCalidad)}>
-        <SelectTrigger className="w-56" aria-label={t(`${K}.filtroAria`)} data-testid="calidad-filtro-movil">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {opciones.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
-  }
+  const conocido: Partial<Record<FiltroDeCalidad, number>> = resumen
+    ? { todos: resumen.inmueblesAuditados, con_problemas: resumen.conProblemas }
+    : {};
   return (
-    <SegmentedControl<FiltroDeCalidad>
-      aria-label={t(`${K}.filtroAria`)}
-      size="sm"
-      value={filtro}
-      onChange={onCambiar}
-      options={opciones}
+    <PestanasDeEstado<FiltroDeCalidad>
+      etiqueta={t(`${K}.filtroAria`)}
+      valor={filtro}
+      onCambio={onCambiar}
+      data-testid="calidad-filtro"
+      pestanas={FILTROS_DE_CALIDAD.map((f) => ({
+        valor: f,
+        etiqueta: t(`${K}.filtro.${f}`),
+        cuantos: conocido[f] ?? (f === filtro ? totalDeLaLista : null),
+        fija: true,
+        tono: f === 'con_problemas' ? ('aviso' as const) : undefined,
+      }))}
     />
   );
 }
@@ -438,13 +420,21 @@ function FilaDeInmueble({
   onDecidir: (p: PropuestaDeCalidad, d: DecisionDeCalidad) => void;
 }) {
   const { t } = useI18n();
+  const tr = useTr();
   const donde = [i.barrio, i.ciudad].filter(Boolean).join(', ');
+  /*
+   * Revisora r25: cada inmueble se pintaba abierto con «Qué falta», «Problemas», «Fotos señaladas» y «Propuestas»
+   * (con 300 inmuebles, miles de px). La fila queda compacta —inmueble, puntaje, la ficha y UNA línea con lo más
+   * grave— y el detalle, plegado debajo (montado siempre: las propuestas se deciden igual que antes).
+   */
+  const loMasGrave = i.problemas[0]?.texto ?? i.falta[0]?.que ?? null;
+  const cuantosDetalles = i.falta.length + i.problemas.length + i.fotosSenaladas.length + i.propuestas.length;
   const motivo = t(`${K}.motivo.${i.motivo}`);
   const negocio = t(`${K}.negocio.${i.tipoDeNegocio}`);
   const puntaje = Math.max(0, Math.min(100, i.puntaje));
 
   return (
-    <li className="space-y-4 px-4 py-4" data-testid={`calidad-inmueble-${i.propertyId}`}>
+    <li className="space-y-2 px-4 py-4" data-testid={`calidad-inmueble-${i.propertyId}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-0.5">
           <p className="font-medium text-fg">
@@ -484,6 +474,26 @@ function FilaDeInmueble({
         </div>
       ) : null}
 
+      {loMasGrave ? (
+        <p className="text-body-sm text-fg" data-testid={`calidad-lo-mas-grave-${i.propertyId}`}>
+          {loMasGrave}
+          {cuantosDetalles > 1 ? (
+            <span className="text-fg-muted">
+              {' · '}
+              {cuantosDetalles - 1} {cuantosDetalles - 1 === 1 ? tr('cosa más') : tr('cosas más')}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
+
+      {cuantosDetalles > 0 ? (
+      <MasDetalles
+        etiqueta={tr('Ver el detalle')}
+        etiquetaAbierto={tr('Ocultar el detalle')}
+        montadoSiempre
+        classNameDelContenido="space-y-4 pt-3"
+        data-testid={`calidad-detalle-${i.propertyId}`}
+      >
       {i.falta.length > 0 ? (
         <Bloque titulo={t(`${K}.queFalta`)}>
           <ul className="list-disc space-y-0.5 pl-5 text-body-sm text-fg">
@@ -538,6 +548,8 @@ function FilaDeInmueble({
             ))}
           </ul>
         </Bloque>
+      ) : null}
+      </MasDetalles>
       ) : null}
     </li>
   );

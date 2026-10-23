@@ -16,6 +16,7 @@
  *    5. El cuadre marca las diferencias.
  */
 
+import { fmtFecha } from '@/lib/admin/format'
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
@@ -354,7 +355,7 @@ describe('RecaudoEnLineaAdminPage', () => {
   it('la lista muestra bruto, comisión, IVA, retenciones, neto y estado; filtra por estado; abre los pagos y descarga Excel y PDF', async () => {
     await pintar()
     const fila = q('liquidacion-LQ261015-0A1B2C-9F3A01')!
-    for (const t of ['$\u00a02.700.000', '$\u00a070.000', '$\u00a013.300', '$\u00a015.000', '$\u00a02.601.700', 'generada', 'Inmobiliaria Andina']) {
+    for (const t of ['$\u00a02.700.000', '$\u00a070.000', '$\u00a013.300', '$\u00a015.000', '$\u00a02.601.700', 'Generada', 'Inmobiliaria Andina']) {
       expect(fila.textContent).toContain(t)
     }
 
@@ -427,8 +428,8 @@ describe('RecaudoEnLineaAdminPage', () => {
     await pintar()
     await clic(q('abrir-LQ261015-0A1B2C-9F3A01')!)
     expect(q('marcar-girada')).toBeNull()
-    expect(q('historia-del-giro')!.textContent).toContain('Marcada como girada el 2026-10-02')
-    expect(q('historia-del-giro')!.textContent).toContain('fecha del giro 2026-10-06 → 2026-10-02')
+    expect(q('historia-del-giro')!.textContent).toContain(`Marcada como girada el ${fmtFecha('2026-10-02')}`)
+    expect(q('historia-del-giro')!.textContent).toContain(`fecha del giro ${fmtFecha('2026-10-06')} → ${fmtFecha('2026-10-02')}`)
 
     await clic(q('desmarcar-girada')!)
     expect(desmarcarGirada).not.toHaveBeenCalled()

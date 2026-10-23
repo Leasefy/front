@@ -1,14 +1,13 @@
 'use client';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useState } from 'react';
-import { Heart, MagnifyingGlass, TrashSimple, MapPin, CaretRight, House, Plus, Check } from '@phosphor-icons/react';
-import Link from 'next/link';
+import { Heart, MagnifyingGlass, TrashSimple, MapPin } from '@phosphor-icons/react';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { motion } from 'framer-motion';
-import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { useWishlist } from '@/lib/stores/wishlist';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { useWishlistedProperties } from '@/lib/hooks/useProperties';
@@ -18,7 +17,8 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { IconButton } from '@leasefy/cadence';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RUTA_DEL_MARKETPLACE } from '@/lib/nav/portal-del-inquilino';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import type { Property } from '@/lib/types/property';
 
@@ -67,7 +67,7 @@ export default function GuardadosPage() {
   // Loading state
   if (isOnboardingLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -77,8 +77,8 @@ export default function GuardadosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="saved" />
         </div>
       </div>
@@ -86,42 +86,35 @@ export default function GuardadosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-medium text-fg tracking-tight">
-                {t('saved.title')}
-              </h1>
-              <p className="mt-2 text-fg-muted">
-                {displayCount === 0
-                  ? (locale === 'es' ? 'Guarda propiedades que te interesen para verlas después' : 'Save properties you like to view them later')
-                  : displayCount === 1
-                  ? (locale === 'es' ? '1 propiedad guardada' : '1 saved property')
-                  : (locale === 'es' ? `${displayCount} propiedades guardadas` : `${displayCount} saved properties`)}
-              </p>
-            </div>
-            {/* El botón del encabezado solo cuando hay guardadas: sin nada, el
-                estado vacío ya ofrece la misma acción justo debajo, y dos
-                botones distintos para lo mismo en la misma pantalla confunden
-                sobre cuál es el camino. */}
-            {properties.length > 0 && (
-              <Link
-                href="/inquilino/explorar"
-                className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
-              >
-                <MagnifyingGlass className="w-4 h-4" />
-                {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
-              </Link>
-            )}
-          </div>
-        </header>
+    <div className="bg-bg">
+      <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Buscar arriendo' : 'Find a rental'}
+          titulo={t('saved.title')}
+          descripcion={
+            displayCount === 0
+              ? (locale === 'es' ? 'Los inmuebles que guardaste, para volver a ellos.' : 'The homes you saved, to come back to them.')
+              : displayCount === 1
+                ? (locale === 'es' ? '1 inmueble guardado: ábrelo para ver la ficha y postularte.' : '1 saved home: open it to see the details and apply.')
+                : (locale === 'es' ? `${displayCount} inmuebles guardados: abre uno para ver la ficha y postularte.` : `${displayCount} saved homes: open one to see the details and apply.`)
+          }
+          acciones={
+            properties.length > 0 ? (
+              // Buscar se hace en el marketplace, en OTRA pestaña (reunión 21-10).
+              <Button asChild size="sm" variant="outline" hideArrow>
+                <a href={RUTA_DEL_MARKETPLACE} target="_blank" rel="noopener noreferrer" data-testid="guardados-ir-al-marketplace">
+                  <MagnifyingGlass className="mr-2 h-4 w-4" aria-hidden="true" />
+                  {locale === 'es' ? 'Buscar en el marketplace' : 'Search the marketplace'}
+                </a>
+              </Button>
+            ) : undefined
+          }
+        />
 
         {/* Content
 
-            Acá el vacío son TRES cosas distintas, y hay cómo saber cuál es
+            Aquí el vacío son TRES cosas distintas, y hay cómo saber cuál es
             porque la lista de guardados es local (localStorage) y los inmuebles
             vienen del backend:
 
@@ -133,8 +126,17 @@ export default function GuardadosPage() {
             guardadas» a alguien que guardó cinco y se las despublicaron. */}
         <CrossFade swapKey={estadoDeGuardadas}>
         {cargandoGuardadas && wishlist.length > 0 ? (
-          <div className="flex items-center justify-center py-20">
-            <Spinner size="lg" />
+          /* El esqueleto con la forma de las tarjetas (antes, una rueda en el medio). */
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" data-testid="guardados-cargando" aria-busy="true">
+            {Array.from({ length: Math.min(Math.max(wishlist.length, 1), 6) }, (_, i) => (
+              <div key={i} className="overflow-hidden rounded-lg border border-border bg-surface">
+                <Skeleton className="aspect-[16/10] w-full rounded-none" />
+                <div className="space-y-2 p-4">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : errorGuardadas ? (
           <FalloDeCarga
@@ -164,7 +166,7 @@ export default function GuardadosPage() {
                     ? 'Las que guardaste ya no están publicadas'
                     : 'The ones you saved are no longer listed'
                   : locale === 'es'
-                    ? 'No tienes propiedades guardadas'
+                    ? 'No tienes inmuebles guardados'
                     : 'No saved properties'
               }
               description={
@@ -173,11 +175,11 @@ export default function GuardadosPage() {
                     ? 'Se arrendaron o las quitaron del catálogo. Busca otras y vuelve a guardar las que te sirvan.'
                     : 'They were rented or removed from the catalog. Browse others and save the ones you like.'
                   : locale === 'es'
-                    ? 'Toca el corazón en las propiedades que te interesen y las encuentras acá para compararlas.'
-                    : 'Tap the heart on the properties you like and find them here to compare them.'
+                    ? 'Abre un inmueble y toca el corazón para guardarlo: aquí lo encuentras después.'
+                    : 'Open a property and tap the heart to save it: you will find it here later.'
               }
               action={{
-                label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
+                label: locale === 'es' ? 'Ver inmuebles para mí' : 'See homes for me',
                 href: '/inquilino/para-ti',
               }}
             />
@@ -190,7 +192,7 @@ export default function GuardadosPage() {
               {properties.map((property) => (
                 <StaggerItem
                   key={property.id}
-                  className="group relative overflow-hidden rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow"
+                  className="group relative overflow-hidden rounded-lg border border-border bg-surface hover:border-border-strong transition-colors duration-slow"
                 >
                   {/* Image */}
                   <button
@@ -220,13 +222,13 @@ export default function GuardadosPage() {
                         e.stopPropagation();
                         removeFromWishlist(property.id);
                       }}
-                      className="absolute top-3 right-3 w-9 h-9 rounded-full hover:scale-110 transition-[transform,background-color] backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-danger group/btn"
+                      className="absolute top-3 right-3 w-9 h-9 rounded-full transition-colors bg-surface/95 border border-border hover:bg-danger-soft group/btn"
                       title={t('saved.remove')}
                       aria-label={t('saved.remove')}
                       icon={
                         <>
-                          <Heart className="w-4 h-4 text-white fill-white group-hover/btn:hidden" />
-                          <TrashSimple className="w-4 h-4 text-white hidden group-hover/btn:block" />
+                          <Heart weight="fill" className="w-4 h-4 text-fg group-hover/btn:hidden" />
+                          <TrashSimple className="w-4 h-4 text-danger hidden group-hover/btn:block" />
                         </>
                       }
                     />
@@ -239,16 +241,16 @@ export default function GuardadosPage() {
                         onClick={() => handleViewProperty(property)}
                         className="text-left flex-1"
                       >
-                        <h3 className="font-semibold text-fg group-hover:text-primary transition-colors line-clamp-1">
+                        <h3 className="font-medium text-fg group-hover:text-primary transition-colors line-clamp-1">
                           {property.title}
                         </h3>
                       </button>
-                      <p className="text-lg font-bold text-fg whitespace-nowrap flex-shrink-0">
+                      <p className="font-mono text-body tabular-nums text-fg whitespace-nowrap flex-shrink-0">
                         {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                         {property.monthlyRent != null ? (
                           <>
                             {formatCurrency(property.monthlyRent)}
-                            <span className="text-xs font-normal text-fg-muted">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                            <span className="text-caption font-normal text-fg-muted">/{locale === 'es' ? 'mes' : 'mo'}</span>
                           </>
                         ) : (
                           '—'
@@ -262,10 +264,10 @@ export default function GuardadosPage() {
                     </p>
 
                     <div className="flex items-center gap-2 pt-3 border-t border-border-faint">
-                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted">
                         {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                       </span>
-                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted">
                         {property.bathrooms}{' '}
                         {locale === 'es'
                           ? property.bathrooms === 1
@@ -273,7 +275,7 @@ export default function GuardadosPage() {
                             : 'baños'
                           : 'bath'}
                       </span>
-                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted">
                         {property.area} m²
                       </span>
                     </div>
@@ -281,50 +283,8 @@ export default function GuardadosPage() {
                 </StaggerItem>
               ))}
 
-              {/* Add More Card */}
-              <StaggerItem key="agregar-mas">
-                <Link
-                  href="/inquilino/explorar"
-                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-xl border-2 border-dashed border-border bg-surface-muted/50 hover:border-primary/30 hover:bg-primary-soft/50 transition-colors group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 group-hover:bg-primary-soft transition-colors">
-                    <Plus className="w-6 h-6 text-fg-subtle group-hover:text-primary transition-colors" />
-                  </div>
-                  <p className="text-sm font-medium text-fg-muted group-hover:text-primary transition-colors">
-                    {locale === 'es' ? 'Agregar más' : 'Add more'}
-                  </p>
-                  <p className="text-xs text-fg-subtle mt-1">
-                    {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-                  </p>
-                </Link>
-              </StaggerItem>
             </Stagger>
 
-            {/* Summary Card */}
-            <div className="mt-8 rounded-xl bg-primary-soft border border-primary/30 p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-surface border border-primary/30 flex items-center justify-center">
-                    <Heart className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-fg">
-                      <AnimatedNumber value={displayCount} /> {displayCount === 1 ? (locale === 'es' ? 'propiedad guardada' : 'saved property') : (locale === 'es' ? 'propiedades guardadas' : 'saved properties')}
-                    </p>
-                    <p className="text-sm text-fg-muted">
-                      {locale === 'es' ? '¿Listo para postularte a alguna?' : 'Ready to apply to one?'}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/inquilino/explorar"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
-                >
-                  <MagnifyingGlass className="w-4 h-4" />
-                  {locale === 'es' ? 'Ver más propiedades' : 'View more properties'}
-                </Link>
-              </div>
-            </div>
           </div>
         )}
         </CrossFade>

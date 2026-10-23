@@ -16,7 +16,8 @@
  */
 
 import { useState } from 'react'
-import { MonoLabel, Presence } from '@leasefy/cadence'
+import { IconButton, Presence } from '@leasefy/cadence'
+import { Plus, X } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 import type { ThresholdRow, ThresholdUpdateBody } from '@/lib/hooks/cobranza/use-thresholds'
@@ -72,9 +73,19 @@ function parseBoundaries(raw: string): number[] | null {
 export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditorProps) {
   const { t, locale } = useI18n()
   const [topN, setTopN] = useState<string>(String(active.top_n_debtors_in_report))
-  const [boundaries, setBoundaries] = useState<string>(
-    (active.mora_dias_bucket_boundaries ?? []).join(','),
-  )
+  // Revisora r25 (Umbrales #1): los cortes eran texto libre «separados por
+  // coma»; ahora son fichas con su «×» y un campo para agregar uno. Lo que
+  // quede escrito en el campo al guardar se suma tal cual (y si no sube, el
+  // error lo dice debajo).
+  const [cortes, setCortes] = useState<number[]>(active.mora_dias_bucket_boundaries ?? [])
+  const [nuevoCorte, setNuevoCorte] = useState<string>('')
+  const agregarCorte = () => {
+    const n = parseBoundaries(nuevoCorte)
+    if (!n) return
+    setCortes((antes) => Array.from(new Set([...antes, ...n])).sort((a, b) => a - b))
+    setNuevoCorte('')
+    setErrors((e) => ({ ...e, mora_dias_bucket_boundaries: undefined }))
+  }
   const [pkr, setPkr] = useState<string>(String(active.pkr_pct_alert_below))
   const [morosidad, setMorosidad] = useState<string>(
     String(active.indice_morosidad_pct_alert_above),
@@ -92,7 +103,8 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
     e.preventDefault()
     setErrors({})
 
-    const boundariesParsed = parseBoundaries(boundaries)
+    const pendientes = parseBoundaries(nuevoCorte) ?? []
+    const boundariesParsed = cortes.length + pendientes.length > 0 ? [...cortes, ...pendientes] : null
     const raw = {
       top_n_debtors_in_report: Number(topN),
       mora_dias_bucket_boundaries: boundariesParsed,
@@ -170,9 +182,9 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <MonoLabel id={`${ID_DEL_CAMPO.top_n_debtors_in_report}-rotulo`} className="block text-muted-foreground tracking-wide">
+          <p id={`${ID_DEL_CAMPO.top_n_debtors_in_report}-rotulo`} className="block text-body-sm text-fg">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.topN')}
-          </MonoLabel>
+          </p>
           <Input
             className="mt-1 w-full font-mono tabular-nums"
             type="number"
@@ -187,28 +199,65 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <MonoLabel id={`${ID_DEL_CAMPO.mora_dias_bucket_boundaries}-rotulo`} className="block text-muted-foreground tracking-wide">
+          <p id={`${ID_DEL_CAMPO.mora_dias_bucket_boundaries}-rotulo`} className="block text-body-sm text-fg">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.moraBoundaries')}
-          </MonoLabel>
-          <Input
-            className="mt-1 w-full font-mono tabular-nums"
-            type="text"
-            value={boundaries}
-            onChange={(e) => setBoundaries(e.target.value)}
-            {...aria('mora_dias_bucket_boundaries')}
-            placeholder="0,8,31,91"
-            required
-          />
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5" data-testid="umbral-cortes-fichas">
+            {cortes.map((c, i) => (
+              <span
+                key={`${c}-${i}`}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-muted py-0.5 pl-3 pr-1 text-body-sm text-fg"
+              >
+                <span className="font-mono tabular-nums">{c}</span>
+                {locale.startsWith('es') ? 'días' : 'days'}
+                <IconButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  icon={<X aria-hidden="true" />}
+                  aria-label={locale.startsWith('es') ? `Quitar el corte de ${c} días` : `Remove the ${c}-day cut`}
+                  onClick={() => setCortes((antes) => antes.filter((_, j) => j !== i))}
+                  disabled={isSaving}
+                />
+              </span>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <Input
+              className="w-28 font-mono tabular-nums"
+              type="text"
+              inputMode="numeric"
+              value={nuevoCorte}
+              onChange={(e) => setNuevoCorte(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  agregarCorte()
+                }
+              }}
+              {...aria('mora_dias_bucket_boundaries')}
+              placeholder={locale.startsWith('es') ? 'Días' : 'Days'}
+            />
+            <Button type="button" variant="outline" size="sm" hideArrow onClick={agregarCorte} disabled={!nuevoCorte.trim()}>
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {locale.startsWith('es') ? 'Agregar corte' : 'Add cut'}
+            </Button>
+          </div>
           <ErrorDelCampo
             id="umbral-cortes-de-mora-error"
             mensaje={errors.mora_dias_bucket_boundaries}
+            pista={
+              locale.startsWith('es')
+                ? 'Cada corte abre un tramo del reporte: 0, 8, 31 y 91 días arman cuatro.'
+                : 'Each cut opens a bucket in the report: 0, 8, 31 and 91 days make four.'
+            }
           />
         </div>
 
         <div>
-          <MonoLabel id={`${ID_DEL_CAMPO.pkr_pct_alert_below}-rotulo`} className="block text-muted-foreground tracking-wide">
+          <p id={`${ID_DEL_CAMPO.pkr_pct_alert_below}-rotulo`} className="block text-body-sm text-fg">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.pkrAlertBelow')}
-          </MonoLabel>
+          </p>
           <Input
             className="mt-1 w-full font-mono tabular-nums"
             type="number"
@@ -224,9 +273,9 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <MonoLabel id={`${ID_DEL_CAMPO.indice_morosidad_pct_alert_above}-rotulo`} className="block text-muted-foreground tracking-wide">
+          <p id={`${ID_DEL_CAMPO.indice_morosidad_pct_alert_above}-rotulo`} className="block text-body-sm text-fg">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.morosidadAlertAbove')}
-          </MonoLabel>
+          </p>
           <Input
             className="mt-1 w-full font-mono tabular-nums"
             type="number"
@@ -245,9 +294,9 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <MonoLabel id={`${ID_DEL_CAMPO.compliance_violations_critical_at_least}-rotulo`} className="block text-muted-foreground tracking-wide">
+          <p id={`${ID_DEL_CAMPO.compliance_violations_critical_at_least}-rotulo`} className="block text-body-sm text-fg">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.violationsAtLeast')}
-          </MonoLabel>
+          </p>
           <Input
             className="mt-1 w-full font-mono tabular-nums"
             type="number"
@@ -265,9 +314,9 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <MonoLabel id={`${ID_DEL_CAMPO.calls_outside_window_critical_at_least}-rotulo`} className="block text-muted-foreground tracking-wide">
+          <p id={`${ID_DEL_CAMPO.calls_outside_window_critical_at_least}-rotulo`} className="block text-body-sm text-fg">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.callsOutsideAtLeast')}
-          </MonoLabel>
+          </p>
           <Input
             className="mt-1 w-full font-mono tabular-nums"
             type="number"

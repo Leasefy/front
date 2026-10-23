@@ -270,3 +270,12 @@ describe('PipelineDetail — sin permiso para mover', () => {
     expect(container.textContent).toContain('Ana Restrepo');
   });
 });
+
+describe('PipelineDetail — «Qué ofrecer» desde el interesado (revisora r22)', () => {
+  it('lleva a Qué ofrecer con ESTE interesado ya elegido', () => {
+    montar(async () => {});
+    // El `next/link` simulado de este archivo sólo pasa `href`: se busca por la dirección.
+    const enlace = container.querySelector<HTMLAnchorElement>(`a[href="/panel/inmobiliaria/pipeline/que-ofrecer?interesado=${ITEM.id}"]`);
+    expect(enlace?.textContent).toContain('Qué otros inmuebles le sirven');
+  });
+});

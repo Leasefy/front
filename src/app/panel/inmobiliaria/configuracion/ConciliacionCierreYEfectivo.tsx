@@ -206,7 +206,7 @@ export function ConciliacionCierreYEfectivo() {
     // Configuración. Lo de adentro (avisos) sí entra y sale con `aparecer`.
     <motion.section {...aparecer} initial={false} className="space-y-5 rounded-lg border border-border bg-surface p-5" data-testid="conciliacion-cierre-y-efectivo">
       <header className="space-y-1">
-        <h2 className="text-h4 text-fg">Conciliación: alerta, efectivo y cierre del mes</h2>
+        <h3 className="text-base font-medium text-fg">Conciliación: alerta, efectivo y cierre del mes</h3>
         {!config.disponible && (
           <p className="text-caption text-fg-muted" data-testid="conciliacion-config-sin-migracion">
             {efectivoSePuedeGuardar(config)
@@ -285,7 +285,7 @@ export function ConciliacionCierreYEfectivo() {
       <div className="space-y-2 border-t border-border pt-4">
         <div className="flex items-center gap-2">
           <Bank className="h-5 w-5 text-fg-muted" aria-hidden="true" />
-          <h3 className="text-body font-semibold text-fg">Cuenta contable de cada cuenta bancaria</h3>
+          <h3 className="text-body font-medium text-fg">Cuenta contable de cada cuenta bancaria</h3>
         </div>
         <p className="text-caption text-fg-muted">
           De aquí sale el «saldo en libros» del cierre del mes, y aquí se asientan los recibos que se concilian desde

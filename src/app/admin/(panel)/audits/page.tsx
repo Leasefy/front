@@ -12,9 +12,8 @@ import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
-import { legible } from '@/lib/admin/textos-del-admin'
-import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
-import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
+import { canal, eventoDeCumplimiento, resumenDeLosDatos } from '@/lib/admin/textos-del-admin'
+import { BarraDeFiltros, Desplegable, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
 import { Button } from '@/components/ui/button'
 import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
 
@@ -43,6 +42,16 @@ interface AuditFacets {
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 /** /audits — Compliance events table with facet selects + CSV export (FRONT.md §6.8 · BACK.md §8.13). */
+/** Los detalles en palabras (sólo lo que tiene nombre; ids y códigos, al cajón y al Excel). */
+function resumenDeLosDetalles(detalles: unknown): string {
+  // Ronda 28 (revisora r27): sin el canal, que ya tiene su columna («Detalles: Canal: Correo» lo repetía).
+  const sinCanal =
+    detalles && typeof detalles === 'object' && !Array.isArray(detalles)
+      ? Object.fromEntries(Object.entries(detalles as Record<string, unknown>).filter(([k]) => !/^(channel|canal)$/i.test(k)))
+      : detalles
+  return resumenDeLosDatos(sinCanal) || 'Ábrelo para ver los detalles'
+}
+
 export default function AuditsPage() {
   const { get, page, setFilters, setPage } = useUrlFilters()
   const type   = get('type')
@@ -98,7 +107,10 @@ export default function AuditsPage() {
   }
 
 
-  const columns: Column<EventRow>[] = [
+  // Ronda 28 (revisora r27, T15): sin deudor en ninguna fila de la página, sin la columna de «—».
+  const sinDeudorEnNinguna = Boolean(events.data) && (events.data?.data ?? []).every((r) => !r.debtor_name)
+
+  const todasLasColumnas: Column<EventRow>[] = [
     {
       header: 'Cuándo',
       cell: (r) => (
@@ -109,7 +121,7 @@ export default function AuditsPage() {
       header: 'Evento',
       cell: (r) => (
         <span className="text-fg" title={r.event_type}>
-          {legible(r.event_type)}
+          {eventoDeCumplimiento(r.event_type)}
         </span>
       ),
     },
@@ -123,26 +135,25 @@ export default function AuditsPage() {
     },
     {
       header: 'Canal',
-      cell: (r) => <span className="text-fg-muted">{r.channel ? legible(r.channel) : '—'}</span>,
+      cell: (r) => <span className="text-fg-muted">{r.channel ? canal(r.channel) : '—'}</span>,
     },
     {
       header: 'Detalles',
-      cell: (r) => {
-        const full = r.details ? JSON.stringify(r.details) : null
-        return (
-          <span className="block max-w-[420px] truncate font-mono text-caption text-fg-muted" title={full ?? undefined}>
-            {full ? full.slice(0, 120) : '—'}
-          </span>
-        )
-      },
+      // Glow up 22-10: los datos en palabras (los dos primeros, con su nombre), nunca el JSON crudo en la fila;
+      // completos en el cajón.
+      cell: (r) => (
+        <span className="block max-w-[420px] truncate text-caption text-fg-muted">{resumenDeLosDetalles(r.details)}</span>
+      ),
     },
   ]
+
+  const columns = sinDeudorEnNinguna ? todasLasColumnas.filter((c) => c.header !== 'Deudor') : todasLasColumnas
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Auditoría"
-        description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y barandas de los agentes. Se descargan en CSV (hasta 50.000 filas)."
+        description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y límites de los agentes."
       />
 
       {exportError && <Alert variant="danger">{exportError}</Alert>}
@@ -156,7 +167,7 @@ export default function AuditsPage() {
         onReintentar={events.refetch}
         emptyTitle="No hay eventos con estos filtros"
         emptyHint="Prueba con otro tipo, otra inmobiliaria u otras fechas."
-        emptyIcon={<ShieldCheck weight="bold" />}
+        emptyIcon={<ShieldCheck weight="duotone" />}
         aria-label="Eventos de cumplimiento"
         onRowClick={setAbierto}
         filaMarcada={(r) => r.id === abierto?.id}
@@ -164,9 +175,9 @@ export default function AuditsPage() {
         queSon={['evento', 'eventos']}
         filtrosEnLaUrl={['type', 'tenant', 'from', 'to']}
         acciones={
-          <Button variant="secondary" hideArrow onClick={onExport} disabled={exporting} className="gap-2">
-            <DownloadSimple className="h-4 w-4" aria-hidden="true" />
-            {exporting ? 'Descargando…' : 'Exportar CSV'}
+          <Button variant="outline" size="sm" hideArrow onClick={onExport} disabled={exporting} isLoading={exporting} className="gap-2">
+            {exporting ? null : <DownloadSimple className="h-4 w-4" aria-hidden="true" />}
+            {exporting ? 'Armando el CSV…' : 'Exportar a CSV (hasta 50.000)'}
           </Button>
         }
         barra={
@@ -177,7 +188,7 @@ export default function AuditsPage() {
                 value={type}
                 onChange={(v) => setFilters({ type: v }, { resetPage: true })}
                 todas="Todos los eventos"
-                opciones={(facets.data?.eventTypes ?? []).map((t) => ({ valor: t, nombre: legible(t) }))}
+                opciones={(facets.data?.eventTypes ?? []).map((t) => ({ valor: t, nombre: eventoDeCumplimiento(t) }))}
               />
             </Filtro>
             <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
@@ -189,12 +200,12 @@ export default function AuditsPage() {
                 opciones={(facets.data?.tenants ?? []).map((t) => ({ valor: t.tenant_id, nombre: t.legal_name ?? t.tenant_id }))}
               />
             </Filtro>
-            <Filtro etiqueta="Desde" htmlFor="filtro-desde" className="sm:w-44">
-              <CampoDeFecha id="filtro-desde" value={from} onChange={(v) => setFilters({ from: v }, { resetPage: true })} />
-            </Filtro>
-            <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
-              <CampoDeFecha id="filtro-hasta" value={to} onChange={(v) => setFilters({ to: v }, { resetPage: true })} />
-            </Filtro>
+            <FiltroDeFechas
+              desde={from}
+              hasta={to}
+              onDesde={(v) => setFilters({ from: v }, { resetPage: true })}
+              onHasta={(v) => setFilters({ to: v }, { resetPage: true })}
+            />
           </BarraDeFiltros>
         }
       />
@@ -202,7 +213,7 @@ export default function AuditsPage() {
       <CajonDelDetalle
         abierto={abierto !== null}
         onCerrar={() => setAbierto(null)}
-        titulo={abierto ? legible(abierto.event_type) : 'Evento'}
+        titulo={abierto ? eventoDeCumplimiento(abierto.event_type) : 'Evento'}
         descripcion={abierto ? fmtDateTime(abierto.timestamp) : undefined}
         campos={
           abierto
@@ -210,7 +221,7 @@ export default function AuditsPage() {
                 { nombre: 'Código', valor: <code className="font-mono">{abierto.event_type}</code> },
                 { nombre: 'Inmobiliaria', valor: abierto.legal_name ?? '—' },
                 { nombre: 'Deudor', valor: abierto.debtor_name ?? '—' },
-                { nombre: 'Canal', valor: abierto.channel ? legible(abierto.channel) : '—' },
+                { nombre: 'Canal', valor: abierto.channel ? canal(abierto.channel) : '—' },
                 {
                   nombre: 'Evidencia',
                   valor: abierto.evidence_url ? (

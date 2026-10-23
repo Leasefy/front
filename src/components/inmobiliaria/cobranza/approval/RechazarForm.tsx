@@ -126,7 +126,7 @@ export function RechazarForm({
           rows={3}
           className="mt-1 block w-full"
         />
-        <span className="mt-1 block text-xs text-fg-subtle">
+        <span className="mt-1 block text-caption text-fg-subtle">
           {t('inmobiliaria.ai.cobranza.approval.rechazarForm.charsRemaining', {
             remaining,
           })}

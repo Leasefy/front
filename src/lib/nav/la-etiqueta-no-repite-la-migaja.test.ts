@@ -26,10 +26,17 @@ function paginas(): { nombre: string; texto: string }[] {
     }));
 }
 
+/** El sobretítulo del encabezado común (`seccion="…"` de <EncabezadoDePantalla>). */
+function sobretitulo(texto: string): string | undefined {
+  return /<EncabezadoDePantalla[\s\S]*?\sseccion="([^"]*)"/.exec(texto)?.[1]?.trim();
+}
+
 describe('las sub-pantallas de Contabilidad', () => {
   it('🔴 la etiqueta de sección no repite la palabra de la migaja', () => {
     const repiten = paginas()
-      .filter(({ texto }) => /<SectionLabel>[^<]*[Cc]ontabilidad[^<]*<\/SectionLabel>/.test(texto))
+      // C2 (revisora r25): el sobretítulo ya no es un <SectionLabel> suelto sino el de
+      // <EncabezadoDePantalla>; la vuelta dice «Contabilidad» y el sobretítulo no la repite.
+      .filter(({ texto }) => /[Cc]ontabilidad/.test(sobretitulo(texto) ?? ''))
       .map((p) => p.nombre);
     expect(repiten).toEqual([]);
   });
@@ -37,9 +44,10 @@ describe('las sub-pantallas de Contabilidad', () => {
   it('todas dicen lo mismo arriba: la diferencia no significaba nada', () => {
     const etiquetas = new Set(
       paginas()
-        .map(({ texto }) => /<SectionLabel>([^<]*)<\/SectionLabel>/.exec(texto)?.[1]?.trim())
+        .map(({ texto }) => sobretitulo(texto))
         .filter((e): e is string => Boolean(e)),
     );
-    expect([...etiquetas]).toEqual(['Finanzas']);
+    // C2 (revisora r25): «Dinero», como los centros de Contabilidad y Nómina.
+    expect([...etiquetas]).toEqual(['Dinero']);
   });
 });

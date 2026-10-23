@@ -226,7 +226,8 @@ describe('<ComprobantesDelSistemaAnterior>', () => {
       container.querySelector('[data-testid="comprobantes-total"]')?.textContent,
     ).toBe('3')
     const t = texto()
-    expect(t).toContain('Comprobante de Ingreso')
+    // Revisión 21-10: dentro de «Ingresos» el tipo no se repite en cada fila (sólo va en «Otros»).
+    expect(t).not.toContain('Comprobante de Ingreso')
     expect(t).toContain('CI-26766')
     expect(t).toContain('CANON SEPTIEMBRE')
     expect(t).toContain('1.008.403')
@@ -302,7 +303,7 @@ describe('<ComprobantesDelSistemaAnterior>', () => {
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
     expect(pestana('ingreso')).toBeNull()
     expect(container.querySelector('[data-testid="comprobantes-total"]')).toBeNull()
-    expect(texto()).toContain('Sin comprobantes del sistema anterior')
+    expect(texto()).toContain('Todavía no hay comprobantes del sistema anterior')
     // No hay una segunda petición «por si acaso»: ya se sabe que no hay nada.
     expect(porContrato).toHaveBeenCalledTimes(1)
   })

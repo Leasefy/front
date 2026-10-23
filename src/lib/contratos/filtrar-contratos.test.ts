@@ -6,6 +6,8 @@ import {
   cuantosFiltros,
   FILTROS_INICIALES,
   DIAS_POR_VENCER,
+  filtrosALaUrl,
+  filtrosDesdeLaUrl,
   type FiltrosDeContratos,
 } from './filtrar-contratos';
 
@@ -218,5 +220,32 @@ describe('hayFiltros / cuantosFiltros', () => {
     expect(hayFiltros(con({ busqueda: 'ana' }))).toBe(true);
     expect(cuantosFiltros(con({ busqueda: 'ana' }))).toBe(0);
     expect(cuantosFiltros(con({ estado: 'active', canon: 'mas_5m' }))).toBe(2);
+  });
+});
+
+describe('los filtros en la URL (DESIGN §25.1, 6b)', () => {
+  it('ida y vuelta: lo que se pone se lee igual', () => {
+    const filtros = con({ busqueda: 'nubia', estado: 'por_firmar', vigencia: 'vencido_sin_renovar', canon: '1m_2m', campo: 'endDate', sentido: 'desc' });
+    const params = new URLSearchParams();
+    filtrosALaUrl(filtros, params);
+    expect(params.toString()).toBe('q=nubia&estado=por_firmar&vigencia=vencido_sin_renovar&canon=1m_2m&orden=endDate&sentido=desc');
+    expect(filtrosDesdeLaUrl(params)).toEqual(filtros);
+  });
+
+  it('sin filtros la URL queda limpia, y los otros parámetros no se tocan', () => {
+    const params = new URLSearchParams('estado=active&pestana=x');
+    filtrosALaUrl(FILTROS_INICIALES, params);
+    expect(params.toString()).toBe('pestana=x');
+  });
+
+  it('un valor desconocido vuelve al de por defecto (nunca deja la tabla vacía)', () => {
+    const leidos = filtrosDesdeLaUrl(new URLSearchParams('estado=nada&vigencia=x&orden=hackeo&canon=99'));
+    expect(leidos).toEqual(FILTROS_INICIALES);
+  });
+
+  it('el sentido sin campo de orden no se escribe', () => {
+    const params = new URLSearchParams();
+    filtrosALaUrl(con({ sentido: 'desc' }), params);
+    expect(params.has('sentido')).toBe(false);
   });
 });

@@ -356,7 +356,7 @@ function ReenvioDeConfirmacion({
     <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
       {/* «¿No te llegó?» → «Listo, te lo reenviamos» (o el tope): se cruzan,
           no se reemplazan de golpe. La cuenta regresiva del botón NO entra
-          acá: cambia cada segundo y no es un cambio de estado. */}
+          aquí: cambia cada segundo y no es un cambio de estado. */}
       <CrossFade
         swapKey={reenvio.agotado ? 'agotado' : reenvio.estado === 'enviado' ? 'enviado' : 'ofrecer'}
       >
@@ -407,7 +407,7 @@ function ReenvioDeConfirmacion({
 }
 
 /** Lo que dice el login cuando el error no se reconoce (nunca el inglés de Supabase). */
-const POR_DEFECTO_AL_ENTRAR = 'Error al iniciar sesión. Intenta de nuevo.';
+const POR_DEFECTO_AL_ENTRAR = 'No pudimos iniciar tu sesión. Vuelve a intentarlo.';
 
 /**
  * Los errores de Supabase al crear la cuenta que son de UN campo: van debajo
@@ -1193,7 +1193,7 @@ export function AuthForm({
             initial={{ scale: motionScale.pop, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={motionSpring.bouncy}
-            className="w-10 h-10 mb-5 rounded-xl bg-success-soft flex items-center justify-center"
+            className="w-10 h-10 mb-5 rounded-lg bg-success-soft flex items-center justify-center"
           >
             <CheckCircle className="w-5 h-5 text-success" weight="fill" />
           </motion.div>
@@ -1245,7 +1245,7 @@ export function AuthForm({
               <fieldset disabled={isLoading} className="min-w-0 space-y-4">
                 <div className="space-y-1.5">
                   <AuthInput
-                    label="Email"
+                    label="Correo"
                     type="email"
                     placeholder="tu@email.com"
                     {...correoDeLogin}
@@ -1350,7 +1350,7 @@ export function AuthForm({
               <fieldset disabled={isLoading} className="min-w-0 space-y-4">
                 <div className="space-y-1.5">
                   <AuthInput
-                    label="Email"
+                    label="Correo"
                     type="email"
                     placeholder="tu@email.com"
                     {...correoDeRegistro}
@@ -1507,7 +1507,7 @@ export function AuthForm({
         {mode === 'register' && registerStep === 'confirm-email' && !conCodigo && (
           <div className="space-y-5">
             {/*
-              Acá había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar
+              Aquí había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar
               sesión» (Nico, 2026-09-07: «¿para qué, si debe ir al correo?»).
               Estaba mal: el enlace del correo vuelve por /auth/callback ya
               con la sesión abierta, así que el paso 3 no existe, y el botón
@@ -1523,7 +1523,7 @@ export function AuthForm({
               </span>
               <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
                 <li>Abre el correo que te enviamos (revisa también spam)</li>
-                <li>Toca el enlace de confirmación: te trae de vuelta acá con la sesión ya abierta</li>
+                <li>Toca el enlace de confirmación: te trae de vuelta aquí con la sesión ya abierta</li>
               </ol>
             </div>
             {webmail && (
@@ -1561,7 +1561,7 @@ export function AuthForm({
             <fieldset disabled={isLoading} className="min-w-0 space-y-4">
               <div className="space-y-1.5">
                 <AuthInput
-                  label="Email"
+                  label="Correo"
                   type="email"
                   placeholder="tu@email.com"
                   {...correoDeRecuperacion}

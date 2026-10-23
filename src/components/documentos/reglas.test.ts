@@ -8,6 +8,7 @@ import {
   avisoDelIncremento,
   camposFaltantes,
   etiquetaDelInmueble,
+  identidadDelDocumento,
   etiquetaDePartes,
   filtrarDocumentos,
   formatearPesos,
@@ -65,6 +66,13 @@ describe('etiquetas de la tabla', () => {
     expect(etiquetaDelInmueble({ ...migrado, consignacion: null, contract: { ...migrado.contract, propertyAddress: null } })).toBe(
       'Contrato 1686',
     );
+  });
+
+  it('la fila se identifica por el contrato y su inquilino, y la dirección va aparte (revisora r24)', () => {
+    const migrado = { ...DOC, contract: { ...DOC.contract!, code: 1839, externalId: '1686', tenantName: 'Diana María Soto' } };
+    expect(identidadDelDocumento(migrado)).toEqual({ titulo: 'Contrato 1686 · Diana María Soto', direccion: 'Calle 100 # 15-20' });
+    expect(identidadDelDocumento({ ...migrado, contract: { ...migrado.contract, tenantName: null } }).titulo).toBe('Contrato 1686');
+    expect(identidadDelDocumento(CARTA)).toEqual({ titulo: 'Casa Envigado', direccion: null });
   });
 
   it('el combo lleva LOS DOS números, el nuestro rotulado, para que se encuentre por cualquiera', () => {

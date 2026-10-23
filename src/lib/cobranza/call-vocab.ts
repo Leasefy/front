@@ -108,7 +108,7 @@ const SENTIMENT_LABELS: Record<string, string> = {
 }
 
 const NEXT_ACTION_LABELS: Record<string, string> = {
-  send_payment_link: 'Enviar link de pago',
+  send_payment_link: 'Enviar el enlace de pago',
   send_reminder: 'Enviar recordatorio',
   retry_voice: 'Reintentar llamada',
   escalate_human: 'Escalar a un humano',
@@ -151,13 +151,13 @@ const ESCALATION_REASON_LABELS: Record<string, string> = {
   whatsapp_inbound_need_plan: 'Pidió un acuerdo de pago por WhatsApp',
   whatsapp_inbound_media: 'Mandó un archivo por WhatsApp (foto, audio o documento)',
   whatsapp_inbound_sin_cobro: 'Escribió por WhatsApp con la cobranza en pausa o el canal cerrado',
-  whatsapp_payment_link_send_failed: 'No le llegó el link de pago por WhatsApp',
+  whatsapp_payment_link_send_failed: 'No le llegó el enlace de pago por WhatsApp',
   whatsapp_cierre_sin_envio: 'Quedó un acuerdo por WhatsApp pero no le llegó la constancia',
   whatsapp_identidad_sin_envio: 'Mori no pudo pedirle por WhatsApp que confirme su identidad',
   whatsapp_comprobante_de_pago: 'Mandó un comprobante de pago por WhatsApp',
   whatsapp_respuesta_bloqueada_por_la_cerca: 'Mori frenó su respuesta por WhatsApp porque no cumplía las reglas',
   whatsapp_conductor_sin_respuesta: 'Mori no pudo responder por WhatsApp',
-  whatsapp_pide_enlace_de_pago: 'Pidió el link de pago por WhatsApp',
+  whatsapp_pide_enlace_de_pago: 'Pidió el enlace de pago por WhatsApp',
   voz_exclusion_sin_titular_revisar_numero:
     'En una llamada, alguien que no es el titular pidió que no llamen a ese número',
 }
@@ -273,5 +273,10 @@ export function escalationReasonLabel(reason: string | null | undefined): string
   if (!limpio) return null
   const conocido = ESCALATION_REASON_LABELS[limpio] ?? motivoConPartes(limpio)
   if (conocido) return conocido
-  return /^[a-z0-9_]+$/.test(limpio) ? `Otro (${limpio})` : limpio
+  // Revisora r25 (bloqueante de Escalaciones): un código que todavía no tiene frase se marca como «Otro motivo»,
+  // nunca con el código a la vista («Otro (playbook_108_algo_nuevo)»): no le dice nada a quien lo lee.
+  return /^[a-z0-9_]+$/.test(limpio) ? OTRO_MOTIVO : limpio
 }
+
+/** Lo que se dice de un motivo de escalación que todavía no tiene frase. */
+export const OTRO_MOTIVO = 'Otro motivo (Mori lo dejó sin explicar)'

@@ -15,6 +15,9 @@ void React
 const listRegistrationProfiles = vi.fn()
 const setRegistrationProfileEnabled = vi.fn()
 
+// Ronda 26: cerrar un registro se confirma antes; aquí la persona confirma.
+vi.mock('@/components/ui/confirmar', () => ({ confirmar: vi.fn().mockResolvedValue(true) }))
+
 vi.mock('@/lib/admin/registration-profiles', () => ({
   listRegistrationProfiles: (signal?: AbortSignal) => listRegistrationProfiles(signal),
   setRegistrationProfileEnabled: (key: string, enabled: boolean) =>

@@ -4,11 +4,11 @@
  * SO-27 (PQRS-FIX, 04-10-2026): una solicitud del propietario — número, estado,
  * plazo, historial, la respuesta de la inmobiliaria y sus archivos.
  */
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react';
 
-import { Badge } from '@/components/ui/badge';
+import { BackButton } from '@/components/ui/back-button';
+import { StatusBadge } from '@leasefy/cadence';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { RespuestaYArchivosDelCaso } from '@/components/tenant/RespuestaYArchivosDelCaso';
@@ -51,28 +51,25 @@ export function SolicitudDelPropietario({ id }: { id: string }) {
 
   return (
     <div className="space-y-5 p-6 lg:p-8">
-      <Link href="/panel/solicitudes" className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg">
-        <ArrowLeft className="h-4 w-4" /> Volver a solicitudes
-      </Link>
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{s.asunto}</h1>
-        <p className="font-mono text-sm text-fg-muted" data-testid="solicitud-radicado">
-          {s.radicado}
-        </p>
-        <Badge variant="secondary">{caso.estadoLabel}</Badge>
-      </header>
+      {/* «Volver» con la pieza de la casa, como las demás fichas. */}
+      <BackButton href="/panel/solicitudes" label="Volver a solicitudes" />
+      <EncabezadoDePantalla
+        seccion={<span data-testid="solicitud-radicado">{s.radicado}</span>}
+        titulo={s.asunto}
+        junto={<StatusBadge tone={abierta ? 'info' : 'success'}>{caso.estadoLabel}</StatusBadge>}
+      />
       <dl className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-surface p-4 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-xs text-fg-muted">Inmueble</dt>
+          <dt className="text-caption text-fg-muted">Inmueble</dt>
           <dd className="text-fg">{s.propiedadDireccion ?? '—'}</dd>
         </div>
         <div>
-          <dt className="text-xs text-fg-muted">Radicada el</dt>
+          <dt className="text-caption text-fg-muted">Radicada el</dt>
           <dd className="text-fg">{fechaLegible(s.createdAt)}</dd>
         </div>
         {abierta && s.slaVenceAt && (
           <div>
-            <dt className="text-xs text-fg-muted">Respuesta a más tardar el</dt>
+            <dt className="text-caption text-fg-muted">Respuesta a más tardar el</dt>
             <dd className="text-fg">{fechaLegible(s.slaVenceAt)}</dd>
           </div>
         )}
@@ -80,12 +77,12 @@ export function SolicitudDelPropietario({ id }: { id: string }) {
       {s.descripcion && <p className="whitespace-pre-wrap text-sm text-fg-muted">{s.descripcion}</p>}
       {caso.solicitud && <RespuestaYArchivosDelCaso caseId={s.id} solicitud={caso.solicitud} onCambio={cargar} comoPropietario />}
       <section className="rounded-lg border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-semibold text-fg">Historial</h2>
+        <h2 className="mb-3 text-h3 text-fg">Historial</h2>
         <ol className="space-y-2 text-sm">
           {caso.events.map((e) => (
             <li key={e.id} className="flex justify-between gap-3">
               <span className="text-fg">{e.label}</span>
-              <span className="shrink-0 text-xs text-fg-muted">{fechaLegible(e.timestamp)}</span>
+              <span className="shrink-0 text-caption text-fg-muted">{fechaLegible(e.timestamp)}</span>
             </li>
           ))}
         </ol>

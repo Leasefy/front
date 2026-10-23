@@ -12,17 +12,14 @@
  * que las columnas se sigan viendo.
  */
 
-import {
-  FileText,
-  FolderOpen,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Eye,
-} from '@phosphor-icons/react';
+import { useMemo, useState } from 'react';
+import { FolderOpen, CheckCircle, XCircle, Eye, MagnifyingGlass } from '@phosphor-icons/react';
+import { CifraHeroe, type TonoDelTramo } from '@/components/pantalla/CifraHeroe';
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Badge, Button } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
 
 /** El número tal cual se escribía antes: sin separador de miles. */
@@ -37,6 +34,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { Input } from '@/components/ui/input';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { getReviewStatusLabel, reviewStatusBadgeVariant } from '@/lib/documents/review-status';
@@ -69,7 +69,14 @@ function formatSize(bytes: number): string {
     : `${Math.round(bytes / 1024)} KB`;
 }
 
-const COLUMNAS = ['Candidato', 'Documento', 'Estado', ''] as const;
+/**
+ * Revisora r25: agrupado por candidato. El nombre va UNA vez, en la fila que abre su grupo, y sus papeles
+ * debajo; por eso la columna «Candidato» ya no se repite en cada papel.
+ */
+const COLUMNAS = ['Documento', 'Estado', ''] as const;
+
+/** Sin tildes ni mayúsculas, para buscar «perez» y encontrar «Pérez». */
+const normalizar = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 export interface DocumentReviewQueueViewProps {
   counts: ReviewQueueCounts;
@@ -111,11 +118,6 @@ const SECUNDARIOS: CountCard[] = [
   { key: 'rejected', label: 'rechazados', icon: XCircle },
 ];
 
-/** Una fila por documento: el candidato es una columna, no un encabezado. */
-interface Fila {
-  item: ReviewQueueItem;
-  doc: ReviewQueueDocument;
-}
 
 export function DocumentReviewQueueView({
   counts,
@@ -129,57 +131,78 @@ export function DocumentReviewQueueView({
   onReject,
   onRetry,
 }: DocumentReviewQueueViewProps) {
-  const filas: Fila[] = items.flatMap((item) => item.documents.map((doc) => ({ item, doc })));
+  // El buscador, DENTRO de la tarjeta: por candidato, inmueble o papel.
+  const [busqueda, setBusqueda] = useState('');
+  const candidatos = useMemo(() => {
+    const q = normalizar(busqueda.trim());
+    if (!q) return items;
+    return items.filter((item) =>
+      [item.tenant.fullName, item.property?.title ?? '', ...item.documents.flatMap((d) => [docTypeLabel(d.type), d.originalName])]
+        .some((t) => normalizar(t).includes(q)),
+    );
+  }, [items, busqueda]);
+  // La página es de CANDIDATOS (un grupo no se parte entre dos páginas).
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(candidatos, {
+    initialPageSize: 10,
+    resetKey: busqueda,
+  });
+  const hayCola = items.length > 0;
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-h2 text-fg flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
-            <FileText className="w-5 h-5 text-fg-muted" />
-          </div>
-          Soportes de candidatos
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
-          Los papeles que el candidato adjunta al postularse —cédula, comprobante
-          de ingresos, carta laboral—. Acá los abres y decides: si apruebas, su
-          postulación sigue; si rechazas, tienes que escribir el motivo, y ese
-          motivo es el que él recibe para volver a mandarlo bien.
-        </p>
-      </div>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo="Soportes de candidatos"
+        descripcion="Los papeles que el candidato adjunta al postularse: ábrelos y decide si la postulación sigue."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: soportes de candidatos" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                Llegan los papeles que el candidato adjunta al postularse: cédula, comprobante de ingresos, carta
+                laboral.
+              </p>
+              <p>
+                «Tomar» lo marca en revisión para que nadie más de tu equipo lo revise a la vez. Si apruebas, su
+                postulación sigue.
+              </p>
+              <p>
+                Si rechazas, tienes que escribir el motivo: es el que él recibe para volver a mandarlo bien.
+              </p>
+              <p>Lo que se le pide a cada perfil lo defines en «Requisitos».</p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
 
-      {/* El resumen: una cifra que es trabajo, y el resto acompañando. */}
-      <div
-        className="flex flex-wrap items-baseline gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-5 py-4"
+      {/* Glow up 22-10 (la vara de Deuda del mes): LA RESPUESTA en una CifraHeroe —lo que falta
+          revisar— con la barra de cómo va la cola; los otros tres acompañan en la leyenda. Con la
+          consulta caída o cargando, «—»: no se afirma un cero que nadie trajo. */}
+      <section
+        className="rounded-lg border border-border bg-card px-5 py-5"
         data-testid="resumen-de-la-cola"
       >
-        <p className="flex items-baseline gap-2">
-          <span
-            className="text-2xl font-semibold tabular-nums text-fg"
-            data-testid="count-pending"
-          >
-            {/* Con la consulta caída, `counts` viene en ceros: afirmar «0
-                pendientes» sobre un dato que nadie trajo es inventar. Mientras
-                carga tampoco se sabe todavía. */}
-            {isLoading || error ? '—' : <AnimatedNumber value={counts.pending} format={enteroTalCual} />}
-          </span>
-          <span className="text-sm text-fg">
-            {counts.pending === 1 ? 'soporte por revisar' : 'soportes por revisar'}
-          </span>
-        </p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
-          {SECUNDARIOS.map(({ key, label, icon: CardIcon }) => (
-            <span key={key} className="flex items-center gap-1.5" data-testid={`count-${key}`}>
-              <CardIcon className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
-              <span className="tabular-nums">
-                {isLoading || error ? '—' : <AnimatedNumber value={counts[key]} format={enteroTalCual} />}
-              </span>
-              {label}
+        <CifraHeroe
+          rotulo="Por revisar"
+          cifra={
+            <span data-testid="count-pending">
+              {isLoading || error ? '—' : <AnimatedNumber value={counts.pending} format={enteroTalCual} />}
             </span>
-          ))}
-        </div>
-      </div>
+          }
+          contexto={counts.pending === 1 ? 'soporte por revisar' : 'soportes por revisar'}
+          tramos={[
+            { clave: 'pending', etiqueta: 'Por revisar', monto: isLoading || error ? 0 : counts.pending, tono: 'aviso' as const },
+            ...SECUNDARIOS.map(({ key, label }) => ({
+              clave: key,
+              etiqueta: label.charAt(0).toUpperCase() + label.slice(1),
+              monto: isLoading || error ? 0 : counts[key],
+              tono: (key === 'approved' ? 'exito' : key === 'rejected' ? 'critico' : 'neutro') as TonoDelTramo,
+              // Revisora r25: «En revisión 0 · Aprobados 0 · Rechazados 0» en la leyenda; los ceros no salen.
+              'data-testid': `count-${key}`,
+              cifra: isLoading || error ? '—' : <AnimatedNumber value={counts[key]} format={enteroTalCual} />,
+            })),
+          ].filter((t) => t.clave !== 'pending' || t.monto > 0)}
+        />
+      </section>
 
       {/* Body: esqueleto → tabla (o → fallo) con un fundido. */}
       <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : 'tabla'}>
@@ -193,8 +216,24 @@ export function DocumentReviewQueueView({
         />
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-hidden">
-          <Table>
-            <TableHeader>
+          {hayCola ? (
+            <div className="border-b border-border px-4 py-3">
+              <div className="relative w-full sm:max-w-sm">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
+                <Input
+                  className="h-9 pl-9"
+                  placeholder="Buscar candidato o inmueble"
+                  aria-label="Buscar en los soportes"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  data-testid="buscar-soportes"
+                />
+              </div>
+            </div>
+          ) : null}
+          {/* En el celular cada soporte es una tarjeta (patrón de Deuda del mes). */}
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 {COLUMNAS.map((c, i) => (
                   <TableHead
@@ -208,19 +247,30 @@ export function DocumentReviewQueueView({
             </TableHeader>
             {/* Tomar, aprobar o rechazar: la fila que sale de la cola se va y
                 las demás suben. */}
-            <TableBodyAnimado>
-              {filas.length === 0 ? (
+            <TableBodyAnimado className="max-md:block">
+              {hayCola && candidatos.length === 0 ? (
+                <TableRowAnimada key="sin-resultados" className="max-md:block">
+                  <TableCell colSpan={COLUMNAS.length} className="p-0 max-md:block">
+                    <SinDatos
+                      hayFiltros
+                      queSon="soportes"
+                      icono={FolderOpen}
+                      onLimpiarFiltros={() => setBusqueda('')}
+                    />
+                  </TableCell>
+                </TableRowAnimada>
+              ) : !hayCola ? (
                 /* Sin filtros en esta pantalla: acá el vacío es siempre «todavía no
-                   llegó nada», nunca «filtraste mal». Y no se crea desde acá — los
+                   llegó nada», nunca «filtraste mal». Y no se crea desde aquí — los
                    soportes los sube quien se postula—, así que la salida útil es ir a
                    ver las postulaciones. */
-                <TableRowAnimada key="vacio">
-                  <TableCell colSpan={COLUMNAS.length} className="p-0">
+                <TableRowAnimada key="vacio" className="max-md:block">
+                  <TableCell colSpan={COLUMNAS.length} className="p-0 max-md:block">
                     <SinDatos
                       queSon="soportes por revisar"
                       icono={FolderOpen}
                       titulo="No hay soportes por revisar"
-                      descripcion="No hay nada que revisar hasta que alguien se postule y adjunte sus papeles. Lo que se le pide a cada perfil lo defines en la pestaña «Requisitos»; apenas alguien mande los suyos, la cola aparece acá."
+                      descripcion="No hay nada que revisar hasta que alguien se postule y adjunte sus papeles. Lo que se le pide a cada perfil lo defines en la pestaña «Requisitos»; apenas alguien mande los suyos, la cola aparece aquí."
                       accion={
                         <Button asChild variant="outline">
                           <Link href="/panel/inmobiliaria/postulaciones">Ver postulaciones</Link>
@@ -230,83 +280,123 @@ export function DocumentReviewQueueView({
                   </TableCell>
                 </TableRowAnimada>
               ) : (
-                filas.map(({ item, doc }) => {
-                  const busy = pendingDocId === doc.id;
-                  const showTake = doc.reviewStatus === 'PENDING';
-                  const showApprove = doc.reviewStatus !== 'APPROVED';
-                  const showReject = doc.reviewStatus !== 'REJECTED';
-                  return (
-                    <TableRowAnimada key={doc.id} data-testid="review-doc">
-                      <TableCell className="align-top">
-                        <p className="font-medium text-fg truncate">{item.tenant.fullName}</p>
-                        {item.property?.title ? (
-                          <p className="text-sm text-fg-muted truncate">{item.property.title}</p>
-                        ) : null}
-                      </TableCell>
-
-                      <TableCell className="max-w-[320px] align-top">
-                        <p className="text-fg truncate">{docTypeLabel(doc.type)}</p>
-                        <p className="text-xs text-fg-muted truncate">
-                          {doc.originalName} · {formatSize(doc.size)}
-                        </p>
-                      </TableCell>
-
-                      <TableCell className="align-top">
-                        <Badge variant={reviewStatusBadgeVariant(doc.reviewStatus)}>
-                          {getReviewStatusLabel(doc.reviewStatus)}
-                        </Badge>
-                        {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
-                          <p className="mt-1 text-xs text-danger break-words max-w-[280px]">
-                            Motivo: {doc.rejectionReason}
+                pageItems.flatMap((item) => {
+                  const porRevisar = item.documents.filter((d) => d.reviewStatus === 'PENDING' || d.reviewStatus === 'IN_REVIEW').length;
+                  const papeles = item.documents.length;
+                  return [
+                    <TableRowAnimada
+                      key={`grupo-${item.applicationId}`}
+                      data-testid="grupo-candidato"
+                      className="bg-surface-muted/40 max-md:block max-md:border-b max-md:border-border max-md:px-4 max-md:py-3"
+                    >
+                      <TableCell colSpan={COLUMNAS.length} className="max-md:block max-md:p-0">
+                        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+                          <p className="min-w-0 truncate font-medium text-fg">
+                            {item.tenant.fullName}
+                            {item.property?.title ? (
+                              <span className="font-normal text-fg-muted"> · {item.property.title}</span>
+                            ) : null}
                           </p>
-                        )}
+                          <p className="shrink-0 text-caption text-fg-muted" data-testid="grupo-cuantos">
+                            {papeles === 1 ? '1 papel' : `${papeles} papeles`}
+                            {porRevisar > 0 ? ` · ${porRevisar} por revisar` : ''}
+                          </p>
+                        </div>
                       </TableCell>
+                    </TableRowAnimada>,
+                    ...(item.documents.map((doc) => {
+                    const busy = pendingDocId === doc.id;
+                    const showTake = doc.reviewStatus === 'PENDING';
+                    const showApprove = doc.reviewStatus !== 'APPROVED';
+                    const showReject = doc.reviewStatus !== 'REJECTED';
+                    return (
+                      <TableRowAnimada
+                        key={doc.id}
+                        data-testid="review-doc"
+                        className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                      >
+                        <TableCell className="max-w-[420px] align-top max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
+                          <p className="text-fg truncate">{docTypeLabel(doc.type)}</p>
+                          <p className="text-caption text-fg-muted truncate">
+                            {doc.originalName} · {formatSize(doc.size)}
+                          </p>
+                        </TableCell>
 
-                      <TableCell className="align-top">
-                        {canReview && (
-                          <div className="flex flex-wrap items-center justify-end gap-2">
-                            {showTake && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                hideArrow
-                                disabled={busy}
-                                onClick={() => onTakeToReview(item.applicationId, doc.id)}
-                              >
-                                Tomar a revisión
-                              </Button>
-                            )}
-                            {showApprove && (
-                              <Button
-                                size="sm"
-                                hideArrow
-                                disabled={busy}
-                                isLoading={busy}
-                                onClick={() => onApprove(item.applicationId, doc.id)}
-                              >
-                                Aprobar
-                              </Button>
-                            )}
-                            {showReject && (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                hideArrow
-                                disabled={busy}
-                                onClick={() => onReject(item, doc)}
-                              >
-                                Rechazar
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRowAnimada>
-                  );
+                        <TableCell className="align-top max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
+                          <Badge variant={reviewStatusBadgeVariant(doc.reviewStatus)}>
+                            {getReviewStatusLabel(doc.reviewStatus)}
+                          </Badge>
+                          {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
+                            <p className="mt-1 text-caption text-danger break-words max-w-[280px]">
+                              Motivo: {doc.rejectionReason}
+                            </p>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="align-top max-md:col-span-2 max-md:row-start-2 max-md:block max-md:p-0">
+                          {canReview && (
+                            <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
+                              {showApprove && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  hideArrow
+                                  disabled={busy}
+                                  isLoading={busy}
+                                  onClick={() => onApprove(item.applicationId, doc.id)}
+                                >
+                                  Aprobar
+                                </Button>
+                              )}
+                              {showReject && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  hideArrow
+                                  className="text-danger hover:text-danger"
+                                  disabled={busy}
+                                  onClick={() => onReject(item, doc)}
+                                >
+                                  Rechazar
+                                </Button>
+                              )}
+                              {/* Revisora r25: tomar es un paso previo que casi nadie necesita; va al
+                                  final y sin borde, después de lo que decide (Aprobar · Rechazar). */}
+                              {showTake && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  hideArrow
+                                  disabled={busy}
+                                  onClick={() => onTakeToReview(item.applicationId, doc.id)}
+                                >
+                                  Tomar a revisión
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRowAnimada>
+                    );
+                  })),
+                  ];
                 })
               )}
             </TableBodyAnimado>
           </Table>
+          {/* La paginación de la casa (Nico, 23-10: las tablas la conservan siempre); sólo con más de una página. */}
+          {shouldPaginate && total > pageSize ? (
+            <div className="border-t border-border px-4 py-3" data-testid="soportes-pie">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 25, 50]}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          ) : null}
         </div>
       )}
       </CrossFade>

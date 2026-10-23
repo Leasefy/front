@@ -21,6 +21,7 @@ import { StepDocuments } from '@/components/wizard/steps/StepDocuments';
 import { StepReview } from '@/components/wizard/steps/StepReview';
 
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/back-button';
 import { IconButton } from '@leasefy/cadence';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -175,13 +176,11 @@ export default function CompletarPage({ params }: CompletarPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4">
         <div className="text-center">
-          <p className="text-fg-muted mb-4">{error ?? 'No se pudo cargar la postulación.'}</p>
-          <a
-            href={`/inquilino/aplicaciones/${applicationId}`}
-            className="text-primary hover:underline text-sm"
-          >
-            ← Volver al detalle
-          </a>
+          <p className="text-fg-muted mb-4" role="alert">{error ?? 'No se pudo cargar la postulación.'}</p>
+          {/* GLOW UP (21-10-2026): la vuelta de siempre, no un enlace suelto con flecha de texto. */}
+          <div className="flex justify-center" data-testid="completar-volver">
+            <BackButton href={`/inquilino/aplicaciones/${applicationId}`} label="Volver a la postulación" />
+          </div>
         </div>
       </div>
     );
@@ -233,13 +232,11 @@ function UpdateWizardContent({
   if (isSuccess) {
     return (
       <div className="min-h-screen bg-surface-muted flex items-center justify-center px-4">
-        {/* Enviar → «¡Información actualizada!»: la tarjeta llega (es un cambio, no la entrada de la página). */}
-        <Appear className="bg-surface rounded-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-8 h-8 text-success" />
-          </div>
-          <h2 className="text-2xl font-semibold text-fg mb-3">
-            ¡Información actualizada!
+        {/* Enviar → «Tu información quedó enviada» (sin «¡!», glow up 22-10): la tarjeta llega (es un cambio, no la entrada de la página). */}
+        <Appear className="bg-surface rounded-lg p-8 max-w-md w-full text-center">
+          <CheckCircle className="w-8 h-8 text-success shrink-0 mx-auto" aria-hidden="true" />
+          <h2 className="text-h3 text-fg mb-3">
+            Tu información quedó enviada
           </h2>
           <p className="text-fg-muted mb-8">
             La inmobiliaria fue notificada de que completaste la información solicitada.
@@ -251,7 +248,7 @@ function UpdateWizardContent({
             onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}`)}
             className="w-full"
           >
-            Ver mi aplicación
+            Ver mi postulación
           </Button>
         </Appear>
       </div>
@@ -281,10 +278,10 @@ function SubmissionErrorBanner({ message }: { message: string }) {
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-start gap-3">
         <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-danger">
+          <p className="text-sm font-medium text-danger">
             No pudimos completar tu solicitud
           </p>
-          <p className="text-xs text-danger mt-0.5 break-words">
+          <p className="text-caption text-danger mt-0.5 break-words">
             {message}
           </p>
         </div>

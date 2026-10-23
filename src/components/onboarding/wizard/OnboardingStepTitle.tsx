@@ -48,12 +48,12 @@ export function OnboardingStepTitle({ pasoId, rotulo, titulo, subtitulo, antes }
       <CrossFade swapKey={pasoId} mode="popLayout">
       {antes}
       {rotulo ? (
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">{rotulo}</p>
+        <p className="text-caption tabular-nums text-fg-subtle">{rotulo}</p>
       ) : null}
       <h1
         ref={tituloRef}
         tabIndex={-1}
-        className="mt-2 text-balance font-heading text-[26px] font-medium leading-[1.12] tracking-[-0.03em] text-fg outline-none sm:text-[28px]"
+        className="mt-1.5 text-balance font-heading text-[26px] font-medium leading-[1.12] tracking-[-0.03em] text-fg outline-none sm:text-[28px]"
       >
         {titulo}
       </h1>

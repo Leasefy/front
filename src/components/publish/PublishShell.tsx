@@ -96,10 +96,10 @@ export function PublishShell({ children }: PublishShellProps) {
         {/* Mobile progress */}
         <div className="px-4 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-mono tabular-nums font-medium text-fg">
+            <span className="text-caption font-mono tabular-nums font-medium text-fg">
               Paso {currentStep} de {totalSteps}
             </span>
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {currentStepConfig?.label}
             </span>
           </div>
@@ -126,7 +126,7 @@ export function PublishShell({ children }: PublishShellProps) {
               Cancelar
             </Button>
 
-            <h1 className="text-2xl font-semibold text-fg tracking-tight">
+            <h1 className="text-2xl font-[420] text-fg tracking-tight">
               Publicar Inmueble
             </h1>
             <p className="text-sm text-fg-muted mt-2">
@@ -136,7 +136,7 @@ export function PublishShell({ children }: PublishShellProps) {
 
           {/* Current step info */}
           <div className="p-6 xl:p-8 border-b border-border">
-            <h2 className="text-xl font-semibold text-fg tracking-tight">
+            <h2 className="text-xl font-[450] text-fg tracking-tight">
               {currentStepConfig?.description}
             </h2>
             <p className="text-sm text-fg-muted mt-2">
@@ -335,7 +335,7 @@ export function PublishShell({ children }: PublishShellProps) {
             </div>
 
             {/* FloppyDisk indicator */}
-            <p className="text-center text-xs text-fg-muted mt-4">
+            <p className="text-center text-caption text-fg-muted mt-4">
               Tu progreso se guarda automáticamente
             </p>
           </div>

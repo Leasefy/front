@@ -108,24 +108,24 @@ export function CuotaPlanTable({ installments, locale, className, acuerdoCerrado
 
   if (installments.length === 0) {
     return (
-      <p className={cn('text-sm text-fg-muted dark:text-fg-subtle', className)}>
+      <p className={cn('text-sm text-fg-muted', className)}>
         {es ? 'Sin cuotas' : 'No installments'}
       </p>
     );
   }
 
   return (
-    <ul className={cn('divide-y divide-border dark:divide-border-strong', className)}>
+    <ul className={cn('divide-y divide-border', className)}>
       {installments.map((cuota) => (
         <li
           key={cuota.number}
           className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
         >
           <div className="min-w-0">
-            <p className="text-sm font-medium text-fg dark:text-white">
+            <p className="text-sm font-medium text-fg">
               {nombreDeLaCuota(cuota.number, loc)}
             </p>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
+            <p className="text-caption text-fg-muted mt-0.5">
               {es ? 'Vence el ' : 'Due '}
               {formatDiaDeLaCuota(cuota.dueDate, loc)}
               {cuota.paidAt && (
@@ -138,10 +138,10 @@ export function CuotaPlanTable({ installments, locale, className, acuerdoCerrado
             </p>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
-            <span className="rounded-full bg-surface-muted dark:bg-border px-2 py-0.5 text-[10px] font-medium text-fg-subtle dark:text-fg-muted whitespace-nowrap">
+            <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-medium text-fg-subtle whitespace-nowrap">
               {cuotaEstadoLabel(cuota.status, loc, acuerdoCerrado)}
             </span>
-            <span className="text-sm font-mono tabular-nums text-fg dark:text-white whitespace-nowrap">
+            <span className="text-sm font-mono tabular-nums text-fg whitespace-nowrap">
               {formatCurrency(cuota.amountCop)}
             </span>
           </div>

@@ -77,9 +77,11 @@ async function montar() {
 
 /** El KPI de conversión: la tarjeta cuyo rótulo es «Tasa de conversión». */
 function kpiDeConversion(): string {
+  // Nico (22-10-2026): la conversión va en la barra del embudo y SÓLO con casos resueltos; sin ellos
+  // no se pinta (ni «0%» ni raya): '—' aquí quiere decir «no está».
   const tarjetas = Array.from(document.querySelectorAll<HTMLElement>('div'));
   const rotulo = tarjetas.find((el) => el.textContent?.trim() === 'Tasa de conversión');
-  if (!rotulo?.parentElement) throw new Error('No se pintó el KPI «Tasa de conversión»');
+  if (!rotulo?.parentElement) return '—';
   // La tarjeta es rótulo + valor; el valor es el hermano siguiente.
   return rotulo.nextElementSibling?.textContent?.trim() ?? '';
 }
@@ -100,14 +102,14 @@ afterEach(async () => {
 });
 
 describe('Pipeline — tasa de conversión', () => {
-  it('sin un solo caso resuelto pinta una raya, NUNCA «0%»', async () => {
+  it('sin un solo caso resuelto no pinta la conversión, NUNCA «0%»', async () => {
     // Un tablero recién abierto: leads en curso, ninguno cerrado ni perdido.
     datos.items = [lead('1', 'lead'), lead('2', 'visit_scheduled')];
     await montar();
     expect(kpiDeConversion()).toBe('—');
   });
 
-  it('con el tablero completamente vacío también pinta la raya', async () => {
+  it('con el tablero completamente vacío tampoco la pinta', async () => {
     datos.items = [];
     await montar();
     expect(kpiDeConversion()).toBe('—');

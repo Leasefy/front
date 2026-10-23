@@ -14,7 +14,7 @@
  *
  * Sirve igual en los tres perfiles (inmobiliaria, propietario, inquilino).
  */
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Envelope, PencilSimple } from '@phosphor-icons/react';
 
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
@@ -35,6 +35,8 @@ interface Props {
   correo: string;
   /** Las clases de la caja de lectura del perfil, para que se vea igual. */
   className?: string;
+  /** Lo que va pegado al correo, en su mismo renglón (el chulo de «Verificado» del glow up). */
+  junto?: ReactNode;
 }
 
 function fechaYHora(iso: string, es: boolean): string {
@@ -70,7 +72,7 @@ export function conPuntoFinal(texto: string): string {
   return texto.endsWith('.') ? texto : `${texto}.`;
 }
 
-export function CambiarCorreoDeEntrada({ correo, className }: Props) {
+export function CambiarCorreoDeEntrada({ correo, className, junto }: Props) {
   const { locale } = useI18n();
   const es = locale !== 'en';
   const [estado, setEstado] = useState<EstadoDelCambioDeCorreo | null>(null);
@@ -178,6 +180,7 @@ export function CambiarCorreoDeEntrada({ correo, className }: Props) {
           <span className="min-w-0 break-words text-sm text-fg" data-testid="correo-actual">
             <CorreoQueSeParte correo={estado?.correo ?? correo ?? '—'} />
           </span>
+          {junto}
         </span>
         {estado && entraConContrasena && !pendiente ? (
           <Button size="sm" variant="ghost" hideArrow onClick={() => setAbierto(true)} data-testid="cambiar-correo">

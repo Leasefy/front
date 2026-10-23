@@ -14,6 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
 import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 
@@ -26,13 +27,13 @@ interface AgenteProfileProps {
 const ROLE_CONFIG: Record<AgenteRole, { label: string; bg: string; text: string }> = {
   agent: {
     label: 'Agente',
-    bg: 'bg-primary-soft',
-    text: 'text-primary',
+    bg: 'bg-surface-muted',
+    text: 'text-fg',
   },
   coordinator: {
     label: 'Coordinador',
-    bg: 'bg-surface-muted dark:bg-ink',
-    text: 'text-fg-muted dark:text-fg-subtle',
+    bg: 'bg-surface-muted',
+    text: 'text-fg-muted',
   },
   director: {
     label: 'Director',
@@ -116,29 +117,18 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
   const whatsappNumber = agente.phone.replace(/[\s+\-]/g, '');
 
   return (
-    <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
+    <div className="rounded-lg border border-border bg-surface overflow-hidden">
       <div className="p-5 lg:p-6">
         {/* Header Row */}
         <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
           {/* Avatar with Status Indicator */}
           <div className="relative shrink-0">
-            {agente.avatar ? (
-              <img
-                src={agente.avatar}
-                alt={agente.name}
-                className="w-20 h-20 rounded-xl object-cover"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-xl bg-primary-soft flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary">
-                  {agente.name.split(' ').map(n => n.charAt(0)).slice(0, 2).join('')}
-                </span>
-              </div>
-            )}
+            {/* Glow up 22-10: el Avatar de Cadence (foto o iniciales), no un cuadro azul hecho a mano. */}
+            <Avatar name={agente.name} src={agente.avatar ?? undefined} size="xl" />
             {/* Status dot */}
             <div
               className={cn(
-                'absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-bg',
+                'absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-card',
                 statusConfig.dot
               )}
               title={statusConfig.label}
@@ -148,7 +138,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Name, Role, and Status */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold text-fg dark:text-white truncate">
+              <h1 className="truncate text-[30px] font-[420] leading-[1.08] tracking-[-0.025em] text-fg lg:text-[40px]">
                 {agente.name}
               </h1>
               <span
@@ -164,7 +154,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
 
             {/* Contact Info */}
             <div className="space-y-1.5">
-              <div className="flex items-center gap-2 text-fg-muted dark:text-fg-subtle">
+              <div className="flex items-center gap-2 text-fg-muted">
                 <Envelope className="w-4 h-4 shrink-0" />
                 <a
                   href={`mailto:${agente.email}`}
@@ -173,7 +163,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
                   {agente.email}
                 </a>
               </div>
-              <div className="flex items-center gap-2 text-fg-muted dark:text-fg-subtle">
+              <div className="flex items-center gap-2 text-fg-muted">
                 <Phone className="w-4 h-4 shrink-0" />
                 <a
                   href={`tel:${agente.phone}`}
@@ -206,42 +196,42 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
         <div className="flex flex-wrap gap-2 mb-6">
           {/* Zone */}
           {agente.zone && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-muted dark:bg-ink text-sm text-fg dark:text-fg-subtle">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-muted text-sm text-fg">
               <MapPin className="w-4 h-4" />
               {agente.zone}
             </div>
           )}
           {/* Specialization */}
           {agente.specialization && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-muted dark:bg-ink text-sm text-fg dark:text-fg-subtle">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-muted text-sm text-fg">
               <Buildings className="w-4 h-4" />
               {specializationLabels[agente.specialization]}
             </div>
           )}
           {/* Hire Date */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-muted dark:bg-ink text-sm text-fg dark:text-fg-subtle">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-muted text-sm text-fg">
             <CalendarBlank className="w-4 h-4" />
             {t('inmobiliaria.agente.since')} {formatHireDate(agente.hireDate)}
           </div>
         </div>
 
         {/* Commission Split */}
-        <div className="p-4 rounded-lg bg-surface-muted dark:bg-bg mb-6">
+        <div className="p-4 rounded-lg bg-surface-muted mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Percent className="w-4 h-4 text-fg-muted" />
-            <span className="text-sm font-medium text-fg dark:text-fg-subtle">
+            <span className="text-sm font-medium text-fg">
               {t('inmobiliaria.agente.commissionDistribution')}
             </span>
           </div>
 
           {/* Split Bar */}
-          <div className="h-3 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex mb-3">
+          <div className="h-3 rounded-full bg-surface-muted overflow-hidden flex mb-3">
             <div
               className="bg-primary"
               style={{ width: `${agentPercent}%` }}
             />
             <div
-              className="bg-muted dark:bg-muted"
+              className="bg-muted"
               style={{ width: `${agencyPercent}%` }}
             />
           </div>
@@ -250,14 +240,14 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-primary" />
-              <span className="text-fg-muted dark:text-fg-subtle">
-                {t('inmobiliaria.agente.agentLabel')}: <span className="font-semibold text-fg dark:text-white">{agentPercent}%</span>
+              <span className="text-fg-muted">
+                {t('inmobiliaria.agente.agentLabel')}: <span className="font-medium text-fg">{agentPercent}%</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-muted dark:bg-muted" />
-              <span className="text-fg-muted dark:text-fg-subtle">
-                {t('inmobiliaria.agente.agencyLabel')}: <span className="font-semibold text-fg dark:text-white">{agencyPercent}%</span>
+              <div className="w-3 h-3 rounded-full bg-muted" />
+              <span className="text-fg-muted">
+                {t('inmobiliaria.agente.agencyLabel')}: <span className="font-medium text-fg">{agencyPercent}%</span>
               </span>
             </div>
           </div>
@@ -265,16 +255,15 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
 
         {/* Contact Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          <a
-            href={`mailto:${agente.email}`}
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-fg font-medium hover:opacity-90 transition-colors"
-          >
-            <Envelope className="w-4 h-4" />
-            Email
-          </a>
+          <Button asChild hideArrow className="min-w-[120px] flex-1">
+            <a href={`mailto:${agente.email}`}>
+              <Envelope className="w-4 h-4" />
+              Correo
+            </a>
+          </Button>
           <a
             href={`tel:${agente.phone}`}
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg text-fg dark:text-fg-subtle font-medium hover:bg-surface-muted dark:hover:bg-ink transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-surface text-fg font-medium hover:bg-surface-muted transition-colors"
           >
             <Phone className="w-4 h-4" />
             {t('inmobiliaria.agente.call')}

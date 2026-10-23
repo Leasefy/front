@@ -1,5 +1,6 @@
 'use client';
 
+import { TarjetaDeLaFicha } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useState, useMemo, useEffect } from 'react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
@@ -20,6 +21,8 @@ import {
   Package,
   Receipt,
 } from '@phosphor-icons/react';
+import { textoDelHistorial } from '@/lib/inmuebles/texto-del-historial';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
@@ -194,7 +197,7 @@ export function ConsignacionTimeline({
   titulo,
 }: ConsignacionTimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { t, formatDate: fmtDate, formatRelativeDate: fmtRelDate } = useI18n();
+  const { t, formatRelativeDate: fmtRelDate } = useI18n();
 
   // ── De dónde salen los eventos ───────────────────────────────────────────
   //
@@ -305,8 +308,10 @@ export function ConsignacionTimeline({
         type: TIPO_DEL_HISTORIAL[e.tipo] ?? 'data_edited',
         date: e.fecha,
         // IN-06: «Cobro de 2026-07» → «Cobro de julio de 2026».
-        title: periodosEnPalabras(e.titulo),
-        description: periodosEnPalabras(e.detalle ?? ''),
+        // 22-10 (revisión): con las palabras de la casa, no las del back
+        // («Agente asignado», «fichas del pipeline»).
+        title: textoDelHistorial(periodosEnPalabras(e.titulo)),
+        description: textoDelHistorial(periodosEnPalabras(e.detalle ?? '')),
         actor: e.esSistema ? t('inmobiliaria.consignaciones.timeline.actors.system') : e.actor,
       });
     }
@@ -343,16 +348,17 @@ export function ConsignacionTimeline({
 
     // Hito 3 — vencimiento del arriendo vigente. El nombre del inquilino va
     // como CONTEXTO del hecho, no como si él hubiera hecho algo ese día.
+    const nombreDelInquilino = consignacion.inquilino?.nombre ?? consignacion.currentTenantName ?? '';
     if (consignacion.leaseEndDate) {
       reales.push({
         id: 'hito-fin-arriendo',
         type: 'lease_renewal',
         date: consignacion.leaseEndDate,
         title: t('inmobiliaria.consignaciones.timeline.events.leaseEnds'),
-        description: consignacion.currentTenantName
-          ? t('inmobiliaria.consignaciones.timeline.events.leaseEndsWithTenant', {
-              name: consignacion.currentTenantName,
-            })
+        // El nombre de la misma fuente que la portada (el inquilino del contrato vigente):
+        // la copia suelta venía en mayúsculas y la ficha decía dos nombres distintos.
+        description: nombreDelInquilino
+          ? t('inmobiliaria.consignaciones.timeline.events.leaseEndsWithTenant', { name: nombreDelInquilino })
           : '',
         actor: t('inmobiliaria.consignaciones.timeline.actors.system'),
       });
@@ -377,22 +383,20 @@ export function ConsignacionTimeline({
   const hasMoreEvents = events.length > maxVisibleItems;
 
   return (
-    <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-border-faint dark:border-border-strong">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
-            <Clock className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-          </div>
-          <h3 className="font-semibold text-fg">{titulo ?? t('inmobiliaria.consignaciones.timeline.title')}</h3>
-          <span className="ml-auto text-sm text-fg-muted dark:text-fg-subtle">
-            {t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
-          </span>
-        </div>
-      </div>
-
-      {/* Timeline */}
-      <div className="p-5">
+    // 21-10 (revisión de la ficha): la misma tarjeta de las demás secciones; cada
+    // evento es un renglón sobre la línea de tiempo, no una caja gris.
+    <TarjetaDeLaFicha
+      title={titulo ?? t('inmobiliaria.consignaciones.timeline.title')}
+      icon={<Clock className="h-4 w-4" />}
+      acciones={
+        <span className="font-mono text-[11px] uppercase tracking-[0.1em] tabular-nums text-fg-subtle">
+          {events.length === 1
+            ? t('inmobiliaria.consignaciones.timeline.eventsCountOne')
+            : t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
+        </span>
+      }
+    >
+      <div>
         {/* Cargando, falló y vacío son tres cosas distintas. Antes ninguna
             existía: siempre había eventos porque siempre se inventaban. */}
         {(cargandoAgenda || (historial === null && !falloHistorial)) && events.length === 0 ? (
@@ -411,7 +415,7 @@ export function ConsignacionTimeline({
         ) : (
         <div className="relative">
           {/* Vertical line */}
-          <div className="absolute left-4 top-0 bottom-0 w-px bg-surface-muted dark:bg-ink" />
+          <div className="absolute bottom-2 left-4 top-2 w-px bg-border-faint dark:bg-border-strong" />
 
           {/* Events: entran escalonados desde la línea (techo de 320 ms), y
               «Ver más» / «Ver menos» los hace entrar y salir. */}
@@ -428,21 +432,26 @@ export function ConsignacionTimeline({
                     {/* Icon */}
                     <div
                       className={cn(
-                        'absolute left-0 w-8 h-8 rounded-full flex items-center justify-center',
-                        style.bg
+                        // Un círculo neutro sobre la línea: el color va en el ícono, no en una caja.
+                        'absolute left-0 flex h-8 w-8 items-center justify-center rounded-full border border-border-faint bg-surface dark:border-border-strong dark:bg-bg',
                       )}
                     >
                       <Icon className={cn('w-4 h-4', style.text)} />
                     </div>
 
                     {/* Content */}
-                    <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
+                    <div className="pt-1">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="font-medium text-fg text-sm">
+                        <h4 className="text-[15px] font-medium text-fg">
                           {event.title}
                         </h4>
-                        <span className="text-xs text-fg-muted dark:text-fg-subtle shrink-0">
-                          {fmtRelDate(event.date)}
+                        {/* 22-10 (revisión): UNA fecha, la del día («17 oct 2026»);
+                            la distancia («hace 4 días») queda al pasar el puntero. */}
+                        <span
+                          className="shrink-0 font-mono text-[12px] tabular-nums text-fg-subtle"
+                          title={fmtRelDate(event.date)}
+                        >
+                          {fechaCorta(diaEnColombia(event.date) ?? event.date)}
                         </span>
                       </div>
 
@@ -452,18 +461,12 @@ export function ConsignacionTimeline({
                         </p>
                       )}
 
-                      <div className="flex items-center gap-3 text-xs text-fg-muted dark:text-fg-subtle">
-                        <span>{fmtDate(event.date)}</span>
-                        {event.actor && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {event.actor}
-                            </span>
-                          </>
-                        )}
-                      </div>
+                      {event.actor ? (
+                        <p className="flex items-center gap-1 text-caption text-fg-muted dark:text-fg-subtle">
+                          <User className="h-3 w-3" aria-hidden="true" />
+                          {event.actor}
+                        </p>
+                      ) : null}
                     </div>
                   </StaggerItem>
                 );
@@ -500,7 +503,7 @@ export function ConsignacionTimeline({
           </Button>
         )}
       </div>
-    </div>
+    </TarjetaDeLaFicha>
   );
 }
 

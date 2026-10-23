@@ -7,11 +7,10 @@
  * al paso 5: acá no hay secuencia que seguir.
  */
 
-import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react';
-
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import Link from 'next/link';
 import { PlanDeCuentas } from '@/components/migracion/PlanDeCuentas';
 import { ROLES_DE_LA_CONTABILIDAD } from '@/lib/auth/roles-de-la-contabilidad';
 
@@ -19,21 +18,27 @@ export default function PlanDeCuentasPage() {
   return (
     <PageGuard module="reportes" roles={ROLES_DE_LA_CONTABILIDAD} seccion="Contabilidad">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
+        <div className="space-y-3">
           <Link
             href="/panel/inmobiliaria/contabilidad"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+            className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-h2 text-fg">Plan de cuentas</h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            El PUC de la inmobiliaria. El código de una cuenta no se cambia; una cuenta con
-            movimientos no se borra, se desactiva.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Dinero"
+            titulo="Plan de cuentas"
+            descripcion="El PUC de la inmobiliaria: las cuentas a las que va cada asiento."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">
+                  El código de una cuenta no se cambia; una cuenta con movimientos no se borra, se
+                  desactiva.
+                </p>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         <PlanDeCuentas sinPaso5 />
       </div>
     </PageGuard>

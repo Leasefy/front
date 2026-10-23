@@ -88,16 +88,17 @@ describe('InmueblesPage', () => {
 
     expect(listarInmuebles).toHaveBeenCalledWith({ q: '', agencyId: '', page: 0 }, expect.any(AbortSignal))
     const texto = container.textContent ?? ''
-    expect(texto).toContain('2 inmuebles')
+    // Ronda 28 (revisora r27, T14): el total lo dice el paginador; sin el «2 inmuebles» suelto que lo repetía.
+    expect(texto).toContain('Mostrando 1–2 de 2')
     expect(texto).toContain('Calle Falsa 123')
     expect(texto).toContain('Inmobiliaria de prueba')
     expect(texto).toContain('Arrendado')
-    expect(texto).toContain('6 · 1 vigentes')
+    expect(texto).toContain('6 · 1 vigente')
     expect(texto).toContain('(sin inmobiliaria)')
     expect(texto).toContain('Disponible')
   })
 
-  it('abrir una fila lleva al historial de ese inmueble', async () => {
+  it('abrir una fila abre el historial de ese inmueble en el cajón (y queda en la URL)', async () => {
     listarInmuebles.mockResolvedValue(pagina([fila()]))
     await mount()
 
@@ -105,7 +106,9 @@ describe('InmueblesPage', () => {
     await act(async () => {
       tr.click()
     })
-    expect(push).toHaveBeenCalledWith('/admin/inmuebles/inm-1')
+    // Ronda 26: el cajón sobre la lista en vez de otra página; `/admin/inmuebles/inm-1` sigue para los enlaces.
+    expect(replace).toHaveBeenLastCalledWith('/admin/inmuebles?ver=inm-1')
+    expect(push).not.toHaveBeenCalled()
   })
 
   it('buscar escribe `q` en la URL al dejar de escribir', async () => {
@@ -149,7 +152,7 @@ describe('InmueblesPage', () => {
       boton.click()
     })
     expect(replace).toHaveBeenLastCalledWith('/admin/inmuebles?agencyId=ag-1')
-    expect(push).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalledWith(expect.stringContaining('ver='))
   })
 
   it('con el filtro de inmobiliaria puesto lo manda al back y ofrece quitarlo', async () => {

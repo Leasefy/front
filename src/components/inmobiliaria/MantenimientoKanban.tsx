@@ -95,8 +95,10 @@ interface MantenimientoKanbanProps {
 const PRIORITY_COLORS: Record<MantenimientoPriority, string> = {
   emergency: 'border-l-[#C0392B]',
   high: 'border-l-[#B7791F]',
-  medium: 'border-l-[#1A40FF]',
-  low: 'border-l-[#6B6B6B]',
+  // Revisora r25 (T3): «Media» iba con el voltaje escrito a mano. El azul es
+  // de la acción; la prioridad media, en grafito.
+  medium: 'border-l-fg-muted',
+  low: 'border-l-border-strong',
 };
 
 const PRIORITY_LABEL_KEYS: Record<MantenimientoPriority, string> = {
@@ -129,15 +131,15 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     id: 'reported',
     titleKey: 'inmobiliaria.mantenimiento.colReported',
     icon: ListBullets,
-    color: 'text-fg-muted dark:text-fg-muted',
-    bgColor: 'bg-surface-muted dark:bg-surface-muted',
+    color: 'text-fg-muted',
+    bgColor: 'bg-surface-muted',
   },
   {
     id: 'quoted',
     titleKey: 'inmobiliaria.mantenimiento.colQuoted',
     icon: CurrencyCircleDollar,
-    color: 'text-primary',
-    bgColor: 'bg-primary-soft',
+    color: 'text-fg-muted',
+    bgColor: 'bg-surface-muted',
   },
   {
     id: 'approved',
@@ -220,8 +222,8 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
       data-testid={`mantenimiento-tarjeta-${solicitud.id}`}
       className={cn(
         'w-full text-left p-3 rounded-md border-l-4 bg-surface',
-        'border border-border dark:border-border-strong',
-        'hover:border-border dark:hover:border-border-strong',
+        'border border-border',
+        'hover:border-border',
         'transition-[border-color,box-shadow] duration-base group',
         onClick && 'cursor-pointer',
         arrastrable && 'cursor-grab active:cursor-grabbing',
@@ -231,28 +233,19 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
     >
       {/* Header */}
       <div className="flex items-start gap-2 mb-2">
-        <div
+        {/* El ícono suelto, sin caja de color (vara: nada de cajas de ícono). */}
+        <TypeIcon
           className={cn(
-            'w-7 h-7 rounded-sm flex items-center justify-center flex-shrink-0',
-            solicitud.priority === 'emergency'
-              ? 'bg-danger-soft'
-              : 'bg-primary-soft'
+            'mt-0.5 w-4 h-4 flex-shrink-0',
+            solicitud.priority === 'emergency' ? 'text-danger' : 'text-fg-muted'
           )}
-        >
-          <TypeIcon
-            className={cn(
-              'w-4 h-4',
-              solicitud.priority === 'emergency'
-                ? 'text-danger'
-                : 'text-primary'
-            )}
-          />
-        </div>
+          aria-hidden="true"
+        />
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-medium text-fg dark:text-white line-clamp-2 group-hover:text-primary dark:group-hover:text-primary transition-colors">
+          <h4 className="text-sm font-medium text-fg line-clamp-2 group-hover:text-primary transition-colors">
             {solicitud.title}
           </h4>
-          <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
+          <p className="text-caption text-fg-muted mt-0.5">
             {typeInfo?.labelEs}
           </p>
         </div>
@@ -269,7 +262,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
       </div>
 
       {/* Property */}
-      <div className="text-xs text-fg-muted dark:text-fg-subtle mb-2 line-clamp-1">
+      <div className="text-caption text-fg-muted mb-2 line-clamp-1">
         <HouseLine className="w-3 h-3 inline mr-1" />
         {solicitud.propertyTitle}
       </div>
@@ -298,7 +291,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
       {/* Footer */}
       {/* SO-15: con cinco columnas la tarjeta es angosta: el pie se parte en
           renglones enteros en vez de cortar «$» de su cifra. */}
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-fg-subtle">
           <span className="flex items-center gap-1 whitespace-nowrap">
             <CalendarBlank className="w-3 h-3" />
@@ -317,7 +310,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
         {(solicitud.priority === 'emergency' || solicitud.priority === 'high') && (
           <span
             className={cn(
-              'px-1.5 py-0.5 rounded text-xs font-medium',
+              'px-1.5 py-0.5 rounded text-caption font-medium',
               solicitud.priority === 'emergency'
                 ? 'bg-danger-soft text-danger'
                 : 'bg-warning-soft text-warning'
@@ -330,7 +323,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
 
         {/* Approved Amount */}
         {solicitud.approvedAmount && (
-          <span className="font-medium text-success whitespace-nowrap">
+          <span className="font-mono tabular-nums text-fg whitespace-nowrap">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}
@@ -398,6 +391,8 @@ interface KanbanColumnProps {
   arrastrable: boolean;
   encima: boolean;
   t: (key: string, params?: Record<string, string | number>) => string;
+  /** Sin solicitudes: angosta y baja (revisora r25: tres columnas vacías ocupaban el tablero). */
+  plegada?: boolean;
 }
 
 function KanbanColumnComponent({
@@ -406,30 +401,21 @@ function KanbanColumnComponent({
   onViewDetails,
   arrastrable,
   encima,
+  plegada = false,
   t,
 }: KanbanColumnProps) {
   const Icon = column.icon;
   const { setNodeRef } = useDroppable({ id: column.id, data: { estado: column.id } });
 
   return (
-    <div className="flex flex-col min-w-0" data-testid={`columna-${column.id}`}>
+    <div className="flex flex-col min-w-0" data-testid={`columna-${column.id}`} data-plegada={plegada ? 'si' : undefined}>
       {/* Column Header */}
-      <div
-        className={cn(
-          'flex items-center gap-2 px-3 py-2.5 rounded-t-xl border border-b-0',
-          'border-border dark:border-border-strong',
-          column.bgColor
-        )}
-      >
-        <Icon className={cn('w-4 h-4', column.color)} />
-        <span className={cn('font-semibold text-sm', column.color)}>{t(column.titleKey)}</span>
-        <span
-          className={cn(
-            'ml-auto px-2 py-0.5 rounded-full text-xs font-medium',
-            'bg-surface-muted',
-            column.color
-          )}
-        >
+      {/* Cadence 2 (glow up 21-10): la columna es un carril de arena, sin color por etapa (el
+          color es de los estados que piden algo, no de las columnas); la cuenta en mono. */}
+      <div className="flex items-center gap-2 rounded-t-[18px] bg-surface-muted/70 px-3.5 pb-1.5 pt-3">
+        <Icon className="h-4 w-4 text-fg-muted" />
+        <span className="text-sm font-medium text-fg">{t(column.titleKey)}</span>
+        <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-subtle">
           {items.length}
         </span>
       </div>
@@ -438,12 +424,10 @@ function KanbanColumnComponent({
       <div
         ref={setNodeRef}
         className={cn(
-          'relative flex-1 p-2 space-y-2 rounded-b-xl border overflow-y-auto transition-[border-color,box-shadow] duration-base',
-          'bg-surface-muted',
-          'min-h-[200px] max-h-[calc(100vh-400px)]',
-          encima
-            ? 'border-dashed border-primary/30 ring-2 ring-primary/20'
-            : 'border-border dark:border-border-strong'
+          'relative flex-1 p-2 space-y-2 rounded-b-[18px] overflow-y-auto transition-[background-color,box-shadow] duration-base',
+          // Revisora r25: la columna vacía va plegada (angosta y baja); sigue recibiendo tarjetas.
+          plegada ? 'min-h-[56px]' : 'min-h-[200px] max-h-[calc(100vh-400px)]',
+          encima ? 'bg-primary-soft/50 ring-2 ring-primary/25' : 'bg-surface-muted/70'
         )}
       >
         {/* Sin `AnimatePresence mode="popLayout"` DIRECTO sobre las tarjetas:
@@ -484,15 +468,12 @@ function KanbanColumnComponent({
         ) : (
           <div
             className={cn(
-              'flex flex-col items-center justify-center h-full py-8 text-fg-subtle',
-              encima && 'rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50'
+              'flex items-center justify-center rounded-[14px] border border-dashed px-4 py-5 text-center text-caption',
+              encima ? 'border-primary/40 text-primary' : 'border-border text-fg-subtle'
             )}
           >
-            <Icon className="w-8 h-8 mb-2 opacity-50" />
-            <p className="text-xs">{t('inmobiliaria.mantenimiento.noRequests')}</p>
-            {arrastrable && (
-              <p className="text-[10px] mt-1 opacity-70">{t('inmobiliaria.pipeline.dragHere')}</p>
-            )}
+            {/* Vacía: una línea; arrastrando encima, dice dónde soltar. */}
+            {encima ? t('inmobiliaria.pipeline.dropHere') : t('inmobiliaria.mantenimiento.noRequests')}
           </div>
         )}
         </CrossFade>
@@ -503,7 +484,7 @@ function KanbanColumnComponent({
           open={items.length > 0 && encima}
           className="flex items-center justify-center py-4 rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50"
         >
-          <p className="text-xs text-primary">{t('inmobiliaria.pipeline.dropHere')}</p>
+          <p className="text-caption text-primary">{t('inmobiliaria.pipeline.dropHere')}</p>
         </Collapse>
       </div>
     </div>
@@ -658,7 +639,17 @@ export function MantenimientoKanban({
       {/* SO-15 (QA 04-10): las cinco columnas a la vista (a 1440 la de
           «Completada» quedaba fuera, a la derecha). En pantallas chicas se
           apilan; nunca hay que desplazar de lado para encontrar una tarjeta. */}
-      <div className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* Revisora r25: a 1440 las columnas vacías van angostas (11rem) y las que tienen trabajo se
+          reparten el resto; abajo de xl se apilan como siempre, las vacías bajas. */}
+      <div
+        className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:[grid-template-columns:var(--columnas-del-tablero)]"
+        style={{
+          ['--columnas-del-tablero' as string]: KANBAN_COLUMNS.map((c) =>
+            groupedData[c.id].length > 0 ? 'minmax(0,1fr)' : 'minmax(0,11rem)',
+          ).join(' '),
+        }}
+        data-testid="tablero-de-mantenimientos"
+      >
         {KANBAN_COLUMNS.map((column) => (
           <KanbanColumnComponent
             key={column.id}
@@ -667,6 +658,7 @@ export function MantenimientoKanban({
             onViewDetails={onViewDetails}
             arrastrable={arrastrable}
             encima={columnaEncima === column.id}
+            plegada={groupedData[column.id].length === 0}
             t={t}
           />
         ))}

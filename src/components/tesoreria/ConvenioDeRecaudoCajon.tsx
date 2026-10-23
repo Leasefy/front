@@ -547,7 +547,7 @@ export function ConvenioDeRecaudoCajon({
                 carácter y creer que el banco mandó mal el archivo. */}
             {presetElegido ? (
               <p
-                className="flex gap-2 rounded-md bg-warning-soft px-3 py-2 text-xs text-fg"
+                className="flex gap-2 rounded-md bg-warning-soft px-3 py-2 text-caption text-fg"
                 data-testid="advertencia-del-preset"
               >
                 <Warning className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden="true" />
@@ -821,7 +821,7 @@ export function ConvenioDeRecaudoCajon({
               {error('codigo', 'El número que el banco le asignó. Está en el contrato del convenio.')}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="convenio-nombre">Cómo lo vas a llamar acá</Label>
+              <Label htmlFor="convenio-nombre">Cómo lo vas a llamar aquí</Label>
               <Input
                 id="convenio-nombre"
                 placeholder="Recaudo de arriendos"

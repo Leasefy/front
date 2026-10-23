@@ -103,7 +103,7 @@ function CampoEditable({
    */
   return (
     <div className="block">
-      <label htmlFor={id} className="block text-xs text-fg-muted dark:text-fg-subtle mb-1">
+      <label htmlFor={id} className="block text-caption text-fg-muted mb-1">
         {etiqueta}
         {sufijo && <span className="text-fg-subtle"> ({sufijo})</span>}
       </label>
@@ -154,7 +154,7 @@ export function DuenosDelInmueble({ owners }: { owners?: DuenoDelArchivo[] }) {
 
   return (
     <div className="space-y-1" data-testid={`duenos-${owners.length}`}>
-      <span className="block text-xs text-fg-muted dark:text-fg-subtle">
+      <span className="block text-caption text-fg-muted">
         {owners.length} propietarios
         {todos ? ' · con su porcentaje' : conPlata ? ' · con su plata' : ` · ${FALTA_EL_PORCENTAJE.toLowerCase()}`}
       </span>
@@ -168,14 +168,14 @@ export function DuenosDelInmueble({ owners }: { owners?: DuenoDelArchivo[] }) {
       ) : null}
       <ul className="space-y-0.5">
         {owners.map((o, i) => (
-          <li key={`${o.documento ?? o.nombre ?? i}`} className="flex items-baseline justify-between gap-3 text-xs">
-            <span className="min-w-0 truncate text-fg dark:text-white">
+          <li key={`${o.documento ?? o.nombre ?? i}`} className="flex items-baseline justify-between gap-3 text-caption">
+            <span className="min-w-0 truncate text-fg">
               {o.nombre ?? o.documento ?? 'Sin nombre'}
               {o.documento && o.nombre ? (
                 <span className="text-fg-subtle"> · {o.documento}</span>
               ) : null}
             </span>
-            <span className="shrink-0 font-mono tabular-nums text-fg dark:text-white">
+            <span className="shrink-0 font-mono tabular-nums text-fg">
               {typeof o.porcentaje === 'number' ? `${o.porcentaje} %` : '—'}
               {typeof o.canon === 'number' ? (
                 <span className="text-fg-subtle"> · {formatCOP(o.canon)}</span>
@@ -185,7 +185,7 @@ export function DuenosDelInmueble({ owners }: { owners?: DuenoDelArchivo[] }) {
         ))}
       </ul>
       {noSuman && (
-        <span className="block text-xs text-danger" data-testid="duenos-no-suman">
+        <span className="block text-caption text-danger" data-testid="duenos-no-suman">
           Los porcentajes suman {suma} %, no 100 %: esta fila va a quedar pendiente hasta que
           cuadren.
         </span>
@@ -255,13 +255,13 @@ function SuggestionRow({
           ? 'bg-success-soft'
           : suggestion.accepted === false
             ? 'bg-surface-muted opacity-60'
-            : 'bg-surface dark:bg-ink'
+            : 'bg-surface'
       )}
     >
       {/* Left: Field + value */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle">
+          <span className="text-caption font-medium text-fg-muted">
             {fieldLabel}
           </span>
           <ConfidencePill confidence={suggestion.confidence} />
@@ -281,17 +281,17 @@ function SuggestionRow({
               aria-label={`Valor para ${fieldLabel}`}
               data-testid={`sugerencia-editar-${suggestion.field}`}
             />
-            <span className="text-xs text-fg-subtle whitespace-nowrap">Enter para guardar</span>
+            <span className="text-caption text-fg-subtle whitespace-nowrap">Enter para guardar</span>
           </div>
         ) : (
           <div
             className={cn(
               'font-mono text-sm mt-0.5',
               suggestion.accepted === false
-                ? 'line-through text-fg-subtle dark:text-fg-muted'
+                ? 'line-through text-fg-subtle'
                 : suggestion.accepted === true
                   ? 'text-success'
-                  : 'text-fg dark:text-white'
+                  : 'text-fg'
             )}
           >
             {suggestion.field === 'monthlyRent'
@@ -301,7 +301,7 @@ function SuggestionRow({
                 : suggestion.suggestedValue}
           </div>
         )}
-        <p className="text-xs text-fg-subtle dark:text-fg-muted italic mt-0.5 leading-relaxed">
+        <p className="text-caption text-fg-subtle italic mt-0.5 leading-relaxed">
           {suggestion.reasoning}
         </p>
       </div>
@@ -347,8 +347,8 @@ function SuggestionRow({
       ) : (
         <MonoLabel
           className={cn(
-            'text-xs shrink-0 mt-1',
-            suggestion.accepted ? 'text-success' : 'text-fg-subtle dark:text-fg-muted'
+            'text-caption shrink-0 mt-1',
+            suggestion.accepted ? 'text-success' : 'text-fg-subtle'
           )}
         >
           {suggestion.accepted
@@ -409,7 +409,7 @@ export function AISuggestionCard({
 
   return (
     <div
-      className="animate-stagger-in rounded-lg border border-border dark:border-border-strong overflow-hidden bg-surface dark:bg-bg"
+      className="animate-stagger-in rounded-lg border border-border overflow-hidden bg-surface"
       style={{ animationDelay: `${Math.min(index, 20) * 50}ms` }}
     >
       {/* Header row */}
@@ -425,11 +425,11 @@ export function AISuggestionCard({
 
         {/* Title + Address */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-fg dark:text-white text-sm truncate">
+          <p className="font-medium text-fg text-sm truncate">
             {displayTitle}
           </p>
           {property.propertyAddress && property.propertyTitle && (
-            <p className="text-xs text-fg-muted dark:text-fg-subtle truncate mt-0.5">
+            <p className="text-caption text-fg-muted truncate mt-0.5">
               {property.propertyAddress}
             </p>
           )}
@@ -438,7 +438,7 @@ export function AISuggestionCard({
         {/* Status badge */}
         <div className={cn('flex items-center gap-1.5 shrink-0', statusTextClass)}>
           <div className={cn('w-1.5 h-1.5 rounded-full', statusDotClass)} />
-          <MonoLabel className="text-xs whitespace-nowrap">
+          <MonoLabel className="text-caption whitespace-nowrap">
             {statusLabel}
           </MonoLabel>
         </div>
@@ -457,7 +457,7 @@ export function AISuggestionCard({
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="border-t border-border-faint dark:border-border-strong px-4 pb-4 pt-3 space-y-3">
+        <div className="border-t border-border-faint px-4 pb-4 pt-3 space-y-3">
           {/* Las fotos que trajo el enlace (Nico, 2026-09-02: «si tiene
               imágenes, deberíamos mostrarlas»). Son URLs del portal de
               origen, no del CDN propio: `<img>` a secas, sin next/image. Una
@@ -494,17 +494,17 @@ export function AISuggestionCard({
           {/* Property summary pills */}
           <div className="flex flex-wrap gap-2">
             {property.propertyType && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted dark:bg-ink text-xs font-mono text-fg-muted dark:text-fg-subtle">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted text-caption font-mono text-fg-muted">
                 {property.propertyType}
               </span>
             )}
             {property.propertyCity && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted dark:bg-ink text-xs font-mono text-fg-muted dark:text-fg-subtle">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted text-caption font-mono text-fg-muted">
                 {property.propertyCity}
               </span>
             )}
             {property.propertyZone && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted dark:bg-ink text-xs font-mono text-fg-muted dark:text-fg-subtle">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted text-caption font-mono text-fg-muted">
                 {property.propertyZone}
               </span>
             )}
@@ -524,7 +524,7 @@ export function AISuggestionCard({
             {/* T-0129 — neutral: no es un error, la fila entra y queda marcada. */}
             {sinCanon(property) && (
               <span
-                className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle"
+                className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted text-fg-muted"
                 data-testid={`sin-canon-${property._rowIndex}`}
               >
                 {AVISO_FILA_SIN_CANON}
@@ -533,7 +533,7 @@ export function AISuggestionCard({
             {/* Nico 14-10: la venta sin precio tampoco frena. */}
             {sinPrecioDeVenta(property) && (
               <span
-                className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle"
+                className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted text-fg-muted"
                 data-testid={`sin-precio-de-venta-${property._rowIndex}`}
               >
                 {AVISO_FILA_SIN_PRECIO_DE_VENTA}
@@ -551,7 +551,7 @@ export function AISuggestionCard({
               campos: se veía «no se puede importar» y no había qué hacer. */}
           {camposACompletar.length > 0 && (
             <div
-              className="border-t border-border-faint dark:border-border-strong pt-3"
+              className="border-t border-border-faint pt-3"
               data-testid={`completar-${property._rowIndex}`}
               data-completo={faltaAlgo ? undefined : 'true'}
             >
@@ -563,7 +563,7 @@ export function AISuggestionCard({
                 )}
                 <span
                   className={cn(
-                    'text-xs font-semibold uppercase tracking-wide',
+                    'text-caption font-medium uppercase tracking-wide',
                     faltaAlgo ? 'text-danger' : 'text-success'
                   )}
                 >
@@ -594,7 +594,7 @@ export function AISuggestionCard({
 
           {/* Editar cualquier dato, falte o no. Un valor leído de un archivo
               ajeno puede estar mal sin estar vacío. */}
-          <div className="border-t border-border-faint dark:border-border-strong pt-3">
+          <div className="border-t border-border-faint pt-3">
             <Button
               type="button"
               variant="ghost"
@@ -628,10 +628,10 @@ export function AISuggestionCard({
           {/* Suggestions list */}
           {hasSuggestions && (
             <>
-              <div className="border-t border-border-faint dark:border-border-strong pt-3">
+              <div className="border-t border-border-faint pt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkle className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-fg dark:text-fg-subtle uppercase tracking-wide">
+                  <span className="text-caption font-medium text-fg uppercase tracking-wide">
                     Sugerencias AI
                   </span>
                 </div>
@@ -669,14 +669,14 @@ export function AISuggestionCard({
 
           {/* Error messages */}
           {property.hasErrors && property.errorMessages.length > 0 && (
-            <div className="border-t border-border-faint dark:border-border-strong pt-3 space-y-1.5">
+            <div className="border-t border-border-faint pt-3 space-y-1.5">
               {property.errorMessages.map((msg, i) => (
                 <div
                   key={i}
                   className="flex items-start gap-2 p-2 rounded-md bg-danger-soft border border-danger/30"
                 >
                   <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" />
-                  <p className="text-xs text-danger">{msg}</p>
+                  <p className="text-caption text-danger">{msg}</p>
                 </div>
               ))}
             </div>

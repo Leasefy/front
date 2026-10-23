@@ -18,12 +18,21 @@
  * Does NOT render raw cédula / phone / email anywhere.
  */
 
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { useTr } from '@/lib/i18n/use-tr'
+import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
+import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
 import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Users } from '@phosphor-icons/react'
+import { Funnel, MagnifyingGlass, Users } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { CARTERA_STAGES, STAGE_LABELS_ES, stageDisplayName, type CarteraStage } from '@/lib/cartera'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -87,8 +96,17 @@ function etiquetaDeCanal(
   return t(`inmobiliaria.ai.cobranza.deudores.channels.${canal}` as never)
 }
 
+const BASE_DE_CASOS = '/panel/inmobiliaria/pagos/cobranza/deudores'
+
+/** Las etapas que piden que alguien mire: llevan el punto ámbar en su pestaña. */
+const ETAPAS_QUE_PIDEN_ATENCION = new Set<CarteraStage>(['S3', 'S4', 'S5'])
+
+/** `varias`: llegaron dos o más etapas por la URL (`?stage=S2,S3`); ninguna pestaña es la activa. */
+type PestanaDeEtapa = 'todas' | 'varias' | CarteraStage
+
 export default function DeudoresListClient() {
   const { t, locale } = useI18n()
+  const tr = useTr()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -104,7 +122,24 @@ export default function DeudoresListClient() {
   }, [searchParams])
 
   const [stages, setStages] = useState<CarteraStage[]>(initialStages)
-  const [channels, setChannels] = useState<Channel[]>([])
+  const [channels, setChannels] = useState<Channel[]>(() => {
+    const raw = searchParams.get('canal')
+    if (!raw) return []
+    return raw.split(',').filter((c): c is Channel => (CHANNELS as string[]).includes(c))
+  })
+
+  // Revisora r25 (Casos #4, 6b): la etapa y el canal viven en la URL; un enlace
+  // o volver atrás deja la lista como estaba. `replace`: filtrar no es navegar.
+  useEffect(() => {
+    const q = new URLSearchParams(searchParams.toString())
+    if (stages.length > 0) q.set('stage', stages.join(','))
+    else q.delete('stage')
+    if (channels.length > 0) q.set('canal', channels.join(','))
+    else q.delete('canal')
+    const nueva = q.toString()
+    if (nueva === searchParams.toString()) return
+    router.replace(nueva ? `${BASE_DE_CASOS}?${nueva}` : BASE_DE_CASOS, { scroll: false })
+  }, [stages, channels, router, searchParams])
   const [daysMin, setDaysMin] = useState<number>(DAYS_MIN_DEFAULT)
   const [daysMax, setDaysMax] = useState<number>(DAYS_MAX_DEFAULT)
   const [searchInput, setSearchInput] = useState<string>('')
@@ -163,6 +198,33 @@ export default function DeudoresListClient() {
   // CONSISTENCIA (04-10-2026, CR-31): sin plazo fijado, que la lista esté vacía
   // es lo correcto; el vacío dice por qué y no manda a importar un CSV.
   const plazoSinFijar = usePlazoSinFijar()
+  // LA RESPUESTA: a cuántos se está cobrando y en qué etapa. Es el mismo
+  // panorama que lee la portada de Cobranza (conteo por etapa del agente); la
+  // lista de abajo pagina por cursor y no sabe su total.
+  const { data: panorama } = useCarteraOverview()
+  const porEtapa = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const e of panorama?.stages ?? []) m.set(e.stage, e.count)
+    return m
+  }, [panorama])
+  // La misma cuenta de la portada: en mora es todo menos «Pre-vencimiento».
+  const totalDeCasos = useMemo(() => [...porEtapa.values()].reduce((a, n) => a + n, 0), [porEtapa])
+  const porVencer = porEtapa.get('S0') ?? 0
+  const enMora = totalDeCasos - porVencer
+  // Revisora r27 (K1): la cifra con su barra. Sin plata (para Víctor), los
+  // tramos van por GRAVEDAD de la mora, agrupando las etapas (las pestañas
+  // dicen cada etapa): hasta 15 días · de 16 a 89 · siniestro o jurídico ·
+  // ilocalizables.
+  const tramosDeLaMora = useMemo(() => {
+    const n = (...st: string[]) => st.reduce((a, x) => a + (porEtapa.get(x) ?? 0), 0)
+    return [
+      { clave: 'temprana', etiqueta: tr('Hasta 15 días'), monto: n('S1'), tono: 'neutro' as const },
+      { clave: 'media', etiqueta: tr('De 16 a 89 días'), monto: n('S2', 'S3'), tono: 'aviso' as const },
+      { clave: 'grave', etiqueta: tr('Siniestro o jurídico'), monto: n('S4', 'S5'), tono: 'critico' as const },
+      { clave: 'ilocalizable', etiqueta: tr('Ilocalizables'), monto: n('SX'), tono: 'neutro' as const },
+    ].map((t) => ({ ...t, cifra: t.monto.toLocaleString(!locale || locale.startsWith('es') ? 'es-CO' : 'en-US'), 'data-testid': `deudores-tramo-${t.clave}` }))
+  }, [porEtapa, tr, locale])
+  const pestana: PestanaDeEtapa = stages.length === 0 ? 'todas' : stages.length === 1 ? stages[0] : 'varias'
 
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
   // hasActiveFilters distinguishes "filtered empty" (Sin deudores con estos filtros)
@@ -215,6 +277,16 @@ export default function DeudoresListClient() {
     )
   }
 
+  // Revisora r25 (Casos #5): el vacío también lleva el encabezado de la
+  // pantalla; sin él, quien llega no sabe dónde está.
+  const encabezadoDelVacio = (
+    <EncabezadoDePantalla
+      seccion={t('inmobiliaria.ai.nav.cobranza')}
+      titulo={t('inmobiliaria.ai.cobranza.deudores.title')}
+      descripcion={t('inmobiliaria.ai.cobranza.deudores.subtitle')}
+    />
+  )
+
   if (
     !isLoading &&
     !hasActiveFilters &&
@@ -223,7 +295,8 @@ export default function DeudoresListClient() {
   ) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8 space-y-4">
+      <div className="p-6 lg:p-8 space-y-6">
+        {encabezadoDelVacio}
         {/* QA-IA-B (04-10-2026): sin días de plazo fijados la lista queda
             vacía aunque haya cuotas vencidas: se dice por qué. */}
         <AvisoPlazoSinFijarEnCobranza />
@@ -231,8 +304,8 @@ export default function DeudoresListClient() {
           <div data-testid="casos-vacio-sin-plazo">
             <EmptyState
               icon={Users}
-              title="Todavía no hay casos de cobranza"
-              description="Es lo esperado: sin días de plazo fijados, las cuotas vencidas no entran a la cobranza. Cuando los fije, quienes sigan debiendo pasado el plazo aparecen aquí solos."
+              title={tr('Todavía no hay casos de cobranza')}
+              description={tr('Es lo esperado: sin días de plazo fijados, las cuotas vencidas no entran a la cobranza. Cuando los fije, quienes sigan debiendo pasado el plazo aparecen aquí solos.')}
             />
           </div>
         ) : (
@@ -243,19 +316,19 @@ export default function DeudoresListClient() {
             <div data-testid="casos-vacio-de-la-cartera">
               <EmptyState
                 icon={Users}
-                title="Todavía no hay deudores en Cobranza"
-                description="Aquí aparecen solos los inquilinos que pasan sus días de plazo sin pagar. Si acabas de fijar el plazo o de cargar contratos, tráelos ahora."
+                title={tr('Todavía no hay casos de cobranza')}
+                description={tr('Aquí aparecen solos los inquilinos que pasan sus días de plazo sin pagar. Si acabas de fijar el plazo o de cargar contratos, tráelos ahora.')}
               />
             </div>
             <TraerLaCartera onTraida={() => void refetch()} />
             <section className="space-y-2" aria-labelledby="importar-otros-deudores">
-              <h2 id="importar-otros-deudores" className="text-sm font-medium text-fg-muted">
-                Otra opción: deudores que no están en Leasefy
+              <h2 id="importar-otros-deudores" className="text-body-sm font-medium text-fg-muted">
+                {tr('Otra opción: deudores que no están en Leasefy')}
               </h2>
               {/* Importar cartera — cableada al endpoint POST /cartera/import.
                   FAIL-SOFT: si el backend no está desplegado (404/red), el card
-                  degrada a "Próximamente — requiere despliegue" sin romper. Tras un
-                  import exitoso refrescamos la lista para salir del empty state. */}
+                  degrada sin romper. Tras un import exitoso refrescamos la lista
+                  para salir del empty state. */}
               <CobranzaImportCard onImported={() => void refetch()} />
             </section>
           </>
@@ -266,9 +339,6 @@ export default function DeudoresListClient() {
   }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-  const toggleStage = (s: CarteraStage) => {
-    setStages((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
-  }
   const toggleChannel = (c: Channel) => {
     setChannels((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
   }
@@ -286,173 +356,191 @@ export default function DeudoresListClient() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   //
-  // Anatomía canónica del panel (la misma de Acuerdos, Pagos, Llamadas, Cartas
-  // y Siniestros):
+  // GLOW UP (revisora r25, Casos #2 y C3): la cifra va DENTRO de la tarjeta,
+  // encima de las pestañas, como «Deuda del mes». Antes iba suelta arriba con
+  // sus siete tramos por etapa y, además, siete chips de etapa con los MISMOS
+  // conteos: el mismo número dicho dos veces. Ahora hay una sola fila: las
+  // etapas son las pestañas, con su conteo.
   //
   //   Card
-  //    ├─ barra de filtros   (border-b)
-  //    ├─ tabla              (overflow-x-auto)
-  //    └─ pie                (border-t)
-  //
-  // Antes los filtros vivían en una columna suelta a la izquierda, fuera de
-  // toda tarjeta, y la tabla flotaba al lado. Era la única pantalla del panel
-  // armada así.
-  const contador = `${total}${hasMore ? '+' : ''} ${total === 1 ? 'caso' : 'casos'}`
+  //    ├─ la cifra «En mora»       (border-b)
+  //    ├─ pestañas por etapa       (border-b)
+  //    ├─ buscador + Filtros (n)   (border-b)  ← canal y días, en un popover
+  //    ├─ tabla / tarjetas
+  //    └─ pie: paginador           (border-t)
+  const fueraDeLasPestanas = channels.length + (daysMin !== DAYS_MIN_DEFAULT || daysMax !== DAYS_MAX_DEFAULT ? 1 : 0)
+  const enEs = !locale || locale.startsWith('es')
+  const cifraDe = (n: number) => n.toLocaleString(enEs ? 'es-CO' : 'en-US')
 
   return (
     <CrossFade swapKey="lista">
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.deudores.title')}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.ai.cobranza.deudores.subtitle')}
-          </p>
-        </div>
-        {/* COBRANZA-MANUAL: la cartera de los contratos llega cada noche; este
-            botón la trae ya. No contacta a nadie. */}
-        <TraerLaCartera compacto onTraida={() => void refetch()} />
-      </header>
+      {/* COBRANZA-MANUAL: la cartera de los contratos llega cada noche; el
+          botón del encabezado la trae ya. No contacta a nadie. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.ai.nav.cobranza')}
+        titulo={t('inmobiliaria.ai.cobranza.deudores.title')}
+        descripcion={t('inmobiliaria.ai.cobranza.deudores.subtitle')}
+        acciones={<TraerLaCartera compacto onTraida={() => void refetch()} />}
+      />
 
       <AvisoPlazoSinFijarEnCobranza />
 
-      <Card>
-        {/* ── Barra de filtros ──────────────────────────────────────────── */}
-        <div className="border-b border-border px-4 py-3 space-y-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="min-w-0 flex-1 max-w-sm">
+      <Card className="overflow-hidden">
+        {/* ── 1 · LA RESPUESTA: cuántos están en mora ────────────────────── */}
+        {/* Sin plata a propósito: ni el panorama ni la lista traen el saldo
+            (para Víctor). Se cuenta como la portada: todo menos «Pre-vencimiento». */}
+        <Presence show={Boolean(panorama)} direction="none">
+          <CifraHeroe
+            className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+            data-testid="deudores-en-cobranza"
+            tamano="mediana"
+            rotulo={tr('En mora')}
+            cifra={cifraDe(enMora)}
+            contexto={
+              <>
+                {enMora === 1 ? tr('inquilino') : tr('inquilinos')}
+                {porVencer > 0 ? (
+                  <span className="text-fg-subtle">
+                    {' · '}
+                    {porVencer === 1
+                      ? tr('1 más con la cuota por vencer')
+                      : tr('{n} más con la cuota por vencer', { n: cifraDe(porVencer) })}
+                  </span>
+                ) : null}
+              </>
+            }
+            tramos={tramosDeLaMora}
+            esCero={enMora === 0}
+            cuandoEsCero={
+              porVencer > 0
+                ? tr('Nadie está en mora: los casos que hay todavía no vencen.')
+                : tr('Nadie está en mora.')
+            }
+          />
+        </Presence>
+
+        {/* ── 2 · Las etapas, con su conteo: UNA fila ───────────────────── */}
+        <div className="border-b border-border px-4 py-3 space-y-2 empty:hidden">
+          <PestanasDeEstado<PestanaDeEtapa>
+            data-testid="deudores-pestanas-de-etapa"
+            etiqueta={t('inmobiliaria.ai.cobranza.deudores.filters.stage')}
+            valor={pestana}
+            onCambio={(v) => setStages(v === 'todas' || v === 'varias' ? [] : [v])}
+            pestanas={[
+              { valor: 'todas', etiqueta: tr('Todos'), cuantos: panorama ? totalDeCasos : null, fija: true, testid: 'stage-chip-todas' },
+              ...CARTERA_STAGES.map((s) => ({
+                valor: s,
+                etiqueta: stageDisplayName(s, enEs ? 'es' : 'en'),
+                cuantos: panorama ? (porEtapa.get(s) ?? 0) : null,
+                tono: ETAPAS_QUE_PIDEN_ATENCION.has(s) ? ('aviso' as const) : undefined,
+                testid: `stage-chip-${s}`,
+              })),
+            ]}
+          />
+          {pestana === 'varias' ? (
+            <p className="text-caption text-fg-muted" data-testid="deudores-varias-etapas">
+              {tr('Viendo')} {stages.map((s) => stageDisplayName(s, enEs ? 'es' : 'en')).join(' · ')}
+              {' · '}
+              <button type="button" onClick={() => setStages([])} className="underline underline-offset-2 hover:text-fg">
+                {tr('Ver todas las etapas')}
+              </button>
+            </p>
+          ) : null}
+        </div>
+
+        {/* ── 3 · Buscar y lo demás, en «Filtros (n)» ────────────────────── */}
+        <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="relative min-w-0 flex-1 sm:max-w-sm">
               <label htmlFor="debtor-search" className="sr-only">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.search.label')}
               </label>
+              <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
               <Input
                 id="debtor-search"
                 type="search"
+                className="pl-9"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('inmobiliaria.ai.cobranza.deudores.filters.search.placeholder')}
+                data-testid="deudores-buscar"
               />
-              {searchHint && <p className="text-xs text-warning mt-1">{searchHint}</p>}
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <span
-                className="text-xs font-medium text-fg-muted whitespace-nowrap"
-                data-testid="sort-label"
-              >
-                {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
-              </span>
-              <span className="text-xs text-fg-muted tabular-nums">{contador}</span>
-            </div>
-          </div>
-
-          {/* Los filtros son los mismos en toda anchura: una sola definición,
-              que envuelve. Antes había una copia en un cajón para móvil, con el
-              riesgo de que las dos se separaran. */}
-          <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
-            <fieldset className="flex items-center gap-2 flex-wrap">
-              <legend className="sr-only">
-                {t('inmobiliaria.ai.cobranza.deudores.filters.stage')}
-              </legend>
-              <span className="text-xs font-medium text-fg-muted">
-                {t('inmobiliaria.ai.cobranza.deudores.filters.stage')}
-              </span>
-              {CARTERA_STAGES.map((s) => (
-                <Chip
-                  key={s}
-                  size="sm"
-                  selected={stages.includes(s)}
-                  onClick={() => toggleStage(s)}
-                  data-testid={`stage-chip-${s}`}
-                  // El código no dice nada solo: el nombre va en el título para
-                  // quien no se sabe la taxonomía de memoria.
-                  title={STAGE_LABELS_ES[s]}
-                >
-                  {/* QA-IA-95 (IA-B-09): el nombre de la etapa, no su código («S1»). */}
-                  {stageDisplayName(s, 'es')}
-                </Chip>
-              ))}
-            </fieldset>
-
-            <fieldset className="flex items-center gap-2 flex-wrap">
-              <legend className="sr-only">
-                {t('inmobiliaria.ai.cobranza.deudores.filters.channel')}
-              </legend>
-              <span className="text-xs font-medium text-fg-muted">
-                {t('inmobiliaria.ai.cobranza.deudores.filters.channel')}
-              </span>
-              {CHANNELS.map((c) => (
-                <Chip
-                  key={c}
-                  size="sm"
-                  selected={channels.includes(c)}
-                  onClick={() => toggleChannel(c)}
-                >
-                  {t(`inmobiliaria.ai.cobranza.deudores.channels.${c}` as Parameters<typeof t>[0])}
-                </Chip>
-              ))}
-            </fieldset>
-
-            <fieldset className="flex items-center gap-2">
-              <legend className="sr-only">
-                {t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
-              </legend>
-              <span className="text-xs font-medium text-fg-muted whitespace-nowrap">
-                {t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
-              </span>
-              <span className="text-xs text-fg-muted tabular-nums whitespace-nowrap">
-                {daysMin}–{daysMax}
-              </span>
-              <div className="w-32">
-                <RangeSlider
-                  min={DAYS_MIN_DEFAULT}
-                  max={DAYS_MAX_DEFAULT}
-                  value={[daysMin, daysMax]}
-                  onValueChange={([lo, hi]) => {
-                    setDaysMin(lo)
-                    setDaysMax(hi)
-                  }}
-                  showLabels={false}
-                  aria-label={t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
-                />
-              </div>
-            </fieldset>
-
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" hideArrow className="shrink-0" data-testid="deudores-filtros">
+                  <Funnel className="h-4 w-4" aria-hidden="true" />
+                  {t('inmobiliaria.ai.cobranza.deudores.filters.title')}
+                  {fueraDeLasPestanas > 0 ? (
+                    <span className="font-mono text-caption tabular-nums">({fueraDeLasPestanas})</span>
+                  ) : null}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 space-y-4 p-4">
+                <fieldset className="space-y-2">
+                  <legend className="text-caption font-medium text-fg-muted">
+                    {t('inmobiliaria.ai.cobranza.deudores.filters.channel')}
+                  </legend>
+                  <div className="flex flex-wrap gap-2">
+                    {CHANNELS.map((c) => (
+                      <Chip
+                        key={c}
+                        size="sm"
+                        selected={channels.includes(c)}
+                        onClick={() => toggleChannel(c)}
+                        data-testid={`channel-chip-${c}`}
+                      >
+                        {t(`inmobiliaria.ai.cobranza.deudores.channels.${c}` as Parameters<typeof t>[0])}
+                      </Chip>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="space-y-2">
+                  <legend className="flex w-full items-center justify-between text-caption font-medium text-fg-muted">
+                    <span>{t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}</span>
+                    <span className="font-mono tabular-nums text-fg">
+                      {tr('{a} a {b}', { a: daysMin, b: daysMax })}
+                    </span>
+                  </legend>
+                  <RangeSlider
+                    min={DAYS_MIN_DEFAULT}
+                    max={DAYS_MAX_DEFAULT}
+                    value={[daysMin, daysMax]}
+                    onValueChange={([lo, hi]) => {
+                      setDaysMin(lo)
+                      setDaysMax(hi)
+                    }}
+                    showLabels={false}
+                    aria-label={t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
+                  />
+                </fieldset>
+              </PopoverContent>
+            </Popover>
             {/* Sólo aparece cuando hay algo que limpiar: un botón que no hace
                 nada enseña a ignorar los botones. */}
             <Presence show={hasActiveFilters} direction="none" initial={false}>
-              <Button
-                variant="link"
-                size="sm"
-                onClick={clearFilters}
-                hideArrow
-                className="px-0 h-auto"
-              >
+              <Button variant="link" size="sm" onClick={clearFilters} hideArrow className="h-auto shrink-0 px-0">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
               </Button>
             </Presence>
           </div>
+          {/* Revisora r27 (UI): «Ordenado por días en la etapa» era un texto
+              suelto que parecía un control; se dice sólo a los lectores de
+              pantalla (el orden se ve en la columna). */}
+          <span className="sr-only" data-testid="sort-label">
+            {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
+          </span>
         </div>
+        {searchHint ? <p className="border-b border-border px-4 py-2 text-caption text-warning">{searchHint}</p> : null}
 
         {/* ── Error ─────────────────────────────────────────────────────── */}
-        <Presence
-            show={Boolean(error)}
-            role="alert"
-            className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
-          >
-            <span>
-              {t('inmobiliaria.ai.cobranza.deudores.error')}: {error}
-            </span>
-            <Button
-              variant="link"
-              size="sm"
-              hideArrow
-              onClick={() => void refetch()}
-              className="shrink-0 px-0 h-auto text-danger underline hover:no-underline"
-            >
-              {t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
-            </Button>
-        </Presence>
+        {/* C5 (r25): FalloDeCarga, nunca el error crudo pegado a la frase. */}
+        {error ? (
+          <div className="border-b border-border">
+            <FalloDeCarga error={falloDelTexto(error)} queEs="los casos" onReintentar={() => refetch()} enmarcado={false} />
+          </div>
+        ) : null}
 
         {/* ── Vacío filtrado — DENTRO de la tarjeta, no flotando ────────── */}
         {/* Filtrar a cero ⇄ volver a ver casos: el uno sale y el otro entra. */}
@@ -460,12 +548,11 @@ export default function DeudoresListClient() {
         {!isLoading && pages.length === 0 && !error ? (
           <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
             <Users className="w-7 h-7 text-fg-muted" weight="duotone" aria-hidden="true" />
-            <p className="text-sm font-medium text-fg">
+            <p className="text-body-sm font-medium text-fg">
               {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
             </p>
-            <p className="text-xs text-fg-muted max-w-sm">
-              Ningún caso cumple con los filtros puestos. Quita alguno para ver
-              el resto de la cartera.
+            <p className="text-caption text-fg-muted max-w-sm">
+              {tr('Ningún caso cumple con los filtros puestos. Quita alguno para ver el resto de la cartera.')}
             </p>
             <Button variant="outline" size="sm" hideArrow className="mt-2" onClick={clearFilters}>
               {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
@@ -474,18 +561,17 @@ export default function DeudoresListClient() {
         ) : (
           <>
             {/* ── Tabla (md+) ───────────────────────────────────────────── */}
+            {/* Revisora r25 (Casos #1): fuera Teléfono y Correo enmascarados
+                —«•••» en todas las filas—; el documento va bajo el nombre y lo
+                demás, en la ficha del caso. */}
             <div className="hidden md:block overflow-x-auto overscroll-contain">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.name')}</TableHead>
                     <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.stage')}</TableHead>
-                    <TableHead className="text-right">
-                      {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
-                    </TableHead>
-                    <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.cedula')}</TableHead>
-                    <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.phone')}</TableHead>
-                    <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.email')}</TableHead>
+                    <TableHead className="text-right">{tr('Días en la etapa')}</TableHead>
+                    <TableHead>{tr('Último movimiento')}</TableHead>
                     <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.channel')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -505,12 +591,13 @@ export default function DeudoresListClient() {
                       }}
                       className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                     >
-                      <TableCell className="text-fg whitespace-nowrap font-medium">
-                        {d.fullName}
+                      <TableCell className="whitespace-nowrap">
+                        <p className="font-medium text-fg">{d.fullName}</p>
+                        <Mask field="cedula" value={d.cedulaMasked} className="text-caption text-fg-muted" />
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" title={STAGE_LABELS_ES[d.currentStage]}>
-                          {stageDisplayName(d.currentStage, 'es')}
+                          {stageDisplayName(d.currentStage, enEs ? 'es' : 'en')}
                         </Badge>
                       </TableCell>
                       {/* Números a la derecha y tabulares: es la columna por la
@@ -518,16 +605,10 @@ export default function DeudoresListClient() {
                       <TableCell className="text-right">
                         <Badge variant={daysBadgeVariant(d.daysInStage)}>{d.daysInStage}</Badge>
                       </TableCell>
-                      <TableCell>
-                        <Mask field="cedula" value={d.cedulaMasked} />
+                      <TableCell className="whitespace-nowrap font-mono text-body-sm tabular-nums text-fg-muted">
+                        {enEs ? fechaCorta(diaEnColombia(d.lastActivityAt)) : new Date(d.lastActivityAt).toLocaleDateString(locale)}
                       </TableCell>
-                      <TableCell>
-                        <Mask field="phone" value={d.phoneMasked} />
-                      </TableCell>
-                      <TableCell>
-                        <Mask field="email" value={d.emailMasked} />
-                      </TableCell>
-                      <TableCell className="text-xs text-fg-muted">
+                      <TableCell className="text-body-sm text-fg-muted">
                         {etiquetaDeCanal(d.channel, t)}
                       </TableCell>
                     </TableRowAnimada>
@@ -546,21 +627,21 @@ export default function DeudoresListClient() {
                     className="w-full min-h-11 text-left px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-fg truncate">{d.fullName}</p>
+                      <p className="text-body-sm font-medium text-fg truncate">{d.fullName}</p>
                       <Badge variant="outline" title={STAGE_LABELS_ES[d.currentStage]}>
-                        {stageDisplayName(d.currentStage, 'es')}
+                        {stageDisplayName(d.currentStage, enEs ? 'es' : 'en')}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2 mt-1.5">
                       <Badge variant={daysBadgeVariant(d.daysInStage)}>
-                        {d.daysInStage} {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
+                        {d.daysInStage === 1 ? tr('1 día en la etapa') : tr('{n} días en la etapa', { n: d.daysInStage })}
                       </Badge>
                       <Mask field="cedula" value={d.cedulaMasked} />
                     </div>
-                    <p className="text-xs text-fg-muted mt-1.5">
+                    <p className="text-caption text-fg-muted mt-1.5">
                       {etiquetaDeCanal(d.channel, t)}
                       {d.lastActivityAt
-                        ? ` · ${new Date(d.lastActivityAt).toLocaleDateString(locale)}`
+                        ? ` · ${enEs ? fechaCorta(diaEnColombia(d.lastActivityAt)) : new Date(d.lastActivityAt).toLocaleDateString(locale)}`
                         : ''}
                     </p>
                   </button>
@@ -590,7 +671,7 @@ export default function DeudoresListClient() {
         <Presence
           show={isLoadingMore}
           direction="none"
-          className="border-t border-border px-4 py-2 text-center text-xs text-fg-muted"
+          className="border-t border-border px-4 py-2 text-center text-caption text-fg-muted"
         >
             {t('inmobiliaria.ai.cobranza.deudores.loadingMore')}
         </Presence>

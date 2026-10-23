@@ -220,7 +220,7 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
       >
         <UsersThree className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
         <p className="text-sm font-medium text-foreground">{t(`${NS}.emptyTitle`)}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{t(`${NS}.emptyBody`)}</p>
+        <p className="text-caption text-muted-foreground mt-0.5">{t(`${NS}.emptyBody`)}</p>
       </div>
     )
   }
@@ -230,7 +230,7 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
       {/* Aggregate header */}
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm text-foreground">
-          <span className="font-semibold tabular-nums" data-testid="equipo-total">
+          <span className="font-medium tabular-nums" data-testid="equipo-total">
             {t(`${NS}.enColaAhora`, { n: numberFormatter.format(data.totalEnCola) })}
           </span>
         </p>

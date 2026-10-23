@@ -1,19 +1,20 @@
 'use client'
 
-import { CheckCircle, CreditCard, CurrencyCircleDollar, HourglassMedium, Prohibit, X } from '@phosphor-icons/react'
-import { Alert } from '@leasefy/cadence'
+import Link from 'next/link'
+import { CheckCircle, CreditCard } from '@phosphor-icons/react'
+import { Alert, Cifra, FranjaDeCifras } from '@leasefy/cadence'
 import { adminApi, traerTodasLasPaginas } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
-import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
-import type { Paginated, PillTone } from '@/lib/admin/types'
+import { fmtCOP, fmtDateTime, fmtFecha } from '@/lib/admin/format'
+import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { LoadingBlock } from '@/components/admin/screen/states'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
-import { Button } from '@/components/ui/button'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { ESTADO_DEL_PAGO, estadoDelPago, pasarela, tonoDelPago } from '@/lib/admin/textos-del-admin'
 
 const PAGE_SIZE = 50
 
@@ -58,28 +59,9 @@ function num(s: string | null | undefined): number {
   return Number.isFinite(n) ? n : 0
 }
 
-function statusTone(s: string): PillTone {
-  switch (s) {
-    case 'approved': return 'ok'
-    case 'pending':  return 'warn'
-    case 'declined':
-    case 'voided':
-    case 'refunded': return 'bad'
-    default:         return 'neutral'
-  }
-}
-
-const ESTADO_DEL_PAGO: Record<string, string> = {
-  approved: 'Aprobado',
-  pending: 'Pendiente',
-  declined: 'Rechazado',
-  voided: 'Anulado',
-  refunded: 'Reembolsado',
-}
-
 function DisbursementCell({ status, disbursedAt }: { status: string | null; disbursedAt: string | null }) {
   if (status === 'disbursed') {
-    const dateOnly = disbursedAt ? fmtDateTime(disbursedAt).split(',')[0] : ''
+    const dateOnly = disbursedAt ? fmtFecha(disbursedAt) : ''
     return (
       <span className="inline-flex items-center gap-1.5 text-success">
         <CheckCircle className="h-4 w-4" weight="fill" aria-hidden="true" />
@@ -120,19 +102,19 @@ export default function PaymentsPage() {
     },
     {
       header: 'Estado',
-      texto: (r) => ESTADO_DEL_PAGO[r.status] ?? legible(r.status),
-      cell: (r) => <Pill tone={statusTone(r.status)}>{ESTADO_DEL_PAGO[r.status] ?? legible(r.status)}</Pill>,
+      texto: (r) => estadoDelPago(r.status),
+      cell: (r) => <Pill tone={tonoDelPago(r.status)}>{estadoDelPago(r.status)}</Pill>,
     },
     {
       header: 'Pasarela',
-      texto: (r) => (r.provider ? legible(r.provider) : ''),
-      cell: (r) => <span className="text-fg-muted">{r.provider ? legible(r.provider) : '—'}</span>,
+      texto: (r) => (r.provider ? pasarela(r.provider) : ''),
+      cell: (r) => <span className="text-fg-muted">{r.provider ? pasarela(r.provider) : '—'}</span>,
     },
     {
       header: 'Valor',
       align: 'right',
       texto: (r) => num(r.amount),
-      cell: (r) => <span className="font-mono font-medium tabular-nums">{fmtCOP(num(r.amount))}</span>,
+      cell: (r) => <span className="font-mono tabular-nums text-fg">{fmtCOP(num(r.amount))}</span>,
     },
     {
       header: 'Comisión',
@@ -168,46 +150,63 @@ export default function PaymentsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Pagos"
-        description="El embudo de los pagos en línea (Wompi y Bold) de los últimos 30 días: aprobados, pendientes, rechazados, reembolsados y desembolsados."
+        description="Los pagos en línea de 30 días (Wompi y Bold) y si ya se giraron."
       />
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          tone="ok"
-          icon={<CheckCircle />}
-          label="Aprobado · 30 días"
-          value={result.isLoading ? '—' : fmtCOP(num(kpis?.approved_total))}
-          hint={`${num(kpis?.approved_count).toLocaleString('es-CO')} pagos`}
-        />
-        <KpiCard
-          tone="warn"
-          icon={<HourglassMedium />}
-          label="Pendientes"
-          value={result.isLoading ? '—' : num(kpis?.pending_count)}
-          hint="Esperando la respuesta de la pasarela"
-        />
-        <KpiCard
-          tone="bad"
-          icon={<Prohibit />}
-          label="Rechazados · 30 días"
-          value={result.isLoading ? '—' : num(kpis?.declined_count)}
-          hint={`${num(kpis?.refunded_count).toLocaleString('es-CO')} reembolsados`}
-        />
-        <KpiCard
-          icon={<CurrencyCircleDollar />}
-          label="Desembolsado · 30 días"
-          value={result.isLoading ? '—' : fmtCOP(num(kpis?.disbursed_total))}
-          hint={`${num(kpis?.disbursed_count).toLocaleString('es-CO')} giros · comisiones ${fmtCOP(num(kpis?.fees_total))}`}
-        />
-      </div>
 
       {pendingDisbursementCount > 0 && (
         <Alert variant="warning" title="Pagos sin desembolsar">
           <span className="font-mono tabular-nums">{pendingDisbursementCount.toLocaleString('es-CO')}</span>{' '}
           {pendingDisbursementCount === 1 ? 'pago aprobado lleva' : 'pagos aprobados llevan'} más de 3 días sin
-          desembolsarse. Revisa la tarea diaria de dispersión (daily-dispersion).
+          desembolsarse. Revisa la dispersión diaria en{' '}
+          <Link href="/admin/inngest-monitor" className="font-medium text-fg underline underline-offset-4">
+            Tareas programadas
+          </Link>
+          .
         </Alert>
       )}
+
+      {/* Glow up 22-10: LA RESPUESTA en una cifra (lo aprobado en 30 días) y tres cifras más, sin tonos ni íconos
+          de color; antes, 4 tarjetas del mismo peso pintadas de verde, ámbar y rojo. */}
+      {result.isLoading && !kpis ? (
+        <LoadingBlock label="Cargando los pagos" filas={3} />
+      ) : kpis &&
+        // Ronda 28 (revisora r27, T6): todo en cero = UNA línea (antes «$ 0 en 0 pagos» + tres ceros con sus
+        // sub-datos + el vacío); la franja, cuando hay algo que contar.
+        num(kpis.approved_count) + num(kpis.disbursed_count) + num(kpis.pending_count) + num(kpis.declined_count) + num(kpis.refunded_count) === 0 ? (
+        <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="pagos-aprobado">
+          Nadie pagó en línea en los últimos 30 días.
+        </p>
+      ) : kpis ? (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo="Aprobado en 30 días"
+              cifra={fmtCOP(num(kpis.approved_total))}
+              contexto={`en ${num(kpis.approved_count).toLocaleString('es-CO')} ${num(kpis.approved_count) === 1 ? 'pago' : 'pagos'}`}
+              data-testid="pagos-aprobado"
+            />
+          </div>
+          <FranjaDeCifras fila="lg" columnas={3} aria-label="El embudo de los pagos">
+            <Cifra
+              etiqueta="Desembolsado"
+              valor={fmtCOP(num(kpis.disbursed_total))}
+              // Ronda 28 (revisora r27): a 390 se cortaba «comisiones…»: dos datos cortos.
+              detalle={`${num(kpis.disbursed_count).toLocaleString('es-CO')} giros · ${fmtCOP(num(kpis.fees_total))} de comisión`}
+            />
+            <Cifra
+              etiqueta="Pendientes"
+              valor={num(kpis.pending_count)}
+              detalle="los espera la pasarela"
+              tono={num(kpis.pending_count) > 0 ? 'aviso' : undefined}
+            />
+            <Cifra
+              etiqueta="Rechazados"
+              valor={num(kpis.declined_count)}
+              detalle={`${num(kpis.refunded_count).toLocaleString('es-CO')} reembolsados`}
+            />
+          </FranjaDeCifras>
+        </div>
+      ) : null}
 
       <DataTable
         columns={columns}
@@ -216,9 +215,9 @@ export default function PaymentsPage() {
         isLoading={result.isLoading}
         error={result.error}
         onReintentar={result.refetch}
-        emptyTitle="No hay pagos con estos filtros"
-        emptyHint="Prueba con otro estado u otra pasarela."
-        emptyIcon={<CreditCard weight="bold" />}
+        emptyTitle={status || provider ? 'No hay pagos con estos filtros' : 'Todavía no hay pagos en línea'}
+        emptyHint={status || provider ? 'Prueba con otro estado u otra pasarela.' : 'Cuando un inquilino pague por Wompi o Bold, aparece aquí.'}
+        emptyIcon={<CreditCard weight="duotone" />}
         aria-label="Pagos"
         barra={
           <BarraDeFiltros>
@@ -243,12 +242,6 @@ export default function PaymentsPage() {
                 ]}
               />
             </Filtro>
-            {status || provider ? (
-              <Button variant="ghost" hideArrow onClick={() => setFilters({ status: '', provider: '' }, { resetPage: true })}>
-                <X className="h-4 w-4" aria-hidden="true" />
-                Quitar los filtros
-              </Button>
-            ) : null}
           </BarraDeFiltros>
         }
         paginacion={result.data ? { page, total: result.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}

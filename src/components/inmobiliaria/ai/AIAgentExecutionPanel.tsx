@@ -1,5 +1,6 @@
 'use client';
 
+import { Avatar } from '@leasefy/cadence';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -124,7 +125,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
             ) : (
               <StepIcon className="h-3.5 w-3.5 text-fg-subtle flex-shrink-0" />
             )}
-            <span className="text-xs text-fg-subtle truncate">
+            <span className="text-caption text-fg-subtle truncate">
               {step?.stepType === 'browser'
                 ? 'datacredito.com.co/consulta/verificacion'
                 : `leasefy.ai/agent/${trace.agentId}/${step?.stepType || 'process'}`}
@@ -143,13 +144,13 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
         {!step ? (
           /* No step selected — show overview */
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-16 h-16 rounded-xl bg-white/[0.05] flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-lg bg-white/[0.05] flex items-center justify-center mb-4">
               <Monitor weight="duotone" className="h-8 w-8 text-fg-subtle" />
             </div>
             <p className="text-sm text-fg-subtle mb-1">
               {locale === 'es' ? 'Vista del agente' : 'Agent view'}
             </p>
-            <p className="text-xs text-fg-subtle max-w-xs">
+            <p className="text-caption text-fg-subtle max-w-xs">
               {locale === 'es'
                 ? 'Selecciona un paso para ver lo que el agente estaba haciendo en ese momento'
                 : 'Select a step to see what the agent was doing at that moment'}
@@ -165,16 +166,16 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                   {/* Simulated DataCrédito page */}
                   <div className="bg-surface rounded-md p-4 max-w-lg mx-auto">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded bg-primary flex items-center justify-center text-primary-fg text-xs font-bold">DC</div>
-                      <span className="text-sm font-semibold text-fg">DataCrédito</span>
-                      <span className="text-xs text-fg-subtle">Consulta de historial crediticio</span>
+                      <Avatar name="DataCrédito" size="sm" />
+                      <span className="text-sm font-medium text-fg">DataCrédito</span>
+                      <span className="text-caption text-fg-subtle">Consulta de historial crediticio</span>
                     </div>
                     <div className="border-t pt-3 space-y-2">
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-caption">
                         <span className="text-fg-subtle">Documento consultado:</span>
                         <span className="font-mono text-fg-muted">{trace.title.includes('CC') ? trace.title.split('CC ')[1] || '1.023.456.789' : '52.789.123'}</span>
                       </div>
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-caption">
                         <span className="text-fg-subtle">Estado consulta:</span>
                         <span className={cn('font-medium', isRunning ? 'text-primary' : 'text-success')}>
                           {isRunning ? 'Procesando...' : 'Completada'}
@@ -182,7 +183,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                       </div>
                       {step.output && (
                         <div className="mt-3 p-2 bg-success-soft rounded border border-success/30">
-                          <p className="text-xs text-success font-mono whitespace-pre-wrap">{step.output}</p>
+                          <p className="text-caption text-success font-mono whitespace-pre-wrap">{step.output}</p>
                         </div>
                       )}
                     </div>
@@ -213,13 +214,13 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                     </div>
                     {step.reasoning && (
                       <div className="mb-3 p-3 rounded bg-white/[0.03] border border-white/[0.06]">
-                        <p className="text-xs text-fg-subtle mb-1 uppercase tracking-wider">{locale === 'es' ? 'Pensamiento' : 'Thinking'}</p>
+                        <p className="text-caption text-fg-subtle mb-1 uppercase tracking-wider">{locale === 'es' ? 'Pensamiento' : 'Thinking'}</p>
                         <p className="text-sm text-fg-subtle leading-relaxed italic">&ldquo;{step.reasoning}&rdquo;</p>
                       </div>
                     )}
                     {step.output && (
                       <div className="p-3 rounded bg-success/20 border border-success/30">
-                        <p className="text-xs text-success mb-1 uppercase tracking-wider">{locale === 'es' ? 'Output' : 'Output'}</p>
+                        <p className="text-caption text-success mb-1 uppercase tracking-wider">{locale === 'es' ? 'Output' : 'Output'}</p>
                         <p className="text-sm text-success font-mono leading-relaxed whitespace-pre-wrap">{step.output}</p>
                       </div>
                     )}
@@ -232,10 +233,10 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                   <div className="bg-surface rounded-md p-6">
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b">
                       <FileText weight="duotone" className="h-5 w-5 text-fg-subtle" />
-                      <span className="text-sm font-semibold text-fg">{locale === 'es' ? 'Generando Documento' : 'Generating Document'}</span>
+                      <span className="text-sm font-medium text-fg">{locale === 'es' ? 'Generando Documento' : 'Generating Document'}</span>
                     </div>
                     {step.output && (
-                      <p className="text-xs text-fg-muted font-mono leading-relaxed whitespace-pre-wrap">{step.output}</p>
+                      <p className="text-caption text-fg-muted font-mono leading-relaxed whitespace-pre-wrap">{step.output}</p>
                     )}
                     {isRunning && (
                       <div className="mt-4 flex items-center gap-2 text-fg-subtle">
@@ -277,12 +278,12 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                 <div className="max-w-sm mx-auto mt-8">
                   <div className="bg-surface rounded-lg p-5 border">
                     <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
+                      <div className="h-10 w-10 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
                         <Bell weight="fill" className="h-5 w-5 text-fg-muted" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-fg">Leasefy</p>
-                        <p className="text-xs text-fg-muted mt-0.5">{step.output || 'Enviando notificación...'}</p>
+                        <p className="text-sm font-medium text-fg">Leasefy</p>
+                        <p className="text-caption text-fg-muted mt-0.5">{step.output || 'Enviando notificación...'}</p>
                       </div>
                     </div>
                   </div>
@@ -388,7 +389,7 @@ function TimelineStep({
             </span>
           </div>
           {isActive && step.reasoning && (
-            <p className="mt-1 text-xs text-primary/80 line-clamp-2 italic">
+            <p className="mt-1 text-caption text-primary/80 line-clamp-2 italic">
               {step.reasoning}
             </p>
           )}
@@ -480,7 +481,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
           <AgentIcon weight="duotone" className={cn('h-4 w-4', agent?.color)} />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-semibold text-fg truncate">
+          <h1 className="text-sm font-medium text-fg truncate">
             {trace.title}
           </h1>
         </div>
@@ -498,7 +499,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
               {locale === 'es' ? 'Completado' : 'Completed'}
             </span>
           )}
-          <span className="text-xs text-fg-subtle tabular-nums">{completedSteps}/{totalSteps}</span>
+          <span className="text-caption text-fg-subtle tabular-nums">{completedSteps}/{totalSteps}</span>
           <div className="w-24 h-1.5 rounded-full bg-surface-muted overflow-hidden">
             <div
               className={cn('h-full rounded-full transition-all duration-500', isRunning ? 'bg-primary' : 'bg-success')}
@@ -506,7 +507,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
             />
           </div>
           {trace.totalDurationMs && (
-            <span className="text-xs text-fg-subtle tabular-nums flex items-center gap-1">
+            <span className="text-caption text-fg-subtle tabular-nums flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {formatDuration(trace.totalDurationMs)}
             </span>
@@ -523,7 +524,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
           style={{ overscrollBehavior: 'contain' }}
         >
           <div className="p-4">
-            <h3 className="text-xs font-medium text-fg-subtle uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <h3 className="text-caption font-medium text-fg-subtle uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Lightning weight="fill" className="h-3 w-3" />
               {locale === 'es' ? 'Ejecución' : 'Execution'}
             </h3>
@@ -553,7 +554,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
               </p>
               {trace.result && (
                 <div className="mt-2 pt-2 border-t border-border">
-                  <p className="text-sm font-semibold text-fg">
+                  <p className="text-sm font-medium text-fg">
                     {trace.result}
                   </p>
                 </div>

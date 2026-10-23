@@ -98,3 +98,15 @@ describe('CSV para nómina', () => {
     expect(csv.at(-1)).toBe('2026-10;Sara Gómez;20000,5;0');
   });
 });
+
+describe('haceCuantoEnPalabras (revisora r25: «Vacante hace 961 días» no se lee)', () => {
+  it('hasta 60 días en días; después en meses; desde un año, años y meses', async () => {
+    const { haceCuantoEnPalabras } = await import('./comercial');
+    expect(haceCuantoEnPalabras(1)).toBe('1 día');
+    expect(haceCuantoEnPalabras(42)).toBe('42 días');
+    expect(haceCuantoEnPalabras(60)).toBe('60 días');
+    expect(haceCuantoEnPalabras(95)).toBe('3 meses');
+    expect(haceCuantoEnPalabras(366)).toBe('1 año');
+    expect(haceCuantoEnPalabras(961)).toBe('2 años y 7 meses');
+  });
+});

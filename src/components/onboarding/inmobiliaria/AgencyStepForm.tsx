@@ -7,7 +7,6 @@ import { aplicarErroresDelServidor } from '@/lib/errores/errores-en-el-formulari
 import { formatearNitAlEscribir } from '@/lib/onboarding/nit'
 import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
 import { PhoneInput, Presence } from '@leasefy/cadence'
-import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
@@ -212,7 +211,7 @@ export function AgencyStepForm({
   return (
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="agency-step-form">
       <div>
-        <label htmlFor="legalName" className="mb-1.5 block text-caption font-semibold text-fg">
+        <label htmlFor="legalName" className="mb-1.5 block text-caption font-medium text-fg">
           Razón social {!legalNameConfirmed && <span className="text-danger">*</span>}
         </label>
         <Input
@@ -236,7 +235,7 @@ export function AgencyStepForm({
       </div>
 
       <div>
-        <label htmlFor="nit" className="mb-1.5 block text-caption font-semibold text-fg">
+        <label htmlFor="nit" className="mb-1.5 block text-caption font-medium text-fg">
           NIT {!nitConfirmed && <span className="text-danger">*</span>}
         </label>
         <Input
@@ -268,7 +267,7 @@ export function AgencyStepForm({
 
       {/* Dirección (contract key `calle`) — full width, free text. */}
       <div>
-        <label htmlFor="address.calle" className="mb-1.5 block text-caption font-semibold text-fg">
+        <label htmlFor="address.calle" className="mb-1.5 block text-caption font-medium text-fg">
           Dirección <span className="text-danger">*</span>
         </label>
         <Input
@@ -295,7 +294,7 @@ export function AgencyStepForm({
           municipio so a stale pairing can never be submitted. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <span id="address-departamento-label" className="mb-1.5 block text-caption font-semibold text-fg">
+          <span id="address-departamento-label" className="mb-1.5 block text-caption font-medium text-fg">
             Departamento <span className="text-danger">*</span>
           </span>
           <Controller
@@ -324,7 +323,7 @@ export function AgencyStepForm({
           <ErrorDelCampo id="address.departamento-error" mensaje={errors.address?.departamento?.message} />
         </div>
         <div>
-          <span id="address-municipio-label" className="mb-1.5 block text-caption font-semibold text-fg">
+          <span id="address-municipio-label" className="mb-1.5 block text-caption font-medium text-fg">
             Municipio <span className="text-danger">*</span>
           </span>
           <Controller
@@ -349,7 +348,7 @@ export function AgencyStepForm({
 
       {/* Código postal — full width, optional. */}
       <div>
-        <label htmlFor="address.codigoPostal" className="mb-1.5 block text-caption font-semibold text-fg">
+        <label htmlFor="address.codigoPostal" className="mb-1.5 block text-caption font-medium text-fg">
           Código postal <span className="text-fg-subtle font-normal">(opcional)</span>
         </label>
         <Input
@@ -378,7 +377,7 @@ export function AgencyStepForm({
       </div>
 
       <div>
-        <label htmlFor="primaryContactEmail" className="mb-1.5 block text-caption font-semibold text-fg">
+        <label htmlFor="primaryContactEmail" className="mb-1.5 block text-caption font-medium text-fg">
           Correo de la cuenta <span className="text-danger">*</span>
         </label>
         <Input
@@ -404,7 +403,7 @@ export function AgencyStepForm({
       </div>
 
       <div>
-        <label htmlFor="primaryContactPhone" className="mb-1.5 block text-caption font-semibold text-fg">
+        <label htmlFor="primaryContactPhone" className="mb-1.5 block text-caption font-medium text-fg">
           Teléfono de la cuenta <span className="text-danger">*</span>
         </label>
         {/* Con selector de país y su indicativo (Nico, 2026-09-07). El valor
@@ -463,7 +462,6 @@ export function AgencyStepForm({
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

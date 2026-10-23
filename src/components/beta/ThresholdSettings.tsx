@@ -61,9 +61,9 @@ function NumberStepper({ value, min, max, step, suffix, onChange, decreaseLabel,
         variant="ghost"
         className={cn(
           'w-7 h-7 rounded-md',
-          'border border-neutral-200 dark:border-border',
-          'bg-white dark:bg-card',
-          'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
+          'border border-neutral-200',
+          'bg-white',
+          'text-muted-foreground hover:text-foreground hover:bg-neutral-50',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
         aria-label={decreaseLabel}
@@ -72,8 +72,8 @@ function NumberStepper({ value, min, max, step, suffix, onChange, decreaseLabel,
       <div
         className={cn(
           'flex items-center justify-center min-w-[80px] px-3 py-1.5',
-          'rounded-md border border-neutral-200 dark:border-border',
-          'bg-neutral-50 dark:bg-neutral-800/50',
+          'rounded-md border border-neutral-200',
+          'bg-neutral-50',
           'text-[13px] font-medium text-foreground tabular-nums'
         )}
       >
@@ -88,9 +88,9 @@ function NumberStepper({ value, min, max, step, suffix, onChange, decreaseLabel,
         variant="ghost"
         className={cn(
           'w-7 h-7 rounded-md',
-          'border border-neutral-200 dark:border-border',
-          'bg-white dark:bg-card',
-          'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
+          'border border-neutral-200',
+          'bg-white',
+          'text-muted-foreground hover:text-foreground hover:bg-neutral-50',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
         aria-label={increaseLabel}
@@ -128,9 +128,9 @@ function CurrencyStepper({ value, min, max, step, onChange, decreaseLabel, incre
         variant="ghost"
         className={cn(
           'w-7 h-7 rounded-md',
-          'border border-neutral-200 dark:border-border',
-          'bg-white dark:bg-card',
-          'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
+          'border border-neutral-200',
+          'bg-white',
+          'text-muted-foreground hover:text-foreground hover:bg-neutral-50',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
         aria-label={decreaseLabel}
@@ -139,8 +139,8 @@ function CurrencyStepper({ value, min, max, step, onChange, decreaseLabel, incre
       <div
         className={cn(
           'flex items-center justify-center min-w-[140px] px-3 py-1.5',
-          'rounded-md border border-neutral-200 dark:border-border',
-          'bg-neutral-50 dark:bg-neutral-800/50',
+          'rounded-md border border-neutral-200',
+          'bg-neutral-50',
           'text-[13px] font-medium text-foreground tabular-nums'
         )}
       >
@@ -155,9 +155,9 @@ function CurrencyStepper({ value, min, max, step, onChange, decreaseLabel, incre
         variant="ghost"
         className={cn(
           'w-7 h-7 rounded-md',
-          'border border-neutral-200 dark:border-border',
-          'bg-white dark:bg-card',
-          'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
+          'border border-neutral-200',
+          'bg-white',
+          'text-muted-foreground hover:text-foreground hover:bg-neutral-50',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
         aria-label={increaseLabel}
@@ -229,7 +229,7 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
       <div className="flex items-center gap-2">
         <Sliders className="w-4.5 h-4.5 text-muted-foreground" weight="duotone" />
         <div>
-          <h3 className="text-[15px] font-semibold text-foreground">
+          <h3 className="text-[15px] font-medium text-foreground">
             {t('beta.preferences.thresholds.title')}
           </h3>
           <p className="text-[13px] text-muted-foreground mt-0.5">
@@ -243,8 +243,8 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
         {/* Mora tolerance */}
         <div
           className={cn(
-            'rounded-lg border border-neutral-200 dark:border-border',
-            'bg-white dark:bg-card',
+            'rounded-lg border border-neutral-200',
+            'bg-white',
             'p-4'
           )}
         >
@@ -273,8 +273,8 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
         {/* Maintenance budget */}
         <div
           className={cn(
-            'rounded-lg border border-neutral-200 dark:border-border',
-            'bg-white dark:bg-card',
+            'rounded-lg border border-neutral-200',
+            'bg-white',
             'p-4'
           )}
         >
@@ -302,8 +302,8 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
         {/* Candidate score */}
         <div
           className={cn(
-            'rounded-lg border border-neutral-200 dark:border-border',
-            'bg-white dark:bg-card',
+            'rounded-lg border border-neutral-200',
+            'bg-white',
             'p-4'
           )}
         >

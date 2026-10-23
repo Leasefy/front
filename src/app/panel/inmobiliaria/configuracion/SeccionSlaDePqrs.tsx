@@ -237,16 +237,17 @@ export function SeccionSlaDePqrs() {
 
   return (
     <div className="space-y-4">
+      {/* Glow up 22-10: «cuánto te demoras, por tipo» lo dice el marco; aquí sólo lo que no dice. */}
       <p className="text-sm text-fg-muted">
-        Cuánto se demora tu inmobiliaria en responder, por tipo. Déjalo vacío para
-        regirte por el plazo legal de <strong>{datos.legalDiasHabiles} días hábiles</strong>{' '}
-        (Ley 1755 art. 14 y Ley 1480 art. 58).
+        Déjalo vacío para regirte por el plazo legal de{' '}
+        <span className="font-mono text-fg">{datos.legalDiasHabiles}</span> días hábiles (Ley 1755 art. 14 y
+        Ley 1480 art. 58).
       </p>
 
       {!datos.disponible && (
         <div
           role="alert"
-          className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning"
+          className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-caption text-warning"
         >
           {datos.motivo ?? 'Todavía no se puede configurar.'}
         </div>
@@ -276,7 +277,7 @@ export function SeccionSlaDePqrs() {
                   setBorrador({ ...borrador, [t.valor]: e.target.value })
                 }
               />
-              <span className="w-12 shrink-0 text-xs text-fg-muted">
+              <span className="w-12 shrink-0 text-caption text-fg-muted">
                 {borrador[t.valor]?.trim() ? 'horas' : 'legal'}
               </span>
             </div>
@@ -354,12 +355,12 @@ export function SeccionSlaDePqrs() {
         </TarjetaDeAjustes>
       )}
       {!isAdmin && (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Sólo un administrador decide a quién se escalan las PQRS vencidas y quién es el responsable por defecto.
         </p>
       )}
 
-      <p className="text-xs text-fg-muted">
+      <p className="text-caption text-fg-muted">
         Cambiar esto <strong>no mueve las PQRS ya radicadas</strong>: cada una se
         juzga con el plazo que se le prometió el día que se radicó. Bajar el
         compromiso no vuelve vencidas de golpe a las que están abiertas.

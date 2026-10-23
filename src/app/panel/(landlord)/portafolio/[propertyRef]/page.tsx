@@ -18,9 +18,9 @@ export default function InmuebleDetallePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
+        <EsqueletoDePagina variante="detail" />
       </div>
     );
   }
@@ -28,10 +28,13 @@ export default function InmuebleDetallePage() {
   if (unavailable || !detalle) {
     return (
       <PortalPlaceholder
+        seccion="Contratos y plata"
         title="Detalle del inmueble"
         subtitle="El historial de pagos, novedades y contrato de tu inmueble."
         icon={Buildings}
-        emptyDescription="Acá vas a ver el contrato, las novedades y el historial de pagos de este inmueble. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        tituloDelVacio="Lo de este inmueble está en Arriendos"
+        emptyDescription="Ahí ves su contrato y lo que te paga el inquilino. El historial con las novedades llega cuando una inmobiliaria te administra los inmuebles en Leasefy."
+        accion={{ label: 'Ver mis arriendos', href: '/panel/leases' }}
       />
     );
   }

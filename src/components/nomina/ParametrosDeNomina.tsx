@@ -46,6 +46,10 @@ import { SIN_MEDIR } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Avisos, ParaValidar, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis';
 
 /** Las tres cifras que fija el Estado: plata, con su tope (🔁 el del back). */
 type CifraDelEstado = keyof typeof TOPE_DE_LAS_CIFRAS_DEL_ESTADO;
@@ -90,7 +94,7 @@ const GRUPOS: {
   {
     titulo: 'Seguridad social y parafiscales',
     explicacion:
-      'En puntos básicos del IBC: 4 % = 400. El fondo de solidaridad pensional no se configura acá — son tramos de ley que dependen de cuántos salarios mínimos gana la persona.',
+      'En puntos básicos del IBC: 4 % = 400. El fondo de solidaridad pensional no se configura aquí — son tramos de ley que dependen de cuántos salarios mínimos gana la persona.',
     campos: [
       { campo: 'saludEmpleadoBps', etiqueta: 'Salud (empleado)', unidad: 'bps' },
       { campo: 'saludEmpleadorBps', etiqueta: 'Salud (empleador)', unidad: 'bps' },
@@ -109,7 +113,7 @@ const GRUPOS: {
   {
     titulo: 'Prestaciones sociales',
     explicacion:
-      'El porcentaje MENSUAL que se provisiona. La base de vacaciones NO lleva auxilio de transporte ni horas extras (CST art. 192); las otras tres sí. Eso no se configura: es ley.',
+      'El porcentaje mensual que se provisiona. La base de vacaciones no lleva auxilio de transporte ni horas extras (CST art. 192); las otras tres sí. Eso no se configura: es ley.',
     campos: [
       { campo: 'primaBps', etiqueta: 'Prima de servicios', unidad: 'bps' },
       { campo: 'cesantiasBps', etiqueta: 'Cesantías', unidad: 'bps' },
@@ -134,7 +138,8 @@ export function ParametrosDeNominaPanel({ anio }: { anio?: number }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Revisora r25 (Configuración del año, UI): la etiqueta encima, como el resto de los campos. */}
+      <div className="flex flex-col items-start gap-1.5">
         <Label htmlFor="anio-de-nomina" className="text-caption text-fg-muted">
           Año
         </Label>
@@ -281,18 +286,36 @@ function Formulario({
   const referencia = datos.propuesta?.referencia ?? null;
   const cargado = datos.guardado;
 
+  const cifrasDelEstado = ['salarioMinimoCop', 'auxilioTransporteCop', 'uvtCop'] as const;
+  const cargadas = cifrasDelEstado.filter((c) => cargado?.[c] != null).length;
+
   return (
     <div className="space-y-6">
+      {/* GLOW UP 3.ª vuelta · LA RESPUESTA: si las cifras del año están para liquidar, y quién
+          las confirmó. Los factores de ley, que casi nunca se tocan, quedan plegados abajo. */}
+      <CifraHeroe
+        rotulo={`Cifras del Estado para ${anio}`}
+        cifra={`${cargadas} de 3`}
+        contexto={
+          !cargado
+            ? 'sin ellas no se liquida'
+            : cargado.confirmadoAt
+              ? `cargadas y confirmadas por el contador el ${fechaCorta(cargado.confirmadoAt.slice(0, 10))}`
+              : 'cargadas, sin confirmar por el contador'
+        }
+        data-testid="cifra-de-parametros"
+      />
+
+      {/* Revisora r25 (Configuración del año #1): «falta todo» se decía tres veces (la cifra, un ámbar y
+          «Todavía nadie ha cargado…»). Ahora la cifra y UNA línea con cuáles faltan y quién las fija. */}
       {!datos.completos ? (
-        <Avisos
-          avisos={[
-            `Falta ${datos.queFalta.join(', ')}. Sin eso la nómina de ${anio} no se puede liquidar.`,
+        <p className="max-w-3xl text-body-sm text-fg-muted" data-testid="faltan-cifras">
+          Falta {datos.queFalta.join(', ')}.{' '}
+          {sinMayusculasDeEnfasis(
             datos.propuesta?.motivoSiFalta ??
               'El salario mínimo y el auxilio de transporte los decreta el Gobierno cada diciembre; la UVT la fija la DIAN por resolución. Leasefy no los inventa.',
-          ]}
-          titulo={`Las cifras de ${anio} todavía no están`}
-          testId="faltan-cifras"
-        />
+          )}
+        </p>
       ) : null}
 
       {datos.guardado && datos.guardado.confirmadoAt == null ? (
@@ -308,7 +331,7 @@ function Formulario({
       <section className="space-y-3">
         <TituloDeBloque
           titulo={`Las cifras que fija el Estado en ${anio}`}
-          explicacion="Leasefy NO las mantiene: el salario mínimo y el auxilio de transporte salen del decreto de diciembre y la UVT de la resolución de la DIAN. Las carga esta inmobiliaria, con el documento a la vista."
+          explicacion="Leasefy no las mantiene: el salario mínimo y el auxilio de transporte salen del decreto de diciembre y la UVT de la resolución de la DIAN. Las carga esta inmobiliaria, con el documento a la vista."
         />
 
         {/*
@@ -320,8 +343,11 @@ function Formulario({
 
           Cargar y confirmar son dos actos distintos y se muestran por separado:
           cargar es teclear el decreto, confirmar es que un contador diga que
-          está bien. Guardar de nuevo NO reconfirma.
+          está bien. Guardar de nuevo no reconfirma.
         */}
+        {/* Revisora r25 (#1): sin nada cargado, este bloque ya no dice «Todavía nadie ha cargado…»: lo
+            dicen la cifra y la línea de arriba. Sólo sale con algo que contar (quién y cuándo). */}
+        {cargado ? (
         <div
           className="rounded-lg border border-border bg-surface p-4 text-caption leading-relaxed text-fg-muted"
           data-testid="quien-y-cuando"
@@ -330,7 +356,7 @@ function Formulario({
             <>
               <p>
                 <strong className="text-fg">Cargadas</strong> el{' '}
-                {cargado.cargadoAt.slice(0, 10)}
+                {fechaCorta(cargado.cargadoAt.slice(0, 10))}
                 {datos.cargadoPor?.nombre
                   ? ` por ${datos.cargadoPor.nombre}`
                   : ' (no se pudo resolver quién)'}
@@ -340,7 +366,7 @@ function Formulario({
                 {cargado.confirmadoAt ? (
                   <>
                     <strong className="text-fg">Confirmadas</strong> el{' '}
-                    {cargado.confirmadoAt.slice(0, 10)}
+                    {fechaCorta(cargado.confirmadoAt.slice(0, 10))}
                     {datos.confirmadoPor?.nombre
                       ? ` por ${datos.confirmadoPor.nombre}`
                       : ''}
@@ -360,6 +386,7 @@ function Formulario({
             </p>
           )}
         </div>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-3">
           {(
             [
@@ -401,15 +428,15 @@ function Formulario({
         </div>
       </section>
 
-      {avisos.length > 0 ? (
-        <Avisos
-          avisos={avisos}
-          titulo="Lo que hay que confirmar con tu contador o tu abogado laboral"
-          testId="avisos-de-factores"
-        />
-      ) : null}
+
 
       {/* ── Los factores ─────────────────────────────────────────────────── */}
+      <MasDetalles
+        etiqueta="Los factores de ley: horas extras, seguridad social y prestaciones"
+        etiquetaAbierto="Ocultar los factores"
+        montadoSiempre
+        classNameDelContenido="space-y-6"
+      >
       {GRUPOS.map((g) => (
         <section key={g.titulo} className="space-y-3">
           <TituloDeBloque titulo={g.titulo} explicacion={g.explicacion} />
@@ -443,12 +470,13 @@ function Formulario({
           </div>
         </section>
       ))}
+      </MasDetalles>
 
       {/* ── La exoneración ───────────────────────────────────────────────── */}
       <section className="space-y-3">
         <TituloDeBloque
           titulo="Exoneración del art. 114-1 del Estatuto Tributario"
-          explicacion="Exonera de salud del empleador, SENA e ICBF por los empleados que devengan menos de 10 salarios mínimos, pero sólo para ciertos contribuyentes. Viene APAGADA: prenderla sin confirmarlo calcularía aportes de menos, y pagar de menos a la seguridad social se corrige con intereses."
+          explicacion="Exonera de salud del empleador, SENA e ICBF por los empleados que devengan menos de 10 salarios mínimos, pero sólo para ciertos contribuyentes. Viene apagada: prenderla sin confirmarlo calcularía aportes de menos, y pagar de menos a la seguridad social se corrige con intereses."
         />
         <div className="flex items-center gap-3">
           <Checkbox id="exoneracion1141" checked={valores.exoneracion1141 === 'si'} onCheckedChange={(marcada: boolean) =>
@@ -483,6 +511,7 @@ function Formulario({
         <ErrorDelCampo id="notas-de-parametros-error" mensaje={errores.delServidor.notas} />
         <div className="flex flex-wrap gap-2">
           <Button
+            size="sm"
             onClick={() => void guardar(false)}
             disabled={guardando}
             data-testid="guardar-parametros"
@@ -490,23 +519,37 @@ function Formulario({
             Guardar
           </Button>
           <Button
+            size="sm"
             variant="outline"
             onClick={() => void guardar(true)}
             disabled={guardando}
             data-testid="guardar-y-confirmar"
           >
-            Guardar y marcar como confirmados por el contador
+            {/* Revisora r25 (B7): el texto largo no parte en un Button y corría la página 6 px a 390. */}
+            Guardar y confirmar
           </Button>
-          <Button variant="ghost" onClick={reset} disabled={guardando}>
+          <Button size="sm" variant="ghost" onClick={reset} disabled={guardando}>
             Deshacer los cambios
           </Button>
         </div>
         <p className="text-caption text-fg-muted">
-          Guardar deja tu nombre y la fecha en «Cargadas»; confirmar es un acto
-          aparte, y corregir una cifra lo borra — si cambia el número, el contador
-          tiene que volver a mirarlo.
+          «Guardar y confirmar» los marca como confirmados por el contador. Guardar
+          deja tu nombre y la fecha en «Cargadas»; confirmar es un acto aparte, y
+          corregir una cifra lo borra: si cambia el número, el contador tiene que
+          volver a mirarlo.
         </p>
       </section>
+      {/* Revisora r25 (#2): lo que hay que confirmar con el contador se consulta: plegado y DEBAJO del
+          formulario (antes ≈180 px abiertos antes de los campos que hay que llenar). */}
+      {avisos.length > 0 ? (
+        <MasDetalles
+          etiqueta={`Lo que hay que confirmar con tu contador o tu abogado laboral (${avisos.length})`}
+          etiquetaAbierto="Ocultar"
+          montadoSiempre
+        >
+          <Avisos avisos={avisos.map(sinMayusculasDeEnfasis)} testId="avisos-de-factores" />
+        </MasDetalles>
+      ) : null}
     </div>
   );
 }

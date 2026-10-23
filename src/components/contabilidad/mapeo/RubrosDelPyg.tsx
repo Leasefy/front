@@ -222,7 +222,7 @@ export function RubrosDelPyg() {
     );
   }
   if (error || !mapeo) {
-    return <FalloDeCarga error={error} queEs="el mapeo de rubros del P&G" onReintentar={cargar} />;
+    return <FalloDeCarga error={error} queEs="el mapeo de rubros del estado de resultados" onReintentar={cargar} />;
   }
 
   // Sin la migración 49 no hay tabla `mapeos_de_rubro`: se explica qué falta y
@@ -232,7 +232,7 @@ export function RubrosDelPyg() {
       <div className="space-y-4" data-testid="rubros-del-pyg">
         <FaltaLaMigracion
           motivo={mapeo.motivo}
-          queSeEspera="decir qué cuenta del PUC es cada rubro del P&G"
+          queSeEspera="decir qué cuenta del PUC es cada rubro del estado de resultados"
           mientrasTanto="El presupuesto sigue cargándose y comparándose igual; lo que queda en «—» es el real del libro de los rubros que no tienen una fuente propia."
           testId="rubros-sin-migracion"
         />
@@ -246,7 +246,7 @@ export function RubrosDelPyg() {
     <div className="space-y-5" data-testid="rubros-del-pyg">
       {mapeo.completo ? (
         <Banner variant="success" title="Todos los rubros sugeridos tienen su cuenta">
-          El presupuesto y el P&G pueden mostrar el real del libro al lado del presupuestado.
+          El presupuesto y el estado de resultados pueden mostrar el real del libro al lado del presupuestado.
         </Banner>
       ) : (
         <Banner
@@ -288,8 +288,8 @@ export function RubrosDelPyg() {
 
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 <TableHead className="min-w-[220px]">Rubro</TableHead>
                 <TableHead>Naturaleza</TableHead>
@@ -297,14 +297,18 @@ export function RubrosDelPyg() {
                 <TableHead className="min-w-[240px]">Agregar una cuenta</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBodyAnimado>
+            <TableBodyAnimado className="max-md:block">
               {mapeo.rubros.map((r) => {
                 const segundaLectura = explicacionDeLaSegundaLectura(r);
                 const mayores = cuentasMayores(r);
                 const ocupada = guardando.has(r.rubro);
                 return (
-                  <TableRowAnimada key={r.rubro} data-testid={`rubro-${r.rubro}`}>
-                    <TableCell className="max-w-[320px] align-top">
+                  <TableRowAnimada
+                    key={r.rubro}
+                    data-testid={`rubro-${r.rubro}`}
+                    className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                  >
+                    <TableCell className="max-w-[320px] align-top max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                       <p className="font-medium text-fg">{r.nombre}</p>
                       <p className="text-caption text-fg-muted">
                         {NOMBRE_DE_LA_FUENTE[r.fuenteDelReal]}
@@ -323,7 +327,7 @@ export function RubrosDelPyg() {
                       ) : null}
                     </TableCell>
 
-                    <TableCell className="whitespace-nowrap align-top">
+                    <TableCell className="whitespace-nowrap align-top max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                       <Badge
                         variant={
                           r.naturaleza === 'MIXTO'
@@ -343,7 +347,7 @@ export function RubrosDelPyg() {
                       ) : null}
                     </TableCell>
 
-                    <TableCell className="align-top">
+                    <TableCell className="align-top max-md:col-span-2 max-md:block max-md:p-0">
                       {r.cuentas.length === 0 ? (
                         <p className="text-caption text-fg-muted" data-testid={`sin-cuenta-${r.rubro}`}>
                           Sin cuenta: el real del libro de este rubro sale en «—».
@@ -394,7 +398,7 @@ export function RubrosDelPyg() {
                       )}
                     </TableCell>
 
-                    <TableCell className="align-top">
+                    <TableCell className="align-top max-md:col-span-2 max-md:block max-md:p-0">
                       {/* Sin `soloImputables`: una cuenta mayor acá es lo normal. */}
                       <SelectorDeCuenta
                         cuentas={cuentas}

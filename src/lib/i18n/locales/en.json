@@ -416,7 +416,7 @@
   },
   "profile": {
     "title": "My Profile",
-    "subtitle": "Manage your personal information",
+    "subtitle": "Your details, your emergency contact and what you look for in a rental.",
     "edit": "Edit profile",
     "save": "Save changes",
     "cancel": "Cancel",
@@ -979,8 +979,6 @@
       "contratos": "Contracts",
       "dispersiones": "Disbursements",
       "renovaciones": "Renewals",
-      "incrementos": "Rent increases",
-      "serviciosPublicos": "Utilities",
       "operaciones": "Maintenance",
       "documentos": "Documents",
       "documentosRevision": "Document review",
@@ -1044,6 +1042,7 @@
       "nomina": "Payroll",
       "liquidaciones": "Settlements",
       "facturasDeProveedores": "Vendor bills",
+      "facturasDeProveedoresCorta": "Invoices",
       "retencion": "Retention",
       "resumenDelNegocio": "Business overview",
       "rentabilidad": "Profitability",
@@ -1074,7 +1073,12 @@
       "pendientesDeAplicar": "Unapplied money",
       "recaudoBancario": "Bank collections",
       "recibos": "Receipts",
-      "deudaDelMes": "Debt this month"
+      "deudaDelMes": "Debt this month",
+      "girosAPropietarios": "Owner payouts",
+      "secCaptacionCorta": "Acquisition",
+      "diasHabiles": "Business days",
+      "incrementos": "Rent increases",
+      "serviciosPublicos": "Utilities"
     },
     "piloto": {
       "titulo": "Autopilot",
@@ -1743,7 +1747,13 @@
       "moreButton": "More",
       "moreAriaLabel": "View more navigation options",
       "sheetTitle": "More options",
-      "closeButton": "Close"
+      "closeButton": "Close",
+      "secciones": {
+        "sec-captacion": "Leasing",
+        "sec-operacion": "Operations",
+        "sec-dinero": "Money",
+        "sec-directorio": "Directory"
+      }
     },
     "common": {
       "title": "Real Estate Agency",
@@ -1806,7 +1816,7 @@
         "cuotasPendientesSinDato": "The server does not send the lease installments yet"
       },
       "pipeline": {
-        "title": "Active Pipeline",
+        "title": "Prospecting in progress",
         "subtitle": "Leads and ongoing negotiations",
         "empty": "No active leads"
       },
@@ -1925,10 +1935,10 @@
         "proteccionDeDatosDesc": "Data subject requests (habeas data): deadlines, their data and the record of the answer",
         "slaDePqrs": "Response time",
         "slaDePqrsDesc": "How long you take to answer a PQRS, by type.",
-        "reparaciones": "Repairs",
-        "reparacionesDesc": "How long you take for each priority and which ones only your agency handles.",
         "comercial": "Sales",
-        "comercialDesc": "Your agents' commission: for listing and for closing, or a fixed amount per deal."
+        "comercialDesc": "Your agents' commission: for listing and for closing, or a fixed amount per deal.",
+        "reparaciones": "Repairs",
+        "reparacionesDesc": "How long you take for each priority and which ones only your agency handles."
       },
       "notifications": {
         "title": "Notifications",
@@ -2629,6 +2639,21 @@
         "suParteDe": "their share of {{canon}} per month",
         "copiarCorreo": "Copy the email",
         "copiarTelefono": "Copy the phone"
+      },
+      "vistas": {
+        "porGirar": "To pay out",
+        "porCompletar": "To complete",
+        "conInmuebles": "With properties",
+        "todos": "All",
+        "etiqueta": "Which owners to show",
+        "vacioPorGirar": "No one has overdue payouts.",
+        "vacioPorGirarDetalle": "Every owner is up to date with what they were owed.",
+        "vacioPorCompletar": "Every profile is complete.",
+        "vacioPorCompletarDetalle": "No owner is missing data that holds back a payout or an invoice.",
+        "vacioConInmuebles": "No owner has listed properties.",
+        "vacioConInmueblesDetalle": "When you list a property, its owner shows up here.",
+        "vacioConBusqueda": "No one in this tab matches “{{busqueda}}”.",
+        "verEnTodos": "Search in All ({{count}})"
       }
     },
     "agentes": {
@@ -3151,10 +3176,10 @@
         "ownerDisbursements": "Owner disbursements",
         "toDisburse": "To disburse",
         "commissions": "Commissions",
-        "progress": "Progress",
-        "pendingLabel": "Pending:",
-        "completedLabel": "Completed:",
-        "failedLabel": "Failed:",
+        "progress": "Paid out",
+        "pendingLabel": "To approve:",
+        "completedLabel": "Paid:",
+        "failedLabel": "Didn't go through:",
         "pendingToProcess": "{{count}} disbursement pending processing",
         "pendingToProcessPlural": "{{count}} disbursements pending processing",
         "viewPending": "View pending",
@@ -3191,7 +3216,7 @@
         "status": "Status",
         "paymentDate": "Payment Date",
         "viewDetail": "View detail",
-        "process": "Process",
+        "process": "Approve",
         "retry": "Retry",
         "downloadExtracto": "Download statement",
         "error": "Error",
@@ -3458,11 +3483,11 @@
       }
     },
     "pipeline": {
-      "title": "Pipeline",
+      "title": "Prospecting",
       "subtitle": "Manage the flow of leads and negotiations",
       "search": "Search lead...",
       "addLead": "New lead",
-      "noLeads": "No leads in pipeline",
+      "noLeads": "No one at this stage",
       "noLeadsDesc": "Start by adding your first lead",
       "stages": {
         "newLead": "New Lead",
@@ -3540,19 +3565,20 @@
       "moving": "Moving...",
       "moveTo": "Move to",
       "overdue": "Overdue:",
-      "agent": "Agent",
-      "inStage": "in stage",
+      "agent": "Advisor",
+      "inStage": "in this stage",
       "today": "Today",
       "week": "Week",
       "monthPreset": "Month",
       "property": "Property",
-      "searchPlaceholder": "Search by candidate or property...",
-      "allAgents": "All agents",
+      "searchPlaceholder": "Search prospect or property",
+      "allAgents": "All advisors",
       "allProperties": "All properties",
       "to": "to",
       "clear": "Clear",
       "enteredPipeline": "Entered the pipeline",
-      "historyNotRecorded": "Earlier stages are not recorded: today only the current stage and when it started are stored. Once stage changes are logged, the full timeline will show up here."
+      "historyNotRecorded": "Earlier stages are not recorded: today only the current stage and when it started are stored. Once stage changes are logged, the full timeline will show up here.",
+      "overdueSentence": "Overdue"
     },
     "agente": {
       "workload": "Workload",
@@ -3698,10 +3724,10 @@
         "captura": "Capture with AI",
         "candidatos": "Candidates",
         "verAviso": "View public listing",
-        "copiarFicha": "Copy listing card",
         "publicarEnElMarketplace": "Publish on the marketplace",
         "quitarDelMarketplace": "Remove from the marketplace",
-        "eliminar": "Remove from portfolio"
+        "eliminar": "Remove from portfolio",
+        "copiarFicha": "Copy listing card"
       },
       "ubicacion": {
         "titulo": "Location",
@@ -4096,6 +4122,7 @@
       "timeline": {
         "title": "History",
         "eventsCount": "{{count}} events",
+        "eventsCountOne": "1 event",
         "showLess": "Show less",
         "showMoreEvents": "Show {{count}} more events",
         "noEvents": "No activity yet",
@@ -4103,7 +4130,7 @@
         "loadFailed": "We couldn't load this property's activity.",
         "events": {
           "consignacionCreated": "Consignment created",
-          "consignacionCreatedDesc": "The consignment contract was signed with the owner",
+          "consignacionCreatedDesc": "The mandate with the owner started",
           "consignacionEnds": "Consignment contract expires",
           "leaseEnds": "Lease expires",
           "leaseEndsWithTenant": "Active lease with {{name}}",
@@ -4137,6 +4164,7 @@
         "saleCommission": "sale commission",
         "consignacion": "Consignment",
         "verFotos": "See {{count}} photos",
+        "agregarFotos": "Add photos",
         "verFoto": "See the photo",
         "abrirFotos": "See the property photos",
         "perMonth": "/mo",
@@ -4147,7 +4175,7 @@
         "months": "months",
         "edit": "Edit",
         "moreActions": "More actions",
-        "viewOnPortal": "View on Portal",
+        "viewOnPortal": "View public listing",
         "viewOnPortalUnavailable": "This property has no linked listing",
         "changeStatus": "Change status",
         "renewConsignment": "Renew consignment",
@@ -4165,6 +4193,12 @@
           "nuevaConsignacionAyuda": "To manage this property again.",
           "reactivar": "Reactivate consignment",
           "reactivarAyuda": "Manage this property again with the same terms: owner, rent and commission."
+        },
+        "estadoDelMandato": {
+          "active": "Active mandate",
+          "pending": "Pending mandate",
+          "expired": "Expired mandate",
+          "terminated": "Ended mandate"
         }
       },
       "filters": {
@@ -4297,7 +4331,7 @@
         "saleTag": "(sale)",
         "commission": "Commission",
         "owner": "Owner",
-        "agent": "Agent",
+        "agent": "Advisor",
         "status": "Status",
         "viewDetail": "View detail",
         "edit": "Edit",
@@ -4481,8 +4515,6 @@
         },
         "step2": {
           "dondeVanLasFotos": "Photos and the property video are uploaded in the «Photos & inventory» step; you can pick several photos at once.",
-          "amenitiesLabel": "Features",
-          "amenitiesHint": "What people searching look at most: the ones you tick show on the listing and in the marketplace filters.",
           "title": "Property Data",
           "subtitle": "Enter the basic property information",
           "propertyTypeLabel": "Property type",
@@ -4525,7 +4557,9 @@
             "bathroomsRequired": "Bathrooms must be between 1 and 10",
             "areaRequired": "Area must be between 10 and 10,000 m2",
             "descriptionRequired": "Description must be between 20 and 5,000 characters"
-          }
+          },
+          "amenitiesLabel": "Features",
+          "amenitiesHint": "What people searching look at most: the ones you tick show on the listing and in the marketplace filters."
         },
         "step3": {
           "title": "Commission Terms",
@@ -4683,7 +4717,7 @@
         "over90": "Over 90 days"
       },
       "rentabilidad": {
-        "eyebrow": "Finance",
+        "eyebrow": "Reports",
         "back": "Back to Reports",
         "title": "Profitability by property",
         "description": "For each property: expected versus collected in the period, the agency commission, withholdings and charges, maintenance expenses and the net left to the owner. Plus occupancy and the annual yield on the commercial value when it is on record.",
@@ -4920,7 +4954,7 @@
       "legales": {
         "subtitle": "The agency's contracts, handover records, inventories and letters.",
         "generar": "Generate document",
-        "buscar": "Search document, property or party",
+        "buscar": "Document, property or person",
         "tipo": "Type",
         "estado": "Status",
         "todosLosTipos": "All types",
@@ -5413,7 +5447,6 @@
       "colApproved": "Approved",
       "colInProgress": "In Progress",
       "colCompleted": "Completed",
-      "colCancelled": "Not approved",
       "noRequests": "No requests",
       "cancelledNotice": "{{count}} cancelled requests not shown",
       "paidByOwner": "Owner",
@@ -5544,7 +5577,8 @@
       "markAsCompleted": "Mark as completed",
       "completeConfirm": "Confirm that the work has been completed satisfactorily?",
       "confirmCompleted": "Confirm completed",
-      "uploadPhotos": "Upload photos"
+      "uploadPhotos": "Upload photos",
+      "colCancelled": "Not approved"
     },
     "propietario": {
       "extracto": {
@@ -5778,7 +5812,9 @@
         "delete": "Delete",
         "noResults": "No owners found",
         "tryOtherTerms": "Try different search terms",
-        "addFirstOwner": "Add your first owner to get started"
+        "addFirstOwner": "Add your first owner to get started",
+        "filtros": "Filters",
+        "tipoDePersona": "Type of person"
       },
       "bankInfo": {
         "bankAccount": "Bank account",
@@ -6113,7 +6149,10 @@
         "pagosHome": "Payments",
         "mantenimiento": "Maintenance",
         "mantenimientoTickets": "Tickets",
-        "mantenimientoResumen": "Overview"
+        "mantenimientoResumen": "Overview",
+        "cobranzaGrupoAcuerdos": "Agreements",
+        "cobranzaGrupoContactos": "Outreach",
+        "pagosEnLinea": "Online payments"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -6122,7 +6161,7 @@
         "detalle": "Detail",
         "paginas": {
           "equipo": "Collections AI team",
-          "inbox": "Conversations inbox",
+          "inbox": "Conversation inbox",
           "promesas": "Payment promises",
           "resultados": "Agent results"
         },
@@ -7090,6 +7129,8 @@
         "detalle": {
           "title": "Ticket detail",
           "errorLoading": "Failed to load detail",
+          "noEncontrado": "We couldn't find this ticket",
+          "noEncontradoDesc": "The link may be wrong or the ticket may no longer exist. Go back to the list to find it.",
           "queEntendi": "What I understood",
           "clasificacion": "Classification",
           "imagenes": "Images",
@@ -7129,7 +7170,7 @@
           }
         },
         "pendientes": {
-          "pageTitle": "What needs your attention",
+          "pageTitle": "Pending",
           "desc": "Today's decisions, prioritized: the agent handles everything else on its own.",
           "vacio": "All caught up",
           "vacioHint": "The agent is managing the portfolio. When something needs your decision, it will show up here.",
@@ -7223,7 +7264,7 @@
         },
         "deudores": {
           "title": "Cases",
-          "subtitle": "Each case is a debtor with an open balance. Most stalled first.",
+          "subtitle": "Each case is a tenant with an open balance. Most stalled first.",
           "filters": {
             "title": "Filters",
             "stage": "Stage",
@@ -7231,7 +7272,7 @@
             "daysInStage": "Days in stage",
             "search": {
               "placeholder": "Name or ID (4+ digits)",
-              "label": "Search debtor"
+              "label": "Search a case"
             },
             "clear": "Clear filters"
           },
@@ -7259,7 +7300,7 @@
             "whatsapp": "WhatsApp",
             "email": "Email"
           },
-          "emptyFiltered": "No debtors match these filters",
+          "emptyFiltered": "No cases match these filters",
           "empty": {
             "title": "No debtors yet",
             "description": "Import a CSV portfolio or add manually.",
@@ -7433,6 +7474,7 @@
           "error": "Failed to load call",
           "errorRetry": "Retry",
           "empty": "No data for this call",
+          "emptyDesc": "It may still be processing, or the link may be wrong. Go back to the calls list to find it.",
           "header": {
             "startedAt": "Started",
             "duration": "Duration",
@@ -7496,7 +7538,7 @@
           "exportTranscriptPdf": "Export transcript PDF"
         },
         "pagos": {
-          "title": "Payments",
+          "title": "Online payments",
           "subtitle": "What's still owed and what has come in. An obligation imported from the portfolio is not a payment yet.",
           "kpi": {
             "porCobrar": "Outstanding",
@@ -7506,7 +7548,7 @@
             "approved": "Approved",
             "declined": "Declined",
             "recaudado": "Total collected",
-            "disbursed": "Total disbursed"
+            "disbursed": "Sent to owners"
           },
           "dateWindow": {
             "today": "Today",
@@ -7577,7 +7619,7 @@
           "disbursement": {
             "settled": "Disbursed",
             "pending": "Not disbursed",
-            "days": "{{days}} d",
+            "days": "{{days}} days",
             "noAplica": "Not applicable"
           }
         },
@@ -7707,10 +7749,10 @@
           },
           "list": {
             "pageTitle": "Insurance claims",
-            "pageSubtitle": "AI-identified insurance claims pending filing",
+            "pageSubtitle": "The insurance claims Mori prepared, to review and file.",
             "empty": {
               "title": "No claims on record",
-              "description": "The AI has not identified any pending insurance claims at this time."
+              "description": "Mori hasn't found claims to file right now."
             },
             "columns": {
               "aseguradora": "Insurer",
@@ -7760,11 +7802,11 @@
             "submitting": "Rejecting...",
             "success": "Letter rejected successfully."
           },
-          "pageTitle": "Pre-judicial letters",
+          "pageTitle": "Letters",
           "pageSubtitle": "AI-generated letters pending review and approval",
           "empty": {
-            "title": "No letters generated",
-            "description": "The agent has no letters waiting for approval. To write one by hand, open a debtor in Cases and use «Generate pre-judicial letter»: it downloads as a PDF with the real data and is not sent."
+            "title": "No letters yet",
+            "description": "The agent hasn't prepared any letters to review. You can write one by hand: it comes out as a PDF with the real data and isn't sent to anyone."
           },
           "columns": {
             "kind": "Type",
@@ -7839,9 +7881,9 @@
           "pageTitle": "Compliance",
           "overview": {
             "ley2300Heading": "Ley 2300 — outside-hours attempts",
-            "habeasDataHeading": "Habeas Data — legal deadline",
+            "habeasDataHeading": "Do-not-contact requests without acknowledgment",
             "retentionHeading": "Data retention",
-            "sparklineHeading": "Flag rate (last 30 days)",
+            "sparklineHeading": "Alerts per day (last 30 days)",
             "debtorRefHint": "Internal debtor reference. The national ID is never shown on compliance screens.",
             "retentionUnmeasured": "No records with an active retention window. Nothing to measure yet.",
             "retentionCaption": "{rows} records with a retention window · {overdue} past due",
@@ -7863,7 +7905,7 @@
             "redPulse": "Expires in less than 24 hours"
           },
           "subPages": {
-            "ley2300Title": "Ley 2300 — outside-hours attempts",
+            "ley2300Title": "Outside contact hours",
             "optOutTitle": "Do not contact (opt-out)",
             "auditTitle": "Audit log"
           },
@@ -7914,7 +7956,7 @@
             "morosidadBase": "{{enMora}} of {{conContrato}} tenants with an active lease"
           },
           "topDebtors": {
-            "heading": "Largest balances",
+            "heading": "The ones that weigh the most",
             "empty": "No notable debtors today",
             "diasDeMora": "Days past due"
           },
@@ -7927,7 +7969,7 @@
             "pageTitle": "Report thresholds",
             "fields": {
               "topN": "Top-N debtors to show",
-              "moraBoundaries": "Days-past-due bucket boundaries",
+              "moraBoundaries": "Days-past-due cuts",
               "pkrAlertBelow": "Alert if PKR falls below (%)",
               "morosidadAlertAbove": "Alert if delinquency exceeds (%)",
               "violationsAtLeast": "Minimum violations to alert",
@@ -8255,7 +8297,12 @@
             "buscar": "Search by name",
             "sinResultados": "We couldn't find it here. Open the “Your personal data” link at the bottom of your agency's emails.",
             "noEsta": "Not on the list? Open the “Your personal data” link at the bottom of your agency's emails.",
-            "noCargo": "We couldn't load the agencies. Reload the page in a few minutes."
+            "noCargo": "We couldn't load the agencies. Reload the page in a few minutes.",
+            "textoSinLista": "Here you ask to see, correct or delete the data an agency holds about you.",
+            "sinLista": "We can't show you the agencies yet. Write to hola@leasefy.co and we'll pass your request on.",
+            "mientras": "Meanwhile, write to us and we'll pass your request on.",
+            "escribirnos": "Write to hola@leasefy.co",
+            "irAlInicio": "Go to the home page"
           }
         },
         "verify": {
@@ -8695,14 +8742,14 @@
           },
           "necesita": {
             "n1": "Properties available for rent, with their rent.",
-            "n2": "Your approval in the queue before each email goes out, in Manual and Copilot."
+            "n2": "Your approval in Suggested candidates before each email goes out, in Manual and Copilot."
           },
           "modo": {
             "sombra": "It does nothing on its own: it proposes the shortlist and each lead's options and, if you want, does it with one click.",
             "copiloto": "It leaves in your Inbox, one click away, each property's shortlist and the options for each new lead.",
             "autonomo": "It builds the shortlist on its own and emails each new lead what fits them, within contact hours and with your grace period to undo it."
           },
-          "empezar": "See the queue"
+          "empezar": "See suggested candidates"
         },
         "pagos": {
           "title": "Payments Agent",
@@ -8890,7 +8937,7 @@
           "comun": {
             "colaTitle": "To review",
             "configTitle": "Settings & autonomy",
-            "configDesc": "What the agent can do on its own and what always requires your approval. Below the mode it says what really changes today for this agent.",
+            "configDesc": "What the agent does on its own and what waits for your approval.",
             "analiticaTitle": "Analytics",
             "enCola": "Pending",
             "pendientes": "Pending",
@@ -8994,7 +9041,7 @@
           "matching": {
             "eyebrow": "Agent · Matching",
             "salaTitulo": "Matching",
-            "salaDesc": "When a candidate loses the property they applied to (or when you ask from their file), it matches their profile with your available properties and leaves the compatible options for you to decide whether we send them.",
+            "salaDesc": "It finds another property for candidates left without theirs, and you decide whether we send it.",
             "colaDesc": "Candidates with compatible properties waiting for your decision. You review the fit and choose whether to send them the options or dismiss the case.",
             "casoColaLabel": "Suggested candidates",
             "crossPregunta": "Is this candidate reliable?",
@@ -9008,7 +9055,7 @@
             },
             "comoFunciona": {
               "title": "How does it work?",
-              "titulo": "How matching works",
+              "titulo": "How Affinity works",
               "descripcion": "When a candidate loses a property, the agent looks for others among yours.",
               "step1": {
                 "title": "A candidate loses a property",
@@ -9020,8 +9067,8 @@
               },
               "step3": {
                 "title": "You decide whether to send the options",
-                "desc": "In copilot the options wait in the queue for your go-ahead; in autonomous they go out by email on their own if at least two match. Never more than one email every 24 hours per candidate.",
-                "tuParte": "in copilot, review the queue and approve each candidate's options."
+                "desc": "In copilot the options wait for your go-ahead in Suggested candidates; in autonomous they go out by email on their own if at least two match. Never more than one email every 24 hours per candidate.",
+                "tuParte": "in copilot, review Suggested candidates and approve each candidate's options."
               }
             },
             "estado": {
@@ -9035,7 +9082,8 @@
               "fallo": "Sending failed",
               "caso_creado": "Case created",
               "caso_decidido": "Decided"
-            }
+            },
+            "deCandidatos": "of {{n}} candidates with options in 30 days"
           },
           "pagos": {
             "eyebrow": "Agent · Vendor payments",
@@ -9130,17 +9178,17 @@
           },
           "avaluos": {
             "salaTitulo": "Appraisals",
-            "salaDesc": "A reference value estimate, fully remote and AI-assisted. No physical visit: the certificate is generated from market data and signed by a Leasefy reviewer.",
+            "salaDesc": "Request an appraisal with no site visit: a Leasefy reviewer signs it.",
             "colaTitle": "My appraisal requests",
             "colaDesc": "Every appraisal you requested, step by step: you request it, a Leasefy reviewer reviews it, signs it and it gets delivered. You see when you requested it, when it was signed and the certificate as soon as it is ready. No physical visit is performed.",
             "colaKpiLabel": "Active",
             "colaEmptyTitle": "No requests yet",
-            "colaEmptyHint": "Request your first appraisal from the Summary: you generate the link, the estimate is made and you follow every step here until the signed certificate.",
+            "colaEmptyHint": "Request your first appraisal from Appraisals: you generate the link, the estimate is made and you follow every step here until the signed certificate.",
             "casoColaLabel": "My requests",
             "solicitarTitle": "Request an appraisal",
             "solicitarCta": "Request appraisal",
-            "solicitarUnavailable": "This environment has no appraisal service connected: we can't open the wizard or mint shareable links. Reach out to your Leasefy contact to activate it.",
-            "desconectadoTitulo": "Appraisal requests are disconnected",
+            "solicitarUnavailable": "We can't open the wizard or create shareable links until they're turned on. Write to us and we'll turn them on.",
+            "desconectadoTitulo": "Appraisals aren't active for your agency yet",
             "directoDetalle": "Open the wizard and enter the property details yourself.",
             "abriendoAsistente": "Opening wizard…",
             "linkCta": "Mint a shareable link",
@@ -9202,7 +9250,7 @@
               }
             },
             "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed.",
-            "colaSinServicio": "Your requests cannot be shown: this environment does not have the appraisal service connected. Write to your Leasefy contact to turn it on.",
+            "colaSinServicio": "We couldn't read your requests: the appraisal service isn't responding. Everything else keeps working.",
             "colaPasosAria": "Where it stands: {{paso}}",
             "colaPedidoEl": "Requested on {{fecha}}",
             "colaFirmadoEl": "signed on {{fecha}}",
@@ -9213,10 +9261,24 @@
               "firmado": "Signed",
               "entregado": "Delivered",
               "rechazado": "Rejected"
+            },
+            "escribenos": "Write to us",
+            "sinServicioBoton": "The appraisal service isn't responding right now.",
+            "sinServicioLista": "We couldn't read your appraisals: the appraisal service isn't responding. Everything else keeps working.",
+            "listosTitulo": "Ready to deliver",
+            "deTotal": "of {{n}} appraisals",
+            "deTotalUno": "of 1 appraisal",
+            "rechazados": "{{n}} rejected",
+            "rechazadosUno": "1 rejected",
+            "filtrarPorEstado": "Filter by status",
+            "metodos": {
+              "avm": "Automated valuation",
+              "comparables": "Market comparables",
+              "comparablesIa": "AI comparables"
             }
           },
           "cobranza": {
-            "salaDesc": "The agent works standard delinquency for you — calls, WhatsApp and letters within the law — and escalates only the critical cases.",
+            "salaDesc": "The agent works delinquency for you —calls, WhatsApp and letters, within the law— and hands a person only what needs a decision.",
             "accionTitle": "Review pending escalations",
             "accionDesc": "Cases the agent can't resolve on its own land here for your decision.",
             "comoFunciona": {
@@ -9938,7 +10000,7 @@
       },
       "pagos_home": {
         "title": "Payments",
-        "subtitle": "What tenants owe this month, instalment by instalment: it exists from the day the contract was signed and it is a slice of each client's account statement.",
+        "subtitle": "What tenants owe this month, installment by installment, and how to record what they pay.",
         "resumen": {
           "nuevaFactura": "New invoice",
           "atencion": {
@@ -10583,8 +10645,8 @@
         "statusPendingApproval": "Pending approval",
         "statusRejected": "Rejected",
         "statusVoid": "Void",
-        "m1BannerTitle": "AP Invoice detail",
-        "m1BannerDesc": "Payments and advanced approval flows connect in a later phase (M1).",
+        "m1BannerTitle": "View only",
+        "m1BannerDesc": "For now the bill is recorded and viewed in Leasefy: approving and paying it is still done outside.",
         "loadingError": "Error loading invoice",
         "fetching": "Loading invoice…"
       }
@@ -10609,7 +10671,7 @@
       "colInmueble": "Property / contract",
       "colAsignado": "Assigned to",
       "colEstado": "Status",
-      "colSla": "SLA",
+      "colSla": "Due",
       "emptyTitle": "No requests yet",
       "emptyDesc": "Log the first one with “New request”.",
       "sinInmueble": "No property",
@@ -11251,8 +11313,8 @@
         "publicar": "Publish",
         "calidad": "Quality"
       },
-      "seccion": "AI agents",
-      "titulo": "Listing quality · Niti",
+      "seccion": "AI agents · Niti",
+      "titulo": "Listing quality",
       "listaAria": "Audited properties, from worst to best",
       "descripcion": "Reviews your properties with the same «minimum to publish» rule as Portals, adds its own checks and suggests fixes. In Automatic it fixes the listing on its own with what it already has (with time for you to undo it); unpublishing or publishing on a portal always waits for your click. It never writes to the owner.",
       "ultimaPasada": "Last run: {{fecha}}",
@@ -11273,7 +11335,7 @@
       "filtro": {
         "todos": "All",
         "con_problemas": "Something to fix",
-        "posible_tomado": "Possibly taken",
+        "posible_tomado": "May already be rented",
         "fotos": "Flagged photos"
       },
       "conteoUno": "1 property",
@@ -11416,7 +11478,7 @@
     },
     "contracts": {
       "title": "Contracts",
-      "subtitle": "Manage your property contracts",
+      "subtitle": "Your properties' contracts and what awaits your signature.",
       "totalContracts": "Total contracts",
       "inSystem": "In the system",
       "toSign": "To sign",
@@ -11580,7 +11642,7 @@
     },
     "candidates": {
       "title": "Candidates",
-      "subtitle": "Evaluate and manage your candidate applications",
+      "subtitle": "Who applied to each property and how their screening went.",
       "scoringGuideToggle": "How does candidate scoring work?",
       "scoringGuideTitle": "Candidate evaluation system",
       "scoringGuideDescription": "Each candidate receives a score from 0 to 100 based on multiple verified factors. This score translates into a risk level (A–D) to facilitate your decision.",
@@ -12861,9 +12923,9 @@
         "desc": "We're asking every insurer we work with, not just one. This can take a few minutes."
       },
       "vacio": {
-        "title": "You don't have an approval yet",
-        "desc": "With an approval you know how much you can rent for, and you apply to as many properties as you want with the same assessment.",
-        "cta": "Find out how much you can rent for",
+        "title": "You don't know your limit yet",
+        "desc": "With your limit you know how much you can rent for, and you apply to as many properties as you want with the same assessment.",
+        "cta": "Find out my limit",
         "comoFunciona": "How it works"
       },
       "pasos": {
@@ -12876,7 +12938,7 @@
           "desc": "We show you the properties that fit your approved cap, so you don't waste time on ones that don't."
         },
         "tres": {
-          "title": "The owner decides",
+          "title": "You apply",
           "desc": "You apply to as many as you want with the same assessment, without paying again."
         }
       }
@@ -12942,6 +13004,9 @@
         "canon": "This property's rent",
         "superaTope": "is above your approved cap of",
         "codeudor": "You can still apply: the agency decides whether to rent it to you. To strengthen your application, add another person (a co-signer)."
+      },
+      "heroe": {
+        "rotulo": "Your rent limit"
       }
     },
     "resultado": {
@@ -13049,7 +13114,10 @@
       "ocultasPlural": "properties that go above your cap.",
       "vacio": "There are no properties within your cap right now",
       "vacioTexto": "New ones come up often. Meanwhile you can browse the full catalog.",
-      "verTodo": "See all properties"
+      "verTodo": "See all properties",
+      "seccion": "Find a rental",
+      "descripcion": "Only the ones that fit your approved cap, cheapest first.",
+      "marketplace": "Search the marketplace"
     }
   },
   "recibos": {
@@ -13306,7 +13374,8 @@
     "filtros": {
       "activos": "Active",
       "terminados": "Ended",
-      "todos": "All"
+      "todos": "All",
+      "sinArriendo": "No lease"
     },
     "kpi": {
       "personas": "Tenants",
@@ -13399,7 +13468,9 @@
       "enFirma": "Being signed",
       "porEmpezar": "Not started",
       "empiezaEl": "Starts on {{fecha}}"
-    }
+    },
+    "vacioSinArriendo": "Every tenant has a contract.",
+    "vacioSinArriendoDetalle": "Anyone you add by hand or bring from the migration without a contract shows up here, with “Create their contract”."
   },
   "cartera": {
     "tabla": {
@@ -13461,7 +13532,7 @@
       "deLaCualEnSiniestro": "of which {{monto}} is in claims",
       "tramoEnSiniestro": "In claims",
       "desdeLosDias": "from {{dias}} days past due",
-      "edadDeLaCartera": "Portfolio age · days past due counted AFTER the contract’s grace period. The five buckets add up to the portfolio."
+      "edadDeLaCartera": "Portfolio age · days past due counted after the contract’s grace period. The five buckets add up to the portfolio."
     },
     "porPropietario": {
       "propietario": "Owner",
@@ -13804,7 +13875,8 @@
       "proximaCuota": "Next payout",
       "sinProxima": "No payouts left to fall due",
       "vencida": "late",
-      "colImpuestos": "Commission and taxes"
+      "colImpuestos": "Commission and taxes",
+      "porVencer": "To be paid out later"
     },
     "cancelado": "Paid",
     "pendiente": "Pending",
@@ -13961,7 +14033,8 @@
     "saldoAFavorEnLote": "In a payment batch, to be paid",
     "saldoAFavorPagado": "Refunded · disbursement voucher No. {{numero}}",
     "saldoAFavorPagadoSinNumero": "Refunded",
-    "saldoAFavorAnulado": "Refund voided: the balance belongs to the tenant again"
+    "saldoAFavorAnulado": "Refund voided: the balance belongs to the tenant again",
+    "porVencer": "Not yet due"
   },
   "agentes": {
     "equipo": {

@@ -186,7 +186,7 @@ describe('<Reapertura>', () => {
     expect(api.asientos.reabrir).not.toHaveBeenCalled();
   });
 
-  it('una fecha posterior a la frontera se frena acá: eso es cerrar, no reabrir', async () => {
+  it('una fecha posterior a la frontera se frena aquí: eso es cerrar, no reabrir', async () => {
     await pintar('2025-12-31');
     await abrirDialogo();
     await escribir(q('reapertura-hasta') as HTMLInputElement, '2026-03-01');

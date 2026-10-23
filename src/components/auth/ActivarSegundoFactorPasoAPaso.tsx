@@ -38,8 +38,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppleLogo,
-  ArrowLeft,
-  ArrowRight,
   ArrowSquareOut,
   Check,
   CheckCircle,
@@ -49,7 +47,6 @@ import {
   GoogleLogo,
   GooglePlayLogo,
   Key,
-  ShieldCheck,
   WarningCircle,
   WindowsLogo,
 } from '@phosphor-icons/react';
@@ -321,12 +318,13 @@ export function ActivarSegundoFactorPasoAPaso({
           initial={{ scale: motionScale.pop, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={motionSpring.bouncy}
-          className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft"
+          className="mx-auto flex w-fit"
         >
-          <CheckCircle className="h-9 w-9 text-success" weight="fill" aria-hidden="true" />
+          {/* El visto suelto, sin círculo de color detrás. */}
+          <CheckCircle className="h-12 w-12 text-success" weight="fill" aria-hidden="true" />
         </motion.div>
         <div className="space-y-2">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-subtle">Listo</p>
+          <p className="text-caption text-fg-subtle">Listo</p>
           <h1
             ref={tituloRef}
             tabIndex={-1}
@@ -352,11 +350,7 @@ export function ActivarSegundoFactorPasoAPaso({
       {/* Qué es y por qué, en una frase. */}
       {sinEncabezado ? null : (
         <div className="space-y-3 text-center">
-          <div className="flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary-soft ring-1 ring-primary/10">
-              <ShieldCheck className="h-6 w-6 text-primary" weight="fill" aria-hidden="true" />
-            </div>
-          </div>
+          {/* Sin caja de ícono de color: el título y su frase bastan. */}
           <h1 className="text-balance font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
             Activa tu segundo factor
           </h1>
@@ -374,7 +368,7 @@ export function ActivarSegundoFactorPasoAPaso({
             id="paso-titulo"
             ref={tituloRef}
             tabIndex={-1}
-            className="min-w-0 text-balance text-[20px] font-semibold leading-tight tracking-[-0.015em] text-fg outline-none"
+            className="min-w-0 text-balance text-[20px] font-medium leading-tight tracking-[-0.015em] text-fg outline-none"
           >
             {paso === 'app'
               ? 'Descarga una app de autenticación en tu celular'
@@ -501,7 +495,6 @@ export function ActivarSegundoFactorPasoAPaso({
                 onClick={() => setPaso('app')}
                 className="sm:flex-none"
               >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 Atrás
               </Button>
               <Button
@@ -512,7 +505,6 @@ export function ActivarSegundoFactorPasoAPaso({
                 data-testid="ya-lo-agregue"
               >
                 Ya la agregué, continuar
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -521,7 +513,7 @@ export function ActivarSegundoFactorPasoAPaso({
         {paso === 'codigo' ? (
           <div className="space-y-5" aria-busy={verificando} data-testid="paso-codigo">
             <p className="text-pretty text-body-sm text-fg-muted">
-              En la app ya aparece tu cuenta nueva con un código de seis dígitos. Escríbelo acá: al
+              En la app ya aparece tu cuenta nueva con un código de seis dígitos. Escríbelo aquí: al
               completar el sexto dígito se revisa solo.
             </p>
             <CasillasDeCodigo
@@ -566,7 +558,6 @@ export function ActivarSegundoFactorPasoAPaso({
                 className="sm:flex-none"
                 data-testid="volver-al-qr"
               >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 Atrás
               </Button>
               <Button
@@ -594,7 +585,7 @@ function NumeroDeInstruccion({ n }: { n: number }) {
   return (
     <span
       aria-hidden="true"
-      className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-muted font-mono text-[11px] tabular-nums text-fg-muted"
+      className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-muted font-mono text-caption leading-none tabular-nums text-fg-muted"
     >
       {n}
     </span>
@@ -640,7 +631,7 @@ function AnilloDePasos({ actual }: { actual: number }) {
       </svg>
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center font-mono text-caption font-semibold tabular-nums text-fg"
+        className="absolute inset-0 flex items-center justify-center font-mono text-caption tabular-nums text-fg"
       >
         {actual + 1}/{total}
       </span>
@@ -671,8 +662,11 @@ function PasoDescargar({
       rel="noopener noreferrer"
       aria-label={`Descargar ${app} en ${etiqueta} (se abre en otra pestaña)`}
       className={cn(
-        buttonVariants({ variant: resaltada ? 'default' : 'outline', size: 'sm' }),
+        // Un solo azul en el paso: el de «Ya tengo la app». La tienda de tu
+        // celular se nota por el borde más oscuro, no por otro botón azul.
+        buttonVariants({ variant: 'outline', size: 'sm' }),
         'flex-1 justify-center gap-1.5 sm:flex-none',
+        resaltada && 'border-fg/40',
       )}
     >
       {etiqueta === 'App Store' ? (
@@ -759,7 +753,6 @@ function PasoDescargar({
         data-testid="ya-tengo-la-app"
       >
         {preparando ? 'Preparando tu código…' : 'Ya tengo la app, continuar'}
-        {preparando ? null : <ArrowRight className="h-4 w-4" aria-hidden="true" />}
       </Button>
     </div>
   );

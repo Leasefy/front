@@ -36,7 +36,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle, Prohibit, WarningCircle } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { Avisos, Cifra, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos, SinLaMigracion } from '@/components/finanzas/piezas';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -80,6 +82,7 @@ import { mesActual } from '@/lib/recaudo/meses';
 // CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
 import { plata as formatCurrency } from '@/lib/contabilidad/plata';
 import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis';
 
 const NUMERO = cifrasDeLaPantalla();
 
@@ -113,6 +116,11 @@ export function rangoEnDias(tramo: { desdeDias: number; hastaDias: number | null
   return ultimo <= tramo.desdeDias
     ? `${tramo.desdeDias} días`
     : `De ${tramo.desdeDias} a ${ultimo} días`;
+}
+
+/** El aviso del back, como se lee en pantalla: sin mayúsculas de énfasis ni la coletilla interna. */
+function avisoEnLimpio(aviso: string): string {
+  return sinMayusculasDeEnfasis(aviso).replace(/\s*Confirmar con el contador\.?\s*$/i, '').trim();
 }
 
 export function DeterioroDeCarteraPanel() {
@@ -175,11 +183,13 @@ export function DeterioroDeCarteraPanel() {
   const provisionCop = totalProvisionado(tramos);
   const anteriorCop = datos?.provision?.provisionAnteriorCop ?? datos?.anterior?.provisionCop ?? 0;
   const movimiento = movimientoDelMes(provisionCop, anteriorCop);
+  const enCero = movimiento === 0 && provisionCop === 0 && anteriorCop === 0;
   const fuera = porcentajesFueraDeRango(tramos);
   const cambiado = hayCambios(datos?.calculo.tramos ?? [], porcentajes);
   const provision = datos?.provision ?? null;
   const disponible = datos?.disponible !== false;
   const aprobada = provision?.estado === 'APROBADA';
+  const lePasaAAprobar = provision?.estado === 'PROPUESTA' && !cambiado;
 
   async function proponer() {
     setEnviando(true);
@@ -287,83 +297,95 @@ export function DeterioroDeCarteraPanel() {
               <SinLaMigracion motivo={datos.motivo} queSeEspera="guardar la provisión del mes" />
             ) : null}
 
+            {/* Revisora r25 (Deterioro, UI): lo del back sin mayúsculas de énfasis («CAPITAL») y sin la
+                coletilla «Confirmar con el contador.», que ya dice el título (se leía como nota interna). */}
             <Avisos
-              avisos={datos.calculo.avisos}
+              avisos={datos.calculo.avisos.map(avisoEnLimpio)}
               testId="avisos-del-deterioro"
               titulo="Lo que el contador tiene que decidir antes de aprobar"
             />
 
-            {/* ── 🔴 El movimiento, que es lo que se asienta ─────────────── */}
-            <section className="space-y-3">
-              <TituloDeBloque
-                titulo="Lo que se asienta este mes"
-                explicacion="La provisión es un saldo acumulado. Al libro va la DIFERENCIA con la del mes anterior: asentar el saldo entero cada mes lo duplicaría."
-              />
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <Cifra
-                  formato={formatCurrency}
-                  id="movimiento"
-                  etiqueta="Movimiento del mes"
-                  valor={movimiento}
-                  definicion={queSeAsienta(movimiento)}
-                  tono={movimiento > 0 ? 'danger' : movimiento < 0 ? 'success' : undefined}
-                />
-                <Cifra
-                  formato={formatCurrency}
-                  id="provision"
-                  etiqueta="Provisión al cierre"
-                  valor={provisionCop}
-                  definicion="El saldo acumulado que queda en la cuenta correctora después de este mes. NO es lo que se asienta."
-                />
-                <Cifra
-                  formato={formatCurrency}
-                  id="provision-anterior"
-                  etiqueta="Provisión del mes anterior"
-                  valor={anteriorCop}
-                  definicion="La última aprobada. Es el punto de partida del movimiento."
-                />
-                <Cifra
-                  formato={formatCurrency}
-                  id="cartera-provisionable"
-                  etiqueta="Cartera provisionable"
-                  valor={datos.calculo.carteraCop}
-                  definicion={`Sólo el CAPITAL en cartera viva: ${NUMERO.format(datos.calculo.cuotas)} cuotas. Lo que está en siniestro y el interés de mora quedan fuera.`}
-                />
-              </div>
-            </section>
+            {/* ── 🔴 LA RESPUESTA: el movimiento, que es lo que se asienta ────────
+                GLOW UP 3.ª vuelta · antes eran cuatro cifras del mismo peso; la que
+                contesta la pantalla es una, y la provisión de antes y de después
+                son su contexto. Lo que mide cada una, plegado al pie. */}
+            <CifraHeroe
+              rotulo="Se asienta este mes"
+              cifra={<span data-testid="valor-movimiento">{formatCurrency(movimiento)}</span>}
+              contexto={
+                <>
+                  la provisión pasa de{' '}
+                  <span className="font-mono tabular-nums" data-testid="valor-provision-anterior">{formatCurrency(anteriorCop)}</span>{' '}
+                  a <span className="font-mono tabular-nums" data-testid="valor-provision">{formatCurrency(provisionCop)}</span>
+                </>
+              }
+              pie={
+                enCero ? null : (
+                <>
+                  {queSeAsienta(movimiento)} Cartera provisionable:{' '}
+                  <span className="font-mono tabular-nums" data-testid="valor-cartera-provisionable">{formatCurrency(datos.calculo.carteraCop)}</span>{' '}
+                  en {NUMERO.format(datos.calculo.cuotas)} cuotas.
+                </>
+                )
+              }
+              // C3 (revisora r25): sin provisión antes ni ahora, UNA línea y no tres cifras en cero.
+              // Revisora r25 (Deterioro #2): esa línea lo dice todo (antes, además, «No hay asiento que hacer…»).
+              esCero={enCero}
+              cuandoEsCero={
+                <>
+                  Nada que asentar este mes: la provisión sigue en{' '}
+                  <span className="font-mono tabular-nums text-fg" data-testid="valor-movimiento">{formatCurrency(0)}</span>. Cartera
+                  provisionable:{' '}
+                  <span className="font-mono tabular-nums" data-testid="valor-cartera-provisionable">{formatCurrency(datos.calculo.carteraCop)}</span>{' '}
+                  en {NUMERO.format(datos.calculo.cuotas)} cuotas.
+                </>
+              }
+              data-testid="cifra-movimiento"
+            />
 
             {/* ── Los tramos, editables ─────────────────────────────────── */}
             <section className="space-y-3">
-              <TituloDeBloque
-                titulo="Provisión por edades"
-                explicacion="El porcentaje de cada tramo es una SUGERENCIA del sistema; el que manda es el que dejes acá. La provisión se recalcula mientras escribes: lo que se guarda son los porcentajes, no los pesos."
-              />
+              <div className="space-y-1">
+                <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Provisión por edades</h2>
+                <p className="text-body-sm text-fg-muted">
+                  El porcentaje de cada tramo es una sugerencia: el que manda es el que dejes aquí.
+                </p>
+              </div>
               <div className="overflow-hidden rounded-lg border border-border">
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
+                  <Table className="max-md:block">
+                    <TableHeader className="max-md:hidden">
                       <TableRow>
                         <TableHead>Tramo</TableHead>
-                        <TableHead>Días de mora</TableHead>
                         <TableHead className="text-right">Cartera</TableHead>
                         <TableHead className="text-right">Cuotas</TableHead>
                         <TableHead className="text-right">% a provisionar</TableHead>
-                        <TableHead className="text-right">Sugerido</TableHead>
                         <TableHead className="text-right">Provisión</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="max-md:block">
                       {tramos.map((t) => (
-                        <TableRow key={t.nombre} data-testid={`tramo-${t.desdeDias}`}>
-                          <TableCell className="font-medium text-fg">{t.nombre}</TableCell>
-                          <TableCell className="text-fg-muted">{rangoEnDias(t)}</TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {formatCurrency(t.carteraCop)}
+                        <TableRow
+                          key={t.nombre}
+                          data-testid={`tramo-${t.desdeDias}`}
+                          className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
+                        >
+                          {/* Revisora r25 (Deterioro #1): «Tramo» y «Días de mora» decían lo mismo; el rango
+                              sólo va debajo cuando el nombre no lo dice. */}
+                          <TableCell className="text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
+                            {t.nombre}
+                            {/\d/.test(t.nombre) ? null : (
+                              <span className="block text-caption text-fg-muted">{rangoEnDias(t)}</span>
+                            )}
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
+                          <TableCell className="text-right font-mono tabular-nums max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted">
+                            {t.carteraCop === 0 ? <span className="text-fg-subtle">—</span> : formatCurrency(t.carteraCop)}
+                            {t.cuotas > 0 ? <span className="md:hidden"> en {NUMERO.format(t.cuotas)} cuotas</span> : null}
+                          </TableCell>
+                          <TableCell className="text-right font-mono tabular-nums max-md:hidden">
                             {NUMERO.format(t.cuotas)}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right max-md:col-start-2 max-md:row-span-2 max-md:row-start-2 max-md:block max-md:p-0">
                             <Input
                               aria-label={`Porcentaje de ${t.nombre}`}
                               data-testid={`porcentaje-${t.desdeDias}`}
@@ -379,26 +401,28 @@ export function DeterioroDeCarteraPanel() {
                                 }));
                               }}
                             />
-                          </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums text-fg-muted">
-                            {t.porcentajeSugerido} %
+                            {t.porcentaje !== t.porcentajeSugerido ? (
+                              <span className="mt-1 block text-caption text-fg-muted" data-testid={`sugerido-${t.desdeDias}`}>
+                                Sugerido: {t.porcentajeSugerido} %
+                              </span>
+                            ) : null}
                           </TableCell>
                           <TableCell
-                            className="text-right font-mono tabular-nums"
+                            className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0"
                             data-testid={`provision-${t.desdeDias}`}
                           >
-                            {formatCurrency(t.provisionCop)}
+                            {t.provisionCop === 0 ? <span className="text-fg-subtle">—</span> : formatCurrency(t.provisionCop)}
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
-                    <TableFooter>
-                      <TableRow>
-                        <TableCell colSpan={6} className="font-medium">
+                    <TableFooter className="max-md:block">
+                      <TableRow className="max-md:flex max-md:items-center max-md:justify-between max-md:px-4 max-md:py-3">
+                        <TableCell colSpan={4} className="font-medium max-md:block max-md:p-0">
                           Total provisionado
                         </TableCell>
                         <TableCell
-                          className="text-right font-mono tabular-nums"
+                          className="text-right font-mono tabular-nums max-md:block max-md:p-0"
                           data-testid="total-provisionado"
                         >
                           {formatCurrency(provisionCop)}
@@ -430,11 +454,41 @@ export function DeterioroDeCarteraPanel() {
               </p>
             </section>
 
+            {/* Lo que se consulta: qué mide cada cifra. */}
+            <MasDetalles etiqueta="Qué mide cada cifra" etiquetaAbierto="Ocultar qué mide cada cifra" montadoSiempre>
+              <div className="max-w-2xl space-y-2 text-body-sm leading-relaxed text-fg-muted">
+                <p>
+                  La provisión es un saldo acumulado. Al libro va la DIFERENCIA con la del mes anterior:
+                  asentar el saldo entero cada mes lo duplicaría.
+                </p>
+                <p data-testid="cifra-provision">
+                  <span className="text-fg">Provisión al cierre</span>: el saldo acumulado que queda en la
+                  cuenta correctora después de este mes. No es lo que se asienta.
+                </p>
+                <p>
+                  <span className="text-fg">Provisión del mes anterior</span>: la última aprobada. Es el
+                  punto de partida del movimiento.
+                </p>
+                <p>
+                  <span className="text-fg">Cartera provisionable</span>: sólo el capital en cartera viva.
+                  Lo que está en siniestro y el interés de mora quedan fuera.
+                </p>
+                <p>
+                  Lo que se guarda son los porcentajes, no los pesos: la provisión se recalcula mientras
+                  escribes.
+                </p>
+              </div>
+            </MasDetalles>
+
             {/* ── Las tres acciones, en el PIE de la tarjeta ──────────────
                 No flotando debajo: son las acciones de ESTA provisión, no de
                 la pantalla, y separadas por aire se leían como otra cosa. */}
             <div className="-mx-4 -mb-4 flex flex-wrap items-center gap-2 border-t border-border px-4 py-3">
+              {/* Un solo azul, en el paso que sigue: con una propuesta guardada y sin cambios,
+                  lo que sigue es aprobarla; si no, proponer. */}
               <Button
+                size="sm"
+                variant={lePasaAAprobar ? 'outline' : 'default'}
                 hideArrow
                 disabled={!disponible || aprobada || fuera.length > 0}
                 isLoading={enviando && confirmando === null}
@@ -444,7 +498,8 @@ export function DeterioroDeCarteraPanel() {
                 {provision && !aprobada ? 'Volver a proponer' : 'Proponer'}
               </Button>
               <Button
-                variant="secondary"
+                size="sm"
+                variant={lePasaAAprobar ? 'default' : 'outline'}
                 hideArrow
                 disabled={!disponible || !provision || provision.estado !== 'PROPUESTA'}
                 onClick={() => setConfirmando('aprobar')}
@@ -454,7 +509,8 @@ export function DeterioroDeCarteraPanel() {
                 Aprobar y asentar
               </Button>
               <Button
-                variant="outline"
+                size="sm"
+                variant="ghost"
                 hideArrow
                 disabled={!disponible || !provision || provision.estado === 'ANULADA'}
                 onClick={() => setConfirmando('anular')}
@@ -465,7 +521,7 @@ export function DeterioroDeCarteraPanel() {
               </Button>
               {cambiado ? (
                 <span className="text-caption text-warning" data-testid="hay-cambios-sin-guardar">
-                  Cambiaste porcentajes y todavía no los propusiste: lo que se ve acá no es lo que
+                  Cambiaste porcentajes y todavía no los propusiste: lo que se ve aquí no es lo que
                   está guardado.
                 </span>
               ) : null}

@@ -17,7 +17,7 @@ const VARIANTE: Record<PillTone, 'success' | 'primary' | 'warning' | 'danger' | 
  * 19-10-2026: «Cobro por resultado» en la ficha). En oscuro toma los tokens del
  * tema; en claro queda exactamente como Cadence la pinta.
  */
-const EL_NEUTRO_EN_OSCURO = 'dark:bg-surface-muted dark:text-fg-muted'
+const EL_NEUTRO_EN_OSCURO = ''
 
 /**
  * La píldora de estado del admin: el `Badge` de Cadence (píldora, texto en

@@ -57,6 +57,8 @@ vi.mock('../use-puede-escribir', async () => {
   };
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
+// El Select de la casa (Radix) no se abre en happy-dom: el doble pinta el <select> nativo con sus opciones.
+vi.mock('@/components/ui/select', () => import('@/components/ui/select.doble-de-prueba'));
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}` }),
 }));
@@ -142,14 +144,23 @@ async function pintar(anioInicial?: number) {
     await Promise.resolve();
     await Promise.resolve();
   });
+  // Revisora r25 (Exógena #1): cada formato es UNA fila; sus bloqueos, avisos, preguntas y
+  // acciones viven en su cajón. Las pruebas miran el 1001 con su cajón abierto.
+  const abrirElFormato = document.querySelector('[data-testid="abrir-formato-1001"]') as HTMLButtonElement | null;
+  if (abrirElFormato) {
+    await act(async () => {
+      abrirElFormato.click();
+      await Promise.resolve();
+    });
+  }
 }
 
 describe('🔴 el aviso del Prevalidador', () => {
-  it('está arriba y dice que Leasefy NO transmite', async () => {
+  it('está arriba y dice que Leasefy no transmite', async () => {
     await pintar();
     const aviso = q('aviso-del-prevalidador')!.textContent!;
     expect(aviso).toContain('plantilla del Prevalidador');
-    expect(aviso).toContain('Leasefy NO transmite');
+    expect(aviso).toContain('Leasefy no transmite');
     expect(aviso).toContain('XML firmado');
   });
 
@@ -257,7 +268,8 @@ describe('<Exogena>', () => {
 
     await pintar();
 
-    expect((q('aprobar-1001') as HTMLButtonElement).disabled).toBe(true);
+    // Revisora r25: con el visto bueno ya dado, el cajón sólo ofrece quitarlo (no las dos con una apagada).
+    expect(q('aprobar-1001')).toBeNull();
     expect((q('anular-1001') as HTMLButtonElement).disabled).toBe(false);
     expect(q('formato-1001')!.textContent).toContain('visto bueno el');
   });
@@ -282,7 +294,7 @@ describe('<Exogena>', () => {
     });
 
     const texto = q('dialogo-de-visto-bueno')!.textContent!;
-    expect(texto).toContain('NO presenta la exógena');
+    expect(texto).toContain('no presenta la exógena');
     expect(texto).toContain('Prevalidador');
   });
 
@@ -445,5 +457,25 @@ describe('🔴 el CSV de la exógena pide el permiso de exportar (23-09, datos p
     expect(api.archivo).not.toHaveBeenCalled();
     // Mirar las filas en pantalla sigue abierto.
     expect((q('ver-1001') as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+describe('Exógena — una fila por formato y la respuesta arriba (revisora r25)', () => {
+  it('la fila dice código, nombre y estado, y «Ver» abre su cajón', async () => {
+    await pintar();
+    const fila = q('fila-1001')!;
+    expect(fila.textContent).toContain('1001');
+    expect(fila.textContent).toContain('retenciones practicadas');
+    expect(q('estado-1001')!.textContent).toBe('Falta el visto bueno');
+    // pintar() ya lo abrió: el cajón trae de dónde sale y sus acciones.
+    expect(q('formato-1001')!.textContent).toContain('Cuentas de gasto');
+    expect(q('aprobar-1001')).not.toBeNull();
+  });
+
+  it('arriba va lo que falta resolver, no «0 de N con visto bueno»', async () => {
+    await pintar();
+    const cifra = q('cifra-de-la-exogena')!.textContent!;
+    expect(cifra).toContain('por resolver');
+    expect(cifra).not.toMatch(/(^|\D)0 de /);
   });
 });

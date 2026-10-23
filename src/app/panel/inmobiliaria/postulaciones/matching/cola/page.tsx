@@ -20,7 +20,7 @@ import { useRouter } from 'next/navigation'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
-import { SectionLabel } from '@/components/ui/section-label'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { useI18n } from '@/lib/i18n'
 
@@ -33,22 +33,21 @@ function MatchingCola() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
-          <SectionLabel>{t(`${PAGES_NS}.salaTitulo`)}</SectionLabel>
-          <h1 className="text-h2 text-fg">{t(`${PAGES_NS}.colaTitle`)}</h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t(`${PAGES_NS}.colaDesc`)}</p>
-        </div>
-
-        {/* El contador sólo cuando hay algo que contar: un «0 pendientes»
-            sobre una cola que nadie alimenta insinúa una revisión que no hubo. */}
-        {!isLoading && total > 0 && (
-          <div className="shrink-0 rounded-lg border border-border bg-surface px-4 py-3 text-center">
-            <p className="text-2xl font-semibold tabular-nums text-fg">{total}</p>
-            <p className="text-xs text-fg-muted">{t('inmobiliaria.ai.workspace.pages.comun.enCola')}</p>
-          </div>
-        )}
-      </header>
+      {/* Glow up 22-10: el encabezado común; lo pendiente junto al título, sólo cuando hay algo que contar
+          (un «0 pendientes» sobre una cola que nadie alimenta insinúa una revisión que no hubo). */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t(`${PAGES_NS}.colaTitle`)}
+        descripcion={t(`${PAGES_NS}.colaDesc`)}
+        junto={
+          !isLoading && total > 0 ? (
+            <span className="text-caption text-fg-muted">
+              <span className="font-mono tabular-nums text-fg">{total}</span>{' '}
+              {t('inmobiliaria.ai.workspace.pages.comun.enCola').toLowerCase()}
+            </span>
+          ) : null
+        }
+      />
 
       <ColaHumana
         agente="matching"

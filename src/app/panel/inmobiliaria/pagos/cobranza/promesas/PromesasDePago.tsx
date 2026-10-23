@@ -1,0 +1,404 @@
+'use client'
+
+/**
+ * /ai/cobranza/promesas — "Promesas de pago" (visión #9).
+ *
+ * Lista las promesas de pago con su {inquilino, valor, fecha prometida, estado,
+ * acción sugerida}. Cada promesa es una <PromesaCard> expandible que muestra
+ * fecha / valor / quién la hizo / canal / mensaje original / estado /
+ * seguimiento / resultado.
+ *
+ * FUENTE: GET /api/agency/:id/cobranza/promises (usePromises) — el HISTÓRICO
+ * agency-wide de promesas de pago del tenant (no solo las de hoy), con PII
+ * enmascarada y un `derivedStatus` de presentación ya calculado por el backend
+ * a partir de (status persistido + dueDate). Antes esta vista dependía solo de
+ * `payment_promises_today` del daily-report (promesas de HOY); ahora muestra el
+ * histórico completo. Si el endpoint aún no está desplegado / responde vacío →
+ * <EmptyState> honesto + cross-link a deudores (fail-soft, nunca rompe).
+ *
+ * T-323: vista informativa. Las acciones por fila (Esperar / Recontactar /
+ * Hacer seguimiento / Recordar) NO tienen endpoint propio → placeholder honesto
+ * "Próximamente" deshabilitado. El seguimiento/recontacto real se hace desde el
+ * detalle del deudor. Nunca se auto-rechaza, escala ni presiona.
+ *
+ * Estilo: contrato DS 2026-06-16 — PageGuard module="cobranza",
+ * SegmentedControl para el filtro por estado, tonos por token.
+ */
+
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import {
+  Handshake,
+  Warning,
+} from '@phosphor-icons/react'
+
+import { PageGuard } from '@/components/auth/PageGuard'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
+import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button, Spinner } from '@/components/ui'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
+import { usePromises } from '@/lib/hooks/cobranza/use-promises'
+import { fraseDelCierre } from '@/lib/cobranza/promesas-de-pago'
+import { useI18n } from '@/lib/i18n'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
+import { PromesasDelEquipo } from '@/components/cobranza-manual/PromesasDelEquipo'
+import {
+  PromesaCard,
+  PROMESA_ESTADO_TOKEN,
+  type Promesa,
+  type PromesaEstado,
+} from '@/components/inmobiliaria/cobranza/PromesaCard'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+
+const BASE = '/panel/inmobiliaria/pagos/cobranza'
+const DEUDORES_HREF = `${BASE}/deudores`
+
+// ── Filtro por estado (SegmentedControl) ─────────────────────────────────────
+
+type EstadoFiltro = 'todas' | PromesaEstado
+
+const FILTRO_OPCIONES: { value: EstadoFiltro; label: string }[] = [
+  { value: 'todas', label: 'Todas' },
+  { value: 'activa', label: 'Activas' },
+  { value: 'por_vencer', label: 'Por vencer' },
+  { value: 'incumplida', label: 'Incumplidas' },
+  { value: 'parcial', label: 'Parciales' },
+  { value: 'cumplida', label: 'Cumplidas' },
+]
+
+// ── Acción sugerida por estado ───────────────────────────────────────────────
+
+const ACCION_POR_ESTADO: Record<PromesaEstado, string> = {
+  activa: 'Esperar',
+  por_vencer: 'Recordar',
+  incumplida: 'Hacer seguimiento',
+  parcial: 'Recontactar',
+  cumplida: 'Esperar',
+}
+
+/**
+ * Estados donde la acción sugerida significa CONTACTAR al inquilino. Se
+ * resuelven con el envío manual de WhatsApp (plantilla aprobada), el mismo
+ * camino de la ficha del deudor.
+ *
+ * «Esperar» no lleva botón: no hay nada que hacer, y un botón que dice
+ * «Esperar» invita a hacer clic para nada.
+ */
+const ESTADOS_QUE_CONTACTAN: PromesaEstado[] = ['por_vencer', 'incumplida', 'parcial']
+
+// ── Contenido ────────────────────────────────────────────────────────────────
+
+function PromesasContent() {
+  // Histórico agency-wide (no solo hoy). El backend ya devuelve `derivedStatus`
+  // y la PII enmascarada; pedimos sin filtro de estado para filtrar client-side
+  // por estado derivado (el SegmentedControl). limit alto = una sola página.
+  const { promises, isLoading, error, refetch } = usePromises({ limit: 200 })
+  const { formatCurrency } = useI18n()
+
+  useAutoRefresh(refetch)
+
+  const [filtro, setFiltro] = useState<EstadoFiltro>('todas')
+
+  /** Deudor al que se le va a enviar la plantilla de seguimiento. */
+  const [contactarA, setContactarA] = useState<string | null>(null)
+
+  // Mapea el histórico de promesas → modelo de UI. El estado ya viene derivado
+  // del backend (derivedStatus). El canal/condiciones se exponen cuando existen.
+  const promesas = useMemo<Promesa[]>(() => {
+    return promises.map((p) => ({
+      key: `${p.id}`,
+      debtorId: p.debtorId,
+      inquilino: p.debtorName || '—',
+      valorCop: p.amount,
+      fechaPrometida: p.dueDate,
+      registradaEn: p.createdAt,
+      estado: p.derivedStatus,
+      quienLaHizo: p.debtorName || '—',
+      canal: p.channel,
+      mensajeOriginal: p.conditions,
+      seguimiento: null,
+      // El cierre contra los recibos del back (07-10-2026): «Incumplida: pagó
+      // $X de $Y hasta el D…». Sin cierre todavía, nada.
+      resultado: p.cierre ? fraseDelCierre(p.cierre, p.amount, (n) => formatCurrency(n)) : null,
+    }))
+  }, [promises, formatCurrency])
+
+  const incumplidas = useMemo(
+    () => promesas.filter((p) => p.estado === 'incumplida'),
+    [promesas],
+  )
+
+  const visibles = useMemo(
+    () => (filtro === 'todas' ? promesas : promesas.filter((p) => p.estado === filtro)),
+    [promesas, filtro],
+  )
+
+  // Conteo de cada estado (de la lista entera, no de la página) y lo
+  // prometido en las que siguen abiertas: LA RESPUESTA de la sección del agente.
+  const pestanas = useMemo(
+    () =>
+      FILTRO_OPCIONES.map((o) => ({
+        valor: o.value,
+        etiqueta: o.label,
+        cuantos: o.value === 'todas' ? promesas.length : promesas.filter((p) => p.estado === o.value).length,
+        fija: o.value === 'todas',
+        tono: o.value === 'incumplida' || o.value === 'por_vencer' ? ('aviso' as const) : undefined,
+        testid: `promesas-pestana-${o.value}`,
+      })),
+    [promesas],
+  )
+  const tramos = useMemo(() => {
+    const tono = { por_vencer: 'aviso', activa: 'neutro', parcial: 'neutro', incumplida: 'critico' } as const
+    return (['incumplida', 'por_vencer', 'activa', 'parcial'] as const).map((e) => {
+      const suma = promesas.filter((p) => p.estado === e).reduce((s, p) => s + Math.max(0, p.valorCop ?? 0), 0)
+      const etiqueta = FILTRO_OPCIONES.find((o) => o.value === e)?.label ?? e
+      return {
+        clave: e,
+        etiqueta,
+        monto: suma,
+        tono: tono[e],
+        cifra: (
+          <button
+            type="button"
+            onClick={() => setFiltro(e)}
+            className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`Ver las promesas: ${etiqueta.toLowerCase()}`}
+          >
+            {formatCurrency(suma)}
+          </button>
+        ),
+      }
+    })
+  }, [promesas, formatCurrency])
+  const prometidoAbierto = tramos.reduce((s, t) => s + t.monto, 0)
+  const abiertas = promesas.filter((p) => p.estado !== 'cumplida').length
+
+  // El histórico agency-wide llega de a 200 y se pintaba entero. Mismo pie que
+  // las tablas del panel: cuántas hay, cuáles se ven y cuántas por página.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(visibles, { resetKey: filtro })
+
+  // ── Header (compartido) ────────────────────────────────────────────────────
+  const header = (
+    <EncabezadoDePantalla
+      seccion="Cobranza"
+      titulo="Promesas de pago"
+      descripcion="Lo que cada inquilino prometió pagar y si lo está cumpliendo."
+      data-testid="promesas-encabezado"
+    />
+  )
+
+  // El modal de WhatsApp se montaba con `{x && <Modal open />}`: cerraba de
+  // golpe. Con el último deudor presente sale con su animación.
+  const contactarAVivo = useUltimoPresente(contactarA)
+
+  // ── Primer load ────────────────────────────────────────────────────────────
+  // Movimiento: cargando → promesas en un `CrossFade` (el mismo nodo en las
+  // dos ramas); lo que ya estaba al montarse no se anima.
+  if (isLoading && promesas.length === 0 && !error) {
+    return (
+      <CrossFade swapKey="cargando">
+      <div className="p-6 lg:p-8 space-y-6">
+        {header}
+        <div className="flex items-center justify-center py-12">
+          <Spinner size="md" />
+        </div>
+      </div>
+      </CrossFade>
+    )
+  }
+
+  return (
+    <CrossFade swapKey="promesas">
+    <div className="p-6 lg:p-8 space-y-6">
+      {header}
+
+      {/* COBRANZA-MANUAL (04-10-2026): las promesas del equipo, primero las
+          incumplidas («sale en un aviso/lista para quien cobra»). */}
+      <PromesasDelEquipo />
+
+      {/* Error de carga */}
+      <Presence
+          show={Boolean(error)}
+          role="alert"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-body-sm text-danger flex items-center gap-2"
+        >
+          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
+          <span>No se pudo cargar las promesas. {error}</span>
+      </Presence>
+
+      {/* La sección del agente: su título, LA RESPUESTA (lo prometido en las
+          abiertas, por estado) y, si hay incumplidas, qué hacer — UNA vez, en
+          el pie de la cifra (antes era un cartel rojo aparte). */}
+      {promesas.length > 0 ? (
+        <section className="space-y-4" aria-labelledby="promesas-del-agente">
+          <h2 id="promesas-del-agente" className="text-body font-medium text-fg">
+            Las que le hicieron al agente
+          </h2>
+          <CifraHeroe
+            data-testid="promesas-prometido"
+            rotulo="Prometido en promesas abiertas"
+            cifra={formatCurrency(prometidoAbierto)}
+            contexto={abiertas === 1 ? 'en 1 promesa' : `en ${abiertas} promesas`}
+            total={prometidoAbierto}
+            tramos={tramos}
+            pie={
+              incumplidas.length > 0 ? (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="promesas-banner-incumplidas" role="status">
+                  <span>
+                    {incumplidas.length === 1 ? (
+                      <>
+                        La de <span className="font-medium text-fg">{incumplidas[0].inquilino}</span> venció sin
+                        pago conciliado: sigue con un recordatorio formal o propón un acuerdo.
+                      </>
+                    ) : (
+                      <>
+                        {incumplidas.length} vencieron sin pago conciliado: sigue con un recordatorio formal o
+                        propón un acuerdo de pago.
+                      </>
+                    )}
+                  </span>
+                  <Button asChild variant="link" size="sm" hideArrow className="h-auto px-0">
+                    <Link href={DEUDORES_HREF}>Ver deudores</Link>
+                  </Button>
+                </span>
+              ) : undefined
+            }
+          />
+        </section>
+      ) : null}
+
+      {/* Sin promesas → EmptyState honesto + cross-link */}
+      <CrossFade swapKey={promesas.length === 0 && !error ? 'vacio' : 'lista'}>
+      {promesas.length === 0 && !error ? (
+        <EmptyState
+          icon={Handshake}
+          // QA-AGENTES 16-10: esta sección es la del AGENTE. Arriba ya pueden
+          // estar las del equipo: «No hay promesas registradas» las contradecía.
+          title="Mori todavía no tiene promesas"
+          description="Cuando un inquilino le prometa pagar a Mori por llamada o WhatsApp, aparecerá aquí con su estado y seguimiento. Las que registra tu equipo van arriba; el histórico de cada deudor está en su detalle."
+          primaryCta={{ label: 'Ir a deudores', href: DEUDORES_HREF }}
+        />
+      ) : (
+        promesas.length > 0 && (
+          <>
+            {/* Filtro por estado — selector excluyente (SegmentedControl) */}
+            <PestanasDeEstado<EstadoFiltro>
+              pestanas={pestanas}
+              valor={filtro}
+              onCambio={setFiltro}
+              etiqueta="Filtrar promesas por estado"
+            />
+
+            {/* Tabla / lista de promesas. Filtrar por estado o paginar hace
+                entrar las promesas escalonadas y salir las que sobran;
+                filtrado a cero, el vacío entra en su lugar. */}
+            <CrossFade swapKey={visibles.length > 0 ? 'lista' : 'vacio'}>
+            {visibles.length > 0 ? (
+              <div className="space-y-3 max-w-3xl">
+                {/* Encabezado tipo tabla (solo desktop, contexto de columnas) */}
+                <div className="hidden sm:grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 text-caption font-medium uppercase tracking-wide text-fg-muted">
+                  <span>Inquilino</span>
+                  <span className="text-right">Valor</span>
+                  <span className="text-right">Fecha prometida</span>
+                  <span className="text-right">Estado</span>
+                </div>
+
+                <Stagger as="ul" className="space-y-3" aria-label="Promesas de pago">
+                  {pageItems.map((p) => (
+                    <StaggerItem as="li" key={p.key} className="space-y-2">
+                      <PromesaCard promesa={p} />
+                      {/* Acción sugerida por estado — placeholder honesto T-323 */}
+                      <div className="flex items-center justify-between gap-3 px-4">
+                        <span className="text-caption text-fg-muted">
+                          Acción sugerida:{' '}
+                          <span className={PROMESA_ESTADO_TOKEN[p.estado].text}>
+                            {ACCION_POR_ESTADO[p.estado]}
+                          </span>
+                        </span>
+                        {ESTADOS_QUE_CONTACTAN.includes(p.estado) && p.debtorId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            hideArrow
+                            onClick={() => setContactarA(p.debtorId)}
+                            title="Enviar una plantilla aprobada por WhatsApp"
+                          >
+                            {ACCION_POR_ESTADO[p.estado]}
+                          </Button>
+                        )}
+                      </div>
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+
+                {shouldPaginate && (
+                  <div className="border-t border-border px-4 py-3">
+                    <TablePagination
+                      total={total}
+                      page={page}
+                      pageSize={pageSize}
+                      pageSizeOptions={PAGE_SIZE_OPTIONS}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Handshake}
+                title="Sin promesas en este estado"
+                description="Ajusta el filtro para ver otras promesas, o revisa el detalle de cada deudor."
+              />
+            )}
+            </CrossFade>
+
+            {/* Nota honesta de alcance de la fuente */}
+            <p className="text-caption text-fg-muted max-w-2xl leading-relaxed">
+              Esta vista muestra el histórico de promesas de pago de toda la
+              inmobiliaria. El detalle de cada promesa (mensaje original, canal y
+              seguimiento) vive en el{' '}
+              <Link
+                href={DEUDORES_HREF}
+                className="text-primary underline-offset-4 hover:underline font-medium"
+              >
+                detalle de cada deudor
+              </Link>
+              .
+            </p>
+          </>
+        )
+      )}
+      </CrossFade>
+
+      {contactarAVivo && (
+        <ManualWAModal
+          open={contactarA !== null}
+          onClose={() => setContactarA(null)}
+          debtorId={contactarAVivo}
+          debtorName=""
+          prefill={{}}
+          onSuccess={() => {
+            setContactarA(null)
+            void refetch()
+          }}
+        />
+      )}
+    </div>
+    </CrossFade>
+  )
+}
+
+export default function PromesasPage() {
+  return (
+    <PageGuard module="cobranza">
+      <PromesasContent />
+    </PageGuard>
+  )
+}

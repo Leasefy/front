@@ -74,6 +74,8 @@ import {
   type ConnectionSourceType,
   type ConnectionStatus,
 } from '@/lib/hooks/conciliacion/use-conciliacion-connections'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 // ── Copy (string literal ES — sin keys t() nuevas) ───────────────────────────
 
@@ -277,7 +279,7 @@ function RegistrarConexion({
             id="conexion-provider-error"
             mensaje={errores.provider}
             pista="Identificador del banco o pasarela."
-            className="mt-0 text-xs"
+            className="mt-0 text-caption"
           />
         </div>
 
@@ -301,7 +303,7 @@ function RegistrarConexion({
             id="conexion-nombre-error"
             mensaje={errores.displayName}
             pista="Cómo se mostrará en la conciliación."
-            className="mt-0 text-xs"
+            className="mt-0 text-caption"
           />
         </div>
       </div>
@@ -326,7 +328,7 @@ function RegistrarConexion({
           id="conexion-configref-error"
           mensaje={errores.configRef}
           pista="Referencia segura (p. ej. ruta de bóveda o llave del gestor de secretos). Nunca escribas aquí la contraseña, el token ni la API key reales."
-          className="mt-0 text-xs"
+          className="mt-0 text-caption"
         />
       </div>
 
@@ -335,7 +337,7 @@ function RegistrarConexion({
         ayuda={
           disabled
             ? 'El servicio de conexiones todavía no está activo en tu cuenta.'
-            : 'Nunca escribas acá la contraseña, el token ni la API key reales.'
+            : 'Nunca escribas aquí la contraseña, el token ni la API key reales.'
         }
       >
         <Button
@@ -486,24 +488,33 @@ function ConciliacionConexiones() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-h2 text-fg">Conexiones</h1>
-          <p className="text-body text-fg-muted max-w-2xl">
-            Registra y administra las fuentes de movimientos (bancos, pasarelas y extractos) que
-            alimentan la conciliación. Nunca guardamos credenciales, solo una referencia segura.
-          </p>
-        </div>
+      <EncabezadoDePantalla
+        seccion="Conciliación bancaria"
+        titulo="Conexiones"
+        descripcion="Las fuentes de movimientos (bancos, pasarelas y extractos) que alimentan la conciliación. Nunca guardamos credenciales, sólo una referencia segura."
+      />
 
-        {/* KPI: cuántas fuentes están vivas (no es el total — ese lo dice el
-            pie de la tabla). */}
-        <div className="shrink-0 rounded-lg border border-border bg-surface p-4">
-          <p className="text-caption text-fg-muted">Conectadas</p>
-          <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">
-            {isLoading && items.length === 0 ? '—' : connectedCount}
-          </p>
-        </div>
-      </header>
+      {/* LA RESPUESTA: cuántas fuentes están vivas, de cuántas (antes una
+          cajita suelta a la derecha del título). */}
+      {items.length > 0 ? (
+        <CifraHeroe
+          data-testid="conexiones-conectadas"
+          rotulo="Conectadas"
+          cifra={connectedCount.toLocaleString('es-CO')}
+          contexto={`de ${items.length.toLocaleString('es-CO')} ${items.length === 1 ? 'fuente' : 'fuentes'}`}
+          total={items.length}
+          tramos={[
+            { clave: 'si', etiqueta: 'Conectadas', monto: connectedCount, tono: 'exito', cifra: connectedCount.toLocaleString('es-CO') },
+            {
+              clave: 'no',
+              etiqueta: 'Sin conectar',
+              monto: items.length - connectedCount,
+              tono: 'aviso',
+              cifra: (items.length - connectedCount).toLocaleString('es-CO'),
+            },
+          ]}
+        />
+      ) : null}
 
       {/* Aviso fail-soft: la ruta todavía no existe en este micro (404/503 del
           hook). Con el micro CAÍDO (`error`) no se dice «en tu cuenta
@@ -535,20 +546,27 @@ function ConciliacionConexiones() {
       >
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-body font-semibold text-fg">Conexiones registradas</h2>
-            <p className="text-caption text-fg-muted">
-              De acá salen los movimientos que la conciliación atribuye a un origen.
-            </p>
+            <h2 className="text-body font-medium text-fg">Conexiones registradas</h2>
           </div>
-          <Button
-            hideArrow
-            className="shrink-0"
-            onClick={() => setRegistrando(true)}
-            data-testid="conexiones-abrir-registro"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            Registrar una conexión
-          </Button>
+          {/* Revisora r25 (Conexiones, prevenir): con el servicio caído el formulario
+              fallaría; el botón se apaga y dice por qué, como «Conciliar N movimientos». */}
+          <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+            <Button
+              hideArrow
+              onClick={() => setRegistrando(true)}
+              disabled={backendUnavailable}
+              aria-describedby={backendUnavailable ? 'conexiones-por-que-no' : undefined}
+              data-testid="conexiones-abrir-registro"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Registrar una conexión
+            </Button>
+            {backendUnavailable ? (
+              <p id="conexiones-por-que-no" className="text-caption text-fg-muted" data-testid="conexiones-por-que-no">
+                Se podrá registrar cuando el servicio de conciliación responda.
+              </p>
+            ) : null}
+          </div>
         </div>
         <EstadoDeDatos
           cargando={isLoading && items.length === 0}

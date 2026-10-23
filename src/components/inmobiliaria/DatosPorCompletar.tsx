@@ -1,8 +1,5 @@
 'use client';
 
-import { Warning } from '@phosphor-icons/react';
-
-import { Badge } from '@/components/ui/badge';
 import { textoDeDatosPorCompletar } from '@/lib/propietarios/datos-por-completar';
 
 /**
@@ -26,11 +23,13 @@ export function DatosPorCompletar({
   const texto = textoDeDatosPorCompletar(pendientes);
   if (!texto) return null;
   return (
+    // Glow up (22-10): en una lista de 1.700 personas este aviso sale en casi todas las
+    // filas; como chip ámbar era ruido. Es un renglón chico con su punto ámbar.
     <span className={className ?? 'inline-flex flex-wrap items-center gap-2'} data-testid="datos-por-completar">
-      <Badge variant="warning" className="gap-1">
-        <Warning className="h-3.5 w-3.5" aria-hidden="true" />
+      <span className="inline-flex items-center gap-1.5 text-caption text-fg-muted">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
         {texto}
-      </Badge>
+      </span>
       {onCompletar ? (
         <button
           type="button"

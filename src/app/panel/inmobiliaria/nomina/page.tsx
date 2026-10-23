@@ -6,7 +6,6 @@
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
 import { EstadoDeNominaPanel } from '@/components/nomina/EstadoDeNomina';
 
 /**
@@ -22,14 +21,9 @@ import { EstadoDeNominaPanel } from '@/components/nomina/EstadoDeNomina';
 export default function NominaPage() {
   return (
     <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
-      <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <SectionLabel>Nómina</SectionLabel>
-          <h1 className="text-h2 text-fg">Nómina</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Empleados con contrato laboral, asesores por comisiones, contratistas de prestación de servicios y aprendices. Liquidación quincenal o mensual, provisión mensual de prestaciones sociales, aportes de seguridad social y nómina electrónica de la DIAN. La planilla PILA se hace por fuera.
-          </p>
-        </header>
+      {/* GLOW UP 21-10: el encabezado vive en la portada, que sabe si el módulo
+          está abierto (sin él no hay «Liquidar un período» que ofrecer). */}
+      <div className="p-6 lg:p-8">
         <EstadoDeNominaPanel />
       </div>
     </PageGuard>

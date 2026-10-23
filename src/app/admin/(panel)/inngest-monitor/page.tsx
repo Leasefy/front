@@ -14,7 +14,11 @@
  */
 
 import { Clock, FlowArrow } from '@phosphor-icons/react'
-import { Alert, Card } from '@leasefy/cadence'
+import { Alert } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { flujoDeLosAgentes, tareaProgramada } from '@/lib/admin/textos-del-admin'
 
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
@@ -68,7 +72,7 @@ const NOMBRE: Record<EstadoDeLaTarea, string> = {
   'al-dia': 'Al día',
   atrasada: 'Atrasada',
   detenida: 'Detenida',
-  'sin-rastro': 'Sin rastro',
+  'sin-rastro': 'Nunca corrió',
 }
 
 const TONO: Record<EstadoDeLaTarea, PillTone> = {
@@ -105,17 +109,19 @@ const SEGMENTOS_DE_FLUJOS: Segmento<WorkflowRow>[] = [
 const COLUMNAS_DE_TAREAS: Column<Tarea>[] = [
   {
     header: 'Tarea',
-    cell: (t) => <span className="font-mono text-caption text-fg">{t.cron}</span>,
+    cell: (t) => <span className="font-medium text-fg">{tareaProgramada(t.cron)}</span>,
     orden: (t) => t.cron,
-    texto: (t) => t.cron,
+    texto: (t) => tareaProgramada(t.cron),
   },
   {
-    header: 'Último rastro en la base',
+    // Revisora r27: en palabras de quien mira (antes «Último rastro en la base» / «Sin rastro»).
+    header: 'Última vez que corrió',
     cell: (t) =>
       t.last_run ? (
-        <span className="whitespace-nowrap font-mono text-caption text-fg-muted">
-          {fmtDateTime(t.last_run)}
-          {t.horas != null ? <span className="ml-1.5 text-fg-subtle">({haceCuanto(t.horas)})</span> : null}
+        // Ronda 26 (revisora r25): a 390 «(hace 6 días)» se cortaba en la tarjeta; ahora va en su propia línea.
+        <span className="block font-mono text-caption text-fg-muted">
+          <span className="whitespace-nowrap">{fmtDateTime(t.last_run)}</span>
+          {t.horas != null ? <span className="block whitespace-nowrap text-fg-subtle">{haceCuanto(t.horas)}</span> : null}
         </span>
       ) : (
         <span className="text-fg-subtle">Nunca</span>
@@ -134,9 +140,9 @@ const COLUMNAS_DE_TAREAS: Column<Tarea>[] = [
 const COLUMNAS_DE_FLUJOS: Column<WorkflowRow>[] = [
   {
     header: 'Flujo',
-    cell: (w) => <span className="font-mono text-caption text-fg">{w.workflow_id}</span>,
+    cell: (w) => <span className="font-medium text-fg">{flujoDeLosAgentes(w.workflow_id)}</span>,
     orden: (w) => w.workflow_id,
-    texto: (w) => w.workflow_id,
+    texto: (w) => flujoDeLosAgentes(w.workflow_id),
   },
   {
     header: 'Corridas en 24 h',
@@ -164,11 +170,22 @@ export default function InngestMonitorPage() {
   })
   const ningunaDejoRastro = Boolean(tareas?.length) && tareas!.every((t) => t.last_run == null)
 
+  const cuenta = (e: EstadoDeLaTarea) => (tareas ?? []).filter((t) => t.estado === e).length
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Tareas programadas"
-        description="Si cada tarea programada está corriendo y cuántas veces corrió cada flujo en las últimas 24 horas. Se deduce de lo que cada una deja escrito en la base, no de Inngest."
+        description="Si cada tarea programada corre y cuántas veces corrió cada flujo en 24 h."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo se sabe" titulo="Las tareas programadas" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Se deduce de lo que cada tarea deja escrito en la base, no de Inngest.</p>
+              <p>Al día: dejó rastro hace menos de 26 h. Atrasada: entre 26 y 72 h. Detenida: más de 72 h. Horas de Colombia.</p>
+              <p>Para ver el último error, la cola y los reintentos de cada tarea hay que conectar la API de Inngest Cloud con su llave.</p>
+            </div>
+          </ParaEntenderMas>
+        }
       />
 
       {ningunaDejoRastro ? (
@@ -177,11 +194,40 @@ export default function InngestMonitorPage() {
         </Alert>
       ) : null}
 
-      <section className="space-y-3" aria-label="Tareas programadas">
-        <h2 className="text-subtitle font-semibold text-fg">Tareas programadas</h2>
-        <p className="text-body-sm text-fg-muted">
-          Al día: dejó rastro hace menos de 26 h · Atrasada: entre 26 y 72 h · Detenida: más de 72 h. Horas de Colombia.
-        </p>
+      {/* Glow up 22-10: LA RESPUESTA (cuántas tareas están al día) en una cifra con la barra por estado; las dos
+          tablas en pestañas con su conteo. */}
+      {tareas && tareas.length > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Tareas al día"
+            cifra={`${cuenta('al-dia')} de ${tareas.length}`}
+            // Ronda 26 (revisora r25): el contexto dice algo nuevo (antes repetía el conteo de la leyenda y de la
+            // pestaña, con «1 detenidas»).
+            contexto={
+              cuenta('detenida') > 0
+                ? `la más quieta dejó rastro ${haceCuanto(Math.max(...(tareas ?? []).filter((t) => t.estado === 'detenida').map((t) => t.horas ?? 0)))}`
+                : 'ninguna detenida'
+            }
+            tramos={[
+              { clave: 'al-dia', etiqueta: NOMBRE['al-dia'], monto: cuenta('al-dia'), tono: 'exito', cifra: String(cuenta('al-dia')) },
+              { clave: 'atrasada', etiqueta: NOMBRE.atrasada, monto: cuenta('atrasada'), tono: 'aviso', cifra: String(cuenta('atrasada')) },
+              { clave: 'detenida', etiqueta: NOMBRE.detenida, monto: cuenta('detenida'), tono: 'critico', cifra: String(cuenta('detenida')) },
+              { clave: 'sin-rastro', etiqueta: NOMBRE['sin-rastro'], monto: cuenta('sin-rastro'), tono: 'neutro', cifra: String(cuenta('sin-rastro')) },
+            ]}
+            total={tareas.length}
+            data-testid="tareas-al-dia"
+          />
+        </div>
+      ) : null}
+
+      <PestanasDeLaFicha
+        etiqueta="Tareas y flujos"
+        pestanas={[
+          {
+            id: 'tareas',
+            etiqueta: 'Tareas programadas',
+            cuenta: tareas?.length ?? null,
+            contenido: (
         <DataTable
           id="tareas"
           columns={COLUMNAS_DE_TAREAS}
@@ -191,7 +237,7 @@ export default function InngestMonitorPage() {
           error={error}
           onReintentar={refetch}
           emptyTitle="Sin tareas registradas"
-          emptyIcon={<Clock weight="bold" />}
+          emptyIcon={<Clock weight="duotone" />}
           aria-label="Tareas programadas"
           queSon={['tarea', 'tareas']}
           buscar="Buscar una tarea"
@@ -199,11 +245,15 @@ export default function InngestMonitorPage() {
           ordenInicial={{ columna: 2, sentido: 'asc' }}
           exportar="tareas-programadas"
         />
-      </section>
-
-      <section className="space-y-3" aria-label="Flujos por eventos">
-        <h2 className="text-subtitle font-semibold text-fg">Flujos por eventos</h2>
-        <p className="text-body-sm text-fg-muted">Corren cuando pasa algo (un pago, una llamada, un mensaje), no a una hora fija.</p>
+            ),
+          },
+          {
+            id: 'flujos',
+            etiqueta: 'Flujos por eventos',
+            cuenta: data?.workflowRuns.length ?? null,
+            contenido: (
+              <div className="space-y-3">
+                <p className="text-body-sm text-fg-muted">Corren cuando pasa algo (un pago, una llamada, un mensaje), no a una hora fija.</p>
         <DataTable
           id="flujos"
           columns={COLUMNAS_DE_FLUJOS}
@@ -213,7 +263,7 @@ export default function InngestMonitorPage() {
           error={error}
           onReintentar={refetch}
           emptyTitle="Sin flujos registrados"
-          emptyIcon={<FlowArrow weight="bold" />}
+          emptyIcon={<FlowArrow weight="duotone" />}
           aria-label="Flujos por eventos"
           queSon={['flujo', 'flujos']}
           buscar="Buscar un flujo"
@@ -221,12 +271,11 @@ export default function InngestMonitorPage() {
           ordenInicial={{ columna: 1, sentido: 'desc' }}
           exportar="flujos-por-eventos"
         />
-      </section>
-
-      <Card className="border-l-4 border-l-fg-subtle p-4 text-caption text-fg-muted">
-        Para ver el último error, la cola y los reintentos de cada tarea, hay que conectar la API de Inngest Cloud con{' '}
-        <code className="font-mono">INNGEST_SIGNING_KEY</code>.
-      </Card>
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }

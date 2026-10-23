@@ -43,7 +43,17 @@ import type { PaginationProps as DSTablePaginationProps } from '@leasefy/cadence
 
 export type TablePaginationProps = DSTablePaginationProps;
 
-export function TablePagination({ className, ...props }: TablePaginationProps) {
+/**
+ * Cuántas páginas hay, para el «1 de 293» del celular. Va como variable de CSS
+ * (un texto entre comillas) porque el número lo pinta el `::after` del botón de
+ * la página actual: el DOM del DS no cambia (mismos botones, mismos nombres).
+ */
+function deCuantasPaginas(total: number, pageSize: number): string {
+  const paginas = Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
+  return `"de ${paginas.toLocaleString('es-CO')}"`;
+}
+
+export function TablePagination({ className, style, ...props }: TablePaginationProps) {
   return (
     <DSTablePagination
       className={cn(
@@ -52,12 +62,21 @@ export function TablePagination({ className, ...props }: TablePaginationProps) {
         '[@media(pointer:coarse)]:h-auto [@media(pointer:coarse)]:min-h-11',
         '[@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_button]:min-w-11',
         '[@media(pointer:coarse)]:[&_select]:min-h-11',
-        // A 390 px el grupo de la derecha (filas + flechas + hasta 7 páginas)
-        // no cabía en una línea y empujaba la página de lado (Payu, 26-09):
-        // que ese grupo también se parta.
-        '[&>div]:flex-wrap [&>div]:gap-y-2',
+        // Desde sm, si el grupo de la derecha (filas + flechas + hasta 7
+        // páginas) no cabe, se parte él también (Payu, 26-09).
+        'sm:[&>div]:flex-wrap [&>div]:gap-y-2',
+        // 🔴 Bajo sm (revisora r27, R1): partido en dos renglones dejaba «293 ›»
+        // solo abajo. En el celular va UN renglón: «Filas [25]» a la izquierda
+        // y «‹ 1 de 293 ›» a la derecha. Sin «Mostrando…» ni los números de
+        // página: la actual se queda (sin el azul) y su `::after` dice «de N».
+        'max-sm:flex-nowrap max-sm:gap-2 max-sm:[&>span]:hidden',
+        'max-sm:[&>div]:w-full max-sm:[&>div]:flex-nowrap max-sm:[&>div>label]:mr-auto max-sm:[&>div>span]:hidden',
+        'max-sm:[&>div>button:not([aria-label]):not([aria-current])]:hidden',
+        'max-sm:[&>div>button[aria-current]]:gap-1 max-sm:[&>div>button[aria-current]]:border-transparent max-sm:[&>div>button[aria-current]]:bg-transparent max-sm:[&>div>button[aria-current]]:px-1 max-sm:[&>div>button[aria-current]]:font-normal max-sm:[&>div>button[aria-current]]:text-fg',
+        'max-sm:[&>div>button[aria-current]]:after:text-fg-muted max-sm:[&>div>button[aria-current]]:after:content-[var(--de-cuantas-paginas)]',
         className
       )}
+      style={{ ['--de-cuantas-paginas' as string]: deCuantasPaginas(props.total, props.pageSize), ...style }}
       {...props}
     />
   );

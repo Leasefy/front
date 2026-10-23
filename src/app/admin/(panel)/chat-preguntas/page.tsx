@@ -21,8 +21,8 @@
  * arriba, sugerencias, tabla con filtros y el detalle del turno en un cajón.
  */
 
-import { useState } from 'react'
-import { Alert, Card, Chip, MonoLabel, Sheet, SheetBody, SheetContent, SheetHeader } from '@leasefy/cadence'
+import { useEffect, useState } from 'react'
+import { Card, Chip, Cifra, FranjaDeCifras, MonoLabel, Sheet, SheetBody, SheetContent, SheetHeader } from '@leasefy/cadence'
 import {
   getChatPreguntas,
   type SugerenciaDelChat,
@@ -32,13 +32,12 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtCOP, fmtDateTime, USD_TO_COP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
+import { LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import { Button } from '@/components/ui/button'
-import { BarraDeFiltros, Buscador, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
-import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
+import { BarraDeFiltros, Buscador, Desplegable, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
 
 const POR_PAGINA = 50
 
@@ -152,7 +151,7 @@ function DetalleDelTurno({ t, onClose }: { t: TurnoDelChat | null; onClose: () =
             las píldoras y los tokens del backoffice no se aplican adentro. */}
         {t && (
           <div className="admin-scope !min-h-0 !bg-transparent flex flex-col min-h-0 flex-1">
-            <SheetHeader title="Detalle de la pregunta" description={`${t.inmobiliaria ?? `Inmobiliaria ${t.agencyId.slice(0, 8)}`} · ${fmtDateTime(t.fecha)}`} />
+            <SheetHeader title="Detalle de la pregunta" description={`${t.inmobiliaria ?? 'Inmobiliaria sin nombre'} · ${fmtDateTime(t.fecha)}`} />
             <SheetBody className="space-y-4">
               <Dato etiqueta="pregunta">
                 <p className="whitespace-pre-wrap">{t.pregunta || '—'}</p>
@@ -191,7 +190,7 @@ function DetalleDelTurno({ t, onClose }: { t: TurnoDelChat | null; onClose: () =
                 ) : (
                   <div className="flex flex-wrap gap-1">
                     {t.especialistas.map((e) => (
-                      <Pill key={`e-${e}`} tone="info">{especialistaLegible(e)}</Pill>
+                      <Pill key={`e-${e}`} tone="neutral">{especialistaLegible(e)}</Pill>
                     ))}
                     {t.fuentes
                       .filter((f) => !f.startsWith('especialista:'))
@@ -244,7 +243,7 @@ function TarjetaDeSugerencia({ s, onAbrir }: { s: SugerenciaDelChat; onAbrir: (t
                   >
                     «{e.pregunta}»{' '}
                     <span className="font-mono text-caption text-fg-subtle">
-                      {e.inmobiliaria ?? e.agencyId.slice(0, 8)} · {fmtDateTime(e.fecha)}
+                      {e.inmobiliaria ?? 'Inmobiliaria sin nombre'} · {fmtDateTime(e.fecha)}
                     </span>
                   </button>
                 </li>
@@ -269,6 +268,17 @@ export default function ChatPreguntasPage() {
 
   const [texto, setTexto] = useState(q)
   const [abierto, setAbierto] = useState<TurnoDelChat | null>(null)
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
+
+  // Ronda 26 (revisora r25): se busca al dejar de escribir (antes con un botón «Buscar»). La URL manda.
+  useEffect(() => {
+    setTexto(q)
+  }, [q])
+  useEffect(() => {
+    if (texto.trim() === q) return
+    const t = setTimeout(() => setFilters({ q: texto.trim() || undefined }, { resetPage: true }), 400)
+    return () => clearTimeout(t)
+  }, [texto, q, setFilters])
 
   const { data, isLoading, error, refetch } = useApiQuery(
     (signal) =>
@@ -288,29 +298,34 @@ export default function ChatPreguntasPage() {
   )
 
   const totales = data?.totales
-  const columnas: Column<TurnoDelChat>[] = [
-    { header: 'Fecha', texto: (t) => fmtDateTime(t.fecha), cell: (t) => <span className="tabular-nums whitespace-nowrap text-fg-muted">{fmtDateTime(t.fecha)}</span> },
-    { header: 'Inmobiliaria', texto: (t) => t.inmobiliaria ?? t.agencyId, cell: (t) => <span title={t.agencyId}>{t.inmobiliaria ?? t.agencyId.slice(0, 8)}</span> },
-    { header: 'Pregunta', texto: (t) => t.pregunta, cell: (t) => <span className="line-clamp-2 text-fg">{t.pregunta || '—'}</span>, className: 'min-w-[16rem]' },
-    { header: 'Cómo terminó', texto: (t) => comoTermino(t), cell: (t) => <EstadoDelTurno t={t} /> },
-    { header: 'Tardó', texto: (t) => segundos(t.ms), cell: (t) => <span className="tabular-nums">{segundos(t.ms)}</span>, align: 'right' },
-    { header: 'Costo', texto: (t) => costo(t.costoUsd), cell: (t) => <span className="tabular-nums">{costo(t.costoUsd)}</span>, align: 'right' },
-  ]
+  const puestos = [agencia, desde || hasta, tema, sinRespuesta, pulgarAbajo].filter(Boolean).length
+  const hayFiltros = puestos > 0 || Boolean(q)
 
-  return (
-    <div className="space-y-6 p-6 lg:p-8">
-      <PageHeader
-        title="Preguntas del chat"
-        description="Lo que le preguntan al chat las inmobiliarias, sin el correo de quién preguntó y con los números largos ocultos, y lo que conviene mejorar."
-      />
-
-      <Alert variant="info" role="note">
-        Sólo la ve el equipo de producto de Leasefy, como dice la §16 de la política de tratamiento
-        (versión 4.0). Las preguntas se guardan 12 meses.
-      </Alert>
-
-      {/* Filtros (viven en la URL). */}
-      <Card className="p-4" data-testid="filtros">
+  const barraDeFiltros = (
+    <div className="w-full space-y-3" data-testid="filtros">
+      <div className="flex flex-wrap items-center gap-2">
+        <Buscador
+          id="filtro-texto"
+          value={texto}
+          onChange={setTexto}
+          placeholder="Palabras de la pregunta"
+          aria-label="buscar en las preguntas"
+          className="min-w-[200px] flex-1"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          hideArrow
+          className="md:hidden"
+          aria-expanded={filtrosAbiertos}
+          aria-controls="filtros-de-las-preguntas"
+          onClick={() => setFiltrosAbiertos((v) => !v)}
+        >
+          {puestos > 0 ? `Filtros (${puestos})` : 'Filtros'}
+        </Button>
+      </div>
+      <div id="filtros-de-las-preguntas" className={filtrosAbiertos ? 'space-y-3' : 'space-y-3 max-md:hidden'}>
         <BarraDeFiltros>
           <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
             <Desplegable
@@ -322,19 +337,13 @@ export default function ChatPreguntasPage() {
               opciones={[
                 ...(data?.inmobiliarias ?? []).map((i) => ({
                   valor: i.agencyId,
-                  nombre: `${i.nombre ?? i.agencyId.slice(0, 8)} (${i.preguntas})`,
+                  nombre: `${i.nombre ?? 'Sin nombre'} (${i.preguntas})`,
                 })),
                 ...(agencia && !(data?.inmobiliarias ?? []).some((i) => i.agencyId === agencia)
-                  ? [{ valor: agencia, nombre: agencia.slice(0, 8) }]
+                  ? [{ valor: agencia, nombre: 'La inmobiliaria elegida' }]
                   : []),
               ]}
             />
-          </Filtro>
-          <Filtro etiqueta="Desde" htmlFor="filtro-desde" className="sm:w-44">
-            <CampoDeFecha id="filtro-desde" value={desde} onChange={(v) => setFilters({ desde: v || undefined }, { resetPage: true })} />
-          </Filtro>
-          <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
-            <CampoDeFecha id="filtro-hasta" value={hasta} onChange={(v) => setFilters({ hasta: v || undefined }, { resetPage: true })} />
           </Filtro>
           <Filtro etiqueta="Tema" htmlFor="filtro-tema">
             <Desplegable
@@ -346,22 +355,14 @@ export default function ChatPreguntasPage() {
               opciones={(data?.temas ?? []).map((t) => ({ valor: t.tema, nombre: `${t.nombre} (${t.preguntas})` }))}
             />
           </Filtro>
-          <form
-            className="flex items-end gap-2 sm:min-w-64 sm:flex-1"
-            onSubmit={(e) => {
-              e.preventDefault()
-              setFilters({ q: texto.trim() || undefined }, { resetPage: true })
-            }}
-          >
-            <Filtro etiqueta="Texto" htmlFor="filtro-texto" className="flex-1">
-              <Buscador id="filtro-texto" value={texto} onChange={setTexto} placeholder="Palabras de la pregunta" aria-label="buscar en las preguntas" />
-            </Filtro>
-            <Button variant="outline" hideArrow type="submit">
-              Buscar
-            </Button>
-          </form>
+          <FiltroDeFechas
+            desde={desde}
+            hasta={hasta}
+            onDesde={(v) => setFilters({ desde: v || undefined }, { resetPage: true })}
+            onHasta={(v) => setFilters({ hasta: v || undefined }, { resetPage: true })}
+          />
         </BarraDeFiltros>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Chip
             selected={sinRespuesta}
             onClick={() => setFilters({ sinRespuesta: sinRespuesta ? undefined : '1' }, { resetPage: true })}
@@ -374,36 +375,31 @@ export default function ChatPreguntasPage() {
           >
             Sólo pulgar abajo
           </Chip>
-          {(agencia || desde || hasta || tema || q || sinRespuesta || pulgarAbajo) && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              hideArrow
-              onClick={() => {
-                setTexto('')
-                setFilters(
-                  { agencia: undefined, desde: undefined, hasta: undefined, tema: undefined, q: undefined, sinRespuesta: undefined, pulgarAbajo: undefined },
-                  { resetPage: true },
-                )
-              }}
-            >
-              Quitar los filtros
-            </Button>
-          )}
         </div>
-      </Card>
+      </div>
+    </div>
+  )
+  const columnas: Column<TurnoDelChat>[] = [
+    { header: 'Fecha', texto: (t) => fmtDateTime(t.fecha), cell: (t) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(t.fecha)}</span> },
+    { header: 'Inmobiliaria', texto: (t) => t.inmobiliaria ?? t.agencyId, cell: (t) => <span>{t.inmobiliaria ?? 'Sin nombre'}</span> },
+    { header: 'Pregunta', texto: (t) => t.pregunta, cell: (t) => <span className="line-clamp-2 text-fg">{t.pregunta || '—'}</span>, className: 'min-w-[16rem]' },
+    { header: 'Cómo terminó', texto: (t) => comoTermino(t), cell: (t) => <EstadoDelTurno t={t} /> },
+    { header: 'Tardó', texto: (t) => segundos(t.ms), cell: (t) => <span className="whitespace-nowrap font-mono tabular-nums">{segundos(t.ms)}</span>, align: 'right' },
+    { header: 'Costo', texto: (t) => costo(t.costoUsd), cell: (t) => <span className="whitespace-nowrap font-mono tabular-nums">{costo(t.costoUsd)}</span>, align: 'right' },
+  ]
 
+  return (
+    <div className="space-y-6 p-6 lg:p-8">
+      <PageHeader
+        title="Preguntas del chat"
+        description="Lo que le preguntan al chat las inmobiliarias y lo que conviene mejorar."
+      />
+
+      {/* Ronda 26 (revisora r25): con fallo o sin preguntas, lo dice la tabla de abajo (con sus filtros a la mano:
+          un filtro que deja la lista vacía, o una búsqueda que el micro rechaza, se cambia ahí mismo). */}
       {isLoading && !data ? (
         <LoadingBlock />
-      ) : error ? (
-        <ErrorBlock error={error} onReintentar={refetch} />
-      ) : !data || data.totales.preguntas === 0 ? (
-        <EmptyBlock
-          title="No hay preguntas en estas fechas"
-          hint="Nadie le ha preguntado nada al chat en este rango, o el chat todavía no guarda sus preguntas en esta instalación."
-        />
-      ) : (
+      ) : error || !data || data.totales.preguntas === 0 ? null : (
         <>
           {/* Resumen de la ventana. */}
           <MonoLabel className="block">
@@ -412,26 +408,34 @@ export default function ChatPreguntasPage() {
             {fechaLarga(hasta || diaDeBogota(data.ventana.hasta))}
             {data.ventana.truncado ? ' · las 5.000 más recientes' : ''}
           </MonoLabel>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
-            <KpiCard label="Preguntas" value={totales!.preguntas} hint={`${totales!.inmobiliarias} ${totales!.inmobiliarias === 1 ? 'inmobiliaria' : 'inmobiliarias'}`} />
-            <KpiCard
-              label="Sin respuesta"
-              value={totales!.porcentajeSinRespuesta == null ? '—' : `${String(totales!.porcentajeSinRespuesta).replace('.', ',')} %`}
-              hint={`${totales!.sinRespuesta} de ${totales!.preguntas}`}
-              tone={(totales!.porcentajeSinRespuesta ?? 0) >= 25 ? 'bad' : 'default'}
-            />
-            <KpiCard label="Reformuladas" value={totales!.reformulaciones} />
-            <KpiCard label="Abandonos" value={totales!.abandonos} />
-            <KpiCard label="Se cortaron" value={totales!.fallas} tone={totales!.fallas > 0 ? 'warn' : 'default'} />
-            <KpiCard
-              label="Costo"
-              value={totales!.turnosConCosto === 0 ? '—' : costo(totales!.costoUsd)}
-              hint={totales!.turnosConCosto === 0 ? 'Todavía sin costo anotado' : `${totales!.turnosConCosto} turnos con costo`}
+          {/* Glow up 22-10: LA RESPUESTA (qué parte de las preguntas se quedó sin respuesta) en una cifra con su
+              barra, y cuatro cifras de apoyo; antes, 6 tarjetas del mismo peso. */}
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo="Sin respuesta"
+              cifra={totales!.porcentajeSinRespuesta == null ? '—' : `${String(totales!.porcentajeSinRespuesta).replace('.', ',')} %`}
+              contexto={`${totales!.sinRespuesta.toLocaleString('es-CO')} de ${totales!.preguntas.toLocaleString('es-CO')} preguntas, de ${totales!.inmobiliarias} ${totales!.inmobiliarias === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
+              tramos={[
+                { clave: 'respondidas', etiqueta: 'Con respuesta', monto: totales!.preguntas - totales!.sinRespuesta, tono: 'exito', cifra: (totales!.preguntas - totales!.sinRespuesta).toLocaleString('es-CO') },
+                { clave: 'sin', etiqueta: 'Sin respuesta', monto: totales!.sinRespuesta, tono: 'critico', cifra: totales!.sinRespuesta.toLocaleString('es-CO') },
+              ]}
+              total={totales!.preguntas}
+              data-testid="chat-preguntas-sin-respuesta"
             />
           </div>
+          <FranjaDeCifras fila="lg" columnas={4} aria-label="Lo demás de las preguntas">
+            <Cifra etiqueta="Reformuladas" valor={totales!.reformulaciones} />
+            <Cifra etiqueta="Abandonos" valor={totales!.abandonos} />
+            <Cifra etiqueta="Se cortaron" valor={totales!.fallas} tono={totales!.fallas > 0 ? 'aviso' : undefined} />
+            <Cifra
+              etiqueta="Costo"
+              valor={totales!.turnosConCosto === 0 ? '—' : costo(totales!.costoUsd)}
+              detalle={totales!.turnosConCosto === 0 ? 'todavía sin costo anotado' : `${totales!.turnosConCosto} turnos con costo`}
+            />
+          </FranjaDeCifras>
 
           {/* Sugerencias. */}
-          <h2 className="text-subtitle font-semibold text-fg">Qué mejorar del chat</h2>
+          <h2 className="text-subtitle font-medium text-fg">Qué mejorar del chat</h2>
           {data.sugerencias.length === 0 ? (
             <p className="text-body-sm text-fg-subtle">
               Nada que sugerir con estas preguntas: ningún tema pasa los umbrales (se necesitan al menos 5 preguntas de un tema).
@@ -501,23 +505,23 @@ export default function ChatPreguntasPage() {
               getKey={(s) => `${s.semana}-${s.agencyId}`}
               columns={[
                 { header: 'Semana del', orden: (s) => s.semana, ordenPrimero: 'desc', texto: (s) => fechaLarga(s.semana), cell: (s) => <span className="whitespace-nowrap">{fechaLarga(s.semana)}</span> },
-                { header: 'Inmobiliaria', orden: (s) => s.inmobiliaria, texto: (s) => s.inmobiliaria ?? s.agencyId, cell: (s) => s.inmobiliaria ?? s.agencyId.slice(0, 8) },
-                { header: 'Preguntas', orden: (s) => s.preguntas, ordenPrimero: 'desc', texto: (s) => s.preguntas, cell: (s) => <span className="tabular-nums">{s.preguntas}</span>, align: 'right' },
+                { header: 'Inmobiliaria', orden: (s) => s.inmobiliaria, texto: (s) => s.inmobiliaria ?? s.agencyId, cell: (s) => s.inmobiliaria ?? 'Sin nombre' },
+                { header: 'Preguntas', orden: (s) => s.preguntas, ordenPrimero: 'desc', texto: (s) => s.preguntas, cell: (s) => <span className="font-mono tabular-nums">{s.preguntas}</span>, align: 'right' },
                 {
                   header: 'Sin respuesta',
                   orden: (s) => s.porcentajeSinRespuesta,
                   ordenPrimero: 'desc',
                   texto: (s) => s.porcentajeSinRespuesta,
                   cell: (s) => (
-                    <span className="tabular-nums">
+                    <span className="font-mono tabular-nums">
                       {s.porcentajeSinRespuesta == null ? '—' : `${String(s.porcentajeSinRespuesta).replace('.', ',')} %`}
                     </span>
                   ),
                   align: 'right',
                 },
-                { header: 'Reformuladas', orden: (s) => s.reformulaciones, ordenPrimero: 'desc', texto: (s) => s.reformulaciones, cell: (s) => <span className="tabular-nums">{s.reformulaciones}</span>, align: 'right' },
-                { header: 'Abandonos', orden: (s) => s.abandonos, ordenPrimero: 'desc', texto: (s) => s.abandonos, cell: (s) => <span className="tabular-nums">{s.abandonos}</span>, align: 'right' },
-                { header: 'Se cortaron', orden: (s) => s.fallas, ordenPrimero: 'desc', texto: (s) => s.fallas, cell: (s) => <span className="tabular-nums">{s.fallas}</span>, align: 'right' },
+                { header: 'Reformuladas', orden: (s) => s.reformulaciones, ordenPrimero: 'desc', texto: (s) => s.reformulaciones, cell: (s) => <span className="font-mono tabular-nums">{s.reformulaciones}</span>, align: 'right' },
+                { header: 'Abandonos', orden: (s) => s.abandonos, ordenPrimero: 'desc', texto: (s) => s.abandonos, cell: (s) => <span className="font-mono tabular-nums">{s.abandonos}</span>, align: 'right' },
+                { header: 'Se cortaron', orden: (s) => s.fallas, ordenPrimero: 'desc', texto: (s) => s.fallas, cell: (s) => <span className="font-mono tabular-nums">{s.fallas}</span>, align: 'right' },
                 { header: 'Temas', texto: (s) => s.temas.map((t) => t.nombre).join(' · '), cell: (s) => <span className="text-fg-muted">{s.temas.map((t) => t.nombre).join(' · ') || '—'}</span> },
               ]}
               emptyTitle="Sin semanas"
@@ -529,22 +533,36 @@ export default function ChatPreguntasPage() {
             />
           </div>
 
-          {/* Las preguntas. */}
-          <MonoLabel className="block mb-3">
-            preguntas · más recientes primero · {data.total} {data.total === 1 ? 'pregunta' : 'preguntas'}
-          </MonoLabel>
+        </>
+      )}
+
+      {/* Las preguntas, con los filtros DENTRO de la tabla (antes en su propia tarjeta, en tres renglones, con
+          «Fecha» suelto y un botón «Buscar»). Los filtros acotan toda la pantalla. A 390, el buscador queda a la
+          vista y lo demás va en «Filtros (n)». */}
+      {data || error ? (
+        <section className="space-y-3" aria-label="Las preguntas">
+          <h2 className="text-subtitle font-medium text-fg">Las preguntas, más recientes primero</h2>
           <DataTable
-            rows={data.filas}
+            rows={error ? undefined : data?.filas}
             getKey={(t) => t.turnoId}
             columns={columnas}
             onRowClick={setAbierto}
             isLoading={isLoading}
-            emptyTitle="Ninguna pregunta con estos filtros"
-            emptyHint="Quita algún filtro para ver más."
+            error={error}
+            onReintentar={refetch}
+            emptyTitle={hayFiltros ? 'Ninguna pregunta con estos filtros' : 'No hay preguntas en estas fechas'}
+            emptyHint={
+              hayFiltros
+                ? 'Quita algún filtro para ver más.'
+                : 'Nadie le ha preguntado nada al chat en este rango, o el chat todavía no guarda sus preguntas en esta instalación.'
+            }
             aria-label="Preguntas del chat"
             filaMarcada={(t) => t.turnoId === abierto?.turnoId}
-            paginacion={{ page, total: data.total, pageSize: POR_PAGINA, onPage: setPage }}
+            paginacion={data ? { page, total: data.total, pageSize: POR_PAGINA, onPage: setPage } : undefined}
             queSon={['pregunta', 'preguntas']}
+            filtrosEnLaUrl={['agencia', 'desde', 'hasta', 'tema', 'q', 'sinRespuesta', 'pulgarAbajo']}
+            onLimpiarFiltros={() => setTexto('')}
+            barra={barraDeFiltros}
             exportar="preguntas-del-chat"
             traerTodoParaElExcel={async () => {
               const todas: TurnoDelChat[] = []
@@ -566,8 +584,13 @@ export default function ChatPreguntasPage() {
               return todas
             }}
           />
-        </>
-      )}
+        </section>
+      ) : null}
+
+      <p className="text-caption text-fg-subtle">
+        Sólo la ve el equipo de producto de Leasefy, como dice la §16 de la política de tratamiento (versión 4.0): sin
+        el correo de quién preguntó y con los números largos ocultos. Las preguntas se guardan 12 meses.
+      </p>
 
       <DetalleDelTurno t={abierto} onClose={() => setAbierto(null)} />
     </div>

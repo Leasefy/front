@@ -117,7 +117,7 @@ export function EscalationAssignDropdown({
                     >
                       <div>
                         <p className="text-sm font-medium text-foreground">{m.name}</p>
-                        <p className="text-xs text-muted-foreground">{m.email}</p>
+                        <p className="text-caption text-muted-foreground">{m.email}</p>
                       </div>
                       {isCurrent && (
                         <MonoLabel className="tracking-wide text-primary">✓</MonoLabel>

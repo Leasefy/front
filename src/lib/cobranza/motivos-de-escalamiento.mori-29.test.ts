@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { escalationReasonLabel } from './call-vocab'
+import { escalationReasonLabel, OTRO_MOTIVO } from './call-vocab'
 
 /**
  * MORI-29 (QA-AGENTES 16-10): Escalamientos pintaba «Otro (dispute)» y
@@ -12,7 +12,7 @@ describe('escalationReasonLabel — los motivos del micro en palabras', () => {
     expect(escalationReasonLabel('whatsapp_inbound_free_text')).toBe(
       'Escribió por WhatsApp algo que Mori no supo responder',
     )
-    expect(escalationReasonLabel('whatsapp_pide_enlace_de_pago')).toBe('Pidió el link de pago por WhatsApp')
+    expect(escalationReasonLabel('whatsapp_pide_enlace_de_pago')).toBe('Pidió el enlace de pago por WhatsApp')
     expect(escalationReasonLabel('voz_exclusion_sin_titular_revisar_numero')).toMatch(/no es el titular/)
   })
 
@@ -30,8 +30,10 @@ describe('escalationReasonLabel — los motivos del micro en palabras', () => {
   })
 
   it('lo que no conoce sigue marcado y la frase escrita va tal cual', () => {
-    expect(escalationReasonLabel('playbook_108_algo_nuevo')).toBe('Otro (playbook_108_algo_nuevo)')
-    expect(escalationReasonLabel('accion_otra_cosa_sin_encolar')).toBe('Otro (accion_otra_cosa_sin_encolar)')
+    // Revisora r25: marcado como «Otro motivo», sin el código a la vista.
+    expect(escalationReasonLabel('playbook_108_algo_nuevo')).toBe(OTRO_MOTIVO)
+    expect(escalationReasonLabel('accion_otra_cosa_sin_encolar')).toBe(OTRO_MOTIVO)
+    expect(OTRO_MOTIVO).not.toMatch(/[a-z]+_[a-z_]+/)
     expect(escalationReasonLabel('Pidió hablar con el gerente')).toBe('Pidió hablar con el gerente')
     expect(escalationReasonLabel('  ')).toBeNull()
   })

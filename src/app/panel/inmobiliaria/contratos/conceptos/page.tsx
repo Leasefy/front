@@ -9,19 +9,18 @@
 
 import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react'
-import { Eyebrow } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { ROLES_DE_CONTRATOS } from '@/lib/contratos/roles-de-contratos'
 import { ConceptosYLiquidacion } from '@/components/contratos/ConceptosYLiquidacion'
-import { useCatalogoDeConceptos } from '@/lib/conceptos/use-catalogo-de-conceptos'
 
 export default function ConceptosPage() {
-  const { activos } = useCatalogoDeConceptos()
   return (
     <PageGuard module="contratos" roles={ROLES_DE_CONTRATOS}>
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1">
+        <div className="space-y-3">
           <Link
             href="/panel/inmobiliaria/contratos"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -29,16 +28,25 @@ export default function ConceptosPage() {
             <ArrowLeft className="h-4 w-4" />
             Contratos
           </Link>
-          <Eyebrow>Portafolio</Eyebrow>
-          <h1 className="text-h2 text-fg">
-            Conceptos y liquidación
-          </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
-            {activos.length} conceptos, uno por cosa que se cobra. Los
-            impuestos no van en el nombre: salen de quién le paga a quién y del
-            uso del inmueble. Los nombres se cambian en Configuración → Conceptos.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Operación"
+            titulo="Conceptos y liquidación"
+            // Revisora r25: la pantalla es una calculadora de UN concepto, no la lista de 72.
+            descripcion="Calcula qué paga y qué recibe cada parte por un concepto, con sus impuestos."
+            ayuda={
+              <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: conceptos y liquidación" variante="secundario">
+                <div className="space-y-3 text-body-sm text-fg-muted">
+                  <p>Cada concepto es una cosa que se cobra en el contrato: el canon, la administración, un servicio.</p>
+                  <p>
+                    Los impuestos no van en el nombre: salen de quién le paga a quién y del uso del inmueble (vivienda
+                    o comercial).
+                  </p>
+                  <p>Los nombres que ve el inquilino se cambian en Configuración → Conceptos.</p>
+                </div>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
 
         <ConceptosYLiquidacion />
       </div>

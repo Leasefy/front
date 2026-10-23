@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CreditCard, CheckCircle, WarningCircle, Shield, Sparkle, Lightning, Lock, ArrowRight, Crown, Buildings, ChartBarHorizontal, ChartBar } from '@phosphor-icons/react';
+import { CreditCard, CheckCircle, WarningCircle, Shield, Lightning, Lock, Crown, Buildings, ChartBar } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { PricingTable } from '@/components/pricing';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -48,9 +49,8 @@ export default function UpgradePage() {
 
     setIsProcessing(true);
 
-    // Small delay for visual feedback
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
+    // GLOW UP (21-10-2026): sin la espera inventada de medio segundo «para dar
+    // sensación de avance»: se va al pago de una.
     // Redirect to checkout with selected plan and billing cycle
     router.push(`/panel/checkout?plan=${selectedPlan}&billing=${billingCycle}`);
   };
@@ -64,71 +64,42 @@ export default function UpgradePage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl p-6 lg:p-8">
         {/* Back link */}
         <div className="mb-6">
           <BackButton href="/panel" label={t('landlord.upgrade.backToPanel')} />
         </div>
 
-        {/* Premium Header */}
-        <div className="relative rounded-lg overflow-hidden mb-8">
-          {/* Gradient Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1A40FF] via-[#1A40FF] to-[#6B6B6B]" />
-          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-
-          {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-neutral-100 dark:bg-neutral-800/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-
-          {/* Content */}
-          <div className="relative px-8 py-12 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
-              <Sparkle className="w-4 h-4 text-[#B7791F]" />
-              <span className="text-sm font-medium text-white">
-                {t('landlord.upgrade.unlockPotential')}
+        {/* GLOW UP (21-10-2026): el encabezado común del portal. Antes, una portada con
+            degradado, manchas difusas, vidrio esmerilado y una chispita: todo fuera del
+            sistema. El plan actual va al lado del título; si no se pudo leer, la tarjeta
+            de abajo lo dice con «Reintentar» (antes salía dos veces). */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Tu plan' : 'Your plan'}
+          titulo={t('landlord.upgrade.title')}
+          descripcion={t('landlord.upgrade.subtitle')}
+          junto={
+            !subscriptionError && currentPlan ? (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1 text-body-sm text-fg"
+                data-testid="plan-actual"
+              >
+                <Crown className="h-4 w-4 text-warning" aria-hidden="true" />
+                {t('landlord.upgrade.currentPlan')} <span className="font-medium">{currentPlan.name}</span>
               </span>
-            </div>
-
-            <h1 className="text-3xl lg:text-4xl font-bold text-white mb-3">
-              {t('landlord.upgrade.title')}
-            </h1>
-            <p className="text-white/70 max-w-md mx-auto">
-              {t('landlord.upgrade.subtitle')}
-            </p>
-
-            {/* Current Plan Badge */}
-            {subscriptionError ? (
-              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                <WarningCircle className="w-4 h-4 text-white/70" />
-                <span className="text-sm text-white/70">{t('landlord.upgrade.subscriptionLoadError')}</span>
-                <button
-                  type="button"
-                  onClick={subscriptionRefetch}
-                  className="text-sm font-medium text-white underline underline-offset-2"
-                >
-                  {t('landlord.upgrade.subscriptionRetry')}
-                </button>
-              </div>
-            ) : (
-              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                <Crown className="w-4 h-4 text-[#B7791F]" />
-                <span className="text-sm text-white/90">{t('landlord.upgrade.currentPlan')}</span>
-                <span className="text-sm font-semibold text-white">{currentPlan?.name}</span>
-              </div>
-            )}
-          </div>
-        </div>
+            ) : undefined
+          }
+        />
 
         {/* Current plan summary card */}
         <Card className="p-6 mb-8">
           {subscriptionError ? (
             /* Error state — do not assert a plan name or billing details we could not load */
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
-                <Shield className="w-6 h-6 text-primary" />
-              </div>
+              <Shield className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
               <div className="flex-1">
-                <h2 className="font-semibold text-fg">
+                <h2 className="text-h3 text-fg">
                   {t('landlord.upgrade.currentSubscription')}
                 </h2>
                 <p className="text-sm text-fg-muted mt-0.5">
@@ -146,11 +117,9 @@ export default function UpgradePage() {
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex items-center gap-4 flex-1">
-                <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
-                  <Shield className="w-6 h-6 text-primary" />
-                </div>
+                <Shield className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
                 <div>
-                  <h2 className="font-semibold text-fg">
+                  <h2 className="text-h3 text-fg">
                     {t('landlord.upgrade.currentSubscription')}
                   </h2>
                   <p className="text-sm text-fg-muted mt-0.5">
@@ -158,7 +127,7 @@ export default function UpgradePage() {
                       <>
                         {t('landlord.upgrade.nextPayment')} <span className="font-medium text-fg">{precioLegible(currentPlan!.price.monthly)}</span> {t('landlord.upgrade.nextPaymentDate')}{' '}
                         <span className="font-medium text-fg">
-                          {new Date(subscription?.currentPeriodEnd ?? new Date().toISOString()).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+                          {new Date(subscription?.currentPeriodEnd ?? new Date().toISOString()).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
                             day: 'numeric',
                             month: 'long',
                           })}
@@ -174,16 +143,16 @@ export default function UpgradePage() {
               {/* Quick stats */}
               <div className="flex gap-6 sm:gap-8">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-fg font-mono tabular-nums">
+                  <p className="text-h3 font-normal text-fg font-mono tabular-nums">
                     {currentPlan?.features.find(f => f.id === 'property_listing')?.limit === 'unlimited' ? '∞' : currentPlan?.features.find(f => f.id === 'property_listing')?.limit || 1}
                   </p>
-                  <p className="text-xs text-fg-muted">{t('landlord.upgrade.propertiesLabel')}</p>
+                  <p className="text-caption text-fg-muted">{t('landlord.upgrade.propertiesLabel')}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-fg font-mono tabular-nums">
+                  <p className="text-h3 font-normal text-fg font-mono tabular-nums">
                     {currentPlan?.features.find(f => f.id === 'unlimited_contracts')?.limit === 'unlimited' ? '∞' : currentPlan?.features.find(f => f.id === 'unlimited_contracts')?.limit || 1}
                   </p>
-                  <p className="text-xs text-fg-muted">{t('landlord.upgrade.contractsLabel')}</p>
+                  <p className="text-caption text-fg-muted">{t('landlord.upgrade.contractsLabel')}</p>
                 </div>
               </div>
             </div>
@@ -194,34 +163,28 @@ export default function UpgradePage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
-                <Lightning className="w-5 h-5 text-success" />
-              </div>
+              <Lightning className="w-5 h-5 text-success shrink-0" aria-hidden="true" />
               <div>
                 <p className="font-medium text-fg text-sm">{t('landlord.upgrade.aiAnalysis')}</p>
-                <p className="text-xs text-fg-muted">{t('landlord.upgrade.autoEvaluation')}</p>
+                <p className="text-caption text-fg-muted">{t('landlord.upgrade.autoEvaluation')}</p>
               </div>
             </div>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-                <Buildings className="w-5 h-5 text-primary" />
-              </div>
+              <Buildings className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
               <div>
                 <p className="font-medium text-fg text-sm">{t('landlord.upgrade.multiProperty')}</p>
-                <p className="text-xs text-fg-muted">{t('landlord.upgrade.centralManagement')}</p>
+                <p className="text-caption text-fg-muted">{t('landlord.upgrade.centralManagement')}</p>
               </div>
             </div>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-surface-muted flex items-center justify-center">
-                <ChartBar className="w-5 h-5 text-fg-muted" />
-              </div>
+              <ChartBar className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
               <div>
                 <p className="font-medium text-fg text-sm">{t('landlord.upgrade.analytics')}</p>
-                <p className="text-xs text-fg-muted">{t('landlord.upgrade.detailedReports')}</p>
+                <p className="text-caption text-fg-muted">{t('landlord.upgrade.detailedReports')}</p>
               </div>
             </div>
           </Card>
@@ -238,11 +201,9 @@ export default function UpgradePage() {
           <div className="mt-8 bg-primary-soft border border-primary/30 rounded-lg p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                </div>
+                <CheckCircle className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
                 <div>
-                  <p className="font-semibold text-fg">
+                  <p className="font-medium text-fg">
                     {t('landlord.upgrade.selectedPlan', { name: newPlan.name })}
                   </p>
                   <p className="text-sm text-fg-muted mt-0.5">
@@ -268,7 +229,6 @@ export default function UpgradePage() {
                   <>
                     <CreditCard className="w-4 h-4" />
                     {t('landlord.upgrade.continueToPayment')}
-                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </Button>
@@ -308,7 +268,7 @@ export default function UpgradePage() {
             </div>
           </div>
 
-          <p className="text-xs text-fg-subtle mt-4">
+          <p className="text-caption text-fg-subtle mt-4">
             {t('landlord.upgrade.acceptedMethods')}
           </p>
         </div>

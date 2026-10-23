@@ -8,7 +8,9 @@ Next.js 15 App Router (React 19). Corre en :3001 (el :3000 es del back).
 
 ## ⚠️ Trabajo de UI — Leé esto PRIMERO
 
-**Antes de construir, modificar o revisar CUALQUIER UI, DEBÉS leer [`docs/DESIGN.md`](./docs/DESIGN.md).**
+**Antes de construir, modificar o revisar CUALQUIER UI, DEBÉS leer [`docs/DESIGN.md`](./docs/DESIGN.md)** —en especial
+§23 (pantallas por tarea), §24 (Cadence 2: la identidad, íconos propios, ilustraciones 3D, piezas) y §25 (medir la UX con
+Nielsen antes y después)— **y cargar las skills `leasefy-diseno` y `pantalla-por-tarea`.**
 
 Es la fuente de verdad para:
 - Principios de diseño + anti-patrones (sin glass morphism, sin gradientes en bubbles,

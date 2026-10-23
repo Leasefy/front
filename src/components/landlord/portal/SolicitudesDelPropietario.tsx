@@ -8,13 +8,15 @@
  * radicar una PQRS ni reportar un daño. Ahora usa las MISMAS rutas que el
  * inquilino (`GET /pqrs/mine`, `POST /pqrs`) con SUS inmuebles, y el MISMO modal.
  */
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { CaretRight, ChatCircleText, Plus } from '@phosphor-icons/react';
+import { ChatCircleText, Plus } from '@phosphor-icons/react';
+import { StatusBadge } from '@leasefy/cadence';
 
-import { Button, Card } from '@/components/ui';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { NuevaSolicitudModal } from '@/components/tenant/NuevaSolicitudModal';
@@ -22,14 +24,16 @@ import { pqrsApi, type ContratoParaRadicar } from '@/lib/api/pqrs.service';
 import type { SolicitudPqrs } from '@/lib/api/pqrs.types';
 import { fechaLegible } from '@/lib/api/facturacion-por-mes.service';
 
-const ESTADO: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
-  recibida: { label: 'Recibida', variant: 'secondary' },
-  asignada: { label: 'Asignada', variant: 'secondary' },
-  en_proceso: { label: 'En proceso', variant: 'secondary' },
-  en_cotizacion: { label: 'En cotización', variant: 'secondary' },
-  resuelta: { label: 'Resuelta', variant: 'outline' },
-  cerrada: { label: 'Cerrada', variant: 'outline' },
+// GLOW UP (22-10): el estado con su punto y su palabra (StatusBadge); lo abierto en azul suave, lo resuelto en verde.
+const ESTADO: Record<string, { label: string; tono: 'info' | 'success' | 'neutral' }> = {
+  recibida: { label: 'Recibida', tono: 'info' },
+  asignada: { label: 'Asignada', tono: 'info' },
+  en_proceso: { label: 'En proceso', tono: 'info' },
+  en_cotizacion: { label: 'En cotización', tono: 'info' },
+  resuelta: { label: 'Resuelta', tono: 'success' },
+  cerrada: { label: 'Cerrada', tono: 'neutral' },
 };
+const yaCerrada = (s: SolicitudPqrs) => s.estado === 'resuelta' || s.estado === 'cerrada';
 const TIPO: Record<string, string> = {
   peticion: 'Petición',
   queja: 'Queja',
@@ -70,26 +74,36 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
 
   if (cargando) return <EsqueletoDePagina variante="list" className="p-6 lg:p-8" />;
 
+  // Lo que espera respuesta primero; dentro de cada grupo, el orden del back.
+  const abiertas = items.filter((x) => !yaCerrada(x)).length;
+  const ordenadas = [...items].sort((a, b) => Number(yaCerrada(a)) - Number(yaCerrada(b)));
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">Solicitudes</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Peticiones, quejas, reclamos y daños de tus inmuebles. Tu inmobiliaria te responde aquí.
-          </p>
-        </div>
-        <Button
-          hideArrow
-          className="shrink-0"
-          onClick={() => setNueva(true)}
-          disabled={contratos.length === 0}
-          data-testid="propietario-nueva-solicitud"
-        >
-          <Plus className="h-4 w-4" weight="bold" />
-          Nueva solicitud
-        </Button>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Solicitudes"
+        // Revisora r25: el título es el de la pestaña (antes «Solicitudes · Solicitudes»).
+        titulo="Mis solicitudes"
+        descripcion={
+          abiertas === 1
+            ? 'Tienes 1 solicitud abierta: va primero. Tu inmobiliaria te responde aquí.'
+            : abiertas > 1
+              ? `Tienes ${abiertas} solicitudes abiertas: van primero. Tu inmobiliaria te responde aquí.`
+              : 'Peticiones, quejas, reclamos y daños de tus inmuebles. Tu inmobiliaria te responde aquí.'
+        }
+        accionPrincipal={
+          <Button
+            hideArrow
+            size="sm"
+            onClick={() => setNueva(true)}
+            disabled={contratos.length === 0}
+            data-testid="propietario-nueva-solicitud"
+          >
+            <Plus className="h-4 w-4" weight="bold" />
+            Nueva solicitud
+          </Button>
+        }
+      />
       {contratos.length === 0 && !error && (
         <p className="text-sm text-fg-muted">
           Para radicar una solicitud necesitas un inmueble consignado con una inmobiliaria.
@@ -98,14 +112,16 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
       {error ? (
         <FalloDeCarga error={error} queEs="tus solicitudes" onReintentar={cargar} />
       ) : items.length === 0 ? (
-        <Card className="p-8 text-center">
-          <ChatCircleText className="mx-auto h-8 w-8 text-fg-subtle" />
-          <p className="mt-3 text-sm text-fg-muted">Todavía no has radicado ninguna solicitud.</p>
-        </Card>
+        <EmptyState
+          icon={ChatCircleText}
+          title="Todavía no has radicado ninguna solicitud"
+          description="Cuando algo de tu inmueble necesite a tu inmobiliaria —una petición, una queja o un daño— la radicas aquí y aquí mismo te responden."
+          action={contratos.length > 0 ? { label: 'Nueva solicitud', onClick: () => setNueva(true) } : undefined}
+        />
       ) : (
         <ul className="space-y-2" data-testid="propietario-solicitudes">
-          {items.map((s) => {
-            const estado = ESTADO[s.estado] ?? { label: s.estado, variant: 'secondary' as const };
+          {ordenadas.map((s) => {
+            const estado = ESTADO[s.estado] ?? { label: s.estado, tono: 'neutral' as const };
             return (
               <li key={s.id}>
                 <Link
@@ -115,14 +131,13 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate font-medium text-fg">{s.asunto}</span>
-                      <Badge variant={estado.variant}>{estado.label}</Badge>
+                      <StatusBadge tone={estado.tono}>{estado.label}</StatusBadge>
                     </div>
-                    <p className="mt-1 text-xs text-fg-muted">
+                    <p className="mt-1 text-caption text-fg-muted">
                       <span className="font-mono">{s.radicado}</span> · {TIPO[s.tipo] ?? s.tipo}
                       {s.propiedadDireccion ? ` · ${s.propiedadDireccion}` : ''} · {fechaLegible(s.createdAt)}
                     </p>
                   </div>
-                  <CaretRight className="h-4 w-4 shrink-0 text-fg-muted" />
                 </Link>
               </li>
             );

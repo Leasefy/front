@@ -82,10 +82,19 @@ afterEach(() => {
 
 describe('la franja de cajones de Inmuebles', () => {
   it('hay un chip por cajón, más «Todos»: ninguna fila se queda sin dónde mirarse', () => {
-    montar()
+    montar({ conteo: { disponible: 1, arrendado: 1, enProceso: 1, mantenimiento: 1, borrador: 1, sinMandato: 1 }, total: 6 })
     for (const cajon of ['all', 'disponible', 'arrendado', 'enProceso', 'mantenimiento', 'borrador', 'sinMandato']) {
       expect(chip(cajon)).not.toBeNull()
     }
+  })
+
+  it('🔴 Nico 22-10 (decisión 23): un cajón en 0 no sale, salvo el elegido; «Todos» siempre', () => {
+    montar()
+    for (const cajon of ['all', 'disponible', 'arrendado', 'sinMandato']) expect(chip(cajon)).not.toBeNull()
+    for (const cajon of ['enProceso', 'mantenimiento', 'borrador']) expect(chip(cajon)).toBeNull()
+    montar({ filters: { ...FILTROS, cajon: 'mantenimiento' } })
+    expect(chip('mantenimiento')).not.toBeNull()
+    expect(numero('mantenimiento')).toBe(0)
   })
 
   it('🔴 el número va EN el chip, y los cinco suman «Todos»', () => {
@@ -130,7 +139,7 @@ describe('la franja de cajones de Inmuebles', () => {
     expect(chip('borrador')?.textContent).toContain('inmobiliaria.consignaciones.filters.draft')
     expect(numero('borrador')).toBe(1)
     const onFiltersChange = vi.fn()
-    montar({ onFiltersChange })
+    montar({ onFiltersChange, conteo: { ...CONTEO, disponible: 2, borrador: 1 } })
     act(() => {
       chip('borrador')!.click()
     })
@@ -143,15 +152,28 @@ describe('la franja de cajones de Inmuebles', () => {
    * UNA fila que no cabía. El buscador y los desplegables van juntos en la
    * primera fila; los cajones, en la suya.
    */
-  it('IN-03: los cuatro desplegables van en la fila del buscador, no detrás de los chips', () => {
+  it('IN-03 + decisión 25: Propietario y Ciudad en la fila del buscador, Asesor y Tipo en «Filtros (n)», no detrás de los chips', () => {
     montar()
     const fila1 = container.querySelector('[data-testid="filtros-fila-1"]')!
     const cajones = container.querySelector('[data-testid="filtros-cajones"]')!
     expect(fila1.querySelector('input')).not.toBeNull()
     const desplegables = fila1.querySelectorAll('[data-testid="filtros-desplegables"] button[role="combobox"]')
-    expect(desplegables.length).toBe(4)
-    expect(cajones.querySelectorAll('[data-testid^="cajon-"]').length).toBe(7)
+    // Decisión 25 de Nico (22-10): a la vista Propietario y Ciudad; Asesor y Tipo en «Filtros (n)».
+    expect(desplegables.length).toBe(2)
+    expect(fila1.querySelector('[data-testid="filtros-mas"]')).not.toBeNull()
+    // «Todos» + los cajones con inmuebles (los de 0 no salen: decisión 23 de Nico).
+    expect(cajones.querySelectorAll('[data-testid^="cajon-"]').length).toBe(4)
     expect(cajones.querySelector('button[role="combobox"]')).toBeNull()
+  })
+
+  it('revisora r25 (UNA barra): la vista va al final del renglón del buscador y los cajones van antes', () => {
+    montar({ vista: <span data-testid="la-vista">Tabla · Tarjetas</span> })
+    const fila1 = container.querySelector('[data-testid="filtros-fila-1"]')!
+    const cajones = container.querySelector('[data-testid="filtros-cajones"]')!
+    expect(fila1.querySelector('[data-testid="filtros-vista"] [data-testid="la-vista"]')).not.toBeNull()
+    expect(fila1.lastElementChild?.getAttribute('data-testid')).toBe('filtros-vista')
+    // Los cajones van primero en el orden del documento.
+    expect(cajones.compareDocumentPosition(fila1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('el chip del cajón elegido se ve distinto de los demás', () => {

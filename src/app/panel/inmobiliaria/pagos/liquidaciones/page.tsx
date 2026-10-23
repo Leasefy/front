@@ -37,9 +37,14 @@
  */
 
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
+import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
+import { nombreDelMes } from '@/lib/utils/mes';
+import { claveDelMes, esMesDeLosGiros } from '@/lib/giros/meses-de-los-giros';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass, Trash } from '@phosphor-icons/react';
+import { Wallet, DotsThreeVertical, MagnifyingGlass, Trash } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
@@ -54,8 +59,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
 import { SectionLabel } from '@/components/ui/section-label';
-import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones';
 import { CajonDeLaLiquidacion } from '@/components/liquidaciones/CajonDeLaLiquidacion';
 import {
   Table,
@@ -68,13 +73,6 @@ import {
 } from '@/components/ui/table';
 import { AnimatedNumber, Presence } from '@leasefy/cadence';
 import { Button, Badge } from '@/components/ui';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   DropdownList,
   DropdownListContent,
@@ -93,6 +91,8 @@ import { AvisoSinPorcentaje } from '@/components/inmobiliaria/AvisoSinPorcentaje
 import { PorGirarDeLaInmobiliaria } from '@/components/liquidaciones/PorGirarDeLaInmobiliaria';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { conSigno } from '@/lib/plata/escribir-plata';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { leerLiquidacionFrenada } from '@/lib/api/dispersiones-errores';
@@ -141,8 +141,8 @@ function AjustesDeLaFila({
   etiquetas: { aFavor: string; aCargo: string; deducciones: string };
 }) {
   const renglones = [
-    aFavor > 0 ? { clave: 'a-favor', etiqueta: etiquetas.aFavor, valor: `+${formatCurrency(aFavor)}`, tono: 'text-fg' } : null,
-    aCargo > 0 ? { clave: 'a-cargo', etiqueta: etiquetas.aCargo, valor: `−${formatCurrency(aCargo)}`, tono: 'text-danger' } : null,
+    aFavor > 0 ? { clave: 'a-favor', etiqueta: etiquetas.aFavor, valor: conSigno('+', formatCurrency(aFavor)), tono: 'text-fg' } : null,
+    aCargo > 0 ? { clave: 'a-cargo', etiqueta: etiquetas.aCargo, valor: conSigno('−', formatCurrency(aCargo)), tono: 'text-danger' } : null,
   ].filter(Boolean) as { clave: string; etiqueta: string; valor: string; tono: string }[];
   // Cada ajuste en dos renglones (su nombre y la cifra): de lado a lado la
   // columna se llevaba 180 px y la tabla seguía sin caber.
@@ -162,7 +162,7 @@ function AjustesDeLaFila({
         {deducciones > 0 ? (
           <>
             <span className="block font-sans text-fg-subtle">{etiquetas.deducciones}</span>
-            <span className="block font-mono tabular-nums text-danger">−{formatCurrency(deducciones)}</span>
+            <span className="block font-mono tabular-nums text-danger">{conSigno('−', formatCurrency(deducciones))}</span>
           </>
         ) : (
           <span className="font-mono text-fg-muted">—</span>
@@ -193,38 +193,13 @@ function sinTildes(texto: string): string {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
-/** Cuántos meses hacia atrás ofrece el selector, contando el corriente. */
-const MESES_EN_EL_SELECTOR = 12;
-
-function claveDelMes(fecha: Date): string {
-  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
-}
-
 /** El mes en curso, en el formato que espera el back (`2026-02`). */
 function mesEnCurso(): string {
   return claveDelMes(new Date());
 }
 
-/**
- * 🔴 PG-R18 (QA de Pagos, decisión de Nico 03-10-2026): cuántos meses por
- * venir ofrece el selector. Antes estaba topado en el mes corriente; con la
- * base CAUSADO (el default) la liquidación de un mes futuro existe —lo que los
- * contratos van a cobrar—, y «Por pagar a propietarios» ya llega al mes en
- * curso + 3. Lo mismo aquí.
- */
-const MESES_HACIA_ADELANTE = 3;
-
-/**
- * Los meses del selector, del más nuevo al más viejo: hasta el mes en curso
- * + 3 y doce hacia atrás (contando el corriente).
- */
-function mesesRecientes(): { value: string; label: string }[] {
-  const hoy = new Date();
-  return Array.from({ length: MESES_EN_EL_SELECTOR + MESES_HACIA_ADELANTE }, (_, i) => {
-    const value = claveDelMes(new Date(hoy.getFullYear(), hoy.getMonth() + MESES_HACIA_ADELANTE - i, 1));
-    return { value, label: mesEnTitulo(value) };
-  });
-}
+// Los meses que se ofrecen (PG-R18, Nico 03-10-2026) viven en `lib/giros/meses-de-los-giros.ts`: son los
+// mismos para los cuatro pasos de Giros.
 
 type Propietario = PropietarioDeLaLiquidacion;
 
@@ -249,11 +224,19 @@ async function leerLiquidacion(month: string): Promise<LiquidacionParaLaPantalla
 
 function TesoreriaContent() {
   const { t } = useI18n();
+  const tr = useTr();
   const k = (s: string) => `inmobiliaria.tesoreria.${s}`;
   // Antes era `useState(mesEnCurso)` sin setter: el mes anterior —el que de
   // verdad se liquida los primeros días— no se podía ver.
   const [month, setMonth] = useState(mesEnCurso);
-  const meses = useMemo(mesesRecientes, []);
+  // Revisora r22 (Giros #3): «Lo que falta del mes» dice si el mes elegido está girado completo.
+  const [mesGirado, setMesGirado] = useState(false);
+  const esCelular = useIsMobile();
+  // El mes viaja entre los pasos de Giros (`?mes=`): se lee al montar, no en el primer pintado (servidor).
+  useEffect(() => {
+    const pedido = new URLSearchParams(window.location.search).get('mes');
+    if (esMesDeLosGiros(pedido)) setMonth(pedido);
+  }, []);
 
   const [vista, setVista] = useState<LiquidacionParaLaPantalla | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -354,6 +337,10 @@ function TesoreriaContent() {
     );
   }, [propietarios, busqueda]);
   const paginado = useTablePagination(visibles, { resetKey: `${month}|${busqueda}` });
+  // Revisora r24 (Giros #5): «Ajustes» sólo si alguna fila del mes tiene (en todas «—» no decía nada).
+  const hayAjustes = visibles.some(
+    (p) => p.totalConceptosAFavor > 0 || p.totalConceptosACargo > 0 || (p.conDeducciones?.deduccionesCop ?? 0) > 0,
+  );
   const suma = (campo: keyof Propietario) =>
     propietarios.reduce((s, p) => s + ((p[campo] as number | undefined) ?? 0), 0);
   /*
@@ -374,15 +361,20 @@ function TesoreriaContent() {
       sign: '',
       tone: 'text-fg',
     },
-    { labelKey: 'fComision', value: suma('totalCommission'), sign: '−', tone: 'text-danger' },
+    { labelKey: 'fComision', value: suma('totalCommission'), sign: '−', tone: 'text-fg' },
     ...(ivaDelMes > 0
-      ? [{ labelKey: 'fIva', value: ivaDelMes, sign: '−', tone: 'text-danger' }]
+      ? [{ labelKey: 'fIva', value: ivaDelMes, sign: '−', tone: 'text-fg' }]
       : []),
     ...(retenidoDelMes > 0
       ? [{ labelKey: 'fRetencionesComision', value: retenidoDelMes, sign: '+', tone: 'text-fg' }]
       : []),
-    { labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' },
-    { labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' },
+    // Ronda 19: a favor y a cargo sólo cuando no son 0 (antes «+$ 0» y «−$ 0»).
+    ...(suma('totalConceptosAFavor') !== 0
+      ? [{ labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' }]
+      : []),
+    ...(suma('totalConceptosACargo') !== 0
+      ? [{ labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' }]
+      : []),
   ];
   /*
    * 🔴 QA 22-09: con deducciones, `netToPropietario` ya viene RESTADO y la
@@ -424,13 +416,7 @@ function TesoreriaContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div className="space-y-1.5">
-          <SectionLabel>{t(k('label'))}</SectionLabel>
-          <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
-        </div>
-        {/* Sin «Procesar en Dispersiones» acá ni en el vacío: «la gente ya sabe
+      {/* Sin «Procesar en Dispersiones» acá ni en el vacío: «la gente ya sabe
             que dispersiones es para dispersar» (Nico, 2026-09-08). La bajada
             sigue diciendo que el giro vive en Dispersiones.
 
@@ -438,13 +424,21 @@ function TesoreriaContent() {
             registrar factura si tenemos una sección dedicada a facturación?».
             Registrar la factura de un proveedor —incluida la lectura desde
             foto— vive ahora en Facturación → Compras, que es esa sección.
-            Acá se lee el neto de cada propietario, no se crean documentos. */}
-      </header>
+            Aquí se lee el neto de cada propietario, no se crean documentos. */}
+      {/* Giros a propietarios (Nico, 22-10-2026): Liquidaciones es el PASO 1 de la misma tarea que
+          Dispersiones y los lotes al banco. Un encabezado para los cuatro pasos y el riel que los ordena. */}
+      <EncabezadoDePantalla
+        seccion={tr(SECCION_DE_LOS_GIROS)}
+        titulo={tr(TITULO_DE_LOS_GIROS)}
+        descripcion={tr(descripcionDelPaso('liquidar'))}
+      />
+      {/* Decisión 17 de Nico (22-10): «Lo que falta del mes» en vez del riel de chulos. */}
+      <LoQueFaltaDelMes paso="liquidar" mes={month} onCambiarMes={setMonth} onCompleto={setMesGirado} />
 
       {/* 🔴 «Por girar» de la inmobiliaria: UNA sola cifra, hasta el mes en
           curso, la misma del Tablero y de «Cartera → Por pagar» (Nico,
           04-10-2026). La tabla de abajo es el neto de UN mes. */}
-      <PorGirarDeLaInmobiliaria />
+      <PorGirarDeLaInmobiliaria mesGirado={mesGirado} nombreDelMes={nombreDelMes(month)} />
 
       {frenada ? (
         <AvisoLiquidacionFrenada frenada={frenada} despues="calcular el neto" />
@@ -505,10 +499,8 @@ function TesoreriaContent() {
               <AvisoSinPorcentaje inmuebles={vista?.sinPorcentaje} />
               {/* El mes en plata — sumas reales, no una fórmula de ejemplo */}
               <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
-                  <Badge variant="secondary">{mesEnTitulo(month)}</Badge>
-                </div>
+                {/* Revisora r22 (Giros #5): sin el chip del mes; el mes ya lo dice el selector de arriba. */}
+                <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
                 {/* En una fila cuando hay ancho: son los pasos de UNA cuenta
                     (canon − comisión + a favor − a cargo = neto), y en columna
                     ocupaban media pantalla de alto. */}
@@ -535,7 +527,8 @@ function TesoreriaContent() {
                         {/* Al cambiar de mes, las cifras cuentan desde las del
                             mes anterior (`AnimatedNumber`). */}
                         <span className={cn('shrink-0 whitespace-nowrap font-mono tabular-nums', row.tone)} data-testid="tesoreria-cifra-del-paso">
-                          {row.sign}
+                          {/* «− $ 770.000», con espacio (VOZ-Y-TONO §4). */}
+                          {row.sign ? `${row.sign}\u00a0` : ''}
                           <AnimatedNumber value={row.value} format={formatCurrency} />
                         </span>
                       </div>
@@ -550,13 +543,14 @@ function TesoreriaContent() {
                   ))}
                   <div className="border-t border-border pt-2.5 flex items-center justify-between lg:col-span-full">
                     <span className="text-sm font-semibold text-fg flex items-center gap-1.5">
-                      <Wallet className={cn('w-4 h-4', neto < 0 ? 'text-danger' : 'text-success')} />
+                      <Wallet className={cn('w-4 h-4', neto < 0 ? 'text-danger' : 'text-fg-muted')} />
                       {t(k('fNeto'))}
                     </span>
                     <span
                       className={cn(
-                        'font-mono tabular-nums font-semibold',
-                        neto < 0 ? 'text-danger' : 'text-success',
+                        // Revisora r24 (Giros #6): mono en tinta, sin negrilla; el verde decoraba.
+                        'font-mono tabular-nums',
+                        neto < 0 ? 'text-danger' : 'text-fg',
                       )}
                       data-testid="tesoreria-neto-total"
                     >
@@ -566,14 +560,14 @@ function TesoreriaContent() {
                   {deduccionesDelMes > 0 && (
                     <div className="flex items-center justify-between gap-2 text-sm" data-testid="tesoreria-deducciones-total">
                       <span className="text-muted-foreground">{t(k('fDeducciones'))}</span>
-                      <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-danger">−{formatCurrency(deduccionesDelMes)}</span>
+                      <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-danger">{conSigno('−', formatCurrency(deduccionesDelMes))}</span>
                     </div>
                   )}
                   {conDeducciones && (aGirarDelMes !== neto || enContraDelMes > 0) && (
                     <>
                       <div className="flex items-center justify-between gap-2 text-sm">
                         <span className="font-semibold text-fg">{t(k('fAGirar'))}</span>
-                        <span className="shrink-0 whitespace-nowrap font-mono font-semibold tabular-nums text-success" data-testid="tesoreria-a-girar-total">
+                        <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-fg" data-testid="tesoreria-a-girar-total">
                           <AnimatedNumber value={aGirarDelMes} format={formatCurrency} />
                         </span>
                       </div>
@@ -611,26 +605,11 @@ function TesoreriaContent() {
                   pestañas y el mes: lo que cambia la lista vive pegado a la
                   lista. El resumen del mes se queda afuera, que es lo que él
                   pidió: es un resumen, no un filtro. */}
+              {/* Ronda 26 (revisora r25, #3): sin el riel «Liquidaciones · Facturas de proveedores». La
+                  segunda llevaba a las facturas de PROVEEDOR, otra tarea dentro de «Pagar a propietarios»
+                  (viven en Contabilidad › Gastos y Egresos). El mes ya no se elige aquí: es el selector
+                  ÚNICO de los cuatro pasos (`MesDeLosGiros`, ronda 19). */}
               <section className="rounded-lg border border-border bg-card overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
-                  <PestanasDeLiquidaciones />
-                  {/* `w-56` y no `min-w`: el trigger del DS es `w-full`, así que
-                      con sólo un mínimo se estiraba a todo el renglón y el mes
-                      quedaba de banda, peor que antes. */}
-                  <Select value={month} onValueChange={setMonth}>
-                    <SelectTrigger className="w-56 gap-2" aria-label="Mes de la liquidación">
-                      <CalendarBlank className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {meses.map((m) => (
-                        <SelectItem key={m.value} value={m.value}>
-                          {m.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 {/* El buscador DENTRO de la tarjeta de la tabla, con el alcance
                     a su lado: suelto arriba no diría qué está filtrando. */}
                 <div className="flex flex-col gap-2 border-b border-border px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -648,12 +627,12 @@ function TesoreriaContent() {
                       data-testid="buscar-liquidacion"
                     />
                   </div>
-                  <p className="text-xs text-fg-muted" data-testid="alcance-de-liquidaciones">
-                    {/* Cuenta entero y sin separador de miles: el mismo `{n}` de antes. */}
+                  <p className="text-caption text-fg-muted" data-testid="alcance-de-liquidaciones">
+                    {/* Cuenta entero y sin separador de miles: el mismo `{n}` de antes. Sin el mes (r22, VOZ §4: ya está
+                        arriba, y salía «de Octubre» con mayúscula a media frase). */}
                     <AnimatedNumber value={visibles.length} format={(n) => String(Math.round(n))} />{' '}
                     de {propietarios.length}{' '}
-                    {propietarios.length === 1 ? 'propietario' : 'propietarios'} de{' '}
-                    {mesEnTitulo(month)}. Las cifras de arriba son las del mes completo.
+                    {propietarios.length === 1 ? 'propietario' : 'propietarios'}. Las cifras de arriba son las del mes completo.
                   </p>
                 </div>
                 {(() => {
@@ -678,11 +657,45 @@ function TesoreriaContent() {
                     </div>
                   ) : null;
                 })()}
+                {esCelular ? (
+                  /* Ronda 21 (390): una tarjeta por propietario con lo que decide —el neto y el estado—; la
+                     tabla encogida escondía el Neto. La tarjeta abre el mismo cajón que la fila. */
+                  <ul className="divide-y divide-border" data-testid="liquidaciones-en-tarjetas">
+                    {paginado.pageItems.map((p) => {
+                      const aGirar = p.conDeducciones ? p.conDeducciones.aGirarCop : p.netToPropietario;
+                      return (
+                        <li key={p.propietarioId}>
+                          <button
+                            type="button"
+                            onClick={() => setAbierta(p)}
+                            className="flex w-full items-start justify-between gap-3 px-5 py-3 text-left hover:bg-surface-muted/60"
+                            data-testid="tesoreria-tarjeta"
+                          >
+                            <span className="min-w-0">
+                              <span className="block line-clamp-2 font-medium text-fg">{p.propietarioName}</span>
+                              {p.liquidacion ? (
+                                <span className="mt-1 block text-caption text-fg-muted">{NOMBRE_DEL_ESTADO[p.liquidacion.estado]}</span>
+                              ) : null}
+                            </span>
+                            <span
+                              className={cn(
+                                'shrink-0 whitespace-nowrap font-mono tabular-nums',
+                                aGirar < 0 ? 'text-danger' : aGirar > 0 ? 'text-fg' : 'text-fg-muted',
+                              )}
+                            >
+                              {formatCurrency(aGirar)}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {COLUMNS.map((c) => (
+                        {COLUMNS.filter((c) => c !== 'colAjustes' || hayAjustes).map((c) => (
                           <TableHead
                             key={c}
                             className={cn(
@@ -722,13 +735,14 @@ function TesoreriaContent() {
                         >
                           <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
                           <TableCell className="whitespace-nowrap font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
-                          <TableCell className="whitespace-nowrap font-mono tabular-nums text-danger">
-                            −{formatCurrency(p.totalCommission)}
+                          {/* Ronda 20: la comisión neutra en los tres pasos (era roja aquí). */}
+                          <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
+                            {conSigno('−', formatCurrency(p.totalCommission))}
                             {/* El IVA de la comisión debajo, no en una columna
                                 más: la tabla ya no cabía a lo ancho (21-09). */}
                             {(p.totalIvaComision ?? 0) > 0 && (
                               <span className="block text-caption" data-testid="tesoreria-iva-fila">
-                                {t(k('colIva'))} −{formatCurrency(p.totalIvaComision ?? 0)}
+                                {t(k('colIva'))} {conSigno('−', formatCurrency(p.totalIvaComision ?? 0))}
                               </span>
                             )}
                             {(p.totalRetencionesComision ?? 0) > 0 && (
@@ -737,10 +751,11 @@ function TesoreriaContent() {
                                 <span className="block max-w-[9rem] whitespace-normal font-sans">
                                   {t(k('fRetencionesComision'))}
                                 </span>
-                                +{formatCurrency(p.totalRetencionesComision ?? 0)}
+                                {conSigno('+', formatCurrency(p.totalRetencionesComision ?? 0))}
                               </span>
                             )}
                           </TableCell>
+                          {hayAjustes ? (
                           <TableCell data-testid="tesoreria-ajustes-fila">
                             <AjustesDeLaFila
                               aFavor={p.totalConceptosAFavor}
@@ -753,13 +768,14 @@ function TesoreriaContent() {
                               }}
                             />
                           </TableCell>
+                          ) : null}
                           {p.conDeducciones ? (
                             /* Lo que se gira de verdad: entero o $0. Si queda en
                                contra no es «queda debiendo»: pasa al mes siguiente. */
                             <TableCell
                               className={cn(
-                                'whitespace-nowrap font-mono tabular-nums font-semibold',
-                                p.conDeducciones.aGirarCop > 0 ? 'text-success' : 'text-fg-muted',
+                                'whitespace-nowrap font-mono tabular-nums',
+                                p.conDeducciones.aGirarCop > 0 ? 'text-fg' : 'text-fg-muted',
                               )}
                               data-testid="tesoreria-neto-fila"
                             >
@@ -775,8 +791,8 @@ function TesoreriaContent() {
                           ) : (
                             <TableCell
                               className={cn(
-                                'whitespace-nowrap font-mono tabular-nums font-semibold',
-                                p.netToPropietario < 0 ? 'text-danger' : 'text-success',
+                                'whitespace-nowrap font-mono tabular-nums',
+                                p.netToPropietario < 0 ? 'text-danger' : 'text-fg',
                               )}
                               data-testid="tesoreria-neto-fila"
                             >
@@ -887,6 +903,7 @@ function TesoreriaContent() {
                     </TableBodyAnimado>
                   </Table>
                 </div>
+                )}
                 {paginado.shouldPaginate && (
                   <div className="border-t border-border px-5 py-3">
                     <TablePagination

@@ -24,6 +24,11 @@
  * ni "estudio": se dice **aprobación** y **tope aprobado**.
  */
 
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { StatusBadge } from '@leasefy/cadence';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCallback } from 'react'
 
 import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
@@ -37,12 +42,10 @@ import {
   EnvelopeSimple,
   Hourglass,
   Info,
-  SealCheck,
   WarningOctagon,
 } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/format'
@@ -66,10 +69,20 @@ export default function AprobacionPage() {
   const { current, estado, isLoading, error, refetch } = usePreScoringCurrent()
 
   if (isLoading) {
+    // Glow up 22-10: el esqueleto con la forma de la pantalla (encabezado y la cifra), no un spinner centrado.
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3">
-        <Spinner size="md" variant="muted" />
-        <p className="text-sm text-fg-muted">{tf(`${NS}.cargando`, 'Cargando tu aprobación...')}</p>
+      <div className="space-y-6 p-6 lg:p-8" aria-busy="true" data-testid="aprobacion-cargando">
+        <span className="sr-only">{tf(`${NS}.cargando`, 'Cargando tu aprobación...')}</span>
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-8 w-60" />
+          <Skeleton className="h-4 w-80 max-w-full" />
+        </div>
+        <div className="space-y-3 rounded-lg border border-border bg-surface p-8">
+          <Skeleton className="h-3 w-36" />
+          <Skeleton className="h-12 w-64" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
       </div>
     )
   }
@@ -86,15 +99,12 @@ export default function AprobacionPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
-      <header>
-        <h1 className="text-3xl font-medium text-fg tracking-tight">
-          {tf(`${NS}.titulo`, 'Mi tope de arriendo')}
-        </h1>
-        <p className="mt-1 text-fg-muted">
-          {tf(`${NS}.subtitulo`, 'Hasta cuánto te respaldan las aseguradoras')}
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion={tf('nav.buscarArriendo', 'Buscar arriendo')}
+        titulo={tf(`${NS}.titulo`, 'Mi tope de arriendo')}
+        descripcion={tf(`${NS}.subtitulo`, 'Hasta cuánto te respaldan las aseguradoras.')}
+      />
 
       {/* Paso 3 de 3 cuando llegó desde «¿Te podemos arrendar este inmueble?». */}
       <RespuestaDelArriendo
@@ -143,31 +153,47 @@ function AprobadoView({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-5">
-        <div className="flex items-center gap-2 text-success">
-          <SealCheck className="w-5 h-5" weight="fill" aria-hidden="true" />
-          <span className="text-sm font-medium">{tf(`${NS}.aprobado.badge`, 'Aprobado')}</span>
-        </div>
+      {/* GLOW UP (22-10): LA RESPUESTA en una CifraHeroe con su estado (punto y palabra) y los datos del buró en
+          una línea al pie, en vez de dos tarjetas con borde dentro de la tarjeta. */}
+      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-6">
+        <StatusBadge tone="success">{tf(`${NS}.aprobado.badge`, 'Aprobado')}</StatusBadge>
 
         {tieneTope ? (
-          <div className="space-y-2">
-            <p className="text-sm text-fg-muted">
-              {tf(`${NS}.aprobado.label`, 'Estás aprobado hasta')}
-            </p>
-            <p className="font-mono tabular-nums text-4xl sm:text-5xl font-semibold text-fg leading-none">
-              {formatCurrency(tope, locale)}
-            </p>
-            <p className="text-sm text-fg-muted leading-relaxed max-w-lg pt-1">
-              {tf(
-                `${NS}.aprobado.ayuda`,
-                'Puedes postularte a cualquier propiedad con un canon hasta ese valor. Y a todas las que quieras: con esta aprobación no vuelves a pagar.',
-              )}
-            </p>
-          </div>
+          <CifraHeroe
+            rotulo={tf(`${NS}.aprobado.label`, 'Estás aprobado hasta')}
+            cifra={formatCurrency(tope, locale)}
+            contexto={locale === 'es' ? 'de canon al mes' : 'monthly rent'}
+            pie={
+              <span className="block space-y-2">
+                <span className="block max-w-lg leading-relaxed">
+                  {tf(
+                    `${NS}.aprobado.ayuda`,
+                    'Puedes postularte a cualquier inmueble con un canon hasta ese valor. Y a todos los que quieras: con esta aprobación no vuelves a pagar.',
+                  )}
+                </span>
+                {tieneDatosDeBuro && (
+                  <span className="flex flex-wrap gap-x-4 gap-y-1" data-testid="datos-del-buro">
+                    {bureau!.minimumScore !== null && (
+                      <span>
+                        {tf(`${NS}.aprobado.scoreBuro`, 'Puntaje del buró')}{' '}
+                        <span className="font-mono tabular-nums text-fg">{bureau!.minimumScore}</span>
+                      </span>
+                    )}
+                    {bureau!.monthlyCapacity !== null && (
+                      <span>
+                        {tf(`${NS}.aprobado.capacidadMensual`, 'Capacidad de pago mensual')}{' '}
+                        <span className="font-mono tabular-nums text-fg">{formatCurrency(bureau!.monthlyCapacity, locale)}</span>
+                      </span>
+                    )}
+                  </span>
+                )}
+              </span>
+            }
+          />
         ) : (
           /* Aprobado pero sin el número: se dice que falta. Nunca se inventa. */
           <div className="space-y-2">
-            <p className="text-2xl font-semibold text-fg">
+            <p className="text-h3 font-light text-fg">
               {tf(`${NS}.aprobado.sinTope.title`, 'Estás aprobado')}
             </p>
             <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
@@ -176,38 +202,29 @@ function AprobadoView({
                 'Estamos terminando de calcular hasta cuánto podemos respaldarte. Te avisamos apenas esté listo.',
               )}
             </p>
-          </div>
-        )}
-
-        {tieneDatosDeBuro && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {bureau!.minimumScore !== null && (
-              <div className="rounded-lg border border-border bg-surface-muted p-4">
-                <p className="font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle">
-                  {tf(`${NS}.aprobado.scoreBuro`, 'Score de buró')}
-                </p>
-                <p className="font-mono text-xl font-semibold tabular-nums text-fg">
-                  {bureau!.minimumScore}
-                </p>
-              </div>
-            )}
-            {bureau!.monthlyCapacity !== null && (
-              <div className="rounded-lg border border-border bg-surface-muted p-4">
-                <p className="font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle">
-                  {tf(`${NS}.aprobado.capacidadMensual`, 'Capacidad de pago mensual')}
-                </p>
-                <p className="font-mono text-xl font-semibold tabular-nums text-fg">
-                  {formatCurrency(bureau!.monthlyCapacity, locale)}
-                </p>
-              </div>
+            {tieneDatosDeBuro && (
+              <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted" data-testid="datos-del-buro">
+                {bureau!.minimumScore !== null && (
+                  <span>
+                    {tf(`${NS}.aprobado.scoreBuro`, 'Puntaje del buró')}{' '}
+                    <span className="font-mono tabular-nums text-fg">{bureau!.minimumScore}</span>
+                  </span>
+                )}
+                {bureau!.monthlyCapacity !== null && (
+                  <span>
+                    {tf(`${NS}.aprobado.capacidadMensual`, 'Capacidad de pago mensual')}{' '}
+                    <span className="font-mono tabular-nums text-fg">{formatCurrency(bureau!.monthlyCapacity, locale)}</span>
+                  </span>
+                )}
+              </p>
             )}
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-1">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button asChild>
             <Link href="/inquilino/para-ti">
-              {tf(`${NS}.aprobado.cta`, 'Ver mis propiedades')}
+              {tf(`${NS}.aprobado.cta`, 'Ver mis inmuebles')}
             </Link>
           </Button>
           <Button asChild variant="secondary">
@@ -255,7 +272,7 @@ function VigenciaPill({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium',
         tono[estado],
       )}
     >
@@ -307,7 +324,7 @@ function RechazadoView({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
+      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
         {/* Informativo, no error (Nico, 02-10): es un «no», pero el texto dice
             que no es definitivo y que hay salidas; un medallón rojo con una ✕
             lo contradecía. El mismo tono que el modal de `PostularButton`. */}
@@ -318,9 +335,9 @@ function RechazadoView({
         >
           <Info className="w-6 h-6 text-info" weight="bold" aria-hidden="true" />
         </div>
-        <h1 className="text-2xl font-semibold text-fg">
+        <h2 className="text-h2 text-fg">
           {tf(`${NS}.rechazado.title`, 'Por ahora no podemos aprobarte')}
-        </h1>
+        </h2>
         <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
           {carriers.length > 0
             ? `Ninguna de las ${carriers.length} aseguradoras que consultamos respaldó tu solicitud esta vez.`
@@ -368,7 +385,7 @@ function EnProcesoView({
   // «Ya la validé» y el reenvío (Nico, 15-09): quien cerró la página y vuelve
   // desde un recordatorio sigue exactamente donde quedó.
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm space-y-4 md:p-8">
+    <section className="rounded-lg border border-border bg-surface p-6 shadow-sm space-y-4 md:p-8">
       <ValidacionPorWhatsapp evaluationStatus={evaluation?.status ?? null} onActualizar={onActualizar} />
       {expiresAt && (
         <div className="pt-1">
@@ -398,37 +415,39 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
       title: tf(`${NS}.pasos.dos.title`, 'Eliges'),
       desc: tf(
         `${NS}.pasos.dos.desc`,
-        'Te mostramos las propiedades que van con tu tope aprobado, para que no pierdas tiempo con las que no aplican.',
+        'Te mostramos los inmuebles que van con tu tope aprobado, para que no pierdas tiempo con los que no aplican.',
       ),
     },
     {
       n: '03',
-      title: tf(`${NS}.pasos.tres.title`, 'El propietario decide'),
+      title: tf(`${NS}.pasos.tres.title`, 'Te postulas'),
       desc: tf(
         `${NS}.pasos.tres.desc`,
-        'Te postulas a las que quieras con el mismo estudio, sin volver a pagar.',
+        'Te postulas a los que quieras con el mismo estudio, sin volver a pagar.',
       ),
     },
   ]
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
+      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
         {/* h2 y no h1: el h1 de la página es "Mi tope de arriendo". */}
-        <h2 className="text-2xl font-semibold text-fg">
-          {tf(`${NS}.vacio.title`, 'Todavía no tienes una aprobación')}
+        <h2 className="text-h3 text-fg">
+          {tf(`${NS}.vacio.title`, 'Todavía no conoces tu tope')}
         </h2>
         <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
           {tf(
             `${NS}.vacio.desc`,
-            'Con una aprobación sabes hasta cuánto puedes arrendar, y te postulas a todas las propiedades que quieras con el mismo estudio.',
+            'Con tu tope sabes hasta cuánto puedes arrendar, y te postulas a todos los inmuebles que quieras con el mismo estudio.',
           )}
         </p>
         <div className="pt-2">
           {/* `/aprobacion` es la entrada del flujo vigente (Wompi, Slice 1). */}
-          <Button asChild size="lg">
+          {/* A 390 el botón va a lo ancho y parte el texto: no se sale de la
+              tarjeta (revisora r25, R1). */}
+          <Button asChild size="lg" className="w-full sm:w-auto whitespace-normal h-auto min-h-12 py-3 text-center">
             <Link href="/aprobacion">
-              {tf(`${NS}.vacio.cta`, 'Conoce hasta cuánto te arrendamos')}
+              {tf(`${NS}.vacio.cta`, 'Conocer mi tope')}
             </Link>
           </Button>
         </div>
@@ -436,23 +455,31 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
 
       {/* El camino completo ANTES de pedir el primer dato: así "postular" deja
           de parecer un compromiso ciego. */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-fg">
+      {/* Revisora r27 (Mi tope, UI): a 390 las tres tarjetas medían ≈550 px de consulta: ahí van plegadas. */}
+      <section className="hidden space-y-3 sm:block">
+        <h2 className="text-body-sm font-medium text-fg">
           {tf(`${NS}.vacio.comoFunciona`, 'Cómo funciona')}
         </h2>
-        <ol className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {pasos.map((p) => (
-            <li key={p.n} className="rounded-lg border border-border bg-surface p-5 space-y-2">
-              <span className="font-mono tabular-nums text-2xl font-light text-primary/40 leading-none">
-                {p.n}
-              </span>
-              <p className="text-sm font-medium text-fg">{p.title}</p>
-              <p className="text-sm text-fg-muted leading-relaxed">{p.desc}</p>
-            </li>
-          ))}
-        </ol>
+        <PasosDeMiTope pasos={pasos} />
       </section>
+      <MasDetalles className="sm:hidden" etiqueta={tf(`${NS}.vacio.comoFunciona`, 'Cómo funciona')} montadoSiempre>
+        <PasosDeMiTope pasos={pasos} />
+      </MasDetalles>
     </div>
+  )
+}
+
+function PasosDeMiTope({ pasos }: { pasos: ReadonlyArray<{ n: string; title: string; desc: string }> }) {
+  return (
+    <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {pasos.map((p) => (
+        <li key={p.n} className="space-y-2 rounded-lg border border-border bg-surface p-5">
+          <span className="font-mono text-caption leading-none tabular-nums text-fg-subtle">{p.n}</span>
+          <p className="text-body-sm font-medium text-fg">{p.title}</p>
+          <p className="text-body-sm leading-relaxed text-fg-muted">{p.desc}</p>
+        </li>
+      ))}
+    </ol>
   )
 }
 
@@ -462,11 +489,9 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
 
 function ExpiradoView({ tf }: { tf: (k: string, f: string) => string }) {
   return (
-    <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
-      <div className="w-12 h-12 rounded-full bg-warning-soft flex items-center justify-center">
-        <Clock className="w-6 h-6 text-warning" aria-hidden="true" />
-      </div>
-      <h2 className="text-2xl font-semibold text-fg">
+    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
+      <Clock className="w-6 h-6 text-warning" aria-hidden="true" />
+      <h2 className="text-h3 text-fg">
         {tf(`${NS}.expirado.title`, 'Tu tiempo para completar la aprobación venció')}
       </h2>
       <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
@@ -496,11 +521,9 @@ function ErrorEstudioView({
   onReintentar: () => void
 }) {
   return (
-    <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
-      <div className="w-12 h-12 rounded-full bg-danger-soft flex items-center justify-center">
-        <WarningOctagon className="w-6 h-6 text-danger" aria-hidden="true" />
-      </div>
-      <h2 className="text-2xl font-semibold text-fg">
+    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
+      <WarningOctagon className="w-6 h-6 text-danger" aria-hidden="true" />
+      <h2 className="text-h3 text-fg">
         {tf(`${NS}.error.title`, 'Algo falló al hacer tu estudio')}
       </h2>
       <p className="text-sm text-fg-muted leading-relaxed max-w-lg">

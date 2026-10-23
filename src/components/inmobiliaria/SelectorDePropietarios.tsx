@@ -21,6 +21,9 @@ import { MagnifyingGlass, Plus, X, User, Check } from '@phosphor-icons/react';
 import { IconButton, Collapse, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
@@ -93,17 +96,22 @@ export function SelectorDePropietarios({
   };
 
   const cuantos = seleccion.length;
+  const tr = useTr();
+  // Revisora r25: a 390 el texto largo del buscador se cortaba («Buscar propietario p…»).
+  const enElCelular = useIsMobile();
+  const miles = (n: number) => n.toLocaleString(localeDeLasCifras());
 
   return (
     <div className={cn('space-y-3', className)} data-testid="selector-de-propietarios">
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
+      {/* Revisora r27 (R3): a 390 el buscador a lo ancho y «+ Nuevo» debajo (antes «Buscar propi» a su lado). */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="relative w-full sm:flex-1">
           <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-subtle" />
           <Input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('inmobiliaria.propietario.selector.searchPlaceholder')}
+            placeholder={enElCelular ? tr('Buscar propietario') : t('inmobiliaria.propietario.selector.searchPlaceholder')}
             className="w-full pl-10 pr-10"
             aria-label={t('inmobiliaria.propietario.selector.searchPlaceholder')}
           />
@@ -120,7 +128,9 @@ export function SelectorDePropietarios({
         </div>
         <Presence show={!formAbierto} initial={false} direction="right" distance="xs" className="shrink-0">
           <Button variant="secondary" hideArrow onClick={() => setFormAbierto(true)} className="shrink-0">
-            <Plus className="h-5 w-5" />
+            <Plus className="h-5 w-5" aria-hidden="true" />
+            {/* Revisora r25: a 390 el «+» iba solo, sin rótulo. */}
+            <span className="sm:hidden">{tr('Nuevo')}</span>
             <span className="hidden sm:inline">{t('inmobiliaria.propietario.selector.addNew')}</span>
           </Button>
         </Presence>
@@ -150,6 +160,14 @@ export function SelectorDePropietarios({
       </Collapse>
 
       <Collapse open={!formAbierto} className="space-y-3">
+        {/* Revisora r25: la grilla tiene alto fijo y no decía cuántos hay. */}
+        {propietarios.length > 0 ? (
+          <p className="text-caption text-fg-muted" data-testid="cuantos-propietarios">
+            {search.trim()
+              ? `${miles(filtrados.length)} de ${miles(propietarios.length)} ${propietarios.length === 1 ? tr('propietario') : tr('propietarios')}`
+              : `${miles(propietarios.length)} ${propietarios.length === 1 ? tr('propietario') : tr('propietarios')}`}
+          </p>
+        ) : null}
         {/* La grilla tiene SU scroll: el diálogo no crece con la agencia. */}
         <div
           className="max-h-[44vh] overflow-y-auto overscroll-contain pr-1"

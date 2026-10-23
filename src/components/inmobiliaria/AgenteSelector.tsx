@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { motionSpring, Pressable } from '@leasefy/cadence';
+import { motionSpring, Pressable, Avatar } from '@leasefy/cadence';
 import {
   User,
   Buildings,
@@ -113,15 +113,6 @@ export function AgenteSelector({
     return sorted;
   }, [filteredAgentes, sortBy]);
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
 
   // Determine if agent is recommended (lowest workload among sorted)
   const isRecommended = (agenteId: string) => {
@@ -282,17 +273,7 @@ export function AgenteSelector({
               {/* Agent Header */}
               <div className="flex items-start gap-3 mb-3">
                 {/* Avatar */}
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white font-semibold text-sm shrink-0">
-                  {agente.avatar ? (
-                    <img
-                      src={agente.avatar}
-                      alt={agente.name}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    getInitials(agente.name)
-                  )}
-                </div>
+                <Avatar name={agente.name} src={agente.avatar || undefined} size="md" />
 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-fg dark:text-white truncate text-sm">

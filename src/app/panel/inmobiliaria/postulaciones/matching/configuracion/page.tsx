@@ -27,7 +27,7 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
-import { SectionLabel } from '@/components/ui/section-label'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useI18n } from '@/lib/i18n'
@@ -57,11 +57,11 @@ function MatchingConfiguracion() {
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
-      <header className="space-y-1.5">
-        <SectionLabel>{t(`${PAGES_NS}.salaTitulo`)}</SectionLabel>
-        <h1 className="text-h2 text-fg">{t(`${COMUN_NS}.configTitle`)}</h1>
-        <p className="max-w-2xl text-sm text-fg-muted">{t(`${PAGES_NS}.salaDesc`)}</p>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t(`${COMUN_NS}.configTitle`)}
+        descripcion={t(`${COMUN_NS}.configDesc`)}
+      />
 
       <AutonomiaPanel
         data={data}
@@ -74,7 +74,7 @@ function MatchingConfiguracion() {
       />
 
       <section className="space-y-3" aria-label={t(`${COMUN_NS}.configDondeTitulo`)}>
-        <h2 className="text-sm font-semibold text-fg">{t(`${COMUN_NS}.configDondeTitulo`)}</h2>
+        <h2 className="text-sm font-medium text-fg">{t(`${COMUN_NS}.configDondeTitulo`)}</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {SALIDAS.map((s) => {
             const SalidaIcon = s.icon
@@ -89,7 +89,7 @@ function MatchingConfiguracion() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium text-fg">{t(s.claveLabel)}</span>
-                  <span className="block truncate text-xs text-fg-muted">{t(s.claveDetalle)}</span>
+                  <span className="block truncate text-caption text-fg-muted">{t(s.claveDetalle)}</span>
                 </span>
                 <CaretRight
                   className="h-3.5 w-3.5 shrink-0 text-fg-muted transition group-hover:translate-x-0.5 group-hover:text-fg"

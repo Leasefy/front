@@ -4,7 +4,7 @@ import BandejaClient from './BandejaClient'
 
 export const metadata: Metadata = {
   title: 'Riesgo · Retención',
-  description: 'Propietarios e inquilinos en riesgo de irse, con qué señal del ERP sumó cuánto.',
+  description: 'Propietarios e inquilinos en riesgo de irse, con qué señal sumó cuánto.',
 }
 
 export default function BandejaPage() {

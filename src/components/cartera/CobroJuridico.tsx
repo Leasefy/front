@@ -20,10 +20,14 @@
  * Permisos: `cobros:view` para ver; `cobros:edit` para mover.
  */
 
+import { cn } from '@/lib/utils';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Gavel, Prohibit } from '@phosphor-icons/react';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { Cifra, FranjaDeCifras, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import {
   AlertDialog,
@@ -350,14 +354,322 @@ export function CobroJuridico() {
 
   const porPagar = honorarios.filter((h) => h.estado === 'POR_PAGAR_AL_ABOGADO');
   const enJuridico = casos.filter((c) => c.estado === 'EN_JURIDICO');
+  const todoEnCero = sugeridos.length === 0 && enJuridico.length === 0 && porPagar.length === 0;
 
   return (
     <EstadoDeDatos cargando={cargando} error={error} queEs="el cobro jurídico" onReintentar={cargar}>
       <div className="space-y-6" data-testid="cobro-juridico">
+        {/* GLOW UP 3.ª vuelta · LA RESPUESTA: la deuda que ya no se cobra con una llamada (los
+            sugeridos), y al lado lo que ya está en manos de un abogado y lo que se le debe. */}
+        {!esAbogadoExterno ? (
+          <div className="space-y-4">
+            <CifraHeroe
+              rotulo="Deuda sugerida para jurídico"
+              cifra={formatCurrency(sugeridos.reduce((t, x) => t + x.deudaCop, 0))}
+              contexto={
+                sugeridos.length === 0
+                  ? 'ningún contrato cumple hoy'
+                  : `en ${sugeridos.length} ${sugeridos.length === 1 ? 'contrato' : 'contratos'} con 90 días o más de mora y sin póliza`
+              }
+              // C3 (revisora r25): sin contratos que cumplan, UNA línea y no «$ 0». Revisora r25
+              // (Jurídico #1): con todo en cero, esa línea lo dice todo y no hay tarjetas debajo.
+              esCero={sugeridos.length === 0}
+              cuandoEsCero={
+                todoEnCero
+                  ? 'Nadie para jurídico hoy: ningún contrato con 90 días o más de mora sin póliza y ningún caso con abogado.'
+                  : 'Hoy ningún contrato cumple para jurídico: 90 días o más de mora y sin póliza.'
+              }
+              data-testid="cifra-del-juridico"
+            />
+            {/* Revisora r25 (Jurídico #1): cada cifra sólo con algo adentro (antes «0 casos» y «$ 0 · 0
+                honorarios» encima de «Ningún caso…» y «No hay honorarios…»). */}
+            {enJuridico.length > 0 || porPagar.length > 0 ? (
+              <FranjaDeCifras aria-label="Lo que ya está en jurídico">
+                {enJuridico.length > 0 ? (
+                  <Cifra
+                    etiqueta="En jurídico"
+                    valor={enJuridico.length}
+                    detalle={enJuridico.length === 1 ? 'caso con abogado' : 'casos con abogado'}
+                  />
+                ) : null}
+                {porPagar.length > 0 ? (
+                  <Cifra
+                    // Revisora r25 (Jurídico #3): «Por pagar a los abogados» se cortaba a 390.
+                    etiqueta="Honorarios por pagar"
+                    valor={formatCurrency(porPagar.reduce((t, h) => t + h.honorarioCop, 0))}
+                    detalle={`${porPagar.length} ${porPagar.length === 1 ? 'honorario del abogado' : 'honorarios de los abogados'}`}
+                    tono="aviso"
+                  />
+                ) : null}
+              </FranjaDeCifras>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* Sugeridos (r25 #1: sólo con algo adentro; vacío, la cifra de arriba ya lo dice) */}
+        {!esAbogadoExterno && sugeridos.length > 0 && (
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="sugeridos">
+          <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Sugeridos para jurídico</p>
+          <p className="mt-1 text-body-sm text-fg-muted">
+            90 días o más de mora y sin póliza. Es una sugerencia: pasar el caso lo decide una persona.
+          </p>
+          {sugeridos.length === 0 ? (
+            <p className="mt-2 text-body-sm text-fg-muted">Ningún contrato cumple hoy.</p>
+          ) : (
+            <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
+              {sugeridos.map((s) => (
+                <StaggerItem
+                  as="li"
+                  key={s.contractId}
+                  className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
+                  data-testid={`sugerido-${s.contractId}`}
+                >
+                  {/* Una fila que se lee de corrido (revisión 21-10): quién y dónde a la
+                      izquierda; la deuda y los días de mora en mono a la derecha. */}
+                  <span className="flex min-w-0 flex-1 items-center justify-between gap-4">
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-fg">{s.tenantName ?? 'Sin nombre'}</span>
+                      <span className="block truncate text-caption text-fg-muted">
+                        Contrato {s.numero} · {s.direccion}
+                        {s.pactaHonorarios ? ' · pacta honorarios' : ' · sin honorarios pactados'}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block font-mono tabular-nums text-fg">{formatCurrency(s.deudaCop)}</span>
+                      <span className="block font-mono text-caption tabular-nums text-danger">{s.diasDeMora} días</span>
+                    </span>
+                  </span>
+                  {puedeMover && (
+                    <span className="flex items-center gap-2">
+                      <select
+                        className="h-9 rounded-md border border-border bg-surface px-2 text-body-sm"
+                        value={abogadoElegido[s.contractId] ?? ''}
+                        onChange={(e) =>
+                          setAbogadoElegido((prev) => ({ ...prev, [s.contractId]: e.target.value }))
+                        }
+                        aria-label="Abogado que lleva el caso"
+                      >
+                        <option value="">Elige el abogado</option>
+                        {abogados
+                          .filter((a) => a.activo)
+                          .map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.nombre}
+                            </option>
+                          ))}
+                      </select>
+                      {/* Una por fila, en contorno: con varias sugeridas, varios azules
+                          competían entre sí. */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        hideArrow
+                        disabled={ocupado}
+                        onClick={() => void pasar(s)}
+                        data-testid={`pasar-${s.contractId}`}
+                      >
+                        Pasar a jurídico
+                      </Button>
+                    </span>
+                  )}
+                </StaggerItem>
+              ))}
+            </Stagger>
+          )}
+        </section>
+        )}
+
+        {/* El abogado externo no tiene la cifra de arriba: sin casos ni honorarios, UNA línea. */}
+        {esAbogadoExterno && enJuridico.length === 0 && porPagar.length === 0 ? (
+          <p className="text-body-sm text-fg-muted" data-testid="juridico-sin-nada">
+            No tienes casos en jurídico ni honorarios por cobrar.
+          </p>
+        ) : null}
+
+        {/* Casos en jurídico (r25 #1: sólo con algo adentro) */}
+        {enJuridico.length > 0 ? (
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="casos">
+          <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">En jurídico</p>
+          {enJuridico.length === 0 ? (
+            <p className="mt-2 text-body-sm text-fg-muted">Ningún caso en jurídico.</p>
+          ) : (
+            <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
+              {enJuridico.map((c) => (
+                <StaggerItem
+                  as="li"
+                  key={c.id}
+                  className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
+                  data-testid={`caso-${c.id}`}
+                >
+                  <span>
+                    {c.abogado.nombre} · desde el {dia(c.pasadoAt)} ·{' '}
+                    {c.pactaHonorarios
+                      ? `honorarios ${c.honorariosPct} % de la deuda${c.honorariosTopeCop ? ` (tope ${formatCurrency(c.honorariosTopeCop)})` : ''}`
+                      : 'sin honorarios a cargo del inquilino'}
+                    {c.honorariosCausadosCop > 0
+                      ? ` · causados ${formatCurrency(c.honorariosCausadosCop)}`
+                      : ''}
+                  </span>
+                  {puedeMover && (
+                    <span className="flex flex-wrap items-center gap-2">
+                      {/* Pactar en el contrato lo hace la inmobiliaria; el abogado cierra SUS casos (B-17). */}
+                      {!esAbogadoExterno && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        hideArrow
+                        disabled={ocupado}
+                        onClick={() => void pactarEnElContrato(c.contractId, !c.pactaHonorarios)}
+                        data-testid={`pactar-${c.contractId}`}
+                      >
+                        {c.pactaHonorarios ? 'No cobrarle honorarios' : 'Cobrarle honorarios'}
+                      </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        hideArrow
+                        disabled={ocupado}
+                        onClick={() => {
+                          setCerrando(c);
+                          setMotivoDeCierre('');
+                          setSinCobro(false);
+                          setErrorDelMotivoDeCierre(null);
+                        }}
+                        data-testid={`cerrar-${c.id}`}
+                      >
+                        Cerrar el caso
+                      </Button>
+                    </span>
+                  )}
+                </StaggerItem>
+              ))}
+            </Stagger>
+          )}
+        </section>
+
+        ) : null}
+
+        {/* Cuenta por pagar al abogado (r25 #1: sólo con algo adentro) */}
+        {porPagar.length > 0 ? (
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="honorarios">
+          <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Por pagar a los abogados</p>
+          <p className="mt-1 text-body-sm text-fg-muted">
+            Lo que se le cargó al inquilino al pasar cada caso a jurídico. Es plata del abogado: no es ingreso de la
+            inmobiliaria ni del propietario.
+          </p>
+          {porPagar.length === 0 ? (
+            <p className="mt-2 text-body-sm text-fg-muted">No hay honorarios pendientes.</p>
+          ) : (
+            <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
+              {porPagar.map((h) => (
+                <StaggerItem
+                  as="li"
+                  key={h.id}
+                  className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
+                  data-testid={`honorario-${h.id}`}
+                >
+                  <span>
+                    {h.abogado.nombre} · {formatCurrency(h.honorarioCop)} (sobre{' '}
+                    {formatCurrency(h.baseCop)}{' '}
+                    {h.origen === 'AL_PASAR' ? 'de deuda al pasar' : 'recaudados'}) · {dia(h.createdAt)}
+                    {h.origen === 'AL_PASAR' && h.conceptoDeUnaVezId ? (
+                      <span className="text-fg-muted"> · cargado al estado de cuenta del inquilino</span>
+                    ) : null}
+                  </span>
+                  {/* Pagarle al abogado lo hace la inmobiliaria (B-17). */}
+                  {puedeMover && !esAbogadoExterno && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      hideArrow
+                      disabled={ocupado}
+                      onClick={() => void pagar(h)}
+                      data-testid={`pagar-${h.id}`}
+                    >
+                      Marcar pagado
+                    </Button>
+                  )}
+                </StaggerItem>
+              ))}
+            </Stagger>
+          )}
+        </section>
+        ) : null}
+        <AlertDialog
+          open={cerrando !== null}
+          onOpenChange={(abierto) => {
+            if (!abierto && !ocupado) {
+              setCerrando(null);
+              setSinCobro(false);
+            }
+          }}
+        >
+          {/* Cerrar el caso es una confirmación; «sin cobro» anula los honorarios
+              del estado de cuenta, y ahí pasa a destructiva (medallón y botón rojos). */}
+          <AlertDialogContent
+            variant={sinCobro ? 'destructive' : 'confirm'}
+            icon={sinCobro ? <Prohibit weight="bold" /> : <Gavel weight="bold" />}
+          >
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cerrar el caso</AlertDialogTitle>
+              <AlertDialogDescription>
+                El contrato deja de estar «en jurídico». Lo que ya se causó al abogado no se borra, salvo que marques
+                que se cerró sin cobro.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="motivo-cierre">Motivo</Label>
+              <Textarea
+                id="motivo-cierre"
+                value={motivoDeCierre}
+                onChange={(e) => {
+                  setMotivoDeCierre(e.target.value);
+                  setErrorDelMotivoDeCierre(null);
+                }}
+                placeholder="El inquilino se puso al día y entregó el inmueble."
+                rows={3}
+                maxLength={500}
+                {...ariaDe('motivo-cierre', errorDelMotivoDeCierre)}
+              />
+              <ErrorDelCampo
+                id="motivo-cierre-error"
+                mensaje={errorDelMotivoDeCierre}
+                pista="Entre 5 y 500 caracteres."
+              />
+              <label className="flex items-start gap-2 text-body-sm">
+                <Checkbox className="mt-1" checked={sinCobro} onCheckedChange={(marcada: boolean) => setSinCobro(marcada)} data-testid="cerrar-sin-cobro" />
+                <span>
+                  <strong>Se cerró SIN COBRO.</strong> Los honorarios salen del estado de cuenta del inquilino (se
+                  anulan con este motivo) y dejan de ser cuenta por pagar al abogado. Si esa cuota ya tiene un pago o
+                  un cobro encima no se puede: se corrige con una nota crédito.
+                </span>
+              </label>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  void cerrar();
+                }}
+                disabled={motivoDeCierre.trim().length < 5}
+                loading={ocupado}
+                data-testid="confirmar-cerrar-caso"
+              >
+                Cerrar el caso
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        {/* Revisión de Operación (21-10): primero el trabajo (sugeridos, casos, honorarios por
+            pagar); la configuración —lo pactado y los abogados— plegada al final. */}
+        <MasDetalles etiqueta="Configuración: lo pactado y los abogados" montadoSiempre>
+          <div className="space-y-6">
         {/* Lo pactado por defecto (lo decide la inmobiliaria: el abogado externo no lo ve, B-17) */}
         {!esAbogadoExterno && (
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="pactado">
-          <p className="flex items-center gap-2 text-body font-semibold text-fg">
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="pactado">
+          <p className="flex items-center gap-2 text-[17px] font-[460] tracking-[-0.01em] text-fg">
             <Gavel className="h-4 w-4" aria-hidden="true" />
             Honorarios del abogado
           </p>
@@ -369,7 +681,7 @@ export function CobroJuridico() {
           </p>
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <label className="text-sm">
-              <span className="block text-xs text-fg-muted">Por defecto, los paga el inquilino</span>
+              <span className="block text-caption text-fg-muted">Por defecto, los paga el inquilino</span>
               <select
                 className="mt-1 rounded-md border border-border bg-surface p-2 text-sm"
                 value={config?.pactaHonorarios === null || config?.pactaHonorarios === undefined ? '' : String(config.pactaHonorarios)}
@@ -384,7 +696,7 @@ export function CobroJuridico() {
             </label>
             <div>
               <label className="text-sm" htmlFor="honorarios-pct">
-                <span className="block text-xs text-fg-muted">% de la deuda al pasar</span>
+                <span className="block text-caption text-fg-muted">% de la deuda al pasar</span>
                 <input
                   id="honorarios-pct"
                   className="mt-1 w-28 rounded-md border border-border bg-surface p-2 text-sm"
@@ -412,7 +724,7 @@ export function CobroJuridico() {
             </div>
             <div>
               <label className="text-sm" htmlFor="honorarios-tope">
-                <span className="block text-xs text-fg-muted">Tope por caso (pesos)</span>
+                <span className="block text-caption text-fg-muted">Tope por caso (pesos)</span>
                 <input
                   id="honorarios-tope"
                   className="mt-1 w-40 rounded-md border border-border bg-surface p-2 text-sm"
@@ -445,8 +757,8 @@ export function CobroJuridico() {
 
         {/* Abogados */}
         {!esAbogadoExterno && (
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="abogados">
-          <p className="text-body font-semibold text-fg">Abogados</p>
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="abogados">
+          <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Abogados</p>
           <ul className="mt-2 space-y-1 text-body-sm">
             {abogados.length === 0 && <li className="text-fg-muted">Todavía no hay abogados registrados.</li>}
             {abogados.map((a) => (
@@ -518,237 +830,8 @@ export function CobroJuridico() {
             sugerido SALE de su lista y el caso ENTRA en la de abajo; lo mismo
             al cerrar un caso o marcar un honorario pagado. */}
 
-        {/* Sugeridos */}
-        {!esAbogadoExterno && (
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="sugeridos">
-          <p className="text-body font-semibold text-fg">Sugeridos para jurídico</p>
-          <p className="mt-1 text-body-sm text-fg-muted">
-            90 días o más de mora y sin póliza. Es una sugerencia: pasar el caso lo decide una persona.
-          </p>
-          {sugeridos.length === 0 ? (
-            <p className="mt-2 text-body-sm text-fg-muted">Ningún contrato cumple hoy.</p>
-          ) : (
-            <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
-              {sugeridos.map((s) => (
-                <StaggerItem
-                  as="li"
-                  key={s.contractId}
-                  className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
-                  data-testid={`sugerido-${s.contractId}`}
-                >
-                  <span>
-                    Contrato {s.numero} · {s.tenantName ?? 'Sin nombre'} · {s.direccion} ·{' '}
-                    <strong>{s.diasDeMora} días</strong> · {formatCurrency(s.deudaCop)}
-                    {s.pactaHonorarios ? ' · pacta honorarios' : ' · sin honorarios pactados'}
-                  </span>
-                  {puedeMover && (
-                    <span className="flex items-center gap-2">
-                      <select
-                        className="rounded-md border border-border bg-surface p-1.5 text-sm"
-                        value={abogadoElegido[s.contractId] ?? ''}
-                        onChange={(e) =>
-                          setAbogadoElegido((prev) => ({ ...prev, [s.contractId]: e.target.value }))
-                        }
-                        aria-label="Abogado que lleva el caso"
-                      >
-                        <option value="">Elige el abogado</option>
-                        {abogados
-                          .filter((a) => a.activo)
-                          .map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.nombre}
-                            </option>
-                          ))}
-                      </select>
-                      <Button
-                        size="sm"
-                        hideArrow
-                        disabled={ocupado}
-                        onClick={() => void pasar(s)}
-                        data-testid={`pasar-${s.contractId}`}
-                      >
-                        Pasar a jurídico
-                      </Button>
-                    </span>
-                  )}
-                </StaggerItem>
-              ))}
-            </Stagger>
-          )}
-        </section>
-        )}
-
-        {/* Casos en jurídico */}
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="casos">
-          <p className="text-body font-semibold text-fg">En jurídico</p>
-          {enJuridico.length === 0 ? (
-            <p className="mt-2 text-body-sm text-fg-muted">Ningún caso en jurídico.</p>
-          ) : (
-            <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
-              {enJuridico.map((c) => (
-                <StaggerItem
-                  as="li"
-                  key={c.id}
-                  className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
-                  data-testid={`caso-${c.id}`}
-                >
-                  <span>
-                    {c.abogado.nombre} · desde el {dia(c.pasadoAt)} ·{' '}
-                    {c.pactaHonorarios
-                      ? `honorarios ${c.honorariosPct} % de la deuda${c.honorariosTopeCop ? ` (tope ${formatCurrency(c.honorariosTopeCop)})` : ''}`
-                      : 'sin honorarios a cargo del inquilino'}
-                    {c.honorariosCausadosCop > 0
-                      ? ` · causados ${formatCurrency(c.honorariosCausadosCop)}`
-                      : ''}
-                  </span>
-                  {puedeMover && (
-                    <span className="flex flex-wrap items-center gap-2">
-                      {/* Pactar en el contrato lo hace la inmobiliaria; el abogado cierra SUS casos (B-17). */}
-                      {!esAbogadoExterno && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        hideArrow
-                        disabled={ocupado}
-                        onClick={() => void pactarEnElContrato(c.contractId, !c.pactaHonorarios)}
-                        data-testid={`pactar-${c.contractId}`}
-                      >
-                        {c.pactaHonorarios ? 'No cobrarle honorarios' : 'Cobrarle honorarios'}
-                      </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        hideArrow
-                        disabled={ocupado}
-                        onClick={() => {
-                          setCerrando(c);
-                          setMotivoDeCierre('');
-                          setSinCobro(false);
-                          setErrorDelMotivoDeCierre(null);
-                        }}
-                        data-testid={`cerrar-${c.id}`}
-                      >
-                        Cerrar el caso
-                      </Button>
-                    </span>
-                  )}
-                </StaggerItem>
-              ))}
-            </Stagger>
-          )}
-        </section>
-
-        {/* Cuenta por pagar al abogado */}
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="honorarios">
-          <p className="text-body font-semibold text-fg">Por pagar a los abogados</p>
-          <p className="mt-1 text-body-sm text-fg-muted">
-            Lo que se le cargó al inquilino al pasar cada caso a jurídico. Es plata del abogado: no es ingreso de la
-            inmobiliaria ni del propietario.
-          </p>
-          {porPagar.length === 0 ? (
-            <p className="mt-2 text-body-sm text-fg-muted">No hay honorarios pendientes.</p>
-          ) : (
-            <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
-              {porPagar.map((h) => (
-                <StaggerItem
-                  as="li"
-                  key={h.id}
-                  className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
-                  data-testid={`honorario-${h.id}`}
-                >
-                  <span>
-                    {h.abogado.nombre} · {formatCurrency(h.honorarioCop)} (sobre{' '}
-                    {formatCurrency(h.baseCop)}{' '}
-                    {h.origen === 'AL_PASAR' ? 'de deuda al pasar' : 'recaudados'}) · {dia(h.createdAt)}
-                    {h.origen === 'AL_PASAR' && h.conceptoDeUnaVezId ? (
-                      <span className="text-fg-muted"> · cargado al estado de cuenta del inquilino</span>
-                    ) : null}
-                  </span>
-                  {/* Pagarle al abogado lo hace la inmobiliaria (B-17). */}
-                  {puedeMover && !esAbogadoExterno && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      hideArrow
-                      disabled={ocupado}
-                      onClick={() => void pagar(h)}
-                      data-testid={`pagar-${h.id}`}
-                    >
-                      Marcar pagado
-                    </Button>
-                  )}
-                </StaggerItem>
-              ))}
-            </Stagger>
-          )}
-        </section>
-        <AlertDialog
-          open={cerrando !== null}
-          onOpenChange={(abierto) => {
-            if (!abierto && !ocupado) {
-              setCerrando(null);
-              setSinCobro(false);
-            }
-          }}
-        >
-          {/* Cerrar el caso es una confirmación; «sin cobro» anula los honorarios
-              del estado de cuenta, y ahí pasa a destructiva (medallón y botón rojos). */}
-          <AlertDialogContent
-            variant={sinCobro ? 'destructive' : 'confirm'}
-            icon={sinCobro ? <Prohibit weight="bold" /> : <Gavel weight="bold" />}
-          >
-            <AlertDialogHeader>
-              <AlertDialogTitle>Cerrar el caso</AlertDialogTitle>
-              <AlertDialogDescription>
-                El contrato deja de estar «en jurídico». Lo que ya se causó al abogado no se borra, salvo que marques
-                que se cerró sin cobro.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="space-y-2">
-              <Label htmlFor="motivo-cierre">Motivo</Label>
-              <Textarea
-                id="motivo-cierre"
-                value={motivoDeCierre}
-                onChange={(e) => {
-                  setMotivoDeCierre(e.target.value);
-                  setErrorDelMotivoDeCierre(null);
-                }}
-                placeholder="El inquilino se puso al día y entregó el inmueble."
-                rows={3}
-                maxLength={500}
-                {...ariaDe('motivo-cierre', errorDelMotivoDeCierre)}
-              />
-              <ErrorDelCampo
-                id="motivo-cierre-error"
-                mensaje={errorDelMotivoDeCierre}
-                pista="Entre 5 y 500 caracteres."
-              />
-              <label className="flex items-start gap-2 text-body-sm">
-                <Checkbox className="mt-1" checked={sinCobro} onCheckedChange={(marcada: boolean) => setSinCobro(marcada)} data-testid="cerrar-sin-cobro" />
-                <span>
-                  <strong>Se cerró SIN COBRO.</strong> Los honorarios salen del estado de cuenta del inquilino (se
-                  anulan con este motivo) y dejan de ser cuenta por pagar al abogado. Si esa cuota ya tiene un pago o
-                  un cobro encima no se puede: se corrige con una nota crédito.
-                </span>
-              </label>
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={(e) => {
-                  e.preventDefault();
-                  void cerrar();
-                }}
-                disabled={motivoDeCierre.trim().length < 5}
-                loading={ocupado}
-                data-testid="confirmar-cerrar-caso"
-              >
-                Cerrar el caso
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          </div>
+        </MasDetalles>
       </div>
     </EstadoDeDatos>
   );

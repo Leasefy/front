@@ -154,16 +154,29 @@ describe('Requisitos por tipo de inquilino', () => {
     expect(porTestId('requisitos-como-se-usa')!.textContent).toContain('«Pedir info»')
   })
 
-  it('P2 — en «Todos» la lista va agrupada por perfil, no plana', async () => {
+  it('P2 + revisora r25 — en «Todos» UNA lista: cada requisito una vez, con en qué perfiles aplica', async () => {
     await montar()
-    const empleado = porTestId('grupo-EMPLEADO')
-    const independiente = porTestId('grupo-INDEPENDIENTE')
-    expect(empleado).not.toBeNull()
-    expect(independiente).not.toBeNull()
-    // Cada «Cédula» vive bajo su perfil, no una detrás de la otra sin contexto.
-    expect(empleado!.textContent).toContain('Cédula por las dos caras')
-    expect(independiente!.textContent).toContain('Cédula por las dos caras')
-    expect(empleado!.textContent).toContain('Empleado')
+    const todos = porTestId('lista-de-todos')!
+    expect(todos).not.toBeNull()
+    // «Cédula» va UNA vez (antes una por perfil), con los dos perfiles.
+    expect(todos.textContent!.split('Cédula por las dos caras').length - 1).toBe(1)
+    const perfilesDeLaCedula = porTestId('en-que-perfiles-r-1')!.textContent
+    expect(perfilesDeLaCedula).toContain('Obligatorio')
+    expect(perfilesDeLaCedula).toContain('todos los perfiles')
+    // El estudio, opcional, sólo en el perfil que lo trae.
+    expect(porTestId('en-que-perfiles-r-2')!.textContent).toContain('Opcional')
+    expect(porTestId('en-que-perfiles-r-2')!.textContent).toContain('Empleado')
+    expect(porTestId('resumen')!.textContent).toBe('2 requisitos en 2 perfiles.')
+  })
+
+  it('revisora r25 — en «Todos» el nombre del perfil lleva a su pestaña, donde se edita', async () => {
+    await montar()
+    expect(porTestId('alternar-r-1')).toBeNull()
+    expect(porTestId('todos-como-se-edita')).not.toBeNull()
+    const boton = [...porTestId('en-que-perfiles-r-2')!.querySelectorAll('button')].find((b) => b.textContent === 'Empleado')!
+    await clic(boton)
+    expect(porTestId('perfil-EMPLEADO')!.getAttribute('aria-selected')).toBe('true')
+    expect(porTestId('alternar-r-1')).not.toBeNull()
   })
 
   it('P5 — dice qué tiene que HACER el candidato, nunca «hace algo»', async () => {
@@ -183,6 +196,7 @@ describe('Requisitos por tipo de inquilino', () => {
 
   it('P3 — el estudio no lleva interruptor ni botón de quitar', async () => {
     await montar()
+    await clic(porTestId('perfil-EMPLEADO'))
     expect(porTestId('estudio-candado-r-2')).not.toBeNull()
     expect(porTestId('alternar-r-2')).toBeNull()
     expect(porTestId('borrar-r-2')).toBeNull()
@@ -194,6 +208,7 @@ describe('Requisitos por tipo de inquilino', () => {
   it('P4 — mientras es el preset no se edita: primero se guarda como propia', async () => {
     h.api.requisitos.mockResolvedValue(respuesta(true))
     await montar()
+    await clic(porTestId('perfil-EMPLEADO'))
     expect(porTestId('aviso-preset')).not.toBeNull()
     expect(porTestId('sembrar-preset')).not.toBeNull()
     expect(porTestId('abrir-agregar')).toBeNull()
@@ -254,6 +269,7 @@ describe('Requisitos por tipo de inquilino', () => {
   it('P1b — y quitar el que no se pide', async () => {
     h.api.borrarRequisito.mockResolvedValue(undefined)
     await montar()
+    await clic(porTestId('perfil-EMPLEADO'))
     await clic(porTestId('borrar-r-1'))
     await clic(enElModal('confirmar-borrado-si'))
     expect(h.api.borrarRequisito).toHaveBeenCalledWith('r-1')
@@ -261,6 +277,7 @@ describe('Requisitos por tipo de inquilino', () => {
 
   it('P6 — quitar PREGUNTA antes, y sin el diálogo del navegador', async () => {
     await montar()
+    await clic(porTestId('perfil-EMPLEADO'))
     await clic(porTestId('borrar-r-1'))
     const dialogo = enElModal('confirmar-borrado')
     expect(dialogo).not.toBeNull()
@@ -275,6 +292,7 @@ describe('Requisitos por tipo de inquilino', () => {
   it('P7 — sin permiso de configuracion:edit no hay botones de escribir', async () => {
     h.canAccess.mockImplementation((_m: string, a: string) => a !== 'edit')
     await montar()
+    await clic(porTestId('perfil-EMPLEADO'))
     expect(porTestId('abrir-agregar')).toBeNull()
     expect(porTestId('alternar-r-1')).toBeNull()
     expect(porTestId('borrar-r-1')).toBeNull()
@@ -307,12 +325,14 @@ describe('los cambios del 18-09 de noche', () => {
     // Antes era una etiqueta muerta y un botón que decía «Volver opcional»:
     // había que adivinar el estado actual y en qué se convertía.
     await montar()
+    await clic(porTestId('perfil-EMPLEADO'))
     expect(porTestId('poner-obligatorio-r-1')!.getAttribute('aria-pressed')).toBe('true')
     expect(porTestId('poner-opcional-r-1')!.getAttribute('aria-pressed')).toBe('false')
   })
 
   it('tocar la opción que ya está NO llama al back', async () => {
     await montar()
+    await clic(porTestId('perfil-EMPLEADO'))
     await clic(porTestId('poner-obligatorio-r-1'))
     expect(h.api.editarRequisito).not.toHaveBeenCalled()
     await clic(porTestId('poner-opcional-r-1'))
@@ -321,6 +341,7 @@ describe('los cambios del 18-09 de noche', () => {
 
   it('el estudio sigue sin control: etiqueta fija y su porqué', async () => {
     await montar()
+    await clic(porTestId('perfil-EMPLEADO'))
     expect(porTestId('poner-opcional-r-2')).toBeNull()
     expect(porTestId('estudio-candado-r-2')).not.toBeNull()
   })

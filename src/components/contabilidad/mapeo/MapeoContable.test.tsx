@@ -220,7 +220,9 @@ describe('<MapeoContable>', () => {
     await pintar();
 
     expect(q('mapeo-que-hacer')).toBeNull();
-    expect(q('mapeo-contable')!.textContent).toContain('Todos los eventos tienen cuenta');
+    // Revisora r25 (Mapeo #1): UNA línea, sin «N de N» ni la leyenda.
+    expect(q('mapeo-contable')!.textContent).toContain('eventos tienen su cuenta');
+    expect(q('cifra-del-mapeo')!.textContent).not.toMatch(/\d+ de \d+/);
   });
 });
 

@@ -31,11 +31,8 @@ import {
   CreditCard,
   FileText,
   ClipboardText,
-  CheckCircle,
   Clock,
   CalendarBlank,
-  Warning,
-  CaretLeft,
   MagnifyingGlass,
   ArrowUpRight,
   ChatCircle,
@@ -44,18 +41,20 @@ import {
   type Icon,
 } from '@phosphor-icons/react';
 
+import { StatusBadge } from '@leasefy/cadence';
 import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
 import { resolveExpectedResponse } from '@/lib/date/business-days';
 import { CostoResponsabilidadCard } from '@/components/tenant/CostoResponsabilidadCard';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { AvisoDeFuentesCaidas } from '@/components/portales/AvisoDeFuentesCaidas';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { AvanceDeLaSolicitud } from '@/components/estado/AvanceDeLaSolicitud';
 import { avanceDeLaSolicitudDelPortal } from '@/lib/estado/avance-de-la-solicitud';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
-import type { BadgeProps } from '@/components/ui/badge';
 import type { CaseTone, CaseType, TenantCase } from '@/lib/types/tenant-case';
 import { RespuestaYArchivosDelCaso } from '@/components/tenant/RespuestaYArchivosDelCaso';
 
@@ -68,10 +67,11 @@ import { RespuestaYArchivosDelCaso } from '@/components/tenant/RespuestaYArchivo
  * intentionally NO `destructive`/alarm mapping — pair icon + text, never color
  * alone (DESIGN.md §7 A11y). Mirrors the hub (v7-03-02) exactly.
  */
-const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>; icon: Icon }> = {
-  neutral: { variant: 'secondary', icon: CheckCircle },
-  info: { variant: 'default', icon: Clock },
-  attention: { variant: 'warning', icon: Warning },
+// GLOW UP (22-10): el estado con su punto y su palabra (StatusBadge), sin ícono en la pastilla; nunca rojo.
+const TONO_DEL_ESTADO: Record<CaseTone, 'neutral' | 'info' | 'warning'> = {
+  neutral: 'neutral',
+  info: 'info',
+  attention: 'warning',
 };
 
 /** Case type → leading icon tile. Only `pago`/`aplicacion` are emitted today. */
@@ -115,21 +115,31 @@ function formatRelative(iso: string, locale: string): string {
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">{children}</div>
+    <div className="bg-bg">
+      <div className="max-w-3xl p-6 lg:p-8">{children}</div>
     </div>
   );
 }
 
-function BackLink({ locale }: { locale: string }) {
+/**
+ * GLOW UP (21-10-2026): la vuelta lleva a la lista de donde se viene. Una
+ * solicitud (PQRS o mantenimiento) se abre desde «Solicitudes»; lo demás
+ * (pagos, postulaciones) desde «Mis casos».
+ */
+function volverA(caso: TenantCase | undefined, locale: string): { href: string; label: string } {
+  const esSolicitud = caso?.type === 'pqrs' || caso?.type === 'mantenimiento';
+  if (esSolicitud) {
+    return { href: '/inquilino/solicitudes', label: locale === 'es' ? 'Volver a Solicitudes' : 'Back to Requests' };
+  }
+  return { href: '/inquilino/casos', label: locale === 'es' ? 'Volver a Mis casos' : 'Back to My cases' };
+}
+
+function BackLink({ locale, caso }: { locale: string; caso?: TenantCase }) {
+  const v = volverA(caso, locale);
   return (
-    <Link
-      href="/inquilino/casos"
-      className="inline-flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white transition-colors mb-6"
-    >
-      <CaretLeft className="w-4 h-4" aria-hidden="true" />
-      {locale === 'es' ? 'Volver a Mis casos' : 'Back to My cases'}
-    </Link>
+    <div className="mb-6" data-testid="caso-volver">
+      <BackButton href={v.href} label={v.label} />
+    </div>
   );
 }
 
@@ -147,8 +157,7 @@ function CaseDetail({
   /** Carga → contenido: la entrada de 4 px si se vio el esqueleto (si no, quieto). */
   entrada: EntradaTrasCargar;
 }) {
-  const badge = TONE_BADGE[caso.tone];
-  const ToneIcon = badge.icon;
+  const tono = TONO_DEL_ESTADO[caso.tone];
   const TypeIcon = TYPE_ICON[caso.type] ?? ClipboardText;
 
   // Timeline from SOURCE TIMESTAMPS only — map CaseEvent[] → TimelineItem[]
@@ -181,35 +190,73 @@ function CaseDetail({
       }).format(sla.date)
     : '';
 
+  // GLOW UP (21-10-2026): la pantalla en el orden del trabajo — «¿en qué va mi
+  // solicitud y qué me toca?». Lo que le toca hacer al inquilino (aprobar la
+  // cotización) va primero; después en qué va y la respuesta; el historial al final.
+  const teTocaAprobar =
+    caso.solicitud?.costoResponsable === 'inquilino' &&
+    caso.solicitud?.estado === 'en_cotizacion' &&
+    !caso.solicitud?.cotizacionAprobadaAt;
+  const tarjetaDelCosto =
+    caso.solicitud && caso.solicitud.costoResponsable ? (
+      <div data-testid={teTocaAprobar ? 'caso-te-toca-aprobar' : 'caso-costo'}>
+        <CostoResponsabilidadCard caseId={caso.id} solicitud={caso.solicitud} />
+      </div>
+    ) : null;
+  // «Ver en …» sólo cuando lleva a otra parte (no a la misma lista de la vuelta).
+  const verEnElOrigen =
+    caso.sourceLink !== '/inquilino/solicitudes' && caso.sourceLink !== '/inquilino/casos';
+
   return (
     <motion.div {...entrada} className="space-y-6">
-      {/* Header — title + neutral status badge */}
-      <header className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-          <TypeIcon className="w-6 h-6 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-medium text-fg dark:text-white tracking-tight">
-            {caso.titulo}
-          </h1>
-          {caso.solicitud?.radicado && (
-            <p className="mt-1 font-mono text-sm text-fg-muted" data-testid="caso-radicado">
+      <EncabezadoDePantalla
+        seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+        titulo={caso.titulo}
+        junto={
+          <StatusBadge tone={tono} data-testid="caso-estado">
+            {caso.estadoLabel}
+          </StatusBadge>
+        }
+        descripcion={
+          caso.solicitud?.radicado ? (
+            <span className="font-mono" data-testid="caso-radicado">
               {caso.solicitud.radicado}
-            </p>
-          )}
-          <div className="mt-2">
-            <Badge variant={badge.variant} className="inline-flex items-center gap-1">
-              <ToneIcon className="w-3 h-3" aria-hidden="true" />
-              {caso.estadoLabel}
-            </Badge>
-          </div>
-        </div>
-      </header>
+            </span>
+          ) : undefined
+        }
+        acciones={
+          <>
+            {verEnElOrigen ? (
+              <Button asChild variant="outline" size="sm" hideArrow>
+                <Link href={caso.sourceLink} className="inline-flex items-center gap-1.5" data-testid="caso-ver-en-origen">
+                  {locale === 'es'
+                    ? `Ver en ${sourceLabel(caso.type, locale)}`
+                    : `View in ${sourceLabel(caso.type, locale)}`}
+                </Link>
+              </Button>
+            ) : null}
+            {/*
+              Real "contactar" affordance for the case → the messages INBOX only.
+              TenantCase carries no applicationId/leaseId, so we deep-link to the
+              inbox and NEVER fabricate a preselected thread (no fabricated query param).
+            */}
+            <Button asChild variant="outline" size="sm" hideArrow>
+              <Link href="/inquilino/mensajes" className="inline-flex items-center gap-1.5" data-testid="caso-escribir">
+                <ChatCircle className="w-4 h-4" aria-hidden="true" />
+                {locale === 'es' ? 'Escribir a la inmobiliaria' : 'Message the agency'}
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-      {/* 21-10-2026 (Portofino): dónde va la solicitud, paso a paso. */}
+      {/* Lo que te toca: aprobar la cotización (SOLI-04), antes que todo lo demás. */}
+      {teTocaAprobar ? tarjetaDelCosto : null}
+
+      {/* 21-10-2026 (Portofino): dónde va la solicitud, paso a paso (de bugs-nico-1, con la cara del glow up). */}
       {caso.solicitud?.estado && (
-        <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
-          <h2 className="mb-3 text-sm font-medium text-fg">Dónde va tu solicitud</h2>
+        <section className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <h2 className="mb-3 text-body-sm font-medium text-fg">Dónde va tu solicitud</h2>
           <AvanceDeLaSolicitud
             {...avanceDeLaSolicitudDelPortal(
               caso.solicitud.estado,
@@ -220,16 +267,20 @@ function CaseDetail({
         </section>
       )}
 
-      {/* Summary card — role responsable + relative updatedAt + source out-link */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6 space-y-4">
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* En qué va — quién la atiende, cuándo se movió y cuándo se espera respuesta. */}
+      <section
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
+        aria-label={locale === 'es' ? 'En qué va' : 'Status'}
+        data-testid="caso-en-que-va"
+      >
+        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="flex items-center gap-2.5">
             <User className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
             <div className="min-w-0">
-              <dt className="text-xs text-fg-subtle dark:text-fg-muted">
+              <dt className="text-caption text-fg-subtle">
                 {locale === 'es' ? 'Responsable' : 'Owner'}
               </dt>
-              <dd className="text-sm font-medium text-fg dark:text-white truncate">
+              <dd className="text-sm font-medium text-fg truncate">
                 {caso.responsable}
               </dd>
             </div>
@@ -237,10 +288,10 @@ function CaseDetail({
           <div className="flex items-center gap-2.5">
             <Clock className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
             <div className="min-w-0">
-              <dt className="text-xs text-fg-subtle dark:text-fg-muted">
+              <dt className="text-caption text-fg-subtle">
                 {locale === 'es' ? 'Actualizado' : 'Updated'}
               </dt>
-              <dd className="text-sm font-medium text-fg dark:text-white">
+              <dd className="text-sm font-medium text-fg">
                 {formatRelative(caso.updatedAt, locale)}
               </dd>
             </div>
@@ -251,10 +302,10 @@ function CaseDetail({
             <div className="flex items-center gap-2.5">
               <CalendarBlank className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
               <div className="min-w-0">
-                <dt className="text-xs text-fg-subtle dark:text-fg-muted">
+                <dt className="text-caption text-fg-subtle">
                   {locale === 'es' ? 'Respuesta esperada' : 'Expected response'}
                 </dt>
-                <dd className="text-sm font-medium text-fg dark:text-white">
+                <dd className="text-sm font-medium text-fg">
                   {sla.estimated
                     ? locale === 'es'
                       ? `Respuesta estimada hacia el ${slaDate}`
@@ -264,7 +315,7 @@ function CaseDetail({
                       : `Response by ${slaDate}`}
                   {sla.estimated && (
                     <span
-                      className="ml-1.5 font-normal text-fg-subtle dark:text-fg-muted"
+                      className="ml-1.5 font-normal text-fg-subtle"
                       title={
                         locale === 'es'
                           ? 'Fecha estimada; tu inmobiliaria confirma la definitiva.'
@@ -279,28 +330,6 @@ function CaseDetail({
             </div>
           )}
         </dl>
-
-        <div className="pt-1 flex flex-wrap items-center gap-2">
-          <Button asChild variant="secondary" size="sm">
-            <Link href={caso.sourceLink} className="inline-flex items-center gap-1.5">
-              {locale === 'es'
-                ? `Ver en ${sourceLabel(caso.type, locale)}`
-                : `View in ${sourceLabel(caso.type, locale)}`}
-              <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
-            </Link>
-          </Button>
-          {/*
-            Real "contactar" affordance for the case → the messages INBOX only.
-            TenantCase carries no applicationId/leaseId, so we deep-link to the
-            inbox and NEVER fabricate a preselected thread (no fabricated query param).
-          */}
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/inquilino/mensajes" className="inline-flex items-center gap-1.5">
-              <ChatCircle className="w-4 h-4" aria-hidden="true" />
-              {locale === 'es' ? 'Escribir a la inmobiliaria' : 'Message the agency'}
-            </Link>
-          </Button>
-        </div>
       </section>
 
       {/* SO-06/SO-18 (PQRS-FIX): la respuesta de la inmobiliaria y los archivos. */}
@@ -308,15 +337,15 @@ function CaseDetail({
         <RespuestaYArchivosDelCaso caseId={caso.id} solicitud={caso.solicitud} />
       )}
 
-      {/* Ley 820 cost responsibility + approve-only quote affordance (SOLI-04) —
-          shown only for PQRS cases with a backend-set cost determination. */}
-      {caso.solicitud && caso.solicitud.costoResponsable && (
-        <CostoResponsabilidadCard caseId={caso.id} solicitud={caso.solicitud} />
-      )}
+      {/* Ley 820: quién paga — informativo cuando no hay nada que aprobar. */}
+      {teTocaAprobar ? null : tarjetaDelCosto}
 
       {/* State timeline (CASO-02 core) — source-timestamp-only events */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
-        <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
+      <section
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
+        data-testid="caso-historial"
+      >
+        <h2 className="text-h3 text-fg mb-4">
           {locale === 'es' ? 'Historial' : 'Timeline'}
         </h2>
         <PlanActivityTimeline
@@ -335,7 +364,7 @@ function CaseDetail({
 export default function CaseDetailPage(props: { params: Promise<{ caseId: string }> }) {
   const params = use(props.params);
   const { locale } = useI18n();
-  const { cases, isLoading, error } = useTenantCases();
+  const { cases, isLoading, error, fuentesQueFallaron, refetch } = useTenantCases();
 
   // Own-cases-only resolution (CASO-02 / T-v7-03-07): filter the tenant's OWN
   // aggregated list — NO API call with the raw route id, NO fetch-by-id hook.
@@ -347,15 +376,16 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
   // Loading gate — never flash a fake not-found while any source is in flight.
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-3xl" />
       </div>
     );
   }
 
-  // Hard aggregate failure (a single failed source already degraded to [] upstream).
-  if (error) {
+  // GLOW UP (21-10-2026): si el caso llegó, se muestra aunque otra fuente haya
+  // fallado; el error de pantalla completa es sólo cuando NO está y algo falló.
+  if (error && !caso) {
     return (
       <PageShell>
         <BackLink locale={locale} />
@@ -363,7 +393,8 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
           icon={XCircle}
           title={locale === 'es' ? 'Error al cargar el caso' : 'Error loading case'}
           description={error}
-          action={{ label: locale === 'es' ? 'Volver a Mis casos' : 'Back to My cases', href: '/inquilino/casos' }}
+          /* «Volver» ya está arriba: aquí, volver a pedir. */
+          action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', onClick: () => void refetch() }}
         />
       </PageShell>
     );
@@ -390,7 +421,8 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
 
   return (
     <PageShell>
-      <BackLink locale={locale} />
+      <BackLink locale={locale} caso={caso} />
+      <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={refetch} className="mb-6" />
       <CaseDetail caso={caso} locale={locale} entrada={entrada} />
     </PageShell>
   );

@@ -1,14 +1,17 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from '@/components/ui/toast';
-import { CalendarBlank, CalendarPlus, Plus, CaretLeft, CaretRight, Check } from '@phosphor-icons/react';
+import { CalendarBlank, CalendarPlus, Plus, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableHeader, TableBodyAnimado, TableRow, TableRowAnimada, TableHead, TableCell } from '@/components/ui/table';
@@ -18,6 +21,8 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
+import { Cifra, FranjaDeCifras, SegmentedControl, StatusBadge, type SemanticTone, type TonoDeCifra } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { EVENTOS_POR_PAGINA, RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
@@ -36,13 +41,13 @@ import { aFechaIso } from '@/lib/fechas-locales';
 import { tareaIdOf, type VistaDeAgenda } from '@/lib/api/agenda.types';
 
 /** Resumen por tipo de evento — color por tipo (estático). */
-const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
-  { key: 'visitas', dot: 'bg-primary', field: 'visitas' },
-  { key: 'firmas', dot: 'bg-warning-500', field: 'firmasPendientes' },
-  { key: 'vencimientos', dot: 'bg-error-500', field: 'vencimientos' },
-  { key: 'seguimientos', dot: 'bg-primary', field: 'seguimientos' },
-  { key: 'inspecciones', dot: 'bg-neutral-300 dark:bg-neutral-600', field: 'inspecciones' },
-  { key: 'tareas', dot: 'bg-neutral-300 dark:bg-neutral-600', field: 'tareas' },
+const RESUMEN_ITEMS: { key: string; tono?: TonoDeCifra; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
+  { key: 'visitas', field: 'visitas' },
+  { key: 'firmas', tono: 'aviso', field: 'firmasPendientes' },
+  { key: 'vencimientos', tono: 'peligro', field: 'vencimientos' },
+  { key: 'seguimientos', field: 'seguimientos' },
+  { key: 'inspecciones', field: 'inspecciones' },
+  { key: 'tareas', field: 'tareas' },
 ];
 
 /**
@@ -50,34 +55,111 @@ const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_AGE
  * van ahora DEBAJO del evento (no en columnas propias) y la fecha lleva la
  * hora debajo. Cinco columnas que caben en un escritorio normal.
  */
-const COLUMNS = ['colFecha', 'colEvento', 'colVinculo', 'colPersona', 'colEstado'];
+const COLUMNS = ['colFecha', 'colEvento', 'colPersona', 'colEstado'];
+
+/** Una tarea sin responsable: en la columna Persona va quien la creó (revisora r25), no «—». */
+function laCreadoraVaEnPersona(e: { tipo: string; responsableNombre?: string; creadaPorId?: string }): boolean {
+  return e.tipo === 'tarea' && !e.responsableNombre && Boolean(e.creadaPorId);
+}
 
 /** AG-02/AG-04: las pestañas de la agenda. */
 type Pestana = VistaDeAgenda | 'semana';
-const PESTANAS: { id: Pestana; label: string }[] = [
+/**
+ * Revisora r24 (Agenda #2): los ESTADOS van en `PestanasDeEstado` dentro de la tarjeta (sin el cero de «Hechas»);
+ * «Semana» es una VISTA, no un estado: va aparte, en «Lista · Semana».
+ */
+const ESTADOS_DE_LA_AGENDA: { id: VistaDeAgenda; label: string }[] = [
   { id: 'proximas', label: 'Próximas' },
-  { id: 'vencidas', label: 'Vencidas' },
+  // Ronda 22: «Atrasadas» (lo que se pasó de fecha); «Vencimientos» era otra cosa (fines de contrato).
+  { id: 'vencidas', label: 'Atrasadas' },
   { id: 'hechas', label: 'Hechas' },
-  { id: 'semana', label: 'Semana' },
 ];
 
-/** Dot color per event type (matches the summary tiles). */
+/**
+ * El punto de cada tipo, en tinta (revisora r22, Agenda #6): cada fin de contrato iba en rojo aunque faltaran
+ * meses. El rojo queda sólo para lo atrasado (`puntoDelEvento`).
+ */
 const TIPO_DOT: Record<EventoTipo, string> = {
-  visita: 'bg-primary',
-  firma_pendiente: 'bg-warning-500',
-  vencimiento_contrato: 'bg-error-500',
-  seguimiento: 'bg-primary',
-  inspeccion: 'bg-neutral-300 dark:bg-neutral-600',
-  tarea: 'bg-neutral-300 dark:bg-neutral-600',
+  visita: 'bg-fg',
+  firma_pendiente: 'bg-fg-muted',
+  vencimiento_contrato: 'bg-fg-subtle',
+  seguimiento: 'bg-fg-muted',
+  inspeccion: 'bg-fg-subtle/60',
+  tarea: 'bg-fg-subtle/60',
 };
+// Revisora r25: en «Atrasadas» las 12 filas llevaban punto rojo, que repetía la pestaña: ahí dice el tipo.
+const puntoDelEvento = (e: EventoAgenda, enAtrasadas = false) =>
+  e.estado === 'vencido' && !enAtrasadas ? 'bg-danger' : TIPO_DOT[e.tipo];
 
-/** Badge classes per event status. */
-const ESTADO_BADGE: Record<EventoEstado, string> = {
-  pendiente: 'bg-primary/10 text-primary',
-  confirmado: 'bg-success-500/10 text-success',
-  completado: 'bg-success-500/10 text-success',
-  vencido: 'bg-error-500/10 text-danger',
-  cancelado: 'bg-neutral-400/10 text-muted-foreground',
+/** «Pendiente» es lo normal de lo que viene: no se pinta (iba en las diez filas); sí lo demás. */
+const conEstadoVisible = (e: EventoAgenda) => e.estado !== 'pendiente';
+
+/** El origen «Sistema» no dice nada (todo lo que no es una tarea lo trae el sistema): no se pinta. */
+const ORIGEN_QUE_NO_SE_DICE = 'sistema';
+
+/**
+ * El título sin el inmueble cuando el inmueble ya va en «Vínculo», al lado (glow up 21-10):
+ * «Vence el contrato · Apartamento en La 50, Caldas» | «Apartamento en La 50, Caldas» decía lo
+ * mismo dos veces y cortaba las dos.
+ */
+function tituloSinElVinculo(e: EventoAgenda): string {
+  const v = e.vinculoLabel?.trim();
+  if (!v) return e.titulo;
+  const cola = ` · ${v}`;
+  return e.titulo.endsWith(cola) && e.titulo.length > cola.length ? e.titulo.slice(0, -cola.length) : e.titulo;
+}
+
+/**
+ * Revisora r24 (Agenda #3): el inmueble es el título y el tipo va debajo, una sola vez («Vence el contrato» +
+ * «Fin de contrato» decían lo mismo, y en «Atrasadas» «Vence» hablaba en presente de lo que ya venció). Las tareas
+ * y los seguimientos tienen su propio título; el vínculo va debajo.
+ */
+const TIPOS_CON_TITULO_DEL_INMUEBLE: readonly EventoTipo[] = ['visita', 'firma_pendiente', 'vencimiento_contrato', 'inspeccion'];
+const elTituloEsElInmueble = (e: EventoAgenda) => TIPOS_CON_TITULO_DEL_INMUEBLE.includes(e.tipo) && !!e.vinculoLabel?.trim();
+function tituloDelEvento(e: EventoAgenda): string {
+  return elTituloEsElInmueble(e) ? e.vinculoLabel!.trim() : tituloSinElVinculo(e);
+}
+
+/** La visita ya pasó (su día y su hora): se cierra con «Llegó» o se reagenda, no se «cancela». */
+function laVisitaYaPaso(e: EventoAgenda): boolean {
+  if (e.estado === 'vencido') return true;
+  const d = fechaLocal(e.fecha);
+  if (!d) return false;
+  const [h, m] = (e.hora ?? '23:59').split(':').map(Number);
+  d.setHours(h || 0, m || 0, 0, 0);
+  return d.getTime() <= Date.now();
+}
+
+/** El grupo del día de un evento, según hoy en Colombia. */
+type GrupoDelDia = 'pasado' | 'hoy' | 'manana' | 'semana' | 'despues';
+const NOMBRE_DEL_GRUPO: Record<GrupoDelDia, string> = {
+  pasado: 'Ya pasó',
+  hoy: 'Hoy',
+  manana: 'Mañana',
+  semana: 'Esta semana',
+  despues: 'Más adelante',
+};
+function diaEnColombia(desplazamiento = 0): string {
+  const d = new Date(Date.now() + desplazamiento * 86_400_000);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+function grupoDelDia(fecha: string): GrupoDelDia {
+  const dia = fecha.slice(0, 10);
+  const hoy = diaEnColombia();
+  if (dia < hoy) return 'pasado';
+  if (dia === hoy) return 'hoy';
+  if (dia === diaEnColombia(1)) return 'manana';
+  if (dia <= diaEnColombia(7)) return 'semana';
+  return 'despues';
+}
+
+/** El estado de cada evento, con `StatusBadge` (punto + palabra). Pendiente es lo normal y no se pinta. */
+const TONO_DEL_ESTADO: Record<EventoEstado, SemanticTone> = {
+  pendiente: 'neutral',
+  confirmado: 'success',
+  completado: 'success',
+  vencido: 'critical',
+  cancelado: 'neutral',
 };
 
 /** Recover the raw PropertyVisit id from an agenda event id (`visit-<uuid>`). */
@@ -85,6 +167,7 @@ const visitIdOf = (eventId: string) => eventId.replace(/^visit-/, '');
 
 function AgendaContent() {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
 
   // El back sirve la agenda con `operaciones:view` pero exige `operaciones:edit`
@@ -244,6 +327,21 @@ function AgendaContent() {
    * vencimientos un día para atrás no sirve. Mismo helper que usa el cajón,
    * así que tabla y detalle nunca dicen días distintos.
    */
+  /** «22 oct» (y el año si no es este): dentro de un grupo del día, la fecha larga sobra. */
+  const formatFechaCorta = (iso: string) => {
+    const d = fechaLocal(iso) ?? new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const otroAno = d.getFullYear() !== new Date().getFullYear();
+    return new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+      day: 'numeric',
+      month: 'short',
+      ...(otroAno ? { year: 'numeric' } : {}),
+    })
+      .format(d)
+      .replace('.', '')
+      // VOZ §4 (revisora r25): «15 sept», no «15 de sept».
+      .replace(/ de /g, ' ');
+  };
   const formatFecha = (iso: string) => {
     const d = fechaLocal(iso) ?? new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
@@ -311,123 +409,248 @@ function AgendaContent() {
   };
 
   const porVista = data?.porVista;
+  /** Al volver de «Semana» a «Lista», la pestaña de estado que estaba. */
+  const ultimaVista = useRef<VistaDeAgenda>('proximas');
+  useEffect(() => {
+    if (pestana !== 'semana') ultimaVista.current = pestana;
+  }, [pestana]);
+  /*
+   * Decisión 24 de Nico (22-10): lo pendiente primero. La primera vez que llegan los conteos, si hay atrasadas y nadie
+   * eligió otra pestaña, la pantalla pasa a «Atrasadas» (como Propietarios abre en «Por girar»). Una sola vez.
+   */
+  const yaAbrioEnLoPendiente = useRef(false);
+  useEffect(() => {
+    if (yaAbrioEnLoPendiente.current || !porVista) return;
+    yaAbrioEnLoPendiente.current = true;
+    if (pestana === 'proximas' && porVista.vencidas > 0) {
+      setPestana('vencidas');
+      setPage(1);
+    }
+  }, [porVista, pestana]);
   const diasDeLaSemana = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(lunes);
     d.setDate(d.getDate() + i);
     return d;
   });
 
+
+  /*
+   * Lo que se hace con cada evento, el mismo en la fila y en la tarjeta del celular (revisora r23, Agenda #1 y #2:
+   * lo atrasado tiene que poder cerrarse, y a 390 ninguna tarjeta tenía acción). Un fin de contrato o una firma
+   * pendiente llevan a su contrato (renovar, terminar o firmar); la visita y la tarea, sus acciones de siempre.
+   */
+  const accionesDe = (e: EventoAgenda) => (
+    <>
+      {(e.tipo === 'vencimiento_contrato' || e.tipo === 'firma_pendiente') && e.vinculoTipo === 'contrato' && e.vinculoId ? (
+        <Button asChild variant="ghost" size="sm" hideArrow>
+          <Link
+            href={`/panel/inmobiliaria/contratos/${encodeURIComponent(e.vinculoId)}`}
+            onClick={(ev) => ev.stopPropagation()}
+            data-testid="agenda-ver-contrato"
+          >
+            Ver contrato
+          </Link>
+        </Button>
+      ) : null}
+      {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
+        <span className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            hideArrow
+            disabled={actingId === visitIdOf(e.id)}
+            // AG-06: sin asesor, confirmar abre el cajón para elegirlo.
+            onClick={(ev) => {
+              ev.stopPropagation();
+              if (e.sinAsesor) {
+                setSeleccionado(e);
+                return;
+              }
+              void runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id)));
+            }}
+          >
+            {t(k('citaConfirmar'))}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            hideArrow
+            disabled={actingId === visitIdOf(e.id)}
+            onClick={(ev) => { ev.stopPropagation(); setErrorDelMotivo(null); setMotivoDe({ visitId: visitIdOf(e.id), cual: 'rechazar' }); }}
+          >
+            {t(k('citaRechazar'))}
+          </Button>
+        </span>
+      )}
+      {/* Revisora r24 (Agenda #1): la visita que ya pasó se cierra diciendo qué pasó —«Llegó» la marca hecha, la
+          misma acción del cajón— o se reagenda en su cajón (ahí siguen «Reprogramar» y «Cancelar»). */}
+      {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && laVisitaYaPaso(e) && (
+        <span className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            hideArrow
+            disabled={actingId === visitIdOf(e.id)}
+            onClick={(ev) => {
+              ev.stopPropagation();
+              void runCitaAction(visitIdOf(e.id), () => agendaApi.marcarHecha(visitIdOf(e.id)));
+            }}
+            data-testid="agenda-visita-llego"
+          >
+            Llegó
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            hideArrow
+            disabled={actingId === visitIdOf(e.id)}
+            onClick={(ev) => {
+              ev.stopPropagation();
+              setSeleccionado(e);
+            }}
+            data-testid="agenda-visita-reagendar"
+          >
+            Reagendar
+          </Button>
+        </span>
+      )}
+      {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && !laVisitaYaPaso(e) && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          hideArrow
+          disabled={actingId === visitIdOf(e.id)}
+          onClick={(ev) => { ev.stopPropagation(); setErrorDelMotivo(null); setMotivoDe({ visitId: visitIdOf(e.id), cual: 'cancelar' }); }}
+        >
+          {t(k('citaCancelar'))}
+        </Button>
+      )}
+      {puedeEditar && e.tipo === 'tarea' && e.estadoRaw === 'PENDIENTE' && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          hideArrow
+          disabled={actingId === tareaIdOf(e.id)}
+          onClick={(ev) => { ev.stopPropagation(); void completarTarea(e); }}
+          data-testid="tarea-hecha-fila"
+        >
+          Marcar hecha
+        </Button>
+      )}
+    </>
+  );
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <SectionLabel>{t(k('label'))}</SectionLabel>
-          <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
-          <p className="text-body text-muted-foreground max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
-        </div>
-        {/* AG-11 (04-10-2026): la asesora también agenda (su `pipeline:edit`).
-            Antes el botón pedía `operaciones:edit` y a ella no le salía. */}
-        {puedeEditar && (
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" onClick={() => setCitaOpen(true)} hideArrow data-testid="pedir-cita">
+      {/* Ronda 22: el encabezado de todas las pantallas (sección · título · una línea | la secundaria y la única azul). */}
+      <EncabezadoDePantalla
+        // T1 (revisora r25): el sobretítulo es la sección del menú, no el título otra vez.
+        seccion={t('inmobiliaria.nav.secCaptacion')}
+        titulo={t(k('title'))}
+        descripcion={t(k('subtitle'))}
+        acciones={
+          puedeEditar ? (
+            <Button variant="outline" size="sm" onClick={() => setCitaOpen(true)} hideArrow data-testid="pedir-cita">
               <CalendarPlus className="w-4 h-4" weight="bold" />
               {t(k('pedirCita'))}
             </Button>
-            <Button onClick={() => setTareaOpen(true)} hideArrow data-testid="nueva-tarea">
+          ) : null
+        }
+        accionPrincipal={
+          puedeEditar ? (
+            <Button size="sm" onClick={() => setTareaOpen(true)} hideArrow data-testid="nueva-tarea">
               <Plus className="w-4 h-4" weight="bold" />
               {t(k('new'))}
             </Button>
-          </div>
-        )}
-      </header>
-
-      {/* AG-02/AG-04: las vistas. «Vencidas» aparte de «Próximas»; «Semana»
-          para ver huecos y choques. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div role="tablist" aria-label="Qué ver" className="inline-flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1">
-          {PESTANAS.map((p) => (
-            <Button
-              key={p.id}
-              type="button"
-              variant="ghost"
-              size="sm"
-              role="tab"
-              aria-selected={pestana === p.id}
-              data-testid={`agenda-pestana-${p.id}`}
-              onClick={() => {
-                setPestana(p.id);
-                setPage(1);
-              }}
-              className={cn(
-                'relative h-auto rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-transparent',
-                pestana === p.id ? 'text-fg' : 'text-fg-muted hover:text-fg',
-              )}
-            >
-              {pestana === p.id && (
-                <motion.span
-                  layoutId="agenda-pestana"
-                  className="absolute inset-0 rounded-md bg-surface-muted"
-                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                />
-              )}
-              <span className="relative">
-                {p.label}
-                {p.id !== 'semana' && porVista && (
-                  <span
-                    className={cn(
-                      'ml-1.5 tabular-nums',
-                      p.id === 'vencidas' && porVista.vencidas > 0 ? 'text-danger' : 'text-fg-muted',
-                    )}
-                  >
-                    {porVista[p.id as VistaDeAgenda]}
-                  </span>
-                )}
-              </span>
-            </Button>
-          ))}
-        </div>
-        <label className="inline-flex items-center gap-2 text-sm text-fg-muted">
-          <Checkbox
-            checked={soloLoMio}
-            onCheckedChange={(marcada) => {
-              setSoloLoMio(marcada === true);
-              setPage(1);
-            }}
-            data-testid="agenda-solo-lo-mio"
-          />
-          Sólo lo mío
-        </label>
-      </div>
+          ) : null
+        }
+      />
 
       {/* Resumen por tipo */}
       <section className="space-y-3">
         <SectionLabel>
-          {pestana === 'vencidas' ? 'Vencidas' : pestana === 'hechas' ? 'Hechas (última semana)' : pestana === 'semana' ? 'Esta semana' : t(k('resumenLabel'))}
+          {pestana === 'vencidas' ? 'Atrasadas' : pestana === 'hechas' ? 'Hechas (última semana)' : pestana === 'semana' ? 'Esta semana' : t(k('resumenLabel'))}
         </SectionLabel>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Cadence 2: los seis tipos en UNA franja (antes, seis tarjetas sueltas). */}
+        <FranjaDeCifras data-testid="agenda-resumen">
           {RESUMEN_ITEMS.map((item) => (
-            <div key={item.key} className="rounded-lg border border-border bg-card p-4">
-              <div className="flex items-center gap-2">
-                <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
-                <span className="text-caption text-muted-foreground truncate">{t(k(`tipo_${item.key}`))}</span>
-              </div>
-              {/* El número entra a los cuatro estados: con la carga caída, la
-                  tabla decía «no se pudo cargar» y un renglón más arriba los
-                  tiles afirmaban «0 visitas · 0 firmas». Un cero es un dato;
-                  «no sé» no es cero. */}
-              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-foreground">
+            <Cifra
+              key={item.key}
+              etiqueta={t(k(`tipo_${item.key}`))}
+              // Revisora r24 (Agenda #5): el punto sólo cuando hay algo que mirar; nunca sobre un cero.
+              tono={!isLoading && !error && resumen[item.field] > 0 ? item.tono : undefined}
+              // Revisora r24 (Agenda #6): a 390 el rótulo va en dos renglones, entero («FIRMAS PENDIENTES»).
+              className="max-md:[&_.truncate]:whitespace-normal"
+              // El número entra a los cuatro estados: con la carga caída, la tabla decía «no se
+              // pudo cargar» y un renglón más arriba los tiles afirmaban «0 visitas · 0 firmas».
+              // Un cero es un dato; «no sé» no es cero.
+              valor={
                 <KpiValor cargando={isLoading} fallo={error}>
                   {resumen[item.field]}
                 </KpiValor>
-              </p>
-            </div>
+              }
+            />
           ))}
-        </div>
+        </FranjaDeCifras>
       </section>
 
       {/* La tabla, sin título encima: no se nombran las tablas (Nico, 2026-09-03). */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
+        {/* Revisora r24 (Agenda #2): la barra de la lista DENTRO de la tarjeta —los estados con su conteo, «Sólo lo
+            mío» y la vista (Lista · Semana)—, como en Contratos e Inquilinos. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border px-4 py-3" data-testid="agenda-barra">
+          {pestana === 'semana' ? (
+            <p className="text-body-sm text-fg-muted">La semana, día por día</p>
+          ) : (
+            <PestanasDeEstado<VistaDeAgenda>
+              etiqueta="Qué ver"
+              valor={pestana}
+              onCambio={(v) => {
+                setPestana(v);
+                setPage(1);
+              }}
+              pestanas={ESTADOS_DE_LA_AGENDA.map((p) => ({
+                valor: p.id,
+                etiqueta: p.label,
+                cuantos: porVista ? porVista[p.id] : null,
+                fija: p.id === 'proximas',
+                tono: p.id === 'vencidas' && (porVista?.vencidas ?? 0) > 0 ? ('aviso' as const) : undefined,
+                testid: `agenda-pestana-${p.id}`,
+              }))}
+            />
+          )}
+          <div className="flex items-center gap-4">
+            <label className="inline-flex items-center gap-2 text-body-sm text-fg-muted">
+              <Checkbox
+                checked={soloLoMio}
+                onCheckedChange={(marcada) => {
+                  setSoloLoMio(marcada === true);
+                  setPage(1);
+                }}
+                data-testid="agenda-solo-lo-mio"
+              />
+              Sólo lo mío
+            </label>
+            <SegmentedControl<'lista' | 'semana'>
+              size="sm"
+              aria-label="Cómo ver la agenda"
+              value={pestana === 'semana' ? 'semana' : 'lista'}
+              onChange={(v) => {
+                setPestana(v === 'semana' ? 'semana' : ultimaVista.current);
+                setPage(1);
+              }}
+              options={[
+                { value: 'lista', label: <span data-testid="agenda-vista-lista">Lista</span>, ariaLabel: 'Lista' },
+                { value: 'semana', label: <span data-testid="agenda-pestana-semana">Semana</span>, ariaLabel: 'Semana' },
+              ]}
+            />
+          </div>
+        </div>
         <EstadoDeDatos
           cargando={isLoading && data === null}
           error={error}
@@ -495,7 +718,7 @@ function AgendaContent() {
                                 )}
                               >
                                 <span className="flex items-center gap-1.5">
-                                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', TIPO_DOT[e.tipo])} />
+                                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', puntoDelEvento(e))} />
                                   <span className="tabular-nums text-fg-muted">{e.hora ? horaDeLaCasa(e.hora) : 'Todo el día'}</span>
                                 </span>
                                 <span className="mt-0.5 block truncate text-fg">{e.titulo}</span>
@@ -521,11 +744,26 @@ function AgendaContent() {
                   icono={CalendarBlank}
                   titulo={pestana === 'vencidas' ? 'Nada vencido' : pestana === 'hechas' ? 'Nada hecho esta semana' : t(k('emptyTitle'))}
                   descripcion={pestana === 'proximas' ? t(k('emptyDesc')) : ''}
-                  crear={puedeEditar && pestana === 'proximas' ? { label: 'Agendar una visita', onClick: () => setCitaOpen(true) } : undefined}
+                  crear={puedeEditar && pestana === 'proximas' ? { label: 'Agendar visita', onClick: () => setCitaOpen(true) } : undefined}
                 />
               </li>
             ) : (
-              eventos.map((e) => (
+              eventos.flatMap((e: EventoAgenda, i: number) => {
+                // Revisora r22 (#7): los grupos del día también a 390 («Hoy», «Mañana»…).
+                const grupo = grupoDelDia(e.fecha);
+                const nuevoGrupo = i === 0 || grupoDelDia(eventos[i - 1].fecha) !== grupo;
+                return [
+                  ...(nuevoGrupo
+                    ? [
+                        <li
+                          key={`grupo-${grupo}`}
+                          className="bg-surface-muted/50 px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle"
+                          data-testid="agenda-grupo-tarjetas"
+                        >
+                          {NOMBRE_DEL_GRUPO[grupo]}
+                        </li>,
+                      ]
+                    : []),
                 <li key={e.id}>
                   <button
                     type="button"
@@ -533,23 +771,30 @@ function AgendaContent() {
                     className="flex w-full items-start gap-3 px-4 py-3 text-left"
                     data-testid="agenda-tarjeta"
                   >
-                    <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', TIPO_DOT[e.tipo])} />
+                    <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', puntoDelEvento(e, pestana === 'vencidas'))} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-fg">{e.titulo}</span>
+                      {/* Revisora r22 (#7): a 390 el título en dos renglones, no cortado. */}
+                      <span className="block line-clamp-2 break-words font-medium text-fg">{tituloDelEvento(e)}</span>
                       <span className="block text-caption text-fg-muted">
-                        {formatFecha(e.fecha)}
+                        <span className="font-mono">{formatFechaCorta(e.fecha)}</span>
                         {e.hora ? ` · ${horaDeLaCasa(e.hora)}` : ''} · {t(k(`rowTipo_${e.tipo}`))}
+                        {!elTituloEsElInmueble(e) && e.vinculoLabel ? ` · ${e.vinculoLabel}` : ''}
                       </span>
                       {e.responsableNombre && (
                         <span className="block truncate text-caption text-fg-muted">{e.responsableNombre}</span>
                       )}
                     </span>
-                    <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-caption font-medium', ESTADO_BADGE[e.estado])}>
-                      {t(k(`estado_${e.estado}`))}
-                    </span>
+{conEstadoVisible(e) && !(pestana === 'vencidas' && e.estado === 'vencido') ? (
+                      <StatusBadge tone={TONO_DEL_ESTADO[e.estado]} className="shrink-0">{t(k(`estado_${e.estado}`))}</StatusBadge>
+                    ) : null}
                   </button>
-                </li>
-              ))
+                  {/* Revisora r23 (Agenda #2): la acción también en la tarjeta, al pie y a la derecha. */}
+                  <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 px-4 pb-3 empty:hidden" data-testid="agenda-tarjeta-acciones">
+                    {accionesDe(e)}
+                  </div>
+                </li>,
+                ];
+              })
             )}
           </ul>
 
@@ -557,11 +802,18 @@ function AgendaContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                {COLUMNS.map((c) => (
-                  <TableHead key={c} className="whitespace-nowrap">
-                    {t(k(c))}
-                  </TableHead>
-                ))}
+                {COLUMNS.map((c) =>
+                  // Revisora r24 (Agenda #4): la última columna son ACCIONES, no un estado: sin rótulo y a la derecha.
+                  c === 'colEstado' ? (
+                    <TableHead key={c} className="text-right">
+                      <span className="sr-only">Acciones</span>
+                    </TableHead>
+                  ) : (
+                    <TableHead key={c} className="whitespace-nowrap">
+                      {t(k(c))}
+                    </TableHead>
+                  ),
+                )}
               </TableRow>
             </TableHeader>
             <TableBodyAnimado>
@@ -575,14 +827,31 @@ function AgendaContent() {
                       descripcion={pestana === 'proximas' ? t(k('emptyDesc')) : ''}
                       crear={
                         puedeEditar && pestana === 'proximas'
-                          ? { label: 'Agendar una visita', onClick: () => setCitaOpen(true) }
+                          ? { label: 'Agendar visita', onClick: () => setCitaOpen(true) }
                           : undefined
                       }
                     />
                   </TableCell>
                 </TableRowAnimada>
               ) : (
-                eventos.map((e: EventoAgenda) => (
+                // GLOW UP 21-10 · la agenda se lee por DÍA: «Hoy», «Mañana», «Esta semana», «Más adelante»
+                // (y «Ya pasó» en las vencidas). Antes era una lista plana de fechas largas.
+                eventos.flatMap((e: EventoAgenda, i: number) => {
+                  const grupo = grupoDelDia(e.fecha);
+                  const nuevoGrupo = i === 0 || grupoDelDia(eventos[i - 1].fecha) !== grupo;
+                  return [
+                    ...(nuevoGrupo
+                      ? [
+                          <TableRowAnimada key={`grupo-${grupo}`} className="hover:bg-transparent" data-testid="agenda-grupo">
+                            <TableCell
+                              colSpan={COLUMNS.length}
+                              className="bg-surface-muted/50 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle"
+                            >
+                              {NOMBRE_DEL_GRUPO[grupo]}
+                            </TableCell>
+                          </TableRowAnimada>,
+                        ]
+                      : []),
                   <TableRowAnimada
                     key={e.id}
                     onClick={() => setSeleccionado(e)}
@@ -590,31 +859,47 @@ function AgendaContent() {
                     data-testid="agenda-fila"
                   >
                     <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
-                      <span className="block">{formatFecha(e.fecha)}</span>
+                      {/* Revisora r22 (#4): dentro de su grupo («Hoy», «Mañana»…), la fecha corta. */}
+                      <span className="block font-mono text-body-sm">{formatFechaCorta(e.fecha)}</span>
                       {/* AG-12: la hora sale en la fila. */}
                       {e.hora && <span className="block text-caption" data-testid="agenda-hora">{horaDeLaCasa(e.hora)}</span>}
                     </TableCell>
-                    <TableCell className="max-w-[320px]">
+                    <TableCell className="max-w-[380px]">
                       <div className="min-w-0">
-                        <p className="text-foreground font-medium truncate">{e.titulo}</p>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <p className="min-w-0 truncate font-medium text-foreground" title={e.titulo}>{tituloDelEvento(e)}</p>
+                          {conEstadoVisible(e) && !(pestana === 'vencidas' && e.estado === 'vencido') ? (
+                            <StatusBadge tone={TONO_DEL_ESTADO[e.estado]} className="shrink-0">{t(k(`estado_${e.estado}`))}</StatusBadge>
+                          ) : null}
+                        </div>
                         <p className="text-caption text-muted-foreground truncate">
                           <span className="inline-flex items-center gap-1.5">
-                            <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', TIPO_DOT[e.tipo])} />
+                            <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', puntoDelEvento(e, pestana === 'vencidas'))} />
                             {t(k(`rowTipo_${e.tipo}`))}
                           </span>
-                          {' · '}
-                          {/* AG-13: «Tú» sólo a quien creó la tarea. */}
-                          {origenDelEvento(e, miUserId, (o) => t(k(`origen_${o}`)))}
+                          {!elTituloEsElInmueble(e) && e.vinculoLabel ? ` · ${e.vinculoLabel}` : ''}
+                          {/* AG-13: «Tú» sólo a quien creó la tarea. Sin «· Sistema» (revisora r22, #3). */}
+                          {/* Revisora r25: en una tarea sin responsable, quién la creó pasa a la columna Persona
+                              (antes «—» ahí y el nombre escondido aquí, en gris). */}
+                          {(e.tipo === 'tarea' || e.origen !== ORIGEN_QUE_NO_SE_DICE) && !laCreadoraVaEnPersona(e)
+                            ? ` · ${origenDelEvento(e, miUserId, (o) => t(k(`origen_${o}`)))}`
+                            : ''}
                           {e.descripcion && e.tipo !== 'visita' ? ` · ${e.descripcion}` : ''}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell className="max-w-[200px]">
-                      <span className="text-muted-foreground truncate block">
-                        {e.vinculoLabel ?? t(k('sinVinculo'))}
-                      </span>
-                    </TableCell>
-                    <TableCell className="max-w-[200px]">
+                      {laCreadoraVaEnPersona(e) ? (
+                        <>
+                          <span className="block truncate text-muted-foreground">
+                            {origenDelEvento(e, miUserId, (o) => t(k(`origen_${o}`)))}
+                          </span>
+                          <span className="block text-caption text-muted-foreground/80" data-testid="agenda-rol-persona">
+                            {tr('La creó')}
+                          </span>
+                        </>
+                      ) : (
+                      <>
                       <span className="block truncate text-muted-foreground">{e.responsableNombre ?? t(k('sinVinculo'))}</span>
                       {e.tipo === 'visita' ? (
                         <span className="block text-caption text-muted-foreground/80" data-testid="agenda-rol-persona">
@@ -627,75 +912,15 @@ function AgendaContent() {
                           </span>
                         )
                       )}
+                      </>
+                      )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[e.estado])}>
-                          {t(k(`estado_${e.estado}`))}
-                        </span>
-                        {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
-                          <span className="flex items-center gap-1.5">
-                            <Button
-                              type="button"
-                              variant="link"
-                              size="sm"
-                              disabled={actingId === visitIdOf(e.id)}
-                              // AG-06: sin asesor, confirmar abre el cajón para elegirlo.
-                              onClick={(ev) => {
-                                ev.stopPropagation();
-                                if (e.sinAsesor) {
-                                  setSeleccionado(e);
-                                  return;
-                                }
-                                void runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id)));
-                              }}
-                              className="h-auto px-0 text-caption font-medium text-success"
-                            >
-                              {t(k('citaConfirmar'))}
-                            </Button>
-                            <span className="text-border">·</span>
-                            <Button
-                              type="button"
-                              variant="link"
-                              size="sm"
-                              disabled={actingId === visitIdOf(e.id)}
-                              onClick={(ev) => { ev.stopPropagation(); setErrorDelMotivo(null); setMotivoDe({ visitId: visitIdOf(e.id), cual: 'rechazar' }); }}
-                              className="h-auto px-0 text-caption font-medium text-danger"
-                            >
-                              {t(k('citaRechazar'))}
-                            </Button>
-                          </span>
-                        )}
-                        {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && (
-                          <Button
-                            type="button"
-                            variant="link"
-                            size="sm"
-                            disabled={actingId === visitIdOf(e.id)}
-                            onClick={(ev) => { ev.stopPropagation(); setErrorDelMotivo(null); setMotivoDe({ visitId: visitIdOf(e.id), cual: 'cancelar' }); }}
-                            className="h-auto px-0 text-caption font-medium text-fg-muted"
-                          >
-                            {t(k('citaCancelar'))}
-                          </Button>
-                        )}
-                        {puedeEditar && e.tipo === 'tarea' && e.estadoRaw === 'PENDIENTE' && (
-                          <Button
-                            type="button"
-                            variant="link"
-                            size="sm"
-                            disabled={actingId === tareaIdOf(e.id)}
-                            onClick={(ev) => { ev.stopPropagation(); void completarTarea(e); }}
-                            className="h-auto gap-1 px-0 text-caption font-medium text-success"
-                            data-testid="tarea-hecha-fila"
-                          >
-                            <Check className="h-3.5 w-3.5" weight="bold" />
-                            Hecha
-                          </Button>
-                        )}
-                      </div>
+                      <div className="flex items-center justify-end gap-1">{accionesDe(e)}</div>
                     </TableCell>
-                  </TableRowAnimada>
-                ))
+                  </TableRowAnimada>,
+                  ];
+                })
               )}
             </TableBodyAnimado>
           </Table>

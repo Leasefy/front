@@ -25,7 +25,7 @@
 
 import { useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Cifra, CrossFade, FranjaDeCifras, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Warning, Download, GearSix, BellRinging, CalendarBlank } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -48,11 +48,15 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table'
-import { MonoLabel } from '@leasefy/cadence'
+import { toast } from 'sonner'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
 import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 
 /**
  * N-11 (QA-PAGOS-95, 05-10-2026): el reporte decía «PKR», «100.0%» y
@@ -95,7 +99,7 @@ const RENDER_FIRST_PAINT_MARK = 'reporte:first-paint'
 const RENDER_MEASURE = 'reporte:render'
 
 function ReporteViewerContent() {
-  const { t, locale } = useI18n()
+  const { t, locale, formatDate } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? null
 
@@ -165,8 +169,8 @@ function ReporteViewerContent() {
     try {
       await downloadHistoryCsv(agencyId)
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[reporte] CSV download failed', err)
+      // Revisora r25 (Reporte #2): si falla, se dice (antes sólo la consola).
+      toast.error(mensajeParaLaPersona(err, { porDefecto: 'No pudimos descargar el historial.', accion: 'descargar el historial' }))
     }
   }
 
@@ -186,7 +190,9 @@ function ReporteViewerContent() {
   if (!isLoading && !data && !error) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Revisora r25 (Reporte #3): el vacío también lleva el encabezado. */}
+        <EncabezadoDePantalla seccion="Cobranza" titulo={t('inmobiliaria.ai.cobranza.reporte.pageTitle')} />
         <EmptyState
           icon={CalendarBlank}
           title={t('inmobiliaria.ai.cobranza.reporte.empty.title')}
@@ -203,64 +209,65 @@ function ReporteViewerContent() {
 
   return (
     <CrossFade swapKey="reporte">
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-heading text-foreground">
-            {t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
-          </h1>
-          {data?.report_date && (
-            <p className="mt-1 text-caption font-mono tabular-nums text-muted-foreground">
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* GLOW UP 21-10: el encabezado común; el día del reporte junto al título
+          y la suscripción y los umbrales como acciones. */}
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
+        junto={
+          data?.report_date ? (
+            <span className="text-caption font-mono tabular-nums text-fg-muted">
               {diaDelReporte(data.report_date, locale)}
-              {data.computed_at && (
-                <span className="ml-2 text-muted-foreground/70">
-                  · {new Date(data.computed_at).toLocaleString(locale)}
-                </span>
-              )}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/suscripcion">
-              <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
-              {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/thresholds">
-              <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
-              {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
-            </Link>
-          </Button>
-        </div>
-      </div>
+              {data.computed_at ? ` · ${formatDate(new Date(data.computed_at), { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}
+            </span>
+          ) : null
+        }
+        /* Revisora r27 (Reporte): suscripción y umbrales son AJUSTES del reporte, no el trabajo de la pantalla:
+           enlaces en gris (antes dos botones de contorno del mismo peso). */
+        acciones={
+          <>
+            <Button asChild variant="link" size="sm" hideArrow className="px-0 text-fg-muted">
+              <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/suscripcion">
+                <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
+                {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
+              </Link>
+            </Button>
+            <Button asChild variant="link" size="sm" hideArrow className="px-0 text-fg-muted">
+              <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/thresholds">
+                <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
+                {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
+              </Link>
+            </Button>
+          </>
+        }
+        data-testid="reporte-encabezado"
+      />
 
-      {/* Error */}
-      {error && !data && (
-        <div className="rounded-lg bg-danger-soft text-danger">
-          Error: {error}
-        </div>
-      )}
+      {/* El error crudo del hook («Error: 500») pasa al cartel de siempre. */}
+      {error && !data ? (
+        <FalloDeCarga
+          error={typeof error === 'string' ? new Error(error) : error}
+          queEs="el reporte del día"
+          onReintentar={() => refetch()}
+        />
+      ) : null}
 
       {data && (
         <>
           {/* 1. KPI tile row */}
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* MORI-22: era «% recuperado» y medía las PROMESAS cumplidas
-                (lo mismo que su umbral); sin promesas vencidas, sin cifra. */}
-            <KpiTile
-              label={t('inmobiliaria.ai.cobranza.reporte.kpis.pkr')}
-              value={porcentajeLegible(pkrValue)}
-              alert={pkrValue != null && pkrValue < pkrAlertBelow}
-              pista={pkrValue == null ? t('inmobiliaria.ai.cobranza.reporte.kpis.pkrSinPromesas') : undefined}
-            />
-            <KpiTile
-              label={t('inmobiliaria.ai.cobranza.reporte.kpis.morosidad')}
-              value={porcentajeLegible(morosidadValue)}
-              alert={morosidadValue != null && morosidadValue > morosidadAlertAbove}
-              pista={
+          {/* LA RESPUESTA del día: la morosidad, con cuántos inquilinos pesa.
+              Debajo, las otras dos cifras del reporte (antes las tres iguales). */}
+          <div data-testid="reporte-cifras" className="space-y-6">
+            <CifraHeroe
+              data-testid="reporte-morosidad"
+              rotulo={t('inmobiliaria.ai.cobranza.reporte.kpis.morosidad')}
+              cifra={
+                <span className={morosidadValue != null && morosidadValue > morosidadAlertAbove ? 'text-danger' : undefined}>
+                  {porcentajeLegible(morosidadValue)}
+                </span>
+              }
+              contexto={
                 morosidadBase
                   ? t('inmobiliaria.ai.cobranza.reporte.kpis.morosidadBase', {
                       enMora: morosidadBase.inquilinos_en_mora.toLocaleString(localeDeLasCifras()),
@@ -268,49 +275,69 @@ function ReporteViewerContent() {
                     })
                   : undefined
               }
+              total={morosidadBase?.inquilinos_con_contrato ?? undefined}
+              tramos={
+                morosidadBase
+                  ? [
+                      {
+                        clave: 'mora',
+                        etiqueta: locale.startsWith('es') ? 'En mora' : 'Delinquent',
+                        monto: morosidadBase.inquilinos_en_mora,
+                        tono: 'critico',
+                        cifra: morosidadBase.inquilinos_en_mora.toLocaleString(localeDeLasCifras()),
+                      },
+                      {
+                        clave: 'al-dia',
+                        etiqueta: locale.startsWith('es') ? 'Al día' : 'Up to date',
+                        monto: Math.max(0, morosidadBase.inquilinos_con_contrato - morosidadBase.inquilinos_en_mora),
+                        tono: 'exito',
+                        cifra: Math.max(
+                          0,
+                          morosidadBase.inquilinos_con_contrato - morosidadBase.inquilinos_en_mora,
+                        ).toLocaleString(localeDeLasCifras()),
+                      },
+                    ]
+                  : undefined
+              }
             />
-            <KpiTile
-              label={t('inmobiliaria.ai.cobranza.reporte.kpis.outsideHours')}
-              value={callsOutside != null ? String(callsOutside) : '—'}
-              alert={callsOutside != null && callsOutside >= callsOutsideCritical}
-            />
-          </section>
+            <FranjaDeCifras aria-label={t('inmobiliaria.ai.cobranza.reporte.pageTitle')} columnas={2}>
+              {/* MORI-22: era «% recuperado» y medía las PROMESAS cumplidas
+                  (lo mismo que su umbral); sin promesas vencidas, sin cifra. */}
+              <KpiTile
+                label={t('inmobiliaria.ai.cobranza.reporte.kpis.pkr')}
+                value={porcentajeLegible(pkrValue)}
+                alert={pkrValue != null && pkrValue < pkrAlertBelow}
+                pista={pkrValue == null ? t('inmobiliaria.ai.cobranza.reporte.kpis.pkrSinPromesas') : undefined}
+              />
+              <KpiTile
+                label={t('inmobiliaria.ai.cobranza.reporte.kpis.outsideHours')}
+                value={callsOutside != null ? String(callsOutside) : '—'}
+                alert={callsOutside != null && callsOutside >= callsOutsideCritical}
+              />
+            </FranjaDeCifras>
+          </div>
 
           {/* 2. Alert banners */}
           {/* Cada aviso baja 4px a su lugar, escalonado (techo 320 ms). La
               clave es el aviso (código + texto), no su posición. */}
           {data.alerts.length > 0 && (
-            <Stagger as="section" direction="down" distance="xs" className="space-y-2">
+            /* Revisora r25 (Reporte #1): cada aviso es UN renglón de una lista,
+               no un cartel de color apilado sobre otro. */
+            <Stagger as="ul" direction="down" distance="xs" className="divide-y divide-border rounded-lg border border-border bg-card" data-testid="reporte-avisos">
               {data.alerts.map((alert) => (
                 <StaggerItem
+                  as="li"
                   key={`${alert.code}-${alert.message_es}`}
-                  className={[
-                    'rounded-lg border p-3 flex items-start gap-3',
-                    alert.level === 'CRITICAL'
-                      ? 'border-danger/30 bg-danger-soft'
-                      : 'border-warning/30 bg-warning-soft',
-                  ].join(' ')}
+                  className="flex items-start gap-2.5 px-4 py-2.5"
                   role="alert"
                 >
                   <Warning
-                    className={[
-                      'w-4 h-4 flex-shrink-0 mt-0.5',
-                      alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
-                    ].join(' ')}
+                    className={['mt-0.5 h-4 w-4 flex-shrink-0', alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning'].join(' ')}
                     weight="fill"
                     aria-hidden="true"
                   />
-                  {/* `message_es` viene redactado del agente. Antes se ignoraba
-                      para componer «{kpi}: {actual} (umbral {threshold})» con
-                      campos que no existen → «: undefined (umbral 12)». */}
-                  <p
-                    className={[
-                      'text-caption',
-                      alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
-                    ].join(' ')}
-                  >
-                    {textoDelAviso(alert, locale)}
-                  </p>
+                  {/* `message_es` viene redactado del agente. */}
+                  <p className="text-body-sm text-fg">{textoDelAviso(alert, locale)}</p>
                 </StaggerItem>
               ))}
             </Stagger>
@@ -318,18 +345,18 @@ function ReporteViewerContent() {
 
           {/* 3. Top-N debtors */}
           <section className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b border-border bg-muted/20">
-              <MonoLabel>
+            <div className="px-4 py-3 border-b border-border">
+              <h2 className="text-body font-normal text-fg">
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.heading')}
-              </MonoLabel>
+              </h2>
             </div>
             {data.top_debtors.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-body-sm text-muted-foreground text-center py-6">
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.empty')}
               </p>
             ) : (
-              <Table>
-                <TableHeader className="bg-muted/10 border-b border-border">
+              <Table className="max-md:block">
+                <TableHeader className="max-md:hidden">
                   <TableRow>
                     <TableHead>
                       {locale.startsWith('es') ? 'Deudor' : 'Debtor'}
@@ -345,9 +372,9 @@ function ReporteViewerContent() {
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBodyAnimado>
+                <TableBodyAnimado className="max-md:block">
                   {data.top_debtors.slice(0, topN).map((d) => (
-                    <TableRowAnimada key={d.debtor_id} className="border-b border-border last:border-0">
+                    <TableRowAnimada key={d.debtor_id} className="border-b border-border last:border-0 max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:px-4 max-md:py-3">
                       {/* El agente SÍ manda `debtor_name` (JOIN agregado el
                           2026-08-10); esta tabla se quedó pintando la
                           referencia y mostraba «CD06141F» en la columna
@@ -356,20 +383,21 @@ function ReporteViewerContent() {
                           nombre. La referencia queda de respaldo, para un
                           payload cacheado sin el JOIN — nunca un nombre
                           inventado. */}
-                      <TableCell className="px-3 py-2 text-caption text-foreground">
+                      <TableCell className="px-3 py-2 text-body-sm text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                         {d.debtor_name?.trim() || (
                           <span className="font-mono text-muted-foreground">
                             {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-fg max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted">
                         {d.dpd}
+                        <span className="md:hidden"> {locale.startsWith('es') ? 'días de mora' : 'days past due'}</span>
                       </TableCell>
-                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-fg max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                         {COP_FORMATTER.format(d.balance_cop)}
                       </TableCell>
-                      <TableCell className="px-3 py-2 font-mono tabular-nums text-caption text-muted-foreground">
+                      <TableCell className="px-3 py-2 font-mono tabular-nums text-caption text-fg-muted max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                         {d.last_contact_at ? diaCorto(d.last_contact_at, locale) : '—'}
                       </TableCell>
                     </TableRowAnimada>
@@ -381,10 +409,10 @@ function ReporteViewerContent() {
 
           {/* 4. 30-day history + CSV export */}
           <section className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
-              <MonoLabel>
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+              <h2 className="text-body font-normal text-fg">
                 {t('inmobiliaria.ai.cobranza.reporte.history.heading')}
-              </MonoLabel>
+              </h2>
               <Button
                 variant="outline"
                 size="sm"
@@ -407,7 +435,7 @@ function ReporteViewerContent() {
                 <Spinner />
               </div>
             ) : history.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-body-sm text-muted-foreground text-center py-6">
                 {t('inmobiliaria.ai.cobranza.reporte.history.empty')}
               </p>
             ) : (
@@ -477,6 +505,11 @@ function ReporteViewerContent() {
   )
 }
 
+/**
+ * Una cifra del reporte, dentro de la franja (GLOW UP 21-10). El punto dice
+ * cómo va: rojo si cruzó su umbral, verde si no; sin cifra («—») no es una
+ * buena noticia y va sin punto.
+ */
 function KpiTile({
   label,
   value,
@@ -489,34 +522,14 @@ function KpiTile({
   /** De dónde sale la cifra, o por qué no hay. */
   pista?: string
 }) {
-  // Sin cifra («—») no es una buena noticia: va en gris, no en verde.
   const sinCifra = value === '—'
   return (
-    <div
-      className={[
-        'rounded-lg border bg-card p-4',
-        alert
-          ? 'border-danger/30'
-          : 'border-border',
-      ].join(' ')}
-    >
-      <MonoLabel>
-        {label}
-      </MonoLabel>
-      <p
-        className={[
-          'mt-2 text-3xl font-mono tabular-nums',
-          alert
-            ? 'text-danger font-bold'
-            : sinCifra
-              ? 'text-muted-foreground'
-              : 'text-success',
-        ].join(' ')}
-      >
-        {value}
-      </p>
-      {pista && <p className="mt-1 text-caption text-muted-foreground">{pista}</p>}
-    </div>
+    <Cifra
+      etiqueta={label}
+      valor={value}
+      tono={alert ? 'peligro' : sinCifra ? undefined : 'exito'}
+      detalle={pista}
+    />
   )
 }
 

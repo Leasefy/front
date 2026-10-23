@@ -108,9 +108,16 @@ vi.mock('@/components/ui', () => ({
     React.createElement('div', { 'data-testid': 'spinner' }, label ?? 'Loading'),
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) =>
     React.createElement('input', props),
+  // El filtro «Inmueble ▾» (revisora r22 #6): un contenedor simple; las pruebas no lo abren.
+  Select: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'select' }, children),
+  SelectTrigger: ({ children, ...props }: { children?: React.ReactNode }) => React.createElement('div', props, children),
+  SelectValue: () => null,
+  SelectContent: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
+  SelectItem: ({ children, value }: { children?: React.ReactNode; value: string }) =>
+    React.createElement('div', { 'data-value': value }, children),
 }))
 
-vi.mock('@/components/data-display/EmptyState', () => ({
+vi.mock('@/components/ui/empty-state', () => ({
   EmptyState: ({ title }: { title: string }) =>
     React.createElement('div', { 'data-testid': 'empty-state' }, title),
 }))
@@ -160,7 +167,7 @@ vi.mock('@/components/ui/responsive-dialog', () => {
 
 /* El explicador vive detrás de un botón y abre un modal del design system; su
    cadena de importes llega al `Dialog` real, que esta prueba dobla a medias.
-   Acá sólo interesa que el mapa NO esté puesto sobre la pantalla, así que el
+   Aquí sólo interesa que el mapa NO esté puesto sobre la pantalla, así que el
    doble pinta el botón y nada más. */
 vi.mock('@/components/ui/para-entender-mas', () => ({
   ParaEntenderMas: ({ etiqueta }: { etiqueta: string }) => (
@@ -171,13 +178,22 @@ vi.mock('@/components/ui/para-entender-mas', () => ({
 vi.mock('@leasefy/cadence', async (importOriginal) => ({
   // El movimiento (ola 2): las primitivas reales. Con las animaciones apagadas
   // (`vitest.setup.ts`) muestran el estado final de una.
-  ...(({ AnimatedNumber, CrossFade, MotionIndicator, Presence, FormError }) => ({
+  ...(({ AnimatedNumber, Avatar, Cifra, CrossFade, FranjaDeCifras, MotionIndicator, Presence, FormError, MonoLabel, StatusBadge, Badge }) => ({
+    // El sobretítulo del encabezado común (ronda 22).
+    MonoLabel,
     AnimatedNumber,
+    Avatar,
+    // La franja de cifras por estado (glow up 21-10): las reales, son las que filtran.
+    Cifra,
+    FranjaDeCifras,
     CrossFade,
     MotionIndicator,
     Presence,
     // El error bajo el campo del cajón de «Aprobar» (marca del estudio).
     FormError,
+    // El estado de la fila y la marca de la lista corta (revisora r24): las reales.
+    StatusBadge,
+    Badge,
   }))(await importOriginal<typeof import('@leasefy/cadence')>()),
   // Reenvía TODAS las props, no sólo onClick: un mock que las filtra deja
   // pasar por bueno un botón sin data-testid ni aria-label reales.
@@ -291,10 +307,20 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-async function renderPage() {
+/**
+ * Nico (22-10, decisión 22): la pantalla abre en la pestaña «En revisión» si hay alguna. Las pruebas que miran la
+ * lista entera tocan antes «Todas» (como haría la persona); `{ todas: false }` deja la pestaña con la que abre.
+ */
+async function renderPage({ todas = true }: { todas?: boolean } = {}) {
   await act(async () => {
     root.render(React.createElement(PostulacionesPage))
   })
+  const pestanaTodas = container.querySelector<HTMLButtonElement>('[data-testid="pestana-all"]')
+  if (todas && pestanaTodas) {
+    await act(async () => {
+      pestanaTodas.click()
+    })
+  }
 }
 
 function tiles(): HTMLButtonElement[] {
@@ -319,22 +345,35 @@ describe('PostulacionesPage', () => {
     expect(container.textContent).toContain('Pide info')
   })
 
-  it('renders the six clickable stat tiles with their counts', async () => {
+  it('las pestañas por estado llevan su conteo y las de cero no salen; «Todas» siempre (Nico, decisión 22)', async () => {
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
 
     const allTiles = tiles()
-    // QA-IA-A (04-10-2026): seis — «No adjudicadas» va aparte de «Rechazadas».
-    expect(allTiles.length).toBe(6)
-
-    const total = allTiles.find((b) => b.textContent?.includes('Total'))
-    expect(total?.textContent).toContain('2')
-    const review = allTiles.find((b) => b.textContent?.includes('En revisión'))
-    expect(review?.textContent).toContain('1')
+    // En revisión 1 · Pide información 1 · Todas 2: Aprobadas, No adjudicadas y Rechazadas están en 0.
+    expect(allTiles.map((b) => b.textContent)).toEqual(['En revisión1', 'Pide información1', 'Todas2'])
   })
 
-  it('filters rows when a stat tile is clicked, and resets on re-click', async () => {
+  it('abre en «En revisión» si hay alguna; sin ninguna, en «Todas»', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+    await renderPage({ todas: false })
+    expect(tiles().find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent).toContain('En revisión')
+    expect(container.querySelectorAll('tbody tr').length).toBe(1)
+    expect(container.textContent).toContain('Juan Pérez')
+
+    act(() => root.unmount())
+    root = createRoot(container)
+    getAllCandidatesMock.mockResolvedValue({
+      ...RESPONSE,
+      candidates: RESPONSE.candidates.filter((c) => c.status !== 'UNDER_REVIEW'),
+    })
+    await renderPage({ todas: false })
+    expect(tiles().find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent).toContain('Todas')
+    expect(container.querySelectorAll('tbody tr').length).toBe(1)
+  })
+
+  it('filters rows when a tab is clicked, and «Todas» shows them all again', async () => {
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
@@ -349,9 +388,9 @@ describe('PostulacionesPage', () => {
     expect(container.textContent).toContain('Ana Gómez')
     expect(container.textContent).not.toContain('Juan Pérez')
 
-    // Re-click resets to all
+    // «Todas» vuelve a la lista entera (una pestaña no se apaga con otro clic).
     await act(async () => {
-      tiles().find((b) => b.textContent?.includes('Pide info'))!.click()
+      tiles().find((b) => b.textContent?.includes('Todas'))!.click()
     })
     expect(container.querySelectorAll('tbody tr').length).toBe(2)
   })
@@ -372,20 +411,21 @@ describe('PostulacionesPage', () => {
     expect(container.textContent).toContain('Juan Pérez')
   })
 
-  it('filters rows from the segmented control, in sync with the tiles', async () => {
+  it('las cifras por estado son el ÚNICO filtro por estado (antes había un selector repetido)', async () => {
+    // Glow up 21-10: seis tarjetas MÁS un selector con los mismos seis estados era
+    // decir lo mismo dos veces. Las cifras viven dentro de la tabla y filtran.
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
 
-    const segment = container.querySelector('[data-segment="NEEDS_INFO"]') as HTMLButtonElement
-    expect(segment).toBeTruthy()
+    expect(container.querySelector('[data-segment]')).toBeNull()
+    const franja = container.querySelector('[data-testid="estados-de-las-postulaciones"]')
+    expect(franja).toBeTruthy()
 
     await act(async () => {
-      segment.click()
+      tiles().find((b) => b.textContent?.includes('Pide info'))!.click()
     })
     expect(container.querySelectorAll('tbody tr').length).toBe(1)
-    expect(container.textContent).toContain('Ana Gómez')
-    // The matching tile reflects the same active filter
     const activeTile = tiles().find((b) => b.getAttribute('aria-pressed') === 'true')
     expect(activeTile?.textContent).toContain('Pide info')
   })
@@ -546,8 +586,8 @@ describe('PostulacionesPage', () => {
     expect(fila?.textContent).not.toContain('Desconocido')
     const noAdjudicadas = tiles().find((b) => b.textContent?.includes('No adjudicadas'))
     expect(noAdjudicadas?.textContent).toContain('1')
-    const rechazadas = tiles().find((b) => b.textContent?.includes('Rechazadas'))
-    expect(rechazadas?.textContent).not.toContain('1')
+    // «Rechazadas» está en 0: su pestaña no sale (decisión 22).
+    expect(tiles().find((b) => b.textContent?.includes('Rechazadas'))).toBeUndefined()
   })
 
   it('S2: si el refresco de fondo falla, la tabla se queda y se avisa', async () => {

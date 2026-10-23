@@ -326,6 +326,25 @@ describe('PantallaDelEstadoDeCuenta', () => {
     );
   });
 
+  it('en un portal, con `encabezado`: la sección del riel y su línea, sin «Volver a…» ni el nombre de quien mira', async () => {
+    const cargar = vi.fn().mockResolvedValue(estadoDeCuenta());
+    await montar(
+      <PantallaDelEstadoDeCuenta
+        cargar={cargar}
+        hoy={HOY}
+        volverA={{ label: 'Volver a pagos', href: '/inquilino/pagos' }}
+        encabezado={{ seccion: 'Mi arriendo', descripcion: 'Cada cuota de tu contrato, lo que ya pagaste y lo que te falta.' }}
+      />,
+    );
+    expect(host.querySelector('h1')?.textContent).toBe('Estado de cuenta');
+    expect(host.textContent).toContain('Mi arriendo');
+    expect(host.textContent).toContain('Cada cuota de tu contrato');
+    expect(host.querySelector('[data-testid="estado-volver"]')).toBeNull();
+    expect(host.querySelector('[data-testid="estado-subtitulo"]')).toBeNull();
+    // Imprimir sigue a la mano.
+    expect(host.querySelector('[data-testid="imprimir-estado"]')).not.toBeNull();
+  });
+
   it('el enlace público no lleva filtros: el cliente recibe su cuenta completa', async () => {
     const cargar = vi.fn().mockResolvedValue(estadoDeCuenta());
     await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} sinFiltros />);
@@ -438,4 +457,21 @@ describe('la barra de filtros vive pegada a las tablas', () => {
       true,
     );
   });
+
+  it('glow up 22-10: el vacío del portal lleva su salida y, sin documento, «Imprimir» no se pinta', async () => {
+    const sinContratosError = Object.assign(new Error('sin contratos'), { status: 404, code: 'SIN_CONTRATOS', detalle: { code: 'SIN_CONTRATOS' } });
+    const cargar = vi.fn().mockRejectedValue(sinContratosError);
+    await montar(
+      <PantallaDelEstadoDeCuenta
+        cargar={cargar}
+        hoy={HOY}
+        encabezado={{ seccion: 'Mi arriendo', descripcion: 'Cada cuota.' }}
+        textosSinContratos={{ titulo: 'Todavía no tienes un contrato de arriendo', detalle: 'Cuando tu inmobiliaria lo firme…', accion: { label: 'Ver inmuebles para mí', href: '/inquilino/para-ti' } }}
+      />,
+    );
+    expect(host.querySelector('[data-testid="estado-sin-contratos-pantalla"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="estado-sin-contratos-pantalla"] a[href="/inquilino/para-ti"]')?.textContent).toBe('Ver inmuebles para mí');
+    expect(host.querySelector('[data-testid="imprimir-estado"]')).toBeNull();
+  });
 });
+

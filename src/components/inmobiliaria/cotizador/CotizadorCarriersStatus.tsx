@@ -26,7 +26,7 @@ function RouteBadge({ mode, t }: { mode: string; t: (k: string) => string }) {
   const key = modeKeyMap[mode] ?? modeKeyMap.stub
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ROUTE_COLORS[mode] ?? ROUTE_COLORS.rest}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium ${ROUTE_COLORS[mode] ?? ROUTE_COLORS.rest}`}
     >
       {t(key)}
     </span>
@@ -47,7 +47,7 @@ function SlaBadge({ state, t }: { state: string; t: (k: string) => string }) {
   }
   const key = slaKeyMap[state] ?? slaKeyMap.healthy
   return (
-    <span className={`text-xs font-medium ${SLA_COLORS[state] ?? SLA_COLORS.healthy}`}>
+    <span className={`text-caption font-medium ${SLA_COLORS[state] ?? SLA_COLORS.healthy}`}>
       {/* QA-IA-95: «Responde bien / Lenta / Con fallas», sin la sigla «SLA:» ante la inmobiliaria. */}
       {t(key)}
     </span>
@@ -116,7 +116,7 @@ export function CotizadorCarriersStatus({
           >
             {/* Carrier name + route mode badge */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-fg capitalize">
+              <span className="text-sm font-medium text-fg capitalize">
                 {nombreDeLaAseguradora(carrier.name)}
               </span>
               <RouteBadge mode={carrier.mode} t={t} />
@@ -124,7 +124,7 @@ export function CotizadorCarriersStatus({
             {/* SLA state badge */}
             <SlaBadge state={carrier.slaState} t={t} />
             {/* Last verdict time */}
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               {t('inmobiliaria.ai.cotizador.overview.carriers.lastVerdict')}:{' '}
               {carrier.lastVerdictAt
                 ? relativeTime(carrier.lastVerdictAt, locale)

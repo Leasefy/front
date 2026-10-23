@@ -13,7 +13,6 @@ import {
   Timer,
   Wrench,
   FileArrowUp,
-  Sparkle,
   WarningCircle,
   SignOut,
 } from '@phosphor-icons/react';
@@ -25,6 +24,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Button, EmptyState } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { TablePagination } from '@/components/ui/pagination';
 import {
   useTablePagination,
@@ -527,48 +527,36 @@ function PortafolioContent() {
   }, [porEliminar, eliminando]);
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.portafolio.title')}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* GLOW UP 21-10: el encabezado de todas las pantallas (sección · título · una línea | la
+          secundaria y la única azul, chicas). La «Captura con IA» sigue apagada a pedido de Nico
+          (2026-09-02: «eso no sirve ahora»); el componente PropertyIACapture sigue entero. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secCaptacion')}
+        titulo={t('inmobiliaria.portafolio.title')}
+        descripcion={
+          <>
             {t('inmobiliaria.portafolio.subtitle')}
-          </p>
-          {soloDisponibles && (
-            <p className="text-xs text-fg-muted" data-testid="portafolio-solo-disponibles">
-              Ves los inmuebles disponibles. Los arrendados son operación de un contrato en curso y no hacen parte de tu rol.
-            </p>
-          )}
-        </div>
-        {/* IN-19: a 390 px los botones van apilados a lo ancho; antes «Nueva
-            consignación» se salía por la derecha. */}
-        <div className="flex flex-col-reverse gap-2 shrink-0 sm:flex-row sm:items-center [&>button]:w-full sm:[&>button]:w-auto">
-          {/* Captura con IA — venía de «Inmuebles · catálogo». Apagada a pedido
-              de Nico (2026-09-02: «eso no sirve ahora»). Desde el 15-09 la ruta
-              /inmuebles/captura REDIRIGE acá (W6): estaba viva sin un solo
-              enlace que llegara a ella. El componente PropertyIACapture sigue
-              entero; cuando la captura esté a la altura, se descomenta este
-              botón y se vuelve a montar la pantalla.
-          <Button variant="secondary" hideArrow onClick={handleCaptura}>
-            <Sparkle className="w-4 h-4 text-primary" weight="fill" />
-            {t('inmobiliaria.inmuebles.acciones.captura')}
-          </Button>
-          */}
-          {/* Import (secundaria) */}
-          <Button variant="secondary" hideArrow onClick={handleImportar}>
+            {soloDisponibles && (
+              <span className="mt-1 block text-caption" data-testid="portafolio-solo-disponibles">
+                Ves los inmuebles disponibles. Los arrendados son operación de un contrato en curso y no hacen parte de tu rol.
+              </span>
+            )}
+          </>
+        }
+        acciones={
+          <Button variant="secondary" size="sm" hideArrow onClick={handleImportar}>
             <FileArrowUp className="w-4 h-4" />
             {t('inmobiliaria.import.title')}
           </Button>
-          {/* Nueva consignación (principal) */}
-          <Button hideArrow onClick={handleNuevaConsignacion}>
+        }
+        accionPrincipal={
+          <Button size="sm" hideArrow onClick={handleNuevaConsignacion}>
             <Plus className="w-4 h-4" />
             {t('inmobiliaria.portafolio.addProperty')}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Qué inmuebles puede abrir esta persona, en este teléfono, sin red.
           No aparece hasta que hay al menos uno preparado. */}
@@ -608,54 +596,42 @@ function PortafolioContent() {
 
       {/* Unified Data Card - View Toggle + Filters + Content + Pagination.
           Sin entrada propia: la página ya entra con el `template.tsx`. Lo que
-          se anima acá adentro son los CAMBIOS (vista, filtros, páginas). */}
+          se anima aquí adentro son los CAMBIOS (vista, filtros, páginas). */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        {/* View Toggle Header - First */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <SegmentedControl<ViewMode>
-            aria-label={t('inmobiliaria.portafolio.views.table')}
-            value={viewMode}
-            onChange={setViewMode}
-            options={[
-              {
-                value: 'table',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <List className="w-4 h-4" />
-                    {t('inmobiliaria.portafolio.views.table')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.portafolio.views.table'),
-              },
-              {
-                value: 'grid',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <SquaresFour className="w-4 h-4" />
-                    {t('inmobiliaria.portafolio.views.cards')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.portafolio.views.cards'),
-              },
-            ]}
-          />
-          <span className="text-sm text-fg-muted tabular-nums">
-            {/* «1 inmueble» / «N inmuebles»: el singular es su propia clave
-                (`…Uno`, como el resto del diccionario); antes decía
-                «1 inmuebles» (QA con avatares, 04-10). */}
-            {sePudoContar
-              ? t(
-                  filteredConsignaciones.length === 1
-                    ? 'inmobiliaria.portafolio.stats.propertyCountUno'
-                    : 'inmobiliaria.portafolio.stats.propertyCount',
-                  { count: filteredConsignaciones.length },
-                )
-              : t('inmobiliaria.portafolio.stats.propertyCountSinContar')}
-          </span>
-        </div>
-
-        {/* Filters - Second */}
+        {/* Revisora r25 (skill §2, UNA barra): los cajones y, debajo, el buscador, los filtros y la
+            vista (Tabla · Tarjetas) en un solo renglón. Antes la vista iba sola en un renglón propio
+            encima de los filtros: tres renglones de controles antes del primer inmueble. En el
+            celular la vista queda en sus dos íconos (el nombre sigue para el lector). */}
         <ConsignacionFilters
+          vista={
+              <SegmentedControl<ViewMode>
+                aria-label={t('inmobiliaria.portafolio.views.table')}
+                value={viewMode}
+                onChange={setViewMode}
+                options={[
+                  {
+                    value: 'table',
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <List className="w-4 h-4" aria-hidden="true" />
+                        <span className="max-md:sr-only">{t('inmobiliaria.portafolio.views.table')}</span>
+                      </span>
+                    ),
+                    ariaLabel: t('inmobiliaria.portafolio.views.table'),
+                  },
+                  {
+                    value: 'grid',
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <SquaresFour className="w-4 h-4" aria-hidden="true" />
+                        <span className="max-md:sr-only">{t('inmobiliaria.portafolio.views.cards')}</span>
+                      </span>
+                    ),
+                    ariaLabel: t('inmobiliaria.portafolio.views.cards'),
+                  },
+                ]}
+              />
+          }
           filters={filters}
           onFiltersChange={handleFiltersChange}
           consignaciones={allConsignaciones}
@@ -698,7 +674,14 @@ function PortafolioContent() {
                       `Consignacion`-typed; the two shapes share no
                       commission/availability/tenant fields to unify).
                     */}
-                    {paginatedConsignaciones.map((row) => (
+                    {/* Revisora r22 (Inmuebles #6): el mismo orden que la tabla por defecto (por título). */}
+                    {[...paginatedConsignaciones]
+                      .sort((a, b) => {
+                        const x = a.propertyTitle.toLowerCase();
+                        const y = b.propertyTitle.toLowerCase();
+                        return x < y ? -1 : x > y ? 1 : 0;
+                      })
+                      .map((row) => (
                       // `flex`: la tarjeta sigue llenando el alto de su fila.
                       <StaggerItem key={portafolioRowKey(row)} className="flex">
                         {row.kind === 'consignacion' ? (
@@ -730,7 +713,7 @@ function PortafolioContent() {
                     icono={Buildings}
                     titulo={t('inmobiliaria.portafolio.noProperties')}
                     descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
-                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
+                    crear={{ label: 'Nuevo mandato', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
@@ -777,7 +760,7 @@ function PortafolioContent() {
                     icono={Buildings}
                     titulo={t('inmobiliaria.portafolio.noProperties')}
                     descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
-                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
+                    crear={{ label: 'Nuevo mandato', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
@@ -789,7 +772,7 @@ function PortafolioContent() {
 
         {/* Pie de tabla — el paginador del design system.
 
-            🔴 `sePudoContar` también manda acá (21-09, visto en el navegador):
+            🔴 `sePudoContar` también manda aquí (21-09, visto en el navegador):
             con la lista caída, el pie seguía diciendo «Mostrando 1–10 de 25» y
             ofreciendo las páginas 2 y 3 encima del cartel de que no se pudo
             cargar. Es el mismo defecto que el contador del encabezado —un

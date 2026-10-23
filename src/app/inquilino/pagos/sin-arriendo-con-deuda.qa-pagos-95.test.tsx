@@ -84,7 +84,7 @@ describe('N-21 · Pagos sin arriendo del portal', () => {
     resumen.valor = { proxima: null, vencidoCop: 6_300_000, cuotasVencidas: 3, restaPorPagar: 11_830_000, enMora: true, diasDeMora: 40 };
     await montar();
     const texto = host.textContent ?? '';
-    expect(texto).not.toContain('Sin pagos por ahora');
+    expect(texto).not.toContain('Todavía no tienes un arriendo');
     expect(host.querySelector('[data-testid="sin-pago-en-linea"]')?.textContent).toContain(
       'El pago en línea todavía no está disponible para tu contrato',
     );
@@ -97,6 +97,74 @@ describe('N-21 · Pagos sin arriendo del portal', () => {
     mio.mockRejectedValue(Object.assign(new Error('Ese inquilino todavía no tiene contratos'), { status: 404 }));
     resumen.valor = null;
     await montar();
-    expect(host.textContent ?? '').toContain('Sin pagos por ahora');
+    expect(host.textContent ?? '').toContain('Todavía no tienes un arriendo');
+  });
+});
+
+describe('Pagos · LA RESPUESTA en grande (glow up 22-10)', () => {
+  it('con vencido, la cifra grande es lo vencido; la próxima cuota y lo que resta van al pie', async () => {
+    mio.mockResolvedValue({});
+    resumen.valor = {
+      proxima: { valor: 2_100_000, fecha: '2026-11-05', diasQueFaltan: 14 },
+      vencidoCop: 6_300_000,
+      cuotasVencidas: 3,
+      restaPorPagar: 11_830_000,
+      enMora: true,
+      diasDeMora: 40,
+    };
+    await montar();
+    const cifras = host.querySelector('[data-testid="cifras-de-pagos"]');
+    expect(cifras?.textContent).toContain('Tienes vencido');
+    expect(cifras?.querySelector('[data-testid="cifra-vencido"]')?.textContent).toMatch(/6\.300\.000/);
+    expect(cifras?.querySelector('[data-testid="cifra-proxima-cuota"]')?.textContent).toMatch(/2\.100\.000/);
+    expect(cifras?.querySelector('[data-testid="cifra-resta-por-pagar"]')?.textContent).toMatch(/11\.830\.000/);
+  });
+
+  it('revisora r25: la cifra trae su barra con lo pagado del contrato, dicho una vez al pie', async () => {
+    mio.mockResolvedValue({
+      contratos: [
+        {
+          secciones: {
+            arriendos: [
+              { estado: 'CANCELADA', valorNeto: 2_100_000 },
+              { estado: 'PENDIENTE', valorNeto: 2_100_000 },
+              { estado: 'PENDIENTE', valorNeto: 2_100_000 },
+            ],
+            otrosConceptos: [],
+          },
+        },
+      ],
+    });
+    resumen.valor = {
+      proxima: { valor: 2_100_000, fecha: '2026-11-05', diasQueFaltan: 14 },
+      vencidoCop: 2_100_000,
+      cuotasVencidas: 1,
+      restaPorPagar: 4_200_000,
+      enMora: true,
+      diasDeMora: 10,
+    };
+    await montar();
+    const cifras = host.querySelector('[data-testid="cifras-de-pagos"]');
+    expect(cifras?.querySelector('[role="img"]')).not.toBeNull();
+    expect(cifras?.querySelector('[data-testid="cifra-pagado-del-contrato"]')?.textContent).toMatch(
+      /Pagado \$\s?2\.100\.000 de \$\s?6\.300\.000 del contrato/,
+    );
+  });
+
+  it('al día, la cifra grande es la próxima cuota con su vencimiento', async () => {
+    mio.mockResolvedValue({});
+    resumen.valor = {
+      proxima: { valor: 2_100_000, fecha: '2026-11-05', diasQueFaltan: 14 },
+      vencidoCop: 0,
+      cuotasVencidas: 0,
+      restaPorPagar: 4_200_000,
+      enMora: false,
+      diasDeMora: 0,
+    };
+    await montar();
+    const cifras = host.querySelector('[data-testid="cifras-de-pagos"]');
+    expect(cifras?.textContent).toContain('Tu próxima cuota');
+    expect(cifras?.querySelector('[data-testid="cifra-proxima-cuota"]')?.textContent).toMatch(/2\.100\.000/);
+    expect(cifras?.querySelector('[data-testid="cifra-vencido"]')?.textContent).toContain('Estás al día');
   });
 });

@@ -58,7 +58,11 @@ import {
   DropdownListSeparator,
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, Avatar, StatusBadge, type SemanticTone } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { hayQuePintarLasPestanas, sinElNumeroRepetido } from '@/lib/pantalla/pestanas-sin-repetir';
+import type { PestanaDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { useTr } from '@/lib/i18n/use-tr';
 import type {
   AgencyUser,
   AgencyRole,
@@ -66,9 +70,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import {
   getRoleLabel,
-  getRoleColor,
   ROLES_DEL_SISTEMA,
-  getUserStatusColor,
   getUserStatusLabel,
 } from '@/lib/types/inmobiliaria';
 import { formatRelativeTime } from '@/lib/format';
@@ -103,6 +105,13 @@ interface ConfigUsuariosProps {
 
 type FilterRole = AgencyRole | 'all';
 type FilterStatus = AgencyUser['status'] | 'all';
+
+/** El estado de una persona con su punto: activo en verde, la invitación abierta en ámbar. */
+const TONO_DEL_ESTADO: Record<AgencyUser['status'], SemanticTone> = {
+  active: 'success',
+  invited: 'warning',
+  inactive: 'neutral',
+};
 
 // ============================================================================
 // Edit Role Modal Component
@@ -148,11 +157,7 @@ function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRo
         <form id="form-editar-rol" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>{t('inmobiliaria.config.users.editRoleModal.currentRole')}</Label>
-            <div className="flex items-center gap-2">
-              <span className={cn('px-3 py-1.5 rounded-full text-sm font-medium', user && getRoleColor(user.role))}>
-                {user && getRoleLabel(user.role)}
-              </span>
-            </div>
+            <p className="text-body text-fg">{user && getRoleLabel(user.role)}</p>
           </div>
 
           <div className="space-y-2">
@@ -271,6 +276,7 @@ export function ConfigUsuarios({
   isLoading = false,
 }: ConfigUsuariosProps) {
   const { t } = useI18n();
+  const tr = useTr();
 
   // Filter state
   const [search, setSearch] = useState('');
@@ -348,19 +354,17 @@ export function ConfigUsuarios({
       inactive: users.filter((u) => u.status === 'inactive').length,
     };
   }, [users]);
+  const todosActivos = userCounts.total > 1 && userCounts.active === userCounts.total;
+  const pestanasDeEstado: PestanaDeEstado<FilterStatus>[] = [
+    { valor: 'all', etiqueta: tr('Todos'), cuantos: userCounts.total, fija: true },
+    // Revisora r25: con nadie inactivo ni invitado, «Activos» repetía «Todos».
+    ...(todosActivos && filterStatus !== 'active'
+      ? []
+      : [{ valor: 'active' as FilterStatus, etiqueta: tr('Activos'), cuantos: userCounts.active, fija: true }]),
+    { valor: 'invited', etiqueta: tr('Invitaciones abiertas'), cuantos: userCounts.invited, tono: 'aviso' },
+    { valor: 'inactive', etiqueta: tr('Inactivos'), cuantos: userCounts.inactive },
+  ];
 
-  // Get initials for avatar fallback. Falls back to the email when a member
-  // has no name yet (e.g. an invited member who has not completed onboarding).
-  const getInitials = (name?: string, email?: string) => {
-    const source = (name && name.trim()) || (email && email.trim()) || '';
-    if (!source) return '?';
-    return source
-      .split(/\s+/)
-      .map((n) => n[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
-  };
 
   // Handle invite submit
   const handleInvite = async (invite: UserInvite) => {
@@ -384,24 +388,40 @@ export function ConfigUsuarios({
 
   return (
     <div className="space-y-6">
-      {/* Cuántos son, y la única puerta para sumar a alguien. El título de la
-          sección lo pone el marco de Configuración: acá repetirlo sobraba. */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <p className="text-sm text-fg-muted">
-          {t('inmobiliaria.config.users.userCount', { total: userCounts.total, active: userCounts.active, invited: userCounts.invited })}
-        </p>
+      {/* Glow up 22-10: cuántos hay de cada estado lo dicen las pestañas de la
+          tarjeta (antes, además, una frase arriba y un selector de estado: lo
+          mismo tres veces). Arriba queda la búsqueda, el rol y la ÚNICA puerta
+          para sumar a alguien. El título lo pone el marco de Configuración. */}
+      {/* Revisora r27 (R6): el buscador y el rol van DENTRO de la tarjeta de la tabla; arriba sólo la puerta para sumar a alguien. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         {onInvite && (
-          <Button hideArrow onClick={() => setInviteModalOpen(true)}>
+          <Button hideArrow size="sm" className="sm:ml-auto" onClick={() => setInviteModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             {t('inmobiliaria.config.users.invite')}
           </Button>
         )}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
+      {/* La tabla sola dentro de la tarjeta, sin título encima (estándar del
+          panel). El vacío vive dentro del <TableBody> para que se sigan viendo
+          los encabezados. */}
+      <section className="rounded-lg border border-border bg-surface overflow-hidden">
+        {/* Las pestañas de estado con su conteo, DENTRO de la tarjeta (como Deuda del mes). */}
+        {/* R2 (revisora r27): con todos activos quedaba UNA pestaña, «Todos 8», que no
+            filtra nada: sola no se pinta. Con dos o más, «Todos» sin el número repetido. */}
+        {hayQuePintarLasPestanas(pestanasDeEstado, filterStatus) ? (
+        <div className="border-b border-border px-4 py-2.5 empty:hidden">
+          <PestanasDeEstado<FilterStatus>
+            etiqueta={tr('Estado de las personas')}
+            valor={filterStatus}
+            onCambio={setFilterStatus}
+            data-testid="equipo-estados"
+            pestanas={sinElNumeroRepetido(pestanasDeEstado, 'all', filterStatus)}
+          />
+        </div>
+        ) : null}
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1 sm:max-w-sm">
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
           <Input
             type="search"
@@ -412,9 +432,8 @@ export function ConfigUsuarios({
           />
         </div>
 
-        {/* Role Filter */}
         <Select value={filterRole} onValueChange={(v) => setFilterRole(v as FilterRole)}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="sm:w-[180px]" aria-label={t('inmobiliaria.config.users.role')}>
             <SelectValue placeholder={t('inmobiliaria.config.users.allRoles')} />
           </SelectTrigger>
           <SelectContent>
@@ -426,28 +445,11 @@ export function ConfigUsuarios({
             ))}
           </SelectContent>
         </Select>
-
-        {/* Status Filter */}
-        <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t('inmobiliaria.config.users.allStatuses')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('inmobiliaria.config.users.allStatuses')}</SelectItem>
-            <SelectItem value="active">{t('inmobiliaria.config.users.active')}</SelectItem>
-            <SelectItem value="invited">{t('inmobiliaria.config.users.invited')}</SelectItem>
-            <SelectItem value="inactive">{t('inmobiliaria.config.users.inactive')}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* La tabla sola dentro de la tarjeta, sin título encima (estándar del
-          panel). El vacío vive dentro del <TableBody> para que se sigan viendo
-          los encabezados. */}
-      <section className="rounded-lg border border-border bg-surface overflow-hidden">
-        <div className="overflow-x-auto">
-        <Table className="w-full min-w-[800px]">
-          <TableHeader>
+        </div>
+        <div className="md:overflow-x-auto">
+        {/* En el celular cada persona es una tarjeta (patrón de Deuda del mes). */}
+        <Table className="w-full md:min-w-[800px] max-md:block">
+          <TableHeader className="max-md:hidden">
             <TableRow className="border-b border-border-faint dark:border-border-strong">
               <TableHead className="text-left p-4">
                 <span>
@@ -459,11 +461,13 @@ export function ConfigUsuarios({
                   {t('inmobiliaria.config.users.role')}
                 </span>
               </TableHead>
-              <TableHead className="text-left p-4">
-                <span>
-                  {t('inmobiliaria.config.users.status')}
-                </span>
-              </TableHead>
+              {todosActivos ? null : (
+                <TableHead className="text-left p-4">
+                  <span>
+                    {t('inmobiliaria.config.users.status')}
+                  </span>
+                </TableHead>
+              )}
               <TableHead className="text-left p-4 hidden md:table-cell">
                 <span>
                   {t('inmobiliaria.config.users.lastAccess')}
@@ -475,10 +479,10 @@ export function ConfigUsuarios({
           {/* Las filas entran escalonadas (techo del sistema) y salen al
               filtrar, buscar o cambiar de página; el vacío entra solo (su
               `SinDatos` ya trae la entrada). */}
-          <TableBodyAnimado>
+          <TableBodyAnimado className="max-md:block">
             {pageItems.length === 0 && (
-              <TableRow key="sin-miembros">
-                <TableCell colSpan={5} className="p-0">
+              <TableRow key="sin-miembros" className="max-md:block">
+                <TableCell colSpan={todosActivos ? 4 : 5} className="p-0 max-md:block">
                   <SinDatos
                     hayFiltros={hayFiltros}
                     queSon="miembros"
@@ -500,15 +504,12 @@ export function ConfigUsuarios({
               </TableRow>
             )}
               {pageItems.map((user) => {
-                const initials = getInitials(user.name, user.email);
-                const roleColor = getRoleColor(user.role);
-                const statusColor = getUserStatusColor(user.status);
-
                 return (
                   <TableRowAnimada
                     key={user.id}
                     className={cn(
                       'border-b border-border hover:bg-muted/40 transition-colors last:border-b',
+                      'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:px-4 max-md:py-4 max-md:last:border-0',
                       onVerFicha && 'cursor-pointer',
                     )}
                     tabIndex={onVerFicha ? 0 : undefined}
@@ -525,31 +526,16 @@ export function ConfigUsuarios({
                     }
                   >
                     {/* User Info */}
-                    <TableCell className="p-4">
+                    <TableCell className="p-4 max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                       <div className="flex items-center gap-3">
-                        {user.avatar ? (
-                          <img
-                            src={user.avatar}
-                            alt={user.name}
-                            className="w-10 h-10 rounded-full object-cover shrink-0"
-                          />
-                        ) : (
-                          <div className={cn(
-                            'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
-                            roleColor.split(' ')[0] // Just the bg class
-                          )}>
-                            <span className={cn('text-sm font-semibold', roleColor.split(' ').slice(1).join(' '))}>
-                              {initials}
-                            </span>
-                          </div>
-                        )}
+                        <Avatar name={user.name || user.email || '?'} src={user.avatar || undefined} size="md" />
                         <div className="min-w-0">
-                          <p className="font-medium text-fg dark:text-white truncate max-w-[200px]">
+                          <p className="font-medium text-fg truncate max-w-[200px] max-md:max-w-none">
                             {user.name?.trim() || user.email}
                           </p>
                           <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
                             <EnvelopeSimple className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate max-w-[180px]">{user.email}</span>
+                            <span className="truncate max-w-[180px] max-md:max-w-none">{user.email}</span>
                           </div>
                           {user.phone && (
                             <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
@@ -561,47 +547,51 @@ export function ConfigUsuarios({
                       </div>
                     </TableCell>
 
-                    {/* Role */}
-                    <TableCell className="p-4">
-                      <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', roleColor)}>
-                        {getRoleLabel(user.role)}
-                      </span>
+                    {/* Rol: es un dato, no un estado (sin pastilla de color). */}
+                    <TableCell className="p-4 text-body-sm text-fg max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-fg-muted">
+                      {getRoleLabel(user.role)}
                     </TableCell>
 
-                    {/* Status. Una invitación pendiente trae sus dos acciones A LA
-                        VISTA (Portofino 21-10: «que quien invita pueda reenviarla»;
-                        antes vivían escondidas en el menú «…»). */}
-                    <TableCell className="p-4" onClick={(e) => user.status === 'invited' && e.stopPropagation()}>
-                      <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', statusColor)}>
-                        {getUserStatusLabel(user.status)}
-                      </span>
-                      {user.status === 'invited' && (onResendInvite || onCambiarCorreo) && (
-                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                          {onResendInvite && (
-                            <button
-                              type="button"
-                              onClick={() => onResendInvite(user.id)}
-                              className="inline-flex items-center gap-1 rounded text-caption font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                              data-testid={`reenviar-${user.id}`}
-                            >
-                              <ArrowClockwise className="size-3.5" aria-hidden="true" />
-                              Reenviar
-                            </button>
-                          )}
-                          {onCambiarCorreo && (
-                            <button
-                              type="button"
-                              onClick={() => onCambiarCorreo(user)}
-                              className="inline-flex items-center gap-1 rounded text-caption font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                              data-testid={`cambiar-correo-${user.id}`}
-                            >
-                              <PencilSimple className="size-3.5" aria-hidden="true" />
-                              Cambiar correo
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
+                    {/* Estado: con su punto (StatusBadge). Con todos activos, «● Activo» en
+                        cada fila no informa (revisora r25): la columna no sale. Una invitación
+                        pendiente trae sus dos acciones A LA VISTA (Portofino 21-10: «que quien
+                        invita pueda reenviarla»; antes vivían escondidas en el menú «…»). */}
+                    {todosActivos ? null : (
+                      <TableCell
+                        className="p-4 max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right"
+                        onClick={(e) => user.status === 'invited' && e.stopPropagation()}
+                      >
+                        <StatusBadge tone={(user.status && TONO_DEL_ESTADO[user.status]) || 'neutral'}>
+                          {getUserStatusLabel(user.status)}
+                        </StatusBadge>
+                        {user.status === 'invited' && (onResendInvite || onCambiarCorreo) && (
+                          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 max-md:justify-end">
+                            {onResendInvite && (
+                              <button
+                                type="button"
+                                onClick={() => onResendInvite(user.id)}
+                                className="inline-flex items-center gap-1 rounded text-caption font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                data-testid={`reenviar-${user.id}`}
+                              >
+                                <ArrowClockwise className="size-3.5" aria-hidden="true" />
+                                Reenviar
+                              </button>
+                            )}
+                            {onCambiarCorreo && (
+                              <button
+                                type="button"
+                                onClick={() => onCambiarCorreo(user)}
+                                className="inline-flex items-center gap-1 rounded text-caption font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                data-testid={`cambiar-correo-${user.id}`}
+                              >
+                                <PencilSimple className="size-3.5" aria-hidden="true" />
+                                Cambiar correo
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+                    )}
 
                     {/* Last Login */}
                     <TableCell className="p-4 hidden md:table-cell">
@@ -621,7 +611,10 @@ export function ConfigUsuarios({
                     </TableCell>
 
                     {/* Actions — el menú no debe abrir además la ficha. */}
-                    <TableCell className="p-4" onClick={(e) => e.stopPropagation()}>
+                    <TableCell
+                      className="p-4 max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <DropdownList
                         open={openMenuId === user.id}
                         onOpenChange={(o) => setOpenMenuId(o ? user.id : null)}

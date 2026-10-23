@@ -23,7 +23,6 @@ import { Button } from '@/components/ui/button';
 import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
 import { SettingsModal } from './SettingsModal';
 
 /**
@@ -366,17 +365,17 @@ export function MfaSetupSection({
 
   if (initializing) {
     return (
-      <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5">
-        <div className="flex items-center gap-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-            <ShieldCheck className="h-[18px] w-[18px] text-fg-muted" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
-            <p className="text-xs text-fg-subtle">Cargando...</p>
+      <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5" aria-busy="true">
+        <div className="flex min-w-0 items-center gap-3">
+          {/* Glow up r26: el ícono suelto (antes en una caja gris) y un esqueleto
+              en vez de «Cargando...» con una rueda. */}
+          <ShieldCheck className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+          <div className="min-w-0 space-y-1.5">
+            <p className="text-sm font-medium text-fg">Segundo factor</p>
+            <span className="block h-4 w-44 animate-pulse rounded bg-surface-muted" aria-hidden="true" />
+            <span className="sr-only">Revisando si lo tienes activo</span>
           </div>
         </div>
-        <Spinner size="sm" variant="muted" />
       </div>
     );
   }
@@ -386,18 +385,17 @@ export function MfaSetupSection({
     return (
       <>
         <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5">
-          <div className="flex items-center gap-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-success-soft">
-              <ShieldCheck className="h-[18px] w-[18px] text-success" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
-              <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex min-w-0 items-center gap-3">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-fg">
+                Segundo factor
                 <Badge variant="success">
                   <Check className="w-3 h-3" />
-                  Activada
+                  Activado
                 </Badge>
-              </div>
+              </p>
+              <p className="text-sm text-fg-muted">Al entrar te pedimos el código de tu app, además de la contraseña</p>
             </div>
           </div>
           <Button
@@ -405,7 +403,7 @@ export function MfaSetupSection({
             size="sm"
             hideArrow
             onClick={abrirDesactivar}
-            className="rounded-md text-xs text-danger border-danger/30 hover:bg-danger-soft"
+            className="shrink-0 text-danger border-danger/30 hover:bg-danger-soft"
           >
             Desactivar
           </Button>
@@ -414,13 +412,13 @@ export function MfaSetupSection({
         <SettingsModal
           open={showDisableModal}
           onClose={cerrarDesactivar}
-          title={pideCodigo ? 'Quitar el segundo factor' : 'Desactivar 2FA'}
+          title={pideCodigo ? 'Quitar el segundo factor' : '¿Desactivar el segundo factor?'}
           variant="destructive"
           icon={<ShieldSlash weight="bold" />}
           description={
             pideCodigo
               ? 'Para quitarlo, primero confirma que eres tú: escribe el código que muestra tu app de autenticación ahora. Enseguida te mostramos cómo activarlo de nuevo.'
-              : 'Al desactivar 2FA tu cuenta queda menos protegida: para entrar bastará tu contraseña.'
+              : 'Tu cuenta queda menos protegida: para entrar bastará tu contraseña.'
           }
           footer={
             pideCodigo ? (
@@ -455,7 +453,7 @@ export function MfaSetupSection({
                   onClick={handleUnenroll}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
+                  {isLoading ? 'Desactivando…' : 'Desactivar el segundo factor'}
                 </Button>
               </>
             )
@@ -508,13 +506,11 @@ export function MfaSetupSection({
   if (state === 'enrolling' && enrollData) {
     return (
       <div className="space-y-4 px-4 py-4 sm:px-5">
-        <div className="flex items-center gap-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-            <Shield className="h-[18px] w-[18px] text-primary" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-fg">Configurar 2FA</p>
-            <p className="text-xs text-fg-subtle">Escanea el código QR con tu app de autenticación</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <Shield className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-fg">Activa el segundo factor</p>
+            <p className="text-sm text-fg-muted">1. Escanea el código QR con tu app de autenticación · 2. Escribe el código de 6 dígitos que te muestra</p>
           </div>
         </div>
 
@@ -531,15 +527,15 @@ export function MfaSetupSection({
 
         {/* Secret key for manual entry */}
         <div className="p-3 bg-surface-muted rounded-lg">
-          <p className="text-xs text-fg-subtle mb-1">O ingresa este código manualmente:</p>
+          <p className="text-caption text-fg-muted mb-1">¿No puedes escanear? Escribe este código en la app:</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs font-mono text-fg break-all select-all">
+            <code className="flex-1 text-caption font-mono text-fg break-all select-all">
               {enrollData.secret}
             </code>
             <IconButton
               variant="ghost"
               aria-label="Copiar código"
-              title="Copiar codigo"
+              title="Copiar código"
               onClick={handleCopySecret}
               icon={<Copy className="w-4 h-4 text-fg-subtle" />}
               className="p-1.5 rounded-md flex-shrink-0"
@@ -549,12 +545,14 @@ export function MfaSetupSection({
 
         {/* Code input */}
         <div>
-          <label className="block text-sm font-medium text-fg-muted mb-2">
-            Ingresa el código de 6 dígitos
+          <label htmlFor="codigo-del-segundo-factor" className="block text-sm font-medium text-fg mb-2">
+            El código de 6 dígitos de tu app
           </label>
           <Input
+            id="codigo-del-segundo-factor"
             type="text"
             inputMode="numeric"
+            autoComplete="one-time-code"
             maxLength={6}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -564,7 +562,7 @@ export function MfaSetupSection({
               }
             }}
             autoFocus
-            className="h-12 rounded-lg text-center tracking-[0.5em] font-mono"
+            className="h-12 text-center tracking-[0.5em] font-mono"
             placeholder="000000"
           />
         </div>
@@ -575,19 +573,19 @@ export function MfaSetupSection({
             variant="outline"
             hideArrow
             onClick={handleCancelEnroll}
-            className="flex-1 rounded-lg"
+            className="flex-1"
           >
             Cancelar
           </Button>
+          {/* El único azul de la inscripción (antes, un verde pintado a mano). */}
           <Button
-            variant="secondary"
             hideArrow
             onClick={handleVerifyCode}
+            isLoading={isLoading}
             disabled={isLoading || code.length !== 6}
-            className="flex-1 rounded-lg bg-success text-white hover:bg-success"
+            className="flex-1"
           >
-            {isLoading ? <Spinner size="xs" variant="current" /> : <ShieldCheck className="w-4 h-4" />}
-            {isLoading ? 'Verificando...' : 'Verificar'}
+            {isLoading ? 'Verificando…' : 'Verificar'}
           </Button>
         </div>
       </div>
@@ -596,26 +594,24 @@ export function MfaSetupSection({
 
   // Idle state - not enrolled
   return (
-    <div className="flex items-center justify-between gap-4 px-4 py-4 hover:bg-surface-hover transition-colors sm:px-5">
-      <div className="flex items-center gap-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-          <ShieldCheck className="h-[18px] w-[18px] text-fg-muted" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
-          <p className="text-xs text-fg-subtle">Capa extra de seguridad para tu cuenta</p>
+    <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5">
+      <div className="flex min-w-0 items-center gap-3">
+        <ShieldCheck className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-fg">Segundo factor</p>
+          <p className="text-sm text-fg-muted">Además de la contraseña, un código de tu app al entrar</p>
         </div>
       </div>
+      {/* El único azul de Seguridad (antes, un verde pintado a mano). */}
       <Button
-        variant="secondary"
         size="sm"
         hideArrow
         onClick={() => void handleStartEnroll()}
+        isLoading={isLoading}
         disabled={isLoading}
-        className="rounded-md text-xs bg-success text-white hover:bg-success"
+        className="shrink-0"
       >
-        {isLoading ? <Spinner size="xs" variant="current" /> : <Shield className="w-3.5 h-3.5" />}
-        {isLoading ? 'Cargando...' : 'Activar'}
+        Activar
       </Button>
     </div>
   );

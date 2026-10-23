@@ -266,24 +266,24 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
           <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
             <PencilSimple className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
-              <p className="text-xs text-warning/90 mt-0.5">
+              <p className="text-caption font-medium text-warning">{t(k('reviewBannerTitle'))}</p>
+              <p className="text-caption text-warning/90 mt-0.5">
                 {t(k('reviewBannerDesc'), { confidence: String(confidencePct) })}
               </p>
               {detectadosLegibles.length > 0 ? (
-                <p className="text-xs text-warning/90 mt-0.5" data-testid="documentos-detectados">
+                <p className="text-caption text-warning/90 mt-0.5" data-testid="documentos-detectados">
                   {t(k('detectados'))}: {detectadosLegibles.join(' · ')}
                 </p>
               ) : null}
               {extracted.bancoNombre && !extracted.banco ? (
-                <p className="text-xs text-warning/90 mt-0.5" data-testid="banco-fuera-de-lista">
+                <p className="text-caption text-warning/90 mt-0.5" data-testid="banco-fuera-de-lista">
                   {t(k('bancoFueraDeLista'), { banco: extracted.bancoNombre })}
                 </p>
               ) : null}
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">{t(k('manualNote'))}</p>
+          <p className="text-caption text-muted-foreground">{t(k('manualNote'))}</p>
         )}
 
         {extracted && conflictos.length > 0 ? (
@@ -294,13 +294,13 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
             <div className="flex items-start gap-2.5">
               <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
               <div>
-                <p className="text-xs font-semibold text-danger">{t(k('conflictosTitle'))}</p>
-                <p className="text-xs text-danger/90 mt-0.5">{t(k('conflictosDesc'))}</p>
+                <p className="text-caption font-medium text-danger">{t(k('conflictosTitle'))}</p>
+                <p className="text-caption text-danger/90 mt-0.5">{t(k('conflictosDesc'))}</p>
               </div>
             </div>
             <ul className="space-y-1.5 pl-7">
               {conflictos.map((c) => (
-                <li key={c.campo} className="text-xs" data-testid={`conflicto-${c.campo}`}>
+                <li key={c.campo} className="text-caption" data-testid={`conflicto-${c.campo}`}>
                   <span className="font-medium text-foreground">{t(k(`campos.${c.campo}`))}:</span>
                   <span className="mt-1 flex flex-wrap gap-1.5">
                     {c.valores.map((v) => (
@@ -308,7 +308,7 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
                         key={`${v.documento}:${v.valor}`}
                         type="button"
                         onClick={() => usarValor(c.campo, v.valor)}
-                        className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-foreground hover:border-primary hover:text-primary"
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-caption text-foreground hover:border-primary hover:text-primary"
                         title={t(k('usarValorDe'), { documento: v.documento })}
                         data-testid={`usar-${c.campo}`}
                       >
@@ -386,11 +386,9 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
     // ── No se pudo leer ──────────────────────────────────────────────────────
     cuerpo = (
       <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
-        <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
-          <WarningCircle className="w-7 h-7 text-danger" />
-        </div>
+        <WarningCircle className="w-7 h-7 text-danger shrink-0" aria-hidden="true" />
         <div className="space-y-1">
-          <h3 className="text-h4 font-semibold text-foreground">{t(k('errorTitle'))}</h3>
+          <h3 className="text-h4 font-medium text-foreground">{t(k('errorTitle'))}</h3>
           <p className="text-body-sm text-muted-foreground max-w-sm">{errorMsg}</p>
         </div>
       </div>
@@ -412,7 +410,7 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
     cuerpo = (
       <div className="space-y-5">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-primary-soft flex items-center justify-center flex-shrink-0">
             <Sparkle className="w-5 h-5 text-primary" weight="fill" />
           </div>
           <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
@@ -451,9 +449,7 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
           }`}
           data-testid="tercero-ia-dropzone"
         >
-          <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center mb-1">
-            <IdentificationCard className="w-6 h-6 text-primary" />
-          </div>
+          <IdentificationCard className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
           <p className="text-body-sm font-medium text-foreground">
             {files.length === 0 ? t(k('uploadTitle')) : t(k('uploadMore'))}
           </p>
@@ -471,7 +467,7 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
                 <span className="min-w-0 flex-1 truncate text-foreground" title={f.name}>
                   {f.name}
                 </span>
-                <span className="text-xs text-muted-foreground tabular-nums">{tamano(f.size)}</span>
+                <span className="text-caption text-muted-foreground tabular-nums">{tamano(f.size)}</span>
                 <button
                   type="button"
                   onClick={() => quitar(i)}
@@ -487,7 +483,7 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:underline"
               >
                 <Plus className="w-3.5 h-3.5" />
                 {t(k('agregarOtro'))}

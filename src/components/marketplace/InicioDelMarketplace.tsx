@@ -8,6 +8,7 @@ import { motionDuration, motionEase, motionStagger, Stagger, StaggerItem } from 
 import { Buildings, House, MagnifyingGlass, MapTrifold } from '@phosphor-icons/react';
 
 import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { primeraFoto } from '@/components/property/PortadaDelInmueble';
 import { useProperties } from '@/lib/hooks/useProperties';
@@ -116,15 +117,24 @@ export function InicioDelMarketplace() {
         <main className="min-w-0 pb-20">
           {/* «Conversación · Galería» también en la entrada (Nico, 09-10: «¿dónde está lo de galería y chat?»). */}
           <InterruptorDeVista vista="conversacion" hrefConversacion="/propiedades" hrefGaleria="/propiedades?vista=lista" />
-          <div className="mx-auto w-full max-w-[1280px]">
+          <div className="relative mx-auto w-full max-w-[1280px]">
+            {/* Cadence 2 · PIX (Nico, 23-10: «quiero más dots», la corriente de la landing nueva): los píxeles de
+                voltaje fluyen detrás de la llegada, concentrados abajo para que la pregunta quede sobre papel limpio.
+                Sólo en claro: en oscuro el papel no es el fondo. */}
+            <CorrienteDeVoltaje
+              className="absolute inset-x-0 top-[240px] h-[380px] w-full opacity-80 [mask-image:linear-gradient(to_bottom,transparent_0%,#000_38%,#000_62%,transparent_100%)] dark:hidden"
+              forma="horizonte"
+              fuerza={0.5}
+              semilla={11}
+            />
             {/* ── La caja, como la llegada del chat ── */}
-            <section className="llegada-grises mx-auto flex max-w-[820px] flex-col items-center px-4 pb-14 pt-12 text-center sm:px-6 md:pt-20">
+            <section className="llegada-grises relative mx-auto flex max-w-[820px] flex-col items-center px-4 pb-14 pt-12 text-center sm:px-6 md:pt-20">
               <motion.div {...entrada(0)}>
                 <OrbeDeAgente agente="orquestador" tamano={72} decorativo />
               </motion.div>
               <motion.h1
                 {...entrada(1)}
-                className="mt-6 font-heading font-semibold leading-[1.02] tracking-[-0.04em] text-fg text-[clamp(2.1rem,6vw,3.5rem)] [text-wrap:balance]"
+                className="mt-6 font-heading font-[400] leading-[1.02] tracking-[-0.04em] text-fg text-[clamp(2.1rem,6vw,3.5rem)] [text-wrap:balance]"
               >
                 ¿Qué estás buscando?
               </motion.h1>
@@ -132,8 +142,16 @@ export function InicioDelMarketplace() {
                 {...entrada(2)}
                 className="mt-4 max-w-[560px] text-[16px] leading-[1.5] text-fg-muted sm:text-[17px] [text-wrap:balance]"
               >
-                Cuéntalo como se lo dirías a alguien. Ori busca entre{' '}
-                <span className="font-mono tabular-nums text-fg">{isLoading ? '…' : total}</span> inmuebles
+                {/* GLOW UP (21-10): con cero publicados no se presume «0 inmuebles»: se dice qué hace Ori. */}
+                Cuéntalo como se lo dirías a alguien.{' '}
+                {!isLoading && total === 0 ? (
+                  'Ori busca entre lo publicado'
+                ) : (
+                  <>
+                    Ori busca entre{' '}
+                    <span className="font-mono tabular-nums text-fg">{isLoading ? '…' : total}</span> inmuebles
+                  </>
+                )}
                 {cuantasPublican > 0 && (
                   <>
                     {' '}
@@ -211,7 +229,7 @@ export function InicioDelMarketplace() {
             {recientes.length > 0 && (
               <section className="px-4 md:px-8" aria-labelledby="recien-publicados">
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <h2 id="recien-publicados" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+                  <h2 id="recien-publicados" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
                     Recién publicados
                   </h2>
                   <Link
@@ -241,7 +259,7 @@ export function InicioDelMarketplace() {
             {/* ── Quién publica: su página es su perfil en Leasefy ── */}
             {inmobiliarias.length > 0 && (
               <section className="mt-14 px-4 md:px-8" aria-labelledby="inmobiliarias-en-leasefy">
-                <h2 id="inmobiliarias-en-leasefy" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+                <h2 id="inmobiliarias-en-leasefy" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
                   Inmobiliarias en Leasefy
                 </h2>
                 <p className="mt-1 text-[14px] text-fg-muted">
@@ -261,7 +279,7 @@ export function InicioDelMarketplace() {
             {conVideo.length > 0 && (
               <section className="mt-14 px-4 md:px-8" aria-labelledby="en-video">
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <h2 id="en-video" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+                  <h2 id="en-video" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
                     Recórrelos en video
                   </h2>
                   <span className="text-[13px] text-fg-muted">Se ven aquí mismo, sin salir de Leasefy</span>

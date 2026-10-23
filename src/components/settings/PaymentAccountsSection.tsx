@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Bank, Wallet, House, Star, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
+import { Bank, Wallet, House, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import { Collapse, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -391,40 +392,36 @@ export function PaymentAccountsSection(
                     className="flex items-start justify-between p-4 border border-border rounded-lg bg-surface"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Icon className="w-5 h-5 text-fg-muted" />
-                      </div>
+                      <Icon className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-medium text-fg">
                             {info.name} {info.detail}
                           </p>
                           {account.isDefault && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-warning-soft text-warning text-xs font-medium rounded-full">
-                              <Star className="w-3 h-3" weight="fill" />
+                            <Badge variant="secondary">
                               {t('landlordSettings.paymentAccounts.default')}
-                            </span>
+                            </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-fg-subtle mt-0.5">
+                        <p className="text-caption text-fg-subtle mt-0.5">
                           {info.holder}
                         </p>
                         {/* Property assignment tags */}
                         {assignedNames.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {assignedNames.map((name) => (
-                              <span
-                                key={name}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-[11px] font-medium rounded-sm"
-                              >
-                                <House className="w-3 h-3" />
-                                {name.length > 30 ? name.slice(0, 30) + '...' : name}
-                              </span>
-                            ))}
-                          </div>
+                          // Los inmuebles en una línea gris de 13 px (antes
+                          // pastillas azules de 11 px, una por inmueble).
+                          <p className="mt-2 flex items-start gap-1.5 text-caption text-fg-muted">
+                            <House className="mt-0.5 w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                            <span className="min-w-0">
+                              {assignedNames
+                                .map((name) => (name.length > 30 ? name.slice(0, 30) + '…' : name))
+                                .join(' · ')}
+                            </span>
+                          </p>
                         )}
                         {assignedNames.length === 0 && (
-                          <p className="text-[11px] text-fg-subtle mt-1">
+                          <p className="text-caption text-fg-subtle mt-1">
                             {t('landlordSettings.paymentAccounts.noPropertiesAssigned')}
                           </p>
                         )}
@@ -434,7 +431,7 @@ export function PaymentAccountsSection(
                       {!account.isDefault && (
                         <button
                           onClick={() => handleSetDefaultAccount(account.id)}
-                          className="text-xs text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+                          className="text-caption text-fg-muted underline-offset-2 hover:text-fg hover:underline"
                         >
                           {t('landlordSettings.paymentAccounts.setAsDefault')}
                         </button>
@@ -444,7 +441,7 @@ export function PaymentAccountsSection(
                           setEditingAccount(account);
                           setShowDeleteAccountModal(true);
                         }}
-                        className="text-xs text-danger hover:underline"
+                        className="text-caption text-danger hover:underline"
                       >
                         {t('common.delete')}
                       </button>
@@ -460,7 +457,7 @@ export function PaymentAccountsSection(
             variant="outline"
             hideArrow
             onClick={() => { resetForms(); setShowAddAccountModal(true); }}
-            className="w-full border-2 border-dashed border-border-strong text-fg-muted rounded-lg hover:border-[#1A40FF]/30 hover:text-[#1A40FF]"
+            className="w-full border-2 border-dashed border-border-strong text-fg-muted rounded-lg hover:text-fg"
           >
             <Plus className="w-5 h-5" />
             <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addAccount')}</span>
@@ -570,7 +567,7 @@ export function PaymentAccountsSection(
                     className={cn(
                       'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors',
                       bankForm.accountType === 'savings'
-                        ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
+                        ? 'border-primary/30 bg-primary-soft text-primary'
                         : 'border-border text-fg-muted hover:border-border-strong'
                     )}
                   >
@@ -582,7 +579,7 @@ export function PaymentAccountsSection(
                     className={cn(
                       'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors',
                       bankForm.accountType === 'checking'
-                        ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
+                        ? 'border-primary/30 bg-primary-soft text-primary'
                         : 'border-border text-fg-muted hover:border-border-strong'
                     )}
                   >
@@ -721,7 +718,7 @@ export function PaymentAccountsSection(
                 className={cn(
                   'w-full h-10 px-3 pr-10 border rounded-lg text-sm text-left relative transition-[color,background-color,border-color,box-shadow] appearance-none cursor-pointer',
                   showPropertyDropdown
-                    ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20 bg-surface'
+                    ? 'border-primary/30 ring-2 ring-primary/20 bg-surface'
                     : 'border-border bg-surface'
                 )}
               >
@@ -751,7 +748,7 @@ export function PaymentAccountsSection(
                       <StaggerItem
                         as="span"
                         key={pid}
-                        className="inline-flex items-center gap-1 pl-2 pr-1 py-1 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium rounded-md"
+                        className="inline-flex items-center gap-1 pl-2 pr-1 py-1 bg-surface-muted text-fg text-caption rounded-md"
                       >
                         <House className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate max-w-[140px]">{prop.title}</span>
@@ -761,7 +758,7 @@ export function PaymentAccountsSection(
                           aria-label="Quitar"
                           onClick={() => setSelectedPropertyIds(prev => prev.filter(id => id !== pid))}
                           icon={<X className="w-3 h-3" />}
-                          className="w-4 h-4 min-h-0 rounded-full ml-0.5 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]"
+                          className="w-4 h-4 min-h-0 rounded-full ml-0.5 hover:bg-border"
                         />
                       </StaggerItem>
                     );
@@ -786,10 +783,10 @@ export function PaymentAccountsSection(
                         <div className={cn(
                           'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
                           isSelected
-                            ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
+                            ? 'border-primary bg-primary'
                             : 'border-border-strong'
                         )}>
-                          {isSelected && <Check className="w-3 h-3 text-white" weight="bold" />}
+                          {isSelected && <Check className="w-3 h-3 text-primary-fg" weight="bold" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-fg truncate">{property.title}</p>
@@ -873,14 +870,14 @@ export function PaymentAccountsSection(
               </div>
               {getPropertyCountForAccount(editingAccount.id) > 0 && (
                 <div className="p-3 bg-warning-soft border border-warning/30 rounded-lg">
-                  <p className="text-xs text-warning">
+                  <p className="text-caption text-warning">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningWithProperties', { count: getPropertyCountForAccount(editingAccount.id) })}
                   </p>
                 </div>
               )}
               {editingAccount.isDefault && paymentAccounts.length > 1 && (
                 <div className="p-3 bg-warning-soft border border-warning/30 rounded-lg">
-                  <p className="text-xs text-warning">
+                  <p className="text-caption text-warning">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningDefault')}
                   </p>
                 </div>

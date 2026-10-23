@@ -13,11 +13,11 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
 import { Exogena } from '@/components/contabilidad/exogena/Exogena';
 
 /**
@@ -39,22 +39,24 @@ export default function ExogenaPage() {
   return (
     <PageGuard module="reportes" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Contabilidad" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
+        <div className="space-y-3">
           <Link
             href="/panel/inmobiliaria/contabilidad"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+            className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-h2 text-fg">Información exógena</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Los seis formatos que le toca presentar a una inmobiliaria, armados contra el libro. El
-            1647 es el propio del negocio: lo que se recaudó para los propietarios. Leasefy prepara
-            la plantilla del Prevalidador de la DIAN y no transmite nada.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Dinero"
+            titulo="Información exógena"
+            descripcion="Los seis formatos que le toca presentar a una inmobiliaria, armados contra el libro."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">El 1647 es el propio del negocio: lo que se recaudó para los propietarios. Leasefy prepara la plantilla del Prevalidador de la DIAN y no transmite nada.</p>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         <Exogena key={anio ?? 'actual'} anioInicial={anio} />
       </div>
     </PageGuard>

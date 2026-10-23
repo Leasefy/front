@@ -72,7 +72,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
 
   return (
     <div className="space-y-6">
-      <h2 className="text-base font-semibold text-fg">
+      <h2 className="text-base font-medium text-fg">
         {tf(`${K}.titulo`, 'Configura la consulta')}
       </h2>
 
@@ -153,7 +153,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
         <legend className="text-sm font-medium text-fg">
           {tf(`${K}.prioridad.titulo`, '¿Qué priorizamos?')}
         </legend>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {tf(`${K}.prioridad.subtitulo`, 'Decide cuál te recomendamos entre las que respalden al candidato.')}
         </p>
         {/* Tarjetas con lo que hace cada una (antes: un control segmentado

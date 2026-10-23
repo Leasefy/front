@@ -112,7 +112,7 @@ describe('<MantenimientoKpiStrip>', () => {
       root.render(React.createElement(MantenimientoKpiStrip, { kpis: null, isLoading: false }))
     })
     const valores = Array.from(
-      container.querySelectorAll('[data-testid="kpi-strip"] p.text-xl'),
+      container.querySelectorAll('[data-testid="kpi-strip"] [data-kpi-valor]'),
     ).map((el) => el.textContent ?? '')
 
     expect(valores).toHaveLength(9)

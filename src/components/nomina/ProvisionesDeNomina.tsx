@@ -49,7 +49,10 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { atributosDelError, useErroresDelFormulario } from './errores-del-formulario';
 import { MENSAJES_DE_NOMINA, PAGO_MAXIMO_DE_NOMINA_COP, pasaDe } from './limites-de-nomina';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { Avisos, Cifra, TituloDeBloque } from './piezas';
+import { Avisos, TituloDeBloque } from './piezas';
+import { Cifra, FranjaDeCifras } from '@leasefy/cadence';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
 
 import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
@@ -86,53 +89,63 @@ export function ProvisionesDeNominaPanel() {
       >
         {({ provisiones, catalogo }) => (
           <>
-            <section className="space-y-3">
-              <TituloDeBloque
-                titulo="El pasivo por prestaciones"
-                explicacion="Lo que se ha provisionado, lo que ya se cruzó contra un pago y lo que queda vivo. La provisión viva de la inmobiliaria es la suma de lo que todavía le debe a su gente."
-                accion={
-                  <Button
-                    onClick={() => setPagando(true)}
-                    data-testid="registrar-pago"
-                  >
-                    Registrar el pago de una prestación
-                  </Button>
-                }
-              />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* GLOW UP 3.ª vuelta · LA RESPUESTA: lo que la inmobiliaria todavía le debe a su gente por
+                prestaciones. Las cuatro prestaciones la acompañan; antes eran cuatro cifras del mismo
+                peso y el total escondido en una línea al final. */}
+            <section className="space-y-4">
+              {/* Ronda 26 (revisora r25, Prestaciones): a 390 la cifra quedaba en una columna de 110 px al lado del
+                  botón; ahora el botón va debajo, a lo ancho. «Pasivo vivo» es jerga contable. */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+                <CifraHeroe
+                  rotulo="Prestaciones por pagar"
+                  cifra={<span data-testid="total-vivo">{formatCurrency(provisiones.totalVivoCop)}</span>}
+                  contexto="lo provisionado que todavía no se ha pagado"
+                  // C3 (revisora r25): sin nada provisionado, UNA línea y no la cifra grande en cero.
+                  esCero={provisiones.totalVivoCop === 0}
+                  className="min-w-0 flex-1"
+                  data-testid="cifra-de-provisiones"
+                />
+                {/* Sin nada provisionado, el pago no es lo que sigue: sale en borde, no en azul (se puede igual). */}
+                <Button
+                  size="sm"
+                  hideArrow
+                  variant={provisiones.totalVivoCop === 0 ? 'outline' : 'default'}
+                  className="max-sm:w-full"
+                  onClick={() => setPagando(true)}
+                  data-testid="registrar-pago"
+                >
+                  Registrar el pago de una prestación
+                </Button>
+              </div>
+              {/* C3: sin ninguna provisión, las cuatro celdas decían «— · Sin provisiones todavía»: fuera. */}
+              {provisiones.porTipo.length > 0 ? (
+              <FranjaDeCifras aria-label="Lo que queda de cada prestación por pagar">
                 {TIPOS.map((t) => {
                   const fila = provisiones.porTipo.find((x) => x.tipo === t.tipo);
                   return (
                     <Cifra
                       key={t.tipo}
-                      id={t.tipo.toLowerCase()}
                       etiqueta={t.nombre}
-                      valor={fila?.vivoCop ?? null}
-                      definicion={
+                      valor={fila ? formatCurrency(fila.vivoCop) : '—'}
+                      detalle={
                         fila
-                          ? `Provisionado ${formatCurrency(fila.provisionadoCop)}, cruzado ${formatCurrency(fila.cruzadoCop)}. Lo que queda es lo que todavía se le debe a la gente.`
-                          : 'Sin provisiones de esta prestación.'
+                          ? `Provisionado ${formatCurrency(fila.provisionadoCop)} · cruzado ${formatCurrency(fila.cruzadoCop)}`
+                          : 'Sin provisiones todavía'
                       }
-                      sinMedir="Todavía no se ha provisionado nada de esta prestación."
+                      data-testid={`cifra-${t.tipo.toLowerCase()}`}
                     />
                   );
                 })}
-              </div>
-              <p
-                className="rounded-lg border border-border bg-surface p-3 text-caption text-fg-muted"
-                data-testid="total-vivo"
-              >
-                Total del pasivo vivo:{' '}
-                <strong>{formatCurrency(provisiones.totalVivoCop)}</strong>
-              </p>
+              </FranjaDeCifras>
+              ) : null}
             </section>
 
+            <MasDetalles etiqueta="Con qué base se provisiona cada una" etiquetaAbierto="Ocultar las bases" montadoSiempre>
             <section className="space-y-3">
-              <TituloDeBloque
-                titulo="Con qué base se provisiona cada una"
-                explicacion="Las cuatro bases NO son la misma, y es acá donde una liquidación hecha a mano se equivoca."
-              />
-              <div className="overflow-x-auto">
+              <p className="text-body-sm text-fg-muted">
+                Las cuatro bases no son la misma, y es aquí donde una liquidación hecha a mano se equivoca.
+              </p>
+              <div className="overflow-x-auto rounded-lg border border-border bg-surface">
                 <Table data-testid="bases-de-prestaciones">
                   <TableHeader>
                     <TableRow>
@@ -169,6 +182,7 @@ export function ProvisionesDeNominaPanel() {
                 </Table>
               </div>
             </section>
+            </MasDetalles>
 
             <section className="space-y-3">
               <TituloDeBloque
@@ -176,13 +190,13 @@ export function ProvisionesDeNominaPanel() {
                 explicacion="Lo que se le debe a cada uno, por prestación."
               />
               {provisiones.porPersona.length === 0 ? (
-                <p className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted">
-                  Todavía no hay provisiones: se escriben al APROBAR un período.
+                <p className="rounded-lg border border-border bg-surface p-5 text-body-sm text-fg-muted">
+                  Todavía no hay provisiones: se escriben al aprobar un período en Liquidación.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table data-testid="provisiones-por-persona">
-                    <TableHeader>
+                <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                  <Table data-testid="provisiones-por-persona" className="max-md:block">
+                    <TableHeader className="max-md:hidden">
                       <TableRow>
                         <TableHead>Persona</TableHead>
                         {TIPOS.map((t) => (
@@ -193,10 +207,14 @@ export function ProvisionesDeNominaPanel() {
                         <TableHead className="text-right">Total vivo</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="max-md:block">
                       {provisiones.porPersona.map((p) => (
-                        <TableRow key={p.personaId} data-testid={`prov-${p.personaId}`}>
-                          <TableCell>
+                        <TableRow
+                          key={p.personaId}
+                          data-testid={`prov-${p.personaId}`}
+                          className="max-md:grid max-md:grid-cols-2 max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                        >
+                          <TableCell className="max-md:col-span-2 max-md:block max-md:p-0">
                             <span className="font-medium text-fg">{p.nombre}</span>
                             {p.documento ? (
                               <span className="ml-1.5 text-caption text-fg-muted">
@@ -207,12 +225,13 @@ export function ProvisionesDeNominaPanel() {
                           {TIPOS.map((t) => (
                             <TableCell
                               key={t.tipo}
-                              className="text-right font-mono tabular-nums"
+                              className="text-right font-mono tabular-nums max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]"
+                              data-etiqueta={t.nombre}
                             >
                               {formatCurrency(p.porTipo[t.tipo] ?? 0)}
                             </TableCell>
                           ))}
-                          <TableCell className="text-right font-mono font-medium tabular-nums">
+                          <TableCell className="text-right font-mono tabular-nums text-fg max-md:col-span-2 max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Total vivo">
                             {formatCurrency(p.vivoCop)}
                           </TableCell>
                         </TableRow>

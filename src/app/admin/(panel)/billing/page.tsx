@@ -3,13 +3,13 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChartLineUp } from '@phosphor-icons/react'
-import { Alert } from '@leasefy/cadence'
+import { Alert, Cifra, FranjaDeCifras } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtFecha } from '@/lib/admin/format'
 import { estadoDelPlan } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 
@@ -59,9 +59,11 @@ const SEGMENTOS: Segmento<IngresoDeLaInmobiliaria>[] = [
   { valor: 'voz', nombre: 'Con cobranza por voz', cumple: (f) => f.voz !== null },
 ]
 
-const nombreDelMes = (clave: string) => {
-  const [y, m] = clave.split('-').map(Number)
-  return new Date(y, m - 1, 1).toLocaleDateString('es-CO', { month: 'long' })
+/** «octubre» de «2026-10»; vacío si el back no mandó el mes (uno viejo manda `{ perTenant, totals }`). */
+const nombreDelMes = (clave: string | null | undefined) => {
+  const m = /^(\d{4})-(\d{2})/.exec(clave ?? '')
+  if (!m) return ''
+  return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString('es-CO', { month: 'long' })
 }
 
 /**
@@ -73,12 +75,17 @@ const nombreDelMes = (clave: string) => {
  * fuentes de ingreso: la mensualidad del plan con sus cobros, y lo que se le
  * cobra por la cobranza por voz (estimado con la fórmula de su factura).
  */
+const FALLO_DE_LA_FORMA = new Error(
+  'El servidor mandó los ingresos sin la lista de inmobiliarias: esta parte del admin todavía no está al día en el servidor.',
+)
+
 export default function IngresosPage() {
   const router = useRouter()
   const ingresos = useApiQuery<RespuestaDeIngresos>((signal) => adminApi('/billing', { signal }), [])
   const d = ingresos.data
+  const formaVieja = Boolean(d) && !Array.isArray(d?.inmobiliarias)
   const t = d?.totales
-  const mes = d ? nombreDelMes(d.mes) : ''
+  const mes = d?.mes ? nombreDelMes(d.mes) : ''
 
   const columnas: Column<IngresoDeLaInmobiliaria>[] = [
     {
@@ -127,19 +134,11 @@ export default function IngresosPage() {
       ordenPrimero: 'desc',
       texto: (f) => f.cobradoEsteMesCop,
       cell: (f) => (
-        <div className="tabular-nums">
+        <div className="font-mono tabular-nums">
           <span className={f.cobradoEsteMesCop > 0 ? 'text-success' : 'text-fg-muted'}>{fmtCOP(f.cobradoEsteMesCop)}</span>
           {f.ultimoPago ? <div className="text-caption text-fg-subtle">Último pago {fmtFecha(f.ultimoPago)}</div> : null}
         </div>
       ),
-    },
-    {
-      header: 'Mes pasado',
-      align: 'right',
-      orden: (f) => f.cobradoMesPasadoCop,
-      ordenPrimero: 'desc',
-      texto: (f) => f.cobradoMesPasadoCop,
-      cell: (f) => <span className="tabular-nums text-fg-muted">{fmtCOP(f.cobradoMesPasadoCop)}</span>,
     },
     {
       header: 'Por cobrar',
@@ -148,7 +147,7 @@ export default function IngresosPage() {
       ordenPrimero: 'desc',
       texto: (f) => f.pendienteCop,
       cell: (f) => (
-        <div className="tabular-nums">
+        <div className="font-mono tabular-nums">
           <span className={f.pendienteCop > 0 ? 'text-warning' : 'text-fg-muted'}>{fmtCOP(f.pendienteCop)}</span>
           {f.cobrosFallidosEsteMes > 0 ? (
             <div className="text-caption text-danger">
@@ -173,14 +172,22 @@ export default function IngresosPage() {
       texto: (f) => (f.voz ? f.voz.estimadoCop : ''),
       cell: (f) =>
         f.voz ? (
-          <div className="tabular-nums">
+          <div className="font-mono tabular-nums">
             <span className="text-fg">{fmtCOP(f.voz.estimadoCop)}</span>
             <div className="text-caption text-fg-subtle">
               {f.voz.enElMinimo ? 'El mínimo del mes' : `Recuperó ${fmtCOP(f.voz.recuperadoEsteMesCop)}`}
             </div>
           </div>
         ) : (
-          <span className="text-caption text-fg-subtle">{d?.vozDisponible === false ? 'No se pudo leer' : 'Sin conectar'}</span>
+          d?.vozDisponible === false ? (
+            <span className="text-caption text-fg-subtle">No se pudo leer</span>
+          ) : (
+            // Ronda 26 (revisora r25): «Sin conectar» en casi todas las filas no informa; callado.
+            <span className="text-fg-subtle" title="Sin conectar">
+              <span aria-hidden="true">—</span>
+              <span className="sr-only">Sin conectar</span>
+            </span>
+          )
         ),
     },
   ]
@@ -189,37 +196,65 @@ export default function IngresosPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Ingresos"
-        description="Lo que Leasefy cobra a cada inmobiliaria: la mensualidad de su plan y lo que se le cobra por la cobranza por voz. Toca una para ver su ficha."
+        description="Lo que Leasefy le cobra a cada inmobiliaria: su plan y la cobranza por voz."
       />
 
-      <section aria-label="Cifras de los ingresos" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <KpiCard label="Mensualidades de los planes" value={t ? fmtCOP(t.mensualidadesCop) : '—'} hint="Planes fijos al día o en mora" />
-        <KpiCard label={`Cobrado en ${mes || 'el mes'}`} value={t ? fmtCOP(t.cobradoEsteMesCop) : '—'} tone="ok" hint={t ? `Mes pasado ${fmtCOP(t.cobradoMesPasadoCop)}` : undefined} />
-        <KpiCard label="Por cobrar" value={t ? fmtCOP(t.pendienteCop) : '—'} tone={t && t.pendienteCop > 0 ? 'warn' : 'default'} hint="Cobros de planes sin pagar" />
-        <KpiCard label="Cobros fallidos" value={t ? t.cobrosFallidosEsteMes : '—'} tone={t && t.cobrosFallidosEsteMes > 0 ? 'bad' : 'default'} hint={`En ${mes || 'el mes'}`} />
-        <KpiCard label="Cobranza por voz" value={t ? fmtCOP(t.estimadoPorVozCop) : '—'} hint="Estimado del mes" />
-      </section>
+      {/* Glow up 22-10: LA RESPUESTA (lo cobrado del mes, con la barra cobrado · por cobrar) y tres cifras de
+          apoyo, sin tonos de color; antes, 5 tarjetas del mismo peso. */}
+      {t ? (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo={`Cobrado en ${mes || 'el mes'}`}
+              cifra={fmtCOP(t.cobradoEsteMesCop)}
+              contexto={`el mes pasado ${fmtCOP(t.cobradoMesPasadoCop)}`}
+              tramos={[
+                { clave: 'cobrado', etiqueta: 'Cobrado', monto: t.cobradoEsteMesCop, tono: 'exito', cifra: fmtCOP(t.cobradoEsteMesCop), siempre: true },
+                { clave: 'por-cobrar', etiqueta: 'Por cobrar (planes sin pagar)', monto: t.pendienteCop, tono: 'aviso', cifra: fmtCOP(t.pendienteCop), siempre: true },
+              ]}
+              data-testid="ingresos-cobrado"
+            />
+          </div>
+          <FranjaDeCifras fila="lg" columnas={3} aria-label="Lo demás de los ingresos">
+            <Cifra etiqueta="Mensualidades de los planes" valor={fmtCOP(t.mensualidadesCop)} detalle="planes fijos al día o en mora" />
+            <Cifra
+              etiqueta="Cobros fallidos"
+              valor={t.cobrosFallidosEsteMes}
+              detalle={`en ${mes || 'el mes'}`}
+              tono={t.cobrosFallidosEsteMes > 0 ? 'peligro' : undefined}
+            />
+            <Cifra etiqueta="Cobranza por voz" valor={fmtCOP(t.estimadoPorVozCop)} detalle="estimado del mes" />
+          </FranjaDeCifras>
+        </div>
+      ) : null}
 
+      {/* Ronda 28 (revisora r27): si la respuesta no trae la lista, es un fallo, no un vacío (antes «Todavía no
+          hay inmobiliarias» con 5 registradas: el servidor mandaba la forma vieja). */}
       {d && !d.vozDisponible ? (
         <Alert variant="warning">No se pudo leer la base de los agentes: lo de la cobranza por voz no aparece (no es cero).</Alert>
       ) : null}
 
       <DataTable
         columns={columnas}
-        rows={d?.inmobiliarias}
+        rows={formaVieja ? undefined : d?.inmobiliarias}
         getKey={(f) => f.tenant_id}
         isLoading={ingresos.isLoading}
-        error={ingresos.error}
+        error={ingresos.error ?? (formaVieja ? FALLO_DE_LA_FORMA : null)}
         onReintentar={ingresos.refetch}
         emptyTitle="Todavía no hay inmobiliarias"
-        emptyIcon={<ChartLineUp weight="bold" />}
+        emptyHint="Cuando una inmobiliaria se registre, aparece aquí con lo que factura."
+        emptyIcon={<ChartLineUp weight="duotone" />}
         aria-label="Ingresos por inmobiliaria"
         onRowClick={(f) => router.push(`/admin/tenants/${f.tenant_id}`)}
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar inmobiliaria"
         segmentos={SEGMENTOS}
-        ordenInicial={{ columna: 1, sentido: 'desc' }}
+        // Ronda 26 (revisora r25): lo pendiente primero. Abre en «En mora» si hay alguna, y ordena por «Por cobrar».
+        segmentoInicial={(formaVieja ? [] : d?.inmobiliarias ?? []).some((f) => SEGMENTOS[2].cumple(f)) ? 'mora' : 'todas'}
+        ordenInicial={{ columna: 3, sentido: 'desc' }}
+        cifraDelCelular={`Cobrado en ${mes || 'el mes'}`}
         exportar={`ingresos-${d?.mes ?? ''}`}
+        masEnElExcel={[{ header: 'Cobrado el mes pasado', texto: (f) => f.cobradoMesPasadoCop }]}
       />
 
       <p className="text-caption text-fg-subtle">

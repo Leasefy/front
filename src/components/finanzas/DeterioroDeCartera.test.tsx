@@ -198,7 +198,7 @@ describe('deterioro de cartera', () => {
   it('🔴 dice que lo que se asienta es el movimiento, no el saldo', async () => {
     await pintar();
     expect(document.body.textContent).toContain('DIFERENCIA con la del mes anterior');
-    expect(texto('cifra-provision')).toContain('NO es lo que se asienta');
+    expect(texto('cifra-provision')).toContain('No es lo que se asienta');
   });
 
   it('avisa cuando lo que se ve ya no es lo que está guardado', async () => {
@@ -238,7 +238,8 @@ describe('deterioro de cartera', () => {
     await pintar();
     const avisos = texto('avisos-del-deterioro');
     expect(avisos).toContain('aseguradora');
-    expect(avisos).toContain('CAPITAL');
+    // C6 (revisora r25): sin mayúsculas de énfasis.
+    expect(avisos).toContain('el capital en cartera');
   });
 
   it('aprobar repite el número que se va a asentar antes del clic', async () => {

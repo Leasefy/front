@@ -9,7 +9,7 @@ import { sanitizeReturnUrl } from '@/lib/utils'
 import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { CrossFade } from '@leasefy/cadence'
 import { useDireccionDelPaso } from '@/components/onboarding/wizard/use-direccion-del-paso'
-import { ArrowLeft, ArrowRight, Clock, Eye, Lightning, SealCheck, Shield, ShieldCheck } from '@phosphor-icons/react'
+import { Clock, Eye, Lightning, SealCheck, Shield, ShieldCheck } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { useTenantOnboarding, TENANT_ONBOARDING_STEPS } from '@/lib/context/TenantOnboardingContext'
 import { useI18n } from '@/lib/i18n'
@@ -291,7 +291,6 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
           hideArrow
           className={isFirstStep ? 'invisible' : undefined}
         >
-          <ArrowLeft className="h-4 w-4" weight="bold" aria-hidden />
           {t.back}
         </Button>
 
@@ -303,7 +302,6 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
         ) : (
           <Button onClick={handleNext} hideArrow data-testid="continuar-onboarding-inquilino">
             {isLastStep ? t.submit : t.continue}
-            <ArrowRight className="h-4 w-4" weight="bold" aria-hidden />
           </Button>
         )}
       </div>

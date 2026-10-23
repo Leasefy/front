@@ -52,7 +52,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
       {/* Header — same pattern as Pipeline Activo / Equipo */}
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
         <div>
-          <h2 className="text-lg font-semibold text-fg">
+          <h2 className="text-h3 text-fg">
             {locale === 'es' ? 'Actividad Reciente' : 'Recent Activity'}
           </h2>
           <p className="text-sm text-fg-subtle">
@@ -72,9 +72,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
       {items.length === 0 ? (
         <div className="px-6 pb-6">
           <div className="rounded-lg bg-surface-muted py-10 px-6 text-center">
-            <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mx-auto mb-4">
-              <Lightning className="h-5 w-5 text-fg-subtle" />
-            </div>
+            <Lightning className="h-5 w-5 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
             <p className="text-sm text-fg-subtle">
               {locale === 'es' ? 'Sin actividad reciente' : 'No recent activity'}
             </p>
@@ -134,7 +132,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                         {activity.title}
                       </p>
                       {isEscalation && (
-                        <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-warning-soft text-warning">
+                        <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning-soft text-warning">
                           {locale === 'es' ? 'Acción' : 'Action'}
                         </span>
                       )}
@@ -149,7 +147,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                   {/* Score badge */}
                   {levelCfg && activity.metadata?.level && (
                     <span className={cn(
-                      'flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold',
+                      'flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-caption font-medium',
                       levelCfg.bg, levelCfg.text,
                     )}>
                       {activity.metadata.level}
@@ -157,7 +155,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                   )}
 
                   {/* Timestamp */}
-                  <span className="flex-shrink-0 text-xs text-fg-subtle tabular-nums whitespace-nowrap pt-0.5">
+                  <span className="flex-shrink-0 text-caption text-fg-subtle tabular-nums whitespace-nowrap pt-0.5">
                     {timeAgo(activity.timestamp, locale)}
                   </span>
                 </div>

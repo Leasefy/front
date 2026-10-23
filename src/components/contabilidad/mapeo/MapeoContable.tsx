@@ -31,7 +31,10 @@ import { CheckCircle, Sparkle, Warning } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TablePagination } from '@/components/ui/pagination';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import {
   Table,
   TableCell,
@@ -200,9 +203,18 @@ export function MapeoContable({
   // deja elegir cuántos ver, que es lo que hace que una tabla se lea como
   // tabla. El hook se llama SIEMPRE —antes de los returns tempranos de carga
   // y de fallo— porque un hook condicional rompe el orden entre renders.
-  const eventos = useMemo(() => mapeo?.eventos ?? [], [mapeo]);
+  // GLOW UP 3.ª vuelta · las filas por lo que les falta: «Sin cuenta» es el trabajo.
+  const [vista, setVista] = useState<'todos' | 'sin-cuenta' | 'con-cuenta'>('todos');
+  const todos = useMemo(() => mapeo?.eventos ?? [], [mapeo]);
+  const eventos = useMemo(
+    () =>
+      vista === 'todos'
+        ? todos
+        : todos.filter((e) => (vista === 'sin-cuenta' ? !e.cuenta : Boolean(e.cuenta))),
+    [todos, vista],
+  );
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(eventos);
+    useTablePagination(eventos, { resetKey: vista });
 
   const marcar = (evento: EventoContable, activo: boolean) =>
     setGuardando((prev) => {
@@ -366,9 +378,21 @@ export function MapeoContable({
 
   if (cargando || cuentasCargando) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <Spinner size="lg" />
-        <p className="text-sm text-fg-muted">Cargando el mapeo…</p>
+      <div className="space-y-5" aria-busy="true">
+        <span className="sr-only">Cargando el mapeo…</span>
+        <div className="space-y-3" aria-hidden="true">
+          <Skeleton className="h-3.5 w-36 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-9 w-32 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-2 w-full rounded-full bg-surface-muted" />
+        </div>
+        <div className="divide-y divide-border rounded-lg border border-border" aria-hidden="true">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+              <Skeleton className="h-4 flex-1 rounded-sm bg-surface-muted" />
+              <Skeleton className="h-9 w-64 rounded-md bg-surface-muted" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -383,14 +407,47 @@ export function MapeoContable({
    * dos. La pestaña de rubros SÍ es un componente aparte porque no comparte nada
    * — tiene su propia consulta.
    */
+  /** ¿Alguna fila tiene algo que decir en «Propuesta»? (CB-05: igual a la elegida = nada que decir). */
+  const hayPropuestas = mapeo.eventos.some((e) => !(e.cuenta && !propuestaQueSirve(e, e.cuenta.id)));
+
   const cuerpoDeAsientos = (
     <div className="space-y-5" data-testid="mapeo-contable">
+      {/* LA RESPUESTA: cuántos eventos del recaudo ya saben a qué cuenta van.
+          Revisora r25 (Mapeo #1): con todo completo, UNA línea verde y sin barra (antes «13 de 13», la
+          leyenda «Con cuenta 13» y «Todos los eventos tienen cuenta…»: tres veces lo mismo). */}
       {mapeo.completo ? (
-        <Banner variant="success" title="Todos los eventos tienen cuenta">
-          Los cobros se causan al emitirse, y los recibos de caja, sus anulaciones y los lotes
-          pagados se asientan solos.
-        </Banner>
+        <p className="flex items-start gap-2 text-body-sm text-fg" data-testid="cifra-del-mapeo">
+          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" weight="fill" aria-hidden="true" />
+          <span>
+            {mapeo.eventos.length === 1
+              ? 'El evento tiene su cuenta'
+              : `Los ${mapeo.eventos.length.toLocaleString(localeDeLasCifras())} eventos tienen su cuenta`}
+            : los cobros se causan al emitirse, y los recibos de caja, sus anulaciones y los lotes pagados se
+            asientan solos.
+          </span>
+        </p>
       ) : (
+      <CifraHeroe
+          rotulo="Eventos con cuenta"
+          cifra={`${(mapeo.eventos.length - sinCuenta.length).toLocaleString(localeDeLasCifras())} de ${mapeo.eventos.length.toLocaleString(localeDeLasCifras())}`}
+          contexto={mapeo.completo ? 'todos los asientos del recaudo se generan solos' : 'los que no tienen cuenta no generan su asiento'}
+          total={mapeo.eventos.length}
+          tramos={[
+            { clave: 'con', etiqueta: 'Con cuenta', monto: mapeo.eventos.length - sinCuenta.length, tono: 'exito', cifra: (mapeo.eventos.length - sinCuenta.length).toLocaleString(localeDeLasCifras()) },
+            { clave: 'sin', etiqueta: 'Sin cuenta', monto: sinCuenta.length, tono: 'aviso', cifra: sinCuenta.length.toLocaleString(localeDeLasCifras()) },
+          ]}
+          pie={
+            mapeo.completo ? (
+              <>
+                Todos los eventos tienen cuenta. Los cobros se causan al emitirse, y los recibos de caja,
+                sus anulaciones y los lotes pagados se asientan solos.
+              </>
+            ) : null
+          }
+          data-testid="cifra-del-mapeo"
+        />
+      )}
+      {mapeo.completo ? null : (
         <Banner
           variant="warning"
           title={
@@ -417,6 +474,7 @@ export function MapeoContable({
                 <Button
                   size="sm"
                   hideArrow
+                  className="mt-1"
                   onClick={() => void sembrar()}
                   disabled={sembrando || !escritura.puede}
                   title={escritura.motivo ?? undefined}
@@ -465,6 +523,8 @@ export function MapeoContable({
           <Button
             size="sm"
             hideArrow
+            // Un solo azul: con el mapeo a medias lo que sigue es completarlo (arriba).
+            variant={mapeo.completo ? 'default' : 'outline'}
             onClick={() => void reprocesar()}
             disabled={reprocesando || !escritura.puede}
             // Sin «Reprocesando…» (23-09): el avance es del centro de procesos.
@@ -477,19 +537,37 @@ export function MapeoContable({
       ) : null}
 
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
-        <Table>
-          <TableHeader>
+        {sinCuenta.length > 0 ? (
+          <div className="border-b border-border px-4 py-3 empty:hidden">
+            <PestanasDeEstado
+              etiqueta="Qué eventos ver"
+              valor={vista}
+              onCambio={setVista}
+              pestanas={[
+                { valor: 'todos', etiqueta: 'Todos', cuantos: todos.length, fija: true },
+                { valor: 'sin-cuenta', etiqueta: 'Sin cuenta', cuantos: sinCuenta.length, tono: 'aviso' },
+                { valor: 'con-cuenta', etiqueta: 'Con cuenta', cuantos: todos.length - sinCuenta.length },
+              ]}
+            />
+          </div>
+        ) : null}
+        <Table className="max-md:block">
+          <TableHeader className="max-md:hidden">
             <TableRow>
               <TableHead>Evento</TableHead>
               <TableHead>Lado</TableHead>
               <TableHead className="min-w-[280px]">Cuenta del PUC</TableHead>
-              <TableHead>Propuesta</TableHead>
+              {hayPropuestas ? <TableHead>Propuesta</TableHead> : null}
             </TableRow>
           </TableHeader>
-          <TableBodyAnimado>
+          <TableBodyAnimado className="max-md:block">
             {pageItems.map((e) => (
-              <TableRowAnimada key={e.evento} data-testid={`evento-${e.evento}`}>
-                <TableCell className="max-w-[320px]">
+              <TableRowAnimada
+                key={e.evento}
+                data-testid={`evento-${e.evento}`}
+                className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+              >
+                <TableCell className="max-w-[320px] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                   {/* La explicación en UNA línea, con el texto entero en el
                       `title`: nueve filas de tres renglones eran media
                       pantalla de párrafos (Nico, 2026-09-03). */}
@@ -504,11 +582,11 @@ export function MapeoContable({
                   {/* CB-05: una línea, y «Leer completo» la abre en su lugar. */}
                   <ExplicacionDelEvento texto={e.explicacion} testId={`explicacion-${e.evento}`} />
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
+                <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                   <Badge variant={e.lado === 'DEBE' ? 'secondary' : 'outline'}>{NOMBRE_DEL_LADO[e.lado]}</Badge>
                 </TableCell>
-                <TableCell>
-                  <div className="flex max-w-[26rem] items-center gap-2">
+                <TableCell className="max-md:col-span-2 max-md:row-start-2 max-md:block max-md:p-0">
+                  <div className="flex max-w-[26rem] items-center gap-2 max-md:max-w-none">
                     <SelectorDeCuenta
                       cuentas={cuentas}
                       value={e.cuenta?.id ?? ''}
@@ -534,7 +612,10 @@ export function MapeoContable({
                   </div>
                   <ErrorDelCampo id={`mapeo-${e.evento}-error`} mensaje={errores[e.evento]} />
                 </TableCell>
-                <TableCell>
+                {/* Revisora r25 (Mapeo, UI #1): sin propuestas que decir, la columna no sale (antes «—» en
+                    las 13 filas y, a 390, un «—» huérfano bajo cada selector). */}
+                {hayPropuestas ? (
+                <TableCell className="max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0">
                   {/* 🔴 CB-05: la propuesta repetía, fila por fila, la cuenta que ya
                       estaba elegida. Sólo se dice cuando DIFIERE (o no hay cuenta). */}
                   {e.cuenta && !propuestaQueSirve(e, e.cuenta.id) ? (
@@ -579,6 +660,7 @@ export function MapeoContable({
                     </span>
                   )}
                 </TableCell>
+                ) : null}
               </TableRowAnimada>
             ))}
           </TableBodyAnimado>
@@ -608,7 +690,7 @@ export function MapeoContable({
           Asientos automáticos
         </TabsTrigger>
         <TabsTrigger value="rubros" data-testid="parte-rubros">
-          Rubros del P&G
+          Rubros del estado de resultados
         </TabsTrigger>
       </TabsList>
 

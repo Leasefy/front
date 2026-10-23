@@ -3,7 +3,8 @@
 import { use, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { ArrowLeft, CheckCircle } from '@phosphor-icons/react';
+import { CheckCircle, HouseLine, Tag } from '@phosphor-icons/react';
+import type { Icon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
@@ -179,7 +180,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
+      <div className="min-h-screen flex items-center justify-center bg-bg">
         <CargaDeMarca tamano="lg" />
       </div>
     );
@@ -206,22 +207,12 @@ export default function AplicarPage({ params }: AplicarPageProps) {
 
   if (!property) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="text-center px-4">
-          <h1 className="text-2xl font-bold text-foreground">
-            Propiedad no encontrada
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            La propiedad que buscas no existe o ha sido removida.
-          </p>
-          <Link href="/propiedades">
-            <Button className="mt-6">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Ver propiedades disponibles
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <AvisoDeAplicar
+        icono={HouseLine}
+        titulo="Propiedad no encontrada"
+        texto="La propiedad que buscas no existe o ha sido removida."
+        accion={{ href: '/propiedades', label: 'Ver propiedades disponibles' }}
+      />
     );
   }
 
@@ -233,44 +224,24 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // listing that switched RENT->SALE after the link was shared.
   if (property.listingType === 'sale') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="text-center px-4 max-w-md">
-          <h1 className="text-2xl font-bold text-foreground">
-            Esta propiedad está en venta
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            No se puede postular a una propiedad en venta. Contacta a la inmobiliaria por chat o agenda una visita desde la ficha del inmueble.
-          </p>
-          <Link href={`/propiedades/${resolvedParams.propertyId}`}>
-            <Button className="mt-6">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver al inmueble
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <AvisoDeAplicar
+        icono={Tag}
+        titulo="Esta propiedad está en venta"
+        texto="No se puede postular a una propiedad en venta. Contacta a la inmobiliaria por chat o agenda una visita desde la ficha del inmueble."
+        accion={{ href: `/propiedades/${resolvedParams.propertyId}`, label: 'Volver al inmueble' }}
+      />
     );
   }
 
   // Property not available for applications
   if (property.status !== 'available') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="text-center px-4">
-          <h1 className="text-2xl font-bold text-foreground">
-            Propiedad no disponible
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Esta propiedad ya no está disponible para aplicaciones.
-          </p>
-          <Link href="/propiedades">
-            <Button className="mt-6">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Ver propiedades disponibles
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <AvisoDeAplicar
+        icono={HouseLine}
+        titulo="Propiedad no disponible"
+        texto="Esta propiedad ya no está disponible para aplicaciones."
+        accion={{ href: '/propiedades', label: 'Ver propiedades disponibles' }}
+      />
     );
   }
 
@@ -280,7 +251,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // esperar.
   if (decidiendoCamino || decidiendoSiPuede || (isAuthed && existingApp === undefined)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
+      <div className="min-h-screen flex items-center justify-center bg-bg">
         <CargaDeMarca tamano="lg" />
       </div>
     );
@@ -339,6 +310,43 @@ export default function AplicarPage({ params }: AplicarPageProps) {
 }
 
 // ============================================================================
+// Un final sin formulario (no existe, en venta, no disponible)
+// ============================================================================
+
+/**
+ * Cuando no hay a qué postularse: el ícono suelto, un título liviano, por qué
+ * y UNA salida (glow up 22-10; antes títulos en negrilla y botones con flecha).
+ */
+function AvisoDeAplicar({
+  icono: Icono,
+  titulo,
+  texto,
+  accion,
+}: {
+  icono: Icon;
+  titulo: string;
+  texto: string;
+  accion: { href: string; label: string };
+}) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-bg px-4">
+      <div className="w-full max-w-md space-y-4 rounded-lg border border-border bg-surface p-6 text-center shadow-xs sm:p-8">
+        <Icono className="mx-auto h-8 w-8 text-fg-subtle" aria-hidden="true" />
+        <div className="space-y-2">
+          <h1 className="text-balance font-heading text-[24px] font-[420] leading-[1.15] tracking-[-0.02em] text-fg">
+            {titulo}
+          </h1>
+          <p className="text-body-sm text-fg-muted">{texto}</p>
+        </div>
+        <Button asChild className="w-full sm:w-auto" hideArrow>
+          <Link href={accion.href}>{accion.label}</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Already-applied card
 // ============================================================================
 
@@ -357,26 +365,23 @@ function AlreadyAppliedCard({
   error,
 }: AlreadyAppliedCardProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
-      <div className="max-w-md w-full bg-card rounded-xl border border-border p-6 text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center mx-auto">
-          <CheckCircle className="w-6 h-6 text-primary" weight="fill" />
-        </div>
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-foreground">
+    <div className="min-h-screen flex items-center justify-center bg-bg px-4">
+      <div className="w-full max-w-md space-y-4 rounded-lg border border-border bg-surface p-6 text-center shadow-xs sm:p-8">
+        {/* El visto suelto, sin círculo de color detrás. */}
+        <CheckCircle className="mx-auto h-8 w-8 text-success" weight="fill" aria-hidden="true" />
+        <div className="space-y-2">
+          <h1 className="text-balance font-heading text-[24px] font-[420] leading-[1.15] tracking-[-0.02em] text-fg">
             Ya tienes una postulación
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-body-sm text-fg-muted">
             Ya postulaste a esta propiedad. Puedes ver el estado de tu postulación,
             o retirarla para volver a empezar.
           </p>
         </div>
         <div className="flex flex-col gap-2">
-          <Link href={`/inquilino/aplicaciones/${applicationId}`} className="w-full">
-            <Button className="w-full" hideArrow>
-              Ver mi postulación
-            </Button>
-          </Link>
+          <Button asChild className="w-full" hideArrow>
+            <Link href={`/inquilino/aplicaciones/${applicationId}`}>Ver mi postulación</Link>
+          </Button>
           <Button
             variant="ghost"
             className="w-full"
@@ -389,7 +394,7 @@ function AlreadyAppliedCard({
           </Button>
         </div>
         {error ? (
-          <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+          <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-body-sm text-danger">
             {error}
           </p>
         ) : null}

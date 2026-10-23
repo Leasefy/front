@@ -14,6 +14,7 @@
  * mismo que ver la ficha.
  */
 
+import { TarjetaDeLaFicha } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RadioGroup, RadioGroupItem, Presence } from '@leasefy/cadence';
 import { enCristiano } from '@/lib/errores/en-cristiano';
@@ -87,21 +88,19 @@ export function ModalidadDelMandato({
   if (esVenta) return null;
 
   return (
-    <section
-      className="rounded-lg border border-border bg-card p-5 space-y-4"
+    // 21-10 (revisión de la ficha): la misma tarjeta de las demás secciones.
+    <TarjetaDeLaFicha
+      title="Giro al propietario"
+      icon={<HandCoins className="h-4 w-4" />}
       data-testid="modalidad-del-mandato"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <HandCoins className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-          <h3 className="text-base font-semibold text-foreground">Giro al propietario</h3>
-        </div>
-        {puedeEditar && mandato?.disponible ? (
-          <Button variant="ghost" size="sm" hideArrow onClick={() => setAbierto(true)}>
+      acciones={
+        puedeEditar && mandato?.disponible ? (
+          <Button variant="secondary" size="sm" hideArrow onClick={() => setAbierto(true)}>
             Cambiar
           </Button>
-        ) : null}
-      </div>
+        ) : null
+      }
+    >
 
       {error ? (
         <p className="text-sm text-danger" role="alert">
@@ -134,7 +133,7 @@ export function ModalidadDelMandato({
               <dd className="text-foreground font-medium mt-0.5" data-testid="modalidad-efectiva">
                 {modalidadEnPalabras(mandato.efectivo.modalidad)}
               </dd>
-              <dd className="text-xs text-muted-foreground mt-1">
+              <dd className="text-caption text-muted-foreground mt-1">
                 {mandato.efectivo.modalidad.modalidad
                   ? QUE_ES_LA_MODALIDAD[mandato.efectivo.modalidad.modalidad]
                   : SIN_MODALIDAD_PACTADA}
@@ -147,7 +146,7 @@ export function ModalidadDelMandato({
               <dd className="text-foreground font-medium mt-0.5" data-testid="intereses-efectivos">
                 {interesesEnPalabras(mandato.efectivo.intereses)}
               </dd>
-              <dd className="text-xs text-muted-foreground mt-1">
+              <dd className="text-caption text-muted-foreground mt-1">
                 {mandato.efectivo.intereses.porcentajeAlPropietario > 0
                   ? 'Lo que el inquilino pague de intereses de mora entra en la liquidación del propietario, sin comisión.'
                   : mandato.efectivo.intereses.destino === 'PROPIETARIO'
@@ -157,7 +156,7 @@ export function ModalidadDelMandato({
             </div>
           </dl>
           {mandato.modalidadDesde ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Rige desde el {diaLegible(mandato.modalidadDesde)}: no cambia lo liquidado antes.
             </p>
           ) : null}
@@ -174,7 +173,7 @@ export function ModalidadDelMandato({
           }}
         />
       ) : null}
-    </section>
+    </TarjetaDeLaFicha>
   );
 }
 
@@ -282,7 +281,7 @@ function EditarModalidad({
               <RadioGroupItem value={valor} className="mt-1" />
               <span>
                 <span className="block text-sm text-foreground">{nombre}</span>
-                {ayuda ? <span className="block text-xs text-muted-foreground">{ayuda}</span> : null}
+                {ayuda ? <span className="block text-caption text-muted-foreground">{ayuda}</span> : null}
               </span>
             </label>
           ))}
@@ -330,7 +329,7 @@ function EditarModalidad({
               <ErrorDelCampo id="pct-propietario-error" mensaje={errorDelPct} />
             </div>
           ) : null}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Lo que le toque al propietario entra en su liquidación sin comisión, y contablemente es
             ingreso para terceros.
           </p>

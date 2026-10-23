@@ -32,7 +32,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 vi.mock('@/lib/context/PermissionsContext', () => ({ usePermissionsContext: () => ({ isAdmin: esAdmin.valor }) }))
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ agency: { id: 'a1' } }) }))
 vi.mock('next/link', () => ({
-  default: ({ children, href }: { children?: React.ReactNode; href: string }) => React.createElement('a', { href }, children),
+  default: ({ children, href, ...resto }: { children?: React.ReactNode; href: string }) =>
+    React.createElement('a', { href, ...resto }, children),
 }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
@@ -122,15 +123,18 @@ describe('tablero de Vinci', () => {
     act(() => root.render(<RetencionDashboardPage />))
     const t = container.textContent ?? ''
     expect(t).not.toMatch(/ejemplo|no está desplegado|no están montadas/i)
-    // La franja: cada cifra con su etiqueta, en el orden en que se lee.
+    // Glow up 22-10 (revisora r24 #2): LA cifra, la barra que la reparte (con plan activo · sin atender) y,
+    // aparte en una línea, lo que no es parte de ella (cobranza y lo retenido).
     const franja = container.querySelector('[data-testid="vinci-resumen"]')?.textContent ?? ''
     expect(franja).toMatch(/En riesgo\s*1\s*1 inquilino · 0 propietarios/)
-    expect(franja).toMatch(/En cobranza\s*3/)
-    expect(franja).toMatch(/En gestión\s*1/)
-    expect(franja).toMatch(/Retenidos\s*0\s*Ningún caso cerrado todavía/)
-    expect(container.querySelector('[data-testid="vinci-medido"]')?.textContent).toMatch(
-      /^Medido .*\(el último barrido\) entre 105 contratos vigentes y 50 propietarios\. En riesgo desde 60\/100\.$/,
+    expect(franja).toMatch(/Con plan activo\s*0/)
+    expect(franja).toMatch(/Sin atender\s*1/)
+    expect(container.querySelector('[data-testid="vinci-aparte"]')?.textContent).toBe(
+      'Aparte: 3 en cobranza (más de 60 días de mora) · ningún caso cerrado todavía',
     )
+    // El pie en una línea: cuándo midió; sobre qué midió y el umbral van en «¿Cómo funciona?».
+    expect(container.querySelector('[data-testid="vinci-medido"]')?.textContent).toMatch(/^Medido .*\(el último barrido\)$/)
+    expect(t).not.toMatch(/ERP/)
     expect(t).toContain('Marta Gómez')
     // La llave de envío apagada se dice, no se finge que Automático escribe.
     expect(container.querySelector('[data-testid="vinci-envio-apagado"]')).not.toBeNull()
@@ -150,9 +154,10 @@ describe('tablero de Vinci', () => {
       refetch: vi.fn(),
     })
     act(() => root.render(<RetencionDashboardPage />))
+    // Glow up 22-10 (revisora r24 #1/#3): ya no es un aviso sino LA principal del encabezado, con su número.
     const aviso = container.querySelector('[data-testid="vinci-por-aprobar-aviso"]')
-    expect(aviso?.textContent).toContain('2 decisiones de Vinci esperan tu clic.')
-    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/retencion/aprobar')
+    expect(aviso?.textContent).toBe('Revisar 2 decisiones')
+    expect(aviso?.getAttribute('href')).toBe('/panel/inmobiliaria/retencion/aprobar')
   })
 
   it('el umbral lo edita sólo el administrador', () => {
@@ -160,12 +165,17 @@ describe('tablero de Vinci', () => {
     expect(container.querySelector('[data-testid="vinci-umbral"]')).toBeNull()
     act(() => root.unmount())
     root = createRoot(container)
+    expect(container.querySelector('[data-testid="vinci-umbral-abrir"]')).toBeNull()
+    act(() => root.unmount())
+    root = createRoot(container)
     esAdmin.valor = true
     act(() => root.render(<RetencionDashboardPage />))
-    expect((container.querySelector('[data-testid="vinci-umbral"]') as HTMLInputElement | null)?.value).toBe('60')
+    // Glow up 22-10 (revisora r24 #1): el umbral vive en su cajón, que abre «Umbral de riesgo».
+    act(() => (container.querySelector('[data-testid="vinci-umbral-abrir"]') as HTMLButtonElement).click())
+    expect((document.querySelector('[data-testid="vinci-umbral"]') as HTMLInputElement | null)?.value).toBe('60')
     // Nico (26-09): la frecuencia —7 días al inquilino, 15 al propietario— también la configura el administrador.
-    expect((container.querySelector('[data-testid="vinci-dias-inquilino"]') as HTMLInputElement | null)?.value).toBe('7')
-    expect((container.querySelector('[data-testid="vinci-dias-propietario"]') as HTMLInputElement | null)?.value).toBe('15')
+    expect((document.querySelector('[data-testid="vinci-dias-inquilino"]') as HTMLInputElement | null)?.value).toBe('7')
+    expect((document.querySelector('[data-testid="vinci-dias-propietario"]') as HTMLInputElement | null)?.value).toBe('15')
   })
 
   it('🔴 el cliente no cae a un mock: un error del agente es un error', async () => {

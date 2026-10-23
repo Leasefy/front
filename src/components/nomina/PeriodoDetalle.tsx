@@ -30,11 +30,12 @@ import {
 import { nominaApi } from '@/lib/api/nomina.service';
 import type { PeriodoConLiquidaciones } from '@/lib/api/nomina.types';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { Cifra, FranjaDeCifras } from '@leasefy/cadence';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import {
   Avisos,
-  Cifra,
   EstadoDelPeriodo,
-  TituloDeBloque,
   etiquetaDelPeriodo,
 } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
@@ -74,31 +75,40 @@ function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-surface p-5">
-        <div>
-          <h2 className="text-base font-semibold text-fg">
-            {etiquetaDelPeriodo(datos.mes, datos.quincena)}
-          </h2>
-          <p className="text-caption text-fg-muted">
-            {datos.desde.slice(0, 10)} al {datos.hasta.slice(0, 10)} ·{' '}
-            {datos.personas} persona{datos.personas === 1 ? '' : 's'}
-          </p>
-          <p className="mt-1 text-caption text-fg-muted">
-            {datos.asientoId ? 'Asentado en contabilidad' : 'Todavía sin asiento'}
-            {datos.loteDeEgresosId
-              ? ' · pagado con lote de egresos'
-              : datos.pagadoAt
-                ? ' · pagado por fuera de Leasefy'
-                : ''}
-          </p>
-          {datos.motivoAnulacion ? (
-            <p className="mt-1 text-caption text-danger" data-testid="motivo-de-anulacion">
-              Anulado: {datos.motivoAnulacion}
-            </p>
-          ) : null}
-        </div>
+      {/* GLOW UP 3.ª vuelta · LA RESPUESTA: lo que se les gira a las personas del período, con
+          su estado al lado. Antes eran una tarjeta con el período y cuatro cifras del mismo peso. */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <CifraHeroe
+          rotulo={`Neto a girar · ${etiquetaDelPeriodo(datos.mes, datos.quincena)}`}
+          cifra={<span data-testid="valor-neto">{formatCurrency(datos.totalNetoCop)}</span>}
+          contexto={`a ${datos.personas} ${datos.personas === 1 ? 'persona' : 'personas'}, del ${fechaCorta(datos.desde.slice(0, 10))} al ${fechaCorta(datos.hasta.slice(0, 10))}`}
+          pie={
+            <>
+              {datos.asientoId ? 'Asentado en contabilidad' : 'Todavía sin asiento'}
+              {datos.loteDeEgresosId
+                ? ' · pagado con lote de egresos'
+                : datos.pagadoAt
+                  ? ' · pagado por fuera de Leasefy'
+                  : ''}
+              .
+              {datos.motivoAnulacion ? (
+                <span className="block text-danger" data-testid="motivo-de-anulacion">
+                  Anulado: {datos.motivoAnulacion}
+                </span>
+              ) : null}
+            </>
+          }
+          className="min-w-0 flex-1"
+          data-testid="cifra-del-periodo"
+        />
         <EstadoDelPeriodo estado={datos.estado} />
-      </header>
+      </div>
+
+      <FranjaDeCifras aria-label="De dónde sale el neto">
+        <Cifra etiqueta="Devengado" valor={formatCurrency(datos.totalDevengadoCop)} detalle="Todo lo reconocido en el período" data-testid="cifra-devengado" />
+        <Cifra etiqueta="Deducciones" valor={formatCurrency(datos.totalDeduccionesCop)} detalle="Aportes del empleado, retención y descuentos" data-testid="cifra-deducciones" />
+        <Cifra etiqueta="Aportes del empleador" valor={formatCurrency(datos.totalAportesCop)} detalle="A cargo de la inmobiliaria, no se descuentan" data-testid="cifra-aportes" />
+      </FranjaDeCifras>
 
       {marcadas.length > 0 ? (
         <Avisos
@@ -123,42 +133,14 @@ function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
         />
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Cifra
-          id="devengado"
-          etiqueta="Devengado"
-          valor={datos.totalDevengadoCop}
-          definicion="Todo lo reconocido a las personas del período."
-        />
-        <Cifra
-          id="deducciones"
-          etiqueta="Deducciones"
-          valor={datos.totalDeduccionesCop}
-          definicion="Aportes del empleado, retención y descuentos autorizados."
-        />
-        <Cifra
-          id="neto"
-          etiqueta="Neto a girar"
-          valor={datos.totalNetoCop}
-          definicion="Lo que se les paga. Viene del back: esta pantalla no vuelve a sumar la tabla."
-          tono="success"
-        />
-        <Cifra
-          id="aportes"
-          etiqueta="Aportes del empleador"
-          valor={datos.totalAportesCop}
-          definicion="Salud, pensión, ARL, caja, SENA e ICBF a cargo de la inmobiliaria. No se le descuentan a nadie."
-        />
-      </div>
-
       <section className="space-y-3">
-        <TituloDeBloque
-          titulo="Los desprendibles"
-          explicacion="Uno por persona. Abre cualquiera para ver cada renglón con su base y su norma."
-        />
-        <div className="overflow-x-auto">
-          <Table data-testid="tabla-de-liquidaciones">
-            <TableHeader>
+        <div className="space-y-1">
+          <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Los desprendibles</h2>
+          <p className="text-body-sm text-fg-muted">Uno por persona: ábrelo para ver cada renglón con su base y su norma.</p>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
+          <Table data-testid="tabla-de-liquidaciones" className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 <TableHead>Persona</TableHead>
                 <TableHead className="text-right">Días</TableHead>
@@ -170,12 +152,16 @@ function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
                 <TableHead />
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="max-md:block">
               {datos.liquidaciones.map((l) => (
-                <TableRow key={l.id} data-testid={`liquidacion-${l.id}`}>
-                  <TableCell>
+                <TableRow
+                  key={l.id}
+                  data-testid={`liquidacion-${l.id}`}
+                  className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
+                >
+                  <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                     <Link
-                      className="font-medium text-brand underline"
+                      className="font-medium text-fg underline-offset-4 hover:underline"
                       href={`${PANEL}/desprendible/${l.id}`}
                     >
                       {l.nombre}
@@ -194,27 +180,28 @@ function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
                       </span>
                     ) : null}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-right tabular-nums max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted">
                     {l.diasLiquidados}
+                    <span className="md:hidden"> días · devengado {formatCurrency(l.devengadoCop)}</span>
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-right font-mono tabular-nums max-md:hidden">
                     {formatCurrency(l.devengadoCop)}
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-right font-mono tabular-nums max-md:hidden">
                     {formatCurrency(l.deduccionesCop)}
                   </TableCell>
-                  <TableCell className="text-right font-mono font-medium tabular-nums">
+                  <TableCell className="text-right font-mono tabular-nums text-fg max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                     {formatCurrency(l.netoCop)}
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-right font-mono tabular-nums max-md:hidden">
                     {formatCurrency(l.ibcCop)}
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-right font-mono tabular-nums max-md:hidden">
                     {formatCurrency(l.retencionCop)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0">
                     <Link
-                      className="text-caption text-brand underline"
+                      className="text-caption text-primary underline-offset-4 hover:underline"
                       href={`${PANEL}/desprendible/${l.id}`}
                     >
                       Ver desprendible

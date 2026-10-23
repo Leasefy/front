@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Presence, RadioCard, RadioCardGroup } from '@leasefy/cadence'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { Pill } from '@/components/admin/Pill'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ErrorBlock } from '@/components/admin/screen/states'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import {
   adoptarLaGanadora,
   empezarElExperimento,
@@ -25,11 +26,21 @@ import {
   type EstadoDelExperimento,
   type Forma,
 } from '@/lib/admin/experimento-de-laura'
-import { Card, MonoLabel } from '@leasefy/cadence'
+import { Card } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 type Accion = null | 'empezar' | 'pausar' | 'adoptar'
+
+/** Un dato de la forma: a 390 con su rótulo encima; a 768+ la columna ya lo dice. */
+function Dato({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+  return (
+    <div role="cell" className="min-w-0 md:text-right">
+      <div className="text-caption text-fg-muted md:hidden">{rotulo}</div>
+      <div className="font-mono text-body-sm tabular-nums text-fg">{children}</div>
+    </div>
+  )
+}
 
 /**
  * El experimento de cómo Laura ofrece el acuerdo (07-10-2026, Nico).
@@ -55,22 +66,21 @@ export function ExperimentoDeLaura() {
   if (consulta.isLoading && !e) {
     return (
       <Card className="p-5 mb-6" aria-busy="true">
-        <MonoLabel className="block">laura · cómo ofrece el acuerdo</MonoLabel>
+        <h2 className="text-body font-medium text-fg">Mori · cómo ofrece el acuerdo</h2>
         <p className="text-body-sm text-fg-muted mt-2">Cargando el experimento…</p>
       </Card>
     )
   }
   if (consulta.error && !e) {
+    // Ronda 26 (revisora r25): el MISMO cartel de fallo que la tabla de abajo (antes un rojo suelto con
+    // «Reintentar» y la tabla con «Intentar de nuevo»).
     return (
-      <Card className="p-5 mb-6">
-        <MonoLabel className="block">laura · cómo ofrece el acuerdo</MonoLabel>
-        <p role="alert" className="text-body-sm text-danger mt-2">
-          No pudimos leer el experimento: {mensajeDelAdmin(consulta.error, { accion: 'leer el experimento' })}
-        </p>
-        <Button variant="outline" hideArrow className="mt-3" type="button"  onClick={consulta.refetch}>
-          Reintentar
-        </Button>
-      </Card>
+      <ErrorBlock
+        titulo="No pudimos cargar el experimento de Mori"
+        error={consulta.error}
+        onReintentar={consulta.refetch}
+        className="mb-6"
+      />
     )
   }
   if (!e) return null
@@ -103,22 +113,30 @@ export function ExperimentoDeLaura() {
   return (
     <Card className="p-5 space-y-4 mb-6" aria-labelledby="experimento-laura-titulo" data-testid="experimento-de-laura">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div id="experimento-laura-titulo" className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-            laura · cómo ofrece el acuerdo
-          </div>
-          <p className="text-caption text-fg-muted mt-1 max-w-3xl">
-            A la mitad de los deudores Laura les ofrece el acuerdo como hoy y a la otra mitad con menos cuotas, al azar y
-            por voz y WhatsApp (el mismo deudor oye lo mismo en los dos). Gana la que recupera más plata en{' '}
-            {e.diasDeLaMedicion} días, contada con los recibos del back. Corre en todas las inmobiliarias
+        <div className="min-w-0">
+          {/* Ronda 28 (revisora r27): un título de verdad (antes un rótulo en mono minúscula) y una sola
+              línea de para qué sirve; el cómo, plegado. El agente se llama Mori en la plataforma. */}
+          <h2 id="experimento-laura-titulo" className="text-body font-medium text-fg">
+            Mori · cómo ofrece el acuerdo
+          </h2>
+          <p className="mt-1 max-w-3xl text-caption text-fg-muted">
+            Gana la forma que recupera más plata en {e.diasDeLaMedicion} días. Corre en todas las inmobiliarias
             {e.inmobiliariasQueLoApagaron > 0
               ? ` menos ${e.inmobiliariasQueLoApagaron === 1 ? 'una que lo apagó' : `${e.inmobiliariasQueLoApagaron} que lo apagaron`}`
               : ''}
-            . Nada cambia en Laura para todas sin tu aprobación.
+            .
           </p>
         </div>
         <Pill tone={estado.tono}>{estado.texto}</Pill>
       </div>
+
+      <MasDetalles etiqueta="¿Cómo funciona?" etiquetaAbierto="Ocultar cómo funciona">
+        <p className="max-w-3xl text-caption text-fg-muted">
+          A la mitad de los deudores Mori les ofrece el acuerdo como hoy y a la otra mitad con menos cuotas, al azar,
+          por voz y WhatsApp (el mismo deudor oye lo mismo en los dos). La plata se cuenta con los pagos que
+          llegaron. Nada cambia en Mori para todas sin tu aprobación.
+        </p>
+      </MasDetalles>
 
       {!e.disponible && (
         <p className="text-body-sm text-warning" data-testid="experimento-sin-migracion">
@@ -135,54 +153,71 @@ export function ExperimentoDeLaura() {
         </p>
       )}
 
-      <div className="overflow-x-auto">
-        <Table data-testid="formas-del-experimento">
-          <TableHeader>
-            <TableRow className="text-left text-caption text-fg-muted">
-              <TableHead >Forma</TableHead>
-              <TableHead className="text-right">Asignados</TableHead>
-              <TableHead className="text-right">Medidos</TableHead>
-              <TableHead className="text-right">Plata en {e.diasDeLaMedicion} días</TableHead>
-              <TableHead className="text-right">Por deudor</TableHead>
-              <TableHead className="text-right">Pagaron algo</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {e.formas.map((f) => (
-              <TableRow key={f.variantKey} data-testid={`forma-${f.variantKey}`}>
-                <TableCell >
-                  <div className="text-fg">{nombreDeLaForma(f.variantKey, e.maxCuotas)}</div>
-                  <div className="text-caption text-fg-muted">{queHaceLaForma(f.variantKey, e.maxCuotas)}</div>
-                </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{f.asignados.toLocaleString('es-CO')}</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">
-                  {f.medidos.toLocaleString('es-CO')}
-                  {(f.enCurso > 0 || f.sinDatos > 0) && (
-                    <div className="text-[11px] text-fg-subtle font-sans">
-                      {f.enCurso > 0 ? `${f.enCurso} en curso` : ''}
-                      {f.enCurso > 0 && f.sinDatos > 0 ? ' · ' : ''}
-                      {f.sinDatos > 0 ? `${f.sinDatos} sin contrato` : ''}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{fmtCOP(f.plataTotal)}</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{f.medidos > 0 ? fmtCOP(f.plataPorDeudor) : '—'}</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">
-                  {f.medidos > 0 ? `${Math.round((f.conAlgunPago / f.medidos) * 100)} %` : '—'}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      {e.estado === 'sin_empezar' ? (
+        // Ronda 28 (revisora r27): sin empezar no hay nada medido; antes una tabla de ceros
+        // («0 · 0 · $ 0 · — · —»). Las dos formas, una por renglón.
+        <ul className="divide-y divide-border-faint rounded-lg border border-border" data-testid="formas-del-experimento">
+          {e.formas.map((f) => (
+            <li key={f.variantKey} className="px-4 py-3" data-testid={`forma-${f.variantKey}`}>
+              <div className="text-body-sm text-fg">{nombreDeLaForma(f.variantKey, e.maxCuotas)}</div>
+              <div className="text-caption text-fg-muted">{queHaceLaForma(f.variantKey, e.maxCuotas)}</div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        // Ronda 28 (revisora r27): a 390 cada forma es una tarjeta (antes la tabla encogida que se corría
+        // a los lados); a 768+ las columnas de siempre.
+        <div data-testid="formas-del-experimento" role="table" aria-label="Cómo va cada forma">
+          <div
+            role="row"
+            className="hidden gap-3 border-b border-border px-1 pb-2 text-caption text-fg-muted md:grid md:grid-cols-[minmax(0,2.4fr)_repeat(5,minmax(0,1fr))]"
+          >
+            <span role="columnheader">Forma</span>
+            <span role="columnheader" className="text-right">Asignados</span>
+            <span role="columnheader" className="text-right">Medidos</span>
+            <span role="columnheader" className="text-right">Plata en {e.diasDeLaMedicion} días</span>
+            <span role="columnheader" className="text-right">Por deudor</span>
+            <span role="columnheader" className="text-right">Pagaron algo</span>
+          </div>
+          {e.formas.map((f) => (
+            <div
+              key={f.variantKey}
+              role="row"
+              data-testid={`forma-${f.variantKey}`}
+              className="grid grid-cols-2 gap-x-3 gap-y-2 border-b border-border-faint px-1 py-3 last:border-b-0 md:grid-cols-[minmax(0,2.4fr)_repeat(5,minmax(0,1fr))] md:items-start"
+            >
+              <div role="cell" className="col-span-2 md:col-span-1">
+                <div className="text-body-sm text-fg">{nombreDeLaForma(f.variantKey, e.maxCuotas)}</div>
+                <div className="text-caption text-fg-muted">{queHaceLaForma(f.variantKey, e.maxCuotas)}</div>
+              </div>
+              <Dato rotulo="Asignados">{f.asignados.toLocaleString('es-CO')}</Dato>
+              <Dato rotulo="Medidos">
+                {f.medidos.toLocaleString('es-CO')}
+                {(f.enCurso > 0 || f.sinDatos > 0) && (
+                  <div className="font-sans text-caption text-fg-subtle">
+                    {f.enCurso > 0 ? `${f.enCurso} en curso` : ''}
+                    {f.enCurso > 0 && f.sinDatos > 0 ? ' · ' : ''}
+                    {f.sinDatos > 0 ? `${f.sinDatos} sin contrato` : ''}
+                  </div>
+                )}
+              </Dato>
+              <Dato rotulo={`Plata en ${e.diasDeLaMedicion} días`}>{fmtCOP(f.plataTotal)}</Dato>
+              <Dato rotulo="Por deudor">{f.medidos > 0 ? fmtCOP(f.plataPorDeudor) : '—'}</Dato>
+              <Dato rotulo="Pagaron algo">
+                {f.medidos > 0 ? `${Math.round((f.conAlgunPago / f.medidos) * 100)} %` : '—'}
+              </Dato>
+            </div>
+          ))}
+        </div>
+      )}
 
       {e.adoptada ? (
         <p role="status" className="text-body-sm text-success" data-testid="experimento-adoptada">
           Ganó {nombreDeLaForma(e.adoptada.variantKey, e.maxCuotas)}: la aprobó {e.adoptada.adoptadaPor} el{' '}
           {fmtDateTime(e.adoptada.adoptadaAt)}.{' '}
           {e.adoptada.variantKey === FORMA_COMO_HOY
-            ? 'Laura sigue ofreciendo el acuerdo como siempre.'
-            : 'Laura la usa con todos los deudores de todas las inmobiliarias.'}
+            ? 'Mori sigue ofreciendo el acuerdo como siempre.'
+            : 'Mori la usa con todos los deudores de todas las inmobiliarias.'}
         </p>
       ) : (
         e.estado !== 'sin_empezar' && (
@@ -270,7 +305,7 @@ export function ExperimentoDeLaura() {
       <Presence show={accion === 'pausar'}>
         <Card className="p-3 border-warning/40 space-y-3" data-testid="confirmar-pausar">
           <p className="text-body-sm text-fg">
-            Mientras esté en pausa, Laura le ofrece el acuerdo a todos como hoy. Lo medido no se pierde y al reanudar
+            Mientras esté en pausa, Mori le ofrece el acuerdo a todos como hoy. Lo medido no se pierde y al reanudar
             cada deudor vuelve a su misma forma.
           </p>
           <div className="flex gap-2">
@@ -315,8 +350,8 @@ export function ExperimentoDeLaura() {
           )}
           <p className="text-body-sm text-fg">
             {ganadora === FORMA_COMO_HOY
-              ? 'El experimento termina y Laura sigue ofreciendo el acuerdo como siempre, en todas las inmobiliarias.'
-              : `El experimento termina y desde ya Laura le ofrece ${e.maxCuotas !== null && e.maxCuotas <= 1 ? 'sólo el pago total' : `como mucho ${e.maxCuotas ?? 'las'} cuotas`} a todos los deudores de todas las inmobiliarias (nunca más de lo que autoriza cada una). Queda registrado con tu correo.`}
+              ? 'El experimento termina y Mori sigue ofreciendo el acuerdo como siempre, en todas las inmobiliarias.'
+              : `El experimento termina y desde ya Mori le ofrece ${e.maxCuotas !== null && e.maxCuotas <= 1 ? 'sólo el pago total' : `como mucho ${e.maxCuotas ?? 'las'} cuotas`} a todos los deudores de todas las inmobiliarias (nunca más de lo que autoriza cada una). Queda registrado con tu correo.`}
           </p>
           <div className="flex gap-2">
             <Button hideArrow type="button"

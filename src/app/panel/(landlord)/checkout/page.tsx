@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CreditCard, Lock, Check, Buildings, WarningCircle } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Button } from '@/components/ui/button';
 import { Input, Spinner } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
@@ -49,7 +50,7 @@ const DOCUMENTO_VALIDO = /^\d{6,15}$/;
  * Inner checkout component that uses search params
  */
 function CheckoutContent() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { user } = useAuth();
   const searchParams = useSearchParams();
 
@@ -213,23 +214,25 @@ function CheckoutContent() {
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-bg">
+      {/* GLOW UP (21-10-2026): el contenedor y el encabezado común del portal. */}
+      <div className="max-w-5xl p-6 lg:p-8">
         {/* Back link */}
         <div className="mb-6">
           <BackButton href="/panel/upgrade" label={t('landlord.checkout.backToPlans')} />
         </div>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            {t('landlord.checkout.title')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('landlord.checkout.subscribingTo')}{' '}
-            <span className="font-medium text-foreground">{plan.name}</span>
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Tu plan' : 'Your plan'}
+          titulo={t('landlord.checkout.title')}
+          descripcion={
+            <>
+              {t('landlord.checkout.subscribingTo')}{' '}
+              <span className="font-medium text-fg" data-testid="checkout-plan">{plan.name}</span>
+            </>
+          }
+        />
 
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Main form column */}
@@ -241,7 +244,7 @@ function CheckoutContent() {
                   <Buildings className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-foreground">
+                  <h2 className="text-h3 text-foreground">
                     {t('landlord.checkout.planLabel', { name: plan.name })}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-0.5">
@@ -283,7 +286,7 @@ function CheckoutContent() {
                   label={
                     <span className="block">
                       <span className="block">{t('landlord.checkout.monthly')}</span>
-                      <span className="block mt-1 text-lg font-bold text-foreground">
+                      <span className="block mt-1 text-lg font-medium text-foreground">
                         {precioLegible(plan.price.monthly)}
                         <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perMonth')}</span>
                       </span>
@@ -295,7 +298,7 @@ function CheckoutContent() {
                   className="flex-1"
                   badge={
                     ahorroAnual > 0 ? (
-                      <span className="px-2 py-0.5 text-xs font-medium bg-success text-white rounded-sm">
+                      <span className="px-2 py-0.5 text-caption font-medium bg-success text-white rounded-sm">
                         {t('landlord.checkout.yearlySaving', { percent: ahorroAnual })}
                       </span>
                     ) : undefined
@@ -303,7 +306,7 @@ function CheckoutContent() {
                   label={
                     <span className="block">
                       <span className="block">{t('landlord.checkout.yearly')}</span>
-                      <span className="block mt-1 text-lg font-bold text-foreground">
+                      <span className="block mt-1 text-lg font-medium text-foreground">
                         {precioLegible(plan.price.yearly)}
                         <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perYear')}</span>
                       </span>
@@ -533,7 +536,7 @@ function CheckoutContent() {
               </Button>
 
               {/* Security note */}
-              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-center gap-2 text-caption text-muted-foreground">
                 <Lock className="w-3 h-3" />
                 <span>{t('landlord.checkout.securePayment')}</span>
               </div>

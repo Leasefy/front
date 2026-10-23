@@ -13,7 +13,7 @@ import {
   motionStagger,
   motionTransition,
 } from '@leasefy/cadence'
-import { ArrowRight, Check } from '@phosphor-icons/react'
+import { Check } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
@@ -314,7 +314,7 @@ export function EleccionDePerfil({
                   {[0, 1].map((i) => (
                     <div
                       key={i}
-                      className="aspect-[4/5] animate-pulse rounded-xl bg-surface-muted sm:aspect-[3/4]"
+                      className="aspect-[16/10] animate-pulse rounded-lg bg-surface-muted sm:aspect-[3/4]"
                     />
                   ))}
                 </div>
@@ -448,7 +448,7 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
         'transition-[box-shadow,opacity] duration-slow ease-standard',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         'disabled:cursor-default',
-        compacta ? 'aspect-square rounded-lg' : 'aspect-[4/5] rounded-xl sm:aspect-[3/4]',
+        compacta ? 'aspect-square rounded-lg' : 'aspect-[16/10] rounded-lg sm:aspect-[3/4]',
         elegida || yendo
           ? 'ring-2 ring-primary ring-offset-2 ring-offset-bg'
           : 'shadow-[0_14px_36px_-22px_rgba(20,19,15,0.4)]',
@@ -474,19 +474,18 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
           style={{ objectPosition: opcion.encuadre }}
         />
 
-        {/* El «Elegir» que invita al clic. Decorativo (aria-hidden): el nombre del botón ya es el rol. */}
+        {/* El «Elegir» que invita al clic, sin flecha (la tarjeta ya es el botón). Decorativo (aria-hidden): el nombre del botón ya es el rol. */}
         {deshabilitada ? null : (
           <span
             aria-hidden
             className={cn(
-              'pointer-events-none absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/35 px-3.5 py-1.5',
+              'pointer-events-none absolute right-4 top-4 inline-flex items-center rounded-full bg-black/35 px-3.5 py-1.5',
               'text-[13px] font-medium text-white opacity-0 backdrop-blur-md transition-[opacity,transform] duration-slow ease-enter',
               'motion-safe:translate-y-1 group-hover:opacity-100 group-focus-visible:opacity-100',
               'motion-safe:group-hover:translate-y-0 motion-safe:group-focus-visible:translate-y-0',
             )}
           >
             Elegir
-            <ArrowRight className="h-3.5 w-3.5" weight="bold" aria-hidden />
           </span>
         )}
 

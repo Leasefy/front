@@ -8,33 +8,35 @@
  */
 
 import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
 import { Copropiedades } from '@/components/contabilidad/copropiedades/Copropiedades';
 
 export default function CopropiedadesPage() {
   return (
     <PageGuard module="reportes" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Contabilidad">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
+        <div className="space-y-3">
           <Link
             href="/panel/inmobiliaria/contabilidad"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+            className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-h2 text-fg">Copropiedades</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            El conjunto o el edificio donde está el inmueble, con su NIT. Es el dueño de la cuota de
-            administración: sin él, esa plata queda en el libro sin decir de quién es, y eso es lo
-            que traba la exógena.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Dinero"
+            titulo="Copropiedades"
+            descripcion="El conjunto o el edificio donde está el inmueble, con su NIT."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">Es el dueño de la cuota de administración: sin él, esa plata queda en el libro sin decir de quién es, y eso es lo que traba la exógena.</p>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         <Copropiedades />
       </div>
     </PageGuard>

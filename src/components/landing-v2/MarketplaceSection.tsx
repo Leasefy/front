@@ -81,7 +81,7 @@ export function MarketplaceSection() {
       <div className="container">
         {/* Sin `.slabel` ni número de sección: NINGUNA otra sección de esta
             landing los usa —todas abren directo con el `h-big`— y el «( 05 )»
-            que tenía acá no numeraba ninguna secuencia real. Un marcador
+            que tenía aquí no numeraba ninguna secuencia real. Un marcador
             ordinal sólo se gana su lugar cuando el orden dice algo. */}
         <div className="mkt-head">
           <h2 className="h-big">{tx('Encuentra tu próximo arriendo.', 'Find your next rental.')}</h2>

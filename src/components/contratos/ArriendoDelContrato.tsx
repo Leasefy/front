@@ -495,13 +495,13 @@ function LineaDelContrato({
 
       <div className="mt-2.5 flex items-start justify-between gap-4 font-mono text-caption tabular-nums">
         <span>
-          <span className="block text-[11px] uppercase tracking-wide text-fg-subtle">Inicio</span>
+          <span className="block text-caption uppercase tracking-wide text-fg-subtle">Inicio</span>
           <span className="text-fg" data-testid="fecha-de-inicio">
             {fechaLegible(avance.inicio)}
           </span>
         </span>
         <span className="text-right">
-          <span className="block text-[11px] uppercase tracking-wide text-fg-subtle">
+          <span className="block text-caption uppercase tracking-wide text-fg-subtle">
             {terminadoEn || terminaEl ? 'Fin pactado' : 'Fin'}
           </span>
           <span className="text-fg" data-testid="fecha-de-fin">
@@ -565,7 +565,7 @@ function Barra({
           // de la línea el ancho que le queda a la etiqueta es poco y «2026»
           // bajaba al renglón de abajo, encima de la barra.
           className={cn(
-            'absolute top-0 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-wide text-primary',
+            'absolute top-0 whitespace-nowrap font-mono text-caption font-medium uppercase tracking-wide text-primary',
             alinearHoy,
           )}
           style={{ left: `${porcentaje}%` }}

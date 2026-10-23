@@ -6,7 +6,7 @@
 
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero';
-import { ESPACIO_DE_LA_PLATA, decimalesEnDocumento, decimalesEnPantalla } from '@/lib/plata/escribir-plata';
+import { ESPACIO_DE_LA_PLATA, decimalesEnDocumento, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
 import { traeCentavosGuardados } from '@/lib/plata/centavos-guardados';
 import { idiomaDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
@@ -42,6 +42,25 @@ export function formatCurrency(amount: number | null | undefined, locale?: 'es' 
   plataQueNoEsNumero('formatCurrency', amount);
   const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
   return '$' + ESPACIO_DE_LA_PLATA + safe.toLocaleString(deLaPantalla(locale), decimalesEnPantalla(safe));
+}
+
+/**
+ * Un formateador para un GRUPO de cifras que se leen juntas (una franja, una
+ * columna): si alguna muestra centavos, todas los muestran (manual de voz §4:
+ * «los mismos decimales en toda una columna o franja»). Revisión de diseño del
+ * 22-10-2026: «$ 6.410.000» al lado de «$ 43.930.500,50». Sin centavos en
+ * ninguna, es `formatCurrency` tal cual.
+ */
+export function plataPareja(
+  valores: ReadonlyArray<number | null | undefined>,
+  locale?: 'es' | 'en',
+): (amount: number | null | undefined) => string {
+  const conCentavos = valores.some((v) => typeof v === 'number' && seMuestranLosCentavos(v));
+  if (!conCentavos) return (amount) => formatCurrency(amount, locale);
+  return (amount) => {
+    const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
+    return '$' + ESPACIO_DE_LA_PLATA + safe.toLocaleString(deLaPantalla(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 }
 
 /**

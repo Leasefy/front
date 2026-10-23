@@ -3,38 +3,34 @@
 import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas'
 import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla'
 import { PostulacionesMarcadas } from '@/components/inmobiliaria/PostulacionesMarcadas'
-import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ClipboardText,
-  Hourglass,
-  WarningCircle,
-  CheckCircle,
-  XCircle,
   MagnifyingGlass,
   X,
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { StatusBadge, type SemanticTone } from '@leasefy/cadence'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { PageGuard } from '@/components/auth/PageGuard'
-import { EmptyState } from '@/components/data-display/EmptyState'
+// La de `ui` es la que pinta la ilustración 3D (`ilustracion`); la de data-display la ignoraba.
+import { EmptyState } from '@/components/ui/empty-state'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
-import { Input } from '@/components/ui'
+import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui'
 import { Table, TableBodyAnimado, TableCell, TableHead, TableHeader, TableRow, TableRowAnimada } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import {
-  AnimatedNumber,
+  Avatar,
   CrossFade,
   IconButton,
-  MotionIndicator,
   Presence,
-  SegmentedControl,
 } from '@leasefy/cadence'
-
-/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
-const enteroTalCual = (n: number) => String(Math.round(n))
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer'
@@ -53,112 +49,63 @@ import { useLocaleDeFechas, useTr } from '@/lib/i18n/use-tr'
 
 // ─── Status display (mirrors propiedades/candidatos pages) ────────────────────
 
+// Revisora r24 (Postulaciones #2): el estado con `StatusBadge` en TINTA —el azul es la acción— y sólo
+// con color lo que cambia el trabajo (aprobado, rechazado, pide información).
 const STATUS_CONFIG: Record<
   LandlordApplicationStatus,
-  { label: string; bg: string; text: string }
+  { label: string; tone: SemanticTone }
 > = {
-  DRAFT:           { label: 'Borrador',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
-  SUBMITTED:       { label: 'Postulado',         bg: 'bg-primary-soft',   text: 'text-primary' },
-  UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
-  APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
-  REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
-  NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
-  WITHDRAWN:       { label: 'Retirado',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
-  CONTRACT_FAILED: { label: 'Contrato fallido',  bg: 'bg-danger-soft',    text: 'text-danger' },
+  DRAFT:           { label: 'Borrador',          tone: 'neutral' },
+  SUBMITTED:       { label: 'Postulado',         tone: 'neutral' },
+  UNDER_REVIEW:    { label: 'En revisión',       tone: 'neutral' },
+  APPROVED:        { label: 'Aprobado',          tone: 'success' },
+  REJECTED:        { label: 'Rechazado',         tone: 'critical' },
+  // Revisora r22 (VOZ): sin abreviar.
+  NEEDS_INFO:      { label: 'Pide información',  tone: 'warning' },
+  WITHDRAWN:       { label: 'Retirado',          tone: 'neutral' },
+  CONTRACT_FAILED: { label: 'Contrato fallido',  tone: 'critical' },
   // Aprobar a una persona desplaza a las demás del mismo inmueble a
   // NO_ADJUDICADO (landlord.service.ts). Sin esta fila salían «Desconocido».
-  NO_ADJUDICADO:   { label: 'No adjudicado',     bg: 'bg-surface-muted',  text: 'text-fg-muted' },
-  PREAPPROVED:     { label: 'Preaprobado',       bg: 'bg-primary-soft',   text: 'text-primary' },
+  NO_ADJUDICADO:   { label: 'No adjudicado',     tone: 'neutral' },
+  PREAPPROVED:     { label: 'Preaprobado',       tone: 'neutral' },
 };
 
-const FALLBACK_STATUS = { label: 'Desconocido', bg: 'bg-surface-muted', text: 'text-fg-muted' };
+const FALLBACK_STATUS: { label: string; tone: SemanticTone } = { label: 'Desconocido', tone: 'neutral' };
 
 const SCORE_COLORS: Record<string, string> = {
   A: 'text-success bg-success-soft',
-  B: 'text-primary bg-primary-soft',
+  B: 'text-fg bg-surface-muted',
   C: 'text-warning bg-warning-soft',
   D: 'text-danger bg-danger-soft',
 };
 
-// ─── Clickable stat tiles (same visual language as propiedades StatTile) ──────
+// ─── Los estados por los que se filtra (las pestañas de la tabla) ─────────────
 
 type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'APPROVED' | 'REJECTED' | 'NOT_AWARDED'
 
-const TILE_TONES = {
-  neutral: 'bg-surface-muted text-fg-muted',
-  ok: 'bg-success-soft text-success',
-  info: 'bg-primary-soft text-primary',
-  warn: 'bg-warning-soft text-warning',
-  bad: 'bg-danger-soft text-danger',
-} as const;
-
+/**
+ * Nico (22-10-2026, decisión 22): las seis cifras grandes pasan a PESTAÑAS con su conteo, como Propietarios e
+ * Inquilinos. Primero lo que espera tu decisión; «Todas» al final y siempre a la vista; una pestaña en 0 no sale.
+ */
 const FILTERS: {
   key: FilterKey;
   label: string;
-  tone: keyof typeof TILE_TONES;
-  icon: typeof ClipboardText;
+  /** El punto ámbar: lo que espera tu decisión. */
+  tono?: 'aviso';
   statuses: LandlordApplicationStatus[] | null;
 }[] = [
-  { key: 'ALL',         label: 'Total',         tone: 'neutral', icon: ClipboardText, statuses: null },
-  { key: 'IN_REVIEW',   label: 'En revisión',   tone: 'info',    icon: Hourglass,     statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
-  { key: 'NEEDS_INFO',  label: 'Pide info',     tone: 'warn',    icon: WarningCircle, statuses: ['NEEDS_INFO'] },
-  { key: 'APPROVED',    label: 'Aprobadas',     tone: 'ok',      icon: CheckCircle,   statuses: ['APPROVED'] },
-  { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
+  { key: 'IN_REVIEW',   label: 'En revisión',    tono: 'aviso', statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
+  { key: 'NEEDS_INFO',  label: 'Pide información', statuses: ['NEEDS_INFO'] },
+  { key: 'APPROVED',    label: 'Aprobadas',      statuses: ['APPROVED'] },
   // QA-IA-A (04-10-2026): el no adjudicado NO es un rechazo —el inmueble quedó
   // para otro— y es a quien hay que ofrecerle otras opciones (F-06). Contarlo
   // entre las rechazadas lo escondía; el back ya lo devuelve en la lista.
-  { key: 'NOT_AWARDED', label: 'No adjudicadas', tone: 'neutral', icon: Hourglass,     statuses: ['NO_ADJUDICADO'] },
+  { key: 'NOT_AWARDED', label: 'No adjudicadas', statuses: ['NO_ADJUDICADO'] },
+  { key: 'REJECTED',    label: 'Rechazadas',     statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
+  { key: 'ALL',         label: 'Todas',          statuses: null },
 ];
 
-function StatTile({
-  value,
-  label,
-  tone,
-  icon: Icon,
-  active,
-  onClick,
-  indicador,
-}: {
-  value: number;
-  label: string;
-  tone: keyof typeof TILE_TONES;
-  icon: typeof ClipboardText;
-  active: boolean;
-  onClick: () => void;
-  /** `layoutId` compartido por las seis: el marco del filtro activo se DESLIZA de una a otra. */
-  indicador: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'relative flex items-center gap-3 p-4 rounded-lg border border-border bg-card text-left transition-colors',
-        !active && 'hover:bg-surface-muted',
-      )}
-    >
-      {/* El marco cobalto del filtro activo (el mismo `border-primary ring-1`
-          de antes), ahora como `MotionIndicator`: viaja a la tarjeta elegida. */}
-      {active && (
-        <MotionIndicator
-          layoutId={indicador}
-          className="-inset-px rounded-lg border border-primary ring-1 ring-primary"
-        />
-      )}
-      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', TILE_TONES[tone])}>
-        <Icon className="w-5 h-5" weight="duotone" />
-      </div>
-      <div className="min-w-0">
-        {/* Cuenta cuando cambia (se aprueba, rechaza o llega una nueva). */}
-        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">
-          <AnimatedNumber value={value} format={enteroTalCual} />
-        </p>
-        <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
-      </div>
-    </button>
-  );
-}
+
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -166,22 +113,22 @@ function formatDate(iso: string, fechas: 'es-CO' | 'en-US' = 'es-CO'): string {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  // La fecha de la casa: «4 de octubre de 2026» (no «04 de oct de 2026»).
-  return d.toLocaleDateString(fechas, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' })
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
+  // Revisora r22 (#7): la fecha corta, como Contratos: «18 oct 2026».
+  return d
+    .toLocaleDateString(fechas, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })
+    .replace(/\./g, '')
+    .replace(/ de /g, ' ')
 }
 
 function PostulacionesContenido() {
   const tr = useTr();
   const fechas = useLocaleDeFechas();
-  const indicadorDelFiltro = `${useId()}-filtro`
   const [items, setItems] = useState<AllCandidatesItem[]>([])
-  const [filter, setFilter] = useState<FilterKey>('ALL')
+  /** La pestaña que la persona eligió; mientras no elija, abre en «En revisión» si hay alguna (Nico, decisión 22). */
+  const [filtroElegido, setFilter] = useState<FilterKey | null>(null)
   const [search, setSearch] = useState('')
+  // Revisora r22 (Postulaciones #6): la decisión es por inmueble; se puede mirar uno solo.
+  const [inmueble, setInmueble] = useState<string>('TODOS')
   /** La persona cuyo cajón está abierto. El detalle vive en esta misma pantalla. */
   const [candidatoAbierto, setCandidatoAbierto] = useState<AllCandidatesItem | null>(null)
   const [accion, setAccion] = useState<{ type: ActionType; candidate: AllCandidatesItem } | null>(
@@ -242,6 +189,8 @@ function PostulacionesContenido() {
       statuses === null ? items.length : items.filter((c) => statuses.includes(c.status)).length,
     [items],
   )
+  const enRevision = countFor(FILTERS[0].statuses)
+  const filter: FilterKey = filtroElegido ?? (enRevision > 0 ? 'IN_REVIEW' : 'ALL')
 
   /**
    * Abre el detalle ACÁ, sin sacar a nadie de la lista.
@@ -293,8 +242,23 @@ function PostulacionesContenido() {
           c.propertyTitle.toLowerCase().includes(q),
       )
     }
-    return result
-  }, [items, filter, search])
+    if (inmueble !== 'TODOS') result = result.filter((c) => c.propertyId === inmueble)
+    // Revisora r22 (#6): las de un mismo inmueble, juntas y en el orden de su lista corta (orden estable).
+    const puesto = (c: AllCandidatesItem) => listaCorta.get(c.id)?.puesto ?? Number.POSITIVE_INFINITY
+    return [...result].sort(
+      (a, b) =>
+        (a.propertyTitle < b.propertyTitle ? -1 : a.propertyTitle > b.propertyTitle ? 1 : 0) ||
+        (a.propertyId < b.propertyId ? -1 : a.propertyId > b.propertyId ? 1 : 0) ||
+        puesto(a) - puesto(b),
+    )
+  }, [items, filter, search, inmueble, listaCorta])
+
+  /** Los inmuebles con postulaciones, con cuántas tiene cada uno (para el filtro). */
+  const inmueblesConPostulaciones = useMemo(() => {
+    const m = new Map<string, { titulo: string; n: number }>()
+    for (const c of items) m.set(c.propertyId, { titulo: c.propertyTitle, n: (m.get(c.propertyId)?.n ?? 0) + 1 })
+    return Array.from(m, ([id, v]) => ({ id, ...v })).sort((a, b) => a.titulo.localeCompare(b.titulo))
+  }, [items])
 
   /**
    * Paginado de presentación: `getAllCandidates()` trae todas las postulaciones
@@ -309,7 +273,14 @@ function PostulacionesContenido() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}` })
+  } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}|${inmueble}` })
+
+  /**
+   * Revisora r24 (Postulaciones #1): en una pestaña que ya filtra por estado, el estado de cada fila repite
+   * la pestaña y le quita el lugar a lo que sí distingue a cada uno (la lista corta). Sale en «Todas» y
+   * cuando la página mezcla estados (en «En revisión» caen Postulado, En revisión y Preaprobado).
+   */
+  const mostrarEstado = filter === 'ALL' || new Set(pageItems.map((c) => c.status)).size > 1
 
   /*
    * El puntaje NO está prendido (Nico, 04-10-2026: «aún ese no lo vamos a
@@ -318,16 +289,30 @@ function PostulacionesContenido() {
    * no lo trae dice «Sin puntaje».
    */
   const hayPuntaje = items.some((c) => Boolean(c.riskScore))
+  // Revisora r22 (#7): el estudio es opcional; si NADIE lo tiene, la columna diría «Sin estudio» en todas las
+  // filas y se leería como algo que falta. Sale cuando alguna postulación lo trae (o trae otra marca).
+  const hayEstudio = items.some((c) => c.marcaDelEstudio !== undefined && c.marcaDelEstudio?.codigo !== 'SIN_ESTUDIO')
+  const esCelular = useIsMobile()
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-h2 text-fg">{tr("Postulaciones")}</h1>
-        <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 max-w-2xl">
-          {tr("Postulaciones de inquilinos a tus propiedades. Haz clic en una para revisarla y decidir.")}
-        </p>
-      </div>
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* Ronda 22: el encabezado de todas las pantallas. */}
+      <EncabezadoDePantalla
+        seccion={tr('Captación y arriendo')}
+        titulo={tr("Postulaciones")}
+        descripcion={tr("Revisa a quienes se postularon y decide a quién le arriendas.")}
+        // Revisora r23 (Postulaciones #2): el recorrido completo, en la ayuda del encabezado (antes al pie, tras una raya).
+        ayuda={
+          <ParaEntenderMas
+            etiqueta={tr("Cómo funciona el recorrido")}
+            titulo={tr("El recorrido completo de una postulación")}
+            descripcion={tr("Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú.")}
+            ancho="ancho"
+          >
+            <RecorridoMapa />
+          </ParaEntenderMas>
+        }
+      />
 
       {/* El refresco de fondo falló con la lista ya en pantalla: se conserva y se
           dice, en vez de borrarla o de dejarla envejecer en silencio. */}
@@ -365,7 +350,7 @@ function PostulacionesContenido() {
         />
       ) : items.length === 0 ? (
         /* Sin nada que atender, lo útil no son seis tiles en cero ni una tabla
-           vacía con filtros: es explicar qué va a llegar acá y de dónde viene.
+           vacía con filtros: es explicar qué va a llegar aquí y de dónde viene.
            El mapa vivía en una pantalla aparte llamada «Recorrido» y ese era el
            error — el recorrido no es un destino, es el contexto de ESTA lista.
 
@@ -377,8 +362,9 @@ function PostulacionesContenido() {
               sumarle otro abría un hueco de media pantalla antes del mapa. */}
           <EmptyState
             icon={ClipboardText}
+            ilustracion="buzon"
             title={tr("Todavía no te ha llegado ninguna postulación")}
-            description={tr("Cuando alguien se postule a una de tus propiedades, aparece acá con su estado y si tiene estudio de arrendamiento.")}
+            description={tr("Cuando alguien se postule a uno de tus inmuebles, aparece aquí con su estado y si tiene estudio de arrendamiento.")}
           />
           {/* 🔴 21-09: acá estaba el mapa de ONCE tarjetas, desplegado, ocupando
               la pantalla entera de una lista vacía. Nico: «eso ahí expuesto…
@@ -398,24 +384,28 @@ function PostulacionesContenido() {
         </div>
       ) : (
         <>
-          {/* Stats — clickable, they filter the table */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {FILTERS.map((f) => (
-              <StatTile
-                key={f.key}
-                value={countFor(f.statuses)}
-                label={tr(f.label)}
-                tone={f.tone}
-                icon={f.icon}
-                active={filter === f.key}
-                onClick={() => setFilter(filter === f.key ? 'ALL' : f.key)}
-                indicador={indicadorDelFiltro}
-              />
-            ))}
-          </div>
-
-          {/* Search + table (same container language as Propiedades) */}
+          {/* La tabla con sus filtros ADENTRO (Cadence 2): arriba, las pestañas por estado con su conteo
+              (Nico, decisión 22); debajo, la búsqueda y el inmueble. */}
           <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <div className="border-b border-border px-4 py-3 empty:hidden">
+              <PestanasDeEstado<FilterKey>
+                etiqueta={tr('Filtrar por estado')}
+                data-testid="estados-de-las-postulaciones"
+                valor={filter}
+                onCambio={setFilter}
+                pestanas={FILTERS.map((f) => {
+                  const cuantas = countFor(f.statuses)
+                  return {
+                    valor: f.key,
+                    etiqueta: tr(f.label),
+                    cuantos: cuantas,
+                    fija: f.key === 'ALL',
+                    tono: cuantas > 0 ? f.tono : undefined,
+                    testid: `pestana-${f.key.toLowerCase()}`,
+                  }
+                })}
+              />
+            </div>
             <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative flex-1 max-w-sm">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted z-10 pointer-events-none" />
@@ -423,7 +413,7 @@ function PostulacionesContenido() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={tr("Buscar por candidato, email o propiedad...")}
+                  placeholder={tr("Interesado, correo o inmueble")}
                   className="pl-9 pr-9"
                 />
                 {search && (
@@ -437,17 +427,21 @@ function PostulacionesContenido() {
                   />
                 )}
               </div>
-
-              {/* Status filter (selector excluyente, sincronizado con las tarjetas) */}
-              <SegmentedControl<FilterKey>
-                aria-label={tr("Filtrar por estado")}
-                value={filter}
-                onChange={setFilter}
-                options={FILTERS.map((f) => ({
-                  value: f.key,
-                  label: tr(f.key === 'ALL' ? 'Todas' : f.label),
-                }))}
-              />
+              {inmueblesConPostulaciones.length > 1 ? (
+                <Select value={inmueble} onValueChange={setInmueble}>
+                  <SelectTrigger className="w-full sm:w-72" aria-label={tr('Inmueble')} data-testid="filtro-inmueble">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TODOS">{tr('Todos los inmuebles')}</SelectItem>
+                    {inmueblesConPostulaciones.map((i) => (
+                      <SelectItem key={i.id} value={i.id}>
+                        {i.titulo} · {i.n === 1 ? tr('1 postulación') : tr('{n} postulaciones', { n: i.n })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
             </div>
 
             {visibleItems.length === 0 ? (
@@ -455,11 +449,41 @@ function PostulacionesContenido() {
                 icon={ClipboardText}
                 title={tr("Sin postulaciones")}
                 description={
-                  search || filter !== 'ALL'
+                  search || filter !== 'ALL' || inmueble !== 'TODOS'
                     ? 'Ninguna postulación coincide con los filtros'
-                    : 'Cuando un inquilino se postule a una de tus propiedades, aparecerá aquí.'
+                    : 'Cuando un inquilino se postule a uno de tus inmuebles, aparecerá aquí.'
                 }
               />
+            ) : esCelular ? (
+              /* Ronda 22 (390): una tarjeta por postulación —quién, a qué inmueble y en qué va—; la tabla se
+                 corría de lado. La tarjeta abre el mismo cajón que la fila. */
+              <ul className="divide-y divide-border" data-testid="postulaciones-en-tarjetas">
+                {pageItems.map((c) => {
+                  const statusCfg = STATUS_CONFIG[c.status] ?? FALLBACK_STATUS
+                  return (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => abrirCandidato(c)}
+                        className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-surface-muted/60"
+                      >
+                        <Avatar name={c.tenantName} size="sm" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-fg">{c.tenantName}</span>
+                          <span className="block truncate text-body-sm text-fg-muted">{c.propertyTitle}</span>
+                          <span className="mt-1.5 flex flex-wrap items-center gap-2">
+                            {mostrarEstado ? <StatusBadge tone={statusCfg.tone}>{tr(statusCfg.label)}</StatusBadge> : null}
+                            {/* Revisora r23 (Postulaciones #1 y #3): el puesto en la lista corta también a 390; la marca del
+                                estudio, con la misma condición que la columna de 1440. */}
+                            <MarcaDeListaCorta puesto={listaCorta.get(c.id)} />
+                            {hayEstudio ? <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio /> : null}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
             ) : (
               <>
               <Table>
@@ -470,13 +494,13 @@ function PostulacionesContenido() {
                         <CasillaDeLaPagina ids={pageItems.map((p) => p.id)} marcadas={marcadas} onMarcar={marcar} queSon="postulaciones" />
                       </TableHead>
                     )}
-                    <TableHead>{tr("Candidato")}</TableHead>
-                    <TableHead>{tr("Propiedad")}</TableHead>
-                    <TableHead>{tr("Estado")}</TableHead>
+                    <TableHead>{tr("Interesado")}</TableHead>
+                    <TableHead>{tr("Inmueble")}</TableHead>
+                    {mostrarEstado && <TableHead>{tr("Estado")}</TableHead>}
                     {/* 🔴 El estudio es opcional (Nico, 04-10-2026): quien se
                         postuló sin él (o con el canon por encima de su
-                        respaldo) se ve marcado acá. */}
-                    <TableHead>{tr("Estudio")}</TableHead>
+                        respaldo) se ve marcado aquí. */}
+                    {hayEstudio && <TableHead>{tr("Estudio")}</TableHead>}
                     {hayPuntaje && <TableHead>{tr("Puntaje")}</TableHead>}
                     <TableHead>{tr("Fecha")}</TableHead>
                   </TableRow>
@@ -513,37 +537,31 @@ function PostulacionesContenido() {
                         )}
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-                              <span className="text-xs font-medium text-primary">{initials(c.tenantName)}</span>
-                            </div>
+                            <Avatar name={c.tenantName} size="sm" />
                             <div className="min-w-0">
                               <p className="font-medium text-fg truncate">{c.tenantName}</p>
-                              <p className="text-xs text-fg-muted truncate">{c.tenantEmail}</p>
+                              <p className="text-caption text-fg-muted truncate">{c.tenantEmail}</p>
                               <MarcaDeListaCorta puesto={listaCorta.get(c.id)} className="mt-0.5" />
                             </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-fg">{c.propertyTitle}</TableCell>
-                        <TableCell>
-                          <span
-                            className={cn(
-                              'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                              statusCfg.bg,
-                              statusCfg.text,
-                            )}
-                          >
-                            {tr(statusCfg.label)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio />
-                        </TableCell>
+                        {mostrarEstado && (
+                          <TableCell>
+                            <StatusBadge tone={statusCfg.tone}>{tr(statusCfg.label)}</StatusBadge>
+                          </TableCell>
+                        )}
+                        {hayEstudio && (
+                          <TableCell>
+                            <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio />
+                          </TableCell>
+                        )}
                         {hayPuntaje && (
                           <TableCell>
                             {c.riskScore ? (
                               <span
                                 className={cn(
-                                  'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
+                                  'inline-flex items-center rounded-full px-2 py-0.5 font-mono text-caption tabular-nums',
                                   SCORE_COLORS[c.riskScore.level] ?? 'text-fg-muted bg-surface-muted',
                                 )}
                               >
@@ -585,22 +603,6 @@ function PostulacionesContenido() {
             )}
           </div>
 
-          {/* Con trabajo encima, el recorrido se pliega: sigue disponible para
-              quien no sepa de dónde salió esta lista, sin robarle espacio a
-              quien vino a atenderla. */}
-          {/* Era un `<details>`: abierto crecía DENTRO de la pantalla y
-              empujaba la lista hacia abajo, así que leerlo costaba perder el
-              lugar. El modal lo muestra encima y lo devuelve intacto. */}
-          <div className="border-t border-border pt-6">
-            <ParaEntenderMas
-              etiqueta={tr("Cómo funciona el recorrido")}
-              titulo={tr("El recorrido completo de una postulación")}
-              descripcion={tr("Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú.")}
-              ancho="ancho"
-            >
-              <RecorridoMapa />
-            </ParaEntenderMas>
-          </div>
         </>
       )}
       </CrossFade>
@@ -620,7 +622,7 @@ function PostulacionesContenido() {
       {accion && (
         <AccionDePostulacion
           type={accion.type}
-          candidateName={accion.candidate.tenantName || accion.candidate.id.slice(0, 8)}
+          candidateName={accion.candidate.tenantName || 'Sin nombre registrado'}
           onConfirm={confirmarAccion}
           onClose={() => setAccion(null)}
           aviso={avisoAlAprobar(accion.candidate.marcaDelEstudio)}

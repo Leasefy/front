@@ -73,7 +73,8 @@ async function montar() {
 
 const texto = () => document.body.textContent ?? ''
 const pestana = () =>
-  [...document.querySelectorAll('[role="tab"]')].find((b) => b.textContent === 'Contratos terminados') as
+  // GLOW UP 21-10: la pestaña lleva al lado cuántos esperan («Contratos terminados 30»).
+  [...document.querySelectorAll('[role="tab"]')].find((b) => b.textContent?.startsWith('Contratos terminados')) as
     | HTMLElement
     | undefined
 
@@ -138,5 +139,11 @@ describe('la Calificación Leasefy en el panel, por rol', () => {
     expect(texto()).toContain('1 contrato')
     expect(texto()).toContain('Ramírez Ocampo Lucía')
     expect(evaluar()).toHaveLength(1)
+  })
+
+  it('GLOW UP 21-10: la pestaña dice cuántos contratos esperan evaluación, sin abrirla', async () => {
+    permisos.valor = new Set(['portafolio:view', 'contratos:view'])
+    await montar()
+    expect(document.querySelector('[data-testid="calificacion-por-evaluar"]')?.textContent).toBe('30')
   })
 })

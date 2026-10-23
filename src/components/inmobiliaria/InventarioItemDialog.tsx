@@ -214,7 +214,7 @@ export function InventarioItemDialog({
               maxLength={120}
               autoFocus
             />
-            {errores.name && <p className="text-xs text-danger">{errores.name}</p>}
+            {errores.name && <p className="text-caption text-danger">{errores.name}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -231,7 +231,7 @@ export function InventarioItemDialog({
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
               />
-              {errores.quantity && <p className="text-xs text-danger">{errores.quantity}</p>}
+              {errores.quantity && <p className="text-caption text-danger">{errores.quantity}</p>}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-fg">{t('inmobiliaria.acta.itemDialog.condition')}</label>
@@ -344,8 +344,8 @@ export function InventarioItemDialog({
                 )}
               </div>
             </div>
-            {errores.foto && <p className="text-xs text-danger">{errores.foto}</p>}
-            <p className="text-xs text-fg-muted">{t('inmobiliaria.acta.itemDialog.photoHelp')}</p>
+            {errores.foto && <p className="text-caption text-danger">{errores.foto}</p>}
+            <p className="text-caption text-fg-muted">{t('inmobiliaria.acta.itemDialog.photoHelp')}</p>
             <Input
               id="inv-photo"
               type="url"

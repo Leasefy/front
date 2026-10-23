@@ -1,16 +1,18 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChartBar, CheckCircle, Gauge as GaugeIcon, ListChecks, PhoneCall, WarningOctagon } from '@phosphor-icons/react'
-import { MonoLabel, Progress } from '@leasefy/cadence'
+import { ChartBar } from '@phosphor-icons/react'
+import { Progress } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { LoadingBlock } from '@/components/admin/screen/states'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { fallaDeCalidad } from '@/lib/admin/textos-del-admin'
 
 /* ── Types (match ADMIN-API-CONTRACT.md — QA) ───────────────────────────── */
 
@@ -85,7 +87,7 @@ export default function QaPage() {
       orden: (r) => (r.qa_score ? Number(r.qa_score) : null),
       texto: (r) => (r.qa_score ? Number(r.qa_score) : null),
       cell: (r) => (
-        <span className="font-mono font-medium tabular-nums text-danger">{r.qa_score ? Number(r.qa_score).toFixed(0) : '—'}</span>
+        <span className="font-mono tabular-nums text-danger">{r.qa_score ? Number(r.qa_score).toFixed(0) : '—'}</span>
       ),
     },
     { header: 'Deudor', orden: (r) => r.debtor_name, texto: (r) => r.debtor_name, cell: (r) => <span className="font-medium">{r.debtor_name ?? '—'}</span> },
@@ -104,21 +106,63 @@ export default function QaPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Calidad de llamadas"
-        description="Cómo puntúa el revisor automático cada llamada de los últimos 30 días, qué alertas salen y cuáles hay que escuchar (puntaje menor a 70)."
+        description="Cómo puntúa el revisor las llamadas de 30 días y cuáles hay que escuchar."
       />
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Resumen">
-        <KpiCard icon={<PhoneCall />} label="Llamadas · 30 días" value={num(stats?.total_calls)} hint="Todas" />
-        <KpiCard icon={<ListChecks />} label="Con puntaje" value={num(stats?.scored_calls)} hint="El revisor ya las escuchó" />
-        <KpiCard
-          icon={<GaugeIcon />}
-          label="Puntaje promedio"
-          value={`${num(stats?.avg_qa_score).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} / 100`}
-        />
-        <KpiCard icon={<CheckCircle />} label="Cumplen" value={num(stats?.compliant_count)} tone="ok" />
-        <KpiCard icon={<WarningOctagon />} label="No cumplen" value={num(stats?.non_compliant_count)} tone="bad" />
-      </section>
+      {/* Glow up 22-10: LA RESPUESTA (el puntaje promedio y cuántas cumplen) en una cifra; después el trabajo
+          —las llamadas para escuchar—; los repartos, plegados. Antes, 5 tarjetas del mismo peso y las gráficas
+          antes de la lista. */}
+      {qa.isLoading && !qa.data ? (
+        <LoadingBlock label="Cargando la calidad de las llamadas" filas={3} />
+      ) : stats && num(stats.scored_calls) === 0 ? (
+        // Ronda 26 (revisora, bloqueante): sin llamadas calificadas no hay promedio; antes «0,0 / 100» inventado.
+        <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="qa-promedio">
+          Sin llamadas calificadas en los últimos 30 días.
+        </p>
+      ) : stats ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Puntaje promedio · 30 días"
+            cifra={`${num(stats.avg_qa_score).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} / 100`}
+            contexto={`en ${num(stats.scored_calls).toLocaleString('es-CO')} ${num(stats.scored_calls) === 1 ? 'llamada' : 'llamadas'} con puntaje, de ${num(stats.total_calls).toLocaleString('es-CO')}`}
+            tramos={[
+              { clave: 'cumplen', etiqueta: 'Cumplen', monto: num(stats.compliant_count), tono: 'exito', cifra: num(stats.compliant_count).toLocaleString('es-CO'), siempre: true },
+              { clave: 'no-cumplen', etiqueta: 'No cumplen', monto: num(stats.non_compliant_count), tono: 'critico', cifra: num(stats.non_compliant_count).toLocaleString('es-CO'), siempre: true },
+            ]}
+            data-testid="qa-promedio"
+          />
+        </div>
+      ) : null}
 
+      {/* Revisora r27: sin llamadas calificadas, la línea de arriba ya lo dice: sin «Para escuchar» sobre nada. */}
+      {stats && num(stats.scored_calls) === 0 && !qa.error ? null : (
+      <section className="space-y-3" aria-label="Llamadas para revisar">
+        <div>
+          <h2 className="text-subtitle font-medium text-fg">Para escuchar</h2>
+          <p className="text-body-sm text-fg-muted">Las 30 llamadas con puntaje más bajo (menor a 70). Toca una para abrirla.</p>
+        </div>
+        <DataTable
+          columns={lowColumns}
+          rows={low}
+          getKey={(r) => r.id}
+          isLoading={qa.isLoading}
+          error={qa.error}
+          onReintentar={qa.refetch}
+          emptyTitle={stats && num(stats.scored_calls) === 0 ? 'Todavía no hay llamadas calificadas' : 'Ninguna llamada está por debajo de 70'}
+          emptyTono="exito"
+          emptyIcon={<ChartBar weight="duotone" />}
+          aria-label="Llamadas para revisar"
+          onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}
+          queSon={['llamada', 'llamadas']}
+          buscar="Deudor o inmobiliaria"
+          filasPorPagina={10}
+          ordenInicial={{ columna: 0, sentido: 'asc' }}
+          exportar="llamadas-para-revisar"
+        />
+      </section>
+      )}
+
+      <MasDetalles etiqueta="Ver cómo se reparten los puntajes y las alertas" etiquetaAbierto="Ocultar los repartos">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Tarjeta titulo="Cómo se reparten los puntajes" descripcion="De 0 a 100, en tramos de 10.">
           {dist.length === 0 ? (
@@ -158,12 +202,12 @@ export default function QaPage() {
                 return (
                   <div key={f.flag} className="space-y-1">
                     <div className="flex items-baseline justify-between gap-3 text-caption">
-                      <span className="text-fg" title={f.flag}>
-                        {legible(f.flag)}
+                      <span className="text-fg">
+                        {fallaDeCalidad(f.flag)}
                       </span>
                       <span className="font-mono tabular-nums text-warning">{n.toLocaleString('es-CO')}</span>
                     </div>
-                    <Progress value={(n / maxFlag) * 100} color="warning" size="xs" label={`${f.flag}: ${n}`} />
+                    <Progress value={(n / maxFlag) * 100} color="warning" size="xs" label={`${fallaDeCalidad(f.flag)}: ${n}`} />
                   </div>
                 )
               })}
@@ -171,27 +215,8 @@ export default function QaPage() {
           )}
         </Tarjeta>
       </div>
+      </MasDetalles>
 
-      <section className="space-y-3" aria-label="Llamadas para revisar">
-        <MonoLabel className="block">Para revisar · puntaje menor a 70 · las 30 más bajas</MonoLabel>
-        <DataTable
-          columns={lowColumns}
-          rows={low}
-          getKey={(r) => r.id}
-          isLoading={qa.isLoading}
-          error={qa.error}
-          onReintentar={qa.refetch}
-          emptyTitle="Ninguna llamada está por debajo de 70"
-          emptyIcon={<ChartBar weight="bold" />}
-          aria-label="Llamadas para revisar"
-          onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}
-          queSon={['llamada', 'llamadas']}
-          buscar="Deudor o inmobiliaria"
-          filasPorPagina={10}
-          ordenInicial={{ columna: 0, sentido: 'asc' }}
-          exportar="llamadas-para-revisar"
-        />
-      </section>
     </div>
   )
 }

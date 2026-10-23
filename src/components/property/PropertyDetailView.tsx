@@ -334,7 +334,7 @@ export function PropertyDetailView({
                   )}
                 </div>
 
-                <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-heading font-semibold text-foreground tracking-[-0.02em] leading-[1.15]">
+                <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-heading font-[420] text-foreground tracking-[-0.025em] leading-[1.15]">
                   {property.title}
                 </h1>
 
@@ -379,7 +379,7 @@ export function PropertyDetailView({
               )}
 
               {/*
-                Acá iba `SocialProofBanner`: "7 viendo ahora" con un punto que
+                Aquí iba `SocialProofBanner`: "7 viendo ahora" con un punto que
                 latía, "38 visitas hoy" y una insignia de "demanda muy alta".
                 Nada de eso se medía — salía de `generateMockStats(propertyId)`,
                 un número derivado de las letras del id, y el contador de
@@ -403,7 +403,7 @@ export function PropertyDetailView({
                   componente que la ficha del panel); sin ellas queda la
                   tarjeta con el enlace por barrio y ciudad. */}
               <div className="mt-12">
-                <h2 className="text-[13px] font-semibold text-foreground uppercase tracking-wide mb-4">Ubicación</h2>
+                <h2 className="mb-4 font-mono text-[12px] font-normal uppercase tracking-[0.08em] text-fg-muted">Ubicación</h2>
                 {tieneCoordenadas(property.latitude, property.longitude) ? (
                   <MapaDelInmueble
                     latitude={property.latitude as number}
@@ -446,7 +446,7 @@ export function PropertyDetailView({
             </div>
 
             {/* Right Column - Sticky CTA. En el celular también se ve (debajo de la
-                ficha): ahí se agenda la visita; «Visita» de la barra lleva hasta acá. */}
+                ficha): ahí se agenda la visita; «Visita» de la barra lleva hasta aquí. */}
             <div className="lg:col-span-5">
               <StickyCTA
                 propertyId={property.id}

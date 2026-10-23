@@ -188,7 +188,7 @@ export function CajonDeLaFactura({
             {/* 🔴 Lo que bloquea, arriba: es la respuesta a «¿por qué no puedo
                 generar ésta?», que es lo que trae a alguien a abrir la fila. */}
             {/* El escenario sin confirmar tiene su propio bloque abajo, con la
-                salida; acá no se repite. */}
+                salida; aquí no se repite. */}
             {bloqueada && estado !== 'sin-escenario' && motivoDelBloqueo && (
               <p
                 className="flex items-start gap-2 rounded-lg border border-border bg-surface-muted p-3 text-sm text-fg"
@@ -378,7 +378,7 @@ export function CajonDeLaFactura({
               <div className="flex items-baseline justify-between gap-4 border-t border-border pt-2">
                 <dt className="text-body font-medium text-fg">Total de la factura</dt>
                 <dd
-                  className="font-mono text-lg font-semibold tabular-nums text-fg"
+                  className="font-mono text-lg tabular-nums text-fg"
                   data-testid="cajon-total"
                 >
                   <CifraQueCuenta valor={factura.totalCop} />

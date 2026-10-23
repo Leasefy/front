@@ -1,4 +1,5 @@
 'use client';
+import { useTr } from '@/lib/i18n/use-tr';
 import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
 import { CobrosMarcados } from '@/components/inmobiliaria/CobrosMarcados';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -11,8 +12,6 @@ import {
   CurrencyCircleDollar,
   BellRinging,
   Scales,
-  Table,
-  SquaresFour,
   Plus,
   CaretLeft,
   CaretRight,
@@ -38,7 +37,8 @@ import {
   MOTIVO_SIN_PERMISO_DE_RECIBO,
   usePuedeHacerRecibo,
 } from '@/components/inmobiliaria/permiso-de-recibo';
-import { CrossFade, IconButton, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import {
   useCobros,
   useCobroSummary,
@@ -54,7 +54,6 @@ import type {
   NuevoReciboPorCliente,
 } from '@/lib/api/recibos-de-caja.types';
 import {
-  CobroResumen,
   CobroFilters,
   CobroTable,
   RegistrarPagoModal,
@@ -63,6 +62,7 @@ import {
 } from '@/components/inmobiliaria';
 import { CobroCard } from '@/components/inmobiliaria/CobroCard';
 import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { GenerarCobrosDialog } from '@/components/inmobiliaria/pagos/GenerarCobrosDialog';
 import {
   RUTA_DE_LA_MIGRACION,
@@ -74,7 +74,8 @@ import { CobrosSinCuota } from '@/components/cartera/CobrosSinCuota';
 import { RecargosSinPlazo } from '@/components/cartera/RecargosSinPlazo';
 import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
-import { LinksDePago } from '@/components/inmobiliaria/pagos/payu/LinksDePago';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { formatCurrency } from '@/lib/format';
 
 /**
  * B-09/N-28 (QA-PAGOS-95 r2; main, con la recomendada): «Configurar
@@ -99,6 +100,8 @@ function getCurrentMonth(): string {
  * Route: /panel/inmobiliaria/pagos/cartera/cobros
  */
 function CobrosContent() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   const { t, locale } = useI18n();
   const searchParams = useSearchParams();
   const puedeHacerRecibo = usePuedeHacerRecibo();
@@ -160,15 +163,11 @@ function CobrosContent() {
   });
 
 
-  // State for view mode.
-  // `null` = no explicit user choice → default from viewport (cards under md).
-  // useIsMobile is false on SSR + first client render and only flips after
-  // mount, so the server and client first paint agree ('table') and the
-  // mobile default applies post-hydration without a mismatch.
+  // La vista sale del ancho (revisora r25, Cobros #3: sin «Tabla / Tarjetas»): tarjetas
+  // bajo md, tabla arriba. useIsMobile es false en el servidor y en la primera pintada, así
+  // que las dos pintadas coinciden ('table') y las tarjetas entran después de hidratar.
   const isMobile = useIsMobile();
-  const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
-  const viewMode: ViewMode = viewModeOverride ?? (isMobile ? 'cards' : 'table');
-  const setViewMode = setViewModeOverride;
+  const viewMode: ViewMode = isMobile ? 'cards' : 'table';
 
   // State for modals
   const [selectedCobro, setSelectedCobro] = useState<Cobro | null>(null);
@@ -509,15 +508,14 @@ function CobrosContent() {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* Header — el encabezado común; las acciones a la derecha, sm. */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">{t('inmobiliaria.cobros.title')}</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.cobros.subtitle')}
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          seccion={tr('Cobrar a inquilinos')}
+          titulo={t('inmobiliaria.cobros.title')}
+          descripcion={t('inmobiliaria.cobros.subtitle')}
+        />
         {/* 🔴 24-09-2026 (a 390 px desbordaba): en el teléfono las acciones
             se parten en líneas; `shrink-0` sólo desde `sm`, donde el
             encabezado ya es una fila. Juntas miden ≈531 px y a 390 quedan
@@ -530,17 +528,17 @@ function CobrosContent() {
               Conciliación, que es otra sección (Nico, 2026-09-03).
               B-09/N-28 (QA-PAGOS-95 r2): el engranaje de «Configurar
               recordatorios» salió; los recordatorios viven en Cobranza ›
-              Recordatorios (J-12) y de acá sólo se va allá. */}
-          <Button asChild variant="outline" hideArrow>
+              Recordatorios (J-12) y de aquí sólo se va allá. */}
+          <Button asChild variant="outline" size="sm" hideArrow>
             <Link href={RUTA_DE_LOS_RECORDATORIOS} data-testid="ir-a-recordatorios">
               <BellRinging className="w-4 h-4" />
-              <span className="hidden sm:inline">Recordatorios</span>
+              <span>Recordatorios</span>
             </Link>
           </Button>
-          <Button asChild variant="secondary" hideArrow>
+          <Button asChild variant="outline" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora">
               <Scales className="w-4 h-4" />
-              <span className="hidden sm:inline">Reglas de mora</span>
+              <span>Reglas de mora</span>
             </Link>
           </Button>
           {/* Emitir el documento de cobro del mes que se está viendo. Es
@@ -550,7 +548,8 @@ function CobrosContent() {
               de sólo lectura se le ofrecía prendido y el back respondía 403. */}
           <span className="inline-flex" title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}>
             <Button
-              variant="secondary"
+              variant="outline"
+              size="sm"
               hideArrow
               disabled={!puedeHacerRecibo}
               onClick={() => setIsGenerarOpen(true)}
@@ -568,6 +567,7 @@ function CobrosContent() {
             title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}
           >
             <Button
+              size="sm"
               hideArrow
               disabled={!puedeHacerRecibo}
               onClick={() => {
@@ -596,7 +596,7 @@ function CobrosContent() {
       />
 
       {/* PPF-02b (QA-PAGOS-95 r2): los recargos escritos sin plazo fijado que
-          quedan (pagados o facturados) se revisan acá. */}
+          quedan (pagados o facturados) se revisan aquí. */}
       <RecargosSinPlazo />
 
       {/* Summary Section — la página ya no anima su propia entrada (la pone el
@@ -611,10 +611,63 @@ function CobrosContent() {
           onReintentar={refetchSummary}
         >
           {(resumen) => (
-            <CobroResumen
-              summary={resumen}
-              onViewPending={handleViewPending}
-              onViewLate={handleViewLate}
+            // Revisora r25 (Cobros #1): LA RESPUESTA en una cifra con su barra —lo que falta
+            // por cobrar de lo emitido— y cada tramo filtra la tabla. Antes, el resumen viejo
+            // con la tasa en 36 px, caja de ícono y tres tarjetas que no sumaban la cifra.
+            <CifraHeroe
+              rotulo="Por cobrar"
+              // El back manda en `totalPending` TODO lo que falta cobrar, mora incluida
+              // (`totalLate` es la parte de los cobros en mora): la cifra es la suya, tal cual.
+              cifra={formatCurrency(resumen.totalPending)}
+              contexto={`de ${formatCurrency(resumen.totalExpected)} emitidos en ${mesEnLaFrase}`}
+              total={resumen.totalExpected}
+              cuandoEsCero={`No hay cobros emitidos en ${mesEnLaFrase}.`}
+              tramos={[
+                {
+                  clave: 'cobrado',
+                  etiqueta: `Cobrado · ${resumen.cobrosPaid.toLocaleString('es-CO')}`,
+                  monto: resumen.totalCollected,
+                  tono: 'exito',
+                  siempre: true,
+                  cifra: formatCurrency(resumen.totalCollected),
+                  'data-testid': 'cobros-tramo-cobrado',
+                },
+                {
+                  clave: 'mora',
+                  etiqueta: `${resumen.plazoSinFijar ? 'Vencido' : 'En mora'} · ${resumen.cobrosLate.toLocaleString('es-CO')}`,
+                  monto: resumen.totalLate,
+                  tono: 'critico',
+                  siempre: true,
+                  cifra: (
+                    <Button type="button" variant="link" hideArrow className="h-auto p-0 font-mono font-normal tabular-nums text-inherit underline-offset-2 hover:underline" onClick={handleViewLate} data-testid="cobros-ver-en-mora">
+                      {formatCurrency(resumen.totalLate)}
+                    </Button>
+                  ),
+                  extra: resumen.plazoSinFijar ? <p className="text-caption text-fg-muted">sin plazo fijado: no corre mora</p> : undefined,
+                  'data-testid': 'cobros-tramo-en-mora',
+                },
+                {
+                  clave: 'pendiente',
+                  etiqueta: `Pendiente · ${resumen.cobrosPending.toLocaleString('es-CO')}`,
+                  // Lo que falta y todavía NO está en mora: el mismo dato de la tarjeta vieja
+                  // (CobroResumen), para no contar la mora dos veces en la barra.
+                  monto: Math.max(0, resumen.totalPending - resumen.totalLate),
+                  tono: 'neutro',
+                  siempre: true,
+                  cifra: (
+                    <Button type="button" variant="link" hideArrow className="h-auto p-0 font-mono font-normal tabular-nums text-inherit underline-offset-2 hover:underline" onClick={handleViewPending} data-testid="cobros-ver-pendientes">
+                      {formatCurrency(Math.max(0, resumen.totalPending - resumen.totalLate))}
+                    </Button>
+                  ),
+                  'data-testid': 'cobros-tramo-pendiente',
+                },
+              ]}
+              pie={
+                resumen.collectionRate === null
+                  ? undefined
+                  : `Tasa de recaudo: ${resumen.collectionRate.toLocaleString('es-CO', { maximumFractionDigits: 1 })} %`
+              }
+              data-testid="cobros-respuesta"
             />
           )}
         </FranjaDelResumen>
@@ -631,30 +684,28 @@ function CobrosContent() {
           className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/20 px-4 py-3"
           data-testid="barra-de-la-tabla-de-cobros"
         >
-          <SegmentedControl
-            aria-label={t('inmobiliaria.cobros.viewTable')}
-            value={viewMode}
-            onChange={(v) => setViewMode(v as ViewMode)}
-            options={[
+          {/* Revisora r25 (Cobros #3): «Vigentes / Anulados» son pestañas con su conteo dentro
+              de la tabla (antes un interruptor) y ya no hay «Tabla / Tarjetas»: a 390 la lista
+              sale en tarjetas sola y en el escritorio, en tabla. */}
+          <PestanasDeEstado
+            etiqueta={t('inmobiliaria.cobros.anular.anulados')}
+            valor={verAnulados ? 'anulados' : 'vigentes'}
+            onCambio={(v) => setVerAnulados(v === 'anulados')}
+            pestanas={[
               {
-                value: 'table',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <Table className="w-4 h-4" />
-                    {t('inmobiliaria.cobros.viewTable')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.cobros.viewTable'),
+                valor: 'vigentes',
+                etiqueta: t('inmobiliaria.cobros.anular.vigentes'),
+                // Se cuenta lo que se leyó: el de la otra pestaña no se pide hasta abrirla.
+                cuantos: !verAnulados && !cobrosLoading && !cobrosError ? (apiCobros ?? []).length : null,
+                fija: true,
+                testid: 'pestana-vigentes',
               },
               {
-                value: 'cards',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <SquaresFour className="w-4 h-4" />
-                    {t('inmobiliaria.cobros.viewCards')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.cobros.viewCards'),
+                valor: 'anulados',
+                etiqueta: t('inmobiliaria.cobros.anular.anulados'),
+                cuantos: verAnulados && !cobrosLoading && !cobrosError ? (apiCobros ?? []).length : null,
+                fija: true,
+                testid: 'pestana-anulados',
               },
             ]}
           />
@@ -669,7 +720,7 @@ function CobrosContent() {
                 aria-label="Mes anterior"
                 onClick={() => shiftMonth(-1)}
               />
-              <span className="text-sm font-medium text-fg text-center tabular-nums min-w-[7rem]">
+              <span className="min-w-[7rem] whitespace-nowrap text-center text-sm font-medium tabular-nums text-fg">
                 {monthDisplay}
               </span>
               <IconButton
@@ -681,18 +732,6 @@ function CobrosContent() {
                 onClick={() => shiftMonth(1)}
               />
             </div>
-            <span className="text-xs text-fg-muted tabular-nums">
-              {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}
-            </span>
-            <SegmentedControl
-              aria-label={t('inmobiliaria.cobros.anular.anulados')}
-              value={verAnulados ? 'anulados' : 'vigentes'}
-              onChange={(v) => setVerAnulados(v === 'anulados')}
-              options={[
-                { value: 'vigentes', label: t('inmobiliaria.cobros.anular.vigentes') },
-                { value: 'anulados', label: t('inmobiliaria.cobros.anular.anulados') },
-              ]}
-            />
           </div>
         </div>
 
@@ -795,13 +834,11 @@ function CobrosContent() {
             />
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
-                <CurrencyCircleDollar
-                  weight="duotone"
-                  className="h-6 w-6 text-fg-muted"
-                  aria-hidden="true"
-                />
-              </div>
+              <CurrencyCircleDollar
+                weight="duotone"
+                className="h-8 w-8 text-fg-muted"
+                aria-hidden="true"
+              />
               {/*
                 Un cobro sale de la consignación del inmueble. Si la migración
                 dejó contratos sin inmueble o sin propietario, esta tabla está
@@ -809,7 +846,7 @@ function CobrosContent() {
                 a la vez inútil: esconde la causa. Una línea, con el botón.
               */}
               <div className="space-y-1.5">
-                <p className="text-base font-semibold text-fg">
+                <p className="text-base font-medium text-fg">
                   {verAnulados
                     ? t('inmobiliaria.cobros.anular.sinAnulados')
                     : (copyDeMigracion?.titulo ?? t('inmobiliaria.cobros.noPayments'))}
@@ -853,7 +890,15 @@ function CobrosContent() {
         documento— y un cobro no trae su cuota. Sin «Enviar link»: los manda
         el cron del back (decisión de Nico).
       */}
-      <LinksDePago />
+      {/* Revisora r25 (Cobros #2): la tabla de enlaces de Cobri ya vive en el Agente de
+          pagos; aquí se repetía entera. Queda la puerta. */}
+      <p className="text-body-sm text-fg-muted" data-testid="cobros-ir-a-los-enlaces">
+        Los enlaces de pago de cada cuota los manda Cobri:{' '}
+        <Link href="/panel/inmobiliaria/pagos/agente" className="text-fg underline underline-offset-2 hover:text-primary">
+          verlos en el Agente de pagos
+        </Link>
+        .
+      </p>
 
       {/* Cobro Detail Modal */}
       <CobroDetail

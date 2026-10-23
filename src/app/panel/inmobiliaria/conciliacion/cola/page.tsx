@@ -24,6 +24,7 @@
  * mentira sobre plata. Una acción que falla avisa por toast y deja la fila.
  */
 
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { useMemo, useState } from 'react'
 import { toast } from '@/components/ui/toast'
 import { CheckCircle, ShieldCheck, XCircle } from '@phosphor-icons/react'
@@ -64,7 +65,7 @@ import {
 } from '@/lib/hooks/conciliacion/limites-de-la-conciliacion'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
-import { Chip, Presence } from '@leasefy/cadence'
+import { Presence } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import {
@@ -78,6 +79,7 @@ import {
 } from '@/lib/hooks/conciliacion/use-conciliacion-bulk'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // ── Taxonomía de excepciones (los 7 caseTypes, set cerrado) ──────────────────
 // Copy en español literal (contrato §9 — ES-first, sin keys t() nuevas).
@@ -307,15 +309,12 @@ function ConciliacionCola() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Encabezado — el conteo lo dice el pie de la tabla, no un KPI suelto. */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle')}
-        </h1>
-        <p className="text-body text-fg-muted max-w-2xl">
-          {t('inmobiliaria.ai.workspace.pages.conciliacion.colaDesc')}
-        </p>
-      </header>
+      {/* Encabezado común — el conteo lo dice el pie de la tabla, no un KPI suelto. */}
+      <EncabezadoDePantalla
+        seccion="Conciliación bancaria"
+        titulo={t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle')}
+        descripcion={t('inmobiliaria.ai.workspace.pages.conciliacion.colaDesc')}
+      />
 
       <section
         /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta
@@ -324,23 +323,25 @@ function ConciliacionCola() {
         className="rounded-lg border border-border bg-surface overflow-x-clip"
       >
         {/* Filtros — dentro de la tarjeta, encima de la tabla. */}
-        <div
-          className="flex flex-wrap items-center gap-2 border-b border-border p-4"
-          role="group"
-          aria-label="Filtrar por tipo de caso"
-        >
-          {CASE_TYPE_FILTERS.map((f) => (
-            <Chip
-              key={f.value}
-              selected={caseFilter === f.value}
-              onClick={() => {
-                setCaseFilter(f.value)
-                clearSelection()
-              }}
-            >
-              {f.label}
-            </Chip>
-          ))}
+        {/* Revisora r25 (Por revisar #1): los tipos como PestanasDeEstado en su riel de lado
+            (a 390 eran tres renglones de pastillas). El micro filtra por tipo y no manda el
+            conteo de cada uno: el número va en la pestaña abierta (lo que se leyó). */}
+        <div className="border-b border-border p-4 empty:hidden">
+          <PestanasDeEstado
+            etiqueta="Filtrar por tipo de caso"
+            valor={caseFilter}
+            onCambio={(v) => {
+              setCaseFilter(v)
+              clearSelection()
+            }}
+            pestanas={CASE_TYPE_FILTERS.map((f) => ({
+              valor: f.value,
+              etiqueta: f.label,
+              cuantos: f.value === caseFilter && !isLoading && !error ? items.length : null,
+              fija: true,
+              testid: `tipo-${f.value}`,
+            }))}
+          />
         </div>
 
         {/* Carga y fallo por fuera del cuerpo; el vacío va DENTRO, para que los
@@ -558,6 +559,8 @@ function ConciliacionCola() {
           <BarraDeAccionesMasivas
             variant="pie"
             testid="conciliacion-acciones"
+            // Tiene acciones que sirven sin marcar nada: la barra queda completa.
+            siempreConAcciones
             marcadas={selectedEligible.length}
             queSon={['cruce', 'cruces']}
             onQuitar={clearSelection}

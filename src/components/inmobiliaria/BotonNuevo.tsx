@@ -17,7 +17,7 @@
  *    `docs/VOCABULARIO.md`.
  *
  * 2. **La explicación aparece una sola vez por flujo.** La primera vez que
- *    alguien abre "Nueva consignación" se le dice qué va a hacer, en tres
+ *    alguien abre "Nuevo mandato" se le dice qué va a hacer, en tres
  *    pasos, y qué necesita tener a mano; de ahí en adelante entra directo. Un
  *    cartel que reaparece se vuelve un obstáculo, y se cierra sin leer.
  *
@@ -54,10 +54,14 @@ import { Button, SplitButton } from '@leasefy/cadence'
 // scrollea) y le encoge los iconos a 3.5.
 // El adaptador los expone con los nombres legacy `DropdownList*`.
 import {
+  DropdownList,
+  DropdownListContent,
   DropdownListItem,
   DropdownListLabel,
   DropdownListSeparator,
+  DropdownListTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { IntroHeroe } from '@/components/inmobiliaria/intro-de-flujo'
 
 import { cn } from '@/lib/utils'
@@ -88,9 +92,18 @@ const RUTA_MIGRACION = '/panel/inmobiliaria/migracion/terceros'
 
 export interface BotonNuevoProps {
   className?: string
+  /**
+   * Para la barra plegada (C8 del plan de la barra, 22-10): un botón cuadrado de 40 px con «＋» que abre
+   * el MISMO menú (y, para el rol con botón propio, su ícono). El nombre va en el tooltip y en `aria-label`.
+   * Necesita un `TooltipProvider` arriba (lo pone el riel).
+   */
+  compacto?: boolean
 }
 
-export function BotonNuevo({ className }: BotonNuevoProps) {
+/** El botón cuadrado del riel: secondary (arena), 40 × 40, la esquina de la casa. */
+const CUADRADO_DEL_RIEL = 'h-10 w-10 min-w-0 rounded-[12px] p-0'
+
+export function BotonNuevo({ className, compacto = false }: BotonNuevoProps) {
   const { t } = useI18n()
   const router = useRouter()
   const { canAccess, agentPermsResolved, refetch, isAdmin, agencyRole } = usePermissionsContext()
@@ -195,10 +208,31 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
   const delRol = botonPrincipalDelRol(isAdmin, agencyRole)
   if (delRol && canAccess(delRol.permiso.module, delRol.permiso.action)) {
     const IconoDelRol = delRol.icono === 'factura' ? Receipt : Wallet
+    if (compacto) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="secondary"
+              size="icon"
+              className={cn(CUADRADO_DEL_RIEL, className)}
+              data-testid="boton-principal-del-rol"
+              aria-label={t(delRol.labelKey)}
+              onClick={() => router.push(delRol.href)}
+            >
+              <IconoDelRol className="h-[18px] w-[18px]" weight="bold" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8} className="bg-fg text-bg">
+            {t(delRol.labelKey)}
+          </TooltipContent>
+        </Tooltip>
+      )
+    }
     return (
       <div data-tour-target="nuevo">
         <Button
-          variant="primary"
+          variant="secondary"
           size="sm"
           className={cn('w-full', className)}
           data-testid="boton-principal-del-rol"
@@ -220,16 +254,153 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
   // el segmento principal nunca queda muerto.
   const principal = disponibles.find((f) => f.key === FLUJO_PRINCIPAL) ?? disponibles[0]
 
+  const menu = (
+    <>
+      {GRUPOS.map((grupo, i) => {
+        const delGrupo = ofrecidos.filter((o) => o.flujo.grupo === grupo)
+        if (delGrupo.length === 0) return null
+        return (
+          <div key={grupo}>
+            {i > 0 && <DropdownListSeparator />}
+            <DropdownListLabel>{t(grupoLabelKey(grupo))}</DropdownListLabel>
+            {delGrupo.map(({ flujo, estado }) => {
+              const Icono = flujo.icon
+              const sinResolver = estado === 'sinResolver'
+              return (
+                <DropdownListItem
+                  key={flujo.key}
+                  // Sin resolver no se abre: reintenta averiguarlo. Se
+                  // deja el ítem seleccionable para poder decir por qué —
+                  // un `disabled` puro no se enfoca ni se lee en voz alta.
+                  onSelect={(e) => {
+                    if (!sinResolver) {
+                      elegir(flujo)
+                      return
+                    }
+                    e.preventDefault()
+                    void refetch()
+                  }}
+                  // items-start: el ítem del DS centra verticalmente, y
+                  // con una descripción de dos líneas el icono queda
+                  // flotando lejos del título al que pertenece.
+                  className="items-start gap-2.5 py-2"
+                >
+                  <Icono
+                    className={cn(
+                      'mt-0.5 h-4 w-4 shrink-0',
+                      sinResolver ? 'text-fg-subtle' : 'text-fg-muted',
+                    )}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={cn(
+                        'flex items-center gap-1 font-medium',
+                        sinResolver ? 'text-fg-muted' : 'text-fg',
+                      )}
+                    >
+                      {t(flujoLabelKey(flujo.key))}
+                      {flujo.externo && !sinResolver && (
+                        <ArrowSquareOut
+                          className="h-3 w-3 text-fg-subtle"
+                          aria-label={t(`${NS}.intro.nuevaPestana`)}
+                        />
+                      )}
+                    </span>
+                    <span
+                      className={cn(
+                        'block text-xs leading-snug',
+                        sinResolver ? 'text-fg-subtle' : 'text-fg-muted',
+                      )}
+                    >
+                      {/* Se dice qué pasó y qué hacer. Callar acá es lo
+                          que hacía desaparecer el paso sin explicación. */}
+                      {sinResolver ? t(`${NS}.sinResolver`) : t(flujoDescKey(flujo.key))}
+                    </span>
+                  </span>
+                </DropdownListItem>
+              )
+            })}
+          </div>
+        )
+      })}
+      {ofreceMigracion && (
+        <div>
+          <DropdownListSeparator />
+          <DropdownListLabel>{t(`${NS}.migracion.grupo`)}</DropdownListLabel>
+          <DropdownListItem
+            data-testid="nuevo-migrar-mis-datos"
+            onSelect={migrar}
+            className="items-start gap-2.5 py-2"
+          >
+            <CloudArrowUp className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1 font-medium text-fg">
+                {t(`${NS}.migracion.label`)}
+              </span>
+              <span className="block text-xs leading-snug text-fg-muted">
+                {t(`${NS}.migracion.desc`)}
+              </span>
+            </span>
+          </DropdownListItem>
+        </div>
+      )}
+    </>
+  )
+
+  const dialogos = (
+    <>
+      <IntroDelFlujo
+        flujo={porExplicar}
+        onCancelar={() => setPorExplicar(null)}
+        onEmpezar={confirmar}
+      />
+
+      {/* El paso previo del contrato: sobre qué postulación se arma. */}
+      <SelectorPostulacion abierto={selectorAbierto} onOpenChange={setSelectorAbierto} />
+    </>
+  )
+
+  if (compacto) {
+    return (
+      <>
+        <DropdownList>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownListTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className={cn(CUADRADO_DEL_RIEL, className)}
+                  aria-label={t(`${NS}.aria`)}
+                  data-testid="nuevo-compacto"
+                >
+                  <Plus className="h-[18px] w-[18px]" weight="bold" />
+                </Button>
+              </DropdownListTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8} className="bg-fg text-bg">
+              {t(`${NS}.boton`)}
+            </TooltipContent>
+          </Tooltip>
+          <DropdownListContent side="right" align="start" sideOffset={8} className="w-72">
+            {menu}
+          </DropdownListContent>
+        </DropdownList>
+        {dialogos}
+      </>
+    )
+  }
+
   return (
     <>
       {/* El `div` es el ANCLAJE del recorrido guiado (`data-tour-target`): el
           SplitButton del DS no reenvía atributos `data-*`, y sin una caja
-          propia el paso «por acá entra un inmueble» no tendría a qué apuntar.
+          propia el paso «por aquí entra un inmueble» no tendría a qué apuntar.
           Sólo existe cuando el botón existe (arriba: sin flujos, `null`), así
           que el recorrido nunca señala un hueco. */}
       <div data-tour-target="nuevo">
       <SplitButton
-        variant="primary"
+        variant="secondary"
         size="sm"
         className={cn('w-full', className)}
         label={
@@ -241,109 +412,11 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
         onClick={() => elegir(principal)}
         caretLabel={t(`${NS}.aria`)}
         menuAlign="start"
-        menuContent={
-          <>
-            {GRUPOS.map((grupo, i) => {
-              const delGrupo = ofrecidos.filter((o) => o.flujo.grupo === grupo)
-              if (delGrupo.length === 0) return null
-              return (
-                <div key={grupo}>
-                  {i > 0 && <DropdownListSeparator />}
-                  <DropdownListLabel>{t(grupoLabelKey(grupo))}</DropdownListLabel>
-                  {delGrupo.map(({ flujo, estado }) => {
-                    const Icono = flujo.icon
-                    const sinResolver = estado === 'sinResolver'
-                    return (
-                      <DropdownListItem
-                        key={flujo.key}
-                        // Sin resolver no se abre: reintenta averiguarlo. Se
-                        // deja el ítem seleccionable para poder decir por qué —
-                        // un `disabled` puro no se enfoca ni se lee en voz alta.
-                        onSelect={(e) => {
-                          if (!sinResolver) {
-                            elegir(flujo)
-                            return
-                          }
-                          e.preventDefault()
-                          void refetch()
-                        }}
-                        // items-start: el ítem del DS centra verticalmente, y
-                        // con una descripción de dos líneas el icono queda
-                        // flotando lejos del título al que pertenece.
-                        className="items-start gap-2.5 py-2"
-                      >
-                        <Icono
-                          className={cn(
-                            'mt-0.5 h-4 w-4 shrink-0',
-                            sinResolver ? 'text-fg-subtle' : 'text-fg-muted',
-                          )}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span
-                            className={cn(
-                              'flex items-center gap-1 font-medium',
-                              sinResolver ? 'text-fg-muted' : 'text-fg',
-                            )}
-                          >
-                            {t(flujoLabelKey(flujo.key))}
-                            {flujo.externo && !sinResolver && (
-                              <ArrowSquareOut
-                                className="h-3 w-3 text-fg-subtle"
-                                aria-label={t(`${NS}.intro.nuevaPestana`)}
-                              />
-                            )}
-                          </span>
-                          <span
-                            className={cn(
-                              'block text-xs leading-snug',
-                              sinResolver ? 'text-fg-subtle' : 'text-fg-muted',
-                            )}
-                          >
-                            {/* Se dice qué pasó y qué hacer. Callar acá es lo
-                                que hacía desaparecer el paso sin explicación. */}
-                            {sinResolver ? t(`${NS}.sinResolver`) : t(flujoDescKey(flujo.key))}
-                          </span>
-                        </span>
-                      </DropdownListItem>
-                    )
-                  })}
-                </div>
-              )
-            })}
-            {ofreceMigracion && (
-              <div>
-                <DropdownListSeparator />
-                <DropdownListLabel>{t(`${NS}.migracion.grupo`)}</DropdownListLabel>
-                <DropdownListItem
-                  data-testid="nuevo-migrar-mis-datos"
-                  onSelect={migrar}
-                  className="items-start gap-2.5 py-2"
-                >
-                  <CloudArrowUp className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1 font-medium text-fg">
-                      {t(`${NS}.migracion.label`)}
-                    </span>
-                    <span className="block text-xs leading-snug text-fg-muted">
-                      {t(`${NS}.migracion.desc`)}
-                    </span>
-                  </span>
-                </DropdownListItem>
-              </div>
-            )}
-          </>
-        }
+        menuContent={menu}
       />
       </div>
 
-      <IntroDelFlujo
-        flujo={porExplicar}
-        onCancelar={() => setPorExplicar(null)}
-        onEmpezar={confirmar}
-      />
-
-      {/* El paso previo del contrato: sobre qué postulación se arma. */}
-      <SelectorPostulacion abierto={selectorAbierto} onOpenChange={setSelectorAbierto} />
+      {dialogos}
     </>
   )
 }

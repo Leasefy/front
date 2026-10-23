@@ -242,6 +242,10 @@ const DECLARADOS: readonly string[] = [
   'renovacionAutomaticaApi.borrarAviso',
   'renovacionAutomaticaApi.registrarAviso',
   'renovacionesApi.getUpcoming',
+  // Sí tiene puerta, pero por un envoltorio del mismo servicio (`revokeSession` →
+  // `revocarSesion`, que usan IdleSessionGuard y auth-context): el barrido no sigue
+  // envoltorios. El 21-10 lo sacaron de la lista y la prueba quedó roja.
+  'sessionApi.revoke',
   'subscriptionsApi.cancelSubscription',
   'subscriptionsApi.getPlan',
   'tesoreriaApi.pendientesDelContrato',
@@ -259,7 +263,7 @@ describe('🔴 ninguna ruta del cliente se queda sin puerta', () => {
       nuevos,
       `Estos métodos del cliente HTTP no los llama nadie en el producto.\n` +
         `Si la pantalla que los usa todavía no existe, esa pantalla es la tarea;\n` +
-        `si el método sobró, bórralo. Declararlo acá es el último recurso, y va\n` +
+        `si el método sobró, bórralo. Declararlo aquí es el último recurso, y va\n` +
         `con el motivo escrito.\n\n  ${nuevos.join('\n  ')}\n`,
     ).toEqual([]);
   });

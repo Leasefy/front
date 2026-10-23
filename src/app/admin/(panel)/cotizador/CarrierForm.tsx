@@ -120,11 +120,8 @@ export function CarrierForm({
     // contraseña de la aseguradora. Sus campos no tienen `name`, pero un envío
     // nativo nunca debe poder armar una URL con credenciales (ver
     // `formularios-con-contrasena.test.ts`).
-    <form method="post" onSubmit={submit} noValidate className="card p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <MonoLabel>{isEdit ? 'Editar aseguradora' : 'Nueva aseguradora'}</MonoLabel>
-        <Pill tone="info">COTIZADOR</Pill>
-      </div>
+    // Ronda 26 (decisión de Nico, 23-10): el formulario vive en un CAJÓN; el título lo pone el cajón.
+    <form method="post" onSubmit={submit} noValidate className="space-y-6">
 
       {/* Identity */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -300,10 +297,10 @@ export function CarrierForm({
       )}
 
       <div className="flex items-center gap-3">
-        <Button hideArrow type="submit"  disabled={isSubmitting || !hidratado}>
-          {isSubmitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear carrier'}
+        <Button size="sm" hideArrow type="submit" disabled={isSubmitting || !hidratado}>
+          {isSubmitting ? 'Guardando…' : isEdit ? 'Guardar los cambios' : 'Crear la aseguradora'}
         </Button>
-        <Button variant="ghost" hideArrow type="button"  onClick={onCancel} disabled={isSubmitting}>
+        <Button variant="ghost" size="sm" hideArrow type="button" onClick={onCancel} disabled={isSubmitting}>
           Cancelar
         </Button>
       </div>

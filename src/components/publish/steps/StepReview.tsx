@@ -62,7 +62,7 @@ function Section({ title, onEdit, children }: SectionProps) {
           size="sm"
           hideArrow
           onClick={onEdit}
-          className="h-auto gap-1.5 px-2 py-1 text-xs text-fg-muted hover:text-fg"
+          className="h-auto gap-1.5 px-2 py-1 text-caption text-fg-muted hover:text-fg"
         >
           <PencilSimple className="w-3 h-3" />
           Editar
@@ -126,22 +126,22 @@ export function StepReview() {
           <div className="text-center">
             <Bed className="w-5 h-5 mx-auto text-fg-subtle mb-1" />
             <p className="text-sm font-medium text-fg font-mono tabular-nums">{draft.bedrooms}</p>
-            <p className="text-xs text-fg-muted">Habitaciones</p>
+            <p className="text-caption text-fg-muted">Habitaciones</p>
           </div>
           <div className="text-center">
             <Bathtub className="w-5 h-5 mx-auto text-fg-subtle mb-1" />
             <p className="text-sm font-medium text-fg font-mono tabular-nums">{draft.bathrooms}</p>
-            <p className="text-xs text-fg-muted">Baños</p>
+            <p className="text-caption text-fg-muted">Baños</p>
           </div>
           <div className="text-center">
             <ArrowsOut className="w-5 h-5 mx-auto text-fg-subtle mb-1" />
             <p className="text-sm font-medium text-fg font-mono tabular-nums">{draft.area}</p>
-            <p className="text-xs text-fg-muted">m²</p>
+            <p className="text-caption text-fg-muted">m²</p>
           </div>
           <div className="text-center">
             <Car className="w-5 h-5 mx-auto text-fg-subtle mb-1" />
             <p className="text-sm font-medium text-fg font-mono tabular-nums">{draft.parkingSpaces}</p>
-            <p className="text-xs text-fg-muted">Parqueaderos</p>
+            <p className="text-caption text-fg-muted">Parqueaderos</p>
           </div>
         </div>
       </Section>
@@ -186,7 +186,7 @@ export function StepReview() {
             </div>
           ))}
         </div>
-        <p className="text-xs text-fg-muted mt-2"><span className="font-mono tabular-nums">{draft.photos.length}</span> foto{draft.photos.length !== 1 ? 's' : ''}</p>
+        <p className="text-caption text-fg-muted mt-2"><span className="font-mono tabular-nums">{draft.photos.length}</span> foto{draft.photos.length !== 1 ? 's' : ''}</p>
       </Section>
 
       {/* Pricing */}
@@ -327,7 +327,7 @@ export function StepReview() {
                   <span className="text-fg-muted min-w-[100px]">{r.label}:</span>
                   <span className="text-fg flex-1">{r.value}</span>
                   {r.isNonNegotiable && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-primary-soft text-primary rounded-full text-xs font-medium">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-primary-soft text-primary rounded-full text-caption font-medium">
                       <Lock className="w-2.5 h-2.5" />
                       Innegociable
                     </span>
@@ -353,7 +353,7 @@ export function StepReview() {
                 <Icon className="w-5 h-5" />
                 <div>
                   <p className="font-semibold">{plan.name}</p>
-                  <p className="text-xs opacity-70 font-mono tabular-nums">{plan.price}</p>
+                  <p className="text-caption opacity-70 font-mono tabular-nums">{plan.price}</p>
                 </div>
               </div>
             );

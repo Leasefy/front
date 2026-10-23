@@ -1,18 +1,22 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { SealCheck } from '@phosphor-icons/react'
 
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
-import { fmtDateTime } from '@/lib/admin/format'
+import { fmtCOP, fmtFecha } from '@/lib/admin/format'
 import { tipoDeDecision } from '@/lib/admin/textos-del-admin'
+import { resumenDeLaDecision } from '@/lib/admin/resumen-de-la-decision'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
-import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
+import { CajonDeLaFicha, useFichaEnLaUrl } from '@/components/admin/screen/CajonDeLaFicha'
+import { DetalleDeLaAprobacion } from './DetalleDeLaAprobacion'
 
 interface PendingRow {
   id: string
@@ -33,23 +37,6 @@ interface ApprovalsResponse {
   facets: Array<{ decision_type: string; n: string }>
 }
 
-const pesos = (n: unknown) => (typeof n === 'number' ? `$ ${n.toLocaleString('es-CO')}` : '—')
-
-function summarizePayload(type: string, payload: Record<string, unknown>): string {
-  switch (type) {
-    case 'pre_judicial_letter':
-      return `Carta prejurídica lista · deuda de ${pesos(payload.debt_amount_cop)}`
-    case 'siniestro_filing':
-      return `Reclamo a la aseguradora ${(payload.insurer as string | undefined) ?? '(sin nombre)'} · ${pesos(payload.debt_amount_cop)}`
-    case 'legal_escalation':
-      return `Escalación legal a ${(payload.target as string | undefined) ?? '(sin destino)'} · ${
-        (payload.reason as string | undefined) ?? 'sin motivo'
-      }`
-    default:
-      return JSON.stringify(payload).slice(0, 200)
-  }
-}
-
 /** Cuánto lleva esperando: más de 3 días es urgente, más de 1 hay que mirarla. */
 function tonoDeLaEspera(dias: number) {
   if (dias > 3) return 'bad' as const
@@ -57,18 +44,23 @@ function tonoDeLaEspera(dias: number) {
   return 'neutral' as const
 }
 
-/** «5 h», «1 día», «3,2 días». */
+/** «5 horas», «1 día», «6 días». Revisora r27 (VOZ §4): días enteros, sin «6,2 días». */
 function esperaEnPalabras(dias: number): string {
-  if (dias < 1) return `${Math.max(1, Math.round(dias * 24))} h`
-  const redondo = Math.round(dias * 10) / 10
-  return `${redondo.toLocaleString('es-CO')} ${redondo === 1 ? 'día' : 'días'}`
+  if (dias < 1) {
+    const h = Math.max(1, Math.round(dias * 24))
+    return `${h} ${h === 1 ? 'hora' : 'horas'}`
+  }
+  const enteros = Math.floor(dias)
+  return `${enteros} ${enteros === 1 ? 'día' : 'días'}`
 }
 
 /** /admin/approvals — la cola de la ley T-323/2024 (FRONT.md §6.11 · BACK.md §8.10). */
 export default function ApprovalsPage() {
-  const router = useRouter()
   const { get, setFilters } = useUrlFilters()
   const type = get('type')
+  // Ronda 26 (revisora r25, «cajón ✗»): la decisión se abre en un cajón sobre la cola —antes otra página— y
+  // queda en la URL (`?ver=`) para compartirla; `/admin/approvals/:id` sigue para los enlaces directos.
+  const { ver, abrir } = useFichaEnLaUrl()
 
   const { data, isLoading, error, refetch } = useApiQuery<ApprovalsResponse>(
     (signal) => adminApi('/approvals', { query: { type: type || undefined }, signal }),
@@ -79,79 +71,154 @@ export default function ApprovalsPage() {
   const totalPending = facets.reduce((a, f) => a + parseInt(f.n, 10), 0)
   const ahora = Date.now()
   const diasDe = (r: PendingRow) => (ahora - new Date(r.created_at).getTime()) / 86_400_000
-  const vencidas = (data?.data ?? []).filter((r) => diasDe(r) > 3).length
+  const filas = data?.data ?? []
+  const vencidas = filas.filter((r) => diasDe(r) > 3).length
+  const paraMirar = filas.filter((r) => diasDe(r) > 1 && diasDe(r) <= 3).length
+  const recientes = filas.length - vencidas - paraMirar
 
+  // Ronda 26 (revisora r25): cada fila dice lo que propone con lo que YA trae la respuesta —antes «Ábrela
+  // para ver lo que propone» en las 63— y la plata va en su columna, en mono. Sin «Confianza» (100 % en
+  // todas: no decide nada; va al Excel).
+  const resumen = (r: PendingRow) => resumenDeLaDecision(r.decision_type, r.decision_payload)
+  const persona = (r: PendingRow) => r.debtor_name ?? resumen(r).persona
   const columnas: Column<PendingRow>[] = [
     {
       header: 'Decisión',
       className: 'min-w-[260px]',
       orden: (r) => tipoDeDecision(r.decision_type),
-      texto: (r) => `${tipoDeDecision(r.decision_type)} · ${summarizePayload(r.decision_type, r.decision_payload)}`,
+      texto: (r) => `${tipoDeDecision(r.decision_type)} · ${resumen(r).texto}`,
       cell: (r) => (
-        <div className="min-w-0 max-w-md space-y-1">
-          <Pill tone="info">{tipoDeDecision(r.decision_type)}</Pill>
-          <p className="line-clamp-2 text-caption text-fg-muted">{summarizePayload(r.decision_type, r.decision_payload)}</p>
+        <div className="min-w-0 max-w-md space-y-0.5">
+          <span className="text-body-sm font-medium text-fg">{tipoDeDecision(r.decision_type)}</span>
+          <p className="line-clamp-2 text-caption text-fg-muted">{resumen(r).texto}</p>
         </div>
       ),
     },
     {
       header: 'Deudor',
-      orden: (r) => r.debtor_name,
-      texto: (r) => r.debtor_name ?? 'Deudor sin nombre',
+      orden: (r) => persona(r),
+      texto: (r) => persona(r) ?? 'Sin nombre',
       cell: (r) => (
         <div className="min-w-0">
-          <div className="font-medium text-fg">{r.debtor_name ?? 'Deudor sin nombre'}</div>
+          <div className="text-body-sm text-fg">{persona(r) ?? 'Sin nombre'}</div>
           <div className="text-caption text-fg-muted">{r.legal_name ?? 'Sin inmobiliaria'}</div>
         </div>
       ),
     },
     {
-      header: 'Esperando',
-      orden: (r) => r.created_at,
-      texto: (r) => esperaEnPalabras(diasDe(r)),
-      cell: (r) => (
-        <Pill tone={tonoDeLaEspera(diasDe(r))} dot>
-          {esperaEnPalabras(diasDe(r))}
-        </Pill>
-      ),
-    },
-    {
-      header: 'Confianza',
-      align: 'right',
-      orden: (r) => (r.confidence_score != null ? Number(r.confidence_score) : null),
-      texto: (r) => (r.confidence_score != null ? Math.round(Number(r.confidence_score) * 100) : null),
-      cell: (r) => (
-        <span className="tabular-nums text-fg">
-          {r.confidence_score != null ? `${Math.round(Number(r.confidence_score) * 100)} %` : '—'}
-        </span>
-      ),
-    },
-    {
-      header: 'Propuesta',
-      align: 'right',
+      // Revisora r27: UNA columna «Espera» (antes «Esperando 6,2 días» y «Desde 16 oct» decían lo mismo).
+      header: 'Espera',
       orden: (r) => r.created_at,
       ordenPrimero: 'desc',
-      texto: (r) => fmtDateTime(r.created_at),
+      texto: (r) => `${esperaEnPalabras(diasDe(r))} · desde ${fmtFecha(r.created_at)}`,
       cell: (r) => (
-        <div className="whitespace-nowrap text-caption">
-          <div className="tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</div>
-          <div className="font-mono text-fg-subtle">{r.model_used}</div>
+        <div className="space-y-0.5">
+          <Pill tone={tonoDeLaEspera(diasDe(r))} dot>
+            {esperaEnPalabras(diasDe(r))}
+          </Pill>
+          <div className="font-mono text-caption tabular-nums text-fg-subtle">{fmtFecha(r.created_at)}</div>
         </div>
       ),
     },
+    {
+      header: 'Valor',
+      align: 'right',
+      orden: (r) => resumen(r).montoCop,
+      texto: (r) => resumen(r).montoCop,
+      cell: (r) => {
+        const monto = resumen(r).montoCop
+        return monto == null ? (
+          <span className="text-fg-subtle">—</span>
+        ) : (
+          <span className="whitespace-nowrap font-mono tabular-nums text-fg">{fmtCOP(monto)}</span>
+        )
+      },
+    },
   ]
+
+  // Pestañas por tipo DENTRO de la tabla (antes un desplegable), sólo con dos tipos o más: con uno solo,
+  // «Todas 63 · Cobro retenido 63» repetiría la cifra. Se arman sobre lo que llegó, así que sólo cuando llegó
+  // todo; si la cola pasa de 100, queda el filtro del servidor (lo que no llegó también se puede pedir).
+  const llegoTodo = data != null && filas.length >= totalPending
+  const segmentos: Segmento<PendingRow>[] | undefined =
+    llegoTodo && !type && facets.length > 1
+      ? [
+          { valor: 'todas', nombre: 'Todas', cumple: () => true },
+          ...[...facets]
+            .sort((x, y) => parseInt(y.n, 10) - parseInt(x.n, 10))
+            .map((f) => ({
+              valor: f.decision_type,
+              nombre: tipoDeDecision(f.decision_type),
+              cumple: (r: PendingRow) => r.decision_type === f.decision_type,
+            })),
+        ]
+      : undefined
+  // La fila se recuerda: decidida, sale de la cola y el cajón sigue diciendo qué era.
+  const enLaCola = ver ? filas.find((r) => r.id === ver) ?? null : null
+  const [recordada, setRecordada] = useState<PendingRow | null>(null)
+  useEffect(() => {
+    if (enLaCola) setRecordada(enLaCola)
+  }, [enLaCola])
+  const abierta = enLaCola ?? (recordada?.id === ver ? recordada : null)
+  const montoEnJuego = filas.reduce((a, r) => a + (resumen(r).montoCop ?? 0), 0)
+
+  const todasViejas = vencidas > 0 && vencidas === filas.length
+  const contexto = [
+    todasViejas
+      ? 'todas llevan más de 3 días'
+      : vencidas > 0
+        ? `${vencidas.toLocaleString('es-CO')} ${vencidas === 1 ? 'lleva' : 'llevan'} más de 3 días`
+        : 'ninguna lleva más de 3 días',
+    montoEnJuego > 0 ? `${fmtCOP(montoEnJuego)} en juego` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Aprobaciones"
-        description="Toda decisión de un agente con efecto legal pasa por acá antes de ejecutarse (sentencia T-323 de 2024). Toca una para revisarla y decidir."
+        description="Lo que un agente propone con efecto legal espera aquí un visto bueno."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="La cola de aprobaciones" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                Toda decisión de un agente con efecto legal (un cobro retenido por el Piloto, una carta prejurídica,
+                un reclamo a la aseguradora, pasar un caso a jurídico) se queda aquí hasta que una persona la revisa:
+                así lo pide la sentencia T-323 de 2024.
+              </p>
+              <p>
+                Cada decisión se abre y se decide una por una: aprobarla, cambiarla o pasarla a un abogado. Así queda
+                constancia de quién la decidió y por qué.
+              </p>
+              <p>Primero van las que llevan más tiempo esperando; las de más de 3 días van en rojo.</p>
+            </div>
+          </ParaEntenderMas>
+        }
       />
 
-      <section aria-label="Cifras de la cola" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard label="Esperando" value={data ? totalPending : '—'} tone={totalPending ? 'warn' : 'default'} />
-        <KpiCard label="Más de 3 días" value={data ? vencidas : '—'} tone={vencidas ? 'bad' : 'default'} />
-      </section>
+      {/* Glow up 22-10: LA RESPUESTA (cuántas esperan) con la barra por espera. Ronda 26: si todas llevan más
+          de 3 días, sin barra ni leyenda (una sola tajada repetía la cifra), y con la plata en juego. */}
+      {data && totalPending > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Esperan un visto bueno"
+            cifra={totalPending.toLocaleString('es-CO')}
+            contexto={contexto}
+            tramos={
+              todasViejas || filas.length === 0
+                ? undefined
+                : [
+                    { clave: 'vencidas', etiqueta: 'Más de 3 días', monto: vencidas, tono: 'critico', cifra: vencidas.toLocaleString('es-CO') },
+                    { clave: 'mirar', etiqueta: 'De 1 a 3 días', monto: paraMirar, tono: 'aviso', cifra: paraMirar.toLocaleString('es-CO') },
+                    { clave: 'recientes', etiqueta: 'Menos de 1 día', monto: recientes, tono: 'neutro', cifra: recientes.toLocaleString('es-CO') },
+                  ]
+            }
+            total={todasViejas ? undefined : filas.length}
+            data-testid="aprobaciones-esperando"
+          />
+        </div>
+      ) : null}
 
       <DataTable
         columns={columnas}
@@ -161,37 +228,57 @@ export default function ApprovalsPage() {
         error={error}
         onReintentar={refetch}
         emptyTitle="No hay decisiones esperando"
-        emptyHint="Cuando un agente proponga algo con efecto legal, aparece acá para que alguien lo apruebe."
-        emptyIcon={<SealCheck weight="bold" />}
+        emptyHint="Cuando un agente proponga algo con efecto legal, aparece aquí para que alguien lo apruebe."
+        emptyIcon={<SealCheck weight="duotone" />}
+        emptyTono="exito"
         aria-label="Cola de aprobaciones"
-        onRowClick={(r) => router.push(`/admin/approvals/${r.id}`)}
+        onRowClick={(r) => abrir(r.id)}
         queSon={['decisión', 'decisiones']}
         buscar="Deudor, inmobiliaria o detalle"
         textoExtra={(r) => `${r.legal_name ?? ''} ${r.model_used}`}
+        segmentos={segmentos}
+        cifraDelCelular="Esperando"
         filtrosEnLaUrl={['type']}
         ordenInicial={{ columna: 2, sentido: 'asc' }}
         exportar="aprobaciones-pendientes"
         masEnElExcel={[
           { header: 'Inmobiliaria', texto: (r) => r.legal_name },
+          {
+            header: 'Confianza (%)',
+            texto: (r) => (r.confidence_score != null ? Math.round(Number(r.confidence_score) * 100) : null),
+          },
           { header: 'Modelo', texto: (r) => r.model_used },
         ]}
         barra={
-          <BarraDeFiltros>
-            <Filtro etiqueta="Tipo de decisión">
-              <Desplegable
-                value={type}
-                onChange={(v) => setFilters({ type: v, page: undefined })}
-                todas={`Todas (${totalPending})`}
-                aria-label="Tipo de decisión"
-                opciones={facets.map((f) => ({ valor: f.decision_type, nombre: `${tipoDeDecision(f.decision_type)} (${f.n})` }))}
-              />
-            </Filtro>
-          </BarraDeFiltros>
+          // Sólo cuando la cola pasa de lo que llega (100) o ya hay un tipo puesto: el filtro del servidor.
+          !llegoTodo || type ? (
+            <BarraDeFiltros>
+              <Filtro etiqueta="Tipo de decisión">
+                <Desplegable
+                  value={type}
+                  onChange={(v) => setFilters({ type: v, page: undefined })}
+                  todas={`Todas (${totalPending.toLocaleString('es-CO')})`}
+                  aria-label="Tipo de decisión"
+                  opciones={facets.map((f) => ({ valor: f.decision_type, nombre: `${tipoDeDecision(f.decision_type)} (${f.n})` }))}
+                />
+              </Filtro>
+            </BarraDeFiltros>
+          ) : undefined
         }
       />
       {data && data.data.length >= 100 ? (
         <p className="text-caption text-fg-subtle">Se muestran las 100 más viejas; el resto aparece a medida que se decidan.</p>
       ) : null}
+
+      <CajonDeLaFicha
+        ver={ver}
+        onCerrar={() => abrir(null)}
+        titulo={abierta ? tipoDeDecision(abierta.decision_type) : 'La decisión'}
+        descripcion={abierta ? `${persona(abierta) ?? 'Sin nombre'} · ${abierta.legal_name ?? 'Sin inmobiliaria'}` : undefined}
+        enlace={`/admin/approvals/${ver}`}
+      >
+        <DetalleDeLaAprobacion key={ver} id={ver} enCajon alDecidir={refetch} />
+      </CajonDeLaFicha>
     </div>
   )
 }

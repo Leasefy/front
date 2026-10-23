@@ -47,11 +47,12 @@ interface DispersionResumenProps {
  * Get completion rate color based on percentage - subtle version
  */
 function getProgressColor(rate: number | null): string {
-  if (rate === null) return 'bg-muted-foreground/30';
-  if (rate >= 90) return 'bg-foreground';
-  if (rate >= 50) return 'bg-foreground/70';
-  if (rate > 0) return 'bg-foreground/50';
-  return 'bg-muted-foreground/30';
+  // GLOW UP (20-10-2026): la barra era negra (`bg-foreground`), el único negro
+  // de dato del panel. Avance en cobalto; completo, en verde.
+  if (rate === null) return 'bg-border-strong';
+  if (rate >= 100) return 'bg-success';
+  if (rate > 0) return 'bg-primary';
+  return 'bg-border-strong';
 }
 
 /*
@@ -139,12 +140,10 @@ export function DispersionResumen({
       {/* Header */}
       <div className="px-6 pt-6 pb-4">
         {/* N-14 (QA-PAGOS-95): sin `capitalize` («Resumen Octubre De 2026»). */}
-        <h3 className="text-lg font-semibold text-foreground">
+        {/* Ronda 21: sin el subtítulo «Giros a propietarios», que repetía el título de la pantalla. */}
+        <h3 className="text-lg font-normal text-foreground">
           {t('inmobiliaria.dispersiones.resumen.summaryMonth', { month: monthDisplay })}
         </h3>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {t('inmobiliaria.dispersiones.resumen.ownerDisbursements')}
-        </p>
       </div>
 
       {/* El aviso de «estimado» entra y, al cargar el resumen con el
@@ -160,7 +159,7 @@ export function DispersionResumen({
           <div>
             <div className="flex items-center gap-2 mb-2">
               <CurrencyCircleDollar className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wide">
+              <span className="font-mono text-caption uppercase tracking-wide text-muted-foreground">
                 {t('inmobiliaria.dispersiones.resumen.toDisburse')}
               </span>
             </div>
@@ -168,7 +167,7 @@ export function DispersionResumen({
               value={summary.totalToDisburse}
               from={0}
               format={formatCurrency}
-              className="text-xl sm:text-2xl font-semibold text-foreground tabular-nums"
+              className="font-mono text-xl sm:text-2xl font-normal text-foreground tabular-nums"
             />
           </div>
 
@@ -176,7 +175,7 @@ export function DispersionResumen({
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Coin className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wide">
+              <span className="font-mono text-caption uppercase tracking-wide text-muted-foreground">
                 {t('inmobiliaria.dispersiones.resumen.commissions')}
               </span>
             </div>
@@ -184,7 +183,7 @@ export function DispersionResumen({
               value={summary.totalCommissions}
               from={0}
               format={formatCurrency}
-              className="text-xl sm:text-2xl font-semibold text-foreground tabular-nums"
+              className="font-mono text-xl sm:text-2xl font-normal text-foreground tabular-nums"
             />
           </div>
 
@@ -192,14 +191,14 @@ export function DispersionResumen({
           <div>
             <div className="flex items-center gap-2 mb-2">
               <TrendUp className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wide">
+              <span className="font-mono text-caption uppercase tracking-wide text-muted-foreground">
                 {t('inmobiliaria.dispersiones.resumen.progress')}
               </span>
             </div>
             <div className="flex items-baseline gap-1">
               {completionRate === null ? (
                 <span
-                className="text-xl sm:text-2xl font-semibold text-foreground tabular-nums"
+                className="font-mono text-xl sm:text-2xl font-normal text-foreground tabular-nums"
                 data-testid="dispersiones-avance"
               >
                   {SIN_MEDIR}
@@ -209,11 +208,11 @@ export function DispersionResumen({
                   value={completionRate}
                   from={0}
                   format={(n) => n.toFixed(0)}
-                  className="text-xl sm:text-2xl font-semibold text-foreground tabular-nums"
+                  className="font-mono text-xl sm:text-2xl font-normal text-foreground tabular-nums"
                   data-testid="dispersiones-avance"
                 />
               )}
-              {completionRate !== null && <span className="text-lg text-muted-foreground">%</span>}
+              {completionRate !== null && <span className="font-mono text-lg text-muted-foreground">%</span>}
             </div>
           </div>
         </div>
@@ -235,7 +234,7 @@ export function DispersionResumen({
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-muted-foreground">{t('inmobiliaria.dispersiones.resumen.pendingLabel')}</span>
             <span className={cn(
-              'font-medium tabular-nums',
+              'font-mono tabular-nums',
               hasPending ? 'text-foreground' : 'text-muted-foreground'
             )}>
               {summary.dispersionsPending}
@@ -244,7 +243,7 @@ export function DispersionResumen({
           <div className="flex items-center gap-1.5 text-sm">
             <CheckCircle className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-muted-foreground">{t('inmobiliaria.dispersiones.resumen.completedLabel')}</span>
-            <span className="font-medium text-foreground tabular-nums">
+            <span className="font-mono text-foreground tabular-nums">
               {summary.dispersionsCompleted}
             </span>
           </div>
@@ -252,7 +251,7 @@ export function DispersionResumen({
             <div className="flex items-center gap-1.5 text-sm">
               <Warning className="w-3.5 h-3.5 text-destructive" />
               <span className="text-muted-foreground">{t('inmobiliaria.dispersiones.resumen.failedLabel')}</span>
-              <span className="font-medium text-destructive tabular-nums">
+              <span className="font-mono text-destructive tabular-nums">
                 {summary.dispersionsFailed}
               </span>
             </div>
@@ -265,7 +264,7 @@ export function DispersionResumen({
         <div className="px-6 py-4 bg-muted/30 border-t border-border flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             {apruebaPorLote
-              ? tr('Tu inmobiliaria aprueba las dispersiones por lote, con código.')
+              ? tr('Tu inmobiliaria aprueba los giros por lote, con código.')
               : summary.dispersionsPending !== 1
                 ? t('inmobiliaria.dispersiones.resumen.pendingToProcessPlural', { count: summary.dispersionsPending })
                 : t('inmobiliaria.dispersiones.resumen.pendingToProcess', { count: summary.dispersionsPending })}
@@ -330,7 +329,7 @@ export function DispersionResumenCompact({
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-foreground">{t('inmobiliaria.dispersiones.resumen.dispersionsLabel')}</span>
         <span
-          className="text-lg font-semibold text-foreground tabular-nums"
+          className="font-mono text-lg font-normal text-foreground tabular-nums"
           data-testid="dispersiones-avance-compacto"
         >
           {textoDeTasa(completionRate, 0)}
@@ -339,7 +338,7 @@ export function DispersionResumenCompact({
       <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-3">
         <BarraDeAvance ancho={anchoDeBarra(completionRate)} className={getProgressColor(completionRate)} />
       </div>
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center justify-between font-mono text-caption tabular-nums text-muted-foreground">
         <span>{formatCurrency(summary.totalToDisburse)}</span>
         <span>{summary.dispersionsCompleted}/{totalDispersions}</span>
       </div>

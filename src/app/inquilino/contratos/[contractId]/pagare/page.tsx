@@ -11,8 +11,9 @@
 import { useCallback, useEffect, useState, use } from 'react';
 import { ArrowSquareOut, CheckCircle, Receipt, WarningCircle } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EmptyState } from '@/components/ui/empty-state';
 import { pagareApi } from '@/lib/api/pagare.service';
@@ -49,13 +50,21 @@ export default function MiFirmaDelPagarePage(props: Props) {
   }, [cargar]);
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <BackButton href="/inquilino/contratos" label="Mis contratos" />
-      <h1 className="text-h2 text-fg">Pagaré</h1>
+    // GLOW UP (21-10-2026): el contenedor, la vuelta y el encabezado del portal.
+    <div className="max-w-3xl p-6 lg:p-8 space-y-6">
+      <BackButton href="/inquilino/contratos" label="Volver a Mis contratos" />
+      <EncabezadoDePantalla
+        seccion="Mi arriendo"
+        titulo="Pagaré"
+        descripcion="El pagaré que respalda tu contrato. Se firma con nuestro proveedor de firma electrónica."
+      />
 
       {cargando ? (
-        <div className="min-h-[30vh] flex items-center justify-center">
-          <Spinner size="md" variant="muted" />
+        /* El esqueleto con la forma de la tarjeta (antes, una rueda). */
+        <div className="space-y-3 rounded-lg border border-border bg-surface p-6" data-testid="pagare-cargando" aria-busy="true">
+          <Skeleton className="h-5 w-1/3" />
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-9 w-40" />
         </div>
       ) : noDisponible ? (
         <EmptyState
@@ -78,7 +87,7 @@ function Contenido({ datos }: { datos: MiFirmaDelPagareResponse }) {
       <EmptyState
         icon={Receipt}
         title="No tienes un pagaré pendiente"
-        description="Cuando tu inmobiliaria emita el pagaré, lo verás acá."
+        description="Cuando tu inmobiliaria emita el pagaré, lo verás aquí."
       />
     );
   }
@@ -88,15 +97,16 @@ function Contenido({ datos }: { datos: MiFirmaDelPagareResponse }) {
       {datos.esSandbox && (
         <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2" data-testid="pagare-sandbox-banner">
           <WarningCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-warning">Sandbox — sin validez jurídica</p>
+          <p className="text-caption text-warning">Sandbox — sin validez jurídica</p>
         </div>
       )}
 
       {datos.miEstado === 'FIRMADO' ? (
-        <div className="rounded-lg border border-success/30 bg-success-soft p-6 text-center space-y-2" data-testid="mi-firma-firmado">
-          <CheckCircle className="w-8 h-8 text-success mx-auto" />
-          <p className="font-semibold text-success">Ya firmaste el pagaré</p>
-        </div>
+        /* Un hecho en una línea con el ícono suelto (antes, un bloque verde con borde y la frase en negrilla). */
+        <p className="flex items-center gap-2 text-body-sm text-fg" data-testid="mi-firma-firmado">
+          <CheckCircle className="h-5 w-5 shrink-0 text-success" aria-hidden="true" />
+          Ya firmaste el pagaré
+        </p>
       ) : datos.miEstado === 'RECHAZADO' ? (
         <p className="text-body-sm text-danger" data-testid="mi-firma-rechazado">
           Rechazaste este pagaré. Si fue un error, comunícate con tu inmobiliaria.

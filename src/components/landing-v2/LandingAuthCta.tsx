@@ -41,7 +41,7 @@ export function LandingAuthCta({ variant = 'header' }: LandingAuthCtaProps) {
    * sesión confirmada, y el panel ya no rebota al login mientras confirma.
    */
   if (isLoading && confirmacionDeLaSesion !== 'sin-confirmar') {
-    return <HuecoDeBotonDeSesion className={className} texto={tx('Iniciar sesión', 'Log in')} />
+    return <HuecoDeBotonDeSesion className={className} texto={tx('Entrar', 'Sign in')} />
   }
 
   if (!isLoading && isAuthenticated && user) {
@@ -54,7 +54,7 @@ export function LandingAuthCta({ variant = 'header' }: LandingAuthCtaProps) {
 
   return (
     <a className={className} href="/auth">
-      {tx('Iniciar sesión', 'Log in')}
+      {tx('Entrar', 'Sign in')}
     </a>
   )
 }

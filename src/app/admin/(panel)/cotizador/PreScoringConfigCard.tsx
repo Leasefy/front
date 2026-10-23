@@ -27,7 +27,7 @@ import {
 import { Card, Eyebrow } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pill } from '@/components/admin/Pill'
+import { ErrorBlock } from '@/components/admin/screen/states'
 
 const MIN_HOURS = 1
 const MAX_HOURS = 720
@@ -76,7 +76,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-fg mb-1.5">
+      <label htmlFor={id} className="mb-1.5 block text-body-sm font-medium text-fg">
         {label}
       </label>
       <Input
@@ -89,7 +89,7 @@ function Field({
       {error ? (
         <p className="mt-1 text-caption text-danger">{error}</p>
       ) : (
-        <p className="mt-1 text-[11px] text-fg-subtle">{help}</p>
+        <p className="mt-1 text-caption text-fg-muted">{help}</p>
       )}
     </div>
   )
@@ -159,26 +159,20 @@ export function PreScoringConfigCard() {
 
   return (
     <Card className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <Eyebrow>Pre-scoring de afianzamiento</Eyebrow>
-        <Pill tone="info">TTL</Pill>
+      {/* Ronda 26 (revisora): sin «Pre-scoring» ni «TTL» (VOZ: «score» no se dice) y sin la pastilla azul. */}
+      <div>
+        <Eyebrow>Estudio previo para el afianzamiento</Eyebrow>
+        <p className="mt-2 text-body-sm text-fg-muted">
+          Cuánto vale un estudio ya hecho antes de pedir uno nuevo, y cuánto se espera la autorización del candidato.
+        </p>
       </div>
-      <p className="text-sm text-fg-muted">
-        Cuánto vale un estudio ya completado antes de relanzar uno nuevo, y cuánto se espera la
-        autorización del candidato. Aplica a todo el pre-scoring de afianzamiento.
-      </p>
 
       {isLoading && !server && (
-        <p className="text-sm text-fg-muted">Cargando configuración…</p>
+        <p className="text-body-sm text-fg-muted">Cargando configuración…</p>
       )}
 
       {error && !server && (
-        <Card className="p-4 ">
-          <p className="text-sm text-danger">{configErrorMessage(error, 'No se pudo cargar la configuración.', 'cargar la configuración')}</p>
-          <Button variant="ghost" hideArrow className="h-8 px-2 mt-2" onClick={refetch}>
-            Reintentar
-          </Button>
-        </Card>
+        <ErrorBlock error={error} onReintentar={refetch} titulo="No pudimos cargar la configuración del estudio" suelto={false} />
       )}
 
       {server && (
@@ -204,18 +198,18 @@ export function PreScoringConfigCard() {
 
           {saveError && (
             <Card className="p-3 ">
-              <p className="text-sm text-danger">{saveError}</p>
+              <p className="text-body-sm text-danger">{saveError}</p>
             </Card>
           )}
           {saved && !saveError && (
             <Card className="p-3 ">
-              <p className="text-sm text-success">Configuración guardada.</p>
+              <p className="text-body-sm text-success">Configuración guardada.</p>
             </Card>
           )}
 
           <div className="flex items-center gap-3">
-            <Button hideArrow onClick={save} disabled={!canSave}>
-              {saving ? 'Guardando…' : 'Guardar'}
+            <Button variant="outline" size="sm" hideArrow onClick={save} disabled={!canSave} isLoading={saving}>
+              Guardar los plazos
             </Button>
           </div>
         </>

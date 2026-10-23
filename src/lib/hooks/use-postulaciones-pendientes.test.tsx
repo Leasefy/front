@@ -44,7 +44,7 @@ describe('usePostulacionesPendientes', () => {
     container.remove()
   })
 
-  it('devuelve el pendiente que manda el backend, no uno calculado acá', async () => {
+  it('devuelve el pendiente que manda el backend, no uno calculado aquí', async () => {
     getAllCandidatesMock.mockResolvedValue({
       candidates: [],
       total: 9,

@@ -105,7 +105,7 @@ export function SobrecostosPorAprobar({ alCambiar }: { alCambiar?: () => void })
   if (pendientes.length === 0) return null;
   return (
     <section className="space-y-3" aria-label="Sobrecostos por aprobar" data-testid="sobrecostos-por-aprobar">
-      <h2 className="text-sm font-semibold text-fg">Costaron más de lo que aprobaste</h2>
+      <h2 className="text-h3 text-fg">Costaron más de lo que aprobaste</h2>
       {pendientes.map((s) => (
         <Pendiente
           key={s.id}

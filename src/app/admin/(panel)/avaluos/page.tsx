@@ -12,19 +12,12 @@ import {
   type PendingReviewItem,
 } from '@/lib/admin/avaluos'
 import { AvaluoRegistros } from './AvaluoRegistros'
-import { Card, Eyebrow, MonoLabel } from '@leasefy/cadence'
+import { Card, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
+import { SealCheck } from '@phosphor-icons/react'
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha'
+import { metodoDelAvaluo } from '@/lib/admin/textos-del-admin'
 
 // Left-border urgency by confidence: low confidence needs the most eyes.
-function confianzaBorder(item: PendingReviewItem): string {
-  switch (item.confianza?.nivel) {
-    case 'baja':
-      return ''
-    case 'media':
-      return ''
-    default:
-      return ''
-  }
-}
 
 /**
  * WHOSE avalúo — one identity line above the confidence row so the reviewer sees
@@ -37,9 +30,7 @@ function AvaluoIdentity({ item }: { item: PendingReviewItem }) {
 
   if (!ownerName && !agencyName) {
     return (
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-1">
-        sin identificar
-      </div>
+      <div className="mb-1 text-caption text-fg-muted">Sin identificar</div>
     )
   }
 
@@ -48,10 +39,10 @@ function AvaluoIdentity({ item }: { item: PendingReviewItem }) {
       <MonoLabel>
         {agencyName ? 'inmobiliaria' : 'propietario'}
       </MonoLabel>
-      {agencyName && <span className="text-sm font-medium text-fg">{agencyName}</span>}
+      {agencyName && <span className="text-body-sm font-medium text-fg">{agencyName}</span>}
       {agencyName && ownerName && <span className="text-fg-subtle">·</span>}
       {ownerName && (
-        <span className={agencyName ? 'text-sm text-fg-muted' : 'text-sm font-medium text-fg'}>
+        <span className={agencyName ? 'text-body-sm text-fg-muted' : 'text-body-sm font-medium text-fg'}>
           {ownerName}
         </span>
       )}
@@ -67,41 +58,34 @@ function AvaluoCard({ item }: { item: PendingReviewItem }) {
       : null
 
   return (
-    <div
+    // Glow up 22-10: la tarjeta de Cadence (antes la clase vieja `card` de admin.css), sin flecha decorativa ni
+    // códigos (método, slug): el valor en mono y la narrativa en letra de lectura.
+    <Card
+      interactive
       role="button"
       tabIndex={0}
       onClick={() => router.push(`/admin/avaluos/${item.id}`)}
       onKeyDown={(e) => e.key === 'Enter' && router.push(`/admin/avaluos/${item.id}`)}
-      className={`card border-l-4 ${confianzaBorder(item)} p-4 flex items-start gap-4 hover:bg-surface-hover transition-colors cursor-pointer`}
+      className="cursor-pointer p-4"
     >
-      <div className="flex-1 min-w-0">
-        <AvaluoIdentity item={item} />
-        <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-          {item.confianza && (
-            <Pill tone={CONFIANZA_TONE[item.confianza.nivel]}>
-              confianza {item.confianza.nivel}
-            </Pill>
-          )}
-          <span className="font-medium text-fg tabular-nums">{fmtCOP(item.valueCop)}</span>
-          {band && <span className="text-fg-subtle text-caption font-mono">{band}</span>}
-          {item.canonLey820?.capped && (
-            <Pill tone="warn">Ley 820 · tope aplicado</Pill>
-          )}
-        </div>
-        {item.narrativaEs && (
-          <div className="text-sm text-fg-muted leading-snug mb-2 line-clamp-2">
-            {item.narrativaEs}
-          </div>
+      <AvaluoIdentity item={item} />
+      <div className="mb-1 flex flex-wrap items-baseline gap-2">
+        <span className="font-mono text-subtitle tabular-nums text-fg">{fmtCOP(item.valueCop)}</span>
+        {band && <span className="font-mono text-caption tabular-nums text-fg-muted">{band}</span>}
+        {item.confianza && (
+          <Pill tone={CONFIANZA_TONE[item.confianza.nivel]}>Confianza {item.confianza.nivel}</Pill>
         )}
-        <div className="flex flex-wrap items-center gap-4 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-          <span>{item.method || '—'}</span>
-          <span>{item.comps.length} comps</span>
-          <span>{item.adjustments.length} ajustes</span>
-          <span className="text-fg-subtle normal-case tracking-normal">{item.slug}</span>
-        </div>
+        {item.canonLey820?.capped && <Pill tone="warn">Ley 820 · tope aplicado</Pill>}
       </div>
-      <div className="text-fg-subtle">→</div>
-    </div>
+      {item.narrativaEs && (
+        <p className="mb-2 line-clamp-2 text-body-sm leading-snug text-fg-muted">{item.narrativaEs}</p>
+      )}
+      <p className="text-caption text-fg-muted">
+        {item.method ? `${metodoDelAvaluo(item.method)} · ` : ''}
+        <span className="font-mono tabular-nums">{item.comps.length}</span> {item.comps.length === 1 ? 'comparable' : 'comparables'} ·{' '}
+        <span className="font-mono tabular-nums">{item.adjustments.length}</span> {item.adjustments.length === 1 ? 'ajuste' : 'ajustes'}
+      </p>
+    </Card>
   )
 }
 
@@ -114,7 +98,7 @@ function AvaluoCard({ item }: { item: PendingReviewItem }) {
  * 50 más recientes). El endpoint no expone fechas, así que no hay antigüedad.
  */
 export default function AvaluosPage() {
-  const { data, isLoading, error } = useApiQuery<{ items: PendingReviewItem[] }>(
+  const { data, isLoading, error, refetch } = useApiQuery<{ items: PendingReviewItem[] }>(
     (signal) => fetchPendingReview(signal),
     [],
   )
@@ -124,51 +108,60 @@ export default function AvaluosPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="avalúos"
-        title="Firma de certificados"
-        description="Avalúos con propuesta de valor lista, pendientes de revisión y firma del certificado."
-        right={
-          <Card className="px-4 py-3 text-center">
-            <div className="text-2xl font-semibold text-fg tabular-nums">
-              {isLoading ? '—' : items.length}
-            </div>
-            <MonoLabel className="block">
-              por firmar
-            </MonoLabel>
-          </Card>
+        title="Avalúos"
+        description="Revisa la propuesta de valor de cada avalúo y firma su certificado (o recházalo)."
+        junto={
+          !isLoading && !error ? (
+            <Pill tone={items.length > 0 ? 'warn' : 'neutral'} dot={items.length > 0}>
+              {items.length === 1 ? '1 por firmar' : `${items.length} por firmar`}
+            </Pill>
+          ) : null
         }
       />
 
-      <MonoLabel className="block mb-3">
-        cola · más recientes primero
-      </MonoLabel>
-
-      {isLoading ? (
-        <LoadingBlock />
-      ) : error ? (
-        <ErrorBlock error={error} />
-      ) : items.length === 0 ? (
-        <EmptyBlock title="Sin avalúos por firmar" hint="La cola está vacía." />
-      ) : (
-        <div className="space-y-2">
-          {items.map((item) => (
-            <AvaluoCard key={item.id} item={item} />
-          ))}
-        </div>
-      )}
-
-      {/* Registros por estado — the full certificate history, filterable by
-          lifecycle state (borrador · en revisión · firmado · rechazado ·
-          entregado). Independent of the "por firmar" queue above. */}
-      <section className="mt-10 pt-8 border-t border-border">
-        <Eyebrow className="mb-2">Registros</Eyebrow>
-        <h2 className="font-display text-xl tracking-tight text-fg mb-1">Historial por estado</h2>
-        <p className="text-sm text-fg-muted max-w-2xl mb-4">
-          Todos los certificados de avalúo, filtrables por estado del ciclo de vida — no solo
-          la cola por firmar.
-        </p>
-        <AvaluoRegistros />
-      </section>
+      {/* Glow up 22-10: el trabajo (la cola por firmar) y el historial en pestañas; antes, el historial debajo de
+          un separador con un título de otra familia. */}
+      <PestanasDeLaFicha
+        etiqueta="Secciones de los avalúos"
+        pestanas={[
+          {
+            id: 'por-firmar',
+            etiqueta: 'Por firmar',
+            // Ronda 26 (bloqueante): con el fallo no hay conteo; un «0» sería inventado.
+            cuenta: isLoading || error ? null : items.length,
+            contenido: isLoading ? (
+              <LoadingBlock label="Cargando los avalúos por firmar" />
+            ) : error ? (
+              <ErrorBlock error={error} onReintentar={refetch} titulo="No pudimos cargar los avalúos por firmar" />
+            ) : items.length === 0 ? (
+              <EmptyBlock
+                title="Nada por firmar"
+                hint="Cuando Leasefy arme una propuesta de valor, aparece aquí. Los más recientes van primero."
+                tono="exito"
+                icono={<SealCheck weight="duotone" />}
+              />
+            ) : (
+              <Stagger className="space-y-2">
+                {items.map((item) => (
+                  <StaggerItem key={item.id}>
+                    <AvaluoCard item={item} />
+                  </StaggerItem>
+                ))}
+              </Stagger>
+            ),
+          },
+          {
+            id: 'historial',
+            etiqueta: 'Historial por estado',
+            contenido: (
+              <div className="space-y-3">
+                <p className="text-body-sm text-fg-muted">Todos los certificados de avalúo, por estado: no sólo la cola por firmar.</p>
+                <AvaluoRegistros />
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }

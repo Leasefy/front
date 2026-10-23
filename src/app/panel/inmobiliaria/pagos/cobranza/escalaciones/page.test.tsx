@@ -59,6 +59,9 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children: React.ReactNode }) => children,
 }))
 vi.mock('@/lib/hooks/use-auto-refresh', () => ({ useAutoRefresh: () => {} }))
+// Tomar se confirma antes (revisora r25, 1c): la prueba confirma con el mismo flujo.
+const confirmarMock = vi.hoisted(() => vi.fn(async () => true))
+vi.mock('@/components/ui/confirmar', () => ({ confirmar: confirmarMock }))
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { email: 'yo@ejemplo.co' } }) }))
 vi.mock('@/lib/context/PermissionsContext', () => ({
   usePermissionsContext: () => ({ canAccess: () => true }),
@@ -122,6 +125,7 @@ describe('Escalaciones — tomar y asignar avisan cuando no salen', () => {
     })
     await montar()
     await clic('tomar-esc-1')
+    expect(confirmarMock).toHaveBeenCalled()
     expect(toastError).toHaveBeenCalledWith('Otra persona ya tomó esta escalación.')
   })
 

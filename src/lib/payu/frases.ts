@@ -4,7 +4,7 @@
  * pruebas digan lo mismo.
  *
  * 🔴 Con Payu apagado no se inventa nada: se dice que está apagado y quién lo
- * prende, y sólo se cuentan los links que el back dice que salieron.
+ * prende, y sólo se cuentan los enlaces que el back dice que salieron.
  */
 import { formatCurrency } from '@/lib/format'
 import { nombreDelMes } from '@/lib/recaudo/meses'
@@ -15,16 +15,16 @@ export const PAYU_APAGADO = 'Cobri está apagado en el servidor: lo prende Lease
 const cuotas = (n: number) => `${n} ${n === 1 ? 'cuota' : 'cuotas'}`
 
 /**
- * «mandó el link de 40 de 105 cuotas[ de octubre de 2026]; 12 se pagaron por
- * link (…) y quedan … pendientes». El mes va sólo si la frase no lo dijo antes.
+ * «mandó el enlace de 40 de 105 cuotas[ de octubre de 2026]; 12 se pagaron por
+ * enlace (…) y quedan … pendientes». El mes va sólo si la frase no lo dijo antes.
  */
 function loQueMando(r: ResumenDeLinksDePago, deMes: string | null): string {
   const pagados =
     r.pagadosPorLink === 0
-      ? 'ninguna se ha pagado por link todavía'
-      : `${r.pagadosPorLink === 1 ? '1 se pagó' : `${r.pagadosPorLink} se pagaron`} por link (${formatCurrency(r.montoCobradoPorLinkCop)})`
+      ? 'ninguna se ha pagado por enlace todavía'
+      : `${r.pagadosPorLink === 1 ? '1 se pagó' : `${r.pagadosPorLink} se pagaron`} por enlace (${formatCurrency(r.montoCobradoPorLinkCop)})`
   return (
-    `mandó el link de ${r.linksEnviados} de ${cuotas(r.cuotas)}${deMes ? ` de ${deMes}` : ''}; ${pagados}` +
+    `mandó el enlace de ${r.linksEnviados} de ${cuotas(r.cuotas)}${deMes ? ` de ${deMes}` : ''}; ${pagados}` +
     ` y quedan ${formatCurrency(r.pendientesCop)} pendientes.`
   )
 }
@@ -34,7 +34,7 @@ export function fraseDelMesDePayu(r: ResumenDeLinksDePago): string {
 
   if (!r.payuActivo) {
     return r.linksEnviados === 0
-      ? `${PAYU_APAGADO} No ha mandado ningún link de ${mes}.`
+      ? `${PAYU_APAGADO} No ha mandado ningún enlace de ${mes}.`
       : `${PAYU_APAGADO} Mientras estuvo prendido ${loQueMando(r, mes)}`
   }
 
@@ -42,8 +42,27 @@ export function fraseDelMesDePayu(r: ResumenDeLinksDePago): string {
 
   if (r.linksEnviados === 0) {
     const cuales = r.cuotas === 1 ? 'la cuota' : `las ${r.cuotas} cuotas`
-    return `Cobri está prendido y todavía no ha mandado links de ${cuales} de ${mes}: el primer aviso de cada cuota sale 3 días antes de su vencimiento.`
+    return `Cobri está prendido y todavía no ha mandado enlaces de ${cuales} de ${mes}: el primer aviso de cada cuota sale 3 días antes de su vencimiento.`
   }
 
   return `En ${mes} Cobri ${loQueMando(r, null)}`
+}
+
+/**
+ * Revisora r25 (Agente de pagos #2): bajo la cifra «Pagadas por enlace», sólo lo que la cifra NO dice
+ * (cuántos enlaces mandó y lo que queda pendiente); lo pagado y «N de M cuotas» ya están arriba. El
+ * estado (prendido/apagado) lo dice la pastilla de al lado.
+ */
+export function loQueLaCifraDeCobriNoDice(r: ResumenDeLinksDePago): string {
+  const mes = nombreDelMes(r.mes)
+  const enlaces = (n: number) => `${n} ${n === 1 ? 'enlace' : 'enlaces'}`
+  const pendientes = r.pendientesCop > 0 ? `; quedan ${formatCurrency(r.pendientesCop)} pendientes` : ''
+  if (!r.payuActivo) {
+    return r.linksEnviados === 0
+      ? 'Cobri no manda enlaces mientras esté apagado: lo prende Leasefy.'
+      : `Cobri no manda enlaces mientras esté apagado: lo prende Leasefy. Mientras estuvo prendido mandó ${enlaces(r.linksEnviados)}${pendientes}.`
+  }
+  if (r.cuotas === 0) return `Cobri está listo, pero ${mes} no tiene cuotas por cobrar.`
+  if (r.linksEnviados === 0) return 'Cobri todavía no ha mandado enlaces: el primer aviso de cada cuota sale antes de su vencimiento.'
+  return `Cobri mandó ${enlaces(r.linksEnviados)}${pendientes}.`
 }

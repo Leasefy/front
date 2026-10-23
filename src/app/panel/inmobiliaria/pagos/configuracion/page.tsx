@@ -9,7 +9,9 @@
  * Backend serves all 6 agents' autonomia since F6.
  */
 
+import Link from 'next/link'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
@@ -17,19 +19,25 @@ import { useI18n } from '@/lib/i18n'
 
 function PagosConfiguracion() {
   const { t } = useI18n()
-  const { data, isLoading, error } = useAgentAutonomia('pagos')
+  const { data, isLoading, error, refetch } = useAgentAutonomia('pagos')
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
-        </p>
-      </header>
+      {/* GLOW UP 3.ª vuelta · el encabezado común, como el de Conciliación (antes un h1 suelto). */}
+      <div className="space-y-3">
+        <Link href="/panel/inmobiliaria/pagos/agente" className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
+          Agente de pagos
+        </Link>
+        {/* C2 (revisora r25): la vuelta dice «Agente de pagos»; el sobretítulo es la sección del menú. */}
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.nav.secAgentes')}
+          titulo={t('inmobiliaria.ai.workspace.pages.comun.configTitle')}
+          descripcion={t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
+        />
+      </div>
 
-      <AutonomiaPanel data={data} isLoading={isLoading} error={error} />
+      {/* Revisora r25 (#1): el fallo con su «Intentar de nuevo» (antes sin botón). */}
+      <AutonomiaPanel data={data} isLoading={isLoading} error={error} onReintentar={refetch} />
     </div>
   )
 }

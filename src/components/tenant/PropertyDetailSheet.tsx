@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
-import { MapPin, Heart, Camera, Bed, Bathtub, CornersOut, House, ArrowSquareOut, CaretRight, ArrowsOut } from '@phosphor-icons/react';
+import { MapPin, Heart, Camera, Bed, Bathtub, House, ArrowSquareOut, ArrowsOut } from '@phosphor-icons/react';
 
 import {
   RELLENO_DEL_CAJON,
@@ -154,10 +154,10 @@ export function PropertyDetailSheet({
             <div className={`${RELLENO_DEL_CAJON} py-5 space-y-5`}>
               {/* Match Data Section */}
               {matchData && (
-                <div className="flex items-center gap-3 p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex items-center gap-3 p-3 bg-surface-muted border border-border rounded-lg">
                   <div
                     className={cn(
-                      'flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg',
+                      'flex items-center justify-center w-12 h-12 rounded-lg font-bold text-lg',
                       getMatchScoreBgColor(matchData.matchScore),
                       'text-white'
                     )}
@@ -182,7 +182,7 @@ export function PropertyDetailSheet({
                         {getAcceptanceProbabilityLabel(matchData.acceptanceProbability)}
                       </span>
                     </div>
-                    <p className="text-xs text-fg-muted mt-0.5 truncate">
+                    <p className="text-caption text-fg-muted mt-0.5 truncate">
                       {matchData.recommendation}
                     </p>
                   </div>
@@ -198,7 +198,7 @@ export function PropertyDetailSheet({
               </div>
 
               {/* Title */}
-              <h2 className="text-xl font-semibold text-fg leading-tight">
+              <h2 className="text-h3 text-fg leading-tight">
                 {property.title}
               </h2>
 
@@ -228,19 +228,19 @@ export function PropertyDetailSheet({
 
               {/* Stats Grid */}
               <div className="grid grid-cols-4 gap-2">
-                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-lg">
                   <ArrowsOut className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg">
                     {areaConocida(property.area) ? formatArea(property.area) : '—'}
                   </span>
                 </div>
-                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-lg">
                   <Bed className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg">
                     {property.bedrooms != null ? `${property.bedrooms} hab` : '—'}
                   </span>
                 </div>
-                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-lg">
                   <Bathtub className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg">
                     {property.bathrooms != null
@@ -248,7 +248,7 @@ export function PropertyDetailSheet({
                       : '—'}
                   </span>
                 </div>
-                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-lg">
                   <House className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg truncate text-center text-[13px]">
                     {typeLabels[property.type]}
@@ -258,7 +258,7 @@ export function PropertyDetailSheet({
 
               {/* Description */}
               <div>
-                <h3 className="text-sm font-semibold text-fg mb-2">
+                <h3 className="text-sm font-medium text-fg mb-2">
                   Descripción
                 </h3>
                 <p className="text-sm text-fg-muted leading-relaxed">
@@ -276,7 +276,7 @@ export function PropertyDetailSheet({
               {/* Gallery Thumbnails */}
               {property.images.length > 1 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-fg mb-3">
+                  <h3 className="text-sm font-medium text-fg mb-3">
                     Galería
                   </h3>
                   <div className="grid grid-cols-4 gap-2">
@@ -307,20 +307,20 @@ export function PropertyDetailSheet({
               )}
 
               {/* Location Card */}
-              <div className="bg-surface-muted border border-border rounded-xl p-4">
+              <div className="bg-surface-muted border border-border rounded-lg p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 bg-primary-soft rounded-xl">
+                    <div className="flex items-center justify-center w-10 h-10 bg-primary-soft rounded-lg">
                       <MapPin className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-fg">
+                      <h3 className="text-sm font-medium text-fg">
                         Ubicación
                       </h3>
                       <p className="text-sm text-fg-muted mt-0.5">
                         {property.neighborhood}, {property.city}
                       </p>
-                      <p className="text-xs text-fg-subtle mt-0.5">
+                      <p className="text-caption text-fg-subtle mt-0.5">
                         {property.address}
                       </p>
                     </div>
@@ -331,7 +331,7 @@ export function PropertyDetailSheet({
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary transition-colors"
+                    className="flex items-center gap-1 text-caption font-medium text-primary hover:text-primary transition-colors"
                   >
                     Ver en Maps
                     <ArrowSquareOut className="w-3 h-3" />
@@ -396,7 +396,7 @@ export function PropertyDetailSheet({
               */}
               {property.listingType === 'sale' ? (
                 <Button asChild hideArrow>
-                  <Link href={`/propiedades/${property.id}`}>Contactar / agendar visita</Link>
+                  <Link href={`/propiedades/${property.id}`} target="_blank" rel="noopener noreferrer">Contactar / agendar visita</Link>
                 </Button>
               ) : (
                 /* Postulación — el gate enseña el camino si todavía no puede

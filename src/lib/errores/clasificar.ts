@@ -539,7 +539,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
         tipo: 'sinPermiso',
         titulo: 'Tu cuenta no está activa en ninguna inmobiliaria',
         descripcion:
-          'No es un permiso que falte: es la membresía. Si te acaban de invitar, acepta la invitación desde el correo; si trabajabas acá, pídele a un administrador que te reactive.',
+          'No es un permiso que falte: es la membresía. Si te acaban de invitar, acepta la invitación desde el correo; si trabajabas aquí, pídele a un administrador que te reactive.',
         sePuedeReintentar: false,
         status,
         mensajeOriginal,
@@ -757,7 +757,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       tipo: 'servidor',
       titulo: 'Esto todavía no está conectado',
       descripcion:
-        'Falta una pieza de nuestro lado, no algo que puedas resolver desde acá. Escríbenos con la referencia de abajo y lo habilitamos.',
+        'Falta una pieza de nuestro lado, no algo que puedas resolver desde aquí. Escríbenos con la referencia de abajo y lo habilitamos.',
       sePuedeReintentar: false,
       status,
       mensajeOriginal,

@@ -1,9 +1,11 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import { AnimatedNumber, CrossFade, MotionIndicator, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, StaggerItem } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import {
   Bell,
   Check,
@@ -15,7 +17,6 @@ import {
   Calendar,
   House,
   Info,
-  CaretRight,
   Checks,
   BellSlash,
   Warning,
@@ -99,7 +100,7 @@ const formatRelativeTime = (dateString: string, locale: string): string => {
     if (diffHours < 24) return `hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
     if (diffDays < 7) return `hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
     if (diffDays < 30) return `hace ${Math.floor(diffDays / 7)} ${Math.floor(diffDays / 7) === 1 ? 'semana' : 'semanas'}`;
-    return date.toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { day: 'numeric', month: 'short' });
+    return date.toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'short' });
   } else {
     if (diffMins < 1) return 'now';
     if (diffMins < 60) return `${diffMins} min ago`;
@@ -115,25 +116,23 @@ type FilterType = 'all' | 'unread' | 'payment' | 'application' | 'message' | 'do
 // Loading skeleton component
 function NotificationSkeleton() {
   return (
-    <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-surface-muted overflow-hidden divide-y divide-border dark:divide-white/5">
+    <div className="rounded-lg border border-border bg-surface overflow-hidden divide-y divide-border">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="flex items-start gap-4 p-5 animate-pulse">
           {/* Icon skeleton */}
-          <div className="w-11 h-11 rounded-xl bg-surface-muted flex-shrink-0" />
+          <div className="mt-0.5 w-5 h-5 rounded bg-surface-muted flex-shrink-0" />
 
           {/* Content skeleton */}
           <div className="flex-1 min-w-0 space-y-2">
             <div className="h-4 bg-surface-muted rounded-md w-3/4" />
-            <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-1/2" />
+            <div className="h-3 bg-surface-muted rounded-md w-1/2" />
             <div className="flex items-center gap-2 mt-2">
-              <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-16" />
+              <div className="h-3 bg-surface-muted rounded-md w-16" />
               <div className="w-1 h-1 rounded-full bg-surface-muted" />
-              <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-20" />
+              <div className="h-3 bg-surface-muted rounded-md w-20" />
             </div>
           </div>
 
-          {/* Arrow skeleton */}
-          <div className="w-5 h-5 rounded bg-surface-muted dark:bg-ink flex-shrink-0" />
         </div>
       ))}
     </div>
@@ -154,7 +153,6 @@ export default function NotificacionesPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [hideRead, setHideRead] = useState(false);
   // La píldora del filtro activo se desliza al nuevo (antes saltaba).
-  const idDelFiltro = useId();
 
   // 02-10-2026 · Antes, cualquier fallo decía el mismo texto fijo. Ahora por
   // el traductor: un 4xx dice qué pasó, un 5xx que fue nuestro (con la
@@ -168,6 +166,7 @@ export default function NotificacionesPage() {
     deleteNotification(id).catch(notifyError('borrar la notificación'));
 
   const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
+  const hayLeidas = notifications.some((n) => n.read);
   const filteredNotifications = visibleNotifications.filter((n) => {
     if (filter === 'all') return true;
     if (filter === 'unread') return !n.read;
@@ -188,6 +187,8 @@ export default function NotificacionesPage() {
     return TENANT_CATEGORIES[category] || TENANT_CATEGORIES.system;
   };
 
+  const cuantosDe = (c: string) => visibleNotifications.filter((n) => n.category === c).length;
+
   const filters = [
     { id: 'all', label: locale === 'es' ? 'Todas' : 'All' },
     { id: 'unread', label: locale === 'es' ? 'Sin leer' : 'Unread', count: unreadCount },
@@ -199,104 +200,61 @@ export default function NotificacionesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                <Bell className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold text-fg dark:text-white tracking-tight">
-                  {locale === 'es' ? 'Notificaciones' : 'Notifications'}
-                </h1>
-                {/* "Todas leídas" sin una sola notificación afirma que hubo
-                    algo que leer. Sin nada, mejor no decir nada. */}
-                {notifications.length > 0 && (
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
-                    {unreadCount > 0
-                      ? locale === 'es'
-                        ? `${unreadCount} sin leer`
-                        : `${unreadCount} unread`
-                      : locale === 'es'
-                      ? 'Todas leídas'
-                      : 'All read'}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
+    <div className="bg-bg">
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* GLOW UP 21-10: el encabezado común (sin el ícono en caja ni sus colores fijos). */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'}
+          titulo={locale === 'es' ? 'Notificaciones' : 'Notifications'}
+          // Revisora r25: el conteo de sin leer vive en su pestaña (antes también aquí: «5 sin leer» dos veces).
+          descripcion={
+            locale === 'es'
+              ? 'Lo que pasó con tu arriendo, tus pagos y tus postulaciones.'
+              : 'What happened with your rental, your payments and your applications.'
+          }
+          acciones={
+            <>
               {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  hideArrow
-                  onClick={handleMarkAllAsRead}
-                >
+                // Revisora r27 (CF): el mismo botón que el propietario (antes fantasma, corrido 16 px a 390, y «Marcar todo»).
+                <Button variant="outline" size="sm" hideArrow onClick={handleMarkAllAsRead}>
                   <Checks className="w-4 h-4" />
-                  <span className="hidden sm:inline">
-                    {locale === 'es' ? 'Marcar todo' : 'Mark all'}
-                  </span>
+                  <span>{locale === 'es' ? 'Marcar todo como leído' : 'Mark all as read'}</span>
                 </Button>
               )}
               <IconButton
                 variant="ghost"
                 onClick={() => router.push('/inquilino/configuracion')}
-                className="p-2.5 rounded-xl text-fg-subtle dark:text-fg-muted hover:text-fg-muted dark:hover:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface/5"
+                className="p-2.5 rounded-lg text-fg-subtle hover:text-fg-muted hover:bg-surface-muted"
                 aria-label={locale === 'es' ? 'Configuración' : 'Settings'}
                 icon={<Gear className="w-5 h-5" />}
               />
-            </div>
-          </div>
-        </header>
+            </>
+          }
+        />
 
-        {/* Filtros — solo con notificaciones. Seis pestañas para filtrar nada
-            es andamiaje alrededor de un vacío. */}
+        {/* Revisora r25 (una sola pieza con el propietario): los filtros son las pestañas de estado de la casa, con su
+            conteo y DENTRO de la tarjeta de la lista; una categoría sin avisos no aparece. */}
+        <div className="rounded-lg border border-border bg-surface overflow-hidden">
         {notifications.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id as FilterType)}
-                className={cn(
-                  'relative isolate flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
-                  filter === f.id
-                    ? 'text-white dark:text-fg'
-                    : 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface-muted'
-                )}
-              >
-                {/* El fondo oscuro del activo es un `MotionIndicator`: se desliza al filtro nuevo. */}
-                {filter === f.id && (
-                  <MotionIndicator
-                    layoutId={`${idDelFiltro}-filtro`}
-                    className="inset-0 -z-10 rounded-full bg-ink dark:bg-surface"
-                  />
-                )}
-                {f.label}
-                {f.count !== undefined && f.count > 0 && (
-                  <span
-                    className={cn(
-                      'text-xs px-1.5 py-0.5 rounded-full',
-                      filter === f.id
-                        ? 'bg-surface'
-                        : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                    )}
-                  >
-                    <AnimatedNumber value={f.count} />
-                  </span>
-                )}
-              </button>
-            ))}
+          <div className="border-b border-border px-4 py-3 sm:px-5 empty:hidden">
+            <PestanasDeEstado
+              etiqueta={locale === 'es' ? 'Filtrar notificaciones' : 'Filter notifications'}
+              valor={filter}
+              onCambio={(v) => setFilter(v)}
+              // Revisora r27 (§3): si todas están sin leer, «Sin leer» diría el mismo número que «Todas»: no sale.
+              pestanas={filters
+                .filter((f) => !(f.id === 'unread' && unreadCount === visibleNotifications.length && filter !== 'unread'))
+                .map((f) => ({
+                valor: f.id as FilterType,
+                etiqueta: f.label,
+                cuantos: f.id === 'all' ? visibleNotifications.length : f.id === 'unread' ? unreadCount : cuantosDe(f.id),
+                fija: f.id === 'all',
+                tono: f.id === 'unread' ? ('aviso' as const) : undefined,
+              }))}
+            />
           </div>
-        </div>
         )}
-
-        {/* Notifications List — cargando → lista, cambiar de filtro o quedar
-            vacío cruzan el contenido; dentro de un mismo filtro, marcar o
-            borrar saca la fila y las demás se corren. */}
         <CrossFade
           swapKey={
             isLoading
@@ -330,11 +288,11 @@ export default function NotificacionesPage() {
                       ? 'Cuando haya actividad en tus postulaciones o arriendos, te notificaremos aquí.'
                       : 'When there is activity on your applications or leases, we will notify you here.'
                   }
-                  className="rounded-xl border-border dark:border-white/10 bg-surface dark:bg-surface-muted"
+                  className="rounded-lg border-border bg-surface"
                 />
               </div>
             ) : (
-              <div className="relative rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-surface-muted overflow-hidden divide-y divide-border dark:divide-white/5">
+              <div className="relative divide-y divide-border">
                 <AnimatePresence initial={false} mode="popLayout">
                 {filteredNotifications.map((notification) => {
                   const IconComponent = getNotificationIcon(notification.type);
@@ -345,28 +303,16 @@ export default function NotificacionesPage() {
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
                       className={cn(
-                        'flex items-start gap-4 p-5 cursor-pointer group transition-colors',
-                        !notification.read
-                          ? 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/30'
-                          : 'hover:bg-surface-muted dark:hover:bg-surface/5'
+                        'flex items-start gap-4 p-5 cursor-pointer group transition-colors hover:bg-surface-muted'
                       )}
                     >
-                      {/* Icon */}
-                      <div
-                        className={cn(
-                          'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105',
-                          !notification.read
-                            ? 'bg-[#1A40FF] dark:bg-[#5570FF]'
-                            : cn(categoryConfig.bgColor, categoryConfig.darkBgColor)
+                      {/* El ícono suelto (antes, en una caja de color: azul si no estaba leída) y, si no está
+                          leída, su punto: la única marca. */}
+                      <div className="relative mt-0.5 flex-shrink-0">
+                        <IconComponent className="w-5 h-5 text-fg-muted" aria-hidden="true" />
+                        {!notification.read && (
+                          <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
                         )}
-                      >
-                        <IconComponent
-                          className={cn(
-                            'w-5 h-5',
-                            !notification.read ? 'text-white' : categoryConfig.color
-                          )}
-                          weight={!notification.read ? 'fill' : 'regular'}
-                        />
                       </div>
 
                       {/* Content */}
@@ -375,32 +321,28 @@ export default function NotificacionesPage() {
                           className={cn(
                             'text-sm leading-relaxed',
                             !notification.read
-                              ? 'text-fg dark:text-white font-semibold'
-                              : 'text-fg dark:text-fg-subtle'
+                              ? 'text-fg font-medium'
+                              : 'text-fg'
                           )}
                         >
                           {notification.title}
                         </p>
-                        <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5 line-clamp-1">
+                        <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 sm:line-clamp-1">
                           {notification.message}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-fg-subtle dark:text-fg-muted">
+                          <span className="text-caption text-fg-subtle">
                             {formatRelativeTime(notification.createdAt, locale)}
                           </span>
-                          <span className="w-1 h-1 rounded-full bg-surface-muted" />
-                          <span
-                            className={cn('text-xs font-medium', categoryConfig.color)}
-                          >
-                            {categoryConfig.label}
-                          </span>
-                          {!notification.read && (
+                          {/* Revisora r25: «Sistema» en cada fila no informa; la categoría sólo cuando dice algo. */}
+                          {notification.category !== 'system' && (
                             <>
                               <span className="w-1 h-1 rounded-full bg-surface-muted" />
-                              <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
-                                {locale === 'es' ? 'Nueva' : 'New'}
-                              </span>
+                              <span className="text-caption text-fg-subtle">{categoryConfig.label}</span>
                             </>
+                          )}
+                          {!notification.read && (
+                            <span className="sr-only">{locale === 'es' ? 'Nueva' : 'New'}</span>
                           )}
                         </div>
                       </div>
@@ -408,11 +350,11 @@ export default function NotificacionesPage() {
                       {/* Action Button */}
                       {notification.actionLabel && (
                         <div
-                          className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
                             hideArrow
                             onClick={() => {
@@ -421,24 +363,22 @@ export default function NotificacionesPage() {
                                 router.push(notification.actionUrl);
                               }
                             }}
-                            className="px-3 py-1.5 text-xs text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
                           >
                             {notification.actionLabel}
-                            <ArrowRight className="w-3 h-3" />
                           </Button>
                         </div>
                       )}
 
                       {/* Quick Actions */}
                       <div
-                        className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="flex items-center gap-1 flex-shrink-0 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {!notification.read && (
                           <IconButton
                             variant="ghost"
                             onClick={() => handleMarkAsRead(notification.id)}
-                            className="p-2 rounded-md text-fg-subtle hover:text-[#2C7A53] dark:hover:text-[#2C7A53] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/30"
+                            className="p-2 rounded-md text-fg-subtle hover:text-success hover:bg-success-soft"
                             title={
                               locale === 'es' ? 'Marcar como leído' : 'Mark as read'
                             }
@@ -451,17 +391,13 @@ export default function NotificacionesPage() {
                         <IconButton
                           variant="ghost"
                           onClick={() => handleDeleteNotification(notification.id)}
-                          className="p-2 rounded-md text-fg-subtle hover:text-[#C4503B] dark:hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30"
+                          className="p-2 rounded-md text-fg-subtle hover:text-danger hover:bg-danger-soft"
                           title={locale === 'es' ? 'Eliminar' : 'Delete'}
                           aria-label={locale === 'es' ? 'Eliminar' : 'Delete'}
                           icon={<TrashSimple className="w-4 h-4" />}
                         />
                       </div>
 
-                      {/* Arrow */}
-                      <div className="flex items-center flex-shrink-0">
-                        <CaretRight className="w-5 h-5 text-fg-subtle dark:text-fg-muted group-hover:text-fg-subtle dark:group-hover:text-fg-muted transition-colors" />
-                      </div>
                     </StaggerItem>
                   );
                 })}
@@ -469,28 +405,33 @@ export default function NotificacionesPage() {
               </div>
             )}
         </CrossFade>
+        </div>
 
-        {/* Summary Card */}
-        {notifications.length > 0 && (
-          <div className="mt-6 p-4 rounded-xl bg-surface-muted border border-border-faint dark:border-white/5">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-fg-muted dark:text-fg-subtle">
-                {locale === 'es'
+        {/* El pie en una línea (antes, una caja). «Limpiar leídas» sólo las escondía y no había cómo volver a
+            verlas: ahora se ocultan y se muestran. */}
+        {/* Revisora r27 (§3): «Mostrando N de M» sólo cuando se ve una parte; «Ocultar las leídas» sólo si hay leídas. */}
+        {notifications.length > 0 && (filteredNotifications.length < notifications.length || hayLeidas || hideRead) && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-caption text-fg-muted" data-testid="pie-de-notificaciones">
+            <span>
+              {filteredNotifications.length < notifications.length
+                ? locale === 'es'
                   ? `Mostrando ${filteredNotifications.length} de ${notifications.length} notificaciones`
-                  : `Showing ${filteredNotifications.length} of ${notifications.length} notifications`}
-              </span>
-              {notifications.length > 0 && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  hideArrow
-                  onClick={() => setHideRead(true)}
-                  className="text-fg-muted hover:text-fg dark:hover:text-fg-subtle"
-                >
-                  {locale === 'es' ? 'Limpiar leídas' : 'Clear read'}
-                </Button>
-              )}
-            </div>
+                  : `Showing ${filteredNotifications.length} of ${notifications.length} notifications`
+                : null}
+            </span>
+            {hayLeidas || hideRead ? (
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
+              onClick={() => setHideRead((v) => !v)}
+              className="text-fg-muted hover:text-fg"
+            >
+              {hideRead
+                ? locale === 'es' ? 'Mostrar las leídas' : 'Show read'
+                : locale === 'es' ? 'Ocultar las leídas' : 'Hide read'}
+            </Button>
+            ) : null}
           </div>
         )}
       </div>

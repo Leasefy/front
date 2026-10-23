@@ -9,12 +9,12 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
-import { Eyebrow } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { MigrarTerceros } from '@/components/migracion/MigrarTerceros';
 import { useI18n } from '@/lib/i18n';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { BackButton } from '@/components/ui/back-button';
 
 export default function MigrarTercerosPage() {
   /*
@@ -48,22 +48,18 @@ function ContenidoDeTerceros() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1">
-        {/* La página «Migración» ya no existe (el muro es la migración):
-            se vuelve a la sección de la que se entra. */}
-        <Link
+      {/* La página «Migración» ya no existe (el muro es la migración): se vuelve a la sección de la que se entra. */}
+      <div className="space-y-3">
+        <BackButton
           href={tipoInicial === 'INQUILINO' ? '/panel/inmobiliaria/inquilinos' : '/panel/inmobiliaria/propietarios'}
-          className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {tipoInicial === 'INQUILINO' ? t('inquilinos.titulo') : t('inmobiliaria.nav.propietarios')}
-        </Link>
-        <Eyebrow>{t('migracion.eyebrow')}</Eyebrow>
-        <h1 className="text-h2 text-fg">
-          {t('migracion.terceros.titulo')}
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t('migracion.terceros.subtitulo')}</p>
-      </header>
+          label={tipoInicial === 'INQUILINO' ? t('inquilinos.titulo') : t('inmobiliaria.nav.propietarios')}
+        />
+        <EncabezadoDePantalla
+          seccion={t('migracion.eyebrow')}
+          titulo={t('migracion.terceros.titulo')}
+          descripcion={t('migracion.terceros.subtitulo')}
+        />
+      </div>
 
       {/* `key`: si cambia el `?tipo=` de la URL, la pantalla arranca limpia (misma razón que en el muro). */}
       <MigrarTerceros key={tipoInicial} tipoInicial={tipoInicial} />

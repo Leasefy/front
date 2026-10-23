@@ -23,12 +23,12 @@ import { CostKpiStrip } from '@/components/inmobiliaria/cotizador/CostKpiStrip'
 import { CostSourcePieChart } from '@/components/inmobiliaria/cotizador/CostSourcePieChart'
 import { MonthlyCostTrendChart } from '@/components/inmobiliaria/cotizador/MonthlyCostTrendChart'
 import { Badge } from '@/components/ui/badge'
-import { SectionLabel } from '@/components/ui/section-label'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { CrossFade } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const COLUMNAS = 3
 
@@ -95,15 +95,11 @@ export default function CostosPage() {
     <CrossFade swapKey="costos">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
-      <header className="space-y-1.5">
-        <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cotizador.costos.pageTitle')}
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-          {t('inmobiliaria.ai.cotizador.costos.pageSubtitle')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t('inmobiliaria.ai.cotizador.costos.pageTitle')}
+        descripcion={t('inmobiliaria.ai.cotizador.costos.pageSubtitle')}
+      />
 
       {/* El fallo va ACÁ ARRIBA y reemplaza los datos, no debajo de ellos.
           Estaba al final de la página: se veían los KPI en cero, la tabla
@@ -127,7 +123,7 @@ export default function CostosPage() {
       {/* Main charts row: pie (left) + trend line (right) — side-by-side on md+ (D-35-09 / XR-03) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <section className="rounded-lg border border-border bg-surface p-5">
-          <h2 className="text-base font-semibold text-fg mb-4">
+          <h2 className="text-base font-medium text-fg mb-4">
             {t('inmobiliaria.ai.cotizador.costos.charts.costSourcePie.title')}
           </h2>
           <CostSourcePieChart
@@ -138,7 +134,7 @@ export default function CostosPage() {
         </section>
 
         <section className="rounded-lg border border-border bg-surface p-5">
-          <h2 className="text-base font-semibold text-fg mb-4">
+          <h2 className="text-base font-medium text-fg mb-4">
             {t('inmobiliaria.ai.cotizador.costos.charts.monthlyCostTrend.title')}
           </h2>
           <MonthlyCostTrendChart
@@ -157,7 +153,7 @@ export default function CostosPage() {
           vacío viven dentro del cuerpo, con la cabecera siempre a la vista. */}
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
         <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cotizador.costos.sourceBreakdownTitle')}
           </h2>
         </div>
@@ -185,7 +181,7 @@ export default function CostosPage() {
                     queSon="fuentes de costo"
                     icono={Coins}
                     titulo={t('inmobiliaria.ai.cotizador.costos.noCostSources')}
-                    descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el gasto aparece acá por fuente."
+                    descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el gasto aparece aquí por fuente."
                   />
                 </TableCell>
               </TableRow>

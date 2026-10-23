@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useId, useRef } from 'react';
 import { VERSION_POLITICA_DE_TRATAMIENTO } from '@/lib/legal/versiones';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedNumber, CrossFade, MotionIndicator, Presence, StaggerItem } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, MotionIndicator, Presence, StaggerItem, StatusBadge } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck, XCircle, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
@@ -13,9 +13,12 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { VistasDeLaPestana, VISTAS_DE_CONTRATO_Y_DOCUMENTOS } from '@/components/portales/VistasDeLaPestana';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -169,7 +172,8 @@ export default function DocumentosPage() {
       || (DOC_TYPE_CONFIG[doc.type]?.label ?? '').toLowerCase().includes(query);
     const matchesType = selectedType === 'all' || doc.type === selectedType;
     return matchesSearch && matchesType;
-  });
+    // Lo rechazado primero: es lo único que pide algo (el orden de lo demás no cambia).
+  }).sort((a, b) => Number(b.reviewStatus === 'REJECTED') - Number(a.reviewStatus === 'REJECTED'));
 
   // Pagination
   const totalPages = Math.ceil(filteredDocuments.length / ITEMS_PER_PAGE);
@@ -320,7 +324,7 @@ export default function DocumentosPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -347,539 +351,509 @@ export default function DocumentosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="documents" />
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
-            {t('documents.title')}
-          </h1>
-          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
-            {t('documents.subtitle')}
-          </p>
-        </header>
+  /*
+   * GLOW UP (22-10): el orden lo pone lo que la persona tiene. Con arriendo, el contrato y los recibos primero;
+   * postulándose, lo que subió primero. Sin nada todavía, UNA salida (antes, tres vacíos seguidos: el del
+   * arriendo, el de los certificados y el de las postulaciones).
+   */
+  const sinNada = !hasLeaseDocs && documents.length === 0;
+  const hayFiltro = searchQuery.trim() !== '' || selectedType !== 'all';
+  const enRevision = reviewCounts.inReview + reviewCounts.pending;
+  const rechazados = reviewCounts.rejected;
 
-        {/* Documentos del arriendo (contrato firmado + recibos) */}
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-fg dark:text-white">
-              {locale === 'es' ? 'Documentos del arriendo' : 'Lease documents'}
-            </h2>
-          </div>
-
-          {hasLeaseDocs ? (
-            <div className="space-y-6">
-              {/* Contrato firmado — descarga vía signed URL (DownloadContractPdfButton) */}
-              {signedContracts.length > 0 && (
-                <div>
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">
-                    {getDocLabel('CONTRATO')}
-                  </p>
-                  {/* Statutory retention: the signed contract is a legal record. It is a Contract
-                      (not a DocumentItem) so it has no delete affordance by construction — this note
-                      makes the exclusion explicit, not accidental. */}
-                  <p className="text-xs text-fg-muted dark:text-fg-subtle mb-3 flex items-center gap-1.5">
-                    <Lock className="w-3 h-3 flex-shrink-0" />
-                    {locale === 'es'
-                      ? 'Documento legal — no eliminable (retención legal).'
-                      : 'Legal document — cannot be deleted (statutory retention).'}
-                  </p>
-                  <div className="space-y-2">
-                    {signedContracts.map((c) => {
-                      const ContratoIcon = getDocIcon('CONTRATO');
-                      const subline = [c.propertyAddress, c.propertyCity].filter(Boolean).join(', ');
-                      return (
-                        <div
-                          key={c.id}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-                            <ContratoIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-fg dark:text-white">
-                              {getDocLabel('CONTRATO')}
-                            </p>
-                            {subline && (
-                              <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
-                                {subline}
-                              </p>
-                            )}
-                          </div>
-                          <DownloadContractPdfButton
-                            contractId={c.id}
-                            contractStatus={c.status}
-                            variant="secondary"
-                            label={locale === 'es' ? 'Descargar contrato' : 'Download lease'}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Recibos de caja (QA-INQ-95): los que la inmobiliaria emitió de verdad, con su PDF.
-                  `recibos === null` = un back sin la ruta: la sección no se pinta. */}
-              {(Boolean(recibosError) || (recibos?.length ?? 0) > 0) && (
-                <RecibosDeCaja recibos={recibos ?? []} error={recibosError} onReintentar={() => recargarRecibos()} />
-              )}
-            </div>
-          ) : (
-            <div className="rounded-xl bg-surface-muted p-10 text-center">
-              <div className="w-14 h-14 rounded-full bg-surface dark:bg-border flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-7 h-7 text-fg-subtle" />
-              </div>
-              <h3 className="font-semibold text-fg dark:text-white mb-2">
-                {locale === 'es' ? 'Aún no tienes documentos del arriendo' : 'No lease documents yet'}
-              </h3>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle max-w-sm mx-auto">
-                {locale === 'es'
-                  ? 'Cuando tu contrato quede firmado y registres pagos, aparecerán aquí.'
-                  : 'Once your lease is signed and payments are recorded, they will appear here.'}
-              </p>
-            </div>
-          )}
-        </section>
-
-        {/* 🔴 Paz y salvo (DOCU-02) — hasta el 21-09-2026 esto eran DOS tarjetas
-            diciendo «Próximamente» sobre endpoints que no existían. Ya existen
-            (`portal/certificados` en el back), así que la pantalla emite de
-            verdad y `MisCertificados` dice, contrato por contrato, cuál
-            corresponde y por qué no se puede cuando no se puede.
-
-            La tarjeta del certificado de retención del 3.5 % se quitó, y no es
-            un olvido: en Colombia la retención sobre el canon la practica el
-            INQUILINO cuando es agente de retención, y el certificado se lo
-            entrega al PROPIETARIO. O sea que el documento no es del inquilino:
-            ya existe, del otro lado, en `GET /portal/certificados-de-retencion`
-            y en el portal del propietario. Lo que sí falta —que un inquilino
-            agente de retención pueda EMITIR el suyo— es una pieza aparte y no
-            se disfraza de «próximamente» acá. */}
-        <section className="mb-8">
-          <MisCertificados />
-        </section>
-
-        {/* Stats Grid — solo con documentos. Cuatro contadores en cero no
-            resumen nada y ocupan justo el lugar del único mensaje útil.
-            Borrar un documento hace contar las cifras desde la anterior. */}
-        {documents.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          {/* Total */}
-          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <FolderOpen className="w-5 h-5 text-primary" />
-            </div>
-            <p className="text-sm text-primary mb-1">Total</p>
-            <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
-              <AnimatedNumber value={reviewCounts.total} />
+  const documentosDelArriendo = hasLeaseDocs ? (
+    <section className="mb-8" data-testid="documentos-del-arriendo">
+      <h2 className="text-h3 text-fg mb-4">
+        {locale === 'es' ? 'Documentos del arriendo' : 'Lease documents'}
+      </h2>
+      <div className="space-y-6">
+        {/* Contrato firmado — descarga vía signed URL (DownloadContractPdfButton) */}
+        {signedContracts.length > 0 && (
+          <div>
+            <p className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle mb-1">
+              {getDocLabel('CONTRATO')}
             </p>
-            <p className="text-sm text-fg-muted mt-2">{t('nav.documents')}</p>
-          </div>
-
-          {/* Approved */}
-          <div className="rounded-xl bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <CheckCircle className="w-5 h-5 text-success" />
-            </div>
-            <p className="text-sm text-fg-muted mb-1">
-              {locale === 'es' ? 'Aprobados' : 'Approved'}
+            {/* Statutory retention: the signed contract is a legal record. It is a Contract
+                (not a DocumentItem) so it has no delete affordance by construction — this note
+                makes the exclusion explicit, not accidental. */}
+            <p className="text-caption text-fg-muted mb-3 flex items-center gap-1.5">
+              <Lock className="w-3 h-3 flex-shrink-0" />
+              {locale === 'es'
+                ? 'Documento legal — no eliminable (retención legal).'
+                : 'Legal document — cannot be deleted (statutory retention).'}
             </p>
-            <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
-              <AnimatedNumber value={reviewCounts.approved} />
-            </p>
-            <p className="text-sm text-fg-muted mt-2">
-              {locale === 'es' ? 'Verificados' : 'Verified'}
-            </p>
-          </div>
-
-          {/* In review */}
-          <div className="rounded-xl bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <Clock className="w-5 h-5 text-warning" />
-            </div>
-            <p className="text-sm text-fg-muted mb-1">
-              {locale === 'es' ? 'En revisión' : 'Under review'}
-            </p>
-            <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
-              <AnimatedNumber value={reviewCounts.inReview + reviewCounts.pending} />
-            </p>
-            <p className="text-sm text-fg-muted mt-2">
-              {locale === 'es' ? 'Pendientes' : 'Pending'}
-            </p>
-          </div>
-
-          {/* Rejected */}
-          <div className="rounded-xl bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <XCircle className="w-5 h-5 text-danger" />
-            </div>
-            <p className="text-sm text-fg-muted mb-1">
-              {locale === 'es' ? 'Rechazados' : 'Rejected'}
-            </p>
-            <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
-              <AnimatedNumber value={reviewCounts.rejected} />
-            </p>
-            <p className="text-sm text-fg-muted mt-2">
-              {locale === 'es' ? 'Requieren acción' : 'Need action'}
-            </p>
-          </div>
-        </div>
-        )}
-
-        {/* Filtros — sin documentos no hay nada que buscar ni que filtrar. */}
-        {documents.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          {/* Search */}
-          <div className="relative flex-1">
-            <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
-            <Input
-              type="text"
-              placeholder={locale === 'es' ? 'Buscar documento...' : 'Search document...'}
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              aria-label={locale === 'es' ? 'Buscar documento' : 'Search document'}
-              className="w-full pl-12 pr-4 rounded-full bg-surface dark:bg-surface-muted"
-            />
-          </div>
-
-          {/* Type Filter Pills */}
-          {filterCategories.length > 1 && (
-            <div className="flex items-center gap-1 p-1 bg-surface-muted rounded-full w-fit overflow-x-auto">
-              {filterCategories.map((cat) => {
-                const IconComponent = cat.icon;
+            <div className="space-y-2">
+              {signedContracts.map((c) => {
+                const ContratoIcon = getDocIcon('CONTRATO');
+                const subline = [c.propertyAddress, c.propertyCity].filter(Boolean).join(', ');
                 return (
-                  <button
-                    key={cat.value}
-                    onClick={() => handleFilterChange(cat.value)}
-                    className={cn(
-                      'relative isolate flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
-                      selectedType === cat.value
-                        ? 'text-fg dark:text-white'
-                        : 'text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-fg-subtle'
-                    )}
+                  <div
+                    key={c.id}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface"
                   >
-                    {/* El fondo del activo es un `MotionIndicator`: se desliza al tipo nuevo. */}
-                    {selectedType === cat.value && (
-                      <MotionIndicator
-                        layoutId={`${idDelFiltro}-tipo`}
-                        className="inset-0 -z-10 rounded-full bg-surface dark:bg-border"
-                      />
-                    )}
-                    <IconComponent className="w-4 h-4" />
-                    <span className="hidden sm:inline">{cat.label}</span>
-                  </button>
+                    <ContratoIcon className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-fg">
+                        {getDocLabel('CONTRATO')}
+                      </p>
+                      {subline && (
+                        <p className="text-caption text-fg-muted truncate">
+                          {subline}
+                        </p>
+                      )}
+                    </div>
+                    <DownloadContractPdfButton
+                      contractId={c.id}
+                      contractStatus={c.status}
+                      variant="secondary"
+                      label={locale === 'es' ? 'Descargar contrato' : 'Download lease'}
+                    />
+                  </div>
                 );
               })}
             </div>
-          )}
-        </div>
+          </div>
         )}
 
-        {/* Habeas Data (Ley 1581) — per-purpose consent gate. Blocks doc access until the
-            mandatory purpose is granted. Avalúo model: separate booleans, unchecked default,
-            one purpose each, Ley 1581 notice. Shown only when there are documents to access. */}
-        {documents.length > 0 && (
-          <section className="mb-6">
-            <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-                  <ShieldCheck className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-fg dark:text-white">
-                    {locale === 'es' ? 'Consentimiento de datos personales' : 'Personal data consent'}
-                  </h2>
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                    {locale === 'es'
-                      ? 'Autoriza el tratamiento de tus documentos del arriendo para poder consultarlos y descargarlos.'
-                      : 'Authorize the processing of your lease documents so you can view and download them.'}
-                  </p>
-                </div>
-              </div>
+        {/* Recibos de caja (QA-INQ-95): los que la inmobiliaria emitió de verdad, con su PDF.
+            `recibos === null` = un back sin la ruta: la sección no se pinta. */}
+        {(Boolean(recibosError) || (recibos?.length ?? 0) > 0) && (
+          <RecibosDeCaja recibos={recibos ?? []} error={recibosError} onReintentar={() => recargarRecibos()} />
+        )}
+      </div>
+    </section>
+  ) : null;
 
-              {/* Consent 1 — purposeDocAccess (MANDATORY): gates doc access */}
-              <div className="space-y-1">
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id="consent-doc-access"
-                    checked={consent.purposeDocAccess}
-                    onCheckedChange={(v) => setConsent((c) => ({ ...c, purposeDocAccess: v === true }))}
-                    aria-required="true"
-                    aria-describedby="consent-doc-access-desc"
-                  />
-                  <label
-                    htmlFor="consent-doc-access"
-                    className="text-sm text-fg dark:text-white leading-snug cursor-pointer"
-                  >
-                    {locale === 'es'
-                      ? 'Autorizo a Leasefy a tratar mis documentos del arriendo para que pueda consultarlos y descargarlos.'
-                      : 'I authorize Leasefy to process my lease documents so I can view and download them.'}
-                  </label>
-                </div>
-                <p id="consent-doc-access-desc" className="text-xs text-fg-muted dark:text-fg-subtle pl-7">
-                  {locale === 'es' ? 'Necesario para acceder a tus documentos.' : 'Required to access your documents.'}
+  /* 🔴 Paz y salvo (DOCU-02) — hasta el 21-09-2026 esto eran DOS tarjetas
+      diciendo «Próximamente» sobre endpoints que no existían. Ya existen
+      (`portal/certificados` en el back), así que la pantalla emite de
+      verdad y `MisCertificados` dice, contrato por contrato, cuál
+      corresponde y por qué no se puede cuando no se puede.
+
+      La tarjeta del certificado de retención del 3.5 % se quitó, y no es
+      un olvido: en Colombia la retención sobre el canon la practica el
+      INQUILINO cuando es agente de retención, y el certificado se lo
+      entrega al PROPIETARIO. O sea que el documento no es del inquilino:
+      ya existe, del otro lado, en `GET /portal/certificados-de-retencion`
+      y en el portal del propietario. Lo que sí falta —que un inquilino
+      agente de retención pueda EMITIR el suyo— es una pieza aparte y no
+      se disfraza de «próximamente» aquí. */
+  const certificados = <MisCertificados ocultarSiVacio className="mb-8" />;
+
+  const documentosDePostulaciones = documents.length > 0 ? (
+    <section className="mb-8" data-testid="documentos-de-postulaciones">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="text-h3 text-fg">
+          {locale === 'es' ? 'Documentos de tus postulaciones' : 'Your application documents'}
+        </h2>
+        {/* El conteo sólo al buscar o filtrar: sin filtro lo dice la cifra de abajo. */}
+        {hayFiltro && (
+          <span className="text-caption text-fg-muted">
+            <AnimatedNumber value={filteredDocuments.length} /> {locale === 'es'
+              ? (filteredDocuments.length !== 1 ? 'documentos' : 'documento')
+              : (filteredDocuments.length !== 1 ? 'documents' : 'document')}
+          </span>
+        )}
+      </div>
+
+      {/* LA RESPUESTA: cuánto de lo que subiste ya está aprobado (antes, cuatro cifras del mismo peso). */}
+      <CifraHeroe
+        tamano="mediana"
+        className="mb-6"
+        data-testid="cifras-de-documentos"
+        rotulo={locale === 'es' ? 'Aprobados' : 'Approved'}
+        cifra={String(reviewCounts.approved)}
+        contexto={
+          locale === 'es'
+            ? `de ${reviewCounts.total} ${reviewCounts.total === 1 ? 'documento que subiste' : 'documentos que subiste'}`
+            : `of ${reviewCounts.total} ${reviewCounts.total === 1 ? 'document you uploaded' : 'documents you uploaded'}`
+        }
+        tramos={[
+          { clave: 'aprobados', etiqueta: locale === 'es' ? 'Aprobados' : 'Approved', monto: reviewCounts.approved, tono: 'exito', cifra: String(reviewCounts.approved) },
+          { clave: 'en-revision', etiqueta: locale === 'es' ? 'En revisión' : 'Under review', monto: enRevision, tono: 'neutro', cifra: String(enRevision) },
+          { clave: 'rechazados', etiqueta: locale === 'es' ? 'Rechazados' : 'Rejected', monto: rechazados, tono: 'critico', cifra: String(rechazados) },
+        ]}
+        pie={
+          rechazados > 0
+            ? locale === 'es'
+              ? rechazados === 1
+                ? 'El rechazado va primero en la lista, con su motivo.'
+                : `Los ${rechazados} rechazados van primero en la lista, cada uno con su motivo.`
+              : 'Rejected documents go first in the list, each with its reason.'
+            : undefined
+        }
+      />
+
+      {/* Habeas Data (Ley 1581) — per-purpose consent gate. Blocks doc access until the
+          mandatory purpose is granted. Avalúo model: separate booleans, unchecked default,
+          one purpose each, Ley 1581 notice. Shown only when there are documents to access. */}
+        <section className="mb-6">
+          <div className="rounded-lg border border-border bg-surface p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <ShieldCheck className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
+              <div>
+                <h2 className="text-h3 text-fg">
+                  {locale === 'es' ? 'Consentimiento de datos personales' : 'Personal data consent'}
+                </h2>
+                <p className="text-sm text-fg-muted">
+                  {locale === 'es'
+                    ? 'Autoriza el tratamiento de tus documentos del arriendo para poder consultarlos y descargarlos.'
+                    : 'Authorize the processing of your lease documents so you can view and download them.'}
                 </p>
-                {/* Al aceptar, el aviso sale; al quitar el visto, vuelve a entrar. */}
-                <Presence
-                  as="p"
-                  show={!consent.purposeDocAccess}
-                  initial={false}
-                  distance="xs"
-                  className="text-xs text-warning pl-7"
-                >
-                    {locale === 'es'
-                      ? 'Debes aceptar este consentimiento para ver o descargar tus documentos.'
-                      : 'You must accept this consent to view or download your documents.'}
-                </Presence>
               </div>
+            </div>
 
-              {/* Consent 2 — purposeThirdPartyShare (OPTIONAL) */}
-              <div className="flex items-start gap-3 mt-4">
+            {/* Consent 1 — purposeDocAccess (MANDATORY): gates doc access */}
+            <div className="space-y-1">
+              <div className="flex items-start gap-3">
                 <Checkbox
-                  id="consent-third-party"
-                  checked={consent.purposeThirdPartyShare}
-                  onCheckedChange={(v) => setConsent((c) => ({ ...c, purposeThirdPartyShare: v === true }))}
+                  id="consent-doc-access"
+                  checked={consent.purposeDocAccess}
+                  onCheckedChange={(v) => setConsent((c) => ({ ...c, purposeDocAccess: v === true }))}
+                  aria-required="true"
+                  aria-describedby="consent-doc-access-desc"
                 />
                 <label
-                  htmlFor="consent-third-party"
-                  className="text-sm text-fg dark:text-white leading-snug cursor-pointer"
+                  htmlFor="consent-doc-access"
+                  className="text-sm text-fg leading-snug cursor-pointer"
                 >
                   {locale === 'es'
-                    ? 'Autorizo compartir mis certificados (paz y salvo / retención) con terceros que yo designe. (Opcional)'
-                    : 'I authorize sharing my certificates (paz y salvo / retention) with third parties I designate. (Optional)'}
+                    ? 'Autorizo a Leasefy a tratar mis documentos del arriendo para que pueda consultarlos y descargarlos.'
+                    : 'I authorize Leasefy to process my lease documents so I can view and download them.'}
                 </label>
               </div>
-
-              {/* Ley 1581 policy notice */}
-              <p className="text-xs text-fg-muted dark:text-fg-subtle leading-relaxed mt-4">
-                {locale === 'es'
-                  ? 'Tus datos son tratados conforme a la Ley 1581 de 2012 (Habeas Data) y la política de privacidad de Leasefy.'
-                  : 'Your data is processed in accordance with Law 1581 of 2012 (Habeas Data) and Leasefy’s privacy policy.'}
+              <p id="consent-doc-access-desc" className="text-caption text-fg-muted pl-7">
+                {locale === 'es' ? 'Necesario para acceder a tus documentos.' : 'Required to access your documents.'}
               </p>
+              {/* Al aceptar, el aviso sale; al quitar el visto, vuelve a entrar. */}
+              <Presence
+                as="p"
+                show={!consent.purposeDocAccess}
+                initial={false}
+                distance="xs"
+                className="text-caption text-warning pl-7"
+              >
+                  {locale === 'es'
+                    ? 'Debes aceptar este consentimiento para ver o descargar tus documentos.'
+                    : 'You must accept this consent to view or download your documents.'}
+              </Presence>
             </div>
-          </section>
+
+            {/* Consent 2 — purposeThirdPartyShare (OPTIONAL) */}
+            <div className="flex items-start gap-3 mt-4">
+              <Checkbox
+                id="consent-third-party"
+                checked={consent.purposeThirdPartyShare}
+                onCheckedChange={(v) => setConsent((c) => ({ ...c, purposeThirdPartyShare: v === true }))}
+              />
+              <label
+                htmlFor="consent-third-party"
+                className="text-sm text-fg leading-snug cursor-pointer"
+              >
+                {locale === 'es'
+                  ? 'Autorizo compartir mis certificados (paz y salvo / retención) con terceros que yo designe. (Opcional)'
+                  : 'I authorize sharing my certificates (paz y salvo / retention) with third parties I designate. (Optional)'}
+              </label>
+            </div>
+
+            {/* Ley 1581 policy notice */}
+            <p className="text-caption text-fg-muted leading-relaxed mt-4">
+              {locale === 'es'
+                ? 'Tus datos son tratados conforme a la Ley 1581 de 2012 (Habeas Data) y la política de privacidad de Leasefy.'
+                : 'Your data is processed in accordance with Law 1581 of 2012 (Habeas Data) and Leasefy’s privacy policy.'}
+            </p>
+          </div>
+        </section>
+
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        {/* Search */}
+        <div className="relative flex-1">
+          <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
+          <Input
+            type="text"
+            placeholder={locale === 'es' ? 'Buscar documento...' : 'Search document...'}
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            aria-label={locale === 'es' ? 'Buscar documento' : 'Search document'}
+            className="w-full pl-12 pr-4 rounded-full bg-surface"
+          />
+        </div>
+
+        {/* Type Filter Pills */}
+        {filterCategories.length > 1 && (
+          <div className="flex items-center gap-1 p-1 bg-surface-muted rounded-full w-fit overflow-x-auto">
+            {filterCategories.map((cat) => {
+              const IconComponent = cat.icon;
+              return (
+                <button
+                  key={cat.value}
+                  onClick={() => handleFilterChange(cat.value)}
+                  className={cn(
+                    'relative isolate flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
+                    selectedType === cat.value
+                      ? 'text-fg'
+                      : 'text-fg-muted hover:text-fg'
+                  )}
+                >
+                  {/* El fondo del activo es un `MotionIndicator`: se desliza al tipo nuevo. */}
+                  {selectedType === cat.value && (
+                    <MotionIndicator
+                      layoutId={`${idDelFiltro}-tipo`}
+                      className="inset-0 -z-10 rounded-full bg-surface"
+                    />
+                  )}
+                  <IconComponent className="w-4 h-4" />
+                  <span className="hidden sm:inline">{cat.label}</span>
+                </button>
+              );
+            })}
+          </div>
         )}
+      </div>
 
-        {/* Documents Grid */}
-        <section>
-          {/* El encabezado con el contador tampoco va sobre el vacío: "0
-              documentos" arriba de "No hay documentos" lo dice dos veces. */}
-          {documents.length > 0 && (
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-fg">
-                {t('nav.documents')}
-              </h2>
-              <span className="text-sm text-fg-muted">
-                <AnimatedNumber value={filteredDocuments.length} /> {locale === 'es'
-                  ? (filteredDocuments.length !== 1 ? 'documentos' : 'documento')
-                  : (filteredDocuments.length !== 1 ? 'documents' : 'document')}
-              </span>
-            </div>
-          )}
+      {/* Con resultados ↔ sin resultados (buscar, filtrar) se cruzan; dentro
+            de la grilla, lo que entra o sale al filtrar, paginar o borrar lo
+            hace con la entrada y la salida del sistema (lo que ya estaba al
+            llegar no se anima) y los demás se corren. */}
+      <CrossFade swapKey={filteredDocuments.length > 0 ? 'con-resultados' : 'sin-resultados'}>
+    {filteredDocuments.length > 0 ? (
+      <>
+        <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <AnimatePresence initial={false} mode="popLayout">
+            {paginatedDocuments.map((doc) => {
+              const Icon = getDocIcon(doc.type);
 
-          {documents.length === 0 ? (
-            /* "aplicaciones" está muerto (docs/VOCABULARIO.md) y además mandaba
-               al historial. Lo siguiente que haría es postularse. */
-            <EmptyState
-              icon={FolderOpen}
-              title={locale === 'es' ? 'No hay documentos' : 'No documents'}
-              description={locale === 'es'
-                ? 'Cuando te postules a una propiedad, los documentos que subas aparecerán aquí organizados.'
-                : 'When you apply to a property, the documents you upload will appear here.'}
-              action={{ label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me', href: '/inquilino/para-ti' }}
-            />
-          ) : (
-            /* Con resultados ↔ sin resultados (buscar, filtrar) se cruzan; dentro
-               de la grilla, lo que entra o sale al filtrar, paginar o borrar lo
-               hace con la entrada y la salida del sistema (lo que ya estaba al
-               llegar no se anima) y los demás se corren. */
-            <CrossFade swapKey={filteredDocuments.length > 0 ? 'con-resultados' : 'sin-resultados'}>
-          {filteredDocuments.length > 0 ? (
-            <>
-              <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <AnimatePresence initial={false} mode="popLayout">
-                  {paginatedDocuments.map((doc) => {
-                    const Icon = getDocIcon(doc.type);
+              return (
+                <StaggerItem
+                  key={doc.id}
+                  className="group rounded-lg border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden"
+                >
+                  {/* Document Header */}
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-4">
+                      <Icon className="w-6 h-6 text-fg-muted shrink-0" aria-hidden="true" />
+                      {(() => {
+                        const style = REVIEW_STATUS_STYLE[doc.reviewStatus];
+                        // El estado con su punto y su palabra (StatusBadge), no una pastilla con ícono.
+                        const tono = style.className.includes('success')
+                          ? 'success'
+                          : style.className.includes('warning')
+                            ? 'warning'
+                            : style.className.includes('danger')
+                              ? 'critical'
+                              : 'neutral';
+                        return <StatusBadge tone={tono}>{getReviewStatusLabel(doc.reviewStatus)}</StatusBadge>;
+                      })()}
+                    </div>
 
-                    return (
-                      <StaggerItem
-                        key={doc.id}
-                        className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted hover:border-border dark:hover:border-border-strong hover: transition-colors duration-slow overflow-hidden"
-                      >
-                        {/* Document Header */}
-                        <div className="p-5">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center">
-                              <Icon className="w-6 h-6 text-fg-muted dark:text-fg-subtle" />
-                            </div>
-                            {(() => {
-                              const style = REVIEW_STATUS_STYLE[doc.reviewStatus];
-                              const StatusIcon = style.icon;
-                              return (
-                                <span
-                                  className={cn(
-                                    'px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1',
-                                    style.className
-                                  )}
-                                >
-                                  <StatusIcon className="w-3 h-3" />
-                                  {getReviewStatusLabel(doc.reviewStatus)}
-                                </span>
-                              );
-                            })()}
-                          </div>
+                    <h3 className="font-medium text-fg mb-2 line-clamp-2">
+                      {getDocLabel(doc.type)}
+                    </h3>
 
-                          <h3 className="font-semibold text-fg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                            {getDocLabel(doc.type)}
-                          </h3>
-
-                          {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
-                            <div className="mb-3 rounded-md bg-danger-soft/60 border border-danger/20 p-2.5 flex items-start gap-2">
-                              <WarningCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
-                              <div className="min-w-0">
-                                <p className="text-xs font-medium text-danger">
-                                  {locale === 'es' ? 'Motivo del rechazo' : 'Rejection reason'}
-                                </p>
-                                <p className="text-xs text-fg-muted mt-0.5 break-words">
-                                  {doc.rejectionReason}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="space-y-1.5">
-                            <p className="text-xs text-fg-muted dark:text-fg-subtle flex items-center gap-1.5 truncate">
-                              <FileText className="w-3 h-3 flex-shrink-0" />
-                              {doc.fileName}
-                            </p>
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs text-fg-subtle flex items-center gap-1.5">
-                                <Calendar className="w-3 h-3" />
-                                {formatDate(doc.createdAt)}
-                              </p>
-                              <span className="text-xs text-fg-subtle">
-                                {formatSize(doc.size)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions — view/download gated behind the mandatory consent; delete is
-                            the ARCO supresión affordance (application DocumentItem cards only). */}
-                        <div className="flex items-center border-t border-border-faint dark:border-border-strong">
-                          <Button
-                            variant="ghost"
-                            hideArrow
-                            onClick={() => handleView(doc)}
-                            disabled={!canAccessDocs}
-                            title={!canAccessDocs ? (locale === 'es' ? 'Acepta el consentimiento para ver' : 'Accept consent to view') : undefined}
-                            className="flex-1 rounded-none py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border hover:text-[#1A40FF] dark:hover:text-[#1A40FF] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                          >
-                            <Eye className="w-4 h-4" />
-                            {t('documents.view')}
-                          </Button>
-                          <div className="w-px h-8 bg-surface-muted" />
-                          <button
-                            type="button"
-                            onClick={() => handleDownload(doc)}
-                            disabled={!canAccessDocs}
-                            title={!canAccessDocs ? (locale === 'es' ? 'Acepta el consentimiento para descargar' : 'Accept consent to download') : undefined}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                          >
-                            <Download className="w-4 h-4" />
-                            {t('documents.download')}
-                          </button>
-                          <div className="w-px h-8 bg-surface-muted" />
-                          <button
-                            type="button"
-                            onClick={() => { setDeletingDocument(doc); setDeleteConfirmText(''); }}
-                            aria-label={locale === 'es' ? 'Eliminar documento' : 'Delete document'}
-                            className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-danger-soft hover:text-danger transition-colors"
-                          >
-                            <Trash className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </StaggerItem>
-                    );
-                  })}
-                </AnimatePresence>
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8">
-                  <IconButton
-                    variant="ghost"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className={cn(
-                      'p-2 rounded-full',
-                      currentPage === 1
-                        ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
-                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border'
+                    {/* El motivo en una línea (antes, una caja con borde dentro de la tarjeta con borde). */}
+                    {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
+                      <p className="mb-3 flex items-start gap-1.5 text-caption text-danger break-words" data-testid={`motivo-del-rechazo-${doc.id}`}>
+                        <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="min-w-0">
+                          <span className="font-medium">{locale === 'es' ? 'Motivo del rechazo:' : 'Rejection reason:'}</span>{' '}
+                          <span className="text-fg-muted">{doc.rejectionReason}</span>
+                        </span>
+                      </p>
                     )}
-                    aria-label={locale === 'es' ? 'Página anterior' : 'Previous page'}
-                    icon={<CaretLeft className="w-5 h-5" />}
-                  />
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+
+                    <div className="space-y-1.5">
+                      <p className="text-caption text-fg-muted flex items-center gap-1.5 truncate">
+                        <FileText className="w-3 h-3 flex-shrink-0" />
+                        {doc.fileName}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-caption text-fg-subtle flex items-center gap-1.5">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(doc.createdAt)}
+                        </p>
+                        <span className="text-caption text-fg-subtle">
+                          {formatSize(doc.size)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions — view/download gated behind the mandatory consent; delete is
+                      the ARCO supresión affordance (application DocumentItem cards only). */}
+                  <div className="flex items-center border-t border-border-faint">
                     <Button
-                      key={page}
                       variant="ghost"
                       hideArrow
-                      onClick={() => setCurrentPage(page)}
-                      aria-current={currentPage === page ? 'page' : undefined}
-                      className={cn(
-                        'w-10 h-10 rounded-full p-0 text-sm font-medium',
-                        currentPage === page
-                          ? 'bg-ink dark:bg-surface text-white dark:text-fg'
-                          : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border'
-                      )}
+                      onClick={() => handleView(doc)}
+                      disabled={!canAccessDocs}
+                      title={!canAccessDocs ? (locale === 'es' ? 'Acepta el consentimiento para ver' : 'Accept consent to view') : undefined}
+                      className="flex-1 rounded-none py-3 text-sm font-medium text-fg-muted hover:bg-surface-muted hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                     >
-                      {page}
+                      <Eye className="w-4 h-4" />
+                      {t('documents.view')}
                     </Button>
-                  ))}
-                  <IconButton
-                    variant="ghost"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className={cn(
-                      'p-2 rounded-full',
-                      currentPage === totalPages
-                        ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
-                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border'
-                    )}
-                    aria-label={locale === 'es' ? 'Página siguiente' : 'Next page'}
-                    icon={<CaretRight className="w-5 h-5" />}
-                  />
-                </div>
+                    <div className="w-px h-8 bg-surface-muted" />
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(doc)}
+                      disabled={!canAccessDocs}
+                      title={!canAccessDocs ? (locale === 'es' ? 'Acepta el consentimiento para descargar' : 'Accept consent to download') : undefined}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-fg-muted hover:bg-surface-muted hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                      <Download className="w-4 h-4" />
+                      {t('documents.download')}
+                    </button>
+                    <div className="w-px h-8 bg-surface-muted" />
+                    <button
+                      type="button"
+                      onClick={() => { setDeletingDocument(doc); setDeleteConfirmText(''); }}
+                      aria-label={locale === 'es' ? 'Eliminar documento' : 'Delete document'}
+                      className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-fg-muted hover:bg-danger-soft hover:text-danger transition-colors"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
+                  </div>
+                </StaggerItem>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <IconButton
+              variant="ghost"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={cn(
+                'p-2 rounded-full',
+                currentPage === 1
+                  ? 'text-fg-subtle cursor-not-allowed'
+                  : 'text-fg-muted hover:bg-surface-muted'
               )}
-            </>
-          ) : (
-            <div className="rounded-xl bg-surface-muted p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-surface dark:bg-border flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-fg-subtle" />
-              </div>
-              <h3 className="font-semibold text-fg dark:text-white mb-2">
-                {t('documents.noDocuments')}
-              </h3>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle max-w-sm mx-auto">
-                {locale === 'es' ? 'Intenta ajustar los filtros o el término de búsqueda' : 'Try adjusting the filters or search term'}
-              </p>
+              aria-label={locale === 'es' ? 'Página anterior' : 'Previous page'}
+              icon={<CaretLeft className="w-5 h-5" />}
+            />
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant="ghost"
+                hideArrow
+                onClick={() => setCurrentPage(page)}
+                aria-current={currentPage === page ? 'page' : undefined}
+                className={cn(
+                  'w-10 h-10 rounded-full p-0 text-sm font-medium',
+                  currentPage === page
+                    ? 'bg-ink text-white'
+                    : 'text-fg-muted hover:bg-surface-muted'
+                )}
+              >
+                {page}
+              </Button>
+            ))}
+            <IconButton
+              variant="ghost"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={cn(
+                'p-2 rounded-full',
+                currentPage === totalPages
+                  ? 'text-fg-subtle cursor-not-allowed'
+                  : 'text-fg-muted hover:bg-surface-muted'
+              )}
+              aria-label={locale === 'es' ? 'Página siguiente' : 'Next page'}
+              icon={<CaretRight className="w-5 h-5" />}
+            />
+          </div>
+        )}
+      </>
+    ) : (
+      <div className="rounded-lg bg-surface-muted p-12 text-center">
+        <FileText className="w-8 h-8 text-fg-subtle mx-auto mb-3" aria-hidden="true" />
+        <h3 className="font-medium text-fg mb-2">
+          {t('documents.noDocuments')}
+        </h3>
+        <p className="text-sm text-fg-muted max-w-sm mx-auto">
+          {locale === 'es' ? 'Intenta ajustar los filtros o el término de búsqueda' : 'Try adjusting the filters or search term'}
+        </p>
+      </div>
+    )}
+      </CrossFade>
+    </section>
+  ) : hasLeaseDocs ? (
+    /* Con los documentos del arriendo arriba, lo de las postulaciones queda en una línea callada. */
+    <p className="mb-8 text-sm text-fg-muted" data-testid="sin-documentos-de-postulacion">
+      {locale === 'es'
+        ? 'Si te postulas a otro inmueble, los documentos que subas también aparecen aquí.'
+        : 'If you apply to another property, the documents you upload also appear here.'}
+    </p>
+  ) : null;
+
+  return (
+    <div className="bg-bg">
+      <motion.div {...entrada} className="p-6 lg:p-8">
+        {/* GLOW UP (21-10): el encabezado de todas las pantallas, con lo que de verdad hay aquí. */}
+        {/* C3 (revisora r25): el título es el de la pestaña («Contrato y documentos») y debajo, cómo volver al
+            contrato (antes no había cómo: la pantalla quedaba huérfana). */}
+        <EncabezadoDePantalla
+          className="mb-6"
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+          titulo={locale === 'es' ? 'Contrato y documentos' : 'Contract and documents'}
+          descripcion={
+            locale === 'es'
+              ? 'Tu contrato firmado, el recibo de cada pago, tus certificados y lo que subiste al postularte.'
+              : 'Your signed contract, the receipt for each payment, your certificates and what you uploaded when applying.'
+          }
+        />
+        <VistasDeLaPestana
+          className="mb-8"
+          etiqueta={locale === 'es' ? 'Contrato o documentos' : 'Contract or documents'}
+          actual="/inquilino/documentos"
+          vistas={VISTAS_DE_CONTRATO_Y_DOCUMENTOS(locale === 'es')}
+        />
+
+        {sinNada ? (
+          <>
+            {/* "aplicaciones" está muerto (docs/VOCABULARIO.md). Lo siguiente que haría es postularse. */}
+            <div className="mb-8" data-testid="documentos-vacio">
+              <EmptyState
+                ilustracion="casa"
+                icon={FolderOpen}
+                title={locale === 'es' ? 'Todavía no tienes documentos' : 'No documents yet'}
+                description={locale === 'es'
+                  ? 'Aquí van tu contrato firmado, tus recibos y lo que subiste al postularte.'
+                  : 'Your signed lease, your receipts and what you uploaded when you applied go here.'}
+                action={{ label: locale === 'es' ? 'Ver inmuebles para mí' : 'See homes for me', href: '/inquilino/para-ti' }}
+              />
             </div>
-          )}
-            </CrossFade>
-          )}
-        </section>
+            {certificados}
+          </>
+        ) : hasLeaseDocs ? (
+          <>
+            {documentosDelArriendo}
+            {certificados}
+            {documentosDePostulaciones}
+          </>
+        ) : (
+          <>
+            {documentosDePostulaciones}
+            {certificados}
+            <p className="text-sm text-fg-muted" data-testid="sin-documentos-del-arriendo">
+              {locale === 'es'
+                ? 'Cuando tu contrato quede firmado y registres pagos, el contrato y sus recibos aparecen aquí.'
+                : 'Once your lease is signed and payments are recorded, they will appear here.'}
+            </p>
+          </>
+        )}
       </motion.div>
 
       {/* Visor del documento: el modal del sistema (DESIGN.md §17). La ✕, el
@@ -907,7 +881,7 @@ export default function DocumentosPage() {
 
             <div className="flex min-h-[400px] items-center justify-center overflow-hidden rounded-[16px] border border-border">
               {viewerUrlLoading ? (
-                <Spinner size="lg" variant="current" className="text-primary" />
+                <Skeleton className="h-[60vh] min-h-[400px] w-full rounded-none" />
               ) : viewingDocument.mimeType?.startsWith('image/') ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -974,7 +948,7 @@ export default function DocumentosPage() {
           </DialogHeader>
 
           <div className="space-y-3">
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               {locale === 'es' ? (
                 <>
                   Para confirmar, escribe{' '}
@@ -995,10 +969,10 @@ export default function DocumentosPage() {
               onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
               placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
               aria-label={locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}
-              className="w-full rounded-xl font-mono text-center tracking-widest"
+              className="w-full rounded-lg font-mono text-center tracking-widest"
             />
             {deletingDocument && (
-              <p className="text-xs text-fg-subtle truncate">
+              <p className="text-caption text-fg-subtle truncate">
                 {getDocLabel(deletingDocument.type)} · {deletingDocument.fileName}
               </p>
             )}

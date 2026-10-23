@@ -7,10 +7,12 @@
  */
 
 import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
+import { EsqueletoDeSeccion } from '@/components/configuracion/piezas';
 import { ContenidoDelPropietario } from './contenido';
 
 export default function ConfiguracionDelPropietarioPage() {
   const administrados = useContratosAdministrados();
-  if (administrados.cargando) return null;
+  // Mientras se sabe si es de inmobiliaria, el esqueleto (antes, la sección en blanco).
+  if (administrados.cargando) return <EsqueletoDeSeccion filas={3} />;
   return <ContenidoDelPropietario id={administrados.doc !== null || administrados.fichaSinContratos ? 'notificaciones' : 'plan'} />;
 }

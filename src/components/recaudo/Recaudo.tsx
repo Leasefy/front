@@ -64,7 +64,7 @@
 
 import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CaretLeft, CaretRight, Coins, Receipt } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Coins, Receipt } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -81,16 +81,23 @@ import {
 } from '@/components/ui/table';
 import { AnimatedNumber, Appear, Presence } from '@leasefy/cadence';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { SinDatos } from '@/components/estado/SinDatos';
 import type { PuntoDeLaSerie, ResumenDeRecaudo } from '@/lib/api/recaudo.types';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, plataPareja } from '@/lib/format';
 import { useRecaudo } from '@/lib/hooks/use-recaudo';
 import { useComparativaDelRecaudo } from '@/lib/hooks/use-comparativa-del-recaudo';
 import { esFuturo, mesActual, nombreDelMes, sumarMeses } from '@/lib/recaudo/meses';
 import { normalizarMedio } from '@/lib/finanzas/medios';
 import { cn } from '@/lib/utils';
 import { GraficoDeRecaudo } from './GraficoDeRecaudo';
-import { ComparativaDelMes, VsMesAnterior, type SentidoDeLaCifra } from './ComparativaDelMes';
+import {
+  ComparativaDelMes,
+  VsMesAnterior,
+  sinComparacionEnNinguna,
+  soloElMes,
+  type SentidoDeLaCifra,
+} from './ComparativaDelMes';
 import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr';
 import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras'
 
@@ -260,6 +267,7 @@ export function Recaudo() {
   const comparativaDelMes = useComparativaDelRecaudo(month);
   const { comparativa } = comparativaDelMes;
   const falloLaComparativa = Boolean(comparativaDelMes.error) && !comparativaDelMes.cargando;
+  const sinComparacion = sinComparacionEnNinguna(comparativa);
   /** La línea «vs mes anterior» de una cifra. */
   const vs = (
     id: string,
@@ -274,10 +282,20 @@ export function Recaudo() {
       sentido={sentido}
       fallo={falloLaComparativa}
       valorMostrado={valorMostrado}
+      formato={plata}
+      callarSinComparacion={sinComparacion}
     />
   );
 
+  // 22-10 (revisión de Dinero): las definiciones, detrás de «Qué mide cada cifra».
+  const [verDefiniciones, setVerDefiniciones] = useState(false);
   const siguiente = sumarMeses(month, 1);
+  // Los mismos decimales en las cinco cifras (revisión 22-10).
+  const plata = plataPareja([
+    ...(resumen ? [resumen.deudaDelMesCop, resumen.recaudadoCop, resumen.pendienteCop, resumen.dispersadoCop, resumen.disponibleCop] : []),
+    ...(serie ?? []).flatMap((p) => [p.deudaDelMesCop, p.recaudadoCop, p.dispersadoCop]),
+    ...(resumen?.porMedio ?? []).map((m) => m.valorCop),
+  ]);
   const puedeAvanzar = !esFuturo(siguiente);
 
   const puntos = useMemo(() => serieParaLaTabla(serie ?? []), [serie]);
@@ -299,17 +317,18 @@ export function Recaudo() {
     <div className="space-y-6">
       {/* ── El mes ─────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2" data-testid="selector-de-mes">
+        {/* Ronda 12: el mismo selector de mes que el Tablero (píldora con flechas). */}
+        <div className="flex items-center gap-1 rounded-full border border-border bg-surface px-1 py-0.5" data-testid="selector-de-mes">
           <Button
-            variant="secondary"
-            size="sm"
+            variant="ghost"
+            size="icon"
             hideArrow
             aria-label={tr("Mes anterior")}
             onClick={() => setMonth(sumarMeses(month, -1))}
           >
             <CaretLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
-          <p className="min-w-[11rem] text-center font-mono text-sm tabular-nums" data-testid="mes-en-foco">
+          <p className="min-w-[10.5rem] text-center text-sm font-medium text-fg" data-testid="mes-en-foco">
             {/* El mes nuevo entra con un fundido; las cifras de abajo cuentan
                 desde las del mes anterior. */}
             <Appear as="span" key={month} direction="none">
@@ -317,8 +336,8 @@ export function Recaudo() {
             </Appear>
           </p>
           <Button
-            variant="secondary"
-            size="sm"
+            variant="ghost"
+            size="icon"
             hideArrow
             aria-label={tr("Mes siguiente")}
             disabled={!puedeAvanzar}
@@ -328,21 +347,13 @@ export function Recaudo() {
           </Button>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cartera/cobros">{tr("Ver cobros del mes")}</Link>
-          </Button>
+          {/* 22-10: dos salidas (las demás viven en el riel de Pagos), sin flechas. */}
           {/* 🔴 Juan (15-10-2026): «¿dónde se ven los recibos de caja que se generaron?». */}
           <Button asChild variant="secondary" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/recibos">{tr("Ver los recibos")}</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cartera">{tr("Ver cartera")}</Link>
-          </Button>
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">
-              {tr("Lotes al banco")}
-              <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
-            </Link>
+            <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">{tr("Lotes al banco")}</Link>
           </Button>
         </div>
       </div>
@@ -381,12 +392,90 @@ export function Recaudo() {
                   {tr("Ir a la deuda del mes")}
                 </Link>
             </Presence>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" data-testid="cifras">
+            {/* GLOW UP (revisión de Dinero, 22-10-2026: «5 cifras con párrafos»): UNA
+                cifra grande —lo que llegó contra lo que se debe, con su barra— y las
+                demás compactas al lado; lo que mide cada una, plegado. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              {sinComparacion && comparativa ? (
+                <p className="text-caption text-fg-muted" data-testid="sin-comparacion-en-ninguna">
+                  {en
+                    ? `No comparison with ${soloElMes(comparativa.mesAnterior, 'en')}: that month had almost no activity.`
+                    : `Sin comparación con ${soloElMes(comparativa.mesAnterior)}: ese mes casi no tuvo movimiento.`}
+                </p>
+              ) : (
+                <span />
+              )}
+              <button
+                type="button"
+                aria-pressed={verDefiniciones}
+                onClick={() => setVerDefiniciones((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-full text-body-sm font-medium text-fg-muted underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                data-testid="que-mide-el-recaudo"
+              >
+                {verDefiniciones ? tr('Ocultar qué mide cada cifra') : tr('Qué mide cada cifra')}
+              </button>
+            </div>
+            <div
+              className="-mt-3 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-2"
+              data-testid="cifras"
+            >
+              {/* Ronda 11 (390): «Llegó» va primero en el orden de la página —es lo que se
+                  lee primero en el celular—; en escritorio cada cifra tiene su lugar
+                  fijo en la grilla (lg:col-start), así que allí nada cambia. */}
+              <Cifra
+                formato={plata}
+                id="llego"
+                destacada
+                verDefinicion={verDefiniciones}
+                className="sm:col-span-2 lg:col-span-1 lg:col-start-1 lg:row-span-2 lg:row-start-1"
+                etiqueta={tr("Llegó")}
+                valor={resumen.recaudadoCop}
+                extra={
+                  resumen.deudaDelMesCop > 0 ? (
+                    <div className="mt-1 space-y-1.5">
+                      <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-muted" role="img" aria-label={tr('Qué parte de lo que se debe ya llegó')}>
+                        <span
+                          className="h-full rounded-full bg-success-500"
+                          style={{ width: `${Math.min(100, Math.max(0, ((resumen.deudaDelMesCop - resumen.pendienteCop) / resumen.deudaDelMesCop) * 100))}%` }}
+                        />
+                      </div>
+                      {/* Ronda 14: la barra dice lo que mide (qué parte de lo del mes ya entró). */}
+                      <p className="text-body-sm text-fg-muted" data-testid="rotulo-de-la-barra-de-llego">
+                        <span className="font-mono tabular-nums text-fg">
+                          {(((resumen.deudaDelMesCop - resumen.pendienteCop) / resumen.deudaDelMesCop) * 100).toLocaleString(en ? 'en-US' : 'es-CO', { maximumFractionDigits: 1 })} %
+                        </span>{' '}
+                        {tr('de los')} <span className="font-mono tabular-nums text-fg">{plata(resumen.deudaDelMesCop)}</span>{' '}
+                        {tr('que se deben en')} {nombreDelMes(month, locale)} {tr('ya entró')}
+                      </p>
+                      {/* 22-10 (revisión: «la cuenta no cierra»): lo que llegó incluye pagos de
+                          otros meses; se dice qué parte es de las cuotas del mes. */}
+                      {resumen.pagadoDeLasCuotasDelMesCop != null && resumen.recaudadoCop - resumen.pagadoDeLasCuotasDelMesCop > 0 ? (
+                        <p className="text-caption text-fg-muted" data-testid="llego-de-otros-meses">
+                          <span className="font-mono tabular-nums text-fg">{plata(resumen.pagadoDeLasCuotasDelMesCop)}</span>{' '}
+                          {tr('son de las cuotas del mes y')}{' '}
+                          <span className="font-mono tabular-nums text-fg">{plata(resumen.recaudadoCop - resumen.pagadoDeLasCuotasDelMesCop)}</span>{' '}
+                          {tr('de meses anteriores.')}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null
+                }
+                comparacion={vs('llego', 'llego', 'subirEsBueno', resumen.recaudadoCop)}
+                /* 🔴 PG-09 (03-10-2026): hablaba de «cobros de este mes»
+                   (`recaudadoDelMesCop` sale de `Cobro.month`), y la deuda vive
+                   en las CUOTAS. Ahora dice lo pagado de las cuotas del mes
+                   (`pagadoDeLasCuotasDelMesCop`, entrara cuando entrara); con un
+                   back sin ese campo, sólo qué son los recibos. */
+                definicion={definicionDeLoQueLlego(resumen, month, locale)}
+              />
               {/* 🔴 Primero lo que el mes HACE DEBER. Es la cifra de la que
                   cuelgan las demás, y la que existe desde que se firma cada
                   contrato: no hay que emitir nada para que haya deuda. */}
               <Cifra
+                formato={plata}
                 id="se-debe"
+                verDefinicion={verDefiniciones}
+                className="lg:col-start-2 lg:row-start-1"
                 etiqueta={tr("Se debe")}
                 valor={resumen.deudaDelMesCop}
                 comparacion={vs('se-debe', 'seDebe', 'neutro', resumen.deudaDelMesCop)}
@@ -397,19 +486,10 @@ export function Recaudo() {
                 }
               />
               <Cifra
-                id="llego"
-                etiqueta={tr("Llegó")}
-                valor={resumen.recaudadoCop}
-                comparacion={vs('llego', 'llego', 'subirEsBueno', resumen.recaudadoCop)}
-                /* 🔴 PG-09 (03-10-2026): hablaba de «cobros de este mes»
-                   (`recaudadoDelMesCop` sale de `Cobro.month`), y la deuda vive
-                   en las CUOTAS. Ahora dice lo pagado de las cuotas del mes
-                   (`pagadoDeLasCuotasDelMesCop`, entrara cuando entrara); con un
-                   back sin ese campo, sólo qué son los recibos. */
-                definicion={definicionDeLoQueLlego(resumen, month, locale)}
-              />
-              <Cifra
+                formato={plata}
                 id="pendiente"
+                verDefinicion={verDefiniciones}
+                className="lg:col-start-3 lg:row-start-1"
                 etiqueta={tr("Pendiente")}
                 valor={resumen.pendienteCop}
                 tono={resumen.pendienteCop > 0 ? 'warning' : undefined}
@@ -426,8 +506,11 @@ export function Recaudo() {
                 }
               />
               <Cifra
+                formato={plata}
                 id="dispersado"
-                etiqueta={tr("Dispersado")}
+                verDefinicion={verDefiniciones}
+                className="lg:col-start-2 lg:row-start-2"
+                etiqueta={tr("Girado")}
                 valor={resumen.dispersadoCop}
                 comparacion={vs('dispersado', 'salio', 'neutro', resumen.dispersadoCop)}
                 definicion={
@@ -437,7 +520,10 @@ export function Recaudo() {
                 }
               />
               <Cifra
+                formato={plata}
                 id="disponible"
+                verDefinicion={verDefiniciones}
+                className="lg:col-start-3 lg:row-start-2"
                 etiqueta={tr("Disponible")}
                 valor={resumen.disponibleCop}
                 tono={resumen.disponibleCop < 0 ? 'danger' : undefined}
@@ -499,6 +585,7 @@ export function Recaudo() {
               cargando={comparativaDelMes.cargando}
               error={comparativaDelMes.error}
               onReintentar={() => comparativaDelMes.recargar()}
+              formato={plata}
             />
 
             {/* El gráfico sí lleva su nombre: es un gráfico, no una tabla. */}
@@ -524,6 +611,9 @@ export function Recaudo() {
             {/* Los mismos doce meses, en la tabla de la casa. La fila del mes
                 en foco va marcada y cualquier fila cambia el mes: es el
                 selector de arriba, pero con los números a la vista. */}
+            {/* 22-10 (revisión de Dinero): la tabla de doce meses repetía el gráfico;
+                queda plegada debajo, montada (la fila cambia el mes, como siempre). */}
+            <MasDetalles etiqueta={tr('Ver mes por mes, en números')} etiquetaAbierto={tr('Ocultar mes por mes')} montadoSiempre>
             <section
               className="overflow-hidden rounded-lg border border-border bg-surface"
               aria-labelledby="serie-mensual-titulo"
@@ -533,7 +623,7 @@ export function Recaudo() {
                   está como suelto, nada realmente se sabe que es de qué»).
                   «No nombramos las tablas» vale cuando la tarjeta que las
                   contiene ya lo dice —en «Deuda del mes» lo dicen el mes, las
-                  pestañas y el buscador—; acá la tabla ERA la tarjeta entera y
+                  pestañas y el buscador—; aquí la tabla ERA la tarjeta entera y
                   no había nada que la nombrara. El gráfico de arriba ya llevaba
                   su nombre, y era el único de los cuatro bloques. */}
               <div className="space-y-1 border-b border-border px-6 py-4">
@@ -571,7 +661,7 @@ export function Recaudo() {
                         {tr("recibos con fecha del mes")}
                       </span>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap text-right">{tr("Dispersado")}</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">{tr("Girado")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -582,7 +672,7 @@ export function Recaudo() {
                           queSon={tr("meses con movimiento")}
                           icono={Coins}
                           titulo={tr("Todavía no hay serie")}
-                          descripcion={tr("Cuando haya cobros, recibos o giros en algún mes, aparece acá.")}
+                          descripcion={tr("Cuando haya cobros, recibos o giros en algún mes, aparece aquí.")}
                         />
                       </TableCell>
                     </TableRow>
@@ -604,13 +694,13 @@ export function Recaudo() {
                             {conMayusculaInicial(nombreDelMes(p.month, locale))}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                            {formatCurrency(p.deudaDelMesCop)}
+                            {plata(p.deudaDelMesCop)}
                           </TableCell>
                           <TableCell
                             className="whitespace-nowrap text-right font-mono tabular-nums text-fg"
                             data-testid="serie-numerador"
                           >
-                            {numerador === null ? '—' : formatCurrency(numerador)}
+                            {numerador === null ? '—' : plata(numerador)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
                             {/* Sin contra qué medir no hay porcentaje: un «0 %» diría que no se recaudó. */}
@@ -620,10 +710,10 @@ export function Recaudo() {
                             className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted"
                             data-testid="serie-recaudado"
                           >
-                            {formatCurrency(p.recaudadoCop)}
+                            {plata(p.recaudadoCop)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                            {formatCurrency(p.dispersadoCop)}
+                            {plata(p.dispersadoCop)}
                           </TableCell>
                         </TableRow>
                       );
@@ -632,6 +722,7 @@ export function Recaudo() {
                 </TableBody>
               </Table>
             </section>
+            </MasDetalles>
 
             {/* Los recibos del mes, agrupados por medio de pago (así los manda
                 el back). El pie suma: es la misma cifra que «Llegó». */}
@@ -651,7 +742,9 @@ export function Recaudo() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="whitespace-nowrap">{tr("Medio de pago")}</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">{tr("Recibos")}</TableHead>
+                    {/* Ronda 11 (390): bajo 768 son dos columnas —«Transferencia · 7 recibos» y
+                        el valor—; la tabla ya no se desplaza de lado ni corta el Valor. */}
+                    <TableHead className="whitespace-nowrap text-right max-md:hidden">{tr("Recibos")}</TableHead>
                     <TableHead className="whitespace-nowrap text-right">{tr("Valor")}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -668,7 +761,7 @@ export function Recaudo() {
                           descripcion={
                             en
                               ? `Receipts dated in ${nombreDelMes(month, 'en')} show up here, grouped by how the money came in.`
-                              : `Los recibos con fecha en ${nombreDelMes(month)} aparecen acá, agrupados por cómo entró la plata.`
+                              : `Los recibos con fecha en ${nombreDelMes(month)} aparecen aquí, agrupados por cómo entró la plata.`
                           }
                         />
                       </TableCell>
@@ -676,10 +769,18 @@ export function Recaudo() {
                   ) : (
                     medios.map((m) => (
                       <TableRowAnimada key={m.medio} data-testid="medio-fila">
-                        <TableCell className="text-fg">{tr(m.nombre || nombreDelMedio(m.medio))}</TableCell>
-                        <TableCell className="text-right font-mono tabular-nums text-fg-muted">{m.cantidad}</TableCell>
+                        <TableCell className="text-fg">
+                          {tr(m.nombre || nombreDelMedio(m.medio))}
+                          {/* Ronda 14 (390): el conteo en su propio renglón (con nowrap desbordaba la tabla). */}
+                          <span className="block whitespace-nowrap text-caption text-fg-muted md:hidden">
+                            {en
+                              ? `${m.cantidad} ${m.cantidad === 1 ? 'receipt' : 'receipts'}`
+                              : `${m.cantidad} ${m.cantidad === 1 ? 'recibo' : 'recibos'}`}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-mono tabular-nums text-fg-muted max-md:hidden">{m.cantidad}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-fg">
-                          {formatCurrency(m.valorCop)}
+                          {plata(m.valorCop)}
                         </TableCell>
                       </TableRowAnimada>
                     ))
@@ -688,12 +789,19 @@ export function Recaudo() {
                 {medios.length > 0 && (
                   <TableFooter>
                     <TableRow data-testid="medio-total">
-                      <TableCell className="font-medium text-fg">{tr("Total")}</TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-fg-muted">
+                      <TableCell className="font-medium text-fg">
+                        {tr("Total")}
+                        <span className="block text-caption font-normal text-fg-muted md:hidden">
+                          {en
+                            ? `${totalDeRecibos.cantidad} ${totalDeRecibos.cantidad === 1 ? 'receipt' : 'receipts'}`
+                            : `${totalDeRecibos.cantidad} ${totalDeRecibos.cantidad === 1 ? 'recibo' : 'recibos'}`}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums text-fg-muted max-md:hidden">
                         {totalDeRecibos.cantidad}
                       </TableCell>
                       <TableCell className="text-right font-mono font-medium tabular-nums text-fg">
-                        <AnimatedNumber value={totalDeRecibos.valorCop} format={formatCurrency} />
+                        <AnimatedNumber value={totalDeRecibos.valorCop} format={plata} />
                       </TableCell>
                     </TableRow>
                   </TableFooter>
@@ -714,6 +822,11 @@ function Cifra({
   definicion,
   tono,
   comparacion,
+  destacada = false,
+  verDefinicion = false,
+  extra,
+  className,
+  formato = formatCurrency,
 }: {
   id: string;
   etiqueta: string;
@@ -722,26 +835,39 @@ function Cifra({
   tono?: 'warning' | 'danger';
   /** La línea «vs mes anterior», a la misma fecha. */
   comparacion?: ReactNode;
+  /** La cifra que decide la pantalla: grande (22-10). */
+  destacada?: boolean;
+  /** «Qué mide cada cifra» abierto: la definición se ve. Plegada sigue montada. */
+  verDefinicion?: boolean;
+  extra?: ReactNode;
+  className?: string;
+  formato?: (n: number) => string;
 }) {
   return (
     <section
-      className="space-y-2 rounded-lg border border-border bg-surface p-5"
+      className={cn('flex min-w-0 flex-col gap-1.5 bg-surface px-5 py-4', destacada && 'gap-2 py-5 sm:px-6', className)}
       data-testid={`cifra-${id}`}
     >
-      <p className="text-label text-fg-muted">{etiqueta}</p>
+      <p className={cn(destacada ? 'font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle' : 'text-caption text-fg-muted')}>
+        {etiqueta}
+      </p>
       <p
         className={cn(
-          'font-mono text-2xl font-medium tabular-nums text-fg',
+          'font-mono tabular-nums text-fg',
+          destacada ? 'text-[32px] font-medium leading-none tracking-[-0.02em] sm:text-[40px]' : 'text-[19px]',
           tono === 'warning' && 'text-warning',
           tono === 'danger' && 'text-danger',
         )}
         data-testid={`valor-${id}`}
       >
         {/* Cuenta desde la del mes anterior al cambiar de mes. */}
-        <AnimatedNumber value={valor} format={formatCurrency} />
+        <AnimatedNumber value={valor} format={formato} />
       </p>
+      {extra}
       {comparacion}
-      <p className="text-xs leading-relaxed text-fg-muted">{definicion}</p>
+      <p hidden={!verDefinicion} className={cn('text-caption leading-relaxed text-fg-muted', verDefinicion && 'animate-rise-in')}>
+        {definicion}
+      </p>
     </section>
   );
 }

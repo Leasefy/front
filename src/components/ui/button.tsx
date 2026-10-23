@@ -13,12 +13,15 @@ import { cn } from "@/lib/utils"
  * - isLoading → loading: el spinner del DS (CircleNotch), deshabilita y anuncia
  *   `aria-busy`. Dentro de un botón va el spinner, NUNCA el logo de Leasefy:
  *   el logo (`CargaDeMarca`) es sólo para cargas de pantalla completa y
- *   transiciones (Nico, 01-10). hideArrow → apaga la flecha automática.
- * - Flecha ArrowUpRight automática en default/white (prop `arrow` del DS).
+ *   transiciones (Nico, 01-10).
+ * - Cadence 2 (20-10-2026): SIN flecha automática. El botón dice lo que hace;
+ *   la flechita ↗ en cada botón azul era de plantilla. `hideArrow` queda por
+ *   compatibilidad y ya no hace nada.
  */
 
 type ButtonVariant =
   | "default"
+  | "ink"
   | "white"
   | "destructive"
   | "outline"
@@ -33,6 +36,7 @@ type DSButtonProps = React.ComponentProps<typeof DSButton>
 
 const VARIANT_MAP: Record<ButtonVariant, NonNullable<DSButtonProps["variant"]>> = {
   default: "primary",
+  ink: "ink",
   white: "white",
   destructive: "destructive",
   outline: "outline",
@@ -58,8 +62,6 @@ const SIZE_FIDELITY: Partial<Record<ButtonSize, string>> = {
   icon: "[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11",
 }
 
-// La flecha automática del mvp aplica a estos variants (hideArrow la apaga).
-const ARROW_VARIANTS = new Set<ButtonVariant>(["default", "white"])
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant | null
@@ -89,7 +91,9 @@ function buttonVariants(options?: {
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { className, variant, size, asChild = false, isLoading = false, hideArrow = false, children, ...props },
+    // `hideArrow` se saca de las props para que no llegue al DOM.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    { className, variant, size, asChild = false, isLoading = false, hideArrow, children, ...props },
     ref
   ) => {
     const resolvedVariant = variant ?? "default"
@@ -103,7 +107,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         size={SIZE_MAP[resolvedSize]}
         loading={isLoading}
         aria-busy={isLoading || undefined}
-        arrow={ARROW_VARIANTS.has(resolvedVariant) && !hideArrow}
         className={cn(
           // El Button legacy del mvp era `group`: se preserva para los call sites
           // que usan group-hover en sus children.

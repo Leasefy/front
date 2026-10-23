@@ -25,7 +25,8 @@ import { SealCheck } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { DocumentosTributarios } from '@/components/landlord/portal/DocumentosTributarios';
-import { SectionLabel } from '@/components/ui/section-label';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
 import type { MisCertificados } from '@/lib/api/tesoreria.types';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -58,15 +59,20 @@ export default function MisCertificadosPage() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1.5">
-        <SectionLabel>Impuestos</SectionLabel>
-        <h1 className="text-h2 text-fg">Certificados y facturas</h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          Lo que los inquilinos te retuvieron en el año, para tu declaración. La cuota quedó
-          saldada con el canon completo y lo retenido se te descontó en tu liquidación: es tu
-          impuesto, y esto es el papel con el que lo acreditas.
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Mi plata"
+        titulo="Certificados y facturas"
+        descripcion="Lo que los inquilinos te retuvieron en el año, para tu declaración."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Qué es lo retenido?" titulo="Lo retenido es tu impuesto">
+            {/* Revisora r25: salió de la descripción (3 renglones). */}
+            <p className="text-body-sm text-fg">
+              La cuota quedó saldada con el canon completo y lo retenido se te descontó en tu liquidación: es tu
+              impuesto, y esto es el papel con el que lo acreditas.
+            </p>
+          </ParaEntenderMas>
+        }
+      />
 
       {/* Nico, 11-10-2026: la certificación del mandatario y las facturas de la
           comisión se bajan aquí (antes: «pídeselas a tu inmobiliaria»). */}
@@ -119,7 +125,7 @@ export default function MisCertificadosPage() {
                     ['ReteICA', c.reteIcaCop],
                   ].map(([etiqueta, valor]) => (
                     <div key={String(etiqueta)} className="rounded border border-border bg-bg p-3">
-                      <dt className="text-xs text-fg-muted">{etiqueta}</dt>
+                      <dt className="text-caption text-fg-muted">{etiqueta}</dt>
                       <dd className="font-mono tabular-nums text-fg">
                         {formatCurrency(Number(valor))}
                       </dd>

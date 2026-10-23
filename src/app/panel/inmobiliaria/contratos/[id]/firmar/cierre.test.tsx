@@ -270,3 +270,22 @@ describe('Firmar contrato — el inquilino todavía no ha firmado', () => {
     expect(container.querySelector('[data-testid="firma-bloqueada"]')).toBeNull();
   });
 });
+
+describe('GLOW UP 21-10: el estado va antes que el documento', () => {
+  it('si el inquilino no ha firmado, el aviso sale ARRIBA del documento, no después de bajarlo', async () => {
+    contratoEnPantalla = { ...CONTRATO, status: 'pending_tenant', tenantSignature: null };
+    await act(async () => {
+      root.render(<FirmarContratoPage />);
+    });
+    const aviso = container.querySelector('[data-testid="firma-bloqueada"]')!;
+    const documento = Array.from(container.querySelectorAll('h2')).find((h) => h.textContent === 'Revisa el documento')!;
+    expect(aviso.compareDocumentPosition(documento) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('volver lleva a la ficha del contrato', async () => {
+    await act(async () => {
+      root.render(<FirmarContratoPage />);
+    });
+    expect(container.querySelector('a[href="/panel/inmobiliaria/contratos/c-1"]')).not.toBeNull();
+  });
+});

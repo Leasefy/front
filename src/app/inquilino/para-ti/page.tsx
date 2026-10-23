@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, TrendUp, Shield, SealCheck, Funnel, CaretLeft, CaretRight, Lightning, Target, Trophy } from '@phosphor-icons/react';
+import { TrendUp, Shield, SealCheck, Funnel, CaretLeft, CaretRight, Lightning, Target, Trophy } from '@phosphor-icons/react';
+import { ArrowUpRight } from '@phosphor-icons/react';
 
-import { IconButton } from '@leasefy/cadence';
+import { CampoDeMedianoche, IconButton } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import type { RecommendedProperty } from '@/lib/api/recommendations.service';
 import { useTenantProfile, RISK_LEVEL_LABELS } from '@/lib/context/TenantProfileContext';
 import { PropertyMatchCard } from '@/components/tenant/PropertyMatchCard';
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { QueSignificaPostularse } from '@/components/tenant/QueSignificaPostularse';
 import { CatalogoPorAprobacion } from '@/components/tenant/CatalogoPorAprobacion';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
@@ -191,7 +193,7 @@ export default function ParaTiPage() {
   // Loading state
   if (isLoading || recommendationsLoading) {
     return (
-      <div className="min-h-screen bg-plan-page">
+      <div className="bg-plan-page">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-surface-muted rounded w-48" />
@@ -212,7 +214,7 @@ export default function ParaTiPage() {
   // lleva a ningún lado.
   if (errorRecomendaciones) {
     return (
-      <div className="min-h-screen bg-plan-page">
+      <div className="bg-plan-page">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <FalloDeCarga
             error={errorRecomendaciones}
@@ -253,46 +255,30 @@ export default function ParaTiPage() {
    * que dice lo mismo con las mismas palabras.
    */
   if (!hasVerifiedProfile || !profile) {
+    // GLOW UP (22-10): el mismo encabezado y la misma pieza del tope que el catálogo y el inicio. La pieza ya
+    // dice el estado de su aprobación (sin pedir, en proceso, rechazada o vencida) y lleva a pedirla; antes era
+    // una tarjeta con «Volver a Inicio» que decía «Todavía no tenemos tu aprobación» en los cuatro casos.
     return (
-      <div className="min-h-screen bg-plan-page">
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <Link
-            href="/inquilino"
-            className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}
-          </Link>
-
-          <div className="rounded-xl bg-surface border border-border p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-primary-soft flex items-center justify-center mx-auto mb-6">
-              <Target className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-xl font-semibold text-fg mb-3">
-              {locale === 'es'
-                ? 'Todavía no tenemos tu aprobación'
-                : 'We don\u2019t have your approval yet'}
-            </h1>
-            <p className="text-sm text-fg-muted max-w-md mx-auto mb-6 leading-relaxed">
-              {locale === 'es'
-                ? 'Con ella sabemos hasta cuánto te respaldan las aseguradoras, y acá te mostramos solo las propiedades que puedes tomar.'
-                : 'With it we know how much the insurers back you, and here we show you only the properties you can take.'}
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button asChild>
-                <Link href="/aprobacion">
-                  {locale === 'es'
-                    ? 'Conoce hasta cuánto te arrendamos'
-                    : 'Find out how much you can rent'}
-                </Link>
+      <div className="bg-plan-page">
+        <div className="p-6 lg:p-8" data-testid="para-ti-sin-aprobacion">
+          <EncabezadoDePantalla
+            className="mb-6"
+            seccion={locale === 'es' ? 'Buscar arriendo' : 'Find a rental'}
+            titulo={locale === 'es' ? 'Inmuebles para ti' : 'Properties for you'}
+            descripcion={
+              locale === 'es'
+                ? 'Con tu aprobación sabemos hasta cuánto te respaldan las aseguradoras y aquí te mostramos sólo lo que puedes tomar.'
+                : 'With your approval we know how much the insurers back you, and here we show you only what you can take.'
+            }
+            acciones={
+              <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">
+                <a href="/propiedades" target="_blank" rel="noopener noreferrer">
+                  {locale === 'es' ? 'Buscar en el marketplace' : 'Search the marketplace'}
+                </a>
               </Button>
-              <Button asChild variant="secondary">
-                <Link href="/inquilino/explorar">
-                  {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-                </Link>
-              </Button>
-            </div>
-          </div>
+            }
+          />
+          <TopeAprobadoBanner aprobacion={aprobacion} vigente={aprobacionVigente} tamano="heroe" />
         </div>
       </div>
     );
@@ -310,24 +296,16 @@ export default function ParaTiPage() {
     'flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm text-white';
 
   return (
-    <div className="min-h-screen bg-plan-page">
+    <div className="bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Back Link */}
-        <Link
-          href="/inquilino"
-          className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}
-        </Link>
+        {/* Glow up 22-10: sin «Volver a Inicio» (es una pestaña del riel, como sus hermanas). */}
 
         {/*
           * Hero de marca.
           *
-          * `bg-brand` y no `bg-primary`: en tema oscuro `--primary` se vuelve
-          * `--indigo-300` (#8A9FFF) y el texto blanco encima queda en **2,48:1**
-          * —ilegible—. `--brand` resuelve al cobalto de Leasefy fijo (#1A40FF)
-          * en los dos temas, y ahí el blanco mide 6,59:1.
+          * Medianoche y no cobalto (decisión de Nico, 23-10): el campo de marca
+          * de Cadence (#0A0F2C con su grano), el mismo en los dos temas; el azul
+          * queda sólo para el botón de la pantalla. Antes `bg-brand` (#1A40FF).
           *
           * El número de la derecha era `getAccessiblePropertiesPercentage()`, una
           * tabla fija por letra de score (A=95, B=85, C=60, D=30) que no mira el
@@ -335,14 +313,14 @@ export default function ParaTiPage() {
           * «0 propiedades encontradas»: la pantalla se desmentía sola. Ahora
           * muestra el conteo real, que puede ser cero y entonces lo dice.
           */}
-        <section className="rounded-xl bg-brand p-8 sm:p-10 mb-6">
+        <CampoDeMedianoche className="rounded-lg p-8 sm:p-10 mb-6" cruces={false} data-testid="para-ti-marca">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-xl">
               <p className="text-overline text-white/80">
                 {locale === 'es' ? 'Tu catálogo' : 'Your catalog'}
               </p>
 
-              <h1 className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-white text-balance">
+              <h1 className="mt-3 text-2xl sm:text-3xl font-medium tracking-tight text-white text-balance">
                 {locale === 'es'
                   ? `Propiedades para ti, ${primerNombre}`
                   : `Properties for you, ${primerNombre}`}
@@ -358,10 +336,10 @@ export default function ParaTiPage() {
 
               <div className="mt-7 flex flex-wrap items-center gap-2">
                 <div className={chipDelHero}>
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-white font-mono text-[10px] font-bold text-brand">
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-white font-mono text-caption text-ink">
                     {riskLevel}
                   </span>
-                  <span>Score {RISK_LEVEL_LABELS[riskLevel]}</span>
+                  <span>{locale === 'es' ? 'Calificación' : 'Rating'} {RISK_LEVEL_LABELS[riskLevel]}</span>
                 </div>
 
                 <div className={chipDelHero}>
@@ -396,7 +374,7 @@ export default function ParaTiPage() {
             {/* El conteo real. Se ve en móvil también: antes era `hidden lg:flex`
                 y el único indicador del hero desaparecía en pantalla chica. */}
             <div className="flex items-center gap-4 border-t border-white/15 pt-6 lg:flex-col lg:items-end lg:gap-1 lg:border-t-0 lg:pt-0 lg:text-right">
-              <span className="font-mono tabular-nums text-5xl font-semibold leading-none text-white">
+              <span className="font-mono tabular-nums text-5xl font-normal leading-none text-white">
                 {cuantasCaben}
               </span>
               <span className="text-sm text-white/80 lg:max-w-[8.5rem]">
@@ -408,9 +386,21 @@ export default function ParaTiPage() {
                     ? 'property fits your cap'
                     : 'properties fit your cap'}
               </span>
+              {/* Reunión 21-10: para seguir buscando, el marketplace (la interfaz «pro»), en OTRA pestaña. */}
+              <a
+                href="/propiedades"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-medium text-white underline-offset-4 hover:underline lg:mt-3"
+                data-testid="ver-el-marketplace"
+              >
+                {locale === 'es' ? 'Ver el marketplace' : 'Open the marketplace'}
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="sr-only">{locale === 'es' ? ' (se abre en otra pestaña)' : ' (opens in a new tab)'}</span>
+              </a>
             </div>
           </div>
-        </section>
+        </CampoDeMedianoche>
 
         {/* Stats Cards */}
         {stats && (
@@ -611,10 +601,8 @@ export default function ParaTiPage() {
           </>
         ) : (
           <div className="bg-surface border border-plan-border rounded-lg p-12 text-center">
-            <div className="w-14 h-14 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4">
-              <Funnel className="w-7 h-7 text-plan-muted" />
-            </div>
-            <h3 className="text-base font-semibold text-plan-primary mb-2">
+            <Funnel className="w-7 h-7 text-plan-muted shrink-0 mx-auto" aria-hidden="true" />
+            <h3 className="text-base font-medium text-plan-primary mb-2">
               {/* Quedarse sin nada por el tope no es quedarse sin nada por un
                   filtro que uno mismo puso: se explica distinto. */}
               {ocultasPorTope > 0 && recomendacionesQueCaben.length === 0
@@ -646,56 +634,48 @@ export default function ParaTiPage() {
         {/* How it works section */}
         <div className="mt-8 bg-surface border border-plan-border rounded-lg overflow-hidden">
           <div className="px-5 py-4 border-b border-plan-border">
-            <h2 className="font-semibold text-plan-primary">
+            <h2 className="text-h3 text-plan-primary">
               {locale === 'es' ? 'Cómo calculamos tu compatibilidad' : 'How we calculate your compatibility'}
             </h2>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-plan-border">
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold font-mono tabular-nums text-success">40%</span>
-              </div>
+              <p className="mb-2 font-mono text-h3 tabular-nums text-success">40 %</p>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Asequibilidad' : 'Affordability'}
               </h3>
-              <p className="text-xs text-plan-muted">
+              <p className="text-caption text-plan-muted">
                 {locale === 'es' ? 'Comparamos el arriendo con tu ingreso disponible' : 'We compare rent with your available income'}
               </p>
             </div>
 
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold font-mono tabular-nums text-primary">30%</span>
-              </div>
+              <p className="mb-2 font-mono text-h3 tabular-nums text-primary">30 %</p>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Compatibilidad' : 'Compatibility'}
               </h3>
-              <p className="text-xs text-plan-muted">
-                {locale === 'es' ? 'Tu score de riesgo vs requisitos del propietario' : 'Your risk score vs landlord requirements'}
+              <p className="text-caption text-plan-muted">
+                {locale === 'es' ? 'Tu calificación frente a lo que pide el propietario' : 'Your risk score vs landlord requirements'}
               </p>
             </div>
 
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold font-mono tabular-nums text-fg-muted">15%</span>
-              </div>
+              <p className="mb-2 font-mono text-h3 tabular-nums text-fg-muted">15 %</p>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Perfil' : 'Profile'}
               </h3>
-              <p className="text-xs text-plan-muted">
+              <p className="text-caption text-plan-muted">
                 {locale === 'es' ? 'Documentación completa y estabilidad laboral' : 'Complete documentation and job stability'}
               </p>
             </div>
 
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold font-mono tabular-nums text-warning">15%</span>
-              </div>
+              <p className="mb-2 font-mono text-h3 tabular-nums text-warning">15 %</p>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Preferencias' : 'Preferences'}
               </h3>
-              <p className="text-xs text-plan-muted">
+              <p className="text-caption text-plan-muted">
                 {locale === 'es' ? 'Ciudad, tipo de propiedad y habitaciones' : 'City, property type and bedrooms'}
               </p>
             </div>
@@ -703,10 +683,11 @@ export default function ParaTiPage() {
         </div>
 
         {/* Improve Profile CTA */}
-        <div className="mt-6 bg-primary-soft border border-border rounded-lg p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* En arena y con su botón de borde: el azul de esta pantalla ya es el de la marca de arriba. */}
+        <div className="mt-6 bg-surface-muted rounded-lg p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-testid="mejorar-el-perfil">
           <div>
             <h3 className="font-medium text-plan-primary mb-0.5">
-              {locale === 'es' ? '¿Quieres acceder a más propiedades?' : 'Want to access more properties?'}
+              {locale === 'es' ? '¿Quieres que más inmuebles quepan en tu tope?' : 'Want more homes to fit your cap?'}
             </h3>
             <p className="text-sm text-plan-secondary">
               {locale === 'es' ? 'Mejora tu perfil agregando documentación adicional o un codeudor' : 'Improve your profile by adding additional documentation or a co-signer'}
@@ -714,9 +695,9 @@ export default function ParaTiPage() {
           </div>
           {/* Botón del DS: píldora, sentence case. Antes era un <Link> con
               `bg-primary text-white` a mano — en oscuro ese par mide 2,48:1. */}
-          <Button asChild className="shrink-0">
+          <Button asChild variant="outline" size="sm" hideArrow className="shrink-0">
             <Link href="/inquilino/perfil">
-              {locale === 'es' ? 'Mejorar perfil' : 'Improve profile'}
+              {locale === 'es' ? 'Completar mi perfil' : 'Complete my profile'}
             </Link>
           </Button>
         </div>

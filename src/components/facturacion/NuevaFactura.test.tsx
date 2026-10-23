@@ -484,6 +484,9 @@ describe('NuevaFactura', () => {
      * el control con el que se filtra una tabla no es otro objeto que la tabla.
      */
     await montar();
+    // GLOW UP (20-10): mirar los meses que siguen va plegado; abierto, su
+    // selector también vive en la tarjeta.
+    await clic('[data-testid="facturacion-ver-meses-que-siguen"]');
     const tarjeta = q('[data-testid="facturacion-inquilinos"]')!.closest('section')!
       .parentElement as HTMLElement;
     // La tarjeta que contiene la tabla contiene también el selector de mes,
@@ -709,7 +712,7 @@ describe('NuevaFactura', () => {
     );
     await montar();
     const bloque = q('[data-testid="facturacion-omitidos"]')!;
-    expect(bloque.textContent).toContain('1 cuota no genera factura');
+    expect(bloque.textContent).toContain('1 cuota del mes no genera factura');
     expect(bloque.textContent).toContain('El mandato no pactó comisión de administración.');
   });
 
@@ -786,7 +789,8 @@ describe('NuevaFactura', () => {
       await montar();
       const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
       expect(fila.textContent).toContain('FE-41');
-      expect(fila.textContent).toContain('interna N° 41');
+      // Revisora r24 (Facturación #5): el consecutivo interno va en el cajón, no en la fila.
+      expect(fila.textContent).not.toContain('N.º interno');
     });
 
     it('con resolución vigente dice con qué número sigue', async () => {
@@ -859,7 +863,8 @@ describe('NuevaFactura', () => {
       const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
         th.textContent!.trim(),
       );
-      expect(cab).toEqual(['', 'Cliente', 'Concepto', 'Valor', 'Estado']);
+      // Revisora r24 (Facturación #5): en la pestaña de inquilinos, «Inquilino».
+      expect(cab).toEqual(['', 'Inquilino', 'Concepto', 'Valor', 'Estado']);
       const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
       expect(fila.textContent).toContain('Base $\u00a01.800.000');
       expect(fila.textContent).toContain('IVA $\u00a0342.000');
@@ -1160,6 +1165,8 @@ describe('NuevaFactura', () => {
      */
     it('el tope se puede estirar hasta diciembre, y el mes de inicio no se mueve', async () => {
       await montar();
+      // GLOW UP (20-10): «Ver también los meses que siguen» abre el selector.
+      await clic('[data-testid="facturacion-ver-meses-que-siguen"]');
       /* Acotado al select de «Ver hasta»: el de «Mes de facturación» también
          tiene diciembres (los meses pasados), y buscar en toda la pantalla
          tocaba el control equivocado — la prueba pasaba por la razón errada. */
@@ -1344,7 +1351,8 @@ describe('NuevaFactura', () => {
       const mora = q('[data-testid="mora-ct-1|2026-09|INQUILINO"]');
       expect(mora?.textContent).toContain('41.000');
       expect(mora?.textContent).toContain('41 días');
-      expect(mora?.textContent).toContain('sobre la cuota');
+      // Revisión 21-10: en palabras de la persona («sigue creciendo» = sobre la cuota).
+      expect(mora?.textContent).toContain('sigue creciendo');
     });
 
     it('🔴 un interés que ya liquidó el cobro se marca «del cobro»', async () => {
@@ -1353,8 +1361,8 @@ describe('NuevaFactura', () => {
       );
       await montar();
       const mora = q('[data-testid="mora-ct-1|2026-09|INQUILINO"]');
-      expect(mora?.textContent).toContain('del cobro');
-      expect(mora?.textContent).not.toContain('sobre la cuota');
+      expect(mora?.textContent).toContain('ya liquidada en el cobro');
+      expect(mora?.textContent).not.toContain('sigue creciendo');
     });
 
     it('el encabezado totaliza la mora aparte de la base y el IVA', async () => {
@@ -1911,8 +1919,8 @@ describe('🔴 EL MOLDE en «Por facturar» (Nico, 23-09: «tarjeta dentro de ta
     expect(bloque.className).not.toMatch(/(^|\s)border(\s|$)/);
     const frase = q('[data-testid="facturacion-resumen"]')!.textContent ?? '';
     expect(frase).toMatch(/contratos? con cuotas de/);
-    // Los filtros dicen que son filtros.
-    expect(document.body.textContent).toContain('Filtrar por mes');
+    // El filtro dice para qué es (GLOW UP, 20-10: «Mes a facturar»).
+    expect(document.body.textContent).toContain('Mes a facturar');
   });
 });
 
@@ -2041,7 +2049,9 @@ describe('QA-FACT: emitir confirma, y cada fila dice lo que de verdad puede pasa
     expect(fila.querySelector('[data-testid="espera-el-giro-ct-1|2026-09|PROPIETARIO"]')!.textContent).toBe(
       'Se factura cuando se le gire',
     );
-    expect((fila.querySelector('button[role="checkbox"]') as HTMLButtonElement).disabled).toBe(true);
+    // Revisora r24 (Facturación #2): sin ninguna emitible no hay casillas; si la hubiera, apagada.
+    const casilla = fila.querySelector<HTMLButtonElement>('button[role="checkbox"]');
+    expect(casilla === null || casilla.disabled).toBe(true);
     expect(fila.querySelector('[data-testid="generar-una-ct-1|2026-09|PROPIETARIO"]')).toBeNull();
   });
 
@@ -2386,5 +2396,93 @@ describe('T-0163: el mes dividido entre los inquilinos del contrato', () => {
     expect(host.textContent).toContain('Nubia Amparo David');
     expect(host.textContent).not.toContain('Nubia Amparo David ·');
     expect(qa('[data-testid^="factura-junta-"]')).toHaveLength(0);
+  });
+});
+
+/**
+ * GLOW UP (Nico, 20-10-2026): «qué requiere hacer primero el usuario y segundo
+ * etc.». El mes dice lo que sale HOY, lo que hay que dejar listo se dice UNA vez
+ * (arriba, en la página) y mirar los meses que siguen va plegado.
+ */
+describe('GLOW UP · «Por facturar» dice qué sale hoy y no repite los avisos', () => {
+  async function montarCon(props: Parameters<typeof NuevaFactura>[0]) {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root.render(<NuevaFactura onIrAResolucion={irAResolucion} {...props} />);
+    });
+  }
+
+  const sinResolucion = () =>
+    respuesta({
+      resolucion: resolucionVigente({
+        puedeNumerar: false,
+        motivo: 'SIN_RESOLUCION',
+        explicacion: 'La inmobiliaria no tiene ninguna resolución de facturación vigente.',
+        siguiente: null,
+        numero: null,
+      }),
+    });
+
+  it('el resumen cuenta lo que se puede emitir hoy', async () => {
+    await montar();
+    // Revisora r24 (Facturación #1): la cifra «0 de 2 emitidas» y un tramo por causa.
+    const estado = q('[data-testid="facturacion-estado-del-mes"]')!.textContent ?? '';
+    expect(estado).toContain('de 2');
+    expect(q('[data-testid="facturacion-tramo-hoy"]')!.textContent).toMatch(/Se pueden emitir hoy\s*2/);
+  });
+
+  it('🔴 sin resolución, ninguna «se puede emitir hoy»: el resumen dice por qué', async () => {
+    porGenerarMock.mockResolvedValue(sinResolucion());
+    await montar();
+    expect(q('[data-testid="facturacion-tramo-hoy"]')!.textContent).toMatch(/Se pueden emitir hoy\s*0/);
+    expect(q('[data-testid="facturacion-tramo-resolucion"]')!.textContent).toContain('Sin la resolución con qué numerarlas');
+  });
+
+  it('🔴 con la lista de la página arriba, el aviso de la resolución no se repite; el del botón se queda', async () => {
+    porGenerarMock.mockResolvedValue(sinResolucion());
+    await montarCon({ sinAvisoDeResolucionArriba: true });
+    expect(q('[data-testid="facturacion-sin-resolucion"]')).toBeNull();
+    // El motivo al lado del botón apagado sigue —es donde se aprieta—, en corto
+    // y con su botón: el largo ya lo dice la lista de arriba.
+    const motivo = q('[data-testid="facturacion-motivo-apagado"]')!;
+    expect(motivo.textContent).toContain('Falta la resolución con qué numerar.');
+    expect(motivo.querySelector('[data-testid="facturacion-ir-a-resolucion"]')).not.toBeNull();
+  });
+
+  it('mirar los meses que siguen va plegado, y al plegarlo la consulta vuelve al mes solo', async () => {
+    await montar();
+    expect(q('[data-testid="facturacion-hasta"]')).toBeNull();
+    await clic('[data-testid="facturacion-ver-meses-que-siguen"]');
+    const elDeVerHasta = q('[data-testid="facturacion-hasta"]')!.closest('[data-select]')!;
+    const diciembre = Array.from(elDeVerHasta.querySelectorAll('[data-opcion]')).find((b) =>
+      /^\d{4}-12$/.test(b.getAttribute('data-opcion') ?? ''),
+    ) as HTMLButtonElement;
+    await act(async () => {
+      diciembre.click();
+    });
+    expect((porGenerarMock.mock.calls.at(-1)?.[0] as { hasta: string }).hasta).toMatch(/-12$/);
+    await clic('[data-testid="facturacion-ver-meses-que-siguen"]');
+    const ultima = porGenerarMock.mock.calls.at(-1)?.[0] as { desde: string; hasta: string };
+    expect(ultima.hasta).toBe(ultima.desde);
+    expect(q('[data-testid="facturacion-hasta"]')).toBeNull();
+  });
+
+  it('🔴 «Sin confirmar» no sale dos veces en la misma fila', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [
+          factura({
+            clave: 'ct-1|2026-09|INQUILINO',
+            impuestosSinConfirmar: true,
+            codigoNoEmitible: 'ESCENARIO_SIN_CONFIRMAR',
+            emitible: false,
+          }),
+        ],
+      }),
+    );
+    await montar();
+    expect(qa('[data-testid="sin-confirmar-ct-1|2026-09|INQUILINO"]')).toHaveLength(1);
   });
 });

@@ -21,13 +21,17 @@ import { CurrencyCircleDollar } from '@phosphor-icons/react'
 
 import { Button, toast } from '@/components/ui'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
-import { CrossFade, StatusBadge, type SemanticTone } from '@leasefy/cadence'
+import { BackButton, CrossFade, StatusBadge, type SemanticTone } from '@leasefy/cadence'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
-import { usePaymentDetail } from '@/lib/hooks/cobranza/use-payment-detail'
+import { usePaymentDetail, type PaymentDetailResponse } from '@/lib/hooks/cobranza/use-payment-detail'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
+import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 const BACK_HREF = '/panel/inmobiliaria/pagos/cobranza/pagos'
 
@@ -42,13 +46,10 @@ function formatCop(value: number | null | undefined): string {
   return copFormat.format(value)
 }
 
+// VOZ §4 (revisora r25): «17 oct 2026», el formato de la casa, en vez de toLocaleDateString.
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—'
-  return new Date(value).toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  return fechaCorta(diaEnColombia(value))
 }
 
 // Free-form status (pending | approved | declined | voided | refunded |
@@ -101,9 +102,9 @@ function metodoEnEspanol(metodo: string | null | undefined): string {
     case 'cartera_import':
       return 'Importado de la cartera'
     case 'wompi':
-      return 'Link de pago (Wompi)'
+      return 'Enlace de pago (Wompi)'
     case 'bold':
-      return 'Link de pago (Bold)'
+      return 'Enlace de pago (Bold)'
     case 'pse':
       return 'PSE'
     case 'transferencia':
@@ -118,7 +119,7 @@ function metodoEnEspanol(metodo: string | null | undefined): string {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-medium text-fg-muted uppercase tracking-wide">{label}</p>
+      <p className="text-caption text-fg-muted">{label}</p>
       <div className="mt-1 text-sm text-fg">{children}</div>
     </div>
   )
@@ -126,13 +127,74 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function BackLink() {
   return (
-    <Link
-      href={BACK_HREF}
-      data-testid="pagos-detail-back"
-      className="text-primary underline-offset-4 hover:underline font-medium text-xs"
-    >
-      ← Volver a pagos
-    </Link>
+    // C4 (r25): la vuelta de la casa (BackButton), como en Siniestros y Escalaciones.
+    <BackButton variant="subtle" href={BACK_HREF} data-testid="pagos-detail-back" label="Volver a Pagos en línea" />
+  )
+}
+
+/**
+ * Los datos del pago: los usa la página y el cajón de la lista (revisora r25:
+ * «el detalle abre una página»; ahora se mira en un cajón sin salir de la lista).
+ */
+function CamposDelPago({ data }: { data: PaymentDetailResponse }) {
+  const provider = data.paymentProvider ?? '—'
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <Field label="Pasarela">
+          <span className="capitalize">{provider}</span>
+        </Field>
+
+        <Field label="Método">
+          {/* `capitalize` sobre el valor crudo pintaba «Cartera_import». */}
+          <span>{metodoEnEspanol(data.paymentMethod)}</span>
+        </Field>
+
+        <Field label="Deudor">
+          <Mask field="cedula" value={data.debtor.fullName} />
+        </Field>
+
+        <Field label="Cédula">
+          <span className="font-mono text-caption">{data.debtor.cedulaMasked}</span>
+        </Field>
+
+        <Field label="Fecha de creación">{formatDate(data.createdAt)}</Field>
+
+        <Field label="Fecha de pago">{formatDate(data.paidAt)}</Field>
+
+        {data.selfReportedAt && (
+          <Field label="Reportado el">{formatDate(data.selfReportedAt)}</Field>
+        )}
+
+        {data.selfReportedBy && (
+          <Field label="Reportado por">
+            <span className="break-all">{data.selfReportedBy}</span>
+          </Field>
+        )}
+
+        {data.verifiedAt && (
+          <Field label="Verificado el">{formatDate(data.verifiedAt)}</Field>
+        )}
+
+        {data.verifiedByUserId && (
+          <Field label="Verificado por">
+            <span className="break-all">{data.verifiedByUserId}</span>
+          </Field>
+        )}
+
+        {data.comprobanteUrl && (
+          <Field label="Comprobante">
+            <a
+              href={data.comprobanteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-fg underline underline-offset-2 font-medium"
+              data-testid="pago-comprobante-link"
+            >
+              Ver comprobante
+            </a>
+          </Field>
+        )}
+    </div>
   )
 }
 
@@ -167,14 +229,14 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
   if (!data) {
     return (
       <CrossFade swapKey="no-disponible">
-      <div className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
+      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <BackLink />
-        <h1 className="text-h2 text-fg">Detalle de pago</h1>
+        <EncabezadoDePantalla seccion="Cobranza · Pagos en línea" titulo="Detalle de pago" />
         <EmptyState
           icon={CurrencyCircleDollar}
           title="Pago no disponible"
           description="No encontramos el detalle de este pago. Puede que aún no esté disponible en este entorno."
-          primaryCta={{ label: 'Volver a pagos', href: BACK_HREF }}
+          primaryCta={{ label: 'Volver a Pagos en línea', href: BACK_HREF }}
         />
       </div>
       </CrossFade>
@@ -182,7 +244,6 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
   }
 
   const isVerifiable = data.status === 'self_reported'
-  const provider = data.paymentProvider ?? '—'
 
   const handleVerify = async () => {
     await verifyPayment('approve')
@@ -190,19 +251,26 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
 
   return (
     <CrossFade swapKey="pago">
-    <div className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
+    <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
       <BackLink />
 
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">Detalle de pago</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            Información del pago, su estado y verificación.
-          </p>
-        </div>
-        {isVerifiable && (
-          <div className="shrink-0">
+      <EncabezadoDePantalla
+        seccion="Cobranza · Pagos en línea"
+        titulo="Detalle de pago"
+        descripcion={
+          isVerifiable
+            ? 'El inquilino dice que ya pagó: revisa el comprobante y verifícalo.'
+            : 'El monto, su estado y quién lo verificó.'
+        }
+        junto={
+          <StatusBadge tone={statusTone(data.status)}>
+            {statusLabel(data.status, data.paymentMethod)}
+          </StatusBadge>
+        }
+        accionPrincipal={
+          isVerifiable ? (
             <Button
+              size="sm"
               hideArrow
               onClick={() => void handleVerify()}
               isLoading={isVerifying}
@@ -211,77 +279,118 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
             >
               Verificar pago
             </Button>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
-      <div className="rounded-lg border border-border bg-card p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <Field label="Monto">
-          <span className="text-lg font-semibold text-fg">{formatCop(data.amount)}</span>
-        </Field>
+      <CifraHeroe rotulo="Monto" cifra={formatCop(data.amount)} tamano="mediana" data-testid="pago-monto" />
 
-        <Field label="Estado">
-          <StatusBadge tone={statusTone(data.status)}>
-            {statusLabel(data.status, data.paymentMethod)}
-          </StatusBadge>
-        </Field>
-
-        <Field label="Proveedor">
-          <span className="capitalize">{provider}</span>
-        </Field>
-
-        <Field label="Método">
-          {/* `capitalize` sobre el valor crudo pintaba «Cartera_import». */}
-          <span>{metodoEnEspanol(data.paymentMethod)}</span>
-        </Field>
-
-        <Field label="Deudor">
-          <Mask field="cedula" value={data.debtor.fullName} />
-        </Field>
-
-        <Field label="Cédula">
-          <span className="font-mono text-xs">{data.debtor.cedulaMasked}</span>
-        </Field>
-
-        <Field label="Fecha de creación">{formatDate(data.createdAt)}</Field>
-
-        <Field label="Fecha de pago">{formatDate(data.paidAt)}</Field>
-
-        {data.selfReportedAt && (
-          <Field label="Reportado el">{formatDate(data.selfReportedAt)}</Field>
-        )}
-
-        {data.selfReportedBy && (
-          <Field label="Reportado por">
-            <span className="break-all">{data.selfReportedBy}</span>
-          </Field>
-        )}
-
-        {data.verifiedAt && (
-          <Field label="Verificado el">{formatDate(data.verifiedAt)}</Field>
-        )}
-
-        {data.verifiedByUserId && (
-          <Field label="Verificado por">
-            <span className="break-all">{data.verifiedByUserId}</span>
-          </Field>
-        )}
-
-        {data.comprobanteUrl && (
-          <Field label="Comprobante">
-            <a
-              href={data.comprobanteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline-offset-4 hover:underline font-medium"
-              data-testid="pago-comprobante-link"
-            >
-              Ver comprobante →
-            </a>
-          </Field>
-        )}
+      <div className="rounded-lg border border-border bg-card p-5 sm:p-6">
+        <CamposDelPago data={data} />
       </div>
     </div>
     </CrossFade>
+  )
+}
+
+/**
+ * El detalle del pago en un cajón, para mirarlo sin salir de la lista
+ * (revisora r25, Pagos #3). Mismos datos y la misma verificación que la página;
+ * la página sigue viva para quien llega por un enlace.
+ */
+export function DetalleDelPagoEnCajon({
+  paymentId,
+  onCerrar,
+}: {
+  paymentId: string | null
+  onCerrar: () => void
+}) {
+  return (
+    <Cajon abierto={paymentId !== null} onOpenChange={(v) => !v && onCerrar()} data-testid="pago-cajon">
+      {paymentId ? <ContenidoDelCajon key={paymentId} paymentId={paymentId} /> : null}
+    </Cajon>
+  )
+}
+
+function ContenidoDelCajon({ paymentId }: { paymentId: string }) {
+  const { data, isLoading, verifyPayment, isVerifying, falloDeVerificacion, limpiarFalloDeVerificacion } =
+    usePaymentDetail({ paymentId })
+
+  useEffect(() => {
+    if (!falloDeVerificacion) return
+    toast.error(
+      mensajeParaLaPersona(falloDeVerificacion, {
+        porDefecto: 'No pudimos verificar el pago.',
+        accion: 'verificar el pago',
+      }),
+    )
+    limpiarFalloDeVerificacion()
+  }, [falloDeVerificacion, limpiarFalloDeVerificacion])
+
+  if (isLoading || !data) {
+    return (
+      <>
+        <CajonCabecera titulo="Detalle de pago" />
+        <CajonCuerpo>
+          <CrossFade swapKey={isLoading ? 'cargando' : 'no-disponible'}>
+            {isLoading ? (
+              <div className="space-y-4" aria-hidden="true">
+                <span className="block h-9 w-48 animate-pulse rounded bg-surface-muted" />
+                <span className="block h-24 w-full animate-pulse rounded bg-surface-muted" />
+              </div>
+            ) : (
+              <p className="text-body-sm text-fg-muted" data-testid="pago-cajon-no-disponible">
+                No encontramos el detalle de este pago. Puede que aún no esté disponible.
+              </p>
+            )}
+          </CrossFade>
+        </CajonCuerpo>
+      </>
+    )
+  }
+
+  const isVerifiable = data.status === 'self_reported'
+  return (
+    <>
+      <CajonCabecera
+        titulo="Detalle de pago"
+        descripcion={
+          isVerifiable
+            ? 'El inquilino dice que ya pagó: revisa el comprobante y verifícalo.'
+            : 'El monto, su estado y quién lo verificó.'
+        }
+      />
+      <CajonCuerpo className="space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <CifraHeroe rotulo="Monto" cifra={formatCop(data.amount)} tamano="mediana" data-testid="pago-cajon-monto" />
+          <StatusBadge tone={statusTone(data.status)}>{statusLabel(data.status, data.paymentMethod)}</StatusBadge>
+        </div>
+        <CamposDelPago data={data} />
+      </CajonCuerpo>
+      <CajonPie
+        izquierda={
+          <Link
+            href={`${BACK_HREF}/${paymentId}`}
+            className="text-body-sm text-fg underline underline-offset-2"
+            data-testid="pago-cajon-abrir-pagina"
+          >
+            Abrir en su página
+          </Link>
+        }
+      >
+        {isVerifiable ? (
+          <Button
+            size="sm"
+            hideArrow
+            onClick={() => void verifyPayment('approve')}
+            isLoading={isVerifying}
+            disabled={isVerifying}
+            data-testid="pago-cajon-verify-btn"
+          >
+            Verificar pago
+          </Button>
+        ) : null}
+      </CajonPie>
+    </>
   )
 }

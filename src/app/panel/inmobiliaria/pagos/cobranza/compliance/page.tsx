@@ -16,11 +16,16 @@
  * (rose for warning/error, emerald for ok).
  */
 
+import { formatRelativeTime } from '@/lib/format'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { useTr } from '@/lib/i18n/use-tr'
 import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
-import { Warning, ShieldCheck, ClipboardText, FileText } from '@phosphor-icons/react'
+import { ShieldCheck, ClipboardText, FileText } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -29,23 +34,19 @@ import { HabeasDataSlaCard } from '@/components/inmobiliaria/cobranza/HabeasData
 import { ComplianceSparkline } from '@/components/inmobiliaria/cobranza/ComplianceSparkline'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { MonoLabel } from '@leasefy/cadence'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 function ComplianceOverviewContent() {
   const { t, locale } = useI18n()
+  const tr = useTr()
   const { data, isLoading, error, refetch } = useComplianceOverview()
 
   useAutoRefresh(refetch)
 
-  // El disparador era `remaining_days <= 15`, que con un término de 15 días es
-  // cierto SIEMPRE que haya una solicitud abierta: la banda roja salía aunque
-  // faltaran dos semanas. Una alerta que está siempre encendida deja de leerse.
-  // Ahora avisa por lo que de verdad urge: vencidas o a punto de vencer.
-  const showBanner = useMemo(() => {
-    if (!data) return false
-    return data.habeas_data.open_requests.some((r) => r.remaining_days <= URGENT_DAYS)
-  }, [data])
+  // La urgencia de «no contactar» (vencidas o a punto) la dice ahora la cifra:
+  // ver `URGENT_DAYS` abajo. Antes era una banda roja aparte.
 
   const lastUpdated = useMemo(() => {
     if (!data?.generated_at) return null
@@ -53,9 +54,9 @@ function ComplianceOverviewContent() {
       0,
       Math.round((Date.now() - new Date(data.generated_at).getTime()) / 1000),
     )
-    if (sec < 60) return locale.startsWith('es') ? `hace ${sec}s` : `${sec}s ago`
-    const min = Math.round(sec / 60)
-    return locale.startsWith('es') ? `hace ${min}m` : `${min}m ago`
+    // C7 (r25): «hace 3 minutos», no «hace 30s».
+    void sec
+    return formatRelativeTime(data.generated_at, locale.startsWith('en') ? 'en' : 'es')
   }, [data?.generated_at, locale])
 
   // Phase 38-05a: page-level skeleton during first load. Movimiento: cada
@@ -99,10 +100,11 @@ function ComplianceOverviewContent() {
         <Link
           key={href}
           href={href}
-          className="rounded-lg border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition-colors flex items-center gap-3"
+          className="rounded-lg border border-border bg-card p-4 hover:bg-surface-muted transition-colors flex items-center gap-3"
         >
-          <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
-          <span className="text-sm font-medium text-foreground">{title}</span>
+          {/* Un solo azul por pantalla (revisora r25): el ícono y el borde, en tinta. */}
+          <Icon className="w-5 h-5 text-fg-muted" aria-hidden="true" />
+          <span className="text-body-sm font-medium text-fg">{title}</span>
         </Link>
       ))}
     </section>
@@ -117,7 +119,12 @@ function ComplianceOverviewContent() {
   if (!isLoading && data && !error && !hasAnyIssues) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
+          descripcion={tr('Si la cobranza cumple la Ley 2300 (horarios y contactos), las solicitudes de no contactar y la retención de los datos.')}
+        />
         <EmptyState
           icon={ShieldCheck}
           title={t('inmobiliaria.ai.cobranza.compliance.empty.title')}
@@ -131,103 +138,105 @@ function ComplianceOverviewContent() {
 
   return (
     <CrossFade swapKey="panel">
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-heading text-foreground">
-            {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
-          </h1>
-          {lastUpdated && (
-            <p className="mt-1 text-xs text-muted-foreground tabular-nums font-mono">
-              {lastUpdated}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Page-level red banner — D-34-RES-A1 trigger remaining_days <= 15.
-          Entra y sale con `Presence` (baja 8px desde arriba, como antes). */}
-      <Presence
-          show={showBanner}
-          direction="down"
-          className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
-          role="alert"
-        >
-          <Warning
-            className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
-            weight="fill"
-            aria-hidden="true"
-          />
-          <p className="text-sm text-danger">
-            {t('inmobiliaria.ai.cobranza.compliance.habeasData.banner')}
-          </p>
-      </Presence>
+    <div className="p-6 lg:p-8 space-y-6">
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
+        descripcion={tr('Si la cobranza cumple la Ley 2300 (horarios y contactos), las solicitudes de no contactar y la retención de los datos.')}
+        junto={
+          lastUpdated ? (
+            <span className="text-caption font-mono tabular-nums text-fg-muted">{lastUpdated}</span>
+          ) : null
+        }
+        data-testid="cumplimiento-encabezado"
+      />
 
       {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
-      <Presence
-        show={Boolean(error && !data)}
-        role="alert"
-        className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
-      >
-          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>Error: {error}</span>
-      </Presence>
+      {/* C5 (r25): FalloDeCarga con «Intentar de nuevo», nunca el error crudo pegado a la frase. */}
+      {error && !data ? (
+        <FalloDeCarga error={falloDelTexto(error)} queEs="el cumplimiento" onReintentar={() => refetch()} />
+      ) : null}
 
       {data && (
         <>
-          {/* Section 1: Ley 2300 weekly counter */}
-          <section className="rounded-lg border border-border bg-card p-4">
-            <MonoLabel>
-              {t('inmobiliaria.ai.cobranza.compliance.overview.ley2300Heading')}
-            </MonoLabel>
-            <div className="mt-3 flex items-baseline gap-3">
-              <span
-                className={[
-                  'text-4xl font-mono tabular-nums',
-                  data.ley_2300.weekly_outside_hours_count === 0
-                    ? 'text-success'
-                    : 'text-danger font-bold',
-                ].join(' ')}
-              >
-                <AnimatedNumber
-                  value={data.ley_2300.weekly_outside_hours_count}
-                  format={(n) => String(Math.round(n))}
-                />
-              </span>
-              {/*
-                Decía «4 / 0», que se lee como una fracción rota — «cuatro de
-                cero». No es un progreso hacia una meta: es un CONTEO de
-                infracciones contra un objetivo que sólo puede ser cero. Se
-                escribe con palabras.
-              */}
-              <span className="text-sm text-muted-foreground">
-                {data.ley_2300.weekly_outside_hours_count === 1
-                  ? 'intento'
-                  : 'intentos'}{' '}
-                · el objetivo es {data.ley_2300.target}
-              </span>
-            </div>
-          </section>
+          {/* LA RESPUESTA (revisora r25, Cumplimiento #1): «¿estoy cumpliendo la
+              ley?» en UNA cifra con sus tres frentes —Ley 2300, no contactar y
+              retención—. Antes la cifra sólo contaba los intentos de la Ley 2300
+              y lo demás pesaba lo mismo, con una banda roja aparte. */}
+          {(() => {
+            const intentos = data.ley_2300.weekly_outside_hours_count
+            const porAcusar = data.habeas_data.open_requests.length
+            const urgen = data.habeas_data.open_requests.filter((r) => r.remaining_days <= URGENT_DAYS).length
+            const pct = data.retention.compliance_pct
+            const retencionMal = pct !== null && pct < data.retention.target
+            const porAtender = (intentos > 0 ? 1 : 0) + (urgen > 0 ? 1 : 0) + (retencionMal ? 1 : 0)
+            return (
+              <CifraHeroe
+                data-testid="cumplimiento-ley-2300"
+                // Revisora r27 (Cumplimiento, UI): el rótulo dice el hecho, no repite el título.
+                rotulo={tr('Por atender')}
+                cifra={porAtender === 0 ? tr('Cumples') : porAtender === 1 ? tr('1 cosa por atender') : tr('{n} cosas por atender', { n: porAtender })}
+                contexto={tr('de tres frentes: Ley 2300, no contactar y retención')}
+                total={3}
+                tramos={[
+                  {
+                    clave: 'ley-2300',
+                    etiqueta: tr('Ley 2300'),
+                    monto: 1,
+                    tono: intentos > 0 ? 'critico' : 'exito',
+                    siempre: true,
+                    cifra:
+                      intentos === 0
+                        ? tr('Sin contactos fuera de horario')
+                        : intentos === 1
+                          ? tr('1 intento fuera de horario esta semana')
+                          : tr('{n} intentos fuera de horario esta semana', { n: intentos }),
+                  },
+                  {
+                    clave: 'no-contactar',
+                    etiqueta: tr('No contactar'),
+                    monto: 1,
+                    tono: urgen > 0 ? 'critico' : porAcusar > 0 ? 'aviso' : 'exito',
+                    siempre: true,
+                    cifra:
+                      porAcusar === 0
+                        ? tr('Todas con su acuse')
+                        : urgen > 0
+                          ? tr('{n} por acusar, {u} vencen ya', { n: porAcusar, u: urgen })
+                          : tr('{n} por acusar, en plazo', { n: porAcusar }),
+                  },
+                  {
+                    clave: 'retencion',
+                    etiqueta: tr('Retención de los datos'),
+                    monto: 1,
+                    tono: pct === null ? 'neutro' : retencionMal ? 'aviso' : 'exito',
+                    siempre: true,
+                    cifra: pct === null ? tr('Sin nada que medir') : `${pct} % / ${data.retention.target} %`,
+                  },
+                ]}
+              />
+            )
+          })()}
 
           {/* Section 2: Habeas Data SLA list */}
+          {/* Revisora r25 (Cumplimiento #2): estas solicitudes son las de «No
+              contactar» y llevan ahí; se llaman igual que su destino (antes
+              «Habeas Data», que en el riel abre otra pantalla). */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <MonoLabel>
+              <h2 className="text-body font-normal text-fg">
                 {t('inmobiliaria.ai.cobranza.compliance.overview.habeasDataHeading')}
-              </MonoLabel>
+              </h2>
               <Link
                 href="/panel/inmobiliaria/pagos/cobranza/compliance/opt-out"
-                className="text-xs text-primary hover:underline font-medium"
+                className="text-caption font-medium text-fg-muted underline underline-offset-2 hover:text-fg"
               >
-                {locale.startsWith('es') ? 'Ver todos' : 'View all'}
+                {tr('Ver No contactar')}
               </Link>
             </div>
             {data.habeas_data.open_requests.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                {locale.startsWith('es')
-                  ? 'Sin solicitudes Habeas Data abiertas'
-                  : 'No open Habeas Data requests'}
+              <p className="text-body-sm text-muted-foreground text-center py-6">
+                {tr('Ninguna solicitud de no contactar espera su acuse.')}
               </p>
             ) : (
               <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -242,9 +251,9 @@ function ComplianceOverviewContent() {
 
           {/* Section 3: Retention gauge */}
           <section className="rounded-lg border border-border bg-card p-4">
-            <MonoLabel>
+            <h2 className="text-body font-normal text-fg">
               {t('inmobiliaria.ai.cobranza.compliance.overview.retentionHeading')}
-            </MonoLabel>
+            </h2>
             {/* `compliance_pct: null` = no hay filas que medir. Antes el back
                 devolvía 100 fijo con un TODO y esto pintaba un 100% verde que
                 no medía nada — en la pantalla cuyo trabajo es avisar cuando
@@ -258,16 +267,16 @@ function ComplianceOverviewContent() {
                 <div className="flex items-baseline gap-2">
                   <span
                     className={[
-                      'text-3xl font-mono tabular-nums',
+                      'text-[24px] font-mono tabular-nums',
                       data.retention.compliance_pct >= data.retention.target
                         ? 'text-success'
                         : 'text-warning',
                     ].join(' ')}
                   >
-                    {data.retention.compliance_pct}%
+                    {data.retention.compliance_pct} %
                   </span>
-                  <span className="text-sm text-muted-foreground">
-                    / {data.retention.target}%
+                  <span className="text-body-sm text-fg-muted">
+                    / {data.retention.target} %
                   </span>
                 </div>
                 <div
@@ -305,13 +314,16 @@ function ComplianceOverviewContent() {
             )}
           </section>
 
-          {/* Section 4: 30-day sparkline */}
-          <section className="rounded-lg border border-border bg-card p-4">
-            <MonoLabel className="mb-3">
-              {t('inmobiliaria.ai.cobranza.compliance.overview.sparklineHeading')}
-            </MonoLabel>
-            <ComplianceSparkline buckets={data.sparkline.daily_buckets_30d} />
-          </section>
+          {/* Section 4: 30-day sparkline — de consulta, plegada (revisora r25). */}
+          <MasDetalles
+            etiqueta={t('inmobiliaria.ai.cobranza.compliance.overview.sparklineHeading')}
+            etiquetaAbierto={tr('Ocultar las alertas por día')}
+            data-testid="cumplimiento-grafica"
+          >
+            <section className="rounded-lg border border-border bg-card p-4">
+              <ComplianceSparkline buckets={data.sparkline.daily_buckets_30d} />
+            </section>
+          </MasDetalles>
 
           {/* Section 5: Sub-page nav cards */}
           {tarjetasDeSubpaginas}

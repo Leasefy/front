@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
+import { Avatar } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { confirmar } from '@/components/ui/confirmar';
 import { useTeamMembers } from '@/lib/hooks/useSettings';
@@ -186,18 +186,14 @@ export function TeamManagementSection(
           {teamMembersList.map((member) => (
             <div key={member.id} className="flex items-center justify-between px-4 py-4 sm:px-5">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                  <span className="text-sm font-semibold text-[#1A40FF] dark:text-[#5570FF]">
-                    {(member.name || member.email || '?').charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                <Avatar name={member.name || member.email || '?'} size="md" className="shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-fg">{member.name || t('landlordSettings.team.pendingInvitation')}</p>
-                  <p className="text-xs text-fg-subtle">{member.email}</p>
+                  <p className="text-caption text-fg-subtle">{member.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
+                <Badge variant="secondary">
                   {member.role === 'admin' ? t('landlordSettings.team.roles.admin') : member.role === 'contador' ? t('landlordSettings.team.roles.accountant') : t('landlordSettings.team.roles.viewer')}
                 </Badge>
                 {member.role !== 'admin' && (
@@ -208,13 +204,13 @@ export function TeamManagementSection(
                         setEditMemberForm({ name: member.name || '', role: member.role });
                         setShowEditMemberModal(true);
                       }}
-                      className="text-xs text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+                      className="text-caption text-fg-muted underline-offset-2 hover:text-fg hover:underline"
                     >
                       {t('landlordSettings.team.edit')}
                     </button>
                     <button
                       onClick={() => void handleRemoveMember(member)}
-                      className="text-xs text-danger hover:underline"
+                      className="text-caption text-danger hover:underline"
                     >
                       {t('landlordSettings.team.remove')}
                     </button>
@@ -224,8 +220,17 @@ export function TeamManagementSection(
             </div>
           ))}
           {cargandoEquipo && teamMembersList.length === 0 && (
-            <div className="flex items-center justify-center px-6 py-8">
-              <Spinner size="md" variant="muted" />
+            // Esqueleto con la forma de la fila (antes una rueda).
+            <div aria-busy="true" data-testid="equipo-cargando">
+              {[0, 1].map((i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-4 sm:px-5">
+                  <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-surface-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-1/3 animate-pulse rounded-full bg-surface-muted" />
+                    <div className="h-2.5 w-1/2 animate-pulse rounded-full bg-surface-muted" />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
           {!cargandoEquipo && Boolean(errorEquipo) && (
@@ -309,23 +314,23 @@ export function TeamManagementSection(
                   className={cn(
                     'w-full flex items-center gap-3 p-4 rounded-lg border transition-colors text-left',
                     inviteForm.role === role.value
-                      ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
+                      ? 'border-primary/30 bg-primary-soft'
                       : 'border-border hover:border-border-strong bg-surface'
                   )}
                 >
                   <div className={cn(
                     'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0',
                     inviteForm.role === role.value
-                      ? 'border-[#1A40FF]/30'
+                      ? 'border-primary'
                       : 'border-border-strong'
                   )}>
                     {inviteForm.role === role.value && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#1A40FF]" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-primary" />
                     )}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-fg">{role.label}</p>
-                    <p className="text-xs text-fg-subtle">{role.desc}</p>
+                    <p className="text-caption text-fg-subtle">{role.desc}</p>
                   </div>
                 </button>
               ))}
@@ -401,23 +406,23 @@ export function TeamManagementSection(
                   className={cn(
                     'w-full flex items-center gap-3 p-4 rounded-lg border transition-colors text-left',
                     editMemberForm.role === role.value
-                      ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
+                      ? 'border-primary/30 bg-primary-soft'
                       : 'border-border hover:border-border-strong bg-surface'
                   )}
                 >
                   <div className={cn(
                     'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0',
                     editMemberForm.role === role.value
-                      ? 'border-[#1A40FF]/30'
+                      ? 'border-primary'
                       : 'border-border-strong'
                   )}>
                     {editMemberForm.role === role.value && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#1A40FF]" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-primary" />
                     )}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-fg">{role.label}</p>
-                    <p className="text-xs text-fg-subtle">{role.desc}</p>
+                    <p className="text-caption text-fg-subtle">{role.desc}</p>
                   </div>
                 </button>
               ))}

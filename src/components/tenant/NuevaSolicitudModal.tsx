@@ -461,7 +461,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
             <Paperclip className="w-4 h-4" />
             {locale === 'es' ? 'Agregar fotos o videos' : 'Add photos or videos'}
           </Button>
-          <p className="text-xs text-fg-muted mt-1.5">
+          <p className="text-caption text-fg-muted mt-1.5">
             {locale === 'es'
               ? 'Fotos o PDF hasta 10 MB; videos hasta 20 MB (unos 20 segundos).'
               : 'Photos or PDF up to 10 MB; videos up to 20 MB (about 20 seconds).'}

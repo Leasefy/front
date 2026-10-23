@@ -1,5 +1,7 @@
 'use client'
 
+import { MagnifyingGlass } from '@phosphor-icons/react'
+import { useRouter } from 'next/navigation'
 import { useState, useCallback } from 'react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
@@ -39,6 +41,7 @@ interface DebtorsResponse {
  * Empty q → idle state, no fetch, no audit row.
  */
 export default function DebtorsPage() {
+  const router = useRouter()
   const { get, setFilters } = useUrlFilters()
 
   // URL is the source of truth for the committed search term.
@@ -71,7 +74,7 @@ export default function DebtorsPage() {
     {
       header: 'Nombre',
       orden: (r) => r.full_name,
-      cell: (r) => <span className="font-medium text-fg">{r.full_name}</span>,
+      cell: (r) => <span className="text-body-sm font-medium text-fg">{r.full_name}</span>,
     },
     {
       header: 'Cédula',
@@ -107,63 +110,65 @@ export default function DebtorsPage() {
     },
   ]
 
+  // Ronda 26 (revisora r25): el buscador va DENTRO de la tabla (antes en otra tarjeta, con un rótulo que el
+  // vacío repetía) y la fila se abre: lleva a sus llamadas. Se sigue buscando al enviar, no con cada tecla:
+  // cada búsqueda queda registrada.
+  const buscador = (
+    <form className="flex w-full flex-wrap items-center gap-2" onSubmit={handleSubmit} role="search">
+      <Input
+        id="buscar-deudor"
+        type="search"
+        className="min-w-0 flex-1"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        placeholder="Nombre, cédula o teléfono"
+        aria-label="Buscar un deudor por nombre, cédula o teléfono"
+        autoComplete="off"
+      />
+      {/* Ronda 28 (revisora r27): el botón del alto del campo (h-11; antes «sm», más bajo). */}
+      <Button hideArrow type="submit" className="h-11" isLoading={debtors.isLoading && Boolean(committedQ)}>
+        Buscar
+      </Button>
+      {committedQ ? (
+        <Button variant="outline" hideArrow type="button" className="h-11" onClick={handleClear}>
+          Limpiar
+        </Button>
+      ) : null}
+    </form>
+  )
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Deudores"
-        description="Busca un deudor por nombre, cédula o teléfono en todas las inmobiliarias. Son datos personales: cada búsqueda queda registrada con tu correo antes de mostrar resultados."
+        description="Busca un deudor en todas las inmobiliarias; cada búsqueda queda registrada."
       />
 
-      {/* Se busca al enviar, no con cada tecla: cada búsqueda queda registrada. */}
-      <form className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-4" onSubmit={handleSubmit}>
-        <label className="min-w-[240px] flex-1" htmlFor="buscar-deudor">
-          <span className="mb-1.5 block text-body-sm font-medium text-fg">Nombre, cédula o teléfono</span>
-          <Input
-            id="buscar-deudor"
-            type="search"
-            className="w-full"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ej.: 1234567 o 300 123 4567"
-            autoComplete="off"
-          />
-        </label>
-        <Button hideArrow type="submit">
-          Buscar
-        </Button>
-        {committedQ && (
-          <Button variant="outline" hideArrow type="button" onClick={handleClear}>
-            Limpiar
-          </Button>
-        )}
-      </form>
-
-      {!committedQ ? (
-        <p className="rounded-lg border border-border bg-surface px-4 py-3 text-body-sm text-fg-muted">
-          Escribe un nombre, una cédula o un teléfono. Hasta que busques no se muestra ni se registra nada.
-        </p>
-      ) : (
-        <>
-          {debtors.data && (
-            <p className="text-caption text-fg-muted">
-              {debtors.data.data.length === 1 ? '1 resultado' : `${debtors.data.data.length} resultados`}
-              {debtors.data.data.length === 50 && ' (se muestran los primeros 50: afina la búsqueda)'}
-            </p>
-          )}
-          <DataTable
-            columns={columns}
-            rows={debtors.data?.data}
-            getKey={(r) => r.id}
-            isLoading={debtors.isLoading}
-            error={debtors.error}
-            emptyTitle={`Nada con «${committedQ}»`}
-            emptyHint="Revisa la cédula o intenta con otro nombre."
-            aria-label="Deudores encontrados"
-            queSon={['deudor', 'deudores']}
-            filasPorPagina={10}
-          />
-        </>
-      )}
+      {debtors.data && debtors.data.data.length === 50 ? (
+        <p className="text-caption text-fg-muted">Se muestran los primeros 50: afina la búsqueda.</p>
+      ) : null}
+      <DataTable
+        columns={columns}
+        rows={committedQ ? debtors.data?.data : []}
+        getKey={(r) => r.id}
+        isLoading={Boolean(committedQ) && debtors.isLoading}
+        error={committedQ ? debtors.error : null}
+        onReintentar={debtors.refetch}
+        emptyTitle={committedQ ? `Nada con «${committedQ}»` : 'Escribe arriba a quién buscas'}
+        emptyHint={
+          committedQ
+            ? 'Revisa la cédula o intenta con otro nombre.'
+            : 'Son datos personales: hasta que busques no se muestra ni se registra nada.'
+        }
+        emptyIcon={<MagnifyingGlass weight="duotone" />}
+        aria-label="Deudores encontrados"
+        onRowClick={(r) => router.push(`/admin/calls?q=${encodeURIComponent(r.full_name)}`)}
+        queSon={['deudor', 'deudores']}
+        // Ronda 28 (revisora r27, T13): el buscador SIEMPRE a la vista y a lo ancho (antes, a 390, detrás de
+        // «Filtros» mientras el vacío decía «Escribe arriba a quién buscas»).
+        buscadorPropio={buscador}
+        filasPorPagina={10}
+      />
     </div>
   )
 }

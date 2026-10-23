@@ -2,27 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { toast } from '@/components/ui/toast';
-import {
-  X,
-  MapPin,
-  Phone,
-  Envelope,
-  Copy,
-  WhatsappLogo,
-  Clock,
-  Warning,
-  CheckCircle,
-  ArrowRight,
-  User,
-  Buildings,
-  CalendarBlank,
-  CaretRight,
-  Note,
-  XCircle,
-  Timer,
-  Target,
-  TrendUp,
-} from '@phosphor-icons/react';
+import { X, MapPin, Phone, Envelope, Copy, WhatsappLogo, Clock, Warning, CheckCircle, User, Buildings, CalendarBlank, CaretRight, Note, XCircle, Timer, Target, TrendUp } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
@@ -171,8 +151,8 @@ function RiskBadge({ score, level }: { score?: number; level?: string }) {
   };
 
   return (
-    <div className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium', colors[level || 'E'])}>
-      {level && <span className="font-bold">{level}</span>}
+    <div className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-caption font-medium', colors[level || 'E'])}>
+      {level && <span className="font-medium">{level}</span>}
       {score && <span className="opacity-75">({score} {tr("pts)")}</span>}
     </div>
   );
@@ -372,7 +352,7 @@ export function PipelineDetail({
             // Al avanzar de etapa la píldora cambia con un fundido: la nueva
             // entra ya y la vieja se va encima (`popLayout`).
             <CrossFade as="span" swapKey={item.stage} mode="popLayout" className="inline-flex shrink-0">
-              <span className={cn('shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold', stageInfo?.color)}>
+              <span className={cn('shrink-0 px-3 py-1.5 rounded-full text-caption font-medium', stageInfo?.color)}>
                 {tr(stageInfo?.labelEs ?? '')}
               </span>
             </CrossFade>
@@ -398,7 +378,7 @@ export function PipelineDetail({
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-foreground truncate">{item.propertyTitle}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5 truncate">{item.propertyAddress}</p>
-                <p className="text-lg font-semibold text-primary mt-2 tabular-nums">
+                <p className="text-lg font-medium text-primary mt-2 tabular-nums">
                   {/* A sale mandate has no canon. `—`, never `$ 0` (C6). */}
                   {item.monthlyRent != null ? (
                     <>
@@ -440,11 +420,20 @@ export function PipelineDetail({
                 <Copy className="w-4 h-4" />
               </button>
             )}
+            {/* Revisora r22 (Qué ofrecer #4): desde el interesado se llega a «Qué ofrecer» con él ya elegido. */}
+            <Link
+              href={`/panel/inmobiliaria/pipeline/que-ofrecer?interesado=${encodeURIComponent(item.id)}`}
+              className="flex items-center justify-between px-4 py-3 border-t border-border text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
+              data-testid="lead-que-ofrecerle"
+            >
+              <span>{tr("Qué otros inmuebles le sirven")}</span>
+              <CaretRight className="w-4 h-4" />
+            </Link>
           </div>
 
           {/* Candidate Section */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <h4 className="text-caption font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <User className="w-3.5 h-3.5" />
               {t('inmobiliaria.pipeline.candidate')}
             </h4>
@@ -457,7 +446,7 @@ export function PipelineDetail({
                     className="w-11 h-11 rounded-full object-cover shrink-0"
                   />
                 ) : (
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white text-sm font-medium shrink-0">
                     {item.candidateName.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}
                   </div>
                 )}
@@ -469,7 +458,7 @@ export function PipelineDetail({
                 <Button
                   variant="secondary"
                   hideArrow
-                  onClick={() => copyToClipboard(item.candidateEmail, 'Email')}
+                  onClick={() => copyToClipboard(item.candidateEmail, 'Correo')}
                   className="justify-start gap-2 px-3 text-muted-foreground"
                 >
                   <Envelope className="w-4 h-4 shrink-0" />
@@ -511,14 +500,14 @@ export function PipelineDetail({
 
           {/* Progress Section */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <h4 className="text-caption font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <TrendUp className="w-3.5 h-3.5" />
               {t('inmobiliaria.pipeline.progress')}
             </h4>
             <div className="rounded-lg border border-border bg-card divide-y divide-border">
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.currentStage')}</span>
-                <span className={cn('px-2.5 py-1 rounded-sm text-xs font-medium', stageInfo?.color)}>
+                <span className={cn('px-2.5 py-1 rounded-sm text-caption font-medium', stageInfo?.color)}>
                   {tr(stageInfo?.labelEs ?? '')}
                 </span>
               </div>
@@ -550,7 +539,7 @@ export function PipelineDetail({
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.daysInStage')}</span>
                 <span className={cn(
-                  'flex items-center gap-1.5 text-sm font-semibold tabular-nums',
+                  'flex items-center gap-1.5 text-sm font-medium tabular-nums',
                   isOverdue ? 'text-warning' : 'text-foreground'
                 )}>
                   {item.daysInStage} {t('inmobiliaria.pipeline.days')}
@@ -579,7 +568,7 @@ export function PipelineDetail({
 
           {/* Timeline Section */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <h4 className="text-caption font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Timer className="w-3.5 h-3.5" />
               {t('inmobiliaria.pipeline.history')}
             </h4>
@@ -622,7 +611,7 @@ export function PipelineDetail({
                                 etapa actual. En el ingreso al pipeline no hay
                                 nada que contar. */}
                             {hito.dias !== undefined && (
-                              <p className="text-xs text-muted-foreground mt-0.5">
+                              <p className="text-caption text-muted-foreground mt-0.5">
                                 {hito.dias}{' '}
                                 {hito.dias === 1
                                   ? t('inmobiliaria.pipeline.daySingular')
@@ -631,7 +620,7 @@ export function PipelineDetail({
                               </p>
                             )}
                           </div>
-                          <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                          <span className="text-caption text-muted-foreground shrink-0 tabular-nums">
                             {formatDateI18n(new Date(hito.fecha), {
                               day: 'numeric',
                               month: 'short',
@@ -648,7 +637,7 @@ export function PipelineDetail({
                   `Math.random()`: diez etapas con sus días, todas menos una
                   inventadas y ninguna marcada como tal. */}
               <p
-                className="mt-4 pt-3 border-t border-border-faint text-xs leading-snug text-muted-foreground"
+                className="mt-4 pt-3 border-t border-border-faint text-caption leading-snug text-muted-foreground"
                 data-testid="pipeline-historial-sin-registro"
               >
                 {t('inmobiliaria.pipeline.historyNotRecorded')}
@@ -658,7 +647,7 @@ export function PipelineDetail({
 
           {/* FALTANTES (05-10-2026, #2): la captación del propietario que llega. */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <h4 className="text-caption font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Buildings className="w-3.5 h-3.5" />
               {tr("Captación")}
             </h4>
@@ -667,7 +656,7 @@ export function PipelineDetail({
 
           {/* Notes Section */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <h4 className="text-caption font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Note className="w-3.5 h-3.5" />
               {t('inmobiliaria.pipeline.notes')}
             </h4>
@@ -725,7 +714,6 @@ export function PipelineDetail({
                 ) : (
                   <>
                     {t('inmobiliaria.pipeline.moveTo')} {tr(nextStageInfo?.labelEs ?? '')}
-                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </Button>

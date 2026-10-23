@@ -73,7 +73,7 @@ export function useLandlordNotifications(
       setUnreadCount(res.unreadCount);
       setTotal(res.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar notificaciones');
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar las notificaciones');
     } finally {
       setIsLoading(false);
     }
@@ -206,7 +206,7 @@ export function useTenantNotifications(
       setUnreadCount(res.unreadCount);
       setTotal(res.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar notificaciones');
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar las notificaciones');
     } finally {
       setIsLoading(false);
     }

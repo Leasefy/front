@@ -25,7 +25,17 @@
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { fechaDeVigencia } from './fecha-de-vigencia';
 
-export type EstadoDeFiltro = ContractStatus | 'all';
+/**
+ * GLOW UP 21-10 · `por_firmar`: los dos estados que esperan una firma (`pending_landlord` y
+ * `pending_tenant`), lo mismo que cuenta la cifra «Por firmar» de la tabla, que ahora filtra.
+ */
+export type EstadoDeFiltro = ContractStatus | 'all' | 'por_firmar' | 'terminados';
+
+/** «Terminados» (21-10): los que ya no corren, vencidos o cancelados. */
+export const ESTADOS_TERMINADOS: readonly ContractStatus[] = ['expired', 'cancelled'];
+
+/** Los estados que cuenta y filtra «Por firmar». */
+export const ESTADOS_POR_FIRMAR: readonly ContractStatus[] = ['pending_landlord', 'pending_tenant'];
 /**
  * La vigencia se mide por FECHAS, no por el estado del flujo de firma: un
  * contrato migrado entra «activo» aunque su fecha de fin ya haya pasado.
@@ -278,7 +288,11 @@ export function filtrarContratos<T extends Partial<Contract>>(
 
   let resultado = contratos.filter((c) => {
     if (q && !coincideBusqueda(c, q)) return false;
-    if (filtros.estado !== 'all' && c.status !== filtros.estado) return false;
+    if (filtros.estado === 'por_firmar') {
+      if (!c.status || !ESTADOS_POR_FIRMAR.includes(c.status)) return false;
+    } else if (filtros.estado === 'terminados') {
+      if (!c.status || !ESTADOS_TERMINADOS.includes(c.status)) return false;
+    } else if (filtros.estado !== 'all' && c.status !== filtros.estado) return false;
     // QA-CONT-95 (A-11): «Activo» es lo que la fila llama «Activo»: sin los que
     // todavía no empiezan («Empieza el…») ni los vencidos sin renovar («Vencido»).
     if (filtros.estado === 'active' && !esActivoDeVerdad(c, hoy)) return false;
@@ -353,3 +367,94 @@ export function vencidoSinRenovar(c: Partial<Contract>, hoy: Date = new Date()):
   const fin = fechaDeVigencia(c.endDate);
   return fin !== null && dia(fin) < dia(hoy);
 }
+
+// ─── Los filtros en la URL (DESIGN.md §25.1, 6b) ────────────────────────────
+//
+// Abrir un contrato y volver ya no deja la lista sin filtros, y un enlace puede
+// llevar a «los por firmar» (`?estado=por_firmar`). Cada valor se valida: uno
+// desconocido (un enlace viejo, una letra de más) vuelve al de por defecto en
+// lugar de dejar la tabla vacía.
+
+const ESTADOS_DE_FILTRO: readonly EstadoDeFiltro[] = [
+  'all', 'por_firmar', 'terminados', 'draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications',
+  'signed', 'active', 'expired', 'cancelled',
+];
+const VIGENCIAS: readonly VigenciaDeFiltro[] = ['all', 'vigente', 'por_vencer', 'vencido', 'vencido_sin_renovar', 'por_empezar', 'sin_fechas'];
+const CON_O_SIN: readonly ConOSin[] = ['all', 'con', 'sin'];
+const ORIGENES: readonly OrigenDeFiltro[] = ['all', 'migrado', 'nativo'];
+const CANONES: readonly CanonDeFiltro[] = ['all', 'sin_canon', 'hasta_1m', '1m_2m', '2m_5m', 'mas_5m'];
+const CAMPOS: readonly CampoDeOrden[] = ['numero', 'tenantName', 'monthlyRent', 'startDate', 'endDate'];
+
+/** El nombre de cada filtro en la URL (cortos y en español). */
+const EN_LA_URL = {
+  busqueda: 'q',
+  estado: 'estado',
+  vigencia: 'vigencia',
+  inmueble: 'inmueble',
+  inquilino: 'inquilino',
+  origen: 'origen',
+  canon: 'canon',
+  campo: 'orden',
+  sentido: 'sentido',
+} as const satisfies Record<keyof FiltrosDeContratos, string>;
+
+function uno<T extends string>(valor: string | null, validos: readonly T[], porDefecto: T): T {
+  return valor !== null && (validos as readonly string[]).includes(valor) ? (valor as T) : porDefecto;
+}
+
+/**
+ * `base` = los filtros con los que abre la pantalla (Contratos abre en
+ * «Activos»): lo que no viene en la URL toma el valor de la base, y lo que es
+ * igual a la base no se escribe.
+ */
+export function filtrosDesdeLaUrl(params: URLSearchParams, base: FiltrosDeContratos = FILTROS_INICIALES): FiltrosDeContratos {
+  const i = base;
+  const campo = params.get(EN_LA_URL.campo);
+  return {
+    busqueda: (params.get(EN_LA_URL.busqueda) ?? '').slice(0, 200),
+    estado: uno(params.get(EN_LA_URL.estado), ESTADOS_DE_FILTRO, i.estado),
+    vigencia: uno(params.get(EN_LA_URL.vigencia), VIGENCIAS, i.vigencia),
+    inmueble: uno(params.get(EN_LA_URL.inmueble), CON_O_SIN, i.inmueble),
+    inquilino: uno(params.get(EN_LA_URL.inquilino), CON_O_SIN, i.inquilino),
+    origen: uno(params.get(EN_LA_URL.origen), ORIGENES, i.origen),
+    canon: uno(params.get(EN_LA_URL.canon), CANONES, i.canon),
+    campo: campo !== null && (CAMPOS as readonly string[]).includes(campo) ? (campo as CampoDeOrden) : i.campo,
+    sentido: uno(params.get(EN_LA_URL.sentido), ['asc', 'desc'] as const, i.sentido),
+  };
+}
+
+/** Pone en `params` sólo lo que difiere de los filtros iniciales; borra lo demás (los otros parámetros no se tocan). */
+export function filtrosALaUrl(
+  filtros: FiltrosDeContratos,
+  params: URLSearchParams,
+  base: FiltrosDeContratos = FILTROS_INICIALES,
+): void {
+  for (const clave of Object.keys(EN_LA_URL) as (keyof FiltrosDeContratos)[]) {
+    const nombre = EN_LA_URL[clave];
+    const valor = filtros[clave];
+    const inicial = base[clave];
+    const texto = typeof valor === 'string' ? valor.trim() : valor;
+    if (texto === null || texto === '' || texto === inicial) params.delete(nombre);
+    else params.set(nombre, String(texto));
+  }
+  // Sin campo de orden, el sentido no dice nada.
+  if (!filtros.campo) params.delete(EN_LA_URL.sentido);
+}
+
+// ─── Las pestañas de estado de la lista (21-10, revisión de diseño) ─────────
+
+/** Las pestañas de la lista de contratos, en su orden. */
+export const PESTANAS_DE_CONTRATOS = ['active', 'por_empezar', 'vencido_sin_renovar', 'por_firmar', 'draft', 'terminados', 'all'] as const;
+export type PestanaDeContratos = (typeof PESTANAS_DE_CONTRATOS)[number];
+
+/** Los filtros de estado y vigencia que pone cada pestaña (los demás filtros se conservan). */
+export function filtrosDeLaPestana(p: PestanaDeContratos): Pick<FiltrosDeContratos, 'estado' | 'vigencia'> {
+  if (p === 'vencido_sin_renovar') return { estado: 'all', vigencia: 'vencido_sin_renovar' };
+  // QA-CONT C-05: los que empiezan después de hoy no son «Activos»; tienen su pestaña.
+  if (p === 'por_empezar') return { estado: 'all', vigencia: 'por_empezar' };
+  return { estado: p, vigencia: 'all' };
+}
+
+/** Con qué abre la pantalla: los activos (los terminados no son trabajo de hoy). */
+// Ronda 13: los activos abren por lo que vence primero (lo que toca mirar va arriba).
+export const FILTROS_AL_ENTRAR: FiltrosDeContratos = { ...FILTROS_INICIALES, estado: 'active', campo: 'endDate', sentido: 'asc' };

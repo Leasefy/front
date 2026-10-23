@@ -41,7 +41,7 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { ArrowLeft, Warning, FloppyDisk, LockSimple } from '@phosphor-icons/react'
+import { Warning, FloppyDisk, LockSimple } from '@phosphor-icons/react'
 import { CrossFade, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -62,6 +62,7 @@ import { DiasDeGraciaDeLaPromesa } from '@/components/inmobiliaria/cobranza/Dias
 import { FormasDeOfrecerElAcuerdo } from '@/components/inmobiliaria/cobranza/FormasDeOfrecerElAcuerdo'
 import { LoQueLePidesAMori } from '@/components/inmobiliaria/cobranza/LoQueLePidesAMori'
 import { Button } from '@/components/ui/button'
+import { BackButton } from '@/components/ui/back-button'
 import {
   Select,
   SelectContent,
@@ -76,6 +77,9 @@ import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { IndiceDeLaPagina } from '@/components/pantalla/IndiceDeLaPagina'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 
 // ─── Negotiation draft ──────────────────────────────────────────────────────
 
@@ -366,7 +370,7 @@ function ModeloDeCobroDeLeasefy({ draft }: { draft: NegotiationDraft }) {
       </dl>
       <p className="text-caption text-fg-muted" data-testid="modelo-de-cobro-solo-leasefy">
         Lo define Leasefy. Para cambiarlo, escríbenos a{' '}
-        <a className="text-primary underline-offset-2 hover:underline" href="mailto:hola@leasefy.co">
+        <a className="text-fg underline underline-offset-2" href="mailto:hola@leasefy.co">
           hola@leasefy.co
         </a>
         .
@@ -383,7 +387,8 @@ function NotProvisionedBanner({ testId }: { testId: string }) {
     >
       <Warning weight="fill" className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
       <p className="text-sm text-foreground">
-        Configuración no disponible — onboarding incompleto para esta agencia.
+        {/* Revisora r25 (bloqueante): decía «onboarding incompleto para esta agencia». */}
+        Esta parte todavía no está lista: falta terminar la puesta en marcha de la cobranza para tu inmobiliaria. Escríbenos a hola@leasefy.co y la dejamos lista.
       </p>
     </div>
   )
@@ -424,6 +429,8 @@ function CobranzaConfiguracionContent() {
   const [modoElegido, setModoElegido] = useState<AutonomiaModo | null>(null)
   const modoDelPiloto = modoElegido ?? modoLeido
   const agencyId = useContext(AuthContext)?.agency?.id ?? null
+  // Revisora r25 (#2): seis bloques de alto; el índice lleva a cada uno.
+  const raiz = useRef<HTMLDivElement>(null)
 
   // ── Negotiation local draft ────────────────────────────────────────────
   const [negDraft, setNegDraft] = useState<NegotiationDraft | null>(null)
@@ -541,7 +548,7 @@ function CobranzaConfiguracionContent() {
 
   return (
     <CrossFade swapKey="configuracion">
-    <div className="p-4 md:p-6 space-y-6 pb-24">
+    <div ref={raiz} className="p-6 lg:p-8 space-y-6 pb-24">
       <div>
         {/* Vuelta al origen. Se llega acá desde «Ajustar» en Acuerdos de pago y
             no había cómo volver: el flujo quedaba cortado en una pantalla de
@@ -549,142 +556,41 @@ function CobranzaConfiguracionContent() {
             ahí (`?volver=acuerdos`), para no inventar una vuelta que no existe
             cuando entraste por el menú. */}
         {volverA === 'acuerdos' && (
-          <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2 mb-2">
-            <Link href={`${COBRANZA_BASE}/acuerdos`}>
-              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-              Volver a Acuerdos de pago
-            </Link>
-          </Button>
+          <BackButton href={`${COBRANZA_BASE}/acuerdos`} label="Acuerdos de pago" variant="subtle" className="mb-2" />
         )}
-        <h1 className="text-h2 text-fg">
-          Configuración de cobranza
-        </h1>
-        {!canEdit && (
-          <p className="mt-1 text-sm text-fg-muted line-clamp-2 max-w-2xl" data-testid="readonly-banner">
-            Tu rol solo tiene acceso de lectura a esta configuración.
-          </p>
-        )}
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo="Configuración"
+          descripcion={
+            <>
+              Cuánto decide solo el agente, cómo cierra las promesas y cómo te reporta.
+              {!canEdit ? (
+                <span data-testid="readonly-banner" className="block">
+                  Tu rol solo tiene acceso de lectura a esta configuración.
+                </span>
+              ) : null}
+            </>
+          }
+        />
       </div>
+
+      <IndiceDeLaPagina raiz={raiz} />
 
       {/* El acuerdo general NO vive acá — ni siquiera como puntero. Se arma en
           /cobranza/acuerdos, junto a los acuerdos puntuales. Dejar una tarjeta
-          con el título «Acuerdo general» acá seguía diciendo que esto era su
+          con el título «Acuerdo general» aquí seguía diciendo que esto era su
           lugar. Ver la nota al pie del archivo. */}
-
-      {/* ① Facturación e integraciones ──────────────────────────────────────
-          Vivían dentro de «Negociación», bajo el subtítulo «Límites que el
-          agente puede ofrecer al negociar con un deudor». No son eso: son cómo
-          nos paga la inmobiliaria y con qué sistemas hablamos. Comparten el
-          mismo PATCH de policy, no la misma pregunta. */}
-      {!policy.notProvisioned && negDraft && (
-        <section
-          data-testid="section-comercial"
-          className="rounded-lg border border-border bg-card p-6 space-y-4"
-          aria-labelledby="heading-comercial"
-        >
-          <div>
-            <h2 id="heading-comercial" className="text-xl font-semibold text-foreground">
-              Facturación e integraciones
-            </h2>
-            <p className="text-sm text-fg-muted mt-1">
-              Cómo te cobra Leasefy el servicio y con qué sistemas de la inmobiliaria se sincroniza.
-            </p>
-          </div>
-          <div className="border-t border-border-faint" />
-
-          {/* 🔴 Cómo te cobra Leasefy: SÓLO LECTURA (Nico, 04-10-2026: «sólo
-              Leasefy lo cambia desde /admin»). Antes se cambiaba acá el modelo
-              de facturación y la comisión de éxito del 8 %. */}
-          <ModeloDeCobroDeLeasefy draft={negDraft} />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="crmProvider" className="text-sm">
-                CRM
-              </Label>
-              <Select
-                value={negDraft.crmProvider}
-                onValueChange={(v) => updateNeg('crmProvider', v as NegotiationDraft['crmProvider'])}
-                disabled={!canEdit}
-              >
-                <SelectTrigger id="crmProvider" data-testid="field-crmProvider">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CRM_PROVIDERS.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {NOMBRE_DEL_CRM[p]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="erpProvider" className="text-sm">
-                ERP
-              </Label>
-              <Select
-                value={negDraft.erpProvider}
-                onValueChange={(v) => updateNeg('erpProvider', v as NegotiationDraft['erpProvider'])}
-                disabled={!canEdit}
-              >
-                <SelectTrigger id="erpProvider" data-testid="field-erpProvider">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ERP_PROVIDERS.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {NOMBRE_DEL_ERP[p]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {canEdit && (
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <Presence show={comercialDirty} direction="none" initial={false}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="min-h-[44px]"
-                  onClick={handleCancelNegotiation}
-                  data-testid="cancel-comercial"
-                >
-                  Descartar
-                </Button>
-              </Presence>
-              <Button
-                size="sm"
-                className="min-h-[44px]"
-                data-testid="save-comercial"
-                disabled={!comercialDirty || negSaving}
-                onClick={() => void handleSaveNegotiation('comercial')}
-              >
-                {negSaving ? (
-                  <Spinner size="sm" variant="current" className="mr-1" />
-                ) : (
-                  <FloppyDisk className="h-4 w-4 mr-1" />
-                )}
-                Guardar integraciones
-              </Button>
-            </div>
-          )}
-          <Presence as="p" show={negError?.donde === 'comercial'} role="alert" className="text-sm text-danger text-right" data-testid="comercial-save-error">
-              {negError?.texto}
-          </Presence>
-        </section>
-      )}
 
       {/* ② Autonomía ────────────────────────────────────────────────────── */}
       <section
         data-testid="section-autonomia"
-        className="rounded-lg border border-border bg-card p-6 space-y-4"
+        id="bloque-autonomia"
+        data-indice="Autonomía"
+        className="scroll-mt-16 rounded-lg border border-border bg-card p-6 space-y-4"
         aria-labelledby="heading-autonomia"
       >
         <div>
-          <h2 id="heading-autonomia" className="text-xl font-semibold text-foreground">
+          <h2 id="heading-autonomia" className="text-lg font-normal text-foreground">
             Autonomía
           </h2>
           <p className="text-sm text-fg-muted mt-1">
@@ -705,7 +611,7 @@ function CobranzaConfiguracionContent() {
               La cobranza sigue el modo que elegiste en el Piloto automático: <strong>{NOMBRE_DEL_MODO[modoDelPiloto]}</strong>.
               Este nivel ya no decide nada mientras ese modo esté elegido.
             </p>
-            <Link href="/panel/inmobiliaria/piloto" className="font-medium text-primary hover:underline">
+            <Link href="/panel/inmobiliaria/piloto" className="font-medium text-fg underline underline-offset-2">
               Cambiar el modo en el Piloto (Autonomía)
             </Link>
           </div>
@@ -757,63 +663,38 @@ function CobranzaConfiguracionContent() {
       {/* Promesas de pago (07-10-2026): los días de gracia con que el agente
           cierra cada promesa contra los pagos del back. Cambiarlo pide
           cobranza:approve, lo mismo que el micro. */}
-      <DiasDeGraciaDeLaPromesa puedeCambiar={canAccess('cobranza', 'approve')} />
+      <div id="bloque-promesas" data-indice="Promesas de pago" className="scroll-mt-16">
+        <DiasDeGraciaDeLaPromesa puedeCambiar={canAccess('cobranza', 'approve')} />
+      </div>
 
       {/* Formas de ofrecer el acuerdo (07-10-2026, Nico: «la que no quiera lo
           apaga»): sale del A/B de Leasefy; la ganadora aprobada aplica igual. */}
-      <FormasDeOfrecerElAcuerdo puedeCambiar={canAccess('cobranza', 'approve')} />
+      <div id="bloque-formas" data-indice="Formas de ofrecer" className="scroll-mt-16">
+        <FormasDeOfrecerElAcuerdo puedeCambiar={canAccess('cobranza', 'approve')} />
+      </div>
 
       {/* Lo que la inmobiliaria le pide a Mori, revisado con IA (21-10-2026). Junto a
           «Formas de ofrecer el acuerdo»: es el mismo tema, cómo negocia Mori (revisora, 22-10). */}
-      <LoQueLePidesAMori puedeEditar={canEdit} />
-
-      {/* ③ Cadencia de contacto — SACADA del panel (ver nota al pie).
-          Cuándo y por qué canal contacta el agente lo afinamos nosotros, no la
-          inmobiliaria: misma decisión que sacó a Playbooks. Lo que a ella sí le
-          toca de horarios (Ley 2300) es la sección de abajo, informativa. */}
-
-      {/* ④ Horario y frecuencia — informativo, Ley 2300, sin inputs ──────── */}
-      <section
-        data-testid="section-horario"
-        className="rounded-lg border border-border bg-card p-6 space-y-3"
-        aria-labelledby="heading-horario"
-      >
-        <div>
-          <h2 id="heading-horario" className="text-xl font-semibold text-foreground">
-            Horario y frecuencia
-          </h2>
-          <p className="text-sm text-fg-muted mt-1">
-            Definido por Ley 2300 — sin excepciones configurables por la agencia.
-          </p>
-        </div>
-        <div className="border-t border-border-faint" />
-        {/* QA-AGENTES 16-10: decía «07:00–19:00» y «1 contacto por canal por
-            semana». El micro abre a las 8 (P-10 de Nico, 23-09; la ley permite
-            desde las 7) y el Art. 3 se lee como un solo canal por semana ISO
-            (`compliance/schedule.ts` y `frequency.ts`). */}
-        <ul className="text-sm text-foreground list-disc pl-5 space-y-1">
-          <li>Lunes a viernes: 08:00–19:00 (la ley permite desde las 07:00; el agente empieza a las 8)</li>
-          <li>Sábados: 08:00–15:00</li>
-          <li>Sin contacto domingos ni festivos</li>
-          <li>Máximo 1 contacto por día, sumando todos los canales</li>
-          <li>Un solo canal por semana (de lunes a domingo)</li>
-        </ul>
-      </section>
+      <div id="bloque-pedidos-a-mori" data-indice="Lo que le pides a Mori" className="scroll-mt-16">
+        <LoQueLePidesAMori puedeEditar={canEdit} />
+      </div>
 
       {/*
         Reporte diario — su pantalla salió del menú porque lo que había que
         mirar (alertas y deudores que más pesan) subió al Resumen. Pero los
         umbrales y la suscripción son configuración de la inmobiliaria, de la
-        misma familia que los acuerdos de arriba, así que su puerta vive acá.
+        misma familia que los acuerdos de arriba, así que su puerta vive aquí.
         Sin esto quedaban sólo alcanzables escribiendo la URL.
       */}
       <section
         data-testid="section-reporte"
-        className="rounded-lg border border-border bg-card p-6 space-y-3"
+        id="bloque-reporte"
+        data-indice="Reporte diario"
+        className="scroll-mt-16 rounded-lg border border-border bg-card p-6 space-y-3"
         aria-labelledby="heading-reporte"
       >
         <div>
-          <h2 id="heading-reporte" className="text-xl font-semibold text-foreground">
+          <h2 id="heading-reporte" className="text-lg font-normal text-foreground">
             Reporte diario
           </h2>
           <p className="text-sm text-fg-muted mt-1">
@@ -824,7 +705,7 @@ function CobranzaConfiguracionContent() {
         <div className="border-t border-border-faint" />
 
         {/* Este switch vivía dentro de «Negociación», entre el CRM y el ERP.
-            Es del reporte diario: vive acá. Guarda en el mismo PATCH de policy,
+            Es del reporte diario: vive aquí. Guarda en el mismo PATCH de policy,
             por eso tiene su propio botón en vez de compartir el del acuerdo. */}
         {!policy.notProvisioned && negDraft && (
           <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
@@ -876,6 +757,153 @@ function CobranzaConfiguracionContent() {
           </Button>
         </div>
       </section>
+
+      {/* ③ Cadencia de contacto — SACADA del panel (ver nota al pie).
+          Cuándo y por qué canal contacta el agente lo afinamos nosotros, no la
+          inmobiliaria: misma decisión que sacó a Playbooks. Lo que a ella sí le
+          toca de horarios (Ley 2300) es la sección de abajo, informativa. */}
+
+      {/* ④ Horario y frecuencia — informativo, Ley 2300, sin inputs ──────── */}
+      <section
+        data-testid="section-horario"
+        id="bloque-horario"
+        data-indice="Horario"
+        className="scroll-mt-16 rounded-lg border border-border bg-card p-6 space-y-3"
+        aria-labelledby="heading-horario"
+      >
+        <div>
+          <h2 id="heading-horario" className="text-lg font-normal text-foreground">
+            Horario y frecuencia
+          </h2>
+          <p className="text-sm text-fg-muted mt-1">
+            De lunes a viernes de 8 a. m. a 7 p. m. y los sábados hasta las 3 p. m. Lo fija la Ley 2300: no se cambia aquí.
+          </p>
+        </div>
+        {/* QA-AGENTES 16-10: decía «07:00–19:00» y «1 contacto por canal por
+            semana». El micro abre a las 8 (P-10 de Nico, 23-09; la ley permite
+            desde las 7) y el Art. 3 se lee como un solo canal por semana ISO
+            (`compliance/schedule.ts` y `frequency.ts`). */}
+        <MasDetalles etiqueta="Ver las reglas de la Ley 2300" etiquetaAbierto="Ocultar las reglas" montadoSiempre>
+        <ul className="text-sm text-foreground list-disc pl-5 space-y-1">
+          <li>Lunes a viernes: de 8 a. m. a 7 p. m. (la ley permite desde las 7 a. m.; el agente empieza a las 8)</li>
+          <li>Sábados: de 8 a. m. a 3 p. m.</li>
+          <li>Sin contacto domingos ni festivos</li>
+          <li>Máximo 1 contacto por día, sumando todos los canales</li>
+          <li>Un solo canal por semana (de lunes a domingo)</li>
+        </ul>
+        </MasDetalles>
+      </section>
+
+
+      {/* ① Facturación e integraciones ──────────────────────────────────────
+          Vivían dentro de «Negociación», bajo el subtítulo «Límites que el
+          agente puede ofrecer al negociar con un deudor». No son eso: son cómo
+          nos paga la inmobiliaria y con qué sistemas hablamos. Comparten el
+          mismo PATCH de policy, no la misma pregunta. */}
+      {!policy.notProvisioned && negDraft && (
+        <section
+          data-testid="section-comercial"
+          id="bloque-facturacion"
+          data-indice="Facturación e integraciones"
+          className="scroll-mt-16 rounded-lg border border-border bg-card p-6 space-y-4"
+          aria-labelledby="heading-comercial"
+        >
+          <div>
+            <h2 id="heading-comercial" className="text-lg font-normal text-foreground">
+              Facturación e integraciones
+            </h2>
+            <p className="text-sm text-fg-muted mt-1">
+              Cómo te cobra Leasefy y con qué programas de la inmobiliaria se sincroniza: el de inmuebles y el contable.
+            </p>
+          </div>
+          <div className="border-t border-border-faint" />
+
+          {/* 🔴 Cómo te cobra Leasefy: SÓLO LECTURA (Nico, 04-10-2026: «sólo
+              Leasefy lo cambia desde /admin»). Antes se cambiaba aquí el modelo
+              de facturación y la comisión de éxito del 8 %. */}
+          <ModeloDeCobroDeLeasefy draft={negDraft} />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="crmProvider" className="text-sm">
+                Programa de inmuebles (CRM)
+              </Label>
+              <Select
+                value={negDraft.crmProvider}
+                onValueChange={(v) => updateNeg('crmProvider', v as NegotiationDraft['crmProvider'])}
+                disabled={!canEdit}
+              >
+                <SelectTrigger id="crmProvider" data-testid="field-crmProvider">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CRM_PROVIDERS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {NOMBRE_DEL_CRM[p]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="erpProvider" className="text-sm">
+                Programa contable (ERP)
+              </Label>
+              <Select
+                value={negDraft.erpProvider}
+                onValueChange={(v) => updateNeg('erpProvider', v as NegotiationDraft['erpProvider'])}
+                disabled={!canEdit}
+              >
+                <SelectTrigger id="erpProvider" data-testid="field-erpProvider">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ERP_PROVIDERS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {NOMBRE_DEL_ERP[p]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {canEdit && (
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <Presence show={comercialDirty} direction="none" initial={false}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="min-h-[44px]"
+                  onClick={handleCancelNegotiation}
+                  data-testid="cancel-comercial"
+                >
+                  Descartar
+                </Button>
+              </Presence>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="min-h-[44px]"
+                data-testid="save-comercial"
+                disabled={!comercialDirty || negSaving}
+                onClick={() => void handleSaveNegotiation('comercial')}
+              >
+                {negSaving ? (
+                  <Spinner size="sm" variant="current" className="mr-1" />
+                ) : (
+                  <FloppyDisk className="h-4 w-4 mr-1" />
+                )}
+                Guardar integraciones
+              </Button>
+            </div>
+          )}
+          <Presence as="p" show={negError?.donde === 'comercial'} role="alert" className="text-sm text-danger text-right" data-testid="comercial-save-error">
+              {negError?.texto}
+          </Presence>
+        </section>
+      )}
+
     </div>
     </CrossFade>
   )

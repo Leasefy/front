@@ -29,6 +29,7 @@ import {
 } from '@/lib/inmobiliaria/comparacion'
 import type { LandlordCandidate } from '@/lib/api/applications.types'
 import type { Property } from '@/lib/types/property'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const EN_CURSO = new Set(['pending', 'queued', 'running'])
 
@@ -129,16 +130,14 @@ function CompararContent() {
   const sinEvaluaciones = entradas.length > 0 && filas.length <= 1
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6 p-6 lg:p-8">
       <div className="space-y-4">
         <BackButton label="Volver a candidatos" onClick={() => router.push(volverALista)} />
-        <div>
-          <h1 className="text-h2 text-fg">Comparar candidatos</h1>
-          <p className="mt-0.5 text-sm text-fg-muted line-clamp-2 max-w-2xl">
-            {property?.title ? `Postulantes a ${property.title}.` : 'Postulantes a esta propiedad.'}
-            {hayDestacado && ' Lo verde es quien va mejor en esa fila.'}
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          seccion="Postulaciones"
+          titulo="Comparar candidatos"
+          descripcion={`${property?.title ? `Postulantes a ${property.title}.` : 'Postulantes a este inmueble.'}${hayDestacado ? ' Lo verde es quien va mejor en esa fila.' : ''}`}
+        />
       </div>
 
       {cargando ? (
@@ -171,7 +170,7 @@ function CompararContent() {
               title="Todavía no hay evaluaciones de estos candidatos"
             >
               Por ahora sólo podemos comparar cuándo se postularon. La evaluación
-              arranca sola cuando entra la postulación; cuando termine, acá
+              arranca sola cuando entra la postulación; cuando termine, aquí
               aparecen nivel, ingresos y señales de riesgo.
             </Callout>
           )}

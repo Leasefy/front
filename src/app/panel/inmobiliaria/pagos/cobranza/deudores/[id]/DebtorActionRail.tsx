@@ -59,30 +59,28 @@ interface DebtorActionRailProps {
   onGestionRegistrada?: () => void
 }
 
-/** Future-aware relative time (the sidebar's old formatter — moved here with
- * the next-action card). cartera.relativeTime is past-only. */
+/**
+ * Cuánto falta (o cuánto pasó) para la próxima acción, en palabras: «en 5 minutos», «en 2 horas y 15 minutos»,
+ * «hace 3 días». Revisora r27: antes «en 5min», «hace 3h», «en 2d» (abreviaturas pegadas al número).
+ */
 function formatRelative(iso: string, now: number, locale: string): string {
+  const es = locale === 'es'
   const diffMs = new Date(iso).getTime() - now
   const isFuture = diffMs >= 0
-  const absMs = Math.abs(diffMs)
-  const mins = Math.floor(absMs / 60_000)
-  if (mins < 1) return locale === 'es' ? 'ahora mismo' : 'just now'
-  if (mins < 60) {
-    return isFuture
-      ? `${locale === 'es' ? 'en' : 'in'} ${mins}min`
-      : `${locale === 'es' ? 'hace' : 'ago'} ${mins}min`
-  }
-  const hrs = Math.floor(mins / 60)
-  const remMins = mins % 60
-  if (hrs < 24) {
-    return isFuture
-      ? `${locale === 'es' ? 'en' : 'in'} ${hrs}h ${remMins}m`
-      : `${locale === 'es' ? 'hace' : 'ago'} ${hrs}h`
-  }
-  const days = Math.floor(hrs / 24)
-  return isFuture
-    ? `${locale === 'es' ? 'en' : 'in'} ${days}d`
-    : `${locale === 'es' ? 'hace' : 'ago'} ${days}d`
+  const mins = Math.floor(Math.abs(diffMs) / 60_000)
+  const n = (k: number, uno: string, varios: string) => `${k} ${k === 1 ? uno : varios}`
+  const minutos = (k: number) => (es ? n(k, 'minuto', 'minutos') : n(k, 'minute', 'minutes'))
+  const horas = (k: number) => (es ? n(k, 'hora', 'horas') : n(k, 'hour', 'hours'))
+  const dias = (k: number) => (es ? n(k, 'día', 'días') : n(k, 'day', 'days'))
+  if (mins < 1) return es ? 'ahora mismo' : 'just now'
+  let cuanto: string
+  if (mins < 60) cuanto = minutos(mins)
+  else if (mins < 24 * 60) {
+    const h = Math.floor(mins / 60)
+    const resto = mins % 60
+    cuanto = isFuture && resto > 0 ? `${horas(h)} ${es ? 'y' : 'and'} ${minutos(resto)}` : horas(h)
+  } else cuanto = dias(Math.floor(mins / (24 * 60)))
+  return isFuture ? `${es ? 'en' : 'in'} ${cuanto}` : es ? `hace ${cuanto}` : `${cuanto} ago`
 }
 
 function formatPlannedTime(iso: string, locale: string): string {
@@ -149,12 +147,8 @@ export function DebtorActionRail({
   return (
     <div className="space-y-4">
       {/* Zone eyebrow — brand dot + uppercase (único uppercase permitido, §4) */}
-      <h2 className="flex items-center gap-2.5">
-        <span
-          aria-hidden="true"
-          className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
-        />
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <h2>
+        <span className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">
           {t(`${NS}.detalle.recomendacion`)}
         </span>
       </h2>
@@ -164,7 +158,7 @@ export function DebtorActionRail({
         className="rounded-lg border border-border bg-surface p-4"
         data-testid="rail-next-action"
       >
-        <h3 className="text-sm font-semibold text-fg">
+        <h3 className="text-sm font-medium text-fg">
           {t(`${NS}.detalle.proximaAccionTitulo`)}
         </h3>
         {/* La próxima acción la agenda el agente en vivo: la que había sale y
@@ -177,19 +171,19 @@ export function DebtorActionRail({
                 {/* «Voz», no «voice» con capitalize. */}
                 {channelLabel(nextAction.channel)}
               </p>
-              <p className="text-xs text-primary tabular-nums">
+              <p className="text-caption text-primary tabular-nums">
                 {formatPlannedTime(nextAction.plannedFor, locale)} ·{' '}
                 {formatRelative(nextAction.plannedFor, now, locale)}
               </p>
               {nextAction.templateName && (
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {nextAction.templateName}
                 </p>
               )}
             </div>
             {/* Por qué — hairline-separated quiet block */}
             <div className="mt-3 pt-3 border-t border-border">
-              <p className="text-xs font-medium text-fg-muted">
+              <p className="text-caption font-medium text-fg-muted">
                 {t(`${NS}.detalle.porQue`)}
               </p>
               <p className="mt-0.5 text-sm leading-snug text-fg-muted">
@@ -210,7 +204,7 @@ export function DebtorActionRail({
         className="rounded-lg border border-border bg-surface p-4"
         data-testid="rail-quick-actions"
       >
-        <h3 className="text-sm font-semibold text-fg">
+        <h3 className="text-sm font-medium text-fg">
           {t(`${NS}.detalle.accionesRapidas`)}
         </h3>
         <div className="mt-3 space-y-2">
@@ -385,7 +379,7 @@ function RailAction({
         {label}
       </span>
       {badge && (
-        <Badge variant="warning" className="shrink-0 text-xs">
+        <Badge variant="warning" className="shrink-0 text-caption">
           {badge}
         </Badge>
       )}

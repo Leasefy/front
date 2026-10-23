@@ -3,7 +3,7 @@
 import { InvitacionAMejorarElPlan } from '@/components/plan/InvitacionAMejorarElPlan';
 import { useMemo, useEffect, type ReactNode } from 'react';
 import { usePathname /* , useRouter */ } from 'next/navigation';
-import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
+import { ChatsCircle, SquaresFour } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
 import { puedeVerLaSuscripcion } from '@/lib/auth/quien-ve-la-suscripcion';
@@ -216,7 +216,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // automático»— vive en el H1 de la sección, que es donde identifica.
       label: t('inmobiliaria.nav.piloto'),
       href: '/panel/inmobiliaria/piloto',
-      icon: AirTrafficControl,
+      // C5 (plan de la barra): Inicio con la cuadrícula de la familia propia (AirTrafficControl no estaba en ella).
+      icon: SquaresFour,
       module: null,
       // Sin píldora `ai`: el rótulo ya no nombra un agente, y «Inicio · IA»
       // se lee como si el inicio fuera un agente. El badge sí queda: dice
@@ -278,7 +279,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-plan-page">
       {/*
-        El muro de la puesta en marcha. Va acá adentro, envolviendo TODO el
+        El muro de la puesta en marcha. Va aquí adentro, envolviendo TODO el
         panel —sidebar, header, contenido y nav móvil—, para que cubra las
         156 rutas de una sola vez y ninguna quede por fuera por olvido.
 
@@ -315,6 +316,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           // Punto de partida del panel: con 156 rutas agrupadas por módulo de
           // negocio, quien entra por primera vez no tiene dónde empezar.
           belowSearch={<BotonNuevo />}
+          // C8: en la barra plegada, el mismo menú detrás de un «＋» de 40 px.
+          belowSearchPlegado={<BotonNuevo compacto />}
           // La tarjeta de invitar sólo a quien puede invitar: el destino
           // (`/configuracion/equipo`) está detrás de `module: 'agentes'`, y a
           // quien no lo tiene lo expulsaba el `PageGuard` sin explicación.
@@ -429,7 +432,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       </Muro>
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
-          <ProtectedRoute>/<AgencySubscriptionGuard>: acá adentro se perdía todo toast
+          <ProtectedRoute>/<AgencySubscriptionGuard>: aquí adentro se perdía todo toast
           emitido mientras los guards resuelven. No montes otro: sonner duplica el toast
           por cada Toaster montado. */}
     </div>

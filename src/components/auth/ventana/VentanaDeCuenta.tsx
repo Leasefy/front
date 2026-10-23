@@ -120,7 +120,7 @@ export function ObraDeMarca({ children, className }: { children?: ReactNode; cla
 export function TextoDeLaObra({ titulo, detalle, razones }: { titulo: string; detalle?: string; razones?: string[] }) {
   return (
     <div>
-      <p className="text-[24px] font-semibold leading-[1.15] tracking-[-0.02em] text-white lg:text-[26px]">{titulo}</p>
+      <p className="text-[24px] font-medium leading-[1.15] tracking-[-0.02em] text-white lg:text-[26px]">{titulo}</p>
       {detalle && <p className="mt-2.5 text-[14px] leading-relaxed text-white/80">{detalle}</p>}
       {razones && razones.length > 0 && (
         <ul className="mt-5 space-y-2">

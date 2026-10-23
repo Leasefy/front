@@ -1,7 +1,7 @@
 import {
-  Buildings,
   CreditCard,
   FileText,
+  Info,
   Seal,
 } from "@phosphor-icons/react/dist/ssr";
 import { Eyebrow } from "@leasefy/cadence";
@@ -33,21 +33,21 @@ const HOW_IT_WORKS = [
     step: "01",
     icon: FileText,
     title: "Solicitar",
-    tagline: "DATOS Y FOTOS DEL INMUEBLE",
+    tagline: "Datos y fotos del inmueble",
     body: "Ingresa los datos del inmueble, sube unas fotos y acepta las autorizaciones de datos. Sin papeleo físico y sin visita al inmueble.",
   },
   {
     step: "02",
     icon: CreditCard,
     title: "Pagar",
-    tagline: "PAGO EN LÍNEA AL SOLICITAR",
+    tagline: "Pago en línea al solicitar",
     body: "Pagas en línea al enviar la solicitud, y la estimación se prepara cuando el pago queda confirmado. Si al final no se puede emitir el avalúo, te devolvemos el pago.",
   },
   {
     step: "03",
     icon: Seal,
     title: "Recibir certificado",
-    tagline: "REVISADO Y FIRMADO POR UNA PERSONA",
+    tagline: "Revisado y firmado por una persona",
     body: "Un revisor revisa la estimación y firma el certificado. Te llega por correo el enlace al informe, con su PDF y un código para verificarlo.",
   },
 ] as const;
@@ -56,110 +56,61 @@ export default function AvaluoPage() {
   return (
     <LandingChrome activo="avaluo">
       <main className="min-h-screen bg-bg">
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="flex flex-col items-center justify-center px-4 pt-32 md:pt-40 pb-16 text-center section-padding">
-        {/* Overline label */}
+      {/* ── Hero: qué es, y UNA acción ───────────────────────────────────── */}
+      {/* Revisora r25: sin `section-padding`, que a 390 le ganaba al pt-32 (py-16) y dejaba el sobretítulo
+          pegado a la barra fija del sitio. El aire de arriba es el de las demás públicas (pt-32 · md:pt-40). */}
+      <section className="flex flex-col items-center justify-center px-4 pt-32 md:pt-40 pb-12 text-center">
         <Eyebrow className="justify-center mb-6">Leasefy valuaciones</Eyebrow>
 
-        {/* Headline — highlighted word on ink (brand surface) */}
+        {/* La palabra resaltada va en tinta: el único azul de la portada es «Solicitar avalúo». */}
         <h1 className="text-display max-w-3xl mx-auto leading-tight">
           Avalúo comercial{" "}
-          <span className="inline-block px-4 py-1 rounded-[14px] bg-primary text-primary-fg">
+          <span className="inline-block rounded-md bg-fg px-4 py-1 text-bg">
             en línea
           </span>
         </h1>
 
-        {/* Description */}
         <p className="text-body-lg text-fg-muted max-w-xl mx-auto mt-6 leading-relaxed">
-          Una estimación del valor de referencia de tu inmueble, para venta o
-          arriendo, hecha de forma remota con los datos y las fotos que cargas y
-          con datos del mercado. Nadie visita el inmueble: un revisor la revisa
-          y la firma antes de entregártela.
+          {/* Revisora r27: a 390 eran 6 renglones. Más corta, sin perder que es una estimación de referencia. */}
+          Una estimación de referencia del valor de tu inmueble, para vender o
+          arrendar, sin que nadie vaya a verlo. Un revisor la firma antes de
+          entregártela.
         </p>
 
-        {/* CTA — primary button, Satoshi sentence case (brand contract §4) */}
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
-          <Button asChild size="lg">
-            <a href={AVALUO_WIZARD_URL} target="_blank" rel="noopener noreferrer">
-              Solicitar avalúo
-            </a>
-          </Button>
+          {AVALUO_WIZARD_URL ? (
+            <Button asChild size="lg">
+              <a href={AVALUO_WIZARD_URL} target="_blank" rel="noopener noreferrer">
+                Solicitar avalúo
+              </a>
+            </Button>
+          ) : (
+            // Revisora r25 (R8): sin la dirección de la solicitud el botón no
+            // lleva a ningún lado; se apaga y dice por qué y qué hacer.
+            <div className="flex flex-col items-center gap-2" data-testid="avaluo-en-pausa">
+              <Button size="lg" disabled>
+                Solicitar avalúo
+              </Button>
+              <p className="text-body-sm text-fg-muted">
+                La solicitud está en pausa ·{" "}
+                <a href="mailto:avaluos@leasefy.co" className="text-fg underline underline-offset-4">
+                  escríbenos a avaluos@leasefy.co
+                </a>
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Trust micro-copy */}
-        <p className="mt-5 text-xs text-fg-subtle font-mono tracking-wide uppercase">
-          100% en línea · Sin visita al inmueble · Si no se emite, te devolvemos el pago
+        <p className="mt-5 text-caption text-fg-muted">
+          100 % en línea · Sin visita al inmueble · Si no se emite, te devolvemos el pago
         </p>
       </section>
 
-      {/* ── Cómo funciona — Step cards (DESIGN.md §10.4) ─────────────────── */}
-      <section className="px-4 pb-24 max-w-5xl mx-auto">
-        <div className="text-center mb-10">
-          <Eyebrow className="justify-center mb-2">El proceso</Eyebrow>
-          <h2 className="text-h2">Cómo funciona</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {HOW_IT_WORKS.map(({ step, icon: Icon, title, tagline, body }) => (
-            <Card
-              key={step}
-              className="rounded-[20px] p-8 space-y-6"
-            >
-              {/* Number + icon row */}
-              <div className="flex items-start justify-between">
-                <span className="text-7xl font-light text-border font-mono tabular-nums leading-none">
-                  {step}
-                </span>
-                <div className="w-12 h-12 rounded-[14px] bg-surface-muted flex items-center justify-center flex-shrink-0">
-                  <Icon
-                    className="w-6 h-6 text-fg-muted"
-                    weight="duotone"
-                    aria-hidden="true"
-                  />
-                </div>
-              </div>
-
-              {/* Step title */}
-              <h3 className="text-2xl font-medium tracking-tight">
-                {title}
-              </h3>
-
-              {/* Mono tagline */}
-              <p className="text-xs font-mono uppercase tracking-wider text-fg-muted">
-                {tagline}
-              </p>
-
-              {/* Body */}
-              <p className="text-body-sm text-fg-muted">{body}</p>
-            </Card>
-          ))}
-        </div>
-
-        {/* Salida alterna — el CTA vive una sola vez, en el hero */}
-        <div className="mt-12 text-center">
-          <p className="text-xs text-fg-muted">
-            También puedes escribirnos a{" "}
-            <a
-              href="mailto:avaluos@leasefy.co"
-              className="underline underline-offset-2"
-            >
-              avaluos@leasefy.co
-            </a>
-          </p>
-        </div>
-      </section>
-
-      {/* ── Buildings icon strip — visual anchor above footer ─────────────── */}
-      <section className="bg-surface-muted border-t border-border py-10 px-4">
-        <div className="max-w-3xl mx-auto flex flex-col items-center gap-4 text-center">
-          <div className="w-14 h-14 rounded-[14px] bg-surface flex items-center justify-center">
-            <Buildings
-              className="w-7 h-7 text-fg-muted"
-              weight="duotone"
-              aria-hidden="true"
-            />
-          </div>
-          <p className="text-body-sm text-fg-muted max-w-md">
+      {/* ── Para qué sirve: ANTES de pagar, no al pie de la página ─────────── */}
+      <section className="px-4 pb-16">
+        <div className="mx-auto flex max-w-2xl items-start gap-3 rounded-lg border border-border bg-surface px-5 py-4 text-left">
+          <Info className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" aria-hidden="true" />
+          <p className="text-body-sm text-fg-muted">
             Sirve como{" "}
             <span className="font-medium text-fg">referencia</span> para
             negociar una compraventa o fijar un canon de arriendo. No es un
@@ -167,6 +118,42 @@ export default function AvaluoPage() {
             hipotecario, procesos judiciales ni trámites ante la DIAN.
           </p>
         </div>
+      </section>
+
+      {/* ── Cómo funciona: tres pasos, en orden ──────────────────────────── */}
+      <section className="px-4 pb-24 max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          <Eyebrow className="justify-center mb-2">El proceso</Eyebrow>
+          <h2 className="text-h2">Cómo funciona</h2>
+        </div>
+
+        <ol className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {HOW_IT_WORKS.map(({ step, icon: Icon, title, tagline, body }) => (
+            <li key={step}>
+              <Card className="h-full space-y-4 rounded-lg p-6 md:p-8">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-caption tabular-nums text-fg-subtle">{step}</span>
+                  <Icon className="h-6 w-6 text-fg-subtle" weight="regular" aria-hidden="true" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-heading text-[22px] font-[420] leading-tight tracking-[-0.02em] text-fg">
+                    {title}
+                  </h3>
+                  <p className="text-caption text-fg-muted">{tagline}</p>
+                </div>
+                <p className="text-body-sm text-fg-muted">{body}</p>
+              </Card>
+            </li>
+          ))}
+        </ol>
+
+        {/* Salida alterna — el CTA vive una sola vez, en el hero */}
+        <p className="mt-12 text-center text-caption text-fg-muted">
+          También puedes escribirnos a{" "}
+          <a href="mailto:avaluos@leasefy.co" className="text-fg underline underline-offset-2">
+            avaluos@leasefy.co
+          </a>
+        </p>
       </section>
       </main>
       <LandingFooterV2 />

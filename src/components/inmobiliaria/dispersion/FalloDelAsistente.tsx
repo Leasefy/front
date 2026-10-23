@@ -12,6 +12,7 @@
 import { CurrencyCircleDollar } from '@phosphor-icons/react';
 
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AvisoLiquidacionFrenada } from '../AvisoLiquidacionFrenada';
 import {
@@ -41,7 +42,7 @@ export function FalloDelAsistente({
     return (
       <AvisoLiquidacionFrenada
         frenada={frenada}
-        despues="generar las dispersiones"
+        despues="generar los giros"
       />
     );
   }
@@ -60,7 +61,7 @@ export function FalloDelAsistente({
   return (
     <FalloDeCarga
       error={error}
-      queEs="las dispersiones del mes"
+      queEs="los giros del mes"
       onReintentar={onReintentar}
       enmarcado
     />
@@ -70,17 +71,16 @@ export function FalloDelAsistente({
 /** El vacío, con la razón que contó el back. */
 export function MesSinGiros({
   motivo,
+  accion,
 }: {
   motivo: { titulo: string; detalle: string };
+  /** La salida del vacío («Ver los giros de octubre»): un vacío sin acción deja a la persona sin camino. */
+  accion?: { label: string; href: string };
 }) {
+  // El vacío de Cadence (círculo, título liviano, una acción secondary) dentro del recuadro punteado del asistente.
   return (
-    <div
-      className="rounded-lg border border-dashed border-border p-12 text-center"
-      data-testid="asistente-mes-vacio"
-    >
-      <CurrencyCircleDollar className="mx-auto mb-4 h-12 w-12 text-fg-muted" />
-      <h3 className="mb-2 text-lg font-semibold text-fg">{motivo.titulo}</h3>
-      <p className="text-fg-muted">{motivo.detalle}</p>
+    <div className="rounded-lg border border-dashed border-border" data-testid="asistente-mes-vacio">
+      <EmptyState icon={CurrencyCircleDollar} title={motivo.titulo} description={motivo.detalle} action={accion} />
     </div>
   );
 }

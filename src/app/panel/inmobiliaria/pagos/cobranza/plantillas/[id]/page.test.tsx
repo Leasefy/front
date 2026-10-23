@@ -174,7 +174,7 @@ describe('TemplatePage (detail editor)', () => {
   })
 
   it('Save draft button calls PUT endpoint, NOT POST /publish', async () => {
-    const { default: TemplatePage } = await import('./page')
+    const { default: TemplatePage } = await import('./EditorDeLaPlantilla')
 
     await act(async () => {
       root.render(
@@ -204,7 +204,7 @@ describe('TemplatePage (detail editor)', () => {
   })
 
   it('Publish button opens AlertDialog (does not auto-call POST /publish)', async () => {
-    const { default: TemplatePage } = await import('./page')
+    const { default: TemplatePage } = await import('./EditorDeLaPlantilla')
 
     await act(async () => {
       root.render(
@@ -239,7 +239,7 @@ describe('TemplatePage (detail editor)', () => {
   })
 
   it('WA section does NOT render for category=stage template', async () => {
-    const { default: TemplatePage } = await import('./page')
+    const { default: TemplatePage } = await import('./EditorDeLaPlantilla')
 
     await act(async () => {
       root.render(
@@ -271,7 +271,7 @@ describe('TemplatePage (detail editor)', () => {
       ),
     ]
 
-    const { default: TemplatePage } = await import('./page')
+    const { default: TemplatePage } = await import('./EditorDeLaPlantilla')
 
     await act(async () => {
       root.render(
@@ -327,7 +327,7 @@ describe('TemplatePage — errores al guardar y publicar', () => {
   }
 
   async function guardarBorrador(id = 'tpl-stage-1') {
-    const { default: TemplatePage } = await import('./page')
+    const { default: TemplatePage } = await import('./EditorDeLaPlantilla')
     await act(async () => {
       root.render(React.createElement(TemplatePage, { params: Promise.resolve({ id }) }))
     })

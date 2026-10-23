@@ -115,7 +115,7 @@ export function EnlacesCompartidos({
                 queSon="enlaces abiertos"
                 icono={LinkSimple}
                 titulo="No hay enlaces abiertos"
-                descripcion="Cuando copies el enlace o lo mandes por correo o WhatsApp, aparece acá para poder revocarlo."
+                descripcion="Cuando copies el enlace o lo mandes por correo o WhatsApp, aparece aquí para poder revocarlo."
               />
             }
           >

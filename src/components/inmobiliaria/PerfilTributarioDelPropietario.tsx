@@ -148,7 +148,7 @@ export function PerfilTributarioDelPropietario({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Scales className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-foreground">{t(k('perfilTributario'))}</h3>
+          <h3 className="text-base font-medium text-foreground">{t(k('perfilTributario'))}</h3>
         </div>
         <Chip
           texto={t(esEmpresa ? k('personaJuridica') : k('personaNatural'))}
@@ -208,7 +208,7 @@ export function PerfilTributarioDelPropietario({
           );
         })}
       </dl>
-      <p className="text-xs text-muted-foreground">{t(k('perfilTributarioAyuda'))}</p>
+      <p className="text-caption text-muted-foreground">{t(k('perfilTributarioAyuda'))}</p>
       {!puedeEditar && (
         <p className="text-caption text-muted-foreground" data-testid="perfil-tributario-solo-lectura">
           {t(k('perfil.soloLectura'))}
@@ -229,9 +229,9 @@ type ChipProps = {
 } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 const CLASE_DEL_CHIP: Record<Estado, string> = {
-  si: 'rounded-full bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary',
-  no: 'rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground',
-  vacio: 'rounded-full border border-dashed border-warning/60 px-2.5 py-1 text-xs text-warning',
+  si: 'rounded-full bg-primary-soft px-2.5 py-1 text-caption font-medium text-primary',
+  no: 'rounded-full bg-muted px-2.5 py-1 text-caption text-muted-foreground',
+  vacio: 'rounded-full border border-dashed border-warning/60 px-2.5 py-1 text-caption text-warning',
 };
 
 /*

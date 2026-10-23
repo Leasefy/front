@@ -30,6 +30,11 @@ import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 export interface MotivoDelMesVacio {
   titulo: string;
   detalle: string;
+  /**
+   * La salida del vacío (revisora r22, Giros #1): si lo del mes YA está en giros, el vacío no se queda
+   * sin acción: lleva a «Ver los giros de {mes}» (el paso 2 con ese mes).
+   */
+  verLosGiros?: true;
 }
 
 const numero = cifrasDeLaPantalla();
@@ -58,8 +63,9 @@ export function motivoDelMesVacio({
       titulo: 'Ya están generadas',
       detalle:
         yaGenerados === 1
-          ? `La dispersión de ${enElMes} ya existe. Búscala en la lista.`
-          : `Las ${numero.format(yaGenerados)} dispersiones de ${enElMes} ya existen. Búscalas en la lista.`,
+          ? `El giro de ${enElMes} ya existe. Búscalo en la lista.`
+          : `Los ${numero.format(yaGenerados)} giros de ${enElMes} ya existen. Búscalos en la lista.`,
+      verLosGiros: true,
     };
   }
 
@@ -101,12 +107,14 @@ export function motivoDelMesVacio({
 
   if (vacio.enUnaDispersion > 0) {
     return {
-      titulo: 'Ya están en una dispersión',
+      // Revisora r24 (Giros #4): que diga lo que pasó y termine en el botón («Ver los giros de…»).
+      titulo: `Ya se generaron los giros de ${enElMes}`,
       detalle: `${
         vacio.enUnaDispersion === 1
           ? `La cuota de propietario de ${enElMes} ya quedó`
           : `Las ${cuotas(vacio.enUnaDispersion)} de ${enElMes} ya quedaron`
-      } en una dispersión. Búscala en la lista.`,
+      } en un giro.`,
+      verLosGiros: true,
     };
   }
 

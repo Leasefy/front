@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
   AnimatedNumber,
+  Avatar,
   CrossFade,
   IconButton,
   MonoLabel,
@@ -56,7 +57,7 @@ import {
 /* `BotonNuevoMensaje` ya NO se importa: era la pastilla primary «Nuevo
    mensaje» que ocupaba una fila entera arriba del buscador. Nico: «podrías
    mejor hacer el buscador un poco más pequeño y colocar el primary un + y se
-   va a entender que es un nuevo mensaje». El botón vive ahora acá abajo
+   va a entender que es un nuevo mensaje». El botón vive ahora aquí abajo
    (`BotonDeNuevoMensaje`), en la misma fila que el buscador. */
 import { NuevoMensajeDrawer } from '@/components/messages/NuevoMensajeDrawer';
 import { SelectorDeEmojis } from '@/components/messages/SelectorDeEmojis';
@@ -98,15 +99,6 @@ export interface MessagesWidgetProps {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 function formatMessageTime(isoStr: string): string {
   const date = new Date(isoStr);
@@ -253,6 +245,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   // keying on it made every null-application thread match the first one).
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [soloSinLeer, setSoloSinLeer] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
@@ -357,7 +350,11 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
       if (!match && !selectedConversationId) return;
     }
     if (!selectedConversationId && conversations.length > 0) {
-      setSelectedConversationId(conversations[0].id);
+      // La más reciente CON mensajes; si ninguna tiene, la primera (revisión 21-10).
+      const conMensajes = conversations
+        .filter((c) => c.lastMessageAt)
+        .sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''));
+      setSelectedConversationId((conMensajes[0] ?? conversations[0]).id);
     }
   }, [conversations, selectedConversationId, urlConversationId, urlApplicationId]);
 
@@ -387,11 +384,29 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     [refetchConversations],
   );
 
-  const filteredConversations = conversations.filter(
+  // GLOW UP 21-10 · el trabajo de la bandeja es RESPONDER a quien espera: «Sin leer» a un toque.
+  const sinLeer = conversations.filter((c) => c.unreadCount > 0).length;
+  /*
+   * Revisión de Operación (21-10): la bandeja se ordena por el último mensaje —lo más
+   * reciente arriba— y las conversaciones sin mensajes van al final. Antes salían en el
+   * orden del servidor y se abría una conversación vacía.
+   */
+  const porActividad = useMemo(
+    () =>
+      [...conversations].sort((a, b) => {
+        if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+        if (!a.lastMessageAt) return 1;
+        if (!b.lastMessageAt) return -1;
+        return b.lastMessageAt.localeCompare(a.lastMessageAt);
+      }),
+    [conversations],
+  );
+  const filteredConversations = porActividad.filter(
     (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.tema ?? '').toLowerCase().includes(searchQuery.toLowerCase()),
+      (!soloSinLeer || c.unreadCount > 0) &&
+      (c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.tema ?? '').toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   useEffect(() => {
@@ -753,6 +768,33 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                   onClick={() => setNuevoMensajeAbierto(true)}
                 />
               </div>
+              {/* Lo que espera respuesta, a un toque (sólo si hay algo sin leer o el filtro está puesto). */}
+              {sinLeer > 0 || soloSinLeer ? (
+                <div className="flex items-center gap-1.5 border-b border-border bg-card px-3 py-2">
+                  {[
+                    { activo: !soloSinLeer, texto: locale === 'es' ? 'Todas' : 'All', onClick: () => setSoloSinLeer(false) },
+                    {
+                      activo: soloSinLeer,
+                      texto: locale === 'es' ? `Sin leer · ${sinLeer}` : `Unread · ${sinLeer}`,
+                      onClick: () => setSoloSinLeer(true),
+                    },
+                  ].map((o) => (
+                    <button
+                      key={o.texto}
+                      type="button"
+                      aria-pressed={o.activo}
+                      onClick={o.onClick}
+                      data-testid={o.activo && soloSinLeer ? 'filtro-sin-leer-activo' : undefined}
+                      className={cn(
+                        'rounded-full px-3 py-1 text-[13px] transition-colors',
+                        o.activo ? 'bg-surface-muted font-medium text-fg' : 'text-fg-muted hover:bg-surface-muted/60',
+                      )}
+                    >
+                      {o.texto}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               {/* Conversations — cargando → lista (o el fallo, o el vacío) se
                   cruzan; dentro de la lista, buscar o una conversación nueva
@@ -794,7 +836,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       {searchQuery
                         ? (locale === 'es' ? 'No se encontraron conversaciones' : 'No conversations found')
                         : (locale === 'es'
-                            ? `Escríbele a ${otherParty} desde acá; las conversaciones te van a quedar en esta lista.`
+                            ? `Escríbele a ${otherParty} desde aquí; las conversaciones te van a quedar en esta lista.`
                             : `Message ${otherParty} from here; your conversations will stay in this list.`)}
                     </p>
                     {/* Acá SÍ va con texto: en un vacío el `+` de arriba es lo
@@ -829,9 +871,8 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         )}
                       >
                         <div className="relative flex-shrink-0">
-                          <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-sm overflow-hidden">
-                            {getInitials(conversation.name)}
-                          </div>
+                          {/* Cadence 2: cada persona con su tono (sale del nombre: el mismo en todas partes) */}
+                          <Avatar name={conversation.name} size="md" />
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -932,9 +973,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         icon={<ArrowLeft className="w-5 h-5" />}
                         className="md:hidden -ml-2 rounded-full text-muted-foreground"
                       />
-                      <div className="w-11 h-11 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-sm">
-                        {getInitials(selectedConversation.name)}
-                      </div>
+                      <Avatar name={selectedConversation.name} size="md" />
                       <div>
                         {fichaDeLaContraparte ? (
                           <button
@@ -1019,7 +1058,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             >
                               {/*
                                 «Ver ficha» va PRIMERO: es lo que Nico pidió
-                                («que desde acá se pueda ir a ver el detalle del
+                                («que desde aquí se pueda ir a ver el detalle del
                                 inquilino») y es lo único del menú que lleva a
                                 otro lado — archivar, silenciar y reportar
                                 actúan sobre el hilo. Sólo aparece cuando hay a
@@ -1108,7 +1147,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       )}
                       {/*
                         El puente con WhatsApp (2026-09-12). Lo que la
-                        inmobiliaria escriba acá también le llega al WhatsApp
+                        inmobiliaria escriba aquí también le llega al WhatsApp
                         del tercero — o no, y entonces dice por qué. Sólo del
                         lado de la inmobiliaria: el inquilino no decide esto.
                       */}
@@ -1486,9 +1525,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
                           <div className="p-6">
                             <div className="text-center mb-6">
-                              <div className="w-20 h-20 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-2xl mx-auto mb-3">
-                                {getInitials(selectedConversation.name)}
-                              </div>
+                              <Avatar name={selectedConversation.name} size="xl" className="mx-auto mb-3" />
                               <h4 className="text-base font-semibold text-foreground">
                                 {selectedConversation.name}
                               </h4>

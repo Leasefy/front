@@ -31,6 +31,7 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { MonoLabel } from '@leasefy/cadence'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useI18n } from '@/lib/i18n'
 
 const NS = 'inmobiliaria.ai.asegurabilidad.equipo'
@@ -155,11 +156,11 @@ function FlowNode({ node, tf }: { node: NodeDef; tf: (k: string, fb: string) => 
       {/* Encabezado del nodo */}
       <header className="flex items-start gap-3">
         <span
-          className={`w-10 h-10 rounded-xl ${accent.chip} flex items-center justify-center shrink-0`}
+          className={`w-10 h-10 rounded-lg ${accent.chip} flex items-center justify-center shrink-0`}
         >
           <Ico className={`w-5 h-5 ${accent.fg}`} weight="duotone" aria-hidden="true" />
         </span>
-        <h3 className="text-base font-semibold text-foreground leading-tight pt-1">
+        <h3 className="text-base font-medium text-foreground leading-tight pt-1">
           {tf(`${NS}.nodes.${node.id}.title`, node.titleFb)}
         </h3>
       </header>
@@ -193,10 +194,10 @@ function FlowNode({ node, tf }: { node: NodeDef; tf: (k: string, fb: string) => 
               key={i}
               className="rounded-lg border border-border bg-card px-3 py-2"
             >
-              <p className="text-lg font-semibold text-fg-muted tabular-nums leading-none">
+              <p className="text-lg font-medium text-fg-muted tabular-nums leading-none">
                 —
               </p>
-              <p className="mt-1 text-[11px] text-muted-foreground leading-tight">
+              <p className="mt-1 text-caption text-muted-foreground leading-tight">
                 {tf(`${NS}.nodes.${node.id}.metric${i + 1}`, fb)}
               </p>
             </div>
@@ -232,18 +233,14 @@ function EquipoAsegurabilidad() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="min-w-0">
-        <h1 className="text-h2 text-fg">
-          {tf(`${NS}.title`, 'Equipo IA')}
-        </h1>
-        <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm max-w-2xl">
-          {tf(
-            `${NS}.subtitle`,
-            'Por cada caso, Leasefy consulta varias aseguradoras a la vez y luego compara y recomienda la mejor opción. Aquí ves cómo trabaja, paso a paso, el equipo de IA que hace ese trabajo.',
-          )}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={tf(`${NS}.title`, 'Equipo IA')}
+        descripcion={tf(
+          `${NS}.subtitle`,
+          'Por cada caso, Leasefy consulta varias aseguradoras a la vez y luego compara y recomienda la mejor opción. Aquí ves cómo trabaja, paso a paso, el equipo de IA que hace ese trabajo.',
+        )}
+      />
 
       {/* Flujo funcional conectado */}
       <section
@@ -289,7 +286,7 @@ function EquipoAsegurabilidad() {
       </section>
 
       {/* Nota de estado vacío — por qué las métricas están en '—' */}
-      <p className="text-xs text-muted-foreground max-w-2xl">
+      <p className="text-caption text-muted-foreground max-w-2xl">
         {tf(
           `${NS}.emptyNote`,
           'Los resultados aparecerán aquí a medida que el equipo procese casos. Por ahora se muestran en blanco (—).',

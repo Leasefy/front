@@ -29,7 +29,7 @@ describe('el encabezado de Cobros', () => {
     expect(PAGINA).not.toContain('Extracto bancario')
   })
 
-  it('🔴 B-09/N-28: ya no configura recordatorios acá; lleva a Cobranza › Recordatorios', () => {
+  it('🔴 B-09/N-28: ya no configura recordatorios aquí; lleva a Cobranza › Recordatorios', () => {
     expect(PAGINA).not.toContain('aria-label="Configuración de cobros"')
     expect(PAGINA).not.toContain('RecordatorioConfig')
     expect(PAGINA).toContain("'/panel/inmobiliaria/pagos/cobranza/recordatorios'")

@@ -16,7 +16,7 @@ describe('CE-01 · la plata de las frases del back con el espacio de la casa', (
   it('🔴 el Cuadre pinta avisos y explicaciones con conLaPlataPegada', () => {
     const s = leer('components/finanzas/CuadreDeTerceros.tsx')
     expect(s).toMatch(/avisosQueElVeredictoNoDijo\(datos\)\.map\(\(a\) => conLaPlataPegada\(a\)\)/)
-    expect(s).toMatch(/<span>\{conLaPlataPegada\(e\)\}<\/span>/)
+    expect(s).toMatch(/<span>\{conLaPlataPegada\(explicacionEnLimpio\(e\)\)\}<\/span>/)
   })
 
   it('🔴 la alerta de partidas de la Conciliación también', () => {

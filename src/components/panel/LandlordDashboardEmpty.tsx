@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { AnimatedNumber, Appear, Collapse, motionDuration, motionEase } from '@leasefy/cadence';
-import { Plus, Play, CreditCard, CaretRight, Check, ArrowRight, Shield, Lightning, Users, Buildings, Clock, TrendUp, VideoCamera, FileText, ChartBar, ChartBarHorizontal } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
+import { Appear, MonoLabel } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Plus, CreditCard, Check, Shield, Lightning, Users, Buildings, VideoCamera, FileText, ChartBar, Lifebuoy } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -53,15 +54,15 @@ const getSetupSteps = (hasProperty: boolean): SetupStep[] => [
     id: 'watch_intro',
     labelEs: 'Conoce la plataforma',
     labelEn: 'Learn the platform',
-    descriptionEs: 'VideoCamera de 2 min sobre cómo funciona',
-    descriptionEn: '2 min video on how it works',
+    descriptionEs: 'Qué hace Leasefy por ti, en tres puntos',
+    descriptionEn: 'What Leasefy does for you, in three points',
     icon: VideoCamera,
     action: 'video',
     completed: false,
   },
   {
     id: 'publish_property',
-    labelEs: 'Publica tu propiedad',
+    labelEs: 'Publica tu inmueble',
     labelEn: 'List your property',
     descriptionEs: 'Llega a miles de inquilinos verificados',
     descriptionEn: 'Reach thousands of verified tenants',
@@ -90,6 +91,30 @@ const getSetupSteps = (hasProperty: boolean): SetupStep[] => [
  * Informativo: el `Dialog` canónico con `variant="info"` (DESIGN.md §17). La ✕,
  * el velo y Esc cierran SIN marcar el paso; «Entendido, continuar» lo marca.
  */
+const PUNTOS_DE_LEASEFY = [
+  {
+    icon: Shield,
+    titleEs: 'Protegemos tu inversión',
+    titleEn: 'We protect your investment',
+    descEs: 'Seguro contra impago hasta 24 meses',
+    descEn: 'Non-payment insurance up to 24 months',
+  },
+  {
+    icon: Users,
+    titleEs: 'Inquilinos verificados',
+    titleEn: 'Verified tenants',
+    descEs: 'Evaluación crediticia completa',
+    descEn: 'Complete credit evaluation',
+  },
+  {
+    icon: Lightning,
+    titleEs: 'Cobros automáticos',
+    titleEn: 'Automatic collection',
+    descEs: 'Recibe el arriendo puntual cada mes',
+    descEn: 'Receive rent on time every month',
+  },
+];
+
 function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClose: () => void; onComplete: () => void }) {
   const { locale } = useI18n();
 
@@ -107,20 +132,24 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
           </DialogTitle>
           <DialogDescription>
             {locale === 'es'
-              ? 'Descubre cómo publicar tu propiedad, recibir aplicaciones verificadas y cobrar tu arriendo de forma segura.'
+              ? 'Publica tu inmueble, recibe postulaciones verificadas y cobra tu arriendo de forma segura.'
               : 'Learn how to list your property, receive verified applications, and collect rent securely.'}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Video placeholder - replace with actual video embed */}
-        <div className="aspect-video overflow-hidden rounded-[16px] bg-neutral-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
-              <Play className="w-10 h-10 text-white fill-white" />
-            </div>
-            <p className="text-white/60 text-sm">Video</p>
-          </div>
-        </div>
+        {/* GLOW UP 22-10: no hay video (era una caja negra con un «Video» de relleno): lo que se dice, en tres
+            puntos. Son las tres tarjetas que antes llenaban el inicio vacío. */}
+        <ul className="space-y-4">
+          {PUNTOS_DE_LEASEFY.map((punto) => (
+            <li key={punto.titleEs} className="flex items-start gap-3">
+              <punto.icon className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+              <span>
+                <span className="block text-body text-fg">{locale === 'es' ? punto.titleEs : punto.titleEn}</span>
+                <span className="block text-sm text-fg-muted">{locale === 'es' ? punto.descEs : punto.descEn}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
 
         <DialogFooter>
           <Button
@@ -145,7 +174,7 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
 // ============================================================================
 
 export function LandlordDashboardEmpty() {
-  const { t, locale } = useI18n();
+  const { locale } = useI18n();
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
   const firstName = user?.name?.split(' ')[0] || (locale === 'es' ? 'Propietario' : 'Owner');
@@ -185,11 +214,6 @@ export function LandlordDashboardEmpty() {
     saveProgress(updated, isCollapsed);
   };
 
-  const toggleCollapsed = () => {
-    const newCollapsed = !isCollapsed;
-    setIsCollapsed(newCollapsed);
-    saveProgress(completedSteps, newCollapsed);
-  };
 
   // Check if user has any properties (in real app, this would come from API)
   const hasProperty = false; // TODO: Replace with actual check
@@ -199,10 +223,6 @@ export function LandlordDashboardEmpty() {
     completed: completedSteps.includes(step.id) || step.id === 'create_account',
   }));
 
-  const completedCount = steps.filter(s => s.completed).length;
-  const totalSteps = steps.length;
-  const progressPercentage = Math.round((completedCount / totalSteps) * 100);
-  const nextStep = steps.find(s => !s.completed);
 
   if (!isLoaded) return null;
 
@@ -216,287 +236,95 @@ export function LandlordDashboardEmpty() {
     }
   };
 
+  /*
+   * GLOW UP 22-10 (como el inicio del inquilino): el encabezado común con «publicar» como la acción principal,
+   * lo que falta en la lista de la casa («Para empezar a arrendar te faltan N pasos», cada uno con su botón), el
+   * vacío de los inmuebles y los atajos. Antes: un widget propio con barra y porcentaje, «¡Completado!», tres
+   * tarjetas de beneficios con el ícono en caja, «Tu potencial mensual $0» fijo, recursos con flechas y una
+   * tarjeta de ayuda.
+   */
+  const atajos = [
+    { href: '/ayuda/propietarios', icon: FileText, label: locale === 'es' ? 'Guía para propietarios' : 'Landlord guide' },
+    { href: '/propiedades', externo: true, icon: ChartBar, label: locale === 'es' ? 'Precios del mercado, en el marketplace' : 'Market prices, on the marketplace' },
+    { href: '/productos/asegurabilidad', icon: Shield, label: locale === 'es' ? 'Cómo funciona el seguro' : 'How insurance works' },
+    { href: '/ayuda', icon: Lifebuoy, label: locale === 'es' ? 'Centro de ayuda' : 'Help center' },
+  ];
+
   return (
     <div className="min-h-screen bg-bg">
-      {/* Llega después de cargar los inmuebles del inicio: entra UNA vez, con
-          4 px (carga → contenido), en vez de cinco entradas escalonadas a mano. */}
-      <Appear distance="xs" className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Welcome Header */}
-        <header className="mb-8">
-          <p className="text-sm font-medium text-fg-muted mb-1">
-            {greeting}
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-medium text-fg tracking-tight">
-            {locale === 'es' ? `Bienvenido, ${firstName}` : `Welcome, ${firstName}`} 👋
-          </h1>
-        </header>
+      {/* Llega después de cargar los inmuebles del inicio: entra UNA vez. */}
+      <Appear className="space-y-6 p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion={locale === 'es' ? 'Inicio' : 'Home'}
+          titulo={`${greeting}, ${firstName}`}
+          descripcion={locale === 'es' ? 'Publica tu primer inmueble y Leasefy te trae los candidatos y te cobra el arriendo.' : 'List your first property and Leasefy brings you applicants and collects your rent.'}
+          accionPrincipal={
+            <Button asChild size="sm" hideArrow className="max-lg:flex-1">
+              <Link href="/publicar?from=panel">{locale === 'es' ? 'Publicar un inmueble' : 'List a property'}</Link>
+            </Button>
+          }
+          data-testid="encabezado-del-propietario-sin-inmuebles"
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+        <ListaParaEmpezar
+          paraQue={locale === 'es' ? 'empezar a arrendar' : 'start renting'}
+          requisitos={steps.map((step) => ({
+            id: step.id,
+            titulo: locale === 'es' ? step.labelEs : step.labelEn,
+            detalle: locale === 'es' ? step.descriptionEs : step.descriptionEn,
+            estado: step.completed ? ('listo' as const) : ('falta' as const),
+            accion: step.completed ? undefined : step.action === 'video' ? (
+              <Button size="sm" variant="outline" hideArrow onClick={() => handleStepClick(step)}>
+                {locale === 'es' ? 'Ver' : 'See'}
+              </Button>
+            ) : step.href ? (
+              <Button asChild size="sm" variant="outline" hideArrow>
+                <Link href={step.href}>{locale === 'es' ? 'Ir' : 'Go'}</Link>
+              </Button>
+            ) : undefined,
+          }))}
+          data-testid="propietario-lo-que-falta"
+        />
 
-            {/* Getting Started Widget */}
-            <div className="rounded-lg bg-surface overflow-hidden">
-              {/* Header */}
-              <button
-                onClick={toggleCollapsed}
-                className="w-full p-6 flex items-center justify-between hover:bg-surface-muted transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="text-2xl">🚀</div>
-                  <div className="text-left">
-                    <h2 className="text-lg font-semibold text-fg">
-                      {locale === 'es' ? 'Primeros pasos' : 'Getting started'}
-                    </h2>
-                    <p className="text-sm text-fg-muted">
-                      {completedCount === totalSteps
-                        ? (locale === 'es' ? '¡Completado!' : 'Completed!')
-                        : `${totalSteps - completedCount} ${locale === 'es' ? 'pasos restantes' : 'steps left'}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  {/* Progress */}
-                  <div className="hidden sm:flex items-center gap-3">
-                    {/* Se llena con `transform` (translateX), no con `width`. */}
-                    <div className="w-32 h-2 bg-surface-muted rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ x: '-100%' }}
-                        animate={{ x: `${progressPercentage - 100}%` }}
-                        transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                        className="h-full w-full bg-fg rounded-full"
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-fg-muted">
-                      <AnimatedNumber value={progressPercentage} from={0} format={(n) => String(Math.round(n))} />%
-                    </span>
-                  </div>
-                  <CaretRight className={cn(
-                    'w-5 h-5 text-fg-subtle transition-transform duration-slow ease-emphasis',
-                    !isCollapsed && 'rotate-90'
-                  )} />
-                </div>
-              </button>
+        <EmptyState
+          icon={Buildings}
+          title={locale === 'es' ? 'Todavía no tienes inmuebles publicados' : 'No published properties yet'}
+          description={
+            locale === 'es'
+              ? 'Publica tu primer inmueble y empieza a recibir postulaciones de inquilinos verificados.'
+              : 'List your first property and start receiving applications from verified tenants.'
+          }
+        />
 
-              {/* Steps List — se abre y se cierra con su altura; el chevrón gira con la misma curva. */}
-              <Collapse open={!isCollapsed} className="px-6 pb-6 space-y-2">
-                  {steps.map((step, index) => {
-                    const Icon = step.icon;
-                    const isNext = !step.completed && index === steps.findIndex(s => !s.completed);
-
-                    const content = (
-                      <div
-                        className={cn(
-                          'flex items-center gap-4 p-4 rounded-lg transition-[opacity,background-color,border-color]',
-                          step.completed
-                            ? 'bg-success-soft dark:bg-[#2C7A53]/15'
-                            : isNext
-                            ? 'bg-surface border border-border cursor-pointer hover:border-border-strong'
-                            : 'bg-surface opacity-50'
-                        )}
-                        onClick={() => !step.href && handleStepClick(step)}
-                      >
-                        {/* Icon/Check */}
-                        <div className={cn(
-                          'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                          step.completed
-                            ? 'bg-success-soft dark:bg-[#2C7A53]/15'
-                            : isNext
-                            ? 'bg-fg'
-                            : 'bg-surface-muted'
-                        )}>
-                          {step.completed ? (
-                            <Check className="w-5 h-5 text-success dark:text-[#3EAE70]" strokeWidth={2.5} />
-                          ) : (
-                            <Icon className={cn(
-                              'w-5 h-5',
-                              isNext ? 'text-bg' : 'text-fg-subtle'
-                            )} />
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            'font-medium',
-                            step.completed
-                              ? 'text-success dark:text-[#3EAE70]'
-                              : 'text-fg'
-                          )}>
-                            {locale === 'es' ? step.labelEs : step.labelEn}
-                          </p>
-                          <p className="text-sm text-fg-muted mt-0.5">
-                            {locale === 'es' ? step.descriptionEs : step.descriptionEn}
-                          </p>
-                        </div>
-
-                        {/* Action */}
-                        {!step.completed && isNext && (
-                          <div className="flex items-center gap-2">
-                            {step.action === 'video' && (
-                              <span className="text-sm font-medium text-fg">
-                                {locale === 'es' ? 'Ver video' : 'Watch'}
-                              </span>
-                            )}
-                            <CaretRight className="w-5 h-5 text-fg-subtle" />
-                          </div>
-                        )}
-                      </div>
-                    );
-
-                    if (step.href && !step.completed && isNext) {
-                      return (
-                        <Link key={step.id} href={step.href}>
-                          {content}
-                        </Link>
-                      );
-                    }
-
-                    return <div key={step.id}>{content}</div>;
-                  })}
-              </Collapse>
-            </div>
-
-            {/* Value Proposition Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                {
-                  icon: Shield,
-                  titleEs: 'Protegemos tu inversión',
-                  titleEn: 'We protect your investment',
-                  descEs: 'Seguro contra impago hasta 24 meses',
-                  descEn: 'Non-payment insurance up to 24 months',
-                },
-                {
-                  icon: Users,
-                  titleEs: 'Inquilinos verificados',
-                  titleEn: 'Verified tenants',
-                  descEs: 'Evaluación crediticia completa',
-                  descEn: 'Complete credit evaluation',
-                },
-                {
-                  icon: Lightning,
-                  titleEs: 'Cobros automáticos',
-                  titleEn: 'Automatic collection',
-                  descEs: 'Recibe el arriendo puntual cada mes',
-                  descEn: 'Receive rent on time every month',
-                },
-              ].map((card) => (
-                <div
-                  key={card.titleEs}
-                  className="rounded-lg bg-surface p-5"
-                >
-                  <div className="w-11 h-11 rounded-xl bg-surface-muted flex items-center justify-center mb-4">
-                    <card.icon weight="duotone" className="w-5 h-5 text-fg-subtle" />
-                  </div>
-                  <h3 className="font-semibold text-fg mb-1">
-                    {locale === 'es' ? card.titleEs : card.titleEn}
-                  </h3>
-                  <p className="text-sm text-fg-muted">
-                    {locale === 'es' ? card.descEs : card.descEn}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Empty state for properties — estilo limpio canónico */}
-            <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
-                <Buildings weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-[15px] font-semibold text-fg">
-                  {locale === 'es' ? 'No tienes propiedades publicadas' : 'No published properties'}
-                </p>
-                <p className="text-sm text-fg-muted max-w-sm leading-relaxed mx-auto">
-                  {locale === 'es'
-                    ? 'Publica tu primera propiedad y comienza a recibir aplicaciones de inquilinos verificados.'
-                    : 'List your first property and start receiving applications from verified tenants.'}
-                </p>
-              </div>
-              <div className="mt-1">
-                <Link
-                  href="/publicar?from=panel"
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-fast"
-                >
-                  <Plus className="w-4 h-4" />
-                  {locale === 'es' ? 'Publicar propiedad' : 'List property'}
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Stats (placeholder) */}
-            <div className="rounded-lg bg-surface p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <TrendUp weight="duotone" className="w-5 h-5 text-fg-subtle" />
-                <span className="text-sm font-medium text-fg-muted">
-                  {locale === 'es' ? 'Tu potencial mensual' : 'Your monthly potential'}
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-fg mb-1">$0</p>
-              <p className="text-sm text-fg-muted">
-                {locale === 'es' ? 'Publica una propiedad para comenzar' : 'List a property to get started'}
-              </p>
-            </div>
-
-            {/* Resources */}
-            <div className="rounded-lg bg-surface p-5">
-              <h3 className="font-semibold text-fg mb-4">
-                {locale === 'es' ? 'Recursos útiles' : 'Helpful resources'}
-              </h3>
-              <div className="space-y-2">
-                {[
-                  { icon: FileText, labelEs: 'Guía para propietarios', labelEn: 'Landlord guide', href: '/ayuda/propietarios' },
-                  { icon: ChartBar, labelEs: 'Precios del mercado', labelEn: 'Market prices', href: '/propiedades' },
-                  { icon: Shield, labelEs: 'Cómo funciona el seguro', labelEn: 'How insurance works', href: '/productos/asegurabilidad' },
-                ].map((resource) => (
-                  <Link
-                    key={resource.labelEs}
-                    href={resource.href}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface transition-colors group"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center group-hover:bg-surface-muted transition-colors">
-                      <resource.icon className="w-5 h-5 text-fg-muted" />
-                    </div>
-                    <span className="flex-1 text-sm font-medium text-fg-muted">
-                      {locale === 'es' ? resource.labelEs : resource.labelEn}
-                    </span>
-                    <CaretRight className="w-4 h-4 text-fg-subtle group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Need help */}
-            <div className="rounded-lg bg-surface p-5">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
-                  <Clock weight="duotone" className="w-5 h-5 text-fg-subtle" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-fg mb-1">
-                    {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
-                  </h4>
-                  <p className="text-sm text-fg-muted mb-3">
-                    {locale === 'es'
-                      ? 'Nuestro equipo responde en menos de 2 horas.'
-                      : 'Our team responds in under 2 hours.'}
-                  </p>
-                  <Link
-                    href="/ayuda"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-fg-muted hover:text-fg transition-colors"
-                  >
-                    {locale === 'es' ? 'Contactar soporte' : 'Contact support'}
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <section className="rounded-lg border border-border bg-surface p-5" data-testid="atajos-del-propietario-sin-inmuebles">
+          <h2 className="mb-3 text-fg-subtle">
+            <MonoLabel>{locale === 'es' ? 'Atajos' : 'Shortcuts'}</MonoLabel>
+          </h2>
+          <ul className="-mx-2 grid gap-0.5 sm:grid-cols-2">
+            {atajos.map((a) => {
+              const Icono = a.icon;
+              const contenido = (
+                <>
+                  <Icono className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+                  <span className="text-sm text-fg">{a.label}</span>
+                </>
+              );
+              return (
+                <li key={a.href}>
+                  {a.externo ? (
+                    <a href={a.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-surface-muted">
+                      {contenido}
+                    </a>
+                  ) : (
+                    <Link href={a.href} className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-surface-muted">
+                      {contenido}
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       </Appear>
 
       {/* VideoCamera Modal */}

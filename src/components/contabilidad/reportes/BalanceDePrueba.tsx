@@ -25,7 +25,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { TablePagination } from '@/components/ui/pagination';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -42,7 +41,7 @@ import { hoy, primerDiaDelMes, rangoInvertido } from '@/lib/contabilidad/fechas'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { FranjaDeInforme, TarjetaDeInforme } from '../piezas';
+import { FranjaDeInforme, TarjetaDeInforme, EsqueletoDeTabla } from '../piezas';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { DescargarElInforme } from './DescargarElInforme';
@@ -319,14 +318,14 @@ export function BalanceDePrueba() {
   return (
     /* 🔴 20-09 · Antes eran DOS tarjetas: el rango de fechas y la casilla en
        una, la tabla en otra, separadas por 20 px. Nico lo dijo de Facturación
-       —«porque esto no está pegado a la tabla»— y valía igual acá: un filtro
+       —«porque esto no está pegado a la tabla»— y valía igual aquí: un filtro
        es el encabezado de su tabla, no otra cosa. Ahora es UNA tarjeta. */
     <TarjetaDeInforme
       testId="informe-balance-de-prueba"
       filtros={
         <>
-          <div className="w-full max-w-md">
-            <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
+          <div className="w-full max-w-xl">
+            <RangoDeFechas atajos desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
           </div>
           <div className="flex items-center gap-2 pb-2">
             <Checkbox
@@ -355,9 +354,7 @@ export function BalanceDePrueba() {
         queEs="el balance de prueba"
         onReintentar={cargar}
         esqueleto={
-          <div className="flex items-center justify-center py-16">
-            <Spinner />
-          </div>
+          <EsqueletoDeTabla />
         }
         cuandoVacio={
           <div className="overflow-x-clip">

@@ -170,10 +170,10 @@ export function AcuerdosGeneralesCard() {
             <Robot className="w-5 h-5 text-fg-muted" weight="duotone" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-fg">Límites del agente</h2>
-            <p className="text-xs text-fg-muted max-w-xl leading-relaxed">
+            <h2 className="text-sm font-medium text-fg">Límites del agente</h2>
+            <p className="text-caption text-fg-muted max-w-xl leading-relaxed">
               El máximo que el agente puede ofrecer, pase lo que pase. Ningún
-              acuerdo general se sale de acá: si uno dice 50% y este límite dice
+              acuerdo general se sale de aquí: si uno dice 50% y este límite dice
               20%, el deudor recibe 20%.
             </p>
           </div>
@@ -225,7 +225,7 @@ export function AcuerdosGeneralesCard() {
       <Collapse open={abierto} id="acuerdo-general-form" className="mt-4 pt-4 border-t border-border space-y-4">
           <div className="space-y-2">
             <Label className="text-sm">Plazos que puede aceptar</Label>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Si el deudor pide uno de estos, el agente lo cierra. Cualquier otro
               número de cuotas te lo escala.
             </p>
@@ -383,7 +383,7 @@ export function AcuerdosGeneralesCard() {
               <Label htmlFor="acuerdo-hardship" className="text-sm cursor-pointer">
                 Permitir ruta de dificultad económica
               </Label>
-              <p className="text-xs text-fg-muted mt-0.5">
+              <p className="text-caption text-fg-muted mt-0.5">
                 Habilita condiciones más blandas cuando el deudor declara una
                 situación puntual (desempleo, salud).
               </p>

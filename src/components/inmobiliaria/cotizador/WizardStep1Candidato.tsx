@@ -40,7 +40,7 @@ export function WizardStep1Candidato({
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-semibold text-fg">
+      <h2 className="text-base font-medium text-fg">
         {t('inmobiliaria.ai.cotizador.nueva.step1.heading')}
       </h2>
 

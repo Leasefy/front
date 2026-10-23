@@ -24,10 +24,13 @@
  * que sabemos.
  */
 
-import Link from 'next/link'
-import { ArrowLeft } from '@phosphor-icons/react'
+import { MagnifyingGlass } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { RUTA_DEL_MARKETPLACE } from '@/lib/nav/portal-del-inquilino'
 
 import { PropertyGrid } from '@/components/property/PropertyGrid'
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner'
@@ -41,7 +44,7 @@ const NS = 'inquilino.catalogoAprobacion'
 
 export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }) {
   const tf = useTf()
-  const { properties, isLoading } = useProperties()
+  const { properties, isLoading, errorCrudo, refetch } = useProperties()
   const { isWishlisted, toggleWishlist } = useWishlist()
   const referencia = referenciaCanon(aprobacion)
 
@@ -89,54 +92,71 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
 
   return (
     <div className="min-h-screen bg-plan-page">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        <Link
-          href="/inquilino"
-          className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          {tf(`${NS}.volver`, 'Volver a Inicio')}
-        </Link>
+      <div className="p-6 lg:p-8">
+        {/* GLOW UP (22-10): el encabezado de las demás pantallas del portal (sin «Volver a Inicio»: el riel y las
+            pestañas de «Buscar arriendo» ya dicen dónde está); seguir buscando es en el marketplace, en OTRA
+            pestaña (reunión 21-10). */}
+        <EncabezadoDePantalla
+          className="mb-6"
+          seccion={tf(`${NS}.seccion`, 'Buscar arriendo')}
+          titulo={tf(`${NS}.titulo`, 'Inmuebles para ti')}
+          descripcion={tf(`${NS}.descripcion`, 'Sólo los que caben en tu tope aprobado, del más barato al más caro.')}
+          acciones={
+            <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">
+              <a href={RUTA_DEL_MARKETPLACE} target="_blank" rel="noopener noreferrer" data-testid="catalogo-ir-al-marketplace">
+                {tf(`${NS}.marketplace`, 'Buscar en el marketplace')}
+              </a>
+            </Button>
+          }
+        />
 
-        <header className="mb-6">
-          <h1 className="text-xl font-semibold text-fg">
-            {tf(`${NS}.titulo`, 'Propiedades para ti')}
-          </h1>
-          <p className="text-sm text-fg-muted mt-1">
-            {isLoading
-              ? tf(`${NS}.cargando`, 'Buscando propiedades…')
-              : referencia
-                ? `${ordenadas.length} ${tf(`${NS}.puedesTomar`, 'que puedes tomar con tu aprobación')}`
-                : tf(`${NS}.sinTope`, 'Tu aprobación está lista. Cuando confirmemos tu tope te mostramos lo que va contigo.')}
-          </p>
-        </header>
+        {/* LA RESPUESTA: hasta cuánto puede arrendar, en grande (la misma pieza del inicio). */}
+        <TopeAprobadoBanner aprobacion={aprobacion} vigente tamano="heroe" className="mb-6" />
 
-        {!isLoading && ocultasPorTope > 0 && (
-          <p className="mb-4 text-sm text-fg-muted">
-            {tf(`${NS}.ocultasPrefijo`, 'No te mostramos')}{' '}
-            <span className="font-mono tabular-nums">{ocultasPorTope}</span>{' '}
-            {ocultasPorTope === 1
-              ? tf(`${NS}.ocultasSingular`, 'propiedad que se pasa de tu tope.')
-              : tf(`${NS}.ocultasPlural`, 'propiedades que se pasan de tu tope.')}
-          </p>
-        )}
+        {/* Cuántos caben y cuántos quedaron fuera, en una línea encima de la lista. */}
+        <p className="mb-4 text-sm text-fg-muted" data-testid="catalogo-conteo">
+          {isLoading ? (
+            tf(`${NS}.cargando`, 'Buscando inmuebles…')
+          ) : referencia ? (
+            <>
+              <span className="font-mono tabular-nums text-fg">{ordenadas.length}</span>{' '}
+              {tf(`${NS}.puedesTomar`, 'que puedes tomar con tu aprobación')}
+              {ocultasPorTope > 0 && (
+                <>
+                  {' · '}
+                  {tf(`${NS}.ocultasPrefijo`, 'No te mostramos')}{' '}
+                  <span className="font-mono tabular-nums">{ocultasPorTope}</span>{' '}
+                  {ocultasPorTope === 1
+                    ? tf(`${NS}.ocultasSingular`, 'inmueble que se pasa de tu tope.')
+                    : tf(`${NS}.ocultasPlural`, 'inmuebles que se pasan de tu tope.')}
+                </>
+              )}
+            </>
+          ) : (
+            tf(`${NS}.sinTope`, 'Tu aprobación está lista. Cuando confirmemos tu tope te mostramos lo que va contigo.')
+          )}
+        </p>
 
-        <TopeAprobadoBanner aprobacion={aprobacion} vigente className="mb-4" />
         <QueSignificaPostularse className="mb-6" />
 
-        {!isLoading && ordenadas.length === 0 ? (
+        {/* Un fallo NO es un vacío (guardián cuatro-estados): si los inmuebles no llegaron, se dice y se reintenta;
+            nunca «no hay inmuebles dentro de tu tope» sobre un dato que no llegó. */}
+        {errorCrudo ? (
+          <FalloDeCarga error={errorCrudo} queEs="los inmuebles que puedes tomar" onReintentar={() => refetch()} />
+        ) : !isLoading && ordenadas.length === 0 ? (
           /* Sin nada dentro del tope no se rellena con cosas que no puede
              tomar: se dice, y se ofrece la salida. */
-          <div className="rounded-lg border border-border bg-surface p-8 text-center">
-            <p className="text-sm font-medium text-fg">
-              {tf(`${NS}.vacio`, 'Ahora mismo no hay propiedades dentro de tu tope')}
-            </p>
-            <p className="text-sm text-fg-muted mt-1">
-              {tf(`${NS}.vacioTexto`, 'Aparecen nuevas seguido. Mientras tanto puedes ver el catálogo completo.')}
-            </p>
-            <Button asChild className="mt-4">
-              <Link href="/inquilino/explorar">{tf(`${NS}.verTodo`, 'Ver todas las propiedades')}</Link>
-            </Button>
+          <div className="rounded-lg border border-border bg-surface" data-testid="catalogo-vacio">
+            <EmptyState
+              icon={MagnifyingGlass}
+              title={tf(`${NS}.vacio`, 'Ahora mismo no hay inmuebles dentro de tu tope')}
+              description={tf(`${NS}.vacioTexto`, 'Aparecen nuevas seguido. Mientras tanto puedes ver el catálogo completo.')}
+              action={{
+                label: tf(`${NS}.verTodo`, 'Ver todos los inmuebles'),
+                // El catálogo completo es el marketplace, en otra pestaña (reunión 21-10).
+                onClick: () => window.open(RUTA_DEL_MARKETPLACE, '_blank', 'noopener,noreferrer'),
+              }}
+            />
           </div>
         ) : (
           <PropertyGrid

@@ -13,9 +13,6 @@ import {
   Storefront,
   Warehouse,
   Briefcase,
-  MapPin,
-  User,
-  CaretRight,
   Eye,
   PencilSimple,
   CalendarPlus,
@@ -23,11 +20,12 @@ import {
   Mountains,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { COMISION_SIN_DEFINIR, textoCortoDeLaComision, textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { useTr } from '@/lib/i18n/use-tr';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
@@ -76,6 +74,7 @@ export function ConsignacionCard({
   comercial,
 }: ConsignacionCardProps) {
   const { t, locale } = useI18n();
+  const tr = useTr();
 
   // Availability status colors
   const AVAILABILITY_COLORS: Record<PropertyAvailability, { bg: string; text: string; label: string }> = useMemo(() => ({
@@ -84,9 +83,10 @@ export function ConsignacionCard({
       text: 'text-success',
       label: t('inmobiliaria.portafolio.card.availability.available'),
     },
+    // Revisora r24 (Inmuebles #3): «Arrendado» en neutro, como en la tabla (el azul es la acción).
     rented: {
-      bg: 'bg-primary-soft',
-      text: 'text-primary',
+      bg: 'bg-surface-muted',
+      text: 'text-fg-muted',
       label: t('inmobiliaria.portafolio.card.availability.rented'),
     },
     in_process: {
@@ -218,7 +218,17 @@ export function ConsignacionCard({
     );
   }
 
-  // Default variant - full card with stats
+  // Default variant — revisora r22 (Inmuebles #4): a 390 cada tarjeta medía ≈520 px, con 160 px de cuadro gris
+  // con un edificio, tres íconos sueltos más «Ver detalle» (que repetía el ojo) y el inquilino en una caja de
+  // voltaje. Ahora: la foto sólo si existe (chica), el título en dos renglones con su estado, el canon en mono,
+  // el inquilino en un renglón gris, y la tarjeta entera abre el detalle.
+  const fechaDeFin = consignacion.leaseEndDate
+    ? new Date(consignacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : null;
   return (
     <Pressable
       hover="lift"
@@ -227,205 +237,133 @@ export function ConsignacionCard({
         'w-full rounded-lg border bg-surface dark:bg-bg overflow-hidden transition-[border-color,box-shadow] duration-base group',
         selected
           ? 'border-primary/30 ring-2 ring-primary/30'
-          : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:',
+          : 'border-border dark:border-border-strong',
         onClick && 'cursor-pointer'
       )}
       onClick={onClick}
+      data-testid="tarjeta-del-inmueble"
     >
-      {/* Image/Thumbnail Header */}
-      <div className="relative h-40 bg-surface-muted dark:bg-ink">
+      <div className="flex gap-3 p-4">
         {consignacion.propertyThumbnail ? (
           <img
             src={consignacion.propertyThumbnail}
             alt={consignacion.propertyTitle}
-            className="w-full h-full object-cover"
+            className="h-16 w-16 shrink-0 rounded-md object-cover"
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <PropertyIcon className="w-16 h-16 text-fg-subtle dark:text-fg-muted" />
+        ) : null}
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="line-clamp-2 break-words font-medium leading-snug text-fg">
+              {consignacion.propertyTitle}
+            </h3>
+            <span className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-caption font-medium', availability.bg, availability.text)}>
+              {availability.label}
+            </span>
           </div>
-        )}
-
-        {/* Availability badge - top left */}
-        <div className="absolute top-3 left-3">
-          <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium', availability.bg, availability.text)}>
-            {availability.label}
-          </span>
-        </div>
-
-        {/* Commission pill - top right */}
-        <div className="absolute top-3 right-3">
-          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium flex items-center gap-1">
-            {/* contract-addendum-2.md §A.3 — a SALE mandate's commissionPercent
-                is always 0; the agreed figure is saleCommissionPercent.
-                IN-03: sin el ícono de porcentaje — el texto ya dice «10 %». */}
-            {textoDeLaComision(consignacion)}
-          </span>
-        </div>
-
-        {/* Property type indicator - bottom left */}
-        <div className="absolute bottom-3 left-3">
-          <span className="px-2.5 py-1 rounded-full bg-surface-muted backdrop-blur-sm text-xs font-medium text-fg dark:text-fg-subtle flex items-center gap-1.5">
-            <PropertyIcon className="w-3.5 h-3.5" />
-            {t(`inmobiliaria.portafolio.card.propertyType.${consignacion.propertyType}`)}
-          </span>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-5">
-        {/* Title and Address */}
-        <div className="mb-3">
-          <h3 className="font-semibold text-fg line-clamp-1 mb-1">
-            {consignacion.propertyTitle}
-          </h3>
-          <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
-            <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity)}</span>
-          </div>
+          <p className="flex min-w-0 items-center gap-1.5 text-body-sm text-fg-muted">
+            <PropertyIcon className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              {barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity)}
+              {' · '}
+              {t(`inmobiliaria.portafolio.card.propertyType.${consignacion.propertyType}`)}
+            </span>
+          </p>
           <SituacionComercialCorta datos={comercial} />
-        </div>
 
-        {/* Rent Info — a SALE mandate has no canon (§A.2): show the sale
-            commission instead, never "$0" or "$0/mes". */}
-        {consignacion.listingType === 'sale' ? (
-          <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-xl font-bold text-fg">
-              {textoDeLaComision(consignacion)}
-            </span>
-            <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.saleCommission')}</span>
-            {/* Nico 14-10: la venta que entró sin precio. */}
-            {consignacion.canonPorConfirmar ? (
-              <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} esVenta />
-            ) : null}
-          </div>
-        ) : (
-          <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-xl font-bold text-fg">
-              {consignacion.canonPorConfirmar
-                ? TEXTO_CANON_POR_CONFIRMAR
-                : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
-            </span>
-            {consignacion.canonPorConfirmar ? (
-              <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} />
-            ) : (
-              <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.perMonth')}</span>
-            )}
-            {/* COMERCIAL (QA 04-10): con `adminFee === 0` pintaba un «0» suelto al lado del canon. */}
-            {consignacion.adminFee != null && consignacion.adminFee > 0 && (
-              <span className="text-xs text-fg-subtle dark:text-fg-muted">
-                + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.portafolio.card.admin')}
+          {/* El canon (en venta, la comisión de venta: nunca «$ 0/mes», §A.2) y la comisión UNA vez (IN-03). */}
+          {consignacion.listingType === 'sale' ? (
+            // Revisora r24 (Inmuebles #3): sin comisión de venta no se pinta el renglón («— comisión de venta»), como en la tabla.
+            textoDeLaComision(consignacion) !== '—' || consignacion.canonPorConfirmar ? (
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                {textoDeLaComision(consignacion) !== '—' ? (
+                  <>
+                    <span className="font-mono text-xl tabular-nums text-fg">{textoDeLaComision(consignacion)}</span>
+                    <span className="text-body-sm text-fg-muted">{t('inmobiliaria.portafolio.card.saleCommission')}</span>
+                  </>
+                ) : null}
+                {/* Nico 14-10: la venta que entró sin precio. */}
+                {consignacion.canonPorConfirmar ? (
+                  <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} esVenta />
+                ) : null}
+              </div>
+            ) : null
+          ) : (
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="font-mono text-xl tabular-nums text-fg">
+                {consignacion.canonPorConfirmar
+                  ? TEXTO_CANON_POR_CONFIRMAR
+                  : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
               </span>
-            )}
-          </div>
-        )}
-
-        {/* Propietario and Agente */}
-        <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-border-faint dark:border-border-strong">
-          {/* Propietario */}
-          {propietarioName && (
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="w-7 h-7 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
-                <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.owner')}</p>
-                <p className="text-sm font-medium text-fg truncate">
-                  {propietarioName}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Agente */}
-          {agenteName && (
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              {agenteAvatar ? (
-                <img
-                  src={agenteAvatar}
-                  alt={agenteName}
-                  className="w-7 h-7 rounded-full object-cover shrink-0"
-                />
+              {consignacion.canonPorConfirmar ? (
+                <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-                  <span className="text-xs font-medium text-primary">
-                    {agenteName.charAt(0)}
-                  </span>
-                </div>
+                <span className="text-body-sm text-fg-muted">{t('inmobiliaria.portafolio.card.perMonth')}</span>
               )}
-              <div className="min-w-0">
-                <p className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.agent')}</p>
-                <p className="text-sm font-medium text-fg truncate">
-                  {agenteName}
-                </p>
-              </div>
+              {/* COMERCIAL (QA 04-10): con `adminFee === 0` pintaba un «0» suelto al lado del canon. */}
+              {consignacion.adminFee != null && consignacion.adminFee > 0 && (
+                <span className="text-caption text-fg-subtle">
+                  + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.portafolio.card.admin')}
+                </span>
+              )}
+              {/* Revisora r24 (Inmuebles #4): el mismo nombre que la tabla («sin definir») y el «·» pegado a su texto. */}
+              {/* Revisora r25: a 390 la comisión baja a su renglón y el «·» quedaba al principio:
+                  el punto sólo va cuando sigue al canon en la misma línea (sm en adelante). */}
+              <span className="whitespace-nowrap text-caption text-fg-muted" title={textoCortoDeLaComision(consignacion).explicacion}>
+                <span className="max-sm:hidden">· </span>
+                {textoCortoDeLaComision(consignacion).texto === COMISION_SIN_DEFINIR
+                  ? tr('Comisión sin definir')
+                  : tr('{comision} de comisión', { comision: textoDeLaComision(consignacion) })}
+              </span>
             </div>
           )}
-        </div>
 
-        {/* Tenant info (if rented) */}
-        {consignacion.availability === 'rented' && consignacion.currentTenantName && (
-          <div className="mb-4 p-3 rounded-lg bg-primary-soft">
-            <p className="text-xs text-primary mb-0.5">{t('inmobiliaria.portafolio.card.currentTenant')}</p>
-            <p className="text-sm font-medium text-primary">
-              {consignacion.currentTenantName}
+          {consignacion.availability === 'rented' && consignacion.currentTenantName ? (
+            <p className="truncate text-caption text-fg-muted" data-testid="inquilino-de-la-tarjeta">
+              {t('inmobiliaria.portafolio.card.currentTenant')}: <span className="text-fg">{consignacion.currentTenantName}</span>
+              {fechaDeFin ? ` · ${t('inmobiliaria.portafolio.card.leaseUntil', { date: fechaDeFin })}` : ''}
             </p>
-            {consignacion.leaseEndDate && (
-              <p className="text-xs text-primary mt-1">
-                {t('inmobiliaria.portafolio.card.leaseUntil', {
-                  date: new Date(consignacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  }),
-                })}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {onView && (
-              <IconButton
-                variant="solid"
-                size="md"
-                onClick={(e) => { e.stopPropagation(); onView(); }}
-                title={t('inmobiliaria.portafolio.card.viewDetailTitle')}
-                aria-label={t('inmobiliaria.portafolio.card.viewDetailTitle')}
-                icon={<Eye className="w-4 h-4" />}
-              />
-            )}
-            {onEdit && (
-              <IconButton
-                variant="solid"
-                size="md"
-                onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                title={t('inmobiliaria.portafolio.card.editTitle')}
-                aria-label={t('inmobiliaria.portafolio.card.editTitle')}
-                icon={<PencilSimple className="w-4 h-4" />}
-              />
-            )}
-            {onAgendarCita && (
-              <IconButton
-                variant="solid"
-                size="md"
-                onClick={(e) => { e.stopPropagation(); onAgendarCita(); }}
-                title={t('inmobiliaria.agenda.pedirCita')}
-                aria-label={t('inmobiliaria.agenda.pedirCita')}
-                icon={<CalendarPlus className="w-4 h-4" />}
-              />
-            )}
-          </div>
-          {onClick && (
-            <div className="flex items-center gap-1 text-sm text-fg-muted dark:text-fg-subtle group-hover:text-primary transition-colors">
-              {t('inmobiliaria.portafolio.card.viewDetail')}
-              <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          )}
+          ) : null}
+          {propietarioName || agenteName ? (
+            <p className="truncate text-caption text-fg-muted">
+              {propietarioName ? (
+                <>
+                  {t('inmobiliaria.portafolio.card.owner')}: <span className="text-fg">{propietarioName}</span>
+                </>
+              ) : null}
+              {propietarioName && agenteName ? ' · ' : null}
+              {agenteName ? (
+                <>
+                  {t('inmobiliaria.portafolio.card.agent')}: <span className="text-fg">{agenteName}</span>
+                </>
+              ) : null}
+            </p>
+          ) : null}
         </div>
       </div>
+
+      {/* Las acciones que no son «ver» (la tarjeta entera ya abre el detalle). */}
+      {onEdit || onAgendarCita || (onView && !onClick) ? (
+        <div className="flex flex-wrap items-center gap-1 border-t border-border-faint px-2 py-1.5">
+          {onView && !onClick ? (
+            <Button size="sm" variant="ghost" hideArrow onClick={(e) => { e.stopPropagation(); onView(); }}>
+              <Eye className="h-4 w-4" />
+              {t('inmobiliaria.portafolio.card.viewDetail')}
+            </Button>
+          ) : null}
+          {onEdit ? (
+            <Button size="sm" variant="ghost" hideArrow onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+              <PencilSimple className="h-4 w-4" />
+              {t('inmobiliaria.portafolio.card.editTitle')}
+            </Button>
+          ) : null}
+          {onAgendarCita ? (
+            <Button size="sm" variant="ghost" hideArrow onClick={(e) => { e.stopPropagation(); onAgendarCita(); }}>
+              <CalendarPlus className="h-4 w-4" />
+              {t('inmobiliaria.agenda.pedirCita')}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
     </Pressable>
   );
 }

@@ -47,7 +47,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
   if (data === undefined) {
     return (
       <section aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}>
-        <h3 className="text-sm font-semibold text-fg-muted mb-3">
+        <h3 className="text-sm font-medium text-fg-muted mb-3">
           {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
         </h3>
         <NoDataYetBadge
@@ -62,7 +62,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
   if (!data.populated) {
     return (
       <section aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}>
-        <h3 className="text-sm font-semibold text-fg-muted mb-3">
+        <h3 className="text-sm font-medium text-fg-muted mb-3">
           {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
         </h3>
         <EmptyState
@@ -79,7 +79,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
 
   return (
     <section aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}>
-      <h3 className="text-sm font-semibold text-fg-muted mb-3">
+      <h3 className="text-sm font-medium text-fg-muted mb-3">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
       </h3>
       {/* `overflow-hidden` recorta las esquinas redondeadas; el scroll horizontal
@@ -110,7 +110,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
             {rows.map((row) => (
               <TableRow key={row.scriptTemplateId}>
                 <TableCell className="px-3">{row.scriptName}</TableCell>
-                <TableCell className="px-3 font-semibold text-fg-muted">{row.stage}</TableCell>
+                <TableCell className="px-3 font-medium text-fg-muted">{row.stage}</TableCell>
                 <TableCell numeric className="px-3 font-mono text-fg-muted">
                   {row.nCalls}
                 </TableCell>

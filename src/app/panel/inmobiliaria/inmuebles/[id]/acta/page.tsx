@@ -19,7 +19,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
-import { ArrowLeft, DownloadSimple, Package, Printer, SpinnerGap } from '@phosphor-icons/react';
+import { DownloadSimple, Package, Printer, SpinnerGap } from '@phosphor-icons/react';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { descargar } from '@/lib/propietarios/exportar-datos';
@@ -28,6 +28,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { useConsignacion, usePropietario } from '@/lib/hooks/useInmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/back-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
@@ -108,13 +109,11 @@ export default function ActaDeEntregaPage() {
           ficha» quedaba en tres renglones: en el celular, el enlace arriba y
           los dos botones debajo, a lo ancho. */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" data-acta-oculto>
-        <Link
+        <BackButton
           href={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
-          className="inline-flex items-center gap-2 whitespace-nowrap text-sm text-fg-muted hover:text-fg"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {t('inmobiliaria.acta.backToProperty')}
-        </Link>
+          label={t('inmobiliaria.acta.backToProperty')}
+          className="self-start whitespace-nowrap"
+        />
         <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
           <Button variant="outline" hideArrow onClick={() => window.print()} disabled={!consignacion} data-testid="acta-imprimir">
             <Printer className="h-4 w-4" />
@@ -141,10 +140,10 @@ export default function ActaDeEntregaPage() {
             data-testid="acta-hoja"
           >
             <header className="mb-6 border-b border-border pb-5">
-              <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
+              <p className="font-mono text-caption uppercase tracking-[0.12em] text-fg-muted">
                 {agency?.name ?? t('inmobiliaria.common.title')}
               </p>
-              <h1 className="mt-1 text-2xl font-semibold">{t('inmobiliaria.acta.pageTitle')}</h1>
+              <h1 className="mt-1 text-2xl font-medium">{t('inmobiliaria.acta.pageTitle')}</h1>
               <p className="mt-1 text-sm text-fg-muted">
                 {t('inmobiliaria.acta.deliveryDateLabel')}: {formatDate(consignacion.contractDate)}
               </p>
@@ -152,7 +151,7 @@ export default function ActaDeEntregaPage() {
 
             <section className="mb-6 grid gap-6 sm:grid-cols-2">
               <div>
-                <h2 className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
+                <h2 className="font-mono text-caption uppercase tracking-[0.12em] text-fg-muted">
                   {t('inmobiliaria.acta.property')}
                 </h2>
                 <p className="mt-1 font-medium">{consignacion.propertyTitle}</p>
@@ -160,11 +159,11 @@ export default function ActaDeEntregaPage() {
                   {consignacion.propertyAddress}, {consignacion.propertyCity}
                 </p>
                 {consignacion.propertyCode != null && (
-                  <p className="mt-1 font-mono text-xs text-fg-muted">#{consignacion.propertyCode}</p>
+                  <p className="mt-1 font-mono text-caption text-fg-muted">#{consignacion.propertyCode}</p>
                 )}
               </div>
               <div>
-                <h2 className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
+                <h2 className="font-mono text-caption uppercase tracking-[0.12em] text-fg-muted">
                   {t('inmobiliaria.acta.owner')}
                 </h2>
                 {duenos.length === 0 ? (
@@ -175,7 +174,7 @@ export default function ActaDeEntregaPage() {
                       <li key={d.nombre} className="flex items-baseline justify-between gap-3">
                         <span className="font-medium">{d.nombre}</span>
                         {d.participacion && (
-                          <span className="font-mono text-xs tabular-nums text-fg-muted">{d.participacion}</span>
+                          <span className="font-mono text-caption tabular-nums text-fg-muted">{d.participacion}</span>
                         )}
                       </li>
                     ))}
@@ -190,7 +189,7 @@ export default function ActaDeEntregaPage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
+              <h2 className="mb-2 font-mono text-caption uppercase tracking-[0.12em] text-fg-muted">
                 {t('inmobiliaria.acta.inventorySection')} · {items.length} {t('inmobiliaria.acta.itemsLabel')}
               </h2>
               {items.length === 0 ? (
@@ -251,7 +250,7 @@ export default function ActaDeEntregaPage() {
             </section>
 
             <section>
-              <h2 className="mb-6 font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
+              <h2 className="mb-6 font-mono text-caption uppercase tracking-[0.12em] text-fg-muted">
                 {t('inmobiliaria.acta.signatures')}
               </h2>
               <div className="grid gap-8 sm:grid-cols-3">

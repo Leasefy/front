@@ -89,7 +89,7 @@ export function NumeracionPorTipo({ datos }: NumeracionPorTipoProps) {
               className="w-5 h-5 text-danger flex-shrink-0"
               weight="fill"
             />
-            <p className="text-caption font-semibold text-danger">
+            <p className="text-caption font-medium text-danger">
               {bloqueos.length === 1
                 ? 'Hay un tipo de documento que hoy no se puede numerar'
                 : `Hay ${bloqueos.length} tipos de documento que hoy no se pueden numerar`}
@@ -127,7 +127,7 @@ export function NumeracionPorTipo({ datos }: NumeracionPorTipoProps) {
               className="w-5 h-5 text-warning flex-shrink-0"
               weight="fill"
             />
-            <p className="text-caption font-semibold text-warning">
+            <p className="text-caption font-medium text-warning">
               Pídele a la DIAN la resolución siguiente antes de quedarte sin
               numeración
             </p>
@@ -155,7 +155,7 @@ export function NumeracionPorTipo({ datos }: NumeracionPorTipoProps) {
         data-testid="numeracion-tabla"
       >
         <div className="border-b border-border p-4">
-          <h3 className="text-body font-semibold text-fg">
+          <h3 className="text-body font-medium text-fg">
             Con qué se numera cada documento
           </h3>
           <p className="text-caption text-fg-muted">

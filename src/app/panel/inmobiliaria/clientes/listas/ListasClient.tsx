@@ -29,7 +29,7 @@
  *      su buscador y su paginación (el molde).
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Collapse, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { errorEnCristiano, motivoEnCristiano } from '@/lib/errores/en-cristiano'
@@ -38,10 +38,13 @@ import { MagnifyingGlass, ShieldWarning, UploadSimple, Warning } from '@phosphor
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { SinDatos } from '@/components/estado/SinDatos'
-import { SectionLabel } from '@/components/ui/section-label'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { useTr } from '@/lib/i18n/use-tr'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { Badge, Button } from '@/components/ui'
@@ -66,6 +69,22 @@ const ROTULO: Record<
   SIN_BLOQUEO: { texto: 'Sin coincidencias', variant: 'secondary' },
 }
 
+/** Las pestañas de la tabla de consultas (revisora r24 #2): lo que espera una decisión va primero. */
+type FiltroDeConsultas = 'todos' | 'por-revisar' | 'libres' | 'confirmados' | 'sin-verificar'
+const DEL_FILTRO: Record<Exclude<FiltroDeConsultas, 'todos'>, (c: ConsultaDeListas) => boolean> = {
+  'por-revisar': (c) => c.estado === 'BLOQUEADO',
+  libres: (c) => c.estado === 'SIN_BLOQUEO' || c.estado === 'LIBERADO',
+  confirmados: (c) => c.estado === 'CONFIRMADO',
+  'sin-verificar': (c) => c.estado === 'SIN_VERIFICAR',
+}
+
+/** Las tres listas de sanciones que se comparan (las mismas del cajón de carga). */
+const LISTAS_OFICIALES = [
+  { codigo: 'OFAC', nombre: 'la OFAC', detalle: 'La lista Clinton del Tesoro de Estados Unidos.' },
+  { codigo: 'ONU', nombre: 'la ONU', detalle: 'La del Consejo de Seguridad de las Naciones Unidas.' },
+  { codigo: 'UE', nombre: 'la Unión Europea', detalle: 'La lista consolidada de sanciones de la UE.' },
+] as const
+
 const PORQUE: Record<ConsultaDeListas['resultado'], string> = {
   LIBRE: 'Se comparó contra las listas cargadas y no coincidió con ninguna.',
   COINCIDENCIA: 'Coincide con una lista: un administrador tiene que revisarlo.',
@@ -84,6 +103,7 @@ function normalizar(s: string): string {
 }
 
 export function ListasClient() {
+  const tr = useTr()
   const { canAccess } = usePermissions()
   const puedeRevisar = canAccess('clientes', 'edit')
 
@@ -95,6 +115,7 @@ export function ListasClient() {
   const [consultaAbierta, setConsultaAbierta] = useState<ConsultaDeListas | null>(null)
   const [parte, setParte] = useState<'consultas' | 'listas'>('consultas')
   const [busqueda, setBusqueda] = useState('')
+  const [filtro, setFiltro] = useState<FiltroDeConsultas>('todos')
 
   const consultas = bandeja.datos?.consultas ?? []
   const sinVerificar = bandeja.datos?.sinVerificar ?? 0
@@ -106,16 +127,44 @@ export function ListasClient() {
   const listas = cargadas.datos?.listas ?? []
 
   const bloqueados = consultas.filter((c) => c.estado === 'BLOQUEADO').length
+  const confirmados = consultas.filter((c) => c.estado === 'CONFIRMADO').length
+  const libres = consultas.filter((c) => c.estado === 'SIN_BLOQUEO' || c.estado === 'LIBERADO').length
   const registros = listas.reduce((s, l) => s + l.filas, 0)
+  // Las tres listas oficiales que todavía no están cargadas (activas).
+  const faltanListas = LISTAS_OFICIALES.filter((l) => !listas.some((c) => c.lista === l.codigo && c.activa))
+  const [codigoParaCargar, setCodigoParaCargar] = useState<string | undefined>(undefined)
+  function abrirCargar(codigo?: string) {
+    setCodigoParaCargar(codigo)
+    setCargandoLista(true)
+  }
+
+  /* Abre en «Por revisar» cuando hay bloqueados (una sola vez, al llegar los datos). */
+  const yaSeEligio = useRef(false)
+  useEffect(() => {
+    if (yaSeEligio.current || bandeja.cargando || !bandeja.datos) return
+    yaSeEligio.current = true
+    if (bloqueados > 0) setFiltro('por-revisar')
+  }, [bandeja.cargando, bandeja.datos, bloqueados])
 
   const consultasVisibles = useMemo(() => {
     const q = normalizar(busqueda)
-    if (q === '') return consultas
-    return consultas.filter((c) =>
+    const delFiltro = filtro === 'todos' ? consultas : consultas.filter(DEL_FILTRO[filtro])
+    if (q === '') return delFiltro
+    return delFiltro.filter((c) =>
       normalizar(`${c.nombre} ${c.documento ?? ''} ${c.terceroTipo}`).includes(q),
     )
-  }, [consultas, busqueda])
-  const paginado = useTablePagination(consultasVisibles, { resetKey: busqueda })
+  }, [consultas, busqueda, filtro])
+  const paginado = useTablePagination(consultasVisibles, { resetKey: `${busqueda}|${filtro}` })
+  /* Revisora r24 #1: sin listas ni consultas, la tarjeta de la tabla no se pinta (eran dos pestañas en
+     cero y un vacío de 300 px debajo de la lista para empezar, diciendo lo mismo). */
+  const mostrarTabla =
+    consultas.length > 0 ||
+    listas.length > 0 ||
+    bandeja.cargando ||
+    Boolean(bandeja.errorCrudo) ||
+    Boolean(cargadas.errorCrudo) ||
+    Boolean(bandeja.noHabilitado)
+  const cuantosDe = (f: Exclude<FiltroDeConsultas, 'todos'>) => consultas.filter(DEL_FILTRO[f]).length
 
   async function revisar() {
     setRevisando(true)
@@ -140,99 +189,110 @@ export function ListasClient() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1.5">
-        <SectionLabel>Directorio</SectionLabel>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-h2 text-fg">Listas restrictivas</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* 🔴 El porqué completo detrás de un botón que abre un MODAL, no
-                puesto sobre la pantalla: es la regla de la casa. */}
-            <ParaEntenderMas
-              etiqueta="Qué es esto y por qué es obligatorio"
-              descripcion="Qué se compara, contra qué, y qué pasa cuando hay una coincidencia."
-            >
-              <div className="space-y-3 text-sm text-fg-muted">
-                <p>
-                  Antes de firmarle a alguien hay que comprobar que no esté en
-                  las listas de sanciones internacionales: la{' '}
-                  <strong className="text-fg">lista Clinton de la OFAC</strong>,
-                  la del <strong className="text-fg">Consejo de Seguridad de la ONU</strong>{' '}
-                  y la de la <strong className="text-fg">Unión Europea</strong>.
-                </p>
-                <p>
-                  En Colombia no es opcional: el sector inmobiliario está
-                  obligado a un sistema de prevención de lavado de activos
-                  (SARLAFT) y a reportarle a la UIAF. Lo que un auditor viene a
-                  mirar no es sólo que hayas comparado, sino{' '}
-                  <strong className="text-fg">
-                    qué decidiste cuando hubo una coincidencia y por qué
-                  </strong>
-                  .
-                </p>
-                <p>
-                  Leasefy consulta sola a cada propietario, inquilino y codeudor
-                  cuando se crea. Una coincidencia lo deja{' '}
-                  <strong className="text-fg">bloqueado</strong> hasta que un
-                  administrador la revise: puede{' '}
-                  <strong className="text-fg">liberarlo</strong> —es un homónimo—
-                  o <strong className="text-fg">confirmarlo</strong>, y en los dos
-                  casos queda guardado quién decidió y por qué.
-                </p>
-                <p>
-                  Los archivos los publican los organismos y cambian: se
-                  descargan de su sitio y se cargan acá. Sin ninguna lista
-                  cargada no se bloquea a nadie —crear un tercero sigue
-                  funcionando— pero todos quedan «sin verificar».
-                </p>
-              </div>
-            </ParaEntenderMas>
-            <Button
-              onClick={() => setCargandoLista(true)}
-              hideArrow
-              data-testid="abrir-cargar-lista"
-            >
-              <UploadSimple className="h-4 w-4" weight="bold" />
-              Cargar una lista
-            </Button>
-          </div>
-        </div>
+      {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): el encabezado común; debajo, LA RESPUESTA —sin
+          listas, lo que falta para empezar a comprobar (OFAC, ONU, UE, cada una con su botón); con listas,
+          una cifra: cuántos bloqueados esperan revisión (o a cuántos se consultó), con la barra de cómo
+          quedó cada consulta—. Antes era una frase con cuatro números del mismo peso. */}
+      <EncabezadoDePantalla
+        seccion="Directorio"
+        titulo="Listas restrictivas"
+        descripcion={tr('Comprobar que nadie a quien le firmas está en la OFAC, la ONU o la UE.')}
+        ayuda={
+              <ParaEntenderMas
+                etiqueta={tr('¿Por qué es obligatorio?')}
+                descripcion="Qué se compara, contra qué, y qué pasa cuando hay una coincidencia."
+              >
+                <div className="space-y-3 text-sm text-fg-muted">
+                  <p>
+                    Antes de firmarle a alguien hay que comprobar que no esté en
+                    las listas de sanciones internacionales: la{' '}
+                    <strong className="text-fg">lista Clinton de la OFAC</strong>,
+                    la del <strong className="text-fg">Consejo de Seguridad de la ONU</strong>{' '}
+                    y la de la <strong className="text-fg">Unión Europea</strong>.
+                  </p>
+                  <p>
+                    En Colombia no es opcional: el sector inmobiliario está
+                    obligado a un sistema de prevención de lavado de activos
+                    (SARLAFT) y a reportarle a la UIAF. Lo que un auditor viene a
+                    mirar no es sólo que hayas comparado, sino{' '}
+                    <strong className="text-fg">
+                      qué decidiste cuando hubo una coincidencia y por qué
+                    </strong>
+                    .
+                  </p>
+                  <p>
+                    Leasefy consulta sola a cada propietario, inquilino y codeudor
+                    cuando se crea. Una coincidencia lo deja{' '}
+                    <strong className="text-fg">bloqueado</strong> hasta que un
+                    administrador la revise: puede{' '}
+                    <strong className="text-fg">liberarlo</strong> —es un homónimo—
+                    o <strong className="text-fg">confirmarlo</strong>, y en los dos
+                    casos queda guardado quién decidió y por qué.
+                  </p>
+                  <p>
+                    Los archivos los publican los organismos y cambian: se
+                    descargan de su sitio y se cargan aquí. Sin ninguna lista
+                    cargada no se bloquea a nadie —crear un tercero sigue
+                    funcionando— pero todos quedan «sin verificar».
+                  </p>
+                </div>
+              </ParaEntenderMas>
+        }
+        accionPrincipal={
+          <Button size="sm" onClick={() => abrirCargar()} hideArrow data-testid="abrir-cargar-lista">
+            <UploadSimple className="h-4 w-4" weight="bold" />
+            Cargar una lista
+          </Button>
+        }
+      />
 
-        {/* 🔴 EL RESUMEN ES UNA FRASE (regla 1 del molde), y dice la relación
-            entre lo que hay cargado y lo que eso deja sin comprobar. */}
-        <p className="max-w-3xl text-body text-fg-muted" data-testid="estado-de-las-listas">
-          {!hayListaCargada ? (
-            <>
-              No tienes ninguna lista cargada, así que{' '}
-              <strong className="text-fg">no se está comprobando a nadie</strong>: los
-              propietarios, inquilinos y codeudores que crees quedan «sin
-              verificar». Carga los archivos de la OFAC, la ONU y la UE para
-              empezar a comparar.
-            </>
-          ) : (
-            <>
-              Se compara contra{' '}
-              <strong className="font-mono tabular-nums text-fg">{listas.length}</strong>{' '}
-              {listas.length === 1 ? 'lista' : 'listas'} con{' '}
-              <strong className="font-mono tabular-nums text-fg">
-                {registros.toLocaleString(localeDeLasCifras())}
-              </strong>{' '}
-              registros. Se consultó a{' '}
-              <strong className="font-mono tabular-nums text-fg">{consultas.length}</strong>{' '}
-              {consultas.length === 1 ? 'tercero' : 'terceros'}
-              {bloqueados > 0 ? (
+      <div className="space-y-4" data-testid="estado-de-las-listas">
+        {faltanListas.length > 0 && !cargadas.cargando ? (
+          <ListaParaEmpezar
+            paraQue={tr('comprobar contra las listas')}
+            descripcion={
+              !hayListaCargada ? (
                 <>
-                  {' '}y hay{' '}
-                  <strong className="font-mono tabular-nums text-danger">{bloqueados}</strong>{' '}
-                  {bloqueados === 1 ? 'bloqueado' : 'bloqueados'} esperando que un
-                  administrador los revise.
+                  {tr('Mientras tanto')}{' '}
+                  <strong className="font-medium text-fg">{tr('no se está comprobando a nadie')}</strong>
+                  {': '}
+                  {tr('los propietarios, inquilinos y codeudores que crees quedan «sin verificar».')}
                 </>
-              ) : (
-                <>, y ninguno quedó bloqueado.</>
-              )}
-            </>
-          )}
-        </p>
-      </header>
+              ) : undefined
+            }
+            requisitos={LISTAS_OFICIALES.map((l) => ({
+              id: l.codigo,
+              titulo: `La lista de ${l.nombre}`,
+              detalle: l.detalle,
+              estado: listas.some((c) => c.lista === l.codigo && c.activa) ? ('listo' as const) : ('falta' as const),
+              accion: (
+                <Button size="sm" variant="outline" hideArrow onClick={() => abrirCargar(l.codigo)} data-testid={`cargar-lista-${l.codigo}`}>
+                  {tr('Cargarla')}
+                </Button>
+              ),
+            }))}
+          />
+        ) : null}
+        {!hayListaCargada ? null : (
+          <CifraHeroe
+            rotulo={bloqueados > 0 ? 'Bloqueados por revisar' : 'Terceros consultados'}
+            cifra={(bloqueados > 0 ? bloqueados : consultas.length).toLocaleString(localeDeLasCifras())}
+            contexto={
+              bloqueados > 0
+                ? `de ${consultas.length.toLocaleString(localeDeLasCifras())} terceros consultados: esperan que un administrador decida si es un homónimo`
+                : `contra ${listas.length} ${listas.length === 1 ? 'lista' : 'listas'} con ${registros.toLocaleString(localeDeLasCifras())} registros · ninguno quedó bloqueado`
+            }
+            tramos={[
+              { clave: 'libres', etiqueta: 'Sin coincidencias', monto: libres, tono: 'exito', cifra: libres.toLocaleString(localeDeLasCifras()), siempre: true },
+              { clave: 'sin-verificar', etiqueta: 'Sin verificar', monto: sinVerificar, tono: 'aviso', cifra: sinVerificar.toLocaleString(localeDeLasCifras()) },
+              { clave: 'bloqueados', etiqueta: 'Bloqueados', monto: bloqueados, tono: 'critico', cifra: bloqueados.toLocaleString(localeDeLasCifras()) },
+              { clave: 'confirmados', etiqueta: 'Confirmados en lista', monto: confirmados, tono: 'critico', cifra: confirmados.toLocaleString(localeDeLasCifras()) },
+            ]}
+            tamano="mediana"
+            data-testid="cifra-de-las-listas"
+          />
+        )}
+      </div>
 
       {/* 🔴 La bandeja, arriba y con número: es una deuda, no una lista. Cada
           fila es un tercero que está operando sin que nadie lo haya comprobado. */}
@@ -257,6 +317,8 @@ export function ListasClient() {
             </div>
             {puedeRevisar ? (
               <Button
+                size="sm"
+                variant="outline"
                 onClick={() => void revisar()}
                 disabled={revisando}
                 hideArrow
@@ -274,22 +336,37 @@ export function ListasClient() {
 
       {/* 🔴 UNA tarjeta: pestañas, buscador y tabla (regla 2 del molde). Eran
           dos tarjetas apiladas, cada una con su vacío de 400 px. */}
-      <Tabs value={parte} onValueChange={(v) => setParte(v as 'consultas' | 'listas')}>
+      {mostrarTabla ? (
         <section className="overflow-x-clip rounded-lg border border-border bg-surface">
-          <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-            <TabsList variant="segmented" className="justify-start">
-              <TabsTrigger value="consultas" className="whitespace-nowrap" data-testid="parte-consultas">
-                A quién se consultó ({consultas.length})
-              </TabsTrigger>
-              <TabsTrigger value="listas" className="whitespace-nowrap" data-testid="parte-listas">
-                Listas cargadas ({listas.length})
-              </TabsTrigger>
-            </TabsList>
+          {/* GLOW UP 22-10 (revisora r24 #2 y #5): UNA fila de pestañas —los estados de las consultas con su
+              conteo en mono y, al final, las listas cargadas—; abre en «Por revisar» si hay bloqueados. Antes,
+              un segmentado «A quién se consultó (0) · Listas cargadas (0)» y los bloqueados donde cayeran. */}
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between empty:hidden">
+            <PestanasDeEstado<FiltroDeConsultas | 'listas'>
+              etiqueta={tr('Filtrar las consultas')}
+              valor={parte === 'listas' ? 'listas' : filtro}
+              onCambio={(v) => {
+                if (v === 'listas') {
+                  setParte('listas')
+                  return
+                }
+                setParte('consultas')
+                setFiltro(v)
+              }}
+              pestanas={[
+                { valor: 'todos', etiqueta: tr('Todos'), cuantos: consultas.length, fija: true, testid: 'parte-consultas' },
+                { valor: 'por-revisar', etiqueta: tr('Por revisar'), cuantos: cuantosDe('por-revisar'), tono: 'aviso', testid: 'filtro-por-revisar' },
+                { valor: 'libres', etiqueta: tr('Sin coincidencias'), cuantos: cuantosDe('libres'), testid: 'filtro-libres' },
+                { valor: 'confirmados', etiqueta: tr('Confirmados'), cuantos: cuantosDe('confirmados'), testid: 'filtro-confirmados' },
+                { valor: 'sin-verificar', etiqueta: tr('Sin verificar'), cuantos: cuantosDe('sin-verificar'), testid: 'filtro-sin-verificar' },
+                { valor: 'listas', etiqueta: tr('Listas cargadas'), cuantos: listas.length > 0 ? listas.length : null, fija: true, testid: 'parte-listas' },
+              ]}
+            />
             {/* El buscador es de las consultas: aparece y se va con la pestaña. */}
             <Presence
               show={parte === 'consultas' && consultas.length > 0}
               direction="none"
-              className="relative w-full sm:max-w-sm"
+              className="relative w-full sm:max-w-xs"
             >
                 <MagnifyingGlass
                   className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
@@ -297,8 +374,8 @@ export function ListasClient() {
                 />
                 <Input
                   className="pl-9"
-                  placeholder="Nombre, documento o tipo"
-                  aria-label="Buscar una consulta en listas"
+                  placeholder={tr('Nombre, documento o tipo')}
+                  aria-label={tr('Buscar una consulta en listas')}
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                   data-testid="buscar-consulta"
@@ -306,7 +383,8 @@ export function ListasClient() {
             </Presence>
           </div>
 
-          <TabsContent value="consultas" className="mt-0">
+          {parte === 'consultas' ? (
+            <>
             {bandeja.noHabilitado ? (
               <p className="p-4 text-sm text-fg-muted" data-testid="consultas-no-habilitadas">
                 {motivoEnCristiano(bandeja.noHabilitado)}
@@ -326,14 +404,18 @@ export function ListasClient() {
                     queSon="consultas en listas"
                     icono={ShieldWarning}
                     titulo={
-                      consultas.length > 0
-                        ? `Ninguna consulta coincide con «${busqueda.trim()}»`
-                        : 'Todavía no se ha consultado a nadie'
+                      consultas.length === 0
+                        ? tr('Todavía no se ha consultado a nadie')
+                        : busqueda.trim()
+                          ? `${tr('Ninguna consulta coincide con')} «${busqueda.trim()}»`
+                          : tr('Ninguna consulta en este estado')
                     }
                     descripcion={
-                      consultas.length > 0
-                        ? 'Buscamos por nombre, documento y tipo de tercero.'
-                        : 'La consulta corre sola cuando se crea un propietario, un inquilino o un codeudor.'
+                      consultas.length === 0
+                        ? tr('Cuando crees un propietario, un inquilino o un codeudor, aparece aquí.')
+                        : busqueda.trim()
+                          ? tr('Buscamos por nombre, documento y tipo de tercero.')
+                          : tr('Elige «Todos» para ver a todos los terceros consultados.')
                     }
                   />
                 ) : (
@@ -385,9 +467,9 @@ export function ListasClient() {
                 )}
               </EstadoDeDatos>
             )}
-          </TabsContent>
-
-          <TabsContent value="listas" className="mt-0">
+            </>
+          ) : (
+            <>
             {cargadas.noHabilitado ? (
               <p className="p-4 text-sm text-fg-muted" data-testid="listas-no-habilitadas">
                 {motivoEnCristiano(cargadas.noHabilitado)}
@@ -441,12 +523,14 @@ export function ListasClient() {
                 )}
               </EstadoDeDatos>
             )}
-          </TabsContent>
+            </>
+          )}
         </section>
-      </Tabs>
+      ) : null}
 
       <CajonDeLaLista
         abierto={cargandoLista}
+        codigoInicial={codigoParaCargar}
         onOpenChange={setCargandoLista}
         onCargada={() => invalidar('clientes')}
       />

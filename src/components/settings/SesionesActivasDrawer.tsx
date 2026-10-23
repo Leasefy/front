@@ -18,7 +18,6 @@ import { Monitor, ShieldCheck, SignOut, Warning } from '@phosphor-icons/react';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth/use-auth';
 import { getDeviceId } from '@/lib/auth/device-id';
@@ -111,22 +110,23 @@ export function CuerpoDeSesiones({ onCerrarSesion }: { onCerrarSesion: () => voi
       {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
           monta en un test sin el contexto del Sheet). */}
       <SheetHeader>
-        <h2 className="text-lg font-semibold text-fg">{t(`${NS}.sessionsTitle`)}</h2>
+        <h2 className="text-h3 text-fg">{t(`${NS}.sessionsTitle`)}</h2>
         <p className="text-body-sm text-fg-muted">{t(`${NS}.sessionsIntro`)}</p>
       </SheetHeader>
 
       <SheetBody className="space-y-4">
         {estado.fase === 'cargando' && (
-          <div className="flex items-center justify-center py-12" data-testid="sesiones-cargando">
-            <Spinner />
+          // Glow up r26: el esqueleto de la tarjeta que va a llegar (antes, una rueda).
+          <div className="space-y-3" data-testid="sesiones-cargando" aria-busy="true">
+            <div className="h-28 animate-pulse rounded-lg border border-border bg-surface-muted" />
           </div>
         )}
 
         {estado.fase === 'error' && (
-          <div className="flex items-start gap-3 rounded-lg border border-border bg-danger-soft p-4">
-            <Warning className="mt-0.5 h-5 w-5 shrink-0 text-danger" weight="fill" aria-hidden />
+          <div className="flex items-start gap-3 rounded-lg border border-border bg-surface p-4">
+            <Warning className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-danger">{t(`${NS}.sessionsError`)}</p>
+              <p role="alert" className="text-sm font-medium text-fg">{t(`${NS}.sessionsError`)}</p>
               <Button variant="outline" size="sm" hideArrow onClick={cargar} className="mt-3">
                 {t(`${NS}.sessionsRetry`)}
               </Button>
@@ -148,9 +148,8 @@ export function CuerpoDeSesiones({ onCerrarSesion }: { onCerrarSesion: () => voi
               className="rounded-lg border border-border bg-surface p-4"
             >
               <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-soft">
-                  <Monitor className="h-5 w-5 text-primary" aria-hidden />
-                </span>
+                {/* El ícono suelto (antes en una caja azul). */}
+                <Monitor className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-medium text-fg">{d.etiqueta}</p>

@@ -170,17 +170,17 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
                 }}
                 className="hover:bg-surface-muted cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <TableCell className="px-3 py-2 text-xs text-fg-muted">
+                <TableCell className="px-3 py-2 text-caption text-fg-muted">
                   {new Date(c.started_at).toLocaleString(locale)}
                 </TableCell>
-                <TableCell className="px-3 py-2 font-mono text-xs">
+                <TableCell className="px-3 py-2 font-mono text-caption">
                   {formatDuration(c.duration_seconds)}
                 </TableCell>
                 <TableCell className="px-3 py-2">
-                  <span className="text-xs">{c.status ?? '—'}</span>
+                  <span className="text-caption">{c.status ?? '—'}</span>
                 </TableCell>
                 <TableCell className="px-3 py-2">
-                  <span className="text-xs font-mono">
+                  <span className="text-caption font-mono">
                     {c.qa_score != null ? c.qa_score.toFixed(1) : '—'}
                   </span>
                 </TableCell>
@@ -204,13 +204,13 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
               onClick={() => abrir(c.id)}
               className="w-full text-left rounded-sm border border-border bg-surface px-3 py-2"
             >
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 {new Date(c.started_at).toLocaleString(locale)}
               </p>
               <p className="text-sm font-medium text-fg mt-0.5">
                 {c.status ?? '—'} · {formatDuration(c.duration_seconds)}
               </p>
-              <p className="text-xs text-fg-muted mt-0.5">
+              <p className="text-caption text-fg-muted mt-0.5">
                 QA {c.qa_score?.toFixed(1) ?? '—'} · {c.compliance_flags_count}{' '}
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.compliance')}
               </p>

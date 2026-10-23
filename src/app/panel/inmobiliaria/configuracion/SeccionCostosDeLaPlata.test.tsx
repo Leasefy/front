@@ -195,7 +195,7 @@ describe('leer un número escrito a mano', () => {
     expect(comoNumero('-3')).toBeNull();
   });
 
-  it('acepta la coma decimal, que es como se escribe acá', () => {
+  it('acepta la coma decimal, que es como se escribe aquí', () => {
     expect(comoNumero('2,65')).toBe(2.65);
     expect(comoNumero('4')).toBe(4);
     expect(comoNumero('0')).toBe(0);

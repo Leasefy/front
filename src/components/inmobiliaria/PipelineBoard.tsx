@@ -19,7 +19,6 @@ import { toast } from '@/components/ui/toast';
 import {
   CaretDown,
   CaretUp,
-  DotsSixVertical,
   ArrowsOutSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -29,11 +28,13 @@ import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/she
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
-import { PipelineCard, NombresDeAgentesContext } from './PipelineCard';
+import { PipelineCard, NombresDeAgentesContext, VariosAsesoresContext } from './PipelineCard';
+import { DropdownList, DropdownListContent, DropdownListItem, DropdownListSeparator, DropdownListTrigger } from '@/components/ui/dropdown-menu';
 import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/MotivoDialog';
 import { MotivoDePerdidaDialog } from '@/components/inmobiliaria/MotivoDePerdidaDialog';
 import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 import { useTr } from '@/lib/i18n/use-tr';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // ============================================================================
 // Types
@@ -165,28 +166,48 @@ function DroppableColumn({
 
   // Extract background and text color classes from stageInfo
   const bgColorClass = stageInfo?.color?.split(' ')[0] || 'bg-surface-muted';
-  const textColorClass = stageInfo?.color?.split(' ')[1] || 'text-fg';
 
   // Calculate if we need to show "Ver todo" button (show when 3+ items)
   const showExpandButton = items.length >= maxVisibleCards;
+
+  /*
+   * Ronda 18: una etapa SIN nadie se pliega a un riel de 44 px con su nombre en vertical y el
+   * «0». Antes eran 280 px de «Nadie en esta etapa» por columna: con 4 interesados el tablero
+   * medía ≈2.650 px y Evaluación, Aprobado, Contrato, Entrega y Cerrado quedaban fuera, a la
+   * derecha. Al arrastrar una tarjeta encima, el riel se abre (`isOver`) para soltarla.
+   */
+  if (items.length === 0 && !isOver) {
+    const nombre = tr(stageInfo?.labelEs || stage);
+    return (
+      <div
+        ref={setNodeRef}
+        className="flex min-h-[220px] w-11 shrink-0 flex-col items-center gap-2 rounded-[18px] bg-surface-muted/50 py-3"
+        title={`${nombre}: ${tr('nadie en esta etapa')}`}
+        aria-label={`${nombre}: 0`}
+        data-testid={`columna-plegada-${stage}`}
+      >
+        {/* Sin el punto de color en la columna vacía: decoraba (revisora r25). */}
+        <span className="font-mono text-caption tabular-nums text-fg-subtle">0</span>
+        <span className="rotate-180 whitespace-nowrap text-body-sm text-fg-muted [writing-mode:vertical-rl]">{nombre}</span>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        'flex flex-col h-full rounded-lg border bg-muted/40 transition-[border-color,box-shadow] duration-base',
+        // Cadence 2: la columna es un carril de arena, sin marco; al arrastrar encima se enciende.
+        'flex flex-col h-full rounded-[18px] transition-[background-color,box-shadow] duration-base',
         isOver
-          ? 'border-primary/30 border-dashed ring-2 ring-primary/20'
-          : 'border-border'
+          ? 'bg-primary-soft/50 ring-2 ring-primary/25'
+          : 'bg-surface-muted/70'
       )}
       style={{ width: '280px', minWidth: '280px' }}
     >
       {/* Column Header */}
       <div
-        className={cn(
-          'flex items-center justify-between p-3 rounded-t-xl border-b',
-          'bg-card border-border'
-        )}
+        className="flex items-center justify-between px-3.5 pb-1.5 pt-3"
       >
         {/* Left side: color indicator + label + count */}
         <div className="flex items-center gap-2.5">
@@ -194,23 +215,17 @@ function DroppableColumn({
           <div
             className={cn(
               'w-2.5 h-2.5 rounded-full',
-              bgColorClass.replace('-100', '-500')
+              bgColorClass.replace('-100', '-500').replace('-soft', '')
             )}
           />
 
           {/* Stage label */}
-          <h3 className="font-semibold text-sm text-foreground">
+          <h3 className="text-sm font-medium text-fg">
             {tr(stageInfo?.labelEs || stage)}
           </h3>
 
-          {/* Count badge */}
-          <span
-            className={cn(
-              'px-2 py-0.5 rounded-full text-xs font-medium',
-              bgColorClass,
-              textColorClass
-            )}
-          >
+          {/* Cuántos: la cifra en mono, sin pastilla de color */}
+          <span className="font-mono text-[12px] tabular-nums text-fg-subtle">
             {items.length}
           </span>
         </div>
@@ -248,19 +263,12 @@ function DroppableColumn({
                 /* Empty State */
                 <div
                   className={cn(
-                    'flex flex-col items-center justify-center py-8 px-4 rounded-md border-2 border-dashed',
-                    isOver
-                      ? 'border-primary/30 bg-primary-soft/50'
-                      : 'border-border bg-muted/40'
+                    'flex items-center justify-center rounded-[14px] border border-dashed px-4 py-5 text-center text-caption',
+                    isOver ? 'border-primary/40 text-primary' : 'border-border text-fg-subtle'
                   )}
                 >
-                  <DotsSixVertical className="w-6 h-6 text-muted-foreground/60 mb-2" />
-                  <p className="text-xs text-muted-foreground text-center">
-                    {t('inmobiliaria.pipeline.noLeads')}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/70 text-center mt-1">
-                    {t('inmobiliaria.pipeline.dragHere')}
-                  </p>
+                  {/* Vacía: una línea; arrastrando encima, dice dónde soltar */}
+                  {isOver ? t('inmobiliaria.pipeline.dropHere') : t('inmobiliaria.pipeline.noLeads')}
                 </div>
               ) : (
                 /* Cards */
@@ -271,9 +279,9 @@ function DroppableColumn({
                     onClick={onCardClick}
                     motivoBloqueo={
                       esTerminal(item.stage)
-                        ? 'Este lead ya terminó: no se mueve de etapa.'
+                        ? 'Este interesado ya terminó: no se mueve de etapa.'
                         : !puedeMover
-                          ? 'No tienes permiso para mover leads.'
+                          ? 'No tienes permiso para mover interesados.'
                           : undefined
                     }
                   />
@@ -328,7 +336,7 @@ function DroppableColumn({
               <div
                 className={cn(
                   'w-3 h-3 rounded-full',
-                  bgColorClass.replace('-100', '-500')
+                  bgColorClass.replace('-100', '-500').replace('-soft', '')
                 )}
               />
             }
@@ -364,6 +372,73 @@ function DroppableColumn({
  * PipelineBoard - Full Kanban board with drag-and-drop between columns
  * Uses @dnd-kit for accessible drag-and-drop functionality
  */
+/**
+ * «Mover a…» de la lista del celular (ronda 20): un menú con la siguiente etapa primero
+ * («Pasar a Evaluación»), las demás después y «Perdido» al final.
+ */
+function MoverA({
+  item,
+  etapas,
+  onMover,
+}: {
+  item: PipelineItem;
+  etapas: readonly PipelineStage[];
+  onMover: (etapa: PipelineStage) => void;
+}) {
+  const tr = useTr();
+  const nombre = (st: PipelineStage) => tr(getPipelineStageInfo(st)?.labelEs || st);
+  const principales: PipelineStage[] = etapas.filter((st) => st !== 'lost');
+  const aqui = principales.indexOf(item.stage);
+  const siguiente = aqui >= 0 ? principales[aqui + 1] : undefined;
+  const otras = etapas.filter((st) => st !== item.stage && st !== siguiente && st !== 'lost');
+  // Revisora r22 (Prospección #3): lo que más se hace —pasar a la siguiente etapa— es UN toque, con su nombre
+  // («Pasar a Visita hecha»); las demás y «Perdido» van en el ▾ de al lado. Dentro del pie de la tarjeta, sin w-full.
+  const menu = (
+    <DropdownListContent align="end">
+      {otras.map((st) => (
+        <DropdownListItem key={st} onSelect={() => onMover(st)}>
+          {nombre(st)}
+        </DropdownListItem>
+      ))}
+      {otras.length > 0 ? <DropdownListSeparator /> : null}
+      <DropdownListItem onSelect={() => onMover('lost')} className="text-danger">
+        {tr('Marcar como perdido')}
+      </DropdownListItem>
+    </DropdownListContent>
+  );
+  if (!siguiente) {
+    return (
+      <DropdownList>
+        <DropdownListTrigger asChild>
+          <Button variant="secondary" size="sm" hideArrow data-testid="mover-a">
+            {tr('Mover a…')}
+          </Button>
+        </DropdownListTrigger>
+        {menu}
+      </DropdownList>
+    );
+  }
+  return (
+    <div className="inline-flex items-center gap-1" data-testid="mover-a">
+      <Button variant="secondary" size="sm" hideArrow onClick={() => onMover(siguiente)} data-testid="mover-a-siguiente">
+        {tr('Pasar a {etapa}', { etapa: nombre(siguiente) })}
+      </Button>
+      <DropdownList>
+        <DropdownListTrigger asChild>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            aria-label={tr('Mover a otra etapa')}
+            icon={<CaretDown className="h-4 w-4" aria-hidden="true" />}
+            data-testid="mover-a-otras"
+          />
+        </DropdownListTrigger>
+        {menu}
+      </DropdownList>
+    </div>
+  );
+}
+
 export function PipelineBoard({
   items,
   onItemClick,
@@ -381,7 +456,10 @@ export function PipelineBoard({
     }
     return m;
   }, [agentes]);
+  // Ronda 20: el nombre del asesor en cada tarjeta sólo si la lista tiene más de uno.
+  const variosAsesores = useMemo(() => new Set(items.map((i) => i.agenteId).filter(Boolean)).size > 1, [items]);
   const { t } = useI18n();
+  const tr = useTr();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   // El lead que se soltó en «Perdido» y espera su motivo.
@@ -430,6 +508,55 @@ export function PipelineBoard({
     return grouped;
   }, [items]);
 
+  /**
+   * Mover a un interesado de etapa: lo usan el arrastre del tablero y «Mover a…» de la lista del
+   * celular (ronda 20). Las mismas guardas: terminado o sin permiso no se mueve; «Perdido» pide el
+   * motivo; «Visita programada» se agenda.
+   */
+  const moverA = useCallback(
+    async (item: PipelineItem, newStage: PipelineStage) => {
+      // Check if stage actually changed
+      if (item.stage === newStage) return;
+
+      // La tarjeta ya viene bloqueada; esto cubre un arrastre por teclado.
+      // Cerrado y Perdido el back los rechaza con 409 LEAD_TERMINADO.
+      if (esTerminal(item.stage) || !puedeMover) return;
+
+      /*
+       * «Perdido» pide el motivo, igual que el cajón. Antes el arrastre se lo
+       * saltaba y la columna se llenaba de perdidos sin explicación. La
+       * tarjeta no se mueve hasta que se confirma.
+       */
+      if (newStage === 'lost') {
+        setErrorDelMotivo(null);
+        setPerdiendo(item);
+        return;
+      }
+
+      // PL-16: «Visita programada» se agenda (día, hora y asesor).
+      if (newStage === 'visit_scheduled' && onPedirVisita) {
+        onPedirVisita(item);
+        return;
+      }
+
+      // Get stage info for toast
+      const oldStageInfo = getPipelineStageInfo(item.stage);
+      const newStageInfo = getPipelineStageInfo(newStage);
+
+      try {
+        await onStageChange(item.id, newStage);
+      } catch {
+        // Ya lo dijo quien intentó guardarlo, con el motivo real.
+        return;
+      }
+
+      toast.success(t('inmobiliaria.pipeline.stageUpdated'), {
+        description: `${item.candidateName}: ${oldStageInfo?.labelEs || item.stage} → ${newStageInfo?.labelEs || newStage}`,
+      });
+    },
+    [onStageChange, t, puedeMover, onPedirVisita]
+  );
+
   // Handle drag start
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -467,47 +594,9 @@ export function PipelineBoard({
       // Find the item
       const item = items.find((i) => i.id === itemId);
       if (!item) return;
-
-      // Check if stage actually changed
-      if (item.stage === newStage) return;
-
-      // La tarjeta ya viene bloqueada; esto cubre un arrastre por teclado.
-      // Cerrado y Perdido el back los rechaza con 409 LEAD_TERMINADO.
-      if (esTerminal(item.stage) || !puedeMover) return;
-
-      /*
-       * «Perdido» pide el motivo, igual que el cajón. Antes el arrastre se lo
-       * saltaba y la columna se llenaba de perdidos sin explicación. La
-       * tarjeta no se mueve hasta que se confirma.
-       */
-      if (newStage === 'lost') {
-        setErrorDelMotivo(null);
-        setPerdiendo(item);
-        return;
-      }
-
-      // PL-16: «Visita programada» se agenda (día, hora y asesor).
-      if (newStage === 'visit_scheduled' && onPedirVisita) {
-        onPedirVisita(item);
-        return;
-      }
-
-      // Get stage info for toast
-      const oldStageInfo = getPipelineStageInfo(item.stage);
-      const newStageInfo = getPipelineStageInfo(newStage);
-
-      try {
-        await onStageChange(itemId, newStage);
-      } catch {
-        // Ya lo dijo quien intentó guardarlo, con el motivo real.
-        return;
-      }
-
-      toast.success(t('inmobiliaria.pipeline.stageUpdated'), {
-        description: `${item.candidateName}: ${oldStageInfo?.labelEs || item.stage} → ${newStageInfo?.labelEs || newStage}`,
-      });
+      await moverA(item, newStage);
     },
-    [items, onStageChange, t, puedeMover, onPedirVisita]
+    [items, moverA]
   );
 
   /**
@@ -536,7 +625,7 @@ export function PipelineBoard({
           mensajeDelRechazoDelMotivo(error, {
             campo: 'lostReason',
             porDefecto: 'No se pudo marcar como perdido. Prueba de nuevo en un momento.',
-            accion: 'marcar el lead como perdido',
+            accion: 'marcar al interesado como perdido',
           }),
         );
         setEnviandoMotivo(false);
@@ -559,8 +648,76 @@ export function PipelineBoard({
     [],
   );
 
+  /*
+   * Ronda 18 (390): sin tablero. Arrastrar entre columnas que no se ven es imposible en el
+   * celular y la primera columna, la que se veía, solía estar vacía. Una lista por etapa, en el
+   * orden del embudo, sólo con las etapas que tienen gente; la tarjeta abre el cajón, que es donde
+   * se cambia de etapa. El primer pintado (servidor, pruebas) es el tablero.
+   */
+  // «Perdido» pide el motivo en los dos anchos (arrastre en el tablero, «Mover a…» en el celular).
+  const dialogoDePerdido = (
+    <MotivoDePerdidaDialog
+      abierto={perdiendo !== null}
+      nombre={perdiendo?.candidateName ?? ''}
+      enviando={enviandoMotivo}
+      error={errorDelMotivo}
+      onCerrar={() => {
+        setPerdiendo(null);
+        setErrorDelMotivo(null);
+      }}
+      onConfirmar={(motivo) => void confirmarPerdido(motivo)}
+    />
+  );
+
+  const esCelular = useIsMobile();
+  if (esCelular) {
+    const etapas = [...mainStages, 'lost' as const];
+    const conGente = etapas.filter((st) => (itemsByStage[st]?.length ?? 0) > 0);
+    // Ronda 22: las mismas etapas que la barra del embudo (sin «Perdido»): decían «+ 7» arriba y «+ 8» aquí.
+    const sinGente = mainStages.filter((st) => (itemsByStage[st]?.length ?? 0) === 0).length;
+    return (
+      <NombresDeAgentesContext.Provider value={nombresDeAgentes}>
+        <VariosAsesoresContext.Provider value={variosAsesores}>
+        <div className="space-y-5 p-1 pb-4" data-testid="lista-por-etapa">
+          {conGente.map((st) => (
+            <section key={st} aria-label={tr(getPipelineStageInfo(st)?.labelEs || st)}>
+              <h3 className="mb-2 flex items-baseline gap-2 text-body-sm font-medium text-fg">
+                {tr(getPipelineStageInfo(st)?.labelEs || st)}
+                <span className="font-mono text-caption tabular-nums text-fg-muted">{itemsByStage[st].length}</span>
+              </h3>
+              <div className="space-y-3">
+                {itemsByStage[st].map((item) => (
+                  <div key={item.id}>
+                    {/* Ronda 20 → r22: mover desde el celular sin abrir el cajón, dentro del pie de la tarjeta. */}
+                    <PipelineCard
+                      item={item}
+                      onClick={onItemClick}
+                      acciones={
+                        puedeMover && !esTerminal(item.stage) ? (
+                          <MoverA item={item} etapas={etapas} onMover={(etapa) => void moverA(item, etapa)} />
+                        ) : undefined
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+          {sinGente > 0 ? (
+            <p className="text-caption text-fg-subtle">
+              {tr(sinGente === 1 ? '+ 1 etapa sin interesados' : '+ {n} etapas sin interesados', { n: sinGente })}
+            </p>
+          ) : null}
+        </div>
+        {dialogoDePerdido}
+        </VariosAsesoresContext.Provider>
+      </NombresDeAgentesContext.Provider>
+    );
+  }
+
   return (
     <NombresDeAgentesContext.Provider value={nombresDeAgentes}>
+    <VariosAsesoresContext.Provider value={variosAsesores}>
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
@@ -595,17 +752,7 @@ export function PipelineBoard({
       </div>
 
       {/* El mismo diálogo y el mismo mínimo que «Marcar perdido» en el cajón. */}
-      <MotivoDePerdidaDialog
-        abierto={perdiendo !== null}
-        nombre={perdiendo?.candidateName ?? ''}
-        enviando={enviandoMotivo}
-        error={errorDelMotivo}
-        onCerrar={() => {
-          setPerdiendo(null);
-          setErrorDelMotivo(null);
-        }}
-        onConfirmar={(motivo) => void confirmarPerdido(motivo)}
-      />
+      {dialogoDePerdido}
 
       {/* Drag Overlay - Shows the card being dragged */}
       <DragOverlay dropAnimation={null}>
@@ -619,6 +766,7 @@ export function PipelineBoard({
         )}
       </DragOverlay>
     </DndContext>
+    </VariosAsesoresContext.Provider>
     </NombresDeAgentesContext.Provider>
   );
 }

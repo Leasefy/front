@@ -35,7 +35,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
-  ArrowRight,
   CaretRight,
   CheckCircle,
   FileArrowUp,
@@ -55,8 +54,10 @@ import {
   soportaNoDeducible,
 } from '@/lib/contabilidad/no-deducible';
 import { Button } from '@/components/ui/button';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { TablePagination } from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -213,7 +214,12 @@ export function PlanDeCuentas({
   const [sembrando, setSembrando] = useState(false);
   const [semilla, setSemilla] = useState<ResultadoSemilla | null>(null);
   const [busqueda, setBusqueda] = useState('');
-  const [cerradas, setCerradas] = useState<Set<string>>(new Set());
+  // Revisora r25 (escala): con 2.809 cuentas el árbol abría TODO desplegado
+  // (138.391 px a 1440). Ahora abre en las clases cerradas y se abre lo que se
+  // toca; buscar muestra lo encontrado en una lista con páginas.
+  const [abiertas, setAbiertas] = useState<Set<string>>(new Set());
+  const [paginaDeLaBusqueda, setPaginaDeLaBusqueda] = useState(1);
+  const [porPaginaDeLaBusqueda, setPorPaginaDeLaBusqueda] = useState(50);
   const [formulario, setFormulario] = useState<Formulario | null>(null);
   /**
    * La importación desde archivo. Nico: «tanto el PUC como los registros
@@ -262,6 +268,7 @@ export function PlanDeCuentas({
   const porCodigo = useMemo(() => new Map(plano.map((c) => [c.codigo, c])), [plano]);
   const q = normalizar(busqueda);
   const visible = useMemo(() => (arbol ? (q ? filtrar(arbol, q) : arbol) : []), [arbol, q]);
+  const encontradas = useMemo(() => (q ? plano.filter((c) => coincide(c, q)) : []), [plano, q]);
 
   const sembrar = async () => {
     setSembrando(true);
@@ -289,7 +296,7 @@ export function PlanDeCuentas({
   };
 
   const alternar = (id: string) =>
-    setCerradas((previo) => {
+    setAbiertas((previo) => {
       const s = new Set(previo);
       if (s.has(id)) s.delete(id);
       else s.add(id);
@@ -371,7 +378,7 @@ export function PlanDeCuentas({
           sus tres botones seguía pintado ARRIBA de «Así va a quedar»: dos
           estados contradictorios en la misma pantalla (auditoría 2026-09-05).
           La siembra es la excepción y por eso NO está en la condición: su
-          botón muestra el «Cargando…» acá mismo. */}
+          botón muestra el «Cargando…» aquí mismo. */}
       {!hayCuentas && !falloDeCarga && !importando && !formulario ? (
         <SinPlan
           sembrando={sembrando}
@@ -482,7 +489,7 @@ export function PlanDeCuentas({
                 Tu plan de cuentas
               </h2>
               <p className="text-sm text-fg-muted" data-testid="puc-resumen">
-                {plano.length} cuentas · {imputables} reciben movimientos
+                {plano.length.toLocaleString('es-CO')} cuentas · {imputables.toLocaleString('es-CO')} reciben movimientos
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -490,7 +497,10 @@ export function PlanDeCuentas({
                 <MagnifyingGlass className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
                 <Input
                   value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
+                  onChange={(e) => {
+                    setBusqueda(e.target.value);
+                    setPaginaDeLaBusqueda(1);
+                  }}
                   placeholder="Buscar por código o nombre"
                   aria-label="Buscar cuenta por código o nombre"
                   className="w-64 pl-8"
@@ -521,16 +531,50 @@ export function PlanDeCuentas({
           </div>
 
           {visible.length === 0 ? (
-            <p className="mt-4 text-sm text-fg-muted">
+            <p className="mt-4 text-body-sm text-fg-muted">
               Ninguna cuenta coincide con «{busqueda}».
             </p>
+          ) : q ? (
+            <>
+              <p className="mt-4 text-caption text-fg-muted" data-testid="puc-encontradas">
+                {encontradas.length.toLocaleString('es-CO')}{' '}
+                {encontradas.length === 1 ? 'cuenta coincide' : 'cuentas coinciden'} con «{busqueda}»
+              </p>
+              <ul className="mt-2 divide-y divide-border-faint" data-testid="puc-arbol">
+                {encontradas
+                  .slice((paginaDeLaBusqueda - 1) * porPaginaDeLaBusqueda, paginaDeLaBusqueda * porPaginaDeLaBusqueda)
+                  .map((c) => (
+                    <Nodo
+                      key={c.id}
+                      nodo={{ ...c, hijas: [] }}
+                      abierto={() => false}
+                      onAlternar={alternar}
+                      onEditar={(cuenta) => setFormulario({ modo: 'editar', cuenta })}
+                      onSubcuenta={(padre) => setFormulario({ modo: 'crear', padre })}
+                    />
+                  ))}
+              </ul>
+              {encontradas.length > porPaginaDeLaBusqueda ? (
+                <TablePagination
+                  total={encontradas.length}
+                  page={paginaDeLaBusqueda}
+                  pageSize={porPaginaDeLaBusqueda}
+                  pageSizeOptions={[25, 50, 100]}
+                  onPageChange={setPaginaDeLaBusqueda}
+                  onPageSizeChange={(n) => {
+                    setPorPaginaDeLaBusqueda(n);
+                    setPaginaDeLaBusqueda(1);
+                  }}
+                />
+              ) : null}
+            </>
           ) : (
             <ul className="mt-4 divide-y divide-border-faint" data-testid="puc-arbol">
               {visible.map((n) => (
                 <Nodo
                   key={n.id}
                   nodo={n}
-                  abierto={(id) => Boolean(q) || !cerradas.has(id)}
+                  abierto={(id) => abiertas.has(id)}
                   onAlternar={alternar}
                   onEditar={(cuenta) => setFormulario({ modo: 'editar', cuenta })}
                   onSubcuenta={(padre) => setFormulario({ modo: 'crear', padre })}
@@ -570,13 +614,11 @@ export function PlanDeCuentas({
               {onContinuar ? (
                 <Button hideArrow onClick={onContinuar} data-testid="puc-continuar">
                   Continuar al paso 6
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
               ) : (
                 <Button asChild hideArrow>
                   <Link href={RUTA_DEL_PASO_5} data-testid="puc-continuar">
                     Continuar al paso 6
-                    <ArrowRight className="ml-1.5 h-4 w-4" />
                   </Link>
                 </Button>
               )}
@@ -598,7 +640,6 @@ export function PlanDeCuentas({
                 data-testid="puc-ver-lo-que-falta"
               >
                 Ver los que faltan
-                <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </>
           )}
@@ -713,24 +754,25 @@ function PendientesDelContador({
 
   return (
     <section
-      className="rounded-lg bg-warning-soft p-5"
+      className="rounded-lg bg-warning-soft px-4 py-3"
       aria-labelledby="puc-pendientes-titulo"
       data-testid="puc-pendientes"
     >
-      <div className="flex items-start gap-2">
-        <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-        <div className="min-w-0 flex-1">
-          <h2 id="puc-pendientes-titulo" className="text-sm font-medium text-fg">
-            {pendientes.length === 1
-              ? 'Una cuenta para confirmar con tu contador'
-              : `${pendientes.length} cuentas para confirmar con tu contador`}
-          </h2>
-          <p className="mt-0.5 text-sm text-fg-muted">
-            El plan base las trae con el código más usado, pero no es una decisión del sistema.
-            Si tu contador usa otro código, crea la cuenta con el suyo y desactiva ésta.
-          </p>
-        </div>
+      {/* Revisora r25 (Plan de cuentas): el aviso ocupaba ≈230 px arriba del plan; ahora es UNA
+          línea con «Ver», y lo de adentro sigue en la página (plegado) para quien lo abre. */}
+      <div className="flex items-center gap-2">
+        <Warning className="h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+        <h2 id="puc-pendientes-titulo" className="min-w-0 flex-1 text-sm font-medium text-fg">
+          {pendientes.length === 1
+            ? 'Una cuenta para confirmar con tu contador'
+            : `${pendientes.length.toLocaleString('es-CO')} cuentas para confirmar con tu contador`}
+        </h2>
       </div>
+      <MasDetalles etiqueta="Ver" etiquetaAbierto="Ocultar" montadoSiempre className="mt-1 pl-6">
+      <p className="text-sm text-fg-muted">
+        El plan base las trae con el código más usado, pero no es una decisión del sistema.
+        Si tu contador usa otro código, crea la cuenta con el suyo y desactiva ésta.
+      </p>
 
       {/* Entran escalonadas (ARREGLOS-8, MOV-A6). */}
       <Stagger as="ul" layout={false} distance="xs" className="mt-4 space-y-2">
@@ -776,6 +818,7 @@ function PendientesDelContador({
           );
         })}
       </Stagger>
+      </MasDetalles>
       {error ? (
         <p className="mt-2 text-sm text-danger" role="alert">
           {error}
@@ -831,7 +874,7 @@ function Nodo({
           <span className="h-5 w-5" aria-hidden />
         )}
         <span
-          className={`font-mono text-sm tabular-nums ${nivel <= 1 ? 'font-semibold text-fg' : 'text-fg'}`}
+          className={`font-mono text-sm tabular-nums ${nivel <= 1 ? 'font-medium text-fg' : 'text-fg'}`}
         >
           {nodo.codigo}
         </span>
@@ -839,19 +882,23 @@ function Nodo({
         <span className={`min-w-0 break-words [overflow-wrap:anywhere] text-sm ${nivel <= 1 ? 'font-medium text-fg' : 'text-fg'}`}>
           {nodo.nombre}
         </span>
-        <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-muted">
+        {/* Revisora r25: a 390 lo que describe la cuenta baja a su propio renglón, debajo del
+            nombre, y las acciones quedan en la primera línea con su rótulo (antes tres renglones
+            con los íconos solos). */}
+        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 max-md:order-last max-md:basis-full max-md:pl-7">
+        <span className="text-caption text-fg-muted">
           {nodo.naturaleza === 'DEBITO' ? 'Débito' : 'Crédito'}
         </span>
         {nodo.imputable ? (
-          <span className="text-[11px] font-medium text-primary">
-            Imputable
+          <span className="text-caption text-fg-muted">
+            · Imputable
           </span>
         ) : null}
         {/* 🔴 Visible en el árbol: una cuenta marcada cambia el 1001 de la
             exógena, y eso no puede vivir sólo dentro del formulario. */}
         {estaMarcadaNoDeducible(nodo) ? (
           <span
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"
+            className="inline-flex items-center gap-1 text-caption text-warning-700 dark:text-warning-100"
             data-testid={`puc-no-deducible-${nodo.codigo}`}
             title="El gasto de esta cuenta va a la columna «Pago o abono no deducible» del formato 1001."
           >
@@ -860,10 +907,11 @@ function Nodo({
           </span>
         ) : null}
         {!nodo.activa ? (
-          <span className="text-[11px] italic text-fg-subtle">
+          <span className="text-caption italic text-fg-subtle">
             Inactiva
           </span>
         ) : null}
+        </span>
         <span className="ml-auto flex shrink-0 gap-1">
           <Button
             size="sm"
@@ -872,7 +920,8 @@ function Nodo({
             onClick={() => onEditar(cuenta)}
             aria-label={`Editar ${nodo.codigo} ${nodo.nombre}`}
           >
-            <PencilSimple className="h-3.5 w-3.5" />
+            <PencilSimple className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="hidden max-md:inline">Editar</span>
           </Button>
           {nodo.activa ? (
             <Button
@@ -882,7 +931,8 @@ function Nodo({
               onClick={() => onSubcuenta(cuenta)}
               aria-label={`Agregar subcuenta a ${nodo.codigo}`}
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="hidden max-md:inline">Subcuenta</span>
             </Button>
           ) : null}
         </span>

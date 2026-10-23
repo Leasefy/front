@@ -257,10 +257,14 @@ describe('CarteraCompleta', () => {
   it('🔴 COLA-01: a 390 px las cifras de la franja van una debajo de otra y las fichas de edad caben', () => {
     conReporte(reporte())
     montar()
+    // 22-10 (glow up): la cifra grande va sola arriba; la leyenda, una debajo de
+    // otra en el teléfono y en dos columnas desde sm.
     const franja = $('[data-testid="resumen-de-cartera"]').className.split(/\s+/)
     expect(franja).toContain('grid-cols-1')
-    expect(franja).toContain('sm:grid-cols-2')
     expect(franja).not.toContain('grid-cols-2')
+    const leyenda = $('[data-testid="leyenda-de-la-cartera"]').className.split(/\s+/)
+    expect(leyenda).toContain('grid-cols-1')
+    expect(leyenda).toContain('sm:grid-cols-2')
     for (const ficha of todos('[data-testid="tramos-de-la-cartera"] button')) {
       const cifra = ficha.querySelectorAll('p')[1]
       const clases = cifra.className.split(/\s+/)
@@ -281,8 +285,10 @@ describe('CarteraCompleta', () => {
     expect(cifras.length).toBeGreaterThanOrEqual(4)
     const largo = Math.max(...cifras.map((c) => Array.from(c).length))
     expect(franja.style.getPropertyValue('--largo-de-la-cifra')).toBe(String(largo))
-    expect($('[data-testid="cifra-deuda-total"]').className).toContain('cifra-que-cabe')
-    expect($('[data-testid="resumen-deuda-total"]').className).toContain('ficha-con-cifra')
+    // Revisora r25 (Cartera #1): la deuda total ya no es una ficha con su cifra: es UNA línea gris
+    // bajo la barra, con la plata en mono dentro de la frase.
+    expect($('[data-testid="cifra-deuda-total"]').className).toContain('font-mono')
+    expect($('[data-testid="cifra-deuda-total"]').className).not.toContain('cifra-que-cabe')
     expect($('[data-testid="cifra-deuda-total"]').className).not.toContain('text-2xl')
   })
 
@@ -549,7 +555,7 @@ describe('CarteraCompleta', () => {
       reporte({
         contratosSinCuotas: 195,
         avisos: [
-          '195 contrato(s) vigente(s) todavía no tienen tabla de amortización: su deuda NO está sumada acá.',
+          '195 contrato(s) vigente(s) todavía no tienen tabla de amortización: su deuda NO está sumada aquí.',
           '5 cuota(s) no tienen agente responsable.',
         ],
       }),
@@ -634,9 +640,12 @@ describe('CarteraCompleta', () => {
       )
       montar()
 
-      expect($('[data-testid="avisos-de-la-cartera"]').textContent).toContain('SIN intereses')
+      // Revisora r25 (Cartera #3): el aviso va a la vista, una vez, arriba de la tabla (sin mayúsculas de énfasis).
+      expect($('[data-testid="aviso-sin-reglas"]').textContent).toContain('se muestra')
+      expect($('[data-testid="aviso-sin-reglas"]').textContent).toContain('sin intereses')
+      // Con la vuelta a la Cartera (r25, Reglas de mora #4).
       expect($('[data-testid="cartera-configurar-reglas"]').getAttribute('href')).toBe(
-        '/panel/inmobiliaria/pagos/cartera/reglas-de-mora',
+        '/panel/inmobiliaria/pagos/cartera/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fpagos%2Fcartera',
       )
       expect(host.querySelector('[data-testid="resumen-intereses-cartera"]')).toBeNull()
     })
@@ -750,7 +759,9 @@ describe('CarteraCompleta', () => {
   describe('los tramos que la configuración deja vacíos', () => {
     it('con el siniestro a los 30 días, dice cuáles no se pueden llenar', () => {
       conReporte(
+        // 22-10: sin deudas en esos tramos (con plata adentro, decir «no se llena» sería falso).
         reporte({
+          items: [],
           siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 30, items: [] },
         }),
       )
@@ -765,7 +776,9 @@ describe('CarteraCompleta', () => {
 
     it('con el siniestro a los 90 días, sólo el último queda fuera', () => {
       conReporte(
+        // 22-10: sin deudas en esos tramos (con plata adentro, decir «no se llena» sería falso).
         reporte({
+          items: [],
           siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 90, items: [] },
         }),
       )

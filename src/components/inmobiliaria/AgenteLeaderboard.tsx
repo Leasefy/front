@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { Stagger, StaggerItem, Avatar } from '@leasefy/cadence';
 import {
   Trophy,
   Medal,
@@ -90,15 +90,6 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
     return sorted;
   }, [agentes, timeRange]);
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
 
   const handleRowClick = (agenteId: string) => {
     router.push(`/panel/inmobiliaria/configuracion/equipo/${agenteId}`);
@@ -109,14 +100,14 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       {/* Header with Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-warning-soft flex items-center justify-center">
             <Trophy className="w-5 h-5 text-warning" weight="fill" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-fg dark:text-white">
+            <h2 className="text-h3 text-fg">
               {t('inmobiliaria.agente.agentRanking')}
             </h2>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               {t('inmobiliaria.agente.topPerformers')}
             </p>
           </div>
@@ -154,9 +145,9 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       </div>
 
       {/* Leaderboard Table */}
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
+      <div className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted border-b border-border dark:border-border-strong text-xs font-medium text-fg-muted dark:text-fg-subtle uppercase tracking-wide">
+        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted border-b border-border text-caption font-medium text-fg-muted uppercase tracking-wide">
           <div className="col-span-1 text-center">#</div>
           <div className="col-span-4">{t('inmobiliaria.agente.agentLabel')}</div>
           <div className="col-span-2 text-center">
@@ -193,9 +184,9 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                   key={agente.id}
                   onClick={() => handleRowClick(agente.id)}
                   className={cn(
-                    'grid grid-cols-12 gap-4 px-4 py-3 border-b border-border-faint dark:border-border-strong cursor-pointer transition-colors duration-base',
-                    isFirst && 'bg-warning-soft/50 dark:bg-warning/10',
-                    !isFirst && 'hover:bg-surface-muted dark:hover:bg-ink'
+                    'grid grid-cols-12 gap-4 px-4 py-3 border-b border-border-faint cursor-pointer transition-colors duration-base',
+                    isFirst && 'bg-warning-soft/50',
+                    !isFirst && 'hover:bg-surface-muted'
                   )}
                 >
                   {/* Rank */}
@@ -205,7 +196,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                         {MEDALS[rank - 1]}
                       </span>
                     ) : (
-                      <span className="text-sm font-medium text-fg-subtle dark:text-fg-muted">
+                      <span className="text-sm font-medium text-fg-subtle">
                         {rank}
                       </span>
                     )}
@@ -213,32 +204,17 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
 
                   {/* Agent */}
                   <div className="col-span-4 flex items-center gap-3">
-                    <div className={cn(
-                      'w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0',
-                      isFirst
-                        ? 'bg-warning-soft'
-                        : 'bg-gradient-to-br from-primary to-fg-muted'
-                    )}>
-                      {agente.avatar ? (
-                        <img
-                          src={agente.avatar}
-                          alt={agente.name}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        getInitials(agente.name)
-                      )}
-                    </div>
+                    <Avatar name={agente.name} src={agente.avatar || undefined} size="sm" ring={isFirst} />
                     <div className="min-w-0">
                       <p className={cn(
                         'font-medium truncate text-sm',
                         isFirst
                           ? 'text-warning'
-                          : 'text-fg dark:text-white'
+                          : 'text-fg'
                       )}>
                         {agente.name}
                       </p>
-                      <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
+                      <p className="text-caption text-fg-muted truncate">
                         {agente.zone || t('inmobiliaria.agente.noZone')}
                       </p>
                     </div>
@@ -247,10 +223,10 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                   {/* Closings */}
                   <div className="col-span-2 flex items-center justify-center">
                     <span className={cn(
-                      'text-lg font-bold',
+                      'text-lg font-medium',
                       closings > 0
                         ? 'text-success'
-                        : 'text-fg-subtle dark:text-fg-muted'
+                        : 'text-fg-subtle'
                     )}>
                       {closings}
                     </span>
@@ -262,7 +238,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                     <div className="flex items-center gap-1.5">
                       <Buildings className="w-4 h-4 text-fg-subtle" />
                       <span
-                        className="text-sm font-medium text-fg dark:text-fg-subtle tabular-nums"
+                        className="text-sm font-medium text-fg tabular-nums"
                         data-testid="agente-inmuebles"
                       >
                         {agente.metrics.assignedProperties}
@@ -279,7 +255,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                         ? 'text-success'
                         : agente.metrics.conversionRate >= 40
                           ? 'text-warning'
-                          : 'text-fg-muted dark:text-fg-subtle'
+                          : 'text-fg-muted'
                     )}>
                       {textoDeTasa(agente.metrics.conversionRate, 0)}
                     </span>
@@ -304,8 +280,8 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
           </Stagger>
         ) : (
           <div className="px-4 py-12 text-center">
-            <Trophy className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
-            <p className="text-fg-muted dark:text-fg-subtle">
+            <Trophy className="w-12 h-12 mx-auto mb-3 text-fg-subtle" />
+            <p className="text-fg-muted">
               {t('inmobiliaria.agente.noActiveAgents')}
             </p>
           </div>
@@ -315,11 +291,11 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       {/* Summary Stats */}
       {rankedAgentes.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
+          <div className="p-4 rounded-lg border border-border bg-surface">
+            <p className="text-caption text-fg-muted mb-1">
               {t('inmobiliaria.agente.totalClosings')} {timeRange === 'month' ? t('inmobiliaria.agente.monthLabel') : t('inmobiliaria.agente.yearLabel')}
             </p>
-            <p className="text-2xl font-bold text-fg dark:text-white">
+            <p className="text-2xl font-medium text-fg">
               {rankedAgentes.reduce(
                 (sum, a) =>
                   sum + (timeRange === 'month' ? a.metrics.closedThisMonth : a.metrics.closedThisYear),
@@ -327,19 +303,19 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
               )}
             </p>
           </div>
-          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
+          <div className="p-4 rounded-lg border border-border bg-surface">
+            <p className="text-caption text-fg-muted mb-1">
               {t('inmobiliaria.agente.assignedProperties')}
             </p>
-            <p className="text-2xl font-bold text-fg dark:text-white">
+            <p className="text-2xl font-medium text-fg">
               {rankedAgentes.reduce((sum, a) => sum + a.metrics.assignedProperties, 0)}
             </p>
           </div>
-          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
+          <div className="p-4 rounded-lg border border-border bg-surface">
+            <p className="text-caption text-fg-muted mb-1">
               {t('inmobiliaria.agente.avgConversion')}
             </p>
-            <p className="text-2xl font-bold text-fg dark:text-white">
+            <p className="text-2xl font-medium text-fg">
               {textoDeTasa(
                 rankedAgentes.reduce((sum, a) => sum + a.metrics.conversionRate, 0) /
                   rankedAgentes.length,

@@ -231,7 +231,7 @@ export function GenerarLiquidaciones({
           <div className="mt-4" data-testid="resultado-de-generar">
             <Etiqueta>resultado</Etiqueta>
             {resultado.resultados.length === 0 ? (
-              <p className="text-sm text-fg mt-1">No había pagos por liquidar en ese rango.</p>
+              <p className="text-body-sm text-fg mt-1">No había pagos por liquidar en ese rango.</p>
             ) : (
               <ul className="mt-2 space-y-1">
                 {resultado.resultados.map((r) => (
@@ -265,7 +265,7 @@ export function GenerarLiquidaciones({
             </div>
 
             {vista.propuestas.length === 0 ? (
-              <p className="text-sm text-fg mt-4">No hay pagos por liquidar en ese rango.</p>
+              <p className="text-body-sm text-fg mt-4">No hay pagos por liquidar en ese rango.</p>
             ) : (
               <div className="space-y-3 mt-4">
                 {vista.propuestas.map((p) => {
@@ -273,7 +273,7 @@ export function GenerarLiquidaciones({
                   return (
                     <div key={p.agencyId} className="border border-border p-4" data-testid={`propuesta-${p.agencyId}`}>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-fg">{p.inmobiliaria ?? 'Sin nombre'}</span>
+                        <span className="text-body-sm font-medium text-fg">{p.inmobiliaria ?? 'Sin nombre'}</span>
                         <span className="font-mono text-caption text-fg-subtle">{p.numero}</span>
                         {p.bloqueo ? <Pill tone="bad">no se puede generar</Pill> : null}
                       </div>
@@ -368,7 +368,7 @@ export function GenerarLiquidaciones({
                 ) : null}
                 <Presence show={confirmando}>
                   <Card className="p-4 " data-testid="confirmar-generar">
-                    <p className="text-sm text-fg">
+                    <p className="text-body-sm text-fg">
                       Se van a generar {generables.length}{' '}
                       {generables.length === 1 ? 'liquidación' : 'liquidaciones'} por{' '}
                       {pesos(vista.totales.netoCop)} de neto, con fecha del giro {fechaDelGiro}. Esto no mueve

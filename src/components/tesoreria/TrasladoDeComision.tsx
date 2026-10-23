@@ -20,11 +20,14 @@
  *    explicación: esa plata la inmobiliaria no la recibió.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { nombreDelMes } from '@/lib/recaudo/meses';
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { ArrowsLeftRight, CheckCircle, Prohibit, XCircle } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { Avisos, Cifra, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,7 +47,9 @@ import type {
   PropuestaDeTraslado,
   Traslado,
 } from '@/lib/api/tesoreria.types';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
+import { plataPareja } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
@@ -56,6 +61,14 @@ function mesAnterior(): string {
   return d.toISOString().slice(0, 7);
 }
 
+/** El estado en palabras (22-10: se pintaba «PROPUESTO», el código del back). */
+const NOMBRE_DEL_ESTADO: Record<string, string> = {
+  PROPUESTO: 'Por aprobar',
+  APROBADO: 'Trasladado',
+  RECHAZADO: 'Rechazado',
+  ANULADO: 'Anulado',
+};
+
 const TONO_DEL_ESTADO: Record<Traslado['estado'], 'success' | 'warning' | 'outline' | 'destructive'> = {
   PROPUESTO: 'warning',
   APROBADO: 'success',
@@ -65,6 +78,7 @@ const TONO_DEL_ESTADO: Record<Traslado['estado'], 'success' | 'warning' | 'outli
 
 export function TrasladoDeComisionPanel() {
   const [periodo, setPeriodo] = useState(mesAnterior);
+  const yaSeMovioAlPendiente = useRef(false);
   const [lista, setLista] = useState<ListaDeTraslados | null>(null);
   const [propuesta, setPropuesta] = useState<PropuestaDeTraslado | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -74,6 +88,14 @@ export function TrasladoDeComisionPanel() {
   const [motivo, setMotivo] = useState('');
   /** El error del motivo del rechazo que mandó el back (`campos[].motivo`). */
   const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
+  // Ronda 11 de la revisión (22-10): UNA pareja de formato para toda la página
+  // (la propuesta decía «,00» y la tarjeta de aprobación no, con el mismo número).
+  const plata = plataPareja([
+    ...(propuesta
+      ? [propuesta.totalCop, propuesta.comisionCop, propuesta.yaTrasladadoCop, ...propuesta.renglones.map((r) => r.valorCop)]
+      : []),
+    ...[...(lista?.propuestos ?? []), ...(lista?.recientes ?? [])].flatMap(valoresDelTraslado),
+  ]);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -85,6 +107,13 @@ export function TrasladoDeComisionPanel() {
       ]);
       setLista(l);
       setPropuesta(p);
+      // 22-10 (revisión): con un traslado esperando aprobación, la pantalla se abre en SU
+      // mes (una vez): lo que hay que decidir va primero, no el cálculo de otro mes.
+      const pendiente = l.propuestos.find((t) => /^\d{4}-\d{2}$/.test(t.periodo));
+      if (pendiente && !yaSeMovioAlPendiente.current && pendiente.periodo !== periodo) {
+        yaSeMovioAlPendiente.current = true;
+        setPeriodo(pendiente.periodo);
+      }
     } catch (error) {
       setFallo(error);
     } finally {
@@ -102,7 +131,7 @@ export function TrasladoDeComisionPanel() {
       const r = await tesoreriaApi.proponerTraslado(periodo);
       if (r.traslado) {
         toast.success(
-          `Traslado de ${formatCurrency(r.traslado.totalCop)} propuesto. Espera tu aprobación.`,
+          `Traslado de ${plata(r.traslado.totalCop)} propuesto. Espera tu aprobación.`,
         );
       } else {
         toast.info(r.propuesta.avisos[0] ?? 'No hay nada que trasladar en este período.');
@@ -185,45 +214,12 @@ export function TrasladoDeComisionPanel() {
           />
         ) : null}
 
-        <section className="space-y-4">
-          {/* 🔴 Dos arreglos del 21-09, los dos por lo mismo.
-              · La explicación de este bloque decía LA MISMA FRASE que el
-                párrafo de la pantalla («mientras no los muevas… el cuadre de
-                plata de terceros va a mostrar esa diferencia»), cinco renglones
-                más abajo. El porqué se fue a un solo lugar —el botón del
-                encabezado— y acá queda el título y el mes.
-              · El mes era un `<input type="month">`, que pinta el nombre del mes
-                EN EL IDIOMA DEL NAVEGADOR: decía «August 2026» en una pantalla
-                entera en español. Ahora es `SelectorDeMes`, el de la casa, que
-                dice «Agosto de 2026» y no deja pasar de hoy. */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-fg">Qué habría que trasladar</h2>
-            <SelectorDeMes
-              mes={periodo}
-              onCambiar={setPeriodo}
-              testId="periodo-del-traslado"
-            />
-          </div>
-
-          {propuesta ? <Propuesta propuesta={propuesta} /> : null}
-
-          {propuesta?.hayQueTrasladar && propuesta.disponible ? (
-            <Button
-              onClick={() => void proponer()}
-              disabled={trabajando}
-              data-testid="proponer-traslado"
-            >
-              <ArrowsLeftRight className="h-4 w-4" aria-hidden="true" />
-              Proponer el traslado de {formatCurrency(propuesta.totalCop)}
-            </Button>
-          ) : null}
-        </section>
-
+        {/* GLOW UP (21-10): primero lo que espera una decisión; después, proponer lo nuevo. */}
         {lista?.propuestos.length ? (
           <section className="space-y-4">
             <TituloDeBloque
               titulo="Esperando tu aprobación"
-              explicacion="Los propuso el sistema al quedar pagado un lote de liquidación, o alguien desde acá. Aprobar mueve la plata y le pone comprobante: no sale solo."
+              explicacion="Aprobar mueve la plata y deja comprobante."
             />
             <ul className="space-y-4" data-testid="traslados-propuestos">
               {lista.propuestos.map((t) => (
@@ -232,15 +228,17 @@ export function TrasladoDeComisionPanel() {
                   className="space-y-3 rounded-lg border border-warning/40 bg-surface p-5"
                   data-testid={`traslado-${t.id}`}
                 >
-                  <FilaDelTraslado traslado={t} />
-                  <div className="flex flex-wrap gap-2">
+                  <FilaDelTraslado traslado={t} plata={plata} destacada />
+                  {/* Ronda 11 (390): la acción de la tarjeta va a lo ancho. */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    {/* 22-10 (revisión): aprobarlo es LA acción de la pantalla → la azul. */}
                     <Button
                       onClick={() => void aprobar(t)}
                       disabled={trabajando}
                       data-testid={`aprobar-${t.id}`}
                     >
                       <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                      Aprobar y trasladar
+                      Aprobar y trasladar {plata(t.totalCop)}
                     </Button>
                     <Button
                       variant="outline"
@@ -259,8 +257,61 @@ export function TrasladoDeComisionPanel() {
                 </li>
               ))}
             </ul>
+            {/* Revisora r25 (Traslados #1): la cifra que se aprueba y el total de abajo no se hablaban
+                (quien aprueba 916 mil no sabía por qué abajo dice 133,9 millones). UNA línea los une. */}
+            {propuesta && propuesta.disponible && propuesta.totalCop > 0 ? (
+              <p className="text-body-sm text-fg-muted" data-testid="traslado-y-lo-que-queda">
+                {lista.propuestos.some((t) => t.periodo === propuesta.periodo)
+                  ? <>Además de éste, en {nombreDelMes(propuesta.periodo)} quedan{' '}</>
+                  : <>En {nombreDelMes(propuesta.periodo)} hay{' '}</>}
+                <span className="font-mono tabular-nums text-fg">{plata(propuesta.totalCop)}</span> por proponer.{' '}
+                <a href="#propuesta-del-traslado" className="text-fg underline underline-offset-4 hover:text-fg-muted">
+                  Ver el cálculo
+                </a>
+              </p>
+            ) : null}
           </section>
         ) : null}
+
+        <section className="space-y-4">
+          {/* 🔴 Dos arreglos del 21-09, los dos por lo mismo.
+              · La explicación de este bloque decía LA MISMA FRASE que el
+                párrafo de la pantalla («mientras no los muevas… el cuadre de
+                plata de terceros va a mostrar esa diferencia»), cinco renglones
+                más abajo. El porqué se fue a un solo lugar —el botón del
+                encabezado— y aquí queda el título y el mes.
+              · El mes era un `<input type="month">`, que pinta el nombre del mes
+                EN EL IDIOMA DEL NAVEGADOR: decía «August 2026» en una pantalla
+                entera en español. Ahora es `SelectorDeMes`, el de la casa, que
+                dice «Agosto de 2026» y no deja pasar de hoy. */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-fg">Qué habría que trasladar</h2>
+            {/* Ronda 12: la misma píldora que el Tablero y Recaudo. */}
+            <div className="rounded-full border border-border bg-surface px-1 py-0.5">
+              <SelectorDeMes
+                mes={periodo}
+                onCambiar={setPeriodo}
+                testId="periodo-del-traslado"
+              />
+            </div>
+          </div>
+
+          {propuesta ? <Propuesta propuesta={propuesta} plata={plata} secundaria={Boolean(lista?.propuestos.length)} /> : null}
+
+          {/* Revisión de Dinero (22-10): con un traslado ya propuesto, la tarea es aprobarlo (arriba);
+              proponer otro competía como segunda acción principal. */}
+          {propuesta?.hayQueTrasladar && propuesta.disponible && !(lista?.propuestos.length) ? (
+            <Button
+              onClick={() => void proponer()}
+              disabled={trabajando}
+              data-testid="proponer-traslado"
+            >
+              <ArrowsLeftRight className="h-4 w-4" aria-hidden="true" />
+              Proponer el traslado de {plata(propuesta.totalCop)}
+            </Button>
+          ) : null}
+        </section>
+
 
         {lista?.recientes.length ? (
           <section className="space-y-4">
@@ -271,7 +322,7 @@ export function TrasladoDeComisionPanel() {
             <ul className="space-y-3" data-testid="traslados-recientes">
               {lista.recientes.map((t) => (
                 <li key={t.id} className="rounded-lg border border-border bg-surface p-4">
-                  <FilaDelTraslado traslado={t} />
+                  <FilaDelTraslado traslado={t} plata={plata} />
                 </li>
               ))}
             </ul>
@@ -291,14 +342,14 @@ export function TrasladoDeComisionPanel() {
               Rechazar el traslado
               {rechazando ? (
                 <>
-                  {' '}de <span className="tabular-nums">{formatCurrency(rechazando.totalCop)}</span>
+                  {' '}de <span className="tabular-nums">{plata(rechazando.totalCop)}</span>
                 </>
               ) : null}
             </DialogTitle>
             <DialogDescription>
               La comisión se queda en la cuenta de recaudo y el cuadre de plata de terceros va a
               seguir mostrando esa diferencia. El traslado queda como rechazado, no se borra, y esa
-              plata vuelve a quedar por trasladar: se puede proponer otro desde acá. Deja escrito
+              plata vuelve a quedar por trasladar: se puede proponer otro desde aquí. Deja escrito
               por qué.
             </DialogDescription>
           </DialogHeader>
@@ -345,115 +396,168 @@ export function TrasladoDeComisionPanel() {
   );
 }
 
-function Propuesta({ propuesta }: { propuesta: PropuestaDeTraslado }) {
+type FormatoDePlata = (n: number | null | undefined) => string;
+
+/*
+ * Ronda 12 de la revisión: el back resta como «Ya trasladado» lo PROPUESTO y lo
+ * APROBADO del período (traslado.service.ts, `estado in [PROPUESTO, APROBADO]`),
+ * pero lo nombra «aprobados». Aquí se dice como es, sin cambiar la cifra.
+ */
+const YA_TRASLADADO = 'Ya trasladado de este período';
+function conceptoDelRenglon(concepto: string): string {
+  return concepto === YA_TRASLADADO ? 'Ya propuesto o trasladado de este período' : concepto;
+}
+function porQueDelRenglon(concepto: string, porQue: string): string {
+  return concepto === YA_TRASLADADO
+    ? 'Hay traslados propuestos o aprobados por esta misma plata: sin restarlos se sacaría dos veces de la cuenta de recaudo.'
+    : porQue;
+}
+
+/** Las cifras de un traslado que se pintan (para la pareja de formato de la página). */
+function valoresDelTraslado(t: Traslado): number[] {
+  return [t.totalCop, t.comisionCop, t.ivaComisionCop, t.interesesCop + t.gastosDeCobranzaCop, t.retencionesComisionCop];
+}
+
+function Propuesta({
+  propuesta,
+  plata: plataDeLaPagina,
+  secundaria = false,
+}: {
+  propuesta: PropuestaDeTraslado;
+  plata?: FormatoDePlata;
+  /** Ronda 13: con un traslado esperando aprobación, ésta es un detalle (la cifra grande es la que se aprueba). */
+  secundaria?: boolean;
+}) {
+  // Los mismos decimales en la franja y en los renglones (revisión 22-10).
+  const plata =
+    plataDeLaPagina ??
+    plataPareja([propuesta.totalCop, propuesta.comisionCop, propuesta.yaTrasladadoCop, ...propuesta.renglones.map((r) => r.valorCop)]);
   return (
     <div className="space-y-4">
       <Avisos avisos={propuesta.avisos} testId="avisos-de-la-propuesta" />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Cifra
-          id="total-del-traslado"
-          etiqueta="Total a trasladar"
-          valor={propuesta.totalCop}
-          definicion="De la cuenta de recaudo a tu cuenta propia. Cuando salga del banco, el cuadre de plata de terceros da cero."
-          tono={propuesta.hayQueTrasladar ? 'success' : undefined}
+      {/* Ronda 11 de la revisión (22-10): eran tres tarjetas de cifras (total, comisión
+          de lo recaudado —antes causada—, ya propuesto) que el desglose vuelve a decir; el mismo
+          número salía cuatro veces. Ahora el total va grande ENCIMA del desglose, que
+          suma y explica renglón por renglón. */}
+      <section
+        id="propuesta-del-traslado"
+        className="scroll-mt-24 overflow-hidden rounded-lg border border-border bg-surface"
+        data-testid="propuesta-del-traslado"
+      >
+        <CifraHeroe
+          className="px-5 pb-4 pt-5 sm:px-6"
+          data-testid="total-del-traslado"
+          tamano={secundaria ? 'mediana' : 'grande'}
+          rotulo="Total a trasladar"
+          cifra={propuesta.totalCop === 0 ? '—' : plata(propuesta.totalCop)}
+          contexto="de la cuenta de recaudo a tu cuenta propia"
+          pie={
+            propuesta.renglones.length === 0 && (propuesta.comisionCop > 0 || propuesta.yaTrasladadoCop > 0) ? (
+              // Sin desglose del back, las dos cifras de las que sale el total, en una línea.
+              <>
+                Comisión de lo recaudado <span className="font-mono tabular-nums text-fg">{plata(propuesta.comisionCop)}</span>
+                {propuesta.yaTrasladadoCop > 0 ? (
+                  <>
+                    {' · '}ya propuesto o trasladado{' '}
+                    <span className="font-mono tabular-nums text-fg">{plata(propuesta.yaTrasladadoCop)}</span>
+                  </>
+                ) : null}
+                . Cuando salga del banco, el cuadre de plata de terceros da cero.
+              </>
+            ) : (
+              'Cuando salga del banco, el cuadre de plata de terceros da cero.'
+            )
+          }
         />
-        <Cifra
-          id="comision-causada"
-          etiqueta="Comisión causada"
-          valor={propuesta.comisionCop}
-          definicion="La comisión de administración del mes, según las cuotas del lado propietario. Se causa al liquidar, haya pagado o no el inquilino."
-        />
-        <Cifra
-          id="ya-trasladado"
-          etiqueta="Ya propuesto o trasladado"
-          valor={propuesta.yaTrasladadoCop}
-          definicion="Lo que ya está en un traslado propuesto o aprobado de este mes. Se resta para no sacar dos veces la misma plata."
-        />
-      </div>
-
-      {propuesta.renglones.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm" data-testid="renglones-del-traslado">
-            <caption className="p-3 text-left text-xs text-fg-muted">
+        {propuesta.renglones.length > 0 ? (
+          // Renglón por renglón como un recibo: el concepto y su cifra en la misma
+          // línea, el porqué a todo el ancho debajo (a 390 ya no queda en media columna).
+          <>
+            <p className="border-t border-border px-5 pt-3 text-caption text-fg-muted sm:px-6">
               Renglón por renglón, con el porqué de cada uno. Es lo que lee quien aprueba.
-            </caption>
-            <thead className="bg-bg text-xs text-fg-muted">
-              <tr>
-                <th className="p-3 text-left">Concepto</th>
-                <th className="p-3 text-right">Valor</th>
-                <th className="p-3 text-left">Por qué</th>
-              </tr>
-            </thead>
-            <tbody>
+            </p>
+            <ol className="px-5 pb-1 sm:px-6" data-testid="renglones-del-traslado">
               {propuesta.renglones.map((r) => (
-                <tr key={r.concepto} className="border-t border-border align-top">
-                  <td className="p-3 text-fg">{r.concepto}</td>
-                  <td
-                    className={`p-3 text-right font-mono tabular-nums ${r.valorCop < 0 ? 'text-warning' : 'text-fg'}`}
-                  >
-                    {formatCurrency(r.valorCop)}
-                  </td>
-                  <td className="p-3 text-xs leading-relaxed text-fg-muted">{r.porQue}</td>
-                </tr>
+                <li
+                  key={r.concepto}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-0.5 border-t border-border-faint py-3 first:border-t-0 dark:border-border-strong"
+                >
+                  <p className="min-w-0 text-body-sm text-fg">{conceptoDelRenglon(r.concepto)}</p>
+                  <p className={`shrink-0 font-mono text-body-sm tabular-nums ${r.valorCop < 0 ? 'text-warning-ink' : 'text-fg'}`}>
+                    {r.valorCop === 0 ? '—' : r.valorCop < 0 ? `− ${plata(Math.abs(r.valorCop))}` : plata(r.valorCop)}
+                  </p>
+                  <p className="col-span-2 text-caption leading-relaxed text-fg-muted">{sinMayusculasDeEnfasis(porQueDelRenglon(r.concepto, r.porQue))}</p>
+                </li>
               ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
+            </ol>
+          </>
+        ) : null}
+      </section>
     </div>
   );
 }
 
-function FilaDelTraslado({ traslado }: { traslado: Traslado }) {
+function FilaDelTraslado({
+  traslado,
+  plata: plataDeLaPagina,
+  destacada = false,
+}: {
+  traslado: Traslado;
+  plata?: FormatoDePlata;
+  /** Ronda 12: en la tarjeta que se aprueba, el monto es LA cifra de la pantalla. */
+  destacada?: boolean;
+}) {
+  // Los mismos decimales en toda la tarjeta (revisión 22-10).
+  const plata = plataDeLaPagina ?? plataPareja(valoresDelTraslado(traslado));
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-mono text-lg tabular-nums text-fg">
-            {formatCurrency(traslado.totalCop)}
+          <p className={cn('font-mono tabular-nums text-fg', destacada ? 'text-[28px] leading-tight tracking-[-0.02em] sm:text-[32px]' : 'text-lg')}>
+            {plata(traslado.totalCop)}
           </p>
           <p className="text-sm text-fg-muted">
-            {traslado.periodo} ·{' '}
+            {/^\d{4}-\d{2}$/.test(traslado.periodo) ? nombreDelMes(traslado.periodo) : traslado.periodo} ·{' '}
             {traslado.origen === 'LOTE'
               ? 'lo propuso el sistema al cerrar la liquidación'
               : 'propuesto a mano'}
             {traslado.comprobanteNumero !== null
               ? ` · comprobante ${traslado.comprobanteNumero}`
               : ''}
-            {traslado.fecha ? ` · ${traslado.fecha}` : ''}
+            {traslado.fecha ? ` · ${fechaCorta(traslado.fecha)}` : ''}
           </p>
         </div>
-        <Badge variant={TONO_DEL_ESTADO[traslado.estado]}>{traslado.estado}</Badge>
+        <Badge variant={TONO_DEL_ESTADO[traslado.estado]}>{NOMBRE_DEL_ESTADO[traslado.estado] ?? traslado.estado}</Badge>
       </div>
-      <dl className="grid grid-cols-2 gap-2 text-xs text-fg-muted sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-2 text-caption text-fg-muted sm:grid-cols-4">
         <div>
           <dt className="text-fg">Comisión</dt>
-          <dd className="font-mono tabular-nums">{formatCurrency(traslado.comisionCop)}</dd>
+          <dd className="font-mono tabular-nums">{plata(traslado.comisionCop)}</dd>
         </div>
         <div>
           <dt className="text-fg">IVA</dt>
-          <dd className="font-mono tabular-nums">{formatCurrency(traslado.ivaComisionCop)}</dd>
+          <dd className="font-mono tabular-nums">{plata(traslado.ivaComisionCop)}</dd>
         </div>
         <div>
           <dt className="text-fg">Intereses y gastos</dt>
           <dd className="font-mono tabular-nums">
-            {formatCurrency(traslado.interesesCop + traslado.gastosDeCobranzaCop)}
+            {traslado.interesesCop + traslado.gastosDeCobranzaCop === 0 ? '—' : plata(traslado.interesesCop + traslado.gastosDeCobranzaCop)}
           </dd>
         </div>
         <div>
-          <dt className="text-fg">Retenciones (−)</dt>
+          <dt className="text-fg">Retenciones</dt>
           <dd className="font-mono tabular-nums">
-            {formatCurrency(traslado.retencionesComisionCop)}
+            {traslado.retencionesComisionCop === 0 ? '—' : `− ${plata(traslado.retencionesComisionCop)}`}
           </dd>
         </div>
       </dl>
       {traslado.motivo ? (
-        <p className="text-xs text-fg-muted">Motivo: {traslado.motivo}</p>
+        <p className="text-caption text-fg-muted">Motivo: {traslado.motivo}</p>
       ) : null}
       {traslado.estado === 'APROBADO' && traslado.asientoId === null ? (
-        <p className="text-xs text-warning">
-          Quedó aprobado SIN asiento contable: falta decir cuál cuenta del PUC es la de recaudo y
+        <p className="text-caption text-warning">
+          Quedó aprobado sin asiento contable: falta decir cuál cuenta del PUC es la de recaudo y
           cuál la propia, en la configuración de tesorería.
         </p>
       ) : null}

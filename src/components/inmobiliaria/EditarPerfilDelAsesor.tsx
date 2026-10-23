@@ -173,13 +173,13 @@ export function EditarPerfilDelAsesor({
           <DialogTitle>Editar perfil</DialogTitle>
           <DialogDescription>
             El nombre, el correo y el teléfono son de la cuenta de {agente.name} y se
-            cambian desde su perfil, no desde acá.
+            cambian desde su perfil, no desde aquí.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-fg-muted" htmlFor="asesor-rol">
+            <label className="text-caption font-medium text-fg-muted" htmlFor="asesor-rol">
               Rol
             </label>
             <Select value={rol} onValueChange={(v) => setRol(v as AgenteRole)}>
@@ -197,7 +197,7 @@ export function EditarPerfilDelAsesor({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-fg-muted" htmlFor="asesor-estado">
+            <label className="text-caption font-medium text-fg-muted" htmlFor="asesor-estado">
               Estado
             </label>
             <Select value={estado} onValueChange={(v) => setEstado(v as AgenteStatus)}>
@@ -214,13 +214,13 @@ export function EditarPerfilDelAsesor({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Inactivo o en licencia deja de recibir inmuebles nuevos.
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-fg-muted" htmlFor="asesor-comision">
+            <label className="text-caption font-medium text-fg-muted" htmlFor="asesor-comision">
               Comisión del asesor (%)
             </label>
             <Input
@@ -231,14 +231,14 @@ export function EditarPerfilDelAsesor({
               value={comision}
               onChange={(e) => setComision(e.target.value)}
             />
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               De cada comisión de la inmobiliaria,{' '}
               {comisionValida ? `${comisionNumero} % es del asesor y ${100 - comisionNumero} % queda en la agencia` : 'la parte del asesor'}.
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-fg-muted" htmlFor="asesor-zona">
+            <label className="text-caption font-medium text-fg-muted" htmlFor="asesor-zona">
               Zona
             </label>
             <Input

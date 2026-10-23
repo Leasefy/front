@@ -68,7 +68,7 @@ export function PricingFAQSection() {
 
             {/* CTA Button */}
             <a
-              href="mailto:info@leasefy.co"
+              href="mailto:hola@leasefy.co"
               className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-foreground text-background text-[14px] font-medium hover:bg-foreground/90 transition-colors"
             >
               Contáctanos

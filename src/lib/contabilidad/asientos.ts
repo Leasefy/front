@@ -6,7 +6,7 @@ export const NOMBRE_DE_ORIGEN: Record<OrigenDelAsiento, string> = {
   MANUAL: 'Manual',
   COBRO: 'Cobro',
   RECIBO_DE_CAJA: 'Recibo de caja',
-  DISPERSION: 'Dispersión',
+  DISPERSION: 'Giro a propietario',
   MIGRACION: 'Migración',
 };
 
@@ -109,7 +109,7 @@ export const NOMBRE_DEL_TIPO_DE_ORIGEN: Record<string, string> = {
   APERTURA: 'Apertura',
   COBRO: 'Cobro',
   RECIBO_DE_CAJA: 'Recibo de caja',
-  DISPERSION: 'Dispersión',
+  DISPERSION: 'Giro a propietario',
   MIGRACION: 'Migración',
   EGRESO: 'Egreso',
   FACTURA_DE_PROVEEDOR: 'Factura de proveedor',

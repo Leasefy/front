@@ -65,14 +65,23 @@ describe('motivoDelMesVacio', () => {
     expect(m.detalle).toContain('propietario de tu inmobiliaria');
   });
 
-  it('las ya atadas a una dispersión se buscan en la lista', () => {
+  it('las ya atadas a un giro se buscan en la lista', () => {
     const m = motivoDelMesVacio({
       mes: '2026-09',
       yaGenerados: 0,
       vacio: vacio({ cuotasDelMes: 730, enUnaDispersion: 730 }),
     });
-    expect(m.titulo).toBe('Ya están en una dispersión');
+    // Revisora r24 (Giros #4): dice lo que pasó; el botón lleva a los giros.
+    expect(m.titulo).toMatch(/^Ya se generaron los giros de septiembre/);
+    expect(m.detalle).not.toContain('Búscalo');
     expect(m.detalle).toContain('730 cuotas de propietario');
+    // revisora r22 (Giros #1): el vacío lleva a ver los giros del mes, no se queda sin salida.
+    expect(m.verLosGiros).toBe(true);
+  });
+
+  it('sólo lo que ya está en giros lleva a «Ver los giros»; un mes sin cuotas no', () => {
+    expect(motivoDelMesVacio({ mes: '2026-09', yaGenerados: 2, vacio: vacio() }).verLosGiros).toBe(true);
+    expect(motivoDelMesVacio({ mes: '2026-09', yaGenerados: 0, vacio: vacio({ cuotasDelMes: 1 }) }).verLosGiros).toBeUndefined();
   });
 
   it('sin saldo por otra razón: canceladas o anuladas, en singular cuando es una', () => {
@@ -84,7 +93,7 @@ describe('motivoDelMesVacio', () => {
   it('las ya generadas mandan, aunque la cuenta diga otra cosa', () => {
     const m = motivoDelMesVacio({ mes: '2026-09', yaGenerados: 2, vacio: vacio() });
     expect(m.titulo).toBe('Ya están generadas');
-    expect(m.detalle).toContain('Búscalas');
+    expect(m.detalle).toContain('Búscalos');
   });
 
   it('un back que todavía no manda la cuenta recibe la frase general, sin cobros', () => {

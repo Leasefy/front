@@ -69,6 +69,7 @@
  *    busca a la persona en el banco y en la migración.
  */
 
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
 import { useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
@@ -85,7 +86,7 @@ import {
   UserCircleMinus,
   Warning,
 } from '@phosphor-icons/react';
-import { CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Avatar, CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 
 import { Badge } from '@/components/ui/badge';
@@ -283,10 +284,13 @@ function CajonDeInquilino({
 export function CuerpoDelCajon({
   detalle,
   onEditar,
+  enFicha = false,
 }: {
   detalle: NonNullable<ReturnType<typeof useInquilinoDetalle>>;
   /** E-16: «Editar datos». Sin él (o sin `contratos:edit`), no hay botón. */
   onEditar?: (persona: Inquilino) => void;
+  /** En la ficha propia (`/inquilinos/[id]`): los bloques van en pestañas (Nico, 21-10). */
+  enFicha?: boolean;
 }) {
   const { t, formatCurrency, formatDate, locale } = useI18n();
   /*
@@ -372,122 +376,17 @@ export function CuerpoDelCajon({
       )}`
     : null;
 
-  return (
+  // GLOW UP (21-10-2026): los bloques del cuerpo como piezas, para el cajón (como siempre)
+  // y para la ficha del inquilino en pestañas (Nico eligió «ficha propia con pestañas»).
+  const bloqueWhatsapp = (
     <>
-      {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
-          monta en un test sin el contexto del Sheet). */}
-      <SheetHeader>
-        {/* Con «Editar datos» y «Enviar mensaje», a 390 px no caben al lado del
-            nombre: las acciones bajan a su propio renglón en vez de apretarlo
-            letra por letra (I-28). */}
-        <div className="flex flex-wrap items-start gap-3">
-          <span
-            aria-hidden="true"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary"
-          >
-            {inicialesDe(persona.nombre)}
-          </span>
-          <div className="min-w-0 flex-1 basis-[12rem]">
-            {/* UN solo encabezado con el nombre: el accesible es el
-                `SheetTitle` del envoltorio (un `h2`). Éste era otro `h2` con
-                el mismo texto. Y se ajusta en dos renglones: a 390 px se
-                cortaba en «Ana So…». */}
-            <p className="break-words text-lg font-semibold leading-snug text-fg" data-testid="inquilino-cajon-nombre">
-              {persona.nombre}
-            </p>
-            <p className="mt-0.5 text-xs text-fg-subtle">
-              {sinArriendos
-                ? t('inquilinos.sinArriendo')
-                : persona.arriendos.length === 1
-                  ? t('inquilinos.conteoArriendoUno', { vigentes: textoDeVigentes(t, vigentes.length) })
-                  : t('inquilinos.conteoArriendos', {
-                      n: persona.arriendos.length,
-                      vigentes: textoDeVigentes(t, vigentes.length),
-                    })}
-            </p>
-          </div>
-          {/* Escribirle sin salir de la ficha, por su CUENTA del portal. Sin
-              cuenta no hay dónde escribirle, y se dice (I-22, Nico: la cuenta
-              se crea desde el contrato; acá no se invita). */}
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {puedeEditar ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                hideArrow
-                onClick={() => onEditar?.(persona)}
-                data-testid="inquilino-editar"
-              >
-                <PencilSimple className="h-4 w-4" aria-hidden="true" />
-                {t(`${NS}.editarDatos`)}
-              </Button>
-            ) : null}
-            {idDeLaCuenta ? (
-              <BotonEnviarMensaje counterpartId={idDeLaCuenta} />
-            ) : (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-muted/40 px-2.5 py-1.5 text-sm text-fg-muted"
-                title={t(`${NS}.sinCuentaDelPortalPorQue`)}
-                data-testid="inquilino-sin-cuenta"
-              >
-                <UserCircleMinus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {t(`${NS}.sinCuentaDelPortal`)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* El contacto se acciona: escribirle, llamarlo o copiar el dato para
-            pegarlo en el banco. Texto suelto obliga a transcribir a mano un
-            correo, que es como se le termina escribiendo a la persona
-            equivocada. */}
-        <div className="mt-3.5 flex flex-wrap items-center gap-2">
-          {persona.email ? (
-            <DatoDeContacto
-              icono={Envelope}
-              valor={persona.email}
-              href={`mailto:${persona.email}`}
-              accion={t(`${NS}.escribirCorreo`)}
-            />
-          ) : null}
-          {persona.telefono ? (
-            <DatoDeContacto
-              icono={Phone}
-              valor={persona.telefono}
-              href={`tel:${persona.telefono}`}
-              accion={t(`${NS}.llamar`)}
-              mono
-            />
-          ) : null}
-          {persona.documento ? (
-            <DatoDeContacto
-              icono={IdentificationCard}
-              // I-14: el NIT con su dígito de verificación (algoritmo DIAN).
-              valor={documentoParaMostrar(persona.documento, persona.tipoDocumento)}
-              accion={t(`${NS}.documento`)}
-              mono
-            />
-          ) : null}
-          {/* T-0128: el documento puede faltar si lo creó la migración. */}
-          <DatosPorCompletar pendientes={persona.datosPendientes} />
-          {/* Sin correo ni teléfono no es un detalle: es a quién no se le
-              puede cobrar ni avisar. Va en la cabecera, no escondido. */}
-          {!persona.email && !persona.telefono ? (
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning-soft/40 px-2.5 py-1.5 text-sm text-warning">
-              <Warning className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {t('inquilinos.sinContacto')}
-            </span>
-          ) : null}
-        </div>
-      </SheetHeader>
-
-      <SheetBody>
         {/* El permiso para escribirle por WhatsApp desde el chat (2026-09-12).
             Apagado por defecto: tener su teléfono no autoriza el canal. */}
         <InterruptorDeWhatsapp personaId={idDeLaCuenta} className="mb-4" />
-        {/* La ficha del archivo de su sistema anterior (Nico, 13-10-2026). */}
-        {detalle.persona.ficha ? (
+    </>
+  );
+  // La ficha del archivo de su sistema anterior (Nico, 13-10-2026).
+  const bloqueAnterior = detalle.persona.ficha ? (
           <dl className="mb-4 grid grid-cols-1 gap-x-4 gap-y-1.5 rounded-lg border border-border p-3 text-sm sm:grid-cols-2" data-testid="ficha-del-archivo">
             <dt className="text-caption text-fg-muted sm:col-span-2">Datos de su sistema anterior</dt>
             {detalle.persona.ficha.direccion ? (
@@ -515,8 +414,8 @@ export function CuerpoDelCajon({
               <dd className="whitespace-pre-line text-fg-muted sm:col-span-2">{detalle.persona.ficha.notas}</dd>
             ) : null}
           </dl>
-        ) : null}
-        {sinArriendos ? (
+        ) : null;
+  const bloqueSinArriendos = (
           <div className="space-y-3">
             {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
             {/* Cargando → el vacío: se cruzan (fundido; el vacío trae su
@@ -548,8 +447,9 @@ export function CuerpoDelCajon({
               )}
             </CrossFade>
           </div>
-        ) : (
-          <div className="space-y-7">
+  );
+  const bloqueDeuda = (
+    <>
             {/* La franja. Sin cajas: la jerarquía la pone el dato, no el borde.
                 Los dos números de plata salen del ESTADO DE CUENTA, no de los
                 cobros: la deuda nace con el contrato. */}
@@ -680,7 +580,9 @@ export function CuerpoDelCajon({
                 </Button>
               ) : null}
             </div>
-
+    </>
+  );
+  const bloqueArriendos = (
             <Seccion
               titulo={t(`${NS}.arriendos`)}
               conteo={persona.arriendos.length}
@@ -694,7 +596,7 @@ export function CuerpoDelCajon({
             >
               {/* El subtítulo acompaña a una lista; nunca queda flotando sobre
                   la nada, porque sin arriendos esta sección no se pinta. */}
-              <p className="text-xs text-fg-muted">{t(`${NS}.arriendosIncluyeTerminados`)}</p>
+              <p className="text-caption text-fg-muted">{t(`${NS}.arriendosIncluyeTerminados`)}</p>
 
               {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
 
@@ -704,7 +606,7 @@ export function CuerpoDelCajon({
                     <RenglonDeArriendo arriendo={a} />
                     <Link
                       href={`/panel/inmobiliaria/contratos/${a.contractId}`}
-                      className="inline-flex items-center gap-1 px-3 text-xs text-primary hover:underline"
+                      className="inline-flex items-center gap-1 px-3 text-caption text-primary hover:underline"
                     >
                       {t(`${NS}.verContrato`)}
                       <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
@@ -713,13 +615,14 @@ export function CuerpoDelCajon({
                 ))}
               </Stagger>
             </Seccion>
-
+  );
+  const bloquePagos = (
             <div data-testid="inquilino-cajon-pagos">
               <Seccion
                 titulo={t(`${NS}.cobrosEmitidos`)}
                 conteo={cobrosLlegaron ? cobros.length : undefined}
                 meta={
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-muted">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-fg-muted">
                     {resumen.ultimoPago ? (
                       <span>{t(`${NS}.ultimoPago`, { fecha: formatDate(resumen.ultimoPago) })}</span>
                     ) : null}
@@ -782,7 +685,7 @@ export function CuerpoDelCajon({
                     />
                   ) : (
                     <>
-                      <p className="text-xs text-fg-muted">{t(`${NS}.pagosDeSusContratos`)}</p>
+                      <p className="text-caption text-fg-muted">{t(`${NS}.pagosDeSusContratos`)}</p>
                       {pagosIncompletos ? <Aviso texto={t(`${NS}.pagosIncompletos`)} /> : null}
                       <Stagger as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
                         {visibles.map((c) => (
@@ -792,7 +695,7 @@ export function CuerpoDelCajon({
                         ))}
                       </Stagger>
                       {cobros.length > visibles.length ? (
-                        <p className="text-xs text-fg-muted">
+                        <p className="text-caption text-fg-muted">
                           {cobros.length - visibles.length === 1
                             ? t(`${NS}.yMasCobrosUno`)
                             : t(`${NS}.yMasCobros`, { n: cobros.length - visibles.length })}
@@ -801,7 +704,7 @@ export function CuerpoDelCajon({
                       {contratoPrincipal ? (
                         <Link
                           href={`/panel/inmobiliaria/contratos/${contratoPrincipal}`}
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          className="inline-flex items-center gap-1 text-caption text-primary hover:underline"
                         >
                           {t(`${NS}.verCobrosDelContrato`)}
                           <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
@@ -812,7 +715,171 @@ export function CuerpoDelCajon({
                 </CrossFade>
               </Seccion>
             </div>
+  );
+
+  return (
+    <>
+      {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
+          monta en un test sin el contexto del Sheet). */}
+      <SheetHeader>
+        {/* Con «Editar datos» y «Enviar mensaje», a 390 px no caben al lado del
+            nombre: las acciones bajan a su propio renglón en vez de apretarlo
+            letra por letra (I-28). */}
+        <div className="flex flex-wrap items-start gap-3">
+          {/* GLOW UP (21-10): el Avatar de Cadence 2, el mismo que lo acompaña en la lista y en Contratos. */}
+          <span aria-hidden="true" className="shrink-0">
+            <Avatar name={persona.nombre} />
+          </span>
+          <div className="min-w-0 flex-1 basis-[12rem]">
+            {/* UN solo encabezado con el nombre: el accesible es el
+                `SheetTitle` del envoltorio (un `h2`). Éste era otro `h2` con
+                el mismo texto. Y se ajusta en dos renglones: a 390 px se
+                cortaba en «Ana So…». */}
+            {/* En la ficha propia el nombre ES el título de la página (su h1, como
+                en las otras fichas); en el cajón el título accesible es el SheetTitle. */}
+            {enFicha ? (
+              <>
+                {/* Glow up 22-10: la sección arriba y el título con la medida del encabezado común (40 px, liviano). */}
+                <p className="font-mono text-caption uppercase tracking-[0.14em] text-fg-subtle">Inquilinos</p>
+                <h1
+                  className="break-words text-[30px] font-[420] leading-[1.08] tracking-[-0.025em] text-fg lg:text-[40px]"
+                  data-testid="inquilino-cajon-nombre"
+                >
+                  {persona.nombre}
+                </h1>
+              </>
+            ) : (
+              <p className="break-words text-lg font-medium leading-snug text-fg" data-testid="inquilino-cajon-nombre">
+                {persona.nombre}
+              </p>
+            )}
+            <p className="mt-0.5 text-caption text-fg-subtle">
+              {sinArriendos
+                ? t('inquilinos.sinArriendo')
+                : persona.arriendos.length === 1
+                  ? t('inquilinos.conteoArriendoUno', { vigentes: textoDeVigentes(t, vigentes.length) })
+                  : t('inquilinos.conteoArriendos', {
+                      n: persona.arriendos.length,
+                      vigentes: textoDeVigentes(t, vigentes.length),
+                    })}
+            </p>
           </div>
+          {/* Escribirle sin salir de la ficha, por su CUENTA del portal. Sin
+              cuenta no hay dónde escribirle, y se dice (I-22, Nico: la cuenta
+              se crea desde el contrato; aquí no se invita). */}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {/* GLOW UP (Nico, 21-10): el cajón es la vista rápida; la ficha completa, en pestañas. */}
+            {!enFicha ? (
+              <Button asChild variant="outline" size="sm" hideArrow>
+                <Link
+                  href={`/panel/inmobiliaria/inquilinos/${encodeURIComponent(persona.tenantId)}`}
+                  data-testid="inquilino-abrir-ficha"
+                >
+                  Abrir la ficha
+                </Link>
+              </Button>
+            ) : null}
+            {puedeEditar ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                hideArrow
+                onClick={() => onEditar?.(persona)}
+                data-testid="inquilino-editar"
+              >
+                <PencilSimple className="h-4 w-4" aria-hidden="true" />
+                {t(`${NS}.editarDatos`)}
+              </Button>
+            ) : null}
+            {idDeLaCuenta ? (
+              <BotonEnviarMensaje counterpartId={idDeLaCuenta} />
+            ) : (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-muted/40 px-2.5 py-1.5 text-sm text-fg-muted"
+                title={t(`${NS}.sinCuentaDelPortalPorQue`)}
+                data-testid="inquilino-sin-cuenta"
+              >
+                <UserCircleMinus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {t(`${NS}.sinCuentaDelPortal`)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* El contacto se acciona: escribirle, llamarlo o copiar el dato para
+            pegarlo en el banco. Texto suelto obliga a transcribir a mano un
+            correo, que es como se le termina escribiendo a la persona
+            equivocada. */}
+        <div className="mt-3.5 flex flex-wrap items-center gap-2">
+          {persona.email ? (
+            <DatoDeContacto
+              icono={Envelope}
+              valor={persona.email}
+              href={`mailto:${persona.email}`}
+              accion={t(`${NS}.escribirCorreo`)}
+            />
+          ) : null}
+          {persona.telefono ? (
+            <DatoDeContacto
+              icono={Phone}
+              valor={persona.telefono}
+              href={`tel:${persona.telefono}`}
+              accion={t(`${NS}.llamar`)}
+              mono
+            />
+          ) : null}
+          {persona.documento ? (
+            <DatoDeContacto
+              icono={IdentificationCard}
+              // I-14: el NIT con su dígito de verificación (algoritmo DIAN).
+              valor={documentoParaMostrar(persona.documento, persona.tipoDocumento)}
+              accion={t(`${NS}.documento`)}
+              mono
+            />
+          ) : null}
+          {/* T-0128: el documento puede faltar si lo creó la migración. */}
+          <DatosPorCompletar pendientes={persona.datosPendientes} />
+          {/* Sin correo ni teléfono no es un detalle: es a quién no se le
+              puede cobrar ni avisar. Va en la cabecera, no escondido. */}
+          {!persona.email && !persona.telefono ? (
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning-soft/40 px-2.5 py-1.5 text-sm text-warning">
+              <Warning className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {t('inquilinos.sinContacto')}
+            </span>
+          ) : null}
+        </div>
+      </SheetHeader>
+
+      <SheetBody>
+        {enFicha ? (
+          <PestanasDeLaFicha
+            fondo="surface"
+            etiqueta="Secciones del inquilino"
+            pestanas={[
+              { id: 'resumen', etiqueta: 'Resumen', contenido: sinArriendos ? bloqueSinArriendos : bloqueDeuda },
+              ...(sinArriendos
+                ? []
+                : [{ id: 'arriendos', etiqueta: 'Arriendos y cobros', contenido: <div className="space-y-7">{bloqueArriendos}{bloquePagos}</div> }]),
+              { id: 'datos', etiqueta: 'Datos y permisos', contenido: bloqueWhatsapp },
+              // Sólo con algo que mostrar: el back no lleva bitácora del inquilino.
+              ...(bloqueAnterior ? [{ id: 'historial', etiqueta: 'Historial', contenido: bloqueAnterior }] : []),
+            ]}
+          />
+        ) : (
+          <>
+            {bloqueWhatsapp}
+            {bloqueAnterior}
+            {sinArriendos ? (
+              bloqueSinArriendos
+            ) : (
+              <div className="space-y-7">
+                {bloqueDeuda}
+                {bloqueArriendos}
+                {bloquePagos}
+              </div>
+            )}
+          </>
         )}
       </SheetBody>
     </>
@@ -838,10 +905,10 @@ function Seccion({
   return (
     <section className="space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border pb-2">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           {titulo}
           {conteo !== undefined ? (
-            <span className="rounded-full bg-surface-muted px-2 py-0.5 font-mono text-xs font-medium tabular-nums text-fg-muted">
+            <span className="rounded-full bg-surface-muted px-2 py-0.5 font-mono text-caption font-medium tabular-nums text-fg-muted">
               {conteo}
             </span>
           ) : null}
@@ -897,17 +964,17 @@ function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
             </Badge>
           )}
           {anterior ? (
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {locale === 'en'
                 ? 'Not charged here: it is older than the contract’s portfolio date.'
                 : 'No se cobra aquí: es anterior a la fecha de cartera del contrato.'}
             </span>
           ) : cobro.paidDate && !debe ? (
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {t(`${NS}.pagadoEl`, { fecha: formatDate(cobro.paidDate) })}
             </span>
           ) : (
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {t(`${NS}.vencimiento`, { fecha: formatDate(cobro.dueDate) })}
             </span>
           )}
@@ -921,7 +988,7 @@ function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
           {formatCurrency(cobro.totalWithFees ?? cobro.totalAmount)}
         </span>
         {debe ? (
-          <span className="whitespace-nowrap text-right font-mono text-xs tabular-nums text-fg-muted">
+          <span className="whitespace-nowrap text-right font-mono text-caption tabular-nums text-fg-muted">
             {t(`${NS}.saldoDelCobro`, { monto: formatCurrency(cobro.pendingAmount) })}
           </span>
         ) : (
@@ -949,11 +1016,11 @@ function Numero({
 }) {
   return (
     <div className="min-w-0 py-2.5 first:pt-0 last:pb-0 sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0">
-      <dt className="text-xs text-fg-muted">{etiqueta}</dt>
+      <dt className="text-caption text-fg-muted">{etiqueta}</dt>
       <dd
         className={cn(
           // I-28: una cifra de plata NUNCA se corta con «…»: no se puede leer cuánto debe.
-          'mt-1 whitespace-nowrap font-mono text-lg font-semibold tabular-nums',
+          'mt-1 whitespace-nowrap font-mono text-lg tabular-nums',
           tono === 'alerta' ? 'text-danger' : tono === 'apagado' ? 'text-fg-subtle' : 'text-fg',
         )}
       >
@@ -962,7 +1029,7 @@ function Numero({
       {detalle ? (
         <dd
           className={cn(
-            'mt-0.5 text-xs',
+            'mt-0.5 text-caption',
             detalleTono === 'alerta'
               ? 'text-danger'
               : detalleTono === 'aviso'
@@ -1047,7 +1114,7 @@ function BotonCopiar({ texto }: { texto: string }) {
 
   return (
     /* IconButton del DS: mismo tamaño (24 px) e ícono (14 px) que el <button>
-       a mano que había acá, pero con el anillo de foco y el `active:scale`
+       a mano que había aquí, pero con el anillo de foco y el `active:scale`
        de Cadence — el hecho a mano no tenía NINGÚN estilo de :focus-visible. */
     <IconButton
       variant="ghost"
@@ -1064,7 +1131,7 @@ function BotonCopiar({ texto }: { texto: string }) {
 /** Un dato que llegó incompleto. No es un error de pantalla: es una advertencia. */
 function Aviso({ texto }: { texto: string }) {
   return (
-    <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/40 px-3 py-2 text-xs text-fg">
+    <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/40 px-3 py-2 text-caption text-fg">
       <Warning className="mt-px h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
       {texto}
     </p>

@@ -455,7 +455,7 @@ export function BalanceDeApertura({
             {resultado.sumadas.length > 0 ? (
               <Punto testid="balance-sumadas">
                 {numero(resultado.sumadas.length)}{" "}
-                {resultado.sumadas.length === 1 ? "subcuenta de tu sistema que acá no existe se sumó" : "subcuentas de tu sistema que acá no existen se sumaron"}{" "}
+                {resultado.sumadas.length === 1 ? "subcuenta de tu sistema que aquí no existe se sumó" : "subcuentas de tu sistema que aquí no existen se sumaron"}{" "}
                 a su cuenta del plan:{" "}
                 {resultado.sumadas
                   .slice(0, 3)

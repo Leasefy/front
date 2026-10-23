@@ -19,34 +19,29 @@
  *
  * Shell + gates are copied from `casos/page.tsx` (Spinner loading → onboarding
  * `CompleteProfileFirst` → error `EmptyState`; `min-h-screen bg-[#f8f8f8]
- * dark:bg-bg` + `max-w-7xl`). Neutral tone only (no red, no countdown, no
+ *` + `max-w-7xl`). Neutral tone only (no red, no countdown, no
  * credit-bureau copy). Buttons/labels sentence case (DESIGN §4).
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import {
-  Scroll,
-  CaretRight,
-  CheckCircle,
-  Clock,
-  Warning,
-  XCircle,
-  type Icon,
-} from '@phosphor-icons/react';
+import { Scroll } from '@phosphor-icons/react';
 
 import { useTenantAcuerdos } from '@/lib/hooks/use-tenant-acuerdos';
+import { useArriendaHoyDelPortal } from '@/lib/hooks/use-arrienda-hoy';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { useI18n } from '@/lib/i18n';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { CuotaPlanTable } from '@/components/tenant/CuotaPlanTable';
 import { SolicitarPlanPagoModal } from '@/components/tenant/SolicitarPlanPagoModal';
+import { SinArriendoTodavia } from '@/components/tenant/SinArriendoTodavia';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { StatusBadge } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import type { BadgeProps } from '@/components/ui/badge';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { tonoDelAcuerdo, etiquetaDelAcuerdo, acuerdoNoSeCobra } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
@@ -56,10 +51,11 @@ import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types';
 // Neutral tone → badge (capped at `warning`; no alarm level at all)
 // ============================================================================
 
-const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>; icon: Icon }> = {
-  neutral: { variant: 'secondary', icon: CheckCircle },
-  info: { variant: 'default', icon: Clock },
-  attention: { variant: 'warning', icon: Warning },
+// Neutro, informativo o atención — nunca rojo: un acuerdo es la salida, no la falta.
+const TONO_DEL_ESTADO: Record<CaseTone, 'neutral' | 'info' | 'warning'> = {
+  neutral: 'neutral',
+  info: 'info',
+  attention: 'warning',
 };
 
 // ============================================================================
@@ -68,8 +64,6 @@ const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>
 
 function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
   const { formatCurrency } = useI18n();
-  const badge = TONE_BADGE[tonoDelAcuerdo(p)];
-  const ToneIcon = badge.icon;
   // La inicial viaja como la «cuota 0» (ARREGLOS-3): el conteo dice las cuotas
   // del plan (1, 2, 3…); la tabla las muestra todas, la inicial primero.
   const nCuotas = p.installments.filter((c) => c.number >= 1).length;
@@ -77,24 +71,20 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
   return (
     <div>
       <Link href={`/inquilino/acuerdos/${encodeURIComponent(p.planId)}`} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 hover:border-primary/40 transition-colors">
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5 hover:bg-surface-muted/40 transition-colors">
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-              <Scroll className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-            </div>
+            <Scroll className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm sm:text-base font-semibold text-fg dark:text-white group-hover:text-primary transition-colors truncate">
+                <h3 className="text-sm sm:text-base font-medium text-fg group-hover:text-primary transition-colors truncate">
                   {locale === 'es' ? 'Acuerdo de pago' : 'Payment agreement'}
                 </h3>
-                <Badge variant={badge.variant} className="inline-flex items-center gap-1">
-                  <ToneIcon className="w-3 h-3" aria-hidden="true" />
-                  {etiquetaDelAcuerdo(p)}
-                </Badge>
+                {/* Glow up 22-10: el estado con su punto y su palabra (StatusBadge), sin ícono en la pastilla. */}
+                <StatusBadge tone={TONO_DEL_ESTADO[tonoDelAcuerdo(p)]}>{etiquetaDelAcuerdo(p)}</StatusBadge>
               </div>
-              <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
-                <span className="font-mono tabular-nums text-fg dark:text-white">
+              <p className="text-caption text-fg-muted mt-1">
+                <span className="font-mono tabular-nums text-fg">
                   {formatCurrency(p.totalDueCop)}
                 </span>
                 {' · '}
@@ -109,12 +99,11 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
               </p>
             </div>
 
-            <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-primary transition-colors flex-shrink-0" />
           </div>
 
           {/* Cuota plan — rendered VERBATIM from the record (no saldo math) */}
           {p.installments.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-border dark:border-border-strong">
+            <div className="mt-4 pt-4 border-t border-border">
               <CuotaPlanTable installments={p.installments} locale={locale} acuerdoCerrado={acuerdoNoSeCobra(p)} />
             </div>
           )}
@@ -132,6 +121,7 @@ export default function AcuerdosPage() {
   const { locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const { items, isLoading, error, refetch } = useTenantAcuerdos();
+  const arrienda = useArriendaHoyDelPortal();
 
   // The only mutation entry point on this read surface: propose a payment plan.
   const [requestOpen, setRequestOpen] = useState(false);
@@ -142,7 +132,7 @@ export default function AcuerdosPage() {
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -152,8 +142,8 @@ export default function AcuerdosPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="rental" />
         </div>
       </div>
@@ -164,44 +154,43 @@ export default function AcuerdosPage() {
   // fires on a genuine (non-404/403/0) failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <EmptyState
-            icon={XCircle}
-            title={locale === 'es' ? 'Error al cargar tus acuerdos' : 'Error loading your agreements'}
-            description={error}
-            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', href: '/inquilino/acuerdos' }}
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
+          {/* GLOW UP (21-10-2026, QA): el encabezado se queda también con el error,
+              para que se sepa dónde se está; sin la acción, que va al mismo servicio caído. */}
+          <EncabezadoDePantalla
+            className="mb-8"
+            seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+            titulo={locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
           />
+          <FalloDeCarga error={error} queEs="tus acuerdos de pago" onReintentar={() => refetch()} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="bg-bg">
+      <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
 
         {/* Header */}
-        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
-              {locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
-            </h1>
-            <p className="mt-1 text-fg-muted dark:text-fg-subtle">
-              {locale === 'es'
-                ? 'Consulta los acuerdos de pago aprobados por tu inmobiliaria y su plan de cuotas.'
-                : 'Review the payment agreements approved by your agency and their installment plan.'}
-            </p>
-          </div>
-          <Button
-            type="button"
-            onClick={() => setRequestOpen(true)}
-            hideArrow
-            className="flex-shrink-0"
-          >
-            {locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan'}
-          </Button>
-        </header>
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+          titulo={locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
+          descripcion={
+            locale === 'es'
+              ? 'Los acuerdos que te aprobó tu inmobiliaria, con su plan de cuotas.'
+              : 'Review the payment agreements approved by your agency and their installment plan.'
+          }
+          accionPrincipal={
+            items.length > 0 ? (
+              <Button type="button" size="sm" onClick={() => setRequestOpen(true)} hideArrow>
+                {locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan'}
+              </Button>
+            ) : undefined
+          }
+        />
 
         {/* List — real own-acuerdos, or an honest empty-state (incl. not-live []) */}
         <section>
@@ -212,19 +201,29 @@ export default function AcuerdosPage() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-5">
-              <EmptyState
-                icon={Scroll}
-                title={locale === 'es' ? 'Aún no tienes acuerdos de pago' : 'No payment agreements yet'}
-                description={
-                  locale === 'es'
-                    ? 'Cuando tu inmobiliaria te apruebe un acuerdo, aparecerá aquí con su plan de cuotas.'
-                    : 'When your agency approves an agreement, it will show up here with its installment plan.'
-                }
-              />
-              <Button type="button" onClick={() => setRequestOpen(true)} hideArrow>
-                {locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan'}
-              </Button>
+            <div className="rounded-lg border border-border bg-surface">
+              {/* Revisora r25: sin arriendo no se ofrece pedir un plan de pago (abría un modal sobre nada). */}
+              {arrienda === false ? (
+                // Revisora r27 (CA): el mismo vacío en las pestañas de «Mi arriendo».
+                <SinArriendoTodavia
+                  queVaAqui="Aquí ves los acuerdos de pago con tu inmobiliaria, con su plan de cuotas."
+                  whatGoesHere="Here you see the payment agreements with your agency, with their installment plan."
+                />
+              ) : (
+                <EmptyState
+                  icon={Scroll}
+                  title={locale === 'es' ? 'Aún no tienes acuerdos de pago' : 'No payment agreements yet'}
+                  description={
+                    locale === 'es'
+                      ? 'Cuando tu inmobiliaria te apruebe un acuerdo, aparecerá aquí con su plan de cuotas.'
+                      : 'When your agency approves an agreement, it will show up here with its installment plan.'
+                  }
+                  action={{
+                    label: locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan',
+                    onClick: () => setRequestOpen(true),
+                  }}
+                />
+              )}
             </div>
           )}
         </section>

@@ -39,6 +39,7 @@ import type { Property } from '@/lib/types/property';
 import { cn } from '@/lib/utils';
 import { CajaDelMarketplace } from './CajaDelMarketplace';
 import { InterruptorDeVista } from './InterruptorDeVista';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 
 /**
  * ══ LA GALERÍA DEL MARKETPLACE (Nico, 09-10-2026) ══════════════════════════
@@ -462,9 +463,14 @@ export function GaleriaDelMarketplace() {
           «mejora eso del chat, quiero que sea más hermoso») ── */}
       {/* Sin `overflow-hidden`: recortaba el menú «Ideas para afinar» (Nico, 09-10). */}
       <header className="relative border-b border-border bg-surface">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/[0.07] via-primary/[0.02] to-transparent"
+        {/* Cadence 2 · PIX (Nico, 23-10): la corriente de voltaje abajo del encabezado, en vez del degradado azul
+            (Cadence no usa degradados). Sólo en claro. */}
+        <CorrienteDeVoltaje
+          className="absolute inset-x-0 bottom-0 h-[70%] w-full opacity-70 [mask-image:linear-gradient(to_top,#000_0%,rgba(0,0,0,.5)_45%,transparent_95%)] dark:hidden"
+          fondo="superficie"
+          forma="horizonte"
+          fuerza={0.42}
+          semilla={19}
         />
         <div className="llegada-grises relative mx-auto flex max-w-[980px] flex-col items-center px-4 pb-8 pt-9 text-center md:px-8 md:pt-12">
           <motion.p
@@ -493,7 +499,7 @@ export function GaleriaDelMarketplace() {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: motionDuration.slow, ease: motionEase.enter, delay: 0.04 }}
-            className="mt-4 font-heading font-semibold leading-[1.04] tracking-[-0.04em] text-fg text-[clamp(2rem,4.6vw,3.25rem)] [text-wrap:balance]"
+            className="mt-4 font-heading font-[400] leading-[1.04] tracking-[-0.04em] text-fg text-[clamp(2rem,4.6vw,3.25rem)] [text-wrap:balance]"
             data-testid="titulo-de-la-busqueda"
           >
             {titulo}

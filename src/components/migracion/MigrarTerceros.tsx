@@ -227,7 +227,7 @@ function avisoDeMasivo(cambios: CambiosMasivos, n: number, listasAhora?: number)
       `${listas.toLocaleString(localeDeLasCifras())} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse otra vez: ` +
       'créalas con el botón de arriba.' +
       (listasAhora !== undefined && n > listasAhora
-        ? ` Las otras ${(n - listasAhora).toLocaleString(localeDeLasCifras())} siguen acá porque les falta algo más.`
+        ? ` Las otras ${(n - listasAhora).toLocaleString(localeDeLasCifras())} siguen aquí porque les falta algo más.`
         : '')
     );
   }
@@ -237,7 +237,7 @@ function avisoDeMasivo(cambios: CambiosMasivos, n: number, listasAhora?: number)
       `${listas} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse con datos por completar: ` +
       'crea las fichas con el botón de arriba y completa lo que falte después, desde Propietarios o Inquilinos.' +
       (listasAhora !== undefined && n > listasAhora
-        ? ` Las otras ${(n - listasAhora).toLocaleString(localeDeLasCifras())} siguen acá porque les falta algo más.`
+        ? ` Las otras ${(n - listasAhora).toLocaleString(localeDeLasCifras())} siguen aquí porque les falta algo más.`
         : '')
     );
   }
@@ -1417,11 +1417,11 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               <p className="max-w-prose text-sm text-fg-muted">
                 {hayCargados
                   ? tipoFijo === 'PROPIETARIO'
-                    ? 'Para sumar los propietarios que no venían en el primero. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'
-                    : 'Para sumar los inquilinos que no venían en el primero. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'
+                    ? 'Para sumar los propietarios que no venían en el primero. Lo que falte se completa aquí, fila por fila, sin volver a subir el archivo.'
+                    : 'Para sumar los inquilinos que no venían en el primero. Lo que falte se completa aquí, fila por fila, sin volver a subir el archivo.'
                   : tipoFijo === 'PROPIETARIO'
-                    ? 'Una fila por propietario, tal como la exporta tu sistema actual. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'
-                    : 'Una fila por inquilino, tal como la exporta tu sistema actual. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'}
+                    ? 'Una fila por propietario, tal como la exporta tu sistema actual. Lo que falte se completa aquí, fila por fila, sin volver a subir el archivo.'
+                    : 'Una fila por inquilino, tal como la exporta tu sistema actual. Lo que falte se completa aquí, fila por fila, sin volver a subir el archivo.'}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -1558,7 +1558,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         ) : null}
 
         {/* QA-MIGRACION-95 (MP-06): si se adivinó mal la hoja o la fila de los
-            encabezados, se elige acá. Fuera del mapeo a propósito: una fila
+            encabezados, se elige aquí. Fuera del mapeo a propósito: una fila
             mal elegida puede dejar el archivo sin filas, y la salida tiene que
             seguir a la vista. */}
         {archivo && donde ? (
@@ -1577,7 +1577,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             activo={isDragActive}
             testid="dropzone-terceros"
             /* Deshabilitado sin decir por qué = un dropzone que «no anda».
-               La espera y el fallo de la plantilla se dicen acá mismo. */
+               La espera y el fallo de la plantilla se dicen aquí mismo. */
             titulo={
               plantilla
                 ? 'Arrastra el archivo o haz clic para elegirlo'
@@ -1753,7 +1753,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                 </p>
                 <p className="mt-0.5 text-sm text-fg-muted">
                   {faltanObligatorias.map((c) => c.titulo).join(' · ')} — igual puedes seguir: las
-                  filas van a quedar marcadas y se completan acá mismo, sin volver a subir nada.
+                  filas van a quedar marcadas y se completan aquí mismo, sin volver a subir nada.
                 </p>
               </div>
             </div>
@@ -2053,7 +2053,7 @@ function ListaDeTrabajo({
             ) : null}
 
             <p className="text-caption text-fg-subtle">
-              Se crean sólo las que no les falta nada. Las demás quedan acá esperando.
+              Se crean sólo las que no les falta nada. Las demás quedan aquí esperando.
             </p>
           </>
         ) : null}
@@ -2195,11 +2195,11 @@ function ListaDeTrabajo({
           {totalPendientes > 0 ? (
             <p className="text-sm text-fg-muted" data-testid="puente-por-revisar">
               {totalPendientes === 1 ? (
-                <>Queda 1 fila del archivo sin crear: está acá abajo esperando tu decisión.</>
+                <>Queda 1 fila del archivo sin crear: está aquí abajo esperando tu decisión.</>
               ) : (
                 <>
                   Quedan <span className="font-mono tabular-nums">{totalPendientes}</span> filas
-                  del archivo sin crear: están acá abajo esperando tu decisión.
+                  del archivo sin crear: están aquí abajo esperando tu decisión.
                 </>
               )}
             </p>
@@ -2316,7 +2316,7 @@ function ListaDeTrabajo({
                 {tipo === 'INQUILINO'
                   ? 'No se crearon todavía: son personas que ya existen en la plataforma —quizá las subiste en Propietarios o ya tenían cuenta— o filas a las que les falta un dato. '
                   : 'No se crearon todavía: son personas que ya existen en la plataforma, filas repetidas en el archivo, o a las que les falta un dato. '}
-                Resuelve cada una acá, o marca varias y resuélvelas juntas: al decidir salen de esta
+                Resuelve cada una aquí, o marca varias y resuélvelas juntas: al decidir salen de esta
                 lista y quedan listas para crear con el botón de arriba.
               </p>
             </div>
@@ -2619,7 +2619,7 @@ function ResolucionMasiva({
         ) : null}
         {porFiltro ? (
           <p className="text-caption text-fg-muted" data-testid="alcance-aviso">
-            Lo que hagas acá se aplica a todas, también a las que no ves en esta página.
+            Lo que hagas aquí se aplica a todas, también a las que no ves en esta página.
           </p>
         ) : null}
       </div>
@@ -2826,7 +2826,7 @@ function ResolucionMasiva({
                 ? 'Ninguna de éstas se puede crear así: tienen otro problema que hay que resolver.'
                 : completables === cantidad
                   ? `Alcanza a ${completables === 1 ? 'la fila' : `las ${completables.toLocaleString(localeDeLasCifras())}`}.`
-                  : `Alcanza a ${completables.toLocaleString(localeDeLasCifras())} de ${cantidad.toLocaleString(localeDeLasCifras())}: las que sólo les falta el documento o su tipo. Las demás siguen acá.`}
+                  : `Alcanza a ${completables.toLocaleString(localeDeLasCifras())} de ${cantidad.toLocaleString(localeDeLasCifras())}: las que sólo les falta el documento o su tipo. Las demás siguen aquí.`}
           </span>
         </div>
       </div>

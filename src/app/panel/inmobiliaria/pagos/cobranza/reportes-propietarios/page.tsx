@@ -34,6 +34,7 @@
  * un solo primary CTA por vista, tokens semánticos.
  */
 
+import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -44,14 +45,15 @@ import {
   PaperPlaneTilt,
   ShieldCheck,
   UsersThree,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Card, CardContent, Spinner } from '@/components/ui'
+import { Badge, Button, Card, CardContent, Spinner } from '@/components/ui'
 import { confirmar } from '@/components/ui/confirmar'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
-import { CrossFade, Eyebrow, MotionIndicator, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CrossFade, Eyebrow, MotionIndicator, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import {
   DebtorPicker,
   type PickedDebtor,
@@ -64,6 +66,14 @@ import {
 } from '@/lib/hooks/cobranza/use-owner-reports'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { antiguedadDeLaCola, diasEnPalabras } from '@/lib/cobranza/antiguedad-de-la-cola'
+import { Input } from '@/components/ui/input'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const PROPIETARIOS_HREF = '/panel/inmobiliaria/propietarios'
@@ -83,7 +93,7 @@ const ESTADO_TOKEN: Record<
     ring: 'ring-border',
   },
   pendiente: {
-    label: 'Pendiente aprobación',
+    label: 'Por aprobar',
     bg: 'bg-warning-soft',
     text: 'text-warning',
     ring: 'ring-warning',
@@ -96,14 +106,18 @@ const ESTADO_TOKEN: Record<
   },
 }
 
+// UI (vara): el estado con la insignia de la casa, no una píldora armada a mano.
+const VARIANTE_DEL_ESTADO: Record<ReporteEstado, 'secondary' | 'warning' | 'success'> = {
+  borrador: 'secondary',
+  pendiente: 'warning',
+  enviado: 'success',
+}
+
 function EstadoBadge({ estado }: { estado: ReporteEstado }) {
-  const token = ESTADO_TOKEN[estado]
   return (
-    <span
-      className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
-    >
-      {token.label}
-    </span>
+    <Badge variant={VARIANTE_DEL_ESTADO[estado]} className="shrink-0">
+      {ESTADO_TOKEN[estado].label}
+    </Badge>
   )
 }
 
@@ -180,14 +194,16 @@ function ReporteRow({
         onClick={onSelect}
         aria-pressed={selected}
         className={[
-          'relative isolate w-full text-left rounded-lg border border-border bg-card p-4 transition-colors',
-          'hover:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+          // Revisora r27 (UI): la fila vive DENTRO de la tarjeta de las pestañas
+          // (antes una tarjeta suelta por reporte, fuera de la lista).
+          'relative isolate w-full text-left px-4 py-3 transition-colors border-l-2 border-l-transparent',
+          'hover:bg-surface-muted/60 focus:outline-none focus-visible:bg-surface-muted',
         ].join(' ')}
       >
         {selected && (
           <MotionIndicator
             layoutId="reportes-propietarios-elegido"
-            className="-inset-px -z-10 rounded-lg border border-primary ring-1 ring-primary/30"
+            className="inset-y-0 -left-0.5 right-0 -z-10 bg-surface-muted border-l-2 border-l-primary"
           />
         )}
         <div className="flex items-start justify-between gap-3">
@@ -198,18 +214,18 @@ function ReporteRow({
                 weight="duotone"
                 aria-hidden="true"
               />
-              <span className="text-sm font-semibold text-fg truncate">
+              <span className="text-sm font-medium text-fg truncate">
                 {reporte.inmueble}
               </span>
             </div>
-            <p className="text-xs text-fg-muted truncate">
+            <p className="text-caption text-fg-muted truncate">
               Propietario: {reporte.propietario}
             </p>
           </div>
           <EstadoBadge estado={reporte.estado} />
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted tabular-nums">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-fg-muted tabular-nums">
           <span>
             <span className="font-medium text-fg">{reporte.diasMora}</span> días de mora
           </span>
@@ -240,39 +256,52 @@ function ReporteRow({
 // deudor. Vive en el encabezado —no dentro de un reporte— porque generar el
 // PRIMERO es justamente lo que no se podía hacer.
 
+/**
+ * «Nuevo reporte» en un cajón (revisora r25, UI: iba en un <header> armado a
+ * mano junto al encabezado común). Elegir el deudor y generar el borrador:
+ * la misma llamada de antes.
+ */
 function NuevoReporte({
+  abierto,
+  onCerrar,
   isGenerating,
   onGenerar,
 }: {
+  abierto: boolean
+  onCerrar: () => void
   isGenerating: boolean
   onGenerar: (debtorId: string) => void
 }) {
   const [deudor, setDeudor] = useState<PickedDebtor | null>(null)
 
   return (
-    <div className="w-full max-w-sm space-y-2">
-      <label
-        htmlFor="reporte-deudor"
-        className="block text-xs font-medium text-fg-muted"
-      >
-        Generar reporte de
-      </label>
-      <DebtorPicker inputId="reporte-deudor" value={deudor} onChange={setDeudor} />
-      <Button
-        size="sm"
-        hideArrow
-        disabled={!deudor || isGenerating}
-        onClick={() => deudor && onGenerar(deudor.id)}
-        title={
-          deudor
-            ? 'Generar el borrador con la cartera del deudor'
-            : 'Elige un deudor primero'
-        }
-      >
-        {isGenerating ? <Spinner size="sm" variant="current" /> : null}
-        Generar reporte
-      </Button>
-    </div>
+    <Cajon abierto={abierto} onOpenChange={(v) => !v && onCerrar()} data-testid="reporte-nuevo-cajon">
+      <CajonCabecera
+        titulo="Nuevo reporte"
+        descripcion="El agente redacta la mora, las gestiones hechas y una recomendación. Lo revisas antes de enviarlo."
+      />
+      <CajonCuerpo className="space-y-2">
+        <label htmlFor="reporte-deudor" className="block text-body-sm text-fg">
+          ¿De qué deudor?
+        </label>
+        <DebtorPicker inputId="reporte-deudor" value={deudor} onChange={setDeudor} />
+      </CajonCuerpo>
+      <CajonPie>
+        <Button variant="ghost" size="sm" hideArrow onClick={onCerrar}>
+          Cancelar
+        </Button>
+        <Button
+          size="sm"
+          hideArrow
+          disabled={!deudor || isGenerating}
+          isLoading={isGenerating}
+          onClick={() => deudor && onGenerar(deudor.id)}
+          title={deudor ? 'Generar el borrador con la cartera del deudor' : 'Elige un deudor primero'}
+        >
+          Generar borrador
+        </Button>
+      </CajonPie>
+    </Cajon>
   )
 }
 
@@ -284,14 +313,14 @@ function conSuCorreo(p: { nombre: string; correo: string | null }): string {
 /** A quién le llega el reporte, leído del contrato del caso (MORI-33). */
 function ParaQuien({ reporte, lectura }: { reporte: ReportePreview; lectura: LecturaDelDestino | 'cargando' | null }) {
   if (lectura === 'cargando') {
-    return <p className="text-xs text-fg-muted">Buscando el propietario del contrato…</p>
+    return <p className="text-caption text-fg-muted">Buscando el propietario del contrato…</p>
   }
   if (lectura === null) {
-    return <p className="text-xs text-fg-muted truncate">Para: {reporte.propietario}</p>
+    return <p className="text-caption text-fg-muted truncate">Para: {reporte.propietario}</p>
   }
   if (!lectura.destino) {
     return (
-      <p className="text-xs text-warning" data-testid="reporte-sin-destino">
+      <p className="text-caption text-warning" data-testid="reporte-sin-destino">
         {lectura.porQueNo ?? 'No sabemos a qué propietario va este reporte.'}
       </p>
     )
@@ -300,12 +329,12 @@ function ParaQuien({ reporte, lectura }: { reporte: ReportePreview; lectura: Lec
   const sinCorreo = d.propietarios.length > 0 && d.propietarios.every((p) => !p.correo)
   return (
     <div className="space-y-0.5" data-testid="reporte-destino">
-      <p className="text-xs text-fg-muted">
+      <p className="text-caption text-fg-muted">
         Para: {d.propietarios.length > 0 ? d.propietarios.map(conSuCorreo).join(' · ') : 'el inmueble no tiene propietario registrado'}
       </p>
-      <p className="text-xs text-fg-subtle">Contrato {d.contrato}</p>
+      <p className="text-caption text-fg-subtle">Contrato {d.contrato}</p>
       {sinCorreo && (
-        <p className="text-xs text-warning">
+        <p className="text-caption text-warning">
           Ningún propietario tiene correo registrado: agrégalo en su ficha para poder enviárselo.
         </p>
       )}
@@ -327,7 +356,7 @@ function ReportePreviewCard({
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-0.5 min-w-0">
             <Eyebrow>Reporte de gestión</Eyebrow>
-            <h2 className="text-base font-semibold text-fg">
+            <h2 className="text-base font-medium text-fg">
               Estado de cobranza — {lectura && lectura !== 'cargando' && lectura.destino ? lectura.destino.inmueble.nombre : reporte.inmueble}
             </h2>
             <ParaQuien reporte={reporte} lectura={lectura} />
@@ -357,8 +386,8 @@ function ReportePreviewCard({
         </div>
 
         {/* Nota de aprobación humana (T-323) */}
-        <div className="flex items-start gap-2 rounded-lg bg-primary-soft p-3 text-xs text-fg">
-          <ShieldCheck className="w-4 h-4 shrink-0 text-primary mt-0.5" weight="duotone" aria-hidden="true" />
+        <div className="flex items-start gap-2 rounded-lg bg-surface-muted p-3 text-caption text-fg">
+          <ShieldCheck className="w-4 h-4 shrink-0 text-fg-muted mt-0.5" weight="duotone" aria-hidden="true" />
           <p>
             Este reporte requiere tu revisión y aprobación antes de enviarse al propietario. Al
             aprobarlo se le manda por correo, con el reporte en PDF. Ningún reporte se envía de forma
@@ -418,6 +447,28 @@ function ReportesPropietariosContent() {
     { value: 'enviado', label: 'Enviados' },
   ]
   const [estadoFilter, setEstadoFilter] = useState<string>('todos')
+  const [nuevoAbierto, setNuevoAbierto] = useState(false)
+
+  // Los conteos de las pestañas salen de la lista completa («Todos»): filtrar
+  // pide al back sólo ese estado, así que se recuerdan los de la última vez
+  // que se vio todo (null mientras no se sepa).
+  const [conteos, setConteos] = useState<Record<ReporteEstado, number> | null>(null)
+  // Desde cuándo espera cada reporte por aprobar (revisora r27, K1 y K2).
+  const [fechasPorAprobar, setFechasPorAprobar] = useState<string[]>([])
+  useEffect(() => {
+    if (estadoFilter !== 'todos' || isLoading) return
+    const n: Record<ReporteEstado, number> = { borrador: 0, pendiente: 0, enviado: 0 }
+    for (const r of realReportes) n[r.estado] += 1
+    setConteos(n)
+    setFechasPorAprobar(
+      realReportes.filter((r) => r.estado === 'pendiente').map((r) => r.raw?.createdAt ?? null).filter((f): f is string => f !== null),
+    )
+  }, [estadoFilter, isLoading, realReportes])
+  const colaPorAprobar = useMemo(
+    () => antiguedadDeLaCola(fechasPorAprobar, { es: true, testid: 'reportes-por-aprobar' }),
+    [fechasPorAprobar],
+  )
+  const [busqueda, setBusqueda] = useState('')
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -426,10 +477,22 @@ function ReportesPropietariosContent() {
   // Feedback de aprobación / generación (T-323).
   const [actionMsg, setActionMsg] = useState<string | null>(null)
 
-  const visibles =
+  const delEstado =
     estadoFilter === 'todos'
       ? fuente
       : fuente.filter((r) => r.estado === estadoFilter)
+  // Revisora r27 (K3): buscador por propietario o inmueble, y la paginación.
+  const visibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return delEstado
+    return delEstado.filter((r) =>
+      `${r.propietario} ${r.inmueble}`.toLocaleLowerCase('es').includes(q),
+    )
+  }, [delEstado, busqueda])
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(
+    visibles,
+    { resetKey: `${estadoFilter}|${busqueda}` },
+  )
 
   /**
    * Selección segura: si el id elegido ya no está en la fuente, caemos al
@@ -485,6 +548,7 @@ function ReportesPropietariosContent() {
     setActionMsg(null)
     const created = await generate({ debtorId })
     if (created) {
+      setNuevoAbierto(false)
       setSelectedId(created.id)
       setEstadoFilter('todos')
       setActionMsg('Borrador generado con la información de cartera del deudor.')
@@ -555,22 +619,25 @@ function ReportesPropietariosContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            Reportes a propietarios
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            Resúmenes de gestión de cobranza por propietario: estado de mora, gestiones realizadas y
-            recomendación, listos para que los revises y envíes al dueño del inmueble.
-          </p>
-        </div>
-        <NuevoReporte isGenerating={isGenerating} onGenerar={onGenerarParaDeudor} />
-      </header>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo="Reportes a propietarios"
+        descripcion="Lo que se le cuenta a cada propietario de la cobranza de su inmueble: revísalo y envíaselo."
+        acciones={
+          <Button variant="secondary" size="sm" hideArrow onClick={() => setNuevoAbierto(true)} data-testid="reporte-nuevo">
+            Nuevo reporte
+          </Button>
+        }
+      />
+      <NuevoReporte
+        abierto={nuevoAbierto}
+        onCerrar={() => setNuevoAbierto(false)}
+        isGenerating={isGenerating}
+        onGenerar={onGenerarParaDeudor}
+      />
 
       {/* Antes: «Intenta de nuevo» fijo ante cualquier fallo. */}
-      <Presence as="p" show={Boolean(generateError)} className="text-sm text-danger" role="alert" data-testid="reporte-generar-error">
+      <Presence as="p" show={Boolean(generateError)} className="text-body-sm text-danger" role="alert" data-testid="reporte-generar-error">
           {mensajeDeLaAccion(
             { error: generateError, fallo: generateFallo },
             { porDefecto: 'No pudimos generar el reporte.', accion: 'generar el reporte' },
@@ -595,16 +662,17 @@ function ReportesPropietariosContent() {
       {/* Cargando → vacío → maestro-detalle: cada estado entra con su fundido. */}
       <CrossFade swapKey={isLoading && !hayReales ? 'cargando' : !seleccionado ? 'vacio' : 'reportes'}>
       {isLoading && !hayReales ? (
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-fg-muted">
-          <Spinner size="sm" variant="muted" className="shrink-0" />
-          Cargando reportes…
+        // C6 (r25): esqueleto con la forma del maestro-detalle, no una rueda con texto.
+        <div aria-busy="true" aria-label="Cargando reportes">
+          <EsqueletoTarjetas cantidad={3} />
         </div>
       ) : !seleccionado ? (
         <EmptyState
           icon={FileText}
           title="Todavía no hay reportes de gestión"
-          description="Elige un deudor arriba y genera el primero: el agente redacta el estado de mora, las gestiones hechas y una recomendación, para que lo revises y lo apruebes antes de enviárselo al propietario."
-          primaryCta={{ label: 'Ver mis propietarios', href: PROPIETARIOS_HREF }}
+          description="Genera el primero: el agente redacta el estado de mora, las gestiones hechas y una recomendación, para que lo revises y lo apruebes antes de enviárselo al propietario."
+          primaryCta={{ label: 'Nuevo reporte', onClick: () => setNuevoAbierto(true) }}
+          secondaryCta={{ label: 'Ver mis propietarios', href: PROPIETARIOS_HREF }}
         />
       ) : (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
@@ -613,26 +681,58 @@ function ReportesPropietariosContent() {
           {/* QA-AGENTES 16-10: a 390 px los cuatro filtros no cabían al lado del
               título («Por aprobar» partido) y arrastraban las tarjetas: en el
               celular van debajo, en su riel. */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-            <h2 className="whitespace-nowrap text-base font-semibold text-fg">Reportes preparados</h2>
-            <div className="-mx-1 max-w-full overflow-x-auto whitespace-nowrap px-1">
-              <SegmentedControl
-                options={estadoOptions}
-                value={estadoFilter}
-                onChange={onFilterChange}
-                aria-label="Filtrar por estado"
+          {/* LA RESPUESTA (revisora r25 #1): cuántos esperan tu aprobación; los
+              conteos por estado van en las pestañas, una sola vez (C3). */}
+          <div className="rounded-lg border border-border bg-card">
+            <div className="border-b border-border px-4 py-4">
+              <CifraHeroe
+                data-testid="reportes-por-aprobar"
+                rotulo="El reporte más viejo por aprobar espera"
+                tamano="mediana"
+                cifra={colaPorAprobar.masVieja === null ? '—' : diasEnPalabras(colaPorAprobar.masVieja, true)}
+                tramos={colaPorAprobar.tramos}
+                esCero={conteos !== null && conteos.pendiente === 0}
+                cuandoEsCero="Ningún reporte espera tu aprobación."
               />
             </div>
-          </div>
-
-          {isLoading && !hayReales ? (
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-fg-muted">
-              <Spinner size="sm" variant="muted" className="shrink-0" />
-              Cargando reportes…
+            <div className="px-4 py-3 empty:hidden">
+              <PestanasDeEstado<string>
+                etiqueta="Filtrar por estado"
+                valor={estadoFilter}
+                onCambio={onFilterChange}
+                pestanas={estadoOptions.map((o) => ({
+                  valor: o.value,
+                  etiqueta: o.label,
+                  cuantos:
+                    conteos === null
+                      ? null
+                      : o.value === 'todos'
+                        ? conteos.borrador + conteos.pendiente + conteos.enviado
+                        : conteos[o.value as ReporteEstado],
+                  fija: o.value === 'todos',
+                  tono: o.value === 'pendiente' ? ('aviso' as const) : undefined,
+                  testid: `reportes-pestana-${o.value}`,
+                }))}
+              />
             </div>
-          ) : visibles.length > 0 ? (
-            <Stagger as="ul" className="space-y-3">
-              {visibles.map((reporte) => (
+            <div className="border-t border-border px-4 py-3">
+              <div className="relative w-full">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+                <Input
+                  type="search"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar propietario o inmueble"
+                  aria-label="Buscar reportes por propietario o inmueble"
+                  className="pl-9"
+                  data-testid="reportes-buscar"
+                />
+              </div>
+            </div>
+
+          {visibles.length > 0 ? (
+            <Stagger as="ul" className="divide-y divide-border border-t border-border">
+              {pageItems.map((reporte) => (
                 <ReporteRow
                   key={reporte.id}
                   reporte={reporte}
@@ -646,12 +746,32 @@ function ReportesPropietariosContent() {
               ))}
             </Stagger>
           ) : (
-            <EmptyState
-              icon={CheckCircle}
-              title="Sin reportes en este estado"
-              description="No hay reportes que coincidan con el filtro seleccionado."
-            />
+            <div className="border-t border-border">
+              <EmptyState
+                icon={busqueda.trim() ? MagnifyingGlass : CheckCircle}
+                title={busqueda.trim() ? 'Ningún reporte coincide con la búsqueda' : 'Sin reportes en este estado'}
+                description={
+                  busqueda.trim()
+                    ? 'Revisa el nombre del propietario o del inmueble, o borra la búsqueda.'
+                    : 'No hay reportes que coincidan con el filtro seleccionado.'
+                }
+                primaryCta={busqueda.trim() ? { label: 'Borrar la búsqueda', onClick: () => setBusqueda('') } : undefined}
+              />
+            </div>
           )}
+          {shouldPaginate ? (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          ) : null}
+          </div>
         </section>
 
         {/* Columna derecha — reporte seleccionado + acciones */}
@@ -664,10 +784,9 @@ function ReportesPropietariosContent() {
           {/* Acciones. enviar/aprobar y PDF se cablean a endpoints reales cuando
               el reporte es real; el resto queda como placeholder honesto.
               La acción principal (Enviar) requiere aprobación humana — T-323. */}
-          <Card>
+          {/* Revisora r27 (Reportes, UI): sin el título «Acciones» (los botones dicen lo que hacen). */}
+          <Card aria-label="Acciones del reporte">
             <CardContent className="p-5 space-y-3">
-              <h3 className="text-base font-semibold text-fg">Acciones</h3>
-
               <div className="flex flex-wrap gap-2">
                 {/* Acción principal — Aprobar / Enviar (POST approve, T-323) */}
                 <Button
@@ -736,25 +855,25 @@ function ReportesPropietariosContent() {
               </div>
 
               {/* Feedback honesto de las acciones */}
-              <Presence as="p" show={Boolean(actionMsg)} className="text-xs text-success">{actionMsg}
+              <Presence as="p" show={Boolean(actionMsg)} className="text-caption text-success">{actionMsg}
               </Presence>
-              <Presence as="p" show={Boolean(pdfMsg)} className="text-xs text-danger" role="alert" data-testid="reporte-pdf-error">
+              <Presence as="p" show={Boolean(pdfMsg)} className="text-caption text-danger" role="alert" data-testid="reporte-pdf-error">
                 {pdfMsg}
               </Presence>
-              <Presence as="p" show={Boolean(approveError)} className="text-xs text-danger" role="alert" data-testid="reporte-aprobar-error">
+              <Presence as="p" show={Boolean(approveError)} className="text-caption text-danger" role="alert" data-testid="reporte-aprobar-error">
                   {mensajeDeLaAccion(
                     { error: approveError, fallo: approveFallo },
                     { porDefecto: 'No pudimos aprobar el reporte.', accion: 'aprobar el reporte' },
                   )}
               </Presence>
-              <Presence as="p" show={Boolean(generateError)} className="text-xs text-danger">
+              <Presence as="p" show={Boolean(generateError)} className="text-caption text-danger">
                   {mensajeDeLaAccion(
                     { error: generateError, fallo: generateFallo },
                     { porDefecto: 'No pudimos generar el borrador.', accion: 'generar el borrador' },
                   )}
               </Presence>
 
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 El envío al propietario siempre requiere tu aprobación explícita: sale por correo, con
                 el reporte en PDF adjunto.
               </p>

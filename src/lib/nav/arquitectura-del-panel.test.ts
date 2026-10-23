@@ -35,7 +35,7 @@ import es from '@/lib/i18n/locales/es.json';
 import en from '@/lib/i18n/locales/en.json';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { PESTANAS_DE_CARTERA } from '@/components/cartera/PestanasDeCartera';
-import { AGENT_WORKSPACES, findAgentWorkspace } from './agentWorkspaceNav';
+import { AGENT_WORKSPACES, findAgentWorkspace, pestanasYSegmentos } from './agentWorkspaceNav';
 import { filterAgencyNav, pasaGateDeFila, type NavFilterContext } from './agency-nav-filter';
 import { filasDelSidebar, resolverEntradaDeModulo } from './sidebar-del-panel';
 import { hrefDeLaFilaActiva } from './fila-activa-del-menu';
@@ -95,7 +95,8 @@ describe('arquitectura del panel — rutas', { timeout: 60_000 }, () => {
     expect(tienePagina(href), `falta ${href.replace(PANEL, '')}/page.tsx`).toBe(true);
   });
 
-  it.each(AGENT_WORKSPACES.flatMap((w) => w.items.map((i) => [w.slug, i.href] as const)))(
+  // Las pestañas y sus segmentos (C2, r25): todo lo que se abre desde la barra tiene su página.
+  it.each(AGENT_WORKSPACES.flatMap((w) => pestanasYSegmentos(w).map((i) => [w.slug, i.href] as const)))(
     'pestaña del agente %s → %s tiene su page.tsx',
     (_slug, href) => {
       expect(tienePagina(href)).toBe(true);
@@ -195,7 +196,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
     for (const w of AGENT_WORKSPACES) {
       claves.add(w.labelKey);
-      for (const i of w.items) claves.add(i.labelKey);
+      for (const i of pestanasYSegmentos(w)) claves.add(i.labelKey);
     }
     const faltan = [...claves].filter((k) => typeof leer(es, k) !== 'string' || typeof leer(en, k) !== 'string');
     expect(faltan).toEqual([]);
@@ -310,6 +311,9 @@ describe('arquitectura del panel — sidebar', () => {
       '/reportes/resumen': 'resumen-del-negocio',
       '/mantenimientos/tickets': 'tickets',
       '/contratos/aprobar': 'por-aprobar',
+      '/pagos/calendario': 'dias-habiles', // la tarjeta dice lo que se corrige, no «calendario» (revisora r27, C12)
+      '/pipeline': 'prospeccion', // vocabulario: manual de voz (22-10), sin anglicismos en el menú
+      '/postulaciones/matching': 'afinidad', // decisión 26 de Nico (22-10): «Matching» → «Afinidad»; la ruta se conserva
     };
     /*
      * 🔴 R4 mide el nombre con el que se NAVEGA a la ruta, que para la raíz de
@@ -387,13 +391,14 @@ describe('arquitectura del panel — agentes', () => {
     // vencido» y «banco rechazó») y «Recordatorios» son plata del INQUILINO que
     // no entró: cobranza, no giro al propietario.
     const cobranza = AGENT_WORKSPACES.find((w) => w.slug === 'cobranza')!;
-    const hrefs = cobranza.items.map((i) => i.href);
+    // Desde la r26 (C2) viven como segmentos de la pestaña «Pagos» y «Contactos»: se abren igual desde la barra.
+    const hrefs = pestanasYSegmentos(cobranza).map((i) => i.href);
     expect(hrefs).toContain(`${PANEL}/pagos/cobranza/fallidos`);
     expect(hrefs).toContain(`${PANEL}/pagos/cobranza/recordatorios`);
     // Y se gatean con el módulo que las ofrece, no por rol: una pestaña que se
     // ve y devuelve al inicio es el defecto MSJ-6.
     for (const href of [`${PANEL}/pagos/cobranza/fallidos`, `${PANEL}/pagos/cobranza/recordatorios`]) {
-      const item = cobranza.items.find((i) => i.href === href)!;
+      const item = pestanasYSegmentos(cobranza).find((i) => i.href === href)!;
       expect(item.module, href).toBe('cobranza');
       expect(item.roles, href).toBeUndefined();
     }
@@ -479,7 +484,8 @@ describe('arquitectura del panel — resolución de rutas', () => {
   it('la pestaña activa es la de href más largo que coincida', () => {
     const pagos = modulos.find((m) => m.key === 'pagos')!;
     const tabs = pestanasDelModulo(pagos);
-    expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/2`)?.href).toBe(`${PANEL}/pagos/dispersiones`);
+    // Giros a propietarios (22-10-2026): un lote es el paso 3 de la entrada unida.
+    expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/2`)?.href).toBe(`${PANEL}/pagos/giros`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos/cartera`)?.href).toBe(`${PANEL}/pagos/cartera`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos?estado=vencidos`)?.href).toBe(`${PANEL}/pagos`);
   });
@@ -519,9 +525,10 @@ describe('arquitectura del panel — resolución de rutas', () => {
     const tabs = pestanasDelModulo(pagos);
     expect(pestanaActiva(tabs, `${PANEL}/pagos`)?.href).toBe(`${PANEL}/pagos`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos/abc-123`)).toBeNull();
-    expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/1`)?.href).toBe(`${PANEL}/pagos/dispersiones`);
+    // Giros a propietarios (22-10-2026): las rutas de los cuatro pasos marcan la misma entrada.
+    expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/1`)?.href).toBe(`${PANEL}/pagos/giros`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos/liquidaciones/por-aprobar`)?.href).toBe(
-      `${PANEL}/pagos/liquidaciones`,
+      `${PANEL}/pagos/giros`,
     );
   });
 });
@@ -616,8 +623,11 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
       `${PANEL}/pagos/cartera`,
       // 🔴 Juan (15-10-2026): «¿dónde se ven los recibos de caja?».
       `${PANEL}/pagos/recibos`,
-      `${PANEL}/pagos/liquidaciones`,
-      `${PANEL}/pagos/dispersiones`,
+      // Revisora r27 (C12): los días hábiles entran al riel de su sección.
+      `${PANEL}/pagos/calendario`,
+      // 🔴 Giros a propietarios (Nico, 22-10-2026: «unirlas»): Liquidaciones y Dispersiones son
+      // los pasos de UNA entrada (`tambienEn`), no dos hermanas.
+      `${PANEL}/pagos/giros`,
       `${PANEL}/pagos/cuadre`,
       `${PANEL}/pagos/traslados`,
       `${PANEL}/pagos/pendientes`,
@@ -631,7 +641,8 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
       'inquilinos',
       'inquilinos',
       'inquilinos',
-      'propietarios',
+      'inquilinos',
+      // Giros a propietarios: una sola entrada para lo que sale (22-10-2026).
       'propietarios',
       'tesoreria',
       'tesoreria',
@@ -691,9 +702,12 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     });
     expect(porHref('/pagos/recaudo')?.module).toBe('cobros');
     expect(porHref('/pagos/cartera')?.module).toBe('cobros');
-    expect(porHref('/pagos/liquidaciones')?.module).toBeNull();
-    expect(porHref('/pagos/liquidaciones')?.roles).toEqual([AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]);
-    expect(porHref('/pagos/dispersiones')?.module).toBe('dispersiones');
+    // 🔴 Giros a propietarios (Nico, 22-10-2026): una entrada para Liquidaciones y Dispersiones, con
+    // el gate de girar (`dispersiones`), que de fábrica tienen ADMIN y CONTADOR —los mismos que
+    // tenía Liquidaciones—. Cada página conserva su `PageGuard` (Liquidaciones, ADMIN y CONTADOR).
+    expect(porHref('/pagos/giros')?.module).toBe('dispersiones');
+    expect(porHref('/pagos/giros')?.roles).toBeUndefined();
+    expect(porHref('/pagos/giros')?.tambienEn).toEqual([`${PANEL}/pagos/liquidaciones`, `${PANEL}/pagos/dispersiones`]);
     // Ninguna de las que venían de Cobros gana un gate de rol nuevo: si lo
     // ganaran, quien tiene `cobros` y no es contador perdería su trabajo.
     // (Cobranza, la tercera, se cuida en el bloque de «Agentes IA».)
@@ -829,7 +843,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     ]);
   });
 
-  it('TODA sala de agente vive acá, y cada workspace registrado tiene acá su puerta', () => {
+  it('TODA sala de agente vive aquí, y cada workspace registrado tiene aquí su puerta', () => {
     const deAgentes = new Set(agentes.modulos.map((m) => m.href));
     const salas = pantallas.filter((p) => p.agente);
     for (const sala of salas) expect(deAgentes.has(sala.href), sala.href).toBe(true);
@@ -948,7 +962,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     };
     const filas = filterAgencyNav(filasDelSidebar(t, sinAgentes), sinAgentes);
     expect(filas.map((f) => f.label)).not.toContain('inmobiliaria.nav.secAgentes');
-    expect(filas.map((f) => f.label)).toContain('inmobiliaria.nav.secCaptacion');
+    expect(filas.map((f) => f.label)).toContain('inmobiliaria.nav.secCaptacionCorta') // decisión 20 de Nico: en la barra, «Captación»;
 
     // Con una sola fila visible, la sección aparece con esa fila.
     const soloAnalytics: NavFilterContext = { ...sinAgentes, canAccess: (m) => m === 'analytics' };
@@ -1012,8 +1026,8 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       '/pagos/recaudo-bancario',
       '/pagos/cartera',
       '/pagos/recibos',
-      '/pagos/liquidaciones',
-      '/pagos/dispersiones',
+      '/pagos/calendario',
+      '/pagos/giros',
       '/pagos/cuadre',
       '/pagos/traslados',
       '/pagos/pendientes',

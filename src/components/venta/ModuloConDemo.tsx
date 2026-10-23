@@ -8,7 +8,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, PlayCircle, Sparkle, WhatsappLogo }
 import { motionDuration, motionEase } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { DemoDelModulo } from '@/lib/venta/demos-del-panel';
 import { enlaceDeWhatsApp, type QuienCompra } from '@/lib/venta/whatsapp-de-leasefy';
 import { cn } from '@/lib/utils';
@@ -45,19 +45,21 @@ export function ModuloConDemo({
   const portada = demo.capturas[0]?.src;
 
   return (
+    // Revisora r24/r25 (B-V): a 390 el texto se cortaba («…si se atrasa [lo]»): la grilla con su columna (grid-cols-1,
+    // min-w-0) y los botones que parten el renglón a lo ancho.
     <section className="px-4 py-8 sm:px-6 lg:px-8 lg:py-12" data-testid="modulo-con-demo">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
-        className="relative mx-auto grid max-w-[1120px] overflow-hidden rounded-xl border border-border bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]"
+        className="relative mx-auto grid max-w-[1120px] grid-cols-1 overflow-hidden rounded-lg border border-border bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]"
       >
-        <div className="flex flex-col justify-center p-6 sm:p-10">
-          <span className="inline-flex items-center gap-2 font-mono text-[11.5px] uppercase tracking-[0.08em] text-primary">
+        <div className="flex min-w-0 flex-col justify-center p-6 sm:p-10">
+          <span className="inline-flex items-center gap-2 font-mono text-caption uppercase tracking-[0.08em] text-fg-muted">
             <Sparkle size={14} weight="fill" aria-hidden="true" />
             {quien === 'inmobiliaria' ? 'Con Leasefy, en piloto automático' : 'Leasefy lo administra por ti'}
           </span>
-          <h1 className="mt-4 text-[28px] font-medium leading-[1.1] tracking-[-0.03em] text-fg sm:text-[34px]" style={{ textWrap: 'balance' }}>
+          <h1 className="mt-4 text-[28px] font-[420] leading-[1.1] tracking-[-0.03em] text-fg sm:text-[34px]" style={{ textWrap: 'balance' }}>
             {demo.titulo}
           </h1>
           <p className="mt-3 max-w-[46ch] text-[15.5px] leading-relaxed text-fg-muted">{demo.promesa}</p>
@@ -70,13 +72,13 @@ export function ModuloConDemo({
             ))}
           </ul>
           <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
-            <Button asChild className="h-12 rounded-full px-6 text-[15px]" data-testid="quiero-leasefy">
+            <Button asChild className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-center text-[15px] sm:w-auto" data-testid="quiero-leasefy">
               <a href={whatsapp} target="_blank" rel="noreferrer noopener">
                 <WhatsappLogo size={18} weight="fill" className="mr-2" aria-hidden="true" />
                 {llamado}
               </a>
             </Button>
-            <Button type="button" variant="secondary" className="h-12 rounded-full px-6 text-[15px]" onClick={() => setVerDemo(true)} data-testid="ver-demo">
+            <Button type="button" variant="secondary" className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-[15px] sm:w-auto" onClick={() => setVerDemo(true)} data-testid="ver-demo">
               <PlayCircle size={18} className="mr-2" aria-hidden="true" />
               Ver demo
             </Button>
@@ -140,23 +142,17 @@ function DemoEnGrande({
   const pantalla = actual?.src;
   return (
     <Dialog open={abierta} onOpenChange={(o) => !o && alCerrar()}>
-      <DialogContent size="xl" className="max-w-[1180px] p-0" data-testid="demo-en-grande">
-        <DialogTitle className="sr-only">Demo: {demo.titulo}</DialogTitle>
-        <div className="flex items-center justify-between gap-3 border-b border-border py-3 pl-4 pr-16 sm:pl-5">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-[12px] font-semibold text-primary-fg">
-              {(empresa?.trim()?.[0] ?? 'L').toUpperCase()}
-            </span>
-            <span className="truncate text-[14px] font-medium text-fg">{empresa ?? 'Tu cuenta'}</span>
-            <span className="hidden rounded-full bg-surface-muted px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.06em] text-fg-muted sm:inline">
-              Demo · datos de ejemplo
-            </span>
-          </div>
-          <span className="font-mono text-[12px] text-fg-subtle">
-            {Math.min(i, total - 1) + 1} / {total}
-          </span>
-        </div>
-        <div className="relative aspect-[16/10] w-full bg-surface-muted">
+      <DialogContent size="xl" className="max-w-[1180px]" data-testid="demo-en-grande">
+        {/* La cabecera de todos los modales (guardián «una sola cabecera», 22-10): título de 16 px,
+            filete y la ✕. Antes era una barra propia con la inicial pintada a mano. */}
+        <DialogHeader>
+          <DialogTitle>Demo: {demo.titulo}</DialogTitle>
+          <DialogDescription>
+            {empresa ?? 'Tu cuenta'} · datos de ejemplo
+            <span className="font-mono tabular-nums"> · {Math.min(i, total - 1) + 1} / {total}</span>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-surface-muted">
           <AnimatePresence mode="wait" initial={false}>
             {pantalla && (
             <motion.div
@@ -178,7 +174,7 @@ function DemoEnGrande({
             </>
           )}
         </div>
-        <div className="flex flex-col gap-3 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <DialogFooter className="sm:justify-between">
           <p className="text-[14px] text-fg-muted">{actual?.alt ? `${actual.alt}.` : ''}</p>
           <Button asChild className="h-11 rounded-full px-5">
             <a href={whatsapp} target="_blank" rel="noreferrer noopener" data-testid="quiero-leasefy-demo">
@@ -186,7 +182,7 @@ function DemoEnGrande({
               {llamado}
             </a>
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

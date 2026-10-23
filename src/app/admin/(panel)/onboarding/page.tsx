@@ -12,7 +12,8 @@ import { estadoDelPlan } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
-import { Tarjeta } from '@/components/admin/screen/Tarjeta'
+import { CifraHeroe, type TramoDeLaCifra } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
 import {
@@ -63,7 +64,7 @@ const FILTRO_DE_PASO = [
 
 const fecha = (iso: string | null) =>
   iso ? (
-    <span className="whitespace-nowrap text-caption tabular-nums text-fg-muted">{fmtFecha(iso)}</span>
+    <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtFecha(iso)}</span>
   ) : (
     <span className="text-caption text-fg-subtle">Todavía no</span>
   )
@@ -96,9 +97,11 @@ export default function OnboardingPage() {
     [paso],
   )
 
-  const embudo = useMemo(() => {
+  // Dónde va cada una: el PRIMER paso que le falta (una partición: cada inmobiliaria cae en un solo tramo).
+  const dondeVan = useMemo(() => {
     const filas = recorridos ?? []
-    return PASOS.map((p) => ({ ...p, cuantas: filas.filter((r) => dioElPaso(r, p.paso)).length }))
+    const porPaso = PASOS.map((p) => ({ ...p, cuantas: filas.filter((r) => loQueLeFalta(r)?.paso === p.paso).length }))
+    return { porPaso, listas: filas.filter((r) => loQueLeFalta(r) === null).length }
   }, [recorridos])
   const registradas = recorridos?.length ?? 0
 
@@ -119,9 +122,9 @@ export default function OnboardingPage() {
     {
       header: 'Asistente',
       orden: (r) => r.asistente.estado,
-      texto: (r) => (ASISTENTE[r.asistente.estado] ?? { nombre: r.asistente.estado }).nombre,
+      texto: (r) => (ASISTENTE[r.asistente.estado] ?? { nombre: 'Otro estado' }).nombre,
       cell: (r) => {
-        const a = ASISTENTE[r.asistente.estado] ?? { nombre: r.asistente.estado, tono: 'muted' as const }
+        const a = ASISTENTE[r.asistente.estado] ?? { nombre: 'Otro estado', tono: 'muted' as const }
         return (
           <div className="flex flex-col items-start gap-1">
             <Pill tone={a.tono} dot>
@@ -173,7 +176,7 @@ export default function OnboardingPage() {
       orden: (r) => r.equipo,
       ordenPrimero: 'desc',
       texto: (r) => r.equipo,
-      cell: (r) => <span className="tabular-nums">{fmtNumero(r.equipo)}</span>,
+      cell: (r) => <span className="font-mono tabular-nums">{fmtNumero(r.equipo)}</span>,
     },
     {
       header: 'Le falta',
@@ -207,8 +210,8 @@ export default function OnboardingPage() {
           <span className="text-fg-subtle">Todavía sin nombre</span>
         ),
     },
-    { header: 'Empezó', orden: (r) => r.created_at, ordenPrimero: 'desc', texto: (r) => fmtDateTime(r.created_at), cell: (r) => <span className="text-caption tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</span> },
-    { header: 'Se vence', orden: (r) => r.expires_at, texto: (r) => fmtDateTime(r.expires_at), cell: (r) => <span className="text-caption tabular-nums text-fg-muted">{fmtDateTime(r.expires_at)}</span> },
+    { header: 'Empezó', orden: (r) => r.created_at, ordenPrimero: 'desc', texto: (r) => fmtDateTime(r.created_at), cell: (r) => <span className="font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</span> },
+    { header: 'Se vence', orden: (r) => r.expires_at, texto: (r) => fmtDateTime(r.expires_at), cell: (r) => <span className="font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.expires_at)}</span> },
   ]
 
   const columnasDeLaVoz: Column<ArranqueDeLaCobranza>[] = [
@@ -226,7 +229,7 @@ export default function OnboardingPage() {
             Ya cobró
           </Pill>
         ) : r.first_call ? (
-          <Pill tone="info" dot>
+          <Pill tone="neutral" dot>
             Ya llamó
           </Pill>
         ) : (
@@ -238,52 +241,51 @@ export default function OnboardingPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        title="Onboarding"
-        description="Cómo arranca cada inmobiliaria: abre su asistente, elige plan, migra sus datos y empieza a operar. Toca una para ver su ficha."
+        title="Inmobiliarias nuevas"
+        description="Cómo arranca cada inmobiliaria, del asistente a operar. Toca una para ver su ficha."
       />
 
-      {data && data.plataforma === null ? (
+      {data && data.plataforma == null ? (
         <Alert variant="warning" title="No pudimos leer las inmobiliarias de la plataforma">
           Abajo sale lo del asistente y la cobranza por voz, que se lee aparte.
         </Alert>
       ) : null}
 
-      {/* El embudo: cuántas de las recientes dieron cada paso. Cada paso filtra la tabla. */}
+      {/* Glow up 22-10: LA RESPUESTA (cuántas ya operan: dieron los cinco pasos) con la barra de dónde se quedó
+          cada una; antes, 5 tarjetas del mismo peso con barras azules que repetían el filtro «Dónde van». */}
       {recorridos && registradas > 0 ? (
-        <Tarjeta
-          titulo="El embudo"
-          descripcion={`De las ${fmtNumero(registradas)} inmobiliarias más recientes, cuántas dieron cada paso. Toca uno para ver a las que les falta.`}
-        >
-          <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Pasos del onboarding">
-            {embudo.map((p) => {
-              const pct = registradas ? Math.round((p.cuantas / registradas) * 100) : 0
-              const activo = paso === p.paso
-              return (
-                <li key={p.paso}>
-                  <button
-                    type="button"
-                    onClick={() => setFilters({ paso: activo ? '' : p.paso }, { resetPage: true })}
-                    aria-pressed={activo}
-                    className={`w-full rounded-lg border px-4 py-3 text-left transition-colors ${
-                      activo ? 'border-primary bg-primary/5' : 'border-border bg-bg hover:bg-surface-hover'
-                    }`}
-                  >
-                    <div className="text-caption text-fg-muted">{p.nombre}</div>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-h3 font-semibold tabular-nums text-fg">{fmtNumero(p.cuantas)}</span>
-                      <span className="text-caption tabular-nums text-fg-subtle">de {fmtNumero(registradas)}</span>
-                    </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover" aria-hidden>
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                    </div>
-                  </button>
-                </li>
-              )
-            })}
-          </ol>
-        </Tarjeta>
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Ya operan"
+            cifra={fmtNumero(dondeVan.listas)}
+            contexto={`de las ${fmtNumero(registradas)} inmobiliarias más recientes`}
+            tramos={[
+              { clave: 'listas', etiqueta: 'Ya operan', monto: dondeVan.listas, tono: 'exito' as const, cifra: fmtNumero(dondeVan.listas), siempre: true },
+              ...dondeVan.porPaso.map(
+                (p): TramoDeLaCifra => ({
+                  clave: p.paso,
+                  etiqueta: `Les falta: ${p.falta.toLowerCase()}`,
+                  monto: p.cuantas,
+                  tono: p.paso === 'asistente' ? 'critico' : 'neutro',
+                  cifra: fmtNumero(p.cuantas),
+                }),
+              ),
+            ]}
+            total={registradas}
+            pie="Cada una cuenta en el primer paso que le falta. Filtra la tabla con «Dónde van»."
+            data-testid="onboarding-terminaron"
+          />
+        </div>
       ) : null}
 
+      <PestanasDeLaFicha
+        etiqueta="Secciones del onboarding"
+        pestanas={[
+          {
+            id: 'recorrido',
+            etiqueta: 'En la plataforma',
+            cuenta: recorridos?.length ?? null,
+            contenido: (
       <DataTable
         columns={columnas}
         rows={recorridos}
@@ -291,8 +293,8 @@ export default function OnboardingPage() {
         isLoading={isLoading}
         error={error}
         onReintentar={refetch}
-        emptyTitle="Todavía no hay inmobiliarias"
-        emptyHint="Cuando una se registre, aparece acá."
+        emptyTitle={data && data.plataforma == null ? 'No pudimos leer las inmobiliarias de la plataforma' : 'Todavía no hay inmobiliarias'}
+        emptyHint={data && data.plataforma == null ? 'Prueba de nuevo en un momento; lo de arriba se lee aparte.' : 'Cuando una se registre, aparece aquí.'}
         id="recorrido"
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar inmobiliaria"
@@ -300,7 +302,7 @@ export default function OnboardingPage() {
         filtrosEnLaUrl={['paso']}
         ordenInicial={{ columna: 0, sentido: 'desc' }}
         exportar="recorrido-de-las-inmobiliarias"
-        emptyIcon={<Rocket weight="bold" />}
+        emptyIcon={<Rocket weight="duotone" />}
         aria-label="Recorrido de cada inmobiliaria"
         onRowClick={(r) => router.push(`/admin/tenants/${r.id}`)}
         barra={
@@ -318,10 +320,15 @@ export default function OnboardingPage() {
           </BarraDeFiltros>
         }
       />
-
+            ),
+          },
+          {
+            id: 'a-medias',
+            etiqueta: 'Registros sin terminar',
+            cuenta: data?.inFlight.length ?? null,
+            contenido: (
       <section className="space-y-3" aria-label="Registros sin terminar">
         <div>
-          <h2 className="text-subtitle font-semibold text-fg">Registros sin terminar</h2>
           <p className="text-body-sm text-fg-muted">
             Empezaron el asistente de registro y no lo terminaron. Si se vence, tienen que empezar de nuevo.
           </p>
@@ -348,10 +355,15 @@ export default function OnboardingPage() {
           />
         )}
       </section>
-
+            ),
+          },
+          {
+            id: 'voz',
+            etiqueta: 'Cobranza por voz',
+            cuenta: data?.liveAgencies.length ?? null,
+            contenido: (
       <section className="space-y-3" aria-label="Arranque de la cobranza por voz">
         <div>
-          <h2 className="text-subtitle font-semibold text-fg">Cobranza por voz</h2>
           <p className="text-body-sm text-fg-muted">
             Las inmobiliarias conectadas a Mori: cuándo llamó y cuándo cobró por primera vez.
           </p>
@@ -373,6 +385,10 @@ export default function OnboardingPage() {
           exportar="arranque-cobranza-por-voz"
         />
       </section>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }

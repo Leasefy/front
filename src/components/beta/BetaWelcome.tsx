@@ -197,7 +197,7 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
           {/* Título + apoyo */}
           <motion.h1
             {...entrada(0)}
-            className="text-center font-heading font-semibold leading-[1.02] tracking-[-0.04em] text-fg text-[clamp(2.1rem,6vw,3.75rem)] [text-wrap:balance]"
+            className="text-center font-heading font-medium leading-[1.02] tracking-[-0.04em] text-fg text-[clamp(2.1rem,6vw,3.75rem)] [text-wrap:balance]"
           >
             {t('beta.welcome.heroTitle')}
           </motion.h1>

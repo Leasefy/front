@@ -16,6 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -177,6 +178,7 @@ export function ImportWizard({
 } = {}) {
   const router = useRouter();
   const { t } = useI18n();
+  const tr = useTr();
   const [currentStep, setCurrentStep] = useState(1);
   // ¿Se avanzó o se volvió? Lo lee el render en que `currentStep` cambió
   // (la ref todavía tiene el paso anterior) y se actualiza después.
@@ -270,7 +272,7 @@ export function ImportWizard({
   const pasoActual = visibleSteps[currentStep - 1]?.id ?? 1;
 
   const retomarLote = useCallback(
-    (l: EstadoDeLoteInmuebles) => {
+    (l: EstadoDeLoteInmuebles, opciones?: { revisar?: boolean }) => {
       const etapa = etapaDeLaCarga(l);
       const aEnviar = wizardState.properties.filter((p) => p.hasErrors || p.selected).length;
       if (etapa === 'subiendo') {
@@ -291,6 +293,7 @@ export function ImportWizard({
       updateState({
         loteRetomado: l.lote,
         subidaRetomada: null,
+        abrirLaRevision: Boolean(opciones?.revisar),
         ...(wizardState.method === 'portal' ? { method: null } : {}),
       });
       setCurrentStep(wizardState.method === 'portal' ? STEPS.length : visibleSteps.length);
@@ -381,6 +384,22 @@ export function ImportWizard({
   );
 
   // Step validation
+  /**
+   * Revisora r25: «Siguiente» apagado sin decir qué falta. Esta línea, al lado del botón, lo dice (y sólo mientras
+   * está apagado).
+   */
+  const porQueNoSigue = (valido: boolean): string | null => {
+    if (valido) return null;
+    if (pasoActual === 1) return tr('Elige cómo vas a traer tus inmuebles');
+    if (pasoActual === 2) {
+      return wizardState.method === 'enlaces'
+        ? tr('Pega al menos un enlace que se pueda leer')
+        : tr('Sube tu archivo para seguir');
+    }
+    if (pasoActual === 3) return tr('Elige la columna de cada dato obligatorio');
+    return null;
+  };
+
   const isStepValid = useMemo(() => {
     switch (pasoActual) {
       case 1:
@@ -506,7 +525,8 @@ export function ImportWizard({
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    // Revisora r25: alineado con el encabezado (antes centrado con mx-auto, 120 px corrido).
+    <div className="max-w-4xl">
       <CargasAMedias
         lotes={cargasParaOfrecer}
         onRetomar={retomarLote}
@@ -571,7 +591,7 @@ export function ImportWizard({
                       ? 'bg-success text-white'
                       : status === 'current'
                         ? 'bg-primary text-primary-fg ring-4 ring-primary/30'
-                        // Sin `dark:bg-ink`: ese override daba rgb(20,19,15) sobre
+                        // Sin ``: ese override daba rgb(20,19,15) sobre
                         // un fondo de página rgb(17,17,19) — el círculo desaparecía.
                         // `bg-surface-muted` ya es sensible al tema y da
                         // rgb(36,34,28), más separado del fondo que en claro.
@@ -584,11 +604,11 @@ export function ImportWizard({
                     )}
                   </div>
                   <span className={cn(
-                    'text-xs font-medium whitespace-nowrap',
+                    'text-caption font-medium whitespace-nowrap',
                     status === 'current'
                       ? 'text-primary'
                       : status === 'completed'
-                        ? 'text-fg dark:text-white'
+                        ? 'text-fg'
                         : 'text-fg-subtle'
                   )}>
                     {paso.label}
@@ -613,7 +633,7 @@ export function ImportWizard({
         {/* Mobile Progress */}
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-fg dark:text-white">
+            <span className="text-sm font-medium text-fg">
               {t('inmobiliaria.import.wizard.mobileProgress', {
                 current: pasoMacro,
                 total: PASOS_VISIBLES.length,
@@ -636,7 +656,7 @@ export function ImportWizard({
       </div>
 
       {/* Step Content */}
-      <div className="bg-surface dark:bg-bg rounded-lg border border-border dark:border-border-strong">
+      <div className="bg-surface rounded-lg border border-border">
         <RanuraVivaContext.Provider value={ranuraViva}>
           <div className="p-6 space-y-6">
             {/*
@@ -691,7 +711,7 @@ export function ImportWizard({
           // cambia, éste cambia con ella.
           // A 390 px los tres botones no caben en fila con `px-6`: el pie
           // empujaba la página a 458 px (QA-MIG-A, MG-29). Se envuelve.
-          <div className="px-4 py-4 sm:px-6 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex flex-wrap items-center justify-between gap-2" data-testid="pie-del-asistente">
+          <div className="px-4 py-4 sm:px-6 rounded-b-lg border-t border-border-faint bg-surface-muted flex flex-wrap items-center justify-between gap-2" data-testid="pie-del-asistente">
             {/* Cancel Button */}
             <Button
               type="button"
@@ -736,6 +756,12 @@ export function ImportWizard({
                     : t('inmobiliaria.import.portal.backToPortfolio')}
                 </Button>
               ) : currentStep < visibleSteps.length ? (
+                <>
+                {porQueNoSigue(isStepValid) ? (
+                  <span className="text-caption text-fg-muted max-sm:basis-full max-sm:text-right" data-testid="por-que-no-sigue">
+                    {porQueNoSigue(isStepValid)}
+                  </span>
+                ) : null}
                 <Button
                   type="button"
                   hideArrow
@@ -747,6 +773,7 @@ export function ImportWizard({
                   {t('inmobiliaria.import.wizard.next')}
                   <CaretRight className="w-4 h-4" />
                 </Button>
+                </>
               ) : (
                 // Ranura del último paso. El botón principal vivió al pie,
                 // a la derecha de «Anterior», en los cuatro pasos anteriores;

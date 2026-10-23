@@ -106,8 +106,8 @@ export function CarrierSlaStateCard({
       {/* State pill */}
       <div className={`flex flex-col items-center gap-2 rounded-md p-4 ${bgClass}`}>
         <Icon weight={iconWeight} className={`h-8 w-8 ${colorClass}`} />
-        <p className={`text-lg font-semibold ${colorClass}`}>{stateLabel}</p>
-        <p className="text-xs text-fg-muted">
+        <p className={`text-lg font-medium ${colorClass}`}>{stateLabel}</p>
+        <p className="text-caption text-fg-muted">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.since')}{' '}
           {formatElapsed(since, t)}
         </p>
@@ -119,18 +119,18 @@ export function CarrierSlaStateCard({
       {/* 30d sparklines */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-2">
+          <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-2">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.latency.title')}
           </p>
           <CarrierLatencySparkline data={p95Sparkline} />
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-2">
+          <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-2">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.errorRate.title')}
           </p>
           {errorRateSparkline.length === 0 ? (
             <div className="h-[160px] flex items-center justify-center">
-              <p className="text-xs text-fg-muted text-center">
+              <p className="text-caption text-fg-muted text-center">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.noErrorRateData')}
               </p>
             </div>

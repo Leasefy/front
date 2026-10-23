@@ -42,6 +42,8 @@ const { api, reportes, toastMock, permisos } = vi.hoisted(() => ({
 vi.mock('@/lib/api/castigo.service', () => ({ castigoApi: api }));
 vi.mock('@/lib/api/inmobiliaria.service', () => ({ reportesApi: reportes }));
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
+// Ronda 26: «Proponer un castigo» abre un cajón; el doble lo pinta como DOM plano.
+vi.mock('@/components/ui/sheet', async () => await import('@/components/ui/sheet-test-stub'));
 vi.mock('@/lib/hooks/usePermissions', () => ({ usePermissions: () => permisos }));
 vi.mock('@/components/estado/FalloDeCarga', () => ({
   FalloDeCarga: ({ error }: { error: unknown }) => (

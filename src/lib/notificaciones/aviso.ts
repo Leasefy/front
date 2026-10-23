@@ -81,6 +81,23 @@ function porMetadata(metadata: unknown): Icon | null {
   return null;
 }
 
+/**
+ * Lo que pide atención YA (glow up 21-10): su ícono va en rojo suave; el resto, en arena. Antes
+ * todos iban en el mismo azul y «Cobro vencido» se veía igual que «Contrato firmado».
+ */
+const PIDEN_ATENCION: ReadonlySet<string> = new Set([
+  'PAYMENT_REJECTED',
+  'PAYMENT_DISPUTE_OPENED',
+  'PAYMENT_OVERDUE',
+  'COBRO_VENCIDO',
+  'DISPERSION_DEVUELTA',
+  'LEASE_EXPIRED',
+]);
+
+export function avisoPideAtencion(tipo: string): boolean {
+  return PIDEN_ATENCION.has(tipo);
+}
+
 export function iconoDelAviso(tipo: string, categoria?: string, metadata?: unknown): Icon {
   return POR_TIPO[tipo] ?? porMetadata(metadata) ?? (categoria ? POR_CATEGORIA[categoria] : undefined) ?? Bell;
 }

@@ -12,7 +12,7 @@
 
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowClockwise } from '@phosphor-icons/react'
+import { ArrowClockwise } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useCarrierDetail } from '@/lib/hooks/cotizador/use-carrier-detail'
 import { useCarrierRecentQuotes } from '@/lib/hooks/cotizador/use-carrier-recent-quotes'
@@ -26,6 +26,8 @@ import { Button } from '@/components/ui/button'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelAgente } from './fallo-del-agente'
 import { CrossFade } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 
 // =============================================================================
 // Component
@@ -54,45 +56,28 @@ export default function CarrierDeepDivePage() {
     <CrossFade swapKey="aseguradora">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras"
-              className="inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-fg transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {t('inmobiliaria.ai.cotizador.aseguradoras.backToList')}
-            </Link>
-          </div>
-          <h1 className="text-h2 text-fg">
-            {carrier.toUpperCase()}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.subtitle')}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Ver SLA link — secundaria, no primary CTA */}
-          <Button variant="secondary" size="sm" hideArrow asChild>
-            <Link href="./sla">
-              {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.slaLinkLabel')}
-            </Link>
-          </Button>
-
-          {/* Refresh */}
-          <Button
-            variant="outline"
-            size="icon"
-            hideArrow
-            onClick={() => void refetch()}
-            aria-label={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.refresh')}
-          >
-            <ArrowClockwise className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
+      <div className="space-y-3">
+        <VolverALaLista
+          href="/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras"
+          label={t('inmobiliaria.ai.cotizador.aseguradoras.backToList')}
+        />
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.nav.secAgentes')}
+          titulo={carrier.toUpperCase()}
+          descripcion={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.subtitle')}
+          acciones={
+            <>
+              <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
+                <ArrowClockwise className="h-4 w-4" aria-hidden="true" />
+                {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.refresh')}
+              </Button>
+              <Button variant="outline" size="sm" hideArrow asChild>
+                <Link href="./sla">{t('inmobiliaria.ai.cotizador.aseguradoras.carrier.slaLinkLabel')}</Link>
+              </Button>
+            </>
+          }
+        />
+      </div>
 
       {/* Fallo con datos ya en pantalla (el sondeo de 60 s tropezó): el cartel
           dice qué pasó y deja lo que ya se veía. Antes decía «…errorLoading: 502»,
@@ -112,7 +97,7 @@ export default function CarrierDeepDivePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Latency sparkline */}
         <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
+          <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.latency.title')}
           </p>
           <CarrierLatencySparkline data={detail?.latencySparkline ?? []} isLoading={isLoading} />
@@ -120,7 +105,7 @@ export default function CarrierDeepDivePage() {
 
         {/* Error rate chart */}
         <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
+          <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.errorRate.title')}
           </p>
           <CarrierErrorRateChart data={detail?.errorRateSeries ?? []} isLoading={isLoading} />
@@ -129,7 +114,7 @@ export default function CarrierDeepDivePage() {
 
       {/* Approval by canon — full width */}
       <div className="rounded-lg border border-border bg-card p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
+        <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.approvalByCanon.title')}
         </p>
         <CarrierApprovalByCanonChart data={detail?.approvalByCanon ?? []} isLoading={isLoading} />
@@ -137,7 +122,7 @@ export default function CarrierDeepDivePage() {
 
       {/* Recent quotes table — full width */}
       <section>
-        <h2 className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
+        <h2 className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.title')}
         </h2>
         <CarrierRecentQuotesTable quotes={recentQuotes ?? null} isLoading={quotesLoading} />

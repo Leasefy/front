@@ -5,11 +5,10 @@
  */
 
 import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ConceptosDeNominaPanel, PorQueDosMarcas } from '@/components/nomina/ConceptosDeNomina';
 
 /**
@@ -26,29 +25,18 @@ export default function ConceptosDeNominaPage() {
   return (
     <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <Link
-            href="/panel/inmobiliaria/nomina"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        <div className="space-y-3">
+          <Link href="/panel/inmobiliaria/nomina" className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
             Nómina
           </Link>
-          <SectionLabel>Nómina</SectionLabel>
-          {/* «Por qué hay dos marcas» a la derecha, donde iría el botón de
-              acción (05-10-2026): era una caja de texto sobre el catálogo. */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-1.5">
-              <h1 className="text-h2 text-fg">Conceptos y cuentas</h1>
-              <p className="max-w-2xl text-sm text-fg-muted">
-                Lo que se devenga, lo que se deduce, lo que aporta el empleador y lo que se provisiona, con la cuenta del PUC a la que va cada renglón. Un concepto sin cuenta no impide liquidar, pero sí impide asentar: el asiento no se escribe a medias.
-              </p>
-            </div>
-            <div className="self-start sm:shrink-0">
-              <PorQueDosMarcas />
-            </div>
-          </div>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Dinero"
+            titulo="Conceptos y cuentas"
+            // Revisora r25 (Conceptos, UI): una línea; lo que pasa sin cuenta lo dice el aviso de los que faltan.
+            descripcion="Lo que se devenga, se deduce, aporta el empleador y se provisiona, con su cuenta del PUC."
+            ayuda={<PorQueDosMarcas />}
+          />
+        </div>
         <ConceptosDeNominaPanel />
       </div>
     </PageGuard>

@@ -1,3 +1,4 @@
+import { Ilustracion, type NombreIlustracion } from '@leasefy/cadence';
 import type * as React from 'react';
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -77,6 +78,13 @@ export interface EmptyStateProps {
    * posición del botón sigan siendo los mismos en las ~130 que lo usan.
    */
   children?: React.ReactNode;
+  /**
+   * Una ilustración 3D de Cadence 2 en lugar del ícono (casa, alcancia,
+   * billetera, escudo, monedas): para el vacío GRANDE de una sección, el que
+   * invita a empezar. Los vacíos chicos (dentro de un cajón o una tarjeta)
+   * siguen con el ícono.
+   */
+  ilustracion?: NombreIlustracion;
   /** Additional CSS classes */
   className?: string;
 }
@@ -111,6 +119,7 @@ export function EmptyState({
   action,
   secondaryAction,
   children,
+  ilustracion,
   className,
 }: EmptyStateProps) {
   return (
@@ -125,13 +134,17 @@ export function EmptyState({
       className={cn('flex flex-col items-center justify-center px-6 py-12 text-center', className)}
       data-testid="empty-state"
     >
-      <span
-        className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
-        aria-hidden="true"
-      >
-        <IconComponent className="h-6 w-6" weight="duotone" />
-      </span>
-      <p className="text-[15px] font-semibold text-fg">{title}</p>
+      {ilustracion ? (
+        <Ilustracion nombre={ilustracion} tamano={136} className="mb-2" />
+      ) : (
+        <span
+          className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
+          aria-hidden="true"
+        >
+          <IconComponent className="h-6 w-6" weight="duotone" />
+        </span>
+      )}
+      <p className="text-[15px] font-medium text-fg">{title}</p>
       <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-fg-muted">{description}</p>
       {children && <div className="mt-5 w-full max-w-sm text-left">{children}</div>}
       {action && <div className="mt-5">{renderAction(action, 'secondary', 'sm')}</div>}

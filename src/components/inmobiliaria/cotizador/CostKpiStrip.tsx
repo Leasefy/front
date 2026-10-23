@@ -87,19 +87,19 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
         >
           <div className="flex items-center gap-2 mb-1">
             <Icon weight="duotone" className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
-            <p className="text-xs text-fg-muted truncate">{label}</p>
+            <p className="text-caption text-fg-muted truncate">{label}</p>
           </div>
           {/* Hueco → cifra con un fundido (`CrossFade`). */}
           <CrossFade swapKey={isLoading ? 'cargando' : 'cifra'}>
           {isLoading ? (
             <div className="h-6 w-16 rounded bg-surface-muted animate-pulse mt-1" />
           ) : (
-            <p className="text-xl font-semibold text-fg mt-1">{value}</p>
+            <p className="text-xl font-medium text-fg mt-1">{value}</p>
           )}
           </CrossFade>
           {caption && (
             <div className="flex items-center gap-1 mt-2">
-              <p className="text-xs text-fg-muted leading-snug">
+              <p className="text-caption text-fg-muted leading-snug">
                 {caption}
               </p>
               <TooltipProvider>
@@ -114,7 +114,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
                       className="flex-shrink-0"
                     />
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs text-xs">
+                  <TooltipContent side="bottom" className="max-w-xs text-caption">
                     {t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}
                   </TooltipContent>
                 </Tooltip>

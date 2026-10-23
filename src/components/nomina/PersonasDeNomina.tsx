@@ -23,6 +23,8 @@
  * a la base de prima, cesantías y vacaciones.
  */
 
+import { SinDatos } from '@/components/estado/SinDatos';
+import { MagnifyingGlass, UsersThree } from '@phosphor-icons/react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -56,8 +58,13 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { atributosDelError, useErroresDelFormulario } from './errores-del-formulario';
 import { MENSAJES_DE_NOMINA, SALARIO_MAXIMO_DEL_MES_COP, pasaDe } from './limites-de-nomina';
-import { Avisos, TituloDeBloque } from './piezas';
+import { Avisos } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 /** Los campos de la persona que pueden llevar error, con el nombre del DTO. */
@@ -102,27 +109,15 @@ export function PersonasDeNominaPanel() {
   }, [busqueda]);
 
   const [abriendo, setAbriendo] = useState(false);
+  const [vista, setVista] = useState<'activas' | 'retiradas' | 'todas'>('activas');
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="busqueda-de-personas">Buscar por nombre o documento</Label>
-          <Input
-            id="busqueda-de-personas"
-            className="w-72"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            data-testid="busqueda-de-personas"
-          />
-        </div>
-        <Button onClick={() => setAbriendo(true)} data-testid="nueva-persona">
-          Registrar a alguien
-        </Button>
-      </div>
 
+      {/* El buscador vive dentro de la tarjeta: al buscar se vuelve a pedir la lista, y la
+          tarjeta (con el buscador) se queda en pantalla con la lista anterior mientras llega. */}
       <Cargado
-        estado={estado}
+        estado={{ ...estado, cargando: estado.cargando && estado.datos === null }}
         queEs="las personas de nómina"
         queSeEspera="registrar a alguien en nómina"
       >
@@ -139,40 +134,101 @@ export function PersonasDeNominaPanel() {
               />
             ) : null}
 
-            <section className="space-y-3">
-              <TituloDeBloque
-                titulo="Los cuatro tipos, y qué implica cada uno"
-                explicacion="El tipo decide cómo se liquida. No se deduce del cargo ni del salario: se elige, y el back rechaza las combinaciones imposibles."
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                {catalogo.tipos.map((t) => (
-                  <div
-                    key={t.tipo}
-                    className="space-y-1 rounded-lg border border-border bg-surface p-4"
-                    data-testid={`tipo-${t.tipo}`}
-                  >
-                    <p className="text-sm font-medium text-fg">{t.nombre}</p>
-                    <p className="text-caption leading-relaxed text-fg-muted">
-                      {t.descripcion}
-                    </p>
+            {(() => {
+              const activas = personas.personas.filter((p) => p.activo);
+              const retiradas = personas.personas.filter((p) => !p.activo);
+              const vistaReal = retiradas.length === 0 ? 'todas' : vista;
+              const visibles = vistaReal === 'activas' ? activas : vistaReal === 'retiradas' ? retiradas : personas.personas;
+              const salarios = activas.reduce((t, p) => t + (p.salarioCop ?? 0), 0);
+              const cifras = localeDeLasCifras();
+              /** Revisora r25 (Personas, C3): sin nadie registrado, sólo el vacío con «Registrar a alguien». */
+              const nadie = personas.personas.length === 0 && !busqueda;
+              return (
+                <>
+                  {/* GLOW UP 3.ª vuelta · LA RESPUESTA: cuánta gente está activa y lo que suman sus salarios.
+                      Revisora r25 (Personas, UI): a 390 la cifra arriba y el botón debajo (el rótulo se partía). */}
+                  {nadie ? null : (
+                  <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+                    <CifraHeroe
+                      tamano="mediana"
+                      rotulo="Personas activas en nómina"
+                      cifra={activas.length.toLocaleString(cifras)}
+                      contexto={
+                        busqueda
+                          ? `de las que coinciden con «${busqueda}»`
+                          : `con salarios que suman ${formatCurrency(salarios)} al mes`
+                      }
+                      className="min-w-0 flex-1"
+                      // C3 (revisora r25): con nadie activo, UNA línea; el vacío de abajo dice qué hacer.
+                      esCero={activas.length === 0 && !busqueda}
+                      data-testid="cifra-de-personas"
+                    />
+                    <Button size="sm" onClick={() => setAbriendo(true)} data-testid="nueva-persona" className="self-start">
+                      Registrar a alguien
+                    </Button>
                   </div>
-                ))}
-              </div>
-            </section>
+                  )}
 
-            <section className="space-y-3">
-              <TituloDeBloque
-                titulo={`${personas.total} persona${personas.total === 1 ? '' : 's'} en nómina`}
-                explicacion="Quien se retira NO se borra: sus liquidaciones y su certificado de retenciones tienen que sobrevivir."
-              />
-              {personas.personas.length === 0 ? (
-                <p className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted">
-                  Todavía no hay nadie registrado.
-                </p>
+                  <section className="overflow-hidden rounded-lg border border-border bg-surface" aria-label="Las personas de nómina">
+                    {nadie ? null : (
+                    <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
+                      {retiradas.length > 0 ? (
+                        <PestanasDeEstado
+                          etiqueta="Estado de las personas"
+                          valor={vistaReal}
+                          onCambio={setVista}
+                          pestanas={[
+                            { valor: 'activas', etiqueta: 'Activas', cuantos: activas.length, fija: true },
+                            { valor: 'retiradas', etiqueta: 'Retiradas', cuantos: retiradas.length },
+                            { valor: 'todas', etiqueta: 'Todas', cuantos: personas.personas.length, fija: true },
+                          ]}
+                        />
+                      ) : null}
+                      <div className="min-w-0 flex-1">
+                        <Label htmlFor="busqueda-de-personas" className="sr-only">Buscar por nombre o documento</Label>
+                        <Input
+                          id="busqueda-de-personas"
+                          className="w-full sm:max-w-xs"
+                          placeholder="Buscar por nombre o documento"
+                          value={busqueda}
+                          onChange={(e) => setBusqueda(e.target.value)}
+                          data-testid="busqueda-de-personas"
+                        />
+                      </div>
+                    </div>
+                    )}
+              {visibles.length === 0 ? (
+                // Revisora r25 (C5): el vacío con su salida (antes una línea gris).
+                personas.personas.length === 0 && !busqueda ? (
+                  <SinDatos
+                    queSon="personas"
+                    icono={UsersThree}
+                    titulo="Todavía no hay nadie registrado"
+                    descripcion="Registra a la primera persona para liquidarle la nómina."
+                    accion={
+                      <Button hideArrow onClick={() => setAbriendo(true)} data-testid="nueva-persona">
+                        Registrar a alguien
+                      </Button>
+                    }
+                  />
+                ) : busqueda ? (
+                  <SinDatos
+                    queSon="personas"
+                    icono={MagnifyingGlass}
+                    titulo="Nadie con ese nombre o documento"
+                    descripcion="Prueba con otra parte del nombre o con el número sin puntos."
+                    accion={
+                      <Button size="sm" variant="secondary" hideArrow onClick={() => setBusqueda('')}>
+                        Borrar la búsqueda
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <p className="p-5 text-body-sm text-fg-muted">Nadie en esta pestaña.</p>
+                )
               ) : (
-                <div className="overflow-x-auto">
-                  <Table data-testid="tabla-de-personas">
-                    <TableHeader>
+                  <Table data-testid="tabla-de-personas" className="max-md:block">
+                    <TableHeader className="max-md:hidden">
                       <TableRow>
                         <TableHead>Nombre</TableHead>
                         <TableHead>Tipo</TableHead>
@@ -183,10 +239,14 @@ export function PersonasDeNominaPanel() {
                         <TableHead>Estado</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBodyAnimado>
-                      {personas.personas.map((p) => (
-                        <TableRowAnimada key={p.id} data-testid={`persona-${p.id}`}>
-                          <TableCell>
+                    <TableBodyAnimado className="max-md:block">
+                      {visibles.map((p) => (
+                        <TableRowAnimada
+                          key={p.id}
+                          data-testid={`persona-${p.id}`}
+                          className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
+                        >
+                          <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                             <span className="font-medium text-fg">{p.nombre}</span>
                             {p.documento ? (
                               <span className="ml-1.5 text-caption text-fg-muted">
@@ -198,42 +258,72 @@ export function PersonasDeNominaPanel() {
                               </span>
                             )}
                           </TableCell>
-                          <TableCell className="text-caption">
+                          <TableCell className="text-caption max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-fg-muted">
                             {p.tipo.replace(/_/g, ' ').toLowerCase()}
                             {p.salarioIntegral ? ' · integral' : ''}
                             {p.etapaAprendizaje
                               ? ` · ${p.etapaAprendizaje.toLowerCase()}`
                               : ''}
+                            <span className="md:hidden">
+                              {p.cargo ? ` · ${p.cargo}` : ''} · {p.periodicidad.toLowerCase()}
+                            </span>
                           </TableCell>
-                          <TableCell className="text-caption text-fg-muted">
+                          <TableCell className="text-caption text-fg-muted max-md:hidden">
                             {p.cargo ?? '—'}
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
+                          <TableCell className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                             {p.salarioCop != null
                               ? formatCurrency(p.salarioCop)
                               : '—'}
                           </TableCell>
-                          <TableCell className="text-caption">
+                          <TableCell className="text-caption max-md:hidden">
                             {p.periodicidad.toLowerCase()}
                           </TableCell>
-                          <TableCell className="text-caption">
+                          <TableCell className="text-caption max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-fg-muted">
+                            <span className="md:hidden">ARL </span>
                             {p.claseRiesgoArl ?? (
                               <span className="text-warning">sin clase</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-caption">
+                          <TableCell className="text-caption max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                             {p.activo
                               ? 'Activo'
-                              : `Retirado${p.fechaRetiro ? ` el ${p.fechaRetiro.slice(0, 10)}` : ''}`}
+                              : `Retirado${p.fechaRetiro ? ` el ${fechaCorta(p.fechaRetiro.slice(0, 10))}` : ''}`}
                           </TableCell>
                         </TableRowAnimada>
                       ))}
                     </TableBodyAnimado>
                   </Table>
-                </div>
               )}
-              <p className="text-caption text-fg-muted">{catalogo.fuenteArl}</p>
-            </section>
+                  </section>
+
+                  <MasDetalles etiqueta="Los cuatro tipos y qué implica cada uno" etiquetaAbierto="Ocultar los tipos" montadoSiempre>
+                    <div className="space-y-3">
+                      <p className="text-body-sm text-fg-muted">
+                        El tipo decide cómo se liquida. No se deduce del cargo ni del salario: se elige, y el
+                        sistema rechaza las combinaciones imposibles. Quien se retira no se borra: sus
+                        liquidaciones y su certificado de retenciones tienen que sobrevivir.
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {catalogo.tipos.map((t) => (
+                          <div
+                            key={t.tipo}
+                            className="space-y-1 rounded-lg border border-border bg-surface p-4"
+                            data-testid={`tipo-${t.tipo}`}
+                          >
+                            <p className="text-body-sm font-medium text-fg">{t.nombre}</p>
+                            <p className="text-caption leading-relaxed text-fg-muted">
+                              {t.descripcion}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-caption text-fg-muted">{catalogo.fuenteArl}</p>
+                    </div>
+                  </MasDetalles>
+                </>
+              );
+            })()}
 
             <NuevaPersona
               abierto={abriendo}

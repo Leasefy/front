@@ -16,10 +16,14 @@
  * de guardar, si dice lo que uno cree que dice.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft, FloppyDisk } from '@phosphor-icons/react'
+import { FloppyDisk } from '@phosphor-icons/react'
+import { BackButton } from '@/components/ui/back-button'
+import { BackButton as VueltaConPregunta } from '@leasefy/cadence'
+import { toast } from '@/components/ui/toast'
+import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir'
 import { Card, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import {
@@ -221,6 +225,26 @@ export function AcuerdoGeneralForm({
     b.conditionEs.trim().length > 0 &&
     !(b.discountPct === 0 && b.maxInstallments === 0)
 
+  // Revisora r25 (5b): el botón apagado dice qué falta, al lado.
+  const loQueFalta = [
+    b.name.trim().length === 0 ? 'el nombre' : null,
+    b.conditionEs.trim().length === 0 ? 'la condición' : null,
+    b.discountPct === 0 && b.maxInstallments === 0 ? 'un descuento o cuotas' : null,
+  ].filter((x): x is string => x !== null)
+  const fraseDeLoQueFalta =
+    loQueFalta.length === 0
+      ? null
+      : `Falta ${loQueFalta.length === 1 ? loQueFalta[0] : `${loQueFalta.slice(0, -1).join(', ')} y ${loQueFalta[loQueFalta.length - 1]}`}.`
+
+  // Revisora r25 (3b): lo escrito no se pierde sin aviso (al cerrar la pestaña, y al volver o cancelar).
+  const sucio = JSON.stringify(b) !== JSON.stringify(inicial)
+  useAvisoAlSalir(sucio && !guardando)
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false)
+  const salir = useCallback(() => {
+    if (sucio) setConfirmandoSalida(true)
+    else router.push(VOLVER)
+  }, [sucio, router])
+
   const guardar = useCallback(async () => {
     setError(null)
     // Lo que el micro rechazaría se ataja acá, debajo de su campo.
@@ -248,6 +272,8 @@ export function AcuerdoGeneralForm({
         maxInstallments: b.maxInstallments,
         minInitialPct: b.minInitialPct,
       })
+      // Revisora r25 (1c): al guardar, el aviso que confirma.
+      toast.success(`Listo: se guardó «${b.name.trim()}». El agente lo usa desde ya.`)
       router.push(VOLVER)
     } catch (e) {
       // Un 400 con `campos` va a su campo; arriba de Guardar, sólo lo suelto
@@ -271,27 +297,28 @@ export function AcuerdoGeneralForm({
   })
 
   return (
-    <main className="p-6 lg:p-8 space-y-6 max-w-3xl">
+    <div className="p-6 lg:p-8 space-y-6">
       <div>
-        <Link
-          href={VOLVER}
-          className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Volver a Acuerdos de pago
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg">{titulo}</h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          Una regla que el agente cierra sin preguntarte. Nunca puede ofrecer más
-          que los límites que ya configuraste.
-        </p>
+        {sucio ? (
+          // La misma pieza de la vuelta (BackButton sin href = botón): con algo
+          // escrito, antes de irse pregunta.
+          <VueltaConPregunta onClick={salir} label="Acuerdos de pago" variant="subtle" data-testid="acuerdo-general-volver" />
+        ) : (
+          <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
+        )}
+        <EncabezadoDePantalla
+          className="mt-3"
+          seccion="Cobranza · Acuerdos"
+          titulo={titulo}
+          descripcion="Una regla que el agente cierra sin preguntarte. Nunca puede ofrecer más que los límites que ya configuraste."
+        />
       </div>
 
       {/* 1 — Qué es */}
       <Card className="p-4 sm:p-5 space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-fg">Qué es</h2>
-          <p className="text-xs text-fg-muted">
+          <h2 className="text-sm font-medium text-fg">Qué es</h2>
+          <p className="text-caption text-fg-muted">
             El nombre es para ti; la condición es lo que el agente le dice al deudor.
           </p>
         </div>
@@ -334,8 +361,8 @@ export function AcuerdoGeneralForm({
       {/* 2 — Cuándo aplica */}
       <Card className="p-4 sm:p-5 space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-fg">Cuándo aplica</h2>
-          <p className="text-xs text-fg-muted">
+          <h2 className="text-sm font-medium text-fg">Cuándo aplica</h2>
+          <p className="text-caption text-fg-muted">
             Lo que dejes vacío no filtra. Sin nada marcado, aplica a cualquier deudor.
           </p>
         </div>
@@ -389,7 +416,8 @@ export function AcuerdoGeneralForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        {/* Revisora r27: a 390 un monto de 9 dígitos no cabía en media columna: uno debajo del otro. */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="ag-min-monto" className="text-sm">
               Deuda desde (COP)
@@ -424,8 +452,8 @@ export function AcuerdoGeneralForm({
       {/* 3 — Qué ofrece */}
       <Card className="p-4 sm:p-5 space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-fg">Qué ofrece</h2>
-          <p className="text-xs text-fg-muted">
+          <h2 className="text-sm font-medium text-fg">Qué ofrece</h2>
+          <p className="text-caption text-fg-muted">
             El descuento va siempre sobre intereses. El capital no se descuenta.
           </p>
         </div>
@@ -497,8 +525,8 @@ export function AcuerdoGeneralForm({
       <Card className="p-4 sm:p-5 space-y-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-fg">Prioridad</h2>
-            <p className="text-xs text-fg-muted max-w-md">
+            <h2 className="text-sm font-medium text-fg">Prioridad</h2>
+            <p className="text-caption text-fg-muted max-w-md">
               Si un deudor califica para varios acuerdos, gana el número más alto.
             </p>
           </div>
@@ -518,8 +546,8 @@ export function AcuerdoGeneralForm({
 
         <div className="flex items-start justify-between gap-4 border-t border-border pt-4">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-fg">Activo</h2>
-            <p className="text-xs text-fg-muted max-w-md">
+            <h2 className="text-sm font-medium text-fg">Activo</h2>
+            <p className="text-caption text-fg-muted max-w-md">
               Apagado queda guardado pero el agente no lo usa.
             </p>
           </div>
@@ -563,20 +591,45 @@ export function AcuerdoGeneralForm({
         </Presence>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button
-          hideArrow
-          disabled={!puedeGuardar || guardando}
-          onClick={() => void guardar()}
-          data-testid="acuerdo-general-guardar"
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            hideArrow
+            disabled={!puedeGuardar || guardando}
+            isLoading={guardando}
+            onClick={() => void guardar()}
+            data-testid="acuerdo-general-guardar"
+            aria-describedby={fraseDeLoQueFalta ? 'acuerdo-general-falta' : undefined}
+          >
+            <FloppyDisk className="w-4 h-4" aria-hidden="true" />
+            {guardando ? 'Guardando…' : textoGuardar}
+          </Button>
+          <Button variant="ghost" hideArrow onClick={salir} data-testid="acuerdo-general-cancelar">
+            Cancelar
+          </Button>
+        </div>
+        {fraseDeLoQueFalta ? (
+          <p id="acuerdo-general-falta" className="text-caption text-fg-muted" data-testid="acuerdo-general-falta">
+            {fraseDeLoQueFalta}
+          </p>
+        ) : null}
+        <Presence
+          show={confirmandoSalida}
+          role="alertdialog"
+          aria-label="Descartar lo que escribiste"
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3"
         >
-          <FloppyDisk className="w-4 h-4" aria-hidden="true" />
-          {guardando ? 'Guardando…' : textoGuardar}
-        </Button>
-        <Button asChild variant="ghost" hideArrow>
-          <Link href={VOLVER}>Cancelar</Link>
-        </Button>
+          <p className="text-body-sm text-fg">Tienes cambios sin guardar. Si vuelves ahora se pierden.</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" hideArrow onClick={() => setConfirmandoSalida(false)}>
+              Seguir editando
+            </Button>
+            <Button variant="ghost" size="sm" hideArrow onClick={() => router.push(VOLVER)} data-testid="acuerdo-general-descartar">
+              Descartar y volver
+            </Button>
+          </div>
+        </Presence>
       </div>
-    </main>
+    </div>
   )
 }

@@ -189,7 +189,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
 
   return (
     <div className="space-y-5">
-      <p className="flex items-start gap-2 text-xs text-fg-muted">
+      <p className="flex items-start gap-2 text-caption text-fg-muted">
         <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
           Los medios se muestran al inquilino en su portal, en «Cómo pagar», y alimentan el selector de
@@ -208,6 +208,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
         <div className="space-y-5" data-testid="medios-vacio">
           <EmptyState
             icon={Wallet}
+            ilustracion="billetera"
             title="Todavía no tienes medios de pago"
             description="Sin medios, el inquilino no sabe a dónde pagarte y el recibo de caja usa la lista genérica. Empieza con los dos de siempre, o arma el tuyo."
             action={puedeEditar ? { label: 'Crear un medio', onClick: abrirNuevo } : undefined}
@@ -229,7 +230,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
       ) : (
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               <span className="font-mono tabular-nums">{medios.length}</span>{' '}
               {medios.length === 1 ? 'medio' : 'medios'}, en el orden en que se muestran
             </p>
@@ -290,10 +291,10 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
                       )}
                     </div>
                     <p className="text-sm text-fg-muted">{describirMedio(medio)}</p>
-                    {medio.instrucciones && <p className="text-xs text-fg-subtle">{medio.instrucciones}</p>}
+                    {medio.instrucciones && <p className="text-caption text-fg-subtle">{medio.instrucciones}</p>}
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2 text-xs text-fg-muted">
+                    <label className="flex items-center gap-2 text-caption text-fg-muted">
                       <Switch
                         checked={medio.visibleAlInquilino}
                         onCheckedChange={(v) => void cambiarBandera(medio, 'visibleAlInquilino', v)}
@@ -307,7 +308,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
                         <EyeSlash className="h-4 w-4" aria-hidden="true" />
                       )}
                     </label>
-                    <label className="flex items-center gap-2 text-xs text-fg-muted">
+                    <label className="flex items-center gap-2 text-caption text-fg-muted">
                       <Switch
                         checked={medio.activo}
                         onCheckedChange={(v) => void cambiarBandera(medio, 'activo', v)}
@@ -348,7 +349,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
               <Badge variant="secondary">Integración de Leasefy</Badge>
             </div>
             <p className="text-sm text-fg-muted">
-              El pago en línea del portal del inquilino. Viene con la plataforma; no se edita acá.
+              El pago en línea del portal del inquilino. Viene con la plataforma; no se edita aquí.
             </p>
           </div>
         </div>

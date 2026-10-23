@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, Megaphone, ArrowRight } from '@phosphor-icons/react';
+import { CheckCircle, Megaphone } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import type { TimelineEntry } from '@/lib/api/owner-solicitudes.types';
 import { STATUS_LABELS } from '@/lib/api/owner-solicitudes.types';
@@ -47,7 +47,6 @@ export function SolicitudTimeline({ timeline }: { timeline: TimelineEntry[] }) {
                 {entry.from && entry.to && (
                   <p className="text-sm text-fg-muted inline-flex items-center gap-1">
                     {STATUS_LABELS[entry.from] ?? entry.from}
-                    <ArrowRight className="w-3 h-3" />
                     {STATUS_LABELS[entry.to] ?? entry.to}
                   </p>
                 )}
@@ -57,7 +56,7 @@ export function SolicitudTimeline({ timeline }: { timeline: TimelineEntry[] }) {
                 )}
               </>
             )}
-            <p className="text-xs text-fg-muted mt-0.5">{formatDate(entry.at)}</p>
+            <p className="text-caption text-fg-muted mt-0.5">{formatDate(entry.at)}</p>
           </div>
         </li>
       ))}

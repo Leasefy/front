@@ -4,12 +4,14 @@ import { useEffect } from 'react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { Button } from '@/components/ui/button'
+import { categoriaDelChequeo, chequeoDeSalud, detalleDelChequeo } from '@/lib/admin/textos-del-admin'
+import { ArrowsClockwise } from '@phosphor-icons/react'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import type { PillTone } from '@/lib/admin/types'
-import { Card, MonoLabel } from '@leasefy/cadence'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 // ─── Types (co-located, per FRONT.md §6.21) ────────────────────────────────
 
@@ -35,12 +37,18 @@ interface HealthResponse {
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
-const CATEGORY_LABEL: Record<CheckCategory, string> = {
-  database: 'Database / Postgres',
-  external: 'External / proveedores',
+const ESTADO: Record<CheckStatus, string> = {
+  ok: 'Responde',
+  degraded: 'Lento o con fallas',
+  down: 'Caído',
+  unconfigured: 'Sin configurar',
 }
 
-const CATEGORY_ORDER: CheckCategory[] = ['database', 'external']
+const ESTADO_GENERAL: Record<HealthResponse['status'], string> = {
+  ok: 'Todo responde',
+  degraded: 'Con fallas',
+  down: 'Hay algo caído',
+}
 
 function statusTone(s: CheckStatus): PillTone {
   switch (s) {
@@ -53,14 +61,19 @@ function statusTone(s: CheckStatus): PillTone {
 
 // ─── Page ──────────────────────────────────────────────────────────────────
 
-/** /health — system status (BACK.md §8.18 · FRONT.md §6.21). */
+/**
+ * /health — si cada servicio responde (glow up, 22-10-2026): LA RESPUESTA en una
+ * cifra (el estado general y cuántos responden) y la lista en una tabla con
+ * pestañas; sin códigos ni inglés a la vista (antes «Status», «checks»,
+ * «unconfigured» y el nombre de la variable de entorno).
+ */
 export default function HealthPage() {
   const { data, isLoading, error, refetch } = useApiQuery<HealthResponse>(
     (signal) => adminApi('/health', { signal }),
     [],
   )
 
-  // Auto-refresh every 30s so the page stays live without a manual reload.
+  // Se vuelve a revisar sola cada 30 s.
   useEffect(() => {
     const id = setInterval(() => refetch(), 30_000)
     return () => clearInterval(id)
@@ -74,99 +87,108 @@ export default function HealthPage() {
     unconfigured: all.filter((c) => c.status === 'unconfigured').length,
   }
 
-  const byCategory = new Map<CheckCategory, Check[]>()
-  for (const c of all) {
-    const list = byCategory.get(c.category) ?? []
-    list.push(c)
-    byCategory.set(c.category, list)
-  }
+  const columnas: Column<Check>[] = [
+    {
+      header: 'Servicio',
+      orden: (c) => c.name,
+      texto: (c) => chequeoDeSalud(c.name),
+      cell: (c) => (
+        <div className="min-w-0">
+          <div className="font-medium text-fg">{chequeoDeSalud(c.name)}</div>
+          <div className="text-caption text-fg-muted">{categoriaDelChequeo(c.category)}</div>
+        </div>
+      ),
+    },
+    {
+      header: 'Estado',
+      orden: (c) => ['down', 'degraded', 'unconfigured', 'ok'].indexOf(c.status),
+      texto: (c) => ESTADO[c.status] ?? 'Otro estado',
+      cell: (c) => (
+        <Pill tone={statusTone(c.status)} dot={c.status !== 'unconfigured'}>
+          {ESTADO[c.status] ?? 'Otro estado'}
+        </Pill>
+      ),
+    },
+    {
+      header: 'Responde en',
+      align: 'right',
+      orden: (c) => c.latency_ms,
+      ordenPrimero: 'desc',
+      texto: (c) => c.latency_ms,
+      cell: (c) => (
+        <span className="font-mono text-caption tabular-nums text-fg-muted">{c.latency_ms != null ? `${c.latency_ms} ms` : '—'}</span>
+      ),
+    },
+    {
+      header: 'Detalle',
+      texto: (c) => (c.status === 'unconfigured' ? 'Falta configurarlo en el servidor.' : detalleDelChequeo(c.detail)),
+      cell: (c) => (
+        <span className="text-caption text-fg-muted">
+          {c.status === 'unconfigured' ? 'Falta configurarlo en el servidor.' : detalleDelChequeo(c.detail)}
+        </span>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Salud del sistema"
-        description="13 checks en paralelo · timeout individual 5 s · auto-refresca cada 30 s."
+        description="Si cada servicio de Leasefy responde. Se vuelve a revisar sola cada 30 segundos."
+        acciones={
+          <Button variant="outline" size="sm" hideArrow onClick={refetch} isLoading={isLoading} className="gap-2">
+            {isLoading ? null : <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />}
+            Revisar ahora
+          </Button>
+        }
       />
 
-      {isLoading && <LoadingBlock label="ejecutando checks…" />}
-      {!isLoading && error && <ErrorBlock error={error} />}
+      {isLoading && !data ? <LoadingBlock label="Revisando los servicios" /> : null}
+      {!isLoading && error && !data ? <ErrorBlock error={error} onReintentar={refetch} /> : null}
 
-      {data && (
+      {data ? (
         <>
-          {/* Global status (worst-of-13, computed server-side) */}
-          <div className="flex items-center gap-3 mb-4">
-            <MonoLabel>
-              estado global
-            </MonoLabel>
-            <Pill tone={statusTone(data.status)}>{data.status}</Pill>
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            {/* Ronda 26: la cifra es un número (antes una frase en mono de 40 px); la frase va al contexto. */}
+            <CifraHeroe
+              rotulo="Servicios que responden"
+              cifra={`${counts.ok} de ${all.length}`}
+              contexto={ESTADO_GENERAL[data.status] ?? 'Sin saber'}
+              tramos={[
+                { clave: 'ok', etiqueta: 'Responden', monto: counts.ok, tono: 'exito', cifra: String(counts.ok), siempre: true },
+                { clave: 'degraded', etiqueta: 'Lentos o con fallas', monto: counts.degraded, tono: 'aviso', cifra: String(counts.degraded), siempre: true },
+                { clave: 'down', etiqueta: 'Caídos', monto: counts.down, tono: 'critico', cifra: String(counts.down), siempre: true },
+                { clave: 'unconfigured', etiqueta: 'Sin configurar', monto: counts.unconfigured, tono: 'neutro', cifra: String(counts.unconfigured) },
+              ]}
+              total={all.length}
+              tamano="mediana"
+              data-testid="salud-estado-general"
+            />
           </div>
 
-          {/* KPI summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <KpiCard label="OK"              value={counts.ok}           tone="ok" />
-            <KpiCard label="Degradados"      value={counts.degraded}     tone="warn" />
-            <KpiCard label="Caídos"          value={counts.down}         tone="bad" />
-            <KpiCard label="No configurados" value={counts.unconfigured} />
-          </div>
-
-          {/* Per-category tables */}
-          {CATEGORY_ORDER.map((cat) => {
-            const checks = byCategory.get(cat)
-            if (!checks?.length) return null
-            return (
-              <section key={cat} className="mb-6">
-                <MonoLabel className="block mb-3">
-                  {CATEGORY_LABEL[cat]}
-                </MonoLabel>
-                <Card className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-b border-border">
-                        <TableHead >
-                          Status
-                        </TableHead>
-                        <TableHead >
-                          Servicio
-                        </TableHead>
-                        <TableHead className="text-right">
-                          Latencia
-                        </TableHead>
-                        <TableHead >
-                          Detalle
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {checks.map((c) => (
-                        <TableRow key={c.name} className="border-b border-border last:border-0">
-                          <TableCell >
-                            <Pill tone={statusTone(c.status)}>{c.status}</Pill>
-                          </TableCell>
-                          <TableCell className="font-medium text-fg">{c.name}</TableCell>
-                          <TableCell className="text-right tabular-nums font-mono text-caption text-fg-muted">
-                            {c.latency_ms != null ? `${c.latency_ms}ms` : '—'}
-                          </TableCell>
-                          <TableCell className="text-caption text-fg-muted font-mono">
-                            {c.detail ?? '—'}
-                            {c.required_env && (
-                              <Pill tone="warn" className="ml-2 text-[9px]">{c.required_env}</Pill>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Card>
-              </section>
-            )
-          })}
-
-          <Card className="p-4 mt-2 border-l-4 border-l-fg-subtle text-caption text-fg-muted">
-            Para activar un check <Pill tone="neutral">unconfigured</Pill>, agrega el env var indicado
-            a <code className="font-mono">.env.local</code> y recarga la página.
-          </Card>
+          <DataTable
+            columns={columnas}
+            rows={all}
+            getKey={(c) => c.name}
+            aria-label="Servicios de Leasefy"
+            queSon={['servicio', 'servicios']}
+            paginar={false}
+            segmentos={[
+              { valor: 'todos', nombre: 'Todos', cumple: () => true },
+              { valor: 'fallas', nombre: 'Caídos o lentos', cumple: (c) => c.status === 'down' || c.status === 'degraded', tono: 'aviso' },
+              { valor: 'sin-configurar', nombre: 'Sin configurar', cumple: (c) => c.status === 'unconfigured' },
+            ]}
+            ordenInicial={{ columna: 1, sentido: 'asc' }}
+            exportar="salud-del-sistema"
+            masEnElExcel={[
+              { header: 'Código del servicio', texto: (c) => c.name },
+              { header: 'Detalle original', texto: (c) => c.detail ?? '' },
+              { header: 'Variable que falta', texto: (c) => c.required_env ?? '' },
+            ]}
+            emptyTitle="Sin servicios que revisar"
+          />
         </>
-      )}
+      ) : null}
     </div>
   )
 }

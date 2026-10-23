@@ -17,8 +17,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle, Warning } from '@phosphor-icons/react'
-import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CheckCircle, MagnifyingGlass } from '@phosphor-icons/react'
+import { Card, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { BackButton } from '@/components/ui/back-button'
+import { confirmar } from '@/components/ui/confirmar'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -36,8 +39,16 @@ import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Spinner, toast } from '@/components/ui'
+import { toast } from '@/components/ui'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { antiguedadDeLaCola, diasEnPalabras } from '@/lib/cobranza/antiguedad-de-la-cola'
+import { Input } from '@/components/ui/input'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -55,6 +66,11 @@ function EscalacionesContent() {
   const currentUserEmail = user?.email ?? null
 
   const [resolveOpen, setResolveOpen] = useState<string | null>(null)
+  // Revisora r27 (UI): una lista con pestañas «Sin tomar · Tomadas» en los dos
+  // anchos (antes columnas a 1440 y pestañas a 390). «Sin tomar» primero: es la
+  // que pide a alguien.
+  const [pestana, setPestana] = useState<'open' | 'assigned'>('open')
+  const [busqueda, setBusqueda] = useState('')
   const [assignOpen, setAssignOpen] = useState<string | null>(null)
   const [members, setMembers] = useState<AgencyUser[]>([])
 
@@ -87,6 +103,17 @@ function EscalacionesContent() {
   // `message`, un 5xx «de nuestro lado», la red la conexión).
   const handleClaim = useCallback(
     async (id: string) => {
+      // Revisora r25 (Escalaciones #4, 1c): tomarla se confirma antes; el caso
+      // pasa a tu nombre y deja de estar libre para el resto del equipo.
+      const es = locale.startsWith('es')
+      const ok = await confirmar({
+        titulo: es ? '¿Tomas este caso?' : 'Take this case?',
+        descripcion: es
+          ? 'Queda a tu nombre: el resto del equipo deja de verlo como libre.'
+          : 'It will be assigned to you: the rest of the team stops seeing it as free.',
+        accion: es ? 'Tomarlo' : 'Take it',
+      })
+      if (!ok) return
       const r = await claim(id)
       if (!r.ok) {
         toast.error(
@@ -99,7 +126,7 @@ function EscalacionesContent() {
         )
       }
     },
-    [claim, t],
+    [claim, t, locale],
   )
 
   const handleResolve = useCallback(
@@ -191,9 +218,56 @@ function EscalacionesContent() {
     [t, data],
   )
 
+  // Revisora r27 (K3): buscador y paginación de la casa; con 200 escalaciones
+  // el tablero no escalaba.
+  const itemsDeLaPestana = useMemo(() => {
+    const todos = (pestana === 'open' ? data?.open : data?.assigned) ?? []
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return todos
+    return todos.filter((e) =>
+      [e.debtor_name, e.debtor_id_masked, e.reason].some((v) => (v ?? '').toLocaleLowerCase('es').includes(q)),
+    )
+  }, [data, pestana, busqueda])
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(
+    itemsDeLaPestana,
+    { resetKey: `${pestana}|${busqueda}` },
+  )
+
+  // Revisora r27 (K1 y K2): la cifra no repite el conteo de «Sin tomar»; dice
+  // cuánto espera el caso más viejo sin tomar, con la barra por antigüedad.
+  const colaSinTomar = useMemo(
+    () =>
+      antiguedadDeLaCola((data?.open ?? []).map((e) => e.created_at), {
+        es: locale.startsWith('es'),
+        locale,
+        testid: 'escalaciones-sin-tomar',
+      }),
+    [data?.open, locale],
+  )
+
   // ── Skeleton + celebratory EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─
   // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
   // tablero, → «todo al día»); lo que ya estaba al montarse no se anima.
+  // La vuelta y el encabezado común, los mismos en el vacío y en el tablero
+  // (revisora r25, Escalaciones #1 y UI: la pieza `BackButton`, no un enlace
+  // armado a mano con `router.back`).
+  const encabezado = (
+    <div className="space-y-3">
+      <BackButton href="/panel/inmobiliaria/pagos/cobranza" label={locale.startsWith('es') ? 'Volver' : 'Back'} />
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
+        descripcion="Los casos que el agente le pasó a una persona: tómalos, asígnalos o resuélvelos."
+        junto={
+          lastUpdated ? (
+            <span className="text-caption tabular-nums text-fg-muted">{lastUpdated}</span>
+          ) : null
+        }
+        data-testid="escalaciones-encabezado"
+      />
+    </div>
+  )
+
   if (isLoading && !data) {
     return (
       <CrossFade swapKey="esqueleto">
@@ -210,7 +284,8 @@ function EscalacionesContent() {
   if (!isLoading && allEmpty && !error) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8 space-y-6">
+        {encabezado}
         <EmptyState
           icon={CheckCircle}
           title={t('inmobiliaria.ai.cobranza.escalaciones.empty.title')}
@@ -223,7 +298,7 @@ function EscalacionesContent() {
 
   return (
     <CrossFade swapKey="tablero">
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* ARIA live region — announces new open escalations to screen readers */}
       <div
         role="status"
@@ -234,108 +309,149 @@ function EscalacionesContent() {
         {escalacionAnnouncement}
       </div>
 
-      {/* Header — DESIGN.md §3 typography */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          {/* Se llega acá desde el caso («Escalaciones →») o desde el tablero
-              del Resumen, y no había forma de devolverse. `router.back()`
-              regresa a donde estabas; sin historial (pestaña nueva) cae al
-              Resumen de Cobranza. */}
-          <Button
-            variant="link"
-            size="sm"
-            hideArrow
-            onClick={() => {
-              if (window.history.length > 1) router.back()
-              else router.push('/panel/inmobiliaria/pagos/cobranza')
-            }}
-            className="gap-1 px-0 h-auto text-sm text-muted-foreground hover:text-foreground"
-            data-testid="escalaciones-volver"
-          >
-            ← Volver
-          </Button>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
-          </h1>
-          {lastUpdated && (
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {lastUpdated}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Loading state — DESIGN.md §11 */}
-      {isLoading && !data && (
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="md" />
-        </div>
-      )}
+      {encabezado}
 
       {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
-      <Presence
-        show={Boolean(error && !data)}
-        role="alert"
-        className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
-      >
-          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>Error: {error}</span>
-      </Presence>
+      {/* GLOW UP 21-10: el cartel de siempre: qué no cargó y su reintento. */}
+      {error && !data ? (
+        <FalloDeCarga error={new Error(error)} queEs="las escalaciones" onReintentar={() => mutate()} />
+      ) : null}
 
-      {/* Kanban — 3 columns md+, stacked sm. Las columnas ya no animan su
-          propia entrada (la página entra con su template): se anima el
-          CAMBIO — tomar, asignar o resolver saca la tarjeta de su columna y la
-          hace entrar en la otra, y el número de la columna cuenta. */}
-      {data && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {columns.map((col) => (
-            <section
-              key={col.key}
-              className="rounded-lg border border-border bg-card/50 overflow-hidden"
-              aria-labelledby={`column-${col.key}-heading`}
+      {/* C3 (r25): LA RESPUESTA y el tablero en UNA tarjeta. La cifra y lo que
+          la acompaña miden lo mismo —lo que sigue sin resolver—: sin la barra
+          que sumaba las resueltas. Lo resuelto va plegado debajo (crecía sin
+          tope en su columna abierta). */}
+      {data ? (
+        <Card className="overflow-hidden">
+          <CifraHeroe
+            className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+            data-testid="escalaciones-sin-tomar"
+            tamano="mediana"
+            rotulo={locale.startsWith('es') ? 'El caso más viejo sin tomar espera' : 'The oldest unclaimed case has waited'}
+            cifra={colaSinTomar.masVieja === null ? '—' : diasEnPalabras(colaSinTomar.masVieja, locale.startsWith('es'))}
+            tramos={colaSinTomar.tramos}
+            esCero={data.open.length === 0}
+            cuandoEsCero={
+              locale.startsWith('es')
+                ? data.assigned.length === 1
+                  ? 'Nada sin tomar: 1 caso está en manos de una persona.'
+                  : data.assigned.length > 1
+                    ? `Nada sin tomar: ${data.assigned.length.toLocaleString(locale)} casos están en manos de una persona.`
+                    : 'Nada sin tomar ni por resolver.'
+                : 'Nothing unclaimed.'
+            }
+          />
+
+          <div className="border-b border-border px-4 py-3 empty:hidden">
+            <PestanasDeEstado<'open' | 'assigned'>
+              pestanas={columns
+                .filter((col): col is typeof col & { key: 'open' | 'assigned' } => col.key !== 'resolved')
+                .map((col) => ({
+                  valor: col.key,
+                  etiqueta: col.label,
+                  cuantos: col.items.length,
+                  fija: true,
+                  tono: col.key === 'open' && col.items.length > 0 ? ('aviso' as const) : undefined,
+                  testid: `escalaciones-pestana-${col.key}`,
+                }))}
+              valor={pestana}
+              onCambio={setPestana}
+              etiqueta={locale.startsWith('es') ? 'Filtrar las escalaciones' : 'Filter escalations'}
+            />
+          </div>
+
+          <div className="border-b border-border px-4 py-3">
+            <div className="relative w-full sm:w-72">
+              <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+              <Input
+                type="search"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder={locale.startsWith('es') ? 'Buscar deudor o motivo' : 'Search debtor or reason'}
+                aria-label={locale.startsWith('es') ? 'Buscar escalaciones por deudor o motivo' : 'Search escalations by debtor or reason'}
+                className="pl-9"
+                data-testid="escalaciones-buscar"
+              />
+            </div>
+          </div>
+
+          <section aria-label={columns.find((c) => c.key === pestana)?.label} className="min-h-[160px] p-3">
+            <Presence
+              as="p"
+              show={itemsDeLaPestana.length === 0}
+              initial={false}
+              direction="none"
+              className="py-6 text-center text-body-sm text-fg-muted"
             >
-              <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between">
-                <h2
-                  id={`column-${col.key}-heading`}
-                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                >
-                  {col.label}
-                </h2>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  <AnimatedNumber value={col.items.length} format={(n) => String(Math.round(n))} />
-                </span>
-              </div>
-              <div className="p-3 space-y-2 min-h-[200px]">
-                <Presence
-                  as="p"
-                  show={col.items.length === 0}
-                  initial={false}
-                  direction="none"
-                  className="text-xs text-muted-foreground text-center py-6"
-                >
-                  {locale.startsWith('es') ? 'Sin escalaciones' : 'No escalations'}
-                </Presence>
-                <Stagger className="space-y-2">
-                  {col.items.map((esc) => (
-                    <StaggerItem key={esc.id}>
-                      <EscalationCard
-                        escalation={esc}
-                        currentUserEmail={currentUserEmail}
-                        hasResolvePerm={hasResolvePerm}
-                        hasAssignPerm={hasAssignPerm}
-                        onOpen={handleOpenDetail}
-                        onClaim={handleClaim}
-                        onAssign={setAssignOpen}
-                        onResolve={setResolveOpen}
-                      />
-                    </StaggerItem>
-                  ))}
-                </Stagger>
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+              {busqueda.trim()
+                ? locale.startsWith('es')
+                  ? 'Ninguna escalación coincide con la búsqueda.'
+                  : 'No escalation matches the search.'
+                : locale.startsWith('es')
+                  ? 'Ninguno por ahora'
+                  : 'None for now'}
+            </Presence>
+            <Stagger className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              {pageItems.map((esc) => (
+                <StaggerItem key={esc.id}>
+                  <EscalationCard
+                    escalation={esc}
+                    currentUserEmail={currentUserEmail}
+                    hasResolvePerm={hasResolvePerm}
+                    hasAssignPerm={hasAssignPerm}
+                    onOpen={handleOpenDetail}
+                    onClaim={handleClaim}
+                    onAssign={setAssignOpen}
+                    onResolve={setResolveOpen}
+                  />
+                </StaggerItem>
+              ))}
+            </Stagger>
+          </section>
+
+          {shouldPaginate ? (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {data && data.resolved.length > 0 ? (
+        <MasDetalles
+          etiqueta={
+            locale.startsWith('es')
+              ? `${t('inmobiliaria.ai.cobranza.escalaciones.kanbanColumns.resolved')} · ${data.resolved.length.toLocaleString(locale)}`
+              : `${t('inmobiliaria.ai.cobranza.escalaciones.kanbanColumns.resolved')} · ${data.resolved.length}`
+          }
+          etiquetaAbierto={locale.startsWith('es') ? 'Ocultar las resueltas' : 'Hide resolved'}
+          data-testid="escalaciones-resueltas"
+        >
+          <Stagger className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+            {data.resolved.map((esc) => (
+              <StaggerItem key={esc.id}>
+                <EscalationCard
+                  escalation={esc}
+                  currentUserEmail={currentUserEmail}
+                  hasResolvePerm={hasResolvePerm}
+                  hasAssignPerm={hasAssignPerm}
+                  onOpen={handleOpenDetail}
+                  onClaim={handleClaim}
+                  onAssign={setAssignOpen}
+                  onResolve={setResolveOpen}
+                />
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </MasDetalles>
+      ) : null}
 
       <EscalationResolveModal
         escalationId={resolveOpen}

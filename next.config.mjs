@@ -9,8 +9,32 @@ import { CONCILIACION_EN_UN_SOLO_LUGAR_DATA } from "./src/lib/nav/conciliacion-e
 import { UN_SOLO_MODULO_DE_PLATA_DATA } from "./src/lib/nav/un-solo-modulo-de-plata.data.mjs";
 import { LA_SALA_DE_PAGOS_SE_FUE_DATA } from "./src/lib/nav/la-sala-de-pagos-se-fue.data.mjs";
 import { LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA } from "./src/lib/nav/los-nombres-que-no-decian-nada.data.mjs";
+import { COBRANZA_RETIRADAS_DATA } from "./src/lib/nav/cobranza-retiradas.data.mjs";
 import { asegurarElTrabajadorDeMaplibre } from "./scripts/copiar-trabajador-de-maplibre.mjs";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
+import fs from "fs";
+
+/**
+ * La familia de íconos de Leasefy (Cadence 2, 21-10-2026) en lugar de Phosphor, en
+ * TODA la plataforma sin tocar los 1.193 archivos que lo importan: `@phosphor-icons/react`
+ * apunta al puente de Cadence (`@leasefy/cadence/phosphor`), que dibuja con nuestra
+ * familia los nombres que usa la plataforma (mismas props: size, weight, mirrored…) y
+ * re-exporta el resto desde el Phosphor de verdad, que queda como
+ * `@phosphor-icons/react-original`. Si la Cadence instalada no trae el puente, no se
+ * toca nada y todo sigue con Phosphor.
+ */
+function aliasDeIconos() {
+  try {
+    const requerir = createRequire(import.meta.url);
+    const puente = requerir.resolve("@leasefy/cadence/phosphor");
+    const original = path.join(path.dirname(requerir.resolve("@phosphor-icons/react")), "index.es.js");
+    if (!fs.existsSync(puente) || !fs.existsSync(original)) return {};
+    return { "@phosphor-icons/react$": puente, "@phosphor-icons/react-original$": original };
+  } catch {
+    return {};
+  }
+}
 
 // 🔴 El worker de MapLibre en `public/maplibre/<versión>/` (03-10-2026). Sin él
 // el mapa sale GRIS («Worker failed to load»). Antes sólo lo copiaba el
@@ -78,6 +102,7 @@ const nextConfig = {
       process.cwd(),
       "node_modules/@radix-ui/react-accordion"
     );
+    Object.assign(config.resolve.alias, aliasDeIconos());
     return config;
   },
   // `src/lib/utils/sanitize-html.ts` importa `isomorphic-dompurify`, que en el
@@ -251,6 +276,11 @@ const nextConfig = {
       // que van arriba sin tapar nada. Ver
       // src/lib/nav/los-nombres-que-no-decian-nada.data.mjs.
       ...LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA,
+      // Las tres pantallas retiradas de Cobranza (equipo, promesas, plantillas).
+      // Fuentes literales: no tapan nada. Aquí y no sólo en su `page.tsx`, que
+      // con el asistente caído no se monta (revisora r27, K7). Ver
+      // src/lib/nav/cobranza-retiradas.data.mjs (con test).
+      ...COBRANZA_RETIRADAS_DATA,
       // La arquitectura por ciclo de vida (2026-09) va después: Next aplica la
       // primera regla que calza y estas son las más generales del panel. Ver
       // src/lib/nav/rutas-por-ciclo-de-vida.data.mjs (con test).

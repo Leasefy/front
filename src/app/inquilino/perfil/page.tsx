@@ -1,17 +1,17 @@
 'use client';
 import { CambiarCorreoDeEntrada } from '@/components/cuenta/CambiarCorreoDeEntrada';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { User as UserIcon, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
+import { User as UserIcon, Phone, MapPin, Shield, Camera, FloppyDisk, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
 import {
-  AnimatedNumber,
   Collapse,
   CrossFade,
   IconButton,
-  motionDuration,
-  motionEase,
+  Avatar,
+  StatusBadge,
 } from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
 import {
@@ -142,9 +142,6 @@ export default function PerfilPage() {
     },
   ];
 
-  const completedSteps = setupSteps.filter(s => s.completed).length;
-  const totalSteps = setupSteps.length;
-  const completionPercentage = Math.round((completedSteps / totalSteps) * 100);
 
   // Real verification signal: Supabase email confirmation (exposed by the auth
   // context). There is no phone/identity verification system in the backend,
@@ -357,178 +354,52 @@ export default function PerfilPage() {
 
   const displayName = user?.name ?? '';
   const savedAvatar = user?.avatar ?? null;
-  const notSet = locale === 'es' ? 'No registrado' : 'Not set';
+  const notSet = locale === 'es' ? 'Sin registrar' : 'Not set'; // una sola manera de decir el vacío (revisora r24)
 
   if (!user) {
     // ProtectedRoute guards this page; user is only briefly null during hydration.
-    return <div className="min-h-screen bg-bg" data-testid="perfil-loading" />;
+    return <div data-testid="perfil-loading" />;
   }
 
+  // Ronda 28 (revisora r27, CB): sin `min-h-screen`: el layout ya pone el fondo y suma la cabecera y el riel.
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div>
+      <div className="p-6 lg:p-8">
 
-        {/* Header */}
-        <header className="mb-8">
-          <div>
-            <h1 className="text-3xl font-medium text-fg tracking-tight">
-              {t('profile.title')}
-            </h1>
-            <p className="mt-1 text-fg-muted">
-              {t('profile.subtitle')}
-            </p>
-          </div>
-        </header>
+        {/* GLOW UP 22-10 (UX, como el panel): el encabezado común y lo que falta del perfil en la lista
+            de siempre —«Para completar tu perfil te faltan N pasos», cada uno con «Completar», y una línea
+            cuando ya está todo—. Antes, un bloque azul con anillo de porcentaje y cinco tarjetas con caja
+            de ícono. */}
+        <EncabezadoDePantalla seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'} titulo={t('profile.title')} descripcion={t('profile.subtitle')} className="mb-8" />
 
-        {/* Setup Progress Section — la barra, el anillo y el porcentaje se
-            revelan desde 0 y, al completar un paso, avanzan desde donde estaban. */}
-        <section className="mb-8">
-          <div className="rounded-xl bg-primary-soft p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              {/* Progress Info */}
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-fg">
-                      {t('profile.completion.title')}
-                    </h2>
-                    <p className="text-sm text-primary">
-                      {locale === 'es'
-                        ? `${completedSteps} de ${totalSteps} pasos completados`
-                        : `${completedSteps} of ${totalSteps} steps completed`}
-                    </p>
-                  </div>
-                </div>
-                {/* `transform` (translateX), no `width`: no recalcula el layout por cuadro. */}
-                <div className="h-2 bg-surface/50 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ x: '-100%' }}
-                    animate={{ x: `${completionPercentage - 100}%` }}
-                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                    className="h-full w-full bg-primary rounded-full"
-                  />
-                </div>
-                <p className="text-xs text-fg-muted mt-2">
-                  {completionPercentage === 100
-                    ? (locale === 'es' ? '¡Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
-                    : t('profile.completion.completeFor')}
-                </p>
-              </div>
+        {/* Revisora r25: sólo lo que falta, sin los pasos hechos ni el «3/5». */}
+        <ListaParaEmpezar
+          className="mb-8"
+          soloLoQueFalta
+          paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
+          requisitos={setupSteps.map((step) => ({
+            id: step.id,
+            titulo: step.label,
+            estado: step.completed ? ('listo' as const) : ('falta' as const),
+            accion: (
+              <Button size="sm" variant="outline" hideArrow onClick={() => setEditingSection(step.section)}>
+                {locale === 'es' ? 'Completar' : 'Complete'}
+              </Button>
+            ),
+          }))}
+          data-testid="perfil-lo-que-falta"
+        />
 
-              {/* Percentage Badge */}
-              <div className="flex items-center justify-center">
-                <div className="relative w-24 h-24">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="white"
-                      strokeWidth="8"
-                      opacity="0.5"
-                      className="dark:opacity-20"
-                    />
-                    <motion.circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="#1A40FF"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      initial={{ strokeDasharray: '0 251.2' }}
-                      animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                      transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-fg">
-                      <AnimatedNumber value={completionPercentage} from={0} format={(n) => String(Math.round(n))} />%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Steps List */}
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {setupSteps.map((step, index) => {
-                const Icon = step.icon;
-                return (
-                  <div
-                    key={step.id}
-                    className={cn(
-                      'rounded-xl p-4 transition-colors',
-                      step.completed
-                        ? 'bg-surface/80'
-                        : 'bg-surface border-2 border-dashed border-primary/30'
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
-                        step.completed
-                          ? 'bg-success-soft'
-                          : 'bg-primary-soft'
-                      )}>
-                        {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-success" />
-                        ) : (
-                          <Icon className="w-4 h-4 text-primary" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          'text-sm font-medium truncate',
-                          step.completed ? 'text-fg' : 'text-primary'
-                        )}>
-                          {step.label}
-                        </p>
-                        {step.completed ? (
-                          <span className="text-xs text-success">{locale === 'es' ? 'Completado' : 'Completed'}</span>
-                        ) : (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            hideArrow
-                            onClick={() => setEditingSection(step.section)}
-                            className="px-0 text-xs text-primary"
-                          >
-                            {locale === 'es' ? 'Completar' : 'Complete'} →
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Avatar Card */}
-            <div className="rounded-xl border border-border bg-surface overflow-hidden">
-              <div className="relative bg-primary-soft h-28">
-                {/* Edit button for avatar section */}
-                {editingSection !== 'avatar' && (
-                  <IconButton
-                    variant="ghost"
-                    onClick={() => setEditingSection('avatar')}
-                    className="absolute top-3 right-3 p-2 bg-surface/20 hover:bg-surface/30 backdrop-blur-sm rounded-full text-white"
-                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                    icon={<Pencil className="w-4 h-4" />}
-                  />
-                )}
-              </div>
-              <div className="px-6 pb-6">
-                {/* Hidden file input */}
+        <div className="space-y-6">
+          {/* Profile Form */}
+          <div className="space-y-6">
+            {/* Personal Information — Editar ↔ ver: las acciones y los campos se
+                cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
+            <div className="rounded-lg border border-border bg-surface p-6">
+              {/* Ronda 28 (revisora r27): la foto en un renglón dentro de «Información personal». Antes una
+                  tarjeta aparte que repetía el nombre y el correo (a 390 los datos empezaban en ≈1.020 px),
+                  y «Verificaciones», una tarjeta para una fila: ahora el chulo va junto al correo. */}
+              <div className="mb-6 border-b border-border pb-6" data-testid="perfil-foto">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -536,165 +407,145 @@ export default function PerfilPage() {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-
-                <div className="relative -mt-14 mb-4">
-                  {/* Avatar circle with image preview */}
-                  <div
-                    className={cn(
-                      "w-28 h-28 rounded-full border-4 border-surface overflow-hidden",
-                      editingSection === 'avatar' && "cursor-pointer"
-                    )}
-                    onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
-                  >
-                    {(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar) ? (
-                      <Image
-                        src={(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar)!}
-                        alt="Avatar"
-                        width={112}
-                        height={112}
-                        className="w-full h-full object-cover"
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="relative size-16 shrink-0">
+                    <div
+                      className={cn('size-16 overflow-hidden rounded-full', editingSection === 'avatar' && 'cursor-pointer')}
+                      onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
+                    >
+                      {(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar) ? (
+                        <Image
+                          src={(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar)!}
+                          alt="Avatar"
+                          width={64}
+                          height={64}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        // Cadence 2: el Avatar del sistema (iniciales y tono del nombre), nunca a mano.
+                        <Avatar name={displayName || user.email || 'Tú'} size="xl" className="size-full" />
+                      )}
+                    </div>
+                    {editingSection === 'avatar' && (
+                      <IconButton
+                        variant="ghost"
+                        onClick={handleAvatarClick}
+                        className="absolute -bottom-1 -right-1 rounded-full bg-ink p-1.5 text-white hover:bg-ink/90"
+                        aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                        icon={<Camera className="h-3.5 w-3.5" />}
                       />
-                    ) : (
-                      <div className="w-full h-full bg-surface-muted flex items-center justify-center text-fg uppercase tracking-wide font-mono font-bold text-4xl">
-                        {(displayName || user.email).charAt(0).toUpperCase()}
-                      </div>
                     )}
                   </div>
-                  {editingSection === 'avatar' && (
-                    <IconButton
-                      variant="ghost"
-                      onClick={handleAvatarClick}
-                      className="absolute bottom-1 right-1 p-2.5 bg-primary rounded-full text-primary-fg hover:bg-primary-hover"
-                      aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
-                      icon={<Camera className="w-4 h-4" />}
-                    />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-fg">{locale === 'es' ? 'Foto de perfil' : 'Profile photo'}</p>
+                    <p className="text-caption text-fg-muted">{locale === 'es' ? 'JPG o PNG, hasta 5 MB.' : 'JPG or PNG, up to 5 MB.'}</p>
+                  </div>
+                  {editingSection !== 'avatar' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      hideArrow
+                      onClick={() => setEditingSection('avatar')}
+                      aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
+                    >
+                      <Camera className="w-4 h-4" aria-hidden="true" />
+                      {locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                    </Button>
                   )}
                 </div>
-
-                {/* Avatar upload area when editing — se abre y se cierra con su altura. */}
-                <Collapse open={editingSection === 'avatar'}>
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={handleAvatarClick}
-                    className={cn(
-                      "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors",
-                      isDragging
-                        ? "border-primary/30 bg-primary-soft"
-                        : "border-border hover:border-primary/30 hover:bg-surface-muted"
-                    )}
-                  >
-                    {avatarPreview ? (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
-                            <Image
-                              src={avatarPreview}
-                              alt="Preview"
-                              width={40}
-                              height={40}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-sm font-medium text-fg">
-                              {locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}
-                            </p>
-                            <p className="text-xs text-fg-muted">
-                              {locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}
-                            </p>
-                          </div>
-                        </div>
-                        <IconButton
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveAvatar();
-                          }}
-                          className="p-2 rounded-md text-fg-subtle hover:text-danger hover:bg-danger-soft"
-                          aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
-                          icon={<TrashSimple className="w-4 h-4" />}
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center mx-auto mb-3">
-                          <Upload className="w-6 h-6 text-fg-subtle" />
-                        </div>
-                        <p className="text-sm font-medium text-fg-muted">
-                          {isDragging
-                            ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here')
-                            : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
-                        </p>
-                        <p className="text-xs text-fg-muted mt-1">
-                          {locale === 'es' ? 'Arrastra o haz clic • JPG, PNG (máx. 5MB)' : 'Drag or click • JPG, PNG (max 5MB)'}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </Collapse>
-
-                <h2 className="text-xl font-semibold text-fg">{displayName}</h2>
-                <p className="text-sm text-fg-muted mt-1">{user.email}</p>
-
-                {/* FloppyDisk/Cancel buttons for avatar section */}
-                <Collapse open={editingSection === 'avatar'}>
-                  <div className="flex items-center gap-2 mt-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      hideArrow
-                      onClick={handleCancelEdit}
-                      className="flex-1 rounded-md"
+                <div className="mt-4">
+                  {/* Avatar upload area when editing — se abre y se cierra con su altura. */}
+                  <Collapse open={editingSection === 'avatar'}>
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={handleAvatarClick}
+                      className={cn(
+                        "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
+                        isDragging
+                          ? "border-primary/30 bg-primary-soft"
+                          : "border-border hover:border-primary/30 hover:bg-surface-muted"
+                      )}
                     >
-                      {t('common.cancel')}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      hideArrow
-                      isLoading={isSaving}
-                      onClick={handleSaveAvatar}
-                      disabled={isSaving}
-                      className="flex-1 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
-                    >
-                      {!isSaving && <FloppyDisk className="w-4 h-4" />}
-                      {t('common.save')}
-                    </Button>
-                  </div>
-                </Collapse>
-              </div>
-            </div>
+                      {avatarPreview ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+                              <Image
+                                src={avatarPreview}
+                                alt="Preview"
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-medium text-fg">
+                                {locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}
+                              </p>
+                              <p className="text-caption text-fg-muted">
+                                {locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}
+                              </p>
+                            </div>
+                          </div>
+                          <IconButton
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveAvatar();
+                            }}
+                            className="p-2 rounded-md text-fg-subtle hover:text-danger hover:bg-danger-soft"
+                            aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
+                            icon={<TrashSimple className="w-4 h-4" />}
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
+                          <p className="text-sm font-medium text-fg-muted">
+                            {isDragging
+                              ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here')
+                              : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
+                          </p>
+                          <p className="text-caption text-fg-muted mt-1">
+                            {locale === 'es' ? 'Arrastra o haz clic • JPG, PNG (máx. 5MB)' : 'Drag or click • JPG, PNG (max 5MB)'}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </Collapse>
 
-            {/* Verification Status Card — only real signals (Supabase email confirmation).
-                There is no phone/identity verification system in the backend. */}
-            {emailVerified && (
-              <div className="rounded-xl border border-border bg-surface p-6">
-                <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-fg-subtle" />
-                  {t('profile.verification.title')}
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-surface-muted border border-border-faint">
-                    <span className="text-sm font-medium text-fg">Email</span>
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      {t('profile.verification.verified')}
-                    </span>
+                    {/* FloppyDisk/Cancel buttons for avatar section */}
+                  <Collapse open={editingSection === 'avatar'}>
+                    <div className="flex items-center gap-2 mt-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        hideArrow
+                        onClick={handleCancelEdit}
+                        className="flex-1 rounded-md"
+                      >
+                        {t('common.cancel')}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        hideArrow
+                        isLoading={isSaving}
+                        onClick={handleSaveAvatar}
+                        disabled={isSaving}
+                        className="flex-1"
+                      >
+                        {!isSaving && <FloppyDisk className="w-4 h-4" />}
+                        {t('common.save')}
+                      </Button>
+                    </div>
+                  </Collapse>
                   </div>
-                </div>
               </div>
-            )}
-          </div>
-
-          {/* Profile Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information — Editar ↔ ver: las acciones y los campos se
-                cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
-            <div className="rounded-xl border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-fg">{t('profile.personalInfo')}</h3>
+                <h3 className="text-h3 text-fg">{t('profile.personalInfo')}</h3>
                 <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'personal' ? (
                   <Button
@@ -725,7 +576,7 @@ export default function PerfilPage() {
                       isLoading={isSaving}
                       onClick={() => handleSaveProfile(editablePersonalFields(user))}
                       disabled={isSaving}
-                      className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
+                      className="gap-1.5"
                     >
                       {!isSaving && <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}
@@ -750,15 +601,12 @@ export default function PerfilPage() {
                         {...propsDelCampo('firstName')}
                         value={formData.firstName}
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('firstName')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <UserIcon className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.firstName || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.firstName || notSet}</p>
                   )}
                 </div>
 
@@ -773,24 +621,26 @@ export default function PerfilPage() {
                         {...propsDelCampo('lastName')}
                         value={formData.lastName}
                         onChange={(e) => handleInputChange('lastName', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('lastName')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <UserIcon className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.lastName || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.lastName || notSet}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">
-                    Email
+                    {locale === 'es' ? 'Correo' : 'Email'}
                   </label>
                   {/* El correo de entrada, con su «Cambiar» (21-10-2026). */}
-                  <CambiarCorreoDeEntrada correo={user.email} className="px-4 py-3 bg-surface-muted rounded-xl" />
+                  {/* El chulo va junto al correo. Sólo la señal real (la confirmación del correo de Supabase): no hay verificación de celular ni de identidad. */}
+                  <CambiarCorreoDeEntrada
+                    correo={user.email}
+                    className="py-1"
+                    junto={emailVerified ? <StatusBadge tone="success">{t('profile.verification.verified')}</StatusBadge> : null}
+                  />
                 </div>
 
                 <div>
@@ -805,15 +655,12 @@ export default function PerfilPage() {
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder="+573001234567"
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('phone')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <Phone className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.phone || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg font-mono tabular-nums">{user.phone ? celularLegible(user.phone) : notSet}</p>
                   )}
                 </div>
 
@@ -829,11 +676,11 @@ export default function PerfilPage() {
                         value={formData.rut}
                         onChange={(e) => handleInputChange('rut', e.target.value)}
                         disabled={isRutLocked(user)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('rut')}
                       {isRutLocked(user) && (
-                        <p className="mt-2 text-xs text-fg-subtle">
+                        <p className="mt-2 text-caption text-fg-subtle">
                           {locale === 'es'
                             ? 'Para modificar tu número de documento, contacta al soporte de Leasefy.'
                             : 'To change your document number, contact Leasefy support.'}
@@ -841,10 +688,7 @@ export default function PerfilPage() {
                       )}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <Shield className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.rut || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.rut || notSet}</p>
                   )}
                 </div>
 
@@ -859,14 +703,12 @@ export default function PerfilPage() {
                         etiqueta={t('profile.dateOfBirth')}
                         value={formData.birthDate}
                         onChange={(v) => handleInputChange('birthDate', v)}
-                        className="rounded-xl bg-surface-muted"
+                        className="rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('birthDate')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <Calendar className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">
+                    <p className="py-1 text-sm text-fg">
                         {user.birthDate
                           ? new Date(user.birthDate.slice(0, 10) + 'T00:00:00').toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
                               day: 'numeric',
@@ -874,8 +716,7 @@ export default function PerfilPage() {
                               year: 'numeric',
                             })
                           : notSet}
-                      </span>
-                    </div>
+                      </p>
                   )}
                 </div>
 
@@ -890,24 +731,21 @@ export default function PerfilPage() {
                         {...propsDelCampo('address')}
                         value={formData.address}
                         onChange={(e) => handleInputChange('address', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('address')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <MapPin className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.address || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.address || notSet}</p>
                   )}
                 </div>
               </CrossFade>
             </div>
 
             {/* Emergency Contact — mismo cruce que los datos personales. */}
-            <div className="rounded-xl border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-fg">{t('profile.emergencyContact')}</h3>
+                <h3 className="text-h3 text-fg">{t('profile.emergencyContact')}</h3>
                 <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button
@@ -938,7 +776,7 @@ export default function PerfilPage() {
                       isLoading={isSaving}
                       onClick={() => handleSaveProfile(EMERGENCY_FIELDS)}
                       disabled={isSaving}
-                      className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
+                      className="gap-1.5"
                     >
                       {!isSaving && <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}
@@ -963,16 +801,13 @@ export default function PerfilPage() {
                         {...propsDelCampo('emergencyContactName')}
                         value={formData.emergencyContactName}
                         onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                         placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
                       />
                       {errorDelCampo('emergencyContactName')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <UserPlus className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.emergencyContactName || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.emergencyContactName || notSet}</p>
                   )}
                 </div>
                 <div>
@@ -986,16 +821,13 @@ export default function PerfilPage() {
                         {...propsDelCampo('emergencyContactPhone')}
                         value={formData.emergencyContactPhone}
                         onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                         placeholder="3001234567"
                       />
                       {errorDelCampo('emergencyContactPhone')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <Phone className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.emergencyContactPhone || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.emergencyContactPhone || notSet}</p>
                   )}
                 </div>
               </CrossFade>
@@ -1005,8 +837,8 @@ export default function PerfilPage() {
             <PreferencesSection />
 
             {/* Danger Zone */}
-            <div className="rounded-xl border border-danger/30 bg-danger-soft/30 p-6">
-              <h3 className="font-semibold text-danger mb-2 flex items-center gap-2">
+            <div className="rounded-lg border border-danger/30 bg-danger-soft/30 p-6">
+              <h3 className="text-h3 text-danger mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
@@ -1058,7 +890,7 @@ export default function PerfilPage() {
                   <DialogTitle>{locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}</DialogTitle>
                   <DialogDescription>
                     {deletionCopy.confirmInstructionPrefix}{' '}
-                    <span className="font-mono font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
+                    <span className="font-mono font-medium text-danger">{deletionCopy.confirmWord}</span>{' '}
                     {deletionCopy.confirmInstructionSuffix}
                   </DialogDescription>
                 </>
@@ -1125,14 +957,14 @@ export default function PerfilPage() {
                   </div>
 
                   {/* Active lease warning */}
-                  <div className="p-4 rounded-xl bg-warning-soft border border-warning/30">
+                  <div className="p-4 rounded-lg bg-warning-soft border border-warning/30">
                     <div className="flex items-start gap-3">
                       <WarningCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-warning">
                           {locale === 'es' ? '¿Tienes un arriendo activo?' : 'Do you have an active rental?'}
                         </p>
-                        <p className="text-xs text-warning mt-0.5">
+                        <p className="text-caption text-warning mt-0.5">
                           {locale === 'es'
                             ? 'No vas a poder darte de baja mientras tengas un contrato de arriendo activo a tu nombre: eliminar tu cuenta no cancela el contrato. Para terminarlo, contacta a tu arrendador.'
                             : 'You cannot delete your account while you have an active lease in your name: deleting your account does not cancel the lease. To end it, contact your landlord.'}
@@ -1186,4 +1018,13 @@ export default function PerfilPage() {
       </Dialog>
     </div>
   );
+}
+
+/**
+ * Revisora r25: el celular con sus espacios («+57 300 111 2233»; antes «+573001112233»). Sólo para mostrar: lo
+ * guardado no cambia. Un número que no tenga la forma de un celular colombiano se muestra tal cual.
+ */
+function celularLegible(numero: string): string {
+  const m = numero.replace(/\s+/g, '').match(/^\+57(\d{3})(\d{3})(\d{4})$/);
+  return m ? `+57 ${m[1]} ${m[2]} ${m[3]}` : numero;
 }

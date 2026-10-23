@@ -167,16 +167,15 @@ function SegundoFactor() {
   const titulo = paso === 'inscribir' ? 'Activa tu segundo factor' : 'Verificación de seguridad'
   const bajada =
     paso === 'inscribir'
-      ? 'El admin ve los datos de todas las inmobiliarias: entrar con el enlace del correo no alcanza. Actívalo una vez con tu app de autenticación.'
+      ? 'El admin ve los datos de todas las inmobiliarias: entrar con el enlace del correo no alcanza. Actívalo una vez con tu aplicación de autenticación.'
       : recienActivado
-        ? 'Ya quedó activado. Para entrar, escribe el código que muestra AHORA tu app (si es el mismo que acabas de usar, espera al siguiente).'
-        : 'Abre tu app de autenticación y escribe el código de seis dígitos.'
+        ? 'Ya quedó activado. Para entrar, escribe el código que muestra AHORA tu aplicación (si es el mismo que acabas de usar, espera al siguiente).'
+        : 'Abre tu aplicación de autenticación y escribe el código de seis dígitos.'
 
   return (
     <Marco>
-      <div className="flex h-14 w-14 items-center justify-center rounded-md bg-primary-soft ring-1 ring-primary/10">
-        <ShieldCheck className="h-7 w-7 text-primary" weight="fill" aria-hidden="true" />
-      </div>
+      {/* Glow up 22-10: el ícono suelto, sin su baldosa azul (un solo azul: el botón). */}
+      <ShieldCheck className="h-9 w-9 text-fg" weight="duotone" aria-hidden="true" />
 
       <CrossFade swapKey={paso === 'inscribir' ? 'inscribir' : recienActivado ? 'activado' : 'codigo'}>
         <TituloDeAcceso titulo={titulo} bajada={bajada} />
@@ -243,7 +242,14 @@ function SegundoFactor() {
       </Presence>
 
       <div className="border-t border-border-faint pt-5">
-        <Button type="button" variant="link" size="sm" hideArrow onClick={() => void cerrarSesion()}>
+        {/* Ronda 26 (revisora): la salida para quien perdió el celular. */}
+        {paso !== 'inscribir' ? (
+          <p className="mb-3 text-body-sm text-fg-muted" data-testid="perdi-el-celular">
+            ¿Perdiste el celular? Pide a otra persona del equipo de Leasefy que te lo restablezca desde «Equipo Leasefy».
+          </p>
+        ) : null}
+        {/* Ronda 28 (revisora r27): alineado con el borde del texto (el relleno del enlace lo corría ≈16 px). */}
+        <Button type="button" variant="link" size="sm" hideArrow className="h-auto px-0" onClick={() => void cerrarSesion()}>
           Cerrar sesión
         </Button>
       </div>

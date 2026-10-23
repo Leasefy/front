@@ -5,11 +5,11 @@
  */
 
 import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { ParametrosDeNominaPanel } from '@/components/nomina/ParametrosDeNomina';
 
 /**
@@ -26,20 +26,24 @@ export default function ConfiguracionDeNominaPage() {
   return (
     <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <Link
-            href="/panel/inmobiliaria/nomina"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        <div className="space-y-3">
+          <Link href="/panel/inmobiliaria/nomina" className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
             Nómina
           </Link>
-          <SectionLabel>Nómina</SectionLabel>
-          <h1 className="text-h2 text-fg">Configuración del año</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Salario mínimo, auxilio de transporte y UVT —que Leasefy NO inventa: los fija el Gobierno cada diciembre y la DIAN por resolución— más los factores de horas extras, las tarifas de aportes y los porcentajes de prestaciones, todos editables y con su norma al lado.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Dinero"
+            titulo="Configuración del año"
+            descripcion="Las cifras del año y los factores con los que se liquida, cada uno con su norma."
+            ayuda={
+              <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: Configuración del año" variante="secundario">
+                <div className="space-y-3 text-body-sm text-fg-muted">
+                  <p>El salario mínimo, el auxilio de transporte y la UVT Leasefy NO los inventa: los fija el Gobierno cada diciembre y la DIAN por resolución.</p>
+                  <p>Los factores de horas extras, las tarifas de aportes y los porcentajes de prestaciones son editables y tienen su norma al lado.</p>
+                </div>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         <ParametrosDeNominaPanel />
       </div>
     </PageGuard>

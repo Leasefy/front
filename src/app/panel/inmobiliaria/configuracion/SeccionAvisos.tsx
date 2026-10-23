@@ -34,6 +34,7 @@ import { avisosApi } from '@/lib/api/avisos.service';
 import type { AvisoAutomatico, EstadoDeLosAvisos } from '@/lib/api/avisos.service';
 import { cn } from '@/lib/utils';
 import { EsqueletoDeSeccion } from './piezas';
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 
 const TITULO_DEL_GRUPO: Record<AvisoAutomatico['grupo'], string> = {
   PLATA: 'Plata',
@@ -146,14 +147,12 @@ toast.error(
 
   return (
     <div className="space-y-6" data-testid="avisos-automaticos">
-        <p className="text-sm text-fg-muted">
-          Esto es lo que les llega solo a tus inquilinos y a tus propietarios.
-          Todo arranca <strong>apagado</strong>: nada sale hasta que lo prendas.
-        </p>
+        {/* Glow up 22-10: «qué les llega solo y que arranca apagado» ya lo dice
+            el marco de Configuración debajo del título: no se repite. */}
 
         {!estado.disponible && (
           <p
-            className="rounded-md border border-border bg-warning-soft px-3 py-2 text-xs text-fg"
+            className="rounded-md border border-border bg-warning-soft px-3 py-2 text-caption text-fg"
             data-testid="avisos-sin-migrar"
           >
             {estado.motivo}
@@ -164,32 +163,48 @@ toast.error(
           const delGrupo = estado.avisos.filter((a) => a.grupo === grupo);
           if (delGrupo.length === 0) return null;
           return (
-            <section key={grupo} className="space-y-3">
-              <h3 className="text-sm font-semibold text-fg">
+            <section key={grupo} className="space-y-2">
+              <h3 className="text-sm font-medium text-fg-muted">
                 {TITULO_DEL_GRUPO[grupo]}
               </h3>
+              {/* Glow up 22-10: UNA tarjeta por grupo con sus filas (antes una caja por aviso),
+                  y ningún botón azul: prender un aviso es una perilla, no LA acción de la pantalla. */}
+              <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
               {delGrupo.map((aviso) => (
                 <div
                   key={aviso.codigo}
-                  className="rounded-lg border border-border bg-surface p-4"
+                  className="px-4 py-4"
                   data-testid={`aviso-${aviso.codigo}`}
                 >
                   {/* A 390 px los dos botones bajan debajo del texto (QA 04-10: desbordaban). */}
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-fg">{aviso.titulo}</p>
-                      <p className="mt-1 text-xs text-fg-muted">
-                        {A_QUIEN[aviso.destinatario]} · {aviso.cuando}
+                      <p className="flex flex-wrap items-center gap-x-2 text-sm font-medium text-fg">
+                        {aviso.titulo}
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1.5 text-caption font-normal',
+                            aviso.prendido ? 'text-success' : 'text-fg-muted',
+                          )}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={cn('h-1.5 w-1.5 rounded-full', aviso.prendido ? 'bg-success' : 'bg-fg-subtle')}
+                          />
+                          <span data-testid={`aviso-estado-${aviso.codigo}`}>
+                            {aviso.prendido ? 'Prendido' : 'Apagado'}
+                          </span>
+                        </span>
                       </p>
-                      {!aviso.automatico && (
-                        <p className="mt-1 text-xs text-fg-muted">
-                          No sale solo: lo manda una persona.
-                        </p>
-                      )}
+                      <p className="mt-1 text-caption text-fg-muted">
+                        {A_QUIEN[aviso.destinatario]} · {aviso.cuando}
+                        {!aviso.automatico ? ' · No sale solo: lo manda una persona.' : ''}
+                      </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <Button
-                        variant="outline"
+                        variant="ghost"
+                        size="sm"
                         hideArrow
                         onClick={() => void verPrevia(aviso)}
                         data-testid={`aviso-previa-${aviso.codigo}`}
@@ -198,7 +213,8 @@ toast.error(
                       </Button>
                       <Button
                         hideArrow
-                        variant={aviso.prendido ? 'outline' : 'default'}
+                        size="sm"
+                        variant="outline"
                         disabled={!estado.disponible || guardando === aviso.codigo}
                         onClick={() => void alternar(aviso)}
                         data-testid={`aviso-alternar-${aviso.codigo}`}
@@ -211,18 +227,9 @@ toast.error(
                       </Button>
                     </div>
                   </div>
-                  <p
-                    className={cn(
-                      'mt-2 text-xs font-medium',
-                      aviso.prendido ? 'text-success' : 'text-fg-muted',
-                    )}
-                    data-testid={`aviso-estado-${aviso.codigo}`}
-                  >
-                    {aviso.prendido ? 'Prendido' : 'Apagado'}
-                  </p>
                   {!aviso.prendido && aviso.advertenciaAlApagar && (
                     <p
-                      className="mt-2 rounded-md border border-border bg-warning-soft px-3 py-2 text-xs text-fg"
+                      className="mt-3 rounded-md border border-border bg-warning-soft px-3 py-2 text-caption text-fg"
                       data-testid={`aviso-advertencia-${aviso.codigo}`}
                     >
                       {aviso.advertenciaAlApagar}
@@ -230,33 +237,37 @@ toast.error(
                   )}
                 </div>
               ))}
+              </div>
             </section>
           );
         })}
 
-        {previa && (
-          <section className="space-y-2" data-testid="aviso-vista-previa">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-fg">
-                {previa.aviso} — {previa.asunto}
-              </h3>
-              <Button variant="outline" hideArrow onClick={() => setPrevia(null)}>
-                Cerrar
-              </Button>
-            </div>
-            {/*
-              El HTML lo arma el BACK con la misma función del envío real. Va en
-              un `iframe` con `sandbox` vacío: es una previsualización, no una
-              página que pueda ejecutar nada.
-            */}
-            <iframe
-              title={`Vista previa de ${previa.aviso}`}
-              sandbox=""
-              srcDoc={previa.html}
-              className="h-[540px] w-full rounded-lg border border-border bg-white"
-            />
-          </section>
-        )}
+        {/* La vista previa en un cajón: antes aparecía al final de la página, lejos del botón. */}
+        <Cajon abierto={previa !== null} onOpenChange={(a) => !a && setPrevia(null)} tamano="lg">
+          {previa ? (
+            <>
+              <CajonCabecera titulo={previa.aviso} descripcion={previa.asunto} />
+              <CajonCuerpo>
+                <section data-testid="aviso-vista-previa">
+                  <p className="sr-only">
+                    {previa.aviso} — {previa.asunto}
+                  </p>
+                  {/*
+                    El HTML lo arma el BACK con la misma función del envío real. Va en
+                    un `iframe` con `sandbox` vacío: es una previsualización, no una
+                    página que pueda ejecutar nada.
+                  */}
+                  <iframe
+                    title={`Vista previa de ${previa.aviso}`}
+                    sandbox=""
+                    srcDoc={previa.html}
+                    className="h-[70vh] w-full rounded-lg border border-border bg-white"
+                  />
+                </section>
+              </CajonCuerpo>
+            </>
+          ) : null}
+        </Cajon>
     </div>
   );
 }

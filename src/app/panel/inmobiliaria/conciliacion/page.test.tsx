@@ -191,7 +191,7 @@ describe('/panel/inmobiliaria/conciliacion — cuando el resumen no llega', () =
     await montar()
     const boton = $('[data-testid="conciliacion-run-cta"]') as HTMLButtonElement
     expect(boton.disabled).toBe(true)
-    expect(boton.getAttribute('title')).toContain('No pude leer el resumen')
+    expect(boton.getAttribute('title')).toContain('No se puede conciliar mientras no se lea el resumen')
   })
 
   it('con datos, «Conciliar» se ofrece con el número', async () => {

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { notFound, useParams, useRouter } from 'next/navigation';
 
 import { seccionPorSlug } from '@/components/configuracion/configuracion-de-cuenta';
+import { EsqueletoDeSeccion } from '@/components/configuracion/piezas';
 import { ContenidoDelPropietario } from '../contenido';
 import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { CONFIGURACION_DEL_PROPIETARIO, SECCIONES_SOLO_DEL_INDEPENDIENTE } from '../secciones';
@@ -24,6 +25,7 @@ export default function SeccionDeConfiguracionDelPropietarioPage() {
     if (noEsSuya) router.replace('/panel/configuracion/notificaciones');
   }, [noEsSuya, router]);
   if (!seccion) notFound();
-  if (administrados.cargando || noEsSuya) return null;
+  // El esqueleto mientras carga o mientras se va a la suya (antes, en blanco).
+  if (administrados.cargando || noEsSuya) return <EsqueletoDeSeccion filas={3} />;
   return <ContenidoDelPropietario id={seccion.id} />;
 }

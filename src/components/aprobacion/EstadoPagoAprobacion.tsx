@@ -142,7 +142,7 @@ export function EstadoPagoAprobacion({
         >
           <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
           {popupBlocked
-            ? 'No se abrió la pestaña — abre el pago acá'
+            ? 'No se abrió la pestaña — abre el pago aquí'
             : '¿No ves la pestaña? Ábrela de nuevo'}
         </a>
       )}

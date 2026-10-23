@@ -45,7 +45,7 @@ const COLOR = {
 const NOMBRE: Record<'deudaDelMesCop' | 'recaudadoCop' | 'dispersadoCop', string> = {
   deudaDelMesCop: 'Se debe',
   recaudadoCop: 'Llegó',
-  dispersadoCop: 'Dispersado',
+  dispersadoCop: 'Girado', // 22-10: la voz dice «girado» (como el Tablero)
 };
 
 /** «$ 1,2 M» / «$ 850 k» para el eje, donde no cabe la cifra entera. */
@@ -69,7 +69,11 @@ interface Props {
 export function GraficoDeRecaudo({ serie }: Props) {
   const tr = useTr();
   const locale = useLocaleDelPanel();
-  const datos = serie.map((p) => ({ ...p, etiqueta: mesCorto(p.month, locale) }));
+  // Ronda 11: los meses viejos sin nada (antes de que la inmobiliaria empezara)
+  // no se pintan; desde el primero con deuda, recaudo o giros, todos.
+  const enOrden = [...serie].sort((x, y) => x.month.localeCompare(y.month));
+  const primero = enOrden.findIndex((p) => p.deudaDelMesCop > 0 || p.recaudadoCop > 0 || p.dispersadoCop > 0);
+  const datos = (primero > 0 ? enOrden.slice(primero) : enOrden).map((p) => ({ ...p, etiqueta: mesCorto(p.month, locale) }));
 
   return (
     <div className="h-[260px] w-full font-mono text-xs" data-testid="grafico-de-recaudo">

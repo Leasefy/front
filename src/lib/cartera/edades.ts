@@ -80,7 +80,7 @@ export const NOMBRE_DE_EDAD: Record<Edad, string> = {
  */
 export const QUE_SIGNIFICA: Record<Edad, string> = {
   '0-30': 'Mora temprana: casi siempre se resuelve con un recordatorio.',
-  '31-60': 'Ya no es un olvido. Acá entra la gestión de cobranza.',
+  '31-60': 'Ya no es un olvido. Aquí entra la gestión de cobranza.',
   '61-90': 'Riesgo de perder el mes. Conviene un acuerdo de pago.',
   '90+': 'Deja de ser cobranza. Es jurídico y reclamación a la aseguradora.',
 }

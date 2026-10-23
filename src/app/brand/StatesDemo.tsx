@@ -21,7 +21,7 @@ export function StatesDemo() {
           <EmptyState
             icon={FolderOpen}
             title="Aún no hay datos"
-            description="Cuando registres movimientos aparecerán acá."
+            description="Cuando registres movimientos aparecerán aquí."
             primaryCta={{ label: 'Crear el primero', href: '#' }}
           />
         </div>

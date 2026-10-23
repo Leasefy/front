@@ -1,9 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Lightning, SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, ClipboardText, Scroll, Receipt, ArrowsLeftRight, Gauge } from '@phosphor-icons/react';
+import { usePathname } from 'next/navigation';
+import { SquaresFour, House, Chat, MagnifyingGlass, ArrowsLeftRight, Gauge } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
+import { PlanSidebar, ProfileCompletionStep, type NavItem } from '@/components/ui/plan/PlanSidebar';
+import { SeccionesDelPortal } from '@/components/portales/SeccionesDelPortal';
+import { useArriendaHoy, ArriendaHoyDelPortalProvider } from '@/lib/hooks/use-arrienda-hoy';
+import {
+  BUSCAR_ARRIENDO,
+  MI_ARRIENDO,
+  filasDelMenu,
+  rutasDeLaSeccion,
+  seccionDeLaRuta,
+  type FilaDelPortal,
+} from '@/lib/nav/portal-del-inquilino';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { TenantProfileProvider, useTenantProfile } from '@/lib/context/TenantProfileContext';
@@ -22,55 +33,51 @@ const TENANT_SETUP_STEPS: ProfileCompletionStep[] = [
 const ONBOARDING_STORAGE_KEY = 'plan_onboarding_tenant';
 
 /**
- * Hook to generate translated nav items
+ * El menú del portal — Nico eligió «3 secciones» (21-10-2026). Antes eran 14
+ * filas en vertical; ahora:
+ *   · quien arrienda: Inicio · Mi arriendo · Mi calificación · Mensajes
+ *   · quien no arrienda: Inicio · Buscar arriendo · Mensajes
+ * Lo de cada sección va en pestañas arriba de la pantalla (`SeccionesDelPortal`).
+ * Nada se borró: cada pantalla cae en su sección (`lib/nav/portal-del-inquilino.ts`).
+ * Sin «Notificaciones», «Perfil» ni «Configuración»: viven en el header (Nico, 15-09).
  */
-function useTenantNavItems() {
+function useTenantNavItems(arrienda: boolean | null, pathname: string) {
   const { t, locale } = useI18n();
+  const es = locale !== 'en';
   const { unreadCount } = useUnreadMessages();
   // AVALI-3 (Nico, 17-10): la misma cuenta entra también a su portal de
   // propietario si es dueño de un inmueble que administra una inmobiliaria.
   const tambienPropietario = useTambienEsPropietario();
 
+  const fila: Record<FilaDelPortal['clave'], NavItem> = {
+    inicio: { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
+    'mi-arriendo': {
+      label: es ? MI_ARRIENDO.es : MI_ARRIENDO.en,
+      href: MI_ARRIENDO.pestanas[0].href,
+      icon: House,
+      tambienEn: rutasDeLaSeccion(MI_ARRIENDO),
+    },
+    buscar: {
+      label: es ? BUSCAR_ARRIENDO.es : BUSCAR_ARRIENDO.en,
+      href: BUSCAR_ARRIENDO.pestanas[0].href,
+      icon: MagnifyingGlass,
+      tambienEn: rutasDeLaSeccion(BUSCAR_ARRIENDO),
+    },
+    calificacion: { label: es ? 'Mi calificación' : 'My rating', href: '/inquilino/calificacion', icon: Gauge },
+    // El conteo sale de useUnreadMessages (polling): el menú nunca promete no-leídos falsos.
+    mensajes: {
+      label: t('nav.messages'),
+      href: '/inquilino/mensajes',
+      icon: Chat,
+      badge: unreadCount > 0 ? unreadCount : undefined,
+    },
+  };
+
   return [
-    { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
-    // Su catálogo va ANTES de Explorar: lo primero es lo que puede tomar,
-    // y hasta ahora no había forma de llegar acá sin saberse la URL.
-    // `Target` y no `Sparkle`: las chispas están reservadas para lo que hace
-    // IA en todo el producto, y esto no la usa — es un filtro por su tope.
-    { label: locale === 'es' ? 'Para ti' : 'For you', href: '/inquilino/para-ti', icon: Target },
-    { label: locale === 'es' ? 'Explorar' : 'Explore', href: '/inquilino/explorar', icon: MagnifyingGlass },
-    // Va temprano a propósito: la aprobación es lo primero del recorrido —
-    // sin ella no se puede postular a nada (docs/VOCABULARIO.md).
-    { label: t('nav.approval'), href: '/inquilino/aprobacion', icon: SealCheck },
-    // La Calificación Leasefy (18-10-2026): verla es gratis, siempre.
-    { label: locale === 'es' ? 'Mi calificación' : 'My rating', href: '/inquilino/calificacion', icon: Gauge },
-    { label: t('nav.myRental'), href: '/inquilino/arriendo', icon: House },
-    { label: t('nav.applications'), href: '/inquilino/aplicaciones', icon: FileMagnifyingGlass },
-    { label: t('nav.contracts'), href: '/inquilino/contratos', icon: Handshake },
-    { label: t('nav.payments'), href: '/inquilino/pagos', icon: CreditCard },
-    // Va pegado a Pagos: «Pagos» son sus recibos uno por uno; el estado de
-    // cuenta es cuánto le falta por pagar del contrato entero, que es la
-    // pregunta que la gente hace de verdad.
-    { label: locale === 'es' ? 'Estado de cuenta' : 'Account statement', href: '/inquilino/estado-de-cuenta', icon: Receipt },
-    { label: locale === 'es' ? 'Acuerdos' : 'Agreements', href: '/inquilino/acuerdos', icon: Scroll },
-    // Portofino 22-10-2026: subir la factura de servicios pagada y los ajustes de EPM.
-    { label: locale === 'es' ? 'Servicios públicos' : 'Utilities', href: '/inquilino/servicios-publicos', icon: Lightning },
-    { label: locale === 'es' ? 'Mis casos' : 'My cases', href: '/inquilino/casos', icon: ClipboardText },
-    // SO-07 (PQRS-FIX, 04-10-2026): «Solicitudes» y «Mis casos» eran dos
-    // entradas para lo mismo (el clic en Solicitudes abría el caso y el menú
-    // saltaba a «Mis casos»). Queda una: «Mis casos», con «Nueva solicitud».
-    { label: t('nav.documents'), href: '/inquilino/documentos', icon: FileText },
-    // Sin badge fijo: el 2 estaba escrito a mano. Ahora el conteo sale de
-    // useUnreadMessages (polling), así el sidebar nunca promete no-leídos falsos.
-    { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat, badge: unreadCount > 0 ? unreadCount : undefined },
+    ...filasDelMenu(arrienda, pathname).map((clave) => fila[clave]),
     ...(tambienPropietario
       ? [{ label: locale === 'es' ? 'Mi portal de propietario' : 'My owner portal', href: '/panel', icon: ArrowsLeftRight }]
       : []),
-    // Sin «Notificaciones»: viven en la campana del header, igual que en el
-    // panel de la inmobiliaria (Nico, 2026-09-15). La pantalla completa sigue
-    // en /inquilino/notificaciones, a un clic desde «Ver todas».
-    // Sin «Perfil» ni «Configuración»: viven en el menú del avatar del header,
-    // como en la inmobiliaria (Nico, 2026-09-15).
   ];
 }
 
@@ -85,7 +92,9 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { hasArriendoPass } = useTenantProfile();
   const { t, locale } = useI18n();
-  const navItems = useTenantNavItems();
+  const arrienda = useArriendaHoy();
+  const pathname = usePathname() ?? '';
+  const navItems = useTenantNavItems(arrienda, pathname);
 
   // Onboarding progress state
   const [onboardingSteps, setOnboardingSteps] = useState<ProfileCompletionStep[]>(TENANT_SETUP_STEPS);
@@ -169,11 +178,12 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
       )}>
         <PlanHeader tenantSubscription={tenantSubscription} />
         <main id="main-content" tabIndex={-1}>
-          {children}
+          <SeccionesDelPortal seccion={seccionDeLaRuta(pathname, arrienda === true)} />
+          <ArriendaHoyDelPortalProvider value={arrienda}>{children}</ArriendaHoyDelPortalProvider>
         </main>
       </div>
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
-          <ProtectedRoute>: acá adentro se perdía todo toast emitido mientras el guard
+          <ProtectedRoute>: aquí adentro se perdía todo toast emitido mientras el guard
           resuelve. No montes otro: sonner duplica el toast por cada Toaster montado. */}
     </div>
   );

@@ -61,6 +61,20 @@ export function etiquetaDelInmueble(doc: DocumentoGenerado): string | null {
 }
 
 /**
+ * GLOW UP 22-10 (revisora r24, Documentos #3): lo que IDENTIFICA la fila. Con mil contratos, todas las filas
+ * empezaban con las mismas cuarenta letras («Contrato de arrendamiento de vivienda…»); la primera columna dice
+ * de qué contrato y de quién es («Contrato 1888 · Diana María Soto») y, debajo, la dirección.
+ */
+export function identidadDelDocumento(doc: DocumentoGenerado): { titulo: string | null; direccion: string | null } {
+  if (doc.contract) {
+    const numero = numeroDelContrato(doc.contract).principal ?? `#${doc.contract.code}`;
+    const titulo = [`Contrato ${numero}`, doc.contract.tenantName || null].filter(Boolean).join(' · ');
+    return { titulo, direccion: doc.contract.propertyAddress ?? doc.consignacion?.propertyTitle ?? null };
+  }
+  return { titulo: doc.consignacion?.propertyTitle ?? null, direccion: null };
+}
+
+/**
  * La opción del combo de contratos. El Combobox busca SÓLO por `label`, así
  * que van LOS DOS números: escribir «1686» (el de Nui) o «111» (el nuestro)
  * tiene que encontrar el mismo contrato, y el nuestro va rotulado para que

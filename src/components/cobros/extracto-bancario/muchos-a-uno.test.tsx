@@ -336,7 +336,8 @@ describe('muchos a uno — la propuesta clara (alta)', () => {
     await hastaQue(() => api.resumen.mock.calls.length === 2);
     await esperar();
     expect(document.querySelector('[data-testid="movimiento-m-1"]')).toBeNull();
-    expect($('[data-testid="pestana-PENDIENTE"]').textContent).toContain('(2)');
+    // «Pendientes 2», sin paréntesis (PestanasDeEstado, como el resto de la casa).
+    expect($('[data-testid="pestana-PENDIENTE"]').textContent).toMatch(/Pendientes\s*2/);
   });
 
   it('con una diferencia GMF la muestra con su regla y no dice «calza»', async () => {

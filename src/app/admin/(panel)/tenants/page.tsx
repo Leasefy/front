@@ -10,7 +10,9 @@ import { fmtFecha, fmtNumero } from '@/lib/admin/format'
 import { pasaLosFiltros, type InmobiliariaDeLaLista } from '@/lib/admin/inmobiliarias-de-la-lista'
 import { estadoDelPlan } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { Cifra, FranjaDeCifras } from '@leasefy/cadence'
+import { CifraHeroe, type TramoDeLaCifra } from '@/components/pantalla/CifraHeroe'
+import { LoadingBlock } from '@/components/admin/screen/states'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
@@ -26,6 +28,15 @@ const SEGMENTOS: Segmento<InmobiliariaDeLaLista>[] = [
   { valor: 'SUSPENDED', nombre: 'Suspendidas', cumple: (f) => estadoDe(f) === 'SUSPENDED' },
   { valor: 'CANCELLED', nombre: 'Canceladas', cumple: (f) => estadoDe(f) === 'CANCELLED' },
   { valor: 'sin-plan', nombre: 'Sin plan', cumple: (f) => estadoDe(f) === 'sin-plan' },
+]
+
+/** Los tramos de la barra: de lo sano a lo perdido (los conteos los dicen las pestañas). */
+const TRAMOS: Array<{ valor: string; nombre: string; tono: TramoDeLaCifra['tono'] }> = [
+  { valor: 'ACTIVE', nombre: 'Al día', tono: 'exito' },
+  { valor: 'PAST_DUE', nombre: 'En mora', tono: 'aviso' },
+  { valor: 'SUSPENDED', nombre: 'Suspendidas', tono: 'critico' },
+  { valor: 'CANCELLED', nombre: 'Canceladas', tono: 'neutro' },
+  { valor: 'sin-plan', nombre: 'Sin plan', tono: 'neutro' },
 ]
 
 const FILTRO_DE_MIGRACION = [
@@ -58,6 +69,16 @@ const FILTRO_DE_COBRANZA = [
  * El endpoint devuelve el arreglo entero (no pagina): el filtro y el recorte
  * van en el cliente, con los filtros en la URL para poder compartir el enlace.
  */
+/** Ronda 26 (revisora r25): el cero de una columna, callado («—» atenuado), para que se vea lo que sí tiene. */
+function Cero({ titulo = 'Ninguno' }: { titulo?: string }) {
+  return (
+    <span className="text-fg-subtle" title={titulo}>
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">{titulo}</span>
+    </span>
+  )
+}
+
 export default function TenantsPage() {
   const router = useRouter()
   const { get, setFilters } = useUrlFilters()
@@ -81,8 +102,9 @@ export default function TenantsPage() {
     const suma = (k: 'contratos_activos' | 'inmuebles') => filas.reduce((s, f) => s + (f[k] ?? 0), 0)
     return {
       total: filas.length,
-      alDia: filas.filter((f) => f.plan?.estado === 'ACTIVE').length,
+      porEstado: Object.fromEntries(TRAMOS.map((t) => [t.valor, filas.filter((f) => estadoDe(f) === t.valor).length])),
       conProblema: filas.filter((f) => f.plan && ['PAST_DUE', 'SUSPENDED'].includes(f.plan.estado)).length,
+      conVoz: filas.filter((f) => f.en_cobranza_por_voz === true).length,
       contratos: suma('contratos_activos'),
       inmuebles: suma('inmuebles'),
     }
@@ -100,7 +122,7 @@ export default function TenantsPage() {
             <span className="font-medium text-fg">{r.nombre ?? r.legal_name}</span>
             {r.activa === false ? <Pill tone="muted">Inactiva</Pill> : null}
             {r.solo_en_el_agente ? <Pill tone="warn">Sólo en la cobranza</Pill> : null}
-            {r.del_marketplace ? <Pill tone="info">Del marketplace</Pill> : null}
+            {r.del_marketplace ? <Pill tone="neutral">Del marketplace</Pill> : null}
           </div>
           <div className="mt-0.5 text-caption text-fg-subtle">
             {[r.nit ? `NIT ${r.nit}` : 'Sin NIT', r.ciudad].filter(Boolean).join(' · ')}
@@ -122,7 +144,7 @@ export default function TenantsPage() {
             </Pill>
           </div>
         ) : (
-          <Pill tone="muted">Sin plan</Pill>
+          <span className="text-caption text-fg-subtle">Sin plan</span>
         )
       },
     },
@@ -132,12 +154,15 @@ export default function TenantsPage() {
       orden: (r) => r.contratos_activos ?? 0,
       ordenPrimero: 'desc',
       texto: (r) => r.contratos_activos ?? 0,
-      cell: (r) => (
-        <div className="tabular-nums">
-          <span className="text-fg">{fmtNumero(r.contratos_activos ?? 0)}</span>
-          {r.contratos ? <div className="text-caption text-fg-subtle">de {fmtNumero(r.contratos)}</div> : null}
-        </div>
-      ),
+      cell: (r) =>
+        r.contratos_activos || r.contratos ? (
+          <div className="font-mono tabular-nums">
+            <span className="text-fg">{fmtNumero(r.contratos_activos ?? 0)}</span>
+            {r.contratos ? <div className="text-caption text-fg-subtle">de {fmtNumero(r.contratos)}</div> : null}
+          </div>
+        ) : (
+          <Cero />
+        ),
     },
     {
       header: 'Inmuebles',
@@ -145,7 +170,7 @@ export default function TenantsPage() {
       orden: (r) => r.inmuebles ?? 0,
       ordenPrimero: 'desc',
       texto: (r) => r.inmuebles ?? 0,
-      cell: (r) => <span className="tabular-nums">{fmtNumero(r.inmuebles ?? 0)}</span>,
+      cell: (r) => (r.inmuebles ? <span className="font-mono tabular-nums">{fmtNumero(r.inmuebles)}</span> : <Cero />),
     },
     {
       header: 'Equipo',
@@ -153,7 +178,7 @@ export default function TenantsPage() {
       orden: (r) => r.equipo ?? 0,
       ordenPrimero: 'desc',
       texto: (r) => r.equipo ?? 0,
-      cell: (r) => <span className="tabular-nums">{fmtNumero(r.equipo ?? 0)}</span>,
+      cell: (r) => (r.equipo ? <span className="font-mono tabular-nums">{fmtNumero(r.equipo)}</span> : <Cero />),
     },
     {
       header: 'Cobranza por voz',
@@ -167,13 +192,14 @@ export default function TenantsPage() {
             : 'Sin conectar',
       cell: (r) =>
         r.en_cobranza_por_voz === true ? (
-          <span className="text-caption text-fg-muted tabular-nums">
-            {fmtNumero(r.debtor_count)} deudores · {fmtNumero(r.call_count)} llamadas
+          <span className="text-caption text-fg-muted">
+            <span className="font-mono tabular-nums">{fmtNumero(r.debtor_count)}</span> deudores ·{' '}
+            <span className="font-mono tabular-nums">{fmtNumero(r.call_count)}</span> llamadas
           </span>
         ) : r.en_cobranza_por_voz === null ? (
           <span className="text-caption text-fg-subtle">No se pudo leer</span>
         ) : (
-          <span className="text-caption text-fg-subtle">Sin conectar</span>
+          <Cero titulo="Sin conectar" />
         ),
     },
     {
@@ -183,7 +209,7 @@ export default function TenantsPage() {
       ordenPrimero: 'desc',
       texto: (r) => fmtFecha(r.created_at),
       cell: (r) => (
-        <span className="whitespace-nowrap text-caption text-fg-muted tabular-nums">{fmtFecha(r.created_at)}</span>
+        <span className="whitespace-nowrap font-mono text-caption text-fg-muted tabular-nums">{fmtFecha(r.created_at)}</span>
       ),
     },
   ]
@@ -193,23 +219,55 @@ export default function TenantsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Inmobiliarias"
-        description="Todas las inmobiliarias de Leasefy: su plan, su operación y su equipo. Toca una para ver su ficha."
+        description="Cada inmobiliaria de Leasefy con su plan, su operación y su equipo."
       />
 
-      <section aria-label="Cifras de las inmobiliarias" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <KpiCard label="Inmobiliarias" value={tenants.data ? cifras.total : '—'} />
-        <KpiCard label="Plan al día" value={tenants.data ? cifras.alDia : '—'} tone="ok" />
-        <KpiCard
-          label="En mora o suspendidas"
-          value={tenants.data ? cifras.conProblema : '—'}
-          tone={cifras.conProblema > 0 ? 'warn' : 'default'}
-        />
-        <KpiCard label="Contratos vigentes" value={tenants.data ? cifras.contratos : '—'} />
-        <KpiCard label="Inmuebles" value={tenants.data ? cifras.inmuebles : '—'} />
-      </section>
-
-      {/* (08-10-2026, Nico) Lo que quedó en «No pudimos abrir tu registro», con su motivo. */}
+      {/* (08-10-2026, Nico) Lo que quedó en «No pudimos abrir tu registro», con su motivo: lo que espera, primero. */}
       <RegistrosSinAsistente />
+
+      {/* Glow up 22-10: LA RESPUESTA en una cifra (cuántas hay y cuántas necesitan algo) con la barra por estado
+          del plan; los conteos de cada estado los dicen las pestañas de la tabla (antes, 5 cifras del mismo peso
+          que repetían las pestañas). */}
+      {tenants.isLoading && !todas ? (
+        <LoadingBlock label="Cargando las inmobiliarias" filas={3} />
+      ) : todas ? (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo="Inmobiliarias en Leasefy"
+              cifra={fmtNumero(cifras.total)}
+              contexto={
+                cifras.conProblema > 0
+                  ? `${fmtNumero(cifras.conProblema)} en mora o suspendidas`
+                  : cifras.total > 0
+                    ? 'ninguna en mora ni suspendida'
+                    : undefined
+              }
+              tramos={TRAMOS.map((t) => ({
+                clave: t.valor,
+                etiqueta: t.nombre,
+                monto: cifras.porEstado[t.valor] ?? 0,
+                tono: t.tono,
+                cifra: fmtNumero(cifras.porEstado[t.valor] ?? 0),
+              }))}
+              total={cifras.total}
+              data-testid="inmobiliarias-cifra"
+            />
+          </div>
+          {/* Ronda 26 (revisora r25): tres ceros no informan; la franja sólo con operación, y «entre todas» una vez. */}
+          {cifras.contratos + cifras.inmuebles + cifras.conVoz > 0 ? (
+          <FranjaDeCifras fila="md" columnas={3} aria-label="La operación de las inmobiliarias, sumada entre todas">
+            <Cifra etiqueta="Contratos vigentes" valor={cifras.contratos} detalle="entre todas las inmobiliarias" />
+            <Cifra etiqueta="Inmuebles" valor={cifras.inmuebles} />
+            <Cifra
+              etiqueta="Con cobranza por voz"
+              valor={cifras.conVoz}
+              detalle={`de ${fmtNumero(cifras.total)} ${cifras.total === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
+            />
+          </FranjaDeCifras>
+          ) : null}
+        </div>
+      ) : null}
 
       <DataTable
         columns={columns}
@@ -219,7 +277,7 @@ export default function TenantsPage() {
         error={tenants.error}
         onReintentar={tenants.refetch}
         emptyTitle="Todavía no hay inmobiliarias"
-        emptyHint="Cuando una se registre, aparece acá."
+        emptyHint="Cuando una se registre, aparece aquí."
         emptyIcon={<Buildings weight="bold" />}
         aria-label="Inmobiliarias"
         onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}
@@ -230,6 +288,7 @@ export default function TenantsPage() {
         filtrar={filtrar}
         filtrosEnLaUrl={['voz', 'migracion', 'origen']}
         ordenInicial={{ columna: 6, sentido: 'desc' }}
+        cifraDelCelular="Contratos"
         exportar="inmobiliarias"
         masEnElExcel={[
           { header: 'NIT', texto: (r) => r.nit },

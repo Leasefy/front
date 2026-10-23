@@ -1,5 +1,13 @@
 'use client';
-import { SituacionComercialDelInmueble } from '@/components/comercial/SituacionComercial';
+import { AvisoDelMandatoQueVence } from '@/components/comercial/SituacionComercial';
+import { useVacanciaYMandatos } from '@/lib/comercial/use-vacancia-y-mandatos';
+import { esVacanciaLarga } from '@/lib/comercial/comercial';
+import { FranjaDelArriendo } from '@/components/inmobiliaria/ficha/FranjaDelArriendo';
+import { FichaDelInmueble, caracteristicasDelInmueble } from '@/components/inmobiliaria/ficha/FichaDelInmueble';
+import { CandidatosQueEsperan } from '@/components/inmobiliaria/ficha/CandidatosQueEsperan';
+import { LoQueFaltaDelInmueble } from '@/components/inmobiliaria/ficha/LoQueFaltaDelInmueble';
+import { PropietariosDelResumen } from '@/components/inmobiliaria/ficha/PropietariosDelResumen';
+import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { useAsesores, rolDelAsesor } from '@/lib/hooks/use-asesores';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
@@ -10,8 +18,12 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { portadaDelInmueble } from '@/lib/inmuebles/titulo-de-la-ficha';
 import { CrossFade } from '@leasefy/cadence';
-import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit, ArrowCounterClockwise } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit, HandCoins, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { motivosDelError } from '@/lib/errores/descripcion-del-error';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -48,10 +60,9 @@ import type { PropertyAvailability, Consignacion } from '@/lib/types/inmobiliari
 // Components
 import { ConsignacionHeader } from '@/components/inmobiliaria/ConsignacionHeader';
 import {
-  PropertyInfoSection,
+  TerminosDelMandatoSection,
   PropietarioSection,
   AgenteSection,
-  CurrentLeaseSection,
   DocumentsSection,
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
 import { FirmaElectronicaDeConsignacionSection } from '@/components/inmobiliaria/consignacion/FirmaElectronicaDeConsignacionSection';
@@ -65,6 +76,8 @@ import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEdit
 // Va al lado del inventario porque es el mismo tipo de dato: lo que el mandato
 // necesita para poder operar.
 import { MandatoDelInmueble } from '@/components/inmobiliaria/captacion/MandatoDelInmueble';
+import { VentaDelInmueble } from '@/components/inmobiliaria/captacion/VentaDelInmueble';
+import { TarjetaDeLaFicha } from '@/components/pantalla/TarjetaDeLaFicha';
 import { ModalidadDelMandato } from '@/components/inmobiliaria/mandato/ModalidadDelMandato';
 import {
   RetiroDeLaAdministracionDialog,
@@ -79,42 +92,55 @@ import { registrarServiceWorker } from '@/lib/inventario/sw-inventario';
 import { cuando as cuandoSeGuardo } from '@/components/inmobiliaria/PrepararParaSinSenal';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
-/** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
+/**
+ * La forma de la ficha, sin datos (revisión 21-10: el esqueleto tiene la forma de
+ * lo que llega): la fila de las migas con las acciones, la portada con su franja
+ * de tres datos, las pestañas y el Resumen en 2/3 + 1/3.
+ */
 function EsqueletoDeLaFicha() {
   return (
-    <div className="p-4 md:p-6 space-y-6" data-testid="ficha-cargando" aria-busy="true">
+    <div className="space-y-6 p-6 lg:p-8" data-testid="ficha-cargando" aria-busy="true">
       <div className="flex items-center justify-between gap-4">
-        <Skeleton className="h-5 w-56" />
-        <Skeleton className="h-10 w-32 rounded-full" />
+        <Skeleton className="h-5 w-40 sm:w-64" />
+        <div className="flex gap-2">
+          <Skeleton className="hidden h-9 w-40 rounded-full sm:block" />
+          <Skeleton className="h-9 w-24 rounded-full" />
+          <Skeleton className="h-9 w-9 rounded-full" />
+        </div>
       </div>
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
+      <div className="overflow-hidden rounded-[28px] border border-border-faint bg-surface dark:border-border-strong dark:bg-bg">
         <div className="flex flex-col lg:flex-row">
-          <Skeleton className="w-full lg:w-80 xl:w-96 h-48 lg:h-72 rounded-none" />
-          <div className="flex-1 p-5 lg:p-6 space-y-4">
+          <Skeleton className="h-44 w-full rounded-none sm:h-56 lg:h-[320px] lg:w-[340px] xl:w-[380px]" />
+          <div className="flex-1 space-y-4 p-6 lg:p-8">
             <div className="flex gap-2">
-              <Skeleton className="h-7 w-28 rounded-full" />
-              <Skeleton className="h-7 w-40 rounded-full" />
+              <Skeleton className="h-[22px] w-24 rounded-[6px]" />
+              <Skeleton className="h-[22px] w-28 rounded-[6px]" />
             </div>
             <Skeleton className="h-9 w-3/4" />
             <Skeleton className="h-5 w-1/2" />
-            <Skeleton className="h-10 w-48" />
-            <div className="flex gap-3 pt-2">
-              <Skeleton className="h-11 w-28 rounded-full" />
-              <Skeleton className="h-11 w-36 rounded-full" />
-              <Skeleton className="h-11 w-40 rounded-full" />
+            <Skeleton className="h-10 w-56" />
+            <div className="grid grid-cols-1 gap-5 border-t border-border-faint pt-6 sm:grid-cols-3 dark:border-border-strong">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Skeleton className="h-56 rounded-lg" />
-          <Skeleton className="h-72 rounded-lg" />
-        </div>
-        <div className="space-y-6">
-          <Skeleton className="h-64 rounded-lg" />
-          <Skeleton className="h-40 rounded-lg" />
-        </div>
+      <div className="flex gap-6 border-b border-border-faint pb-3 dark:border-border-strong">
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-4 w-20" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Skeleton className="h-44 rounded-[24px] lg:col-span-2" />
+        <Skeleton className="h-44 rounded-[24px]" />
       </div>
     </div>
   );
@@ -267,7 +293,7 @@ function ConsignacionDetailContent() {
   const { agente, isLoading: cargandoAgentes } = useAgenteDeConsignacion(consignacion?.agenteId);
   // QA 17-10 (IMANA-1): a cargo puede quedar una administradora, que no está
   // en la lista de agentes: su nombre sale de la de asesores (la de los leads).
-  const { asesores } = useAsesores(Boolean(consignacion?.agenteId) && !cargandoAgentes && !agente);
+  const { asesores, isLoading: cargandoAsesores } = useAsesores(Boolean(consignacion?.agenteId) && !cargandoAgentes && !agente);
   const encargado = useMemo(() => {
     if (agente || !consignacion?.agenteId) return null;
     const a = asesores.find((x) => x.userId === consignacion.agenteId);
@@ -321,6 +347,13 @@ function ConsignacionDetailContent() {
    * banner lo dice sin inventarla.
    */
   const terminada = consignacion?.status === 'terminated';
+  /*
+   * Días vacante y mandato que se vence (COMERCIAL, 04-10): UNA lectura para
+   * la ficha. La vacancia va en la franja de la portada; el mandato por vencer,
+   * en un renglón sobre las pestañas. Fuente aparte: si falla, la ficha sigue.
+   */
+  const { porConsignacion: situaciones } = useVacanciaYMandatos(Boolean(consignacion) && !terminada);
+  const situacion = idDelMandato ? situaciones[idDelMandato] : undefined;
   const [fechaDeTerminacion, setFechaDeTerminacion] = useState<string | null>(null);
   useEffect(() => {
     if (!terminada || !idDelMandato) {
@@ -346,6 +379,8 @@ function ConsignacionDetailContent() {
   // mirando los contratos ACTIVE; `propertyStatus` lo pone el ciclo de vida
   // del contrato; `currentLeaseId` es el arriendo vigente del mandato.
   // `availability` NO cuenta: es lo que alguien marcó a mano.
+  /** Cuántos candidatos esperan decisión (lo dice CandidatosQueEsperan); decide la acción azul. */
+  const [candidatosEsperando, setCandidatosEsperando] = useState(0);
   const contratoVigente =
     consignacion?.arrendado === true ||
     consignacion?.propertyStatus === 'RENTED' ||
@@ -538,7 +573,7 @@ function ConsignacionDetailContent() {
         {/* «Inmueble», no la clave `portafolio.detail.title` («Detalle de
             Propiedad»): el menú dice Inmuebles y el producto no llama
             «propiedad» a nada. */}
-        <h1 className="text-h2 text-fg">Inmueble</h1>
+        <EncabezadoDePantalla seccion="Inmuebles" titulo="Inmueble" />
         <div className="max-w-2xl">
           <FalloDeCarga
             error={errorConsignacion}
@@ -586,9 +621,11 @@ function ConsignacionDetailContent() {
     );
   }
 
+  const conMapa = !!property && tieneCoordenadas(property.latitude, property.longitude);
+
   return (
     <CrossFade swapKey="ficha">
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6 p-6 lg:p-8">
       {/* Sin señal la ficha se arma con lo guardado. Decirlo con la FECHA es
           lo único honesto: las tarjetas que piden otras llamadas —fotos,
           propietario, candidatos— van a salir vacías, y sin este cartel eso
@@ -605,237 +642,362 @@ function ConsignacionDetailContent() {
         </div>
       )}
 
-      {/* Breadcrumb + agendar cita */}
-      <div className="flex items-center justify-between gap-4">
-        <nav className="flex items-center gap-2 text-sm min-w-0">
-          <Link
-            href="/panel/inmobiliaria/inmuebles"
-            className="flex items-center gap-1.5 text-fg-muted hover:text-primary transition-colors"
-          >
-            <CaretLeft className="w-4 h-4" />
-            {t('inmobiliaria.portafolio.title')}
-          </Link>
-          <span className="text-border">/</span>
-          <span className="text-fg font-medium truncate max-w-[200px]">
-            {consignacion.propertyTitle}
-          </span>
-        </nav>
-        <Button
-          hideArrow
-          className="shrink-0"
-          onClick={() => setShowCitaModal(true)}
-          // F11: sin inmueble asociado no hay a dónde agendar la visita.
-          disabled={terminada || !consignacion.propertyId}
-          title={
-            terminada
-              ? t('inmobiliaria.consignaciones.header.terminada.pedirCita')
-              : !consignacion.propertyId
-                ? 'Esta consignación no tiene un inmueble asociado: no hay a dónde agendar la visita.'
-                : undefined
-          }
-          data-testid="pedir-cita"
-        >
-          <CalendarPlus className="w-4 h-4" />
-          {t('inmobiliaria.agenda.pedirCita')}
-        </Button>
-      </div>
-
-      {/* Header */}
-      <div>
-        <ConsignacionHeader
-          consignacion={consignacion}
-          propertyThumbnailUrl={property?.thumbnailUrl}
-          fotos={property?.images}
-          onVerFotos={() => setFotoAbierta(0)}
-          onEdit={handleEdit}
-          onViewPortal={handleViewPortal}
-          onChangeStatus={handleChangeStatus}
-          onTerminate={handleTerminate}
-          onReactivar={() => {
-            setMotivoAlReactivar([]);
-            setShowReactivarDialog(true);
-          }}
-          fechaDeTerminacion={fechaDeTerminacion}
-          contratoVigente={contratoVigente}
-        />
-      </div>
-
-      {/* COMERCIAL (Nico, 04-10-2026): «Vacante hace 42 días» y el mandato
-          que se vence. Fuente aparte: si falla, la ficha sigue igual. */}
-      {!terminada && idDelMandato && <SituacionComercialDelInmueble consignacionId={idDelMandato} />}
-
-      {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Main Info (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
-          <div>
-            <PropertyInfoSection consignacion={consignacion} />
-          </div>
-
-          {/* Las coordenadas viven en el Property (la consignación no las
-              tiene). Sin propertyId no hay mapa que mostrar. */}
-          {consignacion.propertyId && (
-            <div>
-              <UbicacionDelInmueble
-                property={property}
-                cargando={cargandoProperty}
-                consignacion={consignacion}
-                onActualizado={refetchProperty}
-              />
-            </div>
-          )}
-
-          {/* 🔴 (10-10-2026, Nico) Publicado en el marketplace, aparte de
-              disponible. Se oculta solo sin la migración. */}
-          {consignacion.propertyId && (
-            <PublicadoEnElMarketplace
-              propertyId={consignacion.propertyId}
-              puedeCambiar={puedeEditarPortafolio}
-              ficha={property ? fichaDelInmueble(property) : undefined}
-            />
-          )}
-
-          {/* Las fotos viven en el Property; sin propertyId (mandato sin
-              inmueble) no hay galería que mostrar. */}
-          {consignacion.propertyId && (
-            <div id="fotos" className="scroll-mt-20">
-              <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} />
-            </div>
-          )}
-
-          <div id="propietarios" className="scroll-mt-20">
-            <PropietarioSection
-              propietario={propietario ?? undefined}
-              copropietarios={consignacion.copropietarios}
-              participacionesDesconocidas={consignacion.participacionesDesconocidas === true}
-              onCambiar={() => setShowCambiarPropietario(true)}
-              rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
-              onElegirPrincipal={
-                puedeElegirPrincipal
-                  ? async (propietarioId) => {
-                      await consignacionesApi.elegirPrincipal(consignacion.id, propietarioId);
-                      // La copia local gana sobre el hook: se relee ahí (como al adjuntar el contrato).
-                      await recargarConsignacion();
-                    }
-                  : undefined
-              }
-            />
-          </div>
-
-          <div>
-            <AgenteSection
-              agente={agente ?? undefined}
-              encargado={encargado}
-              commissionPercent={consignacion.commissionPercent}
-              isSaleListing={consignacion.listingType === 'sale'}
-              onReassign={handleReassignAgent}
-            />
-          </div>
-
-          {/* D1 y D2 (17-09): con qué modalidad se le gira al propietario y de
-              quién son los intereses de mora. */}
-          <div>
-            <ModalidadDelMandato
-              consignacionId={consignacion.id}
-              esVenta={consignacion.listingType === 'sale'}
-              terminada={terminada}
-            />
-          </div>
-
-          {terminada ? <RetiroRegistrado consignacionId={consignacion.id} /> : null}
-
-          {/* Quién se postuló. Vive acá, antes del contrato vigente: es lo que
-              pasa mientras el inmueble está disponible. */}
-          <div>
-            <CandidatosDelInmueble
-              propertyId={consignacion.propertyId}
-              consignacionId={consignacion.id}
-            />
-          </div>
-
-          {/* Cuándo se puede visitar. Va junto a los candidatos porque es lo
-              otro que pasa mientras el inmueble está disponible — y sin esto
-              el aviso del marketplace dice «Sin disponibilidad» siempre. */}
-          <div>
-            <VisitasDelInmueble
-              propertyId={consignacion.propertyId}
-              arrendado={Boolean(consignacion.arrendado)}
-              arrendadoHasta={consignacion.leaseEndDate ?? null}
-            />
-          </div>
-
-          <div>
-            <CurrentLeaseSection consignacion={consignacion} />
-          </div>
-
-          {/* La historia contable ANTERIOR a Leasefy de este inmueble: los
-              comprobantes del sistema viejo que el back colgó de sus
-              contratos, en tres pestañas (ingresos · egresos · facturas).
-              Después del contrato vigente porque ése es el orden real —
-              arriba lo de hoy, abajo lo que quedó registrado antes. */}
-          <div>
-            <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} />
-          </div>
-
-          <div id="documentos" className="scroll-mt-20">
-            <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
-          </div>
-
-          {/* T-0109 contract.md §3.1.C — vía ADICIONAL a C9 (arriba): firma
-              electrónica reforzada del contrato de consignación. Se oculta
-              sola contra un back sin WU-3 (404 en C2). */}
-          <div>
-            <FirmaElectronicaDeConsignacionSection
-              consignacionId={consignacion.id}
-              puedeEditar={puedeEditarPortafolio}
-            />
-          </div>
-
-          {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
-              en el back —el inmueble (`/properties/:id`: fotos, datos,
-              ubicación) y su mandato (`/inmobiliaria/consignaciones/:id`:
-              estado, canon, terminación)— y aquí se leen como una sola lista. */}
-          <BitacoraDelRecurso
-            recursos={[
-              { tipo: 'inmueble', id: consignacion.propertyId },
-              { tipo: 'consignacion', id: consignacion.id },
-            ]}
+      {/*
+        La portada (revisión de diseño 21-10): migas y acciones en una fila —UNA
+        azul, «Editar»—, y la franja con quién vive, hasta cuándo y quién lo lleva.
+      */}
+      <ConsignacionHeader
+        consignacion={consignacion}
+        propertyThumbnailUrl={property?.thumbnailUrl}
+        fotos={property?.images}
+        onVerFotos={() => setFotoAbierta(0)}
+        onEdit={handleEdit}
+        onViewPortal={handleViewPortal}
+        onChangeStatus={handleChangeStatus}
+        onTerminate={handleTerminate}
+        onReactivar={() => {
+          setMotivoAlReactivar([]);
+          setShowReactivarDialog(true);
+        }}
+        fechaDeTerminacion={fechaDeTerminacion}
+        contratoVigente={contratoVigente}
+        estrato={property?.stratum ?? null}
+        vacanciaLarga={esVacanciaLarga(situacion?.vacancia)}
+        precioDeVenta={property?.salePrice ?? null}
+        migas={
+          <nav aria-label={t('inmobiliaria.portafolio.title')} className="flex min-w-0 items-center gap-2 text-sm">
+            <Link
+              href="/panel/inmobiliaria/inmuebles"
+              className="flex min-w-0 items-center gap-1.5 text-fg-muted transition-colors hover:text-fg"
+            >
+              <CaretLeft className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t('inmobiliaria.portafolio.title')}</span>
+            </Link>
+            <span className="hidden text-fg-subtle sm:inline" aria-hidden="true">/</span>
+            <span className="hidden max-w-[min(60ch,40vw)] truncate font-medium text-fg sm:inline">
+              {portadaDelInmueble(consignacion, t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`)).titulo}
+            </span>
+          </nav>
+        }
+        accionPrevia={
+          /*
+           * «Agendar visita» sólo donde se puede (revisión 21-10, «lo que no se puede, no se
+           * ofrece»): un inmueble arrendado no recibe visitas —el back las rechaza con 409— y
+           * uno terminado ya no se administra. En el celular vive en el menú ⋯.
+           */
+          !terminada && !contratoVigente && consignacion.propertyId ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              hideArrow
+              className="hidden shrink-0 sm:inline-flex"
+              onClick={() => setShowCitaModal(true)}
+              data-testid="pedir-cita"
+            >
+              <CalendarPlus className="h-4 w-4" />
+              Agendar visita
+            </Button>
+          ) : null
+        }
+        onAgendarVisita={!terminada && !contratoVigente && consignacion.propertyId ? () => setShowCitaModal(true) : undefined}
+        // 22-10 (revisión): con el mandato terminado no hay inquilino ni asesor que mostrar;
+        // la portada ya dice cuándo terminó.
+        franja={terminada ? undefined :
+          <FranjaDelArriendo
+            consignacion={consignacion}
+            asesor={
+              agente
+                ? { nombre: agente.name, rol: t(`inmobiliaria.consignaciones.roles.${agente.role}`) }
+                : encargado
+            }
+            cargandoAsesor={Boolean(consignacion.agenteId) && !agente && !encargado && (cargandoAgentes || cargandoAsesores)}
+            onAsignarAsesor={terminada ? undefined : handleReassignAgent}
+            vacancia={situacion?.vacancia}
           />
-        </div>
+        }
+      />
 
-        {/* Right Column - Sidebar (1/3) */}
-        <div className="space-y-6">
-          <div>
-            {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
-                por versiones; sin la migración del back monta la tarjeta de siempre. */}
-            <InventarioDelInmueble
-              consignacion={consignacion}
-              puedeEditar={puedeEditarInventario}
-              copiaLocal={copiaLocal}
-              sinSenal={sinSenal}
-              onActualizada={setConsignacionData}
-              volverAlContrato={volverAlContrato}
-            />
-          </div>
+      {/* El mandato que se vence (faltan 30 días o ya venció): un renglón con su salida. */}
+      {!terminada ? <AvisoDelMandatoQueVence datos={situacion} onPonerFecha={handleEdit} /> : null}
 
-          <div>
-            <MandatoDelInmueble
-              consignacionId={consignacion.id}
-              propietarioNombre={propietario?.name ?? null}
-              propietarioCorreo={propietario?.email ?? null}
-              direccionDelInmueble={consignacion.propertyAddress ?? null}
-              puedeEditar={puedeEditarInventario}
-            />
-          </div>
-
-          <div>
-            <ConsignacionTimeline
-              consignacion={consignacion}
-              agenteName={agente?.name}
-            />
-          </div>
-        </div>
-      </div>
+      {/*
+        GLOW UP (21-10-2026, Nico eligió «Pestañas por tarea»): Resumen · Arrendarlo ·
+        Mandato y giro (lo configurable) · Historial. Todas se montan (cada bloque
+        carga como antes) y un enlace con #fotos, #propietarios o #documentos abre
+        la pestaña donde vive.
+      */}
+      <PestanasDeLaFicha
+        etiqueta="Secciones del inmueble"
+        pestanas={[
+          {
+            id: 'resumen',
+            etiqueta: 'Resumen',
+            contenido: (
+              <>
+                {/*
+                  Resumen (revisión 21-10): lo que la portada no dice —cómo es el
+                  inmueble y dónde queda—, en 2/3 + 1/3. Quién vive, hasta cuándo y
+                  quién lo lleva ya están arriba, en la franja.
+                */}
+                {/* Lo pendiente PRIMERO (revisión 21-10): vencimiento, firma, papeles, mapa y fotos,
+                    cada uno con su botón. Con el mandato terminado no hay nada que poner en regla. */}
+                {/* 22-10 (revisión): disponible, lo primero es quién espera una decisión. */}
+                {!terminada && !contratoVigente ? (
+                  <CandidatosQueEsperan propertyId={consignacion.propertyId} consignacionId={consignacion.id} onCuantos={setCandidatosEsperando} />
+                ) : null}
+                {!terminada ? (
+                  <LoQueFaltaDelInmueble
+                    consignacion={consignacion}
+                    property={property}
+                    cargandoProperty={cargandoProperty}
+                    arrendado={contratoVigente}
+                    onEditar={handleEdit}
+                    onActualizado={refetchProperty}
+                    puedeEditar={puedeEditarPortafolio}
+                    // UNA azul: «Revisar las postulaciones» si alguien espera; si no, el paso que sigue.
+                    siguienteEnAzul={candidatosEsperando === 0}
+                  />
+                ) : null}
+                {consignacion.propertyId ? (
+                  (() => {
+                    const laFicha = (clase?: string) => (
+                      <FichaDelInmueble
+                        property={property}
+                        cargando={cargandoProperty}
+                        onEditar={terminada ? undefined : handleEdit}
+                        loQueFaltaEnLaLista
+                        className={clase}
+                        // Sin coordenadas, la ubicación es un renglón de «Lo que falta» (arriba);
+                        // con el mandato terminado se dice aquí, sin acción que ofrecer.
+                        // 22-10 (revisión): con el mandato terminado no se pide ubicarlo para un aviso que
+                        // ya no se publica; sin mandato vivo, la ubicación es un paso de la lista.
+                        ubicacion={undefined}
+                      />
+                    );
+                    const losDuenos = (
+                      <PropietariosDelResumen
+                        consignacionId={consignacion.id}
+                        propietario={propietario}
+                        copropietarios={consignacion.copropietarios ?? []}
+                        participacionesDesconocidas={consignacion.participacionesDesconocidas === true}
+                      />
+                    );
+                    const elMapa = conMapa ? (
+                      <UbicacionDelInmueble
+                        property={property}
+                        cargando={cargandoProperty}
+                        consignacion={consignacion}
+                        onActualizado={refetchProperty}
+                      />
+                    ) : null;
+                    // 22-10 (revisión, 1440): con dos características o menos la ficha es
+                    // corta y la columna izquierda terminaba 400 px antes; entonces el mapa
+                    // va a la columna ancha y la ficha, a la derecha bajo el propietario.
+                    const pocas = !!property && conMapa && caracteristicasDelInmueble(property, (x) => x).length <= 2;
+                    // Si lo único que hay es el estrato (ya está en la portada), sin tarjeta.
+                    const soloEstrato = !!property && caracteristicasDelInmueble(property, (x) => x).every((c) => c.clave === 'estrato');
+                    return pocas ? (
+                      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+                        <div className="lg:col-span-2">{elMapa}</div>
+                        <div className="space-y-6">
+                          {losDuenos}
+                          {soloEstrato ? null : laFicha()}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+                        {laFicha('lg:col-span-2')}
+                        {/* La columna derecha: quién es el dueño y, si está ubicado, el mapa. */}
+                        <div className="space-y-6">
+                          {losDuenos}
+                          {elMapa}
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  // Cartera migrada sin inmueble detrás: no hay ficha ni mapa que mostrar, y se dice.
+                  <p className="rounded-[16px] border border-border-faint px-5 py-4 text-body-sm text-fg-muted dark:border-border-strong" data-testid="resumen-sin-inmueble">
+                    Este mandato no tiene un inmueble asociado: no hay características ni ubicación que mostrar.
+                  </p>
+                )}
+                {terminada ? <RetiroRegistrado consignacionId={consignacion.id} /> : null}
+              </>
+            ),
+          },
+          // 22-10 (revisión): con el mandato terminado no hay nada que arrendar;
+          // en venta, la pestaña es «Venderlo».
+          ...(terminada ? [] : [{
+            id: 'arrendarlo',
+            etiqueta: consignacion.listingType === 'sale' ? 'Venderlo' : 'Arrendarlo',
+            contenido: (
+              <>
+                {/* 22-10 (revisión): el orden del trabajo —candidatos que esperan,
+                    fotos, publicar, visitas, inventario—, no el de los datos. */}
+                <div>
+                  <CandidatosDelInmueble
+                    propertyId={consignacion.propertyId}
+                    consignacionId={consignacion.id}
+                  />
+                </div>
+                {/* Las fotos viven en el Property; sin propertyId (mandato sin
+                    inmueble) no hay galería que mostrar. */}
+                {consignacion.propertyId && (
+                  <div id="fotos" className="scroll-mt-20">
+                    <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} compacta={contratoVigente} />
+                  </div>
+                )}
+                {/* 🔴 (10-10-2026, Nico) Publicado en el marketplace, aparte de
+                    disponible. Se oculta solo sin la migración. */}
+                {consignacion.propertyId && (
+                  <PublicadoEnElMarketplace
+                    propertyId={consignacion.propertyId}
+                    consignacionId={consignacion.id}
+                    puedeCambiar={puedeEditarPortafolio}
+                    onVerAviso={terminada ? undefined : handleViewPortal}
+                    ficha={property ? fichaDelInmueble(property) : undefined}
+                  />
+                )}
+                {/* Cuándo se puede visitar. Va junto a los candidatos porque es lo
+                    otro que pasa mientras el inmueble está disponible — y sin esto
+                    el aviso del marketplace dice «Sin disponibilidad» siempre. */}
+                <div>
+                  <VisitasDelInmueble
+                    propertyId={consignacion.propertyId}
+                    arrendado={Boolean(consignacion.arrendado)}
+                    arrendadoHasta={consignacion.leaseEndDate ?? null}
+                    agenteId={consignacion.agenteId ?? null}
+                  />
+                </div>
+                {/* Revisión 21-10: el inventario va con lo de arrendar (se necesita antes del próximo contrato), no en el historial. */}
+                <div>
+                  {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
+                      por versiones; sin la migración del back monta la tarjeta de siempre. */}
+                  <InventarioDelInmueble
+                    consignacion={consignacion}
+                    puedeEditar={puedeEditarInventario}
+                    copiaLocal={copiaLocal}
+                    sinSenal={sinSenal}
+                    onActualizada={setConsignacionData}
+                    volverAlContrato={volverAlContrato}
+                  />
+                </div>
+              </>
+            ),
+          }]),
+          {
+            id: 'mandato',
+            // 22-10 (revisión): sin el punto ámbar —se leía sólo por color y el
+            // Resumen ya dice lo que falta—.
+            etiqueta: 'Mandato y giro',
+            contenido: (
+              <>
+                {/* 22-10 (revisión): primero lo que falta hacer —papeles y firma—,
+                    con la firma reforzada (opcional) en el mismo lugar; después los
+                    términos y lo configurable. */}
+                <div id="papeles" className="scroll-mt-20">
+                  <MandatoDelInmueble
+                    consignacionId={consignacion.id}
+                    propietarioNombre={propietario?.name ?? null}
+                    propietarioCorreo={propietario?.email ?? null}
+                    direccionDelInmueble={consignacion.propertyAddress ?? null}
+                    puedeEditar={puedeEditarInventario}
+                    // T-0109 §3.1.C: la firma reforzada (opcional) va DENTRO del bloque de la
+                    // firma (22-10, revisión: estaba suelta entre tarjetas). Se oculta sola sin WU-3.
+                    firmaReforzada={
+                      <FirmaElectronicaDeConsignacionSection consignacionId={consignacion.id} puedeEditar={puedeEditarPortafolio} />
+                    }
+                  />
+                </div>
+                <TerminosDelMandatoSection consignacion={consignacion} onEditar={terminada ? undefined : handleEdit} />
+                <div id="propietarios" className="scroll-mt-20">
+                  <PropietarioSection
+                    propietario={propietario ?? undefined}
+                    copropietarios={consignacion.copropietarios}
+                    participacionesDesconocidas={consignacion.participacionesDesconocidas === true}
+                    onCambiar={() => setShowCambiarPropietario(true)}
+                    rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
+                    onElegirPrincipal={
+                      puedeElegirPrincipal
+                        ? async (propietarioId) => {
+                            await consignacionesApi.elegirPrincipal(consignacion.id, propietarioId);
+                            // La copia local gana sobre el hook: se relee ahí (como al adjuntar el contrato).
+                            await recargarConsignacion();
+                          }
+                        : undefined
+                    }
+                  />
+                </div>
+                {/* D1 y D2 (17-09): con qué modalidad se le gira al propietario y de
+                    quién son los intereses de mora. */}
+                <div>
+                  <ModalidadDelMandato
+                    consignacionId={consignacion.id}
+                    esVenta={consignacion.listingType === 'sale'}
+                    terminada={terminada}
+                  />
+                </div>
+                {/* Con un agente asignado, cómo se reparte la comisión (el nombre ya está en la portada). */}
+                {agente ? (
+                  <AgenteSection
+                    agente={agente}
+                    commissionPercent={consignacion.commissionPercent}
+                    isSaleListing={consignacion.listingType === 'sale'}
+                    onReassign={handleReassignAgent}
+                  />
+                ) : null}
+                <div id="documentos" className="scroll-mt-20">
+                  <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
+                </div>
+                {/* 🔴 C-10 (Nico, 02-10-2026): «Registrar la venta» y la comisión de venta del
+                    mandato. Ronda 12 de la revisión: al FINAL de la pestaña —es una acción de una
+                    vez en la vida del mandato—, no pegada a los papeles. */}
+                <TarjetaDeLaFicha title="La venta del inmueble" icon={<HandCoins className="h-4 w-4" />}>
+                  <VentaDelInmueble consignacionId={consignacion.id} sinTitulo />
+                </TarjetaDeLaFicha>
+              </>
+            ),
+          },
+          {
+            id: 'historial',
+            etiqueta: 'Historial',
+            contenido: (
+              <>
+                {/* Historial (revisión 21-10): primero lo que pasó; después lo del sistema anterior. */}
+                <div>
+                  <ConsignacionTimeline
+                    consignacion={consignacion}
+                    agenteName={agente?.name}
+                    titulo="Lo que pasó"
+                  />
+                </div>
+                {/* La historia contable ANTERIOR a Leasefy de este inmueble: los
+                    comprobantes del sistema viejo que el back colgó de sus
+                    contratos, en tres pestañas (ingresos · egresos · facturas).
+                    Después del contrato vigente porque ése es el orden real —
+                    arriba lo de hoy, abajo lo que quedó registrado antes. */}
+                <div>
+                  <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} ocultarSinComprobantes />
+                </div>
+                {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
+                    en el back —el inmueble (`/properties/:id`: fotos, datos,
+                    ubicación) y su mandato (`/inmobiliaria/consignaciones/:id`:
+                    estado, canon, terminación)— y aquí se leen como una sola lista. */}
+                {/* 22-10 (revisión: «un solo historial»): la bitácora de quién
+                    cambió qué dato va plegada debajo de lo que pasó. */}
+                <MasDetalles etiqueta="Ver quién cambió los datos" etiquetaAbierto="Ocultar quién cambió los datos">
+                  <BitacoraDelRecurso
+                    recursos={[
+                      { tipo: 'inmueble', id: consignacion.propertyId },
+                      { tipo: 'consignacion', id: consignacion.id },
+                    ]}
+                  />
+                </MasDetalles>
+              </>
+            ),
+          },
+        ]}
+      />
 
       <VisorDeFotos
         fotos={property?.images ?? []}

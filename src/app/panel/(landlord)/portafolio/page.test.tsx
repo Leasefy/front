@@ -13,7 +13,9 @@ import { act } from 'react';
 
 const hook = vi.hoisted(() => ({
   valor: {} as Record<string, unknown>,
+  replace: vi.fn(),
 }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: hook.replace }) }));
 vi.mock('@/lib/hooks/useOwnerPortal', () => ({ useOwnerFinanzas: () => hook.valor }));
 vi.mock('@/components/landlord/portal/PortalPlaceholder', () => ({
   PortalPlaceholder: () => React.createElement('div', { 'data-testid': 'proximamente' }),
@@ -31,6 +33,7 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
 }));
 
 import PortafolioPage from './page';
+import { PropietarioDeInmobiliariaProvider } from '@/lib/context/PropietarioDeInmobiliariaContext';
 
 const base = {
   portafolio: null,
@@ -58,9 +61,15 @@ afterEach(() => {
   container.remove();
 });
 
-const pintar = (valor: Record<string, unknown>) => {
+const pintar = (valor: Record<string, unknown>, deInmobiliaria = true) => {
   hook.valor = { ...base, ...valor };
-  act(() => root.render(<PortafolioPage />));
+  act(() =>
+    root.render(
+      <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
+        <PortafolioPage />
+      </PropietarioDeInmobiliariaProvider>,
+    ),
+  );
 };
 
 describe('Mi plata — cuatro estados (O1)', () => {
@@ -74,10 +83,19 @@ describe('Mi plata — cuatro estados (O1)', () => {
     expect(reintentar).toHaveBeenCalledTimes(1);
   });
 
-  it('con el portal apagado sigue siendo «Próximamente»', () => {
+  it('con el portal apagado sigue siendo «Próximamente» (quien tiene inmobiliaria)', () => {
+    hook.replace.mockClear();
     pintar({ unavailable: true });
+    expect(hook.replace).not.toHaveBeenCalled();
     expect(container.querySelector('[data-testid="proximamente"]')).toBeTruthy();
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull();
+  });
+
+  it('ronda 28: al independiente lo lleva directo a sus arriendos, sin la pantalla de paso', () => {
+    hook.replace.mockClear();
+    pintar({ unavailable: true }, false);
+    expect(hook.replace).toHaveBeenCalledWith('/panel/leases');
+    expect(container.querySelector('[data-testid="proximamente"]')).toBeNull();
   });
 
   // Mi plata vive dentro del panel del propietario (menú + cabecera): su carga

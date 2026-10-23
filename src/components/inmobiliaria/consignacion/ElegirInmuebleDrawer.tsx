@@ -9,7 +9,7 @@
  * inmueble nuevo o uno existente; si es existente le muestras en un drawer
  * los que tenemos con un buscador para que pueda decir cuál es.»
  *
- * Antes «Nueva consignación» sólo sabía crear un inmueble desde cero. Quien
+ * Antes «Nuevo mandato» sólo sabía crear un inmueble desde cero. Quien
  * migró su portafolio por Excel o por enlace ya tiene el inmueble cargado:
  * volver a escribirlo entero es cargarlo dos veces.
  *

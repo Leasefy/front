@@ -4,7 +4,7 @@ import { useCallback, useRef } from 'react';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Check, WarningCircle, Info, X } from '@phosphor-icons/react';
+import { MapPin, Check, WarningCircle, Info, X } from '@phosphor-icons/react';
 
 import { Appear, CrossFade, Progress } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
@@ -133,9 +133,8 @@ export function WizardShell({
             size="sm"
             onClick={() => router.back()}
             hideArrow
-            className="text-fg-muted hover:text-fg gap-2"
+            className="text-fg-muted hover:text-fg"
           >
-            <ArrowLeft className="h-4 w-4" />
             Volver
           </Button>
         </div>
@@ -153,7 +152,7 @@ export function WizardShell({
             <h1 className="text-sm font-medium text-fg truncate">
               {property.title}
             </h1>
-            <div className="flex items-center gap-1 text-xs text-fg-muted">
+            <div className="flex items-center gap-1 text-caption text-fg-muted">
               <MapPin className="h-3 w-3" />
               <span className="truncate">{property.neighborhood}</span>
             </div>
@@ -163,17 +162,17 @@ export function WizardShell({
             <p className="text-sm font-mono tabular-nums font-medium text-fg">
               {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : '—'}
             </p>
-            {property.monthlyRent != null && <p className="text-xs text-fg-muted">/mes</p>}
+            {property.monthlyRent != null && <p className="text-caption text-fg-muted">/mes</p>}
           </div>
         </div>
 
         {/* Mobile progress indicator */}
         <div className="px-4 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-mono tabular-nums font-medium text-fg" aria-live="polite" aria-atomic="true">
+            <span className="text-caption font-mono tabular-nums font-medium text-fg" aria-live="polite" aria-atomic="true">
               Paso {currentStep} de {totalSteps}
             </span>
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {currentStepConfig?.label}
             </span>
           </div>
@@ -192,9 +191,8 @@ export function WizardShell({
               size="sm"
               onClick={() => router.back()}
               hideArrow
-              className="text-fg-muted hover:text-fg gap-2 mb-6"
+              className="mb-6 text-fg-muted hover:text-fg"
             >
-              <ArrowLeft className="h-4 w-4" />
               Volver
             </Button>
 
@@ -213,7 +211,7 @@ export function WizardShell({
                 </h1>
                 {/* Sin barrio, sólo la ciudad: nunca «, Sabaneta». */}
                 {(property.neighborhood || property.city) && (
-                  <div className="flex items-center gap-1 text-xs text-fg-muted mt-1">
+                  <div className="flex items-center gap-1 text-caption text-fg-muted mt-1">
                     <MapPin className="h-3 w-3" />
                     <span>{[property.neighborhood, property.city].filter(Boolean).join(', ')}</span>
                   </div>
@@ -223,21 +221,14 @@ export function WizardShell({
                   <span className="text-sm font-mono tabular-nums font-medium text-fg">
                     {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : '—'}
                   </span>
-                  {property.monthlyRent != null && <span className="text-xs text-fg-muted">/mes</span>}
+                  {property.monthlyRent != null && <span className="text-caption text-fg-muted">/mes</span>}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Step title and description */}
-          <div className="p-6 xl:p-8 border-b border-border">
-            <h2 className="text-xl font-semibold text-fg tracking-tight">
-              {currentStepConfig?.description}
-            </h2>
-            <p className="text-sm text-fg-muted mt-2 leading-relaxed">
-              {STEP_DESCRIPTIONS[currentStep]}
-            </p>
-          </div>
+          {/* El paso actual se dice UNA vez, en la cabecera de la tarjeta;
+              aquí sólo el riel de pasos (antes repetía título y descripción). */}
 
           {/* Vertical Stepper */}
           <nav className="flex-1 p-6 xl:p-8 overflow-y-auto">
@@ -275,14 +266,10 @@ export function WizardShell({
                       {/* Circle indicator — Cadence #steps: 32px; done = cobalt fill + check;
                           active = white + 2px cobalt ring (halo) + mono numeral; pending = hairline */}
                       <div
-                        style={
-                          isCurrent
-                            ? { boxShadow: '0 0 0 4px rgba(26,64,255,0.14)' }
-                            : undefined
-                        }
                         className={cn(
                           'relative z-10 size-8 rounded-full flex items-center justify-center transition-[color,background-color,border-color,box-shadow]',
-                          'font-mono text-[13px] font-semibold tabular-nums',
+                          isCurrent && 'ring-4 ring-primary/15',
+                          'font-mono text-[13px] tabular-nums',
                           isCompleted && !isCurrent
                             ? 'bg-primary border-2 border-primary text-primary-fg'
                             : isCurrent
@@ -325,11 +312,11 @@ export function WizardShell({
             {showPrefillNotice && (
               <div
                 role="status"
-                className="mb-4 flex items-start gap-3 p-4 bg-primary-soft border border-primary/20 rounded-[14px]"
+                className="mb-4 flex items-start gap-3 rounded-md bg-surface-muted p-4"
                 data-testid="prefill-notice"
               >
-                <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                <p className="flex-1 text-sm text-fg">
+                <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-subtle" aria-hidden="true" />
+                <p className="flex-1 text-body-sm text-fg">
                   {prefillNoticeCopy}
                 </p>
                 <button
@@ -344,19 +331,20 @@ export function WizardShell({
             )}
 
             {/* Step content */}
-            <div className="bg-surface rounded-[22px] border border-border">
+            <div className="rounded-lg border border-border bg-surface">
               {/* Desktop step header - hidden on mobile since sidebar shows it */}
               <div className="hidden lg:block px-6 py-5 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center size-8 rounded-full bg-ink text-ink-fg font-mono text-sm font-semibold tabular-nums">
+                  <span className="flex items-center justify-center size-8 rounded-full bg-ink text-ink-fg font-mono text-sm tabular-nums">
                     {currentStep}
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-base font-medium text-fg">
                       {currentStepConfig?.description}
                     </h3>
-                    <p className="text-sm text-fg-muted">
-                      Paso {currentStep} de {totalSteps}
+                    <p className="text-body-sm text-fg-muted">
+                      <span className="font-mono tabular-nums">Paso {currentStep} de {totalSteps}</span> ·{' '}
+                      {STEP_DESCRIPTIONS[currentStep]}
                     </p>
                   </div>
                 </div>
@@ -367,7 +355,7 @@ export function WizardShell({
                 <h3 className="text-base font-medium text-fg">
                   {currentStepConfig?.description}
                 </h3>
-                <p className="text-sm text-fg-muted mt-1">
+                <p className="mt-1 text-body-sm text-fg-muted">
                   {STEP_DESCRIPTIONS[currentStep]}
                 </p>
               </div>
@@ -384,7 +372,7 @@ export function WizardShell({
               {/* Validation Errors — entran subiendo 8 px como los avisos del sistema. */}
               {attemptedAdvance && !currentStepValidation.isValid && (
                 <Appear className="px-4 lg:px-6 mb-4" aria-live="assertive" role="alert">
-                  <div className="flex items-start gap-3 p-4 bg-danger-soft border border-danger/20 rounded-[14px]">
+                  <div className="flex items-start gap-3 rounded-md border border-danger/20 bg-danger-soft p-4">
                     <WarningCircle className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-danger">
@@ -449,7 +437,7 @@ export function WizardShell({
             </div>
 
             {/* FloppyDisk indicator */}
-            <p className="text-center text-xs text-fg-muted mt-4">
+            <p className="text-center text-caption text-fg-muted mt-4">
               Tu progreso se guarda automáticamente
             </p>
           </div>

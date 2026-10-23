@@ -252,15 +252,13 @@ export function PostulacionDirecta({
           Volver al inmueble
         </Link>
 
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           {/* Qué inmueble */}
           <div className="border-b border-border p-6">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft">
-                <CheckCircle className="h-5 w-5 text-primary" weight="fill" />
-              </div>
+              <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" weight="fill" aria-hidden="true" />
               <div className="min-w-0 space-y-1">
-                <h1 className="text-xl font-semibold text-foreground">
+                <h1 className="text-h3 text-foreground">
                   Ya tenemos todo lo tuyo
                 </h1>
                 <p className="text-sm text-muted-foreground">
@@ -292,7 +290,7 @@ export function PostulacionDirecta({
           <div className="space-y-5 p-6">
             <Bloque icono={User} titulo="Tus datos">
               {identidad.vieneDelEstudio ? (
-                <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <p className="flex items-start gap-1.5 text-caption text-muted-foreground">
                   <LockSimple className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   Tu nombre y documento vienen de tu estudio de arrendamiento vigente.
                 </p>
@@ -329,7 +327,7 @@ export function PostulacionDirecta({
                   className="flex items-baseline justify-between gap-3 text-sm"
                 >
                   <span className="text-foreground">{NOMBRE_DE_DOCUMENTO[d.type]}</span>
-                  <span className="shrink-0 text-right text-xs text-muted-foreground">
+                  <span className="shrink-0 text-right text-caption text-muted-foreground">
                     {d.originalName}
                     <span className="ml-2 whitespace-nowrap">
                       subido el {fechaCorta(d.uploadedAt)}
@@ -367,11 +365,11 @@ export function PostulacionDirecta({
 
             {consentText ? (
               <div className="rounded-md border border-border bg-muted/30 p-3">
-                <p className="mb-1.5 text-xs font-medium text-foreground">
+                <p className="mb-1.5 text-caption font-medium text-foreground">
                   {consentText.title}
                 </p>
                 <div
-                  className="max-h-32 overflow-y-auto pr-1 text-xs leading-relaxed text-muted-foreground"
+                  className="max-h-32 overflow-y-auto pr-1 text-caption leading-relaxed text-muted-foreground"
                   data-lenis-prevent
                   data-testid="consent-text-body"
                 >
@@ -394,7 +392,7 @@ export function PostulacionDirecta({
             </label>
 
             {!puedeAutorizar ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 No pudimos cargar el texto de autorización de datos. Recarga la página
                 para poder continuar.
               </p>

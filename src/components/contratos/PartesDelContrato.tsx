@@ -131,7 +131,7 @@ export function PartesDelContrato({
 
       <div className="space-y-2 border-t border-border pt-3 first:border-0 first:pt-0">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
             {lista.length > 1 ? `Inquilinos (${lista.length})` : 'Inquilino'}
           </p>
           {puedeEditar ? (
@@ -308,7 +308,7 @@ function FilaDeInquilino({
           {inquilino.documento || 'Sin documento'}
           {inquilino.tipoDocumento ? (
             <span
-              className="ml-1.5 text-[11px] font-medium uppercase tracking-wide"
+              className="ml-1.5 text-caption font-medium uppercase tracking-wide"
               data-testid={`tipo-del-inquilino-${inquilino.id ?? 'principal'}`}
             >
               {etiquetaDelTipoDeDocumento(inquilino.tipoDocumento)}
@@ -330,7 +330,7 @@ function FilaDeInquilino({
       <div className="flex flex-shrink-0 items-center gap-2">
         {inquilino.esPrincipal ? (
           <span
-            className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary"
+            className="rounded-full bg-surface-muted px-2 py-0.5 text-caption font-medium text-fg"
             data-testid="inquilino-principal"
           >
             Principal
@@ -661,7 +661,7 @@ function Propietarios({
   if (lista.length === 0) {
     return (
       <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
           Propietario
         </p>
         <SinPropietarios contract={contract} />
@@ -672,7 +672,7 @@ function Propietarios({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
           {varios ? `Propietarios (${lista.length})` : 'Propietario'}
         </p>
         {puedeEditar && hayMandato ? (
@@ -772,7 +772,7 @@ function Propietarios({
                 </div>
                 {p.esPrincipal ? (
                   <span
-                    className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary"
+                    className="rounded-full bg-surface-muted px-2 py-0.5 text-caption font-medium text-fg"
                     data-testid="propietario-principal"
                   >
                     Principal

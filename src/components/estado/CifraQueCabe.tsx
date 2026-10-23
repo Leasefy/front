@@ -13,15 +13,29 @@
  * se ajusta a su contenido no sirve, porque ahí el ancho lo pone la cifra.
  */
 
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 /** Ancho de cada letra de la mono (JetBrains Mono: 600/1000), con un poco de aire. */
 const ANCHO_DE_LETRA_EM = 0.6
 
-export function CifraQueCabe({ children, className }: { children: string; className?: string }) {
-  const largo = Math.max(children.length, 1)
+export function CifraQueCabe({
+  children,
+  className,
+  texto,
+}: {
+  children: ReactNode
+  className?: string
+  /**
+   * El texto con que se mide el ancho cuando la cifra no es un texto (un
+   * `AnimatedNumber` que cuenta): el de la cifra final ya escrita.
+   */
+  texto?: string
+}) {
+  const medida = texto ?? (typeof children === 'string' ? children : '')
+  const largo = Math.max(medida.length, 1)
   return (
-    <span className={cn('block w-full min-w-0 [container-type:inline-size]', className)} title={children}>
+    <span className={cn('block w-full min-w-0 [container-type:inline-size]', className)} title={medida || undefined}>
       {/* En línea (no bloque): la cifra chica se apoya en la misma línea que
           las cifras grandes de las tarjetas vecinas, y la tarjeta no cambia de alto. */}
       <span

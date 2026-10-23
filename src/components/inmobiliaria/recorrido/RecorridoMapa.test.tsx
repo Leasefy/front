@@ -54,7 +54,7 @@ describe('RecorridoMapa', () => {
 
   it('el recorrido cambia de manos una sola vez', () => {
     const el = montar(<RecorridoMapa />)
-    const cortes = el.textContent?.match(/Acá cambia de manos/g) ?? []
+    const cortes = el.textContent?.match(/Aquí cambia de manos/g) ?? []
     expect(cortes).toHaveLength(1)
   })
 
@@ -64,7 +64,7 @@ describe('RecorridoMapa', () => {
     // El corte es un separador propio entre los dos tramos: va DESPUÉS del
     // paso 6 y ANTES del 7 en el documento (ya no vive dentro de un <li>).
     const corte = el.querySelector('[data-corte]')!
-    expect(corte.textContent).toContain('Acá cambia de manos')
+    expect(corte.textContent).toContain('Aquí cambia de manos')
     expect(items[5].compareDocumentPosition(corte) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(corte.compareDocumentPosition(items[6]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })

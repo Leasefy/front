@@ -126,7 +126,7 @@ describe('<EquipoDeAgentes />', () => {
     escribir('conciliacion')
     expect(porId('equipo-fila-conciliacion')).toBeTruthy()
     expect(porId('equipo-fila-prospectos')).toBeNull()
-    escribir('link de pago')
+    escribir('enlace de pago')
     expect(porId('equipo-fila-pagos')).toBeTruthy()
     // «Análisis de fotos» es una herramienta de Fixi, no una frase de «Hace»
     // (MANOS-1, 04-10-2026: Vidi ya no lista la firma; agenda e inventario).
@@ -153,5 +153,31 @@ describe('<EquipoDeAgentes />', () => {
     })
     expect(texto()).toContain('Estrategia para Juan Pérez')
     expect(texto()).not.toContain('Otra cosa')
+  })
+})
+
+/*
+ * Guardián de la voz (revisora r27, B-A): lo que cuenta cada agente —sus
+ * plegables «Hace» y «No hace» y sus herramientas— sale de `agentes.*` en el
+ * es.json, y ahí se escaparon «link» y «pipeline». Sin anglicismos del manual
+ * de voz: enlace, Prospección, Afinidad, calificación, correo.
+ */
+describe('la voz de los agentes (es.json › agentes.*)', () => {
+  it('no lleva anglicismos de la lista del manual de voz', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const es = JSON.parse(readFileSync(join(process.cwd(), 'src/lib/i18n/locales/es.json'), 'utf8')) as {
+      agentes: unknown
+    }
+    const malos: string[] = []
+    const recorrer = (o: unknown, ruta: string) => {
+      if (typeof o === 'string') {
+        if (/\b(links?|pipelines?|matching|scores?|e-?mails?)\b/i.test(o)) malos.push(`${ruta}: ${o}`)
+      } else if (o && typeof o === 'object') {
+        for (const [k, v] of Object.entries(o)) recorrer(v, `${ruta}.${k}`)
+      }
+    }
+    recorrer(es.agentes, 'agentes')
+    expect(malos).toEqual([])
   })
 })

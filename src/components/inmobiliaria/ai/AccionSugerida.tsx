@@ -123,7 +123,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
       {/* Suggestion */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-foreground">{accion.label}</p>
+          <p className="text-sm font-medium text-foreground">{accion.label}</p>
           {typeof accion.confianza === 'number' && (
             <span className="text-[11px] font-mono text-muted-foreground tabular-nums shrink-0">
               {t(`${WORKSPACE_NS}.acciones.confianza`, { pct: Math.round(accion.confianza * 100) })}
@@ -184,7 +184,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
               setErrorDelMotivo(null)
             }}
             rows={2}
-            className="w-full text-xs resize-none"
+            className="w-full text-caption resize-none"
             placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
             {...(errorDelMotivo
               ? { 'aria-describedby': 'accion-sugerida-reason-error', 'aria-invalid': true as const }

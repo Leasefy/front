@@ -161,11 +161,19 @@ async function elegirArchivo(input: HTMLInputElement | null, archivo: File) {
 
 describe('la cabecera', () => {
   it('nombra el contrato, su estado y cuánto falta para que venza', async () => {
+    // Los días se cuentan con la fecha de la fila (B1, r27) contra HOY (8 sep).
     await montar();
     expect(texto()).toContain('Apartamento en El Golf');
     expect(porTestId('renovacion-estado')?.textContent).toBe('Pendiente');
     expect(porTestId('renovacion-vence')?.textContent).toContain('Vence el 1 de octubre de 2026 · en 23 días');
     expect(porTestId('renovacion-pasos')).not.toBeNull();
+  });
+
+  it('🔴 B1: un contrato que ya venció dice «Venció el … · hace N días», nunca «hoy»', async () => {
+    // El back manda 0 en lo vencido (corta los negativos); hoy es el 4 oct.
+    await montar({ renovacion: { ...base, daysUntilExpiry: 0 }, hoy: new Date(2026, 9, 4) });
+    expect(porTestId('renovacion-vence')?.textContent).toContain('Venció el 1 de octubre de 2026 · hace 3 días');
+    expect(porTestId('renovacion-vence')?.textContent).not.toContain('hoy');
   });
 });
 

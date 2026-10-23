@@ -127,7 +127,7 @@ export function CobroResumen({
           </div>
           <div>
             {/* N-14 (QA-PAGOS-95): «Octubre de 2026», no «Octubre De 2026». */}
-            <h3 className="text-base font-semibold text-fg">
+            <h3 className="text-base font-medium text-fg">
               {monthDisplay.charAt(0).toUpperCase() + monthDisplay.slice(1)}
             </h3>
             <p className="text-sm text-fg-muted">
@@ -191,7 +191,7 @@ export function CobroResumen({
               )}
             </div>
             {tasa && (
-              <p className="mt-1 text-xs text-muted-foreground tabular-nums" data-testid="cobros-cifras-de-la-tasa">
+              <p className="mt-1 text-caption text-muted-foreground tabular-nums" data-testid="cobros-cifras-de-la-tasa">
                 {fraseDeLasCifras(tasa, t, formatCurrency)}
               </p>
             )}
@@ -221,7 +221,7 @@ export function CobroResumen({
           <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle className="w-4 h-4 text-success" weight="fill" />
-              <span className="text-xs font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.collected')}</span>
+              <span className="text-caption font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.collected')}</span>
             </div>
             <AnimatedNumber
               value={summary.totalCollected}
@@ -229,7 +229,7 @@ export function CobroResumen({
               from={0}
               format={formatCurrency}
             />
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-caption text-muted-foreground mt-0.5">
               {t('inmobiliaria.cobros.resumen.payments', { count: summary.cobrosPaid })}
             </p>
           </div>
@@ -237,12 +237,12 @@ export function CobroResumen({
           {/* Pendiente. El back manda en `totalPending` todo lo que falta cobrar, mora
               incluida (así lo suman el pie de la tabla y los reportes). Al lado de
               «En mora» eso contaba la mora dos veces: «Pendiente $10,6 M · 0 cobros»
-              y «En mora $10,6 M · 5 cobros» (QA 2026-09-14). Acá va lo que falta y
+              y «En mora $10,6 M · 5 cobros» (QA 2026-09-14). Aquí va lo que falta y
               todavía NO está en mora, igual que su conteo. */}
           <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
               <Clock className="w-4 h-4 text-warning" weight="fill" />
-              <span className="text-xs font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.pendingLabel')}</span>
+              <span className="text-caption font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.pendingLabel')}</span>
             </div>
             <AnimatedNumber
               value={Math.max(0, summary.totalPending - summary.totalLate)}
@@ -250,7 +250,7 @@ export function CobroResumen({
               from={0}
               format={formatCurrency}
             />
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-caption text-muted-foreground mt-0.5">
               {t('inmobiliaria.cobros.resumen.collections', { count: summary.cobrosPending })}
             </p>
           </div>
@@ -261,7 +261,7 @@ export function CobroResumen({
           <div className="p-3 rounded-md bg-muted/30" data-testid="cobros-resumen-vencido">
             <div className="flex items-center gap-2 mb-1">
               <Warning className={cn('w-4 h-4', summary.plazoSinFijar ? 'text-warning' : 'text-danger')} weight="fill" />
-              <span className="text-xs font-medium text-fg-muted">
+              <span className="text-caption font-medium text-fg-muted">
                 {summary.plazoSinFijar ? 'Vencido' : t('inmobiliaria.cobros.resumen.lateLabel')}
               </span>
             </div>
@@ -271,7 +271,7 @@ export function CobroResumen({
               from={0}
               format={formatCurrency}
             />
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-caption text-muted-foreground mt-0.5">
               {t('inmobiliaria.cobros.resumen.collections', { count: summary.cobrosLate })}
               {summary.plazoSinFijar && (
                 <span data-testid="vencido-sin-plazo"> · sin plazo fijado: no corre mora</span>
@@ -384,7 +384,7 @@ export function CobroResumenCompact({
       <div className="h-2 rounded-full overflow-hidden bg-muted mb-3">
         <BarraDeAvance ancho={anchoDeBarra(summary.collectionRate)} className={rateInfo.fill} />
       </div>
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-caption">
         <span className="text-foreground font-medium">
           {formatCurrency(summary.totalCollected)}
         </span>

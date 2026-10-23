@@ -15,7 +15,7 @@ import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MAXIMO_A_COMPARAR, MINIMO_A_COMPARAR } from '@/lib/inmobiliaria/comparacion';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
-import { AnimatedNumber, BackButton, CrossFade } from '@leasefy/cadence';
+import { AnimatedNumber, Avatar, BackButton, CrossFade } from '@leasefy/cadence';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
@@ -32,6 +32,7 @@ import { useContracts } from '@/lib/hooks/useContracts';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
 import type { Property } from '@/lib/types/property';
 import type { Contract } from '@/lib/types/contract';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 // ─── Status display ──────────────────────────────────────────────────────────
 
@@ -190,7 +191,7 @@ function CandidateActions({
 
   if (status === 'CONTRACT_FAILED') {
     return (
-      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-danger-soft text-danger text-xs font-medium whitespace-nowrap">
+      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-danger-soft text-danger text-caption font-medium whitespace-nowrap">
         Proceso cerrado
       </span>
     );
@@ -380,7 +381,7 @@ function CandidatosContent() {
             parte del panel estás (Nico: «ni se entiende y no tiene navegación
             para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
         <BackButton href="/panel/inmobiliaria/inmuebles" label="Inmuebles" />
-        <h1 className="text-h2 text-fg">Candidatos</h1>
+        <EncabezadoDePantalla seccion="Inmuebles" titulo="Candidatos" />
         <FalloDeCarga
           error={error}
           queEs="ese inmueble"
@@ -394,27 +395,26 @@ function CandidatosContent() {
 
   return (
     <CrossFade swapKey="lista">
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div className="space-y-4">
         <BackButton
-          label="Volver a propiedades"
+          label="Volver a inmuebles"
           onClick={() => router.push('/panel/inmobiliaria/inmuebles')}
         />
 
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-h2 text-fg">Candidatos</h1>
-            {property && (
-              <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-                {/* QA-IA-A: sin barrio salía «· , Medellín». */}
-                {[property.title, [property.neighborhood, property.city].filter((v) => v && String(v).trim()).join(', ')]
+        <EncabezadoDePantalla
+          seccion="Inmuebles"
+          titulo="Candidatos"
+          descripcion={
+            property
+              ? // QA-IA-A: sin barrio salía «· , Medellín».
+                [property.title, [property.neighborhood, property.city].filter((v) => v && String(v).trim()).join(', ')]
                   .filter(Boolean)
-                  .join(' · ')}
-              </p>
-            )}
-          </div>
-        </div>
+                  .join(' · ')
+              : undefined
+          }
+        />
       </div>
 
       {/* Recorrido del inquilino: acá se comparan (paso 9) y se decide (10).
@@ -471,9 +471,6 @@ function CandidatosContent() {
               <TableBodyAnimado>
                 {candidatosPagina.map((candidate) => {
                   const statusCfg = STATUS_CONFIG[candidate.status] ?? FALLBACK_STATUS;
-                  const initials = candidate.tenantName
-                    ? candidate.tenantName.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
-                    : '?';
 
                   return (
                     <TableRowAnimada
@@ -498,17 +495,14 @@ function CandidatosContent() {
                       {/* Tenant */}
                       <TableCell className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-                            <span className="text-sm font-medium text-primary">
-                              {initials}
-                            </span>
-                          </div>
+                          {/* GLOW UP (21-10): el Avatar de Cadence 2 (iniciales y el tono del nombre), no un círculo a mano. */}
+                          <Avatar name={candidate.tenantName || '?'} size="sm" className="shrink-0" />
                           <div>
                             <p className="text-sm font-medium text-fg flex items-center gap-1.5">
                               {candidate.tenantName || '—'}
                               <Sparkle className="w-3 h-3 text-primary" aria-label="Ver análisis IA" />
                             </p>
-                            <p className="text-xs text-fg-muted">
+                            <p className="text-caption text-fg-muted">
                               {candidate.tenantEmail || '—'}
                             </p>
                             {/* 🔴 El estudio es opcional (Nico, 04-10-2026):
@@ -525,13 +519,13 @@ function CandidatosContent() {
                           <div className="flex items-center gap-2">
                             <span
                               className={cn(
-                                'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold',
+                                'inline-flex items-center justify-center w-7 h-7 rounded-full text-caption font-medium',
                                 SCORE_COLORS[candidate.riskScore.level] ?? 'text-fg-muted bg-surface-muted'
                               )}
                             >
                               {candidate.riskScore.level}
                             </span>
-                            <span className="text-sm font-semibold text-fg tabular-nums">
+                            <span className="font-mono text-sm text-fg tabular-nums">
                               {candidate.riskScore.totalScore}
                             </span>
                           </div>
@@ -672,10 +666,10 @@ function CandidateStatTile({
       </div>
       <div className="min-w-0">
         {/* Cuenta cuando cambia (aprobar, rechazar). */}
-        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">
+        <p className="font-mono text-2xl font-medium text-fg tabular-nums leading-none">
           <AnimatedNumber value={value} format={(n) => String(Math.round(n))} />
         </p>
-        <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
+        <p className="text-caption text-fg-muted mt-1 truncate">{label}</p>
       </div>
     </div>
   );

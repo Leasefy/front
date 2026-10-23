@@ -76,7 +76,7 @@ export function DisputasList({
                   {estado.label}
                 </Badge>
               </div>
-              <div className="flex items-center gap-2 text-xs text-fg-muted">
+              <div className="flex items-center gap-2 text-caption text-fg-muted">
                 <span className="font-mono tabular-nums">
                   {d.disputed_amount != null
                     ? formatCurrency(d.disputed_amount)

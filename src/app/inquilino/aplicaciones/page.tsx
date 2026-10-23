@@ -1,22 +1,24 @@
 'use client';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useId, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FileText, MapPin, Clock, CheckCircle, XCircle, ArrowUpRight, GridFour, List, CaretLeft, CaretRight, ListBullets, Warning } from '@phosphor-icons/react';
-import { SegmentedControl, IconButton, CrossFade, MotionIndicator } from '@leasefy/cadence';
+import { FileText, MapPin, Clock, CheckCircle, XCircle, GridFour, List, CaretLeft, CaretRight, ListBullets, Warning } from '@phosphor-icons/react';
+import { IconButton, CrossFade, MotionIndicator, MonoLabel, StatusBadge } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 
 import { useTenantApplications } from '@/lib/hooks/useApplications';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import type { Contract } from '@/lib/types/contract';
@@ -142,6 +144,15 @@ function nextStepForApproved(contract: Contract | undefined, locale: string): st
 /**
  * Tenant Applications Page - Landing Style with List/Grid views and Pagination
  */
+/** El tono del StatusBadge desde el color que ya decide el estado de la postulación. */
+function tonoDelColor(color: string): 'success' | 'warning' | 'critical' | 'info' | 'neutral' {
+  if (color.includes('success')) return 'success';
+  if (color.includes('warning')) return 'warning';
+  if (color.includes('danger')) return 'critical';
+  if (color.includes('primary')) return 'info';
+  return 'neutral';
+}
+
 export default function AplicacionesPage() {
   const { t, locale, formatCurrency } = useI18n();
   const router = useRouter();
@@ -149,6 +160,8 @@ export default function AplicacionesPage() {
   const canScheduleVisit = (s: string) =>
     ['submitted', 'under_review', 'needs_info'].includes(s);
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
+  // Revisora r27: el vacío no le habla de «tu tope aprobado» a quien no lo tiene.
+  const { vigente: conTope } = useAprobacion();
   const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error, errorCrudo, refetch: recargarPostulaciones } = useTenantApplications();
 
   const [activeTab, setTab] = useState<'active' | 'completed'>('active');
@@ -158,7 +171,7 @@ export default function AplicacionesPage() {
   const idDeLaVista = useId();
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
     });
@@ -241,7 +254,7 @@ export default function AplicacionesPage() {
   const entrada = useEntradaTrasCargar(isOnboardingLoading || isAppsLoading);
   if (isOnboardingLoading || isAppsLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -251,8 +264,8 @@ export default function AplicacionesPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="applications" />
         </div>
       </div>
@@ -265,8 +278,8 @@ export default function AplicacionesPage() {
   // nada. `FalloDeCarga` clasifica el fallo y reintenta de verdad.
   if (error) {
     return (
-      <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
           <FalloDeCarga
             error={errorCrudo ?? error}
             queEs="tus postulaciones"
@@ -278,92 +291,32 @@ export default function AplicacionesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="bg-bg">
+      <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
 
         {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-medium text-fg tracking-tight">
-            {t('applications.title')}
-          </h1>
-          <p className="mt-1 text-fg-muted">
-            {t('applications.subtitle')}
-          </p>
-        </header>
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Buscar arriendo' : 'Find a rental'}
+          titulo={t('applications.title')}
+          descripcion={t('applications.subtitle')}
+        />
 
-        {/* Stats Grid */}
-        {!sinPostulaciones && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="rounded-xl bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <FileText className="w-5 h-5 text-fg-subtle" />
-            </div>
-            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Total aplicaciones' : 'Total applications'}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {activeApplications.length + completedApplications.length}
-            </p>
-            <p className="text-sm text-fg-muted mt-2">{locale === 'es' ? 'Todas tus aplicaciones' : 'All your applications'}</p>
-          </div>
-
-          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <Clock className="w-5 h-5 text-primary" />
-            </div>
-            <p className="text-sm text-primary mb-1">{locale === 'es' ? 'En proceso' : 'In progress'}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {activeApplications.length}
-            </p>
-            <p className="text-sm text-fg-muted mt-2">{t('applications.active')}</p>
-          </div>
-
-          <div className="rounded-xl bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <CheckCircle className="w-5 h-5 text-success" />
-            </div>
-            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Completadas' : 'Completed'}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {completedApplications.length}
-            </p>
-            <p className="text-sm text-fg-muted mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
-          </div>
-        </div>
-        )}
+        {/* GLOW UP (22-10): aquí iban tres cifras (todas, en proceso, cerradas) que repetían los números de las
+            pestañas de abajo. Cada postulación dice su estado; las pestañas cuentan. */}
 
         {/* Controls: Tabs + View Toggle */}
         {!sinPostulaciones && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          {/* Tabs — Cadence SegmentedControl */}
-          <SegmentedControl
-            value={activeTab}
-            onChange={handleTabChange}
-            aria-label={locale === 'es' ? 'Filtrar aplicaciones' : 'Filter applications'}
-            options={[
-              {
-                value: 'active',
-                label: (
-                  <span className="inline-flex items-center">
-                    {locale === 'es' ? 'En Proceso' : 'In Progress'}
-                    {activeApplications.length > 0 && (
-                      <Badge variant="default" className="ml-2 h-auto bg-primary-soft px-2 py-0.5 font-mono tabular-nums text-primary">
-                        {activeApplications.length}
-                      </Badge>
-                    )}
-                  </span>
-                ),
-              },
-              {
-                value: 'completed',
-                label: (
-                  <span className="inline-flex items-center">
-                    {locale === 'es' ? 'Historial' : 'History'}
-                    {completedApplications.length > 0 && (
-                      <Badge variant="default" className="ml-2 h-auto bg-primary-soft px-2 py-0.5 font-mono tabular-nums text-primary">
-                        {completedApplications.length}
-                      </Badge>
-                    )}
-                  </span>
-                ),
-              },
+          {/* Las pestañas de estado de todas las pantallas (antes, un SegmentedControl con el conteo en una
+              pastilla voltaje: el azul es para la acción, no para un número). */}
+          <PestanasDeEstado
+            etiqueta={locale === 'es' ? 'Filtrar postulaciones' : 'Filter applications'}
+            valor={activeTab}
+            onCambio={handleTabChange}
+            pestanas={[
+              { valor: 'active', etiqueta: locale === 'es' ? 'En proceso' : 'In progress', cuantos: activeApplications.length, fija: true, testid: 'pestana-en-proceso' },
+              { valor: 'completed', etiqueta: locale === 'es' ? 'Historial' : 'History', cuantos: completedApplications.length, fija: true, testid: 'pestana-historial' },
             ]}
           />
 
@@ -427,12 +380,11 @@ export default function AplicacionesPage() {
                       ? displayStatusForApproved(contractsByApp[application.id], locale)
                       : null;
                     const status = contractStatus ?? fallbackStatus;
-                    const StatusIcon = status.icon;
 
                     return (
                       <div key={application.id}>
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden">
+                          <div className="group rounded-lg border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden">
                             <div className="flex flex-col lg:flex-row">
                               {/* Image */}
                               <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -446,13 +398,9 @@ export default function AplicacionesPage() {
                                   className="object-cover transition-transform duration-reveal group-hover:scale-105"
                                 />
                                 <div className="absolute top-4 left-4">
-                                  <span className={cn(
-                                    'px-3 py-1.5 text-xs font-medium rounded-full flex items-center gap-1.5',
-                                    status.color
-                                  )}>
-                                    <StatusIcon className="w-3 h-3" />
+                                  <StatusBadge tone={tonoDelColor(status.color)} className="bg-surface/90 backdrop-blur-sm">
                                     {status.label}
-                                  </span>
+                                  </StatusBadge>
                                 </div>
                               </div>
 
@@ -460,7 +408,7 @@ export default function AplicacionesPage() {
                               <div className="flex-1 p-6">
                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                                   <div>
-                                    <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
+                                    <h3 className="text-h3 text-fg group-hover:text-primary transition-colors [text-wrap:balance]">
                                       {application.property?.title || 'Propiedad'}
                                     </h3>
                                     <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
@@ -469,40 +417,40 @@ export default function AplicacionesPage() {
                                     </p>
                                   </div>
                                   <div className="sm:text-right">
-                                    <p className="text-2xl font-bold text-fg">
+                                    <p className="font-mono text-h3 tabular-nums text-fg">
                                       {formatCurrency(application.property?.monthlyRent || 0)}
                                     </p>
-                                    <p className="text-xs text-fg-muted">/mes</p>
+                                    <p className="text-caption text-fg-muted">{locale === 'es' ? 'al mes' : 'per month'}</p>
                                   </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-border-faint">
                                   <div>
-                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Código' : 'Code'}</p>
+                                    <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Código' : 'Code'}</MonoLabel>
                                     <p className="text-sm font-mono font-medium text-fg">
                                       {application.trackingCode}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Enviada' : 'Submitted'}</p>
+                                    <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Enviada' : 'Submitted'}</MonoLabel>
                                     <p className="text-sm font-medium text-fg">
                                       {formatShortDate(application.submittedAt)}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Actualizada' : 'Updated'}</p>
+                                    <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Actualizada' : 'Updated'}</MonoLabel>
                                     <p className="text-sm font-medium text-fg">
                                       {formatShortDate(application.updatedAt)}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Progreso' : 'Progress'}</p>
-                                    <p className="text-sm font-medium text-fg">{status.progress}%</p>
+                                    <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Progreso' : 'Progress'}</MonoLabel>
+                                    <p className="font-mono text-sm tabular-nums text-fg">{status.progress} %</p>
                                   </div>
                                 </div>
 
                                 <div className="mt-4">
-                                  <div className="flex items-center justify-between text-xs text-fg-muted mb-2">
+                                  <div className="flex items-center justify-between text-caption text-fg-muted mb-2">
                                     <span>{locale === 'es' ? 'Progreso de tu postulación' : 'Application progress'}</span>
                                     <span>{status.progress}% {locale === 'es' ? 'completado' : 'complete'}</span>
                                   </div>
@@ -523,22 +471,19 @@ export default function AplicacionesPage() {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center justify-between mt-4 p-4 bg-surface-muted rounded-xl">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
-                                      <FileText className="w-5 h-5 text-fg-muted" />
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-fg-muted">{locale === 'es' ? 'Próximo paso' : 'Next step'}</p>
+                                <div className="flex flex-wrap items-center justify-between gap-3 mt-4 p-4 bg-surface-muted rounded-lg">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="min-w-0">
+                                      <MonoLabel className="block text-fg-subtle">{locale === 'es' ? 'Próximo paso' : 'Next step'}</MonoLabel>
                                       <p className={cn(
-                                        'text-sm font-semibold',
+                                        'text-sm font-medium',
                                         application.status === 'needs_info'
                                           ? 'text-warning'
                                           : 'text-fg'
                                       )}>
                                         {application.status === 'submitted' && (locale === 'es' ? 'Esperando revisión' : 'Waiting for review')}
                                         {application.status === 'under_review' && (locale === 'es' ? 'En evaluación de documentos' : 'Document evaluation')}
-                                        {application.status === 'needs_info' && (locale === 'es' ? '⚠ Completar información solicitada' : '⚠ Complete requested information')}
+                                        {application.status === 'needs_info' && (locale === 'es' ? 'Completar la información que te pidieron' : 'Complete the requested information')}
                                         {application.status === 'approved' && nextStepForApproved(contractsByApp[application.id], locale)}
                                         {application.status === 'rejected' && (locale === 'es' ? 'Proceso cerrado — explora alternativas' : 'Process closed — explore alternatives')}
                                         {application.status === 'withdrawn' && (locale === 'es' ? 'Postulación cerrada' : 'Application closed')}
@@ -556,9 +501,8 @@ export default function AplicacionesPage() {
                                         {locale === 'es' ? 'Agendar visita' : 'Schedule visit'}
                                       </button>
                                     )}
-                                    <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:text-primary transition-colors">
+                                    <span className="text-sm font-medium text-primary underline-offset-4 group-hover:underline">
                                       {locale === 'es' ? 'Ver detalle' : 'View details'}
-                                      <ArrowUpRight className="w-4 h-4" />
                                     </span>
                                   </div>
                                 </div>
@@ -581,12 +525,11 @@ export default function AplicacionesPage() {
                       ? displayStatusForApproved(contractsByApp[application.id], locale)
                       : null;
                     const status = contractStatus ?? fallbackStatus;
-                    const StatusIcon = status.icon;
 
                     return (
                       <div key={application.id}>
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden h-full flex flex-col">
+                          <div className="group rounded-lg border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden h-full flex flex-col">
                             {/* Image */}
                             <div className="relative aspect-[4/3] overflow-hidden">
                               <Image
@@ -598,20 +541,16 @@ export default function AplicacionesPage() {
                                 className="object-cover transition-transform duration-reveal group-hover:scale-105"
                               />
                               <div className="absolute top-3 left-3">
-                                <span className={cn(
-                                  'px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1',
-                                  status.color
-                                )}>
-                                  <StatusIcon className="w-3 h-3" />
+                                <StatusBadge tone={tonoDelColor(status.color)} className="bg-surface/90 backdrop-blur-sm">
                                   {status.label}
-                                </span>
+                                </StatusBadge>
                               </div>
                             </div>
 
                             {/* Content */}
                             <div className="p-4 flex-1 flex flex-col">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-fg group-hover:text-primary transition-colors line-clamp-1 mb-1">
+                                <h3 className="font-medium text-fg group-hover:text-primary transition-colors line-clamp-1 mb-1">
                                   {application.property?.title || 'Propiedad'}
                                 </h3>
                                 <p className="text-sm text-fg-muted flex items-center gap-1 mb-3">
@@ -620,20 +559,20 @@ export default function AplicacionesPage() {
                                 </p>
 
                                 <div className="flex items-center justify-between mb-3">
-                                  <p className="text-lg font-bold text-fg">
+                                  <p className="font-mono text-body tabular-nums text-fg">
                                     {formatCurrency(application.property?.monthlyRent || 0)}
-                                    <span className="text-xs font-normal text-fg-muted">/mes</span>
+                                    <span className="font-sans text-caption text-fg-muted"> {locale === 'es' ? 'al mes' : 'per month'}</span>
                                   </p>
-                                  <span className="text-xs font-mono text-fg-subtle">
+                                  <span className="text-caption font-mono text-fg-subtle">
                                     {application.trackingCode}
                                   </span>
                                 </div>
 
                                 {/* Progress Bar */}
                                 <div className="mb-3">
-                                  <div className="flex items-center justify-between text-xs text-fg-subtle mb-1">
+                                  <div className="flex items-center justify-between text-caption text-fg-subtle mb-1">
                                     <span>{locale === 'es' ? 'Progreso' : 'Progress'}</span>
-                                    <span>{status.progress}%</span>
+                                    <span className="font-mono tabular-nums">{status.progress} %</span>
                                   </div>
                                   <div className="h-1.5 bg-surface-muted rounded-full overflow-hidden">
                                     <div
@@ -655,12 +594,11 @@ export default function AplicacionesPage() {
 
                               {/* Footer */}
                               <div className="pt-3 border-t border-border-faint flex items-center justify-between">
-                                <span className="text-xs text-fg-muted">
+                                <span className="text-caption text-fg-muted">
                                   {formatShortDate(application.updatedAt)}
                                 </span>
-                                <span className="flex items-center gap-1 text-xs font-medium text-primary group-hover:text-primary transition-colors">
+                                <span className="text-caption font-medium text-primary underline-offset-4 group-hover:underline">
                                   {locale === 'es' ? 'Ver detalle' : 'View details'}
-                                  <ArrowUpRight className="w-3 h-3" />
                                 </span>
                               </div>
                             </div>
@@ -728,7 +666,7 @@ export default function AplicacionesPage() {
               {/* Results info */}
               <p className="text-center text-sm text-fg-muted mt-4">
                 {locale === 'es'
-                  ? `Mostrando ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} de ${currentApplications.length} aplicaciones`
+                  ? `Mostrando ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} de ${currentApplications.length} postulaciones`
                   : `Showing ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} of ${currentApplications.length} applications`}
               </p>
             </>
@@ -740,16 +678,26 @@ export default function AplicacionesPage() {
                 : (locale === 'es' ? 'No tienes postulaciones cerradas' : 'No closed applications')
               }
               description={activeTab === 'active'
-                ? (locale === 'es'
-                    ? 'Con tu tope aprobado te mostramos las propiedades que puedes tomar. Postularte es el primer paso.'
-                    : 'Explore available properties and apply to start your rental process.')
+                ? conTope
+                  ? (locale === 'es'
+                      ? 'Con tu tope te mostramos los inmuebles que puedes tomar. Postularte es el primer paso.'
+                      : 'With your limit we show you the homes you can take. Applying is the first step.')
+                  : (locale === 'es'
+                      ? 'Primero conoce hasta cuánto puedes arrendar: con ese estudio te postulas a los que quieras.'
+                      : 'First find out how much you can rent for: with that assessment you apply to as many as you want.')
                 : (locale === 'es'
                     ? 'Las postulaciones aprobadas o rechazadas aparecerán aquí.'
                     : 'Approved or rejected applications will appear here.')
               }
               /* A SU catálogo, no al listado general: ahí están las que puede
                  tomar de verdad. "aplicar" está muerto (docs/VOCABULARIO.md). */
-              action={activeTab === 'active' ? { label: locale === 'es' ? 'Ver propiedades para mí' : 'See properties for me', href: '/inquilino/para-ti' } : undefined}
+              action={
+                activeTab !== 'active'
+                  ? undefined
+                  : conTope
+                    ? { label: locale === 'es' ? 'Ver inmuebles para mí' : 'See properties for me', href: '/inquilino/para-ti' }
+                    : { label: locale === 'es' ? 'Conocer mi tope' : 'Find out my limit', href: '/inquilino/aprobacion' }
+              }
             />
           )}
           </CrossFade>

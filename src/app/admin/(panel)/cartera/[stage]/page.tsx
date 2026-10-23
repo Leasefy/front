@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Wallet } from '@phosphor-icons/react'
 import { MonoLabel } from '@leasefy/cadence'
@@ -13,8 +14,9 @@ import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { EmptyBlock } from '@/components/admin/screen/states'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { BackButton } from '@/components/ui/back-button'
+import { Button } from '@/components/ui/button'
 import { Pill } from '@/components/admin/Pill'
-import { ETAPA, ETAPAS_DE_CARTERA, esEtapaDeCartera, legible } from '@/lib/admin/textos-del-admin'
+import { ETAPA, esEtapaDeCartera, motivoDeEtapa, siguienteContacto } from '@/lib/admin/textos-del-admin'
 
 const PAGE_SIZE = 50
 
@@ -82,9 +84,15 @@ export default function CarteraStagePage() {
       <div className="space-y-6 p-6 lg:p-8">
         <BackButton href="/admin/cartera" label="Volver a cartera" />
         <EmptyBlock
-          icono={<Wallet weight="bold" />}
-          title={`No existe la etapa «${params.stage}»`}
-          hint={`Las etapas son ${ETAPAS_DE_CARTERA.join(', ')}.`}
+          icono={<Wallet weight="duotone" />}
+          tono="neutro"
+          title="Esa etapa de cobro no existe"
+          hint="Puede que el enlace esté mal copiado. Elige la etapa desde la cartera."
+          accion={
+            <Button asChild size="sm" variant="outline" hideArrow>
+              <Link href="/admin/cartera">Ver la cartera</Link>
+            </Button>
+          }
         />
       </div>
     )
@@ -112,9 +120,9 @@ export default function CarteraStagePage() {
       header: 'Venía de',
       cell: (r) =>
         r.previous_stage && esEtapaDeCartera(r.previous_stage) ? (
-          <Pill tone={ETAPA[r.previous_stage].tono}>{r.previous_stage}</Pill>
+          <Pill tone={ETAPA[r.previous_stage].tono}>{ETAPA[r.previous_stage].nombre}</Pill>
         ) : (
-          <span className="text-fg-subtle">{r.previous_stage ?? 'inicio'}</span>
+          <span className="text-fg-muted">{r.previous_stage ? (esEtapaDeCartera(r.previous_stage) ? ETAPA[r.previous_stage].nombre : 'Otra etapa') : 'Inicio'}</span>
         ),
     },
     {
@@ -141,7 +149,7 @@ export default function CarteraStagePage() {
         r.next_planned_for ? (
           <div>
             <div className="font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.next_planned_for)}</div>
-            <div className="text-caption text-fg-subtle">{r.next_channel ? legible(r.next_channel) : '—'}</div>
+            <div className="text-caption text-fg-subtle">{r.next_channel ? siguienteContacto(r.next_channel) : '—'}</div>
           </div>
         ) : (
           <span className="text-fg-subtle">—</span>
@@ -150,8 +158,8 @@ export default function CarteraStagePage() {
     {
       header: 'Motivo',
       cell: (r) => (
-        <span className="block max-w-[240px] truncate text-fg-muted" title={r.transition_reason}>
-          {legible(r.transition_reason)}
+        <span className="block max-w-[240px] truncate text-fg-muted">
+          {motivoDeEtapa(r.transition_reason)}
         </span>
       ),
     },
@@ -161,9 +169,16 @@ export default function CarteraStagePage() {
     <div className="space-y-6 p-6 lg:p-8">
       <BackButton href="/admin/cartera" label="Volver a cartera" />
       <PageHeader
-        label={`Cartera · ${stage}`}
+        label="Cartera"
         title={etapa.nombre}
         description={`${etapa.pista.charAt(0).toUpperCase()}${etapa.pista.slice(1)}. Primero los que llevan más tiempo en la etapa.`}
+        junto={
+          result.data ? (
+            <Pill tone={etapa.tono}>
+              {result.data.total.toLocaleString('es-CO')} {result.data.total === 1 ? 'deudor' : 'deudores'}
+            </Pill>
+          ) : null
+        }
       />
 
       <DataTable
@@ -175,7 +190,7 @@ export default function CarteraStagePage() {
         onReintentar={result.refetch}
         emptyTitle={`No hay deudores en ${etapa.nombre.toLowerCase()}`}
         emptyHint={tenant ? 'Prueba quitando el filtro de inmobiliaria.' : undefined}
-        emptyIcon={<Wallet weight="bold" />}
+        emptyIcon={<Wallet weight="duotone" />}
         aria-label={`Deudores en ${etapa.nombre}`}
         barra={
           // El filtro sólo con más de una inmobiliaria en la etapa.

@@ -1,8 +1,10 @@
 'use client'
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { useMemo, useState } from 'react'
 import { Airplane } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
@@ -29,10 +31,14 @@ const cuando = (iso: string | null) => {
     : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })
 }
 
-/** El botón de la fila, corto para que los tres quepan en una línea (el nombre entero va en `aria-label`). */
-const ACCION: Record<EstadoDelPilotoPorLeasefy, string> = { prueba: 'Prueba', contratado: 'Contratar', apagado: 'Apagar' }
+/**
+ * Cada opción del selector de la fila, corta para que las tres quepan en una línea (el nombre entero va en
+ * `aria-label`). Ronda 26 (revisora r25): son ESTADOS, no verbos («Prueba» era un sustantivo suelto y «Apagar»
+ * se ofrecía a lo que nunca se encendió).
+ */
+const ACCION: Record<EstadoDelPilotoPorLeasefy, string> = { prueba: 'En prueba', contratado: 'Contratado', apagado: 'Apagado' }
 
-const tono = (e: EstadoDelPilotoPorLeasefy) => (e === 'contratado' ? 'ok' : e === 'apagado' ? 'bad' : 'info')
+const tono = (e: EstadoDelPilotoPorLeasefy) => (e === 'contratado' ? 'ok' : e === 'apagado' ? 'bad' : 'warn')
 
 const SEGMENTOS: Segmento<PilotoDeLaInmobiliaria>[] = [
   { valor: 'todas', nombre: 'Todas', cumple: () => true },
@@ -101,12 +107,21 @@ export default function PilotoDeLasInmobiliariasPage() {
   const columnas: Column<PilotoDeLaInmobiliaria>[] = [
     {
       header: 'Inmobiliaria',
-      cell: (f) => <span className="font-medium text-fg">{f.legal_name}</span>,
+      // Ronda 26 (revisora r25): «Cómo está hoy» ya no es una columna con la misma frase larga en cada fila;
+      // va callada debajo del nombre.
+      cell: (f) => (
+        <div className="min-w-0">
+          <span className="text-body-sm font-medium text-fg">{f.legal_name}</span>
+          <span className="block text-caption text-fg-muted" data-testid={`admin-piloto-detalle-${f.tenant_id}`}>
+            {f.detalle}
+          </span>
+        </div>
+      ),
       orden: (f) => f.legal_name,
       texto: (f) => f.legal_name,
     },
     {
-      header: 'Plan del Piloto',
+      header: 'Plan del piloto',
       cell: (f) => <Pill tone={tono(f.estado)}>{EL_ESTADO[f.estado].nombre}</Pill>,
       orden: (f) => EL_ESTADO[f.estado].nombre,
       texto: (f) => EL_ESTADO[f.estado].nombre,
@@ -118,19 +133,17 @@ export default function PilotoDeLasInmobiliariasPage() {
       texto: (f) => (f.activo ? 'Encendido' : 'Sin encender'),
     },
     {
-      header: 'Cómo está hoy',
-      cell: (f) => (
-        <span className="text-caption text-fg-muted" data-testid={`admin-piloto-detalle-${f.tenant_id}`}>
-          {f.detalle}
-        </span>
-      ),
-      texto: (f) => f.detalle,
-    },
-    {
       header: 'Último cambio',
       cell: (f) => (
-        <span className="text-caption text-fg-subtle">
-          {f.updated_at ? cuando(f.updated_at) : 'Nadie lo ha cambiado'}
+        <span className="text-caption text-fg-muted">
+          {f.updated_at ? (
+            <span className="font-mono tabular-nums">{cuando(f.updated_at)}</span>
+          ) : (
+            <span className="text-fg-subtle" title="Nadie lo ha cambiado">
+              <span aria-hidden="true">—</span>
+              <span className="sr-only">Nadie lo ha cambiado</span>
+            </span>
+          )}
           {f.updated_by ? <span className="block">{f.updated_by}</span> : null}
         </span>
       ),
@@ -141,18 +154,23 @@ export default function PilotoDeLasInmobiliariasPage() {
     {
       header: '',
       cell: (f) => (
-        <div className="flex gap-1.5 whitespace-nowrap" role="group" aria-label={`Cambiar el Piloto de ${f.legal_name}`}>
+        // Un selector de tres (se ve como uno): la opción de hoy marcada y sin acción; las otras abren el cajón.
+        <div
+          className="inline-flex gap-0.5 whitespace-nowrap rounded-md border border-border bg-surface-muted p-0.5"
+          role="group"
+          aria-label={`Cambiar el plan del piloto de ${f.legal_name}`}
+        >
           {ESTADOS_DEL_PILOTO.map((e) => (
             <Button
               key={e}
               type="button"
-              variant={f.estado === e ? 'secondary' : 'outline'}
+              variant={f.estado === e ? 'secondary' : 'ghost'}
               size="sm"
               hideArrow
               aria-pressed={f.estado === e}
-              aria-label={`Dejarlo en «${EL_ESTADO[e].nombre}»`}
+              aria-label={f.estado === e ? `Hoy está en «${EL_ESTADO[e].nombre}»` : `Dejarlo en «${EL_ESTADO[e].nombre}»`}
               title={EL_ESTADO[e].nombre}
-              disabled={guardando}
+              disabled={guardando || f.estado === e}
               onClick={(ev) => {
                 ev.stopPropagation()
                 abrir(f, e)
@@ -171,15 +189,45 @@ export default function PilotoDeLasInmobiliariasPage() {
     <div className="space-y-6 p-6 lg:p-8" data-testid="admin-piloto">
       <PageHeader
         title="Piloto automático"
-        description="El Piloto automático de cada inmobiliaria: en prueba (30 días), contratado (sin vencimiento) o apagado por Leasefy. Cada cambio pide un motivo y queda en la bitácora con quién lo hizo."
+        description="El piloto automático de cada inmobiliaria: en prueba, contratado o apagado."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="El piloto automático" variante="secundario">
+            <p className="text-body-sm text-fg-muted">En prueba dura 30 días; contratado no vence; apagado lo decide Leasefy. Cada cambio pide un motivo y queda en la bitácora con quién lo hizo.</p>
+          </ParaEntenderMas>
+        }
       />
 
-      {!isLoading && data && (
-        <p className="text-sm text-fg-muted" data-testid="admin-piloto-conteo">
-          {data.length} inmobiliarias · {conteo.activos} con el Piloto encendido · {conteo.prueba} en prueba ·{' '}
-          {conteo.contratado} contratado · {conteo.apagado} apagado por Leasefy
-        </p>
-      )}
+      {/* Glow up 22-10: LA RESPUESTA (para cuántas corre el piloto); antes una frase con cinco cifras del mismo peso. */}
+      {!isLoading && data && data.length > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6" data-testid="admin-piloto-conteo">
+          <CifraHeroe
+            rotulo="Con el piloto encendido"
+            cifra={conteo.activos.toLocaleString('es-CO')}
+            contexto={`de ${data.length.toLocaleString('es-CO')} ${data.length === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
+            // Ronda 26 (revisora r25): la barra cuenta lo MISMO que la cifra (encendido o no); antes contaba el plan
+            // y no se leían juntas. El plan, en las pestañas de la tabla.
+            tramos={[
+              { clave: 'encendido', etiqueta: 'Encendido', monto: conteo.activos, tono: 'exito', cifra: conteo.activos.toLocaleString('es-CO'), siempre: true },
+              {
+                clave: 'sin-encender',
+                etiqueta: 'Sin encender',
+                monto: data.length - conteo.activos,
+                tono: 'neutro',
+                cifra: (data.length - conteo.activos).toLocaleString('es-CO'),
+              },
+            ]}
+            total={data.length}
+            // Ronda 28 (revisora r27, T6): con ninguna encendida, UNA frase (antes «0 de 5» con barra gris y
+            // leyenda 0 / 5).
+            esCero={conteo.activos === 0}
+            cuandoEsCero={
+              data.length === 1
+                ? 'La inmobiliaria todavía no tiene el piloto encendido.'
+                : `Ninguna de las ${data.length.toLocaleString('es-CO')} inmobiliarias tiene el piloto encendido todavía.`
+            }
+          />
+        </div>
+      ) : null}
 
       {hecho && (
         <Alert variant="success" role="status" data-testid="admin-piloto-hecho">
@@ -195,14 +243,15 @@ export default function PilotoDeLasInmobiliariasPage() {
         error={error ? new Error(mensajeDelFalloDelPiloto(error)) : null}
         onReintentar={refetch}
         emptyTitle="Todavía no hay inmobiliarias"
-        emptyIcon={<Airplane weight="bold" />}
-        aria-label="El Piloto automático de cada inmobiliaria"
+        emptyIcon={<Airplane weight="duotone" />}
+        aria-label="El piloto automático de cada inmobiliaria"
         filaTestid={(f) => `admin-piloto-fila-${f.tenant_id}`}
         filaMarcada={(f) => f.tenant_id === cambio?.fila.tenant_id}
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar una inmobiliaria"
         segmentos={SEGMENTOS}
         exportar="piloto-automatico"
+        masEnElExcel={[{ header: 'Cómo está hoy', texto: (f) => f.detalle }]}
       />
 
       <Cajon
@@ -258,6 +307,7 @@ export default function PilotoDeLasInmobiliariasPage() {
             variant={cambio?.estado === 'apagado' ? 'destructive' : 'default'}
             onClick={() => void guardar()}
             disabled={!motivoValido || guardando}
+            isLoading={guardando}
             data-testid="admin-piloto-guardar"
           >
             {guardando ? 'Guardando…' : 'Sí, cambiarlo'}

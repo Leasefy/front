@@ -39,7 +39,7 @@ export function AddOnCard({
           <div className="text-right shrink-0">
             <p className="text-[15px] font-medium text-foreground"><span className="font-mono tabular-nums">{addon.price}%</span> <span className="text-[11px] font-normal text-muted-foreground">del arriendo</span></p>
             <p className="text-[11px] font-mono tabular-nums text-muted-foreground">
-              ~${monthlyCost.toLocaleString('es-CL')}/mes
+              ~${monthlyCost.toLocaleString('es-CO')}/mes
             </p>
           </div>
         );
@@ -47,7 +47,7 @@ export function AddOnCard({
         return (
           <div className="text-right shrink-0">
             <p className="text-[15px] font-medium text-foreground">
-              <span className="font-mono tabular-nums">${addon.price.toLocaleString('es-CL')}</span> <span className="text-[11px] font-normal text-muted-foreground">/mes</span>
+              <span className="font-mono tabular-nums">${addon.price.toLocaleString('es-CO')}</span> <span className="text-[11px] font-normal text-muted-foreground">/mes</span>
             </p>
           </div>
         );
@@ -55,7 +55,7 @@ export function AddOnCard({
         return (
           <div className="text-right shrink-0">
             <p className="text-[15px] font-medium text-foreground">
-              <span className="font-mono tabular-nums">${addon.price.toLocaleString('es-CL')}</span> <span className="text-[11px] font-normal text-muted-foreground">único</span>
+              <span className="font-mono tabular-nums">${addon.price.toLocaleString('es-CO')}</span> <span className="text-[11px] font-normal text-muted-foreground">único</span>
             </p>
           </div>
         );

@@ -35,10 +35,9 @@ export { AgenteSelector } from './AgenteSelector';
 // Consignacion Detail Components
 export { ConsignacionHeader } from './ConsignacionHeader';
 export {
-  PropertyInfoSection,
+  TerminosDelMandatoSection,
   PropietarioSection,
   AgenteSection,
-  CurrentLeaseSection,
   DocumentsSection,
 } from './ConsignacionDetailSections';
 export { ActaEntregaView } from './ActaEntregaView';

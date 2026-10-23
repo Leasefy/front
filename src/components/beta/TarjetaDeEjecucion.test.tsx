@@ -108,7 +108,10 @@ const pintar = (m: ChatMessage, posteriores: ChatMessage[] = []) => {
 const tarjeta = () => container.querySelector<HTMLElement>('[data-testid="tarjeta-de-ejecucion"]')!;
 const boton = (texto: string) =>
   [...container.querySelectorAll('button')].find((b) => b.textContent?.trim() === texto || b.textContent?.includes(texto));
-const esOutline = (b: HTMLElement) => b.className.includes('bg-transparent') && b.className.includes('border-border');
+// El botón secundario: antes contorno (transparente + borde); desde Cadence 2 (20-10-2026) relleno arena sin borde.
+const esOutline = (b: HTMLElement) =>
+  (b.className.includes('bg-transparent') && b.className.includes('border-border')) ||
+  b.className.split(/\s+/).includes('bg-surface-muted'); // la clase sola, no `disabled:bg-surface-muted` del primario
 const flush = () => act(async () => {});
 
 /** La persona respondió con un botón (queda en el hilo después de la tarjeta). */

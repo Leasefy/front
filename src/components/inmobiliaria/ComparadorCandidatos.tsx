@@ -18,6 +18,7 @@
 
 import { useMemo } from 'react'
 import { Trophy, Warning, Info } from '@phosphor-icons/react'
+import { Avatar } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { IconTooltip } from '@/components/ui/icon-tooltip'
@@ -39,17 +40,6 @@ const COLOR_NIVEL: Record<string, string> = {
   B: 'bg-primary-soft text-primary',
   C: 'bg-warning-soft text-warning',
   D: 'bg-danger-soft text-danger',
-}
-
-function iniciales(nombre: string): string {
-  return (
-    nombre
-      .split(' ')
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase() || '?'
-  )
 }
 
 export interface ComparadorCandidatosProps {
@@ -101,9 +91,7 @@ export function ComparadorCandidatos({
                   className="sticky top-0 z-10 h-auto min-w-[180px] border-b border-l border-border bg-card px-4 py-4 align-bottom font-sans normal-case"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-medium text-primary">
-                      {iniciales(candidato.tenantName)}
-                    </span>
+                    <Avatar name={candidato.tenantName || '?'} size="sm" className="shrink-0" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-fg">
                         {candidato.tenantName || '—'}

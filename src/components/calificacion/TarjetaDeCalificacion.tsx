@@ -188,7 +188,7 @@ export function LetraDeLaCalificacion({
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-center rounded-full font-mono font-semibold tabular-nums',
+        'inline-flex shrink-0 items-center justify-center rounded-full font-mono font-medium tabular-nums',
         grande ? 'h-16 w-16 text-3xl' : 'h-8 w-8 text-sm',
         letra ? TONO_DE_LA_LETRA[letra] : 'bg-surface-muted text-fg-subtle',
       )}
@@ -223,7 +223,7 @@ function AnilloDelBloque({ puntaje, etiqueta }: { puntaje: number | null; etique
           />
         )}
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-mono text-base font-semibold tabular-nums text-fg">
+      <span className="absolute inset-0 flex items-center justify-center font-mono text-base font-medium tabular-nums text-fg">
         {puntaje === null ? '—' : <AnimatedNumber value={Math.round(puntaje)} from={0} duration={motionDuration.reveal * 1.6} />}
       </span>
     </div>
@@ -312,7 +312,7 @@ function BloqueDelDesglose<K extends string>({
           etiqueta={bloque.puntaje === null ? tr('Sin puntaje todavía') : tr('{p} de 100', { p: Math.round(bloque.puntaje) })}
         />
         <div className="min-w-0 flex-1">
-          <h4 className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr(titulo)}</h4>
+          <h4 className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{tr(titulo)}</h4>
           <p className="mt-1 text-sm text-fg-muted">{tr(queEs)}</p>
         </div>
         {peso !== null && (
@@ -338,7 +338,7 @@ function BloqueDelDesglose<K extends string>({
                   <span className="text-caption text-fg-muted">
                     {tr(queMide[r.componente as keyof typeof queMide] ?? '')}
                   </span>
-                  <span className="shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">
+                  <span className="shrink-0 font-mono text-caption tabular-nums text-fg-subtle">
                     {tr('cuenta {p} %', { p: Math.round(r.pesoEfectivo) })}
                   </span>
                 </div>
@@ -346,11 +346,11 @@ function BloqueDelDesglose<K extends string>({
               </StaggerItem>
             ))}
           </Stagger>
-          <div className="relative mt-2 h-3" aria-hidden>
+          <div className="relative mt-2 h-4" aria-hidden>
             {TRAMOS_DE_LA_ESCALA.map((t) => (
               <span
                 key={t.letra}
-                className="absolute -translate-x-1/2 font-mono text-[10px] leading-3 text-fg-subtle"
+                className="absolute -translate-x-1/2 font-mono text-caption leading-4 text-fg-subtle"
                 style={{ left: `${t.centro}%` }}
               >
                 {t.letra}
@@ -424,7 +424,7 @@ export function TarjetaDeCalificacion({
         <div className="flex items-start gap-4">
           <LetraDeLaCalificacion letra={c.letra} grande />
           <div className="space-y-1.5">
-            <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr('Calificación Leasefy')}</p>
+            <p className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{tr('Calificación Leasefy')}</p>
             <p className="text-2xl font-medium text-fg">
               <span className="font-mono tabular-nums">{c.puntaje}</span>
               <span className="text-base text-fg-muted">/100</span>
@@ -440,19 +440,19 @@ export function TarjetaDeCalificacion({
 
         <div className={cn('grid grid-cols-2 gap-4 sm:grid-cols-3', !compacta && 'lg:min-w-[22rem]')}>
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr('Canon máximo')}</p>
+            <p className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{tr('Canon máximo')}</p>
             <p className="mt-1 font-mono text-sm tabular-nums text-fg">
               {c.canonMaximoCop !== null ? formatCurrency(c.canonMaximoCop) : tr('Sin ingreso verificado')}
             </p>
           </div>
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr('Historial')}</p>
+            <p className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{tr('Historial')}</p>
             <p className="mt-1 font-mono text-sm tabular-nums text-fg">
               {c.mesesObservados === 1 ? tr('1 mes') : c.mesesObservados > 0 ? tr('{n} meses', { n: c.mesesObservados }) : tr('Sin historial')}
             </p>
           </div>
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr('Pesa el historial')}</p>
+            <p className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{tr('Pesa el historial')}</p>
             <p className="mt-1 font-mono text-sm tabular-nums text-fg">{tr('{p} %', { p: pesoHistorial })}</p>
           </div>
         </div>

@@ -74,8 +74,12 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import Link from 'next/link'
 import { Receipt } from '@phosphor-icons/react'
 import { SegmentedControl } from '@leasefy/cadence'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha'
 
 import {
   Table,
@@ -114,19 +118,22 @@ type Vinculo =
   | { contractId: string; propertyId?: never }
   | { propertyId: string; contractId?: never }
 
-type Props = Vinculo
+type Props = Vinculo & {
+  /** En la ficha del inmueble: sin comprobantes migrados, la sección no se pinta. */
+  ocultarSinComprobantes?: boolean
+}
 
 /** El orden de las pestañas es el de Nico; «Otros» va al final y sólo si hay. */
 const PESTANAS: { clase: ClaseDeComprobante; etiqueta: string; vacio: string }[] = [
   {
     clase: 'ingreso',
     etiqueta: 'Ingresos',
-    vacio: 'Ningún comprobante de ingreso del sistema anterior quedó colgado acá.',
+    vacio: 'No hay comprobantes de ingreso del sistema anterior aquí.',
   },
   {
     clase: 'egreso',
     etiqueta: 'Egresos',
-    vacio: 'Ningún comprobante de egreso del sistema anterior quedó colgado acá.',
+    vacio: 'No hay comprobantes de egreso del sistema anterior aquí.',
   },
   {
     clase: 'factura',
@@ -138,7 +145,7 @@ const PESTANAS: { clase: ClaseDeComprobante; etiqueta: string; vacio: string }[]
     // que no está acá; el arreglo es pedirle al sistema viejo el export con la
     // columna del cliente, y eso es lo que dice el vacío.
     vacio:
-      'Ninguna factura del sistema anterior quedó colgada acá. Una factura se cuelga cuando su concepto nombra al inquilino o al propietario; si el export las trae como «Factura 57521», sin cliente, no hay por dónde colgarlas y hace falta pedirlo con la columna del cliente.',
+      'No hay facturas del sistema anterior aquí. Una factura aparece cuando su concepto nombra al inquilino o al propietario; si el archivo las trae como «Factura 57521», sin cliente, hay que pedirlo de nuevo con la columna del cliente.',
   },
   {
     clase: 'otro',
@@ -230,15 +237,20 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
   // y se lee como «no hay facturas».
   const pagina = useTablePagination(documentos, { resetKey: clase })
 
+  // 22-10 (revisión de la ficha): en la ficha del inmueble, sin comprobantes
+  // migrados la sección no se pinta (era un vacío de 400 px en el Historial).
+  if (props.ocultarSinComprobantes && conteos !== null && totalGeneral === 0) return null
+
   return (
+    // 21-10 (revisión de la ficha): la superficie y el título de las demás secciones.
     <section
-      className="rounded-lg border border-border bg-card p-5 space-y-3"
+      className={cn(SUPERFICIE_DE_LA_FICHA, 'space-y-4 px-6 pb-6 pt-5')}
       data-testid="comprobantes-del-sistema-anterior"
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Receipt className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-foreground">
+        <div className="flex items-center gap-2.5">
+          <Receipt className="h-[18px] w-[18px] text-fg-subtle" aria-hidden="true" />
+          <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">
             Comprobantes del sistema anterior
           </h3>
         </div>
@@ -247,7 +259,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
             diría 500 para siempre. */}
         {totalGeneral > 0 ? (
           <span
-            className="font-mono text-sm tabular-nums text-fg-muted"
+            className="font-mono text-[11px] uppercase tracking-[0.1em] tabular-nums text-fg-subtle"
             data-testid="comprobantes-total"
           >
             {totalGeneral.toLocaleString(localeDeLasCifras())}
@@ -271,8 +283,13 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
         <SinDatos
           queSon="comprobantes migrados"
           icono={Receipt}
-          titulo="Sin comprobantes del sistema anterior"
-          descripcion={`${contractId ? 'Este contrato' : 'Este inmueble'} no tiene comprobantes de la contabilidad vieja colgados. Aparecen acá cuando se sube el export de comprobantes en Migración → Registros contables y el concepto nombra al inquilino o al propietario.`}
+          titulo="Todavía no hay comprobantes del sistema anterior"
+          descripcion={`Aparecen aquí cuando subas los comprobantes del sistema anterior en Migración → Registros contables y el concepto nombre al inquilino o al propietario de ${contractId ? 'este contrato' : 'este inmueble'}.`}
+          accion={
+            <Button asChild variant="secondary" size="sm" hideArrow>
+              <Link href="/panel/inmobiliaria/migracion/contables">Ir a Registros contables</Link>
+            </Button>
+          }
         />
       ) : (
         <div className="space-y-3">
@@ -284,7 +301,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
           {/* Cuatro segmentos no entran en 400 px de ancho. El `TabsList` que
               había antes traía este scroll de fábrica en su shim; el
               `SegmentedControl` del DS es `inline-flex` a secas, así que el
-              contenedor lo pone acá. Sin esto, en un teléfono «Otros» queda
+              contenedor lo pone aquí. Sin esto, en un teléfono «Otros» queda
               fuera de la pantalla y no hay forma de llegar a él. */}
           <div className="max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <SegmentedControl<ClaseDeComprobante>
@@ -345,6 +362,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
             >
               <TablaDeComprobantes
                 documentos={pagina.pageItems}
+                conTipo={clase === 'otro'}
                 pie={
                   pagina.shouldPaginate ? (
                     <div
@@ -369,7 +387,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
               <p className="text-caption text-fg-muted" data-testid="comprobantes-recortados">
                 Se muestran los {historia!.mostrados.toLocaleString(localeDeLasCifras())} más recientes
                 de {historia!.total.toLocaleString(localeDeLasCifras())} en esta pestaña. Los demás están
-                guardados —no se perdió ninguno—, pero acá sólo caben estos.
+                guardados —no se perdió ninguno—, pero aquí sólo caben estos.
               </p>
             ) : null}
           </div>
@@ -380,6 +398,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
 }
 
 function TablaDeComprobantes({
+  conTipo = true,
   documentos,
   pie,
 }: {
@@ -387,15 +406,31 @@ function TablaDeComprobantes({
   documentos: DocumentoMigradoVista[]
   /** El pie de paginación, dentro del mismo marco que la tabla. */
   pie?: ReactNode
+  /**
+   * La columna «Tipo». En Ingresos, Egresos o Facturas dice lo mismo en cada
+   * fila («Comprobante de Ingreso» ×10, revisión 21-10): sólo va en «Otros»,
+   * donde es lo único que dice qué es cada fila (nota crédito, nómina…).
+   */
+  conTipo?: boolean
 }) {
+  const formas = new Set(documentos.map((d) => d.asociadoPor));
+  const comoSeAsociaronTodos =
+    documentos.length > 1 && formas.size === 1 && documentos[0]!.asociadoPor !== 'ninguno' ? documentos[0]!.asociadoPor : null;
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface">
-      <Table>
-        <TableHeader>
+    <div className="overflow-hidden rounded-[16px] border border-border-faint bg-surface">
+      {/* Cómo quedaron colgados de este contrato, UNA vez si es igual para todos (revisión 21-10:
+          «Asociado por el nombre del tercero» ×10). */}
+      {comoSeAsociaronTodos ? (
+        <p className="border-b border-border-faint px-4 py-2.5 text-caption text-fg-subtle" data-testid="comprobantes-asociados-por">
+          Todos asociados {COMO_SE_ASOCIO[comoSeAsociaronTodos] ?? comoSeAsociaronTodos}.
+        </p>
+      ) : null}
+      {/* Bajo 768 cada comprobante es una tarjeta de dos renglones (número y monto; fecha y
+          concepto): la tabla encogida dejaba el concepto de tres letras por renglón. */}
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
-            {/* El tipo se repite dentro de una pestaña, pero en «Otros» es lo
-                único que dice qué es cada fila (nota crédito, nómina…). */}
-            <TableHead>Tipo</TableHead>
+            {conTipo ? <TableHead>Tipo</TableHead> : null}
             <TableHead>Número</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead>Concepto</TableHead>
@@ -408,19 +443,26 @@ function TablaDeComprobantes({
         </TableHeader>
         <TableBody>
           {documentos.map((d) => (
-            <TableRow key={d.id} data-testid="comprobante-migrado">
-              <TableCell className="whitespace-nowrap">
-                {d.tipo || '—'}
-                {d.anulado ? <span className="ml-2 text-caption text-danger">anulado</span> : null}
-              </TableCell>
+            <TableRow
+              key={d.id}
+              data-testid="comprobante-migrado"
+              className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-1 max-md:px-4 max-md:py-3"
+            >
+              {conTipo ? (
+                <TableCell className="whitespace-nowrap max-md:order-3 max-md:col-span-2 max-md:block max-md:p-0 max-md:text-caption">
+                  {d.tipo || '—'}
+                  {d.anulado ? <span className="ml-2 text-caption text-danger">anulado</span> : null}
+                </TableCell>
+              ) : null}
               {/* El prefijo puede venir vacío («FV-26766» vs «26766»), y el
                   consecutivo 0 es un consecutivo: `filter(Boolean)` lo
                   borraría. */}
-              <TableCell className="whitespace-nowrap font-mono text-caption tabular-nums">
+              <TableCell className="whitespace-nowrap font-mono text-caption tabular-nums max-md:order-1 max-md:block max-md:p-0">
                 {d.prefijo ? `${d.prefijo}-${d.consecutivo}` : String(d.consecutivo)}
+                {!conTipo && d.anulado ? <span className="ml-2 font-sans text-caption text-danger">anulado</span> : null}
               </TableCell>
-              <TableCell className="whitespace-nowrap">{diaLegible(d.fecha)}</TableCell>
-              <TableCell className="max-w-[28rem] text-fg-muted">
+              <TableCell className="whitespace-nowrap max-md:order-4 max-md:col-span-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-subtle">{diaLegible(d.fecha)}</TableCell>
+              <TableCell className="max-w-[28rem] text-fg-muted max-md:order-5 max-md:col-span-2 max-md:block max-md:max-w-none max-md:p-0 max-md:text-caption">
                 <span className="line-clamp-2">{d.concepto || '—'}</span>
                 {d.esAnticipo ? (
                   <span className="block text-caption text-fg-subtle">
@@ -432,7 +474,7 @@ function TablaDeComprobantes({
                 {/* Por dónde quedó colgado de este contrato. Importa sobre todo
                     con las dos reglas del 2026-09-16 («CONTRATO N», «COD. N»):
                     quien lee la ficha puede comprobar que el concepto lo dice. */}
-                {d.asociadoPor !== 'ninguno' ? (
+                {d.asociadoPor !== 'ninguno' && !comoSeAsociaronTodos ? (
                   <span
                     className="block text-caption text-fg-subtle"
                     data-testid="comprobante-asociado-por"
@@ -442,7 +484,7 @@ function TablaDeComprobantes({
                 ) : null}
                 {d.datos ? <FilaDelArchivo datos={d.datos} /> : null}
               </TableCell>
-              <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
+              <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:order-2 max-md:block max-md:p-0">
                 {/* `null` es «no se pudo leer el monto» y se muestra así.
                     `formatCurrency(null)` devuelve «$ 0», que es un hecho
                     falso mostrado con total confianza. */}

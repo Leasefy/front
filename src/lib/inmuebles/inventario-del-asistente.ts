@@ -1,7 +1,7 @@
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
 /**
- * Los ítems que el asistente «Nueva consignación» guarda como inventario del
+ * Los ítems que el asistente «Nuevo mandato» guarda como inventario del
  * inmueble al crear la consignación.
  *
  * 🔴 QA con avatares (04-10): el paso «Acta de entrega» dejaba escribir el

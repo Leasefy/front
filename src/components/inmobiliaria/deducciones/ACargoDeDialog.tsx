@@ -249,7 +249,7 @@ export function ACargoDeDialog({
 
         {sugerencia && (
           <p
-            className="rounded-md border border-border bg-info-soft px-3 py-2 text-xs text-fg"
+            className="rounded-md border border-border bg-info-soft px-3 py-2 text-caption text-fg"
             data-testid="a-cargo-de-sugerencia"
           >
             {t(k('sugiereElAgente'), {
@@ -285,7 +285,7 @@ export function ACargoDeDialog({
               data-testid={`a-cargo-de-${o.valor}`}
             >
               <p className="text-sm font-medium text-fg">{o.titulo}</p>
-              <p className="mt-1 text-xs text-fg-muted">{o.ayuda}</p>
+              <p className="mt-1 text-caption text-fg-muted">{o.ayuda}</p>
             </button>
           ))}
         </div>
@@ -296,7 +296,7 @@ export function ACargoDeDialog({
               <Checkbox className="mt-0.5" checked={esEmergencia} onCheckedChange={(marcada: boolean) => setEsEmergencia(marcada)} data-testid="emergencia-marcar" />
               <span>
                 <span className="font-medium">{t(k('emergencia'))}</span>
-                <span className="block text-xs text-fg-muted">{t(k('emergenciaAyuda'))}</span>
+                <span className="block text-caption text-fg-muted">{t(k('emergenciaAyuda'))}</span>
               </span>
             </label>
             {prioridad === 'emergency' && (
@@ -306,7 +306,7 @@ export function ACargoDeDialog({
             )}
             {esEmergencia && (
               <>
-                <label className="block text-xs font-medium text-fg" htmlFor="emergencia-motivo">
+                <label className="block text-caption font-medium text-fg" htmlFor="emergencia-motivo">
                   {t(k('emergenciaMotivo'))}
                 </label>
                 <textarea
@@ -317,7 +317,7 @@ export function ACargoDeDialog({
                   onChange={(e) => setMotivoDeEmergencia(e.target.value)}
                   data-testid="emergencia-motivo"
                 />
-                <label className="block text-xs font-medium text-fg" htmlFor="emergencia-soporte">
+                <label className="block text-caption font-medium text-fg" htmlFor="emergencia-soporte">
                   {t(k('emergenciaSoporte'))}
                 </label>
                 <input
@@ -325,7 +325,7 @@ export function ACargoDeDialog({
                   type="file"
                   accept="application/pdf,image/jpeg,image/png,image/webp"
                   onChange={(e) => setSoporte(e.target.files?.[0] ?? null)}
-                  className="block w-full text-xs text-fg-muted"
+                  className="block w-full text-caption text-fg-muted"
                   data-testid="emergencia-soporte"
                 />
               </>
@@ -338,7 +338,7 @@ export function ACargoDeDialog({
             className="space-y-3 rounded-lg border border-border bg-surface-hover p-4"
             data-testid="reparto"
           >
-            <label className="block text-xs font-medium text-fg" htmlFor="reparto-inquilino">
+            <label className="block text-caption font-medium text-fg" htmlFor="reparto-inquilino">
               {t(k('repartoInquilino'))}
             </label>
             <input
@@ -352,7 +352,7 @@ export function ACargoDeDialog({
               className="w-28 rounded-md border border-border bg-surface p-2 text-sm text-fg"
               data-testid="reparto-inquilino"
             />
-            <p className="text-xs text-fg-muted" data-testid="reparto-resumen">
+            <p className="text-caption text-fg-muted" data-testid="reparto-resumen">
               {t(k('repartoResumen'), {
                 inquilino: `${inquilinoPct}`,
                 propietario: `${propietarioPct}`,
@@ -439,7 +439,7 @@ export function ACargoDeDialog({
             data-testid="motivo-inmobiliaria"
           >
             <label
-              className="block text-xs font-medium text-fg"
+              className="block text-caption font-medium text-fg"
               htmlFor="motivo-de-la-inmobiliaria"
             >
               {t(k('inmobiliariaMotivo'))}

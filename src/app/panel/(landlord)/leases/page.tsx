@@ -2,17 +2,19 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { House, CurrencyDollar, Clock, WarningCircle, TrendUp } from '@phosphor-icons/react';
+import { House, WarningCircle } from '@phosphor-icons/react';
 import { LeaseExpandableItem } from '@/components/lease/LeaseExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Button } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import { PageHeader, KpiCard } from '@leasefy/cadence';
+import { Cifra, FranjaDeCifras } from '@leasefy/cadence';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLeases } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 // ============================================================================
 // TextTs
@@ -22,33 +24,6 @@ interface TabConfig {
   id: string;
   label: string;
   count: number;
-}
-
-// ============================================================================
-// Progress Bar Component
-// ============================================================================
-
-interface ProgressBarProps {
-  value: number;
-  variant: 'success' | 'warning' | 'danger';
-}
-
-function ProgressBar({ value, variant }: ProgressBarProps) {
-  const barColorClass = {
-    success: 'bg-success',
-    warning: 'bg-warning',
-    danger: 'bg-danger',
-  }[variant];
-
-  return (
-    <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-      {/* `transform` (translateX), no `width`: la barra entera corrida a su avance. */}
-      <div
-        className={cn('h-full w-full rounded-full transition-transform duration-reveal ease-enter', barColorClass)}
-        style={{ transform: `translateX(${Math.min(100, Math.max(0, value)) - 100}%)` }}
-      />
-    </div>
-  );
 }
 
 // ============================================================================
@@ -106,9 +81,9 @@ export default function LandlordLeasesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
+        <EsqueletoDePagina variante="list" />
       </div>
     );
   }
@@ -116,7 +91,7 @@ export default function LandlordLeasesPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="p-6 lg:p-8">
           {/* Mostraba `description={error}`: el mensaje crudo del backend,
               en inglés, como único texto de la pantalla. */}
           <FalloDeCarga error={errorCrudo ?? error} queEs="tus arriendos" onReintentar={refetch} />
@@ -127,83 +102,58 @@ export default function LandlordLeasesPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="p-6 lg:p-8">
 
         {/* Header */}
-        <PageHeader title={t('landlord.leases.title')} subtitle={t('landlord.leases.subtitle')} />
+        <EncabezadoDePantalla seccion="Contratos y plata" titulo={t('landlord.leases.title')} descripcion={t('landlord.leases.subtitle')} />
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <KpiCard
-            label={t('landlord.leases.activeLeases')}
-            value={String(stats.activeLeases)}
-            sublabel={t('landlord.leases.activeLeasesSubLabel')}
-            icon={<House />}
+        {/* GLOW UP 22-10: LA RESPUESTA —lo que esperas recibir al mes— en grande, con el recaudo al pie, y los
+            arriendos, los pagos pendientes y los atrasados en una franja. Antes, cuatro tarjetas con su ícono y
+            debajo un bloque azul que repetía el ingreso del mes. */}
+        <div className="mb-8 mt-8 space-y-4" data-testid="cifras-de-mis-arriendos">
+          <CifraHeroe
+            rotulo={t('landlord.leases.monthlyIncome')}
+            cifra={formatCurrency(stats.totalMonthlyIncome)}
+            contexto={t('landlord.leases.expectedMonthlyIncome')}
+            pie={
+              <span>
+                {t('landlord.leases.collectionRate')}{' '}
+                <span className={cn('font-mono tabular-nums', collectionRate >= 90 ? 'text-success' : collectionRate >= 70 ? 'text-warning' : 'text-danger')}>
+                  {collectionRate} %
+                </span>
+              </span>
+            }
+            data-testid="ingreso-esperado"
           />
-          <KpiCard
-            label={t('landlord.leases.monthlyIncome')}
-            value={String(formatCurrency(stats.totalMonthlyIncome))}
-            sublabel={t('landlord.leases.monthlyIncomeSubLabel')}
-            icon={<CurrencyDollar />}
-          />
-          <KpiCard
-            label={t('landlord.leases.pendingPayments')}
-            value={String(stats.pendingPayments)}
-            sublabel={t('landlord.leases.pendingPaymentsSubLabel')}
-            icon={<Clock />}
-          />
-          <KpiCard
-            label={t('landlord.leases.latePayments')}
-            value={String(stats.latePayments)}
-            sublabel={stats.latePayments > 0 ? t('landlord.leases.latePaymentsSubLabel') : t('landlord.leases.latePaymentsAllGood')}
-            icon={<WarningCircle />}
-          />
-        </div>
-
-        {/* Financial Summary Card */}
-        <div className="bg-primary-soft border border-primary/30 rounded-lg p-6 mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
-                  <TrendUp className="w-5 h-5 text-primary" />
-                </div>
-                <span className="text-primary text-sm font-medium">{t('landlord.leases.financialSummary')}</span>
-              </div>
-              <p className="text-3xl font-bold text-fg tracking-tight">
-                {formatCurrency(stats.totalMonthlyIncome)}
-              </p>
-              <p className="text-fg-muted text-sm mt-1">
-                {t('landlord.leases.expectedMonthlyIncome')}
-              </p>
-            </div>
-            <div className="flex-1 max-w-xs">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-fg-muted text-sm">{t('landlord.leases.collectionRate')}</span>
-                <span className="text-fg font-semibold">{collectionRate}%</span>
-              </div>
-              <ProgressBar
-                value={collectionRate}
-                variant={collectionRate >= 90 ? 'success' : collectionRate >= 70 ? 'warning' : 'danger'}
-              />
-            </div>
-          </div>
+          <FranjaDeCifras aria-label={t('landlord.leases.title')}>
+            <Cifra etiqueta={t('landlord.leases.activeLeases')} valor={stats.activeLeases} detalle={t('landlord.leases.activeLeasesSubLabel')} />
+            <Cifra
+              etiqueta={t('landlord.leases.pendingPayments')}
+              valor={stats.pendingPayments}
+              tono={stats.pendingPayments > 0 ? 'aviso' : undefined}
+              detalle={t('landlord.leases.pendingPaymentsSubLabel')}
+            />
+            <Cifra
+              etiqueta={t('landlord.leases.latePayments')}
+              valor={stats.latePayments}
+              tono={stats.latePayments > 0 ? 'peligro' : undefined}
+              detalle={stats.latePayments > 0 ? t('landlord.leases.latePaymentsSubLabel') : t('landlord.leases.latePaymentsAllGood')}
+            />
+          </FranjaDeCifras>
         </div>
 
         {/* Ending Soon Warning */}
         {stats.endingSoon > 0 && (
-          <div className="mb-6 p-4 bg-warning-soft border border-warning/30 rounded-lg">
+          <div className="mb-6 p-4 bg-surface-muted rounded-lg" data-testid="arriendos-por-terminar">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
-                <WarningCircle className="w-5 h-5 text-warning" />
-              </div>
+              <WarningCircle className="w-5 h-5 text-warning shrink-0" aria-hidden="true" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-warning">
+                <p className="text-sm font-medium text-fg">
                   {stats.endingSoon > 1
                     ? t('landlord.leases.endingSoonWarningPlural', { count: stats.endingSoon })
                     : t('landlord.leases.endingSoonWarning', { count: stats.endingSoon })}
                 </p>
-                <p className="text-xs text-warning/70">
+                <p className="text-caption text-fg-muted">
                   {t('landlord.leases.endingSoonDescription')}
                 </p>
               </div>
@@ -221,7 +171,7 @@ export default function LandlordLeasesPage() {
                 className="group inline-flex items-center gap-2"
               >
                 {tab.label}
-                <span className="px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">
+                <span className="px-1.5 py-0.5 rounded-sm text-caption font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-surface group-data-[state=active]:text-fg">
                   {tab.count}
                 </span>
               </TabsTrigger>
@@ -233,6 +183,7 @@ export default function LandlordLeasesPage() {
             {leases.length === 0 ? (
               <EmptyState
                 icon={House}
+                ilustracion="casa"
                 title={t('landlord.leases.emptyTitle')}
                 description={t('landlord.leases.emptyDescription')}
                 action={{ label: t('landlord.leases.emptyAction'), href: "/panel/contratos" }}
@@ -250,10 +201,8 @@ export default function LandlordLeasesPage() {
                   </div>
                 ) : (
                   <div className="rounded-lg bg-surface-muted py-14 px-6 text-center">
-                    <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
-                      <House className="w-6 h-6 text-fg-subtle" />
-                    </div>
-                    <h3 className="text-base font-semibold text-foreground mb-1.5">
+                    <House className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
+                    <h3 className="text-base font-medium text-foreground mb-1.5">
                       {t('landlord.leases.noFilteredLeases', { filter: tabs.find(tItem => tItem.id === activeTab)?.label.toLowerCase() || '' })}
                     </h3>
                     <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">

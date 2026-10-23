@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { SectionLabel } from "@/components/ui/section-label";
-import { IndiceLegal, TextoLegal } from "@/components/legal/TextoLegal";
+import { TextoLegal } from "@/components/legal/TextoLegal";
+import { IndiceDeLosTerminos } from "../terminos/IndiceDeLosTerminos";
 import { POLITICA_V6 } from "@/lib/legal/politica-v6";
 import {
   VERSION_POLITICA_DE_TRATAMIENTO,
@@ -76,7 +77,9 @@ export default function PrivacidadPage() {
         <section className="pt-32 pb-16 md:pt-40 md:pb-24">
           <div className="container-platform"><div className="max-w-[800px]">
             <SectionLabel className="mb-4">Legal</SectionLabel>
-            <h1 className="text-[2rem] md:text-[3rem] font-light text-foreground leading-[1.15] tracking-[-0.02em] italic mb-4">
+            {/* Revisora r25: la hermana de Términos se ve igual (antes el título en cursiva y el índice desplegado:
+                19 renglones, ≈730 px a 390). El texto legal no cambia. */}
+            <h1 className="mb-8 font-heading text-[32px] font-[420] leading-[1.08] tracking-[-0.03em] text-fg md:text-[44px]">
               Política de tratamiento de datos personales
             </h1>
 
@@ -96,7 +99,9 @@ export default function PrivacidadPage() {
               <dt className="font-medium text-foreground">Ámbito</dt>
               <dd className="text-muted-foreground">Colombia, únicamente</dd>
               <dt className="font-medium text-foreground">Versión</dt>
-              <dd className="text-muted-foreground">{VERSION_POLITICA_DE_TRATAMIENTO}</dd>
+              {/* Revisora r25 (R7): la versión como la dice Términos («v6.0»); el
+                  identificador «politica-tratamiento-v6.0» queda para la base. */}
+              <dd className="text-muted-foreground font-mono">{VERSION_POLITICA_DE_TRATAMIENTO.replace(/^.*-(v[\d.]+)$/, '$1')}</dd>
               <dt className="font-medium text-foreground">Vigente desde</dt>
               <dd className="text-muted-foreground">{fechaDeVigencia(VIGENCIA_POLITICA_DE_TRATAMIENTO)}</dd>
               <dt className="font-medium text-foreground">Vigencia de la base de datos</dt>
@@ -105,8 +110,9 @@ export default function PrivacidadPage() {
               </dd>
             </dl>
 
-            <IndiceLegal secciones={POLITICA_V6} />
-            <TextoLegal secciones={POLITICA_V6} />
+            <IndiceDeLosTerminos etiqueta="Contenido de la política">
+              <TextoLegal secciones={POLITICA_V6} />
+            </IndiceDeLosTerminos>
           </div></div>
         </section>
       </main>

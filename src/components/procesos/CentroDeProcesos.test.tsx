@@ -72,7 +72,7 @@ import { ApiError } from '@/lib/api/client'
 import { BotonDelCentroDeProcesos, resumenDelCentro } from './BotonDelCentroDeProcesos'
 import { FilaDeProceso } from './FilaDeProceso'
 import { HistorialDeProcesos, fraseDelHistorial } from './HistorialDeProcesos'
-import { anuncioResuelto, MS_TOPE_DEL_ANUNCIO } from './estado-del-proceso'
+import { anuncioResuelto, MS_TOPE_DEL_ANUNCIO, resultadoDelProceso, fallasDelProceso, textoDelProceso } from './estado-del-proceso'
 import { registrarDetenerEnElNavegador } from './detener-en-el-navegador'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 
@@ -294,7 +294,7 @@ describe('<FilaDeProceso> — acciones según el estado', () => {
       </ul>,
     )
     expect(container.textContent).toContain('Armando el ZIP')
-    expect(q('mensaje-del-proceso')?.textContent).toBe('1 factura emitida · $1.326.782.')
+    expect(q('mensaje-del-proceso')?.textContent).toBe('1 factura emitida · $\u00a01.326.782.')
   })
 })
 
@@ -469,7 +469,7 @@ describe('<HistorialDeProcesos>', () => {
     expect(q('filtro-persona')).not.toBeNull()
   })
 
-  it('vacío, dice qué aparece acá', async () => {
+  it('vacío, dice qué aparece aquí', async () => {
     vi.mocked(procesosApi.listar).mockResolvedValue(lista([]))
     await montar(<HistorialDeProcesos />)
     expect(q('historial-vacio')?.textContent).toContain('Todavía no hay procesos')
@@ -640,5 +640,23 @@ describe('🔴 «Detener» de una corrida del navegador, en la fila del centro (
       soltar()
     })
     expect(q('cancelar-proceso')).toBeNull()
+  })
+})
+
+/* Revisora r25 (Centro de procesos): «Listo» en verde cuando todo falló. */
+
+describe('el resultado de un proceso terminado (revisora r25)', () => {
+  const base = { estado: 'TERMINADO' as const, total: 4 }
+  it('sin fallas es «limpio»; con algunas, «con-fallas»; sin ninguno que saliera, «nada-salio»', () => {
+    expect(resultadoDelProceso({ ...base, mensaje: '4 enviados.' })).toBe('limpio')
+    expect(resultadoDelProceso({ ...base, mensaje: '2 de 4 invitados · 2 fallaron' })).toBe('con-fallas')
+    expect(resultadoDelProceso({ ...base, mensaje: '0 enviados · 2 fallaron' })).toBe('nada-salio')
+    expect(resultadoDelProceso({ estado: 'TERMINADO', total: 1, mensaje: 'Recordatorio de 1 cobro: 0 de 1. 1 falló' })).toBe('nada-salio')
+    expect(resultadoDelProceso({ estado: 'FALLO', total: 1, mensaje: '1 falló' })).toBe('limpio')
+    expect(fallasDelProceso({ mensaje: '1.204 fallaron' })).toBe(1204)
+  })
+  it('la plata lleva su espacio y el mes va en minúscula a media frase', () => {
+    expect(textoDelProceso('Lote de $1.930.000')).toBe('Lote de $ 1.930.000')
+    expect(textoDelProceso('Archivo del lote de Octubre de 2026')).toBe('Archivo del lote de octubre de 2026')
   })
 })

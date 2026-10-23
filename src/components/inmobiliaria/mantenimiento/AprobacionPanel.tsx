@@ -49,7 +49,7 @@ export function AprobacionPanel({ aprobacion }: AprobacionPanelProps) {
         <dl className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <dt className="text-fg-muted">{t(`${ROOT}.inbox.card.estCost`)}</dt>
-            <dd className="font-mono font-semibold text-fg">
+            <dd className="font-mono font-medium text-fg">
               {formatCOP(estimatedMaxCop)}
             </dd>
           </div>

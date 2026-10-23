@@ -28,7 +28,7 @@ describe('movimiento — la coreografía del modal', () => {
     expect(REACOMODAR).toMatchObject({ visualDuration: 0.25 });
   });
 
-  it('son los tokens de Cadence, no números escritos acá', () => {
+  it('son los tokens de Cadence, no números escritos aquí', () => {
     expect(ENTRAR).toBe(motionTransition.enter);
     expect(SALIR).toBe(motionTransition.exit);
     expect(REACOMODAR).toBe(motionTransition.layout);

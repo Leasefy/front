@@ -41,7 +41,8 @@ afterEach(() => {
   container.remove()
 })
 
-const enlaces = () => [...container.querySelectorAll('a')].map((a) => a.getAttribute('href'))
+// Los formularios de las inmobiliarias (el logo, que lleva al inicio, no cuenta).
+const enlaces = () => [...container.querySelectorAll('a[href^="/arco/"]')].map((a) => a.getAttribute('href'))
 
 function buscar(valor: string) {
   const el = container.querySelector('input[type="search"]') as HTMLInputElement
@@ -75,14 +76,18 @@ describe('<ElegirInmobiliaria>', () => {
     act(() => root.render(<ElegirInmobiliaria inmobiliarias={null} />))
     expect(container.querySelector('[role="alert"]')?.textContent).toBe('inmobiliaria.ai.arco.public.elegir.noCargo')
     expect(container.querySelector('input')).toBeNull()
+    expect(container.querySelector('a[href^="mailto:hola@leasefy.co"]')).not.toBeNull()
   })
 
   it('sin ninguna inmobiliaria para mostrar no ofrece buscar: dice dónde está el enlace', () => {
     act(() => root.render(<ElegirInmobiliaria inmobiliarias={[]} />))
     expect(container.querySelector('input')).toBeNull()
+    // Revisora r25 (R4): sin lista no se pide elegir; la salida es el correo de Leasefy.
     expect(container.querySelector('[data-testid="arco-elegir-vacio"]')?.textContent).toBe(
-      'inmobiliaria.ai.arco.public.elegir.sinResultados',
+      'inmobiliaria.ai.arco.public.elegir.sinLista',
     )
+    expect(container.querySelector('a[href^="mailto:hola@leasefy.co"]')).not.toBeNull()
+    expect(container.querySelector('a[href="/"]')).not.toBeNull()
   })
 
   it('la ruta escapa lo que no es seguro en una dirección', () => {

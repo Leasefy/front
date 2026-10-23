@@ -20,3 +20,28 @@ export function proximaAccionVencida(valor: string | null | undefined, hoy: stri
   const dia = diaDeLaProximaAccion(valor);
   return dia !== null && dia < hoy;
 }
+
+/**
+ * «2026-10-19» → «lun 19 oct»: la fecha corta del embudo, la MISMA en «Para hoy»
+ * y en la tarjeta (ronda 20 de la revisora: una decía «lun 19 de oct» y la otra
+ * «19 de oct»).
+ */
+export function diaCortoDelEmbudo(dia: string): string {
+  const fecha = new Date(`${dia}T12:00:00`);
+  return fecha
+    .toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })
+    .replace(/[.,]/g, '')
+    .replace(/ de /g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** ¿La próxima acción es una visita? («Visita el 19 de oct…», «Visitar el inmueble».) */
+export function esUnaVisita(accion: string | null | undefined): boolean {
+  return /^\s*visit/i.test(String(accion ?? ''));
+}
+
+/** «Visita vencida» si es una visita; si no, «Acción vencida». */
+export function rotuloDeLaVencida(accion: string | null | undefined): 'Visita vencida' | 'Acción vencida' {
+  return esUnaVisita(accion) ? 'Visita vencida' : 'Acción vencida';
+}

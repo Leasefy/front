@@ -1,22 +1,20 @@
 'use client';
 import { CambiarCorreoDeEntrada } from '@/components/cuenta/CambiarCorreoDeEntrada';
 
-import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { User, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, TrashSimple, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
+import { User, Phone, MapPin, Shield, Camera, FloppyDisk, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Button, Input, Spinner } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
 import {
-  AnimatedNumber,
   Collapse,
   CrossFade,
   IconButton,
-  motionDuration,
-  motionEase,
+  Avatar,
 } from '@leasefy/cadence';
 import {
   Dialog,
@@ -45,15 +43,15 @@ import { CampoDeNacimiento } from '@/components/ui/campo-de-nacimiento';
  * errores del back por `firstName`/`lastName` o por las dos partes del
  * contacto caen en ese campo.
  */
-type CampoDeLaPantalla = 'nombre' | 'phone' | 'birthDate' | 'address' | 'emergencia';
+type CampoDeLaPantalla = 'nombre' | 'phone' | 'birthDate' | 'address' | 'emergenciaNombre' | 'emergenciaTelefono';
 const CAMPO_EN_PANTALLA: Partial<Record<CampoPersonal, CampoDeLaPantalla | null>> = {
   firstName: 'nombre',
   lastName: 'nombre',
   phone: 'phone',
   birthDate: 'birthDate',
   address: 'address',
-  emergencyContactName: 'emergencia',
-  emergencyContactPhone: 'emergencia',
+  emergencyContactName: 'emergenciaNombre',
+  emergencyContactPhone: 'emergenciaTelefono',
   rut: null,
 };
 const idDelCampo = (campo: CampoDeLaPantalla) => `perfil-propietario-${campo}`;
@@ -72,9 +70,6 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function PropietarioPerfilPage() {
   const { t, locale } = useI18n();
-  // QA-PROP-95: ¿una inmobiliaria le administra los inmuebles? (mientras carga, sí)
-  const administrados = useContratosAdministrados();
-  const deInmobiliaria = administrados.cargando || administrados.doc !== null || Boolean(administrados.fichaSinContratos);
   const { user, updateProfile } = useAuth();
   const router = useRouter();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
@@ -109,7 +104,8 @@ export default function PropietarioPerfilPage() {
     emergencyContactName: user?.emergencyContactName || '',
     emergencyContactPhone: user?.emergencyContactPhone || '',
   });
-  const notSet = locale === 'es' ? 'No registrado' : 'Not set';
+  // Revisora r25: como el perfil gemelo del inquilino («Sin registrar»).
+  const notSet = locale === 'es' ? 'Sin registrar' : 'Not set';
   /** El error de cada campo de la pantalla (del cliente o del back). */
   const [errores, setErrores] = useState<Partial<Record<CampoDeLaPantalla, string>>>({});
   const limpiarError = (campo: CampoDeLaPantalla) =>
@@ -130,7 +126,6 @@ export default function PropietarioPerfilPage() {
 
   // Display helpers for the single-field UI (name + emergency contact)
   const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ') || (locale === 'es' ? 'Propietario' : 'Landlord');
-  const emergencyContactDisplay = [formData.emergencyContactName, formData.emergencyContactPhone].filter(Boolean).join(' - ');
 
   /*
    * Los pasos del perfil salen de lo que la persona YA guardó (Nico,
@@ -161,7 +156,7 @@ export default function PropietarioPerfilPage() {
     },
     {
       id: 'id-number',
-      label: t('landlordProfile.fields.cedula'),
+      label: locale === 'es' ? 'Documento' : t('landlordProfile.fields.cedula'),
       description: locale === 'es' ? 'Tu documento de identidad' : 'Your ID number',
       icon: Shield,
       completed: completo('id-number'),
@@ -182,9 +177,6 @@ export default function PropietarioPerfilPage() {
     },
   ];
 
-  const completedSteps = setupSteps.filter(s => s.completed).length;
-  const totalSteps = setupSteps.length;
-  const completionPercentage = Math.round((completedSteps / totalSteps) * 100);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -198,17 +190,6 @@ export default function PropietarioPerfilPage() {
     const lastName = parts.join(' ');
     setFormData(prev => ({ ...prev, firstName, lastName }));
     limpiarError('nombre');
-  };
-
-  // Single "Nombre - Teléfono" input → split into name / phone parts
-  const handleEmergencyContactChange = (value: string) => {
-    const [name, ...rest] = value.split(' - ');
-    setFormData(prev => ({
-      ...prev,
-      emergencyContactName: (name ?? '').trim(),
-      emergencyContactPhone: rest.join(' - ').trim(),
-    }));
-    limpiarError('emergencia');
   };
 
   /** Pone los errores en sus campos y le da el foco al primero. */
@@ -305,7 +286,7 @@ export default function PropietarioPerfilPage() {
 
   const processFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error(locale === 'es' ? 'Por favor selecciona una imagen' : 'Please select an image');
+      toast.error(locale === 'es' ? 'Elige una imagen (JPG o PNG)' : 'Please select an image');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -378,276 +359,162 @@ export default function PropietarioPerfilPage() {
     }
   };
 
+  // Ronda 28 (revisora r27, CB): sin `min-h-screen`; el fondo lo pone el layout.
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div>
+      <div className="p-6 lg:p-8">
 
-        {/* Header */}
-        <header className="mb-8">
-          <div>
-            <h1 className="text-3xl font-medium text-fg tracking-tight">
-              {locale === 'es' ? 'Mi Perfil' : 'My Profile'}
-            </h1>
-            <p className="mt-1 text-fg-muted">
-              {locale === 'es' ? 'Gestiona tu información personal y preferencias' : 'Manage your personal information and preferences'}
-            </p>
-          </div>
-        </header>
+        {/* GLOW UP 22-10 (como el perfil del inquilino): el encabezado común y lo que falta del perfil en la lista
+            de siempre —«Para completar tu perfil te faltan N pasos», cada uno con «Completar»—. Antes, un bloque
+            azul con barra, anillo de porcentaje y cinco tarjetas con el ícono en una caja de color. */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'}
+          titulo={locale === 'es' ? 'Mi perfil' : 'My profile'}
+          descripcion={locale === 'es' ? 'Tus datos personales y cómo te contactamos.' : 'Your personal details and how we reach you.'}
+        />
 
-        {/* Setup Progress Section — la barra, el anillo y el porcentaje se
-            revelan desde 0 y, al completar un paso, avanzan desde donde estaban. */}
-        <section className="mb-8">
-          <div className="rounded-lg bg-[#EEF1FF] dark:bg-[#1A40FF]/12 p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-fg">
-                      {locale === 'es' ? 'Completar perfil' : 'Complete profile'}
-                    </h2>
-                    <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
-                      {locale === 'es'
-                        ? `${completedSteps} de ${totalSteps} pasos completados`
-                        : `${completedSteps} of ${totalSteps} steps completed`}
-                    </p>
-                  </div>
-                </div>
-                {/* `transform` (translateX), no `width`: no recalcula el layout por cuadro. */}
-                <div className="h-2 bg-white/50 dark:bg-white/10 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ x: '-100%' }}
-                    animate={{ x: `${completionPercentage - 100}%` }}
-                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                    className="h-full w-full bg-[#1A40FF] rounded-full"
-                  />
-                </div>
-                <p className="text-xs text-fg-muted mt-2">
-                  {completionPercentage === 100
-                    ? (locale === 'es' ? 'Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
-                    : (locale === 'es' ? 'Completa tu perfil para acceder a todas las funciones' : 'Complete your profile to access all features')}
-                </p>
-              </div>
+        {/* Revisora r25: sólo lo que falta, sin los pasos hechos ni el «3/5». */}
+        <ListaParaEmpezar
+          className="mb-8"
+          soloLoQueFalta
+          paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
+          requisitos={setupSteps.map((step) => ({
+            id: step.id,
+            titulo: step.label,
+            estado: step.completed ? ('listo' as const) : ('falta' as const),
+            accion: (
+              <Button
+                size="sm"
+                variant="outline"
+                hideArrow
+                onClick={() => {
+                  if (step.id === 'basic-info') {
+                    setAvatarPreview(savedAvatar);
+                    setEditingSection('avatar');
+                  } else {
+                    setEditingSection(step.id === 'emergency-contact' ? 'emergency' : 'personal');
+                  }
+                }}
+              >
+                {locale === 'es' ? 'Completar' : 'Complete'}
+              </Button>
+            ),
+          }))}
+          data-testid="perfil-lo-que-falta"
+        />
 
-              <div className="flex items-center justify-center">
-                <div className="relative w-24 h-24">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="white" strokeWidth="8" opacity="0.5" className="dark:opacity-20" />
-                    <motion.circle
-                      cx="50" cy="50" r="40" fill="none" stroke="#1A40FF" strokeWidth="8" strokeLinecap="round"
-                      initial={{ strokeDasharray: '0 251.2' }}
-                      animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                      transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-fg">
-                      <AnimatedNumber value={completionPercentage} from={0} format={(n) => String(Math.round(n))} />%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {setupSteps.map((step, index) => {
-                const Icon = step.icon;
-                return (
-                  <div
-                    key={step.id}
-                    className={cn(
-                      'rounded-lg p-4 transition-colors',
-                      step.completed
-                        ? 'bg-white/80 dark:bg-white/10'
-                        : 'bg-surface border-2 border-dashed border-[#1A40FF]/30 dark:border-[#B7791F]/30'
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
-                        step.completed ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-                      )}>
-                        {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
-                        ) : (
-                          <Icon className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn('text-sm font-medium truncate', step.completed ? 'text-fg' : 'text-[#1A40FF] dark:text-white')}>
-                          {step.label}
-                        </p>
-                        {step.completed ? (
-                          <span className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">{locale === 'es' ? 'Completado' : 'Completed'}</span>
-                        ) : (
-                          <span className="text-xs text-fg-muted">{locale === 'es' ? 'Pendiente' : 'Pending'}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="rounded-lg border border-border bg-surface overflow-hidden">
-              <div className="relative bg-[#EEF1FF] dark:bg-[#1A40FF]/12 h-28">
-                {editingSection !== 'avatar' && (
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setAvatarPreview(savedAvatar); setEditingSection('avatar'); }}
-                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                    className="absolute top-3 right-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white"
-                    icon={<Pencil className="w-4 h-4" />}
-                  />
-                )}
-              </div>
-              <div className="px-6 pb-6">
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-
-                <div className="relative -mt-14 mb-4">
-                  <div
-                    className={cn("w-28 h-28 rounded-full border-4 border-surface overflow-hidden", editingSection === 'avatar' && "cursor-pointer")}
-                    onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
-                  >
-                    {(editingSection === 'avatar' ? avatarPreview : savedAvatar) ? (
-                      <Image src={(editingSection === 'avatar' ? avatarPreview : savedAvatar)!} alt="Avatar" width={112} height={112} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-white dark:bg-[#1A40FF] flex items-center justify-center text-fg uppercase tracking-wide font-mono font-bold text-4xl">
-                        {fullName.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  {editingSection === 'avatar' && (
-                    <IconButton
-                      variant="solid"
-                      size="sm"
-                      onClick={handleAvatarClick}
-                      aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
-                      className="absolute bottom-1 right-1 bg-primary text-primary-fg hover:bg-neutral-800 dark:hover:bg-neutral-100"
-                      icon={<Camera className="w-4 h-4" />}
-                    />
-                  )}
-                </div>
-
-                {/* El área de la foto se abre y se cierra con su altura. */}
-                <Collapse open={editingSection === 'avatar'}>
-                  <div
-                    onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleAvatarClick}
-                    className={cn(
-                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
-                      isDragging ? "border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15" : "border-border hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-surface-muted"
-                    )}
-                  >
-                    {avatarPreview ? (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
-                            <Image src={avatarPreview} alt="Preview" width={40} height={40} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-sm font-medium text-fg">{locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}</p>
-                            <p className="text-xs text-fg-muted">{locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}</p>
-                          </div>
-                        </div>
-                        <IconButton
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleRemoveAvatar(); }}
-                          aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
-                          className="text-fg-subtle hover:text-danger hover:bg-danger-soft"
-                          icon={<TrashSimple className="w-4 h-4" />}
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center mx-auto mb-3">
-                          <Upload className="w-6 h-6 text-fg-subtle" />
-                        </div>
-                        <p className="text-sm font-medium text-fg-muted">
-                          {isDragging ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here') : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
-                        </p>
-                        <p className="text-xs text-fg-muted mt-1">{locale === 'es' ? 'Arrastra o haz clic - JPG, PNG (máx. 5MB)' : 'Drag or click - JPG, PNG (max 5MB)'}</p>
-                      </>
-                    )}
-                  </div>
-                </Collapse>
-
-                {editingSection === 'avatar' ? (
-                  <Input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)} className="text-lg font-semibold" />
-                ) : (
-                  <h2 className="text-xl font-semibold text-fg">{fullName}</h2>
-                )}
-                {/* «Propietario desde Enero 2024» era una fecha inventada, igual
-                    para todos (Nico, 02-10-2026): no se muestra. */}
-
-                <Collapse open={editingSection === 'avatar'}>
-                  <div className="flex items-center gap-2 mt-4">
-                    <Button variant="ghost" size="sm" hideArrow onClick={handleCancelEdit} className="flex-1 justify-center">
-                      {locale === 'es' ? 'Cancelar' : 'Cancel'}
-                    </Button>
-                    <Button size="sm" hideArrow onClick={() => handleSave('avatar')} disabled={isSaving} className="flex-1 justify-center gap-2">
-                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-4 h-4" />}
-                      {locale === 'es' ? 'Guardar' : 'Save'}
-                    </Button>
-                  </div>
-                </Collapse>
-
-                {/* Quick Stats — QA-PROP-95: «Propiedades publicadas» y «Contratos
-                    activos» son del propietario independiente (publica y arrienda
-                    él); a quien le administra una inmobiliaria no le dicen nada. */}
-                {!deInmobiliaria && (
-                <div className="mt-6 pt-6 border-t border-border-faint space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-                      <Buildings className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-fg">
-                        {locale === 'es' ? 'Propiedades publicadas' : 'Published properties'}
-                      </p>
-                      <p className="text-xs text-fg-muted">
-                        {locale === 'es' ? 'Gestiona tus propiedades' : 'Manage your properties'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-fg">
-                        {locale === 'es' ? 'Contratos activos' : 'Active contracts'}
-                      </p>
-                      <p className="text-xs text-fg-muted">
-                        {locale === 'es' ? 'Arriendos vigentes' : 'Current leases'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                )}
-              </div>
-            </div>
-
-            {/* «Estado de verificación» decía «Verificado» en el correo, el
-                teléfono, la identidad y la propiedad de TODO propietario, sin
-                que nada lo verificara (Nico, 02-10-2026): se quitó. */}
-          </div>
-
+        <div className="space-y-6">
           {/* Profile Form */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
             {/* Personal Information — Editar ↔ ver: las acciones y los campos se
                 cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
             <div className="rounded-lg border border-border bg-surface p-6">
+              {/* Ronda 28 (revisora r27): la foto en un renglón dentro de «Información personal», como el perfil
+                  del inquilino. Antes una tarjeta aparte que repetía el nombre, con «Cambiar foto o nombre» (dos
+                  caminos para el nombre: ése no lo guardaba) y los atajos «Mis inmuebles / Mis contratos», que
+                  repetían el menú. El nombre se cambia en «Editar». */}
+              <div className="mb-6 border-b border-border pb-6" data-testid="perfil-foto">
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="relative size-16 shrink-0">
+                    <div
+                      className={cn('size-16 overflow-hidden rounded-full', editingSection === 'avatar' && 'cursor-pointer')}
+                      onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
+                    >
+                      {(editingSection === 'avatar' ? avatarPreview : savedAvatar) ? (
+                        <Image src={(editingSection === 'avatar' ? avatarPreview : savedAvatar)!} alt="Avatar" width={64} height={64} className="h-full w-full object-cover" />
+                      ) : (
+                        // Cadence 2: el Avatar del sistema (iniciales y tono del nombre), nunca a mano.
+                        <Avatar name={fullName || 'Tú'} size="xl" className="size-full" />
+                      )}
+                    </div>
+                    {editingSection === 'avatar' && (
+                      <IconButton
+                        variant="solid"
+                        size="sm"
+                        onClick={handleAvatarClick}
+                        aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                        className="absolute -bottom-1 -right-1 bg-ink text-white hover:bg-ink/90"
+                        icon={<Camera className="h-3.5 w-3.5" />}
+                      />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-fg">{locale === 'es' ? 'Foto de perfil' : 'Profile photo'}</p>
+                    <p className="text-caption text-fg-muted">{locale === 'es' ? 'JPG o PNG, hasta 5 MB.' : 'JPG or PNG, up to 5 MB.'}</p>
+                  </div>
+                  {editingSection !== 'avatar' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      hideArrow
+                      onClick={() => { setAvatarPreview(savedAvatar); setEditingSection('avatar'); }}
+                      aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
+                    >
+                      <Camera className="w-4 h-4" aria-hidden="true" />
+                      {locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-4">
+                  {/* El área de la foto se abre y se cierra con su altura. */}
+                  <Collapse open={editingSection === 'avatar'}>
+                    <div
+                      onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleAvatarClick}
+                      className={cn(
+                        "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
+                        isDragging ? "border-primary/30 bg-primary-soft" : "border-border hover:border-primary/30 hover:bg-surface-muted"
+                      )}
+                    >
+                      {avatarPreview ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+                              <Image src={avatarPreview} alt="Preview" width={40} height={40} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-medium text-fg">{locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}</p>
+                              <p className="text-caption text-fg-muted">{locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}</p>
+                            </div>
+                          </div>
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleRemoveAvatar(); }}
+                            aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
+                            className="text-fg-subtle hover:text-danger hover:bg-danger-soft"
+                            icon={<TrashSimple className="w-4 h-4" />}
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
+                          <p className="text-sm font-medium text-fg-muted">
+                            {isDragging ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here') : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
+                          </p>
+                          <p className="text-caption text-fg-muted mt-1">{locale === 'es' ? 'Arrastra o haz clic - JPG, PNG (máx. 5MB)' : 'Drag or click - JPG, PNG (max 5MB)'}</p>
+                        </>
+                      )}
+                    </div>
+                  </Collapse>
+
+                  <Collapse open={editingSection === 'avatar'}>
+                    <div className="flex items-center gap-2 mt-4">
+                      <Button variant="ghost" size="sm" hideArrow onClick={handleCancelEdit} className="flex-1 justify-center">
+                        {locale === 'es' ? 'Cancelar' : 'Cancel'}
+                      </Button>
+                      <Button size="sm" hideArrow onClick={() => handleSave('avatar')} disabled={isSaving} className="flex-1 justify-center gap-2">
+                        {!isSaving && <FloppyDisk className="w-4 h-4" aria-hidden="true" />}
+                        {locale === 'es' ? 'Guardar' : 'Save'}
+                      </Button>
+                    </div>
+                  </Collapse>
+
+                </div>
+              </div>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-fg">
+                <h3 className="text-h3 text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
                 </h3>
                 <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
@@ -662,7 +529,7 @@ export default function PropietarioPerfilPage() {
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </Button>
                     <Button size="sm" hideArrow onClick={() => handleSave('personal')} disabled={isSaving} className="gap-1.5">
-                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {!isSaving && <FloppyDisk className="w-4 h-4" aria-hidden="true" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
                     </Button>
                   </div>
@@ -682,19 +549,13 @@ export default function PropietarioPerfilPage() {
                       {errorDelCampo('nombre')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <User className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{fullName}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{fullName}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordProfile.fields.cedula')}</label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                    <Shield className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{formData.rut || notSet}</span>
-                  </div>
+                  <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Documento' : t('landlordProfile.fields.cedula')}</label>
+                  <p className="py-1 text-sm text-fg">{formData.rut || notSet}</p>
                 </div>
 
                 {/* El correo sólo se lee: «Guardar» no lo manda (`PATCH /users/me`
@@ -702,7 +563,8 @@ export default function PropietarioPerfilPage() {
                     se vaciaba al guardar (Nico, 02-10-2026). */}
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Correo' : 'Email'}</label>
-                  <CambiarCorreoDeEntrada correo={formData.email} className="px-4 py-3 bg-surface-muted rounded-lg" />
+                  {/* El correo de entrada, con su «Cambiar» (21-10-2026). */}
+                  <CambiarCorreoDeEntrada correo={formData.email} className="py-1" />
                 </div>
 
                 <div>
@@ -713,10 +575,7 @@ export default function PropietarioPerfilPage() {
                       {errorDelCampo('phone')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <Phone className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.phone || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{formData.phone || notSet}</p>
                   )}
                 </div>
 
@@ -733,29 +592,23 @@ export default function PropietarioPerfilPage() {
                       {errorDelCampo('birthDate')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <Calendar className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">
+                    <p className="py-1 text-sm text-fg">
                         {formData.birthDate
                           ? new Date(formData.birthDate.slice(0, 10) + 'T00:00:00').toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })
                           : notSet}
-                      </span>
-                    </div>
+                      </p>
                   )}
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Dirección' : 'Address'}</label>
+                  <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Dirección actual' : 'Current address'}</label>
                   {editingSection === 'personal' ? (
                     <>
                       <Input type="text" {...propsDelCampo('address')} value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
                       {errorDelCampo('address')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <MapPin className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.address || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{formData.address || notSet}</p>
                   )}
                 </div>
               </CrossFade>
@@ -764,7 +617,7 @@ export default function PropietarioPerfilPage() {
             {/* Emergency Contact — mismo cruce que los datos personales. */}
             <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-fg">{locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}</h3>
+                <h3 className="text-h3 text-fg">{locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}</h3>
                 <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('emergency')} className="gap-1.5">
@@ -777,35 +630,52 @@ export default function PropietarioPerfilPage() {
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </Button>
                     <Button size="sm" hideArrow onClick={() => handleSave('emergency')} disabled={isSaving} className="gap-1.5">
-                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {!isSaving && <FloppyDisk className="w-4 h-4" aria-hidden="true" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
                     </Button>
                   </div>
                 )}
                 </CrossFade>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}</label>
-                <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
-                {editingSection === 'emergency' ? (
-                  <>
-                    <Input type="text" {...propsDelCampo('emergencia')} value={emergencyContactDisplay} onChange={(e) => handleEmergencyContactChange(e.target.value)}
-                      placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'} />
-                    {errorDelCampo('emergencia')}
-                  </>
-                ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                    <UserPlus className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{emergencyContactDisplay || notSet}</span>
-                  </div>
-                )}
-                </CrossFade>
-              </div>
+              {/* Ronda 28 (revisora r27): dos campos, Nombre y Teléfono, como el perfil del inquilino (antes UNO,
+                  «Nombre - Teléfono», que había que escribir con el guion). */}
+              <CrossFade
+                swapKey={editingSection === 'emergency' ? 'editar' : 'ver'}
+                mode="popLayout"
+                className="grid grid-cols-1 gap-6 md:grid-cols-2"
+              >
+                <div>
+                  <label htmlFor={idDelCampo('emergenciaNombre')} className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Nombre' : 'Name'}</label>
+                  {editingSection === 'emergency' ? (
+                    <>
+                      <Input type="text" {...propsDelCampo('emergenciaNombre')} value={formData.emergencyContactName}
+                        onChange={(e) => { setFormData((prev) => ({ ...prev, emergencyContactName: e.target.value })); limpiarError('emergenciaNombre'); }}
+                        placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'} />
+                      {errorDelCampo('emergenciaNombre')}
+                    </>
+                  ) : (
+                    <p className="py-1 text-sm text-fg">{formData.emergencyContactName || notSet}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor={idDelCampo('emergenciaTelefono')} className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Teléfono' : 'Phone'}</label>
+                  {editingSection === 'emergency' ? (
+                    <>
+                      <Input type="tel" {...propsDelCampo('emergenciaTelefono')} value={formData.emergencyContactPhone}
+                        onChange={(e) => { setFormData((prev) => ({ ...prev, emergencyContactPhone: e.target.value })); limpiarError('emergenciaTelefono'); }}
+                        placeholder="3001234567" />
+                      {errorDelCampo('emergenciaTelefono')}
+                    </>
+                  ) : (
+                    <p className="py-1 font-mono text-sm text-fg tabular-nums">{formData.emergencyContactPhone || notSet}</p>
+                  )}
+                </div>
+              </CrossFade>
             </div>
 
             {/* Danger Zone */}
-            <div className="rounded-lg border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/30 dark:bg-[#C4503B]/20 p-6">
-              <h3 className="font-semibold text-[#C4503B] dark:text-[#E0664D] mb-2 flex items-center gap-2">
+            <div className="rounded-lg border border-danger/30 bg-danger-soft/30 p-6">
+              <h3 className="text-h3 text-danger mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
@@ -813,8 +683,14 @@ export default function PropietarioPerfilPage() {
                   inquilino (Nico, 02-10-2026): nada se borra; 30 días para
                   volver y después sólo el soporte de Leasefy. */}
               <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>
-              <Button variant="destructive" hideArrow onClick={handleOpenDeleteModal}>
-                {locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'}
+              {/* Revisora r25: de borde, como en el perfil del inquilino (antes rojo lleno): la confirmación es la que pesa. */}
+              <Button
+                variant="outline"
+                hideArrow
+                onClick={handleOpenDeleteModal}
+                className="rounded-full border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
+              >
+                {locale === 'es' ? 'Eliminar cuenta' : 'Delete account'}
               </Button>
             </div>
           </div>
@@ -850,7 +726,7 @@ export default function PropietarioPerfilPage() {
                   <DialogTitle>{locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}</DialogTitle>
                   <DialogDescription>
                     {deletionCopy.confirmInstructionPrefix}{' '}
-                    <span className="font-mono font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
+                    <span className="font-mono font-medium text-danger">{deletionCopy.confirmWord}</span>{' '}
                     {deletionCopy.confirmInstructionSuffix}
                   </DialogDescription>
                 </>

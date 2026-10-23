@@ -134,7 +134,7 @@ export function ArchivoDelLote({
   return (
     <section className="space-y-3 rounded-lg border border-border bg-surface shadow-sm" data-testid="archivo-del-lote">
       <header className="px-4 pt-4">
-        <h2 className="text-body-sm font-semibold text-fg">El archivo al banco</h2>
+        <h2 className="text-body-sm font-medium text-fg">El archivo al banco</h2>
         <p className="text-caption text-fg-muted">
           Queda en el centro de procesos: lo bajas desde aquí o desde el botón de procesos de arriba.
         </p>
@@ -151,8 +151,8 @@ export function ArchivoDelLote({
       )}
 
       {/* 🔴 23-09 (Nico: «todas las cargas déjalas que sucedan allí»): el
-          archivo EN PREPARACIÓN no se pinta acá con su barra —eso lo muestra
-          el centro—; acá sólo el archivo ya hecho, con «Descargar». */}
+          archivo EN PREPARACIÓN no se pinta aquí con su barra —eso lo muestra
+          el centro—; aquí sólo el archivo ya hecho, con «Descargar». */}
       {proceso && estaActivo(proceso) ? (
         <p className="border-t border-border-faint px-4 py-3 text-caption text-fg-muted" data-testid="archivo-en-el-centro">
           Se está preparando: lo sigues en el centro de procesos, arriba a la derecha, y aparece aquí cuando esté.

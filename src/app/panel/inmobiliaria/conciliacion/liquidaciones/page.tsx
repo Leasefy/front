@@ -14,7 +14,7 @@
  *   POST /api/agency/{id}/conciliacion/settlements/{id}/approve   (T-323)
  *
  * Operador:
- *   (1) Filtra por estado (Chip): todos · borrador · pendiente · aprobado · pagado.
+ *   (1) Filtra por estado (pestañas con conteo, r25): todos · borrador · pendiente · aprobado · pagado.
  *   (2) "Generar liquidación" → diálogo con cifras reales (canon, comisión,
  *       otros) → POST generate (crea un borrador) + refetch.
  *   (3) "Aprobar" por fila → confirmación HUMANA explícita (T-323, AlertDialog)
@@ -75,7 +75,6 @@ import {
   erroresDeLaLiquidacion,
   type CampoDeLaLiquidacion,
 } from '@/lib/hooks/conciliacion/limites-de-la-conciliacion'
-import { Chip } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import {
@@ -85,6 +84,8 @@ import {
 } from '@/lib/hooks/conciliacion/use-conciliacion-settlements'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 
 // ── Estado de liquidación (set cerrado) ──────────────────────────────────────
 
@@ -173,7 +174,7 @@ function SettlementRow({
       </TableCell>
 
       {/* El neto es la cifra de la fila: canon − comisión − otros. */}
-      <TableCell className="whitespace-nowrap font-semibold tabular-nums text-fg">
+      <TableCell className="whitespace-nowrap font-medium tabular-nums text-fg">
         {fmtCop(item.netCop)}
       </TableCell>
 
@@ -404,68 +405,63 @@ function ConciliacionLiquidaciones() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-h2 text-fg">
-            Liquidaciones a propietario
-          </h1>
-          <p className="text-body text-fg-muted max-w-2xl">
-            Lo que la inmobiliaria debe a cada propietario por periodo: canon recaudado menos
-            comisión y otros descuentos. Aquí solo se registra y aprueba — el pago real lo hace
-            pagos.
-          </p>
-          {/*
-            🔴 21-09-2026: hay DOS pantallas llamadas «Liquidaciones». Ésta es
-            la del AGENTE, con su propio registro; las del mes —las que salen
-            de las cuotas del contrato y se giran— viven en Pagos. Sin decirlo,
-            esta pantalla vacía afirma «no hay liquidaciones a propietario»
-            mientras al lado están las del mes, y eso es falso.
-          */}
-          <p className="text-caption text-fg-muted max-w-2xl">
-            Éste es el registro del agente. Las liquidaciones del mes —las que
-            salen de los contratos y se giran— están en{' '}
+      {/* 🔴 21-09-2026: hay DOS pantallas llamadas «Liquidaciones». Ésta es la
+          del AGENTE, con su propio registro; las del mes —las que salen de las
+          cuotas del contrato y se giran— viven en Pagos: la descripción lo dice. */}
+      <EncabezadoDePantalla
+        seccion="Conciliación bancaria"
+        // Revisora r25 (#1): se llama por lo que es —el registro del agente—, no igual que «Pagos ›
+        // Liquidaciones»; la descripción en una línea, con la salida a los giros del mes en gris.
+        titulo="Lo que registró el agente"
+        descripcion={
+          <>
+            Lo que el agente anotó que se le debe a cada propietario, por período. Los giros del mes están en{' '}
             <Link
               href="/panel/inmobiliaria/pagos/liquidaciones"
-              className="text-primary underline-offset-4 hover:underline"
+              className="text-fg underline underline-offset-4 hover:text-fg-muted"
             >
-              Pagos · Liquidaciones
+              Giros a propietarios
             </Link>
             .
-          </p>
-        </div>
-
-        {/* Acción principal. El «en bandeja» que vivía acá se fue: lo dice el
-            pie de la tabla, y el mismo número dos veces no informa dos veces. */}
-        <Button
-          hideArrow
-          className="shrink-0"
-          onClick={() => {
-            resetForm()
-            setGenOpen(true)
-          }}
-          data-testid="liquidacion-generar-cta"
-        >
-          <Receipt className="size-4" aria-hidden="true" />
-          Generar liquidación
-        </Button>
-      </header>
+          </>
+        }
+        accionPrincipal={
+          <Button
+            size="sm"
+            hideArrow
+            className="shrink-0"
+            onClick={() => {
+              resetForm()
+              setGenOpen(true)
+            }}
+            // Revisora r25 (#2): con el servicio caído no se ofrece generar (antes azul y activo).
+            disabled={Boolean(error)}
+            title={error ? 'No se puede generar mientras no carguen las liquidaciones.' : undefined}
+            data-testid="liquidacion-generar-cta"
+          >
+            Generar liquidación
+          </Button>
+        }
+      />
 
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Filtros — dentro de la tarjeta, encima de la tabla. */}
-        <div
-          className="flex flex-wrap items-center gap-2 border-b border-border p-4"
-          role="group"
-          aria-label="Filtrar por estado"
-        >
-          {STATUS_FILTERS.map((f) => (
-            <Chip
-              key={f.value}
-              selected={statusFilter === f.value}
-              onClick={() => setStatusFilter(f.value)}
-            >
-              {f.label}
-            </Chip>
-          ))}
+        {/* Revisora r25 (#3): el estado en pestañas con su conteo DENTRO de la tarjeta (antes chips sin
+            número). El micro filtra por estado y cuenta sólo lo que se pide: el número va en la abierta. */}
+        <div className="border-b border-border p-4 empty:hidden">
+          <PestanasDeEstado
+            etiqueta="Filtrar por estado"
+            valor={statusFilter}
+            onCambio={(v) => setStatusFilter(v)}
+            data-testid="liquidaciones-estados"
+            pestanas={STATUS_FILTERS.map((f) => ({
+              valor: f.value,
+              etiqueta: f.label,
+              cuantos: f.value === statusFilter && !isLoading && !error ? items.length : null,
+              fija: true,
+              testid: `liquidaciones-estado-${f.value}`,
+            }))}
+          />
         </div>
 
         {/* Carga y fallo por fuera del cuerpo; el vacío va DENTRO, para que los
@@ -506,7 +502,7 @@ function ConciliacionLiquidaciones() {
                       queSon="registros"
                       icono={Receipt}
                       titulo="Sin liquidaciones"
-                      descripcion="El agente todavía no tiene ninguna registrada acá. Las del mes están en Pagos · Liquidaciones."
+                      descripcion="El agente todavía no tiene ninguna registrada aquí. Las del mes están en Giros a propietarios."
                       crear={{
                         label: 'Generar liquidación',
                         onClick: () => {
@@ -633,7 +629,7 @@ function ConciliacionLiquidaciones() {
             {/* Vista previa del neto (canon − comisión − otros) */}
             <div className="rounded-[14px] border border-border px-4 py-2.5 text-sm">
               <span className="text-fg-muted">Neto al propietario: </span>
-              <span className="font-mono font-semibold tabular-nums text-fg">{fmtCop(previewNet)}</span>
+              <span className="font-mono tabular-nums text-fg">{fmtCop(previewNet)}</span>
             </div>
           </div>
 

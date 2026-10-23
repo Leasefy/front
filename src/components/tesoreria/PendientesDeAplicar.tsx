@@ -54,6 +54,9 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { errorDelMotivo, errorDelValorADevolver } from '@/lib/tesoreria/limites-de-tesoreria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { useTr } from '@/lib/i18n/use-tr';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 
 /** Los dos campos del diálogo de devolver, y el id de cada uno. */
 type CampoDeLaDevolucion = 'valor' | 'motivo';
@@ -75,6 +78,15 @@ export function PendientesDeAplicarPanel() {
   const [motivo, setMotivo] = useState('');
   const [valor, setValor] = useState('');
   const [errores, setErrores] = useState<Partial<Record<CampoDeLaDevolucion, string>>>({});
+  const tr = useTr();
+  // La cifra de arriba: lo que espera en total, y cuánto de eso se puede aplicar hoy.
+  const totalPendiente = (datos?.aplicables ?? []).reduce((s, i) => s + i.pendiente.saldoCop, 0);
+  const aplicableHoy = Math.min(
+    totalPendiente,
+    datos?.totalAplicableCop ??
+      (datos?.aplicables ?? []).reduce((s, i) => s + Math.max(0, i.aplicableCop), 0),
+  );
+  const esperando = Math.max(0, totalPendiente - aplicableHoy);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -174,7 +186,7 @@ export function PendientesDeAplicarPanel() {
              del encabezado, y sin pendientes ESO era la pantalla entera: el
              mismo texto dos veces.
              Un vacío tiene que decir tres cosas que el intro no dice: que está
-             bien que esté vacío, qué haría aparecer algo acá, y que no hay nada
+             bien que esté vacío, qué haría aparecer algo aquí, y que no hay nada
              que hacer. */
           <div
             className="rounded-lg border border-border bg-surface p-5"
@@ -183,8 +195,9 @@ export function PendientesDeAplicarPanel() {
             <SinDatos
               queSon="plata pendiente de aplicar"
               icono={Hourglass}
+              ilustracion="escudo"
               titulo="No hay nada pendiente, y está bien"
-              descripcion="Toda la plata que entró ya se aplicó o se devolvió. Acá va a aparecer una fila el día que una aseguradora pague más de lo que un inquilino tiene vencido."
+              descripcion="Toda la plata que entró ya se aplicó o se devolvió. Aquí va a aparecer una fila el día que una aseguradora pague más de lo que un inquilino tiene vencido."
             />
           </div>
         }
@@ -202,15 +215,48 @@ export function PendientesDeAplicarPanel() {
           <>
             {/* 🔴 El título era «Pendiente de aplicar», el MISMO de la página
                 dos renglones arriba. Un bloque no se llama igual que la
-                pantalla que lo contiene: acá lo que hace falta decir es
+                pantalla que lo contiene: aquí lo que hace falta decir es
                 cuántos son y cuánto se puede mover hoy. */}
-            <p className="text-sm text-fg-muted" data-testid="cuanto-se-puede-aplicar">
-              {datos.aplicables.length}{' '}
-              {datos.aplicables.length === 1 ? 'entrada' : 'entradas'} esperando.{' '}
-              {datos.totalAplicableCop
-                ? `Hoy se podrían aplicar ${formatCurrency(datos.totalAplicableCop)} a deuda ya vencida.`
-                : 'Ninguna tiene hoy deuda vencida contra la que aplicarse: hay que esperar que venzan más cuotas, o devolverla.'}
-            </p>
+            {/* Revisora r24, Pendientes #1: LA RESPUESTA en una cifra —cuánta plata de terceros
+                espera, en cuántas entradas— partida en lo que se puede aplicar hoy y lo que espera
+                a que venzan cuotas. Antes era una frase gris y el ojo encontraba primero el saldo
+                de cada tarjeta, no el total. */}
+            <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+              <CifraHeroe
+                data-testid="cuanto-se-puede-aplicar"
+                className="[&>ul]:grid-cols-1 sm:[&>ul]:grid-cols-2"
+                rotulo={tr('Por aplicar')}
+                cifra={formatCurrency(totalPendiente)}
+                contexto={
+                  datos.aplicables.length === 1
+                    ? tr('en 1 entrada')
+                    : tr('en {n} entradas', { n: datos.aplicables.length })
+                }
+                total={totalPendiente}
+                tramos={[
+                  {
+                    clave: 'hoy',
+                    etiqueta: tr('Se puede aplicar hoy'),
+                    monto: aplicableHoy,
+                    tono: 'neutro',
+                    cifra: formatCurrency(aplicableHoy),
+                    siempre: true,
+                  },
+                  {
+                    clave: 'espera',
+                    etiqueta: tr('Espera a que venzan cuotas'),
+                    monto: esperando,
+                    tono: 'aviso',
+                    cifra: formatCurrency(esperando),
+                  },
+                ]}
+                pie={
+                  aplicableHoy > 0
+                    ? null
+                    : tr('Ninguna tiene hoy deuda vencida contra la que aplicarse: hay que esperar que venzan más cuotas, o devolverla.')
+                }
+              />
+            </div>
             {/* Movimiento (ola 2, 03-10-2026): las entradas llegan escalonadas;
                 la que se aplica o se devuelve SALE de la lista (`key` = el id). */}
             <Stagger as="ul" className="space-y-4" data-testid="pendientes" distance="xs">
@@ -227,14 +273,14 @@ export function PendientesDeAplicarPanel() {
                         {formatCurrency(item.pendiente.saldoCop)}
                       </p>
                       <p className="text-sm text-fg">{item.pendiente.nombre}</p>
-                      <p className="text-xs text-fg-muted">
+                      <p className="text-caption text-fg-muted">
                         {item.pendiente.pagadorNombre
                           ? `La puso ${item.pendiente.pagadorNombre}`
                           : 'Sin pagador registrado'}
                         {item.pendiente.siniestroReferencia
                           ? ` · siniestro ${item.pendiente.siniestroReferencia}`
                           : ''}{' '}
-                        · entró el {item.pendiente.fecha}
+                        · {tr('entró el {fecha}', { fecha: fechaCorta(item.pendiente.fecha) })}
                       </p>
                     </div>
                     <Badge variant={item.aplicableCop > 0 ? 'success' : 'warning'}>
@@ -244,10 +290,10 @@ export function PendientesDeAplicarPanel() {
                     </Badge>
                   </div>
 
-                  <p className="text-xs leading-relaxed text-fg-muted">{item.porQue}</p>
+                  <p className="text-caption leading-relaxed text-fg-muted">{item.porQue}</p>
 
                   {item.pendiente.aplicadoCop > 0 || item.pendiente.devueltoCop > 0 ? (
-                    <dl className="grid grid-cols-3 gap-2 text-xs text-fg-muted">
+                    <dl className="grid grid-cols-3 gap-2 text-caption text-fg-muted">
                       <div>
                         <dt className="text-fg">Llegó</dt>
                         <dd className="font-mono tabular-nums">
@@ -270,10 +316,10 @@ export function PendientesDeAplicarPanel() {
                   ) : null}
 
                   {item.pendiente.movimientos.length > 0 ? (
-                    <ul className="space-y-1 border-t border-border pt-2 text-xs text-fg-muted">
+                    <ul className="space-y-1 border-t border-border pt-2 text-caption text-fg-muted">
                       {item.pendiente.movimientos.map((m) => (
                         <li key={m.id}>
-                          {m.fecha} · {m.tipo === 'APLICACION' ? 'Aplicado' : 'Devuelto'}{' '}
+                          {fechaCorta(m.fecha)} · {m.tipo === 'APLICACION' ? 'Aplicado' : 'Devuelto'}{' '}
                           {formatCurrency(m.valorCop)}
                           {m.meses.length > 0 ? ` a ${m.meses.join(', ')}` : ''}
                           {m.motivo ? ` — ${m.motivo}` : ''}

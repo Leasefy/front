@@ -165,7 +165,7 @@ describe('aprobado', () => {
     })
     render()
     const t = texto()
-    expect(t).toContain('Score de buró')
+    expect(t).toContain('Puntaje del buró')
     expect(t).toMatch(/650/)
     expect(t).toContain('Capacidad de pago mensual')
     expect(t).toMatch(/3\.000\.000/)
@@ -184,7 +184,7 @@ describe('aprobado', () => {
       },
     })
     render()
-    expect(texto()).not.toContain('Score de buró')
+    expect(texto()).not.toContain('Puntaje del buró')
   })
 })
 
@@ -277,13 +277,13 @@ describe('sin estudio — enseña el camino antes de pedir datos', () => {
     const t = texto()
     expect(t).toContain('Te estudiamos')
     expect(t).toContain('Eliges')
-    expect(t).toContain('El propietario decide')
+    expect(t).toContain('Te postulas')
   })
 
-  it('sin order (nunca se consultó) también cae acá', () => {
+  it('sin order (nunca se consultó) también cae aquí', () => {
     montar(null)
     render()
-    expect(texto()).toContain('Todavía no tienes una aprobación')
+    expect(texto()).toContain('Todavía no conoces tu tope')
   })
 
   it('el CTA por defecto va al flujo vigente de /aprobacion', () => {

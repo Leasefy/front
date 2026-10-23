@@ -32,6 +32,10 @@ const SIN_CABECERA_JUSTIFICADO: Record<string, string> = {
   'components/inmobiliaria/CommandPalette.tsx':
     'Paleta de comandos: su primer elemento es el buscador, no un título. Un ' +
     'filete y una ✕ arriba estorbarían el único gesto que importa (escribir).',
+  'components/auth/ventana/VentanaDeCuenta.tsx':
+    'Entrar o crear la cuenta: dos columnas a sangre (la obra de marca a la izquierda, el ' +
+    'formulario con su banda y su propio título a la derecha). Una cabecera con filete partiría ' +
+    'la obra; el título y la descripción quedan para el lector de pantalla y la ✕ la pone el contenido.',
 }
 
 function archivosTsx(dir: string, encontrados: string[] = []): string[] {

@@ -27,8 +27,8 @@ export function formatCanon(value: number | null | undefined): string {
 }
 
 /**
- * Preserva la locale `es-CL` ya usada en esta pantalla (pre-existente, no se
- * corrige acá). `iso` puede venir como fecha pura ("2026-06-15") o como
+ * En es-CO (21-10-2026: antes era el formato de Chile, que ponía «21 oct» en
+ * vez de «21 de oct»). `iso` puede venir como fecha pura ("2026-06-15") o como
  * datetime ISO completo con hora UTC medianoche ("2026-06-15T00:00:00.000Z"
  * — así serializa Prisma una columna `@db.Date`, que es la forma real en la
  * que viaja `Contract.startDate`/`endDate`). Se toman sólo los primeros 10
@@ -45,7 +45,7 @@ export function formatFecha(
   const soloFecha = iso.slice(0, 10);
   const date = new Date(`${soloFecha}T12:00:00`);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString('es-CL', opts);
+  return date.toLocaleDateString('es-CO', opts);
 }
 
 export function mesesHastaFin(endDateIso: string | null | undefined): number | null {

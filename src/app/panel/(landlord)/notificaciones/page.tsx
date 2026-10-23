@@ -4,39 +4,15 @@ import { useContratosAdministrados } from '@/components/landlord/ContratosConLaI
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import {
-  Bell,
-  Check,
-  TrashSimple,
-  Gear,
-  Users,
-  Buildings,
-  FileText,
-  FileArrowUp,
-  CurrencyDollar,
-  CaretRight,
-  Warning,
-  Star,
-  Wrench,
-  Calendar,
-  ChatCircle,
-  ShieldCheck,
-  House,
-  Eye,
-  Megaphone,
-  UserPlus,
-  PenNib,
-  Bank,
-  Clock,
-  Sparkle,
-  ArrowRight,
-} from '@phosphor-icons/react';
+import { Bell, Check, TrashSimple, Gear, FileText, FileArrowUp, CurrencyDollar, Warning, Calendar, UserPlus, PenNib, Clock } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
-import { IconButton, Chip, CrossFade, StaggerItem } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { IconButton, CrossFade, StaggerItem } from '@leasefy/cadence';
+import { PestanasDeEstado, type PestanaDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLandlordNotifications } from '@/lib/hooks/useNotifications';
 import { LANDLORD_CATEGORIES } from '@/lib/types/notification';
@@ -92,7 +68,7 @@ function NotificationSkeleton() {
   return (
     <div className="flex items-start gap-4 px-5 py-4 border-b border-border-faint animate-pulse">
       {/* Icon skeleton */}
-      <div className="w-10 h-10 rounded-xl bg-surface-muted flex-shrink-0" />
+      <div className="mt-0.5 w-5 h-5 rounded bg-surface-muted flex-shrink-0" />
 
       {/* Content skeleton */}
       <div className="flex-1 min-w-0 space-y-2">
@@ -114,7 +90,7 @@ function NotificationSkeleton() {
 }
 
 export default function NotificacionesPage() {
-  const { t, formatRelativeDate } = useI18n();
+  const { t, formatRelativeDate, locale } = useI18n();
   const router = useRouter();
   const administrados = useContratosAdministrados();
   const deInmobiliaria = administrados.doc !== null;
@@ -141,6 +117,7 @@ export default function NotificacionesPage() {
     deleteNotification(id).catch(notifyError('borrar la notificación'));
 
   const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
+  const hayLeidas = notifications.some((n) => n.read);
   const filteredNotifications = visibleNotifications.filter((n) => {
     if (filter === 'all') return true;
     if (filter === 'unread') return !n.read;
@@ -156,73 +133,78 @@ export default function NotificacionesPage() {
     }
   };
 
+  const cuantosDe = (c: string) => visibleNotifications.filter((n) => n.category === c || (c === 'payment' && n.category === 'alert')).length;
+
   const getCategoryConfig = (category: LandlordNotificationCategory) => {
     return LANDLORD_CATEGORIES[category] || LANDLORD_CATEGORIES.system;
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    // GLOW UP (21-10-2026): el contenedor y el encabezado común del portal (el mismo de las del inquilino).
+    <div className="p-6 lg:p-8">
       {/* Header — QA-PROP-95 (PO-24): a 390 px «Marcar todo como leído» baja de
-          renglón; antes la página se corría 45 px de lado. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-fg">
-            {t('landlord.notifications.title')}
-          </h1>
-          <p className="text-sm text-fg-muted mt-1">
-            {unreadCount > 0 ? t('landlord.notifications.unreadCount', { count: unreadCount }) : t('landlord.notifications.allRead')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
-              <Check className="w-4 h-4" />
-              {t('landlord.notifications.markAllRead')}
-            </Button>
-          )}
-          <IconButton
-            variant="ghost"
-            icon={<Gear className="w-5 h-5" />}
-            aria-label="Configuración"
-            onClick={() => router.push('/panel/configuracion/notificaciones')}
-          />
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border overflow-x-auto">
-        {[
-          { id: 'all', label: t('landlord.notifications.filterAll') },
-          { id: 'unread', label: t('landlord.notifications.filterUnread'), count: unreadCount },
-          { id: 'payment', label: t('landlord.notifications.filterPayments') },
-          { id: 'application', label: t('landlord.notifications.filterCandidates'), soloIndependiente: true },
-          { id: 'contract', label: t('landlord.notifications.filterContracts') },
-          { id: 'lease', label: t('landlord.notifications.filterLeases'), soloIndependiente: true },
-          { id: 'visit', label: t('landlord.notifications.filterVisits'), soloIndependiente: true },
-          { id: 'property', label: t('landlord.notifications.filterProperties'), soloIndependiente: true },
-        ]
-          // QA-PROP-95: candidatos, arriendos, visitas y propiedades son del
-          // propietario independiente; a quien administra una inmobiliaria no le sirven.
-          .filter((f) => !(deInmobiliaria && 'soloIndependiente' in f && f.soloIndependiente))
-          .map((f) => (
-          <Chip
-            key={f.id}
-            selected={filter === f.id}
-            onClick={() => setFilter(f.id as FilterType)}
-            className="whitespace-nowrap"
-          >
-            {f.label}
-            {'count' in f && f.count !== undefined && f.count > 0 && (
-              <span className="ml-1 tabular-nums">{f.count}</span>
+          renglón (el encabezado común envuelve sus acciones). */}
+      <EncabezadoDePantalla
+        className="mb-6"
+        // Revisora r27 (CF): el sobretítulo, como su gemela del inquilino.
+        seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'}
+        titulo={t('landlord.notifications.title')}
+        // Revisora r25: el conteo de sin leer vive en su pestaña (antes también aquí: «3 sin leer» dos veces).
+        descripcion={
+          locale === 'es'
+            ? 'Lo que pasó con tus inmuebles, tus candidatos y tus pagos.'
+            : 'What happened with your properties, your candidates and your payments.'
+        }
+        acciones={
+          <>
+            {unreadCount > 0 && (
+              <Button variant="outline" size="sm" hideArrow onClick={handleMarkAllAsRead}>
+                <Check className="w-4 h-4" />
+                {t('landlord.notifications.markAllRead')}
+              </Button>
             )}
-          </Chip>
-        ))}
-      </div>
+            <IconButton
+              variant="ghost"
+              icon={<Gear className="w-5 h-5" />}
+              aria-label="Configuración"
+              onClick={() => router.push('/panel/configuracion/notificaciones')}
+            />
+          </>
+        }
+      />
 
+      {/* Revisora r25 (una sola pieza con el inquilino): los filtros son las pestañas de estado de la casa, con su
+          conteo y DENTRO de la tarjeta; una categoría sin avisos no aparece (antes ocho pastillas, seis vacías). */}
       {/* Notifications List — cargando → lista, cambiar de filtro o quedar
           vacío cruzan el contenido; dentro de un filtro, marcar o borrar saca
           la fila y las demás se corren (lo que ya estaba no se anima). */}
       <div className="bg-surface rounded-lg border border-border overflow-hidden">
+        {notifications.length > 0 && (
+          <div className="border-b border-border px-4 py-3 sm:px-5 empty:hidden">
+            <PestanasDeEstado
+              etiqueta={t('landlord.notifications.title')}
+              valor={filter}
+              onCambio={(v) => setFilter(v)}
+              pestanas={(
+                [
+                  { valor: 'all', etiqueta: t('landlord.notifications.filterAll'), cuantos: visibleNotifications.length, fija: true },
+                  { valor: 'unread', etiqueta: t('landlord.notifications.filterUnread'), cuantos: unreadCount, tono: 'aviso' },
+                  { valor: 'payment', etiqueta: t('landlord.notifications.filterPayments'), cuantos: cuantosDe('payment') },
+                  { valor: 'application', etiqueta: t('landlord.notifications.filterCandidates'), cuantos: cuantosDe('application'), soloIndependiente: true },
+                  { valor: 'contract', etiqueta: t('landlord.notifications.filterContracts'), cuantos: cuantosDe('contract') },
+                  { valor: 'lease', etiqueta: t('landlord.notifications.filterLeases'), cuantos: cuantosDe('lease'), soloIndependiente: true },
+                  { valor: 'visit', etiqueta: t('landlord.notifications.filterVisits'), cuantos: cuantosDe('visit'), soloIndependiente: true },
+                  { valor: 'property', etiqueta: t('landlord.notifications.filterProperties'), cuantos: cuantosDe('property'), soloIndependiente: true },
+                ] as Array<PestanaDeEstado<FilterType> & { soloIndependiente?: boolean }>
+              )
+                // QA-PROP-95: candidatos, arriendos, visitas e inmuebles son del propietario independiente.
+                .filter((f) => !(deInmobiliaria && f.soloIndependiente))
+                // Revisora r27 (§3): si todas están sin leer, «Sin leer» diría el mismo número que «Todas»: no sale.
+                .filter((f) => !(f.valor === 'unread' && unreadCount === visibleNotifications.length && filter !== 'unread'))
+                .map(({ soloIndependiente: _solo, ...f }) => f)}
+            />
+          </div>
+        )}
         <CrossFade
           className="relative"
           swapKey={
@@ -266,22 +248,16 @@ export default function NotificacionesPage() {
                   className={cn(
                     'flex items-start gap-4 px-5 py-4 hover:bg-surface-hover transition-colors cursor-pointer group',
                     index !== filteredNotifications.length - 1 &&
-                      'border-b border-border-faint',
-                    !notification.read && 'bg-primary-soft/50'
+                      'border-b border-border-faint'
                   )}
                 >
-                  {/* Icon */}
-                  <div
-                    className={cn(
-                      'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-xl',
-                      categoryConfig.bgColor,
-                      categoryConfig.darkBgColor
+                  {/* Glow up 22-10: el ícono suelto (antes, en una caja de color) y la no leída con su punto,
+                      sin la fila teñida de azul. */}
+                  <div className="relative mt-0.5 flex-shrink-0">
+                    <IconComponent className="w-5 h-5 text-fg-muted" aria-hidden="true" />
+                    {!notification.read && (
+                      <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
                     )}
-                  >
-                    <IconComponent
-                      className={cn('w-5 h-5', categoryConfig.color)}
-                      weight={!notification.read ? 'fill' : 'regular'}
-                    />
                   </div>
 
                   {/* Content */}
@@ -296,35 +272,31 @@ export default function NotificacionesPage() {
                     >
                       {notification.title}
                     </p>
-                    <p className="text-sm text-fg-muted mt-0.5 line-clamp-1">
+                    <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 sm:line-clamp-1">
                       {notification.message}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-fg-subtle">
+                      <span className="text-caption text-fg-subtle">
                         {formatRelativeDate(notification.createdAt)}
                       </span>
-                      <span className="text-fg-subtle">
-                        •
-                      </span>
-                      <span
-                        className={cn(
-                          'text-xs font-medium',
-                          categoryConfig.color
-                        )}
-                      >
-                        {categoryConfig.label}
-                      </span>
+                      {/* Revisora r25: «Sistema» en cada fila no informa; la categoría sólo cuando dice algo. */}
+                      {notification.category !== 'system' && (
+                        <>
+                          <span className="text-fg-subtle">•</span>
+                          <span className="text-caption text-fg-subtle">{categoryConfig.label}</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   {/* Action Button */}
                   {notification.actionLabel && (
                     <div
-                      className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           if (notification.actionUrl) {
@@ -334,7 +306,6 @@ export default function NotificacionesPage() {
                         }}
                       >
                         {notification.actionLabel}
-                        <ArrowRight className="w-3 h-3" />
                       </Button>
                     </div>
                   )}
@@ -364,13 +335,6 @@ export default function NotificacionesPage() {
                     />
                   </div>
 
-                  {/* Unread indicator and arrow */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {!notification.read && (
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                    )}
-                    <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted transition-colors" />
-                  </div>
                 </StaggerItem>
               );
             })}
@@ -380,18 +344,22 @@ export default function NotificacionesPage() {
       </div>
 
       {/* Summary */}
-      {notifications.length > 0 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-fg-muted">
+      {/* Revisora r27 (§3 y CF): «Mostrando N de M» sólo cuando se ve una parte; «Ocultar las leídas» sólo si hay
+          leídas; la misma línea gris que el inquilino. */}
+      {notifications.length > 0 && (filteredNotifications.length < notifications.length || hayLeidas || hideRead) && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-caption text-fg-muted">
           <span>
-            {t('landlord.notifications.showingCount', { filtered: filteredNotifications.length, total: notifications.length })}
+            {filteredNotifications.length < notifications.length
+              ? t('landlord.notifications.showingCount', { filtered: filteredNotifications.length, total: notifications.length })
+              : null}
           </span>
-          {notifications.length > 0 && (
-            <Button
-              variant="link"
-              size="sm"
-              onClick={() => setHideRead(true)}
-            >
-              {t('landlord.notifications.clearRead')}
+          {(hayLeidas || hideRead) && (
+            // Revisora r25: el mismo nombre que en el inquilino («Ocultar las leídas»), sin el azul de enlace, y se
+            // puede deshacer.
+            <Button variant="link" size="sm" hideArrow onClick={() => setHideRead((v) => !v)} className="text-fg-muted hover:text-fg" data-testid="ocultar-las-leidas">
+              {hideRead
+                ? locale === 'es' ? 'Mostrar las leídas' : 'Show read'
+                : locale === 'es' ? 'Ocultar las leídas' : 'Hide read'}
             </Button>
           )}
         </div>

@@ -16,7 +16,7 @@ export default function OnboardingLayout({ children }: OnboardingLayoutProps) {
   return (
     <ForceLightMode>
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx).
-          No montes otro acá: sonner pinta cada toast en TODOS los Toaster montados. */}
+          No montes otro aquí: sonner pinta cada toast en TODOS los Toaster montados. */}
       <I18nProvider>
         {/* Con el código del segundo factor pendiente, primero el código
             (QA 01-10-2026: el selector de perfil y los onboardings no tenían

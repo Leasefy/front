@@ -107,7 +107,7 @@ export const COMO_SE_CONECTA: Record<string, ComoSeConecta> = {
     rotuloDelIdentificador: 'Usuario de Mercado Libre',
     ejemploDelIdentificador: 'El de la cuenta ADMINISTRADORA, no la de un colaborador',
     cuidado:
-      'Mercado Libre no se conecta con usuario y clave: se autoriza con un botón. Acá sólo anotamos de quién es la cuenta.',
+      'Mercado Libre no se conecta con usuario y clave: se autoriza con un botón. Aquí sólo anotamos de quién es la cuenta.',
     paraConectarloDeVerdad: [
       'Autorizar a Leasefy desde tu cuenta administradora (un botón, no una clave).',
       'Tener tu usuario activado como inmobiliaria: se pide por el formulario de soporte de Mercado Libre.',

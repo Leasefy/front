@@ -13,7 +13,8 @@ import { useParams } from 'next/navigation';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { DetalleDelLote } from '@/components/dispersiones/lotes/DetalleDelLote';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { BackButton } from '@/components/ui/back-button';
+import Link from 'next/link';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
 
 export default function LoteDeDispersionPage() {
@@ -34,8 +35,12 @@ export default function LoteDeDispersionPage() {
             tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
             parte del panel estás (Nico: «ni se entiende y no tiene navegación
             para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
-            <BackButton href={RUTA_LOTES} label="Lotes" />
-            <h1 className="text-h2 text-fg">Lote</h1>
+            <div className="space-y-3">
+              <Link href={RUTA_LOTES} className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
+                Lotes al banco
+              </Link>
+              <EncabezadoDePantalla seccion="Giros a propietarios · Lotes al banco" titulo="Lote" />
+            </div>
             <FalloDeCarga
               error={{ status: 404 }}
               queEs="el lote"

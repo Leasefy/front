@@ -207,11 +207,11 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             <span className="font-medium text-fg capitalize">
               {row.global.name}
             </span>
-            <span className="text-xs text-fg-muted">{enPalabras(NOMBRE_DE_LA_RUTA, row.global.route)}</span>
+            <span className="text-caption text-fg-muted">{enPalabras(NOMBRE_DE_LA_RUTA, row.global.route)}</span>
             {row.hasOverride && (
               <span
                 data-testid="override-pill"
-                className="inline-flex self-start text-xs bg-primary-soft text-primary rounded-full px-2 py-0.5 mt-0.5"
+                className="inline-flex self-start text-caption bg-primary-soft text-primary rounded-full px-2 py-0.5 mt-0.5"
               >
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.overridePill')}
               </span>
@@ -224,9 +224,9 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
           <div className="flex flex-col gap-0.5">
             <span className="text-fg">{enPalabras(NOMBRE_DEL_MODO, row.global.mode)}</span>
             {row.override?.mode != null ? (
-              <span className="text-xs text-fg-muted">{enPalabras(NOMBRE_DEL_MODO, row.override.mode)}</span>
+              <span className="text-caption text-fg-muted">{enPalabras(NOMBRE_DEL_MODO, row.override.mode)}</span>
             ) : (
-              <span className="text-xs text-fg-muted italic">
+              <span className="text-caption text-fg-muted italic">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.inherits', { value: enPalabras(NOMBRE_DEL_MODO, row.global.mode) })}
               </span>
             )}
@@ -263,7 +263,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
           {tenantPriority != null ? (
             <span className="text-fg">{tenantPriority}</span>
           ) : (
-            <span className="text-xs text-fg-muted italic">
+            <span className="text-caption text-fg-muted italic">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.inherits', { value: String(row.global.priority) })}
             </span>
           )}
@@ -271,7 +271,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
 
         {/* Breach Status */}
         <TableCell className="px-4 py-3 text-sm">
-          <Badge variant="outline" className={`text-xs ${breachClass}`}>
+          <Badge variant="outline" className={`text-caption ${breachClass}`}>
             {enPalabras(NOMBRE_DEL_ESTADO, row.global.breachStatus)}
           </Badge>
         </TableCell>
@@ -327,7 +327,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             <div
               role="alert"
               data-testid="conflict-alert"
-              className="bg-danger-soft text-danger text-xs rounded-md px-3 py-2"
+              className="bg-danger-soft text-danger text-caption rounded-md px-3 py-2"
             >
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.conflictWarning')}
             </div>

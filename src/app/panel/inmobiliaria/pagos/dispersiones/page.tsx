@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import {
-  Bank,
   PaperPlaneTilt,
   Table,
   SquaresFour,
@@ -63,6 +62,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { Button } from '@/components/ui/button';
+import { conElMes } from '@/lib/giros/meses-de-los-giros';
 import { TablePagination } from '@/components/ui/pagination';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -86,6 +86,9 @@ import { nombreDelMes } from '@/lib/utils/mes';
 import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useTr } from '@/lib/i18n/use-tr';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
+import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -227,6 +230,14 @@ function DispersionesContent() {
 
   // State for view mode
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  // Revisión de Dinero (22-10): sin interruptor «Tabla / Tarjetas». La tabla desde 768 px y
+  // las tarjetas solas por debajo (a 390 la tabla se encogía aunque existía la otra vista).
+  useEffect(() => {
+    const ajustar = () => setViewMode(window.innerWidth < 768 ? 'cards' : 'table');
+    ajustar();
+    window.addEventListener('resize', ajustar);
+    return () => window.removeEventListener('resize', ajustar);
+  }, []);
 
   // State for modals
   const [selectedDispersion, setSelectedDispersion] = useState<Dispersion | null>(null);
@@ -385,6 +396,14 @@ function DispersionesContent() {
   }, [dispersiones, filters.month]);
 
   const summary: DispersionSummary = resumenDelBack ?? resumenEstimado;
+  /**
+   * Revisora r22 (Giros #1): con los giros del mes ya generados, «Generar» deja de ser LA acción azul de la
+   * pantalla (al lado decía «Este mes ya está girado»): pasa a secundaria y dice lo que hace ahora, sumar
+   * a quien falte. Lo que toca hacer lo dice «Lo que falta del mes», con su botón.
+   */
+  const mesYaGenerado =
+    summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed > 0 ||
+    dispersiones.some((d) => d.month === filters.month);
 
   // Count dispersiones by status for tabs (hybrid: summary + calculated processing)
   const statusCounts = useMemo(() => {
@@ -443,9 +462,9 @@ function DispersionesContent() {
         avisarQueEstaEnUnLote(enLote, id);
         return;
       }
-      toast.error('No se pudo aprobar la dispersión', {
+      toast.error('No se pudo aprobar el giro', {
         id,
-        description: motivoDeLaAccion(error, 'aprobar la dispersión'),
+        description: motivoDeLaAccion(error, 'aprobar el giro'),
       });
     }
   }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
@@ -577,7 +596,7 @@ function DispersionesContent() {
             {
               id: lote[i].id,
               nombre: lote[i].propietarioName,
-              motivo: motivoDeLaAccion(r.reason, 'aprobar la dispersión'),
+              motivo: motivoDeLaAccion(r.reason, 'aprobar el giro'),
             },
           ]
         : [],
@@ -774,7 +793,7 @@ function DispersionesContent() {
     bloqueDeResumen = (
       <FalloDeCarga
         error={resumenFallo}
-        queEs="el resumen de dispersiones"
+        queEs="el resumen de los giros"
         onReintentar={() => Promise.all([cargarResumen(), refetchDispersiones()])}
       />
     );
@@ -784,33 +803,32 @@ function DispersionesContent() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.dispersiones.title')}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.dispersiones.subtitle')}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {/* Los lotes al banco: el archivo plano con doble aprobación. */}
-          <Button asChild variant="secondary" hideArrow>
-            <Link href={RUTA_LOTES}>
-              <Bank className="w-4 h-4" />
-              {tr("Lotes al banco")}
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* GLOW UP (20-10-2026): el encabezado común —la cara a la que pertenece,
+          qué es en una línea y, a la derecha, lo secundario y lo principal—,
+          con el contenedor de todo el panel (antes `p-4 md:p-6`: esta pantalla
+          arrancaba 8 px más a la izquierda que Liquidaciones). */}
+      {/* Giros a propietarios (Nico, 22-10-2026): Dispersiones es el PASO 2 de la misma tarea. «Lotes
+          al banco» ya no es un botón suelto: es el paso 3 del riel. */}
+      <EncabezadoDePantalla
+        seccion={tr(SECCION_DE_LOS_GIROS)}
+        titulo={tr(TITULO_DE_LOS_GIROS)}
+        descripcion={tr(descripcionDelPaso('revisar'))}
+        accionPrincipal={
+          <Button asChild size="sm" hideArrow variant={mesYaGenerado ? 'secondary' : 'default'} data-testid="generar-los-giros">
+            <Link href={conElMes('/panel/inmobiliaria/pagos/dispersiones/generar', filters.month)}>
+              <Lightning className="w-4 h-4" weight={mesYaGenerado ? 'regular' : 'fill'} />
+              {tr(mesYaGenerado ? 'Generar los que falten' : 'Generar los giros del mes')}
             </Link>
           </Button>
-          <Button asChild hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/dispersiones/generar">
-              <Lightning className="w-4 h-4" weight="fill" />
-              {t('inmobiliaria.dispersiones.wizard.title')}
-            </Link>
-          </Button>
-        </div>
-      </div>
+        }
+      />
+      {/* Decisión 17 de Nico (22-10): «Lo que falta del mes» en vez del riel de chulos. */}
+      <LoQueFaltaDelMes
+        paso="revisar"
+        mes={filters.month}
+        onCambiarMes={(mes) => setFilters((prev) => ({ ...prev, month: mes }))}
+      />
 
       {/* Summary Section — la página ya no anima su propia entrada (la pone el
           `template.tsx`); se anima el CAMBIO: esqueleto → resumen / fallo se
@@ -844,9 +862,11 @@ function DispersionesContent() {
 
       {/* Unified Card - View Toggle + Filters + Content + Pagination */}
       <div className="rounded-lg border border-border bg-card">
-        {/* View Toggle Header - FIRST (Primary hierarchy) */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
+        {/* Revisora r25 (Giros paso 2): la cabecera del selector tabla/tarjetas (oculto) era una franja
+            vacía de ≈25 px encima del buscador: el control queda montado, sin su franja. */}
+        <div className="hidden">
           <SegmentedControl
+            className="hidden"
             aria-label={t('inmobiliaria.dispersiones.viewTable')}
             value={viewMode}
             onChange={(v) => setViewMode(v as ViewMode)}
@@ -873,17 +893,7 @@ function DispersionesContent() {
               },
             ]}
           />
-          {/* El conteo sólo cuando la lista es de verdad: «0 dispersiones»
-              encima de un fallo es otro «no hay». */}
-          <Presence
-            as="span"
-            show={!cargandoLista && !listaCaida}
-            initial={false}
-            direction="none"
-            className="text-xs text-fg-muted tabular-nums"
-          >
-              {filteredDispersiones.length} {t('inmobiliaria.nav.dispersiones').toLowerCase()}
-          </Presence>
+          {/* Revisora r24 (Giros #8): fuera «N giros»: lo dicen la pestaña, el pie y «Mostrando 1–N de N». */}
         </div>
 
         {/* Filters Section - SECOND */}
@@ -902,7 +912,7 @@ function DispersionesContent() {
             error={errorDeLista}
             conservarContenido={conservarLista}
             vacio={filteredDispersiones.length === 0}
-            queEs="las dispersiones"
+            queEs="los giros"
             onReintentar={refetchDispersiones}
             esqueleto={
               viewMode === 'table' ? (
@@ -916,9 +926,9 @@ function DispersionesContent() {
                 hayFiltros={hayFiltros}
                 // Con filtros, SinDatos arma «Ningún <queSon> coincide…»:
                 // «resultado» concuerda, «dispersion» no.
-                queSon={hayFiltros ? 'resultados' : 'dispersiones'}
+                queSon={hayFiltros ? 'resultados' : 'giros'}
                 icono={PaperPlaneTilt}
-                titulo={`Todavía no hay dispersiones de ${monthDisplay}`}
+                titulo={`Todavía no hay giros de ${monthDisplay}`}
                 descripcion={tr("Se arman con la cuota del propietario de cada contrato, haya pagado el inquilino o no. Genéralas desde el asistente.")}
                 crear={{
                   label: t('inmobiliaria.dispersiones.wizard.title'),
@@ -1040,11 +1050,11 @@ function DispersionesContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {tr("Vas a aprobar")} {pendientesEnPantalla.length}{' '}
-              {pendientesEnPantalla.length === 1 ? 'dispersión' : 'dispersiones'} {tr("por")}{' '}
+              {pendientesEnPantalla.length === 1 ? 'giro' : 'giros'} {tr("por")}{' '}
               {formatCurrency(plataPendienteEnPantalla)}{tr(". ¿Seguimos?")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {tr("Son las pendientes que ves en la lista de")} {monthDisplay}{tr(". Cada una queda lista para que otra persona anote la referencia del giro; el sistema no transfiere plata.")}
+              {tr("Son los pendientes que ves en la lista de")} {monthDisplay}{tr(". Cada uno queda listo para que otra persona anote su referencia; el sistema no transfiere plata.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1069,7 +1079,7 @@ function DispersionesContent() {
         {/*
           `xl` (880) porque el extracto tiene nueve columnas. El scroll vertical
           (con `data-lenis-prevent`) lo pone el cuerpo del Dialog: NO se agrega
-          otro acá, dos scrollers anidados se pelean el gesto. «Descargar PDF»
+          otro aquí, dos scrollers anidados se pelean el gesto. «Descargar PDF»
           va en el pie, no metido en el título (DESIGN.md §17).
         */}
         <DialogContent size="xl">

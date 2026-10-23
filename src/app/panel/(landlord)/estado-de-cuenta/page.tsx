@@ -22,9 +22,17 @@ export default function MiEstadoDeCuentaDelPropietarioPage() {
   return (
     <PantallaDelEstadoDeCuenta
       cargar={() => estadoDeCuentaApi.mio()}
+      // C2 (revisora r25): el contenedor de las demás pantallas del portal (antes p-4 y centrado a 1200 px: a 390
+      // arrancaba en x = 16). La pieza es compartida con el panel y el enlace público: se ajusta sólo aquí.
+      className="mx-0 max-w-none p-6 lg:p-8"
       // SO-09 (04-10): el soporte de cada descuento de sus giros.
       abrirSoporteDeLaDeduccion={async (id) => (await estadoDeCuentaApi.soporteDeMiDeduccion(id)).url}
       volverA={{ label: 'Volver al panel', href: '/panel' }}
+      // Glow up 22-10: el encabezado de las demás pantallas del portal en vez del «Volver al panel» y su nombre.
+      encabezado={{
+        seccion: 'Mi plata',
+        descripcion: 'Lo que tu inmobiliaria te ha girado y lo que falta por girar, contrato por contrato.',
+      }}
       // QA-PROP-95 PO-27: el vacío dicho al propietario, no «Este cliente…».
       textosSinContratos={{
         titulo: 'Todavía no tienes contratos con tu inmobiliaria en Leasefy',

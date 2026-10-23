@@ -48,7 +48,7 @@ export function CargasAMedias({
 }: {
   lotes: readonly EstadoDeLoteInmuebles[];
   /** Entrar a la carga, en la etapa en que quedó. */
-  onRetomar: (lote: EstadoDeLoteInmuebles) => void;
+  onRetomar: (lote: EstadoDeLoteInmuebles, opciones?: { revisar?: boolean }) => void;
   /** La carga ya no existe: el asistente suelta el lote si era el suyo. */
   onDescartada: (lote: string) => void;
   /** Algo cambió en el servidor: volver a leer la lista. */
@@ -136,9 +136,11 @@ export function CargasAMedias({
               data-testid={`carga-terminada-${l.lote}`}
             >
               <div className="min-w-0 space-y-0.5">
+              {/* Revisora r25: la fecha iba dos veces (aquí y en la línea de abajo, «Subida por … el …»).
+                  Va UNA vez, abajo, con quién la subió. */}
               <p className="min-w-0 text-sm text-fg">
-                {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
-                {d.cuando ? ' · ' : null}
+                {d.cuando && !l.creadoEn ? <span className="font-medium">{d.cuando}</span> : null}
+                {d.cuando && !l.creadoEn ? ' · ' : null}
                 <span className="font-mono tabular-nums" data-testid={`avance-${l.lote}`}>
                   {d.avance}
                 </span>
@@ -165,9 +167,25 @@ export function CargasAMedias({
                     Reintentar las fallidas
                   </Button>
                 ) : null}
+                {/* Revisora r25: con filas por revisar, la acción dice cuántas y abre esa lista; el resumen
+                    queda al lado, callado. */}
+                {d.porRevisar > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    hideArrow
+                    disabled={ocupada}
+                    data-testid={`revisar-${l.lote}`}
+                    onClick={() => onRetomar(l, { revisar: true })}
+                  >
+                    {d.porRevisar === 1
+                      ? 'Revisar la que falta'
+                      : `Revisar las ${d.porRevisar.toLocaleString(localeDeLasCifras())}`}
+                  </Button>
+                ) : null}
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant={d.porRevisar > 0 ? 'ghost' : 'outline'}
                   hideArrow
                   disabled={ocupada}
                   data-testid={`retomar-${l.lote}`}
@@ -219,7 +237,7 @@ export function CargasAMedias({
               <p className="text-sm text-fg-muted">
                 {d.etapa === 'subiendo' ? (
                   sinClave ? (
-                    'Se cortó en otro navegador y no se puede seguir subiendo desde acá. Descártala y sube el archivo otra vez.'
+                    'Se cortó en otro navegador y no se puede seguir subiendo desde aquí. Descártala y sube el archivo otra vez.'
                   ) : (
                     'Selecciona el mismo archivo y seguimos desde la fila donde quedó.'
                   )
@@ -327,7 +345,7 @@ export function CargasAMedias({
         );
       })}
 
-      <p className="text-xs text-fg-subtle">
+      <p className="text-caption text-fg-subtle">
         Si en cambio subes el mismo archivo de nuevo, los inmuebles se duplican.
       </p>
     </section>

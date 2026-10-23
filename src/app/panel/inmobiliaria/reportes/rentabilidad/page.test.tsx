@@ -126,6 +126,10 @@ vi.mock('@/components/ui/section-label', () => ({
   SectionLabel: ({ children }: { children?: React.ReactNode }) => React.createElement('p', null, children),
 }))
 
+vi.mock('@/components/ui/para-entender-mas', () => ({
+  ParaEntenderMas: ({ etiqueta }: { etiqueta?: string }) => React.createElement('button', { type: 'button' }, etiqueta),
+}))
+
 vi.mock('@/components/ui/pagination', () => ({
   TablePagination: () => React.createElement('div', { 'data-testid': 'pagination' }),
 }))
@@ -136,6 +140,9 @@ vi.mock('@leasefy/cadence', async (importOriginal) => ({
   // Las cifras en plata cuentan (movimiento ola 2): el real, que con las
   // animaciones apagadas escribe la cifra final de una.
   AnimatedNumber: (await importOriginal<typeof import('@leasefy/cadence')>()).AnimatedNumber,
+  // La cifra de arriba (`CifraHeroe`) anima su barra con el movimiento de Cadence.
+  motionDuration: (await importOriginal<typeof import('@leasefy/cadence')>()).motionDuration,
+  motionEase: (await importOriginal<typeof import('@leasefy/cadence')>()).motionEase,
   SegmentedControl: ({ options, value, onChange }: { options: Array<{ value: string; label: React.ReactNode }>; value: string; onChange: (v: string) => void }) =>
     React.createElement(
       'div',
@@ -289,16 +296,21 @@ const DOS = [
 ]
 
 describe('RentabilidadPage — totales y filas', () => {
-  it('pinta los seis totales con la plata formateada', async () => {
+  // GLOW UP 22-10 (UX, al nivel de Deuda del mes): las seis cifras pasaron a UNA respuesta —lo
+  // recaudado de lo esperado, con su barra— y cuatro en una línea. Los mismos montos.
+  it('pinta lo recaudado de lo esperado arriba y las cuatro cifras del período, con la plata formateada', async () => {
     conReporte(reporte(DOS))
     await renderPage()
 
-    const stats = Array.from(container.querySelectorAll('[data-testid="stat"]'))
-    expect(stats).toHaveLength(6)
-    expect(stats[0].textContent).toContain(formatCurrency(30_000_000))
-    expect(stats[1].textContent).toContain(formatCurrency(27_000_000))
-    expect(stats[3].textContent).toContain(formatCurrency(23_800_000))
-    expect(stats[4].textContent).toContain('91,5')
+    const heroe = container.querySelector('[data-testid="cifra-recaudado"]')!
+    expect(heroe.textContent).toContain(formatCurrency(27_000_000))
+    expect(heroe.textContent).toContain(formatCurrency(30_000_000))
+    expect(container.querySelector('[data-testid="cifra-neto"]')?.textContent).toContain(formatCurrency(23_800_000))
+    expect(container.querySelector('[data-testid="cifra-ocupacion"]')?.textContent).toContain('91,5')
+    // Revisora r25: debajo de la cifra sólo el neto; comisión, ocupación y vacancia en una línea.
+    expect(container.querySelectorAll('[data-testid="cifras-del-periodo"] > div')).toHaveLength(1)
+    expect(container.querySelector('[data-testid="cifra-comision"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="cifra-vacancia"]')).not.toBeNull()
   })
 
   it('pinta una fila por inmueble, con propietario y enlace a la ficha', async () => {
@@ -331,7 +343,26 @@ describe('RentabilidadPage — totales y filas', () => {
 
     expect(container.querySelector('[data-testid="fila-de-totales"]')?.textContent).toContain(formatCurrency(23_800_000))
     expect(container.querySelector('[data-testid="notas-del-reporte"]')?.textContent).toContain('Los gastos se descuentan del neto.')
-    expect(container.querySelector('[data-testid="grafico"]')?.getAttribute('data-barras')).toBe('2')
+    // Revisora r24: con menos de cinco inmuebles con neto, el «los que más dejan» no se pinta.
+    expect(container.querySelector('[data-testid="grafico"]')).toBeNull()
+  })
+
+  it('con cinco o más inmuebles con neto, el gráfico sí se pinta con todas las filas', async () => {
+    const CINCO = Array.from({ length: 5 }, (_, i) =>
+      fila({ consignacionId: `c-${i}`, propertyTitle: `Casa ${i}`, netoPropietarioCop: 1_000_000 * (i + 1) }),
+    )
+    conReporte(reporte(CINCO))
+    await renderPage()
+    expect(container.querySelector('[data-testid="grafico"]')?.getAttribute('data-barras')).toBe('5')
+  })
+
+  it('el buscador y las pestañas por recaudo filtran la tabla (revisora r24 #5)', async () => {
+    conReporte(reporte([...DOS, fila({ consignacionId: 'c-cero', propertyTitle: 'Bodega', recaudadoCop: 0, enMoraCop: 300_000 })]))
+    await renderPage()
+    expect(filas()).toHaveLength(3)
+    await click(container.querySelector('[data-testid="rentabilidad-sin"]'))
+    expect(filas()).toHaveLength(1)
+    expect(primeraFila()).toContain('Bodega')
   })
 })
 
@@ -405,6 +436,9 @@ describe('RentabilidadPage — periodo', () => {
     const llamadasAntes = useReportMock.mock.calls.length
     const [, hasta] = useReportMock.mock.calls[0]
 
+    // Revisora r24 #4: «Desde/Hasta» sólo aparecen con «Rango libre».
+    expect(container.querySelector('#rentabilidad-desde')).toBeNull()
+    await click(container.querySelector('[data-preset="libre"]'))
     const input = container.querySelector<HTMLInputElement>('#rentabilidad-desde')!
     await act(async () => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!

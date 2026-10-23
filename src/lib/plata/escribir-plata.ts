@@ -35,6 +35,16 @@ import { formatoDeCifras, type FormatoDeCifras } from '@/lib/i18n/idioma-de-las-
  */
 export const ESPACIO_DE_LA_PLATA = '\u00a0';
 
+/**
+ * El signo y la plata (ronda 20 de la revisora, 22-10-2026): «− $ 140.000»
+ * con el espacio DURO, como el del «$»: a 390 el «−» quedaba solo en un
+ * renglón y la cifra bajaba al siguiente, donde se leía como un monto positivo.
+ * VOZ-Y-TONO §4: «Negativos: − $ 770.000».
+ */
+export function conSigno(signo: '−' | '+', plata: string): string {
+  return `${signo}${ESPACIO_DE_LA_PLATA}${plata}`;
+}
+
 /** ¿El valor tiene centavos (al centavo: `1234.004` no los tiene)? */
 export function tieneCentavos(valor: unknown): boolean {
   if (typeof valor !== 'number' || !Number.isFinite(valor)) return false;

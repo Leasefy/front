@@ -6,7 +6,10 @@
 
 import * as React from 'react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
+import { BackButton } from '@/components/ui/back-button'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EmptyState } from '@/components/data-display/EmptyState'
+import { PhoneSlash } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
@@ -17,6 +20,7 @@ import { Badge, CrossFade } from '@leasefy/cadence'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import CallStateTracePanel from '@/components/inmobiliaria/cobranza/call/CallStateTracePanel'
 import CallSummaryPanel from '@/components/inmobiliaria/cobranza/call/CallSummaryPanel'
 import {
@@ -168,29 +172,27 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   }
 
 
+  // Sin la llamada no se sabe de qué deudor es: la salida va a la lista de
+  // llamadas (antes el fallo y el vacío no tenían ninguna).
+  const aLasLlamadas = {
+    label: t('inmobiliaria.ai.volverA.llamadas'),
+    href: '/panel/inmobiliaria/pagos/cobranza/llamadas',
+  }
+
   // -------- Error --------
   if (error && !data) {
     return (
       <CrossFade swapKey="fallo">
-      <div className="p-6 lg:p-8">
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-6 max-w-xl">
-          <p className="text-sm text-danger font-medium">
-            {t('inmobiliaria.ai.cobranza.call.error')}
-          </p>
-          <p className="text-xs text-danger/80 mt-1">{error}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              void refetch()
-            }}
-            hideArrow
-            className="mt-3"
-          >
-            {t('inmobiliaria.ai.cobranza.call.errorRetry')}
-          </Button>
-        </div>
+      <div className="space-y-4 p-6 lg:p-8">
+        <BackButton href={aLasLlamadas.href} label={aLasLlamadas.label} />
+        <FalloDeCarga
+          error={error}
+          queEs="la llamada"
+          onReintentar={() => {
+            void refetch()
+          }}
+          volverA={aLasLlamadas}
+        />
       </div>
       </CrossFade>
     )
@@ -200,10 +202,13 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   if (!data) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8">
-        <p className="text-sm text-fg-muted">
-          {t('inmobiliaria.ai.cobranza.call.empty')}
-        </p>
+      <div className="space-y-4 p-6 lg:p-8">
+        <BackButton href={aLasLlamadas.href} label={aLasLlamadas.label} />
+        <EmptyState
+          icon={PhoneSlash}
+          title={t('inmobiliaria.ai.cobranza.call.empty')}
+          description={t('inmobiliaria.ai.cobranza.call.emptyDesc')}
+        />
       </div>
       </CrossFade>
     )
@@ -220,18 +225,62 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-3">
-        <Link
+        <BackButton
           href={`/panel/inmobiliaria/pagos/cobranza/deudores/${data.debtorId}`}
-          className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline min-h-11"
-        >
-          ← {t('inmobiliaria.ai.cobranza.call.back')}
-        </Link>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-h2 text-fg">
-              {data.debtorNameMasked}
-            </h1>
-            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-fg-muted">
+          label={t('inmobiliaria.ai.cobranza.call.back')}
+        />
+        <EncabezadoDePantalla
+          seccion="Cobranza · Llamadas"
+          titulo={data.debtorNameMasked}
+          descripcion={
+            locale.startsWith('es')
+              ? 'Lo que se dijo, lo que se acordó y cómo lo hizo el agente.'
+              : 'What was said, what was agreed and how the agent did.'
+          }
+          junto={
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={qa}
+                className="tabular-nums"
+                aria-label={t('inmobiliaria.ai.cobranza.call.header.qaOverall')}
+              >
+                {locale.startsWith('es') ? 'Calidad' : 'Quality'} {overallPct == null ? '—' : `${overallPct}/100`}
+              </Badge>
+              {data.complianceEvents.length > 0 ? (
+                <Badge
+                  variant="warning"
+                  className="tabular-nums"
+                  aria-label={t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
+                >
+                  {data.complianceEvents.length}{' '}
+                  {t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
+                </Badge>
+              ) : null}
+            </div>
+          }
+          acciones={
+            <>
+            {/* Phase 38-07 (D-38-11): export transcript PDF button. Backend
+                  returns PII-redacted JSON; @react-pdf/renderer builds the PDF
+                  client-side and triggers browser download. */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => { void exportTranscript() }}
+                disabled={isExportingTranscript}
+                isLoading={isExportingTranscript}
+                hideArrow
+                aria-label={t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
+              >
+                {isExportingTranscript
+                  ? (locale.startsWith('es') ? 'Generando...' : 'Generating...')
+                  : t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
+              </Button>
+            </>
+          }
+        />
+            <dl className="flex flex-wrap gap-x-6 gap-y-1 text-caption text-fg-muted">
               <div className="flex gap-1">
                 <dt className="font-medium">
                   {t('inmobiliaria.ai.cobranza.call.header.startedAt')}:
@@ -261,42 +310,6 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
                 </dd>
               </div>
             </dl>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={qa}
-              className="tabular-nums"
-              aria-label={t('inmobiliaria.ai.cobranza.call.header.qaOverall')}
-            >
-              QA {overallPct == null ? '—' : `${overallPct}/100`}
-            </Badge>
-            <Badge
-              variant="neutral"
-              className="tabular-nums"
-              aria-label={t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
-            >
-              {data.complianceEvents.length}{' '}
-              {t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
-            </Badge>
-            {/* Phase 38-07 (D-38-11): export transcript PDF button. Backend
-                returns PII-redacted JSON; @react-pdf/renderer builds the PDF
-                client-side and triggers browser download. */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => { void exportTranscript() }}
-              disabled={isExportingTranscript}
-              isLoading={isExportingTranscript}
-              hideArrow
-              aria-label={t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
-            >
-              {isExportingTranscript
-                ? (locale.startsWith('es') ? 'Generando...' : 'Generating...')
-                : t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
-            </Button>
-          </div>
-        </div>
       </header>
 
       {/* Responsive grid: single column on sm; two columns on md+. */}
@@ -306,13 +319,13 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
           {/*
             Reproductor sticky. El envoltorio NO lleva fondo ni padding propio:
             el reproductor ya es una tarjeta con `bg-surface` y esquinas
-            redondeadas, así que un `bg-surface` acá dibujaba un rectángulo
+            redondeadas, así que un `bg-surface` aquí dibujaba un rectángulo
             recto por detrás — se veía como un marco cuadrado alrededor de la
             tarjeta redondeada.
           */}
           {/*
             El reproductor decide solo si hay audio: le pregunta al proxy, que
-            a su vez le pregunta a Vapi. NO se usa `data.hasRecording` acá — esa
+            a su vez le pregunta a Vapi. NO se usa `data.hasRecording` aquí — esa
             bandera sale de una columna que sólo se llena si llegó el
             `end-of-call-report`, y se desincroniza (ver `use-call-recording.ts`).
           */}
@@ -323,7 +336,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             pestañas —que arrancan a los 64px— así que el reproductor se montaba
             sobre ellas. La altura de la barra no era un número disponible en
             ningún lado; ahora `WorkspaceNav` la publica en `--workspace-nav-h`
-            y las secciones de Cobros (que van encima) en `--secciones-h`; acá
+            y las secciones de Cobros (que van encima) en `--secciones-h`; aquí
             se suman las dos a los 64px del header.
 
             `z-10` y no `z-20`: empatado con las pestañas ganaba el reproductor

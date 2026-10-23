@@ -365,7 +365,7 @@ export function FilaDeRevision({
       <RepartoEntreDuenos reparto={fila.asociacion?.propietario?.reparto} />
 
       {/* T-0163: varios inquilinos = la factura se divide entre ellos. Lo deriva
-          el back; acá sólo se ve ANTES de activar. */}
+          el back; aquí sólo se ve ANTES de activar. */}
       <RepartoEntreInquilinos reparto={fila.asociacion?.inquilino?.repartoDeInquilinos} />
 
       {!consignada && !sinInmueble && editable ? (
@@ -380,7 +380,7 @@ export function FilaDeRevision({
           data-testid="activada-sin-propietario"
         >
           Este contrato ya está activo y no tiene propietario: no genera cobros
-          hasta que el inmueble quede consignado. Elígelo acá, o selecciona
+          hasta que el inmueble quede consignado. Elígelo aquí, o selecciona
           varias filas y usa «Mismo propietario».
         </p>
       ) : null}
@@ -739,7 +739,7 @@ function EstadoDeLaFila({ fila }: { fila: FilaDeMigracion }) {
   if (fila.estado === "ACTIVADO" && fila.propertyId && !fila.propietario)
     return (
       <span
-        className="inline-flex items-center gap-1 text-[11px] text-warning"
+        className="inline-flex items-center gap-1 text-caption text-warning"
         data-testid="pastilla-sin-propietario"
       >
         <Warning className="h-3.5 w-3.5" />
@@ -748,25 +748,25 @@ function EstadoDeLaFila({ fila }: { fila: FilaDeMigracion }) {
     );
   if (fila.estado === "ACTIVADO")
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-muted">
+      <span className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-caption text-fg-muted">
         Ya activado
       </span>
     );
   if (fila.estado === "DESCARTADO")
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-muted">
+      <span className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-caption text-fg-muted">
         Descartada
       </span>
     );
   if (fila.faltantes.length === 0)
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] text-success">
+      <span className="inline-flex items-center gap-1 text-caption text-success">
         <CheckCircle className="h-3.5 w-3.5" weight="fill" />
         Listo
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] text-warning">
+    <span className="inline-flex items-center gap-1 text-caption text-warning">
       <Warning className="h-3.5 w-3.5" />
       {fila.faltantes.length === 1
         ? "Le falta 1 dato"

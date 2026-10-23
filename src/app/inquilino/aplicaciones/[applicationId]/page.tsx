@@ -4,9 +4,9 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Collapse, CrossFade, Presence } from '@leasefy/cadence';
+import { Collapse, CrossFade, MonoLabel, Presence, StatusBadge } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, Confetti, PenNib, Warning, ArrowClockwise, SignOut } from '@phosphor-icons/react';
+import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Copy, Check, PaperPlaneTilt, SealCheck, Eye, Confetti, PenNib, Warning, ArrowClockwise, SignOut } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -49,6 +49,15 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 /**
  * Application Detail Page - Premium Leasefy Style
  */
+/** El tono del StatusBadge desde el color que ya decide el estado de la postulación. */
+function tonoDelColor(color: string): 'success' | 'warning' | 'critical' | 'info' | 'neutral' {
+  if (color.includes('success')) return 'success';
+  if (color.includes('warning')) return 'warning';
+  if (color.includes('danger')) return 'critical';
+  if (color.includes('primary')) return 'info';
+  return 'neutral';
+}
+
 export default function ApplicationDetailPage() {
   const { t, locale, formatCurrency } = useI18n();
   const params = useParams();
@@ -89,7 +98,7 @@ export default function ApplicationDetailPage() {
   const entrada = useEntradaTrasCargar(isLoading);
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
       </div>
@@ -119,10 +128,8 @@ export default function ApplicationDetailPage() {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <motion.div {...entrada} className="text-center px-6">
-          <div className="w-20 h-20 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-6">
-            <FileText className="w-10 h-10 text-fg-subtle" />
-          </div>
-          <h2 className="text-2xl font-semibold text-fg mb-3">
+          <FileText className="w-10 h-10 text-fg-subtle mx-auto mb-4" aria-hidden="true" />
+          <h2 className="text-h3 text-fg mb-3">
             {locale === 'es' ? 'Postulación no encontrada' : 'Application not found'}
           </h2>
           <p className="text-fg-muted mb-6 max-w-sm">
@@ -167,7 +174,7 @@ export default function ApplicationDetailPage() {
   const currentStep = getCurrentStepIndex();
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -175,14 +182,14 @@ export default function ApplicationDetailPage() {
   };
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
     });
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleTimeString(locale === 'es' ? 'es-CO' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -223,7 +230,6 @@ export default function ApplicationDetailPage() {
 
   const isFinalStatus = ['approved', 'rejected', 'withdrawn', 'contract_failed', 'no_adjudicado'].includes(application.status);
   const status = statusConfig[application.status] || statusConfig.submitted;
-  const StatusIcon = status.icon;
 
   // Use the contract tied to this application directly via GET /contracts/by-application/:id.
   // Antes se buscaba por propertyId, lo que podía traer un contrato equivocado.
@@ -235,18 +241,19 @@ export default function ApplicationDetailPage() {
     : historialMinimo(application.submittedAt, locale);
 
   return (
-    <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="bg-bg">
+      <motion.div {...entrada} className="p-6 lg:p-8">
         {/* Back Button */}
         <div className="mb-6">
-          <BackButton label={locale === 'es' ? 'Volver a aplicaciones' : 'Back to applications'} />
+          <BackButton href="/inquilino/aplicaciones" label={locale === 'es' ? 'Volver a Mis postulaciones' : 'Back to My applications'} />
         </div>
 
         {/* Hero Card - Property with Status */}
-        <div className="relative rounded-xl overflow-hidden bg-surface-muted border border-transparent mb-8">
+        <div className="relative rounded-lg overflow-hidden bg-surface-muted border border-transparent mb-8">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
-            <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
+            {/* En el celular la foto más baja: el estado y lo que sigue se ven sin bajar tanto. */}
+            <div className="relative w-full lg:w-[400px] h-48 sm:h-64 lg:h-auto flex-shrink-0">
               <Image
                 src={property?.thumbnail || '/placeholder-property.svg'}
                 alt={property?.title || 'Propiedad'}
@@ -265,13 +272,10 @@ export default function ApplicationDetailPage() {
               <div className="flex items-center justify-between mb-4">
                 {/* Retirar cambia el estado: la insignia vieja sale y entra la nueva. */}
                 <CrossFade as="span" swapKey={application.status}>
-                <span className={cn(
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium',
-                  status.bgColor, status.color
-                )}>
-                  <StatusIcon className="w-4 h-4" />
+                {/* El estado con su punto y su palabra (StatusBadge), no una pastilla de color con ícono. */}
+                <StatusBadge tone={tonoDelColor(status.color)} data-testid="estado-de-la-postulacion">
                   {status.label}
-                </span>
+                </StatusBadge>
                 </CrossFade>
                 <Button
                   variant="secondary"
@@ -298,9 +302,16 @@ export default function ApplicationDetailPage() {
 
               {/* Property Info */}
               {property && (
-                <Link href={`/propiedades/${property.id}`} className="group">
-                  <h1 className="text-2xl lg:text-3xl font-semibold text-fg group-hover:text-primary transition-colors mb-2">
+                <Link
+                  href={`/propiedades/${property.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group"
+                  data-testid="postulacion-ver-inmueble"
+                >
+                  <h1 className="text-h2 text-fg group-hover:text-primary transition-colors mb-2 [text-wrap:balance]">
                     {property.title}
+                    <span className="sr-only">{locale === 'es' ? ' (se abre en otra pestaña)' : ' (opens in a new tab)'}</span>
                   </h1>
                   <p className="text-fg-muted flex items-center gap-1.5 mb-4">
                     <MapPin className="w-4 h-4" />
@@ -312,19 +323,19 @@ export default function ApplicationDetailPage() {
               {/* Price and Date */}
               <div className="flex flex-wrap items-center gap-6 mb-6">
                 <div>
-                  <p className="text-sm text-fg-muted mb-1">
-                    {locale === 'es' ? 'Arriendo mensual' : 'Monthly rent'}
-                  </p>
-                  <p className="text-2xl font-bold text-fg">
+                  <MonoLabel className="mb-1 block text-fg-subtle">
+                    {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
+                  </MonoLabel>
+                  <p className="font-mono text-h3 tabular-nums text-fg">
                     {formatCurrency(property?.monthlyRent || 0)}
                   </p>
                 </div>
-                <div className="h-10 w-px bg-surface-muted hidden sm:block" />
+                <div className="h-10 w-px bg-border hidden sm:block" />
                 <div>
-                  <p className="text-sm text-fg-muted mb-1">
-                    {locale === 'es' ? 'Fecha de envío' : 'Submitted on'}
-                  </p>
-                  <p className="text-lg font-medium text-fg flex items-center gap-1.5">
+                  <MonoLabel className="mb-1 block text-fg-subtle">
+                    {locale === 'es' ? 'La enviaste el' : 'Submitted on'}
+                  </MonoLabel>
+                  <p className="text-body text-fg flex items-center gap-1.5">
                     <Calendar className="w-4 h-4" />
                     {formatShortDate(application.submittedAt)}
                   </p>
@@ -343,12 +354,12 @@ export default function ApplicationDetailPage() {
                         <div key={step.key} className="flex items-center">
                           <div className="flex flex-col items-center">
                             <div className={cn(
-                              'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
+                              'w-9 h-9 rounded-full flex items-center justify-center bg-surface transition-colors',
                               isCompleted
                                 ? isCurrent
-                                  ? 'bg-primary text-white'
-                                  : 'bg-success text-white'
-                                : 'bg-surface-muted text-fg-subtle'
+                                  ? 'border-2 border-primary text-primary'
+                                  : 'border border-success text-success'
+                                : 'border border-border text-fg-subtle'
                             )}>
                               {isCompleted && !isCurrent ? (
                                 <CheckCircle className="w-5 h-5" />
@@ -357,16 +368,16 @@ export default function ApplicationDetailPage() {
                               )}
                             </div>
                             <span className={cn(
-                              'text-xs mt-2 font-medium hidden sm:block',
-                              isCurrent ? 'text-primary' : isCompleted ? 'text-success' : 'text-fg-subtle'
+                              'text-caption mt-2 hidden sm:block',
+                              isCurrent ? 'text-fg font-medium' : isCompleted ? 'text-fg-muted' : 'text-fg-subtle'
                             )}>
                               {step.label}
                             </span>
                           </div>
                           {index < progressSteps.length - 1 && (
                             <div className={cn(
-                              'w-8 sm:w-16 lg:w-24 h-1 mx-2 rounded-full transition-colors',
-                              index < currentStep ? 'bg-success' : 'bg-surface-muted'
+                              'w-8 sm:w-16 lg:w-24 h-px mx-2 transition-colors',
+                              index < currentStep ? 'bg-success' : 'bg-border'
                             )} />
                           )}
                         </div>
@@ -386,16 +397,14 @@ export default function ApplicationDetailPage() {
                 // Sin contrato todavía: el landlord no lo creó.
                 if (!contract) {
                   return (
-                    <div className="mt-6 p-4 rounded-xl bg-success-soft border border-success/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-success flex items-center justify-center flex-shrink-0">
-                          <Confetti className="w-5 h-5 text-white" />
-                        </div>
+                        <Confetti className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                         <div>
-                          <p className="font-semibold text-success">
-                            {locale === 'es' ? '¡Felicidades! Tu postulación fue aprobada' : 'Congratulations! Your application was approved'}
+                          <p className="font-medium text-fg">
+                            {locale === 'es' ? 'Tu postulación fue aprobada' : 'Your application was approved'}
                           </p>
-                          <p className="text-sm text-success mt-1">
+                          <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
                               ? 'El propietario está preparando el contrato. Te avisaremos cuando esté listo para firmar.'
                               : 'The landlord is preparing the contract. We\'ll notify you when it\'s ready to sign.'}
@@ -409,27 +418,24 @@ export default function ApplicationDetailPage() {
                 // Pendiente firma del tenant → CTA principal (firma primero — flow tenant-first).
                 if (contractStatus === 'pending_tenant') {
                   return (
-                    <div className="mt-6 p-4 rounded-xl bg-primary-soft border border-primary/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                          <PenNib className="w-5 h-5 text-white" />
-                        </div>
+                        <PenNib className="w-5 h-5 mt-0.5 shrink-0 text-primary" aria-hidden="true" />
                         <div className="flex-1">
-                          <p className="font-semibold text-primary">
-                            {locale === 'es' ? '¡Tu contrato está listo para firmar!' : 'Your contract is ready to sign!'}
+                          <p className="font-medium text-fg">
+                            {locale === 'es' ? 'Tu contrato está listo para firmar' : 'Your contract is ready to sign'}
                           </p>
-                          <p className="text-sm text-primary mt-1">
+                          <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
                               ? 'Revisa el contrato y firma. Después el propietario firmará para cerrar el proceso.'
                               : 'Review the contract and sign. Then the landlord will sign to close the process.'}
                           </p>
-                          <Link
-                            href={`/inquilino/contratos/${contract.id}/firmar`}
-                            className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:opacity-90 text-white rounded-xl text-sm font-semibold transition-colors"
-                          >
-                            <PenNib className="w-4 h-4" />
-                            {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
-                          </Link>
+                          <Button asChild size="sm" hideArrow className="mt-3">
+                            <Link href={`/inquilino/contratos/${contract.id}/firmar`}>
+                              <PenNib className="w-4 h-4" />
+                              {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
+                            </Link>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -439,16 +445,14 @@ export default function ApplicationDetailPage() {
                 // DRAFT: landlord aún no envió el contrato.
                 if (contractStatus === 'draft') {
                   return (
-                    <div className="mt-6 p-4 rounded-xl bg-warning-soft border border-warning/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-warning flex items-center justify-center flex-shrink-0">
-                          <Clock className="w-5 h-5 text-white" />
-                        </div>
+                        <Clock className="w-5 h-5 mt-0.5 shrink-0 text-warning" aria-hidden="true" />
                         <div className="flex-1">
-                          <p className="font-semibold text-warning">
+                          <p className="font-medium text-fg">
                             {locale === 'es' ? 'Contrato en preparación' : 'Contract being prepared'}
                           </p>
-                          <p className="text-sm text-warning mt-1">
+                          <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
                               ? 'El propietario está preparando el contrato. Te avisamos cuando esté listo para firmar.'
                               : 'The landlord is preparing the contract. We\'ll notify you when it\'s ready to sign.'}
@@ -462,16 +466,14 @@ export default function ApplicationDetailPage() {
                 // PENDING_LANDLORD_SIGNATURE: tenant ya firmó, esperando al landlord.
                 if (contractStatus === 'pending_landlord') {
                   return (
-                    <div className="mt-6 p-4 rounded-xl bg-success-soft border border-success/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-success flex items-center justify-center flex-shrink-0">
-                          <SealCheck className="w-5 h-5 text-white" />
-                        </div>
+                        <SealCheck className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                         <div className="flex-1">
-                          <p className="font-semibold text-success">
+                          <p className="font-medium text-fg">
                             {locale === 'es' ? 'Ya firmaste el contrato' : 'You already signed the contract'}
                           </p>
-                          <p className="text-sm text-success mt-1">
+                          <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
                               ? 'Esperando que el propietario firme para cerrar el proceso.'
                               : 'Waiting for the landlord to sign to close the process.'}
@@ -481,7 +483,6 @@ export default function ApplicationDetailPage() {
                             className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-success hover:underline"
                           >
                             {locale === 'es' ? 'Ver contrato' : 'View contract'}
-                            <ArrowUpRight className="w-4 h-4" />
                           </Link>
                         </div>
                       </div>
@@ -492,16 +493,14 @@ export default function ApplicationDetailPage() {
                 // El propietario está aplicando los cambios que pediste antes de firmar.
                 if (contractStatus === 'rejected_pending_modifications') {
                   return (
-                    <div className="mt-6 p-4 rounded-xl bg-warning-soft border border-warning/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-warning flex items-center justify-center flex-shrink-0">
-                          <ArrowClockwise className="w-5 h-5 text-white" />
-                        </div>
+                        <ArrowClockwise className="w-5 h-5 mt-0.5 shrink-0 text-warning" aria-hidden="true" />
                         <div className="flex-1">
-                          <p className="font-semibold text-warning">
+                          <p className="font-medium text-fg">
                             {locale === 'es' ? 'El propietario está aplicando los cambios' : 'The landlord is applying the changes'}
                           </p>
-                          <p className="text-sm text-warning mt-1">
+                          <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
                               ? 'Pediste modificaciones al contrato. Te avisamos cuando el propietario las aplique así puedes revisarlo y firmar.'
                               : 'You requested modifications. We\'ll notify you once the landlord applies them so you can review and sign.'}
@@ -511,7 +510,6 @@ export default function ApplicationDetailPage() {
                             className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-warning hover:underline"
                           >
                             {locale === 'es' ? 'Ver contrato' : 'View contract'}
-                            <ArrowUpRight className="w-4 h-4" />
                           </Link>
                         </div>
                       </div>
@@ -522,16 +520,14 @@ export default function ApplicationDetailPage() {
                 // Ambos firmaron, esperando que empiece a regir.
                 if (contractStatus === 'signed') {
                   return (
-                    <div className="mt-6 p-4 rounded-xl bg-success-soft border border-success/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-success flex items-center justify-center flex-shrink-0">
-                          <SealCheck className="w-5 h-5 text-white" />
-                        </div>
+                        <SealCheck className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                         <div className="flex-1">
-                          <p className="font-semibold text-success">
-                            {locale === 'es' ? '¡Contrato firmado por ambas partes!' : 'Contract signed by both parties!'}
+                          <p className="font-medium text-fg">
+                            {locale === 'es' ? 'El contrato quedó firmado por las dos partes' : 'The contract is signed by both parties'}
                           </p>
-                          <p className="text-sm text-success mt-1">
+                          <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
                               ? 'Esperando que el contrato comience a regir en la fecha acordada.'
                               : 'Waiting for the contract to start on the agreed date.'}
@@ -541,7 +537,6 @@ export default function ApplicationDetailPage() {
                             className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-success hover:underline"
                           >
                             {locale === 'es' ? 'Ver contrato' : 'View contract'}
-                            <ArrowUpRight className="w-4 h-4" />
                           </Link>
                         </div>
                       </div>
@@ -552,13 +547,11 @@ export default function ApplicationDetailPage() {
                 // Contrato vigente o expirado → acceso al detalle.
                 if (contractStatus === 'active' || contractStatus === 'expired') {
                   return (
-                    <div className="mt-6 p-4 rounded-xl bg-success-soft border border-success/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-success flex items-center justify-center flex-shrink-0">
-                          <SealCheck className="w-5 h-5 text-white" />
-                        </div>
+                        <SealCheck className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                         <div className="flex-1">
-                          <p className="font-semibold text-success">
+                          <p className="font-medium text-fg">
                             {locale === 'es'
                               ? (contractStatus === 'active' ? 'Contrato vigente' : 'Contrato expirado')
                               : (contractStatus === 'active' ? 'Contract active' : 'Contract expired')}
@@ -568,7 +561,6 @@ export default function ApplicationDetailPage() {
                             className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-success hover:underline"
                           >
                             {locale === 'es' ? 'Ver contrato' : 'View contract'}
-                            <ArrowUpRight className="w-4 h-4" />
                           </Link>
                         </div>
                       </div>
@@ -579,16 +571,14 @@ export default function ApplicationDetailPage() {
                 // Cancelled (raro — normalmente el backend pasa la app a CONTRACT_FAILED).
                 if (contractStatus === 'cancelled') {
                   return (
-                    <div className="mt-6 p-4 rounded-xl bg-danger-soft border border-danger/30">
+                    <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-danger flex items-center justify-center flex-shrink-0">
-                          <XCircle className="w-5 h-5 text-white" />
-                        </div>
+                        <XCircle className="w-5 h-5 mt-0.5 shrink-0 text-danger" aria-hidden="true" />
                         <div>
-                          <p className="font-semibold text-danger">
+                          <p className="font-medium text-fg">
                             {locale === 'es' ? 'Contrato cancelado' : 'Contract cancelled'}
                           </p>
-                          <p className="text-sm text-danger mt-1">
+                          <p className="text-sm text-fg-muted mt-1">
                             {locale === 'es'
                               ? 'El proceso se cerró. Para intentar de nuevo tienes que crear una nueva postulación.'
                               : 'The process is closed. To try again you need to create a new application.'}
@@ -605,16 +595,14 @@ export default function ApplicationDetailPage() {
               )}
 
               {(application.status === 'needs_info') && !responseSubmitted && (
-                <div className="mt-6 p-4 rounded-xl bg-warning-soft border border-warning/30">
+                <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-warning flex items-center justify-center flex-shrink-0">
-                      <Warning className="w-5 h-5 text-white" />
-                    </div>
+                    <Warning className="w-5 h-5 mt-0.5 shrink-0 text-warning" aria-hidden="true" />
                     <div className="flex-1">
-                      <p className="font-semibold text-warning">
+                      <p className="font-medium text-fg">
                         {locale === 'es' ? 'La inmobiliaria solicitó más información' : 'The agency requested more information'}
                       </p>
-                      <p className="text-sm text-warning mt-1">
+                      <p className="text-sm text-fg-muted mt-1">
                         {locale === 'es'
                           ? 'Revisa la sección de Acciones para completar lo que se te pidió y notificar a la inmobiliaria.'
                           : 'Check the Actions section to complete what was requested and notify the agency.'}
@@ -634,16 +622,14 @@ export default function ApplicationDetailPage() {
               )}
 
               {(application.status === 'needs_info') && responseSubmitted && (
-                <div className="mt-6 p-4 rounded-xl bg-success-soft border border-success/30">
+                <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-success flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-5 h-5 text-white" />
-                    </div>
+                    <CheckCircle className="w-5 h-5 mt-0.5 shrink-0 text-success" aria-hidden="true" />
                     <div>
-                      <p className="font-semibold text-success">
+                      <p className="font-medium text-fg">
                         {locale === 'es' ? 'Respuesta enviada a la inmobiliaria' : 'Response sent to the agency'}
                       </p>
-                      <p className="text-sm text-success mt-1">
+                      <p className="text-sm text-fg-muted mt-1">
                         {locale === 'es'
                           ? 'La inmobiliaria fue notificada y revisará tu información a la brevedad.'
                           : 'The agency has been notified and will review your information shortly.'}
@@ -658,18 +644,16 @@ export default function ApplicationDetailPage() {
                   (el texto del no adjudicado, más una promesa que nadie cumple).
                   Ahora cada caso dice lo suyo. */}
               {(application.status === 'rejected' || application.status === 'no_adjudicado') && (
-                <div className="mt-6 p-4 rounded-xl bg-danger-soft border border-danger/30">
+                <div className="mt-6 p-4 rounded-lg bg-surface-muted">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-danger flex items-center justify-center flex-shrink-0">
-                      <XCircle className="w-5 h-5 text-white" />
-                    </div>
+                    <XCircle className="w-5 h-5 mt-0.5 shrink-0 text-danger" aria-hidden="true" />
                     <div className="flex-1">
-                      <p className="font-semibold text-danger">
+                      <p className="font-medium text-fg">
                         {application.status === 'no_adjudicado'
                           ? locale === 'es' ? 'El inmueble quedó para otra persona' : 'The property went to someone else'
                           : locale === 'es' ? 'No aprobaron esta postulación' : 'This application was not approved'}
                       </p>
-                      <p className="text-sm text-danger mt-1">
+                      <p className="text-sm text-fg-muted mt-1">
                         {application.status === 'no_adjudicado'
                           ? locale === 'es'
                             ? 'La inmobiliaria eligió a otro candidato para este inmueble. No es un rechazo a tu perfil: puedes postularte a otros inmuebles con los mismos datos.'
@@ -678,13 +662,12 @@ export default function ApplicationDetailPage() {
                             ? 'En el historial ves el motivo que dejó la inmobiliaria. Si quieres saber más o un dato tuyo está mal, escríbele desde aquí abajo.'
                             : 'The history shows the reason the agency left. If you want to know more or a detail is wrong, write to them below.'}
                       </p>
-                      <Link
-                        href="/inquilino/explorar"
-                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-danger hover:bg-danger text-white rounded-xl text-sm font-semibold transition-colors"
-                      >
-                        {locale === 'es' ? 'Explorar otras propiedades' : 'Explore other properties'}
-                        <ArrowUpRight className="w-4 h-4" />
-                      </Link>
+                      {/* Buscar otro inmueble no es destructivo: secundaria, no roja. */}
+                      <Button asChild size="sm" variant="secondary" hideArrow className="mt-3">
+                        <Link href="/propiedades" target="_blank" rel="noopener noreferrer">
+                          {locale === 'es' ? 'Ver otros inmuebles' : 'See other properties'}
+                        </Link>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -697,14 +680,14 @@ export default function ApplicationDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Timeline */}
-            <section className="rounded-xl bg-surface-muted p-6">
-              <h2 className="text-lg font-semibold text-fg mb-6">
+            <section className="rounded-lg bg-surface-muted p-6">
+              <h2 className="text-h3 text-fg mb-6">
                 {locale === 'es' ? 'Historial de la postulación' : 'Application history'}
               </h2>
 
               <div className="relative">
                 {/* Timeline line */}
-                <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-surface-muted" />
+                <div className="absolute left-5 top-5 bottom-5 w-px bg-border" />
 
                 {/* Events */}
                 <div className="space-y-6">
@@ -718,8 +701,8 @@ export default function ApplicationDetailPage() {
                         <div className={cn(
                           'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-colors',
                           isFirst
-                            ? 'bg-primary text-white'
-                            : 'bg-surface border-2 border-border text-fg-muted'
+                            ? 'bg-surface border-2 border-primary text-primary'
+                            : 'bg-surface border border-border text-fg-muted'
                         )}>
                           <EventIcon className="w-4 h-4" />
                         </div>
@@ -728,14 +711,14 @@ export default function ApplicationDetailPage() {
                         <div className="flex-1 pt-2">
                           <p className={cn(
                             'text-sm',
-                            isFirst ? 'font-semibold text-fg' : 'text-fg-muted'
+                            isFirst ? 'font-medium text-fg' : 'text-fg-muted'
                           )}>
                             {event.description}
                           </p>
                           {'nota' in event && event.nota ? (
                             <p className="mt-1 text-sm text-fg-muted whitespace-pre-line">«{event.nota}»</p>
                           ) : null}
-                          <p className="text-xs text-fg-subtle mt-1 flex items-center gap-1.5">
+                          <p className="text-caption text-fg-subtle mt-1 flex items-center gap-1.5">
                             <Clock className="w-3 h-3" />
                             {formatDate(event.timestamp)} · {formatTime(event.timestamp)}
                           </p>
@@ -761,13 +744,13 @@ export default function ApplicationDetailPage() {
 
             {/* Property Info Card */}
             {property && (
-              <section className="rounded-xl border border-border bg-surface p-6">
-                <h2 className="text-lg font-semibold text-fg mb-4">
-                  {locale === 'es' ? 'Propiedad' : 'Property'}
+              <section className="rounded-lg border border-border bg-surface p-6">
+                <h2 className="text-h3 text-fg mb-4">
+                  {locale === 'es' ? 'El inmueble' : 'The property'}
                 </h2>
 
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
                       src={property.thumbnail}
                       alt={property.title}
@@ -777,55 +760,78 @@ export default function ApplicationDetailPage() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-fg">{property.title}</h3>
+                    <h3 className="font-medium text-fg">{property.title}</h3>
                     <p className="text-sm text-fg-muted flex items-center gap-1 mt-1">
                       <MapPin className="w-3.5 h-3.5" />
                       {barrioYCiudad(property.neighborhood, property.city)}
                     </p>
-                    <p className="text-lg font-bold text-fg mt-1">
+                    <p className="font-mono text-body tabular-nums text-fg mt-1">
                       {formatCurrency(property.monthlyRent)}
-                      <span className="text-xs font-normal text-fg-muted">/mes</span>
+                      <span className="font-sans text-caption text-fg-muted"> {locale === 'es' ? 'al mes' : 'per month'}</span>
                     </p>
                   </div>
                 </div>
 
-                <Link
-                  href={`/propiedades/${property.id}`}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-full border border-border text-sm font-medium text-fg hover:bg-surface-muted hover:border-border-strong transition-colors"
-                >
-                  {locale === 'es' ? 'Ver propiedad completa' : 'View full property'}
-                  <ArrowUpRight className="w-4 h-4" />
-                </Link>
+                <Button asChild variant="outline" hideArrow className="w-full">
+                  <Link
+                    href={`/propiedades/${property.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="postulacion-ver-propiedad-completa"
+                  >
+                    {locale === 'es' ? 'Ver el inmueble completo' : 'View full property'}
+                    <span className="sr-only">{locale === 'es' ? '(se abre en otra pestaña)' : '(opens in a new tab)'}</span>
+                  </Link>
+                </Button>
               </section>
             )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
-              <h3 className="font-semibold text-fg mb-4">
+            {/* Quick Actions — glow up de los portales (22-10): renglones con su ícono suelto (sin cajas de color),
+                sobre arena y no sobre el azul; fuera «Llamar», que no tenía ninguna acción detrás. */}
+            <div className="rounded-lg bg-surface-muted p-5">
+              <h3 className="text-h3 text-fg mb-3">
                 {locale === 'es' ? 'Acciones' : 'Actions'}
               </h3>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
+                {application.status === 'needs_info' && !responseSubmitted && (
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}/completar`)}
+                    className="flex items-center gap-3 w-full p-3 rounded-lg bg-warning-soft border border-warning/30 text-left transition-colors hover:border-warning/60"
+                  >
+                    <ArrowClockwise className="w-5 h-5 shrink-0 text-warning" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-fg">
+                        {locale === 'es' ? 'Completar información' : 'Complete information'}
+                      </span>
+                      <span className="block text-caption text-fg-muted">
+                        {locale === 'es' ? 'La inmobiliaria espera tu respuesta' : 'The agency is waiting for your answer'}
+                      </span>
+                    </span>
+                  </button>
+                )}
+
                 <button
+                  type="button"
                   onClick={() => setShowChat((prev) => !prev)}
-                  className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-colors group"
+                  aria-expanded={showChat}
+                  className="flex items-center gap-3 w-full p-3 rounded-lg bg-surface text-left transition-colors hover:bg-surface-hover"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center group-hover:opacity-90 transition-colors">
-                    <ChatCircle className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-fg">
-                      {locale === 'es' ? 'Contactar propietario' : 'Contact landlord'}
-                    </p>
-                    <p className="text-xs text-fg-muted">
+                  <ChatCircle className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-fg">
+                      {locale === 'es' ? 'Escribir un mensaje' : 'Send a message'}
+                    </span>
+                    <span className="block text-caption text-fg-muted">
                       {locale === 'es'
-                        ? (showChat ? 'Ocultar conversación' : 'Envía un mensaje sin salir de aquí')
-                        : (showChat ? 'Hide conversation' : 'Send a message without leaving')}
-                    </p>
-                  </div>
+                        ? (showChat ? 'Ocultar la conversación' : 'Sin salir de aquí')
+                        : (showChat ? 'Hide the conversation' : 'Without leaving this page')}
+                    </span>
+                  </span>
                 </button>
 
                 {/* La conversación se abre y se cierra con su altura. */}
@@ -833,58 +839,23 @@ export default function ApplicationDetailPage() {
                   <ChatThread applicationId={applicationId} />
                 </Collapse>
 
-                <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-colors group">
-                  <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center group-hover:bg-success transition-colors">
-                    <Phone className="w-5 h-5 text-success group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-fg">
-                      {locale === 'es' ? 'Llamar' : 'Call'}
-                    </p>
-                    <p className="text-xs text-fg-muted">
-                      {locale === 'es' ? 'Contacto directo' : 'Direct contact'}
-                    </p>
-                  </div>
-                </button>
-
-                {application.status === 'needs_info' && !responseSubmitted && (
-                  <button
-                    onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}/completar`)}
-                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-warning-soft transition-colors group border border-warning/30"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center group-hover:bg-warning transition-colors">
-                      <ArrowClockwise className="w-5 h-5 text-warning group-hover:text-white transition-colors" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-warning">
-                        {locale === 'es' ? 'Completar información' : 'Complete information'}
-                      </p>
-                      <p className="text-xs text-fg-muted">
-                        {locale === 'es' ? 'La inmobiliaria aguarda tu respuesta' : 'Agency awaiting your response'}
-                      </p>
-                    </div>
-                  </button>
-                )}
-
                 {/* Retirada la postulación, la acción sale (no desaparece de golpe). */}
                 <Presence show={!isFinalStatus} initial={false}>
                   <button
                     type="button"
                     onClick={() => setConfirmWithdrawOpen(true)}
                     disabled={isWithdrawing}
-                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface/50 hover:bg-danger-soft transition-[color,background-color,border-color,opacity] group border border-transparent hover:border-danger/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-3 w-full p-3 rounded-lg text-left transition-colors hover:bg-danger-soft disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center group-hover:bg-danger/20 transition-colors">
-                      <XCircle className="w-5 h-5 text-danger" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-danger">
+                    <XCircle className="w-5 h-5 shrink-0 text-danger" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-danger">
                         {locale === 'es' ? 'Retirar postulación' : 'Withdraw application'}
-                      </p>
-                      <p className="text-xs text-fg-muted">
-                        {locale === 'es' ? 'Cancelar solicitud' : 'Cancel request'}
-                      </p>
-                    </div>
+                      </span>
+                      <span className="block text-caption text-fg-muted">
+                        {locale === 'es' ? 'La inmobiliaria deja de verla' : 'The agency stops seeing it'}
+                      </span>
+                    </span>
                   </button>
                 </Presence>
               </div>
@@ -894,17 +865,15 @@ export default function ApplicationDetailPage() {
             <Presence
               show={application.status === 'needs_info' && !responseSubmitted}
               initial={false}
-              className="rounded-xl bg-warning-soft border border-warning/30 p-6"
+              className="rounded-lg bg-warning-soft border border-warning/30 p-6"
             >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center flex-shrink-0">
-                    <Warning className="w-5 h-5 text-warning" />
-                  </div>
+                  <Warning className="w-5 h-5 mt-0.5 shrink-0 text-warning" aria-hidden="true" />
                   <div>
-                    <p className="font-semibold text-warning mb-1">
+                    <p className="font-medium text-fg mb-1">
                       {locale === 'es' ? 'Acción requerida' : 'Action required'}
                     </p>
-                    <p className="text-sm text-warning">
+                    <p className="text-sm text-fg-muted">
                       {locale === 'es'
                         ? 'La inmobiliaria necesita más información para continuar con tu solicitud. Haz clic en "Completar información" para responder.'
                         : 'The agency needs more information to proceed with your application. Click "Complete information" to respond.'}
@@ -916,17 +885,16 @@ export default function ApplicationDetailPage() {
             <Presence
               show={application.status === 'under_review'}
               initial={false}
-              className="rounded-xl bg-warning-soft border border-warning/30 p-6"
+              className="rounded-lg bg-surface border border-border p-6"
             >
+                {/* Estar en revisión no es un aviso: tono neutro, sin la chispa de «IA». */}
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center flex-shrink-0">
-                    <Sparkle className="w-5 h-5 text-warning" />
-                  </div>
+                  <Clock className="w-5 h-5 mt-0.5 shrink-0 text-fg-muted" aria-hidden="true" />
                   <div>
-                    <p className="font-semibold text-warning mb-1">
+                    <p className="font-medium text-fg mb-1">
                       {locale === 'es' ? 'En proceso de revisión' : 'Under review'}
                     </p>
-                    <p className="text-sm text-warning">
+                    <p className="text-sm text-fg-muted">
                       {locale === 'es'
                         ? 'La inmobiliaria está revisando tu postulación. Te avisamos por correo apenas decida.'
                         : 'The agency is reviewing your application. We will email you as soon as it decides.'}
@@ -936,8 +904,8 @@ export default function ApplicationDetailPage() {
             </Presence>
 
             {/* Quick Stats */}
-            <div className="rounded-xl bg-surface-muted p-6">
-              <h3 className="font-semibold text-fg mb-4">
+            <div className="rounded-lg bg-surface-muted p-6">
+              <h3 className="text-h3 text-fg mb-4">
                 {locale === 'es' ? 'Resumen' : 'Summary'}
               </h3>
 
@@ -948,14 +916,14 @@ export default function ApplicationDetailPage() {
                   </span>
                   <span className="text-sm font-mono font-medium text-fg">{application.trackingCode}</span>
                 </div>
-                <div className="h-px bg-surface-muted" />
+                <div className="h-px bg-border" />
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-fg-muted">
                     {locale === 'es' ? 'Enviada' : 'Submitted'}
                   </span>
                   <span className="text-sm font-medium text-fg">{formatShortDate(application.submittedAt)}</span>
                 </div>
-                <div className="h-px bg-surface-muted" />
+                <div className="h-px bg-border" />
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-fg-muted">
                     {locale === 'es' ? 'Estado actual' : 'Current status'}
@@ -964,7 +932,7 @@ export default function ApplicationDetailPage() {
                     {status.label}
                   </CrossFade>
                 </div>
-                <div className="h-px bg-surface-muted" />
+                <div className="h-px bg-border" />
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-fg-muted">
                     {locale === 'es' ? 'Ubicación' : 'Location'}

@@ -266,7 +266,7 @@ describe('P-21 — los KPI de plata a quien no la ve', () => {
     await montar();
 
     const tiles = Array.from(host.querySelectorAll('[data-testid="kpi-valor"]'));
-    expect(tiles.map((t) => t.getAttribute('data-estado'))).toEqual(['ok', 'ok', 'oculto', 'oculto']);
+    expect(tiles.map((t) => t.getAttribute('data-estado'))).toEqual(['ok', 'oculto', 'oculto']);
     expect(host.textContent).not.toContain('$0');
     expect(host.textContent).not.toContain('inmobiliaria.propietarios.upToDate');
     expect(host.textContent).not.toContain('inmobiliaria.propietarios.noPending');
@@ -282,7 +282,7 @@ describe('P-21 — los KPI de plata a quien no la ve', () => {
     await montar();
     const tiles = Array.from(host.querySelectorAll('[data-testid="kpi-valor"]'));
     expect(tiles.every((t) => t.getAttribute('data-estado') === 'ok')).toBe(true);
-    expect(tiles[2].textContent).toMatch(/2\.000\.000/);
+    expect(tiles[1].textContent).toMatch(/2\.000\.000/);
     expect(tabla.plataOculta).toBe(false);
   });
 });

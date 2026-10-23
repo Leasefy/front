@@ -153,7 +153,7 @@ export function StepPhotos() {
               ? 'Suelta las fotos aquí'
               : 'Haz clic o arrastra fotos aquí'}
         </p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+        <p className="text-caption text-neutral-500 dark:text-neutral-400 mt-1">
           {draft.photos.length}/{MAX_PHOTOS} fotos · JPG, PNG o WebP · Máx 10MB
         </p>
       </button>
@@ -189,7 +189,7 @@ export function StepPhotos() {
 
               {/* Primary badge */}
               {index === 0 && (
-                <span className="absolute top-2 left-2 px-2 py-1 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-xs font-medium rounded-md">
+                <span className="absolute top-2 left-2 px-2 py-1 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-caption font-medium rounded-md">
                   Principal
                 </span>
               )}
@@ -218,7 +218,7 @@ export function StepPhotos() {
               className="aspect-[4/3] rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center gap-1 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors bg-white dark:bg-border"
             >
               <ImageSquare className="w-6 h-6 text-fg-muted" />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">Agregar</span>
+              <span className="text-caption text-neutral-500 dark:text-neutral-400">Agregar</span>
             </button>
           )}
         </div>

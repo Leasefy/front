@@ -256,7 +256,7 @@ describe('<ListaDeLotes> — el mes no se ve vacío', () => {
     await montar('2026-07');
 
     expect(candidatos).toHaveBeenCalledWith({ month: '2026-07' });
-    expect(frase()).toContain('Ninguna dispersión de julio de 2026 espera lote');
+    expect(frase()).toContain('Ningún giro de julio de 2026 espera lote');
     expect(botonQueDice('Armar el lote de')).toBeUndefined();
   });
 
@@ -624,7 +624,7 @@ describe('<ListaDeLotes> — los fallos (02-10)', () => {
   it('🔴 si no se pudo contar el mes por un 5xx, la frase lo dice con la referencia', async () => {
     candidatos.mockRejectedValue(fallo500());
     await montar('2026-09');
-    expect(frase()).toContain('No pudimos contar las dispersiones del mes: algo falló de nuestro lado');
+    expect(frase()).toContain('No pudimos contar los giros del mes: algo falló de nuestro lado');
     expect(frase()).toContain('ab12cd34');
   });
 });

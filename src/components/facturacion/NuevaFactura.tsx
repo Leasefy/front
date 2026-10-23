@@ -90,6 +90,7 @@ import {
   Receipt,
   SealWarning,
   Warning,
+  CaretDown,
 } from '@phosphor-icons/react'
 import {
   generarPorTandas,
@@ -175,6 +176,7 @@ import { Collapse, SegmentedControl } from '@leasefy/cadence'
 import { PrefacturasDelRango, finDeAnio } from './PrefacturasDelRango'
 import { FacturasDeIntereses } from './FacturasDeIntereses'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 /**
  * El rango de fechas que trae el nombre de un renglón migrado de Nui
@@ -232,11 +234,10 @@ function InteresDeMora({ factura }: { factura: FacturaDelMes }) {
           : 'Lo calcula el motor de mora sobre la cuota, con las reglas de esta inmobiliaria. Crece cada día hasta que la factura se emita.'
       }
     >
-      Mora <span className="font-mono tabular-nums">{formatCurrency(mora.recargosCop)}</span> ·{' '}
-      {mora.diasDeMora} {mora.diasDeMora === 1 ? 'día' : 'días'} ·{' '}
-      <span className={delCobro ? 'text-fg-subtle' : 'text-warning'}>
-        {delCobro ? 'del cobro' : 'sobre la cuota'}
-      </span>
+      {/* Revisión de Dinero (22-10): «Mora $ 126.000 · 0 días · del cobro» no se entendía. */}
+      Incluye <span className="font-mono tabular-nums">{formatCurrency(mora.recargosCop)}</span> de mora
+      {mora.diasDeMora > 0 ? ` (${mora.diasDeMora} ${mora.diasDeMora === 1 ? 'día' : 'días'})` : ''}
+      {delCobro ? <span className="text-fg-subtle"> · ya liquidada en el cobro</span> : <span className="text-warning"> · sigue creciendo</span>}
     </p>
   )
 }
@@ -354,7 +355,7 @@ function normalizar(s: string): string {
 function NumeroDelContrato({ factura }: { factura: FacturaDelMes }) {
   return (
     <span className="font-mono tabular-nums">
-      <span className="text-fg">{factura.numeroExterno ?? `#${factura.codigo ?? '—'}`}</span>
+      <span className="text-fg">{factura.numeroExterno ?? `${factura.codigo ?? '—'}`}</span>
       {factura.numeroExterno && factura.codigo !== null && (
         <span className="text-fg-muted"> · Leasefy #{factura.codigo}</span>
       )}
@@ -408,7 +409,10 @@ function PlataDeLaFila({ factura }: { factura: FacturaDelMes }) {
               : factura.escenario.nombre}
           </p>
         )}
-      {factura.impuestosSinConfirmar && (
+      {/* GLOW UP (20-10-2026): cuando la columna del estado ya dice «Sin
+          confirmar · Confirmar en el contrato», no se repite aquí (salía dos
+          veces en la misma fila, con el mismo `data-testid`). */}
+      {factura.impuestosSinConfirmar && estadoDeLaFila(factura) !== 'sin-escenario' && (
         <p>
           <ImpuestosSinConfirmar factura={factura} />
         </p>
@@ -457,7 +461,7 @@ function ConceptoDeLaFila({ factura }: { factura: FacturaDelMes }) {
       <InteresDeMora factura={factura} />
       <EnMora factura={factura} />
       {/* 🔴 Lo que esta factura tiene que decir y no cabe en un número. El
-          aviso de «mora sin intereses» ya no va acá: es el mismo en todas las
+          aviso de «mora sin intereses» ya no va aquí: es el mismo en todas las
           filas y se dice UNA vez arriba (FA-03). */}
       {avisos.length > 0 && (
         <p
@@ -523,11 +527,7 @@ function EstadoDeLaFactura({
         </div>
         {/* El número que vale ante la DIAN es el autorizado por la resolución;
             el consecutivo interno queda debajo, para poder cruzarlo. */}
-        {factura.numeroDian && (
-          <span className="font-mono text-caption tabular-nums text-fg-muted">
-            interna N° {factura.numero}
-          </span>
-        )}
+        {/* Revisora r24 (Facturación #5): el consecutivo interno ya está en el cajón; en la fila sobraba. */}
       </div>
     )
   }
@@ -797,7 +797,10 @@ function TablaDeFacturas({
     () => visibles.filter(sePuedeEmitirHoy).map((f) => f.clave),
     [visibles],
   )
-  const sinConfirmar = filas.filter((f) => f.impuestosSinConfirmar).length
+  const ivaDelMes = filas.reduce((s, f) => s + f.ivaCop, 0)
+  const retencionesDelMes = filas.reduce((s, f) => s + f.retencionesCop, 0)
+  // Revisora r24 (Facturación #2): sin ninguna que se pueda emitir, sin casillas (aparecen con la primera).
+  const hayEmitibles = filas.some(sePuedeEmitirHoy)
   // Un back anterior a la decisión del 03-10 todavía mete los recargos en la
   // factura del mes: si van en el total, se totalizan aparte.
   const conMora = filas.filter((f) => moraDe(f) > 0 && llevaIntereses(f))
@@ -866,7 +869,7 @@ function TablaDeFacturas({
     >
       <div className="border-b border-border p-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-body font-semibold text-fg">{titulo}</h3>
+          <h3 className="text-body font-medium text-fg">{titulo}</h3>
           <p className="text-caption text-fg-muted">{descripcion}</p>
         </div>
         <div className="text-caption text-fg-muted sm:text-right">
@@ -878,17 +881,32 @@ function TablaDeFacturas({
               {formatCurrency(filas.reduce((s, f) => s + f.totalCop, 0))}
             </span>
           </p>
-          <p className="whitespace-nowrap">
-            IVA{' '}
-            <span className="font-mono tabular-nums">
-              {formatCurrency(filas.reduce((s, f) => s + f.ivaCop, 0))}
-            </span>{' '}
-            · retenciones{' '}
-            <span className="font-mono tabular-nums">
-              {formatCurrency(filas.reduce((s, f) => s + f.retencionesCop, 0))}
-            </span>
-            {sinConfirmar > 0 && ` · ${sinConfirmar} sin confirmar`}
-          </p>
+          {/* Revisora r24 (Facturación #4): IVA y retenciones sólo cuando hay; en cero no dicen nada. */}
+          {ivaDelMes > 0 || retencionesDelMes > 0 ? (
+            <p className="whitespace-nowrap">
+              {[
+                ivaDelMes > 0 ? (
+                  <span key="iva">
+                    IVA <span className="font-mono tabular-nums">{formatCurrency(ivaDelMes)}</span>
+                  </span>
+                ) : null,
+                retencionesDelMes > 0 ? (
+                  <span key="ret">
+                    retenciones <span className="font-mono tabular-nums">{formatCurrency(retencionesDelMes)}</span>
+                  </span>
+                ) : null,
+                // Revisora r25 (Facturación #1): «N sin confirmar» ya no va aquí: lo dice el aviso de abajo,
+                // con su filtro, y cada fila.
+              ]
+                .filter(Boolean)
+                .map((x, i) => (
+                  <span key={i}>
+                    {i > 0 ? ' · ' : null}
+                    {x}
+                  </span>
+                ))}
+            </p>
+          ) : null}
           {conMora.length > 0 && (
             /* «Recargos», no «interés»: `recargosCop` suma el interés de mora
                Y el gasto administrativo. */
@@ -962,11 +980,8 @@ function TablaDeFacturas({
           className="text-caption text-fg-muted tabular-nums"
           data-testid={`facturacion-${testid}-alcance`}
         >
-          {busqueda.trim() === '' ? (
-            <>
-              {filas.length} {filas.length === 1 ? 'factura' : 'facturas'} en el mes
-            </>
-          ) : (
+          {/* Revisora r24 (Facturación #4): sin búsqueda no se dice cuántas son (lo dicen la pestaña y el pie). */}
+          {busqueda.trim() === '' ? null : (
             <>
               {visibles.length} de {filas.length} facturas.{' '}
               <button
@@ -989,6 +1004,7 @@ function TablaDeFacturas({
           vacioDeLaTabla
         ) : (
           <>
+            {hayEmitibles ? (
             <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
               <Checkbox
                 checked={todas}
@@ -1006,6 +1022,7 @@ function TablaDeFacturas({
                 {elegidas.length > 0 ? 'Quitar la selección' : 'Marcar todas las que se pueden emitir'}
               </span>
             </div>
+            ) : null}
             <ul className="divide-y divide-border" data-testid={`facturacion-${testid}-tarjetas`}>
               {pageItems.map((factura) => {
                 const apagada = estadoDeLaFila(factura) !== 'por-emitir'
@@ -1031,9 +1048,11 @@ function TablaDeFacturas({
                       grupo && 'border-l-2 border-l-primary/50',
                     )}
                   >
-                    <span className="pt-0.5" onClick={(e) => e.stopPropagation()}>
-                      {casilla(factura)}
-                    </span>
+                    {hayEmitibles ? (
+                      <span className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        {casilla(factura)}
+                      </span>
+                    ) : null}
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex items-start justify-between gap-3">
                         <p className="min-w-0 break-words font-medium text-fg">
@@ -1044,8 +1063,8 @@ function TablaDeFacturas({
                         </p>
                       </div>
                       <ConceptoDeLaFila factura={factura} />
-                      <div className="text-caption">
-                        <NumeroDelContrato factura={factura} />
+                      <div className="text-caption text-fg-muted">
+                        Contrato <NumeroDelContrato factura={factura} />
                       </div>
                       {grupo?.primera ? <AvisoDeFacturaJunta factura={factura} /> : null}
                       <div onClick={(e) => e.stopPropagation()}>{estado(factura)}</div>
@@ -1061,6 +1080,7 @@ function TablaDeFacturas({
           <Table>
             <TableHeader>
               <TableRow>
+                {hayEmitibles ? (
                 <TableHead className="w-10">
                   {/* 🔴 Con algo marcado, esta casilla LIMPIA (Nico, 18-09). Con
                       búsqueda puesta sólo toca lo que se ve. */}
@@ -1077,16 +1097,17 @@ function TablaDeFacturas({
                     data-testid={`facturacion-${testid}-todas`}
                   />
                 </TableHead>
+                ) : null}
                 {/* 🔴 FA-04 (QA-FACT, 03-10): cinco columnas, no once. El
                     contrato va debajo del cliente; el inmueble y el período,
                     debajo del concepto; base, IVA y retención, debajo del total.
                     Así cabe entera a 1.440 px y nada queda fuera de vista. */}
-                <TableHead className="whitespace-nowrap">Cliente</TableHead>
+                <TableHead className="whitespace-nowrap">{titulo === 'Inquilinos' ? 'Inquilino' : 'Cliente'}</TableHead>
                 <TableHead className="whitespace-nowrap">Concepto</TableHead>
                 <TableHead className="whitespace-nowrap text-right">Valor</TableHead>
                 {/* 🔴 19-09: la acción de la fila («Generar esta») tiene que estar
                     siempre donde se la busca: la columna se ancla a la derecha. */}
-                <TableHead className="sticky right-0 z-20 whitespace-nowrap border-l border-border bg-bg dark:bg-surface-muted">
+                <TableHead className="sticky right-0 z-20 whitespace-nowrap bg-bg">
                   Estado
                 </TableHead>
               </TableRow>
@@ -1125,13 +1146,20 @@ function TablaDeFacturas({
                         apagada && 'opacity-70',
                       )}
                     >
+                      {hayEmitibles ? (
+                        <TableCell
+                          className={cn('w-10', grupo && 'border-l-2 border-l-primary/50')}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {casilla(factura)}
+                        </TableCell>
+                      ) : null}
                       <TableCell
-                        className={cn('w-10', grupo && 'border-l-2 border-l-primary/50')}
-                        onClick={(e) => e.stopPropagation()}
+                        className={cn(
+                          'w-[30%] min-w-[180px] max-w-[260px] align-top',
+                          !hayEmitibles && grupo && 'border-l-2 border-l-primary/50',
+                        )}
                       >
-                        {casilla(factura)}
-                      </TableCell>
-                      <TableCell className="w-[30%] min-w-[180px] max-w-[260px] align-top">
                         {/* El nombre en dos renglones si hace falta, nunca «Ana So…». */}
                         <p className="line-clamp-2 break-words text-fg" title={aQuienSeFactura(factura)}>
                           {aQuienSeFactura(factura)}
@@ -1153,7 +1181,7 @@ function TablaDeFacturas({
                         <PlataDeLaFila factura={factura} />
                       </TableCell>
                       <TableCell
-                        className="sticky right-0 z-10 whitespace-nowrap border-l border-border bg-surface align-top"
+                        className="sticky right-0 z-10 whitespace-nowrap bg-surface align-top"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {estado(factura)}
@@ -1200,9 +1228,22 @@ export interface NuevaFacturaProps {
    * resolución» diría a dónde ir y no llevaría.
    */
   onIrAResolucion?: () => void
+  /**
+   * GLOW UP (20-10-2026): la página ya dice ARRIBA, en «Para facturar te
+   * faltan N pasos», que falta la resolución, con su botón. Con esta marca el
+   * aviso de acá no se repite (salía tres veces). El motivo al lado del botón
+   * apagado se queda: es donde se aprieta.
+   */
+  sinAvisoDeResolucionArriba?: boolean
+  /** Súbelo para volver a leer el mes (después de cargar una resolución). */
+  recargarCon?: number
 }
 
-export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
+export function NuevaFactura({
+  onIrAResolucion,
+  sinAvisoDeResolucionArriba = false,
+  recargarCon = 0,
+}: NuevaFacturaProps = {}) {
   const [mes, setMes] = useState(() => mesActual())
   /**
    * Hasta dónde MIRAR. Arranca en el mes elegido —que es el trabajo diario— y
@@ -1211,6 +1252,8 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    * usa de vez en cuando.
    */
   const [hasta, setHasta] = useState(() => mesActual())
+  /** «Ver también los meses que siguen»: plegado, la consulta es el mes solo. */
+  const [verMesesQueSiguen, setVerMesesQueSiguen] = useState(false)
   const [datos, setDatos] = useState<FacturasPorGenerar | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
@@ -1277,7 +1320,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
 
   useEffect(() => {
     void cargar(mes, hasta)
-  }, [cargar, mes, hasta])
+  }, [cargar, mes, hasta, recargarCon])
 
   /**
    * T-0163: un mes de un contrato con varios inquilinos sale en una factura por
@@ -1655,6 +1698,37 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     resolucionDeComision.prefijo === datos.resolucion.prefijo
 
   /**
+   * GLOW UP (20-10-2026): lo que la persona vino a saber del mes, de las DOS
+   * tablas: cuántas salen hoy, cuántas ya salieron y cuántas todavía no. Sale
+   * de las mismas reglas que las casillas Y de la resolución de cada tabla: sin
+   * una resolución que numere, ninguna «se puede emitir hoy» (decirlo sería
+   * prometer un botón que está apagado).
+   */
+  const estadoDelMes = (() => {
+    const numeraElCanon = datos?.resolucion.puedeNumerar === true
+    const numeraLaComision = resolucionDeComision?.puedeNumerar === true
+    const deLaTabla = (filas: FacturaDelMes[], numera: boolean) => {
+      const emitidas = filas.filter((f) => f.estado === 'EMITIDA').length
+      const porEmitir = filas.filter((f) => f.estado !== 'EMITIDA' && sePuedeEmitirHoy(f)).length
+      // Revisora r23 (Facturación #1): cada frenada con SU causa; antes todas se le cargaban a la resolución.
+      const porEscenario = filas.filter(
+        (f) => f.estado !== 'EMITIDA' && !sePuedeEmitirHoy(f) && f.codigoNoEmitible === 'ESCENARIO_SIN_CONFIRMAR',
+      ).length
+      return { total: filas.length, emitidas, listas: numera ? porEmitir : 0, sinNumero: numera ? 0 : porEmitir, porEscenario }
+    }
+    const a = deLaTabla(delMes.inquilinos, numeraElCanon)
+    const b = deLaTabla(delMes.propietarios, numeraLaComision)
+    const total = a.total + b.total
+    const emitidas = a.emitidas + b.emitidas
+    const listas = a.listas + b.listas
+    const frenadas = total - emitidas - listas
+    const sinNumero = a.sinNumero + b.sinNumero
+    const porEscenario = a.porEscenario + b.porEscenario
+    const porOtraRazon = Math.max(0, frenadas - sinNumero - porEscenario)
+    return { total, emitidas, listas, frenadas, sinResolucion: sinNumero > 0, sinNumero, porEscenario, porOtraRazon }
+  })()
+
+  /**
    * 🔴 Por qué HOY no se puede emitir nada, en las palabras del back.
    *
    * Sin resolución vigente el back devuelve 400, así que el botón se apaga
@@ -1733,8 +1807,11 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     compacta
     // Bajo `lg` la barra de navegación del celular (56 px + la zona segura)
     // está fija abajo: el pie se pega ENCIMA de ella, no detrás (FA-15).
-    className="bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] lg:bottom-0"
+    // Nico (22-10): con 0 marcadas la barra no se ve (sigue montada); aparece al marcar la primera.
+    className={cn('bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] lg:bottom-0', elegidas.length === 0 && 'hidden')}
     testid="facturacion-acciones"
+    // Tiene acciones que sirven sin marcar nada; 22-10 (revisión): con 0 marcadas no tapa el buscador.
+    siempreConAcciones={elegidas.length > 0}
     marcadas={elegidas.length}
     queSon={['factura', 'facturas']}
     monto={elegidas.length > 0 ? formatCurrency(totalElegido) : null}
@@ -1830,7 +1907,9 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             className="max-w-xl text-caption text-warning"
             data-testid="facturacion-motivo-apagado"
           >
-            {motivoParaNoEmitir}{' '}
+            {/* GLOW UP: con la lista de la página arriba (que ya explica qué
+                falta), aquí basta la razón corta y el botón. */}
+            {sinAvisoDeResolucionArriba ? 'Falta la resolución con qué numerar.' : motivoParaNoEmitir}{' '}
             {onIrAResolucion && (
               <button
                 type="button"
@@ -1906,7 +1985,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           ochocientas filas y apriete un botón que va a fallar. El texto es el
           del back, con el motivo exacto (no cargada, vencida, anulada, rango
           agotado): cada uno se arregla distinto. */}
-      {datos && !datos.resolucion.puedeNumerar && (
+      {datos && !datos.resolucion.puedeNumerar && !sinAvisoDeResolucionArriba && (
         <div
           className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5"
           data-testid="facturacion-sin-resolucion"
@@ -1942,17 +2021,21 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           que la tabla. */}
       {/* 🔴 23-09 (Nico: «tarjeta dentro de tarjeta dentro de tarjeta»): esto
           YA vive dentro de la tarjeta de pestañas de Facturación; un segundo
-          borde acá era la tarjeta de adentro. Pestañas + filtros + tabla son UNA
-          tarjeta: acá sólo hay separadores. */}
+          borde aquí era la tarjeta de adentro. Pestañas + filtros + tabla son UNA
+          tarjeta: aquí sólo hay separadores. */}
       <section className="overflow-x-clip" data-testid="facturacion-por-facturar">
       <div className="border-b border-border px-4 py-4 space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        {/* GLOW UP (20-10-2026): primero EL mes que se factura —es el trabajo de
+            todos los meses— y, plegado, mirar los que siguen (se usa de vez en
+            cuando: la pregunta del CEO del 13-09, «qué tengo por facturar hasta
+            diciembre»). Al plegarlo, la consulta vuelve al mes solo. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="facturacion-mes"
               className="text-caption font-medium text-fg-muted"
             >
-              Filtrar por mes
+              Mes a facturar
             </label>
             <Select
               value={mes}
@@ -1980,84 +2063,127 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             </Select>
           </div>
 
-          {/* 🔴 «Ver hasta» es MIRAR, no emitir. El CEO (13-09): «Si quiero
-              mirar qué facturas tengo por generar hasta el 31 de diciembre…
-              Lo que NO se puede es enviarlas [antes de tiempo].» Por eso
-              estira la consulta y no toca ni las casillas ni el botón. */}
-          {/* 🔴 Un SELECT del design system, no el campo nativo de mes (Nico,
-              21-09: «no estás usando los componentes de cadence, eso de hasta
-              diciembre no se entiende como un filtro»).
-              El `<input type="month">` pintaba el nombre EN EL IDIOMA DEL
-              NAVEGADOR —«September 2026» en una pantalla entera en español— y
-              abría el calendario del sistema, que no se parece a nada del
-              producto. Y «Hasta diciembre» era un botón al lado, que se lee
-              como una acción; ahora diciembre es una opción más de la misma
-              lista, que es lo que siempre fue. */}
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="facturacion-hasta"
-              className="text-caption font-medium text-fg-muted"
-            >
-              Ver hasta (sólo mirar)
-            </label>
-            <Select value={hasta || mes} onValueChange={(v) => setHasta(v)}>
-              <SelectTrigger
-                id="facturacion-hasta"
-                className="w-56"
-                data-testid="facturacion-hasta"
+          {/* 🔴 «Ver hasta» es MIRAR, no emitir (el CEO, 13-09): estira la
+              consulta y no toca ni las casillas ni el botón. Un SELECT del DS
+              (Nico, 21-09), no el campo nativo de mes. */}
+          {verMesesQueSiguen ? (
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="facturacion-hasta"
+                className="text-caption font-medium text-fg-muted"
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {topes.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {mesLegible(t)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                Mirar hasta (no se emite)
+              </label>
+              <Select value={hasta || mes} onValueChange={(v) => setHasta(v)}>
+                <SelectTrigger
+                  id="facturacion-hasta"
+                  className="w-56"
+                  data-testid="facturacion-hasta"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {topes.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {mesLegible(t)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className="inline-flex h-11 items-center gap-1.5 self-start text-body-sm font-medium text-primary underline-offset-4 hover:underline sm:self-end"
+            aria-expanded={verMesesQueSiguen}
+            onClick={() => {
+              if (verMesesQueSiguen) setHasta(mes)
+              setVerMesesQueSiguen((v) => !v)
+            }}
+            data-testid="facturacion-ver-meses-que-siguen"
+          >
+            {verMesesQueSiguen ? 'Ocultar los meses que siguen' : 'Ver también los meses que siguen'}
+          </button>
         </div>
 
-        {/* 🔴 Acá arriba quedan los FILTROS y lo que hay que saber antes de
-            emitir. El botón que emite se fue al pie: hay DOS tablas debajo
-            —Inquilinos y Propietarios— que comparten una sola selección, y
-            desde arriba quedaba fuera de la pantalla justo cuando se estaba
-            marcando (Nico, 19-09). */}
-        {/* El resumen es UNA frase, debajo de los filtros y en su lugar de
-            lectura —no dos líneas grises sueltas a la derecha—, y la
-            numeración se dice como un dato: con qué resolución, cuál sigue y
-            cuántos quedan. */}
+        {/* Revisora r24 (Facturación #1, #4, #6): LA RESPUESTA en una cifra —cuántas de las facturas
+            del mes ya salieron— con su barra y un tramo por causa (el 0 no se pinta en la barra). Antes,
+            una frase de once cifras con la resolución dicha dos veces y el «0» en azul, como un enlace.
+            Los contratos y la numeración quedan al pie, una vez. */}
         {datos && (
-          <p className="text-body-sm text-fg-muted" data-testid="facturacion-resumen">
-            <span className="font-medium text-fg tabular-nums">
-              {datos.totales.contratos.toLocaleString(localeDeLasCifras())}{' '}
-              {datos.totales.contratos === 1 ? 'contrato' : 'contratos'}
-            </span>{' '}
-            {datos.totales.meses === 1
-              ? `con cuotas de ${mesLegible(mes)}`
-              : `con cuotas en ${datos.totales.meses} meses, hasta ${mesLegible(datos.hasta)}`}
-            .
-            {datos.resolucion.puedeNumerar && (
-              <span data-testid="facturacion-siguiente-numero">
-                {' '}
-                {mismaBolsa ? 'Se numeran' : 'El canon se numera'} con la resolución{' '}
-                <span className="font-mono text-fg">{datos.resolucion.numero}</span>: sigue la{' '}
-                <span className="font-mono text-fg">{datos.resolucion.siguiente}</span> y quedan{' '}
-                <span className="font-mono text-fg tabular-nums">{datos.resolucion.disponibles}</span>{' '}
-                {datos.resolucion.disponibles === 1 ? 'número' : 'números'} hasta el{' '}
-                {fechaLegible(datos.resolucion.vigenteHasta)}.
-              </span>
-            )}
-            {/* FA-R24: las comisiones con su propia resolución, dicha aparte. */}
-            {!mismaBolsa && resolucionDeComision?.puedeNumerar && (
-              <span data-testid="facturacion-siguiente-numero-comision">
-                {' '}Las comisiones, con la{' '}
-                <span className="font-mono text-fg">{resolucionDeComision.numero}</span>: sigue la{' '}
-                <span className="font-mono text-fg">{resolucionDeComision.siguiente}</span>.
-              </span>
-            )}
-          </p>
+          <div data-testid="facturacion-resumen">
+            {(() => {
+              const n = (x: number) => x.toLocaleString(localeDeLasCifras())
+              const contratos = (
+                <>
+                  <span className="font-mono tabular-nums text-fg">{n(datos.totales.contratos)}</span>{' '}
+                  {datos.totales.contratos === 1 ? 'contrato' : 'contratos'}{' '}
+                  {datos.totales.meses === 1
+                    ? `con cuotas de ${mesLegible(mes)}`
+                    : `con cuotas en ${datos.totales.meses} meses, hasta ${mesLegible(datos.hasta)}`}
+                  .
+                </>
+              )
+              const numeracion = (
+                <>
+                  {datos.resolucion.puedeNumerar && (
+                    <span className="block" data-testid="facturacion-siguiente-numero">
+                      {mismaBolsa ? 'Numeración' : 'Numeración del canon'}: sigue la{' '}
+                      <span className="font-mono text-fg">{datos.resolucion.siguiente}</span> · quedan{' '}
+                      <span className="font-mono tabular-nums text-fg">{n(datos.resolucion.disponibles)}</span>{' '}
+                      hasta el {fechaLegible(datos.resolucion.vigenteHasta)} · resolución{' '}
+                      <span className="font-mono text-fg">{datos.resolucion.numero}</span>.
+                    </span>
+                  )}
+                  {/* FA-R24: las comisiones con su propia resolución, dicha aparte. */}
+                  {!mismaBolsa && resolucionDeComision?.puedeNumerar && (
+                    <span className="block" data-testid="facturacion-siguiente-numero-comision">
+                      Las comisiones, con la{' '}
+                      <span className="font-mono text-fg">{resolucionDeComision.numero}</span>: sigue la{' '}
+                      <span className="font-mono text-fg">{resolucionDeComision.siguiente}</span>.
+                    </span>
+                  )}
+                </>
+              )
+              if (estadoDelMes.total === 0) {
+                return (
+                  <p className="space-y-0.5 text-body-sm text-fg-muted">
+                    <span className="block">{contratos}</span>
+                    {numeracion}
+                  </p>
+                )
+              }
+              return (
+                <CifraHeroe
+                  rotulo={
+                    datos.totales.meses === 1
+                      ? `Facturas de ${mesLegible(mes)}`
+                      : `Facturas hasta ${mesLegible(datos.hasta)}`
+                  }
+                  cifra={
+                    <>
+                      {n(estadoDelMes.emitidas)} <span className="text-fg-muted">de {n(estadoDelMes.total)}</span>
+                    </>
+                  }
+                  contexto={estadoDelMes.emitidas === 1 ? 'emitida' : 'emitidas'}
+                  tramos={[
+                    { clave: 'emitidas', etiqueta: estadoDelMes.emitidas === 1 ? 'Emitida' : 'Emitidas', monto: estadoDelMes.emitidas, tono: 'exito', cifra: n(estadoDelMes.emitidas), 'data-testid': 'facturacion-tramo-emitidas' },
+                    { clave: 'hoy', etiqueta: estadoDelMes.listas === 1 ? 'Se puede emitir hoy' : 'Se pueden emitir hoy', monto: estadoDelMes.listas, tono: 'neutro', cifra: n(estadoDelMes.listas), siempre: true, 'data-testid': 'facturacion-tramo-hoy' },
+                    { clave: 'escenario', etiqueta: 'Sin el escenario tributario confirmado', monto: estadoDelMes.porEscenario, tono: 'aviso', cifra: n(estadoDelMes.porEscenario), 'data-testid': 'facturacion-tramo-escenario' },
+                    { clave: 'resolucion', etiqueta: 'Sin la resolución con qué numerarlas', monto: estadoDelMes.sinNumero, tono: 'aviso', cifra: n(estadoDelMes.sinNumero), 'data-testid': 'facturacion-tramo-resolucion' },
+                    { clave: 'otra', etiqueta: 'Por otra razón (cada fila dice cuál)', monto: estadoDelMes.porOtraRazon, tono: 'neutro', cifra: n(estadoDelMes.porOtraRazon), 'data-testid': 'facturacion-tramo-otra' },
+                  ]}
+                  pie={
+                    <div className="space-y-0.5">
+                      <p>{contratos}</p>
+                      {numeracion}
+                    </div>
+                  }
+                  data-testid="facturacion-estado-del-mes"
+                />
+              )
+            })()}
+          </div>
         )}
       </div>
 
@@ -2180,12 +2306,20 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
                 className="border-t border-border p-4"
                 data-testid="facturacion-omitidos"
               >
-                <summary className="cursor-pointer text-body-sm text-fg flex items-center gap-2">
-                  <Warning className="h-4 w-4 text-fg-muted" weight="fill" />
-                  {datos.omitidos.length}{' '}
-                  {datos.omitidos.length === 1
-                    ? 'cuota no genera factura'
-                    : 'cuotas no generan factura'}
+                <summary className="flex cursor-pointer items-start gap-2 text-body-sm text-fg">
+                  <Warning className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" weight="fill" />
+                  {/* Revisora r24 (Facturación #3): el texto y «Ver por qué» en un solo trozo (a 390 se partían en columnas). */}
+                  <span className="min-w-0 flex-1">
+                    <span className="font-mono tabular-nums">{datos.omitidos.length}</span>{' '}
+                    {datos.omitidos.length === 1
+                      ? 'cuota del mes no genera factura'
+                      : 'cuotas del mes no generan factura'}{' '}
+                    {/* Revisora r23 (Facturación #4): que se note que se abre y que adentro está el porqué. */}
+                    <span className="whitespace-nowrap text-fg-muted">
+                      · Ver por qué
+                      <CaretDown className="ml-1 inline h-3.5 w-3.5 transition-transform [[open]>summary_&]:rotate-180" aria-hidden="true" />
+                    </span>
+                  </span>
                 </summary>
                 <ul className="mt-3 space-y-1.5">
                   {datos.omitidos.slice(0, 50).map((o) => (

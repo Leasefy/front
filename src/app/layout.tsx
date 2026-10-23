@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { CABECERA_DEL_NONCE } from "@/lib/seguridad/politica-de-contenido";
 import { CABECERA_DEL_IDIOMA, IDIOMA_POR_DEFECTO, esIdioma } from "@/lib/idioma/idioma";
 import { IdiomaDeLaPagina } from "@/lib/idioma/use-idioma";
-import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Host_Grotesk, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
@@ -22,20 +22,20 @@ import { LlavesDeLaPlata } from "@/components/plata/LlavesDeLaPlata";
 import { MotionProvider } from "@leasefy/cadence";
 import { RecordarLaCuenta } from "@/components/auth/RecordarLaCuenta";
 
-// Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
-// Una sola familia para sans + heading; se mapea en globals.css.
-const schibsted = Schibsted_Grotesk({
-  variable: "--font-schibsted",
+// Cadence 2 (20-10-2026): Host Grotesk para leer — títulos livianos y texto —
+// en una sola familia variable (300–800). Se mapea en globals.css.
+const hostGrotesk = Host_Grotesk({
+  variable: "--font-host",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-// JetBrains Mono — numerals / labels / tags / overlines (UPPERCASE)
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains",
+// DM Mono — cifras, etiquetas y textos cortos en MAYÚSCULA (Nico, 20-10-2026).
+const dmMono = DM_Mono({
+  variable: "--font-dm-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "500"],
+  display: "swap",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
@@ -131,7 +131,7 @@ export default async function RootLayout({
   const deLaUrl = cabeceras.get(CABECERA_DEL_IDIOMA);
   const idioma = esIdioma(deLaUrl) ? deLaUrl : IDIOMA_POR_DEFECTO;
   return (
-    <html lang={idioma} className={`lenis ${schibsted.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang={idioma} className={`lenis ${hostGrotesk.variable} ${dmMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -165,7 +165,7 @@ export default async function RootLayout({
             </WishlistProvider>
           </AuthProvider>
           {/* Toaster ÚNICO de toda la app (DESIGN.md §Toaster: position="top-right").
-              Vive acá, fuera de AuthProvider y de todo guard, por dos razones:
+              Vive aquí, fuera de AuthProvider y de todo guard, por dos razones:
               1. Antes se montaba sólo en 4 layouts (panel/inmobiliaria, panel/(landlord),
                  inquilino, onboarding), así que cada toast disparado desde el resto del
                  árbol — /auth/mfa-verify, /avaluo, /propiedades, la landing y el propio
@@ -177,7 +177,7 @@ export default async function RootLayout({
               Si agregas otro en un layout, los toasts se duplican. */}
           <Toaster position="top-right" />
           {/* La franja de «Leasefy no está respondiendo» / «Estás sin internet»
-              (01-10-2026). Va acá, junto al Toaster y fuera de todo guard, por
+              (01-10-2026). Va aquí, junto al Toaster y fuera de todo guard, por
               la misma razón: tiene que verse aunque un guard esté resolviendo
               o no deje pasar. Una sola en toda la app; no la montes en un
               layout. Ver src/lib/conexion/estado-de-conexion.ts. */}

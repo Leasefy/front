@@ -40,12 +40,15 @@
  * no está incompleto: está mal, y nadie lo sabe.
  */
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import {
   Table,
   TableBody,
@@ -58,7 +61,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DescargarElInforme } from '@/components/contabilidad/reportes/DescargarElInforme';
 import { tablasDelBalanceGeneral, tablasDelPyg } from '@/lib/contabilidad/tablas-de-los-informes';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Avisos, Cifra, CifraDeTexto, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos, TituloDeBloque } from '@/components/finanzas/piezas';
 // CB-17 (QA de Contabilidad, 03-10-2026): la plata de Contabilidad con UN formato.
 import { plata, textoDelBack } from '@/lib/contabilidad/plata';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
@@ -196,7 +199,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
       {/* 🔴 UNA SOLA COSA (Nico, 21-09): «eso del mes, switch tab y la tabla
           deberían ser una sola cosa… y así hay muchas tablas que tienen mes
           afuera, switch tab afuera».
-          Acá eran DOS bloques flotando: una tarjeta con el mes, la sede y las
+          Aquí eran DOS bloques flotando: una tarjeta con el mes, la sede y las
           casillas de comparación, y debajo las pestañas sueltas en el aire. Y
           las casillas estaban en el peor lugar posible: agregan COLUMNAS al
           árbol de cuentas, que vive 600 px más abajo, y se leían como un filtro
@@ -206,33 +209,35 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
           cabecera de la tabla cuyas columnas cambian. */}
       <Tabs value={informe} onValueChange={(v) => setInforme(v as Informe)}>
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 lg:flex-row lg:items-center lg:justify-between">
-          <TabsList variant="segmented" className="justify-start">
-            <TabsTrigger value="pyg" data-testid="pestana-pyg" className="whitespace-nowrap">
+          {/* Ronda 26 (revisora r25, UI 1): a 1440 «Balance general» salía cortado; el control no se encoge. */}
+          <TabsList variant="segmented" className="shrink-0 justify-start">
+            <TabsTrigger value="pyg" data-testid="pestana-pyg" className="shrink-0 whitespace-nowrap">
               Estado de resultados (P&G)
             </TabsTrigger>
-            <TabsTrigger value="balance" data-testid="pestana-balance" className="whitespace-nowrap">
+            <TabsTrigger value="balance" data-testid="pestana-balance" className="shrink-0 whitespace-nowrap">
               Balance general
             </TabsTrigger>
           </TabsList>
           <div className="flex flex-wrap items-center gap-4">
             <SelectorDeMes mes={mes} onCambiar={setMes} />
-            <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <span>Sede</span>
-              <select
-                aria-label="Sede"
-                className="h-11 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-                value={sedeId}
-                onChange={(e) => setSedeId(e.target.value)}
-                data-testid="selector-de-sede"
-              >
-                <option value="">Consolidado (todas)</option>
-                {sedes.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre} ({s.codigo})
-                  </option>
-                ))}
-              </select>
-            </label>
+            {/* Revisora r25 (C4): el Select de la casa. Radix no acepta el valor '': «todas» es
+                el consolidado de siempre ('' en la consulta). */}
+            <div className="flex items-center gap-2 text-sm text-fg-muted">
+              <span aria-hidden="true">Sede</span>
+              <Select value={sedeId === '' ? 'todas' : sedeId} onValueChange={(v) => setSedeId(v === 'todas' ? '' : v)}>
+                <SelectTrigger aria-label="Sede" className="w-56" data-testid="selector-de-sede">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Consolidado (todas)</SelectItem>
+                  {sedes.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre} ({s.codigo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {/* CB-C-13 (QA-FACT-CONTA-95 r2): el P&G y el balance general se bajan. */}
             <DescargarElInforme
               informe={informe === 'pyg' ? 'Estado de resultados (P&G)' : 'Balance general'}
@@ -254,59 +259,42 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
         {/* ══ P&G ═══════════════════════════════════════════════════════ */}
         <TabsContent value="pyg" className="space-y-5 pt-5">
           {cargando && !pyg ? (
-            <div className="flex flex-col items-center gap-3 py-16">
-              <Spinner size="lg" />
-              <p className="text-sm text-fg-muted">Armando el P&G…</p>
-            </div>
+            <EsqueletoDelInforme queEs="Armando el P&G…" />
           ) : error && !pyg ? (
             <FalloDeCarga error={error} queEs="el estado de resultados" onReintentar={cargar} />
           ) : pyg ? (
             <>
-              {/* 🔴 La frase del canon, siempre — también cuando todo está bien. */}
-              <Nota testId="el-canon-no-es-ingreso">
-                <p>{leyendaDelCanon(pyg)}</p>
-              </Nota>
+              {/* GLOW UP 3.ª vuelta · LA RESPUESTA: lo que ganó la inmobiliaria en el mes. Antes eran
+                  cuatro cifras del mismo peso; ingresos, gastos y margen son su contexto, y la frase
+                  del canon (siempre, también cuando todo está bien) va al pie. */}
+              <CifraHeroe
+                rotulo="Utilidad del mes"
+                cifra={
+                  <span data-testid="valor-utilidad" className={cn(pyg.resultado.utilidadMesCop < 0 && 'text-danger')}>
+                    <Monto valor={pyg.resultado.utilidadMesCop} />
+                  </span>
+                }
+                contexto={
+                  <>
+                    ingresos <span data-testid="valor-ingresos"><Monto valor={pyg.resultado.ingresosMesCop} /></span> menos
+                    gastos <span data-testid="valor-gastos"><Monto valor={pyg.resultado.gastosMesCop} /></span> · margen{' '}
+                    <span className="font-mono tabular-nums" data-testid="valor-margen">
+                      {margenLegible(pyg.resultado.margenMesPct, SIN_MEDIR)}
+                    </span>
+                  </>
+                }
+                pie={<span data-testid="el-canon-no-es-ingreso">{leyendaDelCanon(pyg)}</span>}
+                data-testid="cifra-del-pyg"
+              />
 
               <Avisos
                 avisos={[
                   ...(avisoDeLoQueFalta(pyg.sinAsentar) ? [avisoDeLoQueFalta(pyg.sinAsentar)!] : []),
-                  // CB-17: las frases del back sin emojis y con la plata de la casa.
                   ...pyg.avisos.map(textoDelBack),
                 ]}
                 testId="avisos-del-pyg"
                 titulo="Lo que este informe no cuenta"
               />
-
-              <dl className="grid gap-4 sm:grid-cols-4">
-                <Cifra
-                  formato={plata}
-                  id="ingresos"
-                  etiqueta="Ingresos del mes"
-                  valor={pyg.resultado.ingresosMesCop}
-                  definicion="Las cuentas de la clase 4 asentadas en el mes. No incluye el canon: ése es del propietario."
-                />
-                <Cifra
-                  formato={plata}
-                  id="gastos"
-                  etiqueta="Gastos del mes"
-                  valor={pyg.resultado.gastosMesCop}
-                  definicion="Las cuentas de las clases 5, 6 y 7 asentadas en el mes."
-                />
-                <Cifra
-                  formato={plata}
-                  id="utilidad"
-                  etiqueta="Utilidad del mes"
-                  valor={pyg.resultado.utilidadMesCop}
-                  definicion="Ingresos menos gastos del mes, antes del cierre anual."
-                  tono={pyg.resultado.utilidadMesCop < 0 ? 'danger' : 'success'}
-                />
-                <CifraDeTexto
-                  id="margen"
-                  etiqueta="Margen del mes"
-                  texto={margenLegible(pyg.resultado.margenMesPct, SIN_MEDIR)}
-                  definicion="Utilidad sobre ingresos. Con «—» no hubo ingresos: «vendiste y no ganaste» y «no vendiste» no son lo mismo."
-                />
-              </dl>
 
               {/* CB-C-09 (QA-FACT-CONTA-95 r2): sin gastos en el mes, lo dice y
                   lleva a Gastos, que es donde nacen. */}
@@ -371,8 +359,8 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                   </p>
                 </fieldset>
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
+                  <Table className="max-md:block">
+                    <TableHeader className="max-md:hidden">
                       <TableRow>
                         <TableHead>Cuenta</TableHead>
                         {columnas.map((c) => (
@@ -382,10 +370,10 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                         ))}
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="max-md:block">
                       {filas.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={columnas.length + 1} className="py-8 text-center">
+                        <TableRow className="max-md:block">
+                          <TableCell colSpan={columnas.length + 1} className="py-8 text-center max-md:block">
                             <p className="text-sm text-fg-muted">
                               No hay movimientos de ingreso ni de gasto asentados en este mes.
                             </p>
@@ -393,12 +381,17 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                         </TableRow>
                       ) : (
                         filas.map((f) => (
-                          <TableRow key={f.clave} data-testid={`fila-${f.clave}`}>
+                          <TableRow
+                            key={f.clave}
+                            data-testid={`fila-${f.clave}`}
+                            className="max-md:grid max-md:grid-cols-2 max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3 max-md:last:border-0"
+                          >
                             <TableCell
                               className={cn(
-                                f.nivel === 'clase' && 'font-semibold text-fg',
-                                f.nivel === 'grupo' && 'pl-6 font-medium text-fg',
-                                f.nivel === 'cuenta' && 'pl-12 text-fg-muted',
+                                'max-md:col-span-2 max-md:block max-md:p-0',
+                                f.nivel === 'clase' && 'font-medium text-fg',
+                                f.nivel === 'grupo' && 'pl-6 font-medium text-fg max-md:pl-3',
+                                f.nivel === 'cuenta' && 'pl-12 text-fg-muted max-md:pl-6',
                               )}
                             >
                               <span className="font-mono text-caption">{f.codigo}</span> {f.nombre}
@@ -413,14 +406,15 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                                       ? f.anioAnteriorMesCop
                                       : f.anioAnteriorAcumuladoCop;
                               return (
-                                <TableCell key={c.clave} className="text-right">
+                                <TableCell key={c.clave} className="text-right max-md:block max-md:p-0 max-md:text-left">
+                                  <span className="block text-caption text-fg-subtle md:hidden">{c.titulo}</span>
                                   {/* 🔴 `null` es «—», nunca `0`. */}
                                   {valor === null ? (
                                     <span className="text-fg-subtle">—</span>
                                   ) : (
                                     <Monto
                                       valor={valor}
-                                      className={cn('text-sm', f.nivel === 'clase' && 'font-medium')}
+                                      className={cn('text-body-sm', f.nivel === 'clase' && 'text-fg')}
                                     />
                                   )}
                                 </TableCell>
@@ -439,7 +433,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                 <section className="space-y-3" data-testid="comparacion-por-rubro">
                   <TituloDeBloque
                     titulo="Contra el presupuesto, por rubro"
-                    explicacion="El presupuesto se carga por rubro («nómina»), no por subcuenta. Repartirlo entre las cuentas de cada rubro daría un número inventado, así que la comparación va acá y no como una columna del árbol de arriba."
+                    explicacion="El presupuesto se carga por rubro («nómina»), no por subcuenta. Repartirlo entre las cuentas de cada rubro daría un número inventado, así que la comparación va aquí y no como una columna del árbol de arriba."
                   />
                   {motivoSinComparacionPorRubro(pyg) ? (
                     <Nota testId="sin-comparacion-por-rubro">
@@ -448,8 +442,8 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                   ) : (
                     <div className="overflow-hidden rounded-lg border border-border bg-surface">
                       <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
+                        <Table className="max-md:block">
+                          <TableHeader className="max-md:hidden">
                             <TableRow>
                               <TableHead>Rubro</TableHead>
                               <TableHead className="text-right">Real del libro</TableHead>
@@ -458,10 +452,14 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                               <TableHead className="text-right">Año anterior</TableHead>
                             </TableRow>
                           </TableHeader>
-                          <TableBody>
+                          <TableBody className="max-md:block">
                             {pyg.porRubro!.filas.map((f) => (
-                              <TableRow key={f.rubro} data-testid={`rubro-${f.rubro}`}>
-                                <TableCell>
+                              <TableRow
+                                key={f.rubro}
+                                data-testid={`rubro-${f.rubro}`}
+                                className="max-md:grid max-md:grid-cols-2 max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3 max-md:last:border-0"
+                              >
+                                <TableCell className="max-md:col-span-2 max-md:block max-md:p-0">
                                   <p className="text-sm text-fg">{f.nombre}</p>
                                   <p className="text-caption text-fg-muted">
                                     {f.naturaleza === 'INGRESO'
@@ -473,7 +471,10 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                                 </TableCell>
                                 {[f.realCop, f.presupuestoCop, f.contraPresupuestoCop, f.anioAnteriorCop].map(
                                   (valor, i) => (
-                                    <TableCell key={i} className="text-right">
+                                    <TableCell key={i} className="text-right max-md:block max-md:p-0 max-md:text-left">
+                                      <span className="block text-caption text-fg-subtle md:hidden">
+                                        {['Real del libro', 'Presupuesto', 'Diferencia', 'Año anterior'][i]}
+                                      </span>
                                       {valor === null ? (
                                         <span className="text-fg-subtle" title="No se pudo medir">
                                           —
@@ -494,6 +495,15 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                 </section>
               ) : null}
 
+              <MasDetalles etiqueta="Qué mide cada cifra" etiquetaAbierto="Ocultar qué mide cada cifra">
+                <ul className="max-w-2xl space-y-1.5 text-body-sm leading-relaxed text-fg-muted">
+                  <li><span className="text-fg">Ingresos</span>: las cuentas de la clase 4 asentadas en el mes. No incluye el canon: ése es del propietario.</li>
+                  <li><span className="text-fg">Gastos</span>: las cuentas de las clases 5, 6 y 7 asentadas en el mes.</li>
+                  <li><span className="text-fg">Utilidad</span>: ingresos menos gastos del mes, antes del cierre anual.</li>
+                  <li><span className="text-fg">Margen</span>: utilidad sobre ingresos. Con «—» no hubo ingresos: «vendiste y no ganaste» y «no vendiste» no son lo mismo.</li>
+                </ul>
+              </MasDetalles>
+
               {pyg.movimientosSinSede > 0 && sedeId ? (
                 <Nota testId="movimientos-sin-sede">
                   <p>
@@ -509,10 +519,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
         {/* ══ Balance general ═══════════════════════════════════════════ */}
         <TabsContent value="balance" className="space-y-5 pt-5">
           {cargando && !balance ? (
-            <div className="flex flex-col items-center gap-3 py-16">
-              <Spinner size="lg" />
-              <p className="text-sm text-fg-muted">Armando el balance…</p>
-            </div>
+            <EsqueletoDelInforme queEs="Armando el balance…" />
           ) : error && !balance ? (
             <FalloDeCarga error={error} queEs="el balance general" onReintentar={cargar} />
           ) : balance ? (
@@ -535,73 +542,50 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                 </Nota>
               ) : null}
 
-              <Nota testId="el-canon-no-es-ingreso-balance">
-                <p>{leyendaDelCanon(balance)}</p>
-              </Nota>
+              {/* GLOW UP 3.ª vuelta · LA RESPUESTA: el activo y si cuadra con el otro lado. Antes eran
+                  cuatro o cinco cifras del mismo peso, que repetían el total de cada lado de abajo. */}
+              <CifraHeroe
+                rotulo="Activo al cierre del mes"
+                cifra={<Monto valor={balance.activo.totalCop} />}
+                contexto={
+                  <span data-testid="ecuacion-del-balance">
+                    = pasivo + patrimonio + resultado
+                    {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? ' (con el de años anteriores)' : ''}{' '}
+                    <Monto valor={totalDelOtroLado(balance)} />
+                    {balance.cuadra ? ' · cuadra' : ' · no cuadra'}
+                  </span>
+                }
+                pie={
+                  <span className="space-y-1">
+                    <span className="block" data-testid="resultado-del-ejercicio">
+                      Resultado del ejercicio:{' '}
+                      <Monto
+                        valor={balance.resultadoDelEjercicioCop}
+                        className={cn('text-caption', balance.resultadoDelEjercicioCop < 0 && 'text-danger')}
+                      />
+                      {/* 🔴 CB-R14 (Nico): el resultado de años anteriores sin asiento
+                          de cierre se calcula y se dice, aparte. */}
+                      {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? (
+                        <span data-testid="resultado-de-ejercicios-anteriores">
+                          {' · de años anteriores: '}
+                          <Monto
+                            valor={balance.resultadoDeEjerciciosAnterioresCop ?? 0}
+                            className={cn('text-caption', (balance.resultadoDeEjerciciosAnterioresCop ?? 0) < 0 && 'text-danger')}
+                          />
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="block" data-testid="el-canon-no-es-ingreso-balance">{leyendaDelCanon(balance)}</span>
+                  </span>
+                }
+                data-testid="cifra-del-balance"
+              />
 
               <Avisos
                 avisos={balance.avisos.map(textoDelBack)}
                 testId="avisos-del-balance"
                 titulo="Lo que este balance no cuenta"
               />
-
-              <dl
-                className={cn(
-                  'grid gap-4 sm:grid-cols-4',
-                  // Cinco cifras no caben en una fila sin partir los montos: 3 + 2.
-                  (balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 && 'sm:grid-cols-3',
-                )}
-              >
-                <Cifra
-                  formato={plata}
-                  id="activo"
-                  etiqueta="Activo"
-                  valor={balance.activo.totalCop}
-                  definicion="Lo que la inmobiliaria tiene y le deben, al último día del mes."
-                />
-                <Cifra
-                  formato={plata}
-                  id="pasivo"
-                  etiqueta="Pasivo"
-                  valor={balance.pasivo.totalCop}
-                  definicion="Lo que debe, incluida la plata de los propietarios que todavía no se giró (2815)."
-                />
-                <Cifra
-                  formato={plata}
-                  id="patrimonio"
-                  etiqueta="Patrimonio"
-                  valor={balance.patrimonio.totalCop}
-                  definicion="El capital y las reservas. Lo crea el contador: el plan de cuentas que trae Leasefy no incluye la clase 3."
-                />
-                <Cifra
-                  formato={plata}
-                  id="resultado-del-ejercicio"
-                  etiqueta="Resultado del ejercicio"
-                  valor={balance.resultadoDelEjercicioCop}
-                  definicion={POR_QUE_EL_RESULTADO_VA_APARTE}
-                  tono={balance.resultadoDelEjercicioCop < 0 ? 'danger' : 'success'}
-                />
-                {/* 🔴 CB-R14 (Nico): el resultado de años anteriores sin asiento
-                    de cierre se calcula y se dice, aparte. */}
-                {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? (
-                  <Cifra
-                    formato={plata}
-                    id="resultado-de-ejercicios-anteriores"
-                    etiqueta="Resultado de años anteriores"
-                    valor={balance.resultadoDeEjerciciosAnterioresCop ?? 0}
-                    definicion="Lo que dejaron los años anteriores y todavía no se lleva al patrimonio: falta el asiento de cierre de esos años, que hace tu contador. Va aparte para que el balance cuadre."
-                    tono={(balance.resultadoDeEjerciciosAnterioresCop ?? 0) < 0 ? 'danger' : 'success'}
-                  />
-                ) : null}
-              </dl>
-
-              <p className="text-caption text-fg-muted" data-testid="ecuacion-del-balance">
-                Activo <Monto valor={balance.activo.totalCop} className="text-caption" /> = pasivo +
-                patrimonio + resultado
-                {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? ' (con el de años anteriores)' : ''}{' '}
-                <Monto valor={totalDelOtroLado(balance)} className="text-caption" />
-                {balance.cuadra ? ' · cuadra.' : ' · NO cuadra.'}
-              </p>
 
               {/* 🔴 La casilla del comparativo vive con las tres listas que
                   cambia, no en una barra de filtros arriba: lo que hace es
@@ -625,8 +609,8 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                     data-testid={`lado-${lado.clave}`}
                   >
                     <div className="flex items-baseline justify-between gap-2 border-b border-border p-3">
-                      <h3 className="text-sm font-semibold text-fg">{lado.titulo}</h3>
-                      <Monto valor={lado.totalCop} className="text-sm font-medium" />
+                      <h3 className="text-body-sm font-medium text-fg">{lado.titulo}</h3>
+                      <Monto valor={lado.totalCop} className="text-body-sm text-fg" />
                     </div>
                     {lado.grupos.length === 0 ? (
                       <p className="p-4 text-caption text-fg-muted">
@@ -675,6 +659,18 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                   </section>
                 ))}
               </div>
+
+              <MasDetalles etiqueta="Qué mide cada cifra" etiquetaAbierto="Ocultar qué mide cada cifra" montadoSiempre>
+                <ul className="max-w-2xl space-y-1.5 text-body-sm leading-relaxed text-fg-muted">
+                  <li><span className="text-fg">Activo</span>: lo que la inmobiliaria tiene y le deben, al último día del mes.</li>
+                  <li><span className="text-fg">Pasivo</span>: lo que debe, incluida la plata de los propietarios que todavía no se giró (2815).</li>
+                  <li><span className="text-fg">Patrimonio</span>: el capital y las reservas. Lo crea el contador: el plan de cuentas que trae Leasefy no incluye la clase 3.</li>
+                  <li data-testid="cifra-resultado-del-ejercicio"><span className="text-fg">Resultado del ejercicio</span>: {POR_QUE_EL_RESULTADO_VA_APARTE}</li>
+                  {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? (
+                    <li><span className="text-fg">Resultado de años anteriores</span>: lo que dejaron los años anteriores y todavía no se lleva al patrimonio: falta el asiento de cierre de esos años, que hace tu contador. Va aparte para que el balance cuadre.</li>
+                  ) : null}
+                </ul>
+              </MasDetalles>
             </>
           ) : null}
         </TabsContent>
@@ -699,6 +695,27 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
           </Button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/** Mientras se arma el informe: la forma de la cifra y de las filas, no una rueda sola. */
+function EsqueletoDelInforme({ queEs }: { queEs: string }) {
+  return (
+    <div className="space-y-5" aria-busy="true">
+      <span className="sr-only">{queEs}</span>
+      <div className="space-y-3" aria-hidden="true">
+        <Skeleton className="h-3.5 w-36 rounded-sm bg-surface-muted" />
+        <Skeleton className="h-9 w-56 rounded-sm bg-surface-muted" />
+      </div>
+      <div className="divide-y divide-border rounded-lg border border-border" aria-hidden="true">
+        {Array.from({ length: 5 }, (_, i) => (
+          <div key={i} className="flex items-center gap-4 px-4 py-3">
+            <Skeleton className="h-4 flex-1 rounded-sm bg-surface-muted" />
+            <Skeleton className="h-4 w-28 rounded-sm bg-surface-muted" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

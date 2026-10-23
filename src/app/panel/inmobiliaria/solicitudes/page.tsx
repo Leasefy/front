@@ -6,21 +6,14 @@ import { PqrsMarcadas } from '@/components/pqrs/PqrsMarcadas';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, Lifebuoy, Plus, Wrench, ArrowRight } from '@phosphor-icons/react';
+import { ArrowLeft, Lifebuoy, Plus } from '@phosphor-icons/react';
 import { lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { AnimatedNumber, CrossFade, SearchInput } from '@leasefy/cadence';
+import { SearchInput, type TonoDeCifra } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { sinElNumeroRepetido } from '@/lib/pantalla/pestanas-sin-repetir';
 
-/** El número tal cual se escribía antes (`{n}`): sin separador de miles. */
-const enteroTalCual = (n: number) => String(Math.round(n));
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Spinner } from '@/components/ui/spinner';
@@ -56,14 +49,24 @@ import {
 import { AvisoDeVencidas } from '@/components/inmobiliaria/pqrs/AvisoDeVencidas';
 
 /** Resumen por estado del ciclo PQRS — color por estado (token semántico). */
-const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_PQRS_VACIO }[] = [
-  { key: 'recibidas', dot: 'bg-primary', field: 'recibidas' },
-  { key: 'asignadas', dot: 'bg-primary', field: 'asignadas' },
-  { key: 'enProceso', dot: 'bg-warning', field: 'enProceso' },
-  { key: 'enCotizacion', dot: 'bg-warning', field: 'enCotizacion' },
-  { key: 'resueltas', dot: 'bg-success', field: 'resueltas' },
-  { key: 'cerradas', dot: 'bg-fg-subtle', field: 'cerradas' },
+/** La franja de la tabla: primero lo urgente (el plazo es lo que se cumple o no), luego los estados. */
+const CIFRAS_DE_PQRS: {
+  key: string;
+  etiqueta?: string;
+  field: keyof typeof RESUMEN_PQRS_VACIO;
+  filtro: FiltrosDePqrs['estado'];
+  tono?: TonoDeCifra;
+}[] = [
+  { key: 'vencidas', etiqueta: 'Vencidas', field: 'vencidas', filtro: 'vencidas', tono: 'peligro' },
+  { key: 'porVencer', etiqueta: 'Por vencer', field: 'porVencer', filtro: 'porVencer', tono: 'aviso' },
+  { key: 'recibidas', field: 'recibidas', filtro: 'RECIBIDA', tono: 'voltaje' },
+  { key: 'asignadas', field: 'asignadas', filtro: 'ASIGNADA' },
+  { key: 'enProceso', field: 'enProceso', filtro: 'EN_PROCESO' },
+  { key: 'enCotizacion', field: 'enCotizacion', filtro: 'EN_COTIZACION' },
+  { key: 'resueltas', field: 'resueltas', filtro: 'RESUELTA' },
+  { key: 'cerradas', field: 'cerradas', filtro: 'CERRADA' },
 ];
+
 
 /**
  * Cómo se nombra la vuelta. Espeja `VUELVE_A` de la ficha del contrato: un
@@ -96,8 +99,6 @@ function PqrsContent() {
   const [data, setData] = useState<PqrsListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // ¿Se vio la carga? Entonces las cifras del resumen que llegan cuentan desde 0.
-  const huboCarga = useRef(false);
-  if (isLoading) huboCarga.current = true;
   // El error entero, no un booleano: `FalloDeCarga` decide si reintentar sirve.
   const [error, setError] = useState<unknown>(null);
   const [nuevaOpen, setNuevaOpen] = useState(false);
@@ -224,49 +225,6 @@ function PqrsContent() {
         />
       ) : null}
 
-      {/* Resumen por estado */}
-      <section className="space-y-3">
-        <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {RESUMEN_ITEMS.map((item) => (
-            <div key={item.key} className="rounded-lg border border-border bg-surface p-4">
-              <div className="flex items-center gap-2">
-                <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
-                <span className="text-caption text-fg-muted truncate">{t(k(`estado_${item.key}`))}</span>
-              </div>
-              {/* Un 0 mientras carga o cuando la consulta falló afirma «no hay
-                  ninguna», que no se sabe. Esqueleto mientras carga; raya y
-                  motivo cuando falló. */}
-              {/* Hueco → cifra con un fundido; la cifra que llega después de
-                  cargar cuenta desde 0, y cuenta otra vez cuando cambia. */}
-              <CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
-              {isLoading ? (
-                <div className="mt-2.5 h-7 w-10 rounded bg-surface-muted animate-pulse" aria-hidden="true" />
-              ) : (
-                <p
-                  className="mt-1.5 text-2xl font-semibold tabular-nums text-fg"
-                  data-testid="pqrs-resumen-valor"
-                >
-                  {error ? (
-                    '—'
-                  ) : (
-                    <AnimatedNumber
-                      value={resumen[item.field]}
-                      from={huboCarga.current ? 0 : undefined}
-                      format={enteroTalCual}
-                    />
-                  )}
-                </p>
-              )}
-              </CrossFade>
-              {!isLoading && error ? (
-                <p className="text-caption text-fg-subtle">No se pudo traer</p>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      </section>
-
       {pedidaNoEsta ? (
         <FalloDeCarga
           error={new ApiError(404, `La solicitud ${pqrsPedida} no está en la lista`)}
@@ -279,27 +237,38 @@ function PqrsContent() {
         />
       ) : null}
 
-      {/* Reparación → cotización (PQRS-03) */}
-      <Link
-        href="/panel/inmobiliaria/mantenimientos"
-        className="flex items-center gap-3 rounded-lg border border-border bg-surface hover:bg-surface-muted/50 transition-colors p-4"
-      >
-        <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
-          <Wrench className="w-[18px] h-[18px] text-fg-muted" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-body-sm font-medium text-fg">{t(k('repairFlowTitle'))}</p>
-          <p className="text-caption text-fg-muted mt-0.5">{t(k('repairFlowDesc'))}</p>
-        </div>
-        <ArrowRight className="w-4 h-4 text-fg-muted flex-shrink-0" />
-      </Link>
-
       {/* Solicitudes — la tabla sola dentro de la tarjeta, sin título encima
           (Nico: «nosotros no nombramos las tablas»). */}
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Buscador + filtro por estado: la primera fila de la card, como en
             Documentos. Van DENTRO de la tarjeta y FUERA del `EstadoDeDatos`
             para que no desaparezcan mientras recarga. */}
+        {/* GLOW UP 21-10 · el trabajo de esta pantalla es RESPONDER CADA PQRS DENTRO DEL PLAZO: la
+            franja empieza por lo urgente (vencidas, por vencer) y sigue con los estados; cada cifra
+            filtra la tabla y se vuelve a tocar para quitar el filtro. Antes los estados eran una
+            franja aparte que sólo informaba y un desplegable con lo mismo. */}
+        {/* Revisión de Operación (21-10): ocho cifras grandes —siete en cero— pasan a pestañas
+            de estado con su conteo; las en cero no salen (salvo «Todas» y la elegida), y la de
+            vencidas lleva el punto. Mientras carga o si falló, sin números: nunca un 0 inventado. */}
+        <div className="border-b border-border px-4 py-3 empty:hidden" data-testid="pqrs-por-estado">
+          <PestanasDeEstado
+            etiqueta="Filtrar por plazo y estado"
+            valor={filtros.estado}
+            onCambio={(v) => setFiltros((f) => ({ ...f, estado: v }))}
+            // R2 (revisora r27): «Todas 1 · Asignadas 1» decía el número dos veces.
+            pestanas={sinElNumeroRepetido<FiltrosDePqrs['estado']>([
+              { valor: 'todos' as FiltrosDePqrs['estado'], etiqueta: 'Todas', cuantos: isLoading || error ? null : resumen.total, fija: true, testid: 'pqrs-pestana-todas' }, // r25: «Todas» con su número, como las demás
+              ...CIFRAS_DE_PQRS.map((item) => ({
+                valor: item.filtro,
+                etiqueta: item.etiqueta ?? t(k(`estado_${item.key}`)),
+                cuantos: isLoading || error ? null : resumen[item.field],
+                tono: item.key === 'vencidas' ? ('aviso' as const) : undefined,
+                testid: `pqrs-pestana-${item.key}`,
+              })),
+            ], 'todos', filtros.estado)}
+          />
+          {!isLoading && error ? <p className="mt-2 text-caption text-fg-muted">No se pudo traer el resumen.</p> : null}
+        </div>
         <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row sm:items-center">
           <SearchInput
             value={filtros.texto}
@@ -310,24 +279,6 @@ function PqrsContent() {
             className="w-full sm:w-80"
             data-testid="pqrs-buscar"
           />
-          <Select
-            value={filtros.estado}
-            onValueChange={(v) => setFiltros((f) => ({ ...f, estado: v as FiltrosDePqrs['estado'] }))}
-          >
-            <SelectTrigger className="w-full whitespace-nowrap sm:w-48" data-testid="pqrs-filtro-estado">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los estados</SelectItem>
-              <SelectItem value="vencidas">Vencidas</SelectItem>
-              <SelectItem value="porVencer">Vencen en 2 días hábiles</SelectItem>
-              {PQRS_ESTADOS.map((e) => (
-                <SelectItem key={e} value={e}>
-                  {ESTADO_LABEL[e]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           {hayFiltros && (
             <span className="text-caption text-fg-muted tabular-nums" data-testid="pqrs-cuantas-filtradas">
               {solicitudes.length} de {todas.length}
@@ -336,7 +287,7 @@ function PqrsContent() {
         </div>
 
         {/* El vacío vive dentro del <TableBody> para que se sigan viendo los
-            encabezados. Acá sólo carga y fallo. */}
+            encabezados. Aquí sólo carga y fallo. */}
         <EstadoDeDatos
           cargando={isLoading}
           error={error}
@@ -348,8 +299,10 @@ function PqrsContent() {
             </div>
           }
         >
-          <Table>
-            <TableHeader>
+          {/* Revisora r25 (§25.1 4b): a 390 cada solicitud es una tarjeta (patrón de Deuda del mes), no una
+              tabla encogida que se corre a los lados. Arriba de md, la tabla de siempre. */}
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 <TableHead className="w-10 pl-4 pr-0">
                   <CasillaDeLaPagina ids={pageItems.map((p) => p.id)} marcadas={marcadas} onMarcar={marcar} queSon="solicitudes" />
@@ -363,10 +316,10 @@ function PqrsContent() {
             </TableHeader>
             {/* Buscar, filtrar, paginar o radicar: las filas entran
                 escalonadas y las que sobran salen. */}
-            <TableBodyAnimado>
+            <TableBodyAnimado className="max-md:block">
               {solicitudes.length === 0 ? (
-                <TableRowAnimada key="vacio">
-                  <TableCell colSpan={COLUMNS.length + 1} className="p-0">
+                <TableRowAnimada key="vacio" className="max-md:block">
+                  <TableCell colSpan={COLUMNS.length + 1} className="p-0 max-md:block">
                     {/* Filtrado a cero NO es «no hay solicitudes»: ofrecer
                         «Nueva solicitud» sobre un filtro que esconde 80 filas
                         es mandar a radicar una que ya existe. */}
@@ -392,7 +345,7 @@ function PqrsContent() {
                   return (
                     <TableRowAnimada
                       key={p.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer max-md:grid max-md:grid-cols-[auto_minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3 max-md:last:border-0"
                       data-testid="pqrs-fila"
                       tabIndex={0}
                       onClick={() => setSeleccionada(p)}
@@ -403,29 +356,29 @@ function PqrsContent() {
                         }
                       }}
                     >
-                      <TableCell className="w-10 pl-4 pr-0" onKeyDown={(e) => e.stopPropagation()}>
+                      <TableCell className="w-10 pl-4 pr-0 max-md:col-start-1 max-md:row-span-3 max-md:row-start-1 max-md:block max-md:w-auto max-md:p-0 max-md:pt-0.5" onKeyDown={(e) => e.stopPropagation()}>
                         <CasillaDeLaFila id={p.id} nombre={`la solicitud ${p.radicado}`} marcadas={marcadas} onMarcar={marcar} />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap font-mono text-fg">{p.radicado}</TableCell>
-                      <TableCell className="max-w-[220px]">
+                      <TableCell className="whitespace-nowrap font-mono text-fg max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">{p.radicado}</TableCell>
+                      <TableCell className="max-w-[220px] max-md:col-start-2 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="text-fg font-medium truncate">{p.solicitanteNombre}</p>
                         <p className="text-caption text-fg-muted">{SOLICITANTE_LABEL[p.solicitanteTipo]}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-fg-muted">{nombreDelTipo(p)}</TableCell>
-                      <TableCell className="max-w-[240px]">
+                      <TableCell className="whitespace-nowrap text-fg-muted max-md:hidden">{nombreDelTipo(p)}</TableCell>
+                      <TableCell className="max-w-[240px] max-md:hidden">
                         <span className="text-fg-muted truncate block">
                           {inmuebleSinRepetir(p.inmuebleLabel) ?? t(k('sinInmueble'))}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-fg-muted">
+                      <TableCell className="whitespace-nowrap text-fg-muted max-md:hidden">
                         {p.asignadoANombre ?? t(k('sinAsignar'))}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-3 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                         <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[p.estado])}>
                           {ESTADO_LABEL[p.estado]}
                         </span>
                       </TableCell>
-                      <TableCell className={cn('whitespace-nowrap tabular-nums', sla.vencido ? 'text-danger font-medium' : 'text-fg-muted')}>
+                      <TableCell className={cn('whitespace-nowrap tabular-nums max-md:col-span-2 max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption', sla.vencido ? 'text-danger font-medium' : 'text-fg-muted')}>
                         {sla.texto}
                       </TableCell>
                     </TableRowAnimada>
@@ -460,6 +413,14 @@ function PqrsContent() {
           )}
         </EstadoDeDatos>
       </section>
+
+      {/* Reparación → cotización (PQRS-03): una línea bajo la tabla, no una tarjeta con flecha. */}
+      <p className="text-caption text-fg-muted">
+        {t(k('repairFlowDesc'))}{' '}
+        <Link href="/panel/inmobiliaria/mantenimientos" className="font-medium text-fg underline decoration-border-strong underline-offset-2 hover:decoration-fg">
+          Ver mantenimientos
+        </Link>
+      </p>
 
       <NuevaPqrsDrawer open={nuevaOpen} onOpenChange={setNuevaOpen} onCreated={load} />
       <PqrsDrawer

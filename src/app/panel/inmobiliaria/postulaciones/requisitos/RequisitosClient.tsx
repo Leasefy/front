@@ -32,6 +32,7 @@
  *      desconfiar de la pantalla.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useId, useMemo, useState } from 'react'
 import { CrossFade, MotionIndicator, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Checkbox } from '@/components/ui/checkbox';
@@ -44,6 +45,7 @@ import {
   FileArrowUp,
   TextAa,
   Handshake,
+  Info,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
@@ -252,7 +254,7 @@ function DialogoDeRequisito({
               id="req-detalle-error"
               mensaje={errores.detalle}
               className="mt-0"
-              pista="Lo que escribas acá es lo que el candidato lee. Mientras más preciso, menos papeles mal mandados."
+              pista="Lo que escribas aquí es lo que el candidato lee. Mientras más preciso, menos papeles mal mandados."
             />
           </div>
 
@@ -340,8 +342,14 @@ function FilaDeRequisito({
   ocupado,
   onAlternar,
   onBorrar,
+  repetido = false,
 }: {
   r: RequisitoDePostulacion
+  /**
+   * Revisora r25: en «Todos» el estudio salía en cada perfil con su párrafo y su nota
+   * («No frena la postulación…»). La explicación va UNA vez, en la primera.
+   */
+  repetido?: boolean
   puedeEditar: boolean
   esElPreset: boolean
   ocupado: boolean
@@ -372,8 +380,8 @@ function FilaDeRequisito({
               <Lock className="h-4 w-4 text-fg-subtle" aria-label="No se puede cambiar" />
             ) : null}
           </p>
-          {r.detalle ? <p className="text-sm text-fg-muted">{r.detalle}</p> : null}
-          <p className="text-xs text-fg-subtle">{texto}</p>
+          {r.detalle && !repetido ? <p className="text-sm text-fg-muted">{r.detalle}</p> : null}
+          <p className="text-caption text-fg-subtle">{texto}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -383,9 +391,11 @@ function FilaDeRequisito({
         {r.esElEstudio ? (
           <>
             <Badge variant="secondary">Opcional</Badge>
-            <span className="text-xs text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
-              No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
-            </span>
+            {repetido ? null : (
+              <span className="text-caption text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
+                No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
+              </span>
+            )}
           </>
         ) : puedeEditar && !esElPreset ? (
           <>
@@ -413,7 +423,7 @@ function FilaDeRequisito({
                     if (r.obligatorio !== o.valor) onAlternar()
                   }}
                   className={cn(
-                    'relative isolate px-3 py-1 text-xs transition-colors disabled:opacity-50',
+                    'relative isolate px-3 py-1 text-caption transition-colors disabled:opacity-50',
                     r.obligatorio === o.valor
                       ? 'font-medium text-background'
                       : 'text-fg-muted hover:text-fg',
@@ -441,10 +451,88 @@ function FilaDeRequisito({
           </>
         ) : (
           // Sin permiso, o mientras es el preset: la etiqueta dice cómo está.
-          <Badge variant={r.obligatorio ? 'default' : 'secondary'}>
+          // Revisora r25 (T3): «Obligatorio» iba en azul ×19; el azul es de la acción.
+          <Badge variant={r.obligatorio ? 'secondary' : 'outline'}>
             {r.obligatorio ? 'Obligatorio' : 'Opcional'}
           </Badge>
         )}
+      </div>
+    </StaggerItem>
+  )
+}
+
+/**
+ * Revisora r25: en «Todos» UNA lista de requisitos, cada uno con en qué perfiles aplica
+ * («Obligatorio · Empleado, Independiente»), en vez de las seis listas de perfil enteras
+ * (3.181 px a 1440; «Cédula» cinco veces). El control Obligatorio/Opcional y quitar viven en la
+ * pestaña de cada perfil; aquí el nombre del perfil lleva a ella.
+ */
+function FilaEnTodos({
+  primero,
+  filas,
+  perfiles,
+  onIrAlPerfil,
+}: {
+  primero: RequisitoDePostulacion
+  filas: RequisitoDePostulacion[]
+  perfiles: { perfil: string; nombre: string }[]
+  onIrAlPerfil: (perfil: string) => void
+}) {
+  const { texto, icono: Icono } = claseDe(primero.clase)
+  const nombreDe = (p: string) => perfiles.find((x) => x.perfil === p)?.nombre ?? p
+  // El estudio es opcional para todos (Nico, 04-10-2026), diga lo que diga la fila.
+  const esObligatorio = (r: RequisitoDePostulacion) => r.obligatorio && !r.esElEstudio
+  const obligatorioEn = filas.filter(esObligatorio).map((r) => r.perfil)
+  const opcionalEn = filas.filter((r) => !esObligatorio(r)).map((r) => r.perfil)
+  const enTodos = perfiles.length > 1 && perfiles.every((p) => filas.some((r) => r.perfil === p.perfil))
+  const losPerfiles = (lista: string[]) =>
+    enTodos && lista.length === filas.length ? (
+      <span>todos los perfiles</span>
+    ) : (
+      lista.map((p, i) => (
+        <span key={p}>
+          {i > 0 ? ', ' : ''}
+          <button
+            type="button"
+            className="underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            onClick={() => onIrAlPerfil(p)}
+          >
+            {nombreDe(p)}
+          </button>
+        </span>
+      ))
+    )
+  const renglon = (obligatorio: boolean, lista: string[]) => (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-fg-muted">
+      <Badge variant={obligatorio ? 'secondary' : 'outline'}>{obligatorio ? 'Obligatorio' : 'Opcional'}</Badge>
+      <span>{losPerfiles(lista)}</span>
+    </p>
+  )
+  return (
+    <StaggerItem
+      as="li"
+      className="flex flex-wrap items-start justify-between gap-3 py-3"
+      data-testid={`requisito-${primero.id}`}
+    >
+      <div className="flex min-w-0 gap-3">
+        <Icono weight="duotone" className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" aria-hidden="true" />
+        <div className="min-w-0 space-y-0.5">
+          <p className="flex items-center gap-2 font-medium text-fg">
+            {primero.etiqueta}
+            {primero.esElEstudio ? <Lock className="h-4 w-4 text-fg-subtle" aria-label="No se puede cambiar" /> : null}
+          </p>
+          {primero.detalle ? <p className="text-sm text-fg-muted">{primero.detalle}</p> : null}
+          <p className="text-caption text-fg-subtle">{texto}</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-start gap-1 sm:items-end" data-testid={`en-que-perfiles-${primero.id}`}>
+        {obligatorioEn.length > 0 ? renglon(true, obligatorioEn) : null}
+        {opcionalEn.length > 0 ? renglon(false, opcionalEn) : null}
+        {primero.esElEstudio ? (
+          <span className="text-caption text-fg-subtle" data-testid={`estudio-candado-${primero.id}`}>
+            No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
+          </span>
+        ) : null}
       </div>
     </StaggerItem>
   )
@@ -506,6 +594,20 @@ export function RequisitosClient() {
     ]
   }, [requisitos, perfiles])
 
+  /** «Todos»: un renglón por requisito distinto (misma clase y mismo texto), con sus perfiles. */
+  const unidos = useMemo(() => {
+    const porClave = new Map<string, { primero: RequisitoDePostulacion; filas: RequisitoDePostulacion[] }>()
+    for (const g of grupos) {
+      for (const r of g.items) {
+        const clave = r.esElEstudio ? 'estudio' : `${r.clase}|${r.etiqueta.trim().toLowerCase()}`
+        const ya = porClave.get(clave)
+        if (ya) ya.filas.push(r)
+        else porClave.set(clave, { primero: r, filas: [r] })
+      }
+    }
+    return [...porClave.values()]
+  }, [grupos])
+
   const obligatorios = requisitos.filter((r) => r.obligatorio).length
 
   async function sembrar() {
@@ -563,33 +665,27 @@ export function RequisitosClient() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-2xl space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Requisitos por tipo de inquilino
-          </h1>
-          {/*
-            🔴 QA-IA-A (04-10-2026): decía «Esto es exactamente lo que ve quien
-            se postula», y no era cierto: el formulario de postulación le pide
-            a TODOS la cédula y el extracto bancario, sin leer esta lista (ni
-            conoce los perfiles Empresa y Extranjero). Hasta que el formulario
-            la lea, la pantalla dice cómo se usa hoy.
-          */}
-          <p className="text-sm text-fg-muted" data-testid="requisitos-como-se-usa">
-            Los papeles que le pides a cada perfil: es la política de riesgo de
-            esta inmobiliaria, y la defines tú. Hoy el formulario de postulación
-            le pide a todos la cédula y el extracto bancario; lo demás de esta
-            lista se lo pides al candidato con «Pedir info» desde su ficha.
-          </p>
-        </div>
-        {puedeEditar && !esElPreset && perfiles.length > 0 ? (
-          <Button size="sm" onClick={() => setAgregando(true)} data-testid="abrir-agregar">
-            <Plus className="mr-1.5 h-4 w-4" />
-            Agregar requisito
-          </Button>
-        ) : null}
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      {/*
+        🔴 QA-IA-A (04-10-2026): decía «Esto es exactamente lo que ve quien
+        se postula», y no era cierto: el formulario de postulación le pide
+        a TODOS la cédula y el extracto bancario, sin leer esta lista (ni
+        conoce los perfiles Empresa y Extranjero). Hasta que el formulario
+        la lea, la pantalla dice cómo se usa hoy.
+      */}
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo="Requisitos por tipo de inquilino"
+        descripcion="Los papeles que le pides a cada perfil: es la política de riesgo de esta inmobiliaria."
+        accionPrincipal={
+          puedeEditar && !esElPreset && perfiles.length > 0 ? (
+            <Button size="sm" onClick={() => setAgregando(true)} data-testid="abrir-agregar">
+              <Plus className="mr-1.5 h-4 w-4" />
+              Agregar requisito
+            </Button>
+          ) : null
+        }
+      />
 
       {datos.noHabilitado ? (
         <Card>
@@ -666,18 +762,35 @@ export function RequisitosClient() {
                 )}
               </div>
             ) : null}
+            {/* Glow up 22-10: la descripción del encabezado queda en UNA línea; cómo se usa
+                hoy la lista (QA-IA-A) se dice una vez, aquí, pegado a ella. */}
+            <p
+              className="flex items-start gap-2 border-b border-border bg-surface-muted/60 px-6 py-2.5 text-caption text-fg-muted"
+              data-testid="requisitos-como-se-usa"
+            >
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              Hoy el formulario de postulación le pide a todos la cédula y el extracto bancario; lo demás
+              de esta lista se lo pides al candidato con «Pedir info» desde su ficha.
+            </p>
             <CardHeader>
-              <CardTitle className="text-base">
+              <CardTitle className="text-base font-medium">
                 {perfil
                   ? (perfiles.find((p) => p.perfil === perfil)?.nombre ?? perfil)
                   : 'Todos los perfiles'}
               </CardTitle>
               {requisitos.length > 0 ? (
                 <p className="text-sm text-fg-muted" data-testid="resumen">
-                  {requisitos.length}{' '}
-                  {requisitos.length === 1 ? 'requisito' : 'requisitos'}, de los
-                  cuales {obligatorios}{' '}
-                  {obligatorios === 1 ? 'es obligatorio' : 'son obligatorios'}.
+                  {perfil ? (
+                    <>
+                      {requisitos.length}{' '}
+                      {requisitos.length === 1 ? 'requisito' : 'requisitos'}, de los
+                      cuales {obligatorios}{' '}
+                      {obligatorios === 1 ? 'es obligatorio' : 'son obligatorios'}.
+                    </>
+                  ) : (
+                    // En «Todos» se cuentan los requisitos DISTINTOS (los de la lista), no uno por perfil.
+                    `${unidos.length} ${unidos.length === 1 ? 'requisito' : 'requisitos'} en ${grupos.length} ${grupos.length === 1 ? 'perfil' : 'perfiles'}.`
+                  )}
                 </p>
               ) : null}
             </CardHeader>
@@ -715,33 +828,23 @@ export function RequisitosClient() {
                     ))}
                   </Stagger>
                 ) : (
-                  <div className="space-y-6" data-testid="lista-de-requisitos">
-                    {grupos.map((g) => (
-                      <section key={g.perfil} data-testid={`grupo-${g.perfil}`}>
-                        <h3 className="mb-1 flex items-baseline gap-2 text-sm font-medium text-fg">
-                          {g.nombre}
-                          <span className="text-xs font-normal text-fg-subtle">
-                            {g.items.length}{' '}
-                            {g.items.length === 1 ? 'requisito' : 'requisitos'}
-                          </span>
-                        </h3>
-                        <Stagger as="ul" className="divide-y border-t">
-                          {g.items.map((r) => (
-                            <FilaDeRequisito
-                              key={r.id}
-                              r={r}
-                              puedeEditar={puedeEditar}
-                              esElPreset={esElPreset}
-                              ocupado={tocando === r.id}
-                              onAlternar={() =>
-                                void alternarObligatorio(r.id, !r.obligatorio)
-                              }
-                              onBorrar={() => setPorBorrar(r)}
-                            />
-                          ))}
-                        </Stagger>
-                      </section>
-                    ))}
+                  <div data-testid="lista-de-requisitos">
+                    <Stagger as="ul" className="divide-y" data-testid="lista-de-todos">
+                      {unidos.map((u) => (
+                        <FilaEnTodos
+                          key={u.primero.id}
+                          primero={u.primero}
+                          filas={u.filas}
+                          perfiles={perfiles}
+                          onIrAlPerfil={setPerfil}
+                        />
+                      ))}
+                    </Stagger>
+                    {puedeEditar && !esElPreset ? (
+                      <p className="border-t border-border pt-3 text-caption text-fg-muted" data-testid="todos-como-se-edita">
+                        Para volver uno obligatorio u opcional, o dejar de pedirlo, entra a su perfil.
+                      </p>
+                    ) : null}
                   </div>
                 )}
                 </CrossFade>

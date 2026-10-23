@@ -129,9 +129,12 @@ describe('Pipeline — fallo de carga (P1)', () => {
     expect($('[data-testid="fallo-de-carga"]')).not.toBeNull();
     expect($('[data-testid="board"]')).toBeNull();
     expect($('[data-testid="sin-datos"]')).toBeNull();
+    // Nico (22-10-2026): la barra del embudo en vez de las 4 cifras; sus dos números (en proceso y
+    // cerrados este mes) dicen «—», y la conversión ni aparece.
     const tiles = estadosDeLosTiles();
-    expect(tiles).toHaveLength(4);
+    expect(tiles).toHaveLength(2);
     expect(tiles.every((e) => e === 'fallo')).toBe(true);
+    expect($('[data-testid="conversion-del-embudo"]')).toBeNull();
     // Ni el contador «0 de 0 leads».
     expect(contenedor.textContent).not.toMatch(/0 de 0/);
   });

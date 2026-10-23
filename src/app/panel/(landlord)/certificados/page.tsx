@@ -25,6 +25,7 @@ import { SealCheck } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { DocumentosTributarios } from '@/components/landlord/portal/DocumentosTributarios';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
 import type { MisCertificados } from '@/lib/api/tesoreria.types';
@@ -61,7 +62,16 @@ export default function MisCertificadosPage() {
       <EncabezadoDePantalla
         seccion="Mi plata"
         titulo="Certificados y facturas"
-        descripcion="Lo que los inquilinos te retuvieron en el año, para tu declaración. La cuota quedó saldada con el canon completo y lo retenido se te descontó en tu liquidación: es tu impuesto, y esto es el papel con el que lo acreditas."
+        descripcion="Lo que los inquilinos te retuvieron en el año, para tu declaración."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Qué es lo retenido?" titulo="Lo retenido es tu impuesto">
+            {/* Revisora r25: salió de la descripción (3 renglones). */}
+            <p className="text-body-sm text-fg">
+              La cuota quedó saldada con el canon completo y lo retenido se te descontó en tu liquidación: es tu
+              impuesto, y esto es el papel con el que lo acreditas.
+            </p>
+          </ParaEntenderMas>
+        }
       />
 
       {/* Nico, 11-10-2026: la certificación del mandatario y las facturas de la

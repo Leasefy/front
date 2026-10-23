@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Wrench } from '@phosphor-icons/react';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -198,7 +199,16 @@ export default function AprobarReparacionesPage() {
         <EncabezadoDePantalla
           seccion="Solicitudes"
           titulo="Aprobar reparaciones"
-          descripcion="Las reparaciones a tu cargo las apruebas tú. Nada se te descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día."
+          descripcion="Las reparaciones a tu cargo: apruébalas o recházalas."
+          ayuda={
+            <ParaEntenderMas etiqueta="¿Cuándo se me descuenta?" titulo="Nada se te descuenta sin tu aprobación">
+              {/* Revisora r25: salió de la descripción (2 renglones). */}
+              <p className="text-body-sm text-fg">
+                Las reparaciones a tu cargo las apruebas tú. Nada se te descuenta sin tu aprobación, salvo una
+                emergencia, que se te avisa el mismo día.
+              </p>
+            </ParaEntenderMas>
+          }
         />
         <EstadoDeDatos
           cargando={cargando}

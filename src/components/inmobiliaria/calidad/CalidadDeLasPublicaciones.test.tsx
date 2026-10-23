@@ -154,9 +154,10 @@ describe('Niti: la pantalla propia y la pestaña de Portales', () => {
     const raizDeLaPantalla = q('[data-testid="calidad-de-las-publicaciones"]');
     expect(raizDeLaPantalla?.className).toContain('p-6');
     expect(raizDeLaPantalla?.className).toContain('lg:p-8');
-    // Revisora r24 (Calidad #2): el agente en el sobretítulo y el h1 = el riel.
+    // Revisora r25: el sobretítulo es la sección del menú («Agentes IA»); el nombre del agente
+    // va en el cuerpo (la ayuda: «Niti revisa tus inmuebles…»). El h1 = el riel.
     expect(q('h1')?.textContent).toBe('Calidad de publicaciones');
-    expect(q('[data-testid="calidad-encabezado"]')?.textContent).toContain('Agentes IA · Niti');
+    expect(q('[data-testid="calidad-encabezado"]')?.textContent).toContain('Agentes IA');
   });
 
   it('como pestaña: sin h1 propio ni margen (Portales ya los pone)', async () => {

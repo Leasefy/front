@@ -18,7 +18,7 @@ void React;
 
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 
-import { RenovacionesTable } from './RenovacionesTable';
+import { RenovacionesTable, cuantoFalta } from './RenovacionesTable';
 import type { Renovacion } from '@/lib/types/inmobiliaria';
 
 function renovacion(overrides: Partial<Renovacion> = {}): Renovacion {
@@ -101,10 +101,13 @@ describe('<RenovacionesTable>', () => {
     expect(vacio!.textContent).toContain('Sin renovaciones en curso');
   });
 
-  it('con filtros puestos el vacío dice «ningún resultado» y ofrece quitarlos', () => {
+  it('con filtros puestos el vacío dice «ningún resultado» y ofrece quitarlos', async () => {
     render({ data: [renovacion()] });
 
-    act(() => chip('Críticas').click());
+    // «Críticas» en cero ya no sale (pestañas de estado, sin ceros): el
+    // filtro que no encuentra nada es la búsqueda.
+    escribir('zzz-no-existe');
+    await esperarLasSalidas();
     const vacio = container.querySelector('[data-testid="sin-datos"]')!;
     expect(vacio.getAttribute('data-caso')).toBe('filtros');
 
@@ -136,8 +139,10 @@ describe('<RenovacionesTable>', () => {
     expect(fila.textContent).toContain('45 días');
     expect(fila.textContent).toContain('$\u00a02.100.000');
     expect(fila.textContent).toContain('Pendiente');
-    // Sin propuesta no se pinta una: raya.
-    expect(fila.textContent).toContain('—');
+    // Sin propuesta en ninguna fila, la columna «Propuesto» no se pinta
+    // (revisora r25: decía «—» en las diez filas).
+    expect(container.querySelector('thead')!.textContent).not.toContain('proposed');
+    expect(container.querySelector('thead')!.textContent).not.toContain('Propuesto');
   });
 
   it('los conteos de los cajones se cuentan sobre la lista real', async () => {
@@ -280,7 +285,7 @@ describe('<RenovacionesTable> — lo que se arregló el 19-09', () => {
     render({ data: [renovacion()] });
     const franja = container.querySelector('[data-testid="filtro-estado"]')!.closest('div.flex.flex-col.gap-3')!;
     expect(franja.querySelector('[data-testid="buscar-renovaciones"]')).not.toBeNull();
-    expect(franja.textContent).toContain('Críticas');
+    expect(franja.textContent).toContain('Urgentes');
   });
 
   it('con la búsqueda puesta dice el alcance y deja quitarlo', () => {
@@ -308,5 +313,27 @@ describe('estaCerrada (CONTR-9, QA de agentes 17-10)', () => {
     expect(estaCerrada('completed')).toBe(true);
     expect(estaCerrada('terminated')).toBe(true);
     for (const s of ['pending', 'notified', 'negotiating', 'approved', 'signed']) expect(estaCerrada(s)).toBe(false);
+  });
+
+  it('🔴 B1: «vence hoy» sólo hoy; lo que ya venció dice hace cuánto', () => {
+    expect(cuantoFalta(-3)).toBe('venció hace 3 días');
+    expect(cuantoFalta(-1)).toBe('venció hace 1 día');
+    expect(cuantoFalta(0)).toBe('vence hoy');
+    expect(cuantoFalta(3)).toBe('en 3 días');
+    render({ data: [renovacion({ id: 'v', daysUntilExpiry: -3, urgencyBucket: '0-30' })] });
+    const fila = container.querySelector('[data-testid="renovacion-v"]')!;
+    expect(fila.textContent).toContain('venció hace 3 días');
+    expect(fila.textContent).not.toContain('vence hoy');
+  });
+
+  it('el nombre que llegó en MAYÚSCULAS se lee en tipo oración, como en Contratos', () => {
+    render({ data: [renovacion({ tenantName: 'JESUS DAVID RODRIGUEZ' })] });
+    expect(container.querySelector('[data-testid="renovacion-r-1"]')!.textContent).toContain('Jesus David Rodriguez');
+  });
+
+  it('con todas en el mismo estado la columna se va y el estado se dice una vez', () => {
+    render({ data: [renovacion({ id: 'a' }), renovacion({ id: 'b', tenantName: 'Otro' })] });
+    expect(container.querySelector('[data-testid="estado-de-todas"]')!.textContent).toContain('Pendiente');
+    expect(container.querySelector('[data-testid="renovacion-a"]')!.textContent).not.toContain('Pendiente');
   });
 });

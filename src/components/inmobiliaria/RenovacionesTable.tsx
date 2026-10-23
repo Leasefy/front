@@ -78,7 +78,10 @@ import {
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Chip, Presence } from '@leasefy/cadence';
+import { Presence } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { textoLegible } from '@/lib/renovaciones/texto-legible';
+import type { ReactNode } from 'react';
 
 import type { Renovacion, RenovacionStatus } from '@/lib/types/inmobiliaria';
 import {
@@ -129,6 +132,12 @@ interface RenovacionesTableProps {
    * un menú termina ofreciendo cinco acciones que no existen.
    */
   onAbrir?: (renovacion: Renovacion) => void;
+  /**
+   * El último renglón de la tarjeta, antes de la paginación: las acciones
+   * masivas (revisora r25: «Marca renovaciones…» quedaba suelto debajo de la
+   * tabla; en Contratos va en su pie).
+   */
+  pie?: ReactNode;
   /** Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas. */
   marcadas?: ReadonlySet<string>;
   onMarcar?: (ids: readonly string[], si: boolean) => void;
@@ -200,6 +209,19 @@ const ORDEN_DE_ESTADO: Record<RenovacionStatus, number> = {
 
 const COLUMNAS = 6;
 
+/**
+ * B1 (revisora r25): «vence hoy» salía también en los contratos que vencieron
+ * hace tres días (`<= 0`). Hoy es hoy; antes, «venció hace N días».
+ */
+export function cuantoFalta(dias: number): string {
+  if (dias === 0) return 'vence hoy';
+  if (dias < 0) {
+    const n = Math.abs(dias);
+    return `venció hace ${n} ${n === 1 ? 'día' : 'días'}`;
+  }
+  return `en ${dias} ${dias === 1 ? 'día' : 'días'}`;
+}
+
 function FilasDeCarga() {
   return (
     <>
@@ -224,6 +246,7 @@ export function RenovacionesTable({
   onAbrir,
   marcadas,
   onMarcar,
+  pie,
 }: RenovacionesTableProps) {
   const conCasillas = Boolean(marcadas && onMarcar);
   const { t, locale } = useI18n();
@@ -351,19 +374,30 @@ export function RenovacionesTable({
     setBusqueda('');
   };
 
-  const chip = (valor: BucketFilter, etiqueta: string, tono: string) => (
-    <Chip selected={bucketFilter === valor} onClick={() => setBucketFilter(valor)}>
-      {etiqueta}
-      <span
-        className={cn(
-          'ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums',
-          bucketFilter === valor && valor !== 'all' ? tono : 'bg-muted',
-        )}
-      >
-        {bucketCounts[valor]}
-      </span>
-    </Chip>
-  );
+  /*
+   * Revisora r25 (T2): las cubetas eran chips rectangulares de colores hechos a
+   * mano, con «Próximas» en azul. Ahora son las pestañas de estado de la casa:
+   * conteo en mono, sin ceros (salvo «Todas») y el punto ámbar en «Críticas».
+   */
+  const pestanasDeUrgencia = [
+    { valor: 'all' as const, etiqueta: t('inmobiliaria.finance.renewals.all'), cuantos: bucketCounts.all, fija: true },
+    { valor: '0-30' as const, etiqueta: t('inmobiliaria.finance.renewals.critical'), cuantos: bucketCounts['0-30'], tono: 'aviso' as const },
+    { valor: '31-60' as const, etiqueta: t('inmobiliaria.finance.renewals.urgent'), cuantos: bucketCounts['31-60'] },
+    { valor: '61-90' as const, etiqueta: t('inmobiliaria.finance.renewals.upcoming'), cuantos: bucketCounts['61-90'] },
+    // El cuarto, para que los de al lado sumen lo que dice «Todas»; en cero no sale.
+    { valor: '90+' as const, etiqueta: 'Más de 90 días', cuantos: bucketCounts['90+'] },
+  ];
+
+  /*
+   * Revisora r25: «Propuesto» decía «—» en las diez filas y «Estado»
+   * «Pendiente» en las diez. Una columna que dice lo mismo en todas las filas
+   * no informa: «Propuesto» sale sólo si alguna tiene propuesta, y el estado,
+   * si todas van en el mismo, se dice UNA vez al pie.
+   */
+  const hayPropuestas = visibles.some((r) => Boolean(r.negotiatedRent || r.proposedRent));
+  const estadoUnico =
+    visibles.length > 1 && visibles.every((r) => r.status === visibles[0].status) ? visibles[0].status : null;
+  const columnas = 4 + (hayPropuestas ? 1 : 0) + (estadoUnico ? 0 : 1);
 
   return (
     <section
@@ -377,17 +411,13 @@ export function RenovacionesTable({
           Ley 820 son 90 días), el estado, y el buscador. */}
       <div className="flex flex-col gap-3 border-b border-border px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          {chip('all', t('inmobiliaria.finance.renewals.all'), 'bg-muted')}
-          {chip('0-30', t('inmobiliaria.finance.renewals.critical'), 'bg-danger-soft text-danger')}
-          {chip('31-60', t('inmobiliaria.finance.renewals.urgent'), 'bg-warning-soft text-warning')}
-          {chip('61-90', t('inmobiliaria.finance.renewals.upcoming'), 'bg-primary-soft text-primary')}
-          {/* El cuarto, para que los tres de al lado sumen lo que dice «Todas».
-              Sólo aparece si de verdad hay alguna: en la mayoría de las
-              inmobiliarias la lista se corta en 90 días y un chip en cero
-              sería una puerta a un cuarto vacío. */}
-          {bucketCounts['90+'] > 0
-            ? chip('90+', 'Más de 90 días', 'bg-muted text-muted-foreground')
-            : null}
+          <PestanasDeEstado
+            pestanas={pestanasDeUrgencia}
+            valor={bucketFilter}
+            onCambio={setBucketFilter}
+            etiqueta="Cuánto le falta a cada contrato para vencer"
+            data-testid="pestanas-de-renovaciones"
+          />
           <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border lg:block" />
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <SelectTrigger
@@ -433,7 +463,7 @@ export function RenovacionesTable({
         initial={false}
         distance="xs"
         as="p"
-        className="border-b border-border px-5 py-2 text-xs text-fg-muted"
+        className="border-b border-border px-5 py-2 text-caption text-fg-muted"
         data-testid="alcance-de-renovaciones"
       >
         {filtradas.length} de {data.length}{' '}
@@ -462,8 +492,12 @@ export function RenovacionesTable({
             <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.renewals.property')}</SortableHeader>
             <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.renewals.expiration')}</SortableHeader>
             <SortableHeader field="currentRent" derecha>{t('inmobiliaria.finance.renewals.currentRent')}</SortableHeader>
-            <TableHead className="whitespace-nowrap text-right">{t('inmobiliaria.finance.renewals.proposed')}</TableHead>
-            <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>
+            {hayPropuestas ? (
+              <TableHead className="whitespace-nowrap text-right">{t('inmobiliaria.finance.renewals.proposed')}</TableHead>
+            ) : null}
+            {estadoUnico ? null : (
+              <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>
+            )}
             <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
@@ -475,7 +509,7 @@ export function RenovacionesTable({
               está al día sin haberlo podido verificar. */}
           {!isLoading && Boolean(error) && (
             <TableRow>
-              <TableCell colSpan={COLUMNAS + (conCasillas ? 1 : 0)} className="p-0">
+              <TableCell colSpan={columnas + (conCasillas ? 1 : 0)} className="p-0">
                 <FalloDeCarga error={error} queEs="las renovaciones" onReintentar={onReintentar} />
               </TableCell>
             </TableRow>
@@ -483,7 +517,7 @@ export function RenovacionesTable({
 
           {!isLoading && !error && filtradas.length === 0 && (
             <TableRow>
-              <TableCell colSpan={COLUMNAS + (conCasillas ? 1 : 0)} className="p-0">
+              <TableCell colSpan={columnas + (conCasillas ? 1 : 0)} className="p-0">
                 <SinDatos
                   queSon="renovaciones"
                   icono={ArrowsClockwise}
@@ -529,9 +563,9 @@ export function RenovacionesTable({
                   className="max-w-[320px] px-5 py-4 max-md:order-1 max-md:block max-md:max-w-none max-md:p-0"
                   title={[item.propertyAddress, item.propietarioName ? `Propietario: ${item.propietarioName}` : null, item.tenantPhone].filter(Boolean).join(' · ')}
                 >
-                  <p className="truncate font-medium text-foreground">{item.propertyTitle}</p>
+                  <p className="truncate font-medium text-foreground">{textoLegible(item.propertyTitle)}</p>
                   <p className="truncate text-caption text-muted-foreground">
-                    {item.tenantName || '—'}
+                    {textoLegible(item.tenantName) || '—'}
                     {rotuloDelContrato(item) ? ` · ${rotuloDelContrato(item)}` : ''}
                   </p>
                 </TableCell>
@@ -550,9 +584,7 @@ export function RenovacionesTable({
                           : 'text-muted-foreground',
                     )}
                   >
-                    {item.daysUntilExpiry <= 0
-                      ? 'vence hoy'
-                      : `en ${item.daysUntilExpiry} ${item.daysUntilExpiry === 1 ? 'día' : 'días'}`}
+                    {cuantoFalta(item.daysUntilExpiry)}
                   </span>
                 </TableCell>
 
@@ -560,6 +592,7 @@ export function RenovacionesTable({
                   {formatCurrency(item.currentRent)}
                 </TableCell>
 
+                {hayPropuestas ? (
                 <TableCell className="whitespace-nowrap px-5 py-4 text-right font-mono tabular-nums max-md:order-5 max-md:block max-md:p-0">
                   {propuesto ? (
                     <div className="flex flex-col items-end">
@@ -576,7 +609,9 @@ export function RenovacionesTable({
                     <span className="text-muted-foreground max-md:hidden">—</span>
                   )}
                 </TableCell>
+                ) : null}
 
+                {estadoUnico ? null : (
                 <TableCell className="whitespace-nowrap px-5 py-4 max-md:order-2 max-md:block max-md:p-0 max-md:text-right">
                   <span
                     className={cn(
@@ -587,6 +622,7 @@ export function RenovacionesTable({
                     {getRenovacionStatusLabel(item.status)}
                   </span>
                 </TableCell>
+                )}
 
                 {/* 🔴 Acá vivía un menú con CINCO items —«Ver detalle»,
                     «Notificar al inquilino», «Iniciar negociación», «Calcular
@@ -606,6 +642,15 @@ export function RenovacionesTable({
           })}
         </TableBodyAnimado>
       </Table>
+
+      {/* El estado, UNA vez, cuando todas van en el mismo (revisora r25). */}
+      {estadoUnico && filtradas.length > 0 ? (
+        <p className="border-t border-border px-5 py-2.5 text-caption text-fg-muted" data-testid="estado-de-todas">
+          {visibles.length === data.length ? 'Todas' : `Las ${visibles.length} abiertas`} van en «{getRenovacionStatusLabel(estadoUnico)}».
+        </p>
+      ) : null}
+
+      {pie}
 
       {/* Pie: sólo si hay más de una página. */}
       {shouldPaginate && (

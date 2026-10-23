@@ -148,15 +148,18 @@ function RenovacionesContent() {
         onAbrir={openWorkflow}
         marcadas={puedeProponerEnBloque ? marcadas : undefined}
         onMarcar={puedeProponerEnBloque ? marcar : undefined}
+        pie={
+          /* Acciones masivas (Nico, 10-10-2026): la propuesta con el IPC a
+             varias. En el pie de la MISMA tabla, como en Contratos (r25). */
+          puedeProponerEnBloque && renovaciones.length > 0 ? (
+            <RenovacionesMarcadas
+              marcadas={renovaciones.filter((r) => marcadas.has(r.id))}
+              onQuitar={quitarLaSeleccion}
+              onCambiaron={() => void recargarRenovaciones()}
+            />
+          ) : null
+        }
       />
-      {/* Acciones masivas (Nico, 10-10-2026): la propuesta con el IPC a varias. */}
-      {puedeProponerEnBloque && renovaciones.length > 0 && (
-        <RenovacionesMarcadas
-          marcadas={renovaciones.filter((r) => marcadas.has(r.id))}
-          onQuitar={quitarLaSeleccion}
-          onCambiaron={() => void recargarRenovaciones()}
-        />
-      )}
 
       {/* Renovacion Workflow Sheet */}
       {selectedRenovacion && (

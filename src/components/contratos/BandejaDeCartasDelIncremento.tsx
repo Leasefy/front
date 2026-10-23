@@ -187,6 +187,9 @@ function Loseta({
   testid: string;
 }) {
   const grita = urgente && cuantas > 0;
+  // Revisora r25: «0 sin constancia · 0 enviadas» repetía la pantalla de al
+  // lado con dos ceros. El conteo en cero no sale; el renglón dice lo que hay.
+  if (cuantas === 0) return null;
   return (
     <Link
       href={`${RUTA_DE_LAS_CARTAS}?estado=${testid}`}

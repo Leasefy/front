@@ -129,7 +129,9 @@ describe('<BandejaDeCartasDelIncremento> — el tablero (D6)', () => {
   });
 
   it('cada loseta es un CAMINO a la cola ya filtrada', async () => {
-    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
+    api.bandejaDeCartas.mockResolvedValue(
+      bandeja([carta(), carta({ contractId: 'c2', estado: 'VENCIDA_SIN_CONSTANCIA', alertaRoja: true }), carta({ contractId: 'c3', estado: 'ENVIADA' })]),
+    );
     await montar();
     const RUTA = '/panel/inmobiliaria/contratos/renovaciones/cartas';
     expect($('loseta-sin-constancia')?.getAttribute('href')).toBe(`${RUTA}?estado=sin-constancia`);
@@ -149,10 +151,12 @@ describe('<BandejaDeCartasDelIncremento> — el tablero (D6)', () => {
     expect(loseta.className).toContain('destructive');
   });
 
-  it('en cero, la loseta roja no grita', async () => {
-    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()], { vencidasSinConstancia: 0 }));
+  it('en cero, la loseta no sale (revisora r25: dos ceros que repetían la cola)', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()], { vencidasSinConstancia: 0, enviadas: 0 }));
     await montar();
-    expect($('loseta-sin-constancia')!.className).not.toContain('destructive');
+    expect($('loseta-sin-constancia')).toBeNull();
+    expect($('loseta-enviadas')).toBeNull();
+    expect($('loseta-por-enviar')!.textContent).toContain('1');
   });
 
   it('sin migración lo dice, sin esconder el tablero', async () => {

@@ -2,7 +2,7 @@
 
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
-import { MapPin, CaretRight, Check } from '@phosphor-icons/react';
+import { MapPin, Check } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatArea } from '@/lib/format';
@@ -55,8 +55,8 @@ export function PropertyMatchCard({
         {/* Match Score Badge */}
         <div className="relative w-14 h-14 rounded-sm overflow-hidden flex-shrink-0">
           <PortadaDelInmueble property={property} alt={property.title} sizes="56px" compacta />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-            <span className="text-lg font-bold text-white">{matchScore}%</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+            <span className="font-mono text-sm tabular-nums text-white">{matchScore} %</span>
           </div>
         </div>
 
@@ -74,7 +74,7 @@ export function PropertyMatchCard({
         {/* Probability Badge */}
         <div
           className={cn(
-            'text-[10px] font-medium px-2 py-1 rounded-sm border',
+            'text-caption px-2 py-1 rounded-sm border',
             probabilityColors.bg,
             probabilityColors.text,
             probabilityColors.border
@@ -83,7 +83,6 @@ export function PropertyMatchCard({
           {acceptanceProbability === 'alta' ? 'Alta' : acceptanceProbability === 'media' ? 'Media' : 'Baja'}
         </div>
 
-        <CaretRight className="w-4 h-4 text-plan-muted group-hover:text-plan-secondary transition-colors" />
       </>
     );
 
@@ -136,14 +135,14 @@ export function PropertyMatchCard({
           getMatchScoreBgColor(matchScore)
         )}
       >
-        <span className="text-sm font-bold text-white">{matchScore}%</span>
-        <span className="text-[10px] text-white/80">match</span>
+        <span className="font-mono text-sm tabular-nums text-white">{matchScore} %</span>
+        <span className="text-caption text-white/80">afinidad</span>
       </div>
 
       {/* Probability Badge - Top Right */}
       <div
         className={cn(
-          'absolute top-3 right-3 text-[10px] font-medium px-2 py-1 rounded-sm border backdrop-blur-sm',
+          'absolute top-3 right-3 text-caption px-2 py-1 rounded-sm border',
           'bg-surface/90',
           acceptanceProbability === 'alta' ? 'text-success border-success/30' :
           acceptanceProbability === 'media' ? 'text-warning border-warning/30' :
@@ -157,11 +156,11 @@ export function PropertyMatchCard({
       <div className="absolute bottom-0 left-0 right-0 p-3">
         <div className="flex items-center gap-1.5 mb-1">
           <MapPin className="w-3 h-3 text-white/70" />
-          <span className="text-[11px] text-white/80">
+          <span className="text-caption text-white/80">
             {[property.neighborhood, property.city].filter(Boolean).join(', ')}
           </span>
         </div>
-        <p className="text-lg font-bold text-white">
+        <p className="font-mono text-body tabular-nums text-white">
           {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
           {property.monthlyRent != null ? (
             <>
@@ -241,30 +240,16 @@ export function PropertyMatchCard({
         {onViewProperty ? (
           <button
             onClick={onViewProperty}
-            className={cn(
-              'flex items-center justify-center gap-2 mt-4 py-2.5 px-4 w-full',
-              'text-sm font-medium rounded-sm transition-colors',
-              matchScore >= 70
-                ? 'bg-plan-primary text-white hover:bg-plan-primary/90'
-                : 'bg-surface-muted text-plan-primary hover:bg-surface-muted/80'
-            )}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm text-fg transition-colors hover:bg-surface-muted"
           >
-            Ver propiedad
-            <CaretRight className="w-4 h-4" />
+            Ver el inmueble
           </button>
         ) : (
           <Link
             href={`/propiedades/${property.id}`} target="_blank" rel="noopener noreferrer"
-            className={cn(
-              'flex items-center justify-center gap-2 mt-4 py-2.5 px-4 w-full',
-              'text-sm font-medium rounded-sm transition-colors',
-              matchScore >= 70
-                ? 'bg-plan-primary text-white hover:bg-plan-primary/90'
-                : 'bg-surface-muted text-plan-primary hover:bg-surface-muted/80'
-            )}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm text-fg transition-colors hover:bg-surface-muted"
           >
-            Ver propiedad
-            <CaretRight className="w-4 h-4" />
+            Ver el inmueble
           </Link>
         )}
       </div>

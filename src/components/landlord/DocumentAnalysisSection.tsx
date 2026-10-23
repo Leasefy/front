@@ -5,7 +5,6 @@ import {
   Brain,
   CheckCircle,
   XCircle,
-  SpinnerGap,
   Clock,
   Warning,
   Shield,
@@ -14,7 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Appear, Collapse } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Badge } from '@/components/ui/badge';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import { useDocumentAnalysis } from '@/lib/hooks/useDocumentAnalysis';
 import { toast } from '@/components/ui/toast';
@@ -37,7 +36,7 @@ interface DocumentAnalysisSectionProps {
 
 const STATUS_CONFIG = {
   PENDING: { icon: Clock, color: 'text-fg-subtle', bg: 'bg-surface-muted', label: 'Pendiente' },
-  PROCESSING: { icon: SpinnerGap, color: 'text-primary', bg: 'bg-primary-soft', label: 'Procesando...' },
+  PROCESSING: { icon: Clock, color: 'text-fg-muted', bg: 'bg-surface-muted', label: 'Procesando…' },
   COMPLETED: { icon: CheckCircle, color: 'text-success', bg: 'bg-success-soft', label: 'Completado' },
   FAILED: { icon: XCircle, color: 'text-danger', bg: 'bg-danger-soft', label: 'Error' },
 } as const;
@@ -72,18 +71,21 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
   const StatusIcon = config.icon;
 
   return (
-    <div className={cn('rounded-lg border border-border overflow-hidden', config.bg)}>
+    // La tarjeta en papel; el estado lo dicen el ícono y la línea gris (antes
+    // la tarjeta entera se teñía del color del estado).
+    <div className="rounded-lg border border-border overflow-hidden bg-surface">
       {/* Header */}
       <button
         type="button"
         onClick={() => result.status === 'COMPLETED' && setExpanded(!expanded)}
         className={cn(
           'w-full flex items-center gap-3 px-4 py-3 text-left',
-          result.status === 'COMPLETED' && 'cursor-pointer hover:bg-black/[0.02]'
+          result.status === 'COMPLETED' && 'cursor-pointer hover:bg-surface-muted'
         )}
       >
         <StatusIcon
-          className={cn('w-5 h-5 flex-shrink-0', config.color, result.status === 'PROCESSING' && 'animate-spin')}
+          className={cn('w-5 h-5 flex-shrink-0', config.color)}
+          aria-hidden="true"
         />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-fg truncate">
@@ -92,12 +94,12 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           <p className="text-caption text-fg-muted">
             {config.label}
             {result.status === 'COMPLETED' && result.scoreFinal !== null && (
-              <> &middot; Score: <span className="font-medium">{result.scoreFinal}/100</span></>
+              <> &middot; Puntaje: <span className="font-mono text-fg">{result.scoreFinal}/100</span></>
             )}
           </p>
         </div>
 
-        {/* Score badge */}
+        {/* Puntaje */}
         {result.status === 'COMPLETED' && result.scoreFinal !== null && (
           <div className="flex items-center gap-2">
             <div className="w-12">
@@ -134,7 +136,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           {/* Justification */}
           {result.justificacion && (
             <div>
-              <p className="text-caption font-medium text-fg-muted mb-1">Justificacion</p>
+              <p className="text-caption text-fg-subtle mb-1">Justificación</p>
               <p className="text-sm text-fg-muted leading-relaxed">{result.justificacion}</p>
             </div>
           )}
@@ -142,7 +144,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           {/* Recommendation */}
           {result.recomendacion && (
             <div>
-              <p className="text-caption font-medium text-fg-muted mb-1">Recomendacion</p>
+              <p className="text-caption text-fg-subtle mb-1">Recomendación</p>
               <p className="text-sm text-fg-muted leading-relaxed">{result.recomendacion}</p>
             </div>
           )}
@@ -150,16 +152,12 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           {/* Flags */}
           {result.flags && Array.isArray(result.flags) && result.flags.length > 0 && (
             <div>
-              <p className="text-caption font-medium text-fg-muted mb-1">Alertas</p>
+              <p className="text-caption text-fg-subtle mb-1">Alertas</p>
               <div className="flex flex-wrap gap-1.5">
                 {result.flags.map((flag, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-warning-soft text-warning text-caption rounded-sm"
-                  >
-                    <Warning className="w-3 h-3" />
+                  <Badge key={i} variant="warning">
                     {String(flag)}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -167,7 +165,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
 
           {/* Processing time */}
           {result.processingTimeMs && (
-            <p className="text-[11px] text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               Procesado en {(result.processingTimeMs / 1000).toFixed(1)}s
               {result.confidence !== null && <> &middot; Confianza OCR: {result.confidence}%</>}
             </p>
@@ -191,7 +189,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
     setTriggering(true);
     try {
       await triggerAnalysis();
-      toast.success('Analisis de documentos iniciado');
+      toast.success('Análisis de documentos iniciado');
     } catch (err) {
       // 02-10-2026: con la regla de oro del traductor (antes, `err.message` crudo).
       toast.error(
@@ -211,11 +209,12 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
 
   if (isLoading) {
     return (
-      <div className={cn('space-y-3', className)}>
-        <div className="flex items-center gap-2">
-          <Spinner size="sm" variant="muted" />
-          <span className="text-sm text-fg-muted">Cargando resultados...</span>
-        </div>
+      // Esqueleto con la forma de la lista (antes una rueda con «Cargando…»).
+      <div className={cn('space-y-2', className)} aria-busy="true" data-testid="analisis-cargando">
+        <div className="h-5 w-48 animate-pulse rounded-full bg-surface-muted" />
+        {[0, 1].map((i) => (
+          <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-muted" />
+        ))}
       </div>
     );
   }
@@ -231,9 +230,9 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
     return (
       <div className={cn('space-y-4', className)}>
         <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-primary" />
+          <Brain className="w-5 h-5 text-fg-muted" aria-hidden="true" />
           <h4 className="text-sm font-medium text-fg">
-            Analisis IA de documentos
+            Análisis IA de documentos
           </h4>
         </div>
         <Appear>
@@ -254,9 +253,9 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
       {/* Header with trigger button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-primary" />
+          <Brain className="w-5 h-5 text-fg-muted" aria-hidden="true" />
           <h4 className="text-sm font-medium text-fg">
-            Analisis IA de documentos
+            Análisis IA de documentos
           </h4>
         </div>
 
@@ -266,13 +265,10 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
             variant={hasResults ? 'outline' : 'default'}
             onClick={handleTrigger}
             disabled={triggering || isAnalyzing}
-            className="text-caption"
+            isLoading={triggering || isAnalyzing}
           >
             {triggering || isAnalyzing ? (
-              <>
-                <Spinner size="xs" variant="current" className="mr-1.5" />
-                Analizando...
-              </>
+              'Analizando…'
             ) : hasResults ? (
               'Reanalizar'
             ) : (
@@ -312,8 +308,8 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
       {allDone && summary.averageScore !== null && (
         <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-muted border border-border">
           <div className="text-center">
-            <p className="text-2xl font-bold text-fg">{summary.averageScore}</p>
-            <p className="text-[11px] text-fg-muted">/100</p>
+            <p className="text-2xl font-mono text-fg">{summary.averageScore}</p>
+            <p className="text-caption text-fg-muted">/100</p>
           </div>
           <div className="flex-1">
             <PlanProgressBar
@@ -322,7 +318,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
               variant={summary.averageScore >= 70 ? 'success' : summary.averageScore >= 50 ? 'warning' : 'danger'}
             />
             <p className="text-caption text-fg-muted mt-1">
-              Score promedio &middot; {summary.completed} completado{summary.completed !== 1 && 's'}
+              Puntaje promedio &middot; {summary.completed} completado{summary.completed !== 1 && 's'}
               {summary.failed > 0 && <>, {summary.failed} fallido{summary.failed !== 1 && 's'}</>}
             </p>
           </div>
@@ -368,7 +364,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
       {/* Empty state */}
       {!hasResults && !isAnalyzing && !error && (
         <p className="text-sm text-fg-muted">
-          Inicia el analisis para verificar los documentos del candidato con inteligencia artificial.
+          Inicia el análisis para verificar los documentos del candidato con inteligencia artificial.
         </p>
       )}
     </div>

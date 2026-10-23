@@ -73,7 +73,8 @@ export default function ReglasDeMoraPage() {
             acciones={
               <Link
                 href="/panel/inmobiliaria/pagos/cartera/usura"
-                className="inline-flex h-8 items-center text-body-sm font-medium text-primary underline-offset-4 hover:underline"
+                // Revisora r25 (Reglas de mora #5): gris y subrayado, no un azul suelto en el encabezado.
+                className="inline-flex h-8 items-center text-body-sm text-fg-muted underline underline-offset-4 hover:text-fg"
                 data-testid="ir-a-la-usura"
               >
                 Ver la tasa de usura que las topea

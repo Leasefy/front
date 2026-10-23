@@ -249,25 +249,25 @@ export function ReglasDeMora() {
     <div className="space-y-5">
       <p className="flex items-start gap-2 text-caption text-fg-muted" data-testid="aviso-motor" data-motor={String(motorPrendido)}>
         <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        {/* Revisora r25 (Reglas de mora #1): sin «motor» (VOZ, «No se dice»). */}
         {motorPrendido === true ? (
           <span>
-            El motor de cobros con reglas está <strong className="font-medium text-fg">prendido</strong>: estas reglas
-            se aplican en el recálculo de cada madrugada sobre los cobros vencidos.
+            El cobro con reglas está <strong className="font-medium text-fg">prendido</strong>: estas reglas se
+            aplican cada madrugada, cuando se recalculan los cobros vencidos.
           </span>
         ) : motorPrendido === false ? (
           <span>
-            El motor de cobros con reglas está <strong className="font-medium text-fg">apagado</strong>: hoy se cobra el
-            % mensual fijo de la configuración y estas reglas no le cambian un peso a nadie. Se pueden dejar
-            listas y{' '}
+            El cobro con reglas está <strong className="font-medium text-fg">apagado</strong>: hoy se cobra el %
+            mensual fijo de la configuración y estas reglas no le cambian un peso a nadie. Puedes dejarlas listas y{' '}
             <Link href="/panel/inmobiliaria/configuracion" className="underline underline-offset-2 hover:text-fg">
-              prenderlo en configuración
+              prenderlo en Configuración
             </Link>
             .
           </span>
         ) : (
           <span>
-            Se aplican sólo con el motor de cobros con reglas prendido en la inmobiliaria. Hasta entonces se
-            pueden dejar listas y revisarlas en frío: no le cambian un peso a nadie.
+            Se aplican sólo con el cobro con reglas prendido en la inmobiliaria. Hasta entonces puedes dejarlas
+            listas y revisarlas en frío: no le cambian un peso a nadie.
           </span>
         )}
       </p>
@@ -281,29 +281,39 @@ export function ReglasDeMora() {
         {lista.length === 0 ? (
           <div className="space-y-5" data-testid="reglas-vacio">
             {/* El vacío es la tabla sin filas: va encerrado en la misma tarjeta
-                que la tabla, como todos los vacíos del panel (Nico, 2026-09-01). */}
+                que la tabla, como todos los vacíos del panel (Nico, 2026-09-01).
+                Revisora r25 (Reglas de mora #2): las sugerencias van DENTRO del vacío y son la
+                acción principal; «Crear una regla» desde cero queda como secundaria (antes dos
+                caminos para lo mismo: el botón del vacío y, debajo, las dos tarjetas). */}
             <div className="overflow-hidden rounded-lg border border-border bg-card">
               <SinDatos
                 queSon={t('reglasDeMora.queSon')}
                 icono={Scales}
                 titulo={t('reglasDeMora.vacio.titulo')}
                 descripcion={t('reglasDeMora.vacio.descripcion')}
-                crear={puedeCrear ? { label: t('reglasDeMora.vacio.crear'), onClick: abrirNueva } : undefined}
+                className="pb-8"
+                accion={
+                  puedeCrear ? (
+                    <div className="w-full max-w-3xl space-y-4 text-left">
+                      <Sugerencias
+                        titulo={t('reglasDeMora.sugerencias.vacioTitulo')}
+                        descripcion={t('reglasDeMora.sugerencias.vacioDescripcion')}
+                        plantillas={faltantes}
+                        enCurso={plantillaEnCurso}
+                        onUsar={usarPlantilla}
+                        principal
+                      />
+                      <div className="flex justify-center">
+                        <Button variant="ghost" size="sm" hideArrow onClick={abrirNueva} data-testid="crear-el-primero">
+                          <Plus className="h-4 w-4" aria-hidden="true" />
+                          {t('reglasDeMora.vacio.crear')}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : undefined
+                }
               />
             </div>
-
-            {/* 🔴 Fuera de la tarjeta y con encabezado propio: acá empieza otra
-                cosa. Antes esto colgaba pelado del vacío y las dos tarjetas se
-                leían como las reglas que la agencia ya tenía. */}
-            {puedeCrear && (
-              <Sugerencias
-                titulo={t('reglasDeMora.sugerencias.vacioTitulo')}
-                descripcion={t('reglasDeMora.sugerencias.vacioDescripcion')}
-                plantillas={faltantes}
-                enCurso={plantillaEnCurso}
-                onUsar={usarPlantilla}
-              />
-            )}
           </div>
         ) : (
           <div className="space-y-5">
@@ -510,12 +520,15 @@ function Sugerencias({
   plantillas,
   enCurso,
   onUsar,
+  principal = false,
 }: {
   titulo: string;
   descripcion: string;
   plantillas: readonly PlantillaDeRegla[];
   enCurso: PlantillaDeRegla['id'] | null;
   onUsar: (plantilla: PlantillaDeRegla) => void;
+  /** En el vacío, la primera sugerencia es LA acción de la pantalla (su botón, el único azul). */
+  principal?: boolean;
 }) {
   if (plantillas.length === 0) return null;
 
@@ -529,9 +542,10 @@ function Sugerencias({
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        {plantillas.map((plantilla) => (
+        {plantillas.map((plantilla, i) => (
           <TarjetaDePlantilla
             key={plantilla.id}
+            principal={principal && i === 0}
             plantilla={plantilla}
             ocupada={enCurso === plantilla.id}
             deshabilitada={enCurso !== null}
@@ -548,7 +562,9 @@ function TarjetaDePlantilla({
   ocupada,
   deshabilitada,
   onUsar,
+  principal = false,
 }: {
+  principal?: boolean;
   plantilla: PlantillaDeRegla;
   ocupada: boolean;
   deshabilitada: boolean;
@@ -568,7 +584,7 @@ function TarjetaDePlantilla({
           <Icono className="h-4 w-4" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1 space-y-1">
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+          <Badge variant="outline">
             {t('reglasDeMora.sugerencias.etiqueta')}
           </Badge>
           <p className="font-medium text-fg">{plantilla.titulo}</p>
@@ -579,7 +595,7 @@ function TarjetaDePlantilla({
         {describirRegla({ ...plantilla.valores, topeCop: plantilla.valores.topeCop ?? null })}
       </p>
       <div>
-        <Button variant="secondary" size="sm" hideArrow onClick={onUsar} isLoading={ocupada} disabled={deshabilitada}>
+        <Button variant={principal ? 'default' : 'secondary'} size="sm" hideArrow onClick={onUsar} isLoading={ocupada} disabled={deshabilitada}>
           {t('reglasDeMora.sugerencias.usar')}
         </Button>
       </div>

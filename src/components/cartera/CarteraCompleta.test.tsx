@@ -643,8 +643,9 @@ describe('CarteraCompleta', () => {
       // Revisora r25 (Cartera #3): el aviso va a la vista, una vez, arriba de la tabla (sin mayúsculas de énfasis).
       expect($('[data-testid="aviso-sin-reglas"]').textContent).toContain('se muestra')
       expect($('[data-testid="aviso-sin-reglas"]').textContent).toContain('sin intereses')
+      // Con la vuelta a la Cartera (r25, Reglas de mora #4).
       expect($('[data-testid="cartera-configurar-reglas"]').getAttribute('href')).toBe(
-        '/panel/inmobiliaria/pagos/cartera/reglas-de-mora',
+        '/panel/inmobiliaria/pagos/cartera/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fpagos%2Fcartera',
       )
       expect(host.querySelector('[data-testid="resumen-intereses-cartera"]')).toBeNull()
     })

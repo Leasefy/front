@@ -695,7 +695,7 @@ export function CarteraCompleta() {
                       : tr('{n} cuotas en mora sin reglas de mora: se muestran sin intereses.', { n: cuotasSinReglas })}
                 </span>
                 <Link
-                  href={RUTA_DE_REGLAS_DE_MORA}
+                  href={`${RUTA_DE_REGLAS_DE_MORA}?volver=${encodeURIComponent('/panel/inmobiliaria/pagos/cartera')}`}
                   className="text-fg underline underline-offset-4 hover:text-fg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   data-testid="cartera-configurar-reglas"
                 >

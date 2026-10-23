@@ -106,14 +106,16 @@ type SortDirection = 'asc' | 'desc';
 
 const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
   low: { bg: 'bg-surface-muted', text: 'text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
-  medium: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
+  // Ronda 30 (revisora r27): «Media» en neutro (era un segundo azul); el color, sólo para Alta y Emergencia.
+  medium: { bg: 'bg-surface-muted', text: 'text-fg', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
   high: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
   emergency: { bg: 'bg-danger-soft', text: 'text-danger', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
 const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
   reported: { bg: 'bg-surface-muted', text: 'text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
-  quoted: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyCircleDollar },
+  // Ronda 30 (revisora r27): «Cotizada» en neutro; el azul es de la acción, no de un estado quieto.
+  quoted: { bg: 'bg-surface-muted', text: 'text-fg', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyCircleDollar },
   approved: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
   in_progress: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Clock },
   completed: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusCompleted', icon: CheckCircle },

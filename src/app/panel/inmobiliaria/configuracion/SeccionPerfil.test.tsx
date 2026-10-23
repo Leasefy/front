@@ -26,6 +26,14 @@ const h = vi.hoisted(() => ({
   resultado: { error: null as unknown },
 }))
 
+// Ronda 30 (a propósito): el Perfil va en pestañas de la casa (PestanasDeLaFicha), que leen y escriben la
+// pestaña en la URL; en la prueba la URL va vacía (abre la primera) y el router no hace nada.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(''),
+  usePathname: () => '/panel/inmobiliaria/configuracion/perfil',
+}))
+
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: h.toastSuccess, error: h.toastError, info: vi.fn(), warning: vi.fn() },
 }))

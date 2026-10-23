@@ -23,13 +23,14 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { CurrencyCircleDollar, Funnel, MagnifyingGlass } from '@phosphor-icons/react'
 import { useTr } from '@/lib/i18n/use-tr'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
 import { DetalleDelPagoEnCajon } from './[paymentId]/PaymentDetailClient'
+import PaymentPlanApprovalClient from './planes/[planId]/PaymentPlanApprovalClient'
+import { CajonDelCaso } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
 
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -117,10 +118,11 @@ function normalizar(texto: string): string {
 export default function PagosFunnelClient() {
   const { t } = useI18n()
   const tr = useTr()
-  const router = useRouter()
   // Revisora r25 (#2): buscar por inquilino; (#3): el detalle en un cajón.
   const [buscar, setBuscar] = useState('')
   const [pagoAbierto, setPagoAbierto] = useState<string | null>(null)
+  // Ronda 30 (K4): el plan de pago abierto en el cajón; al cerrarlo, la lista se vuelve a leer.
+  const [planAbierto, setPlanAbierto] = useState<string | null>(null)
 
   // ── Filter state ──────────────────────────────────────────────────────────
   const [dateWindow, setDateWindow] = useState<DateWindow>('30d')
@@ -240,11 +242,18 @@ export default function PagosFunnelClient() {
     setDateWindow('30d')
     setSort('created_at')
   }
+  const cerrarElPlan = () => {
+    setPlanAbierto(null)
+    void refetch()
+  }
   const handleRowClick = (row: PaymentsFunnelItem) => {
     // Phase 32 contract: pending + payment_plan rows route to the plan approval page;
     // all other rows route to the read-only payment detail page.
     if (row.status === 'pending' && row.paymentPlanId) {
-      router.push(`/panel/inmobiliaria/pagos/cobranza/pagos/planes/${row.paymentPlanId}`)
+      // Ronda 30 (K4, Nico: «K4 cajón»): el plan se revisa y aprueba en un cajón
+      // sobre la lista (antes `router.push` a `pagos/planes/[planId]`, que sigue
+      // viva para los enlaces profundos).
+      setPlanAbierto(row.paymentPlanId)
     } else {
       // El detalle se mira en un cajón, sin perder la lista ni los filtros.
       setPagoAbierto(row.id)
@@ -683,6 +692,15 @@ export default function PagosFunnelClient() {
       </Card>
 
       <DetalleDelPagoEnCajon paymentId={pagoAbierto} onCerrar={() => setPagoAbierto(null)} />
+      <CajonDelCaso
+        abierto={planAbierto !== null}
+        onCerrar={cerrarElPlan}
+        titulo={t('inmobiliaria.ai.cobranza.planes.title')}
+        descripcion="Compara lo que propuso el agente con tus límites y apruébalo, ajústalo o recházalo."
+        data-testid="plan-cajon"
+      >
+        {planAbierto ? <PaymentPlanApprovalClient planId={planAbierto} enCajon onResuelto={cerrarElPlan} /> : null}
+      </CajonDelCaso>
     </div>
     </CrossFade>
   )

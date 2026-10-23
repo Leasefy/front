@@ -29,7 +29,7 @@ import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { useCallback, useState } from 'react'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
+import { ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
@@ -43,7 +43,7 @@ import {
   type ListaDeAnios,
   type ResultadoDeLaSemilla,
 } from '@/lib/admin/exogena'
-import { Alert, Card, Eyebrow, MonoLabel } from '@leasefy/cadence'
+import { Alert, Card, MonoLabel } from '@leasefy/cadence'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -102,7 +102,9 @@ export default function ExogenaAdminPage() {
 
   const anioValido = /^\d{4}$/.test(form.anio.trim()) && Number(form.anio) >= 2000 && Number(form.anio) <= 2100
   const topeParseado = enteroDe(form.tope)
-  const problema = !anioValido
+  const problema = form.anio.trim() === ''
+    ? 'Escribe el año gravable.'
+    : !anioValido
     ? 'El año gravable va en cuatro dígitos, entre 2000 y 2100.'
     : topeParseado === 'INVALIDO'
       ? 'El tope va en pesos enteros y mayor que cero. Déjalo vacío si la resolución del año no fija ninguno: sin tope NO se agrupa nada, que es lo correcto.'
@@ -172,14 +174,17 @@ export default function ExogenaAdminPage() {
         }
       />
 
-      {/* 🔴 El aviso que hace que publicar sea una decisión, no un clic más. */}
-      <Alert variant="warning" title="Antes de publicar, confírmalo contra la resolución" data-testid="aviso-del-preset">
-        <p className="text-body-sm">
-          Los conceptos sugeridos por Leasefy son una <strong>sugerencia de uso corriente, no la resolución</strong>.
-          Confírmalo contra la resolución del año antes de publicar: un concepto equivocado no se ve
-          — pasa el prevalidador y llega mal a la DIAN. Un año sin publicar no lo hereda nadie.
-        </p>
-      </Alert>
+      {/* 🔴 El aviso que hace que publicar sea una decisión, no un clic más. Ronda 28 (revisora r27): sólo
+          cuando hay un año con conceptos por publicar (sin año eran tres bloques para una tarea) y sin negritas. */}
+      {anios.some((a) => !a.publicado && a.conceptos > 0) ? (
+        <Alert variant="warning" title="Antes de publicar, confírmalo contra la resolución" data-testid="aviso-del-preset">
+          <p className="text-body-sm">
+            Los conceptos sugeridos por Leasefy son una sugerencia de uso corriente, no la resolución. Confírmalo
+            contra la resolución del año antes de publicar: un concepto equivocado pasa el prevalidador y llega mal a
+            la DIAN. Un año sin publicar no lo hereda nadie.
+          </p>
+        </Alert>
+      ) : null}
 
       {noHayTablas && (
         <Card className="p-5  mb-6" data-testid="sin-migracion">
@@ -240,10 +245,9 @@ export default function ExogenaAdminPage() {
       {isLoading ? (
         <LoadingBlock label="cargando años" />
       ) : anios.length === 0 ? (
-        <EmptyBlock
-          title="Ningún año cargado"
-          hint="Carga el año gravable abajo y después los conceptos sugeridos. Publicar es un paso aparte."
-        />
+        // Ronda 28 (revisora r27): sin año, el formulario de abajo ES el vacío (antes un vacío que decía
+        // «Carga el año… abajo» y el formulario debajo).
+        null
       ) : (
         <div className="space-y-px" data-testid="anios">
           {anios.map((a) => (
@@ -359,58 +363,55 @@ export default function ExogenaAdminPage() {
 
       {/* ── Cargar o corregir un año ─────────────────────────────────────── */}
       <Card className="p-5" data-testid="formulario-de-anio">
-        <Eyebrow>Cargar / corregir el año</Eyebrow>
-        <p className="text-caption text-fg-muted mt-2">
-          Esto <strong>no publica</strong>. Un año existente se sobrescribe con lo que haya aquí.
+        <h2 className="text-body font-medium text-fg">
+          {anios.length === 0 && !isLoading ? 'Carga el primer año gravable' : 'Cargar o corregir un año'}
+        </h2>
+        <p className="text-caption text-fg-muted mt-1">
+          {anios.length === 0 && !isLoading
+            ? 'Todavía no hay ninguno. Después se cargan los conceptos sugeridos; publicar es un paso aparte.'
+            : 'Esto no publica. Un año que ya existe se sobrescribe con lo que haya aquí.'}
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2 mt-4">
           <label className="block">
-            <MonoLabel>
-              año gravable
-            </MonoLabel>
+            <span className="text-caption text-fg-muted">Año gravable</span>
             <Input
               className="mt-1"
               value={form.anio}
               inputMode="numeric"
-              placeholder="2026"
+              placeholder="p. ej. 2026"
               onChange={(e) => cambiar({ anio: e.target.value })}
               data-testid="campo-anio"
             />
           </label>
           <label className="block">
-            <MonoLabel>
-              resolución
-            </MonoLabel>
+            <span className="text-caption text-fg-muted">Resolución</span>
             <Input
               className="mt-1"
               value={form.resolucion}
-              placeholder="Resolución 000162 de 2023"
+              placeholder="p. ej. Resolución 000162 de 2023"
               onChange={(e) => cambiar({ resolucion: e.target.value })}
               data-testid="campo-resolucion"
             />
           </label>
           <label className="block">
-            <MonoLabel>
-              tope de cuantías menores (pesos)
-            </MonoLabel>
+            <span className="text-caption text-fg-muted">Tope de cuantías menores (pesos)</span>
             <Input
               className="mt-1"
               value={form.tope}
               inputMode="numeric"
-              placeholder="Vacío = no se agrupa nada"
+              placeholder="p. ej. 1.000.000"
               onChange={(e) => cambiar({ tope: e.target.value })}
               data-testid="campo-tope"
             />
+            <span className="mt-1 block text-caption text-fg-subtle">Vacío, no se agrupa nada.</span>
           </label>
           <label className="block">
-            <MonoLabel>
-              NIT de cuantías menores
-            </MonoLabel>
+            <span className="text-caption text-fg-muted">NIT de cuantías menores</span>
             <Input
               className="mt-1"
               value={form.nit}
-              placeholder="222222222"
+              placeholder="p. ej. 222222222"
               onChange={(e) => cambiar({ nit: e.target.value })}
               data-testid="campo-nit"
             />
@@ -418,9 +419,7 @@ export default function ExogenaAdminPage() {
         </div>
 
         <label className="block mt-4">
-          <MonoLabel>
-            notas
-          </MonoLabel>
+          <span className="text-caption text-fg-muted">Notas</span>
           <Textarea
             className="mt-1"
             rows={2}
@@ -436,7 +435,7 @@ export default function ExogenaAdminPage() {
           </p>
         ) : null}
 
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex flex-wrap items-center gap-3 mt-4">
           <Button hideArrow type="button"
             
             disabled={guardando || problema !== null}
@@ -449,7 +448,12 @@ export default function ExogenaAdminPage() {
             <Button variant="ghost" hideArrow type="button"  onClick={() => setForm(VACIO)}>
               Limpiar
             </Button>
-          ) : null}
+          ) : (
+            // Ronda 28 (revisora r27, 5b): el botón apagado dice qué falta (antes nada con el campo vacío).
+            <span className="text-caption text-fg-muted" data-testid="falta-el-anio">
+              Escribe el año gravable.
+            </span>
+          )}
         </div>
       </Card>
     </div>

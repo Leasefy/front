@@ -520,6 +520,27 @@ describe('agenda — la columna de la persona no se lee al revés', () => {
     const rol = container.querySelector('[data-testid="agenda-rol-persona"]')
     expect(rol?.textContent).toContain('colResponsable')
   })
+
+  it('revisora r25: una tarea sin responsable dice en Persona quién la creó (no «—»)', async () => {
+    getAgendaMock.mockResolvedValue({
+      resumen: AGENDA_VACIA.resumen,
+      eventos: [
+        evento({
+          id: 'tarea-2',
+          tipo: 'tarea',
+          origen: 'usuario',
+          titulo: 'Revisar el acta',
+          creadaPorId: 'otra-persona',
+          creadaPorNombre: 'Ana Restrepo',
+        }),
+      ],
+    })
+    await montar()
+
+    const rol = container.querySelector('[data-testid="agenda-rol-persona"]')
+    expect(rol?.textContent).toBe('La creó')
+    expect(rol?.parentElement?.textContent).toContain('Ana Restrepo')
+  })
 })
 
 /**

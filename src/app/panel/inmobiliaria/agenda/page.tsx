@@ -7,6 +7,7 @@ import { CalendarBlank, CalendarPlus, Plus, CaretLeft, CaretRight } from '@phosp
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -55,6 +56,11 @@ const RESUMEN_ITEMS: { key: string; tono?: TonoDeCifra; field: keyof typeof RESU
  * hora debajo. Cinco columnas que caben en un escritorio normal.
  */
 const COLUMNS = ['colFecha', 'colEvento', 'colPersona', 'colEstado'];
+
+/** Una tarea sin responsable: en la columna Persona va quien la creó (revisora r25), no «—». */
+function laCreadoraVaEnPersona(e: { tipo: string; responsableNombre?: string; creadaPorId?: string }): boolean {
+  return e.tipo === 'tarea' && !e.responsableNombre && Boolean(e.creadaPorId);
+}
 
 /** AG-02/AG-04: las pestañas de la agenda. */
 type Pestana = VistaDeAgenda | 'semana';
@@ -161,6 +167,7 @@ const visitIdOf = (eventId: string) => eventId.replace(/^visit-/, '');
 
 function AgendaContent() {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
 
   // El back sirve la agenda con `operaciones:view` pero exige `operaciones:edit`
@@ -872,7 +879,9 @@ function AgendaContent() {
                           </span>
                           {!elTituloEsElInmueble(e) && e.vinculoLabel ? ` · ${e.vinculoLabel}` : ''}
                           {/* AG-13: «Tú» sólo a quien creó la tarea. Sin «· Sistema» (revisora r22, #3). */}
-                          {e.tipo === 'tarea' || e.origen !== ORIGEN_QUE_NO_SE_DICE
+                          {/* Revisora r25: en una tarea sin responsable, quién la creó pasa a la columna Persona
+                              (antes «—» ahí y el nombre escondido aquí, en gris). */}
+                          {(e.tipo === 'tarea' || e.origen !== ORIGEN_QUE_NO_SE_DICE) && !laCreadoraVaEnPersona(e)
                             ? ` · ${origenDelEvento(e, miUserId, (o) => t(k(`origen_${o}`)))}`
                             : ''}
                           {e.descripcion && e.tipo !== 'visita' ? ` · ${e.descripcion}` : ''}
@@ -880,6 +889,17 @@ function AgendaContent() {
                       </div>
                     </TableCell>
                     <TableCell className="max-w-[200px]">
+                      {laCreadoraVaEnPersona(e) ? (
+                        <>
+                          <span className="block truncate text-muted-foreground">
+                            {origenDelEvento(e, miUserId, (o) => t(k(`origen_${o}`)))}
+                          </span>
+                          <span className="block text-caption text-muted-foreground/80" data-testid="agenda-rol-persona">
+                            {tr('La creó')}
+                          </span>
+                        </>
+                      ) : (
+                      <>
                       <span className="block truncate text-muted-foreground">{e.responsableNombre ?? t(k('sinVinculo'))}</span>
                       {e.tipo === 'visita' ? (
                         <span className="block text-caption text-muted-foreground/80" data-testid="agenda-rol-persona">
@@ -891,6 +911,8 @@ function AgendaContent() {
                             {rotuloDeLaPersona(e.tipo) ?? t(k('colResponsable'))}
                           </span>
                         )
+                      )}
+                      </>
                       )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">

@@ -666,4 +666,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Ocultar el detalle": "Hide the details",
   "cosa más": "more thing",
   "cosas más": "more things",
+  // Panel (ronda 26, 2.º agente)
+  "La creó": "Created it",
 }

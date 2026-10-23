@@ -485,7 +485,7 @@ function VitrinaDeOtras({ paginaId }: { paginaId: string }) {
         <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-fg-muted">
           Publicidad
         </span>
-        <h2 id="vitrina-de-otras-titulo" className="text-[17px] font-semibold text-fg">
+        <h2 id="vitrina-de-otras-titulo" className="text-[17px] font-medium text-fg">
           Otros inmuebles en Leasefy
         </h2>
       </div>

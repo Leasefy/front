@@ -251,7 +251,7 @@ function PresentacionDeLaInmobiliaria({ t, suyos }: { t: TarjetaDeInmobiliaria; 
       <div className="min-w-0 flex-1 space-y-3">
         <p className="text-[16px] leading-relaxed text-fg">
           {suyos.length === 1 ? 'Uno' : <span className="font-mono tabular-nums">{suyos.length}</span>} de estos{' '}
-          {suyos.length === 1 ? 'lo ofrece' : 'los ofrece'} <strong className="font-semibold">{t.nombre}</strong>.{' '}
+          {suyos.length === 1 ? 'lo ofrece' : 'los ofrece'} <strong className="font-medium">{t.nombre}</strong>.{' '}
           {r.porcentaje !== null ? (
             <>
               La recomienda el <span className="font-mono tabular-nums">{r.porcentaje}{'\u202f'}%</span> de quienes arrendaron
@@ -280,7 +280,7 @@ function PresentacionDeLaInmobiliaria({ t, suyos }: { t: TarjetaDeInmobiliaria; 
           <div className="flex flex-wrap items-end gap-4 px-5 pb-5">
             <LogoDeLaInmobiliaria i={t} tamano={64} className="relative z-10 -mt-8 ring-4 ring-surface" />
             <div className="min-w-0 flex-1 pt-3">
-              <p className="flex items-center gap-1.5 font-heading text-[18px] font-semibold text-fg">
+              <p className="flex items-center gap-1.5 font-heading text-[18px] font-medium text-fg">
                 <span className="truncate">{t.nombre}</span>
                 {t.verificada && <SelloVerificada />}
               </p>
@@ -441,14 +441,14 @@ function RespuestaDeOri({
                 {sonCercanos ? (
                   <>
                     Ninguno cumple todo lo que pides. Estos{' '}
-                    <strong className="font-mono font-semibold tabular-nums">{totalMostrado}</strong> son los más
+                    <strong className="font-mono font-medium tabular-nums">{totalMostrado}</strong> son los más
                     cercanos: en cada uno te digo qué no cumple o qué no dice.
                   </>
                 ) : foto.total === 0 ? (
                   <>No encontré ninguno que cumpla todo. Quita una de las pastillas y vuelvo a buscar.</>
                 ) : (
                   <>
-                    Encontré <strong className="font-mono font-semibold tabular-nums">{foto.total}</strong>{' '}
+                    Encontré <strong className="font-mono font-medium tabular-nums">{foto.total}</strong>{' '}
                     {foto.total === 1 ? 'que cumple' : 'que cumplen'} lo que pides
                     {nombres.length === 1 ? <>, de {nombres[0]}</> : nombres.length > 1 ? <>, de {nombres.length} inmobiliarias</> : null}.
                     {foto.total > foto.propiedades.length && <> Te muestro los primeros {foto.propiedades.length}.</>}
@@ -459,7 +459,7 @@ function RespuestaDeOri({
 
               {pastillas.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2" data-testid="pastillas-de-la-busqueda">
-                  <span className="text-[12.5px] text-fg-subtle">Entendí:</span>
+                  <span className="text-[13px] text-fg-subtle">Entendí:</span>
                   {pastillas.map((p) => (
                     <span
                       key={p.clave}

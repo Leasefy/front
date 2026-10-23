@@ -448,6 +448,8 @@ export function FacturasDeProveedor({
             </>
           }
           total={facturado}
+          // C3 (revisora r25): sin facturas, UNA línea y no «$ 0» con tres tramos en cero.
+          cuandoEsCero="Todavía no hay facturas de proveedores en este período."
           tramos={[
             { clave: 'pagadas', etiqueta: `Pagadas · ${(pagadas?.n ?? 0).toLocaleString(cifras)}`, monto: pagadas?.neto ?? 0, tono: 'exito', cifra: <Monto valor={pagadas?.neto ?? 0} /> },
             { clave: 'por-pagar', etiqueta: `Por pagar · ${(porPagar?.n ?? 0).toLocaleString(cifras)}`, monto: porPagar?.neto ?? 0, tono: 'neutro', cifra: <Monto valor={porPagar?.neto ?? 0} /> },

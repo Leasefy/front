@@ -317,6 +317,8 @@ export function DeterioroDeCarteraPanel() {
                   en {NUMERO.format(datos.calculo.cuotas)} cuotas.
                 </>
               }
+              // C3 (revisora r25): sin provisión antes ni ahora, UNA línea y no tres cifras en cero.
+              esCero={movimiento === 0 && provisionCop === 0 && anteriorCop === 0}
               data-testid="cifra-movimiento"
             />
 

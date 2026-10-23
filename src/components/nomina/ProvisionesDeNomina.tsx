@@ -98,6 +98,8 @@ export function ProvisionesDeNominaPanel() {
                   rotulo="Pasivo vivo por prestaciones"
                   cifra={<span data-testid="total-vivo">{formatCurrency(provisiones.totalVivoCop)}</span>}
                   contexto="lo provisionado que todavía no se ha cruzado contra un pago"
+                  // C3 (revisora r25): sin nada provisionado, UNA línea y no la cifra grande en cero.
+                  esCero={provisiones.totalVivoCop === 0}
                   className="min-w-0 flex-1"
                   data-testid="cifra-de-provisiones"
                 />

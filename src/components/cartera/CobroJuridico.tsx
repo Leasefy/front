@@ -370,6 +370,9 @@ export function CobroJuridico() {
                   ? 'ningún contrato cumple hoy'
                   : `en ${sugeridos.length} ${sugeridos.length === 1 ? 'contrato' : 'contratos'} con 90 días o más de mora y sin póliza`
               }
+              // C3 (revisora r25): sin contratos que cumplan, UNA línea y no «$ 0».
+              esCero={sugeridos.length === 0}
+              cuandoEsCero="Hoy ningún contrato cumple para jurídico: 90 días o más de mora y sin póliza."
               data-testid="cifra-del-juridico"
             />
             <FranjaDeCifras aria-label="Lo que ya está en jurídico">

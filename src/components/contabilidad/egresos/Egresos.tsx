@@ -591,6 +591,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
         cifra={<Monto valor={faltaPagar} />}
         contexto={`en ${(enCamino.porArmar.length + enCamino.porAprobar.length + enCamino.porPagar.length).toLocaleString(localeDeLasCifras())} ${enCamino.porArmar.length + enCamino.porAprobar.length + enCamino.porPagar.length === 1 ? 'orden o lote' : 'órdenes y lotes'}`}
         total={faltaPagar}
+        // C3 (revisora r25): sin nada en camino, UNA línea y no «$ 0» con tres tramos en cero.
+        cuandoEsCero="No hay nada por pagar a proveedores: ningún egreso por armar, por firmar ni por pagar."
         tramos={[
           { clave: 'por-armar', etiqueta: `Por armar en lote · ${enCamino.porArmar.length}`, monto: sumar(enCamino.porArmar.map((e) => e.netoCop)), tono: 'neutro', siempre: true, cifra: <Monto valor={sumar(enCamino.porArmar.map((e) => e.netoCop))} />, 'data-testid': 'en-camino-por-armar' },
           { clave: 'por-aprobar', etiqueta: `Esperando la firma · ${enCamino.porAprobar.length}`, monto: sumar(enCamino.porAprobar.map((l) => l.totalCop)), tono: 'aviso', siempre: true, cifra: <Monto valor={sumar(enCamino.porAprobar.map((l) => l.totalCop))} />, 'data-testid': 'en-camino-por-aprobar' },

@@ -153,6 +153,8 @@ export function PersonasDeNominaPanel() {
                           : `con salarios que suman ${formatCurrency(salarios)} al mes`
                       }
                       className="min-w-0 flex-1"
+                      // C3 (revisora r25): con nadie activo, UNA línea; el vacío de abajo dice qué hacer.
+                      esCero={activas.length === 0 && !busqueda}
                       data-testid="cifra-de-personas"
                     />
                     <Button size="sm" onClick={() => setAbriendo(true)} data-testid="nueva-persona">

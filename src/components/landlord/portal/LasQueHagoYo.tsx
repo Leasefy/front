@@ -97,12 +97,12 @@ function UnaQueHagoYo({ r, onCambio }: { r: ReparacionQueHagoYo; onCambio: () =>
           </Presence>
           <div className="flex flex-wrap gap-2">
             {avisando ? (
-              <Button hideArrow onClick={() => void yaQuedo()} disabled={enviando} data-testid="ya-quedo-confirmar">
+              <Button variant="ink" hideArrow onClick={() => void yaQuedo()} disabled={enviando} data-testid="ya-quedo-confirmar">
                 <CheckCircle className="h-4 w-4" />
                 {enviando ? 'Avisando…' : 'Confirmar: ya quedó'}
               </Button>
             ) : (
-              <Button hideArrow onClick={() => setAvisando(true)} data-testid="ya-quedo">
+              <Button variant="ink" hideArrow onClick={() => setAvisando(true)} data-testid="ya-quedo">
                 <CheckCircle className="h-4 w-4" />
                 Ya quedó
               </Button>

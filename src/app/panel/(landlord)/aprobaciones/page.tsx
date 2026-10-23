@@ -216,7 +216,7 @@ function Pendiente({
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button hideArrow onClick={() => void decidir('aprobar')} disabled={enviando !== null} data-testid="aprobacion-aprobar">
+        <Button variant="ink" hideArrow onClick={() => void decidir('aprobar')} disabled={enviando !== null} data-testid="aprobacion-aprobar">
           <CheckCircle className="h-4 w-4" />
           {enviando === 'aprobar' ? 'Aprobando…' : 'Aprobar'}
         </Button>

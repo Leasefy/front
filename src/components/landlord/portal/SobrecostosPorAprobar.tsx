@@ -67,7 +67,7 @@ function Pendiente({ s, onListo }: { s: SobrecostoDeReparacion; onListo: () => v
       )}
       <div className="flex flex-wrap gap-2">
         {!rechazando && (
-          <Button hideArrow isLoading={enviando === 'aprobar'} disabled={enviando !== null} onClick={() => void decidir('aprobar')} data-testid="sobrecosto-aprobar">
+          <Button variant="ink" hideArrow isLoading={enviando === 'aprobar'} disabled={enviando !== null} onClick={() => void decidir('aprobar')} data-testid="sobrecosto-aprobar">
             Aprobar la diferencia
           </Button>
         )}

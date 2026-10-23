@@ -98,7 +98,7 @@ function UnaTerminacion({ t, onCambio }: { t: TerminacionEnElPortal; onCambio: (
               </>
             ) : (
               <>
-                <Button hideArrow disabled={enviando} onClick={() => void responder(true)} data-testid="terminacion-si">
+                <Button variant="ink" hideArrow disabled={enviando} onClick={() => void responder(true)} data-testid="terminacion-si">
                   <CheckCircle className="h-4 w-4" />
                   {enviando ? 'Enviando…' : 'Sí, terminar'}
                 </Button>

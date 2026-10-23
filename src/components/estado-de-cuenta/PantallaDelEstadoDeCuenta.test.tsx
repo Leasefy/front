@@ -333,11 +333,11 @@ describe('PantallaDelEstadoDeCuenta', () => {
         cargar={cargar}
         hoy={HOY}
         volverA={{ label: 'Volver a pagos', href: '/inquilino/pagos' }}
-        encabezado={{ seccion: 'Tu arriendo', descripcion: 'Cada cuota de tu contrato, lo que ya pagaste y lo que te falta.' }}
+        encabezado={{ seccion: 'Mi arriendo', descripcion: 'Cada cuota de tu contrato, lo que ya pagaste y lo que te falta.' }}
       />,
     );
     expect(host.querySelector('h1')?.textContent).toBe('Estado de cuenta');
-    expect(host.textContent).toContain('Tu arriendo');
+    expect(host.textContent).toContain('Mi arriendo');
     expect(host.textContent).toContain('Cada cuota de tu contrato');
     expect(host.querySelector('[data-testid="estado-volver"]')).toBeNull();
     expect(host.querySelector('[data-testid="estado-subtitulo"]')).toBeNull();

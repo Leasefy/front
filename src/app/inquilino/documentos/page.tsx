@@ -362,7 +362,7 @@ export default function DocumentosPage() {
         {/* GLOW UP (21-10): el encabezado de todas las pantallas, con lo que de verdad hay aquí. */}
         <EncabezadoDePantalla
           className="mb-8"
-          seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
           titulo={t('documents.title')}
           descripcion={
             locale === 'es'

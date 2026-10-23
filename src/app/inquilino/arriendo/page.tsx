@@ -175,7 +175,7 @@ export default function ArriendoPage() {
         {/* GLOW UP (21-10): el encabezado de todas las pantallas; la acción que más se hace desde aquí es pagar. */}
         <EncabezadoDePantalla
           className="mb-6"
-          seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
           titulo={t('rental.title')}
           descripcion={
             locale === 'es'

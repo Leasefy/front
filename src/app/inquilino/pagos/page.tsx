@@ -415,7 +415,7 @@ function PagosPageContent() {
         <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <EncabezadoDePantalla
             className="mb-8"
-            seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+            seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
             titulo={t('payments.title')}
             descripcion={t('payments.subtitle')}
           />
@@ -445,7 +445,7 @@ function PagosPageContent() {
         {/* GLOW UP (21-10): el encabezado de todas las pantallas, con el trabajo de esta: pagar y ver lo pagado. */}
         <EncabezadoDePantalla
           className="mb-6"
-          seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
           titulo={t('payments.title')}
           descripcion={
             locale === 'es'

@@ -248,7 +248,7 @@ export default function SolicitudesPage() {
         {/* GLOW UP (21-10): el encabezado de todas las pantallas; «Nueva solicitud» es la única azul. */}
         <EncabezadoDePantalla
           className="mb-6"
-          seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
           titulo={locale === 'es' ? 'Solicitudes' : 'Requests'}
           descripcion={
             locale === 'es'

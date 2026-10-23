@@ -60,6 +60,8 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, SinLaMigracion } from '@/components/finanzas/piezas';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import {
   Table,
   TableCell,
@@ -88,6 +90,7 @@ import { SIN_MEDIR } from '@/lib/tasas';
 import { plata, textoDelBack } from '@/lib/contabilidad/plata';
 import { presupuestoContraElLibro } from '@/lib/contabilidad/presupuesto-contra-el-libro';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { cn } from '@/lib/utils';
 
 /** La opción «Otro rubro…» del `Select` de «Cargar un rubro» (CB-30). */
@@ -135,6 +138,19 @@ export function PresupuestoPanel() {
 
   const puedeCargar = cargado?.disponible !== false;
 
+  // GLOW UP 3.ª vuelta · LA RESPUESTA: cuántos rubros van como se planeó. «Bien» es lo que
+  // la tabla ya pinta en verde: un costo por debajo de lo presupuestado, un ingreso por encima.
+  const respuesta = useMemo(() => {
+    if (!comparacion) return null;
+    const t = presupuestoContraElLibro(comparacion, new Map(rubros.map((r) => [r.rubro, r.fuenteDelReal])));
+    const conPresupuesto = t.filas.filter((f) => f.presupuestoCop !== null);
+    const medibles = conPresupuesto.filter((f) => f.contraPresupuestoCop !== null);
+    const bien = medibles.filter((f) =>
+      f.naturaleza === 'COSTO' ? (f.contraPresupuestoCop ?? 0) <= 0 : (f.contraPresupuestoCop ?? 0) >= 0,
+    );
+    return { t, conPresupuesto, medibles, bien };
+  }, [comparacion, rubros]);
+
   const confirmarBorrado = useCallback(async () => {
     if (!borrando) return;
     setQuitando(true);
@@ -162,25 +178,38 @@ export function PresupuestoPanel() {
           tabla tenía el suyo, y entre los dos había un bloque de título más un
           bloque de avisos. Ahora es UNA tarjeta: el mes y el CTA en la cabecera
           —junto al nombre de la tabla que gobiernan— y la tabla debajo. */}
+      {respuesta && respuesta.conPresupuesto.length > 0 ? (
+        <CifraHeroe
+          rotulo="Rubros dentro de lo planeado"
+          cifra={`${respuesta.bien.length.toLocaleString(localeDeLasCifras())} de ${respuesta.conPresupuesto.length.toLocaleString(localeDeLasCifras())}`}
+          contexto={
+            <>
+              real <span className="font-mono tabular-nums">{plata(respuesta.t.totales.realCop)}</span> contra{' '}
+              <span className="font-mono tabular-nums">{plata(respuesta.t.totales.presupuestoCop)}</span> presupuestados
+            </>
+          }
+          total={respuesta.conPresupuesto.length}
+          tramos={[
+            { clave: 'bien', etiqueta: 'Dentro de lo planeado', monto: respuesta.bien.length, tono: 'exito', cifra: respuesta.bien.length.toLocaleString(localeDeLasCifras()) },
+            { clave: 'mal', etiqueta: 'Fuera de lo planeado', monto: respuesta.medibles.length - respuesta.bien.length, tono: 'aviso', cifra: (respuesta.medibles.length - respuesta.bien.length).toLocaleString(localeDeLasCifras()) },
+            { clave: 'sin-medir', etiqueta: 'No se puede medir', monto: respuesta.conPresupuesto.length - respuesta.medibles.length, tono: 'neutro', cifra: (respuesta.conPresupuesto.length - respuesta.medibles.length).toLocaleString(localeDeLasCifras()) },
+          ]}
+          data-testid="cifra-del-presupuesto"
+        />
+      ) : null}
+
       <section className="overflow-x-clip rounded-lg border border-border bg-surface">
-        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold text-fg">
-              {comparacion
-                ? `Presupuesto vs. real vs. ${nombreDelMes(comparacion.mesDelAnioAnterior)}`
-                : 'Presupuesto vs. real'}
-            </h2>
-            <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
-              Lo que se planeó, lo que pasó y lo que pasó el mismo mes del año
-              pasado. Un rubro cuyo real no se puede calcular sale con guion y
-              dice por qué: un cero ahí se leería como «no gastaste nada».
-            </p>
-          </div>
+        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
+          <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">
+            {comparacion
+              ? `Presupuesto vs. real vs. ${nombreDelMes(comparacion.mesDelAnioAnterior)}`
+              : 'Presupuesto vs. real'}
+          </h2>
           <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
             <SelectorDeMes mes={mes} onCambiar={setMes} />
             {puedeCargar ? (
               /* CB-30: sin la ↗ — el botón abre un diálogo acá, no otra página. */
-              <Button hideArrow onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
+              <Button size="sm" hideArrow onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                 Cargar un rubro
               </Button>
@@ -205,6 +234,14 @@ export function PresupuestoPanel() {
           ) : null}
         </EstadoDeDatos>
       </section>
+
+      <MasDetalles etiqueta="Qué dice cada columna" etiquetaAbierto="Ocultar">
+        <p className="max-w-2xl text-body-sm leading-relaxed text-fg-muted">
+          Lo que se planeó, lo que pasó y lo que pasó el mismo mes del año pasado. Un rubro cuyo real
+          no se puede calcular sale con guion y dice por qué: un cero ahí se leería como «no gastaste
+          nada». En verde, un costo por debajo de lo presupuestado o un ingreso por encima.
+        </p>
+      </MasDetalles>
 
       <DialogoDeCarga
         abierto={abriendo}
@@ -286,8 +323,8 @@ function Comparacion({
       ) : null}
 
       <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
+        <Table className="max-md:block">
+          <TableHeader className="max-md:hidden">
             <TableRow>
               <TableHead>Rubro</TableHead>
               <TableHead className="text-right">Presupuesto</TableHead>
@@ -306,12 +343,16 @@ function Comparacion({
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
-          <TableBodyAnimado>
+          <TableBodyAnimado className="max-md:block">
             {tabla.filas.map((fila) => {
               const suFila = porRubro.get(fila.rubro);
               return (
-                <TableRowAnimada key={fila.rubro} data-testid={`rubro-${fila.rubro}`}>
-                  <TableCell>
+                <TableRowAnimada
+                  key={fila.rubro}
+                  data-testid={`rubro-${fila.rubro}`}
+                  className="max-md:grid max-md:grid-cols-2 max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4"
+                >
+                  <TableCell className="max-md:col-span-2 max-md:block max-md:p-0">
                     <div className="space-y-0.5">
                       <p className="font-medium text-fg">{fila.nombre}</p>
                       {/* 🔴 20-09 · Acá se pintaba el motivo ENTERO —cuatro
@@ -337,12 +378,13 @@ function Comparacion({
                       ) : null}
                     </div>
                   </TableCell>
-                  <Monto id={`presupuesto-${fila.rubro}`} valor={fila.presupuestoCop} />
-                  <Monto id={`real-${fila.rubro}`} valor={fila.realCop} />
+                  <Monto id={`presupuesto-${fila.rubro}`} valor={fila.presupuestoCop} etiqueta="Presupuesto" />
+                  <Monto id={`real-${fila.rubro}`} valor={fila.realCop} etiqueta="Real" />
                   {tabla.hayOperacion ? (
-                    <Monto id={`operacion-${fila.rubro}`} valor={fila.operacionCop} apagado />
+                    <Monto id={`operacion-${fila.rubro}`} valor={fila.operacionCop} apagado etiqueta="En la operación" />
                   ) : null}
                   <Monto
+                    etiqueta="Contra el presupuesto"
                     id={`contra-${fila.rubro}`}
                     valor={fila.contraPresupuestoCop}
                     tono={
@@ -357,16 +399,17 @@ function Comparacion({
                             : 'success'
                     }
                   />
-                  <Monto id={`anterior-${fila.rubro}`} valor={fila.anioAnteriorCop} />
+                  <Monto id={`anterior-${fila.rubro}`} valor={fila.anioAnteriorCop} etiqueta={mesConMayuscula(comparacion.mesDelAnioAnterior)} />
                   <TableCell
-                    className="text-right font-mono tabular-nums"
+                    className="text-right font-mono tabular-nums max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]"
                     data-testid={`variacion-${fila.rubro}`}
+                    data-etiqueta="Variación anual"
                   >
                     {fila.variacionAnualPct === null
                       ? SIN_MEDIR
                       : `${fila.variacionAnualPct > 0 ? '+' : ''}${fila.variacionAnualPct} %`}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="max-md:col-span-2 max-md:block max-md:p-0">
                     {suFila ? (
                       <Button
                         variant="ghost"
@@ -382,19 +425,19 @@ function Comparacion({
                 </TableRowAnimada>
               );
             })}
-            <TableRow key="total" className="border-t-2 border-border font-medium">
-              <TableCell>Total</TableCell>
-              <Monto id="total-presupuesto" valor={tabla.totales.presupuestoCop} />
-              <Monto id="total-real" valor={tabla.totales.realCop} />
+            <TableRow key="total" className="border-t-2 border-border max-md:grid max-md:grid-cols-2 max-md:gap-x-4 max-md:gap-y-2 max-md:px-4 max-md:py-4">
+              <TableCell className="font-medium max-md:col-span-2 max-md:block max-md:p-0">Total</TableCell>
+              <Monto id="total-presupuesto" valor={tabla.totales.presupuestoCop} etiqueta="Presupuesto" />
+              <Monto id="total-real" valor={tabla.totales.realCop} etiqueta="Real" />
               {tabla.hayOperacion ? (
-                <Monto id="total-operacion" valor={tabla.totales.operacionCop} apagado />
+                <Monto id="total-operacion" valor={tabla.totales.operacionCop} apagado etiqueta="En la operación" />
               ) : null}
-              <TableCell colSpan={3} className="text-right text-caption text-fg-muted">
+              <TableCell colSpan={3} className="text-right text-caption text-fg-muted max-md:col-span-2 max-md:block max-md:p-0 max-md:text-left">
                 {tabla.totales.rubrosSinReal > 0
                   ? `El total del real NO incluye ${tabla.totales.rubrosSinReal} ${tabla.totales.rubrosSinReal === 1 ? 'rubro' : 'rubros'} que todavía no se ${tabla.totales.rubrosSinReal === 1 ? 'puede' : 'pueden'} medir.`
                   : 'Todos los rubros se pudieron medir.'}
               </TableCell>
-              <TableCell />
+              <TableCell className="max-md:hidden" />
             </TableRow>
           </TableBodyAnimado>
         </Table>
@@ -413,21 +456,27 @@ function Monto({
   valor,
   tono,
   apagado = false,
+  etiqueta,
 }: {
   id: string;
   valor: number | null;
   tono?: 'danger' | 'success';
   apagado?: boolean;
+  /** Lo que dice la columna, para la tarjeta del celular (sin la cabecera de la tabla). */
+  etiqueta?: string;
 }) {
   return (
     <TableCell
       className={cn(
-        'whitespace-nowrap text-right font-mono tabular-nums',
+        'whitespace-nowrap text-right font-mono tabular-nums max-md:block max-md:p-0 max-md:text-left',
+        // La etiqueta de la columna en la tarjeta del celular, por CSS: el texto de la celda es la cifra.
+        etiqueta && 'max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]',
         apagado && 'text-fg-muted',
         valor !== null && tono === 'danger' && 'text-danger',
         valor !== null && tono === 'success' && 'text-success',
       )}
       data-testid={id}
+      data-etiqueta={etiqueta}
     >
       {valor === null ? SIN_MEDIR : plata(valor)}
     </TableCell>

@@ -372,8 +372,10 @@ export default function PerfilPage() {
             de ícono. */}
         <EncabezadoDePantalla seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'} titulo={t('profile.title')} descripcion={t('profile.subtitle')} className="mb-8" />
 
+        {/* Revisora r25: sólo lo que falta, sin los pasos hechos ni el «3/5». */}
         <ListaParaEmpezar
           className="mb-8"
+          soloLoQueFalta
           paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
           descripcion={completedSteps < totalSteps ? t('profile.completion.completeFor') : undefined}
           requisitos={setupSteps.map((step) => ({

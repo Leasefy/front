@@ -337,8 +337,14 @@ describe('Perfil del propietario — sólo lo que es verdad', () => {
     await renderPage()
     const texto = container.textContent ?? ''
     // Glow up 22-10: la lista de la casa (mismo dato: 2 de 5 listos, faltan 3).
+    // Revisora r25: sólo lo que falta y sin el «2/5»: salen los 3 pasos pendientes, no los 2 hechos.
     expect(texto).toContain('Para completar tu perfil te faltan 3 pasos')
-    expect(texto).toContain('2/5')
+    expect(texto).not.toContain('2/5')
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-basic-info"]')).toBeNull()
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-phone"]')).toBeNull()
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-id-number"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-address"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-emergency-contact"]')).not.toBeNull()
     expect(texto).not.toContain('Perfil completo')
     expect(texto).not.toMatch(/Verificar (teléfono|identidad)/)
   })

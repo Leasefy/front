@@ -69,6 +69,11 @@ export interface ListaParaEmpezarProps {
    * acción principal de la pantalla es lo que toca hacer ahora).
    */
   siguienteEnAzul?: boolean;
+  /**
+   * Sólo lo que falta (revisora r25, perfiles): no pinta los pasos ya hechos ni el
+   * anillo «3/5»; el título ya dice cuántos faltan. Por defecto, la lista entera.
+   */
+  soloLoQueFalta?: boolean;
   className?: string;
   'data-testid'?: string;
 }
@@ -101,6 +106,7 @@ export function ListaParaEmpezar({
   recordarComo,
   plegadaAlInicio = false,
   siguienteEnAzul = false,
+  soloLoQueFalta = false,
   className,
   'data-testid': testId,
 }: ListaParaEmpezarProps) {
@@ -169,7 +175,7 @@ export function ListaParaEmpezar({
           >
             <Check className="h-5 w-5" weight="bold" />
           </span>
-        ) : (
+        ) : soloLoQueFalta ? null : (
           <ProgressRing
             value={porcentaje}
             size="sm"
@@ -204,7 +210,7 @@ export function ListaParaEmpezar({
 
       <Collapse open={abierta} id={idDelCuerpo}>
         <Stagger as="ol" className="divide-y divide-border-faint border-t border-border-faint">
-          {requisitos.map((r, i) => (
+          {(soloLoQueFalta ? requisitos.filter((r) => r.estado !== 'listo') : requisitos).map((r, i) => (
             <StaggerItem
               as="li"
               key={r.id}

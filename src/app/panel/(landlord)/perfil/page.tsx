@@ -389,8 +389,10 @@ export default function PropietarioPerfilPage() {
           descripcion={locale === 'es' ? 'Tus datos personales y cómo te contactamos.' : 'Your personal details and how we reach you.'}
         />
 
+        {/* Revisora r25: sólo lo que falta, sin los pasos hechos ni el «3/5». */}
         <ListaParaEmpezar
           className="mb-8"
+          soloLoQueFalta
           paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
           requisitos={setupSteps.map((step) => ({
             id: step.id,

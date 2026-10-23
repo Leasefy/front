@@ -65,6 +65,27 @@ describe('ListaParaEmpezar', () => {
     expect(q('[data-testid="accion-d"]')).not.toBeNull();
   });
 
+  it('soloLoQueFalta: no pinta los pasos hechos ni el «1/3»; por defecto sí (revisora r25, perfiles)', async () => {
+    const requisitos: Requisito[] = [
+      { id: 'a', titulo: 'Resolución', estado: 'listo' },
+      { id: 'b', titulo: 'Documento', estado: 'falta' },
+      { id: 'c', titulo: 'DIAN', estado: 'falta' },
+    ];
+    await pintar(requisitos);
+    expect(q('[data-testid="lista-a"]')).not.toBeNull();
+    expect(q('[data-testid="lista"]')!.textContent).toContain('1/3');
+    await act(async () => {
+      root.render(
+        <ListaParaEmpezar paraQue="facturar" requisitos={requisitos} soloLoQueFalta data-testid="lista" />,
+      );
+    });
+    expect(q('[data-testid="lista-a"]')).toBeNull();
+    expect(q('[data-testid="lista-b"]')).not.toBeNull();
+    expect(q('[data-testid="lista-c"]')).not.toBeNull();
+    expect(q('[data-testid="lista"]')!.textContent).not.toContain('1/3');
+    expect(q('[data-testid="lista"]')!.textContent).toContain('Para facturar te faltan 2 pasos');
+  });
+
   it('en singular cuando falta uno', async () => {
     await pintar([
       { id: 'a', titulo: 'Resolución', estado: 'falta' },

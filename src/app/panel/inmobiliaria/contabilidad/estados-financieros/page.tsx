@@ -37,7 +37,7 @@ export default function EstadosFinancierosPage() {
             Contabilidad
           </Link>
           <EncabezadoDePantalla
-            seccion="Finanzas"
+            seccion="Contabilidad"
             titulo="Estados financieros"
             descripcion="El estado de resultados y el balance general, del mes y del acumulado del año, contra el presupuesto y contra el año pasado."
             ayuda={

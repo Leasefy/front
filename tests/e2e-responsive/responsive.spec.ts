@@ -164,7 +164,7 @@ function findingsFromSweep(sweep: SweepResult, touch: boolean): Finding[] {
       type: 'tap-target',
       severity: 'soft',
       selector: worst[0].selector,
-      detail: `${sweep.tapTotal} interactive element(s) are smaller than 44x44 CSS px (${severe} of the listed ones under 32px). Smallest: ${worst[0].width}x${worst[0].height}.`,
+      detail: `${sweep.tapTotal} interactive element(s) have an effective hit area smaller than 44x44 CSS px (drawn box plus any ::after expansion; ${severe} of the listed ones under 32px). Smallest: ${worst[0].width}x${worst[0].height}.`,
       data: { total: sweep.tapTotal, severeInSample: severe, sample: worst.slice(0, 10) },
     });
   }

@@ -282,21 +282,75 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
   const blockingModal = overlayEl ? sel(overlayEl) : '';
 
   // ---- tap targets (soft) -----------------------------------------------------------------
+  // The drawn box is not the tap area: the app grows touch targets with a `::after` pseudo-element
+  // (`.hit-area-44`), which `getBoundingClientRect` never sees but `elementFromPoint` does (it
+  // returns the owning element). So a target below 44px is hit-tested at the ends of a 44px box
+  // centred on it, and passes when both ends still land on it. Targets under 24px also pass the
+  // WCAG 2.5.8 spacing exception: a 24px circle centred on them touches no other target (nor the
+  // circle of another undersized one). Inline links inside text are exempt.
   const tap: TapItem[] = [];
   let tapTotal = 0;
   if (opts.tapTargets) {
-    for (const e of interactive) {
+    const tapTargets = interactive.filter((e) => {
       if (e.tagName === 'INPUT') {
         const t = (e as HTMLInputElement).type;
-        if ((t === 'checkbox' || t === 'radio') && e.closest('label')) continue; // label is the hit area
+        if ((t === 'checkbox' || t === 'radio') && e.closest('label')) return false; // label is the hit area
       }
-      const cs = getComputedStyle(e);
-      if (e.tagName === 'A' && cs.display === 'inline') continue; // inline text links are exempt
-      if (e.parentElement?.closest(INTERACTIVE)) continue; // nested: the parent is the target
+      if (e.tagName === 'A' && getComputedStyle(e).display === 'inline') return false; // inline text links are exempt
+      return !e.parentElement?.closest(INTERACTIVE); // nested: the parent is the target
+    });
+    const boxes = new Map<HTMLElement, DOMRect>(tapTargets.map((e) => [e, e.getBoundingClientRect()]));
+    const landsOn = (e: HTMLElement, x: number, y: number): boolean => {
+      if (x < 0 || y < 0 || x >= vw || y >= vh) return true; // off screen: cannot be judged, benefit of the doubt
+      const hit = document.elementFromPoint(x, y);
+      return !!hit && (hit === e || e.contains(hit));
+    };
+    const circleTouches = (c: DOMRect, o: DOMRect): boolean => {
+      const cx = c.left + c.width / 2;
+      const cy = c.top + c.height / 2;
+      const dx = Math.max(o.left - cx, 0, cx - o.right);
+      const dy = Math.max(o.top - cy, 0, cy - o.bottom);
+      return Math.hypot(dx, dy) < 12;
+    };
+    for (const e of tapTargets) {
+      const drawn = boxes.get(e) as DOMRect;
+      if (drawn.width >= 44 && drawn.height >= 44) continue;
+
+      // Hit-test the 44px box. Bring the element on screen first, then put every scroller back.
+      const moved: Array<[HTMLElement, number, number]> = [];
+      for (let n: HTMLElement | null = e.parentElement; n; n = n.parentElement) {
+        if (n.scrollHeight > n.clientHeight || n.scrollWidth > n.clientWidth) moved.push([n, n.scrollTop, n.scrollLeft]);
+      }
+      e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' as ScrollBehavior });
       const r = e.getBoundingClientRect();
-      if (r.width >= 44 && r.height >= 44) continue;
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const effW = r.width >= 44 || (landsOn(e, cx - 21, cy) && landsOn(e, cx + 21, cy)) ? Math.max(r.width, 44) : r.width;
+      const effH = r.height >= 44 || (landsOn(e, cx, cy - 21) && landsOn(e, cx, cy + 21)) ? Math.max(r.height, 44) : r.height;
+      for (const [n, top, left] of moved) {
+        n.scrollTop = top;
+        n.scrollLeft = left;
+      }
+      scrollTo(0);
+      if (effW >= 44 && effH >= 44) continue;
+
+      if (effW < 24 && effH < 24) {
+        let crowded = false;
+        for (const [o, ob] of boxes) {
+          if (o === e) continue;
+          const small = ob.width < 24 && ob.height < 24;
+          const apart = small
+            ? Math.hypot(ob.left + ob.width / 2 - (drawn.left + drawn.width / 2), ob.top + ob.height / 2 - (drawn.top + drawn.height / 2)) >= 24
+            : !circleTouches(drawn, ob);
+          if (!apart) {
+            crowded = true;
+            break;
+          }
+        }
+        if (!crowded) continue;
+      }
       tapTotal++;
-      if (tap.length < 40) tap.push({ selector: sel(e), width: Math.round(r.width), height: Math.round(r.height) });
+      if (tap.length < 40) tap.push({ selector: sel(e), width: Math.round(drawn.width), height: Math.round(drawn.height) });
     }
   }
 

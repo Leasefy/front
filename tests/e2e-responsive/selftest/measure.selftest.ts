@@ -81,3 +81,58 @@ test('elements behind a modal are not reported as occluded by it', async ({ page
   const sweep = await sweepOf(page, MODAL_PAGE('role="dialog" aria-modal="true"'));
   expect(sweep.occluded.map((o) => o.selector).filter((s) => /Link A/.test(s))).toEqual([]);
 });
+
+// ---- tap targets: effective hit area (WU-9 item 2) -------------------------------------------
+
+// Same shape as the app's `.hit-area-44`: a 44x44 ::after centred on the control.
+const HIT44 = `.hit44{position:relative}.hit44::after{content:"";position:absolute;left:50%;top:50%;width:44px;height:44px;transform:translate(-50%,-50%)}`;
+const small = (extra: string) => `width:20px;height:20px;padding:0;border:0;background:#ccc;${extra}`;
+
+async function tapOf(page: import('@playwright/test').Page, body: string) {
+  await page.setContent(`<!doctype html><html><head><style>${HIT44}</style></head><body style="margin:0">${body}</body></html>`);
+  const sweep = await page.evaluate(pageSweep, { tapTargets: true, maxPositions: 4 });
+  return sweep.tap.map((t) => t.selector);
+}
+
+test('a 20px control with a 44px ::after hit area is NOT a small tap target', async ({ page }) => {
+  const found = await tapOf(page, `<div style="padding:60px"><button class="hit44" style="${small('')}">a</button></div>`);
+  expect(found).toEqual([]);
+});
+
+test('the same 20px control without the ::after is reported when neighbours are close', async ({ page }) => {
+  const found = await tapOf(
+    page,
+    `<div style="padding:60px"><button style="${small('margin-right:1px')}">a</button><button style="${small('')}">b</button></div>`,
+  );
+  expect(found.length).toBe(2);
+});
+
+test('a hit area that a neighbour covers does not count in full', async ({ page }) => {
+  // The ::after of the first button reaches 12px past the second one, which paints on top of it.
+  const found = await tapOf(
+    page,
+    `<div style="padding:60px;display:flex"><button class="hit44" style="${small('')}">a</button><button style="${small('position:relative;z-index:2;margin-left:2px')}">b</button></div>`,
+  );
+  expect(found.some((s) => /"a"/.test(s))).toBe(true);
+});
+
+test('an undersized target passes the WCAG 2.5.8 spacing exception when nothing is within 24px', async ({ page }) => {
+  const found = await tapOf(
+    page,
+    `<div style="padding:60px"><button style="${small('')}">a</button></div><div style="padding:0 60px 60px"><button style="${small('margin-top:80px')}">b</button></div>`,
+  );
+  expect(found).toEqual([]);
+});
+
+test('the spacing exception does not rescue a target 24px or larger that is still under 44', async ({ page }) => {
+  const found = await tapOf(page, `<div style="padding:60px"><button style="width:32px;height:32px">a</button></div>`);
+  expect(found.length).toBe(1);
+});
+
+test('inline links inside text stay exempt and a 44px target passes', async ({ page }) => {
+  const found = await tapOf(
+    page,
+    `<p style="padding:20px">Read the <a href="#t">terms</a> first.</p><button style="width:44px;height:44px">ok</button>`,
+  );
+  expect(found).toEqual([]);
+});

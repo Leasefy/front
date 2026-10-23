@@ -176,7 +176,7 @@ export function WizardShell({
               {currentStepConfig?.label}
             </span>
           </div>
-          <Progress value={currentStep} max={totalSteps} size="xs" label="Progreso de la solicitud" />
+          <Progress value={currentStep} max={totalSteps} size="xs" label="Progreso de la postulación" />
         </div>
       </header>
 

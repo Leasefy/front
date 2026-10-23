@@ -13865,7 +13865,8 @@
       "proximaCuota": "Next payout",
       "sinProxima": "No payouts left to fall due",
       "vencida": "late",
-      "colImpuestos": "Commission and taxes"
+      "colImpuestos": "Commission and taxes",
+      "porVencer": "To be paid out later"
     },
     "cancelado": "Paid",
     "pendiente": "Pending",
@@ -14022,7 +14023,8 @@
     "saldoAFavorEnLote": "In a payment batch, to be paid",
     "saldoAFavorPagado": "Refunded · disbursement voucher No. {{numero}}",
     "saldoAFavorPagadoSinNumero": "Refunded",
-    "saldoAFavorAnulado": "Refund voided: the balance belongs to the tenant again"
+    "saldoAFavorAnulado": "Refund voided: the balance belongs to the tenant again",
+    "porVencer": "Not yet due"
   },
   "agentes": {
     "equipo": {

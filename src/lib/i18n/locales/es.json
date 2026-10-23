@@ -13900,7 +13900,8 @@
       "proximaCuota": "Próximo giro",
       "sinProxima": "No queda ningún giro por vencer",
       "vencida": "atrasado",
-      "colImpuestos": "Comisión e impuestos"
+      "colImpuestos": "Comisión e impuestos",
+      "porVencer": "Por girar más adelante"
     },
     "cancelado": "Cancelado",
     "pendiente": "Pendiente",
@@ -14057,7 +14058,8 @@
     "saldoAFavorEnLote": "En un lote de egresos, por pagar",
     "saldoAFavorPagado": "Devuelto · comprobante de egreso N.º {{numero}}",
     "saldoAFavorPagadoSinNumero": "Devuelto",
-    "saldoAFavorAnulado": "Devolución anulada: el saldo volvió a ser del inquilino"
+    "saldoAFavorAnulado": "Devolución anulada: el saldo volvió a ser del inquilino",
+    "porVencer": "Por vencer"
   },
   "agentes": {
     "equipo": {

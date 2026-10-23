@@ -33,6 +33,7 @@ import { claveDelLado, useTextoDelEstado } from './textos';
 import { interesesDelEstado } from './intereses';
 import { rotuloDePorGirar, rotuloDeProximosGiros } from '@/lib/propietarios/por-girar';
 import { sumarMeses } from '@/lib/recaudo/meses';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 
 export function ResumenDelEstado({
   doc,
@@ -80,148 +81,161 @@ export function ResumenDelEstado({
         </p>
       </div>
 
-      {/* La primera celda es más ancha que las otras dos: es la del número
-          grande, y «$ 189.000.000» a 36 px no entra en un tercio. Sin el
-          `whitespace-nowrap` el «$» se quedaba solo en una línea — el error
-          más visible que puede tener una cifra, según DESIGN.md §19. */}
-      <div className="grid gap-5 rounded-lg bg-surface-muted p-5 sm:grid-cols-[1.4fr_1fr_1fr] sm:gap-0 sm:divide-x sm:divide-border sm:p-6">
-        <div className="min-w-0 sm:pr-6">
-          <p className="text-label uppercase tracking-wide text-fg-subtle">
-            {porGirar ? rotuloDePorGirar(porGirar.hastaMes) : t('estadoDeCuenta.restaPorPagar')}
-          </p>
-          <p
-            data-testid="resta-por-pagar"
-            className="mt-1.5 whitespace-nowrap font-mono text-[28px] font-medium leading-none tabular-nums text-fg sm:text-[32px] lg:text-[36px]"
-          >
+      {/*
+        Revisora r27 (portales y panel): LA RESPUESTA con la pieza de la casa (`CifraHeroe`), como Pagos, en vez de la
+        caja de tres celdas armada a mano. El número grande sigue siendo el que el CEO dijo de memoria (lo que resta
+        por pagar; al propietario, lo que falta por girar). La barra reparte lo que YA estaba en el resumen —lo
+        cancelado, lo vencido y lo que falta por vencer—, sin cuentas nuevas. El estado (al día / en plazo / en mora)
+        va junto a la cifra; la próxima cuota, los giros y los intereses, al pie.
+      */}
+      <CifraHeroe
+        className="rounded-lg bg-surface-muted p-5 sm:p-6"
+        rotulo={porGirar ? rotuloDePorGirar(porGirar.hastaMes) : t('estadoDeCuenta.restaPorPagar')}
+        cifra={
+          <span data-testid="resta-por-pagar" className="whitespace-nowrap">
             {formatCurrency(porGirar ? porGirar.porGirarCop : r.restaPorPagar)}
-          </p>
-          {porGirar && (
-            <p className="mt-2 text-caption text-fg-muted" data-testid="proximos-giros-del-propietario">
-              {rotuloDeProximosGiros(sumarMeses(porGirar.hastaMes, 1), porGirar.proximosGirosHastaMes)}
-              :{' '}
-              <span className="font-mono tabular-nums">
-                {formatCurrency(porGirar.proximosGirosCop)}
-              </span>
-              {porGirar.deduccionesCop > 0 && (
-                <>
-                  {' · ya descontados '}
-                  <span className="font-mono tabular-nums">
-                    {formatCurrency(porGirar.deduccionesCop)}
-                  </span>
-                  {' de deducciones'}
-                </>
-              )}
-            </p>
-          )}
-          <p className="mt-2.5 text-caption text-fg-muted">
-            {t('estadoDeCuenta.cancelado')}{' '}
-            <span className="font-mono tabular-nums">{formatCurrency(r.cancelado)}</span>
-            {r.vencidoCop > 0 && (
-              <>
-                {' · '}
-                {t('estadoDeCuenta.vencido')}{' '}
-                <span
-                  data-testid="vencido-del-cliente"
-                  className={cn('font-mono tabular-nums', esPropietario ? 'text-warning' : 'text-danger')}
-                >
-                  {formatCurrency(r.vencidoCop)}
-                </span>
-              </>
-            )}
-          </p>
-          {/* El número grande es CAPITAL. El interés de mora va debajo, aparte,
-              con su propio total: sumarlo arriba lo volvería imposible de
-              cruzar con la factura del mes. */}
-          {intereses && intereses.pendiente > 0 && (
-            <p data-testid="intereses-del-cliente" className="mt-1 text-caption text-fg-muted">
-              <span className="text-danger">
-                {t('estadoDeCuenta.masIntereses', {
-                  monto: formatCurrency(intereses.pendiente),
-                })}
-              </span>
-              {' · '}
-              {t('estadoDeCuenta.conIntereses')}{' '}
-              <span className="font-mono tabular-nums text-fg">
-                {formatCurrency(intereses.restaPorPagarConIntereses)}
-              </span>
-            </p>
-          )}
-        </div>
-
-        <div className="sm:px-6">
-          <p className="text-label uppercase tracking-wide text-fg-subtle">
-            {t('estadoDeCuenta.proximaCuota')}
-          </p>
-          {r.proxima ? (
-            <>
-              <p
-                data-testid="proxima-cuota"
-                className="mt-1.5 font-mono text-lg font-medium tabular-nums text-fg"
-              >
-                {fechaLegible(r.proxima.fecha)}
-              </p>
-              <p className="mt-1 font-mono text-body-sm tabular-nums text-fg-muted">
-                {formatCurrency(r.proxima.valor)}
-              </p>
-            </>
-          ) : (
-            /* Sin cuota futura no se inventa una: o el contrato terminó, o todo
-               lo que queda ya venció y eso lo dice la celda de al lado. */
-            <p className="mt-1.5 text-body-sm text-fg-muted">
-              {t('estadoDeCuenta.sinProxima')}
-            </p>
-          )}
-        </div>
-
-        <div className="sm:pl-6">
-          <p className="text-label uppercase tracking-wide text-fg-subtle">
-            {t('estadoDeCuenta.estado')}
-          </p>
-          <p className="mt-1.5">
-            <span
-              data-testid="estado-del-cliente"
-              className={cn(
-                'inline-block rounded-full px-3 py-1 text-body-sm font-medium',
-                r.enMora
-                  ? /* Rojo es «debes»: al propietario se le avisa en ámbar. */
-                    esPropietario
-                    ? 'bg-warning-soft text-warning'
-                    : 'bg-danger-soft text-danger'
-                  : r.enPlazo
-                    ? 'bg-warning-soft text-warning'
-                    : 'bg-success-soft text-success',
-              )}
-            >
-              {r.enMora
-                ? t('estadoDeCuenta.enMoraDias', { dias: r.diasDeMora })
+          </span>
+        }
+        contexto={
+          <span
+            data-testid="estado-del-cliente"
+            className={cn(
+              'inline-block rounded-full px-3 py-0.5 text-body-sm font-medium',
+              r.enMora
+                ? /* Rojo es «debes»: al propietario se le avisa en ámbar. */
+                  esPropietario
+                  ? 'bg-warning-soft text-warning'
+                  : 'bg-danger-soft text-danger'
                 : r.enPlazo
-                  ? // 🔴 CR-31: sin plazo fijado es «Vencida», no «en plazo».
-                    r.sinPlazoFijado
-                    ? t('estadoDeCuenta.vencidaSinPlazo')
-                    : t('estadoDeCuenta.vencidoEnPlazo')
-                  : t('estadoDeCuenta.alDia')}
+                  ? 'bg-warning-soft text-warning'
+                  : 'bg-success-soft text-success',
+            )}
+          >
+            {r.enMora
+              ? t('estadoDeCuenta.enMoraDias', { dias: r.diasDeMora })
+              : r.enPlazo
+                ? // 🔴 CR-31: sin plazo fijado es «Vencida», no «en plazo».
+                  r.sinPlazoFijado
+                  ? t('estadoDeCuenta.vencidaSinPlazo')
+                  : t('estadoDeCuenta.vencidoEnPlazo')
+                : t('estadoDeCuenta.alDia')}
+          </span>
+        }
+        tramos={
+          porGirar
+            ? undefined
+            : [
+                {
+                  clave: 'cancelado',
+                  etiqueta: t('estadoDeCuenta.cancelado'),
+                  monto: r.cancelado,
+                  tono: 'exito',
+                  cifra: formatCurrency(r.cancelado),
+                },
+                {
+                  clave: 'vencido',
+                  etiqueta: t('estadoDeCuenta.vencido'),
+                  monto: r.vencidoCop,
+                  tono: esPropietario ? 'aviso' : r.enMora ? 'critico' : 'aviso',
+                  cifra: (
+                    <span
+                      data-testid="vencido-del-cliente"
+                      className={cn(esPropietario ? 'text-warning' : r.enMora ? 'text-danger' : 'text-warning')}
+                    >
+                      {formatCurrency(r.vencidoCop)}
+                    </span>
+                  ),
+                },
+                {
+                  clave: 'por-vencer',
+                  etiqueta: t('estadoDeCuenta.porVencer'),
+                  monto: Math.max(0, r.restaPorPagar - r.vencidoCop),
+                  tono: 'neutro',
+                  cifra: formatCurrency(Math.max(0, r.restaPorPagar - r.vencidoCop)),
+                },
+              ]
+        }
+        pie={
+          <span className="block space-y-1">
+            {porGirar && (
+              <span className="block" data-testid="proximos-giros-del-propietario">
+                {rotuloDeProximosGiros(sumarMeses(porGirar.hastaMes, 1), porGirar.proximosGirosHastaMes)}
+                :{' '}
+                <span className="font-mono tabular-nums">{formatCurrency(porGirar.proximosGirosCop)}</span>
+                {porGirar.deduccionesCop > 0 && (
+                  <>
+                    {' · ya descontados '}
+                    <span className="font-mono tabular-nums">{formatCurrency(porGirar.deduccionesCop)}</span>
+                    {' de deducciones'}
+                  </>
+                )}
+              </span>
+            )}
+            {porGirar && (
+              <span className="block">
+                {t('estadoDeCuenta.cancelado')}{' '}
+                <span className="font-mono tabular-nums">{formatCurrency(r.cancelado)}</span>
+                {r.vencidoCop > 0 && (
+                  <>
+                    {' · '}
+                    {t('estadoDeCuenta.vencido')}{' '}
+                    <span data-testid="vencido-del-cliente" className="font-mono tabular-nums text-warning">
+                      {formatCurrency(r.vencidoCop)}
+                    </span>
+                  </>
+                )}
+              </span>
+            )}
+            <span className="block">
+              {t('estadoDeCuenta.proximaCuota')}:{' '}
+              {r.proxima ? (
+                <>
+                  <span data-testid="proxima-cuota" className="font-mono tabular-nums text-fg">
+                    {fechaLegible(r.proxima.fecha)}
+                  </span>
+                  {' · '}
+                  <span className="font-mono tabular-nums">{formatCurrency(r.proxima.valor)}</span>
+                </>
+              ) : (
+                /* Sin cuota futura no se inventa una: o el contrato terminó, o todo lo que queda ya venció. */
+                t('estadoDeCuenta.sinProxima')
+              )}
             </span>
-          </p>
-          {r.enPlazo && (
-            <p className="mt-2 text-caption text-fg-muted" data-testid="estado-en-plazo">
-              {r.sinPlazoFijado
-                ? r.cuotasEnPlazo === 1
-                  ? t('estadoDeCuenta.unaVencidaSinPlazoDetalle')
-                  : t('estadoDeCuenta.vencidaSinPlazoDetalle', { n: r.cuotasEnPlazo })
-                : r.cuotasEnPlazo === 1
-                  ? t('estadoDeCuenta.unaVencidaEnPlazoDetalle')
-                  : t('estadoDeCuenta.vencidoEnPlazoDetalle', { n: r.cuotasEnPlazo })}
-            </p>
-          )}
-          {r.enMora && (
-            <p className="mt-2 text-caption text-fg-muted">
-              {r.cuotasVencidas === 1
-                ? t('estadoDeCuenta.unaCuotaVencida')
-                : t('estadoDeCuenta.cuotasVencidas', { n: r.cuotasVencidas })}
-            </p>
-          )}
-        </div>
-      </div>
+            {r.enPlazo && (
+              <span className="block" data-testid="estado-en-plazo">
+                {r.sinPlazoFijado
+                  ? r.cuotasEnPlazo === 1
+                    ? t('estadoDeCuenta.unaVencidaSinPlazoDetalle')
+                    : t('estadoDeCuenta.vencidaSinPlazoDetalle', { n: r.cuotasEnPlazo })
+                  : r.cuotasEnPlazo === 1
+                    ? t('estadoDeCuenta.unaVencidaEnPlazoDetalle')
+                    : t('estadoDeCuenta.vencidoEnPlazoDetalle', { n: r.cuotasEnPlazo })}
+              </span>
+            )}
+            {r.enMora && (
+              <span className="block">
+                {r.cuotasVencidas === 1
+                  ? t('estadoDeCuenta.unaCuotaVencida')
+                  : t('estadoDeCuenta.cuotasVencidas', { n: r.cuotasVencidas })}
+              </span>
+            )}
+            {/* El número grande es CAPITAL. El interés de mora va aparte, con su propio total: sumarlo arriba lo
+                volvería imposible de cruzar con la factura del mes. */}
+            {intereses && intereses.pendiente > 0 && (
+              <span data-testid="intereses-del-cliente" className="block">
+                <span className="text-danger">
+                  {t('estadoDeCuenta.masIntereses', { monto: formatCurrency(intereses.pendiente) })}
+                </span>
+                {' · '}
+                {t('estadoDeCuenta.conIntereses')}{' '}
+                <span className="font-mono tabular-nums text-fg">
+                  {formatCurrency(intereses.restaPorPagarConIntereses)}
+                </span>
+              </span>
+            )}
+          </span>
+        }
+      />
     </section>
   );
 }

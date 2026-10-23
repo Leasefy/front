@@ -8961,7 +8961,7 @@
           "comun": {
             "colaTitle": "Por revisar",
             "configTitle": "Configuración y autonomía",
-            "configDesc": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. Debajo del modo dice qué cambia hoy, de verdad, para este agente.",
+            "configDesc": "Qué hace el agente solo y qué espera tu aprobación.",
             "analiticaTitle": "Analítica",
             "enCola": "Pendientes",
             "pendientes": "Pendientes",

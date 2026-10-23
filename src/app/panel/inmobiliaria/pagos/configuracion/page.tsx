@@ -19,7 +19,7 @@ import { useI18n } from '@/lib/i18n'
 
 function PagosConfiguracion() {
   const { t } = useI18n()
-  const { data, isLoading, error } = useAgentAutonomia('pagos')
+  const { data, isLoading, error, refetch } = useAgentAutonomia('pagos')
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -28,14 +28,16 @@ function PagosConfiguracion() {
         <Link href="/panel/inmobiliaria/pagos/agente" className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
           Agente de pagos
         </Link>
+        {/* C2 (revisora r25): la vuelta dice «Agente de pagos»; el sobretítulo es la sección del menú. */}
         <EncabezadoDePantalla
-          seccion="Agente de pagos"
+          seccion={t('inmobiliaria.nav.secAgentes')}
           titulo={t('inmobiliaria.ai.workspace.pages.comun.configTitle')}
           descripcion={t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
         />
       </div>
 
-      <AutonomiaPanel data={data} isLoading={isLoading} error={error} />
+      {/* Revisora r25 (#1): el fallo con su «Intentar de nuevo» (antes sin botón). */}
+      <AutonomiaPanel data={data} isLoading={isLoading} error={error} onReintentar={refetch} />
     </div>
   )
 }

@@ -8926,7 +8926,7 @@
           "comun": {
             "colaTitle": "To review",
             "configTitle": "Settings & autonomy",
-            "configDesc": "What the agent can do on its own and what always requires your approval. Below the mode it says what really changes today for this agent.",
+            "configDesc": "What the agent does on its own and what waits for your approval.",
             "analiticaTitle": "Analytics",
             "enCola": "Pending",
             "pendientes": "Pending",

@@ -163,7 +163,7 @@ export function AcuerdosGeneralesCard() {
   })
 
   return (
-    <Card className="p-4 sm:p-5">
+    <Card id="acuerdos-generales" className="p-4 sm:p-5 scroll-mt-24">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-start gap-3 min-w-0">
           <span className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center shrink-0">

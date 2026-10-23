@@ -60,6 +60,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/CobranzaConfiguracionSkeleton'
 import { DiasDeGraciaDeLaPromesa } from '@/components/inmobiliaria/cobranza/DiasDeGraciaDeLaPromesa'
 import { FormasDeOfrecerElAcuerdo } from '@/components/inmobiliaria/cobranza/FormasDeOfrecerElAcuerdo'
+import { LoQueLePidesAMori } from '@/components/inmobiliaria/cobranza/LoQueLePidesAMori'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -761,6 +762,10 @@ function CobranzaConfiguracionContent() {
       {/* Formas de ofrecer el acuerdo (07-10-2026, Nico: «la que no quiera lo
           apaga»): sale del A/B de Leasefy; la ganadora aprobada aplica igual. */}
       <FormasDeOfrecerElAcuerdo puedeCambiar={canAccess('cobranza', 'approve')} />
+
+      {/* Lo que la inmobiliaria le pide a Mori, revisado con IA (21-10-2026). Junto a
+          «Formas de ofrecer el acuerdo»: es el mismo tema, cómo negocia Mori (revisora, 22-10). */}
+      <LoQueLePidesAMori puedeEditar={canEdit} />
 
       {/* ③ Cadencia de contacto — SACADA del panel (ver nota al pie).
           Cuándo y por qué canal contacta el agente lo afinamos nosotros, no la

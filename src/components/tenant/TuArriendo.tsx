@@ -115,7 +115,7 @@ export function TuArriendo({
             </li>
           ))}
         </ul>
-        <Link href="/inquilino/arriendo" className="text-body-sm font-medium text-primary underline-offset-4 hover:underline">
+        <Link href="/inquilino/arriendo" className="text-body-sm font-medium text-fg underline underline-offset-4 hover:text-primary">
           {es ? 'Ver mi arriendo' : 'View my rental'}
         </Link>
       </div>

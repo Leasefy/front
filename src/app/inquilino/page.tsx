@@ -312,14 +312,16 @@ export default function InquilinoPage() {
           seccion="Inicio"
           titulo={firstName ? `${greeting}, ${firstName}` : greeting}
           // «Te toca: …» (Nico eligió «3 secciones», 21-10): lo único urgente, en una línea.
+          // Revisora r25: sin tope, la cifra grande de abajo ya dice «Todavía no sabes hasta cuánto…» con su botón; el
+          // «Te toca» que llevaba a lo mismo no se repite aquí. El enlace en tinta: el azul es el botón de la pantalla.
           descripcion={
-            teToca ? (
+            teToca && teToca.href !== '/inquilino/aprobacion' ? (
               <span data-testid="te-toca">
                 {teToca.texto}
                 {teToca.href ? (
                   <>
                     {' '}
-                    <Link href={teToca.href} className="font-medium text-primary underline-offset-4 hover:underline">
+                    <Link href={teToca.href} className="font-medium text-fg underline underline-offset-4 hover:text-primary">
                       {locale === 'es' ? 'Ir' : 'Go'}
                     </Link>
                   </>
@@ -424,12 +426,15 @@ export default function InquilinoPage() {
                 </div>
                 {/* Apunta al catálogo propio, no a Explorar: la sección se
                     llama "Propiedades para ti" y mandaba al listado general. */}
+                {/* Revisora r25: «Ver más» sólo con inmuebles que ver (antes también sobre el vacío). */}
+                {featuredProperties.length > 0 && (
                 <Link
                   href="/inquilino/para-ti"
                   className="text-sm text-fg-muted hover:text-fg font-medium flex items-center gap-1 transition-colors"
                 >
                   {t('common.showMore')}
                 </Link>
+                )}
               </div>
 
               {/* Las destacadas llegan DESPUÉS del panel (su propia consulta). Mientras, el esqueleto con la
@@ -597,14 +602,20 @@ export default function InquilinoPage() {
                       },
                     ]
                   : [
-                      {
-                        // Buscar se hace en el marketplace, en OTRA pestaña (reunión 21-10).
-                        href: RUTA_DEL_MARKETPLACE,
-                        externo: true,
-                        icon: MagnifyingGlass,
-                        label: locale === 'es' ? 'Buscar en el marketplace' : 'Search the marketplace',
-                        desc: locale === 'es' ? 'Con tus filtros, en otra pestaña' : 'With your filters, in a new tab',
-                      },
+                      // Revisora r25: sin inmuebles para ti, el vacío de arriba ya ofrece buscar en el marketplace;
+                      // el atajo no lo repite.
+                      ...(featuredProperties.length > 0
+                        ? [
+                            {
+                              // Buscar se hace en el marketplace, en OTRA pestaña (reunión 21-10).
+                              href: RUTA_DEL_MARKETPLACE,
+                              externo: true,
+                              icon: MagnifyingGlass,
+                              label: locale === 'es' ? 'Buscar en el marketplace' : 'Search the marketplace',
+                              desc: locale === 'es' ? 'Con tus filtros, en otra pestaña' : 'With your filters, in a new tab',
+                            },
+                          ]
+                        : []),
                       {
                         href: '/inquilino/guardados',
                         icon: Heart,

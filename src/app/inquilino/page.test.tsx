@@ -321,12 +321,21 @@ describe('InquilinoPage — «Inmuebles para ti» mientras cargan y sin ninguno 
     expect(container.querySelector('[data-testid="inmuebles-para-ti-cargando"]')).toBeNull()
   })
 
-  it('los atajos no repiten el riel: quien busca ve el marketplace (en otra pestaña), sus guardados y la ayuda', () => {
+  // Revisora r25: sin inmuebles para ti, «Buscar en el marketplace» lo ofrece el vacío (en otra pestaña) y el atajo
+  // no lo repite.
+  it('los atajos no repiten el riel ni el vacío: sin inmuebles, sus guardados y la ayuda; el marketplace, en el vacío', () => {
     loadedUser()
     render()
     const atajos = container.querySelector('[data-testid="atajos-del-inicio"]')
     const hrefs = Array.from(atajos?.querySelectorAll('a') ?? []).map((a) => a.getAttribute('href'))
-    expect(hrefs).toEqual(['/propiedades', '/inquilino/guardados', '/ayuda'])
+    expect(hrefs).toEqual(['/inquilino/guardados', '/ayuda'])
+  })
+
+  it('con inmuebles para ti, el atajo al marketplace vuelve (en otra pestaña)', () => {
+    featuredPropsMock.mockReturnValue({ properties: [{ id: 'p-9', title: 'Apto', price: 1_500_000, images: [] }], isLoading: false })
+    loadedUser()
+    render()
+    const atajos = container.querySelector('[data-testid="atajos-del-inicio"]')
     expect(atajos?.querySelector('a[href="/propiedades"]')?.getAttribute('target')).toBe('_blank')
   })
 })

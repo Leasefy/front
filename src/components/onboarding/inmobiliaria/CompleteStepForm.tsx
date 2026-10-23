@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
-import { ArrowRight, WarningCircle } from '@phosphor-icons/react'
+import { WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { CrossFade, Presence } from '@leasefy/cadence'
@@ -275,7 +275,6 @@ export function CompleteStepForm({
             data-testid="complete-step-go-to-missing"
           >
             Ir a {labelFor(targetStep)}
-            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </Button>
         )}
       </div>
@@ -334,7 +333,6 @@ export function CompleteStepForm({
         ) : (
           <>
             Crear mi inmobiliaria
-            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

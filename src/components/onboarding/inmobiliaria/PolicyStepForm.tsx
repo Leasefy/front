@@ -1,7 +1,6 @@
 'use client'
 
 import { Controller, useForm, type FieldPath } from 'react-hook-form'
-import { ArrowRight } from '@phosphor-icons/react'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

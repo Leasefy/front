@@ -63,11 +63,8 @@ export function OnboardingInfoPanel({
           ) : null}
 
           <div className="p-5 sm:p-6">
-            <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">
-              <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              {rotulo}
-            </p>
-            <h2 className="mt-3 text-balance font-heading text-[17px] font-medium leading-snug tracking-[-0.01em] text-fg">
+            <p className="text-caption text-fg-subtle">{rotulo}</p>
+            <h2 className="mt-1.5 text-balance font-heading text-[17px] font-medium leading-snug tracking-[-0.01em] text-fg">
               {titulo}
             </h2>
 
@@ -76,13 +73,9 @@ export function OnboardingInfoPanel({
             <Stagger as="ul" className="mt-4 space-y-3" layout={false}>
               {razones.map(({ icono: Icono, texto }) => (
                 <StaggerItem as="li" key={texto} className="flex items-start gap-3">
-                  <span
-                    aria-hidden
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"
-                  >
-                    <Icono className="h-3.5 w-3.5" weight="bold" />
-                  </span>
-                  <span className="pt-1 text-body-sm leading-snug text-fg-muted">{texto}</span>
+                  {/* Ícono suelto, sin caja de color: acompaña, no compite con la acción. */}
+                  <Icono aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" />
+                  <span className="text-body-sm leading-snug text-fg-muted">{texto}</span>
                 </StaggerItem>
               ))}
             </Stagger>

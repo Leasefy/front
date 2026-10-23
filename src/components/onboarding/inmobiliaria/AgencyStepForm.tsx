@@ -7,7 +7,6 @@ import { aplicarErroresDelServidor } from '@/lib/errores/errores-en-el-formulari
 import { formatearNitAlEscribir } from '@/lib/onboarding/nit'
 import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
 import { PhoneInput, Presence } from '@leasefy/cadence'
-import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
@@ -463,7 +462,6 @@ export function AgencyStepForm({
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet'
 import { TerminosContenido } from '@/components/legal/TerminosContenido'
-import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Spinner } from '@/components/ui/spinner'
@@ -107,7 +106,6 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

@@ -27,7 +27,6 @@ import {
   type EstimadoDeArriendo,
 } from '@/lib/aprobacion/estimado-de-arriendo';
 import { guardarArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso';
-import { PasosDelArriendo } from '@/components/aprobacion/PasosDelArriendo';
 
 interface TePodemosArrendarProps {
   propertyId: string;
@@ -45,6 +44,54 @@ function Fila({ etiqueta, valor, fuerte }: { etiqueta: string; valor: string; fu
       <span className="text-fg-muted">{etiqueta}</span>
       <span className={`font-mono tabular-nums ${fuerte ? 'font-medium text-fg' : 'font-normal text-fg'}`}>{valor}</span>
     </div>
+  );
+}
+
+/**
+ * «Así funciona» dentro de la medianoche (ronda 30, diseño nuevo): los mismos
+ * tres pasos de `PasosDelArriendo` —mismos nombres y el 1 en curso—, dibujados
+ * como en la muestra: círculos de 30 px unidos por una línea y el estado en mono
+ * de 13 px. El `Stepper` de la casa pinta el estado en 10 px y en un gris fijo
+ * pensado para el papel.
+ */
+const PASOS_EN_LA_NOCHE = [
+  { titulo: 'Te alcanza', detalle: 'Tu ingreso frente al canon' },
+  { titulo: 'Validamos tus datos', detalle: 'Consultamos a las aseguradoras' },
+  { titulo: 'Tu respuesta', detalle: 'Si te lo arrendamos y cómo seguir' },
+];
+
+function PasosEnLaNoche() {
+  return (
+    <ol className="mt-3.5" aria-label="Pasos para arrendar" data-testid="pasos-del-arriendo">
+      {PASOS_EN_LA_NOCHE.map((paso, i) => {
+        const enCurso = i === 0;
+        const ultimo = i === PASOS_EN_LA_NOCHE.length - 1;
+        return (
+          <li
+            key={paso.titulo}
+            className={`relative grid grid-cols-[30px_minmax(0,1fr)] gap-3 ${ultimo ? '' : 'pb-3.5'}`}
+            aria-current={enCurso ? 'step' : undefined}
+          >
+            {!ultimo && <span className="absolute bottom-0.5 left-[14.5px] top-8 w-px bg-white/[0.16]" aria-hidden />}
+            <span
+              className={`relative z-[1] grid h-[30px] w-[30px] place-items-center rounded-full border font-mono text-[13px] ${
+                enCurso ? 'border-primary bg-primary text-white' : 'border-white/[0.16] text-fg-subtle'
+              }`}
+              aria-hidden
+            >
+              {i + 1}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[14.5px] font-medium text-fg">{paso.titulo}</p>
+              <p className="text-[13px] text-fg-muted">{paso.detalle}</p>
+              <p className={`mt-0.5 font-mono text-[13px] uppercase tracking-[0.08em] ${enCurso ? 'text-[#8FA2FF]' : 'text-fg-subtle'}`}>
+                {enCurso ? 'En curso' : 'Pendiente'}
+              </p>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -158,7 +205,7 @@ export function TePodemosArrendar({ propertyId, titulo, foto, canon, ciudad, tip
           ) : (
             <div data-testid="estimado-vacio" className="flex flex-col gap-3">
               <p className="text-[14px] font-medium text-fg">Así funciona</p>
-              <PasosDelArriendo actual={1} orientation="vertical" conDescripcion />
+              <PasosEnLaNoche />
             </div>
           )}
           <div className="flex flex-col gap-1.5 border-t border-white/[0.09] pt-3">

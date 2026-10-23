@@ -1,5 +1,6 @@
 'use client';
 
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useId, useState } from 'react';
 import Image from 'next/image';
@@ -171,7 +172,9 @@ export default function AplicacionesPage() {
   const idDeLaVista = useId();
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    // Ronda 30: la fecha corta de la casa («16 oct 2026»; es-CO daba «16 de oct de 2026»).
+    if (locale === 'es') return fechaCorta(diaEnColombia(dateString) ?? dateString).replace(/ \d{4}$/, '');
+    return new Date(dateString).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
     });

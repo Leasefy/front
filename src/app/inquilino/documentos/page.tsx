@@ -1,5 +1,6 @@
 'use client';
 
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useState, useEffect, useCallback, useId, useRef } from 'react';
 import { VERSION_POLITICA_DE_TRATAMIENTO } from '@/lib/legal/versiones';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -300,8 +301,9 @@ export default function DocumentosPage() {
 
   const getDocIcon = (type: string) => DOC_TYPE_CONFIG[type]?.icon ?? FileText;
 
+  // Ronda 30: la fecha corta de la casa («16 oct 2026»; es-CO daba «16 de oct de 2026»).
   const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    locale === 'es' ? fechaCorta(diaEnColombia(dateString) ?? dateString) : new Date(dateString).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',

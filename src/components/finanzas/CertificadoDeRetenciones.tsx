@@ -51,7 +51,10 @@ import {
 import { diaEnColombia, fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { Avisos, Cifra, CifraDeTexto, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos } from '@/components/finanzas/piezas';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { explicar } from '@/components/finanzas/TasasDeUsura';
 import { Button } from '@/components/ui/button';
 import {
@@ -163,6 +166,19 @@ export function CertificadoDeRetencionesPanel() {
 
   const emitidos = new Map((datos?.emitidos ?? []).map((e) => [e.propietarioId, e]));
 
+  // GLOW UP 3.ª vuelta · las filas por lo que le falta a cada una: el certificado ya entregado,
+  // el que falta emitir y el que no se puede emitir porque el propietario no tiene documento.
+  const [vista, setVista] = useState<VistaDelCertificado>('todos');
+  const filas = datos?.filas ?? [];
+  const grupoDe = (f: FilaDelCertificado): Exclude<VistaDelCertificado, 'todos'> =>
+    emitidos.has(f.propietarioId) ? 'emitidos' : f.documento ? 'por-emitir' : 'sin-documento';
+  const deGrupo = (g: Exclude<VistaDelCertificado, 'todos'>) => filas.filter((f) => grupoDe(f) === g);
+  const sumaDe = (fs: readonly FilaDelCertificado[]) => fs.reduce((t, f) => t + f.totalRetenidoCop, 0);
+  const porEmitir = deGrupo('por-emitir');
+  const yaEmitidos = deGrupo('emitidos');
+  const sinDocumento = deGrupo('sin-documento');
+  const filasVisibles = vista === 'todos' ? filas : filas.filter((f) => grupoDe(f) === vista);
+
   /**
    * 🔴 CB-32 (QA de Contabilidad, 03-10-2026): «Emitir» fijaba número y fecha al
    * primer clic. Ahora se confirma antes: a quién, qué año, cuánto se le retuvo
@@ -268,7 +284,7 @@ export function CertificadoDeRetencionesPanel() {
   }
 
   return (
-    <div className="space-y-5" data-testid="certificado-de-retenciones">
+    <div className="space-y-6" data-testid="certificado-de-retenciones">
       <AlertDialog
         open={confirmandoEmision !== null}
         onOpenChange={(abierto) => !abierto && emitiendo === null && setConfirmandoEmision(null)}
@@ -304,11 +320,11 @@ export function CertificadoDeRetencionesPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* ── Año y criterio ─────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-end gap-4">
+      {/* ── El año y el criterio: definen la pregunta, por eso van antes de la respuesta ── */}
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
         {/* 🔴 CB-17 (QA de Contabilidad, 03-10-2026): el `Select` del DS, no
             el `<select>` del navegador. */}
-        <div className="flex flex-col gap-1.5 text-sm text-fg-muted">
+        <div className="flex flex-col gap-1.5 text-caption text-fg-muted">
           <span id="certificado-anio">Año gravable</span>
           <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
             <SelectTrigger
@@ -327,7 +343,7 @@ export function CertificadoDeRetencionesPanel() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-col gap-1.5 text-sm text-fg-muted">
+        <div className="flex flex-col gap-1.5 text-caption text-fg-muted">
           <span id="certificado-criterio">Criterio</span>
           <Select value={criterio} onValueChange={(v) => setCriterio(v as CriterioDeRetencion)}>
             <SelectTrigger
@@ -343,27 +359,10 @@ export function CertificadoDeRetencionesPanel() {
             </SelectContent>
           </Select>
         </div>
-        <p className="max-w-xl text-caption leading-relaxed text-fg-muted" data-testid="que-mide-el-criterio">
+        <p className="min-w-0 max-w-xl basis-full text-caption leading-relaxed text-fg-muted sm:basis-auto sm:flex-1" data-testid="que-mide-el-criterio">
           {QUE_MIDE_EL_CRITERIO[criterio]}
         </p>
-        {/* 🔴 (18-09) Antes esto sólo se podía emitir de a uno: una inmobiliaria
-            con 300 propietarios necesitaba 300 clics, y quien se olvidara no se
-            enteraba hasta que el propietario reclamara en abril. */}
-        <Button
-          hideArrow
-          data-testid="emitir-todos-los-certificados"
-          isLoading={emitiendoTodos}
-          onClick={() => void emitirTodos()}
-        >
-          Emitir el de todos
-        </Button>
       </div>
-      <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
-        Al cerrar el año esto se hace SOLO para todos tus propietarios y queda disponible en su
-        portal. El botón está aquí para el año que el cierre automático no alcanzó, o para la
-        historia que acabas de migrar: se salta a quien ya lo tiene, así que apretarlo dos veces no
-        duplica ningún documento.
-      </p>
 
       <EstadoDeDatos
         cargando={cargando && !datos}
@@ -373,233 +372,273 @@ export function CertificadoDeRetencionesPanel() {
         conservarContenido={Boolean(datos)}
       >
         {datos ? (
-          <div className="space-y-5">
+          <div className="space-y-6">
+            {/* LA RESPUESTA: cuánto se retuvo en el año y cuánto de eso ya tiene su certificado. */}
+            <CifraHeroe
+              rotulo={`Retenido en ${datos.anio}`}
+              cifra={formatCurrency(datos.totales.totalRetenidoCop)}
+              contexto={
+                <>
+                  a <span data-testid="valor-propietarios">{NUMERO.format(datos.totales.propietarios)}</span>{' '}
+                  {datos.totales.propietarios === 1 ? 'propietario' : 'propietarios'}, sobre una base de{' '}
+                  <span className="font-mono tabular-nums" data-testid="valor-base">{formatCurrency(datos.totales.baseCop)}</span>
+                </>
+              }
+              total={datos.totales.totalRetenidoCop}
+              tramos={[
+                { clave: 'emitidos', etiqueta: `Ya entregado · ${NUMERO.format(yaEmitidos.length)}`, monto: sumaDe(yaEmitidos), tono: 'exito', cifra: formatCurrency(sumaDe(yaEmitidos)) },
+                { clave: 'por-emitir', etiqueta: `Falta emitir · ${NUMERO.format(porEmitir.length)}`, monto: sumaDe(porEmitir), tono: 'neutro', cifra: formatCurrency(sumaDe(porEmitir)) },
+                { clave: 'sin-documento', etiqueta: `Sin documento · ${NUMERO.format(sinDocumento.length)}`, monto: sumaDe(sinDocumento), tono: 'aviso', cifra: formatCurrency(sumaDe(sinDocumento)) },
+              ]}
+              data-testid="cifra-del-certificado"
+            />
+
             <Avisos
               avisos={datos.avisos.map(textoDelBack)}
               testId="avisos-del-certificado"
               titulo="Lo que hay que mirar antes de entregarlo"
             />
 
-            <section className="space-y-3">
-              <TituloDeBloque
-                titulo={`Retenciones del ${datos.anio}`}
-                explicacion="Lo que los inquilinos le retuvieron a cada propietario. La cuota quedó saldada con el canon completo; lo retenido se le descontó en su liquidación, porque es su impuesto."
-              />
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <Cifra
-                  formato={formatCurrency}
-                  id="base"
-                  etiqueta="Base"
-                  valor={datos.totales.baseCop}
-                  definicion="El canon bruto de los períodos sobre los que se retuvo."
+            <section className="overflow-hidden rounded-lg border border-border bg-surface" aria-label={`Retenciones del ${datos.anio}`}>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+                <PestanasDeEstado
+                  etiqueta="Estado de los certificados"
+                  valor={vista}
+                  onCambio={setVista}
+                  pestanas={[
+                    { valor: 'todos', etiqueta: 'Todos', cuantos: filas.length, fija: true },
+                    { valor: 'por-emitir', etiqueta: 'Falta emitir', cuantos: porEmitir.length },
+                    { valor: 'sin-documento', etiqueta: 'Sin documento', cuantos: sinDocumento.length, tono: 'aviso' },
+                    { valor: 'emitidos', etiqueta: 'Entregados', cuantos: yaEmitidos.length },
+                  ]}
+                  data-testid="pestanas-del-certificado"
                 />
-                <Cifra
-                  formato={formatCurrency}
-                  id="retefuente"
-                  etiqueta="Retefuente"
-                  valor={datos.totales.retefuenteCop}
-                  definicion="Retención en la fuente practicada por los inquilinos."
-                />
-                <Cifra
-                  formato={formatCurrency}
-                  id="total-retenido"
-                  etiqueta="Total retenido"
-                  valor={datos.totales.totalRetenidoCop}
-                  definicion="Retefuente + ReteIVA + ReteICA. Es lo que va en los certificados."
-                />
-                {/* 🔴 CB-17: es un CONTEO, no plata (decía «$2»). */}
-                <CifraDeTexto
-                  id="propietarios"
-                  etiqueta="Propietarios"
-                  texto={datos.totales.propietarios.toLocaleString(localeDeLasCifras())}
-                  definicion="Cuántos propietarios tienen algo que certificar este año."
-                />
+                {/* 🔴 (18-09) Antes esto sólo se podía emitir de a uno: una inmobiliaria
+                    con 300 propietarios necesitaba 300 clics, y quien se olvidara no se
+                    enteraba hasta que el propietario reclamara en abril. */}
+                <Button
+                  size="sm"
+                  hideArrow
+                  data-testid="emitir-todos-los-certificados"
+                  isLoading={emitiendoTodos}
+                  onClick={() => void emitirTodos()}
+                >
+                  Emitir el de todos
+                </Button>
               </div>
-            </section>
-
-            <div className="overflow-hidden rounded-lg border border-border">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Propietario</TableHead>
-                      <TableHead>Documento</TableHead>
-                      <TableHead className="text-right">Base</TableHead>
-                      <TableHead className="text-right">Retefuente</TableHead>
-                      <TableHead className="text-right">ReteIVA</TableHead>
-                      <TableHead className="text-right">ReteICA</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Certificado</TableHead>
+              <Table className="max-md:block">
+                <TableHeader className="max-md:hidden">
+                  <TableRow>
+                    <TableHead>Propietario</TableHead>
+                    <TableHead>Documento</TableHead>
+                    <TableHead className="text-right">Base</TableHead>
+                    <TableHead className="text-right">Retefuente</TableHead>
+                    <TableHead className="text-right">ReteIVA</TableHead>
+                    <TableHead className="text-right">ReteICA</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Certificado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="max-md:block">
+                  {filasVisibles.length === 0 ? (
+                    <TableRow className="max-md:block">
+                      <TableCell colSpan={8} className="py-10 text-center text-body-sm text-fg-muted max-md:block">
+                        {filas.length === 0 ? (
+                          <>
+                            A ningún propietario le retuvieron nada en {datos.anio} con este criterio.
+                            No hay certificados que emitir.
+                          </>
+                        ) : (
+                          <>
+                            Ningún propietario en esta pestaña.{' '}
+                            <button type="button" className="text-primary underline-offset-4 hover:underline" onClick={() => setVista('todos')}>
+                              Ver todos
+                            </button>
+                          </>
+                        )}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {datos.filas.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="py-10 text-center text-sm text-fg-muted">
-                          A ningún propietario le retuvieron nada en {datos.anio} con este criterio.
-                          No hay certificados que emitir.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      datos.filas.map((f) => {
-                        const emitido = emitidos.get(f.propietarioId);
-                        const abierto = abierta === f.propietarioId;
-                        return [
-                          <TableRow key={f.propietarioId} data-testid={`fila-${f.propietarioId}`}>
-                            <TableCell className="font-medium text-fg">
-                              <button
-                                type="button"
-                                className="flex items-center gap-1.5 text-left"
-                                aria-expanded={abierto}
-                                data-testid={`abrir-${f.propietarioId}`}
-                                onClick={() => setAbierta(abierto ? null : f.propietarioId)}
-                              >
-                                {abierto ? (
-                                  <CaretDown className="h-3.5 w-3.5" aria-hidden="true" />
-                                ) : (
-                                  <CaretRight className="h-3.5 w-3.5" aria-hidden="true" />
-                                )}
-                                {f.nombre}
-                              </button>
-                              <span className="block pl-5 text-caption text-fg-muted">
-                                {NUMERO.format(f.periodos)}{' '}
-                                {f.periodos === 1 ? 'período' : 'períodos'}
-                                {/* CB-R17: con copropietarios, cada uno con su parte. */}
-                                {typeof f.participacionPct === 'number' && f.participacionPct < 100 ? (
-                                  <span data-testid={`parte-${f.propietarioId}`}>
-                                    {' · '}su parte: {f.participacionPct.toLocaleString(localeDeLasCifras())} %
-                                  </span>
-                                ) : null}
-                              </span>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap font-mono text-caption">
-                              {f.documento || (
-                                <span className="text-warning">Sin documento</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                              {formatCurrency(f.baseCop)}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                              {formatCurrency(f.retefuenteCop)}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                              {formatCurrency(f.reteIvaCop)}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                              {formatCurrency(f.reteIcaCop)}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums font-medium">
-                              {formatCurrency(f.totalRetenidoCop)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap items-start gap-2">
-                              {emitido ? (
-                                <span className="flex flex-col items-start gap-1">
-                                  <span
-                                    className="inline-flex items-center gap-1 text-caption text-success"
-                                    data-testid={`emitido-${f.propietarioId}`}
-                                  >
-                                    <SealCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                                    {/* CB-32: «N.º 1 · 4 de octubre de 2026», no la fecha en ISO. */}
-                                    {numeroDelCertificado(emitido.numero)} ·{' '}
-                                    {fechaLarga(diaEnColombia(emitido.emitidoAt))}
-                                  </span>
-                                  {/* «Se puede regenerar» (Nico, 17-09): anula el
-                                      anterior con motivo y emite otro. El viejo no
-                                      se borra — el propietario puede tenerlo. */}
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    hideArrow
-                                    data-testid={`regenerar-${f.propietarioId}`}
-                                    isLoading={emitiendo === f.propietarioId}
-                                    onClick={() => void reemitir(f)}
-                                  >
-                                    Regenerar
-                                  </Button>
-                                </span>
+                  ) : (
+                    filasVisibles.map((f) => {
+                      const emitido = emitidos.get(f.propietarioId);
+                      const abierto = abierta === f.propietarioId;
+                      return [
+                        <TableRow
+                          key={f.propietarioId}
+                          data-testid={`fila-${f.propietarioId}`}
+                          className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4"
+                        >
+                          <TableCell className="text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
+                            <button
+                              type="button"
+                              className="flex items-center gap-1.5 text-left font-medium"
+                              aria-expanded={abierto}
+                              data-testid={`abrir-${f.propietarioId}`}
+                              onClick={() => setAbierta(abierto ? null : f.propietarioId)}
+                            >
+                              {abierto ? (
+                                <CaretDown className="h-3.5 w-3.5" aria-hidden="true" />
                               ) : (
+                                <CaretRight className="h-3.5 w-3.5" aria-hidden="true" />
+                              )}
+                              {f.nombre}
+                            </button>
+                            <span className="block pl-5 text-caption text-fg-muted">
+                              {NUMERO.format(f.periodos)}{' '}
+                              {f.periodos === 1 ? 'período' : 'períodos'}
+                              {/* CB-R17: con copropietarios, cada uno con su parte. */}
+                              {typeof f.participacionPct === 'number' && f.participacionPct < 100 ? (
+                                <span data-testid={`parte-${f.propietarioId}`}>
+                                  {' · '}su parte: {f.participacionPct.toLocaleString(localeDeLasCifras())} %
+                                </span>
+                              ) : null}
+                            </span>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap font-mono text-caption max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:pl-5">
+                            {f.documento || (
+                              <span className="text-warning">Sin documento</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:hidden">
+                            {formatCurrency(f.baseCop)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:hidden">
+                            {formatCurrency(f.retefuenteCop)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:hidden">
+                            {formatCurrency(f.reteIvaCop)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:hidden">
+                            {formatCurrency(f.reteIcaCop)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg max-md:col-start-2 max-md:row-span-2 max-md:row-start-1 max-md:block max-md:p-0">
+                            {formatCurrency(f.totalRetenidoCop)}
+                          </TableCell>
+                          <TableCell className="max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:pl-5">
+                            <div className="flex flex-wrap items-start gap-2">
+                            {emitido ? (
+                              <span className="flex flex-col items-start gap-1">
+                                <span
+                                  className="inline-flex items-center gap-1 text-caption text-success"
+                                  data-testid={`emitido-${f.propietarioId}`}
+                                >
+                                  <SealCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                  {/* CB-32: «N.º 1 · 4 de octubre de 2026», no la fecha en ISO. */}
+                                  {numeroDelCertificado(emitido.numero)} ·{' '}
+                                  {fechaLarga(diaEnColombia(emitido.emitidoAt))}
+                                </span>
+                                {/* «Se puede regenerar» (Nico, 17-09): anula el
+                                    anterior con motivo y emite otro. El viejo no
+                                    se borra — el propietario puede tenerlo. */}
                                 <Button
                                   size="sm"
-                                  variant="outline"
+                                  variant="ghost"
                                   hideArrow
-                                  data-testid={`emitir-${f.propietarioId}`}
+                                  data-testid={`regenerar-${f.propietarioId}`}
                                   isLoading={emitiendo === f.propietarioId}
-                                  onClick={() => setConfirmandoEmision(f)}
+                                  onClick={() => void reemitir(f)}
                                 >
-                                  Emitir
+                                  Regenerar
                                 </Button>
-                              )}
-                              {/* 🔴 CB-R17 (Nico): el PDF del certificado, por fila
-                                  (back 26beefbc: `retenciones/certificado/pdf`). Sólo
-                                  con documento: sin él no sirve para declarar. */}
-                              <AccionConMotivo
-                                puede={Boolean(f.documento)}
-                                motivo={MOTIVO_SIN_PDF}
-                                ocupado={bajando === f.propietarioId}
-                                textoOcupado="Preparando…"
-                                onClick={() => void bajarPdf(f)}
-                                testId={`pdf-${f.propietarioId}`}
-                                motivoVisible={false}
+                              </span>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                hideArrow
+                                data-testid={`emitir-${f.propietarioId}`}
+                                isLoading={emitiendo === f.propietarioId}
+                                onClick={() => setConfirmandoEmision(f)}
                               >
-                                <DownloadSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                                Descargar PDF
-                              </AccionConMotivo>
-                              </div>
+                                Emitir
+                              </Button>
+                            )}
+                            {/* 🔴 CB-R17 (Nico): el PDF del certificado, por fila
+                                (back 26beefbc: `retenciones/certificado/pdf`). Sólo
+                                con documento: sin él no sirve para declarar. */}
+                            <AccionConMotivo
+                              puede={Boolean(f.documento)}
+                              motivo={MOTIVO_SIN_PDF}
+                              ocupado={bajando === f.propietarioId}
+                              textoOcupado="Preparando…"
+                              onClick={() => void bajarPdf(f)}
+                              testId={`pdf-${f.propietarioId}`}
+                              motivoVisible={false}
+                            >
+                              <DownloadSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                              Descargar PDF
+                            </AccionConMotivo>
+                            </div>
+                          </TableCell>
+                        </TableRow>,
+                        abierto ? (
+                          <TableRow key={`${f.propietarioId}-detalle`} className="max-md:block">
+                            <TableCell colSpan={8} className="bg-surface-muted p-0 max-md:block">
+                              <DetalleMesAMes fila={f} />
                             </TableCell>
-                          </TableRow>,
-                          abierto ? (
-                            <TableRow key={`${f.propietarioId}-detalle`}>
-                              <TableCell colSpan={8} className="bg-surface-muted p-0">
-                                <DetalleMesAMes fila={f} />
-                              </TableCell>
-                            </TableRow>
-                          ) : null,
-                        ];
-                      })
-                    )}
-                  </TableBody>
-                  {datos.filas.length > 0 ? (
-                    <TableFooter>
-                      <TableRow>
-                        <TableCell colSpan={2} className="font-medium">
-                          Total
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                          {formatCurrency(datos.totales.baseCop)}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                          {formatCurrency(datos.totales.retefuenteCop)}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                          {formatCurrency(datos.totales.reteIvaCop)}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
-                          {formatCurrency(datos.totales.reteIcaCop)}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums font-medium">
-                          {formatCurrency(datos.totales.totalRetenidoCop)}
-                        </TableCell>
-                        <TableCell>&nbsp;</TableCell>
-                      </TableRow>
-                    </TableFooter>
-                  ) : null}
-                </Table>
-              </div>
-            </div>
+                          </TableRow>
+                        ) : null,
+                      ];
+                    })
+                  )}
+                </TableBody>
+                {filas.length > 0 && vista === 'todos' ? (
+                  <TableFooter className="max-md:hidden">
+                    <TableRow>
+                      <TableCell colSpan={2} className="font-medium">
+                        Total
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
+                        {formatCurrency(datos.totales.baseCop)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
+                        {formatCurrency(datos.totales.retefuenteCop)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
+                        {formatCurrency(datos.totales.reteIvaCop)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
+                        {formatCurrency(datos.totales.reteIcaCop)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
+                        {formatCurrency(datos.totales.totalRetenidoCop)}
+                      </TableCell>
+                      <TableCell>&nbsp;</TableCell>
+                    </TableRow>
+                  </TableFooter>
+                ) : null}
+              </Table>
+            </section>
 
-            <p className="text-caption leading-relaxed text-fg-muted">
-              Emitir FIJA el número y la fecha del certificado: es el acto de entregarlo, no el
-              cálculo. El cálculo sale de las cuotas y se puede volver a mirar cuando quieras — por
-              eso no se guarda una segunda copia de la plata.
-            </p>
+            {/* Lo que se consulta: cómo se emite y qué es cada columna. */}
+            <MasDetalles etiqueta="Cómo se emiten los certificados" etiquetaAbierto="Ocultar cómo se emiten">
+              <div className="max-w-2xl space-y-2 text-body-sm leading-relaxed text-fg-muted">
+                <p>
+                  Al cerrar el año esto se hace solo para todos tus propietarios y queda disponible en
+                  su portal. «Emitir el de todos» es para el año que el cierre automático no alcanzó, o
+                  para la historia que acabas de migrar: se salta a quien ya lo tiene, así que apretarlo
+                  dos veces no duplica ningún documento.
+                </p>
+                <p>
+                  Emitir fija el número y la fecha del certificado: es el acto de entregarlo, no el
+                  cálculo. El cálculo sale de las cuotas y se puede volver a mirar cuando quieras; por
+                  eso no se guarda una segunda copia de la plata.
+                </p>
+                <p>
+                  <strong className="font-medium text-fg">Base</strong>: el canon bruto de los períodos
+                  sobre los que se retuvo. <strong className="font-medium text-fg">Total</strong>:
+                  retefuente + ReteIVA + ReteICA, lo que va en el certificado.
+                </p>
+              </div>
+            </MasDetalles>
           </div>
         ) : null}
       </EstadoDeDatos>
     </div>
   );
 }
+
+type VistaDelCertificado = 'todos' | 'por-emitir' | 'sin-documento' | 'emitidos';
 
 /** El detalle mes a mes, que es como se imprime el certificado. */
 function DetalleMesAMes({ fila }: { fila: FilaDelCertificado }) {

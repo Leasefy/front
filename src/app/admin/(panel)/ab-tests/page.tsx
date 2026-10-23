@@ -5,19 +5,13 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
+import { estadoDelExperimento } from '@/lib/admin/textos-del-admin'
 import { Pill } from '@/components/admin/Pill'
 import { ExperimentoDeLaura } from '@/components/admin/ExperimentoDeLaura'
 
 import type { PillTone } from '@/lib/admin/types'
 
 
-const ESTADO_DEL_EXPERIMENTO: Record<string, string> = {
-  running: 'En curso',
-  paused: 'En pausa',
-  completed: 'Terminado',
-  draft: 'Borrador',
-  archived: 'Archivado',
-}
 
 // ─── Types (co-located, per FRONT.md §6.26) ────────────────────────────────
 
@@ -57,15 +51,15 @@ const SEGMENTOS: Segmento<ExperimentRow>[] = [
 const columns: Column<ExperimentRow>[] = [
   {
     header: 'Estado',
-    orden: (r) => ESTADO_DEL_EXPERIMENTO[r.status] ?? r.status,
-    texto: (r) => ESTADO_DEL_EXPERIMENTO[r.status] ?? r.status,
-    cell: (r) => <Pill tone={statusTone(r.status)}>{ESTADO_DEL_EXPERIMENTO[r.status] ?? r.status}</Pill>,
+    orden: (r) => estadoDelExperimento(r.status),
+    texto: (r) => estadoDelExperimento(r.status),
+    cell: (r) => <Pill tone={statusTone(r.status)}>{estadoDelExperimento(r.status)}</Pill>,
   },
   {
     header: 'Experimento',
     orden: (r) => r.name,
     texto: (r) => r.name,
-    cell: (r) => <span className="font-mono text-caption break-all">{r.name}</span>,
+    cell: (r) => <span className="break-words text-body-sm font-medium text-fg">{r.name}</span>,
   },
   {
     header: 'Asignaciones',
@@ -108,12 +102,13 @@ export default function AbTestsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Experimentos"
-        description={
-          data
-            ? `Pruebas A/B de los agentes: dos formas de hacer algo y cuál funciona mejor. ${
-                running === 1 ? 'Hay 1 en curso.' : `Hay ${running} en curso.`
-              }`
-            : 'Pruebas A/B de los agentes: dos formas de hacer algo y cuál funciona mejor.'
+        description="Pruebas A/B de los agentes: dos formas de hacer algo y cuál funciona mejor."
+        junto={
+          data ? (
+            <Pill tone={running > 0 ? 'ok' : 'neutral'} dot={running > 0}>
+              {running === 1 ? '1 en curso' : `${running} en curso`}
+            </Pill>
+          ) : null
         }
       />
 

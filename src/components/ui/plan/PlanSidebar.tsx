@@ -1053,7 +1053,7 @@ export function SidebarContent({
         // and Lenis otherwise hijacks the wheel so the sidebar never scrolls.
         data-lenis-prevent
         className={cn(
-          'flex-1 overflow-y-auto py-2 [overscroll-behavior:contain]',
+          'min-h-0 flex-1 overflow-y-auto py-2 [overscroll-behavior:contain]',
           isCollapsed ? 'px-2' : 'px-3'
         )}
       >
@@ -1119,7 +1119,7 @@ export function SidebarContent({
 
       {/* «Completa tu perfil», con la forma de la tarjeta de migración (Nico, 11-10). */}
       {profileCompletion && !isCollapsed && (
-        <div className="px-3 pb-3">
+        <div className="shrink-0 px-3 pb-3">
           <TarjetaDelPerfil config={profileCompletion} onIr={onItemClick} />
         </div>
       )}
@@ -1127,7 +1127,7 @@ export function SidebarContent({
       {/* Footer — cadence §Navigation: invite card + upgrade CTA, then Help.
           Collapsed rail shows only the Help icon. */}
       {isCollapsed ? (
-        <div className="px-2 pb-3 space-y-1">
+        <div data-testid="pie-de-la-barra" className="shrink-0 bg-bg px-2 pb-3 space-y-1">
           {ayudaHref && (
             <Link
               href={ayudaHref}
@@ -1141,7 +1141,7 @@ export function SidebarContent({
           <SidebarThemeToggle collapsed />
         </div>
       ) : (
-        <div className="px-3 pb-3 space-y-2.5">
+        <div data-testid="pie-de-la-barra" className="shrink-0 bg-bg px-3 pb-3 space-y-2.5">
           {footerCards}
           {showInvite && !inviteDismissed && (
             <div className="relative group/invite">

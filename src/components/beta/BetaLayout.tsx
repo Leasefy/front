@@ -64,23 +64,24 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen', dentroD
   // clutter (pedido Nico 2026-06-25). The /beta "separate universe" keeps it.
   const showBetaSidebar = variant === 'fullscreen';
 
+  // Inside the agency panel the chat never covers the panel navigation (T-0173):
+  // it fills the content slot. Only the standalone /panel/beta alias is a true overlay.
+  const enElPanel = variant === 'embedded' || dentroDelPanel;
+
   return (
     <BetaChatProvider onTabChange={(tab) => setTab(tab as BetaTab)}>
       <BetaKeyboardShortcuts onCloseDrawer={() => setDrawerOpen(false)} drawerOpen={drawerOpen} />
       <div
         className={cn(
-          variant === 'fullscreen'
-            ? // h-[100dvh] (not inset-0/100vh) keeps the chat input visible above
-              // the on-screen keyboard / collapsing URL bar on mobile.
-              'fixed inset-x-0 top-0 h-[100dvh] z-50'
-            : // Embedded: fill the classic panel content area. The sticky
+          enElPanel
+            ? // In the content slot: fill the classic panel content area. The sticky
               // PlanHeader is h-16 (4rem); below lg the layout reserves pb-20
-              // (5rem) for the MobileNavBar.
-              'relative h-[calc(100dvh-4rem-5rem)] lg:h-[calc(100dvh-4rem)]',
-          // T-0173: inside the panel, on phones start BELOW the sticky 4rem panel header
-          // so its hamburger, Piloto pill and breadcrumb stay reachable (this bar's own
-          // hamburger opens the chat list: a different menu).
-          variant === 'fullscreen' && dentroDelPanel && 'max-md:top-16 max-md:h-[calc(100dvh-4rem)]',
+              // (5rem) for the MobileNavBar. T-0173: the panel header, sidebar and
+              // bottom nav must stay visible and clickable, so no fixed layer here.
+              'relative h-[calc(100dvh-4rem-5rem)] lg:h-[calc(100dvh-4rem)]'
+            : // h-[100dvh] (not inset-0/100vh) keeps the chat input visible above
+              // the on-screen keyboard / collapsing URL bar on mobile.
+              'fixed inset-x-0 top-0 h-[100dvh] z-50',
           'flex flex-col md:flex-row',
           'bg-background'
         )}

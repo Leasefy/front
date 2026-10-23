@@ -1,9 +1,8 @@
 /**
- * T-0173 — /beta on a phone: the full-screen overlay used to start at top 0,
- * right over the panel header (its hamburger "Abrir menú de navegación", the
- * Piloto pill, the processes button and the breadcrumb), and its own mobile
- * bar with a second hamburger ("Abrir menu") sat on top of the real one.
- * Inside the panel the overlay now starts BELOW the 4rem panel header.
+ * T-0173 — /beta must never hide the panel navigation. It used to be a
+ * `fixed inset-0 z-50` layer over the whole panel (header, sidebar, bottom
+ * nav). Inside the panel it now lives in the content slot, like the embedded
+ * INICIO chat, but keeps its own chat-list sidebar.
  */
 import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -50,16 +49,28 @@ async function pintar(props: Partial<React.ComponentProps<typeof BetaLayout>>) {
   return container.firstElementChild as HTMLElement;
 }
 
-describe('BetaLayout — overlay vs. panel header on phones', () => {
-  it('inside the panel, the overlay starts below the 4rem header under md', async () => {
-    const overlay = await pintar({ dentroDelPanel: true });
-    expect(overlay.className).toContain('max-md:top-16');
-    expect(overlay.className).toContain('max-md:h-[calc(100dvh-4rem)]');
+describe('BetaLayout — overlay vs. panel navigation', () => {
+  it('inside the panel, the chat sits in the content slot, not in a fixed layer', async () => {
+    const area = await pintar({ dentroDelPanel: true });
+    expect(area.className).not.toContain('fixed');
+    expect(area.className).not.toContain('z-50');
+    expect(area.className).toContain('relative');
+  });
+
+  it('inside the panel, it leaves room for the 4rem header and the 5rem bottom nav below lg', async () => {
+    const area = await pintar({ dentroDelPanel: true });
+    expect(area.className).toContain('h-[calc(100dvh-4rem-5rem)]');
+    expect(area.className).toContain('lg:h-[calc(100dvh-4rem)]');
+  });
+
+  it('inside the panel, the chat list menu is still offered', async () => {
+    await pintar({ dentroDelPanel: true });
+    expect(container.querySelector('[aria-label="beta.mobile.openMenu"]')).not.toBeNull();
   });
 
   it('the standalone alias (/panel/beta) keeps the true full-screen overlay', async () => {
     const overlay = await pintar({});
-    expect(overlay.className).not.toContain('max-md:top-16');
+    expect(overlay.className).toContain('fixed');
     expect(overlay.className).toContain('top-0');
   });
 });

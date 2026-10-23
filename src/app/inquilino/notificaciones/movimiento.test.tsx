@@ -117,4 +117,19 @@ describe('Notificaciones del inquilino — movimiento', () => {
     await act(async () => marcar.click())
     await vi.waitFor(() => expect(boton('Sin leer')!.textContent).toContain('1'))
   })
+
+  it('ocultar las leídas se puede deshacer (antes se escondían sin forma de volver a verlas)', async () => {
+    const marcar = container.querySelectorAll<HTMLButtonElement>('button[aria-label="Marcar como leído"]')[0]
+    await act(async () => marcar.click())
+    await act(async () => boton('Ocultar las leídas')!.click())
+    await vi.waitFor(() => expect(container.textContent).not.toContain('Tu pago vence pronto'))
+    await act(async () => boton('Mostrar las leídas')!.click())
+    await vi.waitFor(() => expect(container.textContent).toContain('Tu pago vence pronto'))
+  })
+
+  it('la no leída lleva su punto, sin caja de color ni fila teñida', () => {
+    expect(container.querySelectorAll('span.bg-primary.rounded-full[aria-hidden="true"]')).toHaveLength(2)
+    expect(container.innerHTML).not.toContain('#EEF1FF')
+    expect(container.innerHTML).not.toContain('#1A40FF')
+  })
 })

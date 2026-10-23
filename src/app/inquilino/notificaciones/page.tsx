@@ -16,7 +16,6 @@ import {
   Calendar,
   House,
   Info,
-  CaretRight,
   Checks,
   BellSlash,
   Warning,
@@ -120,7 +119,7 @@ function NotificationSkeleton() {
       {[...Array(5)].map((_, i) => (
         <div key={i} className="flex items-start gap-4 p-5 animate-pulse">
           {/* Icon skeleton */}
-          <div className="w-11 h-11 rounded-lg bg-surface-muted flex-shrink-0" />
+          <div className="mt-0.5 w-5 h-5 rounded bg-surface-muted flex-shrink-0" />
 
           {/* Content skeleton */}
           <div className="flex-1 min-w-0 space-y-2">
@@ -133,8 +132,6 @@ function NotificationSkeleton() {
             </div>
           </div>
 
-          {/* Arrow skeleton */}
-          <div className="w-5 h-5 rounded bg-surface-muted flex-shrink-0" />
         </div>
       ))}
     </div>
@@ -270,10 +267,10 @@ export default function NotificacionesPage() {
                 {f.count !== undefined && f.count > 0 && (
                   <span
                     className={cn(
-                      'text-caption px-1.5 py-0.5 rounded-full',
+                      'font-mono text-caption tabular-nums px-1.5 py-0.5 rounded-full',
                       filter === f.id
-                        ? 'bg-surface'
-                        : 'bg-[#EEF1FF] text-[#1A40FF]'
+                        ? 'bg-surface text-fg'
+                        : 'bg-surface text-fg-muted'
                     )}
                   >
                     <AnimatedNumber value={f.count} />
@@ -336,28 +333,16 @@ export default function NotificacionesPage() {
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
                       className={cn(
-                        'flex items-start gap-4 p-5 cursor-pointer group transition-colors',
-                        !notification.read
-                          ? 'bg-[#EEF1FF]/50 hover:bg-[#EEF1FF]'
-                          : 'hover:bg-surface-muted'
+                        'flex items-start gap-4 p-5 cursor-pointer group transition-colors hover:bg-surface-muted'
                       )}
                     >
-                      {/* Icon */}
-                      <div
-                        className={cn(
-                          'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105',
-                          !notification.read
-                            ? 'bg-[#1A40FF]'
-                            : cn(categoryConfig.bgColor, categoryConfig.darkBgColor)
+                      {/* El ícono suelto (antes, en una caja de color: azul si no estaba leída) y, si no está
+                          leída, su punto: la única marca. */}
+                      <div className="relative mt-0.5 flex-shrink-0">
+                        <IconComponent className="w-5 h-5 text-fg-muted" aria-hidden="true" />
+                        {!notification.read && (
+                          <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
                         )}
-                      >
-                        <IconComponent
-                          className={cn(
-                            'w-5 h-5',
-                            !notification.read ? 'text-white' : categoryConfig.color
-                          )}
-                          weight={!notification.read ? 'fill' : 'regular'}
-                        />
                       </div>
 
                       {/* Content */}
@@ -380,18 +365,11 @@ export default function NotificacionesPage() {
                             {formatRelativeTime(notification.createdAt, locale)}
                           </span>
                           <span className="w-1 h-1 rounded-full bg-surface-muted" />
-                          <span
-                            className={cn('text-caption font-medium', categoryConfig.color)}
-                          >
+                          <span className="text-caption text-fg-subtle">
                             {categoryConfig.label}
                           </span>
                           {!notification.read && (
-                            <>
-                              <span className="w-1 h-1 rounded-full bg-surface-muted" />
-                              <span className="text-caption font-medium text-[#1A40FF]">
-                                {locale === 'es' ? 'Nueva' : 'New'}
-                              </span>
-                            </>
+                            <span className="sr-only">{locale === 'es' ? 'Nueva' : 'New'}</span>
                           )}
                         </div>
                       </div>
@@ -399,11 +377,11 @@ export default function NotificacionesPage() {
                       {/* Action Button */}
                       {notification.actionLabel && (
                         <div
-                          className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
                             hideArrow
                             onClick={() => {
@@ -412,7 +390,6 @@ export default function NotificacionesPage() {
                                 router.push(notification.actionUrl);
                               }
                             }}
-                            className="px-3 py-1.5 text-caption text-[#1A40FF] bg-[#EEF1FF]"
                           >
                             {notification.actionLabel}
                           </Button>
@@ -421,14 +398,14 @@ export default function NotificacionesPage() {
 
                       {/* Quick Actions */}
                       <div
-                        className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="flex items-center gap-1 flex-shrink-0 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {!notification.read && (
                           <IconButton
                             variant="ghost"
                             onClick={() => handleMarkAsRead(notification.id)}
-                            className="p-2 rounded-md text-fg-subtle hover:text-[#2C7A53] hover:bg-[#E8F3EC]"
+                            className="p-2 rounded-md text-fg-subtle hover:text-success hover:bg-success-soft"
                             title={
                               locale === 'es' ? 'Marcar como leído' : 'Mark as read'
                             }
@@ -441,17 +418,13 @@ export default function NotificacionesPage() {
                         <IconButton
                           variant="ghost"
                           onClick={() => handleDeleteNotification(notification.id)}
-                          className="p-2 rounded-md text-fg-subtle hover:text-[#C4503B] hover:bg-[#F8EAE7]"
+                          className="p-2 rounded-md text-fg-subtle hover:text-danger hover:bg-danger-soft"
                           title={locale === 'es' ? 'Eliminar' : 'Delete'}
                           aria-label={locale === 'es' ? 'Eliminar' : 'Delete'}
                           icon={<TrashSimple className="w-4 h-4" />}
                         />
                       </div>
 
-                      {/* Arrow */}
-                      <div className="flex items-center flex-shrink-0">
-                        <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-fg-subtle transition-colors" />
-                      </div>
                     </StaggerItem>
                   );
                 })}
@@ -460,27 +433,26 @@ export default function NotificacionesPage() {
             )}
         </CrossFade>
 
-        {/* Summary Card */}
+        {/* El pie en una línea (antes, una caja). «Limpiar leídas» sólo las escondía y no había cómo volver a
+            verlas: ahora se ocultan y se muestran. */}
         {notifications.length > 0 && (
-          <div className="mt-6 p-4 rounded-lg bg-surface-muted border border-border-faint">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-fg-muted">
-                {locale === 'es'
-                  ? `Mostrando ${filteredNotifications.length} de ${notifications.length} notificaciones`
-                  : `Showing ${filteredNotifications.length} of ${notifications.length} notifications`}
-              </span>
-              {notifications.length > 0 && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  hideArrow
-                  onClick={() => setHideRead(true)}
-                  className="text-fg-muted hover:text-fg"
-                >
-                  {locale === 'es' ? 'Limpiar leídas' : 'Clear read'}
-                </Button>
-              )}
-            </div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-caption text-fg-muted" data-testid="pie-de-notificaciones">
+            <span>
+              {locale === 'es'
+                ? `Mostrando ${filteredNotifications.length} de ${notifications.length} notificaciones`
+                : `Showing ${filteredNotifications.length} of ${notifications.length} notifications`}
+            </span>
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
+              onClick={() => setHideRead((v) => !v)}
+              className="text-fg-muted hover:text-fg"
+            >
+              {hideRead
+                ? locale === 'es' ? 'Mostrar las leídas' : 'Show read'
+                : locale === 'es' ? 'Ocultar las leídas' : 'Hide read'}
+            </Button>
           </div>
         )}
       </div>

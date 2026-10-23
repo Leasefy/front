@@ -28,6 +28,8 @@ import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { useTenantOptions } from '@/lib/admin/use-tenant-options'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Filtro, SelectorDeInmobiliaria } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
@@ -56,7 +58,7 @@ function Veredicto({ fila }: { fila: ChatFeedbackRow }) {
     <span className="flex flex-wrap gap-1.5">
       <Pill tone={arriba ? 'ok' : 'bad'}>{arriba ? 'Pulgar arriba' : 'Pulgar abajo'}</Pill>
       {fila.cifraMal ? <Pill tone="warn">La cifra está mal</Pill> : null}
-      {fila.leccionId ? <Pill tone="info">Se creó una lección</Pill> : null}
+      {fila.leccionId ? <Pill tone="neutral">Se creó una lección</Pill> : null}
     </span>
   )
 }
@@ -78,6 +80,10 @@ export default function ChatFeedbackPage() {
   const inmobiliaria = (id: string) => nombres.get(id) ?? `Inmobiliaria ${id.slice(0, 8)}`
 
   const semanas = data?.semanas ?? []
+  // El orden de las semanas no lo fija el contrato: se ordenan aquí (la más reciente al final).
+  const conValoraciones = [...semanas].sort((a, b) => a.semana.localeCompare(b.semana)).filter((s) => s.total > 0 && s.porcentajeArriba !== null)
+  const ultima = conValoraciones.at(-1) ?? null
+  const anterior = conValoraciones.at(-2) ?? null
 
   const columnas: Column<ChatFeedbackRow>[] = [
     {
@@ -130,28 +136,40 @@ export default function ChatFeedbackPage() {
         description="El pulgar que dejó cada inmobiliaria en cada respuesta. Es lo que dice dónde falla el chat."
       />
 
-      {/* Porcentaje de pulgares arriba por semana. Sin valoraciones esa semana
-          no se pinta un 0 % — se dice que no hubo. */}
-      <section className="space-y-3" aria-label="Pulgares arriba por semana">
-        <MonoLabel className="block">Pulgares arriba por semana</MonoLabel>
-        <div className="flex flex-wrap gap-2">
-          {semanas.length === 0 && !isLoading ? (
-            <span className="text-body-sm text-fg-subtle">Todavía no hay valoraciones.</span>
-          ) : (
-            semanas.map((s) => (
-              <Card className="min-w-[96px] px-4 py-3" key={s.semana}>
-                <MonoLabel className="block">{semanaCorta(s.semana)}</MonoLabel>
-                <div className="mt-1 font-mono text-subtitle tabular-nums text-fg">
-                  {s.porcentajeArriba === null ? '—' : `${s.porcentajeArriba} %`}
-                </div>
-                <div className="font-mono text-caption tabular-nums text-fg-subtle">
-                  {s.arriba} de {s.total}
-                </div>
-              </Card>
-            ))
-          )}
+      {/* Glow up 22-10: LA RESPUESTA (los pulgares arriba de la última semana con valoraciones, contra la anterior)
+          en una cifra; las semanas anteriores, plegadas. Sin valoraciones esa semana no se pinta un 0 %. */}
+      {semanas.length === 0 && !isLoading ? null : ultima ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo={`Pulgares arriba · semana del ${semanaCorta(ultima.semana)}`}
+            cifra={`${ultima.porcentajeArriba} %`}
+            contexto={`${ultima.arriba} de ${ultima.total}${
+              anterior && anterior.porcentajeArriba !== null ? ` · la semana anterior ${anterior.porcentajeArriba} %` : ''
+            }`}
+            tramos={[
+              { clave: 'arriba', etiqueta: 'Arriba', monto: ultima.arriba, tono: 'exito', cifra: String(ultima.arriba) },
+              { clave: 'abajo', etiqueta: 'Abajo', monto: ultima.total - ultima.arriba, tono: 'critico', cifra: String(ultima.total - ultima.arriba) },
+            ]}
+            total={ultima.total}
+            data-testid="pulgares-semana"
+          />
+          {semanas.length > 1 ? (
+            <MasDetalles etiqueta="Ver las semanas anteriores" etiquetaAbierto="Ocultar las semanas anteriores" className="mt-4">
+              <ul className="flex flex-wrap gap-x-6 gap-y-3" aria-label="Pulgares arriba por semana">
+                {semanas.map((s) => (
+                  <li key={s.semana} className="space-y-0.5">
+                    <p className="text-caption text-fg-muted">{semanaCorta(s.semana)}</p>
+                    <p className="font-mono text-body-sm tabular-nums text-fg">
+                      {s.porcentajeArriba === null ? 'Sin valoraciones' : `${s.porcentajeArriba} %`}
+                      <span className="text-caption text-fg-muted"> · {s.arriba} de {s.total}</span>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </MasDetalles>
+          ) : null}
         </div>
-      </section>
+      ) : null}
 
       <DataTable
         columns={columnas}
@@ -162,7 +180,7 @@ export default function ChatFeedbackPage() {
         onReintentar={refetch}
         emptyTitle="Todavía no hay valoraciones"
         emptyHint={agencyId ? 'Esta inmobiliaria todavía no ha marcado ninguna respuesta.' : 'Nadie ha marcado todavía una respuesta del chat con el pulgar.'}
-        emptyIcon={<ThumbsUp weight="bold" />}
+        emptyIcon={<ThumbsUp weight="duotone" />}
         aria-label="Valoraciones del chat"
         onRowClick={setAbierta}
         filaMarcada={(f) => f.id === abierta?.id}

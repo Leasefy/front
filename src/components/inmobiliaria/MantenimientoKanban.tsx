@@ -357,6 +357,8 @@ interface KanbanColumnProps {
   arrastrable: boolean;
   encima: boolean;
   t: (key: string, params?: Record<string, string | number>) => string;
+  /** Sin solicitudes: angosta y baja (revisora r25: tres columnas vacías ocupaban el tablero). */
+  plegada?: boolean;
 }
 
 function KanbanColumnComponent({
@@ -365,13 +367,14 @@ function KanbanColumnComponent({
   onViewDetails,
   arrastrable,
   encima,
+  plegada = false,
   t,
 }: KanbanColumnProps) {
   const Icon = column.icon;
   const { setNodeRef } = useDroppable({ id: column.id, data: { estado: column.id } });
 
   return (
-    <div className="flex flex-col min-w-0" data-testid={`columna-${column.id}`}>
+    <div className="flex flex-col min-w-0" data-testid={`columna-${column.id}`} data-plegada={plegada ? 'si' : undefined}>
       {/* Column Header */}
       {/* Cadence 2 (glow up 21-10): la columna es un carril de arena, sin color por etapa (el
           color es de los estados que piden algo, no de las columnas); la cuenta en mono. */}
@@ -388,7 +391,8 @@ function KanbanColumnComponent({
         ref={setNodeRef}
         className={cn(
           'relative flex-1 p-2 space-y-2 rounded-b-[18px] overflow-y-auto transition-[background-color,box-shadow] duration-base',
-          'min-h-[200px] max-h-[calc(100vh-400px)]',
+          // Revisora r25: la columna vacía va plegada (angosta y baja); sigue recibiendo tarjetas.
+          plegada ? 'min-h-[56px]' : 'min-h-[200px] max-h-[calc(100vh-400px)]',
           encima ? 'bg-primary-soft/50 ring-2 ring-primary/25' : 'bg-surface-muted/70'
         )}
       >
@@ -601,7 +605,17 @@ export function MantenimientoKanban({
       {/* SO-15 (QA 04-10): las cinco columnas a la vista (a 1440 la de
           «Completada» quedaba fuera, a la derecha). En pantallas chicas se
           apilan; nunca hay que desplazar de lado para encontrar una tarjeta. */}
-      <div className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {/* Revisora r25: a 1440 las columnas vacías van angostas (11rem) y las que tienen trabajo se
+          reparten el resto; abajo de xl se apilan como siempre, las vacías bajas. */}
+      <div
+        className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:[grid-template-columns:var(--columnas-del-tablero)]"
+        style={{
+          ['--columnas-del-tablero' as string]: KANBAN_COLUMNS.map((c) =>
+            groupedData[c.id].length > 0 ? 'minmax(0,1fr)' : 'minmax(0,11rem)',
+          ).join(' '),
+        }}
+        data-testid="tablero-de-mantenimientos"
+      >
         {KANBAN_COLUMNS.map((column) => (
           <KanbanColumnComponent
             key={column.id}
@@ -610,6 +624,7 @@ export function MantenimientoKanban({
             onViewDetails={onViewDetails}
             arrastrable={arrastrable}
             encima={columnaEncima === column.id}
+            plegada={groupedData[column.id].length === 0}
             t={t}
           />
         ))}

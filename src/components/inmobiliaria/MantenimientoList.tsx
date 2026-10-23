@@ -683,9 +683,11 @@ export function MantenimientoList({
         )}
         <Stagger layout={false} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {pageItems.map((solicitud) => (
-              <StaggerItem key={solicitud.id} className="relative flex [&>*]:w-full">
+              <StaggerItem key={solicitud.id} className={cn('relative flex [&>*]:w-full', marcadas && onMarcar && 'max-md:pl-9')}>
+              {/* Revisora r25: a 390 la casilla quedaba fuera del borde (iba montada en la esquina, a −8 px).
+                  En el celular va en su propia canaleta a la izquierda de la tarjeta; desde md, en la esquina. */}
               {marcadas && onMarcar && (
-                <span className="absolute -left-2 -top-2 z-10 !w-auto rounded-md bg-surface p-1 shadow-sm">
+                <span className="absolute left-0 top-3 z-10 !w-auto rounded-md bg-surface p-1 md:-left-2 md:-top-2 md:shadow-sm">
                   <CasillaDeLaFila
                     id={solicitud.id}
                     nombre={`el arreglo de ${solicitud.propertyTitle ?? 'este inmueble'}`}

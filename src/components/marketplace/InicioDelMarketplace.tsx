@@ -134,7 +134,7 @@ export function InicioDelMarketplace() {
               </motion.div>
               <motion.h1
                 {...entrada(1)}
-                className="mt-6 font-heading font-semibold leading-[1.02] tracking-[-0.04em] text-fg text-[clamp(2.1rem,6vw,3.5rem)] [text-wrap:balance]"
+                className="mt-6 font-heading font-[400] leading-[1.02] tracking-[-0.04em] text-fg text-[clamp(2.1rem,6vw,3.5rem)] [text-wrap:balance]"
               >
                 ¿Qué estás buscando?
               </motion.h1>

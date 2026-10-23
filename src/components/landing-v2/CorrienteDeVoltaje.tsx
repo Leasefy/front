@@ -15,10 +15,11 @@ import { cn } from '@/lib/utils';
  * - `horizonte` la concentra abajo, para que el texto quede sobre papel limpio.
  */
 
-type Fondo = 'papel' | 'arena' | 'noche';
+type Fondo = 'papel' | 'superficie' | 'arena' | 'noche';
 
 const FONDOS: Record<Fondo, { fondo: number[]; t1: number[]; t2: number[] }> = {
   papel: { fondo: [251, 250, 248], t1: [26, 64, 255], t2: [96, 122, 255] },
+  superficie: { fondo: [255, 255, 255], t1: [26, 64, 255], t2: [96, 122, 255] },
   arena: { fondo: [243, 241, 237], t1: [26, 64, 255], t2: [96, 122, 255] },
   noche: { fondo: [7, 8, 12], t1: [26, 64, 255], t2: [92, 118, 255] },
 };

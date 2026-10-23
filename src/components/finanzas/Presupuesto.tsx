@@ -58,6 +58,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { Avisos, SinLaMigracion } from '@/components/finanzas/piezas';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
@@ -151,6 +152,8 @@ export function PresupuestoPanel() {
     return { t, conPresupuesto, medibles, bien };
   }, [comparacion, rubros]);
 
+  const sinPresupuesto = respuesta !== null && respuesta.conPresupuesto.length === 0;
+
   const confirmarBorrado = useCallback(async () => {
     if (!borrando) return;
     setQuitando(true);
@@ -207,7 +210,7 @@ export function PresupuestoPanel() {
           </h2>
           <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
             <SelectorDeMes mes={mes} onCambiar={setMes} />
-            {puedeCargar ? (
+            {puedeCargar && !sinPresupuesto ? (
               /* CB-30: sin la ↗ — el botón abre un diálogo acá, no otra página. */
               <Button size="sm" hideArrow onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -224,7 +227,39 @@ export function PresupuestoPanel() {
           onReintentar={cargar}
           queEs="el presupuesto del mes"
         >
-          {comparacion ? (
+          {comparacion && sinPresupuesto ? (
+            // Ronda 26 (revisora r25, Presupuesto 9c): sin ningún rubro cargado no hay cifra ni tabla de doce
+            // rubros en «—»: el vacío con su salida, el real del mes en una línea y el detalle plegado.
+            <div className="space-y-4 p-4" data-testid="presupuesto-sin-cargar">
+              <SinDatos
+                queSon="rubros del presupuesto"
+                titulo={`Todavía no hay presupuesto para ${nombreDelMes(mes)}`}
+                descripcion="Carga lo que planeas por rubro y aquí lo comparas con lo que pasó."
+                accion={
+                  puedeCargar ? (
+                    <Button size="sm" hideArrow onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
+                      <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Cargar un rubro
+                    </Button>
+                  ) : undefined
+                }
+              />
+              {respuesta ? (
+                <p className="text-body-sm text-fg-muted" data-testid="real-del-mes">
+                  En {nombreDelMes(mes)} el real va en{' '}
+                  <span className="font-mono tabular-nums text-fg">{plata(respuesta.t.totales.realCop)}</span>.
+                </p>
+              ) : null}
+              <MasDetalles etiqueta="Ver el real por rubro" etiquetaAbierto="Ocultar" montadoSiempre>
+                <Comparacion
+                  comparacion={comparacion}
+                  cargado={cargado?.filas ?? []}
+                  rubros={rubros}
+                  onBorrar={setBorrando}
+                />
+              </MasDetalles>
+            </div>
+          ) : comparacion ? (
             <Comparacion
               comparacion={comparacion}
               cargado={cargado?.filas ?? []}

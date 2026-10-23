@@ -88,6 +88,18 @@ describe('TusGiros', () => {
     expect(cifra('cifra-contratos-vigentes')).toContain('De 3 contratos');
   });
 
+  it('revisora r25: «Por girar» en $ 0 no sale, y los contratos no son una cifra más de la leyenda', async () => {
+    api.giros.mockResolvedValue({ giros: [] });
+    await montar(
+      doc({
+        proximaCuota: null,
+        porGirar: { hastaMes: '2026-10', porGirarCop: 0, cuotas: 0, deduccionesCop: 0, proximosGirosCop: 0, proximosGirosHastaMes: '2026-11' },
+      }),
+    );
+    expect(document.querySelector('[data-testid="cifra-por-girar"]')).toBeNull();
+    expect(document.querySelectorAll('[data-testid="tus-giros"] li').length).toBe(2);
+  });
+
   it('con deducciones lo dice; sin próximo giro dice «Nada por vencer»', async () => {
     api.giros.mockResolvedValue({ giros: [] });
     await montar(

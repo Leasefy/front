@@ -75,6 +75,11 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
 
   // Tablero (Nico, 21-10): «cuánto he generado» = lo que la inmobiliaria ya le giró este año.
   const hoy = hoyEnColombia();
+  const girado = giros.estado === 'listo' ? giradoEnElAnio(giros.todos, hoy) : 0;
+  // Revisora r25: «Por girar» sólo cuando hay algo por girar (antes salía en $ 0), y entonces la barra
+  // dice cuánto ya llegó y cuánto falta por girar.
+  const porGirarCop = doc.porGirar?.porGirarCop ?? 0;
+  const conBarra = giros.estado === 'listo' && porGirarCop > 0 && girado > 0;
   return (
     // QA 21-10 (390 px): de a dos por fila «$ 1.803.830,09» se cortaba y las etiquetas
     // quedaban en «Te han girado en…». Con plata larga, una por fila en el celular.
@@ -86,11 +91,14 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
         rotulo={`Te han girado en ${hoy.slice(0, 4)}`}
         cifra={
           <span data-testid="cifra-girado-en-el-anio">
-            {giros.estado === 'cargando' ? '…' : giros.estado === 'listo' ? formatCurrency(giradoEnElAnio(giros.todos, hoy)) : '—'}
+            {giros.estado === 'cargando' ? '…' : giros.estado === 'listo' ? formatCurrency(girado) : '—'}
           </span>
         }
         contexto={giros.estado === 'fallo' ? 'No se pudo consultar ahora' : 'Lo que ya llegó a tu cuenta'}
         tramos={[
+          ...(conBarra
+            ? [{ clave: 'girado', etiqueta: 'Ya girado', monto: girado, tono: 'exito' as const }]
+            : []),
           {
             clave: 'ultimo',
             etiqueta: 'Último giro',
@@ -125,13 +133,13 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
                 },
               ]
             : []),
-          ...(doc.porGirar
+          ...(doc.porGirar && porGirarCop > 0
             ? [
                 {
                   clave: 'por-girar',
                   etiqueta: 'Por girar',
-                  monto: 0,
-                  tono: doc.porGirar.porGirarCop > 0 ? ('aviso' as const) : ('neutro' as const),
+                  monto: conBarra ? porGirarCop : 0,
+                  tono: 'aviso' as const,
                   siempre: true,
                   cifra: formatCurrency(doc.porGirar.porGirarCop),
                   extra: (
@@ -145,17 +153,15 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
                 },
               ]
             : []),
-          {
-            clave: 'contratos',
-            etiqueta: 'Contratos vigentes',
-            monto: 0,
-            tono: 'neutro',
-            siempre: true,
-            cifra: vigentes,
-            extra: <p className="text-caption text-fg-muted">{doc.contratos.length === 1 ? 'De 1 contrato' : `De ${doc.contratos.length} contratos`}</p>,
-            'data-testid': 'cifra-contratos-vigentes',
-          },
         ]}
+        /* Revisora r25: los contratos no se cuentan otra vez como una cifra (la lista de abajo ya los
+           muestra): aquí sólo se dice de cuántos sale lo girado. */
+        pie={
+          <span data-testid="cifra-contratos-vigentes">
+            {doc.contratos.length === 1 ? 'De 1 contrato' : `De ${doc.contratos.length} contratos`},{' '}
+            {vigentes === 1 ? '1 vigente' : `${vigentes} vigentes`}
+          </span>
+        }
       />
     </div>
   );

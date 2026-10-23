@@ -16,6 +16,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { ClockCounterClockwise } from '@phosphor-icons/react'
 
 import { Card } from '@/components/ui/card'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { cn } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
@@ -25,27 +27,12 @@ import {
   type SaldoDelSistemaAnterior as Lista,
 } from '@/lib/api/saldo-del-sistema-anterior.service'
 
-function Cifra({
-  rotulo,
-  valor,
-  tono,
-  explicacion,
-  testid,
-}: {
-  rotulo: string
-  valor: number
-  tono?: string
-  explicacion: string
-  testid: string
-}) {
-  return (
-    <Card className="p-4">
-      <p className="text-caption text-fg-muted">{rotulo}</p>
-      <p className={`mt-1 font-mono text-2xl font-semibold tabular-nums ${tono ?? 'text-fg'}`} data-testid={testid}>
-        {formatCurrency(valor)}
-      </p>
-      <p className="mt-1 text-caption text-fg-muted">{explicacion}</p>
-    </Card>
+/** Una cifra en cero no informa: «—» atenuado. */
+function PlataOGuion({ valor, className }: { valor: number; className?: string }) {
+  return valor === 0 ? (
+    <span className="text-fg-subtle">—</span>
+  ) : (
+    <span className={cn('font-mono tabular-nums', className)}>{formatCurrency(valor)}</span>
   )
 }
 
@@ -85,34 +72,55 @@ export function SaldoDelSistemaAnterior() {
               <p className="text-sm text-fg">{lista.aviso}</p>
             </Card>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Cifra
-                rotulo="Saldo que traían"
-                valor={lista.totales.saldoCop}
-                explicacion={`De ${lista.totales.contratos} ${lista.totales.contratos === 1 ? 'contrato' : 'contratos'}, a la fecha de corte.`}
-                testid="total-saldo-anterior"
-              />
-              <Cifra
-                rotulo="Recaudado"
-                valor={lista.totales.recaudadoCop}
-                tono="text-success"
-                explicacion="Lo que ya entró. Esto es lo que falta decidir si se gira."
-                testid="total-recaudado-anterior"
-              />
-              <Cifra
-                rotulo="Por recaudar"
-                valor={lista.totales.pendienteCop}
-                tono="text-danger"
-                explicacion="Sigue en la cartera, con su interés de mora."
-                testid="total-pendiente-anterior"
-              />
-            </div>
+            {/* Ronda 26 (revisora r25, Saldo anterior #1): UNA cifra —lo que falta recaudar de lo que traían— con
+                su barra recaudado · por recaudar, en vez de tres tarjetas del mismo peso. «Por recaudar» ya no va en
+                rojo: no es mora, es saldo. */}
+            <CifraHeroe
+              rotulo="Por recaudar"
+              cifra={<span data-testid="total-pendiente-anterior">{formatCurrency(lista.totales.pendienteCop)}</span>}
+              contexto={
+                <>
+                  de los <span className="font-mono tabular-nums" data-testid="total-saldo-anterior">{formatCurrency(lista.totales.saldoCop)}</span>{' '}
+                  que traían {lista.totales.contratos === 1 ? '1 contrato' : `${lista.totales.contratos} contratos`} a la fecha de corte
+                </>
+              }
+              total={lista.totales.saldoCop}
+              tramos={[
+                {
+                  clave: 'recaudado',
+                  etiqueta: 'Recaudado: falta decidir si se gira',
+                  monto: lista.totales.recaudadoCop,
+                  tono: 'exito',
+                  cifra: <span data-testid="total-recaudado-anterior">{formatCurrency(lista.totales.recaudadoCop)}</span>,
+                  siempre: true,
+                },
+                {
+                  clave: 'por-recaudar',
+                  etiqueta: 'Sigue en la cartera, con su interés de mora',
+                  monto: lista.totales.pendienteCop,
+                  tono: 'neutro',
+                  cifra: formatCurrency(lista.totales.pendienteCop),
+                },
+              ]}
+              esCero={lista.totales.saldoCop === 0}
+              cuandoEsCero="Ningún contrato trae saldo del sistema anterior."
+              data-testid="cifra-saldo-anterior"
+            />
 
+            {lista.filas.length === 0 ? (
+              <SinDatos
+                queSon="saldos del sistema anterior"
+                icono={ClockCounterClockwise}
+                titulo="Ningún contrato trae saldo del sistema anterior"
+                descripcion="Se carga con la columna «Saldo» del archivo de contratos, al migrar o al volver a subirlo."
+              />
+            ) : (
             <Card className="overflow-hidden p-0">
-              <Table>
-                <TableHeader>
+              {/* Ronda 26 (#2 y UI): la primera columna es el inquilino (quien identifica), el contrato debajo;
+                  los «$ 0» en «—»; a 390, una tarjeta por contrato (patrón de CuotasDelMesTabla). */}
+              <Table className="max-md:block">
+                <TableHeader className="max-md:hidden">
                   <TableRow>
-                    <TableHead>Contrato</TableHead>
                     <TableHead>Inquilino</TableHead>
                     <TableHead>Propietario</TableHead>
                     <TableHead className="text-right">Saldo</TableHead>
@@ -120,45 +128,46 @@ export function SaldoDelSistemaAnterior() {
                     <TableHead className="text-right">Por recaudar</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {lista.filas.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="p-0">
-                        <SinDatos
-                          queSon="saldos del sistema anterior"
-                          icono={ClockCounterClockwise}
-                          titulo="Ningún contrato trae saldo del sistema anterior"
-                          descripcion="Se carga con la columna «Saldo» del archivo de contratos, al migrar o al volver a subirlo."
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    lista.filas.map((f) => (
-                      <TableRow key={f.contractId} data-testid="fila-saldo-anterior">
-                        <TableCell>
+                <TableBody className="max-md:block">
+                  {lista.filas.map((f) => (
+                    <TableRow
+                      key={f.contractId}
+                      data-testid="fila-saldo-anterior"
+                      className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3"
+                    >
+                      <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
+                        <p className="font-medium text-fg">{f.inquilino ?? 'Sin nombre registrado'}</p>
+                        <p className="text-caption text-fg-muted">
                           <a
                             href={`/panel/inmobiliaria/contratos/${f.contractId}`}
-                            className="font-medium text-fg underline-offset-2 hover:underline"
+                            className="underline-offset-2 hover:text-fg hover:underline"
                           >
                             {f.contrato ? `#${f.contrato}` : 'Ver contrato'}
                           </a>
-                          {f.inmueble && <p className="text-caption text-fg-muted">{f.inmueble}</p>}
-                        </TableCell>
-                        <TableCell>{f.inquilino ?? '—'}</TableCell>
-                        <TableCell>{f.propietario ?? '—'}</TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">{formatCurrency(f.saldoCop)}</TableCell>
-                        <TableCell
-                          className={`text-right font-mono tabular-nums ${f.recaudadoCop > 0 ? 'text-success' : 'text-fg-muted'}`}
-                        >
-                          {formatCurrency(f.recaudadoCop)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">{formatCurrency(f.pendienteCop)}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
+                          {f.inmueble ? ` · ${f.inmueble}` : ''}
+                        </p>
+                      </TableCell>
+                      <TableCell className="max-md:col-span-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
+                        <span className="md:hidden">Propietario: </span>
+                        {f.propietario ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-right max-md:hidden">
+                        <PlataOGuion valor={f.saldoCop} />
+                      </TableCell>
+                      <TableCell className="text-right max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-left max-md:text-caption">
+                        <span className="text-fg-muted md:hidden">Recaudado </span>
+                        <PlataOGuion valor={f.recaudadoCop} />
+                        <span className="text-fg-muted md:hidden"> de {formatCurrency(f.saldoCop)}</span>
+                      </TableCell>
+                      <TableCell className="text-right max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
+                        <PlataOGuion valor={f.pendienteCop} className="text-fg" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </Card>
+            )}
           </>
         )}
       </EstadoDeDatos>

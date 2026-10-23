@@ -15,10 +15,8 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { ROLES_DE_CONTRATOS } from '@/lib/contratos/roles-de-contratos'
 import { ConceptosYLiquidacion } from '@/components/contratos/ConceptosYLiquidacion'
-import { useCatalogoDeConceptos } from '@/lib/conceptos/use-catalogo-de-conceptos'
 
 export default function ConceptosPage() {
-  const { activos } = useCatalogoDeConceptos()
   return (
     <PageGuard module="contratos" roles={ROLES_DE_CONTRATOS}>
       <div className="space-y-6 p-6 lg:p-8">
@@ -31,9 +29,10 @@ export default function ConceptosPage() {
             Contratos
           </Link>
           <EncabezadoDePantalla
-            seccion="Portafolio"
+            seccion="Operación"
             titulo="Conceptos y liquidación"
-            descripcion={`${activos.length} conceptos, uno por cosa que se cobra. Los nombres se cambian en Configuración → Conceptos.`}
+            // Revisora r25: la pantalla es una calculadora de UN concepto, no la lista de 72.
+            descripcion="Calcula qué paga y qué recibe cada parte por un concepto, con sus impuestos."
             ayuda={
               <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: conceptos y liquidación" variante="secundario">
                 <div className="space-y-3 text-body-sm text-fg-muted">

@@ -19,7 +19,7 @@ import { Info, Receipt } from '@phosphor-icons/react'
 
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
+import { MoneyInput } from '@/components/ui/money-input'
 import {
   Select,
   SelectContent,
@@ -95,13 +95,11 @@ export function ConceptosYLiquidacion() {
           <label className="text-sm font-medium text-foreground" htmlFor="valor">
             Valor
           </label>
-          <Input
+          {/* Revisora r25: con separador de miles («2.000.000»), no un número pelado. */}
+          <MoneyInput
             id="valor"
-            type="number"
-            min={0}
-            step={50_000}
             value={valor}
-            onChange={(e) => setValor(Math.max(0, Number(e.target.value) || 0))}
+            onChange={(crudo) => setValor(Math.max(0, Number(crudo) || 0))}
           />
         </div>
 
@@ -122,8 +120,8 @@ export function ConceptosYLiquidacion() {
           </p>
         </div>
 
-        <Perfil titulo="Quien paga" perfil={paga} onCambio={setPaga} esPagador />
-        <Perfil titulo="Quien recibe" perfil={recibe} onCambio={setRecibe} />
+        <Perfil titulo="Quién paga" perfil={paga} onCambio={setPaga} esPagador />
+        <Perfil titulo="Quién recibe" perfil={recibe} onCambio={setRecibe} />
       </Card>
 
       {/* Lo que sale */}
@@ -235,6 +233,10 @@ function Perfil({
             onCambio={(v) => onCambio({ ...perfil, agenteRetenedorIva: v })}
           >
             Practica ReteIVA
+            {/* Un campo apagado dice por qué (DESIGN §24). */}
+            {!perfil.agenteRetenedorRenta ? (
+              <span className="block text-caption text-fg-subtle">Primero marca la retención en la fuente.</span>
+            ) : null}
           </Casilla>
           <Casilla
             id="ret-ica"

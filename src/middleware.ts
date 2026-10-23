@@ -2,12 +2,15 @@ import { type NextRequest, NextResponse } from 'next/server';
 import {
   CABECERA_DEL_NONCE,
   GRUPO_DE_REPORTES_CSP,
+  RUTA_DE_LA_HOME,
   RUTA_DE_REPORTES_CSP,
   cabeceraDeLaPolitica,
+  esDeLaHome,
   llevaPoliticaDeDocumento,
   modoDeLaPolitica,
   nuevoNonce,
   politicaDeContenido,
+  politicaDeLaHome,
 } from '@/lib/seguridad/politica-de-contenido';
 import {
   CABECERA_DEL_IDIOMA,
@@ -57,7 +60,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(destino);
   }
   const reescrita = idioma && publica ? request.nextUrl.clone() : null;
-  if (reescrita) reescrita.pathname = ruta;
+  /*
+   * Ronda 30 (Nico, 23-10-2026): «la de producto en vivo debe ser la landing
+   * principal». La home (`/es`, `/en`) es la página estática de
+   * `public/landing/index.html`, servida tal cual (sin React). La home anterior
+   * sigue en `/inicio-anterior` por si hay que volver. La landing sólo existe
+   * en español: `/en` también la muestra.
+   */
+  if (reescrita) reescrita.pathname = ruta === '/' ? RUTA_DE_LA_HOME : ruta;
 
   const deLaPeticion = new Headers(request.headers);
   // Nadie de afuera dice en qué idioma va la página.
@@ -80,7 +90,7 @@ export function middleware(request: NextRequest) {
 
   const nonce = nuevoNonce();
   const modo = modoDeLaPolitica(process.env.CSP_MODO);
-  const politica = politicaDeContenido(nonce, {
+  const entorno = {
     desarrollo: process.env.NODE_ENV !== 'production',
     // En sólo-reporte `upgrade-insecure-requests` no aplica y ensucia la consola.
     soloReporte: modo === 'reporte',
@@ -90,7 +100,9 @@ export function middleware(request: NextRequest) {
     NEXT_PUBLIC_AVALUO_API_URL: process.env.NEXT_PUBLIC_AVALUO_API_URL,
     NEXT_PUBLIC_ADMIN_API_URL: process.env.NEXT_PUBLIC_ADMIN_API_URL,
     NEXT_PUBLIC_AI_API_URL: process.env.NEXT_PUBLIC_AI_API_URL,
-  });
+  };
+  // La home estática lleva su propia política (sin nonce: no la arma React).
+  const politica = esDeLaHome(ruta) ? politicaDeLaHome(entorno) : politicaDeContenido(nonce, entorno);
   const cabecera = cabeceraDeLaPolitica(modo);
 
   deLaPeticion.set(CABECERA_DEL_NONCE, nonce);

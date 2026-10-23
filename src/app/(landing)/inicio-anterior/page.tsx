@@ -1,13 +1,18 @@
 import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
-import { landingRobots } from '@/lib/landing/landing-stage'
 import { alternativasDelIdioma, idiomaDeLaPeticion } from '@/lib/idioma/metadata'
 import { ForceLightMode } from '@/components/providers/ForceLightMode'
 import LandingHome from '@/components/landing-v2/LandingHome'
 import LogoDefs from '@/components/landing-v2/LogoDefs'
 
 /**
- * Home (`/`) — F1 final integration (landing-react-port). Renders the v2
+ * Ronda 30 (Nico, 23-10-2026): «la de producto en vivo debe ser la landing
+ * principal». La home de `/es` y `/en` ahora es la landing 2, una página
+ * estática (`public/landing/index.html`, la sirve `src/middleware.ts`). Ésta,
+ * la home anterior, queda en `/inicio-anterior` por si hay que volver, fuera
+ * de los buscadores (`noindex`) para no competir con la nueva.
+ *
+ * Home anterior (antes en `/`) — F1 final integration (landing-react-port). Renders the v2
  * (Cohere-style) port 1:1: `<LandingHome>` is a self-contained port of the
  * standalone index.html (its own header/nav/footer), so the shared
  * LandingHeader/LandingFooter are suppressed for this route in the parent
@@ -41,7 +46,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const base: Metadata = {
     title: TITULO[idioma],
     description: DESCRIPCION[idioma],
-    robots: landingRobots(),
+    // Ronda 30: fuera de los buscadores; la home es la landing 2.
+    robots: { index: false, follow: false },
     alternates: alternativasDelIdioma('/', idioma),
   }
   if (idioma === 'es') return base

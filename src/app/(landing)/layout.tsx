@@ -44,7 +44,8 @@ const inter = Inter({
 // 1:1 with the original design. Rendering the shared chrome here too would
 // double it up. Every other route in this group (blog, contacto, productos,
 // landing-preview) keeps the shared chrome.
-const SELF_CONTAINED_CHROME_PATHS = ['/']
+// Ronda 30 (Nico): la home es la landing 2 (estática); la anterior vive en /inicio-anterior.
+const SELF_CONTAINED_CHROME_PATHS = ['/', '/inicio-anterior']
 
 // El chrome del grupo es el MISMO del home: `LandingChrome` (header v2 +
 // LogoDefs + modo claro forzado) y `LandingFooterV2`, extraídos de

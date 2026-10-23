@@ -5,7 +5,7 @@ import { User, Buildings, CurrencyDollar, Warning, CaretRight, Phone, Envelope }
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
-import { IconButton, Pressable, motionSpring } from '@leasefy/cadence';
+import { Avatar, IconButton, Pressable, motionSpring } from '@leasefy/cadence';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar';
@@ -52,14 +52,15 @@ export function PropietarioCard({
             : 'border-border bg-card hover:border-primary/30'
         )}
       >
-        <div className={cn(
-          'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
-          isCompany
-            ? 'bg-muted text-muted-foreground'
-            : 'bg-primary-soft text-primary'
-        )}>
-          {isCompany ? <Buildings className="w-5 h-5" /> : <User className="w-5 h-5" />}
-        </div>
+        {/* Revisora r25 (DESIGN §24): la persona con el Avatar de Cadence, no un ícono azul genérico; la empresa,
+            con su edificio en neutro. */}
+        {isCompany ? (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Buildings className="w-5 h-5" aria-hidden="true" />
+          </div>
+        ) : (
+          <Avatar name={propietario.name} size="md" className="shrink-0" />
+        )}
         <div className="flex-1 min-w-0">
           <p className="font-medium text-foreground truncate text-sm">
             {propietario.name}

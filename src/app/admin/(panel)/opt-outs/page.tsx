@@ -1,18 +1,22 @@
 'use client'
 
-import { BellSlash, HandPalm, Scales, Users } from '@phosphor-icons/react'
-import { Alert, FranjaDeCifras } from '@leasefy/cadence'
+import { BellSlash } from '@phosphor-icons/react'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { adminApi, traerTodasLasPaginas } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime } from '@/lib/admin/format'
 import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { BarraDeFiltros, Buscador, Filtro } from '@/components/admin/screen/Filtros'
 import { legible } from '@/lib/admin/textos-del-admin'
+
+/** El canal de la baja, en palabras (antes «Voice», «Email»). */
+const CANAL: Record<string, string> = { voice: 'Llamada', call: 'Llamada', whatsapp: 'WhatsApp', sms: 'SMS', email: 'Correo', push: 'Notificación' }
+const canal = (c: string | null | undefined) => (c ? CANAL[c] ?? legible(c) : 'Llamada')
 
 const PAGE_SIZE = 50
 
@@ -68,7 +72,7 @@ export default function OptOutsPage() {
     },
     { header: 'Deudor', texto: (r) => r.debtor_name, cell: (r) => <span className="block max-w-[200px] truncate font-medium text-fg">{r.debtor_name ?? '—'}</span> },
     { header: 'Inmobiliaria', texto: (r) => r.legal_name, cell: (r) => <span className="block max-w-[160px] truncate text-fg-muted">{r.legal_name ?? '—'}</span> },
-    { header: 'Canal', texto: (r) => legible(r.channel ?? 'voice'), cell: (r) => <Pill tone="bad">{legible(r.channel ?? 'voice')}</Pill> },
+    { header: 'Canal', texto: (r) => canal(r.channel), cell: (r) => <Pill tone="neutral">{canal(r.channel)}</Pill> },
     { header: 'Cómo se detectó', texto: (r) => (r.detection ? legible(r.detection) : ''), cell: (r) => <span className="text-fg-muted">{r.detection ? legible(r.detection) : '—'}</span> },
     {
       header: 'Lo que dijo',
@@ -79,15 +83,15 @@ export default function OptOutsPage() {
     },
     {
       header: 'Canales cerrados',
-      texto: (r) => (r.opt_out_channels ?? []).map((c) => legible(c)).join(', '),
+      texto: (r) => (r.opt_out_channels ?? []).map((c) => canal(c)).join(', '),
       cell: (r) => {
         const channels = r.opt_out_channels ?? []
         if (channels.length === 0) return <span className="text-fg-subtle">—</span>
         return (
           <div className="flex flex-wrap gap-1">
             {channels.map((c) => (
-              <Pill key={c} tone="bad">
-                {legible(c)}
+              <Pill key={c} tone="neutral">
+                {canal(c)}
               </Pill>
             ))}
           </div>
@@ -100,15 +104,35 @@ export default function OptOutsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Bajas de contacto"
-        description="Habeas Data (Ley 1581) y Ley 2300: los deudores que pidieron no ser contactados. Es un registro que no se revoca; sólo lectura."
+        description="Los deudores que pidieron no ser contactados. Es un registro de sólo lectura que no se revoca."
+        ayuda={
+          <ParaEntenderMas etiqueta="Base legal" titulo="Las bajas de contacto" variante="secundario">
+            <p className="text-body-sm text-fg-muted">
+              Ley 1581 de 2012 (Habeas Data) y Ley 2300 de 2023 (art. 7). La baja no se revoca sin un consentimiento
+              explícito y posterior del titular: para revertirla hace falta su autorización por escrito y el visto bueno
+              del equipo legal de Leasefy. No se borra nada de aquí sin dejar rastro.
+            </p>
+          </ParaEntenderMas>
+        }
       />
 
-      <FranjaDeCifras fila="lg">
-        <KpiCard icon={<Users />} label="Bajas en total" value={result.isLoading ? '—' : Number(stats?.total ?? 0)} hint="Desde que existe Leasefy" />
-        <KpiCard icon={<HandPalm />} tone="bad" label="Lo pidió en la llamada" value={result.isLoading ? '—' : Number(stats?.opt_out_invoked ?? 0)} />
-        <KpiCard icon={<BellSlash />} tone="warn" label="Solicitudes" value={result.isLoading ? '—' : Number(stats?.opt_out_request ?? 0)} />
-        <KpiCard icon={<Scales />} label="Habeas Data" value={result.isLoading ? '—' : Number(stats?.habeas_data_opt_out ?? 0)} />
-      </FranjaDeCifras>
+      {/* Glow up 22-10: LA RESPUESTA (cuántos pidieron la baja) y de dónde vino cada una; antes, 4 tarjetas del
+          mismo peso con tonos rojo y ámbar. */}
+      {stats ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Bajas de contacto"
+            cifra={Number(stats.total ?? 0).toLocaleString('es-CO')}
+            contexto="desde que existe Leasefy"
+            tramos={[
+              { clave: 'llamada', etiqueta: 'Lo pidió en la llamada', monto: Number(stats.opt_out_invoked ?? 0), tono: 'neutro', cifra: Number(stats.opt_out_invoked ?? 0).toLocaleString('es-CO'), siempre: true },
+              { clave: 'solicitud', etiqueta: 'Por solicitud', monto: Number(stats.opt_out_request ?? 0), tono: 'neutro', cifra: Number(stats.opt_out_request ?? 0).toLocaleString('es-CO'), siempre: true },
+              { clave: 'habeas', etiqueta: 'Habeas Data', monto: Number(stats.habeas_data_opt_out ?? 0), tono: 'neutro', cifra: Number(stats.habeas_data_opt_out ?? 0).toLocaleString('es-CO'), siempre: true },
+            ]}
+            data-testid="bajas-total"
+          />
+        </div>
+      ) : null}
 
       <DataTable
         columns={columns}
@@ -118,7 +142,7 @@ export default function OptOutsPage() {
         error={result.error}
         onReintentar={result.refetch}
         emptyTitle={q ? 'Nadie con ese nombre pidió la baja' : 'Nadie ha pedido la baja todavía'}
-        emptyIcon={<BellSlash weight="bold" />}
+        emptyIcon={<BellSlash weight="duotone" />}
         aria-label="Bajas de contacto"
         barra={
           <BarraDeFiltros>
@@ -139,11 +163,6 @@ export default function OptOutsPage() {
         traerTodoParaElExcel={() => traerTodasLasPaginas<OptOutRow>('/opt-outs', { q })}
       />
 
-      <Alert variant="danger" role="note" title="Base legal">
-        Ley 1581 de 2012 y Ley 2300 de 2023 (art. 7). La baja <strong>no se revoca</strong> sin un consentimiento
-        explícito y posterior del titular: para revertirla hace falta su autorización por escrito y el visto bueno del
-        equipo legal de Leasefy. No se borra nada de aquí sin dejar rastro.
-      </Alert>
     </div>
   )
 }

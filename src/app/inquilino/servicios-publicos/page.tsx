@@ -8,10 +8,14 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Lightning } from '@phosphor-icons/react';
 import { CrossFade, StatusBadge } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -85,18 +89,24 @@ export default function ServiciosPublicosDelInquilino() {
 
   const vigentes = (datos?.contratos ?? []).filter((c) => c.vigente);
 
+  // Con un solo arriendo, «Subir una factura» es LA acción (azul); con varios, cada uno la lleva en arena.
+  const unSoloArriendo = vigentes.length === 1;
+
   return (
-    <div className="space-y-6 p-4 md:p-6 lg:p-8">
-      <header className="space-y-1">
-        <h1 className="flex items-center gap-2 text-h2 text-fg">
-          <Lightning className="h-6 w-6 text-primary" weight="duotone" aria-hidden="true" />
-          Servicios públicos
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          Sube cada mes la factura que pagaste (energía, agua, gas…). Si la empresa te cobró conceptos de antes de tu llegada,
-          súbelos como «ajuste»: se le descuentan al propietario y quedan a tu favor.
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Mi arriendo"
+        titulo="Servicios públicos"
+        descripcion="Sube cada mes la factura que pagaste (energía, agua, gas…); la inmobiliaria la revisa y te avisa."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Qué es un ajuste?" titulo="Los ajustes de la empresa de servicios" variante="secundario">
+            <p className="text-body-sm text-fg-muted">
+              Si la empresa te cobró conceptos de antes de tu llegada, súbelos como «ajuste»: se le descuentan al propietario
+              y quedan a tu favor.
+            </p>
+          </ParaEntenderMas>
+        }
+      />
 
       {error ? (
         <FalloDeCarga error={error} queEs="tus servicios públicos" onReintentar={cargar} />
@@ -105,35 +115,63 @@ export default function ServiciosPublicosDelInquilino() {
           {!datos ? (
             <EsqueletoTabla columnas={3} filas={3} />
           ) : vigentes.length === 0 ? (
-            <p className="rounded-lg border border-border bg-card p-5 text-sm text-fg-muted">No tienes un arriendo vigente.</p>
+            <div className="rounded-lg border border-border bg-card">
+              <SinDatos
+                queSon="arriendos"
+                icono={Lightning}
+                ilustracion="casa"
+                titulo="No tienes un arriendo vigente"
+                descripcion="Cuando tengas un arriendo vigente, aquí subes cada mes la factura de servicios que pagaste."
+                accion={
+                  <Button asChild variant="outline" hideArrow>
+                    <Link href="/inquilino">Ir a mi arriendo</Link>
+                  </Button>
+                }
+              />
+            </div>
           ) : (
             <div className="space-y-4">
               {vigentes.map((c) => (
                 <section key={c.contractId} className="space-y-3 rounded-lg border border-border bg-card p-4 md:p-5" data-testid={`contrato-${c.contractId}`}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-medium text-fg">{c.inmueble ?? 'Tu arriendo'}</p>
-                      {c.contrato && <p className="text-xs text-fg-muted">Contrato {c.contrato}</p>}
+                    <div className="min-w-0">
+                      <p className="text-body text-fg">{c.inmueble ?? 'Tu arriendo'}</p>
+                      {c.contrato && (
+                        <p className="text-caption text-fg-muted">
+                          Contrato <span className="font-mono">{c.contrato}</span>
+                        </p>
+                      )}
                     </div>
-                    <Button hideArrow disabled={!datos.disponible} onClick={() => setSubirA(c.contractId)} data-testid="subir-factura">
+                    <Button
+                      variant={unSoloArriendo ? 'default' : 'outline'}
+                      hideArrow
+                      disabled={!datos.disponible}
+                      onClick={() => setSubirA(c.contractId)}
+                      data-testid="subir-factura"
+                    >
                       Subir una factura
                     </Button>
                   </div>
+                  {!datos.disponible && (
+                    <p className="text-caption text-fg-muted">Todavía no se pueden subir facturas desde el portal: falta una actualización de Leasefy.</p>
+                  )}
                   {c.facturas.length === 0 ? (
-                    <p className="text-sm text-fg-muted">Todavía no has subido facturas.</p>
+                    <p className="text-body-sm text-fg-muted">Todavía no has subido facturas. Sube la del mes cuando la pagues.</p>
                   ) : (
                     <ul className="divide-y divide-border">
                       {c.facturas.map((f) => (
-                        <li key={f.id} className="flex flex-wrap items-start justify-between gap-2 py-3 text-sm">
+                        <li key={f.id} className="flex flex-wrap items-start justify-between gap-2 py-3 text-body-sm">
                           <div>
                             <p className="text-fg">
                               {f.nombreDelServicio}
-                              {f.tipo === 'AJUSTE' ? ' · ajuste' : ''} · {formatCurrency(f.valorCop)}
+                              {f.tipo === 'AJUSTE' ? ' · ajuste' : ''} ·{' '}
+                              <span className="font-mono tabular-nums">{formatCurrency(f.valorCop)}</span>
                             </p>
-                            <p className="text-xs text-fg-muted">
-                              Del {fechaCorta(f.periodoDesde)} al {fechaCorta(f.periodoHasta)}
+                            <p className="text-caption text-fg-muted">
+                              Del <span className="font-mono">{fechaCorta(f.periodoDesde)}</span> al{' '}
+                              <span className="font-mono">{fechaCorta(f.periodoHasta)}</span>
                             </p>
-                            {f.motivoDeLaRevision && <p className="text-xs text-danger">{f.motivoDeLaRevision}</p>}
+                            {f.motivoDeLaRevision && <p className="text-caption text-danger">{f.motivoDeLaRevision}</p>}
                           </div>
                           <div className="flex items-center gap-2">
                             <StatusBadge tone={ESTADO[f.estado].tono}>{ESTADO[f.estado].rotulo}</StatusBadge>

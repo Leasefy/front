@@ -13,11 +13,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Lightning, MagnifyingGlass } from '@phosphor-icons/react';
-import { Chip, CrossFade, Eyebrow, Presence, StatusBadge } from '@leasefy/cadence';
+import { Lightning } from '@phosphor-icons/react';
+import { CrossFade, Presence, SearchInput, StatusBadge } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
@@ -178,39 +183,42 @@ function FacturasDelContrato({
         ) : (
           <>
             {!datos.disponible && (
-              <p className="rounded-md bg-warning-soft px-3 py-2 text-xs text-fg">
+              <p className="rounded-xl bg-warning-soft px-3 py-2 text-caption text-fg">
                 Falta una actualización de la base: todavía no se pueden registrar facturas.
               </p>
             )}
             {datos.garantia && (
-              <p className="text-sm text-fg-muted" data-testid="saldo-de-la-garantia">
-                Garantía de servicios: queda {formatCurrency(datos.garantia.saldoCop)} del inquilino.
+              <p className="text-body-sm text-fg-muted" data-testid="saldo-de-la-garantia">
+                Garantía de servicios: queda{' '}
+                <span className="font-mono tabular-nums text-fg">{formatCurrency(datos.garantia.saldoCop)}</span> del inquilino.
               </p>
             )}
 
             <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-fg">Facturas</h3>
+              <h3 className="text-label text-fg-subtle">Facturas</h3>
               {datos.facturas.length === 0 ? (
-                <p className="text-sm text-fg-muted">Este contrato todavía no tiene facturas de servicios.</p>
+                <p className="text-body-sm text-fg-muted">Este contrato todavía no tiene facturas de servicios.</p>
               ) : (
                 <ul className="divide-y divide-border rounded-lg border border-border">
                   {datos.facturas.map((f) => (
-                    <li key={f.id} className="space-y-2 p-3 text-sm" data-testid={`factura-${f.id}`}>
+                    <li key={f.id} className="space-y-2 p-3 text-body-sm" data-testid={`factura-${f.id}`}>
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <p className="font-medium text-fg">
+                          <p className="text-fg">
                             {f.nombreDelServicio} · {TIPO[f.tipo]}
                             {f.empresa ? ` · ${f.empresa}` : ''}
                           </p>
-                          <p className="text-xs text-fg-muted">
-                            Del {fechaCorta(f.periodoDesde)} al {fechaCorta(f.periodoHasta)} · {formatCurrency(f.valorCop)} ·{' '}
+                          <p className="text-caption text-fg-muted">
+                            Del <span className="font-mono">{fechaCorta(f.periodoDesde)}</span> al{' '}
+                            <span className="font-mono">{fechaCorta(f.periodoHasta)}</span> ·{' '}
+                            <span className="font-mono tabular-nums text-fg">{formatCurrency(f.valorCop)}</span> ·{' '}
                             {f.subidaPor === 'INQUILINO' ? 'la subió el inquilino' : 'la registró la inmobiliaria'}
                           </p>
                         </div>
                         <StatusBadge tone={ESTADO_DE_LA_FACTURA[f.estado].tono}>{ESTADO_DE_LA_FACTURA[f.estado].rotulo}</StatusBadge>
                       </div>
-                      {typeof f.liquidacion?.frase === 'string' && <p className="text-xs text-fg-muted">{f.liquidacion.frase}</p>}
-                      {f.motivoDeLaRevision && <p className="text-xs text-danger">Motivo: {f.motivoDeLaRevision}</p>}
+                      {typeof f.liquidacion?.frase === 'string' && <p className="text-caption text-fg-muted">{f.liquidacion.frase}</p>}
+                      {f.motivoDeLaRevision && <p className="text-caption text-danger">Motivo: {f.motivoDeLaRevision}</p>}
                       <div className="flex flex-wrap gap-2">
                         {f.tieneSoporte && (
                           <Button size="sm" variant="ghost" hideArrow onClick={() => void verSoporte(f)}>
@@ -219,8 +227,10 @@ function FacturasDelContrato({
                         )}
                         {puedeEditar && f.estado === 'POR_REVISAR' && (
                           <>
+                            {/* Decidir (aprobar) va en tinta: el azul del cajón es «Guardar la factura». */}
                             <Button
                               size="sm"
+                              variant="ink"
                               hideArrow
                               disabled={guardando}
                               onClick={() =>
@@ -241,6 +251,7 @@ function FacturasDelContrato({
                         {puedeEditar && f.estado === 'PENDIENTE' && f.tipo === 'SALIDA' && (
                           <Button
                             size="sm"
+                            variant="ink"
                             hideArrow
                             disabled={guardando}
                             onClick={() =>
@@ -364,27 +375,61 @@ export function ServiciosPublicos() {
     );
   }, [filas, estado, busqueda]);
   const cargando = !error && datos?.mes !== mes;
+  const hayFiltros = estado !== 'todos' || busqueda.trim() !== '';
+  const limpiar = () => {
+    setEstado('todos');
+    setBusqueda('');
+  };
+
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(visibles, {
+    resetKey: `${mes}|${estado}|${busqueda}`,
+  });
+
+  /*
+   * Glow up (23-10): lo que pide trabajo va primero —lo que subieron para revisar, lo rechazado y a quién le
+   * falta— y lo que está al día, al final. Mientras carga, sin números.
+   */
+  const ORDEN: EstadoDelMes[] = ['POR_REVISAR', 'RECHAZADA', 'SIN_FACTURA', 'AL_DIA'];
+  const pestanas = [
+    { valor: 'todos' as const, etiqueta: 'Todos', cuantos: cargando ? null : filas.length, fija: true },
+    ...ORDEN.map((clave) => ({
+      valor: clave,
+      etiqueta: ESTADOS_DEL_MES.find((e) => e.clave === clave)?.rotulo ?? clave,
+      cuantos: cargando ? null : filas.filter((f) => f.estadoDelMes === clave).length,
+      tono: clave === 'POR_REVISAR' ? ('aviso' as const) : undefined,
+      testid: `estado-${clave}`,
+    })),
+  ];
+  const ajustes = datos?.resumen.ajustesPorRevisar ?? 0;
 
   return (
-    <div className="space-y-6 p-4 md:p-6 lg:p-8">
-      <header className="space-y-1">
-        <Eyebrow>Operación</Eyebrow>
-        <h1 className="flex items-center gap-2 text-h2 text-fg">
-          <Lightning className="h-6 w-6 text-primary" weight="duotone" aria-hidden="true" />
-          Servicios públicos
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          Quién está al día con sus facturas, qué subieron los inquilinos para revisar y los ajustes de la empresa de servicios.
-          La primera factura se parte por días y la última se paga con la garantía.
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Operación"
+        titulo="Servicios públicos"
+        descripcion="Quién está al día con la factura del mes, qué subieron los inquilinos para revisar y los ajustes de la empresa de servicios."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: servicios públicos" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                Cada mes el inquilino sube la factura pagada desde su portal. Aquí la revisas: al aprobarla, el contrato
+                queda al día; al rechazarla, le dices por qué y la vuelve a subir.
+              </p>
+              <p>
+                La primera factura se parte por días entre la inmobiliaria y el inquilino, y la última se paga con la
+                garantía de servicios. Los ajustes de la empresa de servicios se aprueban como una factura más.
+              </p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
 
       {error ? (
         <FalloDeCarga error={error} queEs="los servicios públicos" onReintentar={cargar} />
       ) : (
         <section className="overflow-hidden rounded-lg border border-border bg-card">
           {datos && !datos.disponible && (
-            <p className="border-b border-border bg-warning-soft px-4 py-3 text-xs text-fg md:px-5">
+            <p className="border-b border-border bg-warning-soft px-4 py-3 text-caption text-fg md:px-5">
               Falta una actualización de la base: se ven los contratos, pero todavía no se pueden registrar facturas.
             </p>
           )}
@@ -395,75 +440,88 @@ export function ServiciosPublicos() {
               onCambio={(c) => setDatos((d) => (d ? { ...d, recordatorio: c } : d))}
             />
           )}
-          <div className="space-y-3 border-b border-border px-4 py-3 md:px-5">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2">
-                <label htmlFor="mes-de-servicios" className="shrink-0 text-sm text-fg-muted">
-                  Mes
-                </label>
-                <Select value={mes} onValueChange={elegirMes}>
-                  <SelectTrigger id="mes-de-servicios" className="w-[200px]" data-testid="mes-de-servicios">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {meses.map((m) => (
-                      <SelectItem key={m.valor} value={m.valor}>
-                        {m.rotulo.charAt(0).toUpperCase() + m.rotulo.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="relative w-full md:max-w-xs">
-                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
-                <Input
-                  className="pl-9"
-                  placeholder="Contrato, inquilino, cédula o inmueble"
-                  aria-label="Buscar contratos"
-                  value={busqueda}
-                  onChange={(x) => setBusqueda(x.target.value)}
-                  data-testid="buscar-servicios"
-                />
-              </div>
+
+          {/* El control de la tarea a la vista: el mes y el buscador. */}
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+              <label htmlFor="mes-de-servicios" className="shrink-0 text-body-sm text-fg-muted">
+                Mes
+              </label>
+              <Select value={mes} onValueChange={elegirMes}>
+                <SelectTrigger id="mes-de-servicios" className="w-full sm:w-[200px]" data-testid="mes-de-servicios">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {meses.map((m) => (
+                    <SelectItem key={m.valor} value={m.valor}>
+                      {m.rotulo.charAt(0).toUpperCase() + m.rotulo.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
-              <div className="flex w-max items-center gap-2 md:w-auto md:flex-wrap">
-                <Chip selected={estado === 'todos'} onClick={() => setEstado('todos')}>
-                  Todos <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">{filas.length}</span>
-                </Chip>
-                {ESTADOS_DEL_MES.map((e) => (
-                  <Chip key={e.clave} selected={estado === e.clave} onClick={() => setEstado(e.clave)} data-testid={`estado-${e.clave}`}>
-                    {e.rotulo}{' '}
-                    <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-                      {filas.filter((f) => f.estadoDelMes === e.clave).length}
-                    </span>
-                  </Chip>
-                ))}
-                {(datos?.resumen.ajustesPorRevisar ?? 0) > 0 && (
-                  <span className="text-xs text-warning-700 dark:text-warning-100" data-testid="ajustes-por-revisar">
-                    {datos?.resumen.ajustesPorRevisar} {datos?.resumen.ajustesPorRevisar === 1 ? 'ajuste' : 'ajustes'} de EPM por revisar
-                  </span>
-                )}
-              </div>
+            {/* El ancho va en una caja: la clase de SearchInput le cae al campo, no a su envoltorio. */}
+            <div className="w-full md:w-80">
+              <SearchInput
+                value={busqueda}
+                onChange={(x) => setBusqueda(x.target.value)}
+                onClear={() => setBusqueda('')}
+                placeholder="Contrato, inquilino, cédula o inmueble"
+                aria-label="Buscar contratos"
+                inputSize="md"
+                data-testid="buscar-servicios"
+              />
             </div>
           </div>
 
+          <div className="flex flex-col gap-2 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5">
+            <PestanasDeEstado<EstadoDelMes | 'todos'>
+              etiqueta="Filtrar por el estado de la factura del mes"
+              pestanas={pestanas}
+              valor={estado}
+              onCambio={setEstado}
+            />
+            {ajustes > 0 && (
+              <span className="inline-flex shrink-0 items-center gap-2 text-caption text-fg-muted" data-testid="ajustes-por-revisar">
+                <span className="h-1.5 w-1.5 rounded-full bg-warning" aria-hidden="true" />
+                <span>
+                  <span className="font-mono tabular-nums text-fg">{ajustes}</span> {ajustes === 1 ? 'ajuste' : 'ajustes'} de EPM
+                  por revisar
+                </span>
+              </span>
+            )}
+          </div>
+
+          <Presence
+            show={hayFiltros && !cargando}
+            initial={false}
+            distance="xs"
+            as="p"
+            className="border-b border-border px-4 py-2 text-caption text-fg-muted md:px-5"
+          >
+            <span className="font-mono tabular-nums">
+              {visibles.length} de {filas.length}
+            </span>{' '}
+            en {nombreDelMes(mes)}.{' '}
+            <button type="button" onClick={limpiar} className="text-primary underline-offset-4 hover:underline">
+              Quitar los filtros
+            </button>
+          </Presence>
+
           <CrossFade swapKey={cargando ? 'cargando' : visibles.length === 0 ? 'vacio' : `lista-${mes}`} mode="popLayout" direction="none">
             {cargando ? (
-              <div className="p-4 md:p-5">
+              <div className="p-4 md:p-5" aria-busy="true">
                 <EsqueletoTabla columnas={4} filas={6} />
               </div>
             ) : visibles.length === 0 ? (
               <SinDatos
-                hayFiltros={estado !== 'todos' || busqueda.trim() !== ''}
+                hayFiltros={hayFiltros}
                 queSon="contratos"
                 icono={Lightning}
-                titulo="Ningún contrato en esta vista"
-                descripcion={`Prueba con otro estado o con otro mes que no sea ${nombreDelMes(mes)}.`}
-                onLimpiarFiltros={() => {
-                  setEstado('todos');
-                  setBusqueda('');
-                }}
+                ilustracion="casa"
+                titulo={`Ningún contrato vigente en ${nombreDelMes(mes)}`}
+                descripcion="Aquí salen los contratos vigentes del mes con su factura de servicios. Prueba con otro mes."
+                onLimpiarFiltros={hayFiltros ? limpiar : undefined}
               />
             ) : (
               <>
@@ -481,17 +539,17 @@ export function ServiciosPublicos() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {visibles.map((f) => {
+                      {pageItems.map((f) => {
                         const e = ESTADOS_DEL_MES.find((x) => x.clave === f.estadoDelMes)!;
                         return (
                           <TableRow key={f.contractId} data-testid={`servicios-${f.contractId}`}>
                             <TableCell className="max-w-[320px] px-5 py-4">
-                              <p className="font-medium text-fg">
-                                {f.contrato} · {f.inquilino ?? 'Sin inquilino'}
+                              <p className="text-fg">
+                                <span className="font-mono">{f.contrato}</span> · {f.inquilino ?? 'Sin inquilino'}
                               </p>
-                              <p className="truncate text-xs text-fg-muted">{f.inmueble}</p>
+                              <p className="truncate text-caption text-fg-muted">{f.inmueble}</p>
                               {fraseDeLosRecordatorios(f.recordatorios) && (
-                                <p className="text-xs text-fg-muted" data-testid={`recordado-${f.contractId}`}>
+                                <p className="text-caption text-fg-muted" data-testid={`recordado-${f.contractId}`}>
                                   {fraseDeLosRecordatorios(f.recordatorios)}
                                 </p>
                               )}
@@ -499,23 +557,27 @@ export function ServiciosPublicos() {
                             <TableCell className="py-4">
                               <StatusBadge tone={e.tono}>{e.rotulo}</StatusBadge>
                             </TableCell>
-                            <TableCell className="py-4 text-sm">
+                            <TableCell className="py-4 text-body-sm">
                               {f.ultimaFactura ? (
                                 <>
                                   <p className="text-fg">
-                                    {f.ultimaFactura.nombreDelServicio} · {formatCurrency(f.ultimaFactura.valorCop)}
+                                    {f.ultimaFactura.nombreDelServicio} ·{' '}
+                                    <span className="font-mono tabular-nums">{formatCurrency(f.ultimaFactura.valorCop)}</span>
                                   </p>
-                                  <p className="text-xs text-fg-muted">Hasta el {fechaCorta(f.ultimaFactura.periodoHasta)}</p>
+                                  <p className="text-caption text-fg-muted">
+                                    Hasta el <span className="font-mono">{fechaCorta(f.ultimaFactura.periodoHasta)}</span>
+                                  </p>
                                 </>
                               ) : (
                                 <span className="text-fg-muted">—</span>
                               )}
                             </TableCell>
-                            <TableCell className="py-4 text-xs">
+                            <TableCell className="py-4 text-body-sm">
                               {f.entradaRegistrada ? <span className="text-fg">Liquidada</span> : <span className="text-fg-muted">Sin registrar</span>}
                             </TableCell>
                             <TableCell className="py-4 pr-5 text-right">
-                              <Button size="sm" variant={f.porRevisar > 0 ? 'default' : 'outline'} hideArrow onClick={() => setAbierta(f)} data-testid={`abrir-${f.contractId}`}>
+                              {/* Una sola chispa por pantalla: lo que pide revisión va en arena con su número; lo demás, callado. */}
+                              <Button size="sm" variant={f.porRevisar > 0 ? 'outline' : 'ghost'} hideArrow onClick={() => setAbierta(f)} data-testid={`abrir-${f.contractId}`}>
                                 {f.porRevisar > 0 ? `Revisar (${f.porRevisar})` : 'Ver facturas'}
                               </Button>
                             </TableCell>
@@ -526,18 +588,18 @@ export function ServiciosPublicos() {
                   </Table>
                 </div>
                 <ul className="divide-y divide-border md:hidden">
-                  {visibles.map((f) => {
+                  {pageItems.map((f) => {
                     const e = ESTADOS_DEL_MES.find((x) => x.clave === f.estadoDelMes)!;
                     return (
                       <li key={f.contractId} className="space-y-2 px-4 py-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="font-medium text-fg">
-                              {f.contrato} · {f.inquilino ?? 'Sin inquilino'}
+                            <p className="text-fg">
+                              <span className="font-mono">{f.contrato}</span> · {f.inquilino ?? 'Sin inquilino'}
                             </p>
-                            <p className="truncate text-xs text-fg-muted">{f.inmueble}</p>
+                            <p className="truncate text-caption text-fg-muted">{f.inmueble}</p>
                             {fraseDeLosRecordatorios(f.recordatorios) && (
-                              <p className="text-xs text-fg-muted" data-testid={`recordado-${f.contractId}`}>
+                              <p className="text-caption text-fg-muted" data-testid={`recordado-${f.contractId}`}>
                                 {fraseDeLosRecordatorios(f.recordatorios)}
                               </p>
                             )}
@@ -545,12 +607,13 @@ export function ServiciosPublicos() {
                           <StatusBadge tone={e.tono}>{e.rotulo}</StatusBadge>
                         </div>
                         {f.ultimaFactura && (
-                          <p className="text-xs text-fg-muted">
-                            Última: {f.ultimaFactura.nombreDelServicio} · {formatCurrency(f.ultimaFactura.valorCop)} · hasta el{' '}
-                            {fechaCorta(f.ultimaFactura.periodoHasta)}
+                          <p className="text-caption text-fg-muted">
+                            Última: {f.ultimaFactura.nombreDelServicio} ·{' '}
+                            <span className="font-mono tabular-nums text-fg">{formatCurrency(f.ultimaFactura.valorCop)}</span> · hasta el{' '}
+                            <span className="font-mono">{fechaCorta(f.ultimaFactura.periodoHasta)}</span>
                           </p>
                         )}
-                        <Button size="sm" variant={f.porRevisar > 0 ? 'default' : 'outline'} hideArrow onClick={() => setAbierta(f)}>
+                        <Button size="sm" variant={f.porRevisar > 0 ? 'outline' : 'ghost'} hideArrow onClick={() => setAbierta(f)}>
                           {f.porRevisar > 0 ? `Revisar (${f.porRevisar})` : 'Ver facturas'}
                         </Button>
                       </li>
@@ -560,6 +623,19 @@ export function ServiciosPublicos() {
               </>
             )}
           </CrossFade>
+
+          {shouldPaginate && !cargando && (
+            <div className="border-t border-border px-4 py-3 md:px-5">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </section>
       )}
 

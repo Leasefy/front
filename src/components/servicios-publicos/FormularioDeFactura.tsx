@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Presence, RadioCard, RadioCardGroup } from '@leasefy/cadence';
 
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MoneyInput } from '@/components/ui/money-input';
@@ -150,7 +151,7 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
   return (
     <div className="space-y-5">
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-fg">¿Qué factura es?</legend>
+        <legend className="text-body-sm text-fg">¿Qué factura es?</legend>
         <RadioCardGroup
           value={e.tipo}
           onValueChange={(v) => cambiar('tipo', v as TipoDeFactura)}
@@ -222,9 +223,10 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
       </div>
 
       <Presence show={e.tipo === 'ENTRADA'} distance="xs">
-        <div className="space-y-4 rounded-lg border border-border bg-surface-muted/40 p-4">
+        {/* Glow up 23-10: lo de la entrada en arena, sin borde (el formulario vive en un cajón). */}
+        <div className="space-y-4 rounded-xl bg-surface-muted p-4">
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-fg">¿Quién la pagó?</legend>
+            <legend className="text-body-sm text-fg">¿Quién la pagó?</legend>
             <RadioCardGroup
               value={e.pagadaPor ?? ''}
               onValueChange={(v) => cambiar('pagadaPor', v as QuienPago)}
@@ -240,19 +242,21 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
           </div>
           <Presence show={!!cuenta || !!problemaDeLaCuenta} distance="xs">
             {cuenta ? (
-              <div className="space-y-1 text-sm" data-testid="cuenta-de-la-entrada">
+              <div className="space-y-1 text-body-sm" data-testid="cuenta-de-la-entrada">
                 <p className="text-fg">{cuenta.frase}</p>
                 <p className="text-fg-muted">
-                  Propietario: {cuenta.diasDelPropietario} días · {formatCurrency(cuenta.partePropietarioCop)} — Inquilino:{' '}
-                  {cuenta.diasDelInquilino} días · {formatCurrency(cuenta.parteInquilinoCop)}
+                  Propietario: <span className="font-mono tabular-nums">{cuenta.diasDelPropietario}</span> días ·{' '}
+                  <span className="font-mono tabular-nums">{formatCurrency(cuenta.partePropietarioCop)}</span> — Inquilino:{' '}
+                  <span className="font-mono tabular-nums">{cuenta.diasDelInquilino}</span> días ·{' '}
+                  <span className="font-mono tabular-nums">{formatCurrency(cuenta.parteInquilinoCop)}</span>
                 </p>
-                <p className="font-medium text-fg">
-                  Se mueven {formatCurrency(cuenta.valorAMoverCop)}{' '}
+                <p className="text-fg">
+                  Se mueven <span className="font-mono tabular-nums">{formatCurrency(cuenta.valorAMoverCop)}</span>{' '}
                   {cuenta.cobrarA === 'INQUILINO' ? 'en la próxima cuota del inquilino.' : 'del giro del propietario al inquilino.'}
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-danger" data-testid="problema-de-la-entrada">
+              <p className="text-body-sm text-danger" data-testid="problema-de-la-entrada">
                 {problemaDeLaCuenta}
               </p>
             )}
@@ -261,17 +265,17 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
       </Presence>
 
       <Presence show={e.tipo === 'SALIDA'} distance="xs">
-        <div className="space-y-3 rounded-lg border border-border bg-surface-muted/40 p-4">
+        <div className="space-y-3 rounded-xl bg-surface-muted p-4">
           <div className="space-y-1.5 sm:max-w-xs">
             <Label htmlFor="factura-devolucion">El inquilino devolvió el inmueble el</Label>
             <CampoDeFecha id="factura-devolucion" value={e.devolucion} onChange={(v) => cambiar('devolucion', v)} testid="factura-devolucion" />
           </div>
-          <label className="flex items-start gap-2 text-sm text-fg">
-            <input
-              type="checkbox"
-              className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]"
+          <label className="flex items-start gap-3 text-body-sm text-fg">
+            {/* La casilla de la casa (Cadence), no la del navegador. */}
+            <Checkbox
+              className="mt-0.5"
               checked={e.conLaGarantia}
-              onChange={(x) => cambiar('conLaGarantia', x.target.checked)}
+              onCheckedChange={(v) => cambiar('conLaGarantia', v === true)}
               data-testid="pagar-con-la-garantia"
             />
             <span>

@@ -190,7 +190,11 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
         </h2>
         {algoSinVerificar ? (
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted" data-testid="equipo-sin-verificar">
-            No pudimos ver si el equipo está prendido.
+            {/* Ronda 30 (revisora r27): con la píldora ya diciendo el estado, esta línea no lo pone en duda:
+                dice que lo que no se pudo revisar son los pasos. */}
+            {estado === 'sin-verificar'
+              ? 'No pudimos ver si el equipo está prendido.'
+              : 'No pudimos revisar todo lo que necesita para trabajar.'}
             <Button variant="outline" size="sm" hideArrow onClick={() => void reintentar()}>
               <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
               Volver a consultar

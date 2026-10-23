@@ -200,7 +200,9 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
       expect(fila('c-debe-otra')?.textContent).toContain('la lleva cobranza');
       expect(fila('c-debe-otra')?.textContent).not.toContain('todavía no le ha escrito');
       expect(fila('c-vencida')?.textContent).toContain('Venció hace más de 3 días sin pagar');
-      expect(fila('c-al-dia')?.textContent).toContain('Cobri todavía no le ha escrito por esta cuota.');
+      // Ronda 30: sin nada que cambie, la pastilla «Sin enlace» lo dice; la nota no se repite en la fila.
+      expect(fila('c-al-dia')?.textContent).toContain('Sin enlace');
+      expect(fila('c-al-dia')?.textContent).not.toContain('todavía no le ha escrito');
       expect(fila('c-paga')?.textContent).toContain('Ya está paga');
       expect(fila('c-paga')?.textContent).not.toContain('todavía no le ha escrito');
       expect(fila('c-paga')?.textContent).not.toContain('Venció hace más de 3 días');
@@ -236,7 +238,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     vi.setSystemTime(new Date('2026-09-28T15:00:00.000Z'));
     get.mockResolvedValue(pagina(LOS_CINCO));
     await montar(<LinksDePago mes="2026-10" />);
-    expect(fila('c-ninguno')?.textContent).toContain('Cobri todavía no le ha escrito por esta cuota.');
+    expect(fila('c-ninguno')?.textContent).toContain('Sin enlace');
     expect(fila('c-enviado')?.textContent).toContain('Último aviso:');
     expect(fila('c-pagado')?.textContent).toContain('Pagado el');
     expect(fila('c-vencido')?.textContent).toContain('la sigue cobranza');

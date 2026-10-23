@@ -46,7 +46,8 @@ function PagosCola() {
       {/* PG-16: lo que se ve acá son las facturas de PROVEEDOR, no las
           liquidaciones de los propietarios. */}
       <EncabezadoDePantalla
-        seccion="Pagar a propietarios"
+        // Ronda 30 (revisora r27): son facturas de PROVEEDORES, no giros a propietarios.
+        seccion="Pagar a proveedores"
         titulo="Cuentas por pagar"
         descripcion="Las facturas de proveedor causadas en Gastos: lo que se debe, lo vencido y lo pagado."
       />

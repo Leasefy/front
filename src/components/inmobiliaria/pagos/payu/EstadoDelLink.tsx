@@ -127,7 +127,11 @@ export function EstadoDelLink({
       : estado === 'enviado' && link.ultimoEnvioEn
         ? t('inmobiliaria.cobros.linksDePago.ultimoAviso', { fecha: instanteEnBogota(link.ultimoEnvioEn, locale) })
         : estado === 'ninguno'
-          ? t(`inmobiliaria.cobros.linksDePago.detalle.${detalleSinLink(link)}`)
+          ? // Ronda 30 (revisora r27): «Cobri todavía no le ha escrito por esta cuota» se repetía en cada fila
+            // y la pastilla «Sin enlace» ya lo dice; la nota sale sólo cuando cambia algo (mora, ya paga).
+            detalleSinLink(link) === 'ninguno'
+            ? null
+            : t(`inmobiliaria.cobros.linksDePago.detalle.${detalleSinLink(link)}`)
           : estado === 'vencido'
             ? t('inmobiliaria.cobros.linksDePago.detalle.vencido')
             : estado === 'fallido'

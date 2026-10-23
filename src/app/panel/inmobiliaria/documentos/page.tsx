@@ -516,26 +516,37 @@ function DocumentosContent() {
         {pestana === 'documentos' && !cargando && !error && documentos.length > 0 ? (
           <div className="border-b border-border px-4 py-4 lg:px-5" data-testid="documentos-cifra">
             {cuenta.pendientes > 0 ? (
-              <CifraHeroe
-                tamano="mediana"
-                rotulo={tr('Por terminar')}
-                cifra={`${cifra(cuenta.pendientes)} ${cuenta.pendientes === 1 ? tr('documento') : tr('documentos')}`}
-                contexto={[
-                  `${tr('de')} ${cifra(documentos.length)}`,
-                  cuenta.borradores > 0
-                    ? `${cifra(cuenta.borradores)} ${cuenta.borradores === 1 ? tr('borrador sin mandar a firmar') : tr('borradores sin mandar a firmar')}`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-                total={documentos.length}
-                tramos={[
-                  { clave: 'borrador', etiqueta: tr('Borrador'), monto: cuenta.borradores, tono: 'neutro', cifra: cifra(cuenta.borradores) },
-                  { clave: 'por-firmar', etiqueta: tr('Por firmar'), monto: cuenta.porFirmar, tono: 'aviso', cifra: cifra(cuenta.porFirmar) },
-                  { clave: 'vencido', etiqueta: tr('Vencido'), monto: cuenta.vencidos, tono: 'critico', cifra: cifra(cuenta.vencidos) },
-                  { clave: 'firmados', etiqueta: tr('Firmados'), monto: cuenta.firmados, tono: 'exito', cifra: cifra(cuenta.firmados) },
-                ]}
-              />
+              (() => {
+                /* Revisora r25: el 2 se decía siete veces. «de N» sólo si no son todos; los borradores
+                   los dice la leyenda (no también el contexto); y con todo en UN estado, la cifra lo
+                   dice y no lleva barra ni leyenda («2 borradores sin mandar a firmar»). */
+                const enUnSoloEstado =
+                  [cuenta.borradores, cuenta.porFirmar, cuenta.vencidos, cuenta.firmados].filter((n) => n > 0).length === 1;
+                const todosBorradores = enUnSoloEstado && cuenta.borradores === documentos.length;
+                return (
+                  <CifraHeroe
+                    tamano="mediana"
+                    rotulo={tr('Por terminar')}
+                    cifra={
+                      todosBorradores
+                        ? `${cifra(cuenta.borradores)} ${cuenta.borradores === 1 ? tr('borrador sin mandar a firmar') : tr('borradores sin mandar a firmar')}`
+                        : `${cifra(cuenta.pendientes)} ${cuenta.pendientes === 1 ? tr('documento') : tr('documentos')}`
+                    }
+                    contexto={cuenta.pendientes !== documentos.length ? `${tr('de')} ${cifra(documentos.length)}` : undefined}
+                    total={documentos.length}
+                    tramos={
+                      enUnSoloEstado
+                        ? undefined
+                        : [
+                            { clave: 'borrador', etiqueta: tr('Borrador'), monto: cuenta.borradores, tono: 'neutro', cifra: cifra(cuenta.borradores) },
+                            { clave: 'por-firmar', etiqueta: tr('Por firmar'), monto: cuenta.porFirmar, tono: 'aviso', cifra: cifra(cuenta.porFirmar) },
+                            { clave: 'vencido', etiqueta: tr('Vencido'), monto: cuenta.vencidos, tono: 'critico', cifra: cifra(cuenta.vencidos) },
+                            { clave: 'firmados', etiqueta: tr('Firmados'), monto: cuenta.firmados, tono: 'exito', cifra: cifra(cuenta.firmados) },
+                          ]
+                    }
+                  />
+                );
+              })()
             ) : (
               <p className="text-body-sm text-fg-muted">
                 <span className="font-medium text-fg">{tr('Todo firmado')}</span>

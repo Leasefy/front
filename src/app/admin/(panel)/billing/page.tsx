@@ -136,14 +136,6 @@ export default function IngresosPage() {
       ),
     },
     {
-      header: 'Mes pasado',
-      align: 'right',
-      orden: (f) => f.cobradoMesPasadoCop,
-      ordenPrimero: 'desc',
-      texto: (f) => f.cobradoMesPasadoCop,
-      cell: (f) => <span className="tabular-nums text-fg-muted">{fmtCOP(f.cobradoMesPasadoCop)}</span>,
-    },
-    {
       header: 'Por cobrar',
       align: 'right',
       orden: (f) => f.pendienteCop,
@@ -182,7 +174,15 @@ export default function IngresosPage() {
             </div>
           </div>
         ) : (
-          <span className="text-caption text-fg-subtle">{d?.vozDisponible === false ? 'No se pudo leer' : 'Sin conectar'}</span>
+          d?.vozDisponible === false ? (
+            <span className="text-caption text-fg-subtle">No se pudo leer</span>
+          ) : (
+            // Ronda 26 (revisora r25): «Sin conectar» en casi todas las filas no informa; callado.
+            <span className="text-fg-subtle" title="Sin conectar">
+              <span aria-hidden="true">—</span>
+              <span className="sr-only">Sin conectar</span>
+            </span>
+          )
         ),
     },
   ]
@@ -191,7 +191,7 @@ export default function IngresosPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Ingresos"
-        description="Lo que Leasefy cobra a cada inmobiliaria: la mensualidad de su plan y lo que se le cobra por la cobranza por voz. Toca una para ver su ficha."
+        description="Lo que Leasefy le cobra a cada inmobiliaria: la mensualidad de su plan y la cobranza por voz."
       />
 
       {/* Glow up 22-10: LA RESPUESTA (lo cobrado del mes, con la barra cobrado · por cobrar) y tres cifras de
@@ -241,8 +241,12 @@ export default function IngresosPage() {
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar inmobiliaria"
         segmentos={SEGMENTOS}
-        ordenInicial={{ columna: 1, sentido: 'desc' }}
+        // Ronda 26 (revisora r25): lo pendiente primero. Abre en «En mora» si hay alguna, y ordena por «Por cobrar».
+        segmentoInicial={(d?.inmobiliarias ?? []).some((f) => SEGMENTOS[2].cumple(f)) ? 'mora' : 'todas'}
+        ordenInicial={{ columna: 3, sentido: 'desc' }}
+        cifraDelCelular={`Cobrado en ${mes || 'el mes'}`}
         exportar={`ingresos-${d?.mes ?? ''}`}
+        masEnElExcel={[{ header: 'Cobrado el mes pasado', texto: (f) => f.cobradoMesPasadoCop }]}
       />
 
       <p className="text-caption text-fg-subtle">

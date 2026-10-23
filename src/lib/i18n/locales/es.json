@@ -1075,7 +1075,8 @@
       "recibos": "Recibos",
       "deudaDelMes": "Deuda del mes",
       "girosAPropietarios": "Giros a propietarios",
-      "secCaptacionCorta": "Captación"
+      "secCaptacionCorta": "Captación",
+      "diasHabiles": "Días hábiles"
     },
     "piloto": {
       "titulo": "Piloto automático",
@@ -11502,7 +11503,7 @@
     },
     "contracts": {
       "title": "Contratos",
-      "subtitle": "Gestiona los contratos de tus inmuebles",
+      "subtitle": "Los contratos de tus inmuebles y lo que espera tu firma.",
       "totalContracts": "Total contratos",
       "inSystem": "En el sistema",
       "toSign": "Por firmar",

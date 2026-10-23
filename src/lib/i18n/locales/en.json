@@ -1075,7 +1075,8 @@
       "recibos": "Receipts",
       "deudaDelMes": "Debt this month",
       "girosAPropietarios": "Owner payouts",
-      "secCaptacionCorta": "Acquisition"
+      "secCaptacionCorta": "Acquisition",
+      "diasHabiles": "Business days"
     },
     "piloto": {
       "titulo": "Autopilot",
@@ -11467,7 +11468,7 @@
     },
     "contracts": {
       "title": "Contracts",
-      "subtitle": "Manage your property contracts",
+      "subtitle": "Your properties' contracts and what awaits your signature.",
       "totalContracts": "Total contracts",
       "inSystem": "In the system",
       "toSign": "To sign",

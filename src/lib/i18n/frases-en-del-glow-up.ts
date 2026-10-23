@@ -677,4 +677,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   // Dinero (ronda 28): el Cuadre del día
   "Ver la cuenta renglón por renglón": "See the math line by line",
   "Ocultar la cuenta": "Hide the math",
+  // Cobranza (ronda 26, 2.º agente)
+  "contrato espera tu firma": "contract awaits your signature",
+  "contratos esperan tu firma": "contracts await your signature",
+  "Ningún contrato espera tu firma.": "No contract awaits your signature.",
+  "Ver los que esperan tu firma": "See the ones awaiting your signature",
 }

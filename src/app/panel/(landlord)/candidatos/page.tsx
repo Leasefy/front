@@ -22,6 +22,7 @@ import { FranjaDeCifras, KpiCard, SearchInput, SegmentedControl, MonoLabel } fro
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { PanelEnPausa, esElPanelEnPausa } from '@/components/portales/PanelEnPausa';
 import type { Candidate } from '@/lib/types/candidate';
 import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
@@ -161,7 +162,7 @@ export default function CandidatosPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Fetch candidates from API
-  const { candidates: landlordCandidates, stats, isLoading, error, refetch } = useCandidates();
+  const { candidates: landlordCandidates, stats, isLoading, error, errorCrudo, refetch } = useCandidates();
   const { decide } = useCandidateDecision();
 
   // Map to Candidate type for display (extend with default values for full Candidate fields)
@@ -564,7 +565,12 @@ export default function CandidatosPage() {
           titulo={t('landlord.candidates.title')}
           descripcion={t('landlord.candidates.subtitle')}
         />
-        <FalloDeCarga error={error} queEs="tus candidatos" onReintentar={refetch} />
+        {/* Ronda 28 (revisora r27): la pausa, con la misma voz que en Mis inmuebles (antes «Fue un problema nuestro… Referencia»). */}
+        {esElPanelEnPausa(errorCrudo) ? (
+          <PanelEnPausa />
+        ) : (
+          <FalloDeCarga error={error} queEs="tus candidatos" onReintentar={refetch} />
+        )}
       </div>
     );
   }

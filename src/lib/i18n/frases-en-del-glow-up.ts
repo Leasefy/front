@@ -670,4 +670,8 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "La creó": "Created it",
   // Cobranza (ronda 26, 2.º agente)
   "Todavía no puedes subir la cartera desde aquí: entra sola cada noche desde las cuotas vencidas.": "You can't upload your portfolio from here yet: it comes in on its own every night from the overdue installments.",
+  // Cobranza (ronda 26, 2.º agente)
+  "Tu panel de propietario está en pausa": "Your landlord panel is on pause",
+  "Mientras tanto no se ven tus inmuebles ni tus candidatos. Si una inmobiliaria administra tu inmueble, entra por el portal que ella te dio; si no, escríbenos y te contamos cuándo vuelve.": "Meanwhile your properties and candidates aren't shown. If an agency manages your property, sign in through the portal it gave you; if not, write to us and we'll tell you when it's back.",
+  "Escribir a hola@leasefy.co": "Write to hola@leasefy.co",
 }

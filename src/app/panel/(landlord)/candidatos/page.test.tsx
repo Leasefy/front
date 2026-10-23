@@ -91,6 +91,15 @@ describe('Candidatos del propietario', () => {
     expect(refetch).toHaveBeenCalled();
   });
 
+  it('🔴 la pausa del panel independiente: la misma voz que en Mis inmuebles, sin «problema nuestro» (ronda 28)', () => {
+    pintar({
+      error: 'No pudimos cargar tus candidatos.',
+      errorCrudo: { status: 503, code: 'PANEL_PROPIETARIO_INDEPENDIENTE_CONGELADO' },
+    });
+    expect(container.querySelector('[data-testid="panel-en-pausa"]')?.textContent).toContain('Tu panel de propietario está en pausa');
+    expect(container.textContent).not.toMatch(/problema nuestro|Referencia/);
+  });
+
   it('con nuevos por revisar, entra en «Nuevos»: el aprobado no aparece hasta elegir otro estado', () => {
     pintar({
       candidates: [candidato('1', 'Ana Nueva', 'pending'), candidato('2', 'Beto Aprobado', 'approved')],

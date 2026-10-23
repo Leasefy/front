@@ -11666,7 +11666,7 @@
     },
     "candidates": {
       "title": "Candidatos",
-      "subtitle": "Evalúa y gestiona las postulaciones de tus candidatos",
+      "subtitle": "Quién se postuló a cada inmueble y cómo le fue en el estudio.",
       "scoringGuideToggle": "¿Cómo funciona el scoring de candidatos?",
       "scoringGuideTitle": "Sistema de evaluación de candidatos",
       "scoringGuideDescription": "Cada candidato recibe un puntaje de 0 a 100 basado en múltiples factores verificados. Este score se traduce en un nivel de riesgo (A–D) para facilitar tu decisión.",

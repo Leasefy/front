@@ -16,6 +16,7 @@ import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-car
 import { FranjaDeCifras, KpiCard, SearchInput, SegmentedControl, CrossFade, StaggerItem } from '@leasefy/cadence';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { PanelEnPausa, esElPanelEnPausa } from '@/components/portales/PanelEnPausa';
 
 type ViewMode = 'grid' | 'list';
 
@@ -67,8 +68,11 @@ export default function PropiedadesPage() {
     properties: myProperties,
     isLoading: isLoadingProperties,
     error: errorDeCarga,
+    errorCrudo,
     refetch,
   } = useLandlordProperties();
+  // Ronda 28 (revisora r27): la pausa del panel independiente es un estado, no un error (sin «Reintentar»).
+  const enPausa = esElPanelEnPausa(errorCrudo);
   /*
    * 🔴 ARREGLOS-2 punto 5 (03-10-2026, visto por MOV-A5 a 390 px): mientras
    * cargaba se pintaba el VACÍO («Aún no tienes propiedades») y los contadores
@@ -129,7 +133,8 @@ export default function PropiedadesPage() {
           descripcion={t('landlord.properties.subtitle')}
           accionPrincipal={
             // Revisora r25: a 390 el botón a lo ancho dice lo que hace (antes un «+» solo en un botón azul ancho).
-            <Button asChild size="sm" hideArrow className="max-lg:flex-1">
+            // En pausa, sin el azul: la única acción de la pantalla es la del aviso.
+            <Button asChild size="sm" hideArrow variant={enPausa ? 'outline' : undefined} className="max-lg:flex-1">
               <Link
                 href="/publicar?from=panel"
                 aria-label={t('landlord.properties.newProperty')}
@@ -145,6 +150,8 @@ export default function PropiedadesPage() {
 
         {isLoadingProperties ? (
           <EsqueletoDeLasPropiedades etiqueta={t('landlord.properties.title')} />
+        ) : enPausa ? (
+          <PanelEnPausa />
         ) : errorDeCarga ? (
           <div
             role="alert"
@@ -293,7 +300,7 @@ export default function PropiedadesPage() {
                       <div className="flex items-center justify-between pt-4 border-t border-border-faint">
                         <div>
                           {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
-                          <p className="text-lg font-medium text-fg tabular-nums">
+                          <p className="font-mono text-lg font-normal text-fg tabular-nums">
                             {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                           </p>
                           {property.monthlyRent != null && (
@@ -301,7 +308,7 @@ export default function PropiedadesPage() {
                           )}
                         </div>
                         {candidateCount > 0 && (
-                          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-soft rounded-full text-sm font-medium text-primary">
+                          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-muted rounded-full text-sm text-fg">
                             <Users className="w-3.5 h-3.5" />
                             {candidateCount !== 1 ? t('landlord.properties.candidatesCountPlural', { count: candidateCount }) : t('landlord.properties.candidatesCount', { count: candidateCount })}
                           </span>
@@ -370,7 +377,7 @@ export default function PropiedadesPage() {
                     {/* Price */}
                     <div className="text-right">
                       {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
-                      <p className="text-lg font-medium text-fg tabular-nums">
+                      <p className="font-mono text-lg font-normal text-fg tabular-nums">
                         {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                       </p>
                       {property.monthlyRent != null && (
@@ -380,7 +387,7 @@ export default function PropiedadesPage() {
 
                     {/* Candidates */}
                     {candidateCount > 0 && (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-soft rounded-full text-sm font-medium text-primary">
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-muted rounded-full text-sm text-fg">
                         <Users className="w-3.5 h-3.5" />
                         {candidateCount}
                       </span>

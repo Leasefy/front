@@ -11631,7 +11631,7 @@
     },
     "candidates": {
       "title": "Candidates",
-      "subtitle": "Evaluate and manage your candidate applications",
+      "subtitle": "Who applied to each property and how their screening went.",
       "scoringGuideToggle": "How does candidate scoring work?",
       "scoringGuideTitle": "Candidate evaluation system",
       "scoringGuideDescription": "Each candidate receives a score from 0 to 100 based on multiple verified factors. This score translates into a risk level (A–D) to facilitate your decision.",

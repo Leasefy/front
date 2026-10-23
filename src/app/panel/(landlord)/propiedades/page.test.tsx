@@ -74,6 +74,21 @@ describe('Mis propiedades — carga, error y vacío', () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
+  it('🔴 la pausa del panel independiente se dice como pausa: sin «Reintentar» ni referencia, con su salida (ronda 28)', () => {
+    const refetch = vi.fn();
+    pintar({
+      error: 'No pudimos cargar tus inmuebles. Referencia f469265b.',
+      errorCrudo: { status: 503, code: 'PANEL_PROPIETARIO_INDEPENDIENTE_CONGELADO' },
+      refetch,
+    });
+    const pausa = $('[data-testid="panel-en-pausa"]');
+    expect(pausa?.textContent).toContain('Tu panel de propietario está en pausa');
+    expect(pausa?.textContent).not.toMatch(/Referencia|Reintentar/);
+    expect($('[data-testid="propiedades-error"]')).toBeNull();
+    expect(pausa?.querySelector('a[href="mailto:hola@leasefy.co"]')).not.toBeNull();
+    expect(container.textContent).not.toContain(T.emptyTitle);
+  });
+
   it('cargado y sin propiedades: el vacío de verdad', () => {
     pintar({});
     expect(container.textContent).toContain(T.emptyTitle);

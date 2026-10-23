@@ -230,7 +230,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
           label={t('inmobiliaria.ai.cobranza.call.back')}
         />
         <EncabezadoDePantalla
-          seccion="Cobranza · Llamadas"
+          seccion="Cobranza"
           titulo={data.debtorNameMasked}
           descripcion={
             locale.startsWith('es')

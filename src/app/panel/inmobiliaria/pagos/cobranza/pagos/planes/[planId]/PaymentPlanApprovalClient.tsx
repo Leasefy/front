@@ -385,7 +385,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
       {/* Header */}
       <EncabezadoDePantalla
-        seccion="Cobranza · Pagos"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.planes.title')}
         descripcion={
           <span className="inline-flex flex-wrap items-center gap-2">

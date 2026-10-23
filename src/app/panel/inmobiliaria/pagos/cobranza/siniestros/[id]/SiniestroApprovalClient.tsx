@@ -222,7 +222,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
       {/* De quién y con qué aseguradora. La pantalla no lo decía: se aprobaba
           la radicación de un siniestro sin saber sobre qué póliza. */}
       <EncabezadoDePantalla
-        seccion="Cobranza · Siniestros"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.siniestros.title')}
         descripcion={
           siniestro

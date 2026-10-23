@@ -207,7 +207,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       {/* La vuelta a la lista de cartas (guardián fichas-con-vuelta). */}
       <BackButton href="/panel/inmobiliaria/pagos/cobranza/cartas" label="Cartas" variant="subtle" />
       <EncabezadoDePantalla
-        seccion="Cobranza · Cartas"
+        seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.cartas.title')}
         descripcion="Lee la carta, elige cómo se entrega y apruébala o recházala."
         acciones={

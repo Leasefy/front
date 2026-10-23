@@ -494,7 +494,7 @@ export default function InquilinoPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-h3 text-fg">
-                    {locale === 'es' ? 'Propiedades para ti' : 'Properties for you'}
+                    {locale === 'es' ? 'Inmuebles para ti' : 'Properties for you'}
                   </h2>
                   {/* Decía "Basado en tu perfil y preferencias", que no es lo
                       que hace: no hay motor de perfil detrás de esta sección.

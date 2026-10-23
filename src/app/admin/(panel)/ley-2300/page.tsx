@@ -220,6 +220,8 @@ export default function Ley2300Page() {
           </div>
           )}
 
+          {/* Revisora r27: sin faltas, la línea de arriba ya lo dice: sin el título «Faltas recientes» ni el vacío que lo repetía. */}
+          {(Number(data.stats.total_violations) || 0) > 0 || violations.length > 0 ? (
           <section className="space-y-3" aria-label="Faltas recientes">
             <h2 className="text-subtitle font-medium text-fg">Faltas recientes</h2>
             <DataTable
@@ -241,6 +243,7 @@ export default function Ley2300Page() {
               exportar="faltas-ley-2300"
             />
           </section>
+          ) : null}
 
           <MasDetalles etiqueta="Ver los intentos por día y hora" etiquetaAbierto="Ocultar el mapa de intentos">
           <Tarjeta titulo="Intentos por día y hora" descripcion="Hora de Bogotá, últimos 30 días.">

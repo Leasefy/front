@@ -134,6 +134,8 @@ export default function QaPage() {
         </div>
       ) : null}
 
+      {/* Revisora r27: sin llamadas calificadas, la línea de arriba ya lo dice: sin «Para escuchar» sobre nada. */}
+      {stats && num(stats.scored_calls) === 0 && !qa.error ? null : (
       <section className="space-y-3" aria-label="Llamadas para revisar">
         <div>
           <h2 className="text-subtitle font-medium text-fg">Para escuchar</h2>
@@ -158,6 +160,7 @@ export default function QaPage() {
           exportar="llamadas-para-revisar"
         />
       </section>
+      )}
 
       <MasDetalles etiqueta="Ver cómo se reparten los puntajes y las alertas" etiquetaAbierto="Ocultar los repartos">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

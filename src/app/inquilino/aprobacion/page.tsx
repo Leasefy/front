@@ -426,7 +426,8 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
         </p>
         <div className="pt-2">
           {/* `/aprobacion` es la entrada del flujo vigente (Wompi, Slice 1). */}
-          <Button asChild size="lg">
+          {/* Long label: wrap on phones instead of widening the page (T-0173). */}
+          <Button asChild size="lg" className="h-auto min-h-12 max-w-full whitespace-normal py-3 text-center">
             <Link href="/aprobacion">
               {tf(`${NS}.vacio.cta`, 'Conoce hasta cuánto te arrendamos')}
             </Link>

@@ -13578,7 +13578,7 @@
     },
     "cartera": {
       "titulo": "What tenants owed",
-      "corte": "Cut-off date: {{fecha}}.",
+      "corte": "Movements cut-off: {{fecha}}. From that day on, charges, payments and late fees run in Leasefy; this portfolio is what each tenant owed that day.",
       "descripcion": "Upload the cartera report from your previous system, with one row per pending invoice. Each balance goes to its tenant's contract and accrues late interest from its own date.",
       "columnas": "We use five things from each row: the due date, the tenant document and name, the concept and the outstanding balance. The rest of the file is ignored.",
       "sinCorte": "Set the cut-off date first (Contracts step): the cartera is what each tenant owed that day.",

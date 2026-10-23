@@ -13613,7 +13613,7 @@
     },
     "cartera": {
       "titulo": "La cartera que traían los inquilinos",
-      "corte": "Fecha de corte: {{fecha}}.",
+      "corte": "Corte de movimientos: {{fecha}}. Desde ese día los cobros, los pagos y la mora corren en Leasefy; esta cartera es lo que cada inquilino debía ese día.",
       "descripcion": "Sube el informe de cartera de tu sistema anterior, con una fila por cada factura pendiente. Cada saldo entra al contrato de su inquilino y cuenta mora desde su propia fecha.",
       "columnas": "De cada fila usamos cinco datos: la fecha de vencimiento, el documento y el nombre del inquilino, el concepto y el saldo pendiente. El resto del archivo se ignora.",
       "sinCorte": "Primero la fecha de corte (paso Contratos): la cartera es lo que cada inquilino debía ese día.",

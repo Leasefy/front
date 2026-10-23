@@ -28,6 +28,8 @@ export const NAV_ITEMS = [
   { href: '/admin/billing', label: 'Billing', hint: 'MRR · ARR', code: '18' },
   { href: '/admin/ab-tests', label: 'A/B tests', hint: 'experiments', code: '19' },
   { href: '/admin/onboarding', label: 'Inmobiliarias nuevas', hint: 'cómo arrancan', code: '20' },
+  // Ronda 30 (Nico, 23-10): el arranque de la cobranza por voz, en su propia pantalla (antes una pestaña de Inmobiliarias nuevas).
+  { href: '/admin/cobranza-por-voz', label: 'Cobranza por voz', hint: 'arranque con Mori', code: '38' },
   { href: '/admin/debtors', label: 'Debtors 🛡', hint: 'cross-tenant · PII', code: '21' },
   { href: '/admin/templates', label: 'Templates', hint: 'WA multi-idioma', code: '22' },
   { href: '/admin/users', label: 'Users', hint: 'admin roster', code: '23' },

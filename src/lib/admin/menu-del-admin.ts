@@ -102,6 +102,8 @@ export const PANTALLAS_DEL_ADMIN: Record<string, DatosDeLaPantalla> = {
   '/admin/kill-switch': { seccion: 'inmobiliarias', icono: Power, nombre: 'Pausa de emergencia', queHay: 'Pausar los agentes de una inmobiliaria' },
 
   '/admin/piloto': { seccion: 'agentes', icono: AirTrafficControl, nombre: 'Piloto automático', queHay: 'En prueba, contratado o apagado' },
+  // Ronda 30 (Nico, 23-10): su propia pantalla; antes una pestaña de «Inmobiliarias nuevas».
+  '/admin/cobranza-por-voz': { seccion: 'agentes', icono: PhoneCall, nombre: 'Cobranza por voz', queHay: 'Cuándo llamó y cobró Mori por primera vez' },
   '/admin/agents': { seccion: 'agentes', icono: Robot, nombre: 'Agentes de voz', queHay: 'Las instrucciones de cada agente' },
   '/admin/maestro': { seccion: 'agentes', icono: GraduationCap, nombre: 'Maestro', queHay: 'Lo que aprende de todas las Nairas' },
   '/admin/chat-preguntas': { seccion: 'agentes', icono: ChatsCircle, nombre: 'Preguntas del chat', queHay: 'Qué pregunta la gente y qué falta' },

@@ -78,7 +78,7 @@ const fecha = (iso: string | null) =>
  * cosa»). Antes era el embudo de la cobranza por voz (primera llamada, primer
  * pago) en inglés («funnel», «stage», «configured»). Ahora es el recorrido en
  * la plataforma: se registró → abrió su asistente → eligió plan → resolvió la
- * migración → primer contrato → primer recibo. La cobranza por voz queda abajo.
+ * migración → primer contrato → primer recibo. La cobranza por voz tiene su pantalla (/admin/cobranza-por-voz).
  */
 export default function OnboardingPage() {
   const router = useRouter()
@@ -214,30 +214,6 @@ export default function OnboardingPage() {
     { header: 'Se vence', orden: (r) => r.expires_at, texto: (r) => fmtDateTime(r.expires_at), cell: (r) => <span className="font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.expires_at)}</span> },
   ]
 
-  const columnasDeLaVoz: Column<ArranqueDeLaCobranza>[] = [
-    { header: 'Inmobiliaria', orden: (r) => r.legal_name, texto: (r) => r.legal_name, cell: (r) => <span className="font-medium text-fg">{r.legal_name}</span> },
-    { header: 'Se conectó', orden: (r) => r.created_at, ordenPrimero: 'desc', texto: (r) => fmtFecha(r.created_at), cell: (r) => fecha(r.created_at) },
-    { header: 'Primera llamada', orden: (r) => r.first_call, ordenPrimero: 'desc', texto: (r) => (r.first_call ? fmtFecha(r.first_call) : 'Todavía no'), cell: (r) => fecha(r.first_call) },
-    { header: 'Primer pago', orden: (r) => r.first_payment, ordenPrimero: 'desc', texto: (r) => (r.first_payment ? fmtFecha(r.first_payment) : 'Todavía no'), cell: (r) => fecha(r.first_payment) },
-    {
-      header: 'Va en',
-      orden: (r) => (r.first_payment ? 2 : r.first_call ? 1 : 0),
-      texto: (r) => (r.first_payment ? 'Ya cobró' : r.first_call ? 'Ya llamó' : 'Conectada'),
-      cell: (r) =>
-        r.first_payment ? (
-          <Pill tone="ok" dot>
-            Ya cobró
-          </Pill>
-        ) : r.first_call ? (
-          <Pill tone="neutral" dot>
-            Ya llamó
-          </Pill>
-        ) : (
-          <Pill tone="neutral">Conectada</Pill>
-        ),
-    },
-  ]
-
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
@@ -247,7 +223,7 @@ export default function OnboardingPage() {
 
       {data && data.plataforma == null ? (
         <Alert variant="warning" title="No pudimos leer las inmobiliarias de la plataforma">
-          Abajo sale lo del asistente y la cobranza por voz, que se lee aparte.
+          Abajo sale lo del asistente, que se lee aparte.
         </Alert>
       ) : null}
 
@@ -354,36 +330,6 @@ export default function OnboardingPage() {
             exportar="registros-sin-terminar"
           />
         )}
-      </section>
-            ),
-          },
-          {
-            id: 'voz',
-            etiqueta: 'Cobranza por voz',
-            cuenta: data?.liveAgencies.length ?? null,
-            contenido: (
-      <section className="space-y-3" aria-label="Arranque de la cobranza por voz">
-        <div>
-          <p className="text-body-sm text-fg-muted">
-            Las inmobiliarias conectadas a Mori: cuándo llamó y cuándo cobró por primera vez.
-          </p>
-        </div>
-        <DataTable
-          columns={columnasDeLaVoz}
-          rows={data?.liveAgencies}
-          getKey={(r) => r.tenant_id}
-          isLoading={isLoading}
-          error={error}
-          emptyTitle="Ninguna inmobiliaria conectada a la cobranza por voz"
-          aria-label="Arranque de la cobranza por voz"
-          onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}
-          id="voz"
-          queSon={['inmobiliaria', 'inmobiliarias']}
-          buscar="Buscar inmobiliaria"
-          filasPorPagina={10}
-          ordenInicial={{ columna: 1, sentido: 'desc' }}
-          exportar="arranque-cobranza-por-voz"
-        />
       </section>
             ),
           },

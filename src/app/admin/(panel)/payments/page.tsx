@@ -169,6 +169,13 @@ export default function PaymentsPage() {
           de color; antes, 4 tarjetas del mismo peso pintadas de verde, ámbar y rojo. */}
       {result.isLoading && !kpis ? (
         <LoadingBlock label="Cargando los pagos" filas={3} />
+      ) : kpis &&
+        // Ronda 28 (revisora r27, T6): todo en cero = UNA línea (antes «$ 0 en 0 pagos» + tres ceros con sus
+        // sub-datos + el vacío); la franja, cuando hay algo que contar.
+        num(kpis.approved_count) + num(kpis.disbursed_count) + num(kpis.pending_count) + num(kpis.declined_count) + num(kpis.refunded_count) === 0 ? (
+        <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="pagos-aprobado">
+          Nadie pagó en línea en los últimos 30 días.
+        </p>
       ) : kpis ? (
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
@@ -183,12 +190,13 @@ export default function PaymentsPage() {
             <Cifra
               etiqueta="Desembolsado"
               valor={fmtCOP(num(kpis.disbursed_total))}
-              detalle={`${num(kpis.disbursed_count).toLocaleString('es-CO')} giros · comisiones ${fmtCOP(num(kpis.fees_total))}`}
+              // Ronda 28 (revisora r27): a 390 se cortaba «comisiones…»: dos datos cortos.
+              detalle={`${num(kpis.disbursed_count).toLocaleString('es-CO')} giros · ${fmtCOP(num(kpis.fees_total))} de comisión`}
             />
             <Cifra
               etiqueta="Pendientes"
               valor={num(kpis.pending_count)}
-              detalle="esperando la respuesta de la pasarela"
+              detalle="los espera la pasarela"
               tono={num(kpis.pending_count) > 0 ? 'aviso' : undefined}
             />
             <Cifra
@@ -208,7 +216,7 @@ export default function PaymentsPage() {
         error={result.error}
         onReintentar={result.refetch}
         emptyTitle={status || provider ? 'No hay pagos con estos filtros' : 'Todavía no hay pagos en línea'}
-        emptyHint={status || provider ? 'Prueba con otro estado u otra pasarela.' : 'Cuando un inquilino pague por Wompi, aparece aquí.'}
+        emptyHint={status || provider ? 'Prueba con otro estado u otra pasarela.' : 'Cuando un inquilino pague por Wompi o Bold, aparece aquí.'}
         emptyIcon={<CreditCard weight="duotone" />}
         aria-label="Pagos"
         barra={

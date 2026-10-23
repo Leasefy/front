@@ -8723,14 +8723,14 @@
           },
           "necesita": {
             "n1": "Properties available for rent, with their rent.",
-            "n2": "Your approval in the queue before each email goes out, in Manual and Copilot."
+            "n2": "Your approval in Suggested candidates before each email goes out, in Manual and Copilot."
           },
           "modo": {
             "sombra": "It does nothing on its own: it proposes the shortlist and each lead's options and, if you want, does it with one click.",
             "copiloto": "It leaves in your Inbox, one click away, each property's shortlist and the options for each new lead.",
             "autonomo": "It builds the shortlist on its own and emails each new lead what fits them, within contact hours and with your grace period to undo it."
           },
-          "empezar": "See the queue"
+          "empezar": "See suggested candidates"
         },
         "pagos": {
           "title": "Payments Agent",
@@ -9022,7 +9022,7 @@
           "matching": {
             "eyebrow": "Agent · Matching",
             "salaTitulo": "Matching",
-            "salaDesc": "When a candidate loses the property they applied to (or when you ask from their file), it matches their profile with your available properties and leaves the compatible options for you to decide whether we send them.",
+            "salaDesc": "It finds another property for candidates left without theirs, and you decide whether we send it.",
             "colaDesc": "Candidates with compatible properties waiting for your decision. You review the fit and choose whether to send them the options or dismiss the case.",
             "casoColaLabel": "Suggested candidates",
             "crossPregunta": "Is this candidate reliable?",
@@ -9036,7 +9036,7 @@
             },
             "comoFunciona": {
               "title": "How does it work?",
-              "titulo": "How matching works",
+              "titulo": "How Affinity works",
               "descripcion": "When a candidate loses a property, the agent looks for others among yours.",
               "step1": {
                 "title": "A candidate loses a property",
@@ -9048,8 +9048,8 @@
               },
               "step3": {
                 "title": "You decide whether to send the options",
-                "desc": "In copilot the options wait in the queue for your go-ahead; in autonomous they go out by email on their own if at least two match. Never more than one email every 24 hours per candidate.",
-                "tuParte": "in copilot, review the queue and approve each candidate's options."
+                "desc": "In copilot the options wait for your go-ahead in Suggested candidates; in autonomous they go out by email on their own if at least two match. Never more than one email every 24 hours per candidate.",
+                "tuParte": "in copilot, review Suggested candidates and approve each candidate's options."
               }
             },
             "estado": {
@@ -9063,7 +9063,8 @@
               "fallo": "Sending failed",
               "caso_creado": "Case created",
               "caso_decidido": "Decided"
-            }
+            },
+            "deCandidatos": "of {{n}} candidates with options in 30 days"
           },
           "pagos": {
             "eyebrow": "Agent · Vendor payments",
@@ -12984,6 +12985,9 @@
         "canon": "This property's rent",
         "superaTope": "is above your approved cap of",
         "codeudor": "You can still apply: the agency decides whether to rent it to you. To strengthen your application, add another person (a co-signer)."
+      },
+      "heroe": {
+        "rotulo": "Your rent limit"
       }
     },
     "resultado": {

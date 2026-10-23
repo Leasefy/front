@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * /panel/inmobiliaria/postulaciones/matching — Resumen del agente Matching.
+ * /panel/inmobiliaria/postulaciones/matching — Afinidad (antes «Matching»): su resumen.
  *
  * ── Por qué esta pantalla dejó de usar <SalaAgente> ───────────────────────
  * Hoy el micro no corre Matching para ninguna inmobiliaria: las corridas de
@@ -28,7 +28,8 @@ import type { Icon } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
-import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { CifraHeroe, type TonoDelTramo } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { formatKpiValue } from '@/components/inmobiliaria/ai/SalaAgente'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -85,80 +86,88 @@ function ComoFunciona() {
   )
 }
 
+/** El tono de cada estado del candidato en la barra: lo que espera, lo que salió, lo que se cayó. */
+const TONO_DEL_ESTADO: Record<string, TonoDelTramo> = {
+  sugerido: 'aviso',
+  en_revision: 'aviso',
+  aprobado: 'exito',
+  ejecutando: 'exito',
+  resuelto: 'exito',
+  rechazado: 'neutro',
+  fallo: 'critico',
+}
+
 /**
- * Lo que se pinta cuando el overview trae KPIs de verdad. Sólo las secciones
- * con contenido: un pipeline en cero o un feed vacío no se dibujan, porque
- * «sin casos» al lado de números reales vuelve a insinuar trabajo que no hubo.
+ * Lo que se pinta cuando el overview trae KPIs de verdad. GLOW UP 22-10 (revisora r24, Afinidad #5): LA
+ * RESPUESTA en grande —los que esperan tu visto bueno, de cuántos con opciones en 30 días—; la barra es
+ * el embudo (los estados del candidato, partes del total) y las demás cifras del agente van en UNA línea
+ * al pie. Fuera la tarjeta «Estado de los candidatos» (repetía la barra); la actividad, plegada.
  */
 function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
   const { t, locale } = useI18n()
   const segmentos = data.pipeline.filter((seg) => seg.count > 0)
   // IA-A-05 (QA-IA-95, 05-10-2026): sin candidatos con opciones en 30 días no
   // hubo calce que promediar: «0,0 %» era una medición que no ocurrió.
-  const sinCasos = data.kpis.find((k) => k.id === 'candidatos_30d')?.value === 0
+  const con30 = data.kpis.find((k) => k.id === 'candidatos_30d')
+  const sinCasos = con30?.value === 0
   // La cifra de arriba: la cola (lo que te toca); si el micro no la manda, la primera.
   const heroe = data.kpis.find((k) => k.id === 'en_cola') ?? data.kpis[0]
-  const resto = data.kpis.filter((k) => k !== heroe)
+  const resto = data.kpis.filter((k) => k !== heroe && k !== con30)
 
   return (
     <div className="space-y-6" data-testid="matching-resumen-datos">
-      {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA en una cifra —los candidatos que
-          esperan tu visto bueno (la cola)— y las demás cifras del agente debajo, como leyenda. Antes, cuatro
-          tarjetas iguales. Cada cifra cuenta desde 0. */}
-      <section className="rounded-lg border border-border bg-surface p-5" data-testid="matching-kpis">
+      <section className="rounded-lg border border-border bg-card px-5 py-5" data-testid="matching-kpis">
         <CifraHeroe
           rotulo={heroe.label}
           cifra={<AnimatedNumber value={heroe.value} from={0} format={(n) => formatKpiValue(n, heroe.format)} />}
-          tamano="mediana"
-          tramos={resto.map((kpi) => ({
-            clave: kpi.id,
-            etiqueta: kpi.label,
-            monto: 0,
-            tono: 'neutro' as const,
-            siempre: true,
-            cifra:
-              kpi.id === 'calce_promedio' && sinCasos ? (
-                <span data-testid="calce-sin-casos" title="Sin candidatos con opciones en 30 días">—</span>
-              ) : (
-                <AnimatedNumber value={kpi.value} from={0} format={(n) => formatKpiValue(n, kpi.format)} />
-              ),
+          contexto={
+            con30 && con30 !== heroe
+              ? t(`${PAGES_NS}.deCandidatos`).replace('{{n}}', formatKpiValue(con30.value, con30.format))
+              : undefined
+          }
+          tramos={segmentos.map((seg) => ({
+            clave: seg.estado,
+            etiqueta: t(`${PAGES_NS}.estado.${seg.estado}`),
+            monto: seg.count,
+            tono: TONO_DEL_ESTADO[seg.estado] ?? 'neutro',
+            cifra: String(seg.count),
           }))}
+          pie={
+            resto.length > 0 ? (
+              <span className="flex flex-wrap gap-x-1.5">
+                {resto.map((kpi, i) => (
+                  <span key={kpi.id}>
+                    {i > 0 ? '· ' : ''}
+                    {kpi.label}{' '}
+                    {kpi.id === 'calce_promedio' && sinCasos ? (
+                      <span data-testid="calce-sin-casos" title="Sin candidatos con opciones en 30 días">—</span>
+                    ) : (
+                      <span className="font-mono tabular-nums text-fg">{formatKpiValue(kpi.value, kpi.format)}</span>
+                    )}
+                  </span>
+                ))}
+              </span>
+            ) : undefined
+          }
         />
       </section>
 
-      {segmentos.length > 0 && (
-        <section className="space-y-3 rounded-lg border border-border bg-surface p-4">
-          <h2 className="text-sm font-medium text-fg">{t(`${SALA_NS}.pipelineTitle`)}</h2>
-          <dl className="flex flex-wrap gap-x-4 gap-y-1.5">
-            {segmentos.map((seg) => (
-              <div key={seg.estado} className="flex items-center gap-1.5">
-                <dt className="text-caption text-fg-muted">{t(`${PAGES_NS}.estado.${seg.estado}`)}</dt>
-                <dd className="text-caption font-medium tabular-nums text-fg">
-                  <AnimatedNumber value={seg.count} format={(n) => String(Math.round(n))} />
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      )}
-
       {data.feed.length > 0 && (
-        <section className="space-y-3 rounded-lg border border-border bg-surface p-4">
-          <h2 className="text-sm font-medium text-fg">{t(`${SALA_NS}.feedTitle`)}</h2>
+        <MasDetalles etiqueta={t(`${SALA_NS}.feedTitle`)} data-testid="matching-actividad">
           <Stagger as="ul" direction="down" className="divide-y divide-border">
             {data.feed.map((entrada) => (
               <StaggerItem as="li" key={entrada.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-fg">{entrada.titulo}</p>
+                  <p className="truncate text-sm text-fg">{entrada.titulo}</p>
                   <p className="truncate text-caption text-fg-muted">{entrada.detalle}</p>
                 </div>
-                <span className="shrink-0 text-caption tabular-nums text-fg-muted">
+                <span className="shrink-0 font-mono text-caption tabular-nums text-fg-muted">
                   {relativeTime(entrada.occurredAt, locale)}
                 </span>
               </StaggerItem>
             ))}
           </Stagger>
-        </section>
+        </MasDetalles>
       )}
     </div>
   )
@@ -182,8 +191,8 @@ function MatchingResumen() {
       {/* GLOW UP 22-10 (UX): el encabezado común —«¿Cómo funciona?» en la ayuda, la cola como la única
           principal, con su conteo sólo cuando el micro lo reporta (un «(0)» inventado diría que ya revisó)—. */}
       <EncabezadoDePantalla
-        seccion={t(`${PAGES_NS}.salaTitulo`)}
-        titulo={t('inmobiliaria.ai.nav.resumen')}
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t(`${PAGES_NS}.salaTitulo`)}
         descripcion={t(`${PAGES_NS}.salaDesc`)}
         ayuda={<ComoFunciona />}
         accionPrincipal={
@@ -200,10 +209,11 @@ function MatchingResumen() {
           su fundido. */}
       <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : tieneDatos && data ? 'resumen' : 'sin-trabajo'}>
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4" data-testid="matching-resumen-cargando" aria-busy="true">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-lg border border-border bg-surface-muted" />
-          ))}
+        // El esqueleto con la forma de la cifra (revisora r24 #6), no la grilla de cuatro cajas de antes.
+        <div className="space-y-4 rounded-lg border border-border bg-card px-5 py-5" data-testid="matching-resumen-cargando" aria-busy="true">
+          <div className="h-3 w-40 animate-pulse rounded bg-surface-muted" />
+          <div className="h-10 w-48 animate-pulse rounded bg-surface-muted" />
+          <div className="h-2 w-full animate-pulse rounded-full bg-surface-muted" />
         </div>
       ) : error ? (
         <FalloDeCarga error={errorCrudo} queEs={t(`${PAGES_NS}.queEs`)} onReintentar={refetch} />

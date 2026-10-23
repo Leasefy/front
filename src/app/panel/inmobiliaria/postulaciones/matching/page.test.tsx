@@ -210,7 +210,8 @@ describe('Resumen de Matching — el vacío honesto', () => {
 
     const header = pantalla.querySelector('header')!
     expect(header.textContent).toContain('Afinidad')
-    expect(header.querySelector('h1')?.textContent).toBe('Resumen')
+    // Revisora r24 (Afinidad #1): el h1 es el nombre del riel, no el de la pestaña.
+    expect(header.querySelector('h1')?.textContent).toBe('Afinidad')
     expect(header.querySelector('a')?.getAttribute('href')).toBe(
       '/panel/inmobiliaria/postulaciones/matching/cola',
     )
@@ -233,7 +234,7 @@ describe('Resumen de Matching — el vacío honesto', () => {
     expect(pasos.length).toBe(3)
     expect(pasos[0].textContent).toContain('Un candidato se queda sin inmueble')
     expect(pasos[2].textContent).toContain('Decides si se le mandan las opciones')
-    expect(pasos[2].textContent).toMatch(/copiloto.*cola.*autónomo/i)
+    expect(pasos[2].textContent).toMatch(/copiloto.*Candidatos sugeridos.*autónomo/i)
     expect(pantalla.textContent).not.toMatch(/validado por el Estudio|nada se hace sin ti/i)
   })
 })

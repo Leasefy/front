@@ -8745,7 +8745,7 @@
           "hace": {
             "c1": {
               "titulo": "Cruza con tus inmuebles",
-              "texto": "Compara ingresos, antigüedad laboral, presupuesto y zona con tus inmuebles disponibles, y se queda con los que calzan 70 % o más."
+              "texto": "Compara ingresos, antigüedad laboral, presupuesto y zona con tus inmuebles disponibles, y se queda con los que le sirven en 70 % o más."
             },
             "c2": {
               "titulo": "Arma la lista corta",
@@ -8753,19 +8753,19 @@
             },
             "c3": {
               "titulo": "Prepara el correo",
-              "texto": "Con las opciones que le calzan al candidato; nunca más de un correo cada 24 horas por persona."
+              "texto": "Con las opciones que le sirven al candidato; nunca más de un correo cada 24 horas por persona."
             }
           },
           "necesita": {
             "n1": "Inmuebles disponibles en arriendo, con su canon.",
-            "n2": "Tu visto bueno en la cola antes de que salga cada correo, en Manual y en Copiloto."
+            "n2": "Tu visto bueno en Candidatos sugeridos antes de que salga cada correo, en Manual y en Copiloto."
           },
           "modo": {
             "sombra": "No hace nada solo: te propone la lista corta y las opciones de cada interesado y, si quieres, lo hace con un clic.",
             "copiloto": "Te deja en la Bandeja, listas para un clic, la lista corta de cada inmueble y las opciones de cada interesado nuevo.",
-            "autonomo": "Arma sola la lista corta y le manda por correo a cada interesado nuevo lo que le calza, dentro del horario y con tu gracia para deshacerlo."
+            "autonomo": "Arma sola la lista corta y le manda por correo a cada interesado nuevo lo que le sirve, dentro del horario y con tu gracia para deshacerlo."
           },
-          "empezar": "Ver la cola"
+          "empezar": "Ver los candidatos sugeridos"
         },
         "pagos": {
           "title": "Agente de Pagos",
@@ -9057,7 +9057,7 @@
           "matching": {
             "eyebrow": "Agente · Afinidad",
             "salaTitulo": "Afinidad",
-            "salaDesc": "Cuando un candidato se queda sin el inmueble al que aplicó (o cuando lo pides desde su ficha), cruza su perfil con tus inmuebles disponibles y te deja las opciones compatibles para que decidas si se las mandamos.",
+            "salaDesc": "Les busca otro inmueble a los candidatos que se quedaron sin el suyo, y tú decides si se lo mandamos.",
             "colaDesc": "Candidatos con inmuebles compatibles esperando tu decisión. Revisas los calces y eliges si se le mandan las opciones o se descartan.",
             "casoColaLabel": "Candidatos sugeridos",
             "crossPregunta": "¿Es confiable este candidato?",
@@ -9071,7 +9071,7 @@
             },
             "comoFunciona": {
               "title": "¿Cómo funciona?",
-              "titulo": "Cómo funciona el matching",
+              "titulo": "Cómo funciona Afinidad",
               "descripcion": "Cuando un candidato se queda sin inmueble, el agente le busca otros entre los tuyos.",
               "step1": {
                 "title": "Un candidato se queda sin inmueble",
@@ -9079,12 +9079,12 @@
               },
               "step2": {
                 "title": "El agente lo cruza con tus inmuebles disponibles",
-                "desc": "Compara sus ingresos, antigüedad laboral, presupuesto y zona con tus inmuebles disponibles en arriendo, y se queda con los que calzan 70 % o más."
+                "desc": "Compara sus ingresos, antigüedad laboral, presupuesto y zona con tus inmuebles disponibles en arriendo, y se queda con los que le sirven en 70 % o más."
               },
               "step3": {
                 "title": "Decides si se le mandan las opciones",
-                "desc": "En copiloto las opciones esperan en la cola tu visto bueno; en autónomo salen solas por correo si hay al menos dos que calcen. Nunca más de un correo cada 24 horas por candidato.",
-                "tuParte": "en copiloto, revisa la cola y da el visto bueno a las opciones de cada candidato."
+                "desc": "En copiloto las opciones esperan tu visto bueno en Candidatos sugeridos; en autónomo salen solas por correo si hay al menos dos que le sirvan. Nunca más de un correo cada 24 horas por candidato.",
+                "tuParte": "en copiloto, revisa Candidatos sugeridos y da el visto bueno a las opciones de cada candidato."
               }
             },
             "estado": {
@@ -9098,7 +9098,8 @@
               "fallo": "Falló el envío",
               "caso_creado": "Caso creado",
               "caso_decidido": "Decidido"
-            }
+            },
+            "deCandidatos": "de {{n}} candidatos con opciones en 30 días"
           },
           "pagos": {
             "eyebrow": "Agente · Pagos a proveedores",
@@ -13019,6 +13020,9 @@
         "canon": "El canon de este inmueble",
         "superaTope": "está por encima de tu tope aprobado de",
         "codeudor": "Puedes postularte igual: la inmobiliaria decide si te la arrienda. Si quieres reforzar tu postulación, suma a otra persona (un codeudor)."
+      },
+      "heroe": {
+        "rotulo": "Tu tope"
       }
     },
     "resultado": {

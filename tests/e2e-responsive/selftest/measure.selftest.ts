@@ -136,3 +136,48 @@ test('inline links inside text stay exempt and a 44px target passes', async ({ p
   );
   expect(found).toEqual([]);
 });
+
+// ---- x-scroller tab strips and own descendants (WU-11) ----------------------------------------
+
+const TABS = (tabs: string, extra = '') => `<!doctype html><html><body style="margin:0">
+<div style="position:relative;width:360px;margin-top:20px">
+  <nav style="display:flex;overflow-x:auto;width:360px">${tabs}</nav>
+  <button aria-label="Desplazar secciones" style="position:absolute;right:0;top:0;height:40px;width:40px;z-index:5">&rsaquo;</button>
+  <div style="position:absolute;left:0;top:0;width:30px;height:40px;z-index:4;pointer-events:auto"></div>
+</div>${extra}</body></html>`;
+const tab = (n: number) => `<a href="#t${n}" style="flex:none;display:block;width:120px;height:40px">Tab ${n}</a>`;
+const tabs = Array.from({ length: 8 }, (_, i) => tab(i)).join('');
+
+test.describe('x-scroller tab strips', () => {
+  test.use({ viewport: { width: 400, height: 500 } });
+
+  test('tabs under the scroller own chevron and fade are not occluded', async ({ page }) => {
+    const found = await sweepOf(page, TABS(tabs));
+    expect(found.occluded.map((o) => o.selector).filter((s) => /Tab/.test(s))).toEqual([]);
+  });
+
+  test('a fixed element unrelated to the scroller still occludes its tabs', async ({ page }) => {
+    const cover = '<div style="position:fixed;left:0;top:0;width:400px;height:60px;z-index:50;background:red"></div>';
+    const found = await sweepOf(page, TABS(tabs, cover));
+    expect(found.occluded.length).toBeGreaterThan(0);
+  });
+});
+
+test.describe('own descendants', () => {
+  test.use({ viewport: { width: 400, height: 500 } });
+
+  test('a hit on a span of the same button is not occlusion, even when the span is absolutely positioned', async ({ page }) => {
+    const html = `<!doctype html><html><body style="margin:0"><div style="position:relative;height:100px">
+      <button style="position:absolute;left:0;top:0;width:200px;height:60px"><span style="position:absolute;inset:0">label</span></button></div></body></html>`;
+    const sweep = await sweepOf(page, html);
+    expect(sweep.occluded).toEqual([]);
+  });
+
+  test('a sibling button overlapping another button still occludes it', async ({ page }) => {
+    const html = `<!doctype html><html><body style="margin:0"><div style="position:relative;height:100px">
+      <button style="position:absolute;left:0;top:0;width:200px;height:60px">A</button>
+      <button style="position:absolute;left:0;top:0;width:200px;height:60px;z-index:3">B</button></div></body></html>`;
+    const sweep = await sweepOf(page, html);
+    expect(sweep.occluded.length).toBe(1);
+  });
+});

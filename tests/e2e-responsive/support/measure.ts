@@ -442,12 +442,34 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
   // ---- scroll sweep: occlusion ------------------------------------------------------------
   type Rec = { el: HTMLElement; seen: number; ok: number; by: string; y: number };
   const rec = new Map<HTMLElement, Rec>();
+  /** Nearest ancestor that scrolls horizontally on its own (a tab strip with chevrons). */
+  const xScroller = (e: Element): HTMLElement | null => {
+    for (let n = e.parentElement; n && n !== document.body && n !== de; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (/(auto|scroll|overlay)/.test(cs.overflowX) && n.scrollWidth > n.clientWidth + 1) return n;
+    }
+    return null;
+  };
   const hitOk = (el: HTMLElement, hit: Element | null): boolean => {
     if (!hit) return true;
     if (inPortal(hit)) return true; // Next dev indicator
     const hitModal = hit.closest(MODAL);
     if (hitModal && !hitModal.contains(el)) return true; // behind a modal: inert on purpose, not occluded
     if (hit === el || el.contains(hit) || hit.contains(el)) return true;
+    // Same labelled control: a hit inside the very <button>/<a> that owns the element (or that it owns).
+    const ownCtl = el.closest(INTERACTIVE);
+    const hitCtl = hit.closest(INTERACTIVE);
+    if (ownCtl && hitCtl && (ownCtl === hitCtl || ownCtl.contains(hitCtl) || hitCtl.contains(ownCtl))) return true;
+    // The element's own horizontal scroller controls (chevrons, fades) are not occluders for its children.
+    const xs = xScroller(el);
+    const host = xs?.parentElement;
+    if (xs && host && host.contains(hit) && !xs.contains(hit)) {
+      const btn = hit.closest('button,a,[role=button]');
+      const text = `${btn?.getAttribute('aria-label') ?? ''} ${btn?.getAttribute('title') ?? ''} ${btn?.textContent ?? ''}`;
+      if (btn ? /desplaz|scroll|anterior|siguiente|previous|next|prev|chevron/i.test(text) : !(hit.textContent ?? '').trim()) {
+        return true;
+      }
+    }
     // A sibling inside the same interactive ancestor (a span in the same <a>/<button>) is not an occluder.
     const parentInteractive = el.parentElement?.closest(INTERACTIVE);
     if (parentInteractive && parentInteractive.contains(hit)) return true;
@@ -471,11 +493,14 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
     return null;
   };
   const probeOne = (y: number, el: HTMLElement, nested: boolean): void => {
+    const sx = window.scrollX;
     if (overlayEl && !overlayEl.contains(el)) return;
     if (nested) {
       // Centre it inside every scrollable ancestor, then hit-test where the user would see it.
       // A fixed element that still covers it after this is a true positive and is reported.
-      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' as ScrollBehavior });
+      // Inside an x-scroller, centre on the x axis too: edge chevrons/fades cover the strip's ends.
+      el.scrollIntoView({ block: 'center', inline: xScroller(el) ? 'center' : 'nearest', behavior: 'instant' as ScrollBehavior });
+      window.scrollTo(sx, window.scrollY);
     }
     const r = el.getBoundingClientRect();
     const x0 = Math.max(r.left, 0);
@@ -497,7 +522,7 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
   };
   const probe = (y: number) => {
     for (const el of interactive) {
-      const nested = !!innerScroller(el);
+      const nested = !!innerScroller(el) || !!xScroller(el);
       probeOne(y, el, nested);
       // scrollIntoView also moves the page scroller: put it back before the next element's rect is read.
       if (nested) scrollTo(y);

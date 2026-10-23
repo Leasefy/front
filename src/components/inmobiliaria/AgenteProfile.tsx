@@ -14,6 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
 import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 
@@ -26,8 +27,8 @@ interface AgenteProfileProps {
 const ROLE_CONFIG: Record<AgenteRole, { label: string; bg: string; text: string }> = {
   agent: {
     label: 'Agente',
-    bg: 'bg-primary-soft',
-    text: 'text-primary',
+    bg: 'bg-surface-muted',
+    text: 'text-fg',
   },
   coordinator: {
     label: 'Coordinador',
@@ -122,23 +123,12 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
         <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
           {/* Avatar with Status Indicator */}
           <div className="relative shrink-0">
-            {agente.avatar ? (
-              <img
-                src={agente.avatar}
-                alt={agente.name}
-                className="w-20 h-20 rounded-lg object-cover"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-lg bg-primary-soft flex items-center justify-center">
-                <span className="text-2xl font-medium text-primary">
-                  {agente.name.split(' ').map(n => n.charAt(0)).slice(0, 2).join('')}
-                </span>
-              </div>
-            )}
+            {/* Glow up 22-10: el Avatar de Cadence (foto o iniciales), no un cuadro azul hecho a mano. */}
+            <Avatar name={agente.name} src={agente.avatar ?? undefined} size="xl" />
             {/* Status dot */}
             <div
               className={cn(
-                'absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white',
+                'absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-card',
                 statusConfig.dot
               )}
               title={statusConfig.label}
@@ -148,7 +138,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Name, Role, and Status */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <h1 className="text-h2 text-fg truncate">
+              <h1 className="truncate text-[30px] font-[420] leading-[1.08] tracking-[-0.025em] text-fg lg:text-[40px]">
                 {agente.name}
               </h1>
               <span

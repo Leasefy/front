@@ -141,8 +141,18 @@ export function CargasAMedias({
               <p className="min-w-0 text-sm text-fg">
                 {d.cuando && !l.creadoEn ? <span className="font-medium">{d.cuando}</span> : null}
                 {d.cuando && !l.creadoEn ? ' · ' : null}
-                <span className="font-mono tabular-nums" data-testid={`avance-${l.lote}`}>
-                  {d.avance}
+                {/* Ronda 30 (revisora r27): la frase en Host y sólo las cifras en mono (antes «Terminada: 2.920 creadas»
+                    entera en DM Mono al lado de «· 19 por revisar» en Host). */}
+                <span data-testid={`avance-${l.lote}`}>
+                  {d.avance.split(/(\d[\d.,]*)/).map((trozo, i) =>
+                    /^\d/.test(trozo) ? (
+                      <span key={i} className="font-mono tabular-nums">
+                        {trozo}
+                      </span>
+                    ) : (
+                      trozo
+                    ),
+                  )}
                 </span>
                 {d.porRevisar > 0 ? (
                   <span className="text-fg-muted">
@@ -229,8 +239,16 @@ export function CargasAMedias({
               <p className="text-sm text-fg">
                 {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
                 {d.cuando ? ' · ' : null}
-                <span className="font-mono tabular-nums" data-testid={`avance-${l.lote}`}>
-                  {d.avance}
+                <span data-testid={`avance-${l.lote}`}>
+                  {d.avance.split(/(\d[\d.,]*)/).map((trozo, i) =>
+                    /^\d/.test(trozo) ? (
+                      <span key={i} className="font-mono tabular-nums">
+                        {trozo}
+                      </span>
+                    ) : (
+                      trozo
+                    ),
+                  )}
                 </span>
               </p>
               <DatosDeLaCarga l={l} terminada={falla} enCurso={!falla && (d.queHacer === 'creando' || d.queHacer === 'procesando')} />

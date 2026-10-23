@@ -77,6 +77,18 @@ export function SelectorDePropietarios({
     return [...elegidos, ...resto];
   }, [propietarios, search, seleccion]);
 
+  /*
+   * Ronda 30 (revisora r27, Nuevo mandato): sin caja con scroll propio (a 1440 cortaba la sexta fila a la mitad y a
+   * 390 era un scroll dentro de otro). Sin búsqueda se ven los primeros 9 —los elegidos siempre arriba— y la línea de
+   * abajo invita a buscar entre todos; con búsqueda, hasta 30 de los que coinciden.
+   */
+  const LIMITE = search.trim() ? 30 : 9;
+  const visibles = useMemo(() => {
+    const elegidosEnLista = filtrados.filter((p) => seleccion.includes(p.id)).length;
+    return filtrados.slice(0, Math.max(LIMITE, elegidosEnLista));
+  }, [filtrados, seleccion, LIMITE]);
+  const ocultos = filtrados.length - visibles.length;
+
   const alternar = (id: string) => {
     onCambiarSeleccion(seleccion.includes(id) ? seleccion.filter((x) => x !== id) : [...seleccion, id]);
   };
@@ -168,12 +180,8 @@ export function SelectorDePropietarios({
               : `${miles(propietarios.length)} ${propietarios.length === 1 ? tr('propietario') : tr('propietarios')}`}
           </p>
         ) : null}
-        {/* La grilla tiene SU scroll: el diálogo no crece con la agencia. */}
-        <div
-          className="max-h-[44vh] overflow-y-auto overscroll-contain pr-1"
-          data-lenis-prevent
-          data-testid="mandato-propietarios-grid"
-        >
+        {/* Ronda 30: sin scroll propio; el tope lo pone `visibles` (9, o 30 al buscar). */}
+        <div data-testid="mandato-propietarios-grid">
           {filtrados.length > 0 || pendiente ? (
             /* Al buscar, las tarjetas que no calzan salen y las que vuelven
                entran (`key` = el id). Sin `layout`: la grilla vive en su
@@ -207,7 +215,7 @@ export function SelectorDePropietarios({
                   </div>
                 </StaggerItem>
               )}
-              {filtrados.map((p) => (
+              {visibles.map((p) => (
                 <StaggerItem key={p.id} as="li">
                   <PropietarioCard
                     propietario={p}
@@ -235,6 +243,13 @@ export function SelectorDePropietarios({
             </div>
           )}
         </div>
+        {ocultos > 0 ? (
+          <p className="text-body-sm text-fg-muted" data-testid="propietarios-ocultos">
+            {search.trim()
+              ? `Y ${miles(ocultos)} más: escribe más del nombre, el correo o el documento para encontrarlo.`
+              : `Para ver a los demás, búscalo entre los ${miles(propietarios.length)} por nombre, correo o documento.`}
+          </p>
+        ) : null}
 
         <p
           className={cn('flex items-center gap-2 text-sm', cuantos > 0 ? 'text-success' : 'text-fg-muted')}

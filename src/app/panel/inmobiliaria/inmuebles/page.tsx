@@ -24,6 +24,8 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Button, EmptyState } from '@/components/ui';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { TablePagination } from '@/components/ui/pagination';
 import {
@@ -602,6 +604,27 @@ function PortafolioContent() {
             vista (Tabla · Tarjetas) en un solo renglón. Antes la vista iba sola en un renglón propio
             encima de los filtros: tres renglones de controles antes del primer inmueble. En el
             celular la vista queda en sus dos íconos (el nombre sigue para el lector). */}
+        {sePudoContar && conteoComercial.vacante30 > 0 && filters.comercial !== 'vacante30' ? (
+          <div className="border-b border-border px-4 py-4 lg:px-5" data-testid="inmuebles-cifra-vacantes">
+            <CifraHeroe
+              tamano="mediana"
+              rotulo={'Vacantes hace más de 30 días'}
+              cifra={conteoComercial.vacante30.toLocaleString(localeDeLasCifras())}
+              contexto={conteoComercial.vacante30 === 1 ? 'inmueble sin arrendar hace más de un mes' : 'inmuebles sin arrendar hace más de un mes'}
+              pie={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFiltersChange({ ...filters, comercial: 'vacante30' })}
+                  data-testid="inmuebles-ver-vacantes"
+                >
+                  {conteoComercial.vacante30 === 1 ? 'Ver cuál es' : 'Ver cuáles son'}
+                </Button>
+              }
+            />
+          </div>
+        ) : null}
+
         <ConsignacionFilters
           vista={
               <SegmentedControl<ViewMode>
@@ -639,8 +662,15 @@ function PortafolioContent() {
           agentes={allAgentes}
           conteo={conteoPorCajon}
           total={sePudoContar ? portafolioRows.length : null}
-          conteoComercial={sePudoContar ? conteoComercial : null}
+          /* Ronda 30 (revisora r27): las vacantes largas son LA RESPUESTA de arriba (CifraHeroe); el chip sólo sale
+             cuando ese filtro está puesto, para poder quitarlo (el mismo número no se dice dos veces). */
+          conteoComercial={
+            sePudoContar
+              ? { ...conteoComercial, vacante30: filters.comercial === 'vacante30' ? conteoComercial.vacante30 : 0 }
+              : null
+          }
         />
+
 
         {/* Content */}
         <div>

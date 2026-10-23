@@ -42,6 +42,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { toast } from '@/components/ui/toast'
+import { cn } from '@/lib/utils'
 import {
   Check,
   Copy,
@@ -500,8 +501,13 @@ function AvaluosSala() {
           lado (`/avaluos/cola`), que muestra OTRA cosa —los work-items del
           agente— desde otro servicio. El título de la sección queda para el
           lector de pantalla: a la vista repetía el h1 (revisora r24 #7). */}
+      {/* Ronda 30 (revisora r27): sin la conexión la sección queda vacía (el aviso de arriba ya lo dice) y su
+          borde se veía como una raya suelta sobre la nada; vacía, no se pinta. */}
       <section
-        className="overflow-hidden rounded-lg border border-border bg-card"
+        className={cn(
+          'overflow-hidden rounded-lg border border-border bg-card',
+          servicioCaido && !servicioConfigurado && 'hidden',
+        )}
         aria-labelledby="avaluos-de-la-agencia-titulo"
         data-testid="avaluos-de-la-agencia"
       >

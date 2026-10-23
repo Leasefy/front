@@ -32,7 +32,8 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Tray } from '@phosphor-icons/react'
+import { MagnifyingGlass, Tray } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { toast } from '@/components/ui'
@@ -159,6 +160,9 @@ function InboxContent() {
   }, [groups])
 
   const [filtro, setFiltro] = useState<GrupoFiltro>('todos')
+  // Regla de Nico (23-10): toda lista larga lleva buscador. Por inquilino o por lo que escribió.
+  const [buscar, setBuscar] = useState('')
+  const q = buscar.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
 
   /** El nombre del deudor para los modales (antes abrían con `debtorName=""`). */
   const nombreDe = (debtorId: string | null) =>
@@ -177,8 +181,18 @@ function InboxContent() {
   const total = totalThreads
 
   const visibles = useMemo(
-    () => (filtro === 'todos' ? items : items.filter((it) => it.grupo === filtro)),
-    [items, filtro],
+    () =>
+      items.filter(
+        (it) =>
+          (filtro === 'todos' || it.grupo === filtro) &&
+          (!q ||
+            `${it.inquilino} ${it.ultimoMensaje}`
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .toLowerCase()
+              .includes(q)),
+      ),
+    [items, filtro, q],
   )
 
   // Los hilos del inbox no tienen techo: se pintaban todos. Mismo pie que las
@@ -195,7 +209,7 @@ function InboxContent() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(visibles, { resetKey: filtro })
+  } = useTablePagination(visibles, { resetKey: `${filtro}|${q}` })
 
   const handleMarkRead = async () => {
     if (!openThreadId) return
@@ -284,6 +298,23 @@ function InboxContent() {
               etiqueta={tr("Filtrar conversaciones por grupo")}
             />
           </div>
+          <div className="border-b border-border px-4 py-3">
+            <div className="relative min-w-0 sm:max-w-sm">
+              <label htmlFor="inbox-buscar" className="sr-only">
+                {tr("Buscar por inquilino o mensaje")}
+              </label>
+              <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+              <Input
+                id="inbox-buscar"
+                type="search"
+                className="pl-9"
+                value={buscar}
+                onChange={(e) => setBuscar(e.target.value)}
+                placeholder={tr("Buscar por inquilino o mensaje")}
+                data-testid="inbox-buscar"
+              />
+            </div>
+          </div>
 
           <CrossFade swapKey={visibles.length > 0 ? 'lista' : 'sin-resultados'}>
           {visibles.length > 0 ? (
@@ -323,8 +354,12 @@ function InboxContent() {
             </div>
           ) : (
             <div className="px-6 py-12 text-center">
-              <p className="text-body-sm font-medium text-fg">{tr("Ninguna conversación en este grupo")}</p>
-              <p className="mt-1 text-caption text-fg-muted">{tr("Cambia la pestaña para ver las demás.")}</p>
+              <p className="text-body-sm font-medium text-fg">
+                {q ? tr("Ninguna conversación coincide con «{q}»", { q: buscar.trim() }) : tr("Ninguna conversación en este grupo")}
+              </p>
+              <p className="mt-1 text-caption text-fg-muted">
+                {q ? tr("Prueba con otro nombre o borra la búsqueda.") : tr("Cambia la pestaña para ver las demás.")}
+              </p>
             </div>
           )}
           </CrossFade>

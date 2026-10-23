@@ -634,4 +634,8 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Cuándo se avisa": "When to remind",
   "3 · Enviar los avisos": "3 · Send the reminders",
   "El que toque hoy": "Today's step",
+  // Cobranza (ronda 26, 3.er agente)
+  "Buscar por inquilino o mensaje": "Search by tenant or message",
+  "Ninguna conversación coincide con «{q}»": "No conversation matches «{q}»",
+  "Prueba con otro nombre o borra la búsqueda.": "Try another name or clear the search.",
 }

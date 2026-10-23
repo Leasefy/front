@@ -21,6 +21,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FloppyDisk } from '@phosphor-icons/react'
 import { BackButton } from '@/components/ui/back-button'
+import { BackButton as VueltaConPregunta } from '@leasefy/cadence'
 import { toast } from '@/components/ui/toast'
 import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir'
 import { Card, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -299,14 +300,9 @@ export function AcuerdoGeneralForm({
     <div className="p-6 lg:p-8 space-y-6">
       <div>
         {sucio ? (
-          <button
-            type="button"
-            onClick={salir}
-            className="group/back inline-flex items-center gap-1.5 rounded-md text-body-sm text-fg-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            data-testid="acuerdo-general-volver"
-          >
-            <span aria-hidden="true">←</span> Acuerdos de pago
-          </button>
+          // La misma pieza de la vuelta (BackButton sin href = botón): con algo
+          // escrito, antes de irse pregunta.
+          <VueltaConPregunta onClick={salir} label="Acuerdos de pago" variant="subtle" data-testid="acuerdo-general-volver" />
         ) : (
           <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
         )}

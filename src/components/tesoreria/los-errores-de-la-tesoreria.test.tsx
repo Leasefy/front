@@ -507,6 +507,12 @@ describe('el calendario de festivos — el espejo del tope y los errores', () =>
   it('quitar una corrección con un 5xx dice «de nuestro lado» con la referencia', async () => {
     h.borrarCorreccion.mockRejectedValue(cincoXX());
     await pintar(<CalendarioDeFestivosPanel />);
+    // Revisora r25: «Quitar la corrección» vive en el «⋯» de la fila (Radix abre con pointerdown).
+    await act(async () => {
+      document.body
+        .querySelector('[data-testid="acciones-2026-12-25"]')!
+        .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }));
+    });
     await clic('[data-testid="borrar-2026-12-25"]');
     expect(dichoAlAviso()).toContain('No pudimos borrar la corrección: algo falló de nuestro lado');
     expect(dichoAlAviso()).toContain(REFERENCIA);

@@ -4,13 +4,13 @@ import { useState, useCallback, useMemo, useEffect, use } from 'react';
 import Link from 'next/link';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { useRouter } from 'next/navigation';
-import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, Download, Shield } from '@phosphor-icons/react';
+import { MapPin, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, Download, Shield } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button, Card } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { Avatar, MonoLabel } from '@leasefy/cadence';
@@ -1037,37 +1037,8 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           </div>
         ) : (
           <>
-            {/* Stats Row - Compact Style */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
-                  <div>
-                    <p className="font-mono text-h3 tabular-nums text-fg">{counts.all}</p>
-                    <p className="text-caption text-fg-muted">Total candidatos</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-warning shrink-0" aria-hidden="true" />
-                  <div>
-                    <p className="font-mono text-h3 tabular-nums text-fg">{counts.pending}</p>
-                    <p className="text-caption text-fg-muted">Pendientes</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-success shrink-0" aria-hidden="true" />
-                  <div>
-                    <p className="font-mono text-h3 tabular-nums text-fg">{counts.approved}</p>
-                    <p className="text-caption text-fg-muted">Aprobados</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
+            {/* Ronda 30 (§3, el mismo número una vez): sin la fila de tres tarjetas «Total candidatos · Pendientes ·
+                Aprobados»; esos conteos ya van en las pestañas de abajo (Todos · Pendientes · Aprobados). */}
             {/* Tabs - segmented filter over the candidate/visit views */}
             <Tabs value={activeTab} onValueChange={setTab}>
               <TabsList variant="segmented" className="mb-6">
@@ -1079,7 +1050,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                   >
                     {tab.label}
                     {tab.count !== undefined && (
-                      <span className="px-1.5 py-0.5 rounded-sm text-caption font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">
+                      <span className="px-1.5 py-0.5 rounded-sm text-caption font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-surface group-data-[state=active]:text-fg">
                         {tab.count}
                       </span>
                     )}
@@ -1115,7 +1086,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     onRowClick={handleRowClick}
                     emptyMessage={
                       activeTab === 'all'
-                        ? 'Aún no hay candidatos para esta propiedad'
+                        ? 'Todavía nadie se postuló a este inmueble'
                         : `No hay candidatos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
                     }
                     stickyHeader
@@ -1172,7 +1143,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     },
                   ]}
                   keyExtractor={(row) => row.id}
-                  emptyMessage="No hay visitas para esta propiedad"
+                  emptyMessage="Todavía no hay visitas a este inmueble"
                   stickyHeader
                 />
               </div>

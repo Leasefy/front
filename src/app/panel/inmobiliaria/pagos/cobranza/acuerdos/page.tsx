@@ -27,8 +27,9 @@
  * bg-card/surface-muted, border-border).
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowRight,
   CheckCircle,
@@ -276,32 +277,8 @@ function AcuerdoPropuestoCard({
         </p>
       </div>
 
-      {/*
-        Aquí vivían cinco botones deshabilitados —Aprobar, Editar condiciones,
-        Enviar al inquilino, Escalar, Rechazar— con la etiqueta «Próximamente».
-        Se quitaron porque no eran una función pendiente: **esto todavía no es
-        un acuerdo**. `agreements/propose` calcula un borrador y no persiste
-        nada, así que no hay qué aprobar, ni qué rechazar, ni qué enviar. Un
-        botón «Aprobar» sobre algo que no existe promete un estado que la base
-        no tiene.
-
-        El siguiente paso real es ofrecerlo (POST /cartera/payment-plans/offer,
-        que sí crea el plan y su link de pago) y aprobarlo en el detalle del
-        plan. Ese botón no se agregó aquí todavía: crea un plan vivo y genera un
-        link de cobro, y es una decisión de producto, no de cableado.
-      */}
-      <div className="px-5 py-4 border-t border-border bg-surface-muted">
-        <p className="text-caption text-fg-muted leading-relaxed">
-          Esto es un <span className="font-medium text-fg">borrador calculado</span>: sirve
-          para ver las condiciones antes de comprometerlas. Todavía no existe como acuerdo,
-          no se le envió nada al inquilino y no genera cobro. Los acuerdos vivos se aprueban
-          uno por uno en{' '}
-          <Link href={PLANES_BASE} className="text-primary underline underline-offset-2">
-            Pagos › Planes
-          </Link>
-          .
-        </p>
-      </div>
+      {/* Revisora r25 (bloqueante): aquí iba un pie que repetía por quinta vez que el acuerdo espera aprobación y
+          enlazaba a «Pagos › Planes», una ruta sin página (404). La aprobación se dice una vez, junto al botón. */}
     </div>
   )
 }
@@ -818,7 +795,26 @@ function AcuerdosContent() {
   const { canAccess } = usePermissionsContext()
   const canApprove = canAccess('cobranza', 'approve')
 
-  const [filtro, setFiltro] = useState<AcuerdoFiltro>('todos')
+  // C8 (revisora r25): lo pendiente va primero y el filtro vive en la URL (`?estado=por_aprobar`), así un
+  // enlace —el de las promesas viejas, uno compartido— abre donde tiene que abrir.
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const estadoDeLaUrl = searchParams?.get('estado') ?? null
+  const filtroDeLaUrl: AcuerdoFiltro | null =
+    estadoDeLaUrl && (['todos', ...Object.keys(ACUERDO_ESTADO)] as string[]).includes(estadoDeLaUrl)
+      ? (estadoDeLaUrl as AcuerdoFiltro)
+      : null
+  const [filtroElegido, setFiltroElegido] = useState<AcuerdoFiltro | null>(filtroDeLaUrl)
+  const setFiltro = useCallback(
+    (f: AcuerdoFiltro) => {
+      setFiltroElegido(f)
+      const qs = new URLSearchParams(searchParams?.toString() ?? '')
+      qs.set('estado', f)
+      router.replace(`${pathname}?${qs.toString()}`, { scroll: false })
+    },
+    [router, pathname, searchParams],
+  )
   const [crearAbierto, setCrearAbierto] = useState(false)
   const [detalle, setDetalle] = useState<AcuerdoRow | null>(null)
 
@@ -843,6 +839,8 @@ function AcuerdosContent() {
     () => componerAcuerdos(promises, planes),
     [promises, planes],
   )
+  const hayPorAprobar = acuerdos.some((a) => a.estado === 'por_aprobar')
+  const filtro: AcuerdoFiltro = filtroElegido ?? (hayPorAprobar ? 'por_aprobar' : 'todos')
 
   const cargando = cargandoPromesas || cargandoPlanes
   // Un origen caído no puede tapar lo que el otro sí trajo.
@@ -883,7 +881,7 @@ function AcuerdosContent() {
         </button>
       ),
     }))
-  }, [acuerdos, formatCurrency])
+  }, [acuerdos, formatCurrency, setFiltro])
   const comprometido = tramos.reduce((s, t) => s + t.monto, 0)
 
   return (
@@ -1013,7 +1011,9 @@ function AcuerdosContent() {
 export default function AcuerdosPage() {
   return (
     <PageGuard module="cobranza">
-      <AcuerdosContent />
+      <Suspense fallback={null}>
+        <AcuerdosContent />
+      </Suspense>
     </PageGuard>
   )
 }

@@ -1,28 +1,36 @@
 'use client'
 
 /**
- * Compliance — Ley 2300 outside-hours attempts — Phase 34 plan 34-07.
+ * Cumplimiento › Ley 2300 — los intentos de contacto fuera del horario que
+ * permite la ley (el servidor une los salientes que la cadencia frenó,
+ * `cadence_skip`, con los entrantes fuera de hora, `inbound_outside_hours`).
  *
- * Paginated table of outside-hours communication attempts (server unions
- * outbound `cadence_skip` + inbound `inbound_outside_hours` rows per 34-04).
- *
- * Columns: timestamp, debtor (referencia corta), channel, direction. 50/page cursor.
- *
- * Refs mvp:docs/DESIGN.md §4 (cards, tables), §16 (tabular-nums).
+ * Glow up (revisora r25, 6,1 → ronda 26):
+ *   · el marco va SIEMPRE (encabezado, vuelta en el layout) — también en la
+ *     carga, en el vacío y en el fallo; antes el vacío salía desnudo y es el
+ *     estado normal (el objetivo es cero);
+ *   · LA RESPUESTA arriba, dentro de la tarjeta: cuántos intentos hubo; las
+ *     pestañas Salientes / Entrantes son los conteos (una sola fila);
+ *   · buscador por deudor y canal, y «Cargar más» al pie de la tabla;
+ *   · el canal y la dirección en español («Voz», «Saliente»), nunca
+ *     «voice»/«INBOUND» (bloqueante);
+ *   · la fecha «17 oct 2026, 5:14 p. m.», no el `toLocaleString` del navegador;
+ *   · el fallo con `FalloDeCarga` (antes «fetch_failed» o «500» pegado a la frase);
+ *   · en el celular, tarjetas.
  */
 
-import { useCallback, useEffect, useState } from 'react'
-import { Gavel } from '@phosphor-icons/react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Gavel, MagnifyingGlass } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
-import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
-import { EmptyState } from '@/components/data-display/EmptyState'
+import { ApiError } from '@/lib/api/client'
 import {
   Button,
   Badge,
+  Input,
   Table,
   TableHeader,
   TableBodyAnimado,
@@ -31,7 +39,7 @@ import {
   TableCell,
   TableRowAnimada,
 } from '@/components/ui'
-import { Card, CrossFade, Presence } from '@leasefy/cadence'
+import { Card, CrossFade } from '@leasefy/cadence'
 import {
   normalizeAttempts,
   nextCursorOf,
@@ -39,22 +47,26 @@ import {
   type ComplianceLogResponse,
   type RawAttempt,
 } from '@/lib/hooks/cobranza/compliance-entries'
+import { channelLabel, directionLabel } from '@/lib/cobranza/call-vocab'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 
-// El contrato real del agente y su normalización viven en un solo lugar:
-// `compliance-entries.ts`. Acá se leían `json.items` / `json.next_cursor`, que
-// el agente NO manda — la lista salía vacía siempre y esta pantalla decía «Sin
-// infracciones detectadas» con datos del otro lado.
+type Direccion = 'todos' | 'outbound' | 'inbound'
 
 function Ley2300Content() {
-  const { t, locale } = useI18n()
+  const { t, formatDate } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? null
   const [items, setItems] = useState<Attempt[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
+  const [direccion, setDireccion] = useState<Direccion>('todos')
+  const [busqueda, setBusqueda] = useState('')
 
   const fetchPage = useCallback(
     async (cursor: string | null, append: boolean) => {
@@ -68,14 +80,17 @@ function Ley2300Content() {
         const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
         const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/ley-2300/attempts${qs}`)
-        if (!res.ok) throw new Error(`${res.status}`)
+        if (!res.ok) {
+          const cuerpo = await res.json().catch(() => undefined)
+          throw new ApiError(res.status, 'No pudimos cargar los intentos.', undefined, cuerpo)
+        }
         const json = (await res.json()) as ComplianceLogResponse<RawAttempt>
         const page = normalizeAttempts(json)
         setItems((prev) => (append ? [...prev, ...page] : page))
         setNextCursor(nextCursorOf(json))
         setError(null)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'fetch_failed')
+        setError(err)
       } finally {
         setIsLoading(false)
         setIsLoadingMore(false)
@@ -90,126 +105,177 @@ function Ley2300Content() {
     void fetchPage(null, false)
   }, [agencyId, fetchPage])
 
+  const recargar = useCallback(async () => {
+    setIsLoading(true)
+    await fetchPage(null, false)
+  }, [fetchPage])
+
   const loadMore = useCallback(async () => {
     if (!nextCursor || isLoadingMore) return
     setIsLoadingMore(true)
     await fetchPage(nextCursor, true)
   }, [nextCursor, isLoadingMore, fetchPage])
 
-  // Phase 38-05a: page-level skeleton during first load
-  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
-  // lista, → vacío); lo que ya estaba al montarse no se anima.
-  if (isLoading && items.length === 0) {
-    return (
-      <CrossFade swapKey="esqueleto">
-        <PageSkeleton variant="list" />
-      </CrossFade>
-    )
+  const salientes = useMemo(() => items.filter((i) => i.direction === 'outbound').length, [items])
+  const entrantes = items.length - salientes
+
+  const visibles = useMemo(() => {
+    const q = busqueda.trim().toLowerCase()
+    return items.filter((i) => {
+      if (direccion !== 'todos' && i.direction !== direccion) return false
+      if (!q) return true
+      return [i.debtorName, i.debtorRef, i.channel ? channelLabel(i.channel) : null]
+        .filter((v): v is string => typeof v === 'string')
+        .some((v) => v.toLowerCase().includes(q))
+    })
+  }, [items, direccion, busqueda])
+
+  const cuando = (iso: string) => {
+    const d = new Date(iso)
+    return Number.isNaN(d.getTime())
+      ? '—'
+      : formatDate(d, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
   }
 
-  // Phase 38-05a: page-level EmptyState for "no infractions" celebratory case
-  if (!isLoading && items.length === 0 && !error) {
-    return (
-      <CrossFade swapKey="vacio">
-      <EmptyState
-        icon={Gavel}
-        title={t('inmobiliaria.ai.cobranza.compliance.ley2300.empty.title')}
-        description={t('inmobiliaria.ai.cobranza.compliance.ley2300.empty.description')}
-      />
-      </CrossFade>
-    )
-  }
+  const estado = isLoading && items.length === 0 ? 'cargando' : error && items.length === 0 ? 'fallo' : items.length === 0 ? 'vacio' : 'lista'
+  const cuantos = `${items.length.toLocaleString('es-CO')}${nextCursor ? '+' : ''}`
 
   return (
-    <CrossFade swapKey="lista">
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
         seccion="Cobranza · Cumplimiento"
         titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.ley2300Title')}
-        descripcion={
-          locale.startsWith('es')
-            ? 'Cada intento de contacto fuera del horario que permite la Ley 2300, para revisarlo.'
-            : 'Every contact attempt outside the hours Law 2300 allows, to review.'
-        }
+        descripcion="Cada intento de contacto fuera del horario que permite la Ley 2300. Lo normal es que no haya ninguno."
       />
 
-      <Presence show={Boolean(error)} role="alert" className="rounded-lg border border-danger/30 bg-danger-soft p-3 text-body-sm text-danger">
-          {locale.startsWith('es') ? 'No pudimos cargar los intentos.' : 'We could not load the attempts.'} {error}
-      </Presence>
-
-      {items.length > 0 && (
-        <Card className="overflow-hidden">
-          {/* Forma canónica: `Card` del DS + scroll horizontal propio. El
-              `TableHeader` NO lleva tinte a mano — el del DS ya trae uno
-              adaptativo y `bg-muted/30` fijo rompe el modo oscuro. */}
-          <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  {locale.startsWith('es') ? 'Fecha' : 'Timestamp'}
-                </TableHead>
-                <TableHead>
-                  {locale.startsWith('es') ? 'Deudor' : 'Debtor'}
-                </TableHead>
-                <TableHead>
-                  {locale.startsWith('es') ? 'Canal' : 'Channel'}
-                </TableHead>
-                <TableHead>
-                  {locale.startsWith('es') ? 'Dirección' : 'Direction'}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            {/* «Cargar más» o una fila nueva: entran escalonadas (techo 320 ms). */}
-            <TableBodyAnimado>
-              {items.map((row) => (
-                <TableRowAnimada key={row.eventId}>
-                  <TableCell className="px-3 py-2 font-mono tabular-nums text-caption text-fg">
-                    {new Date(row.timestamp).toLocaleString(locale)}
-                  </TableCell>
-                  {/* El nombre; la referencia sólo si el dato no lo trae.
-                      La columna mostraba `A0F5DCC3` bajo el encabezado
-                      «Deudor»: un código sobre el que no se puede actuar. */}
-                  <TableCell className="px-3 py-2 text-fg">
-                    {row.debtorName ?? (
-                      <span className="font-mono text-caption text-fg-muted">
-                        {row.debtorRef}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="px-3 py-2 text-fg">{row.channel ?? '—'}</TableCell>
-                  <TableCell className="px-3 py-2">
-                    <Badge
-                      variant={row.direction === 'inbound' ? 'default' : 'warning'}
-                      className="uppercase"
-                    >
-                      {row.direction}
-                    </Badge>
-                  </TableCell>
-                </TableRowAnimada>
-              ))}
-            </TableBodyAnimado>
-          </Table>
-          </div>
-          <Presence show={Boolean(nextCursor)} direction="none" initial={false}>
-            <div className="p-3 border-t border-border text-center">
-              <Button
-                variant="outline"
-                size="sm"
-                hideArrow
-                onClick={() => void loadMore()}
-                disabled={isLoadingMore}
-              >
-                {isLoadingMore
-                  ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'
-                  : locale.startsWith('es') ? 'Cargar más' : 'Load more'}
-              </Button>
+      <CrossFade swapKey={estado}>
+        {estado === 'cargando' ? (
+          <Card className="overflow-hidden" data-testid="ley2300-cargando">
+            <EsqueletoTabla columnas={4} filas={6} />
+          </Card>
+        ) : estado === 'fallo' ? (
+          <FalloDeCarga error={error} queEs="los intentos fuera de horario" onReintentar={recargar} />
+        ) : estado === 'vacio' ? (
+          <Card className="flex flex-col items-center gap-2 px-6 py-14 text-center" data-testid="ley2300-vacio">
+            <Gavel className="h-8 w-8 text-fg-subtle" weight="duotone" aria-hidden="true" />
+            <p className="text-body font-medium text-fg">
+              {t('inmobiliaria.ai.cobranza.compliance.ley2300.empty.title')}
+            </p>
+            <p className="max-w-md text-body-sm text-fg-muted">
+              {t('inmobiliaria.ai.cobranza.compliance.ley2300.empty.description')}
+            </p>
+          </Card>
+        ) : (
+          <Card className="overflow-hidden">
+            {/* LA RESPUESTA, dentro de la tarjeta; los conteos por dirección son las pestañas. */}
+            <CifraHeroe
+              className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+              data-testid="ley2300-cifra"
+              tamano="mediana"
+              rotulo="Fuera de horario"
+              cifra={cuantos}
+              contexto={
+                items.length === 1
+                  ? 'intento de contacto para revisar'
+                  : `intentos de contacto para revisar${nextCursor ? ' (hay más; cárgalos al pie)' : ''}`
+              }
+            />
+            <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">
+              <PestanasDeEstado<Direccion>
+                pestanas={[
+                  { valor: 'todos', etiqueta: 'Todos', cuantos: items.length, fija: true, testid: 'ley2300-pestana-todos' },
+                  { valor: 'outbound', etiqueta: 'Salientes', cuantos: salientes, tono: 'aviso', testid: 'ley2300-pestana-salientes' },
+                  { valor: 'inbound', etiqueta: 'Entrantes', cuantos: entrantes, testid: 'ley2300-pestana-entrantes' },
+                ]}
+                valor={direccion}
+                onCambio={setDireccion}
+                etiqueta="Filtrar por dirección del contacto"
+              />
+              <div className="relative w-full md:w-64">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+                <Input
+                  type="search"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar deudor o canal"
+                  aria-label="Buscar por deudor o canal"
+                  className="pl-9"
+                  data-testid="ley2300-buscar"
+                />
+              </div>
             </div>
-          </Presence>
-        </Card>
-      )}
+
+            {error ? (
+              <FalloDeCarga error={error} queEs="los intentos que siguen" onReintentar={loadMore} enmarcado={false} />
+            ) : null}
+
+            <CrossFade swapKey={visibles.length === 0 ? 'sin-resultados' : 'tabla'}>
+              {visibles.length === 0 ? (
+                <div className="px-6 py-12 text-center">
+                  <p className="text-body-sm font-medium text-fg">Ningún intento con ese filtro</p>
+                  <p className="mt-1 text-caption text-fg-muted">Cambia la pestaña o borra la búsqueda para ver los demás.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto max-md:overflow-visible">
+                  <Table className="max-md:block">
+                    <TableHeader className="max-md:hidden">
+                      <TableRow>
+                        <TableHead>Cuándo</TableHead>
+                        <TableHead>Deudor</TableHead>
+                        <TableHead>Canal</TableHead>
+                        <TableHead>Dirección</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    {/* «Cargar más» o un filtro: las filas entran escalonadas (techo 320 ms). */}
+                    <TableBodyAnimado className="max-md:block">
+                      {visibles.map((row) => (
+                        <TableRowAnimada
+                          key={row.eventId}
+                          data-testid={`ley2300-intento-${row.eventId}`}
+                          className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                        >
+                          <TableCell className="font-mono tabular-nums text-body-sm text-fg-muted max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption">
+                            {cuando(row.timestamp)}
+                          </TableCell>
+                          {/* El nombre; la referencia sólo si el dato no lo trae (agente anterior al JOIN). */}
+                          <TableCell className="font-medium text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
+                            {row.debtorName ?? <span className="text-fg-muted">Deudor sin nombre</span>}
+                          </TableCell>
+                          <TableCell className="text-fg max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right max-md:text-caption max-md:text-fg-muted">
+                            {row.channel ? channelLabel(row.channel) : '—'}
+                          </TableCell>
+                          <TableCell className="max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
+                            <Badge variant={row.direction === 'inbound' ? 'default' : 'warning'}>
+                              {directionLabel(row.direction)}
+                            </Badge>
+                          </TableCell>
+                        </TableRowAnimada>
+                      ))}
+                    </TableBodyAnimado>
+                  </Table>
+                </div>
+              )}
+            </CrossFade>
+
+            {nextCursor ? (
+              <div className="border-t border-border px-4 py-3 text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
+                  onClick={() => void loadMore()}
+                  isLoading={isLoadingMore}
+                  disabled={isLoadingMore}
+                  data-testid="ley2300-cargar-mas"
+                >
+                  Cargar los siguientes
+                </Button>
+              </div>
+            ) : null}
+          </Card>
+        )}
+      </CrossFade>
     </div>
-    </CrossFade>
   )
 }
 

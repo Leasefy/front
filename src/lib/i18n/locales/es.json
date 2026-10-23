@@ -6149,8 +6149,8 @@
         "cobranzaResumen": "Resumen",
         "cobranzaCasos": "Casos",
         "cobranzaPendientes": "Pendientes",
-        "cobranzaPlaybooks": "Playbooks",
-        "cobranzaInbox": "Inbox de conversaciones",
+        "cobranzaPlaybooks": "Guiones",
+        "cobranzaInbox": "Bandeja de conversaciones",
         "cobranzaPromesas": "Promesas de pago",
         "cobranzaAcuerdos": "Acuerdos de pago",
         "cobranzaDisputas": "Disputas",
@@ -7242,7 +7242,7 @@
           "stages": {
             "title": "Estado por etapa",
             "avgDays": "en la etapa, en promedio",
-            "ariaLabel": "Etapa {{stage}}, {{count}} deudores, click para ver detalle"
+            "ariaLabel": "Etapa {{stage}}, {{count}} deudores: abre el detalle"
           },
           "funnel": {
             "title": "Tu cartera por etapa",
@@ -7556,7 +7556,7 @@
           "compliance": {
             "pillAria": "Marca de cumplimiento: {{label}}"
           },
-          "exportTranscriptPdf": "Exportar transcript PDF"
+          "exportTranscriptPdf": "Descargar la transcripción en PDF"
         },
         "pagos": {
           "title": "Pagos",
@@ -7927,11 +7927,11 @@
           },
           "subPages": {
             "ley2300Title": "Ley 2300 — intentos fuera de horario",
-            "optOutTitle": "No contactar (opt-out)",
+            "optOutTitle": "No contactar",
             "auditTitle": "Auditoría"
           },
           "filters": {
-            "actor": "Actor",
+            "actor": "Quién",
             "action": "Acción",
             "dateRange": "Rango de fechas",
             "search": "Cédula o referencia del caso"
@@ -7946,10 +7946,10 @@
           },
           "audit": {
             "empty": {
-              "title": "Sin eventos de auditoría",
-              "description": "El log se llena cuando un operador revela PII o aprueba acciones."
+              "title": "La bitácora está vacía en estas fechas",
+              "description": "Se llena cuando alguien ve un dato personal, aprueba una acción o cambia la configuración de la cobranza."
             },
-            "exportCsv": "Exportar CSV"
+            "exportCsv": "Descargar la bitácora (CSV)"
           },
           "ley2300": {
             "empty": {
@@ -7963,7 +7963,7 @@
               "description": "Cuando un deudor pide que no le escriban por un canal concreto (por ejemplo, «no me escriban por WhatsApp»), ese canal se cierra y aparece aquí; la cobranza sigue por los demás. «No me llamen más» y un «no me contacten más» genérico no cierran ningún canal: se anotan y la gestión sigue."
             },
             "errors": {
-              "ackFailed": "No se pudo registrar el acuse del opt-out. Intenta de nuevo."
+              "ackFailed": "No se pudo registrar el acuse de la solicitud. Intenta de nuevo."
             }
           }
         },
@@ -8051,10 +8051,10 @@
             },
             "topScripts": {
               "title": "Guiones de llamada con mayor conversión",
-              "empty": "Sin datos de scripts disponibles.",
-              "pendingPhase38": "El seguimiento de scripts estará disponible en una próxima actualización.",
+              "empty": "Todavía no hay datos de los guiones.",
+              "pendingPhase38": "El seguimiento de los guiones llega en una próxima actualización.",
               "column": {
-                "script": "Script",
+                "script": "Guion",
                 "stage": "Etapa",
                 "nCalls": "Llamadas",
                 "conversionRate": "Tasa conv.",
@@ -8111,7 +8111,7 @@
           },
           "empty": {
             "title": "Haz tu primera llamada para empezar a ver analítica",
-            "description": "Los widgets se activan con 5 o más llamadas.",
+            "description": "Las gráficas se activan con 5 o más llamadas.",
             "cta": {
               "label": "Ir a deudores"
             }

@@ -176,7 +176,7 @@ describe('PlantillasPage', () => {
   })
 
   it('Edit link href contains the template id', async () => {
-    const { default: PlantillasPage } = await import('./page')
+    const { default: PlantillasPage } = await import('./EditorDePlantillas')
 
     await act(async () => {
       root.render(React.createElement(PlantillasPage))
@@ -201,7 +201,7 @@ describe('PlantillasPage', () => {
       OBJECTION_TEMPLATE,
     ]
 
-    const { default: PlantillasPage } = await import('./page')
+    const { default: PlantillasPage } = await import('./EditorDePlantillas')
 
     await act(async () => {
       root.render(React.createElement(PlantillasPage))
@@ -219,7 +219,7 @@ describe('PlantillasPage', () => {
   })
 
   it('Default (stage) tab shows stage templates and not WA templates', async () => {
-    const { default: PlantillasPage } = await import('./page')
+    const { default: PlantillasPage } = await import('./EditorDePlantillas')
 
     await act(async () => {
       root.render(React.createElement(PlantillasPage))

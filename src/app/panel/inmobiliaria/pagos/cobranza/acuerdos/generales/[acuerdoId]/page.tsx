@@ -11,6 +11,7 @@
 import { useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { BackButton } from '@/components/ui/back-button'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { Button } from '@/components/ui'
@@ -37,15 +38,13 @@ const VOLVER = '/panel/inmobiliaria/pagos/cobranza/acuerdos'
  */
 function Marco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <main className="max-w-3xl space-y-6 p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <div>
-        <Link href={VOLVER} className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
-          Acuerdos de pago
-        </Link>
+        <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
         <EncabezadoDePantalla className="mt-3" seccion="Cobranza · Acuerdos" titulo={titulo} />
       </div>
       {children}
-    </main>
+    </div>
   )
 }
 

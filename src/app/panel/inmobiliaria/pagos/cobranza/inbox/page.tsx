@@ -32,15 +32,17 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Tray, PhoneCall, Users } from '@phosphor-icons/react'
+import { Tray } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { toast } from '@/components/ui'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useI18n } from '@/lib/i18n'
 import { formatRelativeTime } from '@/lib/format'
-import { EmptyState } from '@/components/data-display/EmptyState'
-import { Collapse, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Card, Collapse, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import {
   InboxItemCard,
@@ -98,7 +100,7 @@ function InboxContent() {
   // FUENTE: endpoint unificado de inbox del agente (GET /cobranza/inbox).
   // FAIL-SOFT: si el backend no está desplegado responde vacío/404 → este hook
   // degrada a 0 hilos y la página cae a su <EmptyState>, nunca rompe.
-  const { groups, totalThreads, totalUnread, markRead, refetch } = useCobranzaInbox()
+  const { groups, totalThreads, totalUnread, isLoading, error, markRead, refetch } = useCobranzaInbox()
 
   // Hilo abierto (master-detail). null = ninguno seleccionado.
   const [openThreadId, setOpenThreadId] = useState<string | null>(null)
@@ -138,7 +140,8 @@ function InboxContent() {
         g.threads.map((th) => ({
           key: th.id,
           debtorId: th.debtorId,
-          inquilino: tr('Conversación'),
+          // Revisora r25: todas las filas decían «Conversación»; ahora, quién escribió.
+          inquilino: th.debtorName?.trim() || tr('Deudor sin nombre'),
           ultimoMensaje: th.lastMessagePreview ?? '',
           grupo: backendLabelToGrupo(th.label),
           canal: th.channel || null,
@@ -156,6 +159,10 @@ function InboxContent() {
   }, [groups])
 
   const [filtro, setFiltro] = useState<GrupoFiltro>('todos')
+
+  /** El nombre del deudor para los modales (antes abrían con `debtorName=""`). */
+  const nombreDe = (debtorId: string | null) =>
+    (debtorId ? items.find((it) => it.debtorId === debtorId)?.inquilino : undefined) ?? ''
 
   // Conteos por grupo de UI derivados de los conteos reales del backend.
   const counts = useMemo(() => {
@@ -209,183 +216,142 @@ function InboxContent() {
     }
   }
 
+  const estado = isLoading && total === 0 ? 'cargando' : error && total === 0 ? 'fallo' : total === 0 ? 'vacio' : 'lista'
+  const errorDelCartel = error ? { status: /^\d{3}$/.test(error) ? Number(error) : 0, message: error } : null
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
         seccion="Cobranza"
         titulo={tr("Bandeja de conversaciones")}
         descripcion={tr("Las respuestas de tus inquilinos, agrupadas por lo que piden. Lo que el agente no entendió o pide a una persona lo atiendes tú.")}
+        ayuda={
+          <ParaEntenderMas etiqueta={tr("Cómo funciona")} titulo={tr("Cómo funciona la bandeja")} variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>{tr("Responder envía una plantilla aprobada por WhatsApp, y sale sólo porque tú la elegiste. Los mensajes sin entender, las disputas y los que requieren humano nunca se responden automáticamente. Un acuerdo siempre requiere tu aprobación explícita.")}</p>
+              <p>
+                {tr("Las conversaciones de voz están en")}{' '}
+                <Link href={LLAMADAS_HREF} className="text-fg underline underline-offset-2">{tr("Llamadas")}</Link>
+                {tr("; el hilo completo de cada inquilino, en")}{' '}
+                <Link href={DEUDORES_HREF} className="text-fg underline underline-offset-2">{tr("Casos")}</Link>.
+              </p>
+            </div>
+          </ParaEntenderMas>
+        }
       />
 
-      {/* LA RESPUESTA: cuántas no has leído, y de qué son (cada grupo filtra).
-          Antes eran tres cosas que decían lo mismo: un párrafo que narraba los
-          conteos, un selector y unas fichas con los mismos números. */}
-      {total > 0 ? (
-        <CifraHeroe
-          data-testid="inbox-resumen"
-          rotulo={tr("Sin leer")}
-          cifra={totalUnread.toLocaleString(en ? 'en-US' : 'es-CO')}
-          contexto={total === 1 ? tr("de 1 conversación") : tr("de {n} conversaciones", { n: total })}
-          total={total}
-          tramos={INBOX_GRUPOS.map((g) => ({
-            clave: g,
-            etiqueta: tr(INBOX_GRUPO_META[g].label),
-            monto: counts[g],
-            tono: TONO_DEL_GRUPO[g],
-            cifra: (
-              <button
-                type="button"
-                onClick={() => setFiltro(g)}
-                className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {counts[g].toLocaleString(en ? 'en-US' : 'es-CO')}
-              </button>
-            ),
-          }))}
-        />
-      ) : null}
-
-      {/* QA-IA-B (04-10-2026): a 390 px el filtro corría la página de lado: las
-          pestañas se desplazan dentro de su riel. */}
-      {total > 0 ? (
-        <PestanasDeEstado<GrupoFiltro>
-          data-testid="inbox-filtro-riel"
-          pestanas={FILTRO_OPCIONES.map((o) => ({
-            valor: o.value,
-            etiqueta: tr(o.label),
-            cuantos: o.value === 'todos' ? total : counts[o.value],
-            fija: o.value === 'todos',
-            tono: o.value !== 'todos' && TONO_DEL_GRUPO[o.value] !== 'neutro' ? ('aviso' as const) : undefined,
-            testid: o.value === 'todos' ? undefined : `inbox-chip-${o.value}`,
-          }))}
-          valor={filtro}
-          onCambio={setFiltro}
-          etiqueta={tr("Filtrar conversaciones por grupo")}
-        />
-      ) : null}
-
-      {/* Lista de conversaciones (datos reales del endpoint). FAIL-SOFT: si el
-          backend no está desplegado, `visibles` queda vacío → <EmptyState>. */}
-      {/* Con conversaciones ⇄ vacío: el uno sale y el otro entra. Filtrar o
-          paginar hace entrar las conversaciones escalonadas y salir las que
-          sobran; abrir una despliega su hilo con su altura (`Collapse`). */}
-      <CrossFade swapKey={visibles.length > 0 ? 'lista' : 'vacio'}>
-      {visibles.length > 0 ? (
-        <div className="max-w-3xl">
-          <Stagger
-            className="space-y-3"
-            role="list"
-            aria-label={tr("Bandeja de conversaciones")}
-          >
-            {pageItems.map((it) => {
-              const open = openThreadId === it.key
-              return (
-                <StaggerItem key={it.key} className="space-y-3" role="listitem">
-                  <ul>
-                    <InboxItemCard
-                      item={it}
-                      deudorHref={`${DEUDORES_HREF}/${it.debtorId}`}
-                      unread={unreadByThread.get(it.key) ?? false}
-                      recibidoTexto={recibido(it.recibidoEn)}
-                      isOpen={open}
-                      onOpenThread={() =>
-                        setOpenThreadId(open ? null : it.key)
-                      }
-                      onTomarControl={
-                        it.debtorId ? () => setTomarControlDe(it.debtorId) : undefined
-                      }
-                    />
-                  </ul>
-                  {/* Panel de conversación con los mensajes REALES del hilo. */}
-                  <Collapse open={open} className="pl-1">
-                      <InboxThreadPanel
-                        messages={threadDetail?.messages ?? []}
-                        isLoading={threadLoading}
-                        onMarkRead={handleMarkRead}
-                        marcandoLeido={marcandoLeido}
-                        unread={unreadByThread.get(it.key) ?? false}
-                        formatRecibido={(iso) => formatRelativeTime(iso, locale)}
-                        onResponder={
-                          it.debtorId ? () => setResponderA(it.debtorId) : undefined
-                        }
-                      />
-                  </Collapse>
-                </StaggerItem>
-              )
-            })}
-          </Stagger>
-
-        {/* El pie va fuera del contenedor `role="list"`: un hijo que no es
-            `listitem` rompe la lista para el lector de pantalla. */}
-        {shouldPaginate && (
-          <div className="border-t border-border px-4 py-3 mt-3">
-            <TablePagination
-              total={totalVisibles}
-              page={page}
-              pageSize={pageSize}
-              pageSizeOptions={PAGE_SIZE_OPTIONS}
-              onPageChange={setPage}
-              onPageSizeChange={setPageSize}
+      {/* Cargando, fallo, vacío o la lista: cada uno entra con su fundido. Antes
+          mientras cargaba (o si fallaba) la pantalla afirmaba «Aún no hay
+          conversaciones en el inbox» (bloqueante r25: falso y en inglés). */}
+      <CrossFade swapKey={estado}>
+      {estado === 'cargando' ? (
+        <EsqueletoTarjetas cantidad={4} />
+      ) : estado === 'fallo' ? (
+        <FalloDeCarga error={errorDelCartel} queEs="las conversaciones" onReintentar={refetch} />
+      ) : estado === 'vacio' ? (
+        <Card className="flex flex-col items-center gap-2 px-6 py-14 text-center" data-testid="inbox-vacio">
+          <Tray className="h-8 w-8 text-fg-subtle" weight="duotone" aria-hidden="true" />
+          <p className="text-body font-medium text-fg">{tr("Todavía no hay conversaciones")}</p>
+          <p className="max-w-md text-body-sm text-fg-muted">
+            {tr("Cuando tus inquilinos respondan por WhatsApp, voz o correo, sus mensajes llegan aquí agrupados por lo que piden.")}
+          </p>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden">
+          {/* LA RESPUESTA, dentro de la tarjeta: cuántas no has leído. Los grupos son las pestañas, con su conteo. */}
+          <CifraHeroe
+            className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+            data-testid="inbox-resumen"
+            tamano="mediana"
+            rotulo={tr("Sin leer")}
+            cifra={totalUnread.toLocaleString(en ? 'en-US' : 'es-CO')}
+            contexto={total === 1 ? tr("de 1 conversación") : tr("de {n} conversaciones", { n: total })}
+          />
+          {/* QA-IA-B (04-10-2026): a 390 px las pestañas se desplazan dentro de su riel. */}
+          <div className="border-b border-border px-4 py-3">
+            <PestanasDeEstado<GrupoFiltro>
+              data-testid="inbox-filtro-riel"
+              pestanas={FILTRO_OPCIONES.map((o) => ({
+                valor: o.value,
+                etiqueta: tr(o.label),
+                cuantos: o.value === 'todos' ? total : counts[o.value],
+                fija: o.value === 'todos',
+                tono: o.value !== 'todos' && TONO_DEL_GRUPO[o.value] !== 'neutro' ? ('aviso' as const) : undefined,
+                testid: o.value === 'todos' ? undefined : `inbox-chip-${o.value}`,
+              }))}
+              valor={filtro}
+              onCambio={setFiltro}
+              etiqueta={tr("Filtrar conversaciones por grupo")}
             />
           </div>
-        )}
-        </div>
-      ) : (
-        <EmptyState
-          icon={Tray}
-          title={tr("Aún no hay conversaciones en el inbox")}
-          description={tr("Cuando lleguen respuestas de tus inquilinos por WhatsApp, voz o correo, aparecerán aquí agrupadas por intención. Mientras tanto, encuentras las conversaciones en las llamadas y en el detalle de cada deudor.")}
-        />
+
+          <CrossFade swapKey={visibles.length > 0 ? 'lista' : 'sin-resultados'}>
+          {visibles.length > 0 ? (
+            <div className="p-4">
+              <Stagger className="space-y-3" role="list" aria-label={tr("Bandeja de conversaciones")}>
+                {pageItems.map((it) => {
+                  const open = openThreadId === it.key
+                  return (
+                    <StaggerItem key={it.key} className="space-y-3" role="listitem">
+                      <ul>
+                        <InboxItemCard
+                          item={it}
+                          deudorHref={`${DEUDORES_HREF}/${it.debtorId}`}
+                          unread={unreadByThread.get(it.key) ?? false}
+                          recibidoTexto={recibido(it.recibidoEn)}
+                          isOpen={open}
+                          onOpenThread={() => setOpenThreadId(open ? null : it.key)}
+                          onTomarControl={it.debtorId ? () => setTomarControlDe(it.debtorId) : undefined}
+                        />
+                      </ul>
+                      {/* Panel de conversación con los mensajes REALES del hilo. */}
+                      <Collapse open={open} className="pl-1">
+                        <InboxThreadPanel
+                          messages={threadDetail?.messages ?? []}
+                          isLoading={threadLoading}
+                          onMarkRead={handleMarkRead}
+                          marcandoLeido={marcandoLeido}
+                          unread={unreadByThread.get(it.key) ?? false}
+                          formatRecibido={(iso) => formatRelativeTime(iso, locale)}
+                          onResponder={it.debtorId ? () => setResponderA(it.debtorId) : undefined}
+                        />
+                      </Collapse>
+                    </StaggerItem>
+                  )
+                })}
+              </Stagger>
+            </div>
+          ) : (
+            <div className="px-6 py-12 text-center">
+              <p className="text-body-sm font-medium text-fg">{tr("Ninguna conversación en este grupo")}</p>
+              <p className="mt-1 text-caption text-fg-muted">{tr("Cambia la pestaña para ver las demás.")}</p>
+            </div>
+          )}
+          </CrossFade>
+
+          {/* El pie va fuera del contenedor `role="list"`. */}
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={totalVisibles}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
+        </Card>
       )}
       </CrossFade>
-
-      {/* Cross-links explícitos a las superficies donde sí vive la conversación */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl">
-        <Link
-          href={LLAMADAS_HREF}
-          className="rounded-lg border border-border bg-card p-4 hover:bg-surface-muted/50 transition-colors flex items-start gap-3"
-        >
-          <PhoneCall
-            className="w-5 h-5 shrink-0 text-fg-muted mt-0.5"
-            weight="duotone"
-            aria-hidden="true"
-          />
-          <div className="min-w-0">
-            <p className="text-body-sm font-medium text-fg">{tr("Llamadas")}</p>
-            <p className="text-caption text-fg-muted leading-relaxed mt-0.5">
-              {tr("Conversaciones de voz y su resultado, con transcripción y calidad.")}
-            </p>
-          </div>
-        </Link>
-        <Link
-          href={DEUDORES_HREF}
-          className="rounded-lg border border-border bg-card p-4 hover:bg-surface-muted/50 transition-colors flex items-start gap-3"
-        >
-          <Users
-            className="w-5 h-5 shrink-0 text-fg-muted mt-0.5"
-            weight="duotone"
-            aria-hidden="true"
-          />
-          <div className="min-w-0">
-            <p className="text-body-sm font-medium text-fg">{tr("Deudores")}</p>
-            <p className="text-caption text-fg-muted leading-relaxed mt-0.5">
-              {tr("El hilo completo de cada inquilino, con sus mensajes y seguimiento.")}
-            </p>
-          </div>
-        </Link>
-      </section>
-
-      {/* Nota honesta de alcance de la fuente */}
-      <p className="text-caption text-fg-muted leading-relaxed max-w-2xl">
-        {tr("Responder envía una plantilla aprobada por WhatsApp, y sale sólo porque tú la elegiste. Los mensajes sin entender, las disputas y los que requieren humano nunca se responden automáticamente. Un acuerdo siempre requiere tu aprobación explícita.")}
-      </p>
 
       {responderAVivo && (
         <ManualWAModal
           open={responderA !== null}
           onClose={() => setResponderA(null)}
           debtorId={responderAVivo}
-          debtorName=""
+          debtorName={nombreDe(responderAVivo)}
           prefill={{}}
           onSuccess={() => {
             setResponderA(null)
@@ -399,7 +365,7 @@ function InboxContent() {
           open={tomarControlDe !== null}
           onClose={() => setTomarControlDe(null)}
           debtorId={tomarControlDeVivo}
-          debtorName=""
+          debtorName={nombreDe(tomarControlDeVivo)}
           onSuccess={() => {
             setTomarControlDe(null)
             void refetch()

@@ -803,12 +803,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
           {detail.requesterName}
         </p>
         <p className="break-all text-caption text-fg-muted">{detail.requesterEmail}</p>
-        {/* La cédula sólo existe hasheada (se hashea al recibir la solicitud y
-            el valor crudo no se vuelve a usar), así que se muestra una
-            referencia corta, no un enmascarado que fingiría ser la cédula. */}
-        <MonoLabel title={t('inmobiliaria.ai.arco.table.refHint')}>
-          {t('inmobiliaria.ai.arco.table.ref')} {detail.cedulaRef}
-        </MonoLabel>
+        {/* Revisora r25: la «Ref.» sacada del hash de la cédula no identifica a nadie; se quitó. */}
       </div>
 
       <KeyValueList items={items} compact />

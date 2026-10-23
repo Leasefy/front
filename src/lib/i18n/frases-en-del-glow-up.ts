@@ -478,4 +478,18 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Cómo se cuentan los tramos': 'How the age brackets are counted',
   // Asegurabilidad › el caso (Nico 23-10): «Re-cotizar» una sola vez, en el encabezado.
   'Para probar con otro canon o un codeudor, usa «Re-cotizar» arriba.': 'To try a different rent or a co-signer, use “Re-quote” above.',
+  // Cobranza (ronda 26)
+  "No pudimos leer los enlaces de pago de Cobri.": "We could not read Cobri's payment links.",
+  "leer los enlaces de pago de Cobri": "read Cobri's payment links",
+  "Enlaces de pago de Cobri que no se pagaron": "Cobri payment links that were not paid",
+  "Deudor sin nombre": "Unnamed debtor",
+  "Cómo funciona": "How it works",
+  "Cómo funciona la bandeja": "How the inbox works",
+  "Las conversaciones de voz están en": "Voice conversations are in",
+  "; el hilo completo de cada inquilino, en": "; each tenant's full thread, in",
+  "Casos": "Cases",
+  "Todavía no hay conversaciones": "No conversations yet",
+  "Cuando tus inquilinos respondan por WhatsApp, voz o correo, sus mensajes llegan aquí agrupados por lo que piden.": "When your tenants reply by WhatsApp, voice or email, their messages arrive here grouped by what they ask for.",
+  "Ninguna conversación en este grupo": "No conversations in this group",
+  "Cambia la pestaña para ver las demás.": "Switch tabs to see the rest.",
 }

@@ -19,8 +19,10 @@
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { FloppyDisk } from '@phosphor-icons/react'
+import { BackButton } from '@/components/ui/back-button'
+import { toast } from '@/components/ui/toast'
+import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir'
 import { Card, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import {
@@ -222,6 +224,26 @@ export function AcuerdoGeneralForm({
     b.conditionEs.trim().length > 0 &&
     !(b.discountPct === 0 && b.maxInstallments === 0)
 
+  // Revisora r25 (5b): el botón apagado dice qué falta, al lado.
+  const loQueFalta = [
+    b.name.trim().length === 0 ? 'el nombre' : null,
+    b.conditionEs.trim().length === 0 ? 'la condición' : null,
+    b.discountPct === 0 && b.maxInstallments === 0 ? 'un descuento o cuotas' : null,
+  ].filter((x): x is string => x !== null)
+  const fraseDeLoQueFalta =
+    loQueFalta.length === 0
+      ? null
+      : `Falta ${loQueFalta.length === 1 ? loQueFalta[0] : `${loQueFalta.slice(0, -1).join(', ')} y ${loQueFalta[loQueFalta.length - 1]}`}.`
+
+  // Revisora r25 (3b): lo escrito no se pierde sin aviso (al cerrar la pestaña, y al volver o cancelar).
+  const sucio = JSON.stringify(b) !== JSON.stringify(inicial)
+  useAvisoAlSalir(sucio && !guardando)
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false)
+  const salir = useCallback(() => {
+    if (sucio) setConfirmandoSalida(true)
+    else router.push(VOLVER)
+  }, [sucio, router])
+
   const guardar = useCallback(async () => {
     setError(null)
     // Lo que el micro rechazaría se ataja acá, debajo de su campo.
@@ -249,6 +271,8 @@ export function AcuerdoGeneralForm({
         maxInstallments: b.maxInstallments,
         minInitialPct: b.minInitialPct,
       })
+      // Revisora r25 (1c): al guardar, el aviso que confirma.
+      toast.success(`Listo: se guardó «${b.name.trim()}». El agente lo usa desde ya.`)
       router.push(VOLVER)
     } catch (e) {
       // Un 400 con `campos` va a su campo; arriba de Guardar, sólo lo suelto
@@ -272,14 +296,20 @@ export function AcuerdoGeneralForm({
   })
 
   return (
-    <main className="p-6 lg:p-8 space-y-6 max-w-3xl">
+    <div className="p-6 lg:p-8 space-y-6">
       <div>
-        <Link
-          href={VOLVER}
-          className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
-        >
-          Acuerdos de pago
-        </Link>
+        {sucio ? (
+          <button
+            type="button"
+            onClick={salir}
+            className="group/back inline-flex items-center gap-1.5 rounded-md text-body-sm text-fg-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            data-testid="acuerdo-general-volver"
+          >
+            <span aria-hidden="true">←</span> Acuerdos de pago
+          </button>
+        ) : (
+          <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
+        )}
         <EncabezadoDePantalla
           className="mt-3"
           seccion="Cobranza · Acuerdos"
@@ -564,20 +594,45 @@ export function AcuerdoGeneralForm({
         </Presence>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button
-          hideArrow
-          disabled={!puedeGuardar || guardando}
-          onClick={() => void guardar()}
-          data-testid="acuerdo-general-guardar"
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            hideArrow
+            disabled={!puedeGuardar || guardando}
+            isLoading={guardando}
+            onClick={() => void guardar()}
+            data-testid="acuerdo-general-guardar"
+            aria-describedby={fraseDeLoQueFalta ? 'acuerdo-general-falta' : undefined}
+          >
+            <FloppyDisk className="w-4 h-4" aria-hidden="true" />
+            {guardando ? 'Guardando…' : textoGuardar}
+          </Button>
+          <Button variant="ghost" hideArrow onClick={salir} data-testid="acuerdo-general-cancelar">
+            Cancelar
+          </Button>
+        </div>
+        {fraseDeLoQueFalta ? (
+          <p id="acuerdo-general-falta" className="text-caption text-fg-muted" data-testid="acuerdo-general-falta">
+            {fraseDeLoQueFalta}
+          </p>
+        ) : null}
+        <Presence
+          show={confirmandoSalida}
+          role="alertdialog"
+          aria-label="Descartar lo que escribiste"
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3"
         >
-          <FloppyDisk className="w-4 h-4" aria-hidden="true" />
-          {guardando ? 'Guardando…' : textoGuardar}
-        </Button>
-        <Button asChild variant="ghost" hideArrow>
-          <Link href={VOLVER}>Cancelar</Link>
-        </Button>
+          <p className="text-body-sm text-fg">Tienes cambios sin guardar. Si vuelves ahora se pierden.</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" hideArrow onClick={() => setConfirmandoSalida(false)}>
+              Seguir editando
+            </Button>
+            <Button variant="ghost" size="sm" hideArrow onClick={() => router.push(VOLVER)} data-testid="acuerdo-general-descartar">
+              Descartar y volver
+            </Button>
+          </div>
+        </Presence>
       </div>
-    </main>
+    </div>
   )
 }

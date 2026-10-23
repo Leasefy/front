@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { components } from '@/lib/api/generated/agent'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 /**
  * ⚠️ Esto estaba escrito a mano como `{ items, next_cursor }` y el agente
@@ -53,6 +54,8 @@ export interface UseAuditLogResult {
   isLoading: boolean
   isLoadingMore: boolean
   error: string | null
+  /** El error entero, para `FalloDeCarga` (glow up r26: antes la pantalla pegaba «500» a la frase). */
+  fallo: unknown
   hasMore: boolean
   loadMore: () => Promise<void>
   refetch: () => Promise<void>
@@ -85,6 +88,7 @@ export function useAuditLog(filters: AuditLogFilters): UseAuditLogResult {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [fallo, setFallo] = useState<unknown>(null)
 
   const key = useMemo(() => filterKey(filters), [filters])
 
@@ -104,14 +108,20 @@ export function useAuditLog(filters: AuditLogFilters): UseAuditLogResult {
       }
       try {
         const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/audit-log${buildQs(filters, cursor)}`)
-        if (!res.ok) throw new Error(`${res.status}`)
+        if (!res.ok) {
+          const f = await falloDelMicro(res)
+          setFallo(f)
+          throw new Error(`${res.status}`)
+        }
         const json = (await res.json()) as AuditLogResponse
         setItems((prev) =>
           append ? [...prev, ...(json.entries ?? [])] : (json.entries ?? []),
         )
         setNextCursor(json.nextCursor ?? null)
         setError(null)
+        setFallo(null)
       } catch (err) {
+        if (!(err instanceof Error && /^\d{3}$/.test(err.message))) setFallo(err)
         setError(err instanceof Error ? err.message : 'fetch_failed')
       } finally {
         setIsLoading(false)
@@ -148,6 +158,7 @@ export function useAuditLog(filters: AuditLogFilters): UseAuditLogResult {
     isLoading,
     isLoadingMore,
     error,
+    fallo,
     hasMore: nextCursor !== null,
     loadMore,
     refetch,

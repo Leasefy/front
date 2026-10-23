@@ -314,13 +314,8 @@ function RequestsTable({
                 >
                   {row.requesterName}
                 </Link>
-                {/* La cédula sólo existe hasheada; ver `cedulaRef`. */}
-                <p
-                  className="mt-0.5 font-mono text-caption uppercase tracking-wide text-fg-subtle"
-                  title={t(`${NS}.table.refHint`)}
-                >
-                  {t(`${NS}.table.ref`)} {row.cedulaRef}
-                </p>
+                {/* Revisora r25 (bloqueante): aquí iba «Ref. A1B2C3D4», sacado del hash de la cédula. No identifica a
+                    nadie ni sirve para hacer nada: se quitó. El nombre basta para reconocer la solicitud. */}
               </TableCell>
 
               <TableCell className="whitespace-nowrap px-4 py-3">

@@ -46,8 +46,8 @@ const POR_WHATSAPP =
   'Cobri le escribe por WhatsApp a cada inquilino en el horario de ley. Si hoy ya se le escribió a alguno, la Ley 2300 no deja salir el suyo y su fila lo dice.'
 
 const BOTONES: Boton[] = [
-  { accion: 'reenviar', label: 'Reenviar links', icon: LinkSimple, confirmacion: POR_WHATSAPP },
-  { accion: 'generar', label: 'Generar links nuevos', icon: ArrowsClockwise, confirmacion: POR_WHATSAPP },
+  { accion: 'reenviar', label: 'Reenviar los enlaces', icon: LinkSimple, confirmacion: POR_WHATSAPP },
+  { accion: 'generar', label: 'Generar enlaces nuevos', icon: ArrowsClockwise, confirmacion: POR_WHATSAPP },
   { accion: 'seguimiento', label: 'Marcar en seguimiento', icon: ClipboardText },
   { accion: 'quitar_seguimiento', label: 'Quitar seguimiento', icon: XCircle },
   {
@@ -88,8 +88,8 @@ export function LinksFallidosDeCobri({
       <Card className="p-5 flex flex-wrap items-center justify-between gap-3" data-testid="cobri-fallidos-error">
         <p className="text-sm text-fg-muted">
           {mensajeParaLaPersona(lectura.error, {
-            porDefecto: tr('No pudimos leer los links de pago de Cobri.'),
-            accion: tr('leer los links de pago de Cobri'),
+            porDefecto: tr('No pudimos leer los enlaces de pago de Cobri.'),
+            accion: tr('leer los enlaces de pago de Cobri'),
           })}
         </p>
         <Button variant="outline" size="sm" hideArrow onClick={() => void lectura.recargar()}>
@@ -143,7 +143,7 @@ export function LinksFallidosDeCobri({
     <Card className="p-0 overflow-hidden" data-testid="cobri-fallidos">
       <div className="space-y-3 border-b border-border px-5 py-4">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-fg">{tr('Links de pago de Cobri que no se pagaron')}</h2>
+          <h2 className="text-body font-medium text-fg">{tr('Enlaces de pago de Cobri que no se pagaron')}</h2>
           <p className="text-sm text-fg-muted max-w-2xl">
             {tr('Marca las cuotas y elige qué hacer. Lo que le escribe al inquilino sale por Cobri en el horario de ley y con la Ley 2300 (un contacto al día y un solo canal por semana).')}
           </p>

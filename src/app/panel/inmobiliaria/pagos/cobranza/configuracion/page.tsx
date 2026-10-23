@@ -383,7 +383,8 @@ function NotProvisionedBanner({ testId }: { testId: string }) {
     >
       <Warning weight="fill" className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
       <p className="text-sm text-foreground">
-        Configuración no disponible — onboarding incompleto para esta agencia.
+        {/* Revisora r25 (bloqueante): decía «onboarding incompleto para esta agencia». */}
+        Esta parte todavía no está lista: falta terminar la puesta en marcha de la cobranza para tu inmobiliaria. Escríbenos a hola@leasefy.co y la dejamos lista.
       </p>
     </div>
   )
@@ -784,7 +785,7 @@ function CobranzaConfiguracionContent() {
             Horario y frecuencia
           </h2>
           <p className="text-sm text-fg-muted mt-1">
-            Definido por Ley 2300 — sin excepciones configurables por la agencia.
+            Lo fija la Ley 2300: la inmobiliaria no puede cambiarlo.
           </p>
         </div>
         <div className="border-t border-border-faint" />

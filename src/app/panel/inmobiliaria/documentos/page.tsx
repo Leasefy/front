@@ -43,7 +43,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui';
-import { IconButton, Presence, SearchInput, StatusBadge } from '@leasefy/cadence';
+import { IconButton, Presence, SearchInput } from '@leasefy/cadence';
+import { Badge } from '@/components/ui/badge';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { useTr } from '@/lib/i18n/use-tr';
@@ -139,6 +140,17 @@ const ACTA_ESTADO_LABEL: Record<ActaEntrega['status'], string> = {
   pending_signatures: 'Por firmar',
   completed: 'Completada',
 };
+
+/**
+ * Ronda 30 (revisora r27, Documentos): el estado con el `Badge` de la casa, en tipo oración («Borrador»), como en
+ * Inmuebles y Contratos (antes «● BORRADOR» en mayúsculas y en mono).
+ */
+const VARIANTE_DEL_TONO = {
+  neutral: 'secondary',
+  warning: 'warning',
+  success: 'success',
+  critical: 'destructive',
+} as const;
 
 const ACTA_ESTADO_TONO: Record<ActaEntrega['status'], 'neutral' | 'warning' | 'success'> = {
   draft: 'neutral',
@@ -528,12 +540,18 @@ function DocumentosContent() {
                   <CifraHeroe
                     tamano="mediana"
                     rotulo={tr('Por terminar')}
-                    cifra={
+                    /* Ronda 30 (revisora r27): la cifra es el NÚMERO; la frase va en el contexto, como en las
+                       demás CifraHeroe (antes «2 borradores sin mandar a firmar» entero en DM Mono grande). */
+                    cifra={cifra(todosBorradores ? cuenta.borradores : cuenta.pendientes)}
+                    contexto={
                       todosBorradores
-                        ? `${cifra(cuenta.borradores)} ${cuenta.borradores === 1 ? tr('borrador sin mandar a firmar') : tr('borradores sin mandar a firmar')}`
-                        : `${cifra(cuenta.pendientes)} ${cuenta.pendientes === 1 ? tr('documento') : tr('documentos')}`
+                        ? cuenta.borradores === 1
+                          ? tr('borrador sin mandar a firmar')
+                          : tr('borradores sin mandar a firmar')
+                        : `${cuenta.pendientes === 1 ? tr('documento') : tr('documentos')}${
+                            cuenta.pendientes !== documentos.length ? ` ${tr('de')} ${cifra(documentos.length)}` : ''
+                          }`
                     }
-                    contexto={cuenta.pendientes !== documentos.length ? `${tr('de')} ${cifra(documentos.length)}` : undefined}
                     total={documentos.length}
                     tramos={
                       enUnSoloEstado
@@ -740,7 +758,7 @@ function DocumentosContent() {
                         {fechaCorta(doc.createdAt, locale)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
-                        <StatusBadge tone={ESTADO_TONO[doc.status]}>{ESTADO_LABEL[doc.status]}</StatusBadge>
+                        <Badge variant={VARIANTE_DEL_TONO[ESTADO_TONO[doc.status]]}>{ESTADO_LABEL[doc.status]}</Badge>
                       </TableCell>
                       {/* Las acciones de la fila actúan; el clic no sube a la fila. */}
                       <TableCell
@@ -943,7 +961,7 @@ function DocumentosContent() {
                         {cuandoFueLaEntrega(acta, locale)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        <StatusBadge tone={ACTA_ESTADO_TONO[acta.status]}>{ACTA_ESTADO_LABEL[acta.status]}</StatusBadge>
+                        <Badge variant={VARIANTE_DEL_TONO[ACTA_ESTADO_TONO[acta.status]]}>{ACTA_ESTADO_LABEL[acta.status]}</Badge>
                       </TableCell>
                     </TableRowAnimada>
                   ))
@@ -1054,7 +1072,7 @@ function DocumentosContent() {
                 <dd className="font-mono tabular-nums text-fg">{fechaCorta(documentoAbierto.createdAt, locale)}</dd>
                 <dt className="text-fg-muted">Estado</dt>
                 <dd>
-                  <StatusBadge tone={ESTADO_TONO[documentoAbierto.status]}>{ESTADO_LABEL[documentoAbierto.status]}</StatusBadge>
+                  <Badge variant={VARIANTE_DEL_TONO[ESTADO_TONO[documentoAbierto.status]]}>{ESTADO_LABEL[documentoAbierto.status]}</Badge>
                 </dd>
               </dl>
             </CajonCuerpo>

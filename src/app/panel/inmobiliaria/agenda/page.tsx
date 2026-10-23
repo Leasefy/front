@@ -1,15 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { toast } from '@/components/ui/toast';
-import { CalendarBlank, CalendarPlus, Plus, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { CalendarBlank, CalendarPlus, Plus, CaretLeft, CaretRight, MagnifyingGlass } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useTr } from '@/lib/i18n/use-tr';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -120,7 +121,7 @@ function tituloDelEvento(e: EventoAgenda): string {
   return elTituloEsElInmueble(e) ? e.vinculoLabel!.trim() : tituloSinElVinculo(e);
 }
 
-/** La visita ya pasó (su día y su hora): se cierra con «Llegó» o se reagenda, no se «cancela». */
+/** La visita ya pasó (su día y su hora): se cierra con «Sí llegó» o se reagenda, no se «cancela». */
 function laVisitaYaPaso(e: EventoAgenda): boolean {
   if (e.estado === 'vencido') return true;
   const d = fechaLocal(e.fecha);
@@ -409,6 +410,23 @@ function AgendaContent() {
   };
 
   const porVista = data?.porVista;
+  /*
+   * Ronda 30 (revisora r27, Agenda): la tabla lleva su buscador (regla de Nico: toda tabla con buscador). El feed
+   * de la agenda no acepta búsqueda, así que busca en las filas que ya llegaron —la página que se ve— y lo dice
+   * («Buscar en esta página»). Valor derivado con useMemo: nada de efectos que guarden la lista.
+   */
+  const [busqueda, setBusqueda] = useState('');
+  const eventosDeLaLista = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (!q) return eventos;
+    const sinTildes = (v?: string) => (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return eventos.filter((e) =>
+      [e.titulo, e.descripcion, e.vinculoLabel, e.responsableNombre, e.asesorNombre, e.creadaPorNombre].some((v) =>
+        sinTildes(v).includes(q),
+      ),
+    );
+  }, [eventos, busqueda]);
+  const buscandoSinResultado = total > 0 && eventos.length > 0 && eventosDeLaLista.length === 0;
   /** Al volver de «Semana» a «Lista», la pestaña de estado que estaba. */
   const ultimaVista = useRef<VistaDeAgenda>('proximas');
   useEffect(() => {
@@ -500,7 +518,8 @@ function AgendaContent() {
             }}
             data-testid="agenda-visita-llego"
           >
-            Llegó
+            {/* Ronda 30 (revisora r27, VOZ §7.7): «Sí llegó», el mismo nombre que en Prospección y Preparar visitas. */}
+            Sí llegó
           </Button>
           <Button
             type="button"
@@ -624,7 +643,21 @@ function AgendaContent() {
               }))}
             />
           )}
-          <div className="flex items-center gap-4">
+          <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 sm:w-auto">
+            {pestana !== 'semana' && (
+              <div className="relative w-full sm:w-56">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
+                <Input
+                  type="search"
+                  value={busqueda}
+                  onChange={(ev) => setBusqueda(ev.target.value)}
+                  placeholder="Buscar en esta página"
+                  aria-label="Buscar en esta página de la agenda"
+                  className="h-9 pl-9"
+                  data-testid="agenda-buscar"
+                />
+              </div>
+            )}
             <label className="inline-flex items-center gap-2 text-body-sm text-fg-muted">
               <Checkbox
                 checked={soloLoMio}
@@ -748,10 +781,14 @@ function AgendaContent() {
                 />
               </li>
             ) : (
-              eventos.flatMap((e: EventoAgenda, i: number) => {
+              buscandoSinResultado ? (
+                <li>
+                  <SinDatos queSon="eventos" hayFiltros onLimpiarFiltros={() => setBusqueda('')} />
+                </li>
+              ) : eventosDeLaLista.flatMap((e: EventoAgenda, i: number) => {
                 // Revisora r22 (#7): los grupos del día también a 390 («Hoy», «Mañana»…).
                 const grupo = grupoDelDia(e.fecha);
-                const nuevoGrupo = i === 0 || grupoDelDia(eventos[i - 1].fecha) !== grupo;
+                const nuevoGrupo = i === 0 || grupoDelDia(eventosDeLaLista[i - 1].fecha) !== grupo;
                 return [
                   ...(nuevoGrupo
                     ? [
@@ -836,9 +873,15 @@ function AgendaContent() {
               ) : (
                 // GLOW UP 21-10 · la agenda se lee por DÍA: «Hoy», «Mañana», «Esta semana», «Más adelante»
                 // (y «Ya pasó» en las vencidas). Antes era una lista plana de fechas largas.
-                eventos.flatMap((e: EventoAgenda, i: number) => {
+                buscandoSinResultado ? (
+                  <TableRowAnimada key="sin-resultado">
+                    <TableCell colSpan={COLUMNS.length} className="p-0">
+                      <SinDatos queSon="eventos" hayFiltros onLimpiarFiltros={() => setBusqueda('')} />
+                    </TableCell>
+                  </TableRowAnimada>
+                ) : eventosDeLaLista.flatMap((e: EventoAgenda, i: number) => {
                   const grupo = grupoDelDia(e.fecha);
-                  const nuevoGrupo = i === 0 || grupoDelDia(eventos[i - 1].fecha) !== grupo;
+                  const nuevoGrupo = i === 0 || grupoDelDia(eventosDeLaLista[i - 1].fecha) !== grupo;
                   return [
                     ...(nuevoGrupo
                       ? [

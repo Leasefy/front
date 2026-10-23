@@ -13,12 +13,13 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AnimatedNumber, Collapse, CrossFade } from '@leasefy/cadence';
+import { AnimatedNumber, Cifra, Collapse, CrossFade, FranjaDeCifras } from '@leasefy/cadence';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { useEntradaTrasCargar, useHuboEsqueleto } from '@/components/portales/use-entrada-tras-cargar';
 import { AparecerSi } from '@/components/portales/AparecerSi';
-import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, Calendar, ArrowUpRight, CaretDown, CaretRight, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Chat, Plus, FileText, ChartBar, Bell, CheckCircle, Check } from '@phosphor-icons/react';
+import { Buildings, Users, Clock, WarningCircle, Calendar, ArrowUpRight, CaretDown, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Chat, Plus, FileText, Bell, CheckCircle, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { BrandDot, BrandContour, MonoLabel, StatusBadge, SEMANTIC, type SemanticTone } from '@/components/brand';
+import { StatusBadge, SEMANTIC, type SemanticTone } from '@/components/brand';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { useLandlordProperties, useLandlordDashboard } from '@/lib/hooks/useLandlord';
@@ -61,14 +62,9 @@ function UrgentActionsBanner({ actions, entra }: { actions: DashboardUrgentActio
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 flex items-center gap-3 hover:bg-[rgba(0,0,0,0.03)] transition-colors"
+        className="w-full p-4 flex items-center gap-3 hover:bg-surface-muted transition-colors"
       >
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: SEMANTIC.warning.soft }}
-        >
-          <WarningCircle className="w-5 h-5" style={{ color: SEMANTIC.warning.fg }} />
-        </div>
+        <WarningCircle className="w-5 h-5 shrink-0 text-warning" aria-hidden="true" />
         <div className="flex-1 text-left">
           <p className="text-sm font-medium text-fg">
             {t('landlord.dashboard.pendingActions', { count: actions.length })}
@@ -335,15 +331,8 @@ function PanelDelPropietarioIndependiente() {
     return (
       <div className="min-h-screen bg-bg">
         <motion.div {...entradaAdministrados} className="p-6 lg:p-8 space-y-8">
-          <header>
-            <span className="inline-flex items-center gap-2 mb-2">
-              <BrandDot />
-              <MonoLabel className="text-[11px] font-medium text-primary">{greeting}</MonoLabel>
-            </span>
-            <h1 className="text-h2 text-fg [text-wrap:balance]">
-              {t('dashboard.hello', { name: firstName })}
-            </h1>
-          </header>
+          {/* Glow up 22-10: el encabezado común (sección del riel y el saludo como título). */}
+          <EncabezadoDePantalla seccion="Inicio" titulo={`${greeting}, ${firstName}`} />
           <ContratosConLaInmobiliaria doc={administrados.doc} />
         </motion.div>
       </div>
@@ -410,142 +399,82 @@ function PanelDelPropietarioIndependiente() {
     <div className="min-h-screen bg-bg">
       <div className="p-6 lg:p-8">
 
-        {/* Hero Header */}
-        <header className="mb-10">
-          <div>
-            <span className="inline-flex items-center gap-2 mb-2">
-              <BrandDot />
-              <MonoLabel className="text-[11px] font-medium text-primary">
-                {greeting}
-              </MonoLabel>
-            </span>
-            <h1 className="text-h2 text-fg [text-wrap:balance]">
-              {t('dashboard.hello', { name: firstName })}
-            </h1>
-          </div>
-        </header>
+        {/* Glow up 22-10: el encabezado común; publicar es la acción principal del propietario que arrienda solo. */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion="Inicio"
+          titulo={`${greeting}, ${firstName}`}
+          descripcion={locale === 'es' ? 'Lo que te entra cada mes, tus inmuebles y tus candidatos.' : 'What comes in each month, your properties and your applicants.'}
+          accionPrincipal={
+            <Button asChild size="sm" hideArrow className="max-lg:flex-1">
+              <Link href="/publicar?from=panel">{t('landlord.dashboard.newProperty')}</Link>
+            </Button>
+          }
+          data-testid="encabezado-del-propietario-independiente"
+        />
 
-        {/* Stats Grid - Landing Style */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          {/* Monthly Income - Featured Card (ink brand hero) */}
-          <div
-            className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-lg p-6"
-            style={{ background: 'linear-gradient(150deg, var(--ink) 58%, var(--ink-2) 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
-          >
-            {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
-            <div className="absolute -inset-x-1 top-[34%] h-[44%] text-white/[0.14] pointer-events-none">
-              <BrandContour />
+        {/* LA RESPUESTA: lo que te entra al mes, en grande; inmuebles, candidatos y recaudo en una franja (antes,
+            cuatro tarjetas del mismo peso, la primera en medianoche con degradado, un brillo azul y el ícono en caja). */}
+        <div className="mb-10 space-y-4" data-testid="cifras-del-propietario">
+          {isLoading ? (
+            <div className="space-y-3 rounded-lg border border-border bg-surface p-5" aria-busy="true">
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-10 w-56" />
+              <Skeleton className="h-4 w-40" />
             </div>
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
-                <CurrencyDollar className="w-5 h-5 text-white/90" />
-              </div>
-              {/* Ronda 23, B5: aquí había un «+12%» fijo, sin ningún dato detrás. Sin la variación real del
-                  mes no se pinta nada. */}
-            </div>
-            <MonoLabel className="block text-[11px] font-medium text-white/55 mb-1.5">{t('landlord.dashboard.monthlyIncome')}</MonoLabel>
-            {isLoading ? (
-              <Skeleton className="h-9 w-36 rounded-md bg-white/10" />
-            ) : (
-              <p className="font-mono text-[28px] font-normal text-white tabular-nums leading-none">
+          ) : (
+            <CifraHeroe
+              rotulo={t('landlord.dashboard.monthlyIncome')}
+              cifra={
                 <AnimatedNumber
                   value={dashboardData.financial.monthlyIncome}
                   from={huboCarga ? 0 : undefined}
                   format={plataQueLlega(dashboardData.financial.monthlyIncome, i18nFormatCurrency)}
                 />
-              </p>
-            )}
-            {isLoading ? (
-              <Skeleton className="h-4 w-24 mt-2 rounded bg-white/10" />
-            ) : (
-              <p className="text-sm text-white/70 mt-2">
-                {t('landlord.dashboard.activeLeases', { count: dashboardData.financial.activeLeases })}
-              </p>
-            )}
-          </div>
-
-          {/* Properties */}
-          <div className="rounded-lg bg-surface-muted p-6">
-            <Buildings className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
-            <p className="text-sm text-fg-muted mb-1">{t('landlord.dashboard.properties')}</p>
-            {isLoading ? (
-              <Skeleton className="h-9 w-12 rounded-md" />
-            ) : (
-              <p className="font-mono text-h2 tabular-nums text-fg">
-                <AnimatedNumber value={properties.length} from={huboCarga ? 0 : undefined} />
-              </p>
-            )}
-            {isLoading ? (
-              <Skeleton className="h-4 w-20 mt-2 rounded" />
-            ) : (
-              <p className="text-sm text-fg-muted mt-2">
-                {dashboardData.financial.activeLeases} {t('landlord.dashboard.rented')}
-              </p>
-            )}
-          </div>
-
-          {/* Candidates */}
-          <div className="rounded-lg bg-surface-muted p-6">
-            <Users className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
-            <p className="text-sm text-fg-muted mb-1">{t('landlord.dashboard.candidates')}</p>
-            {isLoading ? (
-              <Skeleton className="h-9 w-12 rounded-md" />
-            ) : (
-              <p className="font-mono text-h2 tabular-nums text-fg">
-                <AnimatedNumber value={totalCandidates} from={huboCarga ? 0 : undefined} />
-              </p>
-            )}
-            {isLoading ? (
-              <Skeleton className="h-4 w-28 mt-2 rounded" />
-            ) : (
-              <p className="text-sm text-fg-muted mt-2">
-                {pendingReviews > 0 && (
-                  <span className="font-medium text-warning">{t('landlord.dashboard.pendingCount', { count: pendingReviews })}</span>
-                )}
-                {pendingReviews === 0 && t('landlord.dashboard.allReviewed')}
-              </p>
-            )}
-          </div>
-
-          {/* Collection Rate */}
-          <div className="rounded-lg bg-surface-muted p-6">
-            <ChartBar className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
-            <p className="text-sm text-fg-muted mb-1">{t('landlord.dashboard.collectionRate')}</p>
-            {isLoading ? (
-              <>
-                <Skeleton className="h-9 w-20 rounded-md" />
-                <Skeleton className="h-4 w-16 mt-2 rounded" />
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <p className="font-mono text-h2 tabular-nums text-fg">
-                    {/* Revisora r24 (N8): sin el tablero del back no hay tasa que mostrar; antes salía un 100 % de
-                        respaldo y «Excelente» fijo, sin ningún dato detrás. */}
-                    {dashboard ? (
-                      <>
-                        <AnimatedNumber
-                          value={dashboardData.financial.collectionRate}
-                          from={huboCarga ? 0 : undefined}
-                          format={(n) => String(Math.round(n))}
-                        />%
-                      </>
-                    ) : (
-                      '—'
-                    )}
-                  </p>
-                  {dashboard && dashboardData.financial.collectionRate >= 95 ? (
-                    <StatusBadge tone="success" dot={false}>
-                      {t('landlord.dashboard.excellent')}
-                    </StatusBadge>
-                  ) : null}
-                </div>
-                <p className="text-sm text-fg-muted mt-2">
-                  {t('landlord.dashboard.thisMonth')}
-                </p>
-              </>
-            )}
-          </div>
+              }
+              contexto={t('landlord.dashboard.activeLeases', { count: dashboardData.financial.activeLeases })}
+              pie={
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {dashboardData.financial.pendingPayments > 0 && (
+                    <span>
+                      {t('landlord.dashboard.pendingPayments')}{' '}
+                      <span className="font-mono tabular-nums text-danger">{dashboardData.financial.pendingPayments}</span>
+                    </span>
+                  )}
+                  <Link href="/panel/leases" className="text-fg underline decoration-border-strong underline-offset-4 hover:decoration-fg">
+                    {t('landlord.dashboard.viewDetails')}
+                  </Link>
+                </span>
+              }
+              data-testid="ingreso-del-mes"
+            />
+          )}
+          <FranjaDeCifras aria-label={locale === 'es' ? 'Tus inmuebles' : 'Your properties'}>
+            <Cifra
+              etiqueta={t('landlord.dashboard.properties')}
+              valor={isLoading ? '—' : properties.length}
+              detalle={isLoading ? undefined : `${dashboardData.financial.activeLeases} ${t('landlord.dashboard.rented')}`}
+            />
+            <Cifra
+              etiqueta={t('landlord.dashboard.candidates')}
+              valor={isLoading ? '—' : totalCandidates}
+              tono={!isLoading && pendingReviews > 0 ? 'aviso' : undefined}
+              detalle={
+                isLoading
+                  ? undefined
+                  : pendingReviews > 0
+                    ? t('landlord.dashboard.pendingCount', { count: pendingReviews })
+                    : t('landlord.dashboard.allReviewed')
+              }
+            />
+            {/* Revisora r24 (N8): sin el tablero del back no hay tasa que mostrar (antes, un 100 % de respaldo). */}
+            <Cifra
+              etiqueta={t('landlord.dashboard.collectionRate')}
+              valor={!isLoading && dashboard ? `${Math.round(dashboardData.financial.collectionRate)} %` : '—'}
+              tono={!isLoading && dashboard && dashboardData.financial.collectionRate >= 95 ? 'exito' : undefined}
+              detalle={t('landlord.dashboard.thisMonth')}
+            />
+          </FranjaDeCifras>
         </div>
 
         {/* Urgent Actions Banner */}
@@ -566,7 +495,6 @@ function PanelDelPropietarioIndependiente() {
                   className="text-sm text-fg-muted hover:text-fg font-medium flex items-center gap-1 transition-colors"
                 >
                   {t('landlord.dashboard.viewAll')}
-                  <CaretRight className="w-4 h-4" />
                 </Link>
               </div>
 
@@ -757,7 +685,7 @@ function PanelDelPropietarioIndependiente() {
                 {dashboardLoading ? (
                   [0, 1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-4 p-4">
-                      <Skeleton className="w-10 h-10 rounded-lg flex-shrink-0" />
+                      <Skeleton className="w-5 h-5 rounded flex-shrink-0" />
                       <div className="flex-1 space-y-2">
                         <Skeleton className="h-4 w-48 rounded" />
                         <Skeleton className="h-3 w-32 rounded" />
@@ -768,7 +696,7 @@ function PanelDelPropietarioIndependiente() {
                 ) : dashboardData.recentActivity.length > 0 ? (
                   dashboardData.recentActivity.slice(0, 5).map((activity) => (
                     <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-surface-hover transition-colors">
-                      <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center flex-shrink-0">
+                      <div className="flex w-5 shrink-0 items-center justify-center" aria-hidden="true">
                         {activity.type === 'application' && <FileText className="w-5 h-5 text-fg-muted" />}
                         {activity.type === 'status_change' && <CheckCircle className="w-5 h-5 text-fg-muted" />}
                         {activity.type === 'message' && <Chat className="w-5 h-5 text-fg-muted" />}
@@ -802,71 +730,6 @@ function PanelDelPropietarioIndependiente() {
           {/* Sidebar */}
           <div className="space-y-6">
 
-            {/* Financial Summary Card */}
-            <div className="rounded-lg bg-surface border border-border p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <BrandDot />
-                <MonoLabel className="text-[11px] font-medium text-fg-muted">
-                  {t('landlord.dashboard.financialSummary')}
-                </MonoLabel>
-              </div>
-              {/* Cargando → resumen: se cruzan; la cifra cuenta desde 0 y la barra se corre. */}
-              <CrossFade swapKey={dashboardLoading ? 'cargando' : 'listo'}>
-              {dashboardLoading ? (
-                <>
-                  <Skeleton className="h-9 w-36 rounded-md" />
-                  <Skeleton className="h-4 w-28 mt-1 rounded" />
-                  <div className="mt-6 pt-4 border-t border-border-faint space-y-3">
-                    <div className="flex justify-between">
-                      <Skeleton className="h-4 w-24 rounded" />
-                      <Skeleton className="h-4 w-10 rounded" />
-                    </div>
-                    <Skeleton className="h-2 w-full rounded-full" />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="font-mono text-h2 tabular-nums text-fg">
-                    <AnimatedNumber
-                      value={dashboardData.financial.monthlyIncome}
-                      from={huboCarga ? 0 : undefined}
-                      format={plataQueLlega(dashboardData.financial.monthlyIncome, i18nFormatCurrency)}
-                    />
-                  </p>
-                  <p className="text-fg-muted text-sm mt-1">
-                    {t('landlord.dashboard.incomeThisMonth')}
-                  </p>
-
-                  <div className="mt-6 pt-4 border-t border-border-faint space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-fg-muted">{t('landlord.dashboard.collectionRateLabel')}</span>
-                      <span className="text-fg font-medium tabular-nums">{dashboardData.financial.collectionRate}%</span>
-                    </div>
-                    <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full w-full rounded-full transition-transform duration-slow ease-enter"
-                        style={{ transform: `translateX(${dashboardData.financial.collectionRate - 100}%)`, backgroundColor: '#1A40FF' }}
-                      />
-                    </div>
-                    {dashboardData.financial.pendingPayments > 0 && (
-                      <div className="flex items-center justify-between text-sm pt-2">
-                        <span className="text-fg-muted">{t('landlord.dashboard.pendingPayments')}</span>
-                        <span className="text-danger font-medium tabular-nums">{dashboardData.financial.pendingPayments}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <Link
-                    href="/panel/leases"
-                    className="inline-flex items-center gap-1.5 mt-4 text-sm text-primary hover:opacity-80 font-medium transition-opacity"
-                  >
-                    {t('landlord.dashboard.viewDetails')}
-                  </Link>
-                </>
-              )}
-              </CrossFade>
-            </div>
-
             {/* Quick Actions */}
             <div className="rounded-lg bg-surface-muted p-5">
               <h3 className="font-medium text-fg mb-4">{t('landlord.dashboard.quickActions')}</h3>
@@ -889,7 +752,6 @@ function PanelDelPropietarioIndependiente() {
                       {action.badge && (
                         <span className="w-2 h-2 rounded-full bg-primary" />
                       )}
-                      <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-primary transition-colors" />
                     </div>
                   </Link>
                 ))}
@@ -1004,7 +866,6 @@ function UpcomingVisitsCard({ visits, entra }: { visits: Visit[]; entra: boolean
                   })} · {visit.requestedTime} · {VISIT_STATUS_LABELS[visit.status]}
                 </p>
               </div>
-              <CaretRight className="w-4 h-4 text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </button>
           ))}
         </div>
@@ -1145,8 +1006,7 @@ function UpcomingEventsCard({ events, entra }: { events: DashboardUpcomingEvent[
                     })}
                   </p>
                 </div>
-                <CaretRight className="w-4 h-4 text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-              </button>
+                </button>
             );
           })}
         </div>

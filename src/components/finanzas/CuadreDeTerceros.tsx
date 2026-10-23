@@ -433,15 +433,22 @@ function LaCuenta({ datos }: { datos: Respuesta }) {
   const plata = plataPareja(renglones.map((r) => r.valorCop));
   const delBack = Boolean(datos.renglones && datos.renglones.length > 0);
   return (
-    <section className="space-y-3" data-testid={delBack ? 'cuadre-renglones' : 'cuadre-terminos'}>
-      <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">{tr('La cuenta, renglón por renglón')}</h2>
-      <Card className="px-5 py-2 sm:px-6">
-        <ol>
-          {renglones.map((r) => (
-            <RenglonDeLaCuenta key={r.clave} renglon={r} plata={plata} />
-          ))}
-        </ol>
-      </Card>
+    // Revisora r27 (Cuadre, «lo que se consulta, plegado»): la cifra de arriba ya es la respuesta;
+    // los ocho renglones se consultan. Montado siempre: un lector y las pruebas siguen encontrándolos.
+    <section data-testid={delBack ? 'cuadre-renglones' : 'cuadre-terminos'}>
+      <MasDetalles
+        etiqueta={tr('Ver la cuenta renglón por renglón')}
+        etiquetaAbierto={tr('Ocultar la cuenta')}
+        montadoSiempre
+      >
+        <Card className="px-5 py-2 sm:px-6">
+          <ol>
+            {renglones.map((r) => (
+              <RenglonDeLaCuenta key={r.clave} renglon={r} plata={plata} />
+            ))}
+          </ol>
+        </Card>
+      </MasDetalles>
     </section>
   );
 }

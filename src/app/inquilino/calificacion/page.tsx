@@ -9,6 +9,7 @@
  */
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { useArriendaHoyDelPortal } from '@/lib/hooks/use-arrienda-hoy';
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -205,6 +206,9 @@ export default function MiCalificacionPage({
   const tr = useTr();
   const router = useRouter();
   const { formatCurrency, locale } = useI18n();
+  // El sobretítulo es la sección del menú: «Buscar arriendo» para quien busca (quien arrienda la tiene como fila
+  // suelta). Lo sabe el layout: ninguna lectura nueva.
+  const arrienda = useArriendaHoyDelPortal();
   const localeFechas = useLocaleDeFechas();
   const idiomaDelPanel = useLocaleDelPanel();
   const { certificado } = use(searchParams);
@@ -295,6 +299,7 @@ export default function MiCalificacionPage({
 
   const encabezado = (
     <EncabezadoDePantalla
+      seccion={arrienda === false ? (locale === 'es' ? 'Buscar arriendo' : 'Find a rental') : undefined}
       // Revisora r25: el título es el de la pestaña y de la fila del menú (antes «Mi Calificación Leasefy»).
       titulo={locale === 'es' ? 'Mi calificación' : 'My rating'}
       descripcion={tr('Cómo te ven para arrendar: tu historial de pagos en Leasefy y tus documentos. Verla es gratis, siempre.')}

@@ -4761,7 +4761,7 @@
         "stats": {
           "expected": "Esperado",
           "collected": "Recaudado",
-          "collectionRate": "{{pct}}% · {{rotulo}}",
+          "collectionRate": "{{pct}} % · {{rotulo}}",
           "commission": "Comisión de la inmobiliaria",
           "netToOwners": "Neto a propietarios",
           "occupancy": "Ocupación promedio",

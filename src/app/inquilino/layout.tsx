@@ -6,7 +6,7 @@ import { SquaresFour, House, Chat, MagnifyingGlass, ArrowsLeftRight, Gauge } fro
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep, type NavItem } from '@/components/ui/plan/PlanSidebar';
 import { SeccionesDelPortal } from '@/components/portales/SeccionesDelPortal';
-import { useArriendaHoy } from '@/lib/hooks/use-arrienda-hoy';
+import { useArriendaHoy, ArriendaHoyDelPortalProvider } from '@/lib/hooks/use-arrienda-hoy';
 import {
   BUSCAR_ARRIENDO,
   MI_ARRIENDO,
@@ -179,7 +179,7 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
         <PlanHeader tenantSubscription={tenantSubscription} />
         <main id="main-content" tabIndex={-1}>
           <SeccionesDelPortal seccion={seccionDeLaRuta(pathname, arrienda === true)} />
-          {children}
+          <ArriendaHoyDelPortalProvider value={arrienda}>{children}</ArriendaHoyDelPortalProvider>
         </main>
       </div>
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de

@@ -31,6 +31,7 @@ import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-car
 import { Scroll } from '@phosphor-icons/react';
 
 import { useTenantAcuerdos } from '@/lib/hooks/use-tenant-acuerdos';
+import { useArriendaHoyDelPortal } from '@/lib/hooks/use-arrienda-hoy';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { useI18n } from '@/lib/i18n';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
@@ -119,6 +120,7 @@ export default function AcuerdosPage() {
   const { locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const { items, isLoading, error, refetch } = useTenantAcuerdos();
+  const arrienda = useArriendaHoyDelPortal();
 
   // The only mutation entry point on this read surface: propose a payment plan.
   const [requestOpen, setRequestOpen] = useState(false);
@@ -199,19 +201,32 @@ export default function AcuerdosPage() {
             </div>
           ) : (
             <div className="rounded-lg border border-border bg-surface">
-              <EmptyState
-                icon={Scroll}
-                title={locale === 'es' ? 'Aún no tienes acuerdos de pago' : 'No payment agreements yet'}
-                description={
-                  locale === 'es'
-                    ? 'Cuando tu inmobiliaria te apruebe un acuerdo, aparecerá aquí con su plan de cuotas.'
-                    : 'When your agency approves an agreement, it will show up here with its installment plan.'
-                }
-                action={{
-                  label: locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan',
-                  onClick: () => setRequestOpen(true),
-                }}
-              />
+              {/* Revisora r25: sin arriendo no se ofrece pedir un plan de pago (abría un modal sobre nada). */}
+              {arrienda === false ? (
+                <EmptyState
+                  icon={Scroll}
+                  title={locale === 'es' ? 'Aún no tienes acuerdos de pago' : 'No payment agreements yet'}
+                  description={
+                    locale === 'es'
+                      ? 'Cuando tengas un arriendo, aquí ves tus acuerdos de pago con su plan de cuotas.'
+                      : 'When you have a rental, your payment agreements show up here with their installment plan.'
+                  }
+                />
+              ) : (
+                <EmptyState
+                  icon={Scroll}
+                  title={locale === 'es' ? 'Aún no tienes acuerdos de pago' : 'No payment agreements yet'}
+                  description={
+                    locale === 'es'
+                      ? 'Cuando tu inmobiliaria te apruebe un acuerdo, aparecerá aquí con su plan de cuotas.'
+                      : 'When your agency approves an agreement, it will show up here with its installment plan.'
+                  }
+                  action={{
+                    label: locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan',
+                    onClick: () => setRequestOpen(true),
+                  }}
+                />
+              )}
             </div>
           )}
         </section>

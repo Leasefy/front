@@ -34,6 +34,23 @@ const SITES: Array<[file: string, anchor: string]> = [
   ['src/app/panel/(landlord)/perfil/page.tsx', 'absolute top-3 right-3 bg-white/20'],
   ['src/app/panel/inmobiliaria/perfil/page.tsx', 'absolute top-3 right-3 bg-card/70'],
   ['src/components/property/PropertySearchView.tsx', 'className="whitespace-nowrap '],
+  // WU-8: agency one-offs, links and back buttons
+  ['src/app/panel/inmobiliaria/pagos/recaudo/page.tsx', "className=\"text-sm underline text-fg"],
+  ['src/app/panel/inmobiliaria/pagos/recaudo/autopago/page.tsx', "href=\"/panel/inmobiliaria/pagos/recaudo\">"],
+  ['src/app/panel/inmobiliaria/pagos/recaudo/aseguradoras/page.tsx', "href=\"/panel/inmobiliaria/pagos/recaudo\">"],
+  ['src/app/panel/inmobiliaria/pagos/recaudo/estudios/page.tsx', "href=\"/panel/inmobiliaria/pagos/recaudo\">"],
+  ['src/app/panel/inmobiliaria/pagos/cartera/juridico/page.tsx', "href=\"/panel/inmobiliaria/pagos/cartera\">"],
+  ['src/app/panel/inmobiliaria/pagos/cobranza/configuracion/page.tsx', "Volver a Acuerdos de pago"],
+  ['src/components/inmobiliaria/cobranza/AcuerdoGeneralForm.tsx', "Volver a Acuerdos de pago"],
+  ['src/app/panel/inmobiliaria/pagos/cobranza/acuerdos/generales/[acuerdoId]/page.tsx', "Volver a Acuerdos de pago"],
+  ['src/components/inmobiliaria/ai/VolverALaLista.tsx', "<BackButton"],
+  ['src/app/panel/inmobiliaria/inmuebles/[id]/page.tsx', "<BackButton"],
+  ['src/app/panel/inmobiliaria/inmuebles/importar/page.tsx', "<BackButton"],
+  ['src/app/panel/inmobiliaria/inmuebles/nuevo/page.tsx', "<BackButton"],
+  ['src/components/contratos/BandejaDeCartasDelIncremento.tsx', "data-testid=\"abrir-cola-de-cartas\""],
+  ['src/components/contratos/BandejaDeCartasDelIncremento.tsx', "#{carta.externalId"],
+  ['src/app/panel/inmobiliaria/reportes/resumen/page.tsx', "{t('inmobiliaria.common.viewAll"],
+  ['src/app/panel/inmobiliaria/reportes/resumen/page.tsx', "viewFullReports"],
 ];
 
 describe('standalone controls opt into a 44 px touch target', () => {

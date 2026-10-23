@@ -62,7 +62,7 @@ function EditarAcuerdoGeneral() {
           <Button hideArrow onClick={() => void refetch()}>
             Reintentar
           </Button>
-          <Button asChild variant="ghost" hideArrow>
+          <Button asChild variant="ghost" hideArrow className="[@media(pointer:coarse)]:min-h-11">
             <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
           </Button>
         </div>
@@ -79,7 +79,7 @@ function EditarAcuerdoGeneral() {
         <p className="text-sm text-fg-muted">
           Puede que alguien lo haya borrado. Los demás siguen en Acuerdos de pago.
         </p>
-        <Button asChild hideArrow>
+        <Button asChild hideArrow className="[@media(pointer:coarse)]:min-h-11">
           <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
         </Button>
       </div>

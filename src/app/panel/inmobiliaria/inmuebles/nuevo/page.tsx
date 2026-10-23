@@ -71,7 +71,7 @@ function NuevaConsignacionContent() {
       {/* Header */}
       <div className="flex flex-col gap-4">
         {/* Back Link */}
-        <BackButton href={volverA} label={etiquetaDeRegreso} />
+        <BackButton href={volverA} label={etiquetaDeRegreso} className="[@media(pointer:coarse)]:min-h-11" />
 
         {/* Title */}
         <div className="flex items-center gap-3">

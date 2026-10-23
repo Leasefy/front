@@ -28,15 +28,15 @@ export default function RecaudoPage() {
           </p>
           {/* 17-09-2026: los estudios que pagan los solicitantes, con su recibo. */}
           <div className="flex flex-wrap gap-4">
-            <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/estudios">
+            <Link className="text-sm underline text-fg [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center" href="/panel/inmobiliaria/pagos/recaudo/estudios">
               {tr("Estudios pagados por solicitantes")}
             </Link>
             {/* D11 (17-09-2026): las aseguradoras que pagan siniestros. */}
-            <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/aseguradoras">
+            <Link className="text-sm underline text-fg [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center" href="/panel/inmobiliaria/pagos/recaudo/aseguradoras">
               {tr("Aseguradoras")}
             </Link>
             {/* 26-09-2026: los inquilinos con cobro automático (sólo lectura). */}
-            <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/autopago">
+            <Link className="text-sm underline text-fg [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center" href="/panel/inmobiliaria/pagos/recaudo/autopago">
               {tr("Autopago")}
             </Link>
           </div>

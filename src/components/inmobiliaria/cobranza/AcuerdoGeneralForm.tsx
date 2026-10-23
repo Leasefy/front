@@ -275,7 +275,7 @@ export function AcuerdoGeneralForm({
       <div>
         <Link
           href={VOLVER}
-          className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg"
+          className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg [@media(pointer:coarse)]:min-h-11"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           Volver a Acuerdos de pago

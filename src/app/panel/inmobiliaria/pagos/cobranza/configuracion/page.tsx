@@ -548,7 +548,7 @@ function CobranzaConfiguracionContent() {
             ahí (`?volver=acuerdos`), para no inventar una vuelta que no existe
             cuando entraste por el menú. */}
         {volverA === 'acuerdos' && (
-          <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2 mb-2">
+          <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2 mb-2 [@media(pointer:coarse)]:min-h-11">
             <Link href={`${COBRANZA_BASE}/acuerdos`}>
               <ArrowLeft className="w-4 h-4" aria-hidden="true" />
               Volver a Acuerdos de pago

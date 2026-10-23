@@ -47,7 +47,7 @@ export function VolverALaLista({ href, label, className }: VolverALaListaProps) 
       variant="subtle"
       href={href}
       label={label}
-      className={className}
+      className={`[@media(pointer:coarse)]:min-h-11 ${className ?? ''}`.trim()}
       data-testid="volver-a-la-lista"
       onClick={(e) => {
         // Con modificador manda el navegador (pestaña/ventana nueva).

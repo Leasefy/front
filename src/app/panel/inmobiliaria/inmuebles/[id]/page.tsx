@@ -494,6 +494,7 @@ function ConsignacionDetailContent() {
         <BackButton
           href="/panel/inmobiliaria/inmuebles"
           label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
+          className="[@media(pointer:coarse)]:min-h-11"
         />
         {/* «Inmueble», no la clave `portafolio.detail.title` («Detalle de
             Propiedad»): el menú dice Inmuebles y el producto no llama

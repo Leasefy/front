@@ -141,7 +141,7 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
         </div>
         <Link
           href={RUTA_DE_LAS_CARTAS}
-          className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+          className="text-caption font-medium text-primary underline-offset-4 hover:underline [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center"
           data-testid="abrir-cola-de-cartas"
         >
           Abrir la cola →
@@ -261,7 +261,7 @@ export function Fila({
       data-testid={`carta-${carta.contractId}-${carta.desde}`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <Link href={`/panel/inmobiliaria/contratos/${carta.contractId}`} className="font-medium underline-offset-2 hover:underline">
+        <Link href={`/panel/inmobiliaria/contratos/${carta.contractId}`} className="font-medium underline-offset-2 hover:underline [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center">
           #{carta.externalId ?? carta.code} · {carta.inquilino ?? 'Sin inquilino'}
         </Link>
         <span>

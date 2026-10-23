@@ -597,7 +597,7 @@ function ResumenDelNegocio() {
             </div>
             <Link
               href="/panel/inmobiliaria/pipeline"
-              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline [@media(pointer:coarse)]:min-h-11"
             >
               {t('inmobiliaria.common.viewAll')}
               <ArrowRight className="h-4 w-4" />
@@ -630,7 +630,7 @@ function ResumenDelNegocio() {
             </div>
             <Link
               href="/panel/inmobiliaria/configuracion/equipo"
-              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline [@media(pointer:coarse)]:min-h-11"
             >
               {t('inmobiliaria.common.viewAllM')}
               <ArrowRight className="h-4 w-4" />
@@ -777,7 +777,7 @@ function ResumenDelNegocio() {
           </div>
           <Link
             href="/panel/inmobiliaria/reportes"
-            className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline [@media(pointer:coarse)]:min-h-11"
           >
             {t('inmobiliaria.dashboard.financial.viewFullReports')}
             <ArrowRight className="h-4 w-4" />

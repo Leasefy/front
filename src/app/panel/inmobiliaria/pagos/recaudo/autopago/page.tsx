@@ -28,7 +28,7 @@ export default function AutopagoPage() {
             Los inquilinos que inscribieron el cobro automático de su cuota, con el tope que pusieron y cómo salió el
             último intento. Acá sólo se mira: el autopago lo inscribe, lo pausa o lo cancela el inquilino desde su
             portal.{' '}
-            <Link className="underline" href="/panel/inmobiliaria/pagos/recaudo">
+            <Link className="relative hit-area-44 underline" href="/panel/inmobiliaria/pagos/recaudo">
               Volver a Recaudo
             </Link>
           </p>

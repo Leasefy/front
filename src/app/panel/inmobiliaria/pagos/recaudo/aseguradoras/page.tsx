@@ -124,7 +124,7 @@ function Contenido() {
           Las que pagan siniestros. Cuando una paga, el recibo lleva a la aseguradora como pagador: las cuotas
           quedan pagadas para la inmobiliaria y el propietario, y en el estado de cuenta del inquilino esa deuda
           sale «subrogada a la aseguradora».{' '}
-          <Link className="underline" href="/panel/inmobiliaria/pagos/recaudo">
+          <Link className="relative hit-area-44 underline" href="/panel/inmobiliaria/pagos/recaudo">
             Volver a Recaudo
           </Link>
         </p>

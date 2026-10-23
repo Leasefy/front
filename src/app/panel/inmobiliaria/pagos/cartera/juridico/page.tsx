@@ -24,7 +24,7 @@ export default function CobroJuridicoPage() {
           <p className="max-w-2xl text-sm text-muted-foreground">
             Lo que ya no se cobra con una llamada. El sistema sugiere desde el día 90 de mora sin póliza; pasar el
             caso lo decide una persona y queda visible en el contrato y en la cartera.{' '}
-            <Link className="underline" href="/panel/inmobiliaria/pagos/cartera">
+            <Link className="relative hit-area-44 underline" href="/panel/inmobiliaria/pagos/cartera">
               Volver a Cartera
             </Link>
           </p>

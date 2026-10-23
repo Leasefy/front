@@ -103,7 +103,7 @@ function Contenido() {
         <p className="max-w-2xl text-sm text-muted-foreground">
           El estudio lo paga el solicitante a la inmobiliaria: recibo y factura. No se devuelve y, mientras esté vigente,
           le sirve para cualquier inmueble sin volver a pagar.{' '}
-          <Link className="underline" href="/panel/inmobiliaria/pagos/recaudo">
+          <Link className="relative hit-area-44 underline" href="/panel/inmobiliaria/pagos/recaudo">
             Volver a Recaudo
           </Link>
         </p>

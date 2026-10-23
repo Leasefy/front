@@ -20,6 +20,7 @@ function ImportarContent() {
       <BackButton
         href="/panel/inmobiliaria/inmuebles"
         label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
+        className="[@media(pointer:coarse)]:min-h-11"
       />
 
       {/* Title */}

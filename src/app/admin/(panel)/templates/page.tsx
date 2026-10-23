@@ -1,5 +1,6 @@
 'use client'
 
+import { toast } from 'sonner'
 import { useState } from 'react'
 import { ChatText } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
@@ -73,6 +74,8 @@ export default function PlantillasPage() {
         method: 'PATCH',
         body: { pushTitulo: titulo.trim(), pushTexto: texto.trim(), activa, motivo: motivo.trim() },
       })
+      // Ronda 26 (T10): aviso al terminar.
+      toast.success('Listo: el aviso quedó guardado')
       setAbierta(null)
       refetch()
     } catch (err) {
@@ -199,7 +202,7 @@ export default function PlantillasPage() {
             Cerrar
           </Button>
           <Button hideArrow disabled={!hayCambio || motivo.trim().length < 5 || guardando} onClick={() => void guardar()}>
-            {guardando ? 'Guardando…' : 'Guardar'}
+            {guardando ? 'Guardando…' : 'Guardar el aviso'}
           </Button>
         </CajonPie>
       </Cajon>

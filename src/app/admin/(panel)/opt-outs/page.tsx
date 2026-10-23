@@ -118,7 +118,8 @@ export default function OptOutsPage() {
 
       {/* Glow up 22-10: LA RESPUESTA (cuántos pidieron la baja) y de dónde vino cada una; antes, 4 tarjetas del
           mismo peso con tonos rojo y ámbar. */}
-      {stats ? (
+      {stats && Number(stats.total ?? 0) === 0 ? null : stats ? (
+        // Ronda 26 (T6): en cero no se pinta la cifra; lo dice el vacío de la tabla (una sola vez).
         <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
           <CifraHeroe
             rotulo="Bajas de contacto"
@@ -143,6 +144,7 @@ export default function OptOutsPage() {
         onReintentar={result.refetch}
         emptyTitle={q ? 'Nadie con ese nombre pidió la baja' : 'Nadie ha pedido la baja todavía'}
         emptyIcon={<BellSlash weight="duotone" />}
+        emptyTono={q ? undefined : "exito"}
         aria-label="Bajas de contacto"
         barra={
           <BarraDeFiltros>

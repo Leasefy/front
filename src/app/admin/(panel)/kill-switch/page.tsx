@@ -1,5 +1,6 @@
 'use client'
 
+import { toast } from 'sonner'
 import { useState } from 'react'
 import { Power } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
@@ -46,6 +47,8 @@ export default function PausaDeEmergenciaPage() {
     setFallo(null)
     try {
       await adminApi(`/banderas/${objetivo.tenant_id}/pausa`, { method: 'PUT', body: { pausada: pausar, motivo: motivo.trim() } })
+      // Ronda 26 (T10): aviso al terminar.
+      toast.success(pausar ? `Listo: los agentes de ${objetivo.nombre} quedaron en pausa` : `Listo: los agentes de ${objetivo.nombre} volvieron a funcionar`)
       setObjetivo(null)
       refetch()
     } catch (err) {

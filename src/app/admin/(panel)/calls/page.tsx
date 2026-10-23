@@ -86,8 +86,8 @@ export default function CallsPage() {
         isLoading={calls.isLoading}
         error={calls.error}
         onReintentar={calls.refetch}
-        emptyTitle="No hay llamadas con estos filtros"
-        emptyHint="Prueba con otra inmobiliaria u otro resultado."
+        emptyTitle={tenant || outcome || q ? 'No hay llamadas con estos filtros' : 'Todavía no hay llamadas'}
+        emptyHint={tenant || outcome || q ? 'Prueba con otra inmobiliaria u otro resultado.' : 'Cuando Mori haga la primera, aparece aquí.'}
         emptyIcon={<PhoneCall weight="duotone" />}
         aria-label="Llamadas"
         onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}

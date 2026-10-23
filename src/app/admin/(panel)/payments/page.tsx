@@ -207,8 +207,8 @@ export default function PaymentsPage() {
         isLoading={result.isLoading}
         error={result.error}
         onReintentar={result.refetch}
-        emptyTitle="No hay pagos con estos filtros"
-        emptyHint="Prueba con otro estado u otra pasarela."
+        emptyTitle={status || provider ? 'No hay pagos con estos filtros' : 'Todavía no hay pagos en línea'}
+        emptyHint={status || provider ? 'Prueba con otro estado u otra pasarela.' : 'Cuando un inquilino pague por Wompi, aparece aquí.'}
         emptyIcon={<CreditCard weight="duotone" />}
         aria-label="Pagos"
         barra={

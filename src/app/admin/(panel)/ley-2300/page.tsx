@@ -203,6 +203,13 @@ export default function Ley2300Page() {
         <>
           {/* Glow up 22-10: LA RESPUESTA (cuántas faltas hubo) en una cifra; después el trabajo (las faltas) y el
               mapa de calor plegado. Antes, 4 tarjetas del mismo peso y el mapa antes de la lista. */}
+          {/* Ronda 26 (T6): sin faltas, UNA línea (antes «0 en 0 llamadas · 0 deudores y 0 inmobiliarias»). */}
+          {(Number(data.stats.total_violations) || 0) === 0 ? (
+            <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="ley-2300-faltas">
+              Ninguna falta a la Ley 2300 en los últimos 30 días
+              {(Number(data.stats.total_calls) || 0) > 0 ? `, en ${(Number(data.stats.total_calls) || 0).toLocaleString('es-CO')} llamadas.` : '.'}
+            </p>
+          ) : (
           <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
             <CifraHeroe
               rotulo="Faltas a la Ley 2300 · 30 días"
@@ -211,6 +218,7 @@ export default function Ley2300Page() {
               data-testid="ley-2300-faltas"
             />
           </div>
+          )}
 
           <section className="space-y-3" aria-label="Faltas recientes">
             <h2 className="text-subtitle font-medium text-fg">Faltas recientes</h2>
@@ -220,6 +228,7 @@ export default function Ley2300Page() {
               getKey={(v) => v.id}
               emptyTitle="Ninguna falta: todo dentro del horario"
               emptyIcon={<Scales weight="duotone" />}
+              emptyTono="exito"
               aria-label="Faltas a la Ley 2300"
               queSon={['falta', 'faltas']}
               buscar="Deudor, inmobiliaria o tipo"

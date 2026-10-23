@@ -1,5 +1,6 @@
 'use client'
 
+import { toast } from 'sonner'
 import { useState } from 'react'
 import { Target } from '@phosphor-icons/react'
 import { Alert, Cifra, FranjaDeCifras } from '@leasefy/cadence'
@@ -77,6 +78,8 @@ export default function MetasPage() {
     try {
       const cuerpo = Object.fromEntries(CAMPOS.map((c) => [c.clave, valores[c.clave] === '' ? null : Number(valores[c.clave])]))
       await adminApi(`/metas/${editando.mes}`, { method: 'PUT', body: cuerpo })
+      // Ronda 26 (T10): aviso al terminar, con lo que cambió.
+      toast.success(`Listo: quedaron las metas de ${nombreDelMes(editando.mes).toLowerCase()}`)
       setEditando(null)
       refetch()
     } catch (err) {
@@ -154,7 +157,7 @@ export default function MetasPage() {
       />
       {data && !data.disponible ? (
         <Alert variant="warning" title="Todavía no se pueden poner metas">
-          Falta preparar la tabla de metas en esta base (la prepara Víctor). Mientras tanto se ve lo real.
+          Falta preparar la base para las metas. Mientras tanto se ve lo real.
         </Alert>
       ) : null}
 

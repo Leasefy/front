@@ -181,7 +181,13 @@ export default function EscalationsPage() {
 
       {/* Glow up 22-10: LA RESPUESTA (cuántas esperan a alguien) en una cifra con la barra abiertas · en curso ·
           resueltas; antes, 3 cajas del mismo peso. */}
-      {data ? (
+      {data && open.length + assigned.length === 0 ? (
+        // Ronda 26 (T6): con todo en cero, UNA línea (antes un «0» de 40 px con la barra verde de otra cosa).
+        <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="escalaciones-esperan">
+          Nadie espera a una persona.
+          {resolved.length > 0 ? ` ${resolved.length.toLocaleString('es-CO')} ${resolved.length === 1 ? 'se resolvió' : 'se resolvieron'} en los últimos 7 días.` : ''}
+        </p>
+      ) : data ? (
         <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
           <CifraHeroe
             rotulo="Esperan a una persona"
@@ -205,7 +211,7 @@ export default function EscalationsPage() {
           isLoading={isLoading}
           error={error}
           onReintentar={refetch}
-          emptyTitle="No hay escalaciones"
+          emptyTitle={data && data.length > 0 ? 'Nada por atender' : 'No hay escalaciones'}
           emptyHint="Cuando un agente le pase un caso a una persona, aparece aquí."
           aria-label="Escalaciones"
           onRowClick={(r) => router.push(`/admin/escalations/${r.id}`)}

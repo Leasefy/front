@@ -183,7 +183,7 @@ export function Liquidaciones({
           <ErrorBlock error={error} />
         ) : !data || data.data.length === 0 ? (
           <EmptyBlock
-            title="Ninguna liquidación con estos filtros"
+            title={filtros.agencyId || filtros.desde || filtros.hasta || filtros.estado ? 'Ninguna liquidación con estos filtros' : 'Todavía no hay liquidaciones'}
             hint="Genera las de un rango de fechas con «Generar liquidaciones»: la frecuencia del giro está por definir."
           />
         ) : (

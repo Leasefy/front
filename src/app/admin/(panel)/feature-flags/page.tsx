@@ -1,5 +1,6 @@
 'use client'
 
+import { toast } from 'sonner'
 import { useState } from 'react'
 import { Flag } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
@@ -59,6 +60,8 @@ export default function BanderasPage() {
         body: { encendido: cambio.encendido, motivo: motivo.trim() },
       })
       setAbierta({ ...abierta, ...fila })
+      // Ronda 26 (T10): aviso al terminar.
+      toast.success(cambio.encendido ? 'Listo: el agente quedó prendido' : 'Listo: el agente quedó apagado')
       setCambio(null)
       setMotivo('')
       refetch()

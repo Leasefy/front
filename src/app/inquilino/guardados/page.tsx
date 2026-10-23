@@ -2,14 +2,12 @@
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useState } from 'react';
-import { Heart, MagnifyingGlass, TrashSimple, MapPin, Plus } from '@phosphor-icons/react';
-import Link from 'next/link';
+import { Heart, MagnifyingGlass, TrashSimple, MapPin } from '@phosphor-icons/react';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { motion } from 'framer-motion';
-import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { useWishlist } from '@/lib/stores/wishlist';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { useWishlistedProperties } from '@/lib/hooks/useProperties';
@@ -19,7 +17,8 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { IconButton } from '@leasefy/cadence';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RUTA_DEL_MARKETPLACE } from '@/lib/nav/portal-del-inquilino';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import type { Property } from '@/lib/types/property';
 
@@ -95,18 +94,18 @@ export default function GuardadosPage() {
           titulo={t('saved.title')}
           descripcion={
             displayCount === 0
-                  ? (locale === 'es' ? 'Guarda propiedades que te interesen para verlas después' : 'Save properties you like to view them later')
-                  : displayCount === 1
-                  ? (locale === 'es' ? '1 propiedad guardada' : '1 saved property')
-                  : (locale === 'es' ? `${displayCount} propiedades guardadas` : `${displayCount} saved properties`)
+              ? (locale === 'es' ? 'Guarda los inmuebles que te interesen para compararlos después.' : 'Save the homes you like to compare them later.')
+              : displayCount === 1
+                ? (locale === 'es' ? '1 inmueble guardado: ábrelo para ver la ficha y postularte.' : '1 saved home: open it to see the details and apply.')
+                : (locale === 'es' ? `${displayCount} inmuebles guardados: abre uno para ver la ficha y postularte.` : `${displayCount} saved homes: open one to see the details and apply.`)
           }
           acciones={
             properties.length > 0 ? (
               // Buscar se hace en el marketplace, en OTRA pestaña (reunión 21-10).
               <Button asChild size="sm" variant="outline" hideArrow>
-                <a href="/propiedades" target="_blank" rel="noopener noreferrer">
+                <a href={RUTA_DEL_MARKETPLACE} target="_blank" rel="noopener noreferrer" data-testid="guardados-ir-al-marketplace">
                   <MagnifyingGlass className="mr-2 h-4 w-4" aria-hidden="true" />
-                  {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
+                  {locale === 'es' ? 'Buscar en el marketplace' : 'Search the marketplace'}
                 </a>
               </Button>
             ) : undefined
@@ -127,8 +126,17 @@ export default function GuardadosPage() {
             guardadas» a alguien que guardó cinco y se las despublicaron. */}
         <CrossFade swapKey={estadoDeGuardadas}>
         {cargandoGuardadas && wishlist.length > 0 ? (
-          <div className="flex items-center justify-center py-20">
-            <Spinner size="lg" />
+          /* El esqueleto con la forma de las tarjetas (antes, una rueda en el medio). */
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" data-testid="guardados-cargando" aria-busy="true">
+            {Array.from({ length: Math.min(Math.max(wishlist.length, 1), 6) }, (_, i) => (
+              <div key={i} className="overflow-hidden rounded-lg border border-border bg-surface">
+                <Skeleton className="aspect-[16/10] w-full rounded-none" />
+                <div className="space-y-2 p-4">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : errorGuardadas ? (
           <FalloDeCarga
@@ -158,7 +166,7 @@ export default function GuardadosPage() {
                     ? 'Las que guardaste ya no están publicadas'
                     : 'The ones you saved are no longer listed'
                   : locale === 'es'
-                    ? 'No tienes propiedades guardadas'
+                    ? 'No tienes inmuebles guardados'
                     : 'No saved properties'
               }
               description={
@@ -167,11 +175,11 @@ export default function GuardadosPage() {
                     ? 'Se arrendaron o las quitaron del catálogo. Busca otras y vuelve a guardar las que te sirvan.'
                     : 'They were rented or removed from the catalog. Browse others and save the ones you like.'
                   : locale === 'es'
-                    ? 'Toca el corazón en las propiedades que te interesen y las encuentras aquí para compararlas.'
+                    ? 'Toca el corazón en los inmuebles que te interesen y los encuentras aquí para compararlos.'
                     : 'Tap the heart on the properties you like and find them here to compare them.'
               }
               action={{
-                label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
+                label: locale === 'es' ? 'Ver inmuebles para mí' : 'See homes for me',
                 href: '/inquilino/para-ti',
               }}
             />
@@ -214,13 +222,13 @@ export default function GuardadosPage() {
                         e.stopPropagation();
                         removeFromWishlist(property.id);
                       }}
-                      className="absolute top-3 right-3 w-9 h-9 rounded-full hover:scale-110 transition-[transform,background-color] backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-danger group/btn"
+                      className="absolute top-3 right-3 w-9 h-9 rounded-full transition-colors bg-surface/95 border border-border hover:bg-danger-soft group/btn"
                       title={t('saved.remove')}
                       aria-label={t('saved.remove')}
                       icon={
                         <>
-                          <Heart className="w-4 h-4 text-white fill-white group-hover/btn:hidden" />
-                          <TrashSimple className="w-4 h-4 text-white hidden group-hover/btn:block" />
+                          <Heart weight="fill" className="w-4 h-4 text-fg group-hover/btn:hidden" />
+                          <TrashSimple className="w-4 h-4 text-danger hidden group-hover/btn:block" />
                         </>
                       }
                     />
@@ -256,10 +264,10 @@ export default function GuardadosPage() {
                     </p>
 
                     <div className="flex items-center gap-2 pt-3 border-t border-border-faint">
-                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted">
                         {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                       </span>
-                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted">
                         {property.bathrooms}{' '}
                         {locale === 'es'
                           ? property.bathrooms === 1
@@ -267,7 +275,7 @@ export default function GuardadosPage() {
                             : 'baños'
                           : 'bath'}
                       </span>
-                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted">
                         {property.area} m²
                       </span>
                     </div>
@@ -275,45 +283,8 @@ export default function GuardadosPage() {
                 </StaggerItem>
               ))}
 
-              {/* Add More Card */}
-              <StaggerItem key="agregar-mas">
-                <Link
-                  href="/propiedades" target="_blank" rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-lg border-2 border-dashed border-border bg-surface-muted/50 hover:border-primary/30 hover:bg-primary-soft/50 transition-colors group"
-                >
-                  <Plus className="w-6 h-6 text-fg-subtle group-hover:text-primary transition-colors shrink-0" aria-hidden="true" />
-                  <p className="text-sm font-medium text-fg-muted group-hover:text-primary transition-colors">
-                    {locale === 'es' ? 'Agregar más' : 'Add more'}
-                  </p>
-                  <p className="text-caption text-fg-subtle mt-1">
-                    {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-                  </p>
-                </Link>
-              </StaggerItem>
             </Stagger>
 
-            {/* Summary Card */}
-            <div className="mt-8 rounded-lg bg-primary-soft border border-primary/30 p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <Heart className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
-                  <div>
-                    <p className="font-medium text-fg">
-                      <AnimatedNumber value={displayCount} /> {displayCount === 1 ? (locale === 'es' ? 'propiedad guardada' : 'saved property') : (locale === 'es' ? 'propiedades guardadas' : 'saved properties')}
-                    </p>
-                    <p className="text-sm text-fg-muted">
-                      {locale === 'es' ? '¿Listo para postularte a alguna?' : 'Ready to apply to one?'}
-                    </p>
-                  </div>
-                </div>
-                <Button asChild hideArrow>
-                  <Link href="/propiedades" target="_blank" rel="noopener noreferrer">
-                    <MagnifyingGlass className="w-4 h-4" />
-                    {locale === 'es' ? 'Ver más inmuebles' : 'View more properties'}
-                  </Link>
-                </Button>
-              </div>
-            </div>
           </div>
         )}
         </CrossFade>

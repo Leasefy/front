@@ -7738,10 +7738,10 @@
           },
           "list": {
             "pageTitle": "Insurance claims",
-            "pageSubtitle": "AI-identified insurance claims pending filing",
+            "pageSubtitle": "The insurance claims Mori prepared, to review and file.",
             "empty": {
               "title": "No claims on record",
-              "description": "The AI has not identified any pending insurance claims at this time."
+              "description": "Mori hasn't found claims to file right now."
             },
             "columns": {
               "aseguradora": "Insurer",

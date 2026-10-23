@@ -16,7 +16,9 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Siren } from '@phosphor-icons/react'
+import { MagnifyingGlass, Siren } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -111,6 +113,22 @@ function SiniestrosContent() {
   )
 
   const claims = data?.claims ?? []
+  // Revisora r25 (#3): buscar por deudor (nombre o documento) entre los cargados.
+  const [buscar, setBuscar] = useState('')
+  const q = buscar.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+  const visibles = useMemo(
+    () =>
+      q
+        ? claims.filter((c) =>
+            `${c.debtorName ?? ''} ${c.debtorDocument ?? ''}`
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .toLowerCase()
+              .includes(q),
+          )
+        : claims,
+    [claims, q],
+  )
 
   /**
    * Paginado de presentación. `resetKey` con los filtros: sin eso, filtrar
@@ -124,7 +142,7 @@ function SiniestrosContent() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(claims, { resetKey: `${statusFilter ?? ''}` })
+  } = useTablePagination(visibles, { resetKey: `${statusFilter ?? ''}|${q}` })
   const hasFilters = statusFilter !== undefined
 
   // Conteo y saldo por estado: se saben cuando la lista viene sin filtro (trae
@@ -237,8 +255,16 @@ function SiniestrosContent() {
         descripcion={t('inmobiliaria.ai.cobranza.siniestros.list.pageSubtitle')}
       />
 
-      {/* LA RESPUESTA: lo que espera tu aprobación para reclamarle a la aseguradora. */}
+      {/* Status filter chips */}
+      {/*
+        Contenedor canónico del panel: UNA tarjeta con su barra de filtros, la
+        tabla y el pie de paginación. Los filtros y el aviso de error vivían
+        sueltos por encima y la pantalla se leía como bloques sin relación.
+      */}
+      <Card className="overflow-hidden">
+      {/* LA RESPUESTA, DENTRO de la tarjeta (C3): lo que espera tu aprobación para reclamarle a la aseguradora. */}
       {resumen && resumen.total > 0 ? (
+        <div className="border-b border-border px-4 py-5 sm:px-6">
         <CifraHeroe
           data-testid="siniestros-por-revisar"
           rotulo={isEs ? 'Por revisar' : 'To review'}
@@ -263,15 +289,9 @@ function SiniestrosContent() {
             cifra: formatCurrency(resumen.porEstado[st]?.saldo ?? 0),
           }))}
         />
+        </div>
       ) : null}
 
-      {/* Status filter chips */}
-      {/*
-        Contenedor canónico del panel: UNA tarjeta con su barra de filtros, la
-        tabla y el pie de paginación. Los filtros y el aviso de error vivían
-        sueltos por encima y la pantalla se leía como bloques sin relación.
-      */}
-      <Card className="overflow-hidden">
       <div className="border-b border-border px-4 py-3">
         <PestanasDeEstado<string>
           pestanas={pestanas}
@@ -283,6 +303,23 @@ function SiniestrosContent() {
           }}
           etiqueta={isEs ? 'Filtrar los siniestros por estado' : 'Filter claims by status'}
         />
+      </div>
+      <div className="border-b border-border px-4 py-3">
+        <div className="relative min-w-0 sm:max-w-sm">
+          <label htmlFor="siniestros-buscar" className="sr-only">
+            {isEs ? 'Buscar por deudor' : 'Search by debtor'}
+          </label>
+          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+          <Input
+            id="siniestros-buscar"
+            type="search"
+            className="pl-9"
+            value={buscar}
+            onChange={(e) => setBuscar(e.target.value)}
+            placeholder={isEs ? 'Buscar por deudor o documento' : 'Search by debtor or ID'}
+            data-testid="siniestros-buscar"
+          />
+        </div>
       </div>
 
       {/* Error */}
@@ -331,6 +368,15 @@ function SiniestrosContent() {
               siniestros con el filtro seleccionado» — o sea, tranquilizando
               justo cuando no debía.
             */}
+            {claims.length > 0 && visibles.length === 0 && (
+              <TableRowAnimada key="sin-coincidencias" className="max-md:block">
+                <TableCell colSpan={7} className="px-3 py-12 text-center max-md:block">
+                  <p className="text-body-sm text-fg-muted" data-testid="siniestros-sin-coincidencias">
+                    {isEs ? `Ningún siniestro es de «${buscar.trim()}».` : `No claim is from «${buscar.trim()}».`}
+                  </p>
+                </TableCell>
+              </TableRowAnimada>
+            )}
             {claims.length === 0 && !isLoading && (
               <TableRowAnimada key="vacio" className="max-md:block">
                 <TableCell colSpan={7} className="px-3 py-12 text-center max-md:block">
@@ -397,8 +443,9 @@ function SiniestrosContent() {
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-fg capitalize whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
-                  {c.aseguradora}
+                {/* Revisora r25: el nombre de la casa, nunca el código crudo con `capitalize`. */}
+                <TableCell className="px-3 py-2 text-fg whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
+                  {nombreDeLaAseguradora(c.aseguradora)}
                 </TableCell>
                 <TableCell className="px-3 py-2 max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                   <Badge variant={statusBadgeVariant(c.status)}>
@@ -416,10 +463,17 @@ function SiniestrosContent() {
                 {/* El correo, no el UUID: «4a0efc55…» no le dice nada a nadie.
                     Si el aprobador ya no está en el equipo cae al id recortado,
                     que al menos es rastreable en la auditoría. */}
-                <TableCell className="px-3 py-2 text-caption text-fg-muted max-md:hidden">
+                <TableCell
+                  className="px-3 py-2 text-caption text-fg-muted max-md:hidden"
+                  title={!c.approvedByEmail && c.approvedByHumanUserId ? c.approvedByHumanUserId : undefined}
+                >
+                  {/* Si ya no está en el equipo se dice así; el id queda en el
+                      título (rastreable en la auditoría), no a la vista. */}
                   {c.approvedByEmail ??
                     (c.approvedByHumanUserId
-                      ? c.approvedByHumanUserId.slice(0, 8) + '…'
+                      ? isEs
+                        ? 'Alguien que ya no está en el equipo'
+                        : 'Someone no longer on the team'
                       : '—')}
                 </TableCell>
               </TableRowAnimada>

@@ -7773,10 +7773,10 @@
           },
           "list": {
             "pageTitle": "Siniestros",
-            "pageSubtitle": "Reclamaciones de seguro generadas por IA pendientes de radicación",
+            "pageSubtitle": "Las reclamaciones al seguro que Mori preparó, por revisar y radicar.",
             "empty": {
               "title": "Sin siniestros registrados",
-              "description": "La IA no ha identificado siniestros pendientes de radicación en este momento."
+              "description": "Mori no ha encontrado siniestros por radicar en este momento."
             },
             "columns": {
               "aseguradora": "Aseguradora",

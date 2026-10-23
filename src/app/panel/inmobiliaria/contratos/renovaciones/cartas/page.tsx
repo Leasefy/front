@@ -45,9 +45,10 @@ import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { usePermissions } from '@/lib/hooks/usePermissions';
-import { Chip } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
-import { Fila } from '@/components/contratos/BandejaDeCartasDelIncremento';
+import { Fila, tipoDeLaCarta } from '@/components/contratos/BandejaDeCartasDelIncremento';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { plataPareja } from '@/lib/format';
 import {
   CartaDelIncrementoCajon,
   type CartaQueSeAbre,
@@ -126,6 +127,18 @@ function ColaDeCartas() {
     return n;
   }, [todas]);
 
+  /* Revisora r25: la misma plata con y sin centavos en la columna, y el mismo
+     «Carta de incremento por IPC del 5,1 %…» repetido en cada fila. */
+  const plata = useMemo(() => {
+    const f = plataPareja(todas.flatMap((c) => [c.canonAnteriorCop, c.canonNuevoCop]));
+    return (n: number) => f(n);
+  }, [todas]);
+  const tipoUnico = useMemo(() => {
+    if (todas.length < 2) return null;
+    const t = tipoDeLaCarta(todas[0]);
+    return todas.every((c) => tipoDeLaCarta(c) === t) ? t : null;
+  }, [todas]);
+
   const visibles = useMemo(() => {
     const q = normalizar(busqueda);
     return todas.filter((c) => {
@@ -183,31 +196,24 @@ function ColaDeCartas() {
               alcance. Igual que Renovaciones y que la deuda del mes. */}
           <div className="flex flex-col gap-3 border-b border-border px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <Chip selected={estado === 'todas'} onClick={() => setEstado('todas')}>
-                Todas
-                <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-caption tabular-nums">
-                  {conteos.todas}
-                </span>
-              </Chip>
-              {ESTADOS.map((e) => (
-                <Chip
-                  key={e.clave}
-                  selected={estado === e.clave}
-                  onClick={() => setEstado(e.clave)}
-                >
-                  {e.rotulo}
-                  <span
-                    className={cn(
-                      'ml-1.5 rounded px-1.5 py-0.5 text-caption tabular-nums',
-                      e.clave === 'sin-constancia' && (conteos[e.clave] ?? 0) > 0
-                        ? 'bg-danger-soft text-danger'
-                        : 'bg-muted',
-                    )}
-                  >
-                    {conteos[e.clave] ?? 0}
-                  </span>
-                </Chip>
-              ))}
+              {/* Revisora r25 (T2): las pestañas de estado de la casa, sin ceros
+                  (antes chips grises con «Sin constancia 0», «Enviadas 0»). */}
+              <PestanasDeEstado<ClaveDeEstado>
+                pestanas={[
+                  { valor: 'todas', etiqueta: 'Todas', cuantos: conteos.todas, fija: true },
+                  ...ESTADOS.map((e) => ({
+                    valor: e.clave as ClaveDeEstado,
+                    etiqueta: e.rotulo,
+                    cuantos: conteos[e.clave] ?? 0,
+                    ...(e.clave === 'sin-constancia' ? { tono: 'aviso' as const } : {}),
+                    testid: `pestana-cartas-${e.clave}`,
+                  })),
+                ]}
+                valor={estado}
+                onCambio={setEstado}
+                etiqueta="Estado de las cartas"
+                data-testid="pestanas-de-cartas"
+              />
             </div>
 
             <div className="relative w-full lg:max-w-xs">
@@ -267,11 +273,20 @@ function ColaDeCartas() {
                 onLimpiarFiltros={hayFiltros ? limpiar : undefined}
               />
             ) : (
+              <>
+              {tipoUnico ? (
+                <p className="flex items-center gap-1.5 border-b border-border px-5 py-2.5 text-caption text-fg-muted" data-testid="tipo-de-las-cartas">
+                  <EnvelopeSimple className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  Todas son la {tipoUnico.charAt(0).toLowerCase() + tipoUnico.slice(1)}.
+                </p>
+              ) : null}
               <ul className="divide-y divide-border px-5" data-testid="cola-de-cartas">
                 {pageItems.map((c) => (
                   <Fila
                     key={`${c.contractId}-${c.desde}`}
                     carta={c}
+                    plata={plata}
+                    sinTipo={tipoUnico !== null}
                     editable={puedeEditar && datos.disponible}
                     onAbrir={(carta) =>
                       setCartaAbierta({
@@ -283,6 +298,7 @@ function ColaDeCartas() {
                   />
                 ))}
               </ul>
+              </>
             )}
           </CrossFade>
 

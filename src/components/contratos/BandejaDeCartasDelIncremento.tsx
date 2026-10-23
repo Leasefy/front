@@ -41,6 +41,7 @@ import {
 } from '@/lib/api/ciclo-de-vida.service';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { textoLegible } from '@/lib/renovaciones/texto-legible';
 
 /** La cola completa. El tablero lleva acá, con el estado en la URL. */
 export const RUTA_DE_LAS_CARTAS = '/panel/inmobiliaria/contratos/renovaciones/cartas';
@@ -235,31 +236,43 @@ export function Fila({
   carta,
   editable,
   onAbrir,
+  plata = (n: number) => PESOS.format(n),
+  sinTipo = false,
 }: {
   carta: CartaEnLaBandeja;
   editable: boolean;
   onAbrir: (carta: CartaEnLaBandeja) => void;
+  /**
+   * La plata pareja de la cola (revisora r25, T5): «$ 1.326.782,40» y
+   * «$ 1.734.150» salían en la misma columna. La cola le pasa `plataPareja`.
+   */
+  plata?: (n: number) => string;
+  /** Todas las cartas de la cola son del mismo tipo: se dice una vez arriba. */
+  sinTipo?: boolean;
 }) {
   const enviada = carta.estado === 'ENVIADA';
   return (
     <li
-      className={`space-y-2 py-3 text-sm ${carta.alertaRoja ? 'rounded-md bg-destructive/5 px-2' : ''}`}
+      className={`flex flex-col gap-2 py-3 text-sm sm:flex-row sm:items-start sm:justify-between sm:gap-4 ${carta.alertaRoja ? 'rounded-md bg-destructive/5 px-2' : ''}`}
       data-testid={`carta-${carta.contractId}-${carta.desde}`}
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="min-w-0 flex-1 space-y-1">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <Link href={`/panel/inmobiliaria/contratos/${carta.contractId}`} className="font-medium underline-offset-2 hover:underline">
-          #{carta.externalId ?? carta.code} · {carta.inquilino ?? 'Sin inquilino'}
+          #{carta.externalId ?? carta.code} · {textoLegible(carta.inquilino) || 'Sin inquilino'}
         </Link>
-        <span>
-          {PESOS.format(carta.canonAnteriorCop)} → <strong>{PESOS.format(carta.canonNuevoCop)}</strong> desde el{' '}
-          {fechaCorta(carta.desde)}
+        <span className="font-mono tabular-nums text-fg-muted">
+          {plata(carta.canonAnteriorCop)} → <span className="text-fg">{plata(carta.canonNuevoCop)}</span>
+          <span className="font-sans"> desde el {fechaCorta(carta.desde)}</span>
         </span>
       </div>
-      <p className="text-caption text-muted-foreground">{carta.inmueble}</p>
-      <p className="flex items-center gap-1.5 text-caption text-fg" data-testid={`tipo-de-carta-${carta.contractId}`}>
-        <EnvelopeSimple className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-        {tipoDeLaCarta(carta)}
-      </p>
+      <p className="truncate text-caption text-muted-foreground" title={carta.inmueble ?? undefined}>{textoLegible(carta.inmueble)}</p>
+      {sinTipo ? null : (
+        <p className="flex items-center gap-1.5 text-caption text-fg" data-testid={`tipo-de-carta-${carta.contractId}`}>
+          <EnvelopeSimple className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+          {tipoDeLaCarta(carta)}
+        </p>
+      )}
       {carta.alertaRoja ? (
         <p className="flex items-start gap-1.5 text-caption font-medium text-destructive">
           {/* 🔴 Acá había un emoji 🔴 literal, el mismo que uso en los
@@ -284,15 +297,17 @@ export function Fila({
           Sin correo del inquilino: entrégala por otro medio y registra la constancia en el contrato.
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
+      </div>
+      <div className="flex shrink-0 flex-wrap gap-2">
         {enviada ? (
           <Button size="sm" variant="outline" onClick={() => onAbrir(carta)} data-testid={`ver-enviada-${carta.contractId}`}>
             Ver la carta enviada
           </Button>
         ) : (
+          // Revisora r25 (T3): un botón AZUL por fila eran diez azules. Borde.
           <Button
             size="sm"
-            variant={editable ? 'default' : 'outline'}
+            variant="outline"
             onClick={() => onAbrir(carta)}
             data-testid={`ver-y-enviar-${carta.contractId}`}
           >

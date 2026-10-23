@@ -1,19 +1,20 @@
 'use client';
 
-import { plataQueLlega } from '@/lib/plata/plata-que-llega';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AnimatedNumber, Banner, Cifra, CrossFade, FranjaDeCifras, Presence, StaggerItem, StatusBadge } from '@leasefy/cadence';
+import { AnimatedNumber, Banner, CrossFade, Presence, StaggerItem, StatusBadge } from '@leasefy/cadence';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 // I1 (auditoría 13-09): el toast sale del design system, no de `sonner` pelado.
 // Importarlo directo del paquete se salta el `<Toaster>` configurado de la casa
 // (posición, duración, estilos) y produce un aviso que no se parece a los demás
 // del producto — o que no se ve, si el proveedor montado es el del DS.
 import { toast } from '@/components/ui/toast';
-import { Check, Clock, CreditCard, CurrencyCircleDollar, Buildings, CaretRight, Receipt, Prohibit, XCircle, Download } from '@phosphor-icons/react';
+import { Check, Clock, CreditCard, CurrencyCircleDollar, Prohibit, XCircle, Download } from '@phosphor-icons/react';
 
 import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
@@ -22,7 +23,6 @@ import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Spinner } from '@/components/ui/spinner';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
@@ -413,14 +413,12 @@ function PagosPageContent() {
     return (
       <div className="min-h-screen bg-bg">
         <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <header className="mb-8">
-            <h1 className="text-3xl font-medium text-fg tracking-tight">
-              {t('payments.title')}
-            </h1>
-            <p className="mt-1 text-fg-muted">
-              {t('payments.subtitle')}
-            </p>
-          </header>
+          <EncabezadoDePantalla
+            className="mb-8"
+            seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+            titulo={t('payments.title')}
+            descripcion={t('payments.subtitle')}
+          />
 
           <div>
             <EmptyState
@@ -486,53 +484,81 @@ function PagosPageContent() {
           {errorResumen ? (
             <FalloDeCarga error={errorResumen} queEs="lo que debes" onReintentar={cargarResumen} />
           ) : cargandoResumen || !resumen ? (
-            <div className="flex h-40 items-center justify-center rounded-lg bg-surface-muted">
-              <Spinner size="md" />
+            /* Esqueleto con la forma de la cifra (antes, un spinner en una caja gris). */
+            <div className="space-y-3 rounded-lg border border-border bg-surface p-6" aria-busy="true" data-testid="cifras-de-pagos-cargando">
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-10 w-56" />
+              <Skeleton className="h-3.5 w-72 max-w-full" />
             </div>
           ) : (
-            /* GLOW UP (21-10): las tres cifras en la franja común (antes, tres tarjetas teñidas con su ícono en
-               caja); la próxima cuota primero, lo vencido con su punto. */
-            <FranjaDeCifras fila="lg" data-testid="cifras-de-pagos">
-              <Cifra
-                etiqueta={locale === 'es' ? 'Próxima cuota' : 'Next installment'}
-                valor={resumen.proxima ? resumen.proxima.valor : '—'}
-                format={resumen.proxima ? plataQueLlega(resumen.proxima.valor, formatCurrencyI18n) : undefined}
-                tono="voltaje"
-                detalle={
-                  resumen.proxima
-                    ? resumen.proxima.diasQueFaltan === 0
-                      ? t('dashboard.dueToday')
-                      : `${locale === 'es' ? 'Vence el' : 'Due'} ${fechaLegible(resumen.proxima.fecha)}`
-                    : locale === 'es'
-                      ? 'No quedan cuotas por vencer'
-                      : 'No upcoming installments'
-                }
-                data-testid="cifra-proxima-cuota"
-              />
-              <Cifra
-                etiqueta={locale === 'es' ? 'Vencido' : 'Overdue'}
-                valor={resumen.vencidoCop}
-                format={plataQueLlega(resumen.vencidoCop, formatCurrencyI18n)}
-                tono={resumen.vencidoCop > 0 ? 'peligro' : 'exito'}
-                detalle={
-                  resumen.cuotasVencidas === 0
+            /* GLOW UP (22-10): LA RESPUESTA en grande —lo vencido si hay, si no la próxima cuota— y lo demás
+               en una línea al pie (antes, tres cifras del mismo peso en una franja: «Resta por pagar hasta el
+               fin del contrato» pesaba lo mismo que lo que vence esta semana). Las mismas cifras y testids. */
+            <section className="rounded-lg border border-border bg-surface p-6" data-testid="cifras-de-pagos">
+              <CifraHeroe
+                rotulo={
+                  resumen.vencidoCop > 0
                     ? locale === 'es'
-                      ? 'Estás al día'
-                      : 'You are up to date'
-                    : locale === 'es'
-                      ? `${resumen.cuotasVencidas} ${resumen.cuotasVencidas === 1 ? 'cuota vencida' : 'cuotas vencidas'}`
-                      : `${resumen.cuotasVencidas} overdue`
+                      ? 'Tienes vencido'
+                      : 'Overdue'
+                    : resumen.proxima
+                      ? locale === 'es'
+                        ? 'Tu próxima cuota'
+                        : 'Your next installment'
+                      : locale === 'es'
+                        ? 'Lo que debes'
+                        : 'What you owe'
                 }
-                data-testid="cifra-vencido"
+                cifra={
+                  resumen.vencidoCop > 0 ? (
+                    <span data-testid="cifra-vencido">
+                      {formatCurrencyI18n(resumen.vencidoCop)}
+                    </span>
+                  ) : resumen.proxima ? (
+                    <span data-testid="cifra-proxima-cuota">
+                      {formatCurrencyI18n(resumen.proxima.valor)}
+                    </span>
+                  ) : (
+                    formatCurrencyI18n(0)
+                  )
+                }
+                contexto={
+                  resumen.vencidoCop > 0
+                    ? locale === 'es'
+                      ? `en ${resumen.cuotasVencidas} ${resumen.cuotasVencidas === 1 ? 'cuota vencida' : 'cuotas vencidas'}`
+                      : `in ${resumen.cuotasVencidas} overdue`
+                    : resumen.proxima
+                      ? resumen.proxima.diasQueFaltan === 0
+                        ? t('dashboard.dueToday')
+                        : `${locale === 'es' ? 'vence el' : 'due'} ${fechaLegible(resumen.proxima.fecha)}`
+                      : locale === 'es'
+                        ? 'Estás al día y no quedan cuotas por vencer'
+                        : 'You are up to date with no upcoming installments'
+                }
+                pie={
+                  <span className="flex flex-wrap gap-x-4 gap-y-1">
+                    {resumen.vencidoCop > 0 && resumen.proxima && (
+                      <span data-testid="cifra-proxima-cuota">
+                        {locale === 'es' ? 'Próxima cuota' : 'Next installment'}{' '}
+                        <span className="font-mono tabular-nums text-fg">
+                          {formatCurrencyI18n(resumen.proxima.valor)}
+                        </span>{' '}
+                        {locale === 'es' ? 'el' : 'on'} {fechaLegible(resumen.proxima.fecha)}
+                      </span>
+                    )}
+                    {resumen.vencidoCop === 0 && resumen.proxima && (
+                      <span data-testid="cifra-vencido">{locale === 'es' ? 'Estás al día' : 'You are up to date'}</span>
+                    )}
+                    <span data-testid="cifra-resta-por-pagar">
+                      {locale === 'es' ? 'Resta por pagar hasta el fin del contrato' : 'Remaining until the end of the contract'}{' '}
+                      <span className="font-mono tabular-nums text-fg">
+                        {formatCurrencyI18n(resumen.restaPorPagar)}
+                      </span>
+                    </span>
+                  </span>
+                }
               />
-              <Cifra
-                etiqueta={locale === 'es' ? 'Resta por pagar' : 'Remaining'}
-                valor={resumen.restaPorPagar}
-                format={plataQueLlega(resumen.restaPorPagar, formatCurrencyI18n)}
-                detalle={locale === 'es' ? 'Hasta el fin del contrato' : 'Until the end of the contract'}
-                data-testid="cifra-resta-por-pagar"
-              />
-            </FranjaDeCifras>
+            </section>
           )}
         </CrossFade>
 
@@ -711,30 +737,8 @@ function PagosPageContent() {
             )}
             </Presence>
 
-            {/* Quick Links */}
-            <div className="rounded-lg bg-surface-muted p-5">
-              <h3 className="text-h3 text-fg mb-3">{t('dashboard.quickActions')}</h3>
-              <div className="space-y-2">
-                {[
-                  { href: '/inquilino/documentos', icon: Receipt, label: locale === 'es' ? 'Ver recibos' : 'View receipts', desc: locale === 'es' ? 'Historial de comprobantes' : 'Receipt history' },
-                  { href: '/inquilino/arriendo', icon: Buildings, label: t('nav.myRental'), desc: locale === 'es' ? 'Ver contrato actual' : 'View current contract' },
-                ].map((action) => (
-                  <Link key={action.href} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface transition-colors group">
-                      <action.icon className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-fg group-hover:text-primary transition-colors">
-                          {action.label}
-                        </p>
-                        <p className="text-caption text-fg-muted truncate">{action.desc}</p>
-                      </div>
-                      <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-primary transition-colors" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
+            {/* GLOW UP (22-10): aquí iban «Ver recibos» y «Mi arriendo», que son pestañas del riel («Contrato y
+                documentos», «Resumen»); el recibo de cada pago se baja en su fila. */}
             {/* 🔴 Autopago (PAGO-04). Hasta el 21-09-2026 esto mostraba
                 «Próximamente» sobre un endpoint que no existía. Ya existe
                 (`/portal/autopago`), y se llavea por CONTRATO —no por

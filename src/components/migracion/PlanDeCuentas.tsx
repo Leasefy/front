@@ -56,6 +56,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { TablePagination } from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -212,7 +213,12 @@ export function PlanDeCuentas({
   const [sembrando, setSembrando] = useState(false);
   const [semilla, setSemilla] = useState<ResultadoSemilla | null>(null);
   const [busqueda, setBusqueda] = useState('');
-  const [cerradas, setCerradas] = useState<Set<string>>(new Set());
+  // Revisora r25 (escala): con 2.809 cuentas el árbol abría TODO desplegado
+  // (138.391 px a 1440). Ahora abre en las clases cerradas y se abre lo que se
+  // toca; buscar muestra lo encontrado en una lista con páginas.
+  const [abiertas, setAbiertas] = useState<Set<string>>(new Set());
+  const [paginaDeLaBusqueda, setPaginaDeLaBusqueda] = useState(1);
+  const [porPaginaDeLaBusqueda, setPorPaginaDeLaBusqueda] = useState(50);
   const [formulario, setFormulario] = useState<Formulario | null>(null);
   /**
    * La importación desde archivo. Nico: «tanto el PUC como los registros
@@ -261,6 +267,7 @@ export function PlanDeCuentas({
   const porCodigo = useMemo(() => new Map(plano.map((c) => [c.codigo, c])), [plano]);
   const q = normalizar(busqueda);
   const visible = useMemo(() => (arbol ? (q ? filtrar(arbol, q) : arbol) : []), [arbol, q]);
+  const encontradas = useMemo(() => (q ? plano.filter((c) => coincide(c, q)) : []), [plano, q]);
 
   const sembrar = async () => {
     setSembrando(true);
@@ -288,7 +295,7 @@ export function PlanDeCuentas({
   };
 
   const alternar = (id: string) =>
-    setCerradas((previo) => {
+    setAbiertas((previo) => {
       const s = new Set(previo);
       if (s.has(id)) s.delete(id);
       else s.add(id);
@@ -481,7 +488,7 @@ export function PlanDeCuentas({
                 Tu plan de cuentas
               </h2>
               <p className="text-sm text-fg-muted" data-testid="puc-resumen">
-                {plano.length} cuentas · {imputables} reciben movimientos
+                {plano.length.toLocaleString('es-CO')} cuentas · {imputables.toLocaleString('es-CO')} reciben movimientos
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -489,7 +496,10 @@ export function PlanDeCuentas({
                 <MagnifyingGlass className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
                 <Input
                   value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
+                  onChange={(e) => {
+                    setBusqueda(e.target.value);
+                    setPaginaDeLaBusqueda(1);
+                  }}
                   placeholder="Buscar por código o nombre"
                   aria-label="Buscar cuenta por código o nombre"
                   className="w-64 pl-8"
@@ -520,16 +530,50 @@ export function PlanDeCuentas({
           </div>
 
           {visible.length === 0 ? (
-            <p className="mt-4 text-sm text-fg-muted">
+            <p className="mt-4 text-body-sm text-fg-muted">
               Ninguna cuenta coincide con «{busqueda}».
             </p>
+          ) : q ? (
+            <>
+              <p className="mt-4 text-caption text-fg-muted" data-testid="puc-encontradas">
+                {encontradas.length.toLocaleString('es-CO')}{' '}
+                {encontradas.length === 1 ? 'cuenta coincide' : 'cuentas coinciden'} con «{busqueda}»
+              </p>
+              <ul className="mt-2 divide-y divide-border-faint" data-testid="puc-arbol">
+                {encontradas
+                  .slice((paginaDeLaBusqueda - 1) * porPaginaDeLaBusqueda, paginaDeLaBusqueda * porPaginaDeLaBusqueda)
+                  .map((c) => (
+                    <Nodo
+                      key={c.id}
+                      nodo={{ ...c, hijas: [] }}
+                      abierto={() => false}
+                      onAlternar={alternar}
+                      onEditar={(cuenta) => setFormulario({ modo: 'editar', cuenta })}
+                      onSubcuenta={(padre) => setFormulario({ modo: 'crear', padre })}
+                    />
+                  ))}
+              </ul>
+              {encontradas.length > porPaginaDeLaBusqueda ? (
+                <TablePagination
+                  total={encontradas.length}
+                  page={paginaDeLaBusqueda}
+                  pageSize={porPaginaDeLaBusqueda}
+                  pageSizeOptions={[25, 50, 100]}
+                  onPageChange={setPaginaDeLaBusqueda}
+                  onPageSizeChange={(n) => {
+                    setPorPaginaDeLaBusqueda(n);
+                    setPaginaDeLaBusqueda(1);
+                  }}
+                />
+              ) : null}
+            </>
           ) : (
             <ul className="mt-4 divide-y divide-border-faint" data-testid="puc-arbol">
               {visible.map((n) => (
                 <Nodo
                   key={n.id}
                   nodo={n}
-                  abierto={(id) => Boolean(q) || !cerradas.has(id)}
+                  abierto={(id) => abiertas.has(id)}
                   onAlternar={alternar}
                   onEditar={(cuenta) => setFormulario({ modo: 'editar', cuenta })}
                   onSubcuenta={(padre) => setFormulario({ modo: 'crear', padre })}

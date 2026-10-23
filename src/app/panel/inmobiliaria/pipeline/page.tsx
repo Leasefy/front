@@ -339,7 +339,21 @@ function PipelineContent() {
 
       {/* Lo que toca hoy, ARRIBA (ronda 18: estaba en la 2.ª de 9 columnas). Sólo con la lista a la vista. */}
       {yaSeMostro && !errorCrudo ? (
-        <ParaHoyDelEmbudo pendientes={pendientesDeHoy} onAbrir={handleCardClick} onAgendar={setAgendandoA} />
+        <ParaHoyDelEmbudo
+          pendientes={pendientesDeHoy}
+          onAbrir={handleCardClick}
+          onAgendar={setAgendandoA}
+          onLlego={
+            puedeMover
+              ? (item) =>
+                  void handleStageChange(item.id, 'visit_done').then(
+                    () => toast.success(tr('Visita hecha: {nombre}', { nombre: item.candidateName })),
+                    // El fallo ya lo dijo `handleStageChange` (toast con el porqué).
+                    () => undefined,
+                  )
+              : undefined
+          }
+        />
       ) : null}
 
       {/* Nico (22-10-2026): el embudo en una barra en vez de las 4 cifras. Tocar una etapa deja la

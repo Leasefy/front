@@ -11,7 +11,7 @@ import { useTr } from '@/lib/i18n/use-tr';
 import { formatCurrency } from '@/lib/format';
 import type { PipelineItem } from '@/lib/types/inmobiliaria';
 import type { PendienteDeHoy } from '@/lib/pipeline/para-hoy';
-import { diaCortoDelEmbudo as diaCorto, rotuloDeLaVencida } from '@/lib/pipeline/proxima-accion';
+import { diaCortoDelEmbudo as diaCorto, esUnaVisita, rotuloDeLaVencida } from '@/lib/pipeline/proxima-accion';
 
 const VISIBLES = 5;
 
@@ -19,11 +19,17 @@ export function ParaHoyDelEmbudo({
   pendientes,
   onAbrir,
   onAgendar,
+  onLlego,
   className,
 }: {
   pendientes: readonly PendienteDeHoy[];
   onAbrir: (item: PipelineItem) => void;
   onAgendar?: (item: PipelineItem) => void;
+  /**
+   * Revisora r25: una visita vencida se cierra aquí como en Preparar visitas,
+   * con «Sí llegó» (pasa a «Visita hecha») además de «Reagendar».
+   */
+  onLlego?: (item: PipelineItem) => void;
   className?: string;
 }) {
   const tr = useTr();
@@ -95,6 +101,18 @@ export function ParaHoyDelEmbudo({
             >
               {porQue(p)}
             </p>
+            {onLlego && p.porQue === 'vencida' && esUnaVisita(p.item.nextAction) ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                hideArrow
+                className="self-start sm:self-auto"
+                onClick={() => onLlego(p.item)}
+                data-testid="para-hoy-llego"
+              >
+                {tr('Sí llegó')}
+              </Button>
+            ) : null}
             {onAgendar ? (
               <Button
                 variant="secondary"

@@ -158,12 +158,18 @@ export function PipelineCard({
           <div
             className={cn(
               'flex items-start gap-2 text-[13px]',
-              isOverdue ? 'rounded-[10px] bg-danger-soft px-2.5 py-2 text-danger' : 'text-fg-muted',
+              // Revisora r25: el mismo chip rojo salía en «Para hoy» y en la
+              // columna. En el tablero basta el punto rojo y la frase en rojo.
+              isOverdue ? 'text-danger' : 'text-fg-muted',
             )}
             title={item.nextAction}
             data-testid="pipeline-card-que-sigue"
           >
-            <CalendarCheck className="mt-0.5 size-3.5 shrink-0" />
+            {isOverdue ? (
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-danger-500" aria-hidden="true" />
+            ) : (
+              <CalendarCheck className="mt-0.5 size-3.5 shrink-0" />
+            )}
             {isOverdue && diaDeLaAccion ? (
               <p className="min-w-0 flex-1 truncate">
                 <span className="font-medium">

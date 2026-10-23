@@ -24,17 +24,22 @@ import { textoDeTasa } from '@/lib/tasas';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 
-/** De qué color va el tramo de cada etapa: lo que recién entra en gris, lo avanzado en azul, lo cerrado en verde. */
+/**
+ * De qué color va el tramo de cada etapa (revisora r25: el embudo pintaba de
+ * azul lo avanzado, contra «un solo azul»). Por avance, de arena a grafito;
+ * verde sólo «Cerrado» y rojo sólo «Perdido».
+ */
 const TONO_DEL_TRAMO: Partial<Record<PipelineStage, string>> = {
-  lead: 'bg-fg-subtle/35',
-  visit_scheduled: 'bg-fg-subtle/55',
-  visit_done: 'bg-fg-subtle/75',
-  application: 'bg-primary/45',
-  evaluation: 'bg-primary/65',
-  approved: 'bg-primary/80',
-  contract: 'bg-primary',
-  handover: 'bg-primary',
+  lead: 'bg-fg-subtle/30',
+  visit_scheduled: 'bg-fg-subtle/45',
+  visit_done: 'bg-fg-subtle/60',
+  application: 'bg-fg-muted/55',
+  evaluation: 'bg-fg-muted/70',
+  approved: 'bg-fg-muted/85',
+  contract: 'bg-fg/70',
+  handover: 'bg-fg/80',
   completed: 'bg-success-500',
+  lost: 'bg-danger-500',
 };
 
 export interface CifrasDelEmbudo {

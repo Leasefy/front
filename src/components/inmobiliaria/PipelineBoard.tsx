@@ -186,10 +186,7 @@ function DroppableColumn({
         aria-label={`${nombre}: 0`}
         data-testid={`columna-plegada-${stage}`}
       >
-        <span
-          className={cn('h-2 w-2 rounded-full', bgColorClass.replace('-100', '-500').replace('-soft', ''))}
-          aria-hidden="true"
-        />
+        {/* Sin el punto de color en la columna vacía: decoraba (revisora r25). */}
         <span className="font-mono text-caption tabular-nums text-fg-subtle">0</span>
         <span className="rotate-180 whitespace-nowrap text-body-sm text-fg-muted [writing-mode:vertical-rl]">{nombre}</span>
       </div>

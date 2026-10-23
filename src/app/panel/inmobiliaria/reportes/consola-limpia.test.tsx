@@ -365,7 +365,7 @@ describe('«Reportes» — un reporte a la vez (Nico, 01-10)', () => {
     const fila = filaDe('Extractos de propietarios')!
     expect(fila).toBeTruthy()
     const ir = fila.querySelector<HTMLAnchorElement>('a[href="/panel/inmobiliaria/pagos/dispersiones"]')
-    expect(ir?.textContent).toContain('Ir a dispersiones')
+    expect(ir?.textContent).toContain('Ir a Giros a propietarios')
     expect(fila.textContent).not.toContain('Bajar CSV')
     expect(fila.querySelector('[data-testid="sale-con"]')?.textContent).toBe('Uno por propietario')
   })

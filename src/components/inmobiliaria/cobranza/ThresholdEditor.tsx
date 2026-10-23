@@ -53,6 +53,27 @@ export interface ThresholdEditorProps {
   onSubmit: (body: ThresholdUpdateBody) => Promise<{ version: number | null }>
   /** Optional success message renderer — page wires the toast. */
   onSuccess?: (version: number | null) => void
+  /**
+   * Ronda 30 (revisora r27): el valor de HOY de cada cifra (del Reporte diario), para decidir el umbral
+   * mirando dónde está hoy. `null` = no se pudo medir; sin la prop no se dice nada.
+   */
+  hoy?: {
+    pkr: number | null
+    morosidad: number | null
+    violaciones: number | null
+    fueraDeHorario: number | null
+  }
+}
+
+function LineaDeHoy({ valor, sufijo, es }: { valor: number | null | undefined; sufijo?: string; es: boolean }) {
+  if (valor == null) return null
+  const cifra = `${valor.toLocaleString(es ? 'es-CO' : 'en-US', { maximumFractionDigits: 1 })}${sufijo ?? ''}`
+  return (
+    <p className="mt-1 text-caption text-fg-muted">
+      {es ? 'Hoy: ' : 'Today: '}
+      <span className="font-mono tabular-nums text-fg">{cifra}</span>
+    </p>
+  )
 }
 
 type FieldErrors = Partial<Record<CampoDeLosUmbrales | 'form', string>>
@@ -70,7 +91,7 @@ function parseBoundaries(raw: string): number[] | null {
   return nums.map((n) => Math.trunc(n))
 }
 
-export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditorProps) {
+export function ThresholdEditor({ active, onSubmit, onSuccess, hoy }: ThresholdEditorProps) {
   const { t, locale } = useI18n()
   const [topN, setTopN] = useState<string>(String(active.top_n_debtors_in_report))
   // Revisora r25 (Umbrales #1): los cortes eran texto libre «separados por
@@ -270,6 +291,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             required
           />
           <ErrorDelCampo id="umbral-pkr-error" mensaje={errors.pkr_pct_alert_below} />
+          <LineaDeHoy valor={hoy?.pkr} sufijo={' %'} es={locale.startsWith('es')} />
         </div>
 
         <div>
@@ -291,6 +313,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             id="umbral-morosidad-error"
             mensaje={errors.indice_morosidad_pct_alert_above}
           />
+          <LineaDeHoy valor={hoy?.morosidad} sufijo={' %'} es={locale.startsWith('es')} />
         </div>
 
         <div>
@@ -311,6 +334,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             id="umbral-violaciones-error"
             mensaje={errors.compliance_violations_critical_at_least}
           />
+          <LineaDeHoy valor={hoy?.violaciones} es={locale.startsWith('es')} />
         </div>
 
         <div>
@@ -331,6 +355,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             id="umbral-fuera-de-horario-error"
             mensaje={errors.calls_outside_window_critical_at_least}
           />
+          <LineaDeHoy valor={hoy?.fueraDeHorario} es={locale.startsWith('es')} />
         </div>
       </div>
 

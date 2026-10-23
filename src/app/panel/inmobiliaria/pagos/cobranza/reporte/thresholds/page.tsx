@@ -20,6 +20,8 @@
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
+import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
+import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
 import { ThresholdEditor } from '@/components/inmobiliaria/cobranza/ThresholdEditor'
 import { ThresholdVersionsTable } from '@/components/inmobiliaria/cobranza/ThresholdVersionsTable'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
@@ -40,6 +42,16 @@ function ThresholdsContent() {
     rollbackTo,
     refetch,
   } = useThresholds()
+  // Ronda 30 (revisora r27): junto a cada umbral, cómo está HOY (lo mismo que mide el Reporte diario).
+  const { data: reporte } = useDailyReport()
+  const hoy = reporte
+    ? {
+        pkr: sinDeudores(reporte) ? null : (reporte.summary.pkr_pct ?? reporte.summary.pkr_7d_pct ?? null),
+        morosidad: reporte.summary.indice_morosidad_pct ?? null,
+        violaciones: reporte.summary.compliance_violations_count ?? null,
+        fueraDeHorario: reporte.summary.calls_outside_window_count ?? null,
+      }
+    : undefined
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -92,6 +104,7 @@ function ThresholdsContent() {
           <ThresholdEditor
             key={active.version ?? 'por-defecto'}
             active={active}
+            hoy={hoy}
             onSubmit={async (body) => {
               const row = await updateThresholds(body)
               return { version: row.version }

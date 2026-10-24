@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
  *   «reducir movimiento».
  * - Sin WebGL no pinta nada: es decoración (`aria-hidden`).
  * - `horizonte` la concentra abajo, para que el texto quede sobre papel limpio.
+ * - `marco` deja un claro redondo en el centro (la llegada del marketplace, como en el diseño aprobado).
  */
 
 type Fondo = 'papel' | 'superficie' | 'arena' | 'noche';
@@ -27,7 +28,7 @@ const FONDOS: Record<Fondo, { fondo: number[]; t1: number[]; t2: number[] }> = {
 const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
 const FRAG = [
   'precision highp float;',
-  'uniform vec2 res;uniform float t;uniform float celda;uniform vec3 fondo;uniform vec3 tinta;uniform vec3 tinta2;uniform float semilla;uniform float forma;uniform float fuerza;',
+  'uniform vec2 res;uniform float t;uniform float celda;uniform vec3 fondo;uniform vec3 tinta;uniform vec3 tinta2;uniform float semilla;uniform float forma;uniform float fuerza;uniform float marco;',
   'float h(vec2 p){p=fract(p*vec2(443.897,441.423));p+=dot(p,p.yx+19.19);return fract((p.x+p.y)*p.x);}',
   'vec2 gr(vec2 p){float a=h(p+semilla)*6.2831853;return vec2(cos(a),sin(a));}',
   'float ru(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*f*(f*(f*6.-15.)+10.);return mix(mix(dot(gr(i),f),dot(gr(i+vec2(1,0)),f-vec2(1,0)),u.x),mix(dot(gr(i+vec2(0,1)),f-vec2(0,1)),dot(gr(i+vec2(1,1)),f-vec2(1,1)),u.x),u.y);}',
@@ -40,7 +41,10 @@ const FRAG = [
   ' float vena=pow(max(0.,1.-abs(f-.1)*2.4),5.);I=max(I,vena*.55);',
   ' float vac=smoothstep(-.7,.6,fbm(x*.4+vec2(17.3,3.9))/.19);I*=.2+.8*vac;',
   ' if(forma>.5){I=min(1.,I*(.45+.95*smoothstep(.35,1.,yN))+.32*smoothstep(.7,1.04,yN)*smoothstep(-1.2,1.2,f));}',
-  ' float pr=min(.9,((.004+.03*smoothstep(-.6,.5,f))+.84*pow(I,.85))*fuerza);',
+  ' float ruido=.004+.03*smoothstep(-.6,.5,f);',
+  // `marco` (la llegada del marketplace aprobada por Nico): un claro redondo en el centro, el texto sobre papel limpio.
+  ' if(marco>.5){vec2 uv=gl_FragCoord.xy/res-.5;uv.x*=res.x/res.y*.55;float rr=length(uv);float m=smoothstep(.2,.62,rr);I=smoothstep(.04,.62,I)*m;ruido*=.25*m;}',
+  ' float pr=marco>.5?min(.92,(ruido+.86*pow(I,.8))*fuerza):min(.9,(ruido+.84*pow(I,.85))*fuerza);',
   ' float k=h(c+semilla*.13);vec3 col=fondo;',
   ' if(k<pr){col=mix(tinta,tinta2,step(.62,h(c.yx+3.7)));}',
   ' gl_FragColor=vec4(col,1.);',
@@ -52,6 +56,8 @@ export interface CorrienteDeVoltajeProps {
   fondo?: Fondo;
   /** `horizonte` concentra los píxeles abajo; `corrientes` los reparte. */
   forma?: 'horizonte' | 'corrientes';
+  /** Deja un claro redondo en el centro, para el texto que va encima. */
+  marco?: boolean;
   /** Lado de cada píxel, en px de CSS. */
   celda?: number;
   /** 0–1: cuánto se llena. */
@@ -65,6 +71,7 @@ export interface CorrienteDeVoltajeProps {
 export function CorrienteDeVoltaje({
   fondo = 'papel',
   forma = 'horizonte',
+  marco = false,
   celda = 4,
   fuerza = 0.65,
   semilla = 7,
@@ -115,6 +122,7 @@ export function CorrienteDeVoltaje({
     gl.uniform3fv(u('tinta2'), c3(F.t2));
     gl.uniform1f(u('semilla'), semilla);
     gl.uniform1f(u('forma'), forma === 'horizonte' ? 1 : 0);
+    gl.uniform1f(u('marco'), marco ? 1 : 0);
 
     const quieto = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const t0 = performance.now();
@@ -178,7 +186,7 @@ export function CorrienteDeVoltaje({
       cancelAnimationFrame(cuadroId);
       window.removeEventListener('resize', alCambiar);
     };
-  }, [fondo, forma, celda, fuerza, semilla, velocidad]);
+  }, [fondo, forma, marco, celda, fuerza, semilla, velocidad]);
 
   return <canvas ref={ref} aria-hidden="true" data-testid="corriente-de-voltaje" className={cn('pointer-events-none block', className)} />;
 }

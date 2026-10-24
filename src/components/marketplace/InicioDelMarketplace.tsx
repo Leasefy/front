@@ -50,12 +50,14 @@ const TITULO_DE_SECCION =
  */
 function Revela({ children, className }: { children: ReactNode; className?: string }) {
   const quieto = useReducedMotion();
-  if (quieto) return <div className={className}>{children}</div>;
+  // Siempre el mismo motion.div: si con movimiento reducido fuera un <div> suelto, la hidratación conserva el
+  // `opacity:0` que pintó el servidor (React no corrige estilos al hidratar) y el bloque queda invisible.
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 22 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={quieto ? false : { opacity: 0, y: 22 }}
+      animate={quieto ? { opacity: 1, y: 0 } : undefined}
+      whileInView={quieto ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '0px 0px -60px 0px' }}
       transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
     >
@@ -150,9 +152,10 @@ export function InicioDelMarketplace() {
             >
               <CorrienteDeVoltaje
                 className="absolute inset-0 h-full w-full [mask-image:linear-gradient(to_bottom,transparent_0%,#000_30%,#000_74%,transparent_100%)] dark:hidden"
-                forma="horizonte"
+                forma="corrientes"
+                marco
                 celda={3}
-                fuerza={0.9}
+                fuerza={1.05}
                 semilla={11}
               />
               <div className="relative z-[1] mx-auto flex max-w-[900px] flex-col items-center">

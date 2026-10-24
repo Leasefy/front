@@ -51,6 +51,7 @@ const base = {
   stats: { total: 0, pending: 0, approved: 0, rejected: 0 },
   isLoading: false,
   error: null as string | null,
+  errorCrudo: null as unknown,
   refetch: vi.fn(),
 };
 

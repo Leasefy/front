@@ -34,7 +34,6 @@ vi.mock('framer-motion', () => ({
 vi.mock('@leasefy/cadence', () => ({
   // Ronda 30: el botón de la casa importa las escalas del movimiento (hover/press sin sombras).
   motionScale: { pop: 0.96, press: 0.97, hover: 1.02, lift: 1.01 },
-  motionSpring: {},
   motionDuration: {},
   motionEase: {},
   IconButton: (props: Record<string, unknown>) => React.createElement('button', { 'aria-label': props['aria-label'] }),

@@ -6,6 +6,7 @@
 (function () {
   var $ = LF.$, $$ = LF.$$, MOV = LF.MOV, root = document.documentElement;
   var PROD = window.PROD, ORDEN = window.ORDEN, ALT = window.ALT;
+  var LFT = window.LFI ? window.LFI.t : function (s) { return s; };
   var main = $("#vista"), hdr = $("#hdr"), aviso = $("#aviso"), pista = $$("#pista i");
   var vista = null, limpieza = [], avisoCerrado = false;
   var DEMO = "/contacto", PLANES = "/#planes";
@@ -136,7 +137,7 @@
   /* ── el reloj: la hora del momento que cuenta cada producto (la de su noche) ── */
   (function () {
     try {
-      var hoy = new Date(), sem = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"], mes = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+      var hoy = new Date(), sem = (window.LFI && window.LFI.en) ? ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] : ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"], mes = (window.LFI && window.LFI.en) ? ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] : ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
       $("#relojDia").textContent = sem[hoy.getDay()] + " " + hoy.getDate() + " " + mes[hoy.getMonth()];
     } catch (e) {}
   })();
@@ -185,12 +186,12 @@
   var mb = $("#mbtn"), db = $("#despBtn"), dp = $("#despProd"), cierreDesp = 0;
   function abrirDesp(si) { dp.classList.toggle("abierto", si); db.setAttribute("aria-expanded", si ? "true" : "false"); }
   function cerrarMenus() {
-    root.classList.remove("menu-abierto"); mb.setAttribute("aria-expanded", "false"); mb.textContent = "Menú";
+    root.classList.remove("menu-abierto"); mb.setAttribute("aria-expanded", "false"); mb.textContent = LFT("Menú");
     abrirDesp(false); if (lenis) lenis.start();
   }
   mb.addEventListener("click", function () {
     var a = root.classList.toggle("menu-abierto");
-    mb.setAttribute("aria-expanded", a ? "true" : "false"); mb.textContent = a ? "Cerrar" : "Menú";
+    mb.setAttribute("aria-expanded", a ? "true" : "false"); mb.textContent = a ? LFT("Cerrar") : LFT("Menú");
     if (lenis) { if (a) lenis.stop(); else lenis.start(); }
   });
   db.addEventListener("click", function () { abrirDesp(!dp.classList.contains("abierto")); });
@@ -213,14 +214,14 @@
       capa.style.transform = "";
       var x = v.tx + n[0] * v.s, y = v.ty + n[1] * v.s;
       pin.style.left = x + "%"; pin.style.top = y + "%"; pin.classList.add("ver");
-      chip.classList.remove("ver"); chip.textContent = n[2];
+      chip.classList.remove("ver"); chip.textContent = LFT(n[2]);
       chip.style.top = "calc(" + y.toFixed(2) + "% - 18px)";
       if (x > 56) { chip.style.left = "auto"; chip.style.right = "calc(" + (100 - x).toFixed(2) + "% + 22px)"; }
       else { chip.style.right = "auto"; chip.style.left = "calc(" + x.toFixed(2) + "% + 22px)"; }
       if (conZoom) { var t = setTimeout(function () { chip.classList.add("ver"); }, 650); limpieza.push(function () { clearTimeout(t); }); } else chip.classList.add("ver");
-      pie.innerHTML = '<i aria-hidden="true"></i>' + n[2];
+      pie.innerHTML = '<i aria-hidden="true"></i>' + LFT(n[2]);
     }
-    if (!MOV) { poner(0, false); pie.innerHTML = p.notas.map(function (n) { return '<i aria-hidden="true"></i>' + n[2]; }).join(" &nbsp; "); return; }
+    if (!MOV) { poner(0, false); pie.innerHTML = p.notas.map(function (n) { return '<i aria-hidden="true"></i>' + LFT(n[2]); }).join(" &nbsp; "); return; }
     var k = -1, total = p.notas.length;
     var t0 = setTimeout(function () { k = 0; poner(0, true); }, 1100);
     var ciclo = setInterval(function () { k = (k + 1) % (total + 1); poner(k === total ? -1 : k, true); }, 3800);
@@ -236,7 +237,7 @@
       if (i === act) return; act = i;
       var r = p.reco[i], src = img(r[0]), vis = imgs[cara];
       if (vis.getAttribute("src") !== src) { cara = 1 - cara; var nueva = imgs[cara]; nueva.src = src; nueva.classList.add("on"); vis.classList.remove("on"); }
-      var v = encuadre(r[0], r[1]); capa.style.transform = tf(v); an.setAttribute("style", anillo(v, r[1])); et.textContent = r[2];
+      var v = encuadre(r[0], r[1]); capa.style.transform = tf(v); an.setAttribute("style", anillo(v, r[1])); et.textContent = LFT(r[2]);
       hs.forEach(function (h, k) { h.classList.toggle("on", k === i); });
       puntos.forEach(function (d, k) { d.classList.toggle("on", k === i); });
     }
@@ -327,10 +328,12 @@
     limpiar();
     vista = v;
     main.innerHTML = v === "productos" ? htmlIndice() : htmlProducto(PROD[v], v);
+    /* el inglés de la vista, antes de partir los títulos (ver /landing/js/idioma.js) */
+    if (window.LFI) window.LFI.aplicar(main);
     marcarNav(v); ponerHora(v);
-    document.title = (v === "productos" ? "Productos" : PROD[v].name) + " | Leasefy";
+    document.title = LFT(v === "productos" ? "Productos" : PROD[v].name) + " | Leasefy";
     var md = document.querySelector('meta[name="description"]');
-    if (md) md.setAttribute("content", v === "productos" ? md.dataset.indice || md.getAttribute("content") : PROD[v].lead);
+    if (md) md.setAttribute("content", LFT(v === "productos" ? md.dataset.indice || md.getAttribute("content") : PROD[v].lead));
     irArriba(true);
     montar();
     alScroll();

@@ -21,6 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Host+Grotesk:wght@300..700&display=swap" rel="stylesheet">
 <script src="/internas/productos/js/00-arranque.js"></script>
+<script src="/landing/js/idioma.js"></script>
 <style>
 /* Productos Leasefy · la identidad de la landing 2 (papel, tinta y voltaje) sobre la estructura de producción:
    portada clara con la corriente PIX → por qué importa (pantalla fija) → capacidades → ficha → puesta en marcha → noche → demo */
@@ -393,6 +394,13 @@ section{position:relative;overflow-x:clip}
 }
 </style>
 <style id="barra-de-la-home">
+/* ES / EN (Nico 23-10: «toda la landing en español e inglés») */
+.idioma{display:inline-flex;align-items:center;gap:2px;height:34px;padding:3px;border-radius:12px;background:var(--arena);corner-shape:superellipse(1.5);flex:none}
+.idioma button{height:28px;min-width:32px;padding:0 8px;border:0;border-radius:9px;background:transparent;font-family:var(--m);font-size:12px;letter-spacing:.06em;color:var(--ceniza);cursor:pointer;corner-shape:superellipse(1.5)}
+.idioma button:hover{color:var(--tinta)}
+.idioma button[aria-pressed="true"]{background:var(--sup);color:var(--tinta);box-shadow:var(--sombra-susurro)}
+.idioma button:focus-visible{outline:2px solid var(--voltaje);outline-offset:1px}
+.menu .idioma{align-self:flex-start;margin-top:14px}
 /* La barra de la home, igual en todas las páginas (Nico 23-10). */
 .con-motion :is(.btn,.boleto,.mbtn,.aviso a,.aviso button){transition:background-color .2s,color .2s,border-color .2s}
 .hdr{position:fixed;inset:0 0 auto 0;z-index:60;height:var(--hdr);background:var(--bg);border-bottom:1px solid transparent;transition:border-color .3s}
@@ -510,6 +518,7 @@ section{position:relative;overflow-x:clip}
       <span class="pista" id="pista" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
     </div>
     <div class="hdr-cta">
+      <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
       <a class="btn btn-s btn-sm pub" href="/publica">Publicar gratis</a>
       <a class="btn btn-s btn-sm" href="/auth">Entrar</a>
       <a class="btn btn-p btn-sm" href="/auth?mode=register">Crear cuenta</a>
@@ -532,6 +541,7 @@ section{position:relative;overflow-x:clip}
   <a class="it" href="/#planes"><span>03</span>Planes</a>
   <a class="it" href="/avaluo"><span>04</span>Avalúos</a>
   <a class="it" href="/contacto"><span>05</span>Contacto</a>
+  <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
   <div class="acc"><a class="btn btn-p" href="/auth?mode=register">Crear cuenta</a><a class="btn btn-s" href="/auth">Entrar</a><a class="btn btn-s" href="/publica">Publicar gratis</a></div>
 </div>
 
@@ -552,6 +562,7 @@ section{position:relative;overflow-x:clip}
 
 <div class="aviso" id="aviso" role="status"><span class="aviso-fotos" aria-hidden="true"><img src="/internas/productos/img/fotos/01.webp" alt=""><img src="/internas/productos/img/fotos/04.webp" alt=""><img src="/internas/productos/img/fotos/02.webp" alt=""></span><span class="aviso-tx"><b><i aria-hidden="true"></i>Marketplace</b><span>Publica gratis antes que tu competencia</span></span><a href="/publica">Publicar gratis</a><button type="button" id="avisoX" aria-label="Cerrar el aviso del marketplace"><svg class="ic"><use href="#i-x"/></svg></button></div>
 
+<script src="/landing/js/idioma-aplicar.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>

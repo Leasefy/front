@@ -26,7 +26,8 @@ import { RUTA_DE_LA_HOME, TERCEROS_DE_LA_HOME, politicaDeLaHome } from '@/lib/se
 
 const CARPETA = 'public/landing'
 const HTML = readFileSync(join(CARPETA, 'index.html'), 'utf8')
-const SCRIPTS_PROPIOS = readdirSync(join(CARPETA, 'js')).filter((f) => f.endsWith('.js'))
+// `en.js` (el diccionario del inglés) no va en la página: lo carga idioma.js sólo cuando la página va en inglés.
+const SCRIPTS_PROPIOS = readdirSync(join(CARPETA, 'js')).filter((f) => f.endsWith('.js') && f !== 'en.js')
 const JS = SCRIPTS_PROPIOS.map((f) => readFileSync(join(CARPETA, 'js', f), 'utf8')).join('\n')
 const MEGA_MENU_JS = readFileSync(join(CARPETA, 'js', '08-mega-menu.js'), 'utf8')
 const CABECERA_V2 = readFileSync('src/components/landing-v2/LandingHeaderV2.tsx', 'utf8')

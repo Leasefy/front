@@ -154,5 +154,7 @@ window.LF = (function () {
     return true;
   }
 
-  return { $: $, $$: $$, MOV: MOV, fmt: fmt, contar: contar, partir: partir, partirRelato: partirRelato, pos: pos, motivo: motivo, esferas: esferas, pintarEstrias: pintarEstrias };
+  /* el inglés de lo que escriben los scripts (ver idioma.js); sin el núcleo del idioma, el español tal cual */
+  var t = window.LFI ? window.LFI.t : function (s) { return s; };
+  return { t: t, $: $, $$: $$, MOV: MOV, fmt: fmt, contar: contar, partir: partir, partirRelato: partirRelato, pos: pos, motivo: motivo, esferas: esferas, pintarEstrias: pintarEstrias };
 })();

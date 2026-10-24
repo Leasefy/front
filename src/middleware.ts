@@ -65,8 +65,9 @@ export function middleware(request: NextRequest) {
    * Ronda 30 (Nico, 23-10-2026): «la de producto en vivo debe ser la landing
    * principal». La home (`/es`, `/en`) es la página estática de
    * `public/landing/index.html`, servida tal cual (sin React). La home anterior
-   * sigue en `/inicio-anterior` por si hay que volver. La landing sólo existe
-   * en español: `/en` también la muestra.
+   * sigue en `/inicio-anterior` por si hay que volver. `/es` y `/en` sirven la
+   * misma página: el inglés lo pone `public/landing/js/idioma.js` según el prefijo
+   * (Nico 23-10: toda la landing, internas incluidas, en español e inglés).
    */
   /*
    * Ronda 30: también sus internas (`/productos`, `/productos/<producto>` y

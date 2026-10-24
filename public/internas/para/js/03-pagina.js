@@ -5,6 +5,7 @@
 (function () {
   var $ = LF.$, $$ = LF.$$, MOV = LF.MOV, root = document.documentElement;
   var VISTAS = ["inmobiliarias", "propietarios", "inquilinos", "agentes"];
+  var LFT = window.LFI ? window.LFI.t : function (s) { return s; };
   var TITULOS = { inmobiliarias: "Para inmobiliarias", propietarios: "Para propietarios", inquilinos: "Para inquilinos", agentes: "Para agentes inmobiliarios" };
   var vistas = {}; $$(".vista").forEach(function (v) { vistas[v.dataset.vista] = v; });
   var iniciada = {}, actual = null;
@@ -67,9 +68,9 @@
   var mb = $("#mbtn");
   mb.addEventListener("click", function () {
     var a = root.classList.toggle("menu-abierto");
-    mb.setAttribute("aria-expanded", a ? "true" : "false"); mb.textContent = a ? "Cerrar" : "Menú";
+    mb.setAttribute("aria-expanded", a ? "true" : "false"); mb.textContent = a ? LFT("Cerrar") : LFT("Menú");
   });
-  $$("#menu a").forEach(function (a) { a.addEventListener("click", function () { root.classList.remove("menu-abierto"); mb.setAttribute("aria-expanded", "false"); mb.textContent = "Menú"; }); });
+  $$("#menu a").forEach(function (a) { a.addEventListener("click", function () { root.classList.remove("menu-abierto"); mb.setAttribute("aria-expanded", "false"); mb.textContent = LFT("Menú"); }); });
   var aviso = $("#aviso"), avisoCerrado = false;
   $("#avisoX").addEventListener("click", function () { avisoCerrado = true; aviso.classList.remove("ver"); });
 
@@ -78,7 +79,7 @@
   (function () {
     var d = $(".reloj .dia"); if (!d) return;
     try {
-      var hoy = new Date(), sem = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"], mes = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+      var hoy = new Date(), sem = (window.LFI && window.LFI.en) ? ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] : ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"], mes = (window.LFI && window.LFI.en) ? ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] : ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
       d.textContent = sem[hoy.getDay()] + " " + hoy.getDate() + " " + mes[hoy.getMonth()];
     } catch (e) {}
   })();
@@ -144,7 +145,7 @@
     VISTAS.forEach(function (k) { vistas[k].hidden = k !== nombre; });
     $$(".sel-tabs a").forEach(function (a) { if (a.dataset.ir === nombre) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     $("#selRuta").textContent = nombre;
-    document.title = TITULOS[nombre] + " | Leasefy";
+    document.title = LFT(TITULOS[nombre]) + " | Leasefy";
     if (subir) arriba(true);
     iniciarVista(nombre);
     escalar(); repintar();

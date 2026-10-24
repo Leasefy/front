@@ -37,7 +37,7 @@
   function apPaso() {
     var it = NOCHE[apK % NOCHE.length]; apK++;
     if (apH) apH.textContent = it[0]; if (horaB) horaB.textContent = it[0];
-    if (apT) { if (window.gsap && MOV) gsap.fromTo(apT, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .45, ease: "expo.out", onStart: function () { apT.textContent = it[1]; } }); else apT.textContent = it[1]; }
+    if (apT) { if (window.gsap && MOV) gsap.fromTo(apT, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .45, ease: "expo.out", onStart: function () { apT.textContent = LF.t(it[1]); } }); else apT.textContent = LF.t(it[1]); }
   }
   LF.autopiloto = function (on) {
     clearInterval(apI); apI = null;
@@ -226,8 +226,8 @@
   }
   function aseguradoras(cont) {
     $$(".badge[data-final]", cont).forEach(function (b, j) {
-      b.textContent = "Consultando"; b.className = "badge p";
-      gsap.delayedCall(.5 + j * .55, function () { b.textContent = b.dataset.final; b.className = "badge" + (b.dataset.tono === "a" ? " a" : ""); gsap.fromTo(b, { scale: .85 }, { scale: 1, duration: .4, ease: "back.out(2)" }); });
+      b.textContent = LF.t("Consultando"); b.className = "badge p";
+      gsap.delayedCall(.5 + j * .55, function () { b.textContent = LF.t(b.dataset.final); b.className = "badge" + (b.dataset.tono === "a" ? " a" : ""); gsap.fromTo(b, { scale: .85 }, { scale: 1, duration: .4, ease: "back.out(2)" }); });
     });
   }
   ScrollTrigger.create({ trigger: "#agEstudio", start: "top 80%", once: true, onEnter: function () { puntaje($("#puntaje"), $$("#puntDots i")); } });
@@ -245,13 +245,13 @@
     if (i === 0) { $("#vEnProceso").textContent = "23"; gsap.fromTo("#vNuevo", { opacity: 0, y: -16, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .6, delay: .5, ease: "expo.out", onComplete: function () { $("#vEnProceso").textContent = "24"; } }); }
     if (i === 1) { aseguradoras(v); gsap.fromTo("#vVeredicto", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .5, delay: 2.3 }); }
     if (i === 2) puntaje($("#vPunt"), $$("#vDots i"));
-    if (i === 3) { var b = $("#vEnviar"); b.classList.remove("hecho"); b.textContent = "Enviar las 4 opciones a Julián"; gsap.from($$(".vfila", v), { opacity: 0, x: -10, stagger: .1, duration: .45, delay: .25 }); gsap.delayedCall(1.6, function () { b.classList.add("hecho"); b.textContent = "Enviadas a Julián por correo"; }); }
+    if (i === 3) { var b = $("#vEnviar"); b.classList.remove("hecho"); b.textContent = LF.t("Enviar las 4 opciones a Julián"); gsap.from($$(".vfila", v), { opacity: 0, x: -10, stagger: .1, duration: .45, delay: .25 }); gsap.delayedCall(1.6, function () { b.classList.add("hecho"); b.textContent = LF.t("Enviadas a Julián por correo"); }); }
   }
   function ponPaso(i) {
     if (i === actual) return;
     var antes = actual; actual = i;
     pasos.forEach(function (p, j) { p.classList.toggle("on", j === i); });
-    gsap.fromTo(chip, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .35, onStart: function () { chip.textContent = pasos[i].dataset.chip; } });
+    gsap.fromTo(chip, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .35, onStart: function () { chip.textContent = LF.t(pasos[i].dataset.chip); } });
     tres.forEach(function (im, j) {
       if (j === i) gsap.fromTo(im, { opacity: 0, y: 40, rotate: -10, scale: .8 }, { opacity: 1, y: 0, rotate: 0, scale: 1, duration: .8, ease: "expo.out" });
       else if (j === antes) gsap.to(im, { opacity: 0, y: -30, rotate: 8, duration: .4 });
@@ -291,12 +291,12 @@
       riesgo.forEach(function (d) { d.classList.toggle("riesgo", f === 2); d.classList.toggle("bien", f === 3); });
       sen.forEach(function (li, j) {
         li.classList.toggle("ok", f === 3 && j < 2);
-        li.querySelector(".st").textContent = f === 3 ? (j < 2 ? "Renovó · 12 meses" : "Llamar hoy") : "Llamar hoy";
+        li.querySelector(".st").textContent = LF.t(f === 3 ? (j < 2 ? "Renovó · 12 meses" : "Llamar hoy") : "Llamar hoy");
       });
       gsap.to(sen, { opacity: f >= 2 ? 1 : 0, y: f >= 2 ? 0 : 10, stagger: .12, duration: .5, ease: "expo.out", overwrite: true });
-      if (f <= 1) { estK.textContent = "Revisando…"; estK.className = "r"; }
-      if (f === 2) { estK.textContent = "3 con señales de irse"; estK.className = "r alerta"; est.textContent = "En riesgo · llama hoy"; est.className = "est2"; tx.textContent = "3 propietarios muestran señales de irse. Te dejé a quién llamar primero y qué decirle."; }
-      if (f === 3) { estK.textContent = "2 renovaron hoy"; estK.className = "r ok"; est.textContent = "Renovaron · 12 meses más"; est.className = "est2 ok"; tx.textContent = "Llamaste a tiempo: Gloria y Jorge renovaron con ustedes. Inversiones Ríos sigue en tu lista de hoy."; }
+      if (f <= 1) { estK.textContent = LF.t("Revisando…"); estK.className = "r"; }
+      if (f === 2) { estK.textContent = LF.t("3 con señales de irse"); estK.className = "r alerta"; est.textContent = LF.t("En riesgo · llama hoy"); est.className = "est2"; tx.textContent = LF.t("3 propietarios muestran señales de irse. Te dejé a quién llamar primero y qué decirle."); }
+      if (f === 3) { estK.textContent = LF.t("2 renovaron hoy"); estK.className = "r ok"; est.textContent = LF.t("Renovaron · 12 meses más"); est.className = "est2 ok"; tx.textContent = LF.t("Llamaste a tiempo: Gloria y Jorge renovaron con ustedes. Inversiones Ríos sigue en tu lista de hoy."); }
     };
     /* Nico 23-10 («al final del scroll el bloque de Retención se daña»): cada fase cambia textos de distinto largo
        y el bloque crecía al llegar al final (80 px a 390, 21 px a 1440), empujando todo lo de abajo y saltando al
@@ -306,6 +306,7 @@
       [tx, tx, ["3 propietarios muestran señales de irse. Te dejé a quién llamar primero y qué decirle.", "Llamaste a tiempo: Gloria y Jorge renovaron con ustedes. Inversiones Ríos sigue en tu lista de hoy."]],
       [est, est, ["En riesgo · llama hoy", "Renovaron · 12 meses más"]]
     ].concat(sen.map(function (li) { return [li, li.querySelector(".st"), ["Llamar hoy", "Renovó · 12 meses"]]; }));
+    VARIANTES.forEach(function (v) { v[2] = v[2].map(LF.t); });
     var reservar = function () {
       VARIANTES.forEach(function (v) {
         var caja = v[0], el = v[1], antes = el.textContent, alto = 0;

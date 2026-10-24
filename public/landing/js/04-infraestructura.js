@@ -23,7 +23,7 @@
   if (vt) {
     var html = "";
     for (var k = 0; k < 2; k++) VIT.forEach(function (v) {
-      html += '<a class="vi" href="/propiedades"' + (k ? ' aria-hidden="true" tabindex="-1"' : "") + '><span class="vi-foto"><img src="/landing/img/' + v[0] + '.webp" alt="" loading="lazy"></span><span><b>$ ' + v[1] + ' <em>/mes</em></b><span>' + v[2] + '</span><small>Tu Inmobiliaria</small></span></a>';
+      html += '<a class="vi" href="/propiedades"' + (k ? ' aria-hidden="true" tabindex="-1"' : "") + '><span class="vi-foto"><img src="/landing/img/' + v[0] + '.webp" alt="" loading="lazy"></span><span><b>$ ' + v[1] + ' <em>' + LF.t("/mes") + '</em></b><span>' + LF.t(v[2]) + '</span><small>' + LF.t("Tu Inmobiliaria") + '</small></span></a>';
     });
     vt.innerHTML = html;
   }
@@ -32,9 +32,9 @@
   var mb = $("#mbtn");
   mb.addEventListener("click", function () {
     var a = root.classList.toggle("menu-abierto");
-    mb.setAttribute("aria-expanded", a ? "true" : "false"); mb.textContent = a ? "Cerrar" : "Menú";
+    mb.setAttribute("aria-expanded", a ? "true" : "false"); mb.textContent = a ? LF.t("Cerrar") : LF.t("Menú");
   });
-  $$("#menu a").forEach(function (a) { a.addEventListener("click", function () { root.classList.remove("menu-abierto"); mb.setAttribute("aria-expanded", "false"); mb.textContent = "Menú"; }); });
+  $$("#menu a").forEach(function (a) { a.addEventListener("click", function () { root.classList.remove("menu-abierto"); mb.setAttribute("aria-expanded", "false"); mb.textContent = LF.t("Menú"); }); });
   var aviso = $("#aviso"), avisoCerrado = false;
   $("#avisoX").addEventListener("click", function () { avisoCerrado = true; aviso.classList.remove("ver"); });
 
@@ -44,7 +44,9 @@
   (function () {
     var d = $(".reloj .dia"); if (!d) return;
     try {
-      var hoy = new Date(), sem = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"], mes = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+      var hoy = new Date(), en = window.LFI && window.LFI.en;
+      var sem = en ? ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] : ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+      var mes = en ? ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] : ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
       d.textContent = sem[hoy.getDay()] + " " + hoy.getDate() + " " + mes[hoy.getMonth()];
     } catch (e) {}
   })();
@@ -279,8 +281,8 @@
         .fromTo("#toast", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: .55, ease: "expo.out" }, .3)
         .add(function () {
           fila.classList.add("pagada");
-          var e = $("#filaPagoEst"); e.className = "est ok"; e.textContent = "Pagada";
-          var s = $("#filaPagoSub"); s.className = ""; s.textContent = "pagó hoy, 9:12";
+          var e = $("#filaPagoEst"); e.className = "est ok"; e.textContent = LF.t("Pagada");
+          var s = $("#filaPagoSub"); s.className = ""; s.textContent = LF.t("pagó hoy, 9:12");
           $("#filaPagoVal").className = "falta"; $("#filaPagoVal").textContent = "$ 0,00";
           $("#tFalta").textContent = "6"; $("#tCart").textContent = "1"; $("#tPag").textContent = "4";
         }, .35)

@@ -22,6 +22,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Host+Grotesk:wght@300..700&display=swap" rel="stylesheet">
 <script src="/landing/js/00-arranque.js"></script>
+<script src="/landing/js/idioma.js"></script>
 <style>
 :root{
   --bg:#FBFAF8;--arena:#F3F1ED;--piedra:#E7E3DC;--filete:#ECE8E1;--sup:#FFFFFF;
@@ -103,6 +104,13 @@ ul,ol{list-style:none}
 .reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
 .reloj .pista i.on{background:var(--voltaje-dot)}
 .hdr-cta{display:flex;align-items:center;gap:10px}
+/* ES / EN (Nico 23-10: «toda la landing en español e inglés») */
+.idioma{display:inline-flex;align-items:center;gap:2px;height:34px;padding:3px;border-radius:12px;background:var(--arena);corner-shape:superellipse(1.5);flex:none}
+.idioma button{height:28px;min-width:32px;padding:0 8px;border:0;border-radius:9px;background:transparent;font-family:var(--m);font-size:12px;letter-spacing:.06em;color:var(--ceniza);cursor:pointer;corner-shape:superellipse(1.5)}
+.idioma button:hover{color:var(--tinta)}
+.idioma button[aria-pressed="true"]{background:var(--sup);color:var(--tinta);box-shadow:var(--sombra-susurro)}
+.idioma button:focus-visible{outline:2px solid var(--voltaje);outline-offset:1px}
+.menu .idioma{align-self:flex-start;margin-top:14px}
 .mbtn{display:none;height:38px;padding:0 14px;border-radius:12px;background:var(--arena);font-size:14px;font-weight:500;corner-shape:superellipse(1.5)}
 .menu{position:fixed;inset:var(--hdr) 0 0 0;z-index:59;background:var(--bg);padding:24px var(--gutter);display:none;flex-direction:column;gap:6px;overflow:auto}
 .menu-abierto .menu{display:flex}
@@ -1031,6 +1039,7 @@ section{position:relative;overflow-x:clip}
       <span class="pista" id="pista" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
     </div>
     <div class="hdr-cta">
+      <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
       <a class="btn btn-s btn-sm pub" href="/publica">Publicar gratis</a>
       <a class="btn btn-s btn-sm" href="/auth">Entrar</a>
       <a class="btn btn-p btn-sm" href="/auth?mode=register">Crear cuenta</a>
@@ -1050,6 +1059,7 @@ section{position:relative;overflow-x:clip}
   <a class="it" href="#planes"><span>03</span>Planes</a>
   <a class="it" href="/avaluo"><span>04</span>Avalúos</a>
   <a class="it" href="/contacto"><span>05</span>Contacto</a>
+  <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
   <div class="acc"><a class="btn btn-p" href="/auth?mode=register">Crear cuenta</a><a class="btn btn-s" href="/auth">Entrar</a><a class="btn btn-s" href="/publica">Publicar gratis</a></div>
 </div>
 
@@ -1634,6 +1644,7 @@ section{position:relative;overflow-x:clip}
 
 <div class="aviso" id="aviso" role="status"><span class="aviso-fotos" aria-hidden="true"><img src="/landing/img/fotos/01.webp" alt=""><img src="/landing/img/fotos/04.webp" alt=""><img src="/landing/img/fotos/02.webp" alt=""></span><span class="aviso-tx"><b><i aria-hidden="true"></i>Marketplace</b><span>Arriendos en Medellín y el Valle de Aburrá</span></span><a href="/propiedades">Ver inmuebles</a><button type="button" id="avisoX" aria-label="Cerrar el aviso del marketplace"><svg class="ic"><use href="#i-x"/></svg></button></div>
 
+<script src="/landing/js/idioma-aplicar.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>

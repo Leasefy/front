@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { ArrowsClockwise, Buildings, FileText, ListNumbers, Users } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { AccionesDeLaSeccion } from '@/components/configuracion/acciones-de-la-seccion';
 import { useMigracion } from '@/components/migracion/migracion-context';
 import { TarjetaDeAjustes, FilaDeAjuste } from './piezas';
 
@@ -52,24 +53,24 @@ export function SeccionMigracion() {
 
   return (
     <div className="space-y-4" data-testid="seccion-migracion">
-      <TarjetaDeAjustes>
-        <FilaDeAjuste
-          icono={ArrowsClockwise}
-          titulo="Asistente de migración"
-          descripcion="Los seis pasos a pantalla completa, en orden: propietarios, inquilinos, inmuebles, contratos, plan de cuentas y saldos."
+      {/* Nico (23-10-2026): «Migrar ahora» (el asistente) arriba, a la derecha del título de la sección. */}
+      <AccionesDeLaSeccion>
+        <Button
+          type="button"
+          size="sm"
+          hideArrow
+          data-testid="abrir-asistente-de-migracion"
+          // Sin contexto (fuera del panel) cae al primer importador suelto.
+          onClick={() => (migracion ? migracion.abrir() : router.push(PASOS[0].href))}
         >
-          <Button
-            type="button"
-            size="sm"
-            hideArrow
-            data-testid="abrir-asistente-de-migracion"
-            // Sin contexto (fuera del panel) cae al primer importador suelto.
-            onClick={() => (migracion ? migracion.abrir() : router.push(PASOS[0].href))}
-          >
-            Migrar ahora
-          </Button>
-        </FilaDeAjuste>
-      </TarjetaDeAjustes>
+          Migrar ahora
+        </Button>
+      </AccionesDeLaSeccion>
+      <p className="flex items-start gap-2 text-sm text-fg-muted">
+        <ArrowsClockwise className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        El asistente recorre los seis pasos a pantalla completa, en orden: propietarios, inquilinos, inmuebles,
+        contratos, plan de cuentas y saldos. Cada paso también se abre suelto aquí abajo.
+      </p>
 
       <TarjetaDeAjustes>
         {PASOS.map((paso) => (

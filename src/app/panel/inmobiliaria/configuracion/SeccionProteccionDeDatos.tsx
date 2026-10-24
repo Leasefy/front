@@ -28,6 +28,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AccionesDeLaSeccion } from '@/components/configuracion/acciones-de-la-seccion';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import {
   Dialog,
@@ -194,7 +195,8 @@ export function SeccionProteccionDeDatos() {
           <p className="text-sm text-fg" data-testid="frase-del-resumen">
             {fraseDelResumen(lista)}
           </p>
-          <div className="flex items-center gap-2">
+          {/* Nico (23-10-2026): las acciones arriba, a la derecha del título; la ayuda a la izquierda del principal. */}
+          <AccionesDeLaSeccion>
             <ParaEntenderMas etiqueta="Los plazos de la ley" titulo="Solicitudes de los titulares (Ley 1581)">
               <div className="space-y-3 text-sm text-fg">
                 <p>
@@ -222,7 +224,7 @@ export function SeccionProteccionDeDatos() {
             <Button hideArrow size="sm" onClick={() => setRegistrando(true)} data-testid="registrar-solicitud">
               Registrar una solicitud
             </Button>
-          </div>
+          </AccionesDeLaSeccion>
         </div>
       ) : (
         <p

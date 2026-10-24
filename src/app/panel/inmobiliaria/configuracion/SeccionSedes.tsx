@@ -26,6 +26,7 @@ import { explicar } from '@/components/finanzas/TasasDeUsura';
 import { Badge } from '@/components/ui/badge';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Button } from '@/components/ui/button';
+import { AccionesDeLaSeccion } from '@/components/configuracion/acciones-de-la-seccion';
 import {
   Dialog,
   DialogContent,
@@ -118,8 +119,9 @@ export function SeccionSedes() {
             <SinLaMigracion motivo={datos.motivo} queSeEspera="crear y editar sedes" />
           ) : null}
 
-          {/* Glow up 22-10: el para qué ya lo dice el marco; el detalle, en la ayuda. */}
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          {/* Glow up 22-10: el para qué ya lo dice el marco; el detalle, en la ayuda. Nico (23-10-2026): la ayuda y
+              «Crear una sede» arriba, a la derecha del título de la sección. */}
+          <AccionesDeLaSeccion>
             <ParaEntenderMas etiqueta="¿Cómo funcionan las sedes?" titulo="Sedes">
               <p className="text-body text-fg-muted">
                 Cada sede es un centro de costo: el tablero financiero se puede mirar consolidado o
@@ -130,7 +132,7 @@ export function SeccionSedes() {
             <Button size="sm" hideArrow disabled={!disponible} onClick={() => setEditando('nueva')}>
               Crear una sede
             </Button>
-          </div>
+          </AccionesDeLaSeccion>
 
           {sinAsignar.inmuebles > 0 || sinAsignar.contratos > 0 ? (
             <p

@@ -11,7 +11,7 @@
  * permisos, en qué URL); este componente sólo lo dibuja.
  */
 
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ProveedorDeLaRanura } from '@/components/configuracion/acciones-de-la-seccion';
 
 export interface EntradaDeConfiguracion {
   id: string;
@@ -105,6 +106,9 @@ function Marco({
   const indicador = `marco-de-configuracion-${useId()}`;
   const entradas = menu.flatMap((g) => g.entradas);
   const activa = entradas.find((e) => e.id === activaId) ?? null;
+
+  // La ranura de las acciones de la sección, a la derecha de su título (Nico 23-10): ver `acciones-de-la-seccion.tsx`.
+  const [ranura, setRanura] = useState<HTMLDivElement | null>(null);
 
   const permisoParaSalir = usePermisoParaSalir();
   const irA = async (id: string) => {
@@ -196,12 +200,21 @@ function Marco({
           className="min-w-0 flex-1 space-y-4"
         >
           {activa && (
-            <div className="space-y-1">
-              <h2 className="text-base font-medium text-fg">{activa.label}</h2>
-              <p className="text-sm text-fg-muted">{activa.desc}</p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+              <div className="min-w-0 space-y-1">
+                <h2 className="text-base font-medium text-fg">{activa.label}</h2>
+                <p className="text-sm text-fg-muted">{activa.desc}</p>
+              </div>
+              {/* Las acciones de la sección: los secundarios a la izquierda, el principal a la derecha. */}
+              <div
+                ref={setRanura}
+                className="flex shrink-0 flex-wrap items-center gap-2 empty:hidden sm:justify-end"
+                data-testid="acciones-de-la-seccion"
+              />
             </div>
           )}
-          {children}
+          {/* Sin título (p. ej. la ficha de un miembro) no hay ranura: las acciones quedan en su lugar. */}
+          {activa ? <ProveedorDeLaRanura ranura={ranura}>{children}</ProveedorDeLaRanura> : children}
           <BarraDeGuardado />
         </PageTransition>
       </div>

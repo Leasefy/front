@@ -21,7 +21,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
-import { ChartBar, Handshake, Trophy, UsersThree } from '@phosphor-icons/react';
+import { ChartBar, Handshake, Plus, Trophy, UsersThree } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
+import { AccionesDeLaSeccion } from '@/components/configuracion/acciones-de-la-seccion';
 import { SegmentedControl } from '@leasefy/cadence';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -314,6 +316,25 @@ export function SeccionEquipo() {
 
   return (
     <div className="space-y-4">
+      {/* Nico (23-10-2026): «Invitar usuario» arriba, a la derecha del título «Miembros y roles», en cualquier
+          pestaña (antes, debajo de las pestañas con un hueco raro). Desde otra pestaña lleva a Miembros y abre la
+          invitación (el mismo camino de `?invitar=1`). */}
+      {puedeVerElPadron && puedeAdministrarEquipo && (
+        <AccionesDeLaSeccion>
+          <Button
+            hideArrow
+            size="sm"
+            onClick={() => {
+              if (vista !== 'miembros') setVista('miembros');
+              setInvitarAlMontar(true);
+            }}
+            data-testid="invitar-usuario"
+          >
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+            {t('inmobiliaria.config.users.invite')}
+          </Button>
+        </AccionesDeLaSeccion>
+      )}
       {/* 🔴 ARREGLOS-4 (03-10-2026): a 390 px las cuatro pestañas no cabían y
           empujaban la pantalla de lado. Se desplazan dentro de su riel, como el
           filtro de «Mis propiedades» y los comprobantes del sistema anterior. */}
@@ -365,6 +386,8 @@ export function SeccionEquipo() {
               isAdmin ? null : 'Sólo un administrador cambia los permisos de una persona.'
             }
             abrirInvitacion={invitarAlMontar}
+            onInvitacionAbierta={() => setInvitarAlMontar(false)}
+            sinBotonDeInvitar
           />
           <PermisosDeLaPersona
             persona={personaDePermisos}

@@ -2236,7 +2236,7 @@
       "users": {
         "title": "Equipo",
         "subtitle": "Gestiona los usuarios de tu inmobiliaria",
-        "invite": "Invitar a alguien del equipo",
+        "invite": "Invitar usuario",
         "name": "Nombre",
         "email": "Correo",
         "role": "Rol",

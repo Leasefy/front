@@ -28,6 +28,7 @@ import {
 } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AccionesDeLaSeccion } from '@/components/configuracion/acciones-de-la-seccion';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
@@ -234,11 +235,14 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
               <span className="font-mono tabular-nums">{medios.length}</span>{' '}
               {medios.length === 1 ? 'medio' : 'medios'}, en el orden en que se muestran
             </p>
+            {/* Nico (23-10-2026): la acción principal arriba, a la derecha del título de la sección. */}
             {puedeEditar && (
-              <Button hideArrow size="sm" onClick={abrirNuevo}>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Nuevo medio
-              </Button>
+              <AccionesDeLaSeccion>
+                <Button hideArrow size="sm" onClick={abrirNuevo}>
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Nuevo medio
+                </Button>
+              </AccionesDeLaSeccion>
             )}
           </div>
 

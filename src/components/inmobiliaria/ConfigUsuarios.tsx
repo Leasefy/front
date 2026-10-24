@@ -100,6 +100,10 @@ interface ConfigUsuariosProps {
   permisosApagadoPorque?: string | null;
   /** `?invitar=1`: abre el formulario apenas se puede. */
   abrirInvitacion?: boolean;
+  /** Se llama al abrir la invitación pedida con `abrirInvitacion` (el padre la apaga para poder pedirla otra vez). */
+  onInvitacionAbierta?: () => void;
+  /** El botón «Invitar usuario» lo pone el padre arriba, junto al título (Configuración, Nico 23-10). */
+  sinBotonDeInvitar?: boolean;
   isLoading?: boolean;
 }
 
@@ -276,6 +280,8 @@ export function ConfigUsuarios({
   onPermisos,
   permisosApagadoPorque = null,
   abrirInvitacion = false,
+  onInvitacionAbierta,
+  sinBotonDeInvitar = false,
   isLoading = false,
 }: ConfigUsuariosProps) {
   const { t } = useI18n();
@@ -297,7 +303,10 @@ export function ConfigUsuarios({
 
   // `?invitar=1` llega después del primer render (el padre lo lee de la URL).
   useEffect(() => {
-    if (abrirInvitacion) setInviteModalOpen(true);
+    if (!abrirInvitacion) return;
+    setInviteModalOpen(true);
+    onInvitacionAbierta?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sólo cuando la piden
   }, [abrirInvitacion]);
 
   // Filter users
@@ -396,14 +405,14 @@ export function ConfigUsuarios({
           mismo tres veces). Arriba queda la búsqueda, el rol y la ÚNICA puerta
           para sumar a alguien. El título lo pone el marco de Configuración. */}
       {/* Revisora r27 (R6): el buscador y el rol van DENTRO de la tarjeta de la tabla; arriba sólo la puerta para sumar a alguien. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        {onInvite && (
+      {onInvite && !sinBotonDeInvitar && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button hideArrow size="sm" className="sm:ml-auto" onClick={() => setInviteModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             {t('inmobiliaria.config.users.invite')}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* La tabla sola dentro de la tarjeta, sin título encima (estándar del
           panel). El vacío vive dentro del <TableBody> para que se sigan viendo

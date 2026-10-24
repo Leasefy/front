@@ -19,6 +19,7 @@ import { Card } from '@/components/ui/card';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { Button } from '@/components/ui/button';
+import { AccionesDeLaSeccion } from '@/components/configuracion/acciones-de-la-seccion';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -172,8 +173,9 @@ export function SeccionConceptos() {
         </p>
       )}
 
-      {/* Ronda 30: arriba sólo las dos acciones; el buscador vive en la tarjeta de la lista. */}
-      <div className="flex flex-wrap items-center justify-end gap-3">
+      {/* Nico (23-10-2026): las dos acciones arriba, a la derecha del título de la sección; el secundario a la izquierda
+          del principal. El buscador vive en la tarjeta de la lista. */}
+      <AccionesDeLaSeccion>
         <input
           ref={archivoRef}
           type="file"
@@ -193,7 +195,7 @@ export function SeccionConceptos() {
           <Plus className="mr-2 h-4 w-4" />
           Nuevo concepto
         </Button>
-      </div>
+      </AccionesDeLaSeccion>
 
       <Card className="overflow-hidden p-0">
         {/* Las pestañas con su conteo, dentro de la tarjeta (antes «N activos de M» en una línea). */}

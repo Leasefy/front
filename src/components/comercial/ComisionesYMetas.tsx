@@ -48,6 +48,7 @@ import {
   type MetaDelAsesor,
   type MetasDelMes,
 } from '@/lib/comercial/comercial';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 const RUTA_DE_LA_REGLA = '/panel/inmobiliaria/configuracion/comercial';
 
@@ -275,7 +276,7 @@ function SeccionDeMetas({ datos, puedeEditar, alCambiar }: { datos: MetasDelMes;
         </div>
       </div>
       {datos.asesores.length === 0 ? (
-        <p className="text-sm text-fg-muted">Todavía no hay asesores en el equipo.</p>
+        <VacioChico titulo="Todavía no hay asesores en el equipo." ilustracion="equipo" />
       ) : (
         <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {datos.asesores.map((a) => (

@@ -40,6 +40,7 @@ import {
   type CartaQueSeAbre,
 } from "@/components/contratos/CartaDelIncrementoCajon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 const PESOS = plataEnPantalla(localeDeLasCifras, {
   style: "currency",
@@ -254,7 +255,7 @@ export function IncrementosDelContrato({
       )}
 
       {datos.aniversarios.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hay aniversarios dentro del contrato.</p>
+        <VacioChico titulo="No hay aniversarios dentro del contrato." ilustracion="ipc" />
       ) : (
         <ul className="divide-y divide-border">
           {datos.aniversarios.map((a) => (

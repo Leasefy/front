@@ -66,6 +66,7 @@ import {
   type ConfiguracionJuridica,
   type HonorarioJuridico,
 } from '@/lib/api/juridico.service';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /** Lo que se dice cuando el error no trae nada legible. */
 const POR_DEFECTO = 'Prueba de nuevo en un momento.';
@@ -414,7 +415,7 @@ export function CobroJuridico() {
             90 días o más de mora y sin póliza. Es una sugerencia: pasar el caso lo decide una persona.
           </p>
           {sugeridos.length === 0 ? (
-            <p className="mt-2 text-body-sm text-fg-muted">Ningún contrato cumple hoy.</p>
+            <VacioChico className="mt-2" titulo="Ningún contrato cumple hoy." ilustracion="reloj_mora" />
           ) : (
             <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
               {sugeridos.map((s) => (
@@ -491,7 +492,7 @@ export function CobroJuridico() {
         <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="casos">
           <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">En jurídico</p>
           {enJuridico.length === 0 ? (
-            <p className="mt-2 text-body-sm text-fg-muted">Ningún caso en jurídico.</p>
+            <VacioChico className="mt-2" titulo="Ningún caso en jurídico." ilustracion="sobre_cobro" />
           ) : (
             <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
               {enJuridico.map((c) => (
@@ -559,7 +560,7 @@ export function CobroJuridico() {
             inmobiliaria ni del propietario.
           </p>
           {porPagar.length === 0 ? (
-            <p className="mt-2 text-body-sm text-fg-muted">No hay honorarios pendientes.</p>
+            <VacioChico className="mt-2" titulo="No hay honorarios pendientes." ilustracion="monedas" />
           ) : (
             <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
               {porPagar.map((h) => (
@@ -760,7 +761,7 @@ export function CobroJuridico() {
         <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="abogados">
           <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Abogados</p>
           <ul className="mt-2 space-y-1 text-body-sm">
-            {abogados.length === 0 && <li className="text-fg-muted">Todavía no hay abogados registrados.</li>}
+            {abogados.length === 0 && <VacioChico as="li" titulo="Todavía no hay abogados registrados." ilustracion="equipo" />}
             {abogados.map((a) => (
               <li key={a.id} className="flex items-center justify-between gap-2">
                 <span>

@@ -23,6 +23,7 @@
  * Tonos vía TOKENS del DS (warning/danger/fg-muted + *-soft) — CERO hex inline.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useMemo, useState } from 'react'
 import { MagnifyingGlass } from '@phosphor-icons/react'
 import { Card } from '@leasefy/cadence'
@@ -367,6 +368,7 @@ export function PagoFallidoTabla({ items, onAction, onOpen, enmarcada = true }: 
 
       {visibles.length === 0 ? (
         <div className="px-6 py-12 text-center">
+          <Ilustracion nombre="lupa" tamano={96} className="mx-auto mb-2" />
           <p className="text-body-sm font-medium text-fg">Ningún pago fallido con ese filtro</p>
           <p className="mt-1 text-caption text-fg-muted">Cambia la pestaña o borra la búsqueda para ver los demás.</p>
         </div>

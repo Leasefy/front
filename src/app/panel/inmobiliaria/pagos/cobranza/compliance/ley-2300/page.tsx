@@ -19,6 +19,7 @@
  *   · en el celular, tarjetas.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Gavel, MagnifyingGlass } from '@phosphor-icons/react'
 
@@ -217,6 +218,7 @@ function Ley2300Content() {
             <CrossFade swapKey={visibles.length === 0 ? 'sin-resultados' : 'tabla'}>
               {visibles.length === 0 ? (
                 <div className="px-6 py-12 text-center">
+                  <Ilustracion nombre="lupa" tamano={96} className="mx-auto mb-2" />
                   <p className="text-body-sm font-medium text-fg">Ningún intento con ese filtro</p>
                   <p className="mt-1 text-caption text-fg-muted">Cambia la pestaña o borra la búsqueda para ver los demás.</p>
                 </div>

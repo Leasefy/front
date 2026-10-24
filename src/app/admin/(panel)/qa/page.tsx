@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { fallaDeCalidad } from '@/lib/admin/textos-del-admin'
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /* ── Types (match ADMIN-API-CONTRACT.md — QA) ───────────────────────────── */
 
@@ -166,7 +167,7 @@ export default function QaPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Tarjeta titulo="Cómo se reparten los puntajes" descripcion="De 0 a 100, en tramos de 10.">
           {dist.length === 0 ? (
-            <p className="text-body-sm text-fg-muted">Todavía no hay llamadas con puntaje.</p>
+            <VacioChico titulo="Todavía no hay llamadas con puntaje." ilustracion="mensajes" />
           ) : (
             <div className="space-y-2.5">
               {/* Los 10 tramos (1 a 10, como width_bucket) */}

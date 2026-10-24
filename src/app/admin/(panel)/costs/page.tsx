@@ -11,6 +11,7 @@ import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { nombreDelModelo } from '@/lib/admin/textos-del-admin'
+import { VacioChico } from '@/components/estado/VacioChico';
 
 
 /* ── Types (match ADMIN-API-CONTRACT.md — Costs) ────────────────────────── */
@@ -73,7 +74,7 @@ const modeloDelUso = (codigo: string | null | undefined) => {
 const pesos = (dolares: number) => fmtCOP(alPeso(dolares))
 
 function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
-  if (daily.length === 0) return <p className="text-body-sm text-fg-muted">Todavía no hay datos.</p>
+  if (daily.length === 0) return <VacioChico titulo="Todavía no hay datos." ilustracion="grafica" />
 
   const vapiVals = daily.map((d) => num(d.vapi_cost_usd))
   const claudeVals = daily.map((d) => num(d.claude_cost_usd))

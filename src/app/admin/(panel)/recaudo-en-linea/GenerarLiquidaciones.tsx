@@ -37,6 +37,7 @@ import { Cifra, ErrorDeLaAccion, Etiqueta } from './partes'
 import { Card } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { VacioChico } from '@/components/estado/VacioChico';
 
 const NOMBRE_DEL_RESULTADO: Record<EstadoDelResultado, string> = {
   creada: 'generada',
@@ -265,7 +266,7 @@ export function GenerarLiquidaciones({
             </div>
 
             {vista.propuestas.length === 0 ? (
-              <p className="text-body-sm text-fg mt-4">No hay pagos por liquidar en ese rango.</p>
+              <VacioChico className="mt-4" titulo="No hay pagos por liquidar en ese rango." ilustracion="banco" />
             ) : (
               <div className="space-y-3 mt-4">
                 {vista.propuestas.map((p) => {

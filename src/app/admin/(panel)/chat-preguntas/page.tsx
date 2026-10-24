@@ -40,6 +40,7 @@ import { Pill } from '@/components/admin/Pill'
 import { Button } from '@/components/ui/button'
 import { BarraDeFiltros, Buscador, Desplegable, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
 import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
+import { VacioChico } from '@/components/estado/VacioChico';
 
 const POR_PAGINA = 50
 
@@ -506,7 +507,7 @@ export default function ChatPreguntasPage() {
             <Card className="p-5">
               <MonoLabel className="mb-2 block">Especialistas que más trabajan</MonoLabel>
               {data.especialistas.length === 0 ? (
-                <span className="text-body-sm text-fg-subtle">Ningún especialista en estas preguntas</span>
+                <VacioChico titulo="Ningún especialista en estas preguntas" ilustracion="mensajes" />
               ) : (
                 <ul className="text-body-sm space-y-0.5">
                   {data.especialistas.map((e) => (

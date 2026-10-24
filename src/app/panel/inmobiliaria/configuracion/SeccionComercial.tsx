@@ -38,6 +38,7 @@ import {
   type ReglasDeComision,
 } from '@/lib/comercial/comercial';
 import { EsqueletoDeSeccion } from './piezas';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /** De 6 meses atrás a 6 adelante: desde cuándo rige. */
 function mesesParaElegir(hoy: string): string[] {
@@ -375,7 +376,7 @@ export function SeccionComercial() {
           </div>
         </div>
         {datos.asesores.length === 0 ? (
-          <p className="text-sm text-fg-muted">Todavía no hay asesores en el equipo. Invítalos en Equipo.</p>
+          <VacioChico titulo="Todavía no hay asesores en el equipo." detalle="Invítalos en Equipo." ilustracion="equipo" />
         ) : (
           <>
           <div className="relative w-full sm:w-72">

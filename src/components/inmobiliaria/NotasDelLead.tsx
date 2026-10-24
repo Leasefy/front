@@ -8,6 +8,7 @@ import { embudoApi, notasSinMarcas, type NotaDelLead } from '@/lib/api/embudo.se
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { diaDeLaCasa, horaDeLaCasa } from '@/lib/agenda/hora-de-la-casa';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /**
  * 🔴 PL-13 (QA del 04-10-2026): las notas del interesado SE GUARDAN, con quién
@@ -122,7 +123,7 @@ export function NotasDelLead({
           </li>
         )}
         {!cargando && notas.length === 0 && !viejas && (
-          <li className="text-caption text-muted-foreground">Todavía no hay notas.</li>
+          <VacioChico as="li" titulo="Todavía no hay notas." ilustracion="mensajes" />
         )}
       </ul>
     </div>

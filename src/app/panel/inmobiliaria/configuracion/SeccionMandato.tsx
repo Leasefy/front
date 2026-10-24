@@ -35,6 +35,7 @@ import { PESOS, QUE_ES_LA_MODALIDAD, diaLegible } from '@/lib/mandato/textos';
 import { EsqueletoDeSeccion } from './piezas';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 type Borrador = Omit<CobroAlArrendar, 'id'> & { id?: string; clave: string };
 
@@ -270,7 +271,7 @@ function CobrosAlArrendar({
       </p>
 
       {filas.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hay cobros configurados.</p>
+        <VacioChico titulo="No hay cobros configurados." ilustracion="sobre_cobro" />
       ) : (
         <div className="space-y-3">
           {filas.map((f) => (

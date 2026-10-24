@@ -40,6 +40,7 @@ import {
   type CuentasContables,
 } from '@/lib/api/cierre-de-conciliacion';
 import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /** El mismo rango que el back (1 a 365 días). */
 export function diasDeAlertaValidos(texto: string): number | null {
@@ -296,7 +297,7 @@ export function ConciliacionCierreYEfectivo() {
         </p>
         {!contables.disponible && <p className="text-caption text-fg-muted">{contables.motivo}</p>}
         {contables.cuentas.length === 0 ? (
-          <p className="text-caption text-fg-muted">No hay cuentas bancarias: se registran en Configuración → Medios de pago.</p>
+          <VacioChico titulo="No hay cuentas bancarias" detalle="Se registran en Configuración → Medios de pago." ilustracion="banco" />
         ) : (
           <ul className="space-y-2">
             {contables.cuentas.map((c) => (

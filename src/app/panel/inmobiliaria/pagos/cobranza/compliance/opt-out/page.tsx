@@ -16,6 +16,7 @@
  * Refs mvp:docs/DESIGN.md §4 (cards), §16 (tabular-nums).
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, BellSlash, MagnifyingGlass } from '@phosphor-icons/react'
 
@@ -283,7 +284,8 @@ function OptOutContent() {
 
             {visibles.length === 0 ? (
               <div className="px-6 py-12 text-center">
-                <p className="text-body-sm font-medium text-fg">Ninguna solicitud con ese filtro</p>
+                <Ilustracion nombre="lupa" tamano={96} className="mx-auto mb-2" />
+                  <p className="text-body-sm font-medium text-fg">Ninguna solicitud con ese filtro</p>
                 <p className="mt-1 text-caption text-fg-muted">Cambia la pestaña o borra la búsqueda para ver las demás.</p>
               </div>
             ) : (

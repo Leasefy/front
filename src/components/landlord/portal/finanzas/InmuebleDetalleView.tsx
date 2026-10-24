@@ -5,6 +5,7 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { Card } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import type { FinanzasInmuebleDetalle, FinanzasPagos } from '@/lib/api/owner-finanzas.types';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 interface InmuebleDetalleViewProps {
   detalle: FinanzasInmuebleDetalle;
@@ -112,7 +113,7 @@ export function InmuebleDetalleView({ detalle, pagos }: InmuebleDetalleViewProps
         <Card className="p-4 sm:p-6 mt-6">
           <h2 className="text-base font-semibold mb-4">Historial de pagos</h2>
           {!pagos || pagos.items.length === 0 ? (
-            <p className="text-sm text-fg-muted">Todavía no hay pagos registrados.</p>
+            <VacioChico titulo="Todavía no hay pagos registrados." ilustracion="billetera" />
           ) : (
             <ul className="divide-y divide-border">
               {pagos.items.map((p) => (

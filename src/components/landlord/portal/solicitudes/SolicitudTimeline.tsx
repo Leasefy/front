@@ -4,6 +4,7 @@ import { CheckCircle, Megaphone } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import type { TimelineEntry } from '@/lib/api/owner-solicitudes.types';
 import { STATUS_LABELS } from '@/lib/api/owner-solicitudes.types';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /**
  * Timeline de debido proceso de una solicitud (F4): eventos de gestión + llamados de atención.
@@ -16,7 +17,7 @@ export function SolicitudTimeline({ timeline }: { timeline: TimelineEntry[] }) {
   const { formatDate } = useI18n();
 
   if (timeline.length === 0) {
-    return <p className="text-sm text-fg-muted">Todavía no hay movimientos registrados.</p>;
+    return <VacioChico titulo="Todavía no hay movimientos registrados." ilustracion="portapapeles" />;
   }
 
   // Newest first (defensivo: el back puede venir ordenado, pero no lo asumimos).

@@ -17,6 +17,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 import { useI18n } from '@/lib/i18n';
 import { recibosDelInquilinoApi, type ReciboDelInquilino } from '@/lib/api/recibos-del-inquilino.service';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
@@ -69,7 +70,7 @@ export function RecibosDeCaja({
       {error ? (
         <FalloDeCarga error={error} queEs="tus recibos" onReintentar={onReintentar} />
       ) : recibos.length === 0 ? (
-        <p className="text-sm text-fg-muted">Todavía no tienes recibos de caja.</p>
+        <VacioChico titulo="Todavía no tienes recibos de caja." ilustracion="factura" />
       ) : (
         <div className="space-y-2">
           {recibos.map((r) => (

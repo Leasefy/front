@@ -53,6 +53,7 @@ import { TablePagination } from '@/components/ui/pagination';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { EsqueletoDeSeccion } from './piezas';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 export const TIPOS: Record<BaseTributaria, string> = {
   ARRENDAMIENTO: 'Arrendamiento',
@@ -432,7 +433,7 @@ function PlanEditable({
         </table>
       </div>
       {filasDelPlan.length === 0 ? (
-        <p className="text-sm text-fg-muted">Ningún concepto del archivo coincide con la búsqueda.</p>
+        <VacioChico titulo="Ningún concepto del archivo coincide con la búsqueda." ilustracion="lupa" />
       ) : (
         <TablePagination
           total={pagDelPlan.total}

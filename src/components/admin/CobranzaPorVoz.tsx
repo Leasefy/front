@@ -22,6 +22,7 @@ import {
   tonoDelPago,
   urgencia,
 } from '@/lib/admin/textos-del-admin'
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /* ── Contract: docs/ADMIN-API-CONTRACT.md (back repo) — GET /dashboard ─────
  * 12 independent blocks via Promise.allSettled; each block may be null
@@ -177,7 +178,7 @@ function frenteAAyer(hoy: number, ayer: number): string | null {
 // ── lo cobrado frente al costo, 14 días ──────────────────────────────────────
 
 function BarrasDeCatorceDias({ trend }: { trend: DayBucket[] }) {
-  if (trend.length === 0) return <p className="text-body-sm text-fg-muted">Todavía no hay días con llamadas.</p>
+  if (trend.length === 0) return <VacioChico titulo="Todavía no hay días con llamadas." ilustracion="grafica" />
   const cobrado = trend.map((d) => num(d.paid_total))
   const costo = trend.map((d) => num(d.vapi_cost) * USD_TO_COP)
   const tope = Math.max(...cobrado, ...costo, 1)
@@ -430,7 +431,7 @@ export function CobranzaPorVoz({
 
           <Tarjeta titulo="Cómo terminan las llamadas" descripcion="Los últimos 30 días.">
             {resultados.length === 0 ? (
-              <p className="text-body-sm text-fg-muted">Todavía no hay llamadas terminadas.</p>
+              <VacioChico titulo="Todavía no hay llamadas terminadas." ilustracion="mensajes" />
             ) : (
               <ul className="space-y-3">
                 {resultados.map((o) => {
@@ -502,13 +503,13 @@ export function CobranzaPorVoz({
                 />
               </div>
             ) : (
-              <p className="text-body-sm text-fg-muted">No hay experimentos en curso.</p>
+              <VacioChico titulo="No hay experimentos en curso." ilustracion="bombillo" />
             )}
           </Tarjeta>
 
           <Tarjeta titulo="Pagos de las últimas 24 horas" descripcion={pagos.length > 0 ? contar(pagos.length, 'pago', 'pagos') : undefined}>
             {pagos.length === 0 ? (
-              <p className="text-body-sm text-fg-muted">Todavía no hay pagos hoy.</p>
+              <VacioChico titulo="Todavía no hay pagos hoy." ilustracion="billetera" />
             ) : (
               <ul className="divide-y divide-border-faint">
                 {pagos.map((t) => (

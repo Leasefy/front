@@ -315,7 +315,7 @@ export function PantallaDelEstadoDeCuenta({
             <Link
               href={regreso.href}
               data-testid="estado-volver"
-              className="inline-flex items-center text-body-sm text-fg-muted transition-colors hover:text-fg"
+              className="inline-flex items-center text-body-sm text-fg-muted transition-colors hover:text-fg [@media(pointer:coarse)]:min-h-11"
             >
               {regreso.label}
             </Link>

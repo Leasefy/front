@@ -750,7 +750,8 @@ describe('Documentos — escribir plantillas propias', () => {
       const clases = el.className.split(/s+/)
       expect(clases).not.toContain('shrink-0')
     }
-    expect(boton.parentElement!.className).toContain('min-w-0')
+    // The header actions stretch to the phone width (`[&>*]:w-full`) and only go auto from `sm:`.
+    expect(boton.parentElement!.className).toContain('[&>*]:w-full')
   })
 
   it('un VIEWER no ve ninguno de los botones de escribir', async () => {

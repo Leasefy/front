@@ -108,7 +108,7 @@ function EditarAcuerdoGeneral() {
             titulo="Ese acuerdo general ya no existe"
             descripcion="Puede que alguien lo haya borrado. Los demás siguen en Acuerdos de pago."
             accion={
-              <Button asChild size="sm" hideArrow>
+              <Button asChild size="sm" hideArrow className="[@media(pointer:coarse)]:min-h-11">
                 <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
               </Button>
             }

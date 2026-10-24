@@ -119,9 +119,8 @@ describe('Visitas del propietario en móvil (T-0173)', () => {
     })
     const selector = container.querySelector('[aria-label="landlord.visits.title"]') as HTMLElement
     expect(selector).not.toBeNull()
-    // El control mide ~569 px; su contenedor debe acotarlo y scrollear.
-    const contenedor = selector.parentElement as HTMLElement
-    expect(contenedor.className).toContain('max-w-full')
-    expect(contenedor.className).toContain('overflow-x-auto')
+    // The status tabs (PestanasDeEstado) are their own rail: it is `min-w-0` and slides sideways inside the card.
+    expect(selector.className).toContain('min-w-0')
+    expect(selector.className).toContain('overflow-x-auto')
   })
 })

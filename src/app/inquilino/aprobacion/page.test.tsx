@@ -338,6 +338,7 @@ describe('vacío en móvil (T-0173)', () => {
     ) as HTMLAnchorElement
     expect(cta).toBeTruthy()
     expect(cta.className).toContain('whitespace-normal')
-    expect(cta.className).toContain('max-w-full')
+    // Nico's CTA is `w-full sm:w-auto` on phones: it fills the card instead of widening the page.
+    expect(cta.className).toContain('w-full')
   })
 })

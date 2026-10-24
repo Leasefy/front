@@ -700,6 +700,28 @@
     }
   }
 
+  /* T-0173 WU-12: edge-anchored controls (the tab-strip scroll chevrons, 4 px
+     from the viewport edge) must not grow the hit area outward: the overflow
+     widened the page past the viewport. -start keeps the left edge and grows
+     right; -end keeps the right edge and grows left. Vertical stays centred. */
+  @media (pointer: coarse) {
+    .hit-area-44-start::after,
+    .hit-area-44-end::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translateY(-50%);
+    }
+    .hit-area-44-start::after {
+      left: 0;
+    }
+    .hit-area-44-end::after {
+      right: 0;
+    }
+  }
+
   /* T-0173 WU-6: @leasefy/cadence Chip and Tabs triggers are 26-34 px tall and
      cadence is not editable from front, so touch gets a 44 px floor here.
      Chip = a role=checkbox button WITHOUT data-state (the Radix Checkbox has

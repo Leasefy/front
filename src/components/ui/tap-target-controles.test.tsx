@@ -51,3 +51,25 @@ describe('cadence chips and tabs get a 44 px height on touch via globals.css', (
     rule('[role="tab"][data-variant="underline"]');
   });
 });
+
+// T-0173 WU-12: an edge-anchored control must never grow its hit area OUTWARD.
+// The tab-strip scroll chevrons are 26 px wide, 4 px from the viewport edge;
+// a centred 44 px ::after stuck out 7 px and widened the page to 366 px on a
+// 360 px phone. They use the inward-only variants instead.
+describe('edge-anchored hit areas grow inward only', () => {
+  const css = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf8');
+  const bar = readFileSync(join(process.cwd(), 'src/components/inmobiliaria/BarraDePestanas.tsx'), 'utf8');
+
+  it('defines inward variants anchored to one edge, inside the coarse query', () => {
+    expect(css).toMatch(/\.hit-area-44-start::after\s*\{[^}]*left:\s*0/);
+    expect(css).toMatch(/\.hit-area-44-end::after\s*\{[^}]*right:\s*0/);
+    const first = css.indexOf('.hit-area-44-start::after');
+    expect(css.slice(Math.max(0, first - 400), first)).toContain('@media (pointer: coarse)');
+  });
+
+  it('the strip chevrons use them and never the centred utility', () => {
+    expect(bar).toContain('hit-area-44-start');
+    expect(bar).toContain('hit-area-44-end');
+    expect(bar).not.toMatch(/hit-area-44(?![-\w])/);
+  });
+});

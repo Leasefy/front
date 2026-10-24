@@ -479,7 +479,7 @@ export function BarraDePestanas({
           tabIndex={overflow.start ? 0 : -1}
           onClick={() => scrollByStep(-1)}
           className={cn(
-            'absolute left-1 top-1/2 z-20 -translate-y-1/2 hit-area-44 rounded-full border border-border bg-bg p-1 text-fg-muted shadow-sm transition-opacity hover:text-fg',
+            'absolute left-1 top-1/2 z-20 -translate-y-1/2 hit-area-44-start rounded-full border border-border bg-bg p-1 text-fg-muted shadow-sm transition-opacity hover:text-fg',
             overflow.start ? 'opacity-100' : 'pointer-events-none opacity-0',
           )}
         >
@@ -497,7 +497,7 @@ export function BarraDePestanas({
           tabIndex={overflow.end ? 0 : -1}
           onClick={() => scrollByStep(1)}
           className={cn(
-            'absolute right-1 top-1/2 z-20 -translate-y-1/2 hit-area-44 rounded-full border border-border bg-bg p-1 text-fg-muted shadow-sm transition-opacity hover:text-fg',
+            'absolute right-1 top-1/2 z-20 -translate-y-1/2 hit-area-44-end rounded-full border border-border bg-bg p-1 text-fg-muted shadow-sm transition-opacity hover:text-fg',
             overflow.end ? 'opacity-100' : 'pointer-events-none opacity-0',
           )}
         >

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { CajaQueEntra } from '@/components/estado/entrada-del-estado';
+import { ilustracionDelVacio } from '@/lib/vacios/ilustracion-del-vacio';
 
 /**
  * EmptyState — EL estado vacío del panel. Canónico único.
@@ -79,10 +80,10 @@ export interface EmptyStateProps {
    */
   children?: React.ReactNode;
   /**
-   * Una ilustración 3D de Cadence 2 en lugar del ícono (casa, alcancia,
-   * billetera, escudo, monedas): para el vacío GRANDE de una sección, el que
-   * invita a empezar. Los vacíos chicos (dentro de un cajón o una tarjeta)
-   * siguen con el ícono.
+   * La ilustración 3D de Cadence 2 que pide la pantalla (casa, alcancia,
+   * billetera, escudo, monedas…), a 136 px. Sin ella se deduce de lo que falta
+   * (`ilustracionDelVacio`), a 112 px: desde el 23-10-2026 TODO vacío lleva la
+   * suya (Nico), también los chicos de un cajón o una tarjeta.
    */
   ilustracion?: NombreIlustracion;
   /** Additional CSS classes */
@@ -134,16 +135,14 @@ export function EmptyState({
       className={cn('flex flex-col items-center justify-center px-6 py-12 text-center', className)}
       data-testid="empty-state"
     >
-      {ilustracion ? (
-        <Ilustracion nombre={ilustracion} tamano={136} className="mb-2" />
-      ) : (
-        <span
-          className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
-          aria-hidden="true"
-        >
-          <IconComponent className="h-6 w-6" weight="duotone" />
-        </span>
-      )}
+      {/* Nico (23-10-2026): todo vacío lleva su ilustración 3D. La que pide la pantalla o, si no, la que sale de
+          lo que falta (`ilustracionDelVacio`); el ícono queda como pista para quien lee el código. */}
+      <Ilustracion
+        nombre={ilustracion ?? ilustracionDelVacio(title, description)}
+        tamano={ilustracion ? 136 : 112}
+        className="mb-2"
+        data-icono={IconComponent.displayName ?? undefined}
+      />
       <p className="text-[15px] font-medium text-fg">{title}</p>
       <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-fg-muted">{description}</p>
       {children && <div className="mt-5 w-full max-w-sm text-left">{children}</div>}

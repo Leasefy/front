@@ -552,11 +552,13 @@ describe('pantallas de uso diario — controles por primitiva', () => {
 })
 
 describe('un solo estado vacío', () => {
-  it('el canónico encierra el ícono en un CÍRCULO, no en una loseta', () => {
-    // «todo en grises y siempre encerrado en círculos» (Nico, 2026-09-03).
+  it('el canónico SIEMPRE lleva su ilustración 3D, ni círculo ni loseta', () => {
+    // Antes «todo en grises y siempre encerrado en círculos» (Nico, 2026-09-03); desde el 23-10-2026: «todo empty
+    // state debe tener sí o sí una ilustración 3D asociada» (Nico).
     const fuente = leer('components/ui/empty-state.tsx')
-    expect(fuente).toMatch(/rounded-full bg-surface-muted/)
-    expect(fuente).not.toMatch(/rounded-(?:2xl|xl|lg|md)\s+bg-surface-muted/)
+    expect(fuente).toMatch(/<Ilustracion\b/)
+    expect(fuente).toContain('ilustracionDelVacio(')
+    expect(fuente).not.toMatch(/rounded-(?:full|2xl|xl|lg|md)\s+bg-surface-muted/)
   })
 
   it('data-display/EmptyState delega y no dibuja su propio markup', () => {

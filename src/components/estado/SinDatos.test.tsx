@@ -118,14 +118,14 @@ describe('<SinDatos>', () => {
     expect(container.textContent).not.toContain('análisi ')
   })
 
-  it('🔴 la lupa es sólo para la búsqueda: el vacío de verdad sin ícono del dominio lleva una bandeja (revisora r27, C10)', () => {
-    const icono = () => container.querySelector('[data-testid="sin-datos"] svg')?.innerHTML ?? ''
+  it('🔴 la lupa es sólo para la búsqueda: el vacío de verdad lleva la ilustración de lo que falta (revisora r27, C10; Nico 23-10: siempre en 3D)', () => {
+    const ilustracion = () =>
+      container.querySelector('[data-testid="sin-datos"] [data-ilustracion]')?.getAttribute('data-ilustracion') ?? ''
     pintar({ queSon: 'personas' })
-    const delVacio = icono()
+    expect(ilustracion()).toBe('cedula')
     pintar({ hayFiltros: true, queSon: 'personas', onLimpiarFiltros: () => {} })
-    const deLaBusqueda = icono()
-    expect(delVacio).not.toBe('')
-    expect(deLaBusqueda).not.toBe('')
-    expect(delVacio).not.toBe(deLaBusqueda)
+    expect(ilustracion()).toBe('lupa')
+    pintar({ queSon: 'personas', ilustracion: 'equipo' })
+    expect(ilustracion()).toBe('equipo')
   })
 })

@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CajaQueEntra } from './entrada-del-estado'
 import { useTr } from '@/lib/i18n/use-tr'
+import { ilustracionDelVacio } from '@/lib/vacios/ilustracion-del-vacio'
 
 export interface SinDatosProps {
   /**
@@ -115,13 +116,14 @@ export function SinDatos({
       data-testid="sin-datos"
       data-caso={hayFiltros ? 'filtros' : 'vacio'}
     >
-      {ilustracion && !hayFiltros ? (
-        <Ilustracion nombre={ilustracion} tamano={136} className="mx-auto" />
-      ) : (
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
-          <Icono weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
-        </div>
-      )}
+      {/* Nico (23-10-2026): todo vacío con su ilustración 3D. Con filtros, la lupa (lo que falta es lo buscado);
+          sin ellos, la que pide la pantalla o la que sale de lo que son («pagos» → billetera). */}
+      <Ilustracion
+        nombre={hayFiltros ? 'lupa' : (ilustracion ?? ilustracionDelVacio(queSon, titulo, descripcion))}
+        tamano={136}
+        className="mx-auto"
+        data-icono={Icono.displayName ?? undefined}
+      />
 
       <div className="mt-4 space-y-1.5">
         <p className="text-[15px] font-semibold text-fg">{tituloFinal}</p>

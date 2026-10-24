@@ -8,7 +8,9 @@
 import { ArrowSquareOut, CaretRight } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 
+import { Ilustracion } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
+import { ilustracionDelVacio } from '@/lib/vacios/ilustracion-del-vacio';
 
 export function EsqueletoDeSeccion({ filas = 4 }: { filas?: number }) {
   return (
@@ -35,8 +37,12 @@ export function VacioDeSeccion({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-14 text-center">
-      {/* Glow up 22-10: el ícono suelto, sin caja (Cadence 2). */}
-      <Icono className="h-8 w-8 text-fg-subtle" weight="light" aria-hidden="true" />
+      {/* Nico (23-10-2026): todo vacío con su ilustración 3D, la que sale de lo que falta. */}
+      <Ilustracion
+        nombre={ilustracionDelVacio(titulo, ayuda)}
+        tamano={112}
+        data-icono={Icono.displayName ?? undefined}
+      />
       <div className="space-y-1">
         <p className="text-base font-medium text-fg">{titulo}</p>
         <p className="mx-auto max-w-sm text-sm text-fg-muted">{ayuda}</p>

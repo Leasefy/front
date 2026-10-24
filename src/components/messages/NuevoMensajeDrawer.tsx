@@ -25,8 +25,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Buildings, MagnifyingGlass, PaperPlaneTilt, Users } from '@phosphor-icons/react';
-import { Avatar, SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
+import { Buildings, MagnifyingGlass, PaperPlaneTilt } from '@phosphor-icons/react';
+import { Avatar, Ilustracion, SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { mensajeDelHiloDirecto } from './fallo-del-hilo-directo';
 
@@ -358,9 +358,8 @@ function VacioDeLaPestana({
       className="flex flex-col items-center justify-center px-6 py-16 text-center"
       data-testid="pestana-vacia"
     >
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
-        <Users className="h-6 w-6 text-fg-muted" weight="duotone" />
-      </div>
+      {/* Nico (23-10-2026): todo vacío con su ilustración 3D. */}
+      <Ilustracion nombre={hayBusqueda ? 'lupa' : 'cedula'} tamano={112} className="mb-2" />
       <p className="mb-1 text-sm font-semibold text-fg">No hay {quienes} en esta lista</p>
       <p className="max-w-xs text-sm text-fg-muted">
         {hayBusqueda

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CrossFade } from '@leasefy/cadence';
+import { CrossFade, Ilustracion } from '@leasefy/cadence';
 import { useRouter } from 'next/navigation';
 import {
   FileText,
@@ -103,9 +103,8 @@ const mesEnCurso = () => new Date().toISOString().slice(0, 7);
 function SinDatosDelReporte() {
   return (
     <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-12 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
-        <ChartBar className="h-5 w-5 text-fg-muted" weight="duotone" />
-      </div>
+      {/* Nico (23-10-2026): todo vacío con su ilustración 3D. */}
+      <Ilustracion nombre="grafica" tamano={112} />
       <div className="space-y-1">
         <p className="text-body font-medium text-fg">Todavía no hay nada que mostrar</p>
         <p className="mx-auto max-w-sm text-body-sm text-fg-muted">

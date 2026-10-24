@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Appear, Collapse } from '@leasefy/cadence';
+import { Appear, Collapse, Ilustracion } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { MotivosDelValidador } from './MotivosDelValidador';
 import {
@@ -651,9 +651,8 @@ function CatalogoDeClausulas({
         data-testid="plantilla-catalogo-vacio"
         className="rounded-lg bg-surface-muted px-6 py-10 text-center"
       >
-        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-surface-muted text-fg-muted">
-          <FileText className="h-5 w-5" aria-hidden="true" />
-        </div>
+        {/* Nico (23-10-2026): todo vacío con su ilustración 3D. */}
+        <Ilustracion nombre="contrato" tamano={96} className="mx-auto" />
         <p className="text-body-sm text-fg mt-3">Esta plantilla no tiene cláusulas opcionales</p>
         <p className="text-caption text-fg-muted mt-1">
           El contrato sale con el texto de la plantilla, que ya trae lo que la ley exige.

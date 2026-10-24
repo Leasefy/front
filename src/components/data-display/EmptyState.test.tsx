@@ -53,7 +53,8 @@ describe('EmptyState', () => {
     expect(container.textContent ?? '').toContain('No hay deudores aún')
     expect(container.textContent ?? '').toContain('Importa una cartera CSV o agrega manualmente.')
 
-    expect(container.querySelector('[data-testid="fake-icon"]')).not.toBeNull()
+    // Nico 23-10-2026: todo vacío con su ilustración 3D (el ícono ya no se dibuja; se deduce de lo que falta).
+    expect(container.querySelector('[data-ilustracion]')?.getAttribute('data-ilustracion')).toBe('sobre_cobro')
   })
 
   it('renders primaryCta as an anchor when href is provided', () => {

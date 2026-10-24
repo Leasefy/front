@@ -143,6 +143,8 @@ vi.mock('@leasefy/cadence', async (importOriginal) => ({
   // La cifra de arriba (`CifraHeroe`) anima su barra con el movimiento de Cadence.
   motionDuration: (await importOriginal<typeof import('@leasefy/cadence')>()).motionDuration,
   motionEase: (await importOriginal<typeof import('@leasefy/cadence')>()).motionEase,
+  // Los vacíos llevan su ilustración 3D (Nico 23-10): la real.
+  Ilustracion: (await importOriginal<typeof import('@leasefy/cadence')>()).Ilustracion,
   SegmentedControl: ({ options, value, onChange }: { options: Array<{ value: string; label: React.ReactNode }>; value: string; onChange: (v: string) => void }) =>
     React.createElement(
       'div',

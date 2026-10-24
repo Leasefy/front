@@ -62,7 +62,15 @@ import {
   verificarFactorNuevo,
   type FactorPorVerificar,
 } from '@/lib/auth/inscripcion-del-segundo-factor';
+import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock';
+import {
+  inscribirYVerificarConElMock,
+  liberarYVerificarConElMock,
+  resolverCodigoDelMock,
+  userIdDelToken,
+} from '@/lib/auth/mock-del-segundo-factor';
 import { POR_QUE_LO_PEDIMOS } from '@/lib/auth/por-que-el-segundo-factor';
+import { useMockDelSegundoFactor } from '@/lib/auth/use-mock-del-segundo-factor';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import { Appear, Collapse, CrossFade, FormError, motionScale, motionSpring } from '@leasefy/cadence';
@@ -151,6 +159,8 @@ export function ActivarSegundoFactorPasoAPaso({
   const [codigo, setCodigo] = useState('');
   const [verificando, setVerificando] = useState(false);
   const [errorDelCodigo, setErrorDelCodigo] = useState<string | null>(null);
+  // Sólo fuera de producción (`lib/config/entorno.ts`): en producción es siempre `false`.
+  const mockHabilitado = useMockDelSegundoFactor();
   /*
    * Hacia dónde se movió la persona: «Continuar» entra por la derecha y
    * «Atrás» por la izquierda. Se deriva del paso anterior durante el render
@@ -271,11 +281,37 @@ export function ActivarSegundoFactorPasoAPaso({
       setVerificando(true);
       setErrorDelCodigo(null);
       try {
+        const token = getAccessToken() ?? tokenRef.current;
+        // Mock (sólo fuera de producción): `123456` se cambia por el código real.
+        const resuelto = await resolverCodigoDelMock({
+          codigo: codigoCompleto,
+          userId: userIdDelToken(token),
+          factorId: actual.factorId,
+        });
+        if (!resuelto.ok) {
+          // Sin secreto de este factor: el back lo libera y el mock inscribe y
+          // verifica uno nuevo (una sola vez; si falla, el mensaje de siempre).
+          const recuperado =
+            resuelto.sinSecreto && token
+              ? await liberarYVerificarConElMock({ token, enElIngreso: true })
+              : null;
+          if (recuperado?.ok) {
+            activadoRef.current = true;
+            setPaso('listo');
+            onActivado(recuperado.factorId);
+            return;
+          }
+          verificandoRef.current = false;
+          setVerificando(false);
+          setCodigo('');
+          setErrorDelCodigo(recuperado ? recuperado.mensaje : resuelto.mensaje);
+          return;
+        }
         await verificarFactorNuevo({
           factorId: actual.factorId,
-          codigo: codigoCompleto,
+          codigo: resuelto.codigo,
           enElIngreso: true,
-          token: getAccessToken() ?? tokenRef.current,
+          token,
         });
       } catch (err) {
         verificandoRef.current = false;
@@ -296,6 +332,37 @@ export function ActivarSegundoFactorPasoAPaso({
     },
     [onActivado],
   );
+
+  /**
+   * Mock (sólo fuera de producción): inscribe el factor como siempre, guarda
+   * el secreto y completa el primer código con el TOTP calculado, sin QR.
+   */
+  const usarElMock = useCallback(async () => {
+    if (verificandoRef.current) return;
+    setPreparando(true);
+    setErrorAlPreparar(null);
+    try {
+      const token = getAccessToken() ?? tokenRef.current;
+      tokenRef.current = token;
+      if (!token) throw new Error('Tu sesión se cerró. Vuelve a entrar con tu contraseña.');
+      if (await consultaRef.current) return;
+      verificandoRef.current = true;
+      const { factorId } = await inscribirYVerificarConElMock({ token, enElIngreso: true });
+      activadoRef.current = true;
+      setPaso('listo');
+      onActivado(factorId);
+    } catch (err) {
+      verificandoRef.current = false;
+      setErrorAlPreparar(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos activar el mock. Intenta de nuevo en un momento.',
+          accion: 'activar el mock',
+        }),
+      );
+    } finally {
+      setPreparando(false);
+    }
+  }, [onActivado]);
 
   const copiarClave = useCallback(async () => {
     if (!factor?.secret) return;
@@ -393,6 +460,7 @@ export function ActivarSegundoFactorPasoAPaso({
             preparando={preparando}
             error={errorAlPreparar}
             onContinuar={() => void irAEscanear()}
+            onUsarMock={mockHabilitado ? () => void usarElMock() : undefined}
           />
         ) : null}
 
@@ -546,6 +614,7 @@ export function ActivarSegundoFactorPasoAPaso({
             <p className="text-pretty text-center text-caption text-fg-subtle">
               El código cambia cada 30 segundos. Si te lo rechaza, espera al siguiente.
             </p>
+            {mockHabilitado ? <AvisoDelMock /> : null}
             {/* El mismo pie del paso del QR (Nico, 02-10: «ahí con un link y el
                 otro bello con algo mejor, déjalo como está en el paso del QR»). */}
             <div className="flex flex-col-reverse gap-3 sm:flex-row">
@@ -578,6 +647,19 @@ export function ActivarSegundoFactorPasoAPaso({
         </div>
       </section>
     </div>
+  );
+}
+
+/** Sólo fuera de producción: dice que `123456` es el atajo del mock, no seguridad real. */
+function AvisoDelMock() {
+  return (
+    <p
+      className="flex flex-wrap items-center justify-center gap-2 text-center text-caption text-fg-subtle"
+      data-testid="aviso-del-mock"
+    >
+      <InsigniaDelMock />
+      Con el mock activo, escribir 123456 envía el código real de este navegador.
+    </p>
   );
 }
 
@@ -644,11 +726,14 @@ function PasoDescargar({
   preparando,
   error,
   onContinuar,
+  onUsarMock,
 }: {
   plataforma: Plataforma | null;
   preparando: boolean;
   error: string | null;
   onContinuar: () => void;
+  /** Sólo fuera de producción; sin esto la opción no existe. */
+  onUsarMock?: () => void;
 }) {
   const tienda = (
     href: string,
@@ -754,6 +839,23 @@ function PasoDescargar({
       >
         {preparando ? 'Preparando tu código…' : 'Ya tengo la app, continuar'}
       </Button>
+
+      {onUsarMock ? (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            hideArrow
+            onClick={onUsarMock}
+            disabled={preparando}
+            data-testid="usar-mock-de-autenticacion"
+          >
+            Usar mock de autenticación
+          </Button>
+          <InsigniaDelMock />
+        </div>
+      ) : null}
     </div>
   );
 }

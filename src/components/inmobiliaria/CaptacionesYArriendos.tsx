@@ -24,7 +24,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { agentesApi } from '@/lib/api/inmobiliaria.service';
 import type { CaptacionesYArriendos as Datos } from '@/lib/types/inmobiliaria';
-import { diaLegible } from '@/lib/mandato/textos';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -194,7 +194,7 @@ function ResumenPorAsesor({
           ) : null}
           {asesores.map((a) => (
             <TableRow key={a.userId} className="border-t border-border" data-testid={`asesor-${a.userId}`}>
-              <TableCell className="p-3 pl-4 text-fg">
+              <TableCell className="p-3 pl-4 text-fg [overflow-wrap:anywhere]">
                 {a.nombre}
                 {a.activo ? '' : ' · ya no está en el equipo'}
               </TableCell>
@@ -295,8 +295,9 @@ function TablaDelPeriodo({
           </Select>
         ) : null}
       </div>
-      <Table className="md:min-w-[720px]">
-        <TableHeader>
+      {/* En el celular cada fila es una tarjeta: el inmueble, debajo la persona y el asesor, y la fecha a la derecha. */}
+      <Table className="md:min-w-[720px] max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow className="border-b border-border-faint">
             <TableHead className="p-3 pl-4 text-left">Inmueble</TableHead>
             <TableHead className="p-3 text-left">{quien}</TableHead>
@@ -304,10 +305,10 @@ function TablaDelPeriodo({
             <TableHead className="p-3 pr-4 text-right">Fecha</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="max-md:block">
           {pag.pageItems.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} className="p-0">
+            <TableRow className="max-md:block">
+              <TableCell colSpan={4} className="p-0 max-md:block">
                 <SinDatos
                   hayFiltros={hayFiltros}
                   queSon={pestana === 'captaciones' ? 'captaciones' : 'arriendos cerrados'}
@@ -328,14 +329,23 @@ function TablaDelPeriodo({
             </TableRow>
           ) : (
             pag.pageItems.map((f) => (
-              <TableRow key={f.id} className="border-b border-border last:border-b-0" data-testid={`fila-${pestana}-${f.id}`}>
-                <TableCell className="p-3 pl-4 text-fg">{f.inmueble}</TableCell>
-                <TableCell className="p-3 text-fg-muted">{f.persona || '—'}</TableCell>
-                <TableCell className="p-3">
+              <TableRow
+                key={f.id}
+                className="border-b border-border last:border-b-0 max-md:flex max-md:items-start max-md:justify-between max-md:gap-3 max-md:px-4 max-md:py-3"
+                data-testid={`fila-${pestana}-${f.id}`}
+              >
+                <TableCell className="p-3 pl-4 text-fg max-md:block max-md:min-w-0 max-md:p-0">
+                  {f.inmueble}
+                  <span className="mt-0.5 block text-caption text-fg-muted md:hidden">
+                    {[f.persona, f.asesor ?? 'sin asesor'].filter(Boolean).join(' · ')}
+                  </span>
+                </TableCell>
+                <TableCell className="p-3 text-fg-muted max-md:hidden">{f.persona || '—'}</TableCell>
+                <TableCell className="p-3 max-md:hidden">
                   {f.asesor ? <span className="text-fg">{f.asesor}</span> : <span className="text-fg-subtle">Sin asesor</span>}
                 </TableCell>
-                <TableCell className="whitespace-nowrap p-3 pr-4 text-right font-mono text-caption text-fg-muted">
-                  {diaLegible(f.fecha)}
+                <TableCell className="whitespace-nowrap p-3 pr-4 text-right font-mono text-caption text-fg-muted max-md:block max-md:shrink-0 max-md:p-0">
+                  {fechaCorta(f.fecha)}
                 </TableCell>
               </TableRow>
             ))

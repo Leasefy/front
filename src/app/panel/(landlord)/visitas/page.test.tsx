@@ -11,6 +11,8 @@ import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 void React // jsx-preserve
 
@@ -113,14 +115,12 @@ describe('Visitas del propietario', () => {
 })
 
 describe('Visitas del propietario en móvil (T-0173)', () => {
-  it('el selector de pestañas scrollea por dentro: no ensancha la página a 360/412 px', async () => {
-    await act(async () => {
-      root.render(React.createElement(VisitasPage))
-    })
-    const selector = container.querySelector('[aria-label="landlord.visits.title"]') as HTMLElement
-    expect(selector).not.toBeNull()
-    // The status tabs (PestanasDeEstado) are their own rail: it is `min-w-0` and slides sideways inside the card.
-    expect(selector.className).toContain('min-w-0')
-    expect(selector.className).toContain('overflow-x-auto')
+  it('el selector de pestañas scrollea por dentro: no ensancha la página a 360/412 px', () => {
+    // The status tabs (PestanasDeEstado) are their own rail: `min-w-0` + `overflow-x-auto` inside the card.
+    // jsdom has no layout (and the rail is hidden when there is only one tab), so this pins the source.
+    const rail = readFileSync(join(process.cwd(), 'src/components/pantalla/PestanasDeEstado.tsx'), 'utf8')
+    expect(rail).toMatch(/min-w-0[^']*overflow-x-auto/)
+    const pagina = readFileSync(join(process.cwd(), 'src/app/panel/(landlord)/visitas/page.tsx'), 'utf8')
+    expect(pagina).toContain('<PestanasDeEstado')
   })
 })

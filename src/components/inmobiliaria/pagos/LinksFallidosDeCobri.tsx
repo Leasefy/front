@@ -18,6 +18,7 @@
  * Lo que le escribe al inquilino sale por Cobri en el horario de ley y con la
  * Ley 2300 (un contacto al día): por eso se confirma antes y la fila lo dice.
  */
+import { Ilustracion } from '@leasefy/cadence';
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { ArrowsClockwise, Bank, ClipboardText, Headset, LinkSimple, MagnifyingGlass, XCircle } from '@phosphor-icons/react'
@@ -209,6 +210,7 @@ export function LinksFallidosDeCobri({
       </div>
       {visibles.length === 0 ? (
         <div className="px-6 py-12 text-center" data-testid="cobri-fallidos-sin-resultados">
+          <Ilustracion nombre="lupa" tamano={80} className="mx-auto mb-2 block" />
           <p className="text-body-sm font-medium text-fg">{tr('Ningún enlace con esa búsqueda')}</p>
           <p className="mt-1 text-caption text-fg-muted">{tr('Borra la búsqueda para ver los demás.')}</p>
         </div>

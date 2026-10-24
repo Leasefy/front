@@ -28,6 +28,7 @@
  * se hace de vez en cuando, no un filtro de la tabla que está arriba.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Certificate, MagnifyingGlass, User } from '@phosphor-icons/react'
 
@@ -228,6 +229,7 @@ export function CajonDeLaCertificacion({
                 </p>
               ) : resultados.length === 0 ? (
                 <p className="text-caption text-fg-muted" data-testid="cert-sin-resultados">
+                  <Ilustracion nombre="lupa" tamano={56} className="mb-2 block" />
                   Ningún propietario coincide con «{busqueda.trim()}».
                 </p>
               ) : (

@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Spinner as DSSpinner } from '@/components/ui/spinner';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, Ilustracion } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { EstudioPagadoALaInmobiliaria } from '@/components/inmobiliaria/estudios/EstudioPagadoALaInmobiliaria';
 import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio';
@@ -756,6 +756,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
 
                 {!level && !evaluation && !aiError && (
                   <p className="text-caption text-fg-muted">
+                    <Ilustracion nombre="lupa_estudio" tamano={56} className="mb-2 block" />
                     {tr("Aún no hay análisis disponible.")}
                   </p>
                 )}

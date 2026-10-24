@@ -22,6 +22,7 @@
  * la DIAN.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { cn } from '@/lib/utils';
 import { FileText } from '@phosphor-icons/react';
@@ -213,7 +214,7 @@ export function NominaElectronicaPanel() {
                     }
                   />
                 ) : (
-                  <p className="p-5 text-body-sm text-fg-muted">Ningún documento en esta pestaña.</p>
+                  <p className="p-5 text-body-sm text-fg-muted"><Ilustracion nombre="carpeta" tamano={56} className="mb-2 block" />Ningún documento en esta pestaña.</p>
                 )
               ) : (
                   <Table data-testid="tabla-de-documentos" className="max-md:block">

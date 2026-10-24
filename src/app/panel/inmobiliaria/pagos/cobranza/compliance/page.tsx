@@ -16,6 +16,7 @@
  * (rose for warning/error, emerald for ok).
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { formatRelativeTime } from '@/lib/format'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
@@ -253,6 +254,7 @@ function ComplianceOverviewContent() {
             </div>
             {data.habeas_data.open_requests.length === 0 ? (
               <p className="text-body-sm text-muted-foreground text-center py-6">
+                <Ilustracion nombre="escudo" tamano={80} className="mx-auto mb-2 block" />
                 {tr('Ninguna solicitud de no contactar espera su acuse.')}
               </p>
             ) : (

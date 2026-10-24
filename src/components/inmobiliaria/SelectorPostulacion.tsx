@@ -24,6 +24,7 @@
  * necesario que haya postulaciones para crear un nuevo contrato»).
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useMemo, useState } from 'react'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useRouter } from 'next/navigation'
@@ -187,6 +188,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
 
               {elegibles.length === 0 ? (
                 <p className="py-8 text-center text-sm text-fg-muted">
+                  <Ilustracion nombre="lupa" tamano={80} className="mx-auto mb-2 block" />
                   Ninguna postulación coincide con «{busqueda}».
                 </p>
               ) : (

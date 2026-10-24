@@ -1,5 +1,6 @@
 'use client';
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useState } from 'react';
 import Link from 'next/link';
 import { CaretLeft, ShieldCheck, CheckCircle, Warning } from '@phosphor-icons/react';
@@ -95,6 +96,7 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
         {comparacion.candidates.length === 0 ? (
           <Card className="p-6 mt-6">
             <p className="text-sm text-fg-muted">
+              <Ilustracion nombre="cedula" tamano={80} className="mb-2 block" />
               Todavía no hay postulados para comparar en este proceso.
             </p>
           </Card>

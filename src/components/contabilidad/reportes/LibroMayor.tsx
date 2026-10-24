@@ -24,6 +24,7 @@
  * en rojo antes de la tabla — igual que en el balance de prueba.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { CaretRight } from '@phosphor-icons/react';
 
@@ -235,6 +236,7 @@ export function LibroMayor() {
           <div>
             {mayor.filas.length === 0 ? (
               <p className="p-8 text-center text-sm text-fg-muted">
+                <Ilustracion nombre="lupa" tamano={80} className="mx-auto mb-2 block" />
                 No hay movimientos en este rango con estos filtros.
               </p>
             ) : esCelular ? (

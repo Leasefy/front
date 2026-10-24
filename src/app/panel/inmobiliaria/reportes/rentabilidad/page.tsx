@@ -24,7 +24,7 @@ import {
   Buildings,
   DownloadSimple,
 } from '@phosphor-icons/react';
-import { AnimatedNumber, SegmentedControl } from '@leasefy/cadence';
+import { AnimatedNumber, SegmentedControl, Ilustracion } from '@leasefy/cadence';
 
 
 import { cn } from '@/lib/utils';
@@ -529,6 +529,7 @@ function RentabilidadContent() {
               {pageItems.length === 0 ? (
                 <TableRow className="max-md:block">
                   <TableCell colSpan={COLUMNAS.length} className="py-10 text-center text-body-sm text-fg-muted max-md:block">
+                    <Ilustracion nombre="lupa" tamano={80} className="mx-auto mb-2 block" />
                     {tr('Ningún inmueble coincide con la búsqueda o el filtro.')}
                   </TableCell>
                 </TableRow>

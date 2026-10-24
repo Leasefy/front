@@ -1,5 +1,6 @@
 'use client';
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -335,6 +336,7 @@ export function AuditTrail({ contract, rejections = [], expanded = false, classN
       <div className="p-4 pt-6">
         {events.length === 0 ? (
           <p className="text-sm text-fg-muted text-center py-4">
+            <Ilustracion nombre="portapapeles" tamano={56} className="mx-auto mb-2 block" />
             Sin eventos registrados todavía.
           </p>
         ) : (

@@ -23,6 +23,7 @@
  * personas van a firmar.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CaretRight, Scales } from '@phosphor-icons/react'
 import { Collapse } from '@leasefy/cadence'
@@ -225,6 +226,7 @@ export function ProponerCastigo({
                 </div>
               ) : contratos.length === 0 ? (
                 <p className="text-sm text-fg-muted">
+                  <Ilustracion nombre="sobre_cobro" tamano={56} className="mb-2 block" />
                   No hay cartera: no hay nada que castigar.
                 </p>
               ) : (

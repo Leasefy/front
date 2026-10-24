@@ -26,6 +26,7 @@
  * agencia. Mandar el otro no falla ni avisa: asigna a nadie.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useMemo, useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -169,9 +170,7 @@ export function AsignarInmuebleAlAsesor({
               className="rounded-lg border border-border bg-surface-muted px-4 py-6 text-center"
               data-testid="asignar-inmueble-vacio"
             >
-              <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg-muted">
-                <Buildings className="h-6 w-6" weight="duotone" aria-hidden="true" />
-              </span>
+              <Ilustracion nombre="casa" tamano={96} className="mx-auto mb-2" />
               <p className="text-sm font-medium text-fg">
                 No hay otro inmueble para darle
               </p>
@@ -198,6 +197,7 @@ export function AsignarInmuebleAlAsesor({
                 className="rounded-lg border border-border bg-surface-muted px-4 py-6 text-center text-sm text-fg-muted"
                 data-testid="asignar-inmueble-sin-resultados"
               >
+                <Ilustracion nombre="lupa" tamano={80} className="mx-auto mb-2 block" />
                 Ningún inmueble de tu portafolio coincide con «{busqueda.trim()}».
               </p>
             ) : (

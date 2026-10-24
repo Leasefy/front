@@ -79,7 +79,7 @@ import {
   TableRow,
   TableRowAnimada,
 } from '@/components/ui/table';
-import { AnimatedNumber, Appear, Presence } from '@leasefy/cadence';
+import { AnimatedNumber, Appear, Presence, Ilustracion } from '@leasefy/cadence';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -595,7 +595,7 @@ export function Recaudo() {
               {puntos.length > 0 ? (
                 <GraficoDeRecaudo serie={serie ?? []} />
               ) : (
-                <p className="text-body-sm text-fg-muted">{tr("Todavía no hay serie para graficar.")}</p>
+                <p className="text-body-sm text-fg-muted"><Ilustracion nombre="grafica" tamano={56} className="mb-2 block" />{tr("Todavía no hay serie para graficar.")}</p>
               )}
             </section>
 

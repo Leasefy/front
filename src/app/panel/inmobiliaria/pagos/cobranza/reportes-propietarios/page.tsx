@@ -34,6 +34,7 @@
  * un solo primary CTA por vista, tokens semánticos.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -377,6 +378,7 @@ function ReportePreviewCard({
                 <span className="font-medium">{reporte.valor}</span>.
               </p>
               <p className="text-fg-muted">
+                <Ilustracion nombre="portapapeles" tamano={56} className="mb-2 block" />
                 Todavía no hay una narrativa redactada para este reporte. Vuelve a
                 generarlo para que el agente componga el resumen de gestiones y la
                 recomendación con la información de cartera del deudor.

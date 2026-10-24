@@ -18,6 +18,7 @@
  * Lo que queda en la tabla de abajo es la COLA MANUAL.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowCounterClockwise, Receipt, Stack } from '@phosphor-icons/react';
 
@@ -248,6 +249,7 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
         </div>
       ) : (
         <p className="p-4 text-body-sm text-fg-muted" data-testid="lote-vacio">
+          <Ilustracion nombre="banco" tamano={56} className="mb-2 block" />
           No hay un lote esperando aprobación.
         </p>
       )}

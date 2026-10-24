@@ -25,6 +25,7 @@
  * y a nadie más. No pasa por nuestro back ni se guarda acá.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -355,6 +356,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
         {estado?.disponible && !estado.autopago && !formulario && (
           <div className="space-y-3">
             <p className="text-sm text-fg-muted">
+              <Ilustracion nombre="celular_pago" tamano={56} className="mb-2 block" />
               Todavía no tienes cobro automático. Puedes activarlo con una tarjeta y cancelarlo
               cuando quieras.
             </p>

@@ -6,6 +6,7 @@
  * MARCADA y su frase. No corrige nada: dice qué mirar.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useState } from 'react'
 import { Cifra as CifraDeCadence, CrossFade, Eyebrow, FranjaDeCifras } from '@leasefy/cadence'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
@@ -197,6 +198,7 @@ export function CuadreDelRecaudo({ version }: { version: number }) {
               </Card>
             ) : (
               <p className="text-body-sm text-success" data-testid="sin-diferencias">
+                <Ilustracion nombre="banco" tamano={56} className="mb-2 block" />
                 Sin diferencias en este rango: lo reportado por Wompi cuadra con lo liquidado y lo que falta por liquidar.
               </p>
             )}

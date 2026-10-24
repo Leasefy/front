@@ -1,5 +1,6 @@
 'use client'
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useId, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -69,6 +70,7 @@ export function BlogListing() {
 
         {!featured && (
           <p className="landing-bp__empty" data-testid="blog-empty" role="status">
+            <Ilustracion nombre="carpeta" tamano={56} className="mb-2 block" />
             Todavía no hay artículos en {activeCategory}. Pronto.
           </p>
         )}

@@ -21,6 +21,7 @@
  * verdad.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -327,7 +328,7 @@ export function SeccionMovimientos() {
                 }}
               />
             ) : (
-              <p className="p-8 text-center text-sm text-fg-muted">Sin movimientos todavía.</p>
+              <p className="p-8 text-center text-sm text-fg-muted"><Ilustracion nombre="portapapeles" tamano={80} className="mx-auto mb-2 block" />Sin movimientos todavía.</p>
             )}
           </div>
         ) : (

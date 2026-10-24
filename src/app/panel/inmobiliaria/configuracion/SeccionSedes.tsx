@@ -16,6 +16,7 @@
  * creer que la diferencia es del negocio. Se dice arriba, con el número.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Storefront } from '@phosphor-icons/react';
@@ -167,6 +168,7 @@ export function SeccionSedes() {
                   {sedes.length === 0 ? (
                     <TableRow className="max-md:block">
                       <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted max-md:block">
+                        <Ilustracion nombre="edificio" tamano={80} className="mx-auto mb-2 block" />
                         Todavía no hay sedes. Sin ellas el tablero muestra la inmobiliaria entera,
                         que es exactamente lo que hacía hasta ahora.
                       </TableCell>

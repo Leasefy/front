@@ -21,6 +21,7 @@
  * arriba, sugerencias, tabla con filtros y el detalle del turno en un cajón.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useEffect, useState } from 'react'
 import { Card, Chip, Cifra, FranjaDeCifras, MonoLabel } from '@leasefy/cadence'
 import {
@@ -469,6 +470,7 @@ export default function ChatPreguntasPage() {
           <h2 className="text-subtitle font-medium text-fg">Qué mejorar del chat</h2>
           {data.sugerencias.length === 0 ? (
             <p className="text-body-sm text-fg-subtle">
+              <Ilustracion nombre="bombillo" tamano={56} className="mb-2 block" />
               Nada que sugerir con estas preguntas: ningún tema pasa los umbrales (se necesitan al menos 5 preguntas de un tema).
             </p>
           ) : (

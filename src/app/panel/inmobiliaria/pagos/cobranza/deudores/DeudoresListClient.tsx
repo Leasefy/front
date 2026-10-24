@@ -18,6 +18,7 @@
  * Does NOT render raw cédula / phone / email anywhere.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
@@ -547,7 +548,7 @@ export default function DeudoresListClient() {
         <CrossFade swapKey={!isLoading && pages.length === 0 && !error ? 'vacio-filtrado' : 'tabla'}>
         {!isLoading && pages.length === 0 && !error ? (
           <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
-            <Users className="w-7 h-7 text-fg-muted" weight="duotone" aria-hidden="true" />
+            <Ilustracion nombre="lupa" tamano={96} />
             <p className="text-body-sm font-medium text-fg">
               {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
             </p>

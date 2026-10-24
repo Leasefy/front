@@ -50,6 +50,7 @@
  * va a guardar es mentir.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useEffect, useRef, useState } from 'react';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
@@ -419,6 +420,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
         <div className="space-y-4">
           {consignaciones.length === 0 ? (
             <p className="text-sm text-fg-muted" data-testid="nuevo-lead-sin-inmuebles">
+              <Ilustracion nombre="casa" tamano={56} className="mb-2 block" />
               {tr("Todavía no tienes inmuebles consignados. Un interesado se anota sobre uno: consigna el primero y vuelve aquí.")}
             </p>
           ) : (

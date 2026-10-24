@@ -34,6 +34,7 @@
  *    mirar cuando se quiera.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useState } from 'react';
 import { CaretDown, CaretRight, DownloadSimple, SealCheck } from '@phosphor-icons/react';
 
@@ -468,6 +469,7 @@ export function CertificadoDeRetencionesPanel() {
                           </>
                         ) : (
                           <>
+                            <Ilustracion nombre="llaves" tamano={56} className="mb-2 block" />
                             Ningún propietario en esta pestaña.{' '}
                             <button type="button" className="text-primary underline-offset-4 hover:underline" onClick={() => setVista('todos')}>
                               Ver todos

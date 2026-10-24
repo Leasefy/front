@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { AnimatedNumber, Avatar, Callout, KeyValueList } from '@leasefy/cadence';
+import { AnimatedNumber, Avatar, Callout, KeyValueList, Ilustracion } from '@leasefy/cadence';
 import {
   CheckCircle,
   Clock,
@@ -818,6 +818,7 @@ export function RielDeActividad({
           <p className="text-sm text-fg-muted">Cargando…</p>
         ) : ordenado.length === 0 ? (
           <p className="text-sm text-fg-muted" data-testid="riel-vacio">
+            <Ilustracion nombre="portapapeles" tamano={56} className="mb-2 block" />
             Todavía no hay movimientos.
           </p>
         ) : (

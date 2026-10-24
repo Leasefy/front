@@ -23,6 +23,7 @@
  * «No salió».
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useState } from 'react'
 import { CheckCircle, WarningCircle } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
@@ -213,6 +214,7 @@ export function ModalAvisarNoElegidos({
 
           {esperando.length === 0 ? (
             <p className="text-sm text-fg-muted">
+              <Ilustracion nombre="cedula" tamano={56} className="mb-2 block" />
               No hay nadie más esperando respuesta para este inmueble.
             </p>
           ) : (

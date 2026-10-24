@@ -1,5 +1,6 @@
 'use client'
 
+import { Ilustracion } from '@leasefy/cadence';
 import { Scales } from '@phosphor-icons/react'
 import { MonoLabel } from '@leasefy/cadence'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
@@ -206,6 +207,7 @@ export default function Ley2300Page() {
           {/* Ronda 26 (T6): sin faltas, UNA línea (antes «0 en 0 llamadas · 0 deudores y 0 inmobiliarias»). */}
           {(Number(data.stats.total_violations) || 0) === 0 ? (
             <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="ley-2300-faltas">
+              <Ilustracion nombre="escudo" tamano={56} className="mb-2 block" />
               Ninguna falta a la Ley 2300 en los últimos 30 días
               {(Number(data.stats.total_calls) || 0) > 0 ? `, en ${(Number(data.stats.total_calls) || 0).toLocaleString('es-CO')} llamadas.` : '.'}
             </p>

@@ -102,7 +102,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { CrossFade } from '@leasefy/cadence';
+import { CrossFade, Ilustracion } from '@leasefy/cadence';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toast';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
@@ -584,6 +584,7 @@ function UltimosAsientos({
         <p className="px-5 py-6 text-sm text-fg-muted">No se pudo leer el libro.</p>
       ) : asientos.length === 0 ? (
         <p className="px-5 py-6 text-sm text-fg-muted">
+          <Ilustracion nombre="calculadora" tamano={80} className="mb-2 block" />
           Todavía no hay asientos. El primero puede ser manual, o entrar por la migración.
         </p>
       ) : (

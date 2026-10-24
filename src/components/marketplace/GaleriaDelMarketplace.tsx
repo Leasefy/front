@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { motionDuration, motionEase } from '@leasefy/cadence';
+import { motionDuration, motionEase, Ilustracion } from '@leasefy/cadence';
 import { ArrowsOut, CaretDown, Check, Heart, Info, MapTrifold, Play, Plus, X } from '@phosphor-icons/react';
 
 import { LogoDelAdministrador } from '@/components/property/AdministradoPor';
@@ -611,6 +611,7 @@ export function GaleriaDelMarketplace() {
               rejilla(cumplen)
             ) : (
               <p className="rounded-[20px] border border-dashed border-border p-[22px] text-[14.5px] text-fg-muted">
+                <Ilustracion nombre="lupa" tamano={56} className="mb-2 block" />
                 Ninguno cumple todo. Quita una pastilla o mira los que están cerca.
               </p>
             )}

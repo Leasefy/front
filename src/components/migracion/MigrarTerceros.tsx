@@ -37,7 +37,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Presence, SegmentedControl, Stagger, StaggerItem, Ilustracion } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
@@ -2060,6 +2060,7 @@ function ListaDeTrabajo({
 
         {resumen.listos === 0 && resumen.requierenAtencion > 0 ? (
           <p className="text-sm text-fg-muted">
+            <Ilustracion nombre="carpeta" tamano={56} className="mb-2 block" />
             Todavía no hay ninguna lista. Resuelve lo de abajo y van pasando solas.
           </p>
         ) : null}

@@ -18,8 +18,7 @@ import {
   motionDuration,
   motionEase,
   motionStagger,
-  usePrefersReducedMotion,
-} from '@leasefy/cadence';
+  usePrefersReducedMotion, Ilustracion } from '@leasefy/cadence';
 import { motion } from 'framer-motion';
 
 import { useI18n } from '@/lib/i18n';
@@ -406,7 +405,7 @@ export function TarjetaDeCalificacion({
     return (
       <div className={cn('rounded-lg border border-border bg-surface p-6 dark:border-border-strong', className)}>
         <div className="flex items-start gap-4">
-          <LetraDeLaCalificacion letra={null} grande />
+          <Ilustracion nombre="lupa_estudio" tamano={72} className="shrink-0" />
           <div className="space-y-1">
             <p className="text-base font-medium text-fg">{tr('Todavía no hay calificación')}</p>
             <p className="max-w-xl text-sm text-fg-muted">

@@ -25,6 +25,7 @@
  *   navegador, que ignora el tema y algunos navegadores suprimen del todo.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { SinDatos } from '@/components/estado/SinDatos';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -348,6 +349,7 @@ export function PeriodosDeNominaPanel() {
                     {visibles.length === 0 ? (
                       <TableRowAnimada key="vacio" className="max-md:block">
                         <TableCell colSpan={9} className="py-8 text-center text-body-sm text-fg-muted max-md:block">
+                          <Ilustracion nombre="calculadora" tamano={80} className="mx-auto mb-2 block" />
                           Ningún período en esta pestaña.{' '}
                           <button type="button" className="text-primary underline-offset-4 hover:underline" onClick={() => setVista('todos')}>
                             Ver todos

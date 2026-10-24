@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Buildings, CaretDown, CheckCircle, Clock, WarningCircle, ChatCircle, FileText, Phone, Envelope, ArrowsClockwise } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
-import { Collapse } from '@leasefy/cadence';
+import { Collapse, Ilustracion } from '@leasefy/cadence';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useLeasePayments } from '@/lib/hooks/useLeases';
 import type { Lease, Payment } from '@/lib/types/lease';
@@ -354,6 +354,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                 />
               ) : payments.length === 0 ? (
                 <p className="text-sm text-fg-muted p-5 text-center">
+                  <Ilustracion nombre="billetera" tamano={56} className="mx-auto mb-2 block" />
                   No hay pagos registrados
                 </p>
               ) : (

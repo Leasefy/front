@@ -70,7 +70,7 @@ import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { CrossFade, Presence } from '@leasefy/cadence';
+import { CrossFade, Presence, Ilustracion } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
 import { EscenarioDelArchivoPorRevisar, EscenarioTributario } from '@/components/contratos/EscenarioTributario';
@@ -555,6 +555,7 @@ function ContratoDetalleContent() {
               />
             ) : (
               <p className="text-sm text-muted-foreground py-2">
+                <Ilustracion nombre="contrato" tamano={56} className="mb-2 block" />
                 Todavía no hay documento para este contrato.
               </p>
             )}

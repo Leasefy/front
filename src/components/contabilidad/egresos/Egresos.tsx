@@ -112,7 +112,7 @@ import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
-import { Presence } from '@leasefy/cadence';
+import { Presence, Ilustracion } from '@leasefy/cadence';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { usePuedeCambiarEgresos, usePuedeEscribir } from '../use-puede-escribir';
 import { CajonDelEgreso } from './CajonDelEgreso';
@@ -959,6 +959,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
         <div className="p-4">
           {lotes.length === 0 ? (
             <p className="p-8 text-center text-sm text-fg-muted">
+              <Ilustracion nombre="banco" tamano={80} className="mx-auto mb-2 block" />
               Todavía no hay lotes. Arma el primero desde la pestaña de egresos.
             </p>
           ) : (

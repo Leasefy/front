@@ -19,6 +19,7 @@
  * un `Select`: doscientos inmuebles no se encuentran bajando una lista.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { House, User, UserPlus } from '@phosphor-icons/react'
 import { SegmentedControl, Presence } from '@leasefy/cadence'
@@ -300,6 +301,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
         </label>
         {consignaciones !== null && elegibles.length === 0 && !errorInmuebles ? (
           <p className="rounded-md border border-dashed border-border bg-surface-muted px-3 py-2 text-sm text-fg-muted" data-testid="sin-inmuebles">
+            <Ilustracion nombre="casa" tamano={56} className="mb-2 block" />
             No hay inmuebles consignados libres. Consigna uno desde Inmuebles y vuelve.
           </p>
         ) : (
@@ -371,6 +373,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             />
             {!cargandoInquilinos && inquilinos.length === 0 && (
               <p className="text-caption text-fg-muted" data-testid="sin-inquilinos">
+                <Ilustracion nombre="cedula" tamano={56} className="mb-2 block" />
                 Todavía no hay inquilinos con arriendos aquí. Cárgalo como nuevo.
               </p>
             )}

@@ -37,6 +37,7 @@
  * circuito vino a cerrar.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { CaretDown, Warning } from '@phosphor-icons/react'
 
 import {
@@ -221,6 +222,7 @@ function FilasDelMes({ filas }: { filas: FacturaDelMes[] }) {
   if (filas.length === 0) {
     return (
       <p className="px-4 py-3 text-caption text-fg-muted">
+        <Ilustracion nombre="factura" tamano={56} className="mb-2 block" />
         Ninguna factura de este mes.
       </p>
     )

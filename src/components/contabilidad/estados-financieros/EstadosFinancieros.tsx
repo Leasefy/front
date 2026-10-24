@@ -40,6 +40,7 @@
  * no está incompleto: está mal, y nadie lo sabe.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -388,6 +389,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                         <TableRow className="max-md:block">
                           <TableCell colSpan={columnas.length + 1} className="py-8 text-center max-md:block">
                             <p className="text-sm text-fg-muted">
+                              <Ilustracion nombre="grafica" tamano={80} className="mx-auto mb-2 block" />
                               No hay movimientos de ingreso ni de gasto asentados en este mes.
                             </p>
                           </TableCell>

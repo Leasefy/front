@@ -1,5 +1,6 @@
 'use client';
 
+import { Ilustracion } from '@leasefy/cadence';
 import {
   Buildings,
   House,
@@ -168,6 +169,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
             vez de dibujar doce barras en el piso. */}
         {!hayAlgoQueGraficar && (
           <p className="text-sm text-fg-muted">
+            <Ilustracion nombre="grafica" tamano={56} className="mb-2 block" />
             Todavía no hay historial de cobros para reconstruir la ocupación mes a mes.
           </p>
         )}

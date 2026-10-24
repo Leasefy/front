@@ -15,8 +15,8 @@
  */
 
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
-import { Info, Plus, X } from '@phosphor-icons/react';
-import { Presence } from '@leasefy/cadence';
+import { Plus, X } from '@phosphor-icons/react';
+import { Presence, Ilustracion } from '@leasefy/cadence';
 
 import { Button, Input } from '@/components/ui';
 import { Combobox } from '@/components/ui/combobox';
@@ -272,8 +272,8 @@ export function ProveedorDeLaSolicitud({
 
       {!registrando && proveedores.length === 0 && (
         <div className="flex flex-col gap-3 rounded-lg border border-dashed border-border bg-surface-muted px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-start gap-2 text-sm text-fg-muted">
-            <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <p className="flex items-center gap-3 text-sm text-fg-muted">
+            <Ilustracion nombre="llave_destornillador" tamano={48} className="shrink-0" />
             Todavía no tienes proveedores registrados.
           </p>
           <Button type="button" variant="secondary" size="sm" hideArrow onClick={abrirRegistro} data-testid="proveedor-registrar-primero">

@@ -1,5 +1,6 @@
 'use client';
 
+import { Ilustracion } from '@leasefy/cadence';
 import Link from 'next/link';
 import { Bell, CheckCircle } from '@phosphor-icons/react';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
@@ -71,6 +72,7 @@ export default function NovedadesPage() {
           <h2 className="text-base font-medium mb-4">Resumen mensual</h2>
           {digests.length === 0 ? (
             <p className="text-sm text-fg-muted">
+              <Ilustracion nombre="grafica" tamano={56} className="mb-2 block" />
               Todavía no hay resúmenes. Cuando cierre el mes vas a recibir uno aquí con tu recaudo,
               ocupación y novedades.
             </p>

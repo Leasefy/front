@@ -30,9 +30,10 @@
  * SegmentedControl para el filtro de grupo, Chips de conteo, tonos por token.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { MagnifyingGlass, Tray } from '@phosphor-icons/react'
+import { MagnifyingGlass } from '@phosphor-icons/react'
 import { Input } from '@/components/ui/input'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -264,7 +265,7 @@ function InboxContent() {
         <FalloDeCarga error={errorDelCartel} queEs="las conversaciones" onReintentar={refetch} />
       ) : estado === 'vacio' ? (
         <Card className="flex flex-col items-center gap-2 px-6 py-14 text-center" data-testid="inbox-vacio">
-          <Tray className="h-8 w-8 text-fg-subtle" weight="duotone" aria-hidden="true" />
+          <Ilustracion nombre="mensajes" tamano={112} />
           <p className="text-body font-medium text-fg">{tr("Todavía no hay conversaciones")}</p>
           <p className="max-w-md text-body-sm text-fg-muted">
             {tr("Cuando tus inquilinos respondan por WhatsApp, voz o correo, sus mensajes llegan aquí agrupados por lo que piden.")}

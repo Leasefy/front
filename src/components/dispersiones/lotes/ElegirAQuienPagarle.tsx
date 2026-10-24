@@ -33,7 +33,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Banner } from '@leasefy/cadence';
+import { Banner, Ilustracion } from '@leasefy/cadence';
 import { Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -375,6 +375,7 @@ export function ElegirAQuienPagarle({
             {girables.length === 0 && excluidos.length === 0 && compensables.length === 0 && (
               <TableRow>
                 <TableCell colSpan={conColumnaDelGmf ? 6 : 5} className="py-8 text-center text-sm text-fg-muted">
+                  <Ilustracion nombre="banco" tamano={80} className="mx-auto mb-2 block" />
                   No hay dispersiones pendientes de {nombreDelMes(mes)} sin lote.
                 </TableCell>
               </TableRow>

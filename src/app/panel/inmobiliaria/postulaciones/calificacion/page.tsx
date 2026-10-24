@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MagnifyingGlass, Handshake } from '@phosphor-icons/react';
-import { CrossFade, Presence, SearchInput, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, Presence, SearchInput, Stagger, StaggerItem, Ilustracion } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -245,6 +245,7 @@ function Evaluar({
       {contratos === null ? null : contratos.length === 0 ? (
         <p className="flex items-center gap-2 rounded-lg border border-dashed border-border p-6 text-sm text-fg-muted">
           <Handshake className="h-4 w-4" aria-hidden />
+          <Ilustracion nombre="contrato" tamano={80} className="mb-2 block" />
           {tr('No hay contratos terminados por evaluar.')}
         </p>
       ) : (
@@ -270,7 +271,7 @@ function Evaluar({
           </div>
           <div className="rounded-lg border border-border bg-surface">
             {filtrados.length === 0 ? (
-              <p className="px-5 py-6 text-sm text-fg-muted">{tr('Ningún contrato coincide con la búsqueda.')}</p>
+              <p className="px-5 py-6 text-sm text-fg-muted"><Ilustracion nombre="lupa" tamano={80} className="mb-2 block" />{tr('Ningún contrato coincide con la búsqueda.')}</p>
             ) : (
               <div className="divide-y divide-border">
                 {pageItems.map((k) => (

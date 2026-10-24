@@ -33,7 +33,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Collapse, Stagger, StaggerItem, Ilustracion } from '@leasefy/cadence';
 import {
   CaretRight,
   CheckCircle,
@@ -532,6 +532,7 @@ export function PlanDeCuentas({
 
           {visible.length === 0 ? (
             <p className="mt-4 text-body-sm text-fg-muted">
+              <Ilustracion nombre="lupa" tamano={56} className="mb-2 block" />
               Ninguna cuenta coincide con «{busqueda}».
             </p>
           ) : q ? (
@@ -668,6 +669,7 @@ function SinPlan({
       aria-labelledby="puc-vacio-titulo"
       data-testid="puc-vacio"
     >
+      <Ilustracion nombre="calculadora" tamano={80} className="mb-2" />
       <h2 id="puc-vacio-titulo" className="text-sm font-medium text-fg">
         Todavía no hay plan de cuentas
       </h2>

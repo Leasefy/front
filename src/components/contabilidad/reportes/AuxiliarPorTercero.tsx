@@ -25,6 +25,7 @@
  * entonces los saldos de abajo no se pueden usar para cobrar ni para girar.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
@@ -256,6 +257,7 @@ export function AuxiliarPorTercero() {
           <div>
             {auxiliar.terceros.length === 0 ? (
               <p className="p-8 text-center text-sm text-fg-muted">
+                <Ilustracion nombre="calculadora" tamano={80} className="mx-auto mb-2 block" />
                 Ningún tercero con movimiento en este rango{conSaldo ? ' y con saldo' : ''}.
               </p>
             ) : (

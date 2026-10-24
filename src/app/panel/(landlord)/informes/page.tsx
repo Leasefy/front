@@ -24,7 +24,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { SearchInput } from '@leasefy/cadence';
+import { SearchInput, Ilustracion } from '@leasefy/cadence';
 import { FileArrowDown } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -246,6 +246,7 @@ export default function MisInformesPage() {
 
           {reparaciones && reparaciones.length === 0 && !motivoDeReparaciones && (
             <p className="text-sm text-fg-muted">
+              <Ilustracion nombre="llave_destornillador" tamano={56} className="mb-2 block" />
               Todavía no hay reparaciones registradas en tus inmuebles.
             </p>
           )}
@@ -369,6 +370,7 @@ function InmueblesDelCertificado({ inmuebles }: { inmuebles: readonly InmuebleDe
           {pageItems.length === 0 ? (
             <TableRow className="max-md:block">
               <TableCell colSpan={4} className="py-6 text-center text-body-sm text-fg-muted max-md:block">
+                <Ilustracion nombre="lupa" tamano={80} className="mx-auto mb-2 block" />
                 Ningún inmueble se llama así.{' '}
                 <button type="button" className="underline" onClick={() => setTexto('')}>
                   Ver todos

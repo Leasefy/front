@@ -62,7 +62,7 @@ ul,ol{list-style:none}
 .lead{font-size:clamp(17px,1.3vw,19.5px);line-height:1.55;color:var(--grafito);max-width:620px}
 .lead b{color:var(--tinta);font-weight:500}
 .acento{color:var(--voltaje-txt)}
-.pw{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.1em;margin-bottom:-.1em}
+.pw{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .09em .1em;margin:0 -.09em -.1em}
 .pwi{display:inline-block;will-change:transform}
 .mov [data-palabras]{visibility:hidden}
 .mov [data-r]{opacity:0;transform:translateY(26px)}
@@ -81,7 +81,7 @@ ul,ol{list-style:none}
 .btn-xl{height:58px;padding:0 34px;font-size:18px}
 /* Nico 23-10: con Motion el resorte lo pone JS (hover y presión, valores de Cadence); el CSS sólo cambia color.
    Sin Motion queda la presión en CSS; con movimiento reducido, nada se mueve. Ningún botón lleva sombra. */
-.con-motion :is(.btn,.boleto,.mbtn,.aviso a,.aviso button){transition:background-color .2s,color .2s,border-color .2s}
+.con-motion :is(.btn,.mbtn,.aviso a,.aviso button){transition:background-color .2s,color .2s,border-color .2s}
 .con-motion .btn:active{transform:none}
 @media (prefers-reduced-motion:reduce){.btn:active{transform:none}}
 .lnk{color:var(--voltaje-txt);font-weight:500}
@@ -92,7 +92,7 @@ ul,ol{list-style:none}
 .hdr.con-filete{border-color:var(--filete)}
 .hdr .wrap{display:flex;align-items:center;height:100%;gap:26px}
 .logo{display:flex;align-items:center;height:40px}
-.logo svg{height:21px;width:auto;fill:var(--tinta)}
+.logo svg{height:26px;width:auto;fill:var(--tinta)}
 .nav{display:flex;gap:24px;font-size:15px;color:var(--grafito)}
 .nav a{display:inline-flex;align-items:center;gap:8px;transition:color .2s}
 .nav a:hover{color:var(--tinta)}
@@ -311,18 +311,12 @@ section{position:relative;overflow-x:clip}
 /* ── héroe ── */
 .hero-alto{position:relative;height:290vh}
 .hero-pega{position:sticky;top:0;height:100vh;overflow:hidden;padding-top:var(--hdr);display:flex;flex-direction:column;align-items:center}
-.hero-txt{text-align:center;width:100%;max-width:1220px;padding:0 var(--gutter);margin-top:clamp(20px,4.5vh,56px);position:relative;z-index:3}
+.hero-txt{text-align:center;width:100%;max-width:1220px;padding:0 var(--gutter);margin-top:clamp(20px,4.5vh,56px);position:relative;z-index:1}
 .hero h1.t-xl{font-size:clamp(44px,5.5vw,84px)}
-.boleto{display:inline-flex;align-items:center;gap:10px;height:36px;padding:0 6px 0 12px;border-radius:12px;background:var(--sup);border:1px solid var(--filete);font-size:13.5px;color:var(--grafito);corner-shape:superellipse(1.5);max-width:100%}
-.boleto i{width:8px;height:8px;border-radius:2px;background:var(--voltaje-dot);flex:none}
-.boleto span{font-family:var(--m);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta)}
-.boleto em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-@media (max-width:560px){.boleto em{display:none}}
-.boleto b{font-weight:500;color:var(--voltaje-txt);background:var(--voltaje-suave);height:26px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9px;white-space:nowrap;corner-shape:superellipse(1.5)}
-.hero h1{margin-top:26px}
+.hero h1{margin-top:0}
 .hero .lead{margin:20px auto 0;max-width:680px}
 .hero-cta{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap}
-.hero-escena{position:relative;width:min(1100px,86vw,calc((100vh - 150px)/.68));margin-top:clamp(28px,4.5vh,52px);perspective:2200px;z-index:2}
+.hero-escena{position:relative;width:min(1100px,86vw,calc((100vh - 214px)/.68));margin-top:clamp(28px,4.5vh,52px);perspective:2200px;z-index:2}
 .hero-escena .disp{transform-origin:50% 100%}
 .hero-escena .f1{width:clamp(130px,15vw,230px);left:-13%;top:-6%}
 .hero-escena .f2{width:clamp(110px,12vw,190px);right:-11%;top:22%}
@@ -342,7 +336,7 @@ section{position:relative;overflow-x:clip}
 }
 
 /* ── la corriente: píxeles de voltaje que fluyen (Cadence 2 · PIX) ── */
-.corriente{position:absolute;display:block;pointer-events:none}
+.corriente{position:absolute;display:block;pointer-events:none;image-rendering:pixelated;image-rendering:crisp-edges}
 .hero-pix{left:0;right:0;bottom:0;width:100%;height:44%;z-index:0;opacity:.9;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.85) 22%,rgba(0,0,0,.3) 55%,transparent 82%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.85) 22%,rgba(0,0,0,.3) 55%,transparent 82%)}
 .mov .hero-pix{opacity:0}
 @media (max-width:899px){.hero-pix{height:48%}}
@@ -358,9 +352,24 @@ section{position:relative;overflow-x:clip}
 
 /* ── marketplace: vitrina + mosaico ── */
 .mk{background:var(--arena);padding-bottom:clamp(96px,12vw,170px)}
-.vitrina{display:flex;align-items:center;gap:24px;padding:22px 0 22px var(--gutter);border-bottom:1px solid var(--piedra)}
-.vit-rot{display:flex;align-items:center;gap:10px;font-family:var(--m);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ceniza);line-height:1.25;flex:none}
-.vit-rot i{width:8px;height:8px;border-radius:2px;background:var(--voltaje-dot)}
+/* Nico 23-10: el marketplace con más peso en el héroe — una franja pegada a la barra donde pasan los inmuebles */
+.mk-banda{width:100%;flex:none;display:flex;align-items:center;gap:18px;height:64px;padding:0 var(--gutter);background:var(--arena);border-bottom:1px solid var(--filete);position:relative;z-index:4}
+.mkb-rot{display:flex;align-items:center;gap:10px;flex:none;font-family:var(--m);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta);white-space:nowrap}
+.mkb-rot i{width:8px;height:8px;border-radius:2px;background:var(--voltaje-dot)}
+.mkb-rot em{font-family:var(--f);font-style:normal;text-transform:none;letter-spacing:0;font-size:13.5px;color:var(--grafito)}
+.mk-banda .vit-pista{align-self:stretch;display:flex;align-items:center}
+.mk-banda .vit-track{gap:10px}
+.mk-banda .vi{gap:10px;padding:5px 14px 5px 5px;border-radius:12px}
+.mk-banda .vi-foto{width:42px;height:42px;border-radius:9px}
+.mk-banda .vi-foto img{width:38px;height:38px}
+.mk-banda .vi-foto img[src*="fotos"]{width:42px;height:42px;border-radius:9px}
+.mk-banda .vi b{font-size:13px}
+.mk-banda .vi span{font-size:12.5px}
+.mk-banda .vi small{display:none}
+.mkb-ver{flex:none;font-size:14px;white-space:nowrap}
+@media (max-width:1180px){.mkb-rot em{display:none}}
+@media (max-width:899px){.mkb-ver{display:none}.mk-banda{padding-right:0}}
+@media (max-width:560px){.mk-banda{height:58px;gap:12px}.mkb-rot span{font-size:10.5px}}
 .vit-pista{flex:1;overflow:hidden;min-width:0;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
 .vit-track{display:flex;gap:14px;width:max-content;will-change:transform}
 .vi{display:flex;align-items:center;gap:12px;padding:8px 18px 8px 8px;background:var(--sup);border-radius:16px;box-shadow:var(--sombra-susurro);corner-shape:superellipse(1.5)}
@@ -370,8 +379,6 @@ section{position:relative;overflow-x:clip}
 .vi b em{font-style:normal;color:var(--ceniza);font-size:12px}
 .vi span{display:block;font-size:13px;color:var(--grafito);white-space:nowrap}
 .vi small{display:block;font-size:12px;color:var(--ceniza)}
-.vit-ver{flex:none;margin-right:var(--gutter);font-size:14px}
-@media (max-width:720px){.vit-rot span{display:none}.vit-ver{display:none}.vitrina{padding-right:0}}
 .mosaico{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(40px,6vw,96px);align-items:center;padding-top:clamp(80px,10vw,140px)}
 .mos-txt h2{margin-top:22px}
 .mos-txt .lead{margin-top:22px}
@@ -409,7 +416,7 @@ section{position:relative;overflow-x:clip}
 
 /* ── el problema ── */
 .prob-cab{padding-top:clamp(96px,12vw,160px)}
-.prob-alto{position:relative;height:320vh}
+.prob-alto{position:relative;height:440vh}
 .prob-pega{position:sticky;top:0;height:100vh;overflow:hidden}
 .prob-esc{position:absolute;inset:var(--hdr) 0 0 0}
 .prob-palabras{position:absolute;left:var(--gutter);top:12%;z-index:2}
@@ -445,7 +452,7 @@ section{position:relative;overflow-x:clip}
 .capas-mini li i{width:7px;height:7px;border-radius:2px;background:var(--voltaje-dot)}
 .mov .prob-uno .lead,.mov .capas-mini li{opacity:0}
 @media (max-width:899px){
-  .prob-alto{height:260vh}
+  .prob-alto{height:360vh}
   .prob-palabras{top:4%}
   .chip-in{height:36px;font-size:13.5px;padding:0 12px 0 10px}
   .chip{left:var(--xm);top:var(--ym)}
@@ -667,6 +674,7 @@ section{position:relative;overflow-x:clip}
 @media (max-width:560px){.senales li{flex-wrap:wrap;row-gap:4px}.senales .st{min-width:0;flex-basis:100%;padding-left:22px;text-align:left}}
 .senales li.ok .st{color:var(--exito)}
 .ret-aviso{margin-top:14px;display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:18px;background:var(--arena);corner-shape:superellipse(1.5)}
+.esfera{flex:none;border-radius:50%}
 .ret-aviso .esfera{width:38px;height:38px}
 .ret-aviso b{display:block;font-weight:500;font-size:15px}
 .ret-aviso p{font-size:13.5px;color:var(--grafito);margin-top:2px}
@@ -824,7 +832,7 @@ section{position:relative;overflow-x:clip}
 .contacto h2{max-width:1180px;margin:24px auto 0}
 .fin-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:40px}
 .contacto .mail{display:block;margin-top:18px;font-family:var(--m);font-size:13px;color:var(--ceniza)}
-.fin-pix{left:0;right:0;bottom:0;width:100%;height:40%;z-index:0;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%)}
+.fin-pix{left:0;right:0;bottom:0;width:100%;height:46%;z-index:0;-webkit-mask-image:linear-gradient(to top,transparent 0%,rgba(0,0,0,.55) 16%,#000 38%,rgba(0,0,0,.8) 58%,transparent 94%);mask-image:linear-gradient(to top,transparent 0%,rgba(0,0,0,.55) 16%,#000 38%,rgba(0,0,0,.8) 58%,transparent 94%)}
 .mov .fin-pix{opacity:0;transform:translateY(60px)}
 .autopiloto{display:inline-flex;align-items:center;gap:12px;margin-top:44px;height:46px;padding:0 18px 0 14px;border-radius:16px;background:var(--sup);box-shadow:var(--sombra-flotante),0 0 0 1px var(--filete);font-size:15px;corner-shape:superellipse(1.5);max-width:100%}
 .ap-dot{width:10px;height:10px;border-radius:3px;background:var(--voltaje-dot);flex:none}
@@ -844,7 +852,7 @@ section{position:relative;overflow-x:clip}
 @media (max-width:720px){.autopiloto{font-size:13px}.autopiloto-on .reloj .ap{display:none}}
 
 /* ── pie ── */
-.pie{border-top:1px solid var(--filete);padding:64px 0 28px;background:var(--bg)}
+.pie{padding:64px 0 28px;background:var(--bg)}
 .pie-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}
 .pie-grid p{color:var(--grafito);font-size:15px;max-width:360px;margin-top:16px}
 .pie .estado{display:inline-flex;align-items:center;gap:8px;margin-top:18px;font-family:var(--m);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ceniza)}
@@ -1050,9 +1058,13 @@ section{position:relative;overflow-x:clip}
 <section class="hero" id="inicio">
   <div class="hero-alto">
     <div class="hero-pega">
+      <div class="mk-banda" aria-label="Inmuebles publicados en el marketplace de Leasefy">
+        <a class="mkb-rot" href="/propiedades"><i aria-hidden="true"></i><span>Marketplace</span><em>Arriendos de las inmobiliarias de Leasefy</em></a>
+        <div class="vit-pista"><div class="vit-track" id="vitTrack"></div></div>
+        <a class="mkb-ver lnk" href="/propiedades">Ver los inmuebles</a>
+      </div>
       <canvas class="corriente hero-pix" data-corriente="papel" data-raton data-marco data-semilla="11" data-celda="3" data-fuerza="1.15" data-velocidad="1" aria-hidden="true"></canvas>
       <div class="hero-txt">
-        <a class="boleto" href="/propiedades"><i aria-hidden="true"></i><span>Marketplace</span><em>Arriendos de las inmobiliarias de Leasefy</em><b>Publica gratis</b></a>
         <h1 class="t-xl" data-palabras>Tu operación inmobiliaria en <span class="acento">piloto automático</span></h1>
         <p class="lead" data-r>Leasefy combina CRM, ERP y agentes AI para centralizar y automatizar toda tu operación de arriendos, de la solicitud a la retención del propietario.</p>
         <div class="hero-cta" data-r><a class="btn btn-p" href="/auth?mode=register">Crear mi cuenta</a><a class="btn btn-s" href="#como-funciona">Ver cómo funciona</a></div>
@@ -1146,11 +1158,6 @@ section{position:relative;overflow-x:clip}
 
 <!-- ═════════ 2 · MARKETPLACE: vitrina + publicar gratis ═════════ -->
 <section class="mk" id="marketplace">
-  <div class="vitrina" aria-label="Inmuebles publicados en el marketplace de Leasefy">
-    <p class="vit-rot"><i aria-hidden="true"></i><span>En el<br>marketplace</span></p>
-    <div class="vit-pista"><div class="vit-track" id="vitTrack"></div></div>
-    <a class="vit-ver lnk" href="/propiedades">Ver los inmuebles</a>
-  </div>
   <figure class="ciudad foto-estrias revela" aria-label="Medellín en estrías de voltaje">
     <img src="/landing/img/fotos-co/medellin-poblado.webp" alt="El Poblado y las montañas de Medellín" loading="lazy"><canvas aria-hidden="true"></canvas>
     <figcaption><span class="mono">MEDELLÍN · ENVIGADO · SABANETA · ITAGÜÍ · BELLO · RIONEGRO</span></figcaption>
@@ -1158,7 +1165,7 @@ section{position:relative;overflow-x:clip}
   <div class="wrap mosaico">
     <div class="mos-txt">
       <p class="ceja"><i></i><b>07:40</b>Marketplace Leasefy · gratis para inmobiliarias</p>
-      <h2 class="t-l" data-palabras>Publica <span class="acento">gratis</span>. Que te encuentre toda la ciudad.</h2>
+      <h2 class="t-l" data-palabras>Publica <span class="acento">gratis</span>.<br>Que te encuentre toda la ciudad.</h2>
       <p class="lead" data-r>Sube tus inmuebles al marketplace de Leasefy sin pagar nada. Aparecen con tu marca, tus fotos y tus videos, frente a quien está buscando dónde vivir.</p>
       <div class="cta" data-r><a class="btn btn-p" href="/publica">Publicar mis inmuebles gratis</a><a class="btn btn-s" href="/propiedades">Ver el marketplace</a></div>
       <ol class="mos-ben">

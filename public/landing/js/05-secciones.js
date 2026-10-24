@@ -88,7 +88,7 @@
     var rel = function (el) { var x = 0, y = 0, n = el; while (n && n !== esc) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; } return { x: x + el.offsetWidth / 2, y: y + el.offsetHeight / 2 }; };
     var cx = function () { return esc.offsetWidth / 2; }, cy = function () { return esc.offsetHeight * (LF.desk() ? .44 : .40); };
     var pt = gsap.timeline({ scrollTrigger: { trigger: ".prob-alto", start: "top top", end: "bottom bottom", scrub: .6, invalidateOnRefresh: true,
-      onUpdate: function (s) { esc.classList.toggle("suena", s.progress > .16 && s.progress < .3); } } });
+      onUpdate: function (s) { var tt = s.progress * pt.duration(); esc.classList.toggle("suena", tt > .16 && tt < .3); } } });
     ScrollTrigger.create({ trigger: ".prob-alto", start: "top 75%", once: true, onEnter: function () { gsap.from($$(".chip[data-pre] .chip-in", esc), { opacity: 0, scale: .7, y: 30, stagger: .07, duration: .7, ease: "back.out(1.6)" }); } });
     /* Nico 23-10: el caos crece con el scroll. Cada palabra abre su ventana: su cifra sube, llega su oleada
        de avisos (se apilan torcidos sobre los de antes) y al cerrar la ventana la palabra se tacha. */
@@ -142,26 +142,27 @@
     var arco = carga.querySelector(".lleno"), largo = 2 * Math.PI * 36, cifraC = carga.querySelector("b"), estC = { p: 0 };
     var pintarC = function () { var v = estC.p; arco.setAttribute("stroke-dasharray", "2 7"); arco.style.strokeDashoffset = 0; arco.setAttribute("pathLength", "1"); arco.style.strokeDasharray = v + " " + (1 - v + .0001); cifraC.textContent = Math.round(v * 100) + " %"; };
     pintarC();
+    /* Nico 23-10: la carga y el estallido van despacio, para que se sienta el «boom» (el doble de scroll que antes) */
     pt.to(carga, { opacity: 1, duration: .03 }, .45)
-      .to(estC, { p: 1, duration: .17, ease: "none", onUpdate: pintarC }, .46)
-      .to(carga, { scale: 1.6, opacity: 0, duration: .04, ease: "power2.in" }, .64);
-    pt.to(pp, { x: function (i, el) { return cx() - rel(el).x; }, y: function (i, el) { return cy() - rel(el).y; }, scale: .05, opacity: 0, duration: .14, ease: "power3.in", stagger: .015 }, .46);
+      .to(estC, { p: 1, duration: .3, ease: "none", onUpdate: pintarC }, .46)
+      .to(carga, { scale: 1.6, opacity: 0, duration: .05, ease: "power2.in" }, .8);
+    pt.to(pp, { x: function (i, el) { return cx() - rel(el).x; }, y: function (i, el) { return cy() - rel(el).y; }, scale: .05, opacity: 0, duration: .18, ease: "power3.in", stagger: .02 }, .46);
     /* el paso a Leasefy: uno por uno, cada aviso se vuelve voltaje y lo absorbe el punto que se carga */
-    var anilloSvg = carga.querySelector("svg"), pasoAbs = (.6 - .47 - .075) / Math.max(1, visibles.length - 1);
+    var anilloSvg = carga.querySelector("svg"), pasoAbs = (.74 - .47 - .075) / Math.max(1, visibles.length - 1);
     visibles.forEach(function (c, k) {
       var t = .47 + k * pasoAbs, ci = c.firstElementChild;
       pt.to(ci, { backgroundColor: "#1A40FF", color: "#FFFFFF", duration: .012, ease: "none" }, t)
         .to(c, { x: function () { return cx() - rel(c).x; }, y: function () { return cy() - rel(c).y; }, scale: .12, rotate: "+=" + (k % 2 ? 50 : -50), opacity: 0, duration: .065, ease: "power3.in" }, t + .01)
         .add(function () { gsap.fromTo(anilloSvg, { scale: 1.14 }, { scale: 1, duration: .4, ease: "power2.out", overwrite: true }); }, t + .074);
     });
-    pt.to(punto, { scale: 1, duration: .05, ease: "back.out(3)" }, .6)
-      .to(punto, { scale: 2.6, duration: .04, ease: "power2.in" }, .64)
-      .to(punto, { scale: 0, duration: .02 }, .68)
-      .to(estE, { e: 1, duration: .24, ease: "none", onUpdate: dibujarE }, .67);
-    if (tUno) pt.fromTo(tUno.w, { yPercent: 110, scale: .6 }, { yPercent: 0, scale: 1, stagger: .025, duration: .12, ease: "power3.out" }, .7);
-    pt.to(".prob-uno .lead", { opacity: 1, duration: .1 }, .8)
-      .to(".capas-mini li", { opacity: 1, stagger: .03, duration: .08 }, .84)
-      .to({}, { duration: .06 });
+    pt.to(punto, { scale: 1, duration: .05, ease: "back.out(3)" }, .74)
+      .to(punto, { scale: 2.6, duration: .05, ease: "power2.in" }, .79)
+      .to(punto, { scale: 0, duration: .02 }, .84)
+      .to(estE, { e: 1, duration: .4, ease: "none", onUpdate: dibujarE }, .83);
+    if (tUno) pt.fromTo(tUno.w, { yPercent: 110, scale: .6 }, { yPercent: 0, scale: 1, stagger: .03, duration: .14, ease: "power3.out" }, .9);
+    pt.to(".prob-uno .lead", { opacity: 1, duration: .1 }, 1.02)
+      .to(".capas-mini li", { opacity: 1, stagger: .03, duration: .08 }, 1.06)
+      .to({}, { duration: .08 });
     chips.forEach(function (c, i) { gsap.to(c.firstElementChild, { y: i % 2 ? 7 : -7, duration: 2.4 + i * .3, ease: "sine.inOut", yoyo: true, repeat: -1 }); });
   }
 
@@ -366,7 +367,19 @@
       }
     };
     /* cada paso entra con un solo gesto: el primero cambia apenas el escenario se fija */
-    var stF = ScrollTrigger.create({ trigger: fin, start: "top top+=68", end: "bottom bottom", onUpdate: function (s) { /* Nico 23-10: la ruta se llena con el scroll y se sabe cuándo llega al siguiente punto */ if (lleno) lleno.style.width = Math.min(100, s.progress * 3.6 / 3 * 100) + "%"; ponE(Math.min(3, Math.floor(s.progress * 3.6))); } });
+    /* Nico 23-10: la ruta se llena con el scroll y llega a cada punto JUSTO cuando ese paso se enciende (antes los
+       puntos estaban al 25/50/75 % y la línea se llenaba como si estuvieran al 33/66/100 %: pasaba el punto sin cambiar). */
+    var centros = [], anchoRuta = 0, rutaEl = $("#ruta");
+    var medirRuta = function () { anchoRuta = rutaEl.clientWidth; centros = estR.map(function (e) { var i = e.querySelector("i"); return e.offsetLeft + i.offsetLeft + i.offsetWidth / 2; }); };
+    var llenar = function (p) {
+      if (!lleno) return; if (!centros.length || !anchoRuta) medirRuta();
+      var seg = p * 3.6, w;
+      if (seg < 3) { var k = Math.floor(seg); w = centros[k] + (centros[k + 1] - centros[k]) * (seg - k); }
+      else w = centros[3] + (anchoRuta - centros[3]) * Math.min(1, (seg - 3) / .6);
+      lleno.style.width = Math.max(0, w) + "px";
+    };
+    window.addEventListener("resize", function () { centros = []; });
+    var stF = ScrollTrigger.create({ trigger: fin, start: "top top+=68", end: "bottom bottom", onUpdate: function (s) { llenar(s.progress); ponE(Math.min(3, Math.floor(s.progress * 3.6))); } });
     estR.forEach(function (e, i) { e.addEventListener("click", function () { var y = stF.start + (stF.end - stF.start) * Math.min(.98, (i + .15) / 3.6); if (LF.lenis) LF.lenis.scrollTo(y, { duration: 1 }); else window.scrollTo(0, y); }); });
     ScrollTrigger.create({ trigger: fin, start: "top 70%", once: true, onEnter: function () { var c = $(".fin-b.on .cifra"); LF.contar(c, 0, +c.dataset.v, 1.3, +c.dataset.d); } });
     gsap.from("#finLap", { y: 80, rotateX: 18, opacity: 0, duration: 1.2, ease: "expo.out", scrollTrigger: { trigger: fin, start: "top 75%" } });

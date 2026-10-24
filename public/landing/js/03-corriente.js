@@ -124,10 +124,14 @@ LF.corriente = (function () {
        que se difumina y vuelve sola a su sitio. Con el mouse quieto no se dibuja nada alrededor. */
     gl.uniform1f(u("conCampo"), 0);
     if (cv.dataset.raton != null && !quietoGlobal && window.matchMedia("(hover:hover)").matches) o.estela = estela(gl, u, cv);
+    /* Nico 23-10 («el héroe anda lentico»): el dibujo es de celdas de 3–4 px y el shader las calculaba píxel por
+       píxel (9 a 36 veces el mismo cálculo por celda). Ahora el lienzo tiene UNA muestra por celda y el navegador lo
+       agranda sin suavizar (image-rendering: pixelated): se ve igual y la GPU hace una fracción del trabajo. */
     o.pintar = function (ahora) {
-      var dpr = Math.min(window.devicePixelRatio || 1, 2), w = Math.max(2, Math.round(cv.clientWidth * dpr)), hh = Math.max(2, Math.round(cv.clientHeight * dpr));
+      var dpr = Math.min(window.devicePixelRatio || 1, 2), celda = Math.max(2, Math.round((+(cv.dataset.celda || 3)) * dpr));
+      var w = Math.max(2, Math.ceil(cv.clientWidth * dpr / celda)), hh = Math.max(2, Math.ceil(cv.clientHeight * dpr / celda));
       if (cv.width !== w || cv.height !== hh) { cv.width = w; cv.height = hh; }
-      gl.viewport(0, 0, w, hh); gl.uniform2f(u("res"), w, hh); gl.uniform1f(u("celda"), Math.max(2, Math.round((+(cv.dataset.celda || 3)) * dpr)));
+      gl.viewport(0, 0, w, hh); gl.uniform2f(u("res"), w, hh); gl.uniform1f(u("celda"), 1);
       gl.uniform1f(u("fuerza"), o.fuerza);
       /* lento y parejo a 60 o a 120 Hz: el paso se calcula con el tiempo real del cuadro */
       var dt = o.antes ? Math.min(.05, Math.max(0, (ahora - o.antes) / 1000)) : .016; o.antes = ahora;

@@ -47,6 +47,16 @@
       (prompt ? '<p class="lead" data-r>' + prompt + '</p>' : "") + '<div class="fin-cta" data-r>' + ctas(true) + '</div></div></section>';
   }
 
+  /* Nico 23-10 («esos bentos hay que hacerlos más hermosos… que tengan el mismo tamaño y mismas formas no se ve bien,
+     para eso tienes ilustraciones, crear diferentes jerarquías y formas»): el bento de capacidades tiene jerarquía —la
+     principal grande, una alta, una mediana y una horizontal— y un dato de la ficha con su ilustración 3D (otra que la
+     de la ficha, para no repetirla en la misma página). */
+  var ILUS = { crm: "mensajes", erp: "calendario_pago", cobranza: "reloj_mora", inquilino: "lupa_estudio", avaluos: "pin", conciliacion: "pago_confirmado", matching: "llaves", asegurabilidad: "contrato" };
+  function datoConIlustracion(p, slug) {
+    var d = p.ficha[1];
+    return '<aside class="cap cap--i" data-r><p class="cap-k">' + d[0] + '</p><p class="cap-dato">' + d[1] + '</p><img class="cap-ilus" src="/ilustraciones/' + ILUS[slug] + '-voltaje.webp" alt="" width="640" height="640" loading="lazy" decoding="async"></aside>';
+  }
+
   /* ── la interna de un producto: portada → por qué importa → capacidades → ficha → puesta en marcha → noche → demo ── */
   function htmlProducto(p, slug) {
     var semilla = ORDEN.indexOf(slug) * 7 + 3;
@@ -68,11 +78,11 @@
       '<div class="caps">' + p.caps.map(function (c, i) {
         var k = p.clips[i], r = k[1];
         var e = encuadre(k[0], r);
-        return '<article class="cap" data-r><div class="clip' + (e.s > 1 ? "" : " quieta") + '" style="--ox:' + e.ox + '%;--oy:0%;--zoom:' + e.s.toFixed(3) + '"><div class="clip-camara">' +
+        return '<article class="cap cap--' + "abcd".charAt(i) + '" data-r><div class="clip' + (e.s > 1 ? "" : " quieta") + '" style="--ox:' + e.ox + '%;--oy:0%;--zoom:' + e.s.toFixed(3) + '"><div class="clip-camara">' +
           (k[0].indexOf("p/") === 0 ? '<img src="' + img(k[0]) + '" alt="' + (ALT[k[0]] || c[0]) + '" loading="lazy" decoding="async">' :
           '<video muted loop playsinline preload="none" poster="/internas/productos/img/clips/' + k[0] + '.webp" aria-label="' + c[0] + ', en el panel de Leasefy"><source src="/internas/productos/img/clips/' + k[0] + '.mp4" type="video/mp4"></video>') + '</div></div>' +
           '<div class="cap-tx"><p class="cap-k">' + k[2] + '</p><h3>' + c[0] + '</h3><p>' + c[1] + '</p></div></article>';
-      }).join("") + '</div></div></section>';
+      }).join("") + datoConIlustracion(p, slug) + '</div></div></section>';
 
     h += '<section class="sec" id="ficha"><div class="wrap ficha-grid"><div class="ficha-cab"><p class="ceja"><i aria-hidden="true"></i>Ficha</p><h2 class="t-l" data-palabras>La ficha, sin adornos</h2>' +
       '<p class="lead" data-r>Los datos duros para decidir rápido — qué es, qué reemplaza y cuándo está operando.</p>' +

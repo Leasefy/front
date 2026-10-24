@@ -48,19 +48,38 @@
       d.textContent = sem[hoy.getDay()] + " " + hoy.getDate() + " " + mes[hoy.getMonth()];
     } catch (e) {}
   })();
-  function reloj(p) {
-    var min = Math.round(422 + (1170 - 422) * p);
+  /* Nico 23-10 («las horas no coinciden»): el reloj marca la hora de la sección que estás leyendo. Cada sección
+     dice su hora en su ceja (07:40, 08:00 … 19:30); entre dos cejas avanza parejo. La noche del piloto automático
+     arranca recién al llegar al final (19:30 → 19:42 → …), no apenas asoma el cierre. */
+  var anclas = null;
+  function medirAnclas() {
+    var ojo = innerHeight * .55;
+    anclas = [{ y: ojo, m: 422 }];
+    $$(".ceja b").forEach(function (b) {
+      var t = /^(\d\d):(\d\d)$/.exec(b.textContent.trim()); if (!t) return;
+      var m = +t[1] * 60 + +t[2], y = b.getBoundingClientRect().top + window.scrollY, u = anclas[anclas.length - 1];
+      if (m > u.m && y > u.y) anclas.push({ y: y, m: m });
+    });
+  }
+  LF.medirAnclas = medirAnclas;
+  function minutosEn(y) {
+    if (!anclas) medirAnclas();
+    for (var i = 1; i < anclas.length; i++) if (y < anclas[i].y) { var a = anclas[i - 1], b = anclas[i]; return a.m + (b.m - a.m) * Math.max(0, y - a.y) / (b.y - a.y); }
+    return anclas[anclas.length - 1].m;
+  }
+  function reloj(min) {
+    min = Math.round(min);
     var h = Math.floor(min / 60), m = min % 60;
     horaEl.textContent = (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
-    var n = Math.round(p * pista.length);
+    var n = Math.round(Math.max(0, Math.min(1, (min - 422) / (1170 - 422))) * pista.length);
     pista.forEach(function (i, j) { i.classList.toggle("on", j < n); });
   }
+  var ctaFinal = $("#contacto .fin-cta");
   function alScroll() {
-    var max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
     var y = window.scrollY;
-    var fondoP = $("#contacto").getBoundingClientRect().top < innerHeight * .55;
+    var fondoP = ctaFinal.getBoundingClientRect().bottom < innerHeight * .8 || y + innerHeight >= document.documentElement.scrollHeight - 4;
     if (fondoP !== root.classList.contains("autopiloto-on")) { root.classList.toggle("autopiloto-on", fondoP); if (LF.autopiloto) LF.autopiloto(fondoP); }
-    if (!fondoP) reloj(Math.min(1, y / max));
+    if (!fondoP) reloj(minutosEn(y + innerHeight * .55));
     hdr.classList.toggle("con-filete", y > 8);
     var ins = $("#inmuebles"), r = ins ? ins.getBoundingClientRect() : null;
     var enFondo = $("#contacto").getBoundingClientRect().top < innerHeight * .6;
@@ -68,6 +87,8 @@
     aviso.classList.toggle("ver", y > finHero && !enFondo && !(r && r.top < innerHeight && r.bottom > 0));
   }
   window.addEventListener("scroll", alScroll, { passive: true });
+  window.addEventListener("resize", function () { anclas = null; alScroll(); });
+  window.addEventListener("load", function () { anclas = null; alScroll(); });
   alScroll();
 
   /* escalar las pantallas armadas en HTML a su marco */
@@ -127,7 +148,7 @@
   /* entradas */
   ScrollTrigger.batch("[data-r]", { start: "top 90%", once: true, onEnter: function (b) { gsap.to(b, { opacity: 1, y: 0, duration: .9, ease: "expo.out", stagger: .08, overwrite: "auto" }); } });
   gsap.to(".hero [data-r]", { opacity: 1, y: 0, duration: 1, ease: "expo.out", stagger: .1, delay: .55 });
-  gsap.from(".boleto", { opacity: 0, y: 14, duration: .8, ease: "expo.out", delay: .05 });
+  gsap.from(".mk-banda", { opacity: 0, y: -10, duration: .8, ease: "expo.out", delay: .05 });
   gsap.to(".hero-pix", { opacity: .9, duration: 2.2, ease: "power2.out", delay: .4 });
 
   /* parallax de los 3D */
@@ -176,6 +197,7 @@
   }
   LF.trazarHilos = function () { $$(".hilo").forEach(trazar); };
   ScrollTrigger.addEventListener("refreshInit", LF.trazarHilos);
+  ScrollTrigger.addEventListener("refresh", function () { anclas = null; });
   (function () {
     var t = 0, rehacer = function () { clearTimeout(t); t = setTimeout(function () { ScrollTrigger.refresh(); }, 220); };
     document.querySelectorAll("img").forEach(function (im) { if (!im.complete) im.addEventListener("load", rehacer, { once: true }); });
@@ -278,10 +300,11 @@
   var mm = gsap.matchMedia();
   mm.add(DESK, function () {
     gsap.delayedCall(.5, function () { hacer("cabecera"); });
-    var esc = $(".hero-escena"), txt = $(".hero-txt");
+    var esc = $(".hero-escena"), txt = $(".hero-txt"), banda = $(".mk-banda");
+    /* el laptop termina centrado en lo que queda debajo de la barra y de la franja del marketplace */
     var subir = function () {
-      var r = esc.offsetTop, alto = esc.offsetHeight;
-      var meta = (innerHeight - alto) / 2 + 20;
+      var r = esc.offsetTop, alto = esc.offsetHeight, techo = banda ? banda.offsetTop + banda.offsetHeight : 0;
+      var meta = techo + (innerHeight - techo - alto) / 2 + 8;
       return -(r - meta);
     };
     var tl = gsap.timeline({ scrollTrigger: { trigger: ".hero-alto", start: "top top", end: "bottom bottom", scrub: .7, invalidateOnRefresh: true,
@@ -293,7 +316,8 @@
       } } });
     tl.fromTo("#dispHero", { rotateX: 26, scale: .9 }, { rotateX: 0, scale: 1, ease: "power1.out", duration: .34 }, 0)
       .to(esc, { y: subir, ease: "power1.inOut", duration: .34 }, 0)
-      .to(txt, { y: -160, opacity: 0, ease: "power1.in", duration: .26 }, 0)
+      .to(txt, { y: function () { return subir() - 120; }, ease: "power1.inOut", duration: .34 }, 0)
+      .to(txt, { opacity: 0, ease: "power2.out", duration: .12 }, 0)
       .to(".baja", { opacity: 0, duration: .06 }, 0)
       .to(".hero-escena .f1", { y: -120, x: -30, ease: "none", duration: 1 }, 0)
       .to(".hero-escena .f2", { y: -150, ease: "none", duration: 1 }, 0)

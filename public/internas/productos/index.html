@@ -41,26 +41,6 @@
   --suave:cubic-bezier(.22,1,.36,1);
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0F0F11;--arena:#16161A;--piedra:#2A2A30;--filete:#24242A;--sup:#1A1A1F;
-  --tinta:#F3F1ED;--grafito:#B7B3AC;--ceniza:#94908A;
-  --voltaje:#1A40FF;--voltaje-hover:#3352FF;--voltaje-txt:#8FA2FF;--voltaje-dot:#4D6BFF;--voltaje-suave:rgba(77,107,255,.16);
-  --noche:#0A0F2C;--noche-sup:#121A44;--noche-filete:rgba(255,255,255,.1);
-  --exito:#5BBF84;--exito-suave:rgba(91,191,132,.14);
-  --btn-s:#24242A;--btn-s-hover:#2F2F36;
-  --pix-fondo:15,15,17;
-  --sombra-flotante:0 50px 90px -40px rgba(0,0,0,.75),0 22px 40px -22px rgba(0,0,0,.5);
-  color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0F0F11;--arena:#16161A;--piedra:#2A2A30;--filete:#24242A;--sup:#1A1A1F;
-  --tinta:#F3F1ED;--grafito:#B7B3AC;--ceniza:#94908A;
-  --voltaje:#1A40FF;--voltaje-hover:#3352FF;--voltaje-txt:#8FA2FF;--voltaje-dot:#4D6BFF;--voltaje-suave:rgba(77,107,255,.16);
-  --noche:#0A0F2C;--noche-sup:#121A44;--noche-filete:rgba(255,255,255,.1);
-  --exito:#5BBF84;--exito-suave:rgba(91,191,132,.14);
-  --btn-s:#24242A;--btn-s-hover:#2F2F36;
-  --pix-fondo:15,15,17;
-  --sombra-flotante:0 50px 90px -40px rgba(0,0,0,.75),0 22px 40px -22px rgba(0,0,0,.5);
-  color-scheme:dark}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%;overflow-x:clip}
 body{background:var(--bg);color:var(--tinta);font-family:var(--f);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:clip;min-width:320px}
@@ -110,7 +90,7 @@ ul,ol{list-style:none}
 .hdr.con-filete{border-color:var(--filete)}
 .hdr .wrap{display:flex;align-items:center;height:100%;gap:26px}
 .logo{display:flex;align-items:center;height:40px}
-.logo svg{height:21px;width:auto;fill:var(--tinta)}
+.logo svg{height:26px;width:auto;fill:var(--tinta)}
 .nav{display:flex;align-items:center;gap:24px;font-size:15px;color:var(--grafito)}
 .nav>a,.nav-btn{display:inline-flex;align-items:center;gap:8px;transition:color .2s;height:40px}
 .nav>a:hover,.nav-btn:hover,.nav-btn[aria-expanded="true"]{color:var(--tinta)}
@@ -238,7 +218,30 @@ section{position:relative;overflow-x:clip}
 }
 
 /* ── capacidades: el panel en uso ── */
-.caps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:clamp(44px,5vw,72px)}
+/* el bento (Nico 23-10): jerarquía y formas distintas — a grande, i dato con ilustración, b alta, c mediana, d horizontal */
+.caps{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-areas:"a a a a a a a a i i i i" "a a a a a a a a b b b b" "c c c c c d d d d d d d";gap:16px;margin-top:clamp(44px,5vw,72px)}
+.caps .cap--a{grid-area:a}.caps .cap--b{grid-area:b}.caps .cap--c{grid-area:c}.caps .cap--d{grid-area:d}.caps .cap--i{grid-area:i}
+.caps .cap--a .clip{flex:1 1 auto;aspect-ratio:auto;min-height:340px}
+.caps .cap--a .cap-tx{padding:24px 16px 14px}
+.caps .cap--a h3{font-size:clamp(26px,2.5vw,36px)}
+.caps .cap--a p{font-size:16.5px}
+.caps .cap--b .cap-tx,.caps .cap--c .cap-tx{padding:18px 12px 12px}
+.caps .cap--b h3{font-size:clamp(20px,1.6vw,23px)}
+.caps .cap--d{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:12px}
+.caps .cap--d .cap-tx{order:-1;align-self:center;padding:20px 14px 20px 18px}
+.caps .cap--d .clip{aspect-ratio:auto;height:100%;min-height:280px}
+.caps .cap--i{position:relative;overflow:hidden;background:var(--voltaje-suave);border-color:transparent;padding:28px 26px;min-height:300px}
+.caps .cap--i .cap-k{position:relative;z-index:1}
+.caps .cap--i .cap-dato{position:relative;z-index:1;color:var(--tinta);font-size:clamp(23px,2vw,29px);font-weight:400;letter-spacing:-.02em;line-height:1.16;margin-top:12px;max-width:13ch}
+.caps .cap--i .cap-dato b{font-weight:inherit;color:var(--voltaje-txt)}
+.caps .cap--i .cap-ilus{position:absolute;right:-2%;bottom:-6%;width:46%;max-width:200px;height:auto;pointer-events:none}
+@media (max-width:1023px){
+  .caps{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"a a" "i b" "c d"}
+  .caps .cap--a .clip{flex:none;aspect-ratio:16/10;min-height:0}
+  .caps .cap--d{display:flex;flex-direction:column}
+  .caps .cap--d .cap-tx{order:0;align-self:auto;padding:18px 12px 12px}
+  .caps .cap--d .clip{aspect-ratio:16/10;height:auto;min-height:0}
+}
 .cap{background:var(--sup);border:1px solid var(--filete);border-radius:28px;padding:12px;corner-shape:superellipse(1.5);display:flex;flex-direction:column}
 .clip{position:relative;overflow:hidden;aspect-ratio:16/10;max-width:100%;border-radius:18px;background:var(--pantalla);border:1px solid var(--pantalla-filete);corner-shape:superellipse(1.5)}
 .clip-camara{position:absolute;inset:0;transform-origin:var(--ox,50%) var(--oy,50%);will-change:transform}
@@ -250,7 +253,7 @@ section{position:relative;overflow-x:clip}
 .cap-k{font-family:var(--m);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--voltaje-txt)}
 .cap h3{font-size:clamp(22px,1.9vw,27px);font-weight:420;letter-spacing:-.02em;line-height:1.18;margin-top:8px}
 .cap p{color:var(--grafito);margin-top:6px;font-size:15.5px;max-width:52ch}
-@media (max-width:760px){.caps{grid-template-columns:1fr}}
+@media (max-width:760px){.caps{grid-template-columns:1fr;grid-template-areas:"a" "i" "b" "c" "d"}.caps .cap--i{min-height:250px}.caps .cap--i .cap-ilus{width:46%}}
 
 /* ── ficha ── */
 .ficha-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(32px,6vw,96px);align-items:start}
@@ -322,7 +325,14 @@ section{position:relative;overflow-x:clip}
 .ind h2{margin-top:18px}
 .ind-g{display:grid;gap:16px;margin-top:clamp(36px,4vw,56px)}
 .ind-g.dos{grid-template-columns:repeat(2,minmax(0,1fr))}
-.ind-g.tres{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ind-g.tres{grid-template-columns:repeat(12,minmax(0,1fr))}
+/* los seis agentes con jerarquía (Nico 23-10, «crear diferentes jerarquías y formas»): uno grande y uno mediano arriba,
+   tres al medio y el último a lo ancho, con el texto a la izquierda */
+.ind-g.tres .pz:nth-child(1){grid-column:span 7}.ind-g.tres .pz:nth-child(2){grid-column:span 5}
+.ind-g.tres .pz:nth-child(3),.ind-g.tres .pz:nth-child(4),.ind-g.tres .pz:nth-child(5){grid-column:span 4}
+.ind-g.tres .pz:nth-child(1) h3{font-size:clamp(26px,2.5vw,36px)}
+.ind-g.tres .pz:nth-child(6){grid-column:1/-1;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:12px;align-items:center}
+.ind-g.tres .pz:nth-child(6) .pz-tx{order:-1;padding:20px 18px}
 .pz{display:flex;flex-direction:column;background:var(--sup);border:1px solid var(--filete);border-radius:28px;padding:12px;corner-shape:superellipse(1.5);transition:border-color .3s}
 .pz:hover{border-color:var(--piedra)}
 .pz .recorte{border-radius:18px}
@@ -332,7 +342,7 @@ section{position:relative;overflow-x:clip}
 .pz p{color:var(--grafito);font-size:16px}
 .pz .ver{margin-top:auto;padding-top:10px;color:var(--voltaje-txt);font-weight:500;font-size:15px}
 .ind-pie{display:flex;justify-content:flex-end;margin-top:28px}
-@media (max-width:1000px){.ind-g.tres{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1000px){.ind-g.tres{grid-template-columns:repeat(2,minmax(0,1fr))}.ind-g.tres .pz:nth-child(n){grid-column:auto}.ind-g.tres .pz:nth-child(1),.ind-g.tres .pz:nth-child(6){grid-column:1/-1}.ind-g.tres .pz:nth-child(6){display:flex;flex-direction:column}.ind-g.tres .pz:nth-child(6) .pz-tx{order:0;padding:18px 12px 12px}}
 @media (max-width:640px){.ind-g.dos,.ind-g.tres{grid-template-columns:1fr}}
 
 /* ── pie (el de la landing) ── */
@@ -389,7 +399,7 @@ section{position:relative;overflow-x:clip}
 .hdr.con-filete{border-color:var(--filete)}
 .hdr .wrap{display:flex;align-items:center;height:100%;gap:26px}
 .logo{display:flex;align-items:center;height:40px}
-.logo svg{height:21px;width:auto;fill:var(--tinta)}
+.logo svg{height:26px;width:auto;fill:var(--tinta)}
 .nav{display:flex;gap:24px;font-size:15px;color:var(--grafito)}
 .nav a{display:inline-flex;align-items:center;gap:8px;transition:color .2s}
 .nav a:hover{color:var(--tinta)}

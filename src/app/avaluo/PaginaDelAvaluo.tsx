@@ -232,7 +232,8 @@ export function PaginaDelAvaluo({ solicitud }: PaginaDelAvaluoProps) {
       </section>
 
       {/* ── Antes de pagar: qué es y para qué NO sirve (la ficha, sin adornos). ── */}
-      <section className="border-t border-border-faint px-4 py-[clamp(64px,8vw,120px)]" aria-labelledby="para-que-sirve">
+      {/* Sin línea arriba (Nico 24-10: «quita esa línea de separación tan fea»): la corriente ya se apaga sola al bajar. */}
+      <section className="px-4 py-[clamp(64px,8vw,120px)]" aria-labelledby="para-que-sirve">
         <div className="mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
           <Revela>
             <Sobretitulo>{tx('Antes de pagar', 'Before you pay')}</Sobretitulo>

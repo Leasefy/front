@@ -689,7 +689,7 @@ export function GenerarDispersion({
       {/* ── LO QUE VAS A GIRAR, y confirmar acá mismo. Era el paso 6. */}
       {hayQueElegir && total != null && (
         <div
-          className="sticky bottom-0 z-10 rounded-lg border border-border bg-surface px-4 py-3 shadow-sm"
+          className="sticky bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] z-10 lg:bottom-0 rounded-lg border border-border bg-surface px-4 py-3 shadow-sm"
           data-testid="lo-que-vas-a-girar"
         >
           <div className="flex flex-wrap items-end justify-between gap-4">
@@ -726,7 +726,7 @@ export function GenerarDispersion({
                 grande
               />
             </dl>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
               {onCancel && (
                 <Button type="button" variant="ghost" hideArrow onClick={onCancel}>
                   Cancelar
@@ -739,6 +739,7 @@ export function GenerarDispersion({
                 disabled={!sePuedeConfirmar}
                 isLoading={enviando}
                 data-testid="confirmar"
+                className="h-auto min-h-10 max-w-full whitespace-normal py-2 text-left"
               >
                 <Check className="h-4 w-4" weight="bold" />
                 {/* ARREGLOS-8: sin dispersiones nuevas, lo que hace el botón es

@@ -332,7 +332,7 @@ export function PipelineFilters({
             value={fechaLocal(filters.dateFrom ?? null)}
             onChange={(d) => updateFilter('dateFrom', d ? aFechaIso(d) : undefined)}
             placeholder={tr("Desde")}
-            className="w-full sm:w-40"
+            className="w-full sm:w-40 [@media(pointer:coarse)]:min-h-11"
           />
           <span className="text-muted-foreground text-sm">{t('inmobiliaria.pipeline.to')}</span>
           <DatePicker
@@ -340,7 +340,7 @@ export function PipelineFilters({
             value={fechaLocal(filters.dateTo ?? null)}
             onChange={(d) => updateFilter('dateTo', d ? aFechaIso(d) : undefined)}
             placeholder={tr("Hasta")}
-            className="w-full sm:w-40"
+            className="w-full sm:w-40 [@media(pointer:coarse)]:min-h-11"
           />
         </div>
 

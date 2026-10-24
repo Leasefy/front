@@ -306,6 +306,7 @@ export function TrasladoDeComisionPanel() {
               onClick={() => void proponer()}
               disabled={trabajando}
               data-testid="proponer-traslado"
+              className="h-auto min-h-10 max-w-full whitespace-normal py-2 text-left"
             >
               <ArrowsLeftRight className="h-4 w-4" aria-hidden="true" />
               Proponer el traslado de {plata(propuesta.totalCop)}

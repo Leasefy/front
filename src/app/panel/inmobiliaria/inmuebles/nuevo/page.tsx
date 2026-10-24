@@ -70,7 +70,7 @@ function NuevaConsignacionContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Glow up 22-10: el encabezado común, sin la caja de ícono de color. */}
       <div className="space-y-3">
-        <BackButton href={volverA} label={etiquetaDeRegreso} />
+        <BackButton href={volverA} label={etiquetaDeRegreso} className="[@media(pointer:coarse)]:min-h-11" />
         <EncabezadoDePantalla
           seccion={t('inmobiliaria.nav.secCaptacionCorta')}
           titulo={t('inmobiliaria.portafolio.new.title')}

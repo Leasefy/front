@@ -131,7 +131,7 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
           {!datos.disponible && ' Falta una actualización de la base para poder enviarlas.'}{' '}
           <Link
             href={RUTA_DE_LAS_CARTAS}
-            className="font-medium text-primary underline-offset-4 hover:underline"
+            className="font-medium text-primary underline-offset-4 hover:underline [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center"
             data-testid="abrir-cola-de-cartas"
           >
             Ver los incrementos por mes
@@ -174,7 +174,7 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
         </span>
         <Link
           href={RUTA_DE_LAS_CARTAS}
-          className="text-body-sm font-medium text-primary underline-offset-4 hover:underline"
+          className="text-body-sm font-medium text-primary underline-offset-4 hover:underline [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center"
           data-testid="abrir-cola-de-cartas"
         >
           Ver los incrementos por mes →
@@ -269,7 +269,7 @@ export function Fila({
     >
       <div className="min-w-0 flex-1 space-y-1">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <Link href={`/panel/inmobiliaria/contratos/${carta.contractId}`} className="font-medium underline-offset-2 hover:underline">
+        <Link href={`/panel/inmobiliaria/contratos/${carta.contractId}`} className="font-medium underline-offset-2 hover:underline [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center">
           #{carta.externalId ?? carta.code} · {textoLegible(carta.inquilino) || 'Sin inquilino'}
         </Link>
         <span className="font-mono tabular-nums text-fg-muted">

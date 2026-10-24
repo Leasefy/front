@@ -341,7 +341,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           className={cn(
             // pb-20 reserves space for the mobile bottom nav, which is visible
             // below lg (same breakpoint where the desktop sidebar appears).
-            'transition-all duration-200 pb-20 lg:pb-0',
+            'transition-all duration-200 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0',
             isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
           )}
         >

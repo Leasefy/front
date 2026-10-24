@@ -227,7 +227,7 @@ export default function NotificacionesPage() {
               <IconButton
                 variant="ghost"
                 onClick={() => router.push('/inquilino/configuracion')}
-                className="p-2.5 rounded-lg text-fg-subtle hover:text-fg-muted hover:bg-surface-muted"
+                className="p-2.5 rounded-lg text-fg-subtle hover:text-fg-muted hover:bg-surface-muted [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                 aria-label={locale === 'es' ? 'Configuración' : 'Settings'}
                 icon={<Gear className="w-5 h-5" />}
               />

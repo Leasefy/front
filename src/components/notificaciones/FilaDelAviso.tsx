@@ -101,7 +101,7 @@ export function FilaDelAviso({ aviso, compacta = false, sinPunto = false, onAbri
             onClick={() => onMarcarLeido(aviso)}
             aria-label={grupo ? `Marcar los ${aviso.cantidad} como leídos` : 'Marcar como leída'}
             title={grupo ? `Marcar los ${aviso.cantidad} como leídos` : 'Marcar como leída'}
-            className="flex h-7 w-7 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-success-soft hover:text-success"
+            className="flex h-7 w-7 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-success-soft hover:text-success [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
           >
             <Check className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
@@ -111,7 +111,7 @@ export function FilaDelAviso({ aviso, compacta = false, sinPunto = false, onAbri
           onClick={() => onQuitar(aviso)}
           aria-label={grupo ? `Quitar los ${aviso.cantidad} avisos` : 'Quitar el aviso'}
           title={grupo ? `Quitar los ${aviso.cantidad} avisos` : 'Quitar el aviso'}
-          className="flex h-7 w-7 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-danger-soft hover:text-danger"
+          className="flex h-7 w-7 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-danger-soft hover:text-danger [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
         >
           <X className="h-3.5 w-3.5" aria-hidden="true" />
         </button>

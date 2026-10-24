@@ -728,6 +728,7 @@ function CobrosContent() {
                 variant="ghost"
                 icon={<CaretLeft className="w-4 h-4" />}
                 aria-label="Mes anterior"
+                className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                 onClick={() => shiftMonth(-1)}
               />
               <span className="min-w-[7rem] whitespace-nowrap text-center text-sm font-medium tabular-nums text-fg">
@@ -737,6 +738,7 @@ function CobrosContent() {
                 variant="ghost"
                 icon={<CaretRight className="w-4 h-4" />}
                 aria-label="Mes siguiente"
+                className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                 disabled={!puedeAvanzarDeMes}
                 title={puedeAvanzarDeMes ? undefined : 'Es el mes corriente: todavía no hay meses después de este.'}
                 onClick={() => shiftMonth(1)}

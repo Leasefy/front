@@ -109,7 +109,7 @@ function Contenido() {
       <div className="space-y-3">
         <Link
           href="/panel/inmobiliaria/pagos/recaudo"
-          className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+          className="relative hit-area-44 inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
           data-testid="volver-a-recaudo"
         >
           Volver a Recaudo

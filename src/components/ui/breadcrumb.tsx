@@ -71,7 +71,7 @@ const SEPARATOR_SIZE: Record<BreadcrumbSize, string> = {
 };
 
 const LINK_CLASSES =
-  'flex items-center gap-1 text-muted-foreground transition-colors duration-150 hover:text-foreground';
+  'flex items-center gap-1 text-muted-foreground transition-colors duration-150 hover:text-foreground [@media(pointer:coarse)]:min-h-11';
 const DISABLED_CLASSES =
   'flex items-center gap-1 text-muted-foreground/50 pointer-events-none';
 
@@ -137,7 +137,15 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
         {showHouseIcon && (
           <>
             <DSBreadcrumbItem>
-              <Link href={homeHref} aria-label="House" className={LINK_CLASSES}>
+              <Link
+                href={homeHref}
+                aria-label="House"
+                className={cn(
+                  LINK_CLASSES,
+                  // Touch: the 12px icon sits in a 44px target (T-0173).
+                  'justify-center [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
+                )}
+              >
                 <House className={iconSize} />
               </Link>
             </DSBreadcrumbItem>

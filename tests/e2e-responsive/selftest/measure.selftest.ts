@@ -34,6 +34,26 @@ test('a fixed element that really covers an item after scrolling IS still report
   expect(found.length).toBeGreaterThan(0);
 });
 
+// ---- sampling aliasing (T-0180 WU-4) ---------------------------------------------------------
+
+const PAGE_WITH_BARS = (body: string, pad: number) => `<!doctype html><html><body style="margin:0">
+<header style="position:sticky;top:0;height:65px;background:#fff;z-index:10">Header</header>
+<main style="padding-bottom:${pad}px">${body}</main>
+<nav style="position:fixed;left:0;right:0;bottom:0;height:57px;background:#eee;z-index:10">Bottom nav</nav></body></html>`;
+const rows = (n: number, h: number) =>
+  Array.from({ length: n }, (_, i) => `<button style="display:block;height:${h}px;width:200px">Row ${i}</button>`).join('');
+
+test('a control that only one sample catches under the sticky header or bottom nav is NOT occluded', async ({ page }) => {
+  // 400px viewport, 6 samples: a 44px row is on screen at one sample and can land under a bar.
+  const found = await occluded(page, PAGE_WITH_BARS(rows(60, 44), 80));
+  expect(found.filter((s) => /Row/.test(s))).toEqual([]);
+});
+
+test('the last control of a page without bottom padding IS still reported under the bottom nav', async ({ page }) => {
+  const found = await occluded(page, PAGE_WITH_BARS(rows(60, 44), 0));
+  expect(found.filter((s) => /Row/.test(s)).length).toBeGreaterThan(0);
+});
+
 // ---- blocking modals (WU-9 item 1) -----------------------------------------------------------
 
 const MODAL_PAGE = (attrs: string) => `<!doctype html><html><body style="margin:0">

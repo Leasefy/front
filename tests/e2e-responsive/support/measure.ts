@@ -547,6 +547,35 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
   inspectFixed('bottom');
   scrollTo(0);
 
+  // Confirmation pass. The sweep samples a handful of scroll positions, so an element that lands
+  // in only ONE sample can land under a sticky header or the bottom nav purely by aliasing (a 44px
+  // control is on screen at ~1-2 of 12 samples; the bars cover ~15% of the viewport). A person just
+  // scrolls it to the middle. Candidates are re-tested centred; only the ones still covered there
+  // (a bar that cannot be scrolled clear of, e.g. content at the page end without bottom padding,
+  // or a persistent overlay) are real.
+  for (const r of rec.values()) {
+    if (r.seen === 0 || r.ok > 0) continue;
+    if (overlayEl && !overlayEl.contains(r.el)) continue;
+    const sx = window.scrollX;
+    r.el.scrollIntoView({ block: 'center', inline: xScroller(r.el) ? 'center' : 'nearest', behavior: 'instant' as ScrollBehavior });
+    window.scrollTo(sx, window.scrollY);
+    await sleep(60);
+    const b = r.el.getBoundingClientRect();
+    const cx0 = Math.max(b.left, 0);
+    const cx1 = Math.min(b.right, vw);
+    const cy0 = Math.max(b.top, 0);
+    const cy1 = Math.min(b.bottom, vh);
+    if (cx1 - cx0 <= 1 || cy1 - cy0 <= 1) continue;
+    if (((cx1 - cx0) * (cy1 - cy0)) / (b.width * b.height) < 0.6) continue;
+    const centred = document.elementFromPoint((cx0 + cx1) / 2, (cy0 + cy1) / 2);
+    if (hitOk(r.el, centred)) {
+      r.ok++;
+      continue;
+    }
+    r.by = centred ? sel(centred) : 'unknown';
+  }
+  scrollTo(0);
+
   const occludedAll = [...rec.values()].filter((r) => r.seen > 0 && r.ok === 0);
   const occluded: OccludedItem[] = occludedAll.slice(0, 40).map((r) => {
     const b = r.el.getBoundingClientRect();

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 
 import { conIdioma } from '@/lib/idioma/idioma';
-import { alternativasDelIdioma, idiomaDeLaPeticion } from '@/lib/idioma/metadata';
+import { datosDelInmueble } from '@/lib/seo/datos-del-inmueble';
+import { alternativasSoloEnEspanol, idiomaDeLaPeticion } from '@/lib/idioma/metadata';
 import {
   metadataDeLaVistaPrevia,
   pedirInmuebleParaLaVistaPrevia,
@@ -25,7 +26,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const idioma = await idiomaDeLaPeticion();
   const ruta = `/propiedades/${id}`;
-  const alternates = alternativasDelIdioma(ruta, idioma);
+  // SEO (24-10): la ficha existe sólo en español; /en/… muestra lo mismo → canonical a la de /es.
+  const alternates = alternativasSoloEnEspanol(ruta);
   const inmueble = await pedirInmuebleParaLaVistaPrevia(id);
   if (!inmueble) return { alternates };
   return {
@@ -34,6 +36,23 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default function FichaDelInmuebleLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+/**
+ * Los datos estructurados del aviso (SEO, 24-10-2026): `RealEstateListing` con su precio y el inmueble. Mismo pedido
+ * que la metadata de arriba (Next lo reutiliza: no es una llamada más). Sin respuesta del back, la ficha carga igual.
+ */
+export default async function FichaDelInmuebleLayout({ children, params }: { children: React.ReactNode; params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const inmueble = await pedirInmuebleParaLaVistaPrevia(id);
+  const sitio = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
+  return (
+    <>
+      {inmueble ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(datosDelInmueble(inmueble, `${sitio}${conIdioma(`/propiedades/${id}`, 'es')}`, sitio)).replace(/</g, '\\u003c') }}
+        />
+      ) : null}
+      {children}
+    </>
+  );
 }

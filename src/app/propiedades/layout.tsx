@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { alternativasSoloEnEspanol } from "@/lib/idioma/metadata";
 
 /**
  * El catálogo es de arriendo Y de venta («Arrendar / Comprar»; Nico,
@@ -26,9 +27,8 @@ export const metadata: Metadata = {
       "Encuentra tu próximo hogar para arrendar o comprar. Apartamentos y casas con búsqueda inteligente y propietarios verificados.",
     type: "website",
   },
-  alternates: {
-    canonical: "/propiedades",
-  },
+  // SEO (24-10): el canonical es la dirección final (/es…): la de sin prefijo redirige.
+  alternates: alternativasSoloEnEspanol("/propiedades"),
 };
 
 export default function PropiedadesLayout({

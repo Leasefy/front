@@ -24,3 +24,12 @@ export function alternativasDelIdioma(ruta: string, idioma: Idioma): NonNullable
     languages: { 'es-CO': conIdioma(ruta, 'es'), en: conIdioma(ruta, 'en'), 'x-default': ruta },
   };
 }
+
+/**
+ * canonical de una página pública que todavía SÓLO existe en español (marketplace, ficha, blog, ayuda, contacto…):
+ * en /en se ve lo mismo, así que las dos apuntan a la de /es y no se declara un inglés que no hay (SEO, 24-10-2026;
+ * skill seo-experto: nunca hreflang a un «inglés» que es español).
+ */
+export function alternativasSoloEnEspanol(ruta: string): NonNullable<Metadata['alternates']> {
+  return { canonical: conIdioma(ruta, 'es'), languages: { 'es-CO': conIdioma(ruta, 'es'), 'x-default': ruta } };
+}

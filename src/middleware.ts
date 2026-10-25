@@ -10,6 +10,7 @@ import {
   llevaPoliticaDeDocumento,
   modoDeLaPolitica,
   nuevoNonce,
+  paginaArmada,
   politicaDeContenido,
   politicaDeLaHome,
 } from '@/lib/seguridad/politica-de-contenido';
@@ -75,7 +76,11 @@ export function middleware(request: NextRequest) {
    * React siguen en el código como respaldo: para volver a ellas basta quitar
    * esta reescritura.
    */
-  if (reescrita) reescrita.pathname = ruta === '/' ? RUTA_DE_LA_HOME : (internaDeLaRuta(ruta) ?? ruta);
+  /*
+   * SEO (Nico 24-10-2026): cada dirección de la landing estática sirve su página ya armada para buscadores
+   * (`public/paginas/<idioma>/…`, ver `paginaArmada`); las fuentes de arriba siguen siendo las que se editan.
+   */
+  if (reescrita && idioma) reescrita.pathname = paginaArmada(ruta, idioma) ?? (ruta === '/' ? RUTA_DE_LA_HOME : (internaDeLaRuta(ruta) ?? ruta));
 
   const deLaPeticion = new Headers(request.headers);
   // Nadie de afuera dice en qué idioma va la página.

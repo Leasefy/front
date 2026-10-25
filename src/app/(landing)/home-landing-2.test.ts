@@ -79,10 +79,12 @@ const PUBLICO = [
 afterEach(() => vi.unstubAllEnvs())
 
 describe('la home es la landing 2 (Ronda 30, Nico)', () => {
-  it('/es y /en sirven la página estática de la landing 2', () => {
-    for (const url of ['https://leasefy.co/es', 'https://leasefy.co/en']) {
-      const r = middleware(new NextRequest(url))
-      expect(r.headers.get('x-middleware-rewrite')).toBe(`https://leasefy.co${RUTA_DE_LA_HOME}`)
+  it('/es y /en sirven la página estática de la landing 2, ya armada para buscadores en su idioma', () => {
+    for (const idioma of ['es', 'en']) {
+      const r = middleware(new NextRequest(`https://leasefy.co/${idioma}`))
+      // SEO (24-10): la armada desde la fuente (scripts/landing/armar-paginas.mjs), con su título, canonical e inglés
+      expect(r.headers.get('x-middleware-rewrite')).toBe(`https://leasefy.co/paginas/${idioma}/index.html`)
+      expect(existsSync(join('public', 'paginas', idioma, 'index.html'))).toBe(true)
     }
     expect(RUTA_DE_LA_HOME).toBe('/landing/index.html')
     // `/` sin idioma sigue yendo primero a /es o /en, como el resto de lo público.

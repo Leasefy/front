@@ -74,6 +74,10 @@
     var LF = { t: (window.LF && window.LF.t) || (window.LFI && window.LFI.t) || function (s) { return s; } };
     var en = raiz.lang === "en" || (window.LFI && window.LFI.idioma === "en");
     var numero = function (n) { return Number(n).toLocaleString(en ? "en-US" : "es-CO"); };
+    /* los enlaces cuyo href cumple (comparado en código: el prefijo de idioma o el origen del artefacto varían) */
+    var enlacesQue = function (cumple) {
+      return Array.prototype.filter.call(document.querySelectorAll("a[href]"), function (a) { return cumple(a.getAttribute("href") || ""); });
+    };
     var crear = function (tag, clase, texto) {
       var el = document.createElement(tag);
       if (clase) el.className = clase;
@@ -83,7 +87,7 @@
 
     /* 1 ── con sesión, lo que crea cuenta o entra lleva al panel (los del encabezado ya vienen en pareja) */
     if (conSesion) {
-      Array.prototype.forEach.call(document.querySelectorAll('a[href^="' + ORIGEN + '/auth"]'), function (a) {
+      enlacesQue(function (h) { return h.indexOf(ORIGEN + "/auth") === 0; }).forEach(function (a) {
         if (a.hasAttribute("data-sin-sesion") || a.closest("[data-sin-sesion]")) return;
         a.setAttribute("href", ORIGEN + "/ir-al-panel");
         a.textContent = LF.t("Ir al panel");
@@ -190,7 +194,7 @@
       return d;
     }
     if (!conSesion) {
-      Array.prototype.forEach.call(document.querySelectorAll('a[href="' + ORIGEN + '/publica"]'), function (a) {
+      enlacesQue(function (h) { return h === ORIGEN + "/publica" || h === ORIGEN + "/es/publica" || h === ORIGEN + "/en/publica"; }).forEach(function (a) {
         a.addEventListener("click", function (e) {
           if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; /* abrir en otra pestaña sigue igual */
           if (!window.HTMLDialogElement) return; /* navegador viejo: va a /publica, que también abre la cuenta */

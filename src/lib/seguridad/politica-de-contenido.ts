@@ -299,9 +299,22 @@ export function internaDeLaRuta(ruta: string): string | null {
   return (PUBLICOS_DE_LAS_INTERNAS as readonly string[]).includes(m[2]) ? RUTAS_DE_LAS_INTERNAS.para : null;
 }
 
+/**
+ * La página YA ARMADA para buscadores que sirve esta ruta en este idioma (SEO, Nico 24-10-2026: «optimiza toda la
+ * landing para SEO, para que podamos aparecer en todo lado»): `public/paginas/<idioma>/…`, una por dirección, con su
+ * título, canonical, hreflang, JSON-LD, el contenido de su vista y el inglés en el HTML. La arma
+ * `scripts/landing/armar-paginas.mjs` desde las fuentes de arriba; `null` si la ruta no es de la landing estática.
+ */
+export function paginaArmada(ruta: string, idioma: 'es' | 'en'): string | null {
+  if (ruta === '/' || ruta === '') return `/paginas/${idioma}/index.html`;
+  if (internaDeLaRuta(ruta) === null) return null;
+  if (ruta === '/productos') return `/paginas/${idioma}/productos/index.html`;
+  return `/paginas/${idioma}${ruta}.html`;
+}
+
 /** ¿Esta ruta (sin prefijo de idioma) es la home, una de sus internas o un archivo de ellas? */
 export function esDeLaHome(ruta: string): boolean {
-  return ruta === '/' || ruta === '' || ruta.startsWith('/landing/') || ruta.startsWith('/internas/') || internaDeLaRuta(ruta) !== null;
+  return ruta === '/' || ruta === '' || ruta.startsWith('/landing/') || ruta.startsWith('/internas/') || ruta.startsWith('/paginas/') || internaDeLaRuta(ruta) !== null;
 }
 
 export function politicaDeLaHome(env: Pick<EntornoDeLaPolitica, 'desarrollo' | 'soloReporte'>): string {

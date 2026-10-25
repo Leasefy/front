@@ -9,6 +9,7 @@
   var TITULOS = { inmobiliarias: "Para inmobiliarias", propietarios: "Para propietarios", inquilinos: "Para inquilinos", agentes: "Para agentes inmobiliarios" };
   var vistas = {}; $$(".vista").forEach(function (v) { vistas[v.dataset.vista] = v; });
   var iniciada = {}, actual = null;
+  var SEO = {}; try { SEO = JSON.parse((document.getElementById("lf-seo") || {}).textContent || "{}"); } catch (e) {}
 
   $$("[data-motivo]").forEach(LF.motivo);
 
@@ -140,12 +141,17 @@
   }
   function mostrar(nombre, subir) {
     if (VISTAS.indexOf(nombre) < 0) nombre = "inmobiliarias";
+    /* SEO (24-10): la página armada de cada público trae sólo su vista; los demás viven en su dirección */
+    if (!vistas[nombre]) { location.replace(PREFIJO + "/para/" + nombre); return; }
     if (nombre === actual) { if (subir) arriba(); return; }
     actual = nombre;
-    VISTAS.forEach(function (k) { vistas[k].hidden = k !== nombre; });
+    VISTAS.forEach(function (k) { if (vistas[k]) vistas[k].hidden = k !== nombre; });
     $$(".sel-tabs a").forEach(function (a) { if (a.dataset.ir === nombre) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     $("#selRuta").textContent = nombre;
-    document.title = LFT(TITULOS[nombre]) + " | Leasefy";
+    /* la página armada trae el título y la descripción pensados para buscadores (#lf-seo, SEO 24-10) */
+    var seo = SEO["/para/" + nombre], md = document.querySelector('meta[name="description"]');
+    if (seo) { document.title = seo[0]; if (md) md.setAttribute("content", seo[1]); }
+    else document.title = LFT(TITULOS[nombre]) + " | Leasefy";
     if (subir) arriba(true);
     iniciarVista(nombre);
     escalar(); repintar();
@@ -164,6 +170,7 @@
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
       var destino = PREFIJO + "/para/" + a.dataset.ir;
+      if (!vistas[a.dataset.ir]) { location.href = destino; return; }
       if (location.pathname !== destino) { try { history.pushState(null, "", destino); } catch (er) {} }
       mostrar(a.dataset.ir, true);
     });

@@ -118,12 +118,17 @@
   window.LFI = { idioma: idioma, en: EN, t: t, aplicar: aplicar, listo: listo, selector: selector, SEP: SEP };
   if (EN) {
     root.setAttribute("lang", "en");
-    root.classList.add("lf-en", "lf-traduciendo");
-    var st = document.createElement("style");
-    st.textContent = ".lf-traduciendo body{visibility:hidden}";
-    document.head.appendChild(st);
-    /* si algo falla, la página igual se muestra (en español) */
-    setTimeout(listo, 2500);
+    root.classList.add("lf-en");
+    /* la página armada (public/paginas/en, SEO 24-10) ya viene en inglés: no se esconde; en.js igual hace falta
+       para lo que escriben los scripts (LFI.t) */
+    if (root.getAttribute("data-armada") !== "en") {
+      root.classList.add("lf-traduciendo");
+      var st = document.createElement("style");
+      st.textContent = ".lf-traduciendo body{visibility:hidden}";
+      document.head.appendChild(st);
+      /* si algo falla, la página igual se muestra (en español) */
+      setTimeout(listo, 2500);
+    }
     var src = (document.currentScript && document.currentScript.src || "").replace(/idioma\.js(\?.*)?$/, "en.js");
     if (src) document.write('<script src="' + src + '"><\/script>');
   }

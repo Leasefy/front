@@ -1,0 +1,34 @@
+# Leasefy
+
+> Leasefy es un software inmobiliario para inmobiliarias de Colombia: CRM, ERP y agentes AI en una sola plataforma para centralizar y automatizar la operación de arriendos, de la solicitud a la retención del propietario. Incluye un marketplace de arriendos con los inmuebles de las inmobiliarias que lo usan. Sede: Medellín, Colombia. Contacto: hola@leasefy.co.
+
+Leasefy is real estate software for property management agencies in Colombia: CRM, ERP and AI agents that automate rentals, collections, leases, bank reconciliation and owner payouts, plus a rental marketplace.
+
+## El sistema
+- [Inicio](https://leasefy.co/es): qué es Leasefy y cómo se arma el día de una inmobiliaria en piloto automático.
+- [Productos](https://leasefy.co/es/productos): el CRM, el ERP y los agentes AI.
+- [CRM inmobiliario](https://leasefy.co/es/productos/crm): interesados, inmuebles y asesores en un solo embudo.
+- [ERP de arriendos](https://leasefy.co/es/productos/erp): recaudo, giros a propietarios y cierre de mes trazables.
+
+## Agentes AI
+- [Cobranza](https://leasefy.co/es/productos/cobranza): recordatorios, seguimiento y escalamiento de la mora.
+- [Estudio del inquilino](https://leasefy.co/es/productos/inquilino): identidad, capacidad de pago y comportamiento del candidato.
+- [Avalúos](https://leasefy.co/es/productos/avaluos): el canon del mercado real de la ciudad, con comparables.
+- [Conciliación bancaria](https://leasefy.co/es/productos/conciliacion): cada pago del extracto encuentra su contrato.
+- [Matching](https://leasefy.co/es/productos/matching): opciones de arriendo para cada interesado el mismo día.
+- [Asegurabilidad](https://leasefy.co/es/productos/asegurabilidad): evaluación y gestión de la asegurabilidad de cada contrato.
+
+## Para quién
+- [Inmobiliarias](https://leasefy.co/es/para/inmobiliarias)
+- [Propietarios](https://leasefy.co/es/para/propietarios)
+- [Inquilinos](https://leasefy.co/es/para/inquilinos)
+- [Agentes inmobiliarios](https://leasefy.co/es/para/agentes)
+
+## Marketplace y servicios
+- [Inmuebles en arriendo y venta](https://leasefy.co/es/propiedades): los inmuebles publicados por las inmobiliarias de Leasefy.
+- [Avalúo comercial en línea](https://leasefy.co/es/avaluo): estimación del valor de referencia, revisada y firmada por una persona (no reemplaza un avalúo RAA).
+- [Contacto](https://leasefy.co/es/contacto)
+
+## In English
+- [Home](https://leasefy.co/en) · [Products](https://leasefy.co/en/productos) · [Real estate CRM](https://leasefy.co/en/productos/crm) · [Rental ERP](https://leasefy.co/en/productos/erp) · [Collections](https://leasefy.co/en/productos/cobranza) · [Tenant screening](https://leasefy.co/en/productos/inquilino) · [Appraisals](https://leasefy.co/en/productos/avaluos) · [Reconciliation](https://leasefy.co/en/productos/conciliacion) · [Matching](https://leasefy.co/en/productos/matching) · [Insurability](https://leasefy.co/en/productos/asegurabilidad)
+- [For agencies](https://leasefy.co/en/para/inmobiliarias) · [For owners](https://leasefy.co/en/para/propietarios) · [For tenants](https://leasefy.co/en/para/inquilinos) · [For agents](https://leasefy.co/en/para/agentes) · [Online appraisal](https://leasefy.co/en/avaluo)

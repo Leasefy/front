@@ -93,10 +93,11 @@ afterEach(() => vi.unstubAllEnvs())
 
 describe('las internas de la home se sirven estáticas (Ronda 30, Nico)', () => {
   it('/productos, sus ocho internas y las cuatro por público sirven su página; lo demás sigue en React', () => {
+    // SEO (24-10): cada dirección sirve SU página ya armada (public/paginas/<idioma>/…), hecha desde estas fuentes.
     for (const idioma of ['es', 'en']) {
-      expect(reescritura(`/${idioma}/productos`)).toBe(`https://leasefy.co${RUTAS_DE_LAS_INTERNAS.productos}`)
-      for (const s of PRODUCTOS_DE_LAS_INTERNAS) expect(reescritura(`/${idioma}/productos/${s}`)).toBe(`https://leasefy.co${RUTAS_DE_LAS_INTERNAS.productos}`)
-      for (const s of PUBLICOS_DE_LAS_INTERNAS) expect(reescritura(`/${idioma}/para/${s}`)).toBe(`https://leasefy.co${RUTAS_DE_LAS_INTERNAS.para}`)
+      expect(reescritura(`/${idioma}/productos`)).toBe(`https://leasefy.co/paginas/${idioma}/productos/index.html`)
+      for (const s of PRODUCTOS_DE_LAS_INTERNAS) expect(reescritura(`/${idioma}/productos/${s}`)).toBe(`https://leasefy.co/paginas/${idioma}/productos/${s}.html`)
+      for (const s of PUBLICOS_DE_LAS_INTERNAS) expect(reescritura(`/${idioma}/para/${s}`)).toBe(`https://leasefy.co/paginas/${idioma}/para/${s}.html`)
     }
     expect(RUTAS_DE_LAS_INTERNAS).toEqual({ productos: '/internas/productos/index.html', para: '/internas/para/index.html' })
     // Lo que no es una interna no se toca.

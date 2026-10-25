@@ -10,6 +10,7 @@
   var main = $("#vista"), hdr = $("#hdr"), aviso = $("#aviso"), pista = $$("#pista i");
   var vista = null, limpieza = [], avisoCerrado = false;
   var DEMO = "/contacto", PLANES = "/#planes";
+  var SEO = {}; try { SEO = JSON.parse((document.getElementById("lf-seo") || {}).textContent || "{}"); } catch (e) {}
 
   /* ── utilidades de la pantalla real ── */
   function img(src) { return "/internas/productos/img/" + src + ".webp"; }
@@ -133,12 +134,16 @@
   function marcarNav(v) {
     $$("[data-v]").forEach(function (a) { if (a.dataset.v === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
   }
+  /* SEO (24-10): scripts/landing/armar-paginas.mjs arma cada dirección con estas mismas funciones (contenido en el HTML) */
+  window.LF_VISTAS = { producto: htmlProducto, indice: htmlIndice, llenarNav: llenarNav };
 
   /* ── el reloj: la hora del momento que cuenta cada producto (la de su noche) ── */
   (function () {
     try {
       var hoy = new Date(), sem = (window.LFI && window.LFI.en) ? ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] : ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"], mes = (window.LFI && window.LFI.en) ? ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] : ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-      $("#relojDia").textContent = sem[hoy.getDay()] + " " + hoy.getDate() + " " + mes[hoy.getMonth()];
+      /* el día del reloj que se ve (antes sólo cambiaba el #relojDia escondido y la barra decía «JUE 22 OCT», Nico 24-10) */
+      var dia = sem[hoy.getDay()] + " " + hoy.getDate() + " " + mes[hoy.getMonth()];
+      $$(".reloj .dia, #relojDia").forEach(function (el) { el.textContent = dia; });
     } catch (e) {}
   })();
   function ponerHora(v) {
@@ -331,9 +336,14 @@
     /* el inglés de la vista, antes de partir los títulos (ver /landing/js/idioma.js) */
     if (window.LFI) window.LFI.aplicar(main);
     marcarNav(v); ponerHora(v);
-    document.title = LFT(v === "productos" ? "Productos" : PROD[v].name) + " | Leasefy";
     var md = document.querySelector('meta[name="description"]');
-    if (md) md.setAttribute("content", LFT(v === "productos" ? md.dataset.indice || md.getAttribute("content") : PROD[v].lead));
+    /* la página armada trae el título y la descripción pensados para buscadores de cada vista (#lf-seo, SEO 24-10) */
+    var seo = SEO[v === "productos" ? "/productos" : "/productos/" + v];
+    if (seo) { document.title = seo[0]; if (md) md.setAttribute("content", seo[1]); }
+    else {
+      document.title = LFT(v === "productos" ? "Productos" : PROD[v].name) + " | Leasefy";
+      if (md) md.setAttribute("content", LFT(v === "productos" ? md.dataset.indice || md.getAttribute("content") : PROD[v].lead));
+    }
     irArriba(true);
     montar();
     alScroll();
@@ -347,7 +357,7 @@
   }
   /* ¿el enlace es de esta página? Sólo /productos y /productos/<uno de los ocho>. */
   function deEstaPagina(camino) {
-    var m = /^\/productos(?:\/([a-z]+))?$/.exec(camino);
+    var m = /^\/productos(?:\/([a-z]+))?$/.exec(camino.replace(/^\/(es|en)(?=\/|$)/, ""));
     return !!m && (!m[1] || !!PROD[m[1]]);
   }
   function ruta(enfocar) {
@@ -363,7 +373,7 @@
       var partes = href.split("#"), camino = partes[0], ancla = partes[1] || null;
       if (!deEstaPagina(camino) || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === "_blank") return;
       e.preventDefault();
-      var destino = PREFIJO + camino + (ancla ? "#" + ancla : "");
+      var destino = PREFIJO + camino.replace(/^\/(es|en)(?=\/|$)/, "") + (ancla ? "#" + ancla : "");
       if (location.pathname + location.hash !== destino) { try { history.pushState(null, "", destino); } catch (er) {} }
       return mostrar(vistaDe(camino), ancla, true);
     }

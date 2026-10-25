@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { FAQJsonLd } from "@/components/seo/JsonLd";
+import { alternativasSoloEnEspanol } from "@/lib/idioma/metadata";
 
 export const metadata: Metadata = {
   title: "Centro de Ayuda y Preguntas Frecuentes",
@@ -18,9 +19,8 @@ export const metadata: Metadata = {
       "Encuentra respuestas a todas tus preguntas sobre arriendos, contratos, pagos y verificación de inquilinos.",
     type: "website",
   },
-  alternates: {
-    canonical: "/ayuda",
-  },
+  // SEO (24-10): el canonical es la dirección final (/es…): la de sin prefijo redirige.
+  alternates: alternativasSoloEnEspanol("/ayuda"),
 };
 
 export default function AyudaLayout({

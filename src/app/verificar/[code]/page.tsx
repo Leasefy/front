@@ -60,8 +60,8 @@ const NIVELES: Record<string, { texto: string; color: string; fondo: string }> =
   A: { texto: 'Riesgo bajo', color: 'text-success', fondo: 'bg-success-soft' },
   B: {
     texto: 'Riesgo medio-bajo',
-    color: 'text-[#1A40FF] dark:text-[#5570FF]',
-    fondo: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    color: 'text-[#1A40FF]',
+    fondo: 'bg-[#EEF1FF]',
   },
   C: { texto: 'Riesgo medio', color: 'text-warning', fondo: 'bg-warning-soft' },
   D: { texto: 'Riesgo alto', color: 'text-danger', fondo: 'bg-danger-soft' },
@@ -103,7 +103,7 @@ export default function VerificarPage() {
     <div className="flex min-h-screen items-center justify-center bg-bg p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-foreground">Leasefy</h1>
+          <h1 className="text-h2 text-foreground">Leasefy</h1>
           <p className="mt-1 text-sm text-muted-foreground">Verificación de estudio</p>
         </div>
 
@@ -118,11 +118,11 @@ export default function VerificarPage() {
                documento verdadero es falso porque se cayó la red es el peor
                error posible en esta pantalla: alguien no arrienda por eso. */
             <div className="flex flex-col items-center gap-4 p-10 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-warning-soft">
+              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-warning-soft">
                 <WarningCircle className="h-7 w-7 text-warning" />
               </div>
               <div>
-                <p className="mb-1 text-base font-semibold text-foreground">
+                <p className="mb-1 text-base font-medium text-foreground">
                   No pudimos comprobarlo ahora
                 </p>
                 <p className="max-w-xs text-sm text-muted-foreground">
@@ -145,7 +145,7 @@ export default function VerificarPage() {
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
+        <p className="mt-6 text-center text-caption text-muted-foreground">
           Leasefy — Plataforma de gestión de arriendos
         </p>
       </div>
@@ -160,8 +160,8 @@ function Autentico({ r, codigo }: { r: EstudioVerificado; codigo: string }) {
       <div className="flex items-center gap-3 border-b border-success/30 bg-success-soft px-6 py-4">
         <CheckCircle className="h-6 w-6 text-success" weight="fill" />
         <div>
-          <p className="text-sm font-semibold text-success">Estudio verificado</p>
-          <p className="text-xs text-success">
+          <p className="text-sm font-medium text-success">Estudio verificado</p>
+          <p className="text-caption text-success">
             Este documento lo generó Leasefy y sigue vigente.
           </p>
         </div>
@@ -169,10 +169,10 @@ function Autentico({ r, codigo }: { r: EstudioVerificado; codigo: string }) {
 
       <div className="space-y-5 p-6">
         <div>
-          <p className="mb-1 text-xs text-muted-foreground">Inquilino</p>
-          <p className="text-lg font-semibold text-foreground">{r.nombreEnmascarado}</p>
+          <p className="mb-1 text-caption text-muted-foreground">Inquilino</p>
+          <p className="text-lg font-medium text-foreground">{r.nombreEnmascarado}</p>
           {/* Por qué está a medias: si no se dijera, se leería como un error. */}
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-caption text-muted-foreground">
             El nombre va incompleto a propósito: alcanza para reconocer al de tu carta y no para
             identificar a nadie más.
           </p>
@@ -181,15 +181,15 @@ function Autentico({ r, codigo }: { r: EstudioVerificado; codigo: string }) {
         {nivel ? (
           <div className="flex items-center gap-4">
             <div
-              className={cn('flex h-16 w-16 items-center justify-center rounded-xl', nivel.fondo)}
+              className={cn('flex h-16 w-16 items-center justify-center rounded-lg', nivel.fondo)}
             >
-              <span className={cn('text-3xl font-bold', nivel.color)}>{r.nivel}</span>
+              <span className={cn('text-3xl font-medium', nivel.color)}>{r.nivel}</span>
             </div>
             <div>
-              <p className="text-base font-semibold text-foreground">{nivel.texto}</p>
+              <p className="text-base font-medium text-foreground">{nivel.texto}</p>
               {/* 🔴 El puntaje exacto NO se muestra acá: esta página la abre
                   cualquiera con el código, y el número lo pagó el propietario. */}
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-caption text-muted-foreground">
                 El puntaje exacto sólo lo ve quien pidió el estudio.
               </p>
             </div>
@@ -213,7 +213,7 @@ function NoAutentico({ r, codigo }: { r: EstudioVerificado | null; codigo: strin
     <div className="flex flex-col items-center gap-4 p-10 text-center">
       <div
         className={cn(
-          'flex h-14 w-14 items-center justify-center rounded-xl',
+          'flex h-14 w-14 items-center justify-center rounded-lg',
           vencido || sinTerminar ? 'bg-warning-soft' : 'bg-danger-soft',
         )}
       >
@@ -226,7 +226,7 @@ function NoAutentico({ r, codigo }: { r: EstudioVerificado | null; codigo: strin
         )}
       </div>
       <div>
-        <p className="mb-1 text-base font-semibold text-foreground">
+        <p className="mb-1 text-base font-medium text-foreground">
           {vencido
             ? 'Este estudio ya venció'
             : sinTerminar

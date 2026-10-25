@@ -160,7 +160,9 @@ describe('<SeccionAvisos> — nada sale hasta que lo prendan', () => {
       avisos: [RECIBO],
     })
     await montar()
-    expect(q('avisos-sin-migrar')?.textContent).toContain('20260918182000')
+    // Ronda 30 (a propósito): el número de la migración ya no se ve; queda en el `title` para quien despliega.
+    expect(q('avisos-sin-migrar')?.getAttribute('title')).toContain('20260918182000')
+    expect(q('avisos-sin-migrar')?.textContent).not.toContain('20260918182000')
     expect(
       (q('aviso-alternar-RECIBO_DE_CAJA_AL_INQUILINO') as HTMLButtonElement)
         .disabled,

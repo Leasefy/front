@@ -17,6 +17,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 // 10-10-2026: las fechas son campos de Cadence (se eligen, no se escriben); en la
 // prueba, un <input> con el mismo id y data-testid (`campos-de-fecha.doble-de-prueba`).
 vi.mock('@/components/contabilidad/CampoDeDia', () => import('@/components/ui/campos-de-fecha.doble-de-prueba'))
+// Ronda 30: la modalidad usa el Select de la casa (Radix); aquí, un <select> del navegador que se maneja igual.
+vi.mock('@/components/ui/select', () => ({
+  Select: ({ value, onValueChange, children }: { value?: string; onValueChange?: (v: string) => void; children?: React.ReactNode }) => (
+    <select data-testid="destino-de-los-intereses" value={value} onChange={(e) => onValueChange?.(e.target.value)}>
+      {children}
+    </select>
+  ),
+  SelectTrigger: () => null,
+  SelectValue: () => null,
+  SelectContent: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => <option value={value}>{children}</option>,
+}))
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 

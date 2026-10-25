@@ -119,7 +119,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
         aria-expanded={isExpanded}
         className={cn(
           'w-full flex items-center gap-2 px-3 py-2.5',
-          'text-left text-xs',
+          'text-left text-caption',
           'hover:bg-surface-hover',
           'transition-colors duration-150'
         )}
@@ -142,7 +142,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
 
       {/* Summary — always visible */}
       <div className="px-3 pb-2">
-        <p className="text-xs text-fg-muted leading-relaxed">
+        <p className="text-caption text-fg-muted leading-relaxed">
           {section.summary}
         </p>
       </div>
@@ -159,7 +159,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
             {/* Detail bullets */}
             <ul className="space-y-1.5">
               {section.details.map((detail, idx) => (
-                <li key={idx} className="flex gap-2 text-xs text-fg-muted leading-relaxed">
+                <li key={idx} className="flex gap-2 text-caption text-fg-muted leading-relaxed">
                   <span className="text-fg-subtle mt-0.5 flex-shrink-0">-</span>
                   <span>{detail}</span>
                 </li>
@@ -178,7 +178,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
                 }}
                 className={cn(
                   'gap-1.5 px-2.5 py-1.5 h-auto rounded-md',
-                  'text-xs font-medium border',
+                  'text-caption font-medium border',
                   actionBtnColor
                 )}
               >
@@ -240,11 +240,11 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <p className="text-xs text-fg-muted font-medium">
+          <p className="text-caption text-fg-muted font-medium">
             {formattedDate}
           </p>
           {briefing.isNew && (
-            <Badge variant="default" className="gap-1 px-1.5 py-0.5 text-[10px] font-semibold">
+            <Badge variant="default" className="gap-1 px-1.5 py-0.5 text-[10px] font-medium">
               <Sparkle className="w-2.5 h-2.5" weight="fill" />
               {t('beta.briefing.new')}
             </Badge>
@@ -253,7 +253,7 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
         <p className="text-sm text-fg font-medium leading-snug">
           {briefing.greeting}
         </p>
-        <p className="text-xs text-fg-muted leading-relaxed">
+        <p className="text-caption text-fg-muted leading-relaxed">
           {briefing.overallSummary}
         </p>
       </div>

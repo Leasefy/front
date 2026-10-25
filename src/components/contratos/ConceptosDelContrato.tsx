@@ -281,7 +281,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Receipt className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-foreground">
+          <h3 className="text-base font-medium text-foreground">
             Conceptos del contrato
           </h3>
         </div>
@@ -298,7 +298,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       ) : conceptos.length === 0 && !agregando ? (
         <p className="text-sm text-muted-foreground">
           Sólo el canon. Si este contrato cobra administración, parqueadero o
-          alguna cuota, agrégala acá: los recurrentes entran en el cobro de
+          alguna cuota, agrégala aquí: los recurrentes entran en el cobro de
           cada mes con su IVA y sus retenciones, y salen en la cuenta de cobro.
         </p>
       ) : null}
@@ -643,13 +643,13 @@ function ConceptoEnLista({
                   que se le olvidó el IVA se ven idénticos en una factura. */}
               <ul className="space-y-0.5 pt-1">
                 {liquidacion.motivos.map((m) => (
-                  <li key={m} className="text-[11px] leading-snug text-muted-foreground">
+                  <li key={m} className="text-caption leading-snug text-muted-foreground">
                     {m}
                   </li>
                 ))}
               </ul>
               {esSupuesto(concepto, perfiles) ? (
-                <p className="pt-1 text-[11px] text-muted-foreground">
+                <p className="pt-1 text-caption text-muted-foreground">
                   Alguna de las dos partes no tiene el perfil tributario
                   configurado: para esos campos se usa el valor por defecto de
                   su tipo de persona.

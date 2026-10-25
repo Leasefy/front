@@ -14,7 +14,9 @@
 
 import Link from 'next/link'
 import { useRef, type ReactNode } from 'react'
-import { ArrowRight, Robot } from '@phosphor-icons/react'
+import { Robot } from '@phosphor-icons/react'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { Button } from '@/components/ui/button'
 import type { Icon } from '@phosphor-icons/react'
 
 import type { AgenteId, WorkItemEstado } from '@/lib/api/work-item'
@@ -159,18 +161,13 @@ function OverviewBody({
         className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
         data-testid="sala-agente-empty"
       >
-        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
-          <EmptyIcon
-            weight="duotone"
-            className="h-6 w-6 text-fg-subtle"
-            aria-hidden="true"
-          />
-        </div>
+        {/* El ícono suelto, sin caja (Cadence 2). */}
+        <EmptyIcon weight="light" className="h-8 w-8 text-fg-subtle" aria-hidden="true" />
         <div className="space-y-1.5">
-          <p className="text-[15px] font-semibold text-fg">
+          <p className="text-[15px] font-medium text-fg">
             {t(`${WORKSPACE_NS}.sala.emptyTitle`)}
           </p>
-          <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
+          <p className="text-sm text-fg-muted max-w-sm leading-relaxed mx-auto">
             {emptyHint ?? t(`${WORKSPACE_NS}.sala.emptyBody`)}
           </p>
         </div>
@@ -194,8 +191,8 @@ function OverviewBody({
               className="rounded-lg border border-border bg-card p-4"
               data-testid={`sala-kpi-${kpi.id}`}
             >
-              <p className="text-xs text-muted-foreground leading-tight">{kpi.label}</p>
-              <p className="text-xl font-semibold text-foreground mt-1 tabular-nums">
+              <p className="text-caption text-muted-foreground leading-tight">{kpi.label}</p>
+              <p className="mt-1 font-mono text-xl tabular-nums text-foreground">
                 <AnimatedNumber
                   value={kpi.value}
                   from={desde}
@@ -209,11 +206,11 @@ function OverviewBody({
 
       {/* Pipeline por estado */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-3" data-testid="sala-pipeline">
-        <h2 className="text-sm font-semibold text-foreground">
+        <h2 className="text-sm font-medium text-foreground">
           {pipelineTitle ?? t(`${WORKSPACE_NS}.sala.pipelineTitle`)}
         </h2>
         {pipelineTotal === 0 ? (
-          <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.pipelineEmpty`)}</p>
+          <p className="text-caption text-muted-foreground">{t(`${WORKSPACE_NS}.sala.pipelineEmpty`)}</p>
         ) : (
           <>
             {/* La barra crece desde la izquierda (sólo `scaleX`); el ancho de
@@ -242,10 +239,10 @@ function OverviewBody({
                     className={`w-2 h-2 rounded-full ${ESTADO_BAR_CLS[seg.estado] ?? 'bg-fg-subtle'}`}
                     aria-hidden="true"
                   />
-                  <dt className="text-[11px] text-muted-foreground">
+                  <dt className="text-caption text-muted-foreground">
                     {estadoLabel(t, seg.estado, agente)}
                   </dt>
-                  <dd className="text-[11px] font-medium text-foreground tabular-nums">
+                  <dd className="font-mono text-caption tabular-nums text-foreground">
                     <AnimatedNumber value={seg.count} format={enteroTalCual} />
                   </dd>
                 </div>
@@ -257,9 +254,9 @@ function OverviewBody({
 
       {/* Actividad reciente */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-3" data-testid="sala-feed">
-        <h2 className="text-sm font-semibold text-foreground">{t(`${WORKSPACE_NS}.sala.feedTitle`)}</h2>
+        <h2 className="text-sm font-medium text-foreground">{t(`${WORKSPACE_NS}.sala.feedTitle`)}</h2>
         {overview.feed.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.feedEmpty`)}</p>
+          <p className="text-caption text-muted-foreground">{t(`${WORKSPACE_NS}.sala.feedEmpty`)}</p>
         ) : (
           // Lo que el agente acaba de hacer entra ARRIBA bajando a su lugar.
           <Stagger as="ul" direction="down" className="divide-y divide-border">
@@ -268,15 +265,15 @@ function OverviewBody({
               return (
                 <StaggerItem as="li" key={entry.id} className="py-2.5 first:pt-0 last:pb-0 flex items-start gap-2">
                   <span
-                    className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-full ring-1 shrink-0 mt-0.5 ${meta.cls}`}
+                    className={`inline-flex items-center text-caption px-2 py-0.5 rounded-full ring-1 shrink-0 mt-0.5 ${meta.cls}`}
                   >
                     {actorLabel(t, entry.actorType)}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{entry.titulo}</p>
-                    <p className="text-xs text-muted-foreground truncate">{entry.detalle}</p>
+                    <p className="text-caption text-muted-foreground truncate">{entry.detalle}</p>
                   </div>
-                  <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 mt-0.5">
+                  <span className="text-caption text-muted-foreground tabular-nums shrink-0 mt-0.5">
                     {relativeTime(entry.occurredAt, t)}
                   </span>
                 </StaggerItem>
@@ -313,24 +310,21 @@ export function SalaAgente({
 
   return (
     <div className="p-6 lg:p-8 space-y-6" data-testid={`sala-agente-${agente}`}>
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          {/* Navegación arriba (breadcrumb en el header + tabs en WorkspaceNav). */}
-          <h1 className="text-2xl font-semibold text-foreground">{titulo}</h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">{descripcion}</p>
-        </div>
-
-        <Link
-          href={colaHref}
-          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-[opacity,transform] duration-fast ease-enter"
-          data-testid="sala-cola-cta"
-        >
-          {colaLabel ?? t(`${WORKSPACE_NS}.sala.irACola`)}
-          {typeof colaCount === 'number' ? ` (${numberFormatter.format(colaCount)})` : ''}
-          <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-        </Link>
-      </header>
+      {/* Glow up 22-10: el encabezado común (sección, título liviano, una línea) con la cola como
+          la única principal, sin flecha. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={titulo}
+        descripcion={descripcion}
+        accionPrincipal={
+          <Button asChild size="sm" hideArrow>
+            <Link href={colaHref} data-testid="sala-cola-cta">
+              {colaLabel ?? t(`${WORKSPACE_NS}.sala.irACola`)}
+              {typeof colaCount === 'number' ? ` (${numberFormatter.format(colaCount)})` : ''}
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Domain-specific slot */}
       {children}

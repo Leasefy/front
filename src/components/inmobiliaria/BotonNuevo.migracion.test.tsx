@@ -35,6 +35,11 @@ vi.mock('@/lib/i18n', async () => {
 // on what the menu offers, not on Radix's open mechanics.
 vi.mock('@leasefy/cadence', () => ({
   Button: (p: React.ComponentProps<'button'>) => <button {...p} />,
+  // Ronda 30: el botón de la casa importa las escalas del movimiento.
+  motionScale: { pop: 0.96, press: 0.97, hover: 1.02, lift: 1.01 },
+  motionSpring: { bouncy: {}, snappy: {}, soft: {} },
+  motionDuration: {},
+  motionEase: {},
   SplitButton: ({ label, onClick, caretLabel, menuContent }: {
     label: React.ReactNode; onClick: () => void; caretLabel: string; menuContent: React.ReactNode
   }) => (
@@ -97,14 +102,14 @@ describe('BotonNuevo → Migrar mis datos', () => {
   it('is hidden for non-admins, other entries stay', () => {
     permisos = { ...permisos, isAdmin: false }
     montar()
-    expect(item(/consignación/i)).toBeDefined()
+    expect(item(/mandato/i)).toBeDefined() // manual de voz: «mandato», no «consignación»
     expect(item(/Migrar mis datos/)).toBeUndefined()
   })
 
   it('is hidden while the migration wall is already blocking', () => {
     migracion = { ...migracion!, estado: { bloquea: true } }
     montar()
-    expect(item(/consignación/i)).toBeDefined()
+    expect(item(/mandato/i)).toBeDefined() // manual de voz: «mandato», no «consignación»
     expect(item(/Migrar mis datos/)).toBeUndefined()
   })
 })

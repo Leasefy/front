@@ -24,6 +24,7 @@
  * preguntándose por qué guardó una cosa y el portal muestra otra.
  */
 
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useContext, useEffect, useId, useState } from 'react';
 import Link from 'next/link';
 import { AuthContext } from '@/lib/auth/auth-context';
@@ -77,6 +78,12 @@ export interface VisitasDelInmuebleProps {
    * sabe) y pregunta antes de abrir horarios.
    */
   arrendado?: boolean;
+  /**
+   * Quién está a cargo del inmueble (`consignacion.agenteId`). El horario que manda el back
+   * puede ser el de otra persona (la administradora, por defecto): «que está a cargo» sólo se
+   * dice si es ella (revisión 21-10: la portada decía «Nadie a cargo» y aquí sí había alguien).
+   */
+  agenteId?: string | null;
   /** Hasta cuándo va el contrato vigente (`YYYY-MM-DD…`), si se sabe. */
   arrendadoHasta?: string | null;
 }
@@ -166,7 +173,7 @@ function ModalidadCard({
 
 type Estado = 'cargando' | 'listo' | 'error';
 
-export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHasta = null }: VisitasDelInmuebleProps) {
+export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHasta = null, agenteId }: VisitasDelInmuebleProps) {
   const [preguntarSiArrendado, setPreguntarSiArrendado] = useState(false);
   // La pestaña de horarios elegida lleva su píldora, que se DESLIZA a la otra.
   const indicadorDeLaModalidad = `${useId()}-modalidad`;
@@ -271,15 +278,13 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
   if (!propertyId) {
     return (
       <section
-        className="rounded-lg border border-border bg-surface"
+        className={SUPERFICIE_DE_LA_FICHA}
         data-testid="visitas-del-inmueble"
       >
-        <header className="flex items-start gap-3 border-b border-border px-5 py-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
-            <CalendarCheck className="h-[18px] w-[18px] text-primary" aria-hidden />
-          </span>
+        <header className="flex items-start gap-3 border-b border-border-faint px-6 pb-4 pt-5">
+          <CalendarCheck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden />
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-fg">Visitas</h3>
+            <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Visitas</h3>
             <p className="mt-0.5 text-body-sm text-fg-muted">Sin inmueble asociado</p>
           </div>
         </header>
@@ -296,16 +301,14 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface"
+      className={SUPERFICIE_DE_LA_FICHA}
       data-testid="visitas-del-inmueble"
     >
-      <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+      <header className="flex items-start justify-between gap-4 border-b border-border-faint px-6 pb-4 pt-5">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
-            <CalendarCheck className="h-[18px] w-[18px] text-primary" aria-hidden />
-          </span>
+          <CalendarCheck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden />
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-fg">Visitas</h3>
+            <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Visitas</h3>
             <p className="mt-0.5 text-body-sm text-fg-muted" data-testid="visitas-resumen">
               {delAsesor
                 ? `Se pueden agendar · horario de ${delAsesor.nombre}: ${resumenDeLaSemana(windowsToSchedule(delAsesor.ventanas))}`
@@ -406,7 +409,8 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
           <div className="space-y-3" data-testid="visitas-del-asesor">
             <p className="text-body-sm text-fg-muted">
               Las visitas de este inmueble siguen el horario de visitas de{' '}
-              <span className="font-medium text-fg">{delAsesor.nombre}</span>, que está a cargo. Los
+              <span className="font-medium text-fg">{delAsesor.nombre}</span>
+              {agenteId === undefined || delAsesor.userId === agenteId ? ', que está a cargo' : ''}. Los
               interesados ven esos cupos en el aviso; el cupo reservado desaparece y la visita entra a
               la agenda.
               {prendido &&
@@ -440,7 +444,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
         {estado === 'listo' && !delAsesor && prendido && (
           <div className="space-y-5">
             <div>
-              <h4 className="text-sm font-semibold text-fg">Cómo se puede visitar</h4>
+              <h4 className="text-sm font-medium text-fg">Cómo se puede visitar</h4>
               <p className="mt-0.5 text-body-sm text-fg-muted">
                 Lo que elijas es lo que el interesado ve en el aviso.
               </p>
@@ -527,7 +531,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
               <div className="rounded-lg border border-dashed border-border p-5 text-center">
                 <p className="text-body-sm text-fg-muted">
                   Esta modalidad todavía no tiene horarios, así que no se puede
-                  reservar por acá.
+                  reservar por aquí.
                 </p>
                 <Button
                   variant="outline"

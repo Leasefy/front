@@ -163,10 +163,10 @@ export function AccionesDelPlan({
                 onChange={(e) => setMotivo(e.target.value)}
                 placeholder={
                   accion === 'suspender'
-                    ? 'Ej.: tres meses sin pagar'
+                    ? 'P. ej.: tres meses sin pagar'
                     : accion === 'reactivar'
-                      ? 'Ej.: pagó por transferencia'
-                      : 'Ej.: cliente piloto, un mes de cortesía'
+                      ? 'P. ej.: pagó por transferencia'
+                      : 'P. ej.: cliente piloto, un mes de cortesía'
                 }
                 aria-required="true"
               />

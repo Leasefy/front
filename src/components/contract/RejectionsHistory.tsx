@@ -27,10 +27,10 @@ export function RejectionsHistory({ rejections, collapsible = true, className }:
     <section className={cn('rounded-lg border border-warning/30 bg-warning-soft/60 dark:bg-warning/20 p-5 space-y-3', className)}>
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-sm text-fg">
+          <h3 className="font-medium text-sm text-fg">
             {hasHistory ? `Modificaciones solicitadas (${rejections.length})` : 'Modificación solicitada'}
           </h3>
-          <p className="text-xs text-fg-muted mt-0.5">
+          <p className="text-caption text-fg-muted mt-0.5">
             Historial de rechazos del inquilino
           </p>
         </div>
@@ -42,7 +42,7 @@ export function RejectionsHistory({ rejections, collapsible = true, className }:
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium text-warning hover:underline py-1"
+          className="w-full inline-flex items-center justify-center gap-1.5 text-caption font-medium text-warning hover:underline py-1"
         >
           {expanded ? (
             <>
@@ -95,15 +95,15 @@ function RejectionCard({ rejection, highlight = false }: { rejection: ContractRe
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-1">
-          <span className="text-xs font-semibold text-fg">{typeLabel}</span>
-          <span className="text-[11px] text-fg-muted tabular-nums">
+          <span className="text-caption font-medium text-fg">{typeLabel}</span>
+          <span className="text-caption text-fg-muted tabular-nums">
             {formatDate(rejection.createdAt)}
           </span>
         </div>
         <p className="text-sm text-fg whitespace-pre-wrap break-words">
           {rejection.reason}
         </p>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-fg-muted">
+        <div className="mt-2 flex items-center gap-1.5 text-caption text-fg-muted">
           <User className="w-3 h-3" />
           <span>{rejection.rejectedBy.firstName} {rejection.rejectedBy.lastName}</span>
         </div>

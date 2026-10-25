@@ -95,7 +95,7 @@ export function NoPudimosConfirmarTuSesion({ variante = 'pantalla', children }: 
     >
       <Icono className="h-10 w-10 text-muted-foreground" weight="light" aria-hidden="true" />
       <div className="space-y-1.5">
-        <h1 className="text-lg font-semibold text-foreground">{titulo}</h1>
+        <h1 className="text-lg font-medium text-foreground">{titulo}</h1>
         <p className="text-sm text-muted-foreground">{descripcion}</p>
       </div>
       <Button

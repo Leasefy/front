@@ -73,7 +73,8 @@ describe('AsignarAgente — a quién ofrece (QA 17-10, IMANA-1)', () => {
     expect(texto).toContain('Asignar asesor')
     expect(texto).toContain('Administración')
     expect(texto).toContain('Leo Asesor')
-    expect(texto).toContain('2 leads abiertos')
+    // Ronda 30 (sin inglés): «interesados», no «leads».
+    expect(texto).toContain('2 interesados abiertos')
     expect(assignAgent).toHaveBeenCalledWith('c1', 'u1')
     expect(toastMock.success).toHaveBeenCalledWith('Ana Administradora queda a cargo del inmueble')
   })

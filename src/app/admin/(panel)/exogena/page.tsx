@@ -25,10 +25,11 @@
  * declarar uno por uno.
  */
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { useCallback, useState } from 'react'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
+import { ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
@@ -42,7 +43,8 @@ import {
   type ListaDeAnios,
   type ResultadoDeLaSemilla,
 } from '@/lib/admin/exogena'
-import { Card, Eyebrow, MonoLabel } from '@leasefy/cadence'
+import { Alert, Card, MonoLabel } from '@leasefy/cadence'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -100,7 +102,9 @@ export default function ExogenaAdminPage() {
 
   const anioValido = /^\d{4}$/.test(form.anio.trim()) && Number(form.anio) >= 2000 && Number(form.anio) <= 2100
   const topeParseado = enteroDe(form.tope)
-  const problema = !anioValido
+  const problema = form.anio.trim() === ''
+    ? 'Escribe el año gravable.'
+    : !anioValido
     ? 'El año gravable va en cuatro dígitos, entre 2000 y 2100.'
     : topeParseado === 'INVALIDO'
       ? 'El tope va en pesos enteros y mayor que cero. Déjalo vacío si la resolución del año no fija ninguno: sin tope NO se agrupa nada, que es lo correcto.'
@@ -138,7 +142,7 @@ export default function ExogenaAdminPage() {
       setSemilla({ anio, r })
       refetch()
     } catch (err) {
-      setAccionError(mensajeDelAdmin(err, { accion: 'sembrar el preset', porDefecto: 'No se pudo sembrar el preset.' }))
+      setAccionError(mensajeDelAdmin(err, { accion: 'cargar los conceptos sugeridos', porDefecto: 'No se pudieron cargar los conceptos sugeridos.' }))
     } finally {
       setOcupado(null)
     }
@@ -162,36 +166,44 @@ export default function ExogenaAdminPage() {
     <div className="space-y-6 p-6 lg:p-8" data-testid="admin-exogena">
       <PageHeader
         title="Exógena"
-        description="Los códigos de concepto y el tope de cuantías menores que Leasefy carga por año. Las inmobiliarias los heredan, con opción de sobrescribir — pero SÓLO lo publicado se hereda."
+        description="Los conceptos y el tope de cuantías menores que Leasefy carga cada año."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="La exógena de Leasefy" variante="secundario">
+            <p className="text-body-sm text-fg-muted">Las inmobiliarias heredan sólo lo publicado y lo pueden sobrescribir.</p>
+          </ParaEntenderMas>
+        }
       />
 
-      {/* 🔴 El aviso que hace que publicar sea una decisión, no un clic más. */}
-      <Card className="p-4 " data-testid="aviso-del-preset">
-        <p className="text-sm text-fg">
-          El preset del código es una <strong>sugerencia de uso corriente, no la resolución</strong>.
-          Confírmalo contra la resolución del año antes de publicar: un concepto equivocado no se ve
-          — pasa el prevalidador y llega mal a la DIAN. Un año sin publicar no lo hereda nadie.
-        </p>
-      </Card>
+      {/* 🔴 El aviso que hace que publicar sea una decisión, no un clic más. Ronda 28 (revisora r27): sólo
+          cuando hay un año con conceptos por publicar (sin año eran tres bloques para una tarea) y sin negritas. */}
+      {anios.some((a) => !a.publicado && a.conceptos > 0) ? (
+        <Alert variant="warning" title="Antes de publicar, confírmalo contra la resolución" data-testid="aviso-del-preset">
+          <p className="text-body-sm">
+            Los conceptos sugeridos por Leasefy son una sugerencia de uso corriente, no la resolución. Confírmalo
+            contra la resolución del año antes de publicar: un concepto equivocado pasa el prevalidador y llega mal a
+            la DIAN. Un año sin publicar no lo hereda nadie.
+          </p>
+        </Alert>
+      ) : null}
 
       {noHayTablas && (
         <Card className="p-5  mb-6" data-testid="sin-migracion">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warning">
-            migración pendiente
-          </span>
-          <p className="text-sm text-fg mt-2">
-            La base todavía no tiene las tablas de exógena de plataforma (migración{' '}
-            <code className="font-mono">20260919001000_exogena_de_plataforma</code>). La aplica
-            Víctor. Mientras tanto cada inmobiliaria usa el preset del código, marcado «pendiente de
-            confirmar», que es lo de hoy — y cargar un año acá responde 503.
+          <p className="text-body-sm font-medium text-fg">Falta preparar la base de la exógena</p>
+          <p className="text-body-sm text-fg-muted mt-1">
+            La base todavía no tiene las tablas de exógena de plataforma. La aplica el equipo técnico. Mientras tanto cada
+            inmobiliaria usa los conceptos sugeridos, marcados «pendiente de confirmar», que es lo de hoy, y cargar un año
+            aquí todavía no se puede.
           </p>
+          <MasDetalles etiqueta="Ver el nombre de la migración" etiquetaAbierto="Ocultar el nombre" montadoSiempre className="mt-3">
+            <code className="font-mono text-caption text-fg-muted">20260919001000_exogena_de_plataforma</code>
+          </MasDetalles>
         </Card>
       )}
 
-      {error && <div className="mb-6"><ErrorBlock error={error} /></div>}
+      {error && <div className="mb-6"><ErrorBlock error={error} onReintentar={refetch} /></div>}
       {accionError && (
         <Card className="p-4  mb-6" data-testid="accion-error">
-          <p className="text-sm text-danger">{accionError}</p>
+          <p className="text-body-sm text-danger">{accionError}</p>
         </Card>
       )}
 
@@ -201,13 +213,13 @@ export default function ExogenaAdminPage() {
           <MonoLabel className="block">
             semilla · {semilla.anio}
           </MonoLabel>
-          <p className="text-sm text-fg mt-2">
-            {semilla.r.sembrados} conceptos sembrados. {semilla.r.aviso}
+          <p className="text-body-sm text-fg mt-2">
+            {semilla.r.sembrados} conceptos cargados. Son una sugerencia de uso corriente, no la resolución.
           </p>
           {semilla.r.sinSugerencia.length > 0 ? (
             <>
               <p className="text-caption text-fg-muted mt-3">
-                Estos {semilla.r.sinSugerencia.length} el preset NO los puede proponer: hay que
+                Estos {semilla.r.sinSugerencia.length} la sugerencia NO los puede proponer: hay que
                 leerlos en la resolución y cargarlos a mano.
               </p>
               <ul className="mt-2 space-y-1" data-testid="sin-sugerencia">
@@ -223,7 +235,7 @@ export default function ExogenaAdminPage() {
             </>
           ) : (
             <p className="text-caption text-fg-muted mt-3">
-              El preset propuso un concepto para cada cuenta. Revisalos igual contra la resolución.
+              La sugerencia propuso un concepto para cada cuenta. Revísalos igual contra la resolución.
             </p>
           )}
         </Card>
@@ -233,10 +245,9 @@ export default function ExogenaAdminPage() {
       {isLoading ? (
         <LoadingBlock label="cargando años" />
       ) : anios.length === 0 ? (
-        <EmptyBlock
-          title="Ningún año cargado"
-          hint="Carga el año gravable abajo y después siembra el preset. Publicar es un paso aparte."
-        />
+        // Ronda 28 (revisora r27): sin año, el formulario de abajo ES el vacío (antes un vacío que decía
+        // «Carga el año… abajo» y el formulario debajo).
+        null
       ) : (
         <div className="space-y-px" data-testid="anios">
           {anios.map((a) => (
@@ -244,12 +255,12 @@ export default function ExogenaAdminPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm text-fg">{a.anio}</span>
+                    <span className="font-mono text-subtitle tabular-nums text-fg">{a.anio}</span>
                     <Pill tone={a.publicado ? 'ok' : 'muted'}>
-                      {a.publicado ? 'publicado' : 'borrador'}
+                      {a.publicado ? 'Publicado' : 'Borrador'}
                     </Pill>
-                    <span className="font-mono text-[10px] text-fg-subtle">
-                      {a.conceptos} conceptos
+                    <span className="text-caption text-fg-muted">
+                      <span className="font-mono tabular-nums">{a.conceptos}</span> conceptos
                     </span>
                   </div>
                   <p className="text-caption text-fg-muted mt-1">
@@ -272,25 +283,22 @@ export default function ExogenaAdminPage() {
                 </div>
 
                 <div className="flex shrink-0 flex-wrap gap-2">
-                  <Button variant="outline" hideArrow type="button"
-                    
+                  <Button variant="outline" size="sm" hideArrow type="button"
                     disabled={ocupado === a.anio}
                     onClick={() => setForm(formularioDe(a))}
                     data-testid={`corregir-${a.anio}`}
                   >
                     Corregir
                   </Button>
-                  <Button variant="outline" hideArrow type="button"
-                    
+                  <Button variant="outline" size="sm" hideArrow type="button"
                     disabled={ocupado === a.anio}
                     onClick={() => void onSembrar(a.anio)}
                     data-testid={`sembrar-${a.anio}`}
                   >
-                    Sembrar el preset
+                    Cargar los conceptos sugeridos
                   </Button>
                   {a.publicado ? (
-                    <Button variant="destructive" hideArrow type="button"
-                      
+                    <Button variant="outline" size="sm" hideArrow type="button"
                       disabled={ocupado === a.anio}
                       onClick={() => void onPublicar(a.anio, false)}
                       data-testid={`despublicar-${a.anio}`}
@@ -325,7 +333,7 @@ export default function ExogenaAdminPage() {
               {/* 🔴 La confirmación es nuestra, en la fila. Nada de `confirm()`. */}
               {confirmando === a.anio ? (
                 <Card className="p-4 mt-4 " data-testid={`confirmar-publicar-${a.anio}`}>
-                  <p className="text-sm text-fg">
+                  <p className="text-body-sm text-fg">
                     Publicar {a.anio} hace que TODAS las inmobiliarias hereden estos{' '}
                     {a.conceptos} conceptos y este tope. ¿Ya los confirmaste contra la resolución?
                   </p>
@@ -355,58 +363,55 @@ export default function ExogenaAdminPage() {
 
       {/* ── Cargar o corregir un año ─────────────────────────────────────── */}
       <Card className="p-5" data-testid="formulario-de-anio">
-        <Eyebrow>Cargar / corregir el año</Eyebrow>
-        <p className="text-caption text-fg-muted mt-2">
-          Esto <strong>no publica</strong>. Un año existente se sobrescribe con lo que haya acá.
+        <h2 className="text-body font-medium text-fg">
+          {anios.length === 0 && !isLoading ? 'Carga el primer año gravable' : 'Cargar o corregir un año'}
+        </h2>
+        <p className="text-caption text-fg-muted mt-1">
+          {anios.length === 0 && !isLoading
+            ? 'Todavía no hay ninguno. Después se cargan los conceptos sugeridos; publicar es un paso aparte.'
+            : 'Esto no publica. Un año que ya existe se sobrescribe con lo que haya aquí.'}
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2 mt-4">
           <label className="block">
-            <MonoLabel>
-              año gravable
-            </MonoLabel>
+            <span className="text-caption text-fg-muted">Año gravable</span>
             <Input
               className="mt-1"
               value={form.anio}
               inputMode="numeric"
-              placeholder="2026"
+              placeholder="p. ej. 2026"
               onChange={(e) => cambiar({ anio: e.target.value })}
               data-testid="campo-anio"
             />
           </label>
           <label className="block">
-            <MonoLabel>
-              resolución
-            </MonoLabel>
+            <span className="text-caption text-fg-muted">Resolución</span>
             <Input
               className="mt-1"
               value={form.resolucion}
-              placeholder="Resolución 000162 de 2023"
+              placeholder="p. ej. Resolución 000162 de 2023"
               onChange={(e) => cambiar({ resolucion: e.target.value })}
               data-testid="campo-resolucion"
             />
           </label>
           <label className="block">
-            <MonoLabel>
-              tope de cuantías menores (pesos)
-            </MonoLabel>
+            <span className="text-caption text-fg-muted">Tope de cuantías menores (pesos)</span>
             <Input
               className="mt-1"
               value={form.tope}
               inputMode="numeric"
-              placeholder="Vacío = no se agrupa nada"
+              placeholder="p. ej. 1.000.000"
               onChange={(e) => cambiar({ tope: e.target.value })}
               data-testid="campo-tope"
             />
+            <span className="mt-1 block text-caption text-fg-subtle">Vacío, no se agrupa nada.</span>
           </label>
           <label className="block">
-            <MonoLabel>
-              NIT de cuantías menores
-            </MonoLabel>
+            <span className="text-caption text-fg-muted">NIT de cuantías menores</span>
             <Input
               className="mt-1"
               value={form.nit}
-              placeholder="222222222"
+              placeholder="p. ej. 222222222"
               onChange={(e) => cambiar({ nit: e.target.value })}
               data-testid="campo-nit"
             />
@@ -414,9 +419,7 @@ export default function ExogenaAdminPage() {
         </div>
 
         <label className="block mt-4">
-          <MonoLabel>
-            notas
-          </MonoLabel>
+          <span className="text-caption text-fg-muted">Notas</span>
           <Textarea
             className="mt-1"
             rows={2}
@@ -432,7 +435,7 @@ export default function ExogenaAdminPage() {
           </p>
         ) : null}
 
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex flex-wrap items-center gap-3 mt-4">
           <Button hideArrow type="button"
             
             disabled={guardando || problema !== null}
@@ -445,7 +448,12 @@ export default function ExogenaAdminPage() {
             <Button variant="ghost" hideArrow type="button"  onClick={() => setForm(VACIO)}>
               Limpiar
             </Button>
-          ) : null}
+          ) : (
+            // Ronda 28 (revisora r27, 5b): el botón apagado dice qué falta (antes nada con el campo vacío).
+            <span className="text-caption text-fg-muted" data-testid="falta-el-anio">
+              Escribe el año gravable.
+            </span>
+          )}
         </div>
       </Card>
     </div>

@@ -3,7 +3,7 @@ import type { RiskScore } from '@/lib/types/risk-score';
 import { RISK_LEVELS } from '@/lib/types/risk-score';
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-CL', {
+  return new Date(iso).toLocaleDateString('es-CO', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

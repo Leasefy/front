@@ -106,7 +106,7 @@ function TooltipDeRentabilidad({
     ['Gastos', punto.gastosMantenimientoCop],
   ];
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-sm">
+    <div className="rounded-lg border border-border bg-card px-3 py-2 text-caption shadow-sm">
       <p className="mb-1 font-medium text-fg">{punto.etiqueta}</p>
       <dl className="space-y-0.5">
         {lineas.map(([nombre, valor]) => (
@@ -167,7 +167,7 @@ export function GraficoDeRentabilidad({ filas }: Props) {
 
   return (
     <div
-      className="w-full font-mono text-xs"
+      className="w-full font-mono text-caption"
       style={{ height: alto }}
       data-testid="grafico-de-rentabilidad"
       data-barras={datos.length}

@@ -732,7 +732,7 @@ export function GenerarDocumentoDialog({
                 abajo del botón: quien está atendiendo a alguien que espera el
                 papel tiene que ver de una vez todo lo que falta, y no
                 descubrirlo de a un motivo por intento. Las cifras no se pintan
-                acá — las pone el back en el documento.
+                aquí — las pone el back en el documento.
               */}
               {preparacion.certificado && !preparacion.certificado.puedeEmitirse && (
                 <div

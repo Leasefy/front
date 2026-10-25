@@ -201,7 +201,7 @@ export function PauseModal({
             {/* Reanudar no tiene «hasta cuándo»: la pausa se levanta y ya. */}
             {modo === 'pausar' && (
               <label className="block">
-                <span className="text-xs font-medium text-fg-subtle">
+                <span className="text-caption font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.pause.untilLabel')}
                 </span>
                 <CampoDeDia
@@ -220,7 +220,7 @@ export function PauseModal({
               </label>
             )}
             <label className="block">
-              <span className="text-xs font-medium text-fg-subtle">
+              <span className="text-caption font-medium text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.detail.acciones.pause.reasonLabel')}
               </span>
               <Textarea
@@ -244,7 +244,7 @@ export function PauseModal({
           </div>
         )}
 
-        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-caption text-danger" data-testid="intervencion-error">
             {error}
         </Presence>
 

@@ -42,7 +42,7 @@ export function LandingRegistroCta({ variant }: LandingRegistroCtaProps) {
   // 🔴 LOGIN-BUCLE: pasado el tope de una sesión guardada sin confirmar, el
   // hueco no se queda para siempre (mismo criterio que LandingAuthCta).
   if (isLoading && confirmacionDeLaSesion !== 'sin-confirmar') {
-    return <HuecoDeBotonDeSesion className={className} texto={tx('Empezar ahora', 'Get started')} />
+    return <HuecoDeBotonDeSesion className={className} texto={tx('Crear cuenta', 'Create account')} />
   }
   const authenticated = !isLoading && isAuthenticated && !!user
 
@@ -59,7 +59,7 @@ export function LandingRegistroCta({ variant }: LandingRegistroCtaProps) {
 
   return (
     <a className={className} href="/auth?mode=register">
-      {tx('Empezar ahora', 'Get started')}
+      {tx('Crear cuenta', 'Create account')}
     </a>
   )
 }

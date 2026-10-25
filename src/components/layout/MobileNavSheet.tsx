@@ -7,9 +7,22 @@ import { NavItem } from '@/components/ui/plan/PlanSidebar';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
+/** Un grupo de la hoja de «Más» (Agentes IA, Reportes…); sin título, va sin cabecera. */
+export interface GrupoDeLaHoja {
+  titulo: string | null;
+  items: NavItem[];
+}
+
 interface MobileNavSheetProps {
   open: boolean;
   items: NavItem[];
+  /**
+   * El título de la hoja. La de una sección dice su nombre («Dinero»); sin
+   * título, «Más opciones» (la hoja de siempre).
+   */
+  titulo?: string;
+  /** Filas agrupadas con su cabecera (la hoja de «Más» de la barra por secciones). Va después de `items`. */
+  grupos?: GrupoDeLaHoja[];
   /**
    * La fila marcada, calculada sobre el menú ENTERO (`hrefDeLaFilaActiva`).
    * El cajón sólo recibe las filas que no entraron en la barra, así que no
@@ -20,7 +33,7 @@ interface MobileNavSheetProps {
   onClose: () => void;
 }
 
-export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSheetProps) {
+export function MobileNavSheet({ open, items, titulo, grupos, hrefActivo, onClose }: MobileNavSheetProps) {
   const pathname = usePathname();
   const { t } = useI18n();
 
@@ -35,10 +48,22 @@ export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSh
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" aria-describedby={undefined}>
         {/* Visible: con la cabecera escondida, la ✕ caía encima de la primera fila. */}
-        <SheetHeader title={t('inmobiliaria.mobileNav.sheetTitle')} />
+        <SheetHeader title={titulo ?? t('inmobiliaria.mobileNav.sheetTitle')} />
 
         <SheetBody className="flex flex-col px-3 pt-3 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
-          {items.filter((item) => item.kind !== 'section').map((item) => {
+          {[
+            { titulo: null, items },
+            ...(grupos ?? []),
+          ].map((grupo, g) => (
+            <div key={grupo.titulo ?? `grupo-${g}`} className={cn('flex flex-col', g > 0 && grupo.items.length > 0 && 'mt-3')}>
+              {grupo.titulo && grupo.items.length > 0 && (
+                // La misma cabecera de sección del menú de escritorio, alineada
+                // con el texto de las filas (12 + 12 px).
+                <p className="px-3 pb-1 pt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
+                  {grupo.titulo}
+                </p>
+              )}
+          {grupo.items.filter((item) => item.kind !== 'section').map((item) => {
             const active = isActive(item);
             const IconComponent = item.icon as React.ComponentType<{
               className?: string;
@@ -95,6 +120,8 @@ export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSh
               );
             });
           })}
+            </div>
+          ))}
         </SheetBody>
 
         {/* Acá abajo había una fila «Cerrar» con su propia ✕, además de la del

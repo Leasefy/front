@@ -18,8 +18,9 @@
  */
 
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
-import { useState } from 'react'
-import { ArrowCounterClockwise, Buildings, DotsThreeVertical } from '@phosphor-icons/react'
+import { useMemo, useState } from 'react'
+import { ArrowCounterClockwise, Buildings, DotsThreeVertical, MagnifyingGlass } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
 
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -197,21 +198,23 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
 
   return (
     <>
+      {/* Ronda 30 (a 390 tarjetas, regla de la casa): arriba la aseguradora y si está activa para tu inmobiliaria;
+          abajo su estado y las acciones. Lo demás (modo, prioridades, lo global) desde md. */}
       <TableRow
-        className={trClass}
+        className={`${trClass} max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-3 max-md:gap-y-2 max-md:px-4 max-md:py-3.5`}
         data-has-override={row.hasOverride ? 'true' : undefined}
       >
         {/* Name + Route — sticky first column */}
-        <TableCell className="px-4 py-3 text-sm sticky left-0 bg-surface z-10">
+        <TableCell className="px-4 py-3 text-sm sticky left-0 bg-surface z-10 max-md:static max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
           <div className="flex flex-col gap-0.5">
             <span className="font-medium text-fg capitalize">
               {row.global.name}
             </span>
-            <span className="text-xs text-fg-muted">{enPalabras(NOMBRE_DE_LA_RUTA, row.global.route)}</span>
+            <span className="text-caption text-fg-muted">{enPalabras(NOMBRE_DE_LA_RUTA, row.global.route)}</span>
             {row.hasOverride && (
               <span
                 data-testid="override-pill"
-                className="inline-flex self-start text-xs bg-primary-soft text-primary rounded-full px-2 py-0.5 mt-0.5"
+                className="inline-flex self-start text-caption bg-surface-muted text-fg rounded-full px-2 py-0.5 mt-0.5" /* Ronda 30: en neutro; el azul es de la acción */
               >
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.overridePill')}
               </span>
@@ -220,13 +223,13 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         </TableCell>
 
         {/* Mode — global / tenant */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:hidden">
           <div className="flex flex-col gap-0.5">
             <span className="text-fg">{enPalabras(NOMBRE_DEL_MODO, row.global.mode)}</span>
             {row.override?.mode != null ? (
-              <span className="text-xs text-fg-muted">{enPalabras(NOMBRE_DEL_MODO, row.override.mode)}</span>
+              <span className="text-caption text-fg-muted">{enPalabras(NOMBRE_DEL_MODO, row.override.mode)}</span>
             ) : (
-              <span className="text-xs text-fg-muted italic">
+              <span className="text-caption text-fg-muted italic">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.inherits', { value: enPalabras(NOMBRE_DEL_MODO, row.global.mode) })}
               </span>
             )}
@@ -234,7 +237,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         </TableCell>
 
         {/* Global Enabled */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:hidden">
           <Badge
             variant="outline"
             className={globalEnabled ? 'text-success border-success/30' : 'text-fg-muted'}
@@ -244,7 +247,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         </TableCell>
 
         {/* Tenant Enabled — interactive Switch */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
           <Switch
             checked={tenantEnabled ?? globalEnabled}
             onCheckedChange={handleToggle}
@@ -254,30 +257,30 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         </TableCell>
 
         {/* Global Priority */}
-        <TableCell className="px-4 py-3 text-sm text-fg">
+        <TableCell className="px-4 py-3 text-sm text-fg max-md:hidden">
           {row.global.priority}
         </TableCell>
 
         {/* Tenant Priority */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:hidden">
           {tenantPriority != null ? (
             <span className="text-fg">{tenantPriority}</span>
           ) : (
-            <span className="text-xs text-fg-muted italic">
+            <span className="text-caption text-fg-muted italic">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.inherits', { value: String(row.global.priority) })}
             </span>
           )}
         </TableCell>
 
         {/* Breach Status */}
-        <TableCell className="px-4 py-3 text-sm">
-          <Badge variant="outline" className={`text-xs ${breachClass}`}>
+        <TableCell className="px-4 py-3 text-sm max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
+          <Badge variant="outline" className={`text-caption ${breachClass}`}>
             {enPalabras(NOMBRE_DEL_ESTADO, row.global.breachStatus)}
           </Badge>
         </TableCell>
 
         {/* Actions — kebab menu */}
-        <TableCell className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm max-md:col-start-2 max-md:row-start-2 max-md:block max-md:justify-self-end max-md:p-0">
           <DropdownList open={kebabOpen} onOpenChange={setKebabOpen}>
             <DropdownListTrigger asChild>
               <Button
@@ -327,7 +330,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             <div
               role="alert"
               data-testid="conflict-alert"
-              className="bg-danger-soft text-danger text-xs rounded-md px-3 py-2"
+              className="bg-danger-soft text-danger text-caption rounded-md px-3 py-2"
             >
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.conflictWarning')}
             </div>
@@ -379,8 +382,16 @@ export function CarrierRegistryTable({
 
   // El registro crece con cada aseguradora que se da de alta; la página de
   // aseguradoras le pasa la lista entera, así que el recorte va acá.
+  // Ronda 30 (regla de Nico: toda tabla con buscador): por el nombre de la aseguradora.
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const plano = (v?: string | null) =>
+      (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const q = plano(busqueda.trim())
+    return q ? rows.filter((r) => plano(r.global.name).includes(q)) : rows
+  }, [rows, busqueda])
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(rows)
+    useTablePagination(visibles, { resetKey: busqueda })
 
   // Los cuatro estados, en el orden de la casa: cargando → falló → vacío →
   // filas. El vacío se evalúa al final para que la tabla nunca diga «no hay
@@ -409,6 +420,12 @@ export function CarrierRegistryTable({
         />
       </TableCell>
     </TableRow>
+  ) : visibles.length === 0 ? (
+    <TableRow>
+      <TableCell colSpan={COLUMNAS} className="p-0">
+        <SinDatos queSon="aseguradoras" hayFiltros onLimpiarFiltros={() => setBusqueda('')} />
+      </TableCell>
+    </TableRow>
   ) : (
     pageItems.map((row) => (
       <CarrierTableRow
@@ -423,8 +440,24 @@ export function CarrierRegistryTable({
 
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-surface">
-      <Table className="min-w-full divide-y divide-border">
-        <TableHeader className="bg-surface-muted/60">
+      {rows.length > 0 && !isLoading && !error ? (
+        <div className="border-b border-border px-4 py-3">
+          <div className="relative w-full sm:max-w-sm">
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+            <Input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar una aseguradora"
+              aria-label="Buscar una aseguradora por su nombre"
+              className="h-9 pl-9"
+              data-testid="aseguradoras-buscar"
+            />
+          </div>
+        </div>
+      ) : null}
+      <Table className="min-w-full divide-y divide-border max-md:block">
+        <TableHeader className="bg-surface-muted/60 max-md:hidden">
           <TableRow>
             <TableHead className="px-4 py-3 text-left sticky left-0 bg-surface-muted z-10">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colName')}
@@ -452,7 +485,7 @@ export function CarrierRegistryTable({
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="divide-y divide-border">{cuerpo}</TableBody>
+        <TableBody className="divide-y divide-border max-md:block">{cuerpo}</TableBody>
       </Table>
 
       {shouldPaginate && !isLoading && !error && (

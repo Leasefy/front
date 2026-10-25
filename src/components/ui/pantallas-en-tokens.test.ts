@@ -268,9 +268,8 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
     'tema claro.',
   'components/inmobiliaria/ConsignacionHeader.tsx':
     'Scrim y píldoras sobre la FOTO de portada del inmueble (`bg-black/60`, ' +
-    '`text-white`, `ring-white/70`). La foto no cambia con el tema.',
-  'components/inmobiliaria/ConsignacionCard.tsx':
-    'Píldora de comisión sobre la foto de la tarjeta (`bg-black/60 text-white`).',
+    '`text-white`, `ring-white/70`), y la píldora «Agregar fotos» sobre el campo de ' +
+    'medianoche (`bg-white/10`, `ring-white/20`). Ni la foto ni la medianoche cambian con el tema.',
   'components/inmobiliaria/FotosDelInmueble.tsx':
     'Degradé `from-black/60` y píldora «Subiendo» sobre la foto; y ' +
     '`bg-danger … text-white` en «No se subió» — `text-danger-fg` es el rojo mismo, ' +
@@ -553,11 +552,13 @@ describe('pantallas de uso diario — controles por primitiva', () => {
 })
 
 describe('un solo estado vacío', () => {
-  it('el canónico encierra el ícono en un CÍRCULO, no en una loseta', () => {
-    // «todo en grises y siempre encerrado en círculos» (Nico, 2026-09-03).
+  it('el canónico SIEMPRE lleva su ilustración 3D, ni círculo ni loseta', () => {
+    // Antes «todo en grises y siempre encerrado en círculos» (Nico, 2026-09-03); desde el 23-10-2026: «todo empty
+    // state debe tener sí o sí una ilustración 3D asociada» (Nico).
     const fuente = leer('components/ui/empty-state.tsx')
-    expect(fuente).toMatch(/rounded-full bg-surface-muted/)
-    expect(fuente).not.toMatch(/rounded-(?:2xl|xl|lg|md)\s+bg-surface-muted/)
+    expect(fuente).toMatch(/<Ilustracion\b/)
+    expect(fuente).toContain('ilustracionDelVacio(')
+    expect(fuente).not.toMatch(/rounded-(?:full|2xl|xl|lg|md)\s+bg-surface-muted/)
   })
 
   it('data-display/EmptyState delega y no dibuja su propio markup', () => {

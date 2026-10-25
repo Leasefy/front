@@ -37,6 +37,7 @@ import {
   Tira,
 } from './piezas';
 import { portadaDe } from '@/lib/marketplace/portadas';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 import { cn } from '@/lib/utils';
 
 // El mapa de MapLibre toca `window`: sólo en el navegador.
@@ -131,18 +132,22 @@ function Cabecera({ p }: { p: Pagina }) {
         {portadaDe(p.portadaUrl) ? (
           <Image src={portadaDe(p.portadaUrl)} alt="" fill priority sizes="1280px" className="object-cover" />
         ) : (
-          <span
-            className="absolute inset-0"
-            aria-hidden
-            style={{ background: `radial-gradient(120% 140% at 0% 0%, ${colorDe(p)}55, ${colorDe(p)}14 55%, transparent)` }}
-          />
+          <>
+            {/* Sin portada (Nico, 23-10: «más dots»): la corriente de voltaje de Leasefy; en oscuro, el tono de la marca. */}
+            <CorrienteDeVoltaje className="absolute inset-0 h-full w-full dark:hidden" fondo="arena" forma="corrientes" fuerza={0.55} semilla={(p.nombre?.length ?? 7) + 3} />
+            <span
+              className="absolute inset-0 hidden dark:block"
+              aria-hidden
+              style={{ background: `radial-gradient(120% 140% at 0% 0%, ${colorDe(p)}55, ${colorDe(p)}14 55%, transparent)` }}
+            />
+          </>
         )}
       </motion.div>
       <div className="flex flex-col items-start gap-4 px-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-5 md:px-6">
         <LogoDeLaInmobiliaria i={p} tamano={104} className="relative z-10 -mt-12 ring-4 ring-background" />
         <motion.div {...entrada(2)} className="min-w-0 flex-1 pt-1 sm:pt-4">
           <h1
-            className="flex items-center gap-2 font-heading text-[28px] font-semibold tracking-[-0.02em] text-fg md:text-[34px]"
+            className="flex items-center gap-2 font-heading text-[28px] font-[420] tracking-[-0.025em] text-fg md:text-[34px]"
             data-testid="nombre-de-la-inmobiliaria"
           >
             <span className="min-w-0 break-words">{p.nombre}</span>
@@ -198,7 +203,7 @@ export function PaginaDeLaInmobiliaria({ nombre }: { nombre: string }) {
   if (falla) {
     return (
       <div className="mx-auto max-w-[720px] px-4 py-24 text-center" data-testid="inmobiliaria-no-existe">
-        <h1 className="font-heading text-[28px] font-semibold text-fg">
+        <h1 className="font-heading text-[28px] font-[450] text-fg">
           {falla === 'no-existe' ? 'No encontramos esa inmobiliaria' : 'No pudimos abrir esta página'}
         </h1>
         <p className="mt-2 text-[15px] text-fg-muted">
@@ -303,13 +308,13 @@ function Contenido({ pagina }: { pagina: Pagina }) {
             marketplace, 10-10-2026). */}
         <div className="flex min-w-0 flex-col gap-6">
           <section
-            className="rounded-xl border border-border bg-surface p-5 shadow-sm md:p-7"
+            className="rounded-lg border border-border bg-surface p-5 md:p-7"
             aria-label={`Pregúntale a ${pagina.nombre}`}
           >
             <div className="flex items-center gap-3">
               <OrbeDeAgente agente="orquestador" tamano={44} decorativo />
               <div>
-                <h2 className="font-heading text-[20px] font-semibold text-fg">Pregúntale a {pagina.nombre}</h2>
+                <h2 className="font-heading text-[20px] font-[450] text-fg">Pregúntale a {pagina.nombre}</h2>
                 <p className="text-[13.5px] text-fg-muted">
                   Conoce sus <span className="font-mono tabular-nums">{numero(pagina.inmuebles)}</span>{' '}
                   {pagina.inmuebles === 1 ? 'inmueble' : 'inmuebles'} y responde lo que le preguntes, a cualquier hora. Nunca se inventa uno.
@@ -324,18 +329,18 @@ function Contenido({ pagina }: { pagina: Pagina }) {
           </section>
           {ubicados.length > 0 && (
             <section
-              className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm"
+              className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-lg border border-border bg-surface"
               aria-labelledby="donde-estan"
               data-testid="mapa-de-sus-inmuebles"
             >
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-4 md:px-7">
                 <div className="min-w-0">
-                  <h2 id="donde-estan" className="font-heading text-[17px] font-semibold text-fg">
+                  <h2 id="donde-estan" className="font-heading text-[17px] font-[450] text-fg">
                     Dónde están sus inmuebles
                   </h2>
                   {barrios.length > 0 && <p className="truncate text-[13px] text-fg-muted">{barrios.join(' · ')}</p>}
                 </div>
-                <span className="text-[12.5px] text-fg-subtle">Toca un precio para verlo</span>
+                <span className="text-[13px] text-fg-subtle">Toca un precio para verlo</span>
               </div>
               <div className="relative min-h-[220px] flex-1 border-t border-border">
                 <PropertyMap
@@ -377,7 +382,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
       {pagina.videos.length > 0 && (
         <section className="mx-auto mt-12 max-w-[1280px] px-4 md:px-6" aria-labelledby="sus-videos">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 id="sus-videos" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+            <h2 id="sus-videos" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
               Sus videos
             </h2>
             <span className="text-[13px] text-fg-muted">Se ven aquí mismo, sin salir de Leasefy</span>
@@ -394,7 +399,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
       <section className="mx-auto mt-12 max-w-[1280px] px-4 md:px-6" aria-labelledby="sus-inmuebles">
         {/* Sin «Ver los N con mapa» arriba: el mapa ya está debajo de su chat
             (Nico, 16-10-2026: «saca esto si ya metiste lo del mapa»). */}
-        <h2 id="sus-inmuebles" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+        <h2 id="sus-inmuebles" className="font-heading text-[22px] font-[450] tracking-[-0.02em] text-fg">
           Sus inmuebles
         </h2>
         {suyos.length > 0 ? (
@@ -480,7 +485,7 @@ function VitrinaDeOtras({ paginaId }: { paginaId: string }) {
         <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-fg-muted">
           Publicidad
         </span>
-        <h2 id="vitrina-de-otras-titulo" className="text-[17px] font-semibold text-fg">
+        <h2 id="vitrina-de-otras-titulo" className="text-[17px] font-medium text-fg">
           Otros inmuebles en Leasefy
         </h2>
       </div>

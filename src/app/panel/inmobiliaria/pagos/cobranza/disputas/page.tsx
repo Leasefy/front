@@ -21,8 +21,12 @@
  *     recomendación sobre la que decide una persona.
  */
 
+import { useEstadoEnLaUrl } from '@/lib/cobranza/use-estado-en-la-url'
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Scales, ShieldWarning } from '@phosphor-icons/react'
+import { Lock, MagnifyingGlass, Scales } from '@phosphor-icons/react'
+import { toast } from 'sonner'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAuth } from '@/lib/auth'
@@ -31,8 +35,7 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui'
 import { CampoDePlata } from '@/components/ui/campo-de-plata'
 import { Textarea } from '@/components/ui/textarea'
-import { Spinner } from '@/components/ui/spinner'
-import { AnimatedNumber, CrossFade, Presence, SegmentedControl, Card } from '@leasefy/cadence'
+import { CrossFade, Presence, Card } from '@leasefy/cadence'
 // El Dialog del ADAPTADOR local (z del panel y la ✕ del producto), no el de Cadence pelado.
 import {
   Dialog,
@@ -54,7 +57,6 @@ import { TablePagination } from '@/components/ui/pagination'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import {
@@ -62,9 +64,14 @@ import {
   type PickedDebtor,
 } from '@/components/inmobiliaria/cobranza/DebtorPicker'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { antiguedadDeLaCola, diasEnPalabras } from '@/lib/cobranza/antiguedad-de-la-cola'
+import { formatCurrency } from '@/lib/format'
+import { debtorLabel } from '@/lib/cobranza/dispute-vocab'
+import { Input } from '@/components/ui/input'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 
-const BASE = '/panel/inmobiliaria/pagos/cobranza'
-const DEUDORES_HREF = `${BASE}/deudores`
 
 const REASON_MIN = 1
 /** El mismo tope del micro (`reason: z.string().trim().min(1).max(2000)`). */
@@ -89,7 +96,6 @@ const CAMPOS_DE_LA_DISPUTA = Object.keys(ID_DEL_CAMPO_DE_LA_DISPUTA) as CampoDeL
  * (En una clase de Tailwind se puede escribir pegado porque Tailwind
  * normaliza el `calc` al generar el CSS; acá no hay quien lo haga.)
  */
-const TOPE = 'calc(4rem + var(--secciones-h, 0px) + var(--workspace-nav-h, 3rem))'
 
 // ── Filtro por estado (SegmentedControl) ─────────────────────────────────────
 
@@ -195,8 +201,8 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
         <DialogHeader>
           <DialogTitle>Abrir una disputa</DialogTitle>
           <DialogDescription>
-            Registrar una disputa deja constancia y la pone en la cola de
-            revisión humana. No pausa la cobranza automáticamente.
+            Deja constancia y la pone en la cola de revisión de una persona.
+            No pausa la cobranza sola.
           </DialogDescription>
         </DialogHeader>
 
@@ -205,7 +211,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
           <div className="space-y-1.5">
             <label
               htmlFor="disputa-debtor"
-              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+              className="block text-body-sm font-medium text-fg"
             >
               Deudor <span className="text-danger">*</span>
             </label>
@@ -224,7 +230,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
           <div className="space-y-1.5">
             <label
               htmlFor="disputa-reason"
-              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+              className="block text-body-sm font-medium text-fg"
             >
               Motivo de la disputa <span className="text-danger">*</span>
             </label>
@@ -245,7 +251,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             />
             <div className="flex items-start justify-between gap-3">
               <ErrorDelCampo id="disputa-reason-error" mensaje={errorDelMotivo} className="mt-0" />
-              <span className="ml-auto shrink-0 text-xs text-fg-muted tabular-nums">
+              <span className="ml-auto shrink-0 text-caption text-fg-muted tabular-nums">
                 {reasonLen} / {REASON_MAX}
               </span>
             </div>
@@ -255,7 +261,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
           <div className="space-y-1.5">
             <label
               htmlFor="disputa-monto"
-              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+              className="block text-body-sm font-medium text-fg"
             >
               Monto en disputa (opcional)
             </label>
@@ -275,7 +281,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             <ErrorDelCampo id="disputa-monto-error" mensaje={errorDelMonto} />
           </div>
 
-          <Presence as="p" show={Boolean(submitError)} role="alert" className="text-xs text-danger" data-testid="disputa-abrir-error">
+          <Presence as="p" show={Boolean(submitError)} role="alert" className="text-caption text-danger" data-testid="disputa-abrir-error">
               {submitError}
           </Presence>
         </div>
@@ -312,7 +318,19 @@ function DisputasContent() {
   const { user: authUser } = useAuth()
 
   // Filtro server-side por estado (el endpoint soporta ?status).
-  const [filtro, setFiltro] = useState<EstadoFiltro>('todas')
+  const [filtro, setFiltroInterno] = useState<EstadoFiltro>('todas')
+  // C8 (r25): abre en «Abiertas» si hay alguna, y el filtro vive en la URL.
+  const estadoUrl = useEstadoEnLaUrl<EstadoFiltro>(FILTRO_OPCIONES.map((o) => o.value))
+  useEffect(() => {
+    if (estadoUrl.deLaUrl) setFiltroInterno(estadoUrl.deLaUrl)
+  }, [estadoUrl.deLaUrl])
+  const setFiltro = useCallback(
+    (f: EstadoFiltro) => {
+      setFiltroInterno(f)
+      estadoUrl.escribir(f === 'todas' ? null : f)
+    },
+    [estadoUrl],
+  )
   // Abrir y resolver es `cobranza:intervene` en el micro (también la lista).
   // QA-IA-B (04-10-2026): al contador se le ofrecía «Abrir disputa» y la
   // lista decía «No pudimos cargar las disputas. 403».
@@ -338,6 +356,14 @@ function DisputasContent() {
   /** Falló la carga y no tenemos nada: no sabemos si hay o no. */
   const hayError = (error !== null && disputes.length === 0) || sinPermiso
 
+  // Revisora r27 (K3): la lista tiene buscador por deudor, como las demás tablas.
+  const [busqueda, setBusqueda] = useState('')
+  const disputasVistas = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return disputes
+    return disputes.filter((d) => debtorLabel(d).toLocaleLowerCase('es').includes(q))
+  }, [disputes, busqueda])
+
   const seleccionada = useMemo(
     () => disputes.find((d) => d.id === seleccionadaId) ?? null,
     [disputes, seleccionadaId],
@@ -346,14 +372,14 @@ function DisputasContent() {
   // Auto-selección: al cargar, al cambiar de filtro, o si la elegida ya no
   // está en la lista. Sin esto el panel derecho arrancaría vacío siempre.
   useEffect(() => {
-    if (disputes.length === 0) {
+    if (disputasVistas.length === 0) {
       setSeleccionadaId(null)
       return
     }
-    if (!disputes.some((d) => d.id === seleccionadaId)) {
-      setSeleccionadaId(disputes[0].id)
+    if (!disputasVistas.some((d) => d.id === seleccionadaId)) {
+      setSeleccionadaId(disputasVistas[0].id)
     }
-  }, [disputes, seleccionadaId])
+  }, [disputasVistas, seleccionadaId])
 
   // Paginación de la columna izquierda. El paginado vive acá y no dentro de
   // <DisputasList> porque `filtro` vive acá: al cambiar de estado hay que
@@ -361,7 +387,7 @@ function DisputasContent() {
   // conoce el filtro. La selección y los conteos siguen mirando la lista
   // COMPLETA — sólo se recorta lo que se pinta.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(disputes, { resetKey: filtro })
+    useTablePagination(disputasVistas, { resetKey: `${filtro}|${busqueda}` })
 
   const counts = useMemo(() => {
     const c = { open: 0, in_review: 0, resolved: 0 }
@@ -372,6 +398,71 @@ function DisputasContent() {
     }
     return c
   }, [disputes])
+
+  // El conteo de TODAS se sabe cuando la lista viene sin filtro de estado; con
+  // un estado elegido el micro sólo trae ése y los demás quedan como estaban.
+  const [conteoDeTodas, setConteoDeTodas] = useState<{
+    open: number
+    inReview: number
+    resolved: number
+    total: number
+    /** Las que siguen sin resolver (abiertas y en revisión): desde cuándo y por cuánto. */
+    sinResolver: Array<{ desde: string; monto: number | null }>
+  } | null>(null)
+  useEffect(() => {
+    if (filtro !== 'todas' || isLoading) return
+    setConteoDeTodas({
+      open: counts.open,
+      inReview: counts.in_review,
+      resolved: counts.resolved,
+      total: disputes.length,
+      sinResolver: disputes
+        .filter((d) => d.status !== 'resolved')
+        .map((d) => ({ desde: d.opened_at, monto: d.disputed_amount ?? null })),
+    })
+    if (!estadoUrl.yaEligio() && counts.open > 0) {
+      estadoUrl.marcarElegido()
+      setFiltroInterno('open' as EstadoFiltro)
+    }
+  }, [filtro, isLoading, counts, disputes.length, estadoUrl])
+  // Revisora r27 (K1 y K2): la cifra no repite el conteo de «Abiertas»; dice la
+  // plata en disputa sin resolver, con la barra por antigüedad (en plata). Sin
+  // ningún monto registrado, dice cuánto espera la más vieja.
+  const sinResolver = conteoDeTodas?.sinResolver ?? []
+  const plataEnDisputa = sinResolver.reduce((s, d) => s + (d.monto ?? 0), 0)
+  const colaSinResolver = useMemo(
+    () =>
+      antiguedadDeLaCola(
+        sinResolver.map((d) => d.desde),
+        plataEnDisputa > 0
+          ? { es: true, testid: 'disputas-abiertas', montos: sinResolver.map((d) => d.monto), formato: formatCurrency }
+          : { es: true, testid: 'disputas-abiertas' },
+      ),
+    [sinResolver, plataEnDisputa],
+  )
+  const pestanas = useMemo(
+    () =>
+      FILTRO_OPCIONES.map((o) => ({
+        valor: o.value,
+        etiqueta: o.label,
+        cuantos:
+          o.value === filtro
+            ? disputes.length
+            : conteoDeTodas
+              ? o.value === 'todas'
+                ? conteoDeTodas.total
+                : o.value === 'open'
+                  ? conteoDeTodas.open
+                  : o.value === 'resolved'
+                    ? conteoDeTodas.resolved
+                    : null
+              : null,
+        fija: o.value === 'todas',
+        tono: o.value === 'open' ? ('aviso' as const) : undefined,
+        testid: `disputas-pestana-${o.value}`,
+      })),
+    [filtro, disputes.length, conteoDeTodas],
+  )
 
   // ── Mutaciones cableadas (refetch tras éxito) ─────────────────────────────
   const handleOpenDispute = useCallback(
@@ -385,6 +476,8 @@ function DisputasContent() {
         // Saltar a la disputa recién creada: es lo que la persona acaba de
         // hacer, no tiene por qué buscarla en la lista.
         if (res.data?.dispute?.id) setSeleccionadaId(res.data.dispute.id)
+        // Revisora r25 (Disputas #4): registrar se confirma con un aviso.
+        toast.success('Disputa registrada: quedó abierta para que una persona la revise.')
         void refetch()
       }
       return {
@@ -425,29 +518,24 @@ function DisputasContent() {
 
   // ── Header (compartido) ────────────────────────────────────────────────────
   const header = (
-    <header className="flex items-start justify-between gap-4 flex-wrap">
-      <div className="space-y-1">
-        <h1 className="text-h2 text-fg">
-          Disputas
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          Las disputas que los deudores levantaron sobre su saldo o un cargo.
-          Abrir o resolver una disputa es una decisión humana: el agente nunca
-          pausa ni reactiva la cobranza por su cuenta.
-        </p>
-      </div>
-      {puedeActuar && !sinPermiso && (
-        <Button
-          size="sm"
-          hideArrow
-          onClick={() => setAbrirOpen(true)}
-          data-testid="disputa-abrir"
-          className="shrink-0"
-        >
-          Abrir disputa
-        </Button>
-      )}
-    </header>
+    <EncabezadoDePantalla
+      seccion="Cobranza"
+      titulo="Disputas"
+      descripcion="Lo que los deudores discuten de su saldo o de un cargo. Las abre y las resuelve una persona."
+      accionPrincipal={
+        puedeActuar && !sinPermiso ? (
+          <Button
+            size="sm"
+            hideArrow
+            onClick={() => setAbrirOpen(true)}
+            data-testid="disputa-abrir"
+            className="shrink-0"
+          >
+            Abrir disputa
+          </Button>
+        ) : undefined
+      }
+    />
   )
 
   // ── Primer load ────────────────────────────────────────────────────────────
@@ -458,9 +546,8 @@ function DisputasContent() {
       <CrossFade swapKey="cargando">
       <div className="p-6 lg:p-8 space-y-6">
         {header}
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="md" variant="default" />
-        </div>
+        {/* C6 (r25): esqueleto con la forma de la tabla, no una rueda. */}
+        <Card className="overflow-hidden" aria-busy="true"><EsqueletoTabla columnas={5} filas={5} /></Card>
       </div>
       </CrossFade>
     )
@@ -472,135 +559,164 @@ function DisputasContent() {
       {header}
 
       {/* Error de carga. Cuando falla, ABAJO no puede decirse «no hay
-          disputas»: no sabemos si hay o no. */}
-      <Presence show={hayError}
-          role="alert"
-          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3 flex-wrap"
-        >
-          <span className="flex items-center gap-2">
-            <ShieldWarning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-            <span data-testid="disputas-fallo">
-              {sinPermiso
-                ? 'Tu rol no puede ver las disputas: las abre y las resuelve quien gestiona la cobranza. Si las necesitas, pídele el acceso a un administrador.'
-                : mensajeParaLaPersona(fallo ?? error, { porDefecto: 'No pudimos cargar las disputas.' })}
-            </span>
-          </span>
-          {!sinPermiso && (
-            <Button
-              variant="outline"
-              size="sm"
-              hideArrow
-              onClick={() => void refetch()}
-              className="shrink-0"
-            >
-              Reintentar
-            </Button>
-          )}
-      </Presence>
-
-      {/* Filtro por estado + conteo */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <SegmentedControl<EstadoFiltro>
-          options={FILTRO_OPCIONES}
-          value={filtro}
-          onChange={(v) => {
-            setFiltro(v)
-            setVerDetalleEnMovil(false)
-          }}
-          aria-label="Filtrar disputas por estado"
-        />
-        {disputes.length > 0 && (
-          <span className="text-xs text-fg-muted tabular-nums">
-            {/* «1 abierta», no «1 abiertas» (QA-AGENTES 16-10). */}
-            <AnimatedNumber value={counts.open} format={(n) => String(Math.round(n))} />{' '}
-            {counts.open === 1 ? 'abierta' : 'abiertas'} ·{' '}
-            <AnimatedNumber value={counts.resolved} format={(n) => String(Math.round(n))} />{' '}
-            {counts.resolved === 1 ? 'resuelta' : 'resueltas'}
-          </span>
-        )}
-      </div>
-
-      {/* Vacío ⇄ maestro-detalle: el uno sale y el otro entra. */}
-      <CrossFade swapKey={hayError ? 'fallo' : disputes.length === 0 ? `vacio-${filtro}` : 'lista'}>
-      {hayError ? null : disputes.length === 0 ? (
-        <EmptyState
-          icon={Scales}
-          title={
-            filtro === 'todas'
-              ? 'No hay disputas registradas'
-              : 'Sin disputas en este estado'
-          }
-          description={
-            filtro === 'todas'
-              ? 'Cuando un deudor dispute su saldo o un cargo, podrás abrir una disputa aquí y resolverla con un resultado y una nota. El detalle de cada deudor también muestra sus disputas.'
-              : 'Ajusta el filtro para ver otras disputas, o abre una nueva.'
-          }
-          primaryCta={
-            filtro === 'todas'
-              ? { label: 'Ir a los casos', href: DEUDORES_HREF }
-              : undefined
-          }
-        />
+          disputas»: no sabemos si hay o no. C5 (r25): FalloDeCarga, con su
+          reintento; sin el permiso, el porqué y a quién pedírselo. */}
+      {sinPermiso ? (
+        <Card className="flex items-start gap-3 px-5 py-4" role="status" data-testid="disputas-fallo">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+          <p className="text-body-sm text-fg-muted">
+            Tu rol no puede ver las disputas: las abre y las resuelve quien gestiona la cobranza. Si
+            las necesitas, pídele el acceso a un administrador.
+          </p>
+        </Card>
+      ) : hayError ? (
+        <div data-testid="disputas-fallo">
+          <FalloDeCarga error={fallo ?? error} queEs="las disputas" onReintentar={() => refetch()} />
+        </div>
       ) : (
-        /* Maestro-detalle: la lista elige, el panel muestra y resuelve. */
-        <div className="lg:grid lg:grid-cols-[22rem_1fr] lg:gap-5 lg:items-start">
-          {/* Lista — se oculta en móvil cuando hay un detalle abierto */}
-          <Card
-            className={`overflow-hidden lg:sticky ${verDetalleEnMovil ? 'hidden lg:block' : ''}`}
-            style={{ top: TOPE }}
-          >
-            {/* `data-lenis-prevent`: Lenis escucha la rueda en `window`, así
-                que sin esto la lista no scrollea dentro de su propia caja. */}
-            <div
-              data-lenis-prevent
-              className="lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto"
-            >
-              <DisputasList
-                disputes={pageItems}
-                selectedId={seleccionadaId}
-                onSelect={elegir}
-              />
-            </div>
+        /* C3 (r25): LA RESPUESTA y las pestañas DENTRO de la tarjeta, y la lista
+           con su detalle en la misma tarjeta. Sin tramos: «Abiertas · Resueltas»
+           eran los mismos conteos de las pestañas y no sumaban el total (las «en
+           revisión» quedaban fuera); ahora se dicen en el contexto. */
+        <Card className="overflow-hidden">
+          {conteoDeTodas && conteoDeTodas.total > 0 ? (
+            <CifraHeroe
+              className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+              data-testid="disputas-abiertas"
+              tamano="mediana"
+              rotulo={plataEnDisputa > 0 ? 'En disputa, sin resolver' : 'La disputa más vieja sin resolver espera'}
+              cifra={
+                plataEnDisputa > 0
+                  ? formatCurrency(plataEnDisputa)
+                  : colaSinResolver.masVieja === null
+                    ? '—'
+                    : diasEnPalabras(colaSinResolver.masVieja, true)
+              }
+              contexto={
+                plataEnDisputa > 0 && colaSinResolver.masVieja !== null
+                  ? colaSinResolver.masVieja === 0
+                    ? 'la más vieja se abrió hoy'
+                    : `la más vieja espera hace ${diasEnPalabras(colaSinResolver.masVieja, true)}`
+                  : undefined
+              }
+              tramos={colaSinResolver.tramos}
+              esCero={conteoDeTodas.open === 0 && conteoDeTodas.inReview === 0}
+              cuandoEsCero="Ninguna disputa abierta: todas están resueltas."
+            />
+          ) : null}
 
-            {/* El pie va FUERA de la caja con scroll: se queda a la vista
-                mientras se recorre la lista. */}
-            {shouldPaginate && (
-              <div className="border-t border-border px-4 py-3">
-                <TablePagination
-                  total={total}
-                  page={page}
-                  pageSize={pageSize}
-                  pageSizeOptions={PAGE_SIZE_OPTIONS}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
+          <div className="border-b border-border px-4 py-3 empty:hidden">
+            <PestanasDeEstado<EstadoFiltro>
+              pestanas={pestanas}
+              valor={filtro}
+              onCambio={(v) => {
+                setFiltro(v)
+                setVerDetalleEnMovil(false)
+              }}
+              etiqueta="Filtrar disputas por estado"
+            />
+          </div>
+
+          {disputes.length > 0 ? (
+            <div className="border-b border-border px-4 py-3">
+              <div className="relative w-full sm:w-64">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+                <Input
+                  type="search"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar deudor"
+                  aria-label="Buscar disputas por deudor"
+                  className="pl-9"
+                  data-testid="disputas-buscar"
                 />
               </div>
-            )}
-          </Card>
-
-          {/* Detalle — en móvil reemplaza a la lista */}
-          <Card
-            className={`overflow-hidden mt-4 lg:mt-0 ${verDetalleEnMovil ? '' : 'hidden lg:block'}`}
-          >
-            <div className="lg:hidden border-b border-border p-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                hideArrow
-                onClick={() => setVerDetalleEnMovil(false)}
-              >
-                <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-                Volver a la lista
-              </Button>
             </div>
-            <DisputaDetailPanel
-              dispute={seleccionada}
-              onResolve={handleResolveDispute}
+          ) : null}
+
+          {/* Vacío ⇄ maestro-detalle: el uno sale y el otro entra. */}
+          <CrossFade swapKey={disputes.length === 0 ? `vacio-${filtro}` : disputasVistas.length === 0 ? 'sin-resultados' : 'lista'}>
+          {disputes.length > 0 && disputasVistas.length === 0 ? (
+            <EmptyState
+              icon={MagnifyingGlass}
+              title="Ninguna disputa coincide con la búsqueda"
+              description="Revisa el nombre del deudor o borra la búsqueda."
+              primaryCta={{ label: 'Borrar la búsqueda', onClick: () => setBusqueda('') }}
             />
-          </Card>
-        </div>
+          ) : disputes.length === 0 ? (
+            /* Revisora r25 (Disputas #3): el vacío ofrece la acción de esta
+               pantalla, «Abrir disputa», no mandar a Casos. */
+            <EmptyState
+              icon={Scales}
+              title={
+                filtro === 'todas'
+                  ? 'No hay disputas registradas'
+                  : 'Sin disputas en este estado'
+              }
+              description={
+                filtro === 'todas'
+                  ? 'Cuando un deudor discuta su saldo o un cargo, ábrela aquí y resuélvela con un resultado y una nota. La ficha de cada deudor también muestra las suyas.'
+                  : 'Cambia la pestaña para ver las demás, o abre una nueva.'
+              }
+              primaryCta={
+                puedeActuar ? { label: 'Abrir disputa', onClick: () => setAbrirOpen(true) } : undefined
+              }
+            />
+          ) : (
+            /* Maestro-detalle: la lista elige, el panel muestra y resuelve. */
+            <div className="lg:grid lg:grid-cols-[22rem_1fr] lg:items-start">
+              {/* Lista — se oculta en móvil cuando hay un detalle abierto */}
+              <div className={`lg:border-r lg:border-border ${verDetalleEnMovil ? 'hidden lg:block' : ''}`}>
+                {/* `data-lenis-prevent`: Lenis escucha la rueda en `window`, así
+                    que sin esto la lista no scrollea dentro de su propia caja. */}
+                {/* Revisora r27 (UI): sin caja con scroll propio dentro de una
+                    página con scroll (dos barras a 1440); la lista se pagina. */}
+                <div>
+                  <DisputasList
+                    disputes={pageItems}
+                    selectedId={seleccionadaId}
+                    onSelect={elegir}
+                  />
+                </div>
+
+                {/* El pie va FUERA de la caja con scroll: se queda a la vista
+                    mientras se recorre la lista. */}
+                {shouldPaginate && (
+                  <div className="border-t border-border px-4 py-3">
+                    <TablePagination
+                      total={total}
+                      page={page}
+                      pageSize={pageSize}
+                      pageSizeOptions={PAGE_SIZE_OPTIONS}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Detalle — en móvil reemplaza a la lista */}
+              <div className={verDetalleEnMovil ? '' : 'hidden lg:block'}>
+                <div className="lg:hidden border-b border-border p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
+                    onClick={() => setVerDetalleEnMovil(false)}
+                  >
+                    Volver a la lista
+                  </Button>
+                </div>
+                <DisputaDetailPanel
+                  dispute={seleccionada}
+                  onResolve={handleResolveDispute}
+                />
+              </div>
+            </div>
+          )}
+          </CrossFade>
+        </Card>
       )}
-      </CrossFade>
 
       {/* Alta — sigue siendo modal: es una creación, no una lectura */}
       <AbrirDisputaModal

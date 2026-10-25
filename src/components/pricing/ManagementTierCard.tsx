@@ -68,7 +68,7 @@ export function ManagementTierCard({
             <span className="text-[14px] text-sand-600">del arriendo</span>
           </div>
           <p className="mt-1 text-[12px] text-sand-600">
-            Ejemplo: <span className="font-mono tabular-nums">${monthlyCost.toLocaleString('es-CL')}/mes</span> para arriendo de <span className="font-mono tabular-nums">${exampleRent.toLocaleString('es-CL')}</span>
+            Ejemplo: <span className="font-mono tabular-nums">${monthlyCost.toLocaleString('es-CO')}/mes</span> para arriendo de <span className="font-mono tabular-nums">${exampleRent.toLocaleString('es-CO')}</span>
           </p>
         </div>
 
@@ -136,7 +136,7 @@ export function ManagementTierCard({
           <span className="text-[14px] text-muted-foreground">del arriendo</span>
         </div>
         <p className="mt-1 text-[12px] text-muted-foreground">
-          Ejemplo: <span className="font-mono tabular-nums">${monthlyCost.toLocaleString('es-CL')}/mes</span> para arriendo de <span className="font-mono tabular-nums">${exampleRent.toLocaleString('es-CL')}</span>
+          Ejemplo: <span className="font-mono tabular-nums">${monthlyCost.toLocaleString('es-CO')}/mes</span> para arriendo de <span className="font-mono tabular-nums">${exampleRent.toLocaleString('es-CO')}</span>
         </p>
       </div>
 

@@ -461,11 +461,12 @@ describe('🔴 editar pide la ficha: la lista ya no trae la cuenta entera (23-09
 describe('Tiles — nunca un «0» ni un «Al día» que nadie verificó', () => {
   const tiles = () => Array.from(host.querySelectorAll('[data-testid="kpi-valor"]'));
 
-  it('mientras carga, los cuatro tiles muestran un hueco', async () => {
+  it('mientras carga, los tiles muestran un hueco', async () => {
     estado.isLoading = true;
     await montar();
 
-    expect(tiles()).toHaveLength(4);
+    // Ronda 20: tres tiles; la cifra «Propietarios» repetía la pestaña «Todos».
+    expect(tiles()).toHaveLength(3);
     expect(tiles().every((t) => t.getAttribute('data-estado') === 'cargando')).toBe(true);
     expect(host.textContent).not.toContain('inmobiliaria.propietarios.upToDate');
   });
@@ -488,9 +489,8 @@ describe('Tiles — nunca un «0» ni un «Al día» que nadie verificó', () =>
     const valores = tiles().map((t) => t.textContent ?? '');
     expect(tiles().every((t) => t.getAttribute('data-estado') === 'ok')).toBe(true);
     // El recaudo va con el formateador de la lista (`formatCurrency` de los tipos), no el del i18n.
-    expect(valores[0]).toBe('1');
-    expect(valores[1]).toBe('2');
-    expect(valores[2]).toMatch(/4\.000\.000/);
-    expect(valores[3]).toBe('inmobiliaria.propietarios.upToDate');
+    expect(valores[0]).toBe('2');
+    expect(valores[1]).toMatch(/4\.000\.000/);
+    expect(valores[2]).toBe('inmobiliaria.propietarios.upToDate');
   });
 });

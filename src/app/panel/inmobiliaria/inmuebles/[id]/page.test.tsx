@@ -117,32 +117,56 @@ vi.mock('@/lib/hooks/useProperties', () => ({
 }));
 
 vi.mock('@/components/inmobiliaria/ConsignacionHeader', () => ({
+  // La cabecera de verdad se prueba en su archivo; acá sólo el cableado. Desde el
+  // 21-10 las migas (con el título) y «Pedir cita» viajan como `migas` y
+  // `accionPrevia`, y la cabecera las pinta en su fila.
   ConsignacionHeader: ({
     propertyThumbnailUrl,
     onViewPortal,
     fechaDeTerminacion,
     contratoVigente,
+    migas,
+    accionPrevia,
   }: {
     propertyThumbnailUrl?: string;
     onViewPortal?: () => void;
     fechaDeTerminacion?: string | null;
     contratoVigente?: boolean;
+    migas?: React.ReactNode;
+    accionPrevia?: React.ReactNode;
   }) =>
-    React.createElement('button', {
-      'data-testid': 'view-portal-stub',
-      'data-thumbnail': propertyThumbnailUrl ?? '',
-      'data-fecha-terminacion': fechaDeTerminacion ?? '',
-      'data-contrato-vigente': contratoVigente ? '1' : '0',
-      onClick: onViewPortal,
-    }),
+    React.createElement(
+      React.Fragment,
+      null,
+      migas ?? null,
+      accionPrevia ?? null,
+      React.createElement('button', {
+        'data-testid': 'view-portal-stub',
+        'data-thumbnail': propertyThumbnailUrl ?? '',
+        'data-fecha-terminacion': fechaDeTerminacion ?? '',
+        'data-contrato-vigente': contratoVigente ? '1' : '0',
+        onClick: onViewPortal,
+      }),
+    ),
 }));
 
 vi.mock('@/components/inmobiliaria/ConsignacionDetailSections', () => ({
-  PropertyInfoSection: () => null,
+  TerminosDelMandatoSection: () => null,
   PropietarioSection: () => null,
   AgenteSection: () => null,
-  CurrentLeaseSection: () => null,
   DocumentsSection: () => null,
+}));
+
+vi.mock('@/components/inmobiliaria/ficha/FichaDelInmueble', () => ({
+  FichaDelInmueble: () => null,
+  caracteristicasDelInmueble: () => [],
+}));
+
+vi.mock('@/components/inmobiliaria/ficha/LoQueFaltaDelInmueble', () => ({
+  LoQueFaltaDelInmueble: () => null,
+}));
+vi.mock('@/components/inmobiliaria/ficha/PropietariosDelResumen', () => ({
+  PropietariosDelResumen: () => null,
 }));
 
 vi.mock('@/components/inmobiliaria/ActaEntregaView', () => ({
@@ -295,6 +319,18 @@ describe('<ConsignacionDetailPage> — entrar por el id del inmueble', () => {
 });
 
 describe('<ConsignacionDetailPage> — Ver en Portal', () => {
+  it('GLOW UP (Nico, 21-10): Resumen · Arrendarlo · Mandato y giro · Historial', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
+    renderPage();
+    const pestanas = Array.from(container.querySelectorAll('[data-testid^="pestana-"]')).map((p) => p.getAttribute('data-testid'));
+    expect(pestanas).toEqual(['pestana-resumen', 'pestana-arrendarlo', 'pestana-mandato', 'pestana-historial']);
+    const panel = (id: string) => container.querySelector(`[data-testid="panel-${id}"]`)!;
+    expect(panel('resumen').getAttribute('data-state')).toBe('active');
+    expect(panel('arrendarlo').querySelector('#fotos')).not.toBeNull();
+    expect(panel('mandato').querySelector('#propietarios')).not.toBeNull();
+    expect(panel('mandato').querySelector('#documentos')).not.toBeNull();
+  });
+
   it('opens the public ficha for the property in a new tab', () => {
     useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
     renderPage();
@@ -354,7 +390,13 @@ describe('<ConsignacionDetailPage> — mandato TERMINADO (Nico, 2026-09-13: «es
     expect(cita.disabled).toBe(false);
   });
 
-  it('terminado: «Pedir cita» queda deshabilitado con el porqué, y la fecha sale del evento del historial', async () => {
+  it('🔴 revisión 21-10: arrendado (contrato vigente) no ofrece «Pedir cita»: el back rechaza la visita con 409', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: { ...BASE_CONSIGNACION, arrendado: true, availability: 'rented' } });
+    renderPage();
+    expect(document.body.querySelector('[data-testid="pedir-cita"]')).toBeNull();
+  });
+
+  it('terminado: no ofrece «Agendar visita» (revisión 21-10: nada apagado), y la fecha sale del evento del historial', async () => {
     getHistorialMock.mockResolvedValue([
       { id: 'e2', tipo: 'datos_editados', titulo: 'x', detalle: null, actor: 'Ana', esSistema: false, fecha: '2026-09-14T10:00:00.000Z', metadata: {} },
       { id: 'e1', tipo: 'consignacion_terminada', titulo: 'Consignación terminada', detalle: null, actor: 'Ana', esSistema: false, fecha: '2026-09-13T15:00:00.000Z', metadata: {} },
@@ -368,9 +410,7 @@ describe('<ConsignacionDetailPage> — mandato TERMINADO (Nico, 2026-09-13: «es
       await Promise.resolve();
     });
 
-    const cita = document.body.querySelector<HTMLButtonElement>('[data-testid="pedir-cita"]')!;
-    expect(cita.disabled).toBe(true);
-    expect(cita.getAttribute('title')).toBe('inmobiliaria.consignaciones.header.terminada.pedirCita');
+    expect(document.body.querySelector('[data-testid="pedir-cita"]')).toBeNull();
     expect(getHistorialMock).toHaveBeenCalledWith('consig-1');
     const header = document.body.querySelector('[data-testid="view-portal-stub"]')!;
     expect(header.getAttribute('data-fecha-terminacion')).toBe('2026-09-13T15:00:00.000Z');

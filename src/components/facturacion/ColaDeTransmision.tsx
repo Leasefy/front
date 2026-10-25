@@ -157,7 +157,7 @@ function AcuseDeLaDian({ d }: { d: DocumentoEnLaCola }) {
               href={d.pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-primary underline-offset-2 hover:underline"
+              className="font-medium text-primary underline-offset-2 hover:underline"
               data-testid={`pdf-dian-${d.id}`}
             >
               Ver el PDF
@@ -168,7 +168,7 @@ function AcuseDeLaDian({ d }: { d: DocumentoEnLaCola }) {
               href={d.qrDatos}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-primary underline-offset-2 hover:underline"
+              className="font-medium text-primary underline-offset-2 hover:underline"
               data-testid={`qr-dian-${d.id}`}
             >
               Consultarla en la DIAN
@@ -337,7 +337,7 @@ export function ColaDeTransmision() {
               permisos?.isAdmin ? (
                 <Link
                   href="/panel/inmobiliaria/configuracion/facturacion"
-                  className="text-caption font-semibold text-primary underline-offset-2 hover:underline"
+                  className="text-caption font-medium text-primary underline-offset-2 hover:underline"
                   data-testid="cola-ver-pasos"
                 >
                   Ver los pasos
@@ -361,7 +361,7 @@ export function ColaDeTransmision() {
           className="rounded-lg border border-danger/30 bg-danger-soft p-3 space-y-1"
           data-testid="cola-avisos"
         >
-          <p className="text-caption font-semibold text-danger">
+          <p className="text-caption font-medium text-danger">
             {datos.avisos.length === 1
               ? 'Hay 1 documento que lleva demasiado tiempo sin transmitirse'
               : `Hay ${datos.avisos.length} documentos que llevan demasiado tiempo sin transmitirse`}
@@ -387,7 +387,7 @@ export function ColaDeTransmision() {
           className="rounded-lg border border-warning/30 bg-warning-soft p-3 space-y-1"
           data-testid="cola-saltos"
         >
-          <p className="text-caption font-semibold text-fg">
+          <p className="text-caption font-medium text-fg">
             {saltos.length === 1
               ? 'La numeración de tus facturas tiene 1 salto'
               : `La numeración de tus facturas tiene ${saltos.length} saltos`}
@@ -478,7 +478,7 @@ export function ColaDeTransmision() {
                       descripcion={
                         datos && !datos.disponible
                           ? faltaEnLaBase('La cola de transmisión a la DIAN')
-                          : 'Cada documento que emitas entra acá y se transmite a la DIAN cuando el proveedor tecnológico esté conectado. El recaudo no espera a esto.'
+                          : 'Cada documento que emitas entra aquí y se transmite a la DIAN cuando el proveedor tecnológico esté conectado. El recaudo no espera a esto.'
                       }
                     />
                   </TableCell>

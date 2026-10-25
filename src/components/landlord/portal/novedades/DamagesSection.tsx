@@ -4,6 +4,7 @@ import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n';
 import type { DanosResponse } from '@/lib/api/owner-novedades.types';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 const ESTADO_LABEL: Record<string, string> = {
   en_proceso: 'En proceso',
@@ -34,7 +35,7 @@ export function DamagesSection({ danos }: { danos: DanosResponse | null }) {
           habilite el módulo de mantenimiento.
         </p>
       ) : danos.tickets.length === 0 ? (
-        <p className="text-sm text-fg-muted">No hay daños registrados en tus inmuebles.</p>
+        <VacioChico titulo="No hay daños registrados en tus inmuebles." ilustracion="llave_destornillador" />
       ) : (
         <ul className="divide-y divide-border">
           {danos.tickets.map((t) => (
@@ -44,7 +45,7 @@ export function DamagesSection({ danos }: { danos: DanosResponse | null }) {
                   {t.category ?? 'Daño'}
                   {t.severity ? <span className="text-fg-muted"> · {t.severity}</span> : null}
                 </p>
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   Reportado {formatDate(t.createdAt)}
                   {t.resolvedAt ? ` · resuelto ${formatDate(t.resolvedAt)}` : ''}
                 </p>

@@ -76,5 +76,6 @@ export const PESTANAS_DE_CARTERA: readonly PestanaDelRiel[] = [
 
 export function PestanasDeCartera() {
   const { t } = useI18n()
-  return <RielDePestanas items={PESTANAS_DE_CARTERA} ariaLabel={t('cartera.pestanas.ariaLabel')} />
+  // 22-10 (revisión de Dinero): cuatro a la vista y las tres del final del camino en «Más».
+  return <RielDePestanas items={PESTANAS_DE_CARTERA} ariaLabel={t('cartera.pestanas.ariaLabel')} visibles={4} />
 }

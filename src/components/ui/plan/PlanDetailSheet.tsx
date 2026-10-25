@@ -188,7 +188,7 @@ export function PlanDetailSheet({
           {/* Progress Section */}
           {progress && (
             <div className="px-6 py-4 border-b border-border-faint">
-              <p className="text-xs font-medium text-plan-secondary mb-2">
+              <p className="text-caption font-medium text-plan-secondary mb-2">
                 {progress.label || 'Progreso'}
               </p>
               <PlanProgressBar value={progress.value} showValue size="md" />
@@ -198,7 +198,7 @@ export function PlanDetailSheet({
           {/* Quick Actions */}
           {quickActions && quickActions.length > 0 && (
             <div className="px-6 py-4 border-b border-border-faint">
-              <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
+              <p className="text-caption font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 Acciones Rapidas
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -226,7 +226,7 @@ export function PlanDetailSheet({
           {/* Custom Sections */}
           {sections?.map(section => (
             <div key={section.id} className="px-6 py-4 border-b border-border-faint">
-              <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
+              <p className="text-caption font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 {section.title}
               </p>
               {section.content}
@@ -236,7 +236,7 @@ export function PlanDetailSheet({
           {/* Activity Timeline */}
           {activity && activity.length > 0 && (
             <div className="px-6 py-4 border-b border-border-faint">
-              <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
+              <p className="text-caption font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 Actividad
               </p>
               <PlanActivityTimeline items={activity} maxItems={5} compact />
@@ -246,7 +246,7 @@ export function PlanDetailSheet({
           {/* Notes Section */}
           {(notes !== undefined || onNotesChange) && (
             <div className="px-6 py-4">
-              <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
+              <p className="text-caption font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 Notas
               </p>
               {onNotesChange ? (

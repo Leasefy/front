@@ -105,9 +105,9 @@
  * un renglón del estado de cuenta de alguien.
  */
 
-import { useId, useMemo, useState, type ReactNode } from 'react'
+import { useId, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { MagnifyingGlass, Plus, Warning } from '@phosphor-icons/react'
+import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
 import { AnimatedNumber, Appear, MotionIndicator, Presence } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui'
@@ -120,6 +120,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { CuotasDelMesTabla } from '@/components/inmobiliaria/pagos/CuotasDelMesTabla'
 import { RegistrarPagoModal } from '@/components/inmobiliaria/RegistrarPagoModal'
@@ -132,6 +134,7 @@ import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service'
 import type { NuevoReciboPorCliente } from '@/lib/api/recibos-de-caja.types'
 import type { CajonDeLaCuota, FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { plataPareja } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA, sumarIntereses } from '@/components/cartera/interes-de-mora'
 import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes'
@@ -291,6 +294,7 @@ function CifraEnLaFrase({
   activa,
   onClick,
   queMuestra,
+  formato = formatCurrency,
 }: {
   /** La cifra: cuenta desde la anterior al cambiar de mes (`AnimatedNumber`). */
   monto: number
@@ -300,6 +304,8 @@ function CifraEnLaFrase({
   onClick: () => void
   /** Qué queda en la tabla al tocarla. Va al `title`: un clic no se adivina. */
   queMuestra: string
+  /** El formato de la franja (los mismos decimales en todas sus cifras). */
+  formato?: (n: number) => string
 }) {
   return (
     <button
@@ -309,46 +315,43 @@ function CifraEnLaFrase({
       title={queMuestra}
       data-testid={`abrir-${testId}`}
       className={cn(
-        'font-mono font-semibold tabular-nums decoration-dotted underline-offset-4',
+        'font-mono tabular-nums decoration-dotted decoration-1 underline-offset-[0.2em]',
         'rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         activa ? 'underline' : 'hover:underline',
         tono === 'success' ? 'text-success' : tono === 'danger' ? 'text-danger' : 'text-fg',
       )}
       data-activa={activa ? 'si' : 'no'}
     >
-      <AnimatedNumber data-testid={testId} value={monto} format={formatCurrency} />
+      <AnimatedNumber data-testid={testId} value={monto} format={formato} />
     </button>
   )
 }
 
 /**
- * Una pestaña de cajón: el número ES el filtro.
+ * Una pestaña de cajón: filtra la tabla.
  *
- * El monto que muestra es lo que FALTA en ese cajón —la misma medida en las
- * cuatro—, así que las tres de la derecha suman la primera. El conteo va
- * debajo, chico: es el dato secundario.
+ * GLOW UP (revisión de Dinero, 22-10-2026): eran cinco pestañas con su plata en
+ * mono grande y el conteo debajo —cinco cifras más compitiendo con la del mes—.
+ * La plata de cada momento ya está en la leyenda de la cifra de arriba (y
+ * también filtra); acá queda lo que una pestaña necesita: el nombre y cuántas
+ * cuotas hay. Una pestaña en cero no se pinta (salvo «Todo lo que falta» y la
+ * elegida): un cero no se filtra.
  */
 function PestanaDeCajon({
   label,
-  monto,
   cuotas,
   activa,
   tono,
   testId,
-  testIdCifra,
   onClick,
-  extra,
   marca,
 }: {
   label: string
-  monto: number
   cuotas: number
   activa: boolean
-  tono?: 'warning' | 'danger' | 'muted'
+  tono?: 'warning' | 'danger'
   testId: string
-  testIdCifra: string
   onClick: () => void
-  extra?: ReactNode
   /** El `layoutId` de la marca de la pestaña elegida (una por tarjeta). */
   marca: string
 }) {
@@ -360,35 +363,28 @@ function PestanaDeCajon({
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        'relative flex shrink-0 flex-col gap-0.5 px-4 py-3 text-left transition-colors',
+        'relative inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap px-0.5 text-body-sm transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-        activa ? 'bg-surface' : 'hover:bg-surface-muted',
+        activa ? 'font-medium text-fg' : 'text-fg-muted hover:text-fg',
       )}
     >
-      <span className={cn('text-xs', activa ? 'font-medium text-fg' : 'text-fg-muted')}>
-        {label}
-      </span>
+      {label}
       <span
         className={cn(
-          'font-mono text-base font-semibold tabular-nums',
-          tono === 'danger'
+          'font-mono text-caption tabular-nums',
+          tono === 'danger' && cuotas > 0
             ? 'text-danger'
-            : tono === 'warning'
-              ? 'text-warning'
-              : tono === 'muted'
-                ? 'text-fg-muted'
-                : 'text-fg',
+            : tono === 'warning' && cuotas > 0
+              ? 'text-warning-ink'
+              : activa
+                ? 'text-fg'
+                : 'text-fg-subtle',
         )}
-        data-testid={testIdCifra}
       >
-        <AnimatedNumber value={monto} format={formatCurrency} />
+        {numberFormatter.format(cuotas)}
+        <span className="sr-only"> {cuotas === 1 ? 'cuota' : 'cuotas'}</span>
       </span>
-      <span className="text-caption text-fg-subtle">
-        {numberFormatter.format(cuotas)} {cuotas === 1 ? 'cuota' : 'cuotas'}
-      </span>
-      {extra}
-      {/* La marca de la elegida SE DESLIZA a la nueva (`MotionIndicator`);
-          antes se apagaba en una y se prendía en la otra. */}
+      {/* La marca de la elegida SE DESLIZA a la nueva (`MotionIndicator`). */}
       {activa ? (
         <MotionIndicator layoutId={marca} className="inset-x-0 bottom-0 h-0.5 bg-primary" />
       ) : null}
@@ -450,18 +446,6 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
     [todas],
   )
 
-  /**
-   * Lo que entró por las cuotas YA SALDADAS. No es el «Pagado» del resumen:
-   * ése incluye los abonos parciales de cuotas que todavía deben, así que
-   * usarlo acá pondría en la pestaña una plata que no es la de sus filas.
-   */
-  const pagadoDeLasSaldadas = useMemo(
-    () =>
-      todas
-        .filter((f) => f.cajon === 'SIN_DEUDA')
-        .reduce((suma, f) => suma + (f.pagadoCop ?? 0), 0),
-    [todas],
-  )
 
   const t = datos?.totales
   const avisos = datos?.avisos ?? []
@@ -486,42 +470,47 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
     return res
   }
 
+  // Los mismos decimales en toda la franja (revisión 22-10).
+  const plata = plataPareja([t?.totalCop, t?.pendienteCop, t?.pagadoCop, t?.porVencerCop, t?.vencidaEnPlazoCop, t?.carteraCop, interesDelMes, t?.totalConInteresCop])
+  const cuantasCuotas = (n: number) => `${numberFormatter.format(n)} ${n === 1 ? 'cuota' : 'cuotas'}`
+  const cuantosInquilinos = (n: number) => `${numberFormatter.format(n)} ${n === 1 ? 'inquilino' : 'inquilinos'}`
+
+  /** Las pestañas: «Todo lo que falta» y la elegida siempre; las demás, sólo con cuotas. */
+  const seVe = (c: CajonElegido, n: number) => c === 'TODAS' || c === cajon || n > 0
+
   return (
     <section className="space-y-3" aria-label={`La deuda de ${titulo}`}>
-      {/* 🔴 UNA tarjeta: el mes, las cifras, las pestañas, el buscador y la
-          tabla. Antes eran cinco bloques sueltos encima de la tabla y ninguno
-          se leía como parte de ella (Nico, 18-09). */}
+      {/* 🔴 UNA tarjeta: el mes, la cifra, las pestañas, el buscador y la tabla
+          (Nico, 18-09: «esto tiene que hacer parte de la tabla»). */}
       <div
-        className="overflow-hidden rounded-lg border border-border bg-surface"
+        className="overflow-hidden rounded-2xl border border-border bg-surface"
         data-testid="tarjeta-de-la-deuda"
       >
         {/* 1 · El mes y la única acción que mueve plata. Va FUERA de
             `EstadoDeDatos`: cambiar de mes no puede hacer desaparecer el
             control con el que se cambia de mes. */}
-        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-base font-semibold text-fg">La deuda de</h2>
-            <Select value={mes} onValueChange={setMes}>
-              <SelectTrigger className="w-[190px]" aria-label="Mes de la deuda">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {opciones.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {mesEnTitulo(m)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex flex-col gap-3 px-5 pt-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <Select value={mes} onValueChange={setMes}>
+            <SelectTrigger className="w-full sm:w-[200px]" aria-label="Mes de la deuda">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {opciones.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {mesEnTitulo(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {/* Sin `cobros:create` queda a la vista y deshabilitado, con el porqué:
               esconder un control se lee como «falta la función». */}
           <span
-            className="inline-flex"
+            className="inline-flex [&>*]:w-full sm:[&>*]:w-auto"
             title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}
           >
             <Button
               hideArrow
+              size="sm"
               disabled={!puedeHacerRecibo}
               onClick={() => setReciboAbierto(true)}
               data-testid="abrir-recibo-de-caja"
@@ -539,264 +528,289 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
           onReintentar={recargar}
           esqueleto={<EsqueletoTabla columnas={6} filas={6} />}
         >
-          {/* 2 · El mes en UNA FRASE, que dice la relación entre los tres
-                 números. Eran tres fichas idénticas a las pestañas de abajo, y
-                 por eso «no se sabía qué era de qué». Las tres cifras siguen
-                 abriendo la tabla en sus filas. */}
-          <p
-            className="border-b border-border bg-surface-muted/40 px-4 py-3 text-sm leading-relaxed text-fg-muted"
+          {/* 2 · LA cifra del mes: cuánto falta, de cuánto, y en qué momento
+                 está lo que falta. GLOW UP (revisión de Dinero, 22-10-2026): era
+                 una frase con cuatro cifras del mismo peso y cinco pestañas con
+                 plata; ahora hay UNA cifra grande y su barra. Cada monto sigue
+                 siendo un botón que deja la tabla en sus filas (Nico, 19-09:
+                 «yo debería de poder dar clic a cada una»). */}
+          <CifraHeroe
+            className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
             data-testid="resumen-del-mes"
-          >
-            De los{' '}
-            <CifraEnLaFrase
-              testId="mes-se-debe"
-              monto={t?.totalCop ?? 0}
-              activa={cajon === 'MES'}
-              onClick={() => setCajon('MES')}
-              queMuestra={`Ver las ${numberFormatter.format(t?.cuotas ?? 0)} cuotas del mes en la tabla`}
-            />{' '}
-            que se deben en {enFrase} —{numberFormatter.format(t?.cuotas ?? 0)}{' '}
-            {(t?.cuotas ?? 0) === 1 ? 'cuota' : 'cuotas'} de{' '}
-            {numberFormatter.format(t?.inquilinos ?? 0)}{' '}
-            {(t?.inquilinos ?? 0) === 1 ? 'inquilino' : 'inquilinos'}— ya entraron{' '}
-            <CifraEnLaFrase
-              testId="mes-pagado"
-              monto={t?.pagadoCop ?? 0}
-              tono="success"
-              activa={cajon === 'PAGADO'}
-              onClick={() => setCajon('PAGADO')}
-              queMuestra="Ver en la tabla las cuotas que ya pagaron algo"
-            />{' '}
-            y faltan{' '}
-            {/* «Falta por pagar» y la pestaña «Todo lo que falta» son el MISMO
-                número, así que son el mismo filtro: al tocar cualquiera de los
-                dos se encienden los dos. */}
-            <CifraEnLaFrase
-              testId="mes-falta"
-              monto={t?.pendienteCop ?? 0}
-              activa={cajon === 'TODAS'}
-              onClick={() => setCajon('TODAS')}
-              queMuestra="Ver en la tabla todo lo que falta por pagar"
-            />
-            {/* El interés va DENTRO de la misma oración, entre paréntesis.
-                Suelto después del punto se leía como un fragmento —«$366.919.750
-                con intereses.»— sin verbo ni sujeto. */}
-            {interesDelMes > 0 ? (
-              <span className="text-fg-muted" data-testid="mes-falta-con-intereses">
-                {' ('}
-                {traducir(CLAVE_DE_MORA.conIntereses, {
-                  monto: formatCurrency(
-                    hayVencidasSinPlazo
-                      ? (t?.pendienteCop ?? 0) + interesDelMes
-                      : t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
-                  ),
-                })}
-                {')'}
-              </span>
-            ) : null}
-            .
-          </p>
-
-          {/* 🔴 Lo que estos números NO cuentan. Un contrato vigente sin tabla de
-              amortización no es un contrato sin deuda: es una deuda que todavía
-              nadie generó. Callarlo deja el resumen mintiendo por omisión. */}
-          <Presence show={avisos.length > 0} initial={false}>
-            <div
-              className="flex gap-2 border-b border-border bg-warning-soft px-4 py-3 text-sm text-fg"
-              data-testid="avisos-del-mes"
-            >
-              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-              <div className="space-y-2">
-                <ul className="space-y-1">
-                  {avisos.map((aviso) => (
-                    <li key={aviso}>{aviso}</li>
-                  ))}
-                </ul>
-                {/* 🔴 A-04 (QA-PAGOS-95): «Fíjalos en Configuración → Perfil» sin
-                    enlace dejaba a la persona buscando; el mismo enlace que el
-                    Tablero y el estado de cuenta, con el foco en el campo. */}
-                {hayVencidasSinPlazo ? (
-                  <Link
-                    href={RUTA_PARA_FIJAR_EL_PLAZO}
-                    className="mr-4 inline-block font-medium underline underline-offset-4"
-                    data-testid="mes-fijar-el-plazo"
-                  >
-                    Fijar los días de plazo
-                  </Link>
+            rotulo="Falta por pagar"
+            cifra={
+              <CifraEnLaFrase
+                formato={plata}
+                testId="mes-falta"
+                monto={t?.pendienteCop ?? 0}
+                activa={cajon === 'TODAS'}
+                onClick={() => setCajon('TODAS')}
+                queMuestra="Ver en la tabla todo lo que falta por pagar"
+              />
+            }
+            contexto={
+              <>
+                de los{' '}
+                <CifraEnLaFrase
+                  formato={plata}
+                  testId="mes-se-debe"
+                  monto={t?.totalCop ?? 0}
+                  activa={cajon === 'MES'}
+                  onClick={() => setCajon('MES')}
+                  queMuestra={`Ver las ${numberFormatter.format(t?.cuotas ?? 0)} cuotas del mes en la tabla`}
+                />{' '}
+                que se deben en {enFrase}
+                {/* Ronda 11 de la revisión (22-10): el total con intereses es de
+                    TODO lo que falta, no de la cartera: va en la línea de la
+                    cifra grande, no bajo el tramo «Cartera». */}
+                {interesDelMes > 0 ? (
+                  <span className="block whitespace-nowrap sm:inline" data-testid="mes-falta-con-intereses">
+                    <span className="hidden sm:inline">{' · '}</span>
+                    <span className="font-mono tabular-nums">
+                      {traducir(CLAVE_DE_MORA.conIntereses, {
+                        monto: plata(
+                          hayVencidasSinPlazo
+                            ? (t?.pendienteCop ?? 0) + interesDelMes
+                            : t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
+                        ),
+                      })}
+                    </span>
+                  </span>
                 ) : null}
-                {/* Sin reglas de mora el interés sale en cero y NO porque no haya
-                    mora: se lleva a donde se arregla. */}
-                {datos?.sinReglasDeMora ? (
-                  <Link
-                    href={RUTA_DE_REGLAS_DE_MORA}
-                    className="inline-block font-medium underline underline-offset-4"
-                    data-testid="mes-configurar-reglas"
-                  >
-                    {traducir(CLAVE_DE_MORA.configurarReglas)}
-                  </Link>
+              </>
+            }
+            total={t?.totalCop ?? 0}
+            tramos={[
+              {
+                clave: 'pagado',
+                etiqueta: 'Ya entró',
+                monto: t?.pagadoCop ?? 0,
+                tono: 'exito',
+                'data-testid': 'tramo-pagado',
+                cifra: (
+                  <CifraEnLaFrase
+                    formato={plata}
+                    testId="mes-pagado"
+                    monto={t?.pagadoCop ?? 0}
+                    activa={cajon === 'PAGADO'}
+                    onClick={() => setCajon('PAGADO')}
+                    queMuestra="Ver en la tabla las cuotas que ya pagaron algo"
+                  />
+                ),
+              },
+              {
+                clave: 'por-vencer',
+                etiqueta: 'Por vencer',
+                monto: t?.porVencerCop ?? 0,
+                tono: 'neutro',
+                cifra: (
+                  <CifraEnLaFrase
+                    formato={plata}
+                    testId="mes-por-vencer"
+                    monto={t?.porVencerCop ?? 0}
+                    activa={cajon === 'POR_VENCER'}
+                    onClick={() => setCajon('POR_VENCER')}
+                    queMuestra="Ver en la tabla las cuotas que todavía no vencen"
+                  />
+                ),
+              },
+              {
+                clave: 'en-plazo',
+                etiqueta: hayVencidasSinPlazo ? 'Vencido' : 'Vencido, en plazo',
+                monto: t?.vencidaEnPlazoCop ?? 0,
+                tono: 'aviso',
+                cifra: (
+                  <CifraEnLaFrase
+                    formato={plata}
+                    testId="mes-vencido-en-plazo"
+                    monto={t?.vencidaEnPlazoCop ?? 0}
+                    activa={cajon === 'VENCIDA_EN_PLAZO'}
+                    onClick={() => setCajon('VENCIDA_EN_PLAZO')}
+                    queMuestra="Ver en la tabla las cuotas vencidas que siguen en plazo"
+                  />
+                ),
+              },
+              {
+                clave: 'cartera',
+                etiqueta: 'Cartera',
+                monto: t?.carteraCop ?? 0,
+                tono: 'critico',
+                cifra: (
+                  <CifraEnLaFrase
+                    formato={plata}
+                    testId="mes-cartera"
+                    monto={t?.carteraCop ?? 0}
+                    tono="danger"
+                    activa={cajon === 'CARTERA'}
+                    onClick={() => setCajon('CARTERA')}
+                    queMuestra="Ver en la tabla las cuotas en cartera"
+                  />
+                ),
+                extra:
+                  interesDelMes > 0 ? (
+                    <span
+                      className="block font-mono text-caption tabular-nums text-danger"
+                      data-testid="mes-intereses"
+                      title={traducir(CLAVE_DE_MORA.explicacion)}
+                    >
+                      {traducir(CLAVE_DE_MORA.masIntereses, {
+                        monto: plata(interesDelMes),
+                      })}
+                    </span>
+                  ) : null,
+
+              },
+            ]}
+            pie={
+              <div className="flex flex-col gap-2">
+                <span>
+                  {cuantasCuotas(t?.cuotas ?? 0)} de {cuantosInquilinos(t?.inquilinos ?? 0)}
+                </span>
+                {/* 🔴 Lo que estos números NO cuentan, en UN renglón junto a la
+                    cifra que afectan («N cosas afectan esta cifra · Ver»). Antes
+                    eran franjas amarillas apiladas encima de todo. Plegado pero
+                    montado: lo que pide arreglarse sigue a un clic. */}
+                {avisos.length > 0 ? (
+                  <div className="flex items-start gap-2" data-testid="avisos-del-mes">
+                    <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" />
+                    <MasDetalles
+                      montadoSiempre
+                      etiqueta={`${avisos.length === 1 ? '1 cosa afecta' : `${avisos.length} cosas afectan`} esta cifra`}
+                      etiquetaAbierto="Ocultar"
+                      classNameDelContenido="space-y-3"
+                    >
+                      <ul className="space-y-1.5 text-body-sm text-fg">
+                        {avisos.map((aviso) => (
+                          <li key={aviso}>{aviso}</li>
+                        ))}
+                      </ul>
+                      {/* 🔴 A-04 (QA-PAGOS-95): el mismo enlace que el Tablero y el
+                          estado de cuenta, con el foco en el campo. Sin reglas de
+                          mora el interés sale en cero y NO porque no haya mora. */}
+                      {hayVencidasSinPlazo || datos?.sinReglasDeMora ? (
+                        <div className="flex flex-wrap gap-2">
+                          {hayVencidasSinPlazo ? (
+                            <Button asChild size="sm" variant="secondary">
+                              <Link href={RUTA_PARA_FIJAR_EL_PLAZO} data-testid="mes-fijar-el-plazo">
+                                Fijar los días de plazo
+                              </Link>
+                            </Button>
+                          ) : null}
+                          {datos?.sinReglasDeMora ? (
+                            <Button asChild size="sm" variant="secondary">
+                              <Link href={RUTA_DE_REGLAS_DE_MORA} data-testid="mes-configurar-reglas">
+                                {traducir(CLAVE_DE_MORA.configurarReglas)}
+                              </Link>
+                            </Button>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </MasDetalles>
+                  </div>
                 ) : null}
               </div>
+            }
+          />
+
+          {/* 3 · La barra de la tabla: los cajones como pestañas (filtran) y el
+                 buscador, en UN renglón. En el orden en que una deuda los
+                 recorre —nace futura, vence, y recién después es cartera—, con
+                 las palabras de «Cartera por concepto». */}
+          <div className="flex flex-col gap-3 border-b border-border px-5 pt-1 sm:px-6 lg:flex-row lg:items-stretch lg:justify-between lg:gap-6 lg:pt-0">
+            <div
+              role="tablist"
+              aria-label="Qué cuotas ver en la tabla"
+              data-testid="cajones-del-mes"
+              data-lenis-prevent
+              className="-mx-1 flex min-w-0 items-stretch gap-5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:pt-1"
+            >
+              {/* 🔴 Los conteos de las pestañas salen de la misma fuente —las
+                  filas—, para que cuadren: «todo lo que falta» es la suma de los
+                  tres momentos. */}
+              <PestanaDeCajon
+                marca={marca}
+                label="Todo lo que falta"
+                cuotas={cuotasQueFaltan}
+                activa={cajon === 'TODAS'}
+                testId="cajon-todas"
+                onClick={() => setCajon('TODAS')}
+              />
+              {seVe('POR_VENCER', cuotasPorCajon.POR_VENCER ?? 0) ? (
+                <PestanaDeCajon
+                  marca={marca}
+                  label="Por vencer"
+                  cuotas={cuotasPorCajon.POR_VENCER ?? 0}
+                  activa={cajon === 'POR_VENCER'}
+                  testId="cajon-por-vencer"
+                  onClick={() => setCajon('POR_VENCER')}
+                />
+              ) : null}
+              {seVe('VENCIDA_EN_PLAZO', cuotasPorCajon.VENCIDA_EN_PLAZO ?? 0) ? (
+                <PestanaDeCajon
+                  marca={marca}
+                  label={hayVencidasSinPlazo ? 'Vencido' : 'Vencido, en plazo'}
+                  cuotas={cuotasPorCajon.VENCIDA_EN_PLAZO ?? 0}
+                  tono="warning"
+                  activa={cajon === 'VENCIDA_EN_PLAZO'}
+                  testId="cajon-vencido-en-plazo"
+                  onClick={() => setCajon('VENCIDA_EN_PLAZO')}
+                />
+              ) : null}
+              {seVe('CARTERA', cuotasPorCajon.CARTERA ?? 0) ? (
+                <PestanaDeCajon
+                  marca={marca}
+                  label="Cartera"
+                  cuotas={cuotasPorCajon.CARTERA ?? 0}
+                  tono="danger"
+                  activa={cajon === 'CARTERA'}
+                  testId="cajon-cartera"
+                  onClick={() => setCajon('CARTERA')}
+                />
+              ) : null}
+              {/* 🔴 La pestaña de las saldadas existe para que nadie desaparezca:
+                  buscar a un inquilino que YA PAGÓ tiene que encontrarlo. */}
+              {seVe('SIN_DEUDA', cuotasPorCajon.SIN_DEUDA ?? 0) ? (
+                <PestanaDeCajon
+                  marca={marca}
+                  label="Pagadas"
+                  cuotas={cuotasPorCajon.SIN_DEUDA ?? 0}
+                  activa={cajon === 'SIN_DEUDA'}
+                  testId="cajon-pagadas"
+                  onClick={() => setCajon('SIN_DEUDA')}
+                />
+              ) : null}
             </div>
-          </Presence>
 
-          {/* 3 · Los tres cajones COMO PESTAÑAS, pegadas a la tabla: el número
-                 es el filtro. En el orden en que una deuda los recorre —nace
-                 futura, vence, y recién después es cartera—, con las palabras
-                 de «Cartera por concepto». */}
-          <div
-            role="tablist"
-            aria-label="Qué cuotas ver en la tabla"
-            data-testid="cajones-del-mes"
-            data-lenis-prevent
-            className="flex items-stretch divide-x divide-border overflow-x-auto border-b border-border bg-surface-muted/40 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {/* 🔴 «Ver en la tabla» es la palabra que faltaba. Nico, 21-09:
-                «arriba hay como filtros, y no se ve a qué hacen parte». Las
-                pestañas ya filtraban la tabla desde el 18-09, pero nada en
-                pantalla lo DECÍA: se leían como cinco indicadores más. Un
-                control que cambia una lista tiene que nombrar la lista. */}
-            <span className="flex shrink-0 items-center whitespace-nowrap px-4 text-caption uppercase tracking-wide text-fg-subtle">
-              Ver en la tabla
-            </span>
-            {/* 🔴 Los conteos de las CUATRO pestañas salen de la misma fuente
-                —las filas—, para que la franja cuadre consigo misma: «todo lo
-                que falta» es, por definición, la suma de los tres momentos que
-                tiene al lado. Antes el primero contaba el mes entero (`t.cuotas`)
-                y el último la cartera del back (`t.cuotasEnCartera`), y nada
-                obligaba a que 0 + 8 + 93 diera lo que decía el primero. */}
-            <PestanaDeCajon
-              marca={marca}
-              label="Todo lo que falta"
-              monto={t?.pendienteCop ?? 0}
-              cuotas={cuotasQueFaltan}
-              activa={cajon === 'TODAS'}
-              testId="cajon-todas"
-              testIdCifra="mes-falta-pestana"
-              onClick={() => setCajon('TODAS')}
-            />
-            <PestanaDeCajon
-              marca={marca}
-              label="Por vencer"
-              monto={t?.porVencerCop ?? 0}
-              cuotas={cuotasPorCajon.POR_VENCER ?? 0}
-              tono="muted"
-              activa={cajon === 'POR_VENCER'}
-              testId="cajon-por-vencer"
-              testIdCifra="mes-por-vencer"
-              onClick={() => setCajon('POR_VENCER')}
-            />
-            <PestanaDeCajon
-              marca={marca}
-              label={hayVencidasSinPlazo ? 'Vencido' : 'Vencido, en plazo'}
-              monto={t?.vencidaEnPlazoCop ?? 0}
-              cuotas={cuotasPorCajon.VENCIDA_EN_PLAZO ?? 0}
-              tono="warning"
-              activa={cajon === 'VENCIDA_EN_PLAZO'}
-              testId="cajon-vencido-en-plazo"
-              testIdCifra="mes-vencido-en-plazo"
-              onClick={() => setCajon('VENCIDA_EN_PLAZO')}
-            />
-            <PestanaDeCajon
-              marca={marca}
-              label="Cartera"
-              monto={t?.carteraCop ?? 0}
-              cuotas={cuotasPorCajon.CARTERA ?? 0}
-              tono="danger"
-              activa={cajon === 'CARTERA'}
-              testId="cajon-cartera"
-              testIdCifra="mes-cartera"
-              onClick={() => setCajon('CARTERA')}
-              extra={
-                interesDelMes > 0 ? (
-                  <span
-                    className="font-mono text-caption tabular-nums text-danger"
-                    data-testid="mes-intereses"
-                    title={traducir(CLAVE_DE_MORA.explicacion)}
-                  >
-                    {traducir(CLAVE_DE_MORA.masIntereses, {
-                      monto: formatCurrency(interesDelMes),
-                    })}
-                  </span>
-                ) : null
-              }
-            />
-            {/* 🔴 La quinta pestaña existe para que nadie desaparezca. Sacar las
-                saldadas de «todo lo que falta» era correcto, pero sin este
-                cajón esas cuotas no se podían ver en ninguna parte y buscar a
-                un inquilino que YA PAGÓ devolvía «ningún resultado» — la
-                pantalla afirmaría que no existe. Con esto, las cuatro
-                pestañas de deuda más ésta suman las cuotas del mes que dice
-                el resumen, y el número se puede conciliar a ojo. */}
-            <PestanaDeCajon
-              marca={marca}
-              label="Pagadas"
-              monto={pagadoDeLasSaldadas}
-              cuotas={cuotasPorCajon.SIN_DEUDA ?? 0}
-              tono="muted"
-              activa={cajon === 'SIN_DEUDA'}
-              testId="cajon-pagadas"
-              testIdCifra="mes-pagadas"
-              onClick={() => setCajon('SIN_DEUDA')}
-            />
-          </div>
-
-          {/* 3b · Qué es el cajón elegido, en una línea. Es lo que antes vivía
-                  debajo de cada ficha; acá acompaña a la tabla que se mira. */}
-          <p
-            className="border-b border-border px-4 py-2 text-xs text-fg-muted"
-            data-testid="que-es-este-cajon"
-          >
-            {/* La frase del cajón nuevo entra con un fundido (sin salida: la
-                línea no cambia de alto ni se queda un momento vacía). */}
-            <Appear as="span" key={cajon} direction="none">
-            {QUE_ES_ESTE_CAJON[cajon]}
-            </Appear>
-          </p>
-
-          {/* 4 · El buscador, DENTRO de la tarjeta, con el alcance a su lado.
-                 La cifra de arriba habla del MES; la tabla, de lo filtrado. */}
-          <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative w-full sm:max-w-sm">
+            {/* 4 · El buscador, DENTRO de la tarjeta. */}
+            {/* Nico (22-10): el buscador quedaba con más aire arriba que abajo (el `pt-1` de la barra lo
+                corría). En escritorio ocupa todo el alto de la barra y se centra entre las dos líneas. */}
+            <div className="relative w-full pb-3 lg:flex lg:w-72 lg:shrink-0 lg:items-center lg:pb-0">
               <MagnifyingGlass
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+                className="pointer-events-none absolute left-3 top-[18px] h-4 w-4 -translate-y-1/2 text-fg-muted lg:top-1/2"
                 aria-hidden="true"
               />
               <Input
-                className="pl-9"
-                placeholder="Inquilino, documento, contrato o inmueble"
+                className="h-9 pl-9"
+                placeholder="Buscar inquilino o contrato"
                 aria-label="Buscar en las cuotas del mes"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 data-testid="buscar-cuotas"
               />
             </div>
-            {/*
-              🔴 El alcance describe SIEMPRE lo que hay en la tabla, también sin
-              filtros puestos. Antes el caso «sin filtros» cantaba `todas.length`
-              —las cuotas del mes— y desde que «Todo lo que falta» dejó fuera las
-              saldadas, eso era falso: decía «105 cuotas en Septiembre de 2026»
-              encima de una tabla de 101. Un renglón que cuenta una cosa y
-              muestra otra es peor que no tener renglón.
-            */}
-            <p className="text-xs text-fg-muted" data-testid="alcance-de-la-tabla">
-              {numberFormatter.format(visibles.length)} de{' '}
-              {numberFormatter.format(todas.length)}{' '}
-              {todas.length === 1 ? 'cuota' : 'cuotas'} de {enFrase}.
-              {/* «Quitar el filtro» entra con el primer filtro y se va al
-                  quitarlo. */}
-              <Presence as="span" show={hayFiltros} initial={false} direction="none">
-                  {' '}Las cifras de arriba son las del mes completo.{' '}
-                  <button
-                    type="button"
-                    onClick={limpiar}
-                    className="font-medium text-primary underline-offset-4 hover:underline"
-                    data-testid="limpiar-filtros"
-                  >
-                    Quitar el filtro
-                  </button>
-              </Presence>
-            </p>
           </div>
+
+          {/* 3b · Qué es lo que se está mirando, en una línea (las palabras de
+                  «Cartera por concepto»: sin ellas «vencido, en plazo» y
+                  «cartera» se leen como sinónimos). */}
+          <p
+            className="border-b border-border px-5 py-2.5 text-caption text-fg-muted sm:px-6"
+            data-testid="que-es-este-cajon"
+          >
+            <Appear as="span" key={cajon} direction="none">
+            {QUE_ES_ESTE_CAJON[cajon]}
+            </Appear>
+          </p>
 
           {/* 5 · La tabla, sin marco propio: el marco es el de la tarjeta. */}
           <CuotasDelMesTabla
@@ -807,16 +821,37 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             vista={cajon}
             sinMarco
           />
+
+          {/* 🔴 El alcance describe SIEMPRE lo que hay en la tabla, también sin
+              filtros: «3 de 4 cuotas de septiembre de 2026». La cifra de arriba
+              habla del MES; la tabla, de lo filtrado. */}
+          <p
+            className="border-t border-border px-5 py-3 text-caption text-fg-muted sm:px-6"
+            data-testid="alcance-de-la-tabla"
+          >
+            {numberFormatter.format(visibles.length)} de{' '}
+            {numberFormatter.format(todas.length)}{' '}
+            {todas.length === 1 ? 'cuota' : 'cuotas'} de {enFrase}.
+            <Presence as="span" show={hayFiltros} initial={false} direction="none">
+                {' '}La cifra de arriba es la del mes completo.{' '}
+                <button
+                  type="button"
+                  onClick={limpiar}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid="limpiar-filtros"
+                >
+                  Quitar el filtro
+                </button>
+            </Presence>
+          </p>
         </EstadoDeDatos>
       </div>
 
       {datos ? (
-        <p className="text-xs text-fg-muted">
-          La deuda sale de las cuotas del contrato, no de los cobros emitidos: existe
-          desde que se firma, y el inquilino puede pagarla antes o hasta el día máximo
-          de cartera de su contrato. Cada fila es un mes del{' '}
-          <strong className="font-medium">estado de cuenta</strong> de ese cliente: haz
-          clic en su nombre para verlo completo. Leído contra el {fechaLarga(datos.hoy)}.
+        <p className="px-1 text-caption text-fg-muted">
+          La deuda sale de las cuotas del contrato: existe desde que se firma. Cada fila es
+          un mes del <strong className="font-medium text-fg">estado de cuenta</strong> de ese
+          cliente. Leído contra el {fechaLarga(datos.hoy)}.
         </p>
       ) : null}
 

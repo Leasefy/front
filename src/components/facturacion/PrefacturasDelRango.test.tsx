@@ -315,7 +315,7 @@ describe('PrefacturasDelRango', () => {
     expect(host.textContent).toContain(AVISO_CONTRATOS_QUE_TERMINAN);
   });
 
-  it('🔴 y NO tiene ningún botón de emitir: acá sólo se mira', () => {
+  it('🔴 y NO tiene ningún botón de emitir: aquí sólo se mira', () => {
     expect(host.querySelector('button')).toBeNull();
     expect(host.querySelector('input[type="checkbox"]')).toBeNull();
   });
@@ -354,7 +354,7 @@ describe('PrefacturasDelRango', () => {
     expect(bloque?.textContent).toContain('Nubia Amparo David');
     expect(bloque?.textContent).toContain('31 dic 2026');
     expect(q('[data-testid="rango-terminan-pildora-2026-12"]')?.textContent).toContain(
-      '1 terminan acá',
+      '1 terminan aquí',
     );
   });
 

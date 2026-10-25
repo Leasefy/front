@@ -133,7 +133,7 @@ export function RejectContractModal({
         )}
 
         <div className="space-y-1">
-          <label htmlFor="motivo-del-rechazo" className="block text-xs font-medium text-fg">
+          <label htmlFor="motivo-del-rechazo" className="block text-caption font-medium text-fg">
             Motivo <span className="text-danger">*</span>
           </label>
           <Textarea
@@ -145,7 +145,7 @@ export function RejectContractModal({
             placeholder={
               type === 'MODIFICATIONS'
                 ? 'Ej: El depósito es muy alto, propongo reducirlo a 1 mes de renta.'
-                : 'Ej: Decidí no continuar con esta propiedad.'
+                : 'Ej.: decidí no seguir con este inmueble.'
             }
             rows={4}
             maxLength={REASON_MAX}
@@ -168,7 +168,7 @@ export function RejectContractModal({
               className="mt-0"
             />
             <p className={cn(
-              'text-xs font-mono tabular-nums',
+              'text-caption font-mono tabular-nums',
               reasonTrimmed.length > REASON_MAX ? 'text-danger' : 'text-fg-muted'
             )}>
               {reasonTrimmed.length}/{REASON_MAX}

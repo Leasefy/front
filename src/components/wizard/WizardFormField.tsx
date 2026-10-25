@@ -182,7 +182,7 @@ export function LockedField({ id, value, reason, icon, className }: LockedFieldP
         <span className="flex-1 truncate text-sm text-fg" aria-hidden="true">{value || '—'}</span>
         <LockSimple className="h-4 w-4 flex-shrink-0 text-fg-muted" aria-hidden="true" />
       </div>
-      <p className="text-xs text-fg-muted">{reason}</p>
+      <p className="text-caption text-fg-muted">{reason}</p>
     </div>
   );
 }

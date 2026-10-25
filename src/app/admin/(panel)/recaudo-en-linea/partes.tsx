@@ -30,7 +30,7 @@ export function Cifra({
   return (
     <div className="min-w-0">
       <Etiqueta>{nombre}</Etiqueta>
-      <div className={`text-sm font-medium tabular-nums mt-0.5 ${color}`}>{valor}</div>
+      <div className={`font-mono text-body-sm tabular-nums mt-0.5 ${color}`}>{valor}</div>
     </div>
   )
 }
@@ -43,7 +43,7 @@ export function ErrorDeLaAccion({ mensaje, testId }: { mensaje: string | null; t
   return (
     <Presence show={mensaje !== null}>
       <Card className="p-4  mt-4" data-testid={testId} role="alert">
-        <p className="text-sm text-danger">{ultimo.current}</p>
+        <p className="text-body-sm text-danger">{ultimo.current}</p>
       </Card>
     </Presence>
   )

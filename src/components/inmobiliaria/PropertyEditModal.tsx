@@ -229,7 +229,7 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
       // referencia, o la conexión si no hubo respuesta).
       const reparto = repartirErroresDelServidor<CampoDelModal>(err, {
         campos: CAMPOS_DEL_MODAL,
-        porDefecto: 'Error al actualizar la propiedad',
+        porDefecto: 'No se pudo actualizar el inmueble',
         accion: 'actualizar la propiedad',
       });
       setDelServidor(reparto.porCampo);

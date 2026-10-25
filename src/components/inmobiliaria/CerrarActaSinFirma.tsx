@@ -193,7 +193,7 @@ export function CerrarActaSinFirma({
         <form id={ID_DEL_FORMULARIO} onSubmit={enviar} className="space-y-4" ref={formulario}>
           <ul className="space-y-2" data-testid="condiciones-del-cierre">
             {condiciones.map((c) => (
-              <li key={c.texto} className="flex items-start gap-2 text-xs">
+              <li key={c.texto} className="flex items-start gap-2 text-caption">
                 {c.cumple ? (
                   <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" weight="fill" />
                 ) : (
@@ -208,7 +208,7 @@ export function CerrarActaSinFirma({
 
           <fieldset disabled={!listo} className="space-y-3">
             <div>
-              <label htmlFor="acta-testigoNombre" className="mb-1 block text-xs font-medium text-foreground">
+              <label htmlFor="acta-testigoNombre" className="mb-1 block text-sm font-medium text-foreground">
                 Nombre del testigo<span className="ml-0.5 text-danger">*</span>
               </label>
               <Input
@@ -227,7 +227,7 @@ export function CerrarActaSinFirma({
               <ErrorDelCampo id="acta-testigoNombre-error" mensaje={delServidor.testigoNombre} />
             </div>
             <div>
-              <label htmlFor="acta-testigoDocumento" className="mb-1 block text-xs font-medium text-foreground">
+              <label htmlFor="acta-testigoDocumento" className="mb-1 block text-sm font-medium text-foreground">
                 Cédula del testigo<span className="ml-0.5 text-danger">*</span>
               </label>
               <Input

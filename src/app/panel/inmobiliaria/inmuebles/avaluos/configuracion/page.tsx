@@ -15,6 +15,7 @@ import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useI18n } from '@/lib/i18n'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 function AvaluosConfiguracion() {
   const { t } = useI18n()
@@ -27,13 +28,11 @@ function AvaluosConfiguracion() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
-          {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t('inmobiliaria.ai.workspace.pages.comun.configTitle')}
+        descripcion={t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
+      />
 
       <AutonomiaPanel
         data={data}

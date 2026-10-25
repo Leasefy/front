@@ -8,17 +8,20 @@
  * certificado verificable para mostrarlo afuera.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { useArriendaHoyDelPortal } from '@/lib/hooks/use-arrienda-hoy';
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Certificate, CircleNotch, Eye, Handshake, ShareNetwork, XCircle } from '@phosphor-icons/react';
+import { Certificate, CircleNotch, Eye, ShareNetwork } from '@phosphor-icons/react';
 import { Presence } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -52,8 +55,8 @@ const COMO_TERMINO: Record<ContratoDeLaPersona['termino'], string> = {
 function Seccion({ titulo, descripcion, children }: { titulo: string; descripcion?: string; children: React.ReactNode }) {
   const tr = useTr();
   return (
-    <section className="rounded-lg border border-border bg-surface p-6 dark:border-border-strong">
-      <h2 className="text-base font-medium text-fg">{tr(titulo)}</h2>
+    <section className="rounded-lg border border-border bg-surface p-6">
+      <h2 className="text-h3 text-fg">{tr(titulo)}</h2>
       {descripcion && <p className="mt-1 max-w-2xl text-sm text-fg-muted">{tr(descripcion)}</p>}
       <div className="mt-4">{children}</div>
     </section>
@@ -110,11 +113,20 @@ function Autorizacion({ datos, alCambiar }: { datos: MiCalificacion; alCambiar: 
         </div>
       ) : (
         <div className="space-y-4">
+          {/* Revisora r27: la autorización plegada (≈150 px abierta a 1440 y una caja con su propio scroll a 390);
+              la casilla y el botón a la vista. Con una versión nueva, abierta: hay que leerla. El texto no cambia. */}
           {texto && (
-            <div className="max-h-48 overflow-y-auto rounded-md bg-surface-muted p-4 text-caption leading-relaxed text-fg-muted" data-lenis-prevent>
-              <p className="mb-1 font-medium text-fg">{texto.title}</p>
-              {texto.text}
-            </div>
+            <MasDetalles
+              etiqueta={tr('Leer la autorización')}
+              etiquetaAbierto={tr('Ocultar la autorización')}
+              abiertoAlInicio={a.hayVersionNueva}
+              montadoSiempre
+            >
+              <div className="rounded-md bg-surface-muted p-4 text-caption leading-relaxed text-fg-muted">
+                <p className="mb-1 font-medium text-fg">{texto.title}</p>
+                {texto.text}
+              </div>
+            </MasDetalles>
           )}
           {a.hayVersionNueva && (
             <p className="text-sm text-warning">{tr('El texto de la autorización cambió: léelo y vuelve a aceptarlo.')}</p>
@@ -150,7 +162,7 @@ function Evaluacion({ e, alResponder }: { e: EvaluacionDeFin; alResponder: () =>
     }
   };
   return (
-    <div className="rounded-md border border-border p-4 dark:border-border-strong">
+    <div className="border-t border-border-faint py-4 first:border-t-0 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-medium text-fg">
           {e.inmobiliaria ?? tr('Una inmobiliaria')}
@@ -203,7 +215,10 @@ export default function MiCalificacionPage({
 }) {
   const tr = useTr();
   const router = useRouter();
-  const { formatCurrency } = useI18n();
+  const { formatCurrency, locale } = useI18n();
+  // El sobretítulo es la sección del menú: «Buscar arriendo» para quien busca (quien arrienda la tiene como fila
+  // suelta). Lo sabe el layout: ninguna lectura nueva.
+  const arrienda = useArriendaHoyDelPortal();
   const localeFechas = useLocaleDeFechas();
   const idiomaDelPanel = useLocaleDelPanel();
   const { certificado } = use(searchParams);
@@ -292,10 +307,20 @@ export default function MiCalificacionPage({
       timeZone: 'America/Bogota',
     });
 
+  const encabezado = (
+    <EncabezadoDePantalla
+      seccion={arrienda === false ? (locale === 'es' ? 'Buscar arriendo' : 'Find a rental') : undefined}
+      // Revisora r25: el título es el de la pestaña y de la fila del menú (antes «Mi Calificación Leasefy»).
+      titulo={locale === 'es' ? 'Mi calificación' : 'My rating'}
+      descripcion={tr('Cómo te ven para arrendar: tu historial de pagos en Leasefy y tus documentos. Verla es gratis, siempre.')}
+    />
+  );
+
   if (cargando && !datos) return <EsqueletoDePagina variante="list" className="p-6 lg:p-8" />;
   if (error && !datos) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="space-y-6 p-6 lg:p-8">
+        {encabezado}
         <FalloDeCarga error={error} queEs={tr('tu calificación')} onReintentar={cargar} />
       </div>
     );
@@ -304,29 +329,37 @@ export default function MiCalificacionPage({
 
   const contratos = datos.historial?.porContrato ?? [];
   const sinCalificacion = !datos.calificacion || datos.calificacion.estado === 'SIN_DATOS';
+  const sinEvaluaciones = !datos.evaluaciones.disponible || datos.evaluaciones.lista.length === 0;
 
   return (
     <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1">
-        <h1 className="text-h2 text-fg">{tr('Mi Calificación Leasefy')}</h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          {tr('Cómo te ven para arrendar: tu historial de pagos en Leasefy y tus documentos. Verla es gratis, siempre.')}
-        </p>
-      </header>
+      {encabezado}
 
       {datos.calificacion ? (
         <TarjetaDeCalificacion calificacion={datos.calificacion} deTu />
       ) : (
-        <EmptyState icon={XCircle} title={tr('Todavía no hay calificación')} description={tr('Todavía no hay datos para calificar.')} />
+        // Revisora r27: dice cómo tenerla (antes «Todavía no hay calificación · Todavía no hay datos…», sin salida).
+        <EmptyState
+          icon={Certificate}
+          title={tr('Todavía no tienes calificación')}
+          description={tr('Se arma con tu estudio y tus pagos en Leasefy.')}
+          action={{ label: tr('Conocer mi tope'), href: '/inquilino/aprobacion' }}
+        />
       )}
 
       <Autorizacion datos={datos} alCambiar={cargar} />
 
+      {/* Revisora r27: vacías no se pintan (eran ≈270 px de nada): sin arriendos ni evaluaciones, UNA línea. */}
+      {contratos.length === 0 && sinEvaluaciones ? (
+        <p className="text-body-sm text-fg-muted" data-testid="calificacion-sin-historial">
+          {tr('Cuando arriendes con Leasefy, aquí ves cada contrato con tus pagos a tiempo y lo que dijo la inmobiliaria al terminar.')}
+        </p>
+      ) : null}
+
+      {contratos.length > 0 && (
       <Seccion titulo="Tus arriendos en Leasefy" descripcion="Cada contrato que cuenta para tu historial, con cuántas cuotas pagaste a tiempo.">
-        {contratos.length === 0 ? (
-          <p className="text-sm text-fg-muted">{tr('Todavía no tienes arriendos con historial de pagos en Leasefy.')}</p>
-        ) : (
-          <div className="divide-y divide-border dark:divide-border-strong">
+        {(
+          <div className="divide-y divide-border">
             {contratos.map((k) => (
               <div key={k.contractId} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
@@ -357,7 +390,10 @@ export default function MiCalificacionPage({
           </div>
         )}
       </Seccion>
+      )}
 
+      {/* Revisora r25: la tarjeta sólo cuando existe (antes «Esta parte todavía no está disponible»: espacio de nada). */}
+      {datos.consultas.disponible && (
       <Seccion titulo="Quién consultó tu calificación" descripcion="Cada vez que una inmobiliaria la mira, queda aquí.">
         {!datos.consultas.disponible ? (
           <p className="text-sm text-fg-muted">{tr('Esta parte todavía no está disponible.')}</p>
@@ -367,7 +403,7 @@ export default function MiCalificacionPage({
             {tr('Nadie la ha consultado todavía.')}
           </p>
         ) : (
-          <ul className="divide-y divide-border text-sm dark:divide-border-strong">
+          <ul className="divide-y divide-border text-sm">
             {datos.consultas.lista.slice(0, 20).map((c, i) => (
               <li key={`${c.cuando}-${i}`} className="flex justify-between gap-3 py-2">
                 <span className="text-fg">{c.inmobiliaria}</span>
@@ -375,25 +411,28 @@ export default function MiCalificacionPage({
                 <span className="font-mono text-caption tabular-nums text-fg-muted">{fechaYHora(c.cuando)}</span>
               </li>
             ))}
+            {datos.consultas.lista.length > 20 && (
+              <li className="pt-2 text-caption text-fg-muted">
+                {tr('Se ven las 20 más recientes de {n} consultas.', { n: datos.consultas.lista.length })}
+              </li>
+            )}
           </ul>
         )}
       </Seccion>
+      )}
 
+      {!sinEvaluaciones && (
       <Seccion titulo="Evaluaciones al terminar un contrato" descripcion="Lo que dijo la inmobiliaria cuando terminó tu contrato. Puedes responder una vez; tu respuesta se muestra al lado.">
-        {!datos.evaluaciones.disponible || datos.evaluaciones.lista.length === 0 ? (
-          <p className="flex items-center gap-2 text-sm text-fg-muted">
-            <Handshake className="h-4 w-4" aria-hidden />
-            {tr('No tienes evaluaciones todavía.')}
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {datos.evaluaciones.lista.map((e) => (
-              <Evaluacion key={e.id} e={e} alResponder={cargar} />
-            ))}
-          </div>
-        )}
+        <div>
+          {datos.evaluaciones.lista.map((e) => (
+            <Evaluacion key={e.id} e={e} alResponder={cargar} />
+          ))}
+        </div>
       </Seccion>
+      )}
 
+      {/* Revisora r25: el certificado sólo cuando está a la venta o ya tienes uno (antes «todavía no está a la venta»). */}
+      {(datos.certificados.precioCop !== null || datos.certificados.lista.length > 0 || datos.certificados.pendienteId != null || sinConfirmar != null || revisando !== null) && (
       <Seccion
         titulo="Certificado para compartir"
         descripcion="Un código que cualquiera puede comprobar en Leasefy durante 60 días: sirve para mostrar tu calificación a una inmobiliaria que no está en Leasefy."
@@ -460,6 +499,7 @@ export default function MiCalificacionPage({
           )}
         </div>
       </Seccion>
+      )}
     </motion.div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * OrigenDelInmueble — la pregunta que abre «Nueva consignación».
+ * OrigenDelInmueble — la pregunta que abre «Nuevo mandato».
  *
  * ── Por qué existe (Nico, 2026-09-02) ─────────────────────────────────────
  * «Preguntarle si quiere asociar a un inmueble nuevo o uno existente; si es
@@ -33,7 +33,7 @@ const NS = 'inmobiliaria.consignaciones.origen';
  * desde su ficha, con `?propietarioId=`): ahí el trámite es «dale un inmueble a
  * esta persona» y ofrecer los del portafolio sin dueño ahorra cargarlo de nuevo.
  *
- * Desde «Nueva consignación» —el botón del portafolio, la barra lateral, el
+ * Desde «Nuevo mandato» —el botón del portafolio, la barra lateral, el
  * buscador, el panel de inicio— la respuesta siempre es la misma: el flujo
  * completo. Preguntarlo ahí era un paso de más (Nico, 2026-09-03).
  *

@@ -13,9 +13,17 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { FileText, WarningCircle } from '@phosphor-icons/react';
+import { CheckCircle, FileText } from '@phosphor-icons/react';
+import { Presence } from '@leasefy/cadence';
 
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import {
+  AvisoDelEnlace,
+  CargandoElEnlace,
+  MarcoDelEnlace,
+  TituloDelEnlace,
+} from '@/components/enlace-publico/MarcoDelEnlace';
+import { buttonVariants } from '@/components/ui/button';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import type { OtpAdapter } from '@/components/contract/OTPVerification';
 import { toast } from '@/components/ui/toast';
@@ -23,6 +31,14 @@ import { ApiError } from '@/lib/api/client';
 import { firmaPublicaDeConsignacionApi } from '@/lib/api/consignacion-firma.service';
 import type { FirmaPublicaResponse } from '@/lib/api/consignacion-firma.types';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { fechaCorta, hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
+import { cn } from '@/lib/utils';
+
+/** El día de la firma, en Colombia: «17 oct 2026». */
+function diaDeLaFirma(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : fechaCorta(hoyEnColombia(d));
+}
 
 export default function FirmarConsignacionPublicoPage() {
   const { token } = useParams<{ token: string }>();
@@ -84,37 +100,27 @@ export default function FirmarConsignacionPublicoPage() {
   };
 
   return (
-    <main className="min-h-screen bg-bg flex items-center justify-center p-6">
-      <section className="w-full max-w-lg rounded-lg border border-border bg-surface p-8 space-y-5 shadow-sm">
-        <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-          <FileText className="w-5 h-5 text-primary" aria-hidden="true" />
-        </div>
-
-        {cargando ? (
-          <p className="text-body-sm text-fg-muted">Cargando…</p>
-        ) : enlaceInvalido ? (
-          <div className="space-y-2" data-testid="enlace-invalido">
-            <h1 className="text-h2">Enlace no válido</h1>
-            <p className="text-body-sm text-fg-muted flex items-start gap-2">
-              <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-              Este enlace de firma no es válido. Pide a la inmobiliaria que te envíe uno nuevo.
-            </p>
-          </div>
-        ) : enlaceVencido ? (
-          <div className="space-y-2" data-testid="enlace-vencido">
-            <h1 className="text-h2">Este enlace venció</h1>
-            <p className="text-body-sm text-warning flex items-start gap-2">
-              <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-              Pide a la inmobiliaria que te envíe un enlace nuevo para firmar.
-            </p>
-          </div>
-        ) : error && !datos ? (
-          <FalloDeCarga error={error} queEs="el proceso de firma" onReintentar={cargar} enmarcado={false} />
-        ) : datos ? (
-          <ContenidoFirmaPublica datos={datos} adapter={adapter} onFirmar={firmar} />
-        ) : null}
-      </section>
-    </main>
+    <MarcoDelEnlace
+      ancho="lg"
+      de={datos?.agencia.nombre}
+      vista={cargando ? 'cargando' : enlaceInvalido ? 'invalido' : enlaceVencido ? 'vencido' : error && !datos ? 'error' : 'firma'}
+    >
+      {cargando ? (
+        <CargandoElEnlace texto="Cargando el contrato…" />
+      ) : enlaceInvalido ? (
+        <AvisoDelEnlace tono="invalido" titulo="Enlace no válido" data-testid="enlace-invalido">
+          <p>Este enlace de firma no es válido. Pide a la inmobiliaria que te envíe uno nuevo.</p>
+        </AvisoDelEnlace>
+      ) : enlaceVencido ? (
+        <AvisoDelEnlace tono="vencido" titulo="Este enlace venció" data-testid="enlace-vencido">
+          <p>Pide a la inmobiliaria que te envíe un enlace nuevo para firmar.</p>
+        </AvisoDelEnlace>
+      ) : error && !datos ? (
+        <FalloDeCarga error={error} queEs="el proceso de firma" onReintentar={cargar} enmarcado={false} />
+      ) : datos ? (
+        <ContenidoFirmaPublica datos={datos} adapter={adapter} onFirmar={firmar} />
+      ) : null}
+    </MarcoDelEnlace>
   );
 }
 
@@ -131,37 +137,49 @@ function ContenidoFirmaPublica({
 
   return (
     <>
-      <div className="space-y-1">
-        <h1 className="text-h2">Firma el contrato de consignación</h1>
-        <p className="text-body-sm text-fg-muted">
-          Hola {firmante.nombre}, {agencia.nombre} te invitó a firmar el contrato de consignación de{' '}
-          <strong>{consignacion.propertyTitle}</strong> — {consignacion.propertyAddress}, {consignacion.propertyCity}.
+      <TituloDelEnlace
+        rotulo="Contrato de consignación"
+        titulo="Firma el contrato de consignación"
+        descripcion={
+          <>
+            Hola {firmante.nombre}, {agencia.nombre} te invitó a firmar el contrato de consignación de{' '}
+            <strong className="font-medium text-fg">{consignacion.propertyTitle}</strong> — {consignacion.propertyAddress},{' '}
+            {consignacion.propertyCity}.
+          </>
+        }
+      />
+
+      {/* Lo que se firma, primero y a la vista: el documento entero en otra pestaña. */}
+      <div className="flex flex-col gap-3 rounded-md border border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="flex items-start gap-2.5 text-body-sm text-fg">
+          <FileText className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" aria-hidden="true" />
+          <span>Lee el contrato completo antes de firmar.</span>
         </p>
+        <a
+          href={documento.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0')}
+          data-testid="ver-documento-publico"
+        >
+          Ver el documento
+        </a>
       </div>
 
-      <a
-        href={documento.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-body-sm text-primary hover:underline"
-        data-testid="ver-documento-publico"
-      >
-        <FileText className="w-4 h-4" />
-        Ver el documento
-      </a>
-
       {firmante.firmado ? (
-        <p className="text-body-sm text-success" data-testid="ya-firmaste">
-          Ya firmaste este contrato{firmante.firmadoAt ? ` el ${new Date(firmante.firmadoAt).toLocaleDateString('es-CO')}` : ''}.
-        </p>
+        <Presence show className="flex items-start gap-2.5 rounded-md bg-success-soft px-4 py-3 text-body-sm text-fg" data-testid="ya-firmaste">
+          <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
+          <span>Ya firmaste este contrato{firmante.firmadoAt ? ` el ${diaDeLaFirma(firmante.firmadoAt)}` : ''}.</span>
+        </Presence>
       ) : proceso.estado === 'CANCELADO' ? (
         <p className="text-body-sm text-fg-muted" data-testid="proceso-cancelado">
           Este proceso de firma fue cancelado. Si tienes dudas, comunícate con {agencia.nombre}.
         </p>
       ) : proceso.estado === 'FIRMADO' ? (
-        <p className="text-body-sm text-success" data-testid="proceso-cerrado">
-          Este contrato ya quedó firmado por todas las partes.
-        </p>
+        <Presence show className="flex items-start gap-2.5 rounded-md bg-success-soft px-4 py-3 text-body-sm text-fg" data-testid="proceso-cerrado">
+          <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
+          <span>Este contrato ya quedó firmado por todas las partes.</span>
+        </Presence>
       ) : (
         <SignatureForm
           onSign={onFirmar}

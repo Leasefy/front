@@ -67,7 +67,7 @@ export function ArcoDeadlineAlert({
       >
         {/* `span`, no `div`: Banner pinta sus children dentro de un `<p>`. */}
         <span className="flex items-center justify-between gap-2">
-          <span className="text-xs leading-snug">{t(`${NS}.alert.subtitle`)}</span>
+          <span className="text-caption leading-snug">{t(`${NS}.alert.subtitle`)}</span>
           <CaretRight className="h-4 w-4 shrink-0" weight="regular" aria-hidden="true" />
         </span>
       </Banner>

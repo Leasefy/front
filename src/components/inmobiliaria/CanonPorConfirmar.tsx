@@ -33,7 +33,7 @@ export function CanonPorConfirmarBadge({
 }) {
   const etiqueta = esVenta ? ETIQUETA_PRECIO_POR_COMPLETAR : ETIQUETA_CANON_POR_CONFIRMAR;
   const estilo = cn(
-    'inline-flex items-center gap-1 rounded-sm bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning',
+    'inline-flex items-center gap-1 rounded-sm bg-warning-soft px-2 py-0.5 text-caption font-medium text-warning',
     className,
   );
   if (!inmuebleId) {

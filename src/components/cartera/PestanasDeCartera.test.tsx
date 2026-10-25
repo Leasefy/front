@@ -97,4 +97,19 @@ describe('PestanasDeCartera', () => {
     expect(marcadas).toHaveLength(1)
     expect(marcadas[0]!.textContent).toContain('Por edad')
   })
+
+  it('🔴 22-10: tocar una opción de «Más» no cierra el menú antes de navegar', () => {
+    montarEn('/panel/inmobiliaria/pagos/cartera')
+    const mas = host.querySelector<HTMLButtonElement>('[data-testid="riel-mas"]')!
+    act(() => {
+      mas.click()
+    })
+    const menu = host.querySelector<HTMLElement>('[id$="-mas"]')!
+    expect(menu.hidden).toBe(false)
+    const enlace = menu.querySelector('a')!
+    act(() => {
+      enlace.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    })
+    expect(menu.hidden).toBe(false)
+  })
 })

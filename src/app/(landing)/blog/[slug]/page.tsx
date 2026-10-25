@@ -22,7 +22,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = blogPosts.find((p) => p.slug === slug);
   if (!post) return { title: "Articulo no encontrado" };
 
-  const articleUrl = `${siteUrl}/blog/${slug}`;
+  // SEO (24-10): la dirección final lleva /es (la de sin prefijo redirige); el blog existe sólo en español.
+  const articleUrl = `${siteUrl}/es/blog/${slug}`;
 
   return {
     title: post.title,

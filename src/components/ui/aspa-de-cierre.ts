@@ -20,7 +20,7 @@
  * todos lados (ver `una-sola-aspa.test.tsx`).
  */
 export const ASPA_DE_CIERRE = [
-  'inline-flex size-9 shrink-0 items-center justify-center rounded-full',
+  'inline-flex size-9 shrink-0 items-center justify-center rounded-full [@media(pointer:coarse)]:size-11',
   'border border-border bg-surface text-fg-muted transition-colors',
   'hover:border-border-strong hover:bg-surface-hover hover:text-fg',
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface',

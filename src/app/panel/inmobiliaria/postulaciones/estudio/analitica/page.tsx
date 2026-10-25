@@ -8,6 +8,7 @@
  */
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
 import { useI18n } from '@/lib/i18n'
@@ -18,12 +19,11 @@ function EstudioAnalitica() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          {t('inmobiliaria.ai.workspace.pages.estudio.analiticaDesc')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo={t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}
+        descripcion={t('inmobiliaria.ai.workspace.pages.estudio.analiticaDesc')}
+      />
 
       <AnaliticaAgente data={data} isLoading={isLoading} error={error} notAvailable={notAvailable} />
     </div>

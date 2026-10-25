@@ -165,7 +165,7 @@ describe('aprobado', () => {
     })
     render()
     const t = texto()
-    expect(t).toContain('Score de buró')
+    expect(t).toContain('Puntaje del buró')
     expect(t).toMatch(/650/)
     expect(t).toContain('Capacidad de pago mensual')
     expect(t).toMatch(/3\.000\.000/)
@@ -184,7 +184,7 @@ describe('aprobado', () => {
       },
     })
     render()
-    expect(texto()).not.toContain('Score de buró')
+    expect(texto()).not.toContain('Puntaje del buró')
   })
 })
 
@@ -225,8 +225,9 @@ describe('rechazado — tiene salidas, no es un callejón', () => {
     render()
     const medallon = document.querySelector('[data-testid="rechazado-medallon"]')
     expect(medallon?.getAttribute('data-tono')).toBe('info')
-    expect(medallon?.className).toContain('bg-info-soft')
-    expect(medallon?.className).not.toContain('danger')
+    // Ronda 30 (Cadence 2, sin íconos en círculos de color): el tono va en el ícono, no en un círculo de fondo.
+    expect(medallon?.querySelector('svg')?.getAttribute('class') ?? '').toContain('text-info')
+    expect(medallon?.innerHTML).not.toContain('danger')
   })
 })
 
@@ -277,13 +278,13 @@ describe('sin estudio — enseña el camino antes de pedir datos', () => {
     const t = texto()
     expect(t).toContain('Te estudiamos')
     expect(t).toContain('Eliges')
-    expect(t).toContain('El propietario decide')
+    expect(t).toContain('Te postulas')
   })
 
-  it('sin order (nunca se consultó) también cae acá', () => {
+  it('sin order (nunca se consultó) también cae aquí', () => {
     montar(null)
     render()
-    expect(texto()).toContain('Todavía no tienes una aprobación')
+    expect(texto()).toContain('Todavía no conoces tu tope')
   })
 
   it('el CTA por defecto va al flujo vigente de /aprobacion', () => {
@@ -325,5 +326,19 @@ describe('cargando', () => {
     montar(null, { isLoading: true })
     render()
     expect(texto()).toContain('Cargando tu aprobación')
+  })
+})
+
+describe('vacío en móvil (T-0173)', () => {
+  it('el CTA puede partirse en dos líneas: no ensancha la página a 360/412 px', () => {
+    montar(null)
+    render()
+    const cta = Array.from(container.querySelectorAll('a')).find((a) =>
+      a.getAttribute('href') === '/aprobacion',
+    ) as HTMLAnchorElement
+    expect(cta).toBeTruthy()
+    expect(cta.className).toContain('whitespace-normal')
+    // Nico's CTA is `w-full sm:w-auto` on phones: it fills the card instead of widening the page.
+    expect(cta.className).toContain('w-full')
   })
 })

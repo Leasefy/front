@@ -1,13 +1,19 @@
 'use client';
+
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useRouter } from 'next/navigation';
-import { CaretLeft, PaperPlaneTilt } from '@phosphor-icons/react';
-import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
 import { GenerarDispersion } from '@/components/inmobiliaria/dispersion/GenerarDispersion';
 import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { SECCION_DE_LOS_GIROS } from '@/components/giros/PasosDeLosGiros';
+import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
+import { esMesDeLosGiros } from '@/lib/giros/meses-de-los-giros';
+import { mesActual } from '@/lib/recaudo/meses';
+import { useTr } from '@/lib/i18n/use-tr';
 
 /**
  * La pantalla de generar la dispersión del mes.
@@ -18,7 +24,14 @@ import { Button } from '@/components/ui';
  */
 function GenerarDispersionesContent() {
   const { t } = useI18n();
+  const tr = useTr();
   const router = useRouter();
+  // El mes que trae el enlace de «Lo que falta del mes» (`?mes=`); se lee al montar, no en el servidor.
+  const [mes, setMes] = useState(mesActual);
+  useEffect(() => {
+    const pedido = new URLSearchParams(window.location.search).get('mes');
+    if (esMesDeLosGiros(pedido)) setMes(pedido);
+  }, []);
 
   /**
    * El asistente ya avisó, con el número que devolvió el back.
@@ -32,6 +45,16 @@ function GenerarDispersionesContent() {
    * así que generar las de julio y caer en agosto vacío se lee como que no
    * pasó nada.
    */
+  /** El mes elegido arriba; queda en la dirección para que recargar no lo pierda. */
+  const cambiarMes = (nuevo: string) => {
+    setMes(nuevo);
+    try {
+      window.history.replaceState(window.history.state, '', `?mes=${nuevo}`);
+    } catch {
+      /* la dirección es una cortesía */
+    }
+  };
+
   const handleComplete = (month: string) => {
     router.push(`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`);
   };
@@ -40,47 +63,27 @@ function GenerarDispersionesContent() {
     router.push('/panel/inmobiliaria/pagos/dispersiones');
   };
 
+  // GLOW UP 21-10: el encabezado común (sección, título, para qué sirve) con la
+  // vuelta arriba, como las demás pantallas de Pagos; sin la franja aparte.
   return (
-    <div className="min-h-screen bg-plan-page">
-      {/* Header — la página ya no anima su propia entrada: la pone el
-          `template.tsx` (antes el encabezado bajaba y el asistente subía con
-          retraso, encima de esa entrada). */}
-      <div className="border-b border-border bg-background">
-        {/* 🔴 Nico, 22-09: «¿por qué no utilizas todo el ancho? ¡para eso lo
-            tienes!». Esta pantalla tenía DOS topes distintos —el encabezado en
-            `max-w-4xl` (896 px) y el contenido en `max-w-6xl` (1152 px)—, así
-            que en un monitor de 1.900 px sobraba media pantalla Y el botón de
-            volver ni siquiera quedaba alineado con las tarjetas de abajo. El
-            panel ya tiene su tope (1.920 px) en su layout: acá no va ninguno. */}
-        <div className="px-6 py-4 lg:px-8">
-          <div className="flex items-center gap-4">
-            <Button asChild variant="ghost" size="sm" hideArrow>
-              <Link href="/panel/inmobiliaria/pagos/dispersiones">
-                <CaretLeft className="w-5 h-5" />
-                <span className="hidden sm:inline">{t('inmobiliaria.common.back')}</span>
-              </Link>
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-                <PaperPlaneTilt className="w-5 h-5 text-primary" weight="fill" />
-              </div>
-              <div>
-                <h1 className="text-base font-semibold text-fg">
-                  {t('inmobiliaria.dispersiones.wizard.title')}
-                </h1>
-                <p className="text-sm text-fg-muted">
-                  {t('inmobiliaria.dispersiones.subtitle')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Wizard Content */}
-      <div className="px-6 py-6 lg:px-8">
-        <GenerarDispersion onComplete={handleComplete} onCancel={handleCancel} />
-      </div>
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* Ronda 26 (revisora r25, Generar UI): la vuelta sin flecha y con el nombre de a dónde vuelve, como las demás. */}
+      <Link
+        href="/panel/inmobiliaria/pagos/dispersiones"
+        className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+        data-testid="volver-a-los-giros"
+      >
+        {tr('Volver a Giros a propietarios')}
+      </Link>
+      <EncabezadoDePantalla
+        seccion={tr(SECCION_DE_LOS_GIROS)}
+        titulo={t('inmobiliaria.dispersiones.wizard.title')}
+        descripcion={t('inmobiliaria.dispersiones.subtitle')}
+      />
+      {/* Decisión 17 de Nico (22-10): lo que falta del mes también aquí. Revisora r22 (Giros #8): con el MISMO
+          selector de mes de los otros pasos, y el asistente sin el suyo; generar es la acción del paso 1. */}
+      <LoQueFaltaDelMes paso="liquidar" mes={mes} onCambiarMes={cambiarMes} />
+      <GenerarDispersion mes={mes} onCambiarMes={cambiarMes} onComplete={handleComplete} onCancel={handleCancel} />
     </div>
   );
 }

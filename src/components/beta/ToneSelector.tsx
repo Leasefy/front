@@ -72,7 +72,7 @@ export function ToneSelector({ className }: ToneSelectorProps) {
       <div className="flex items-center gap-2">
         <ChatText className="w-4.5 h-4.5 text-muted-foreground" weight="duotone" />
         <div>
-          <h3 className="text-[15px] font-semibold text-foreground">
+          <h3 className="text-[15px] font-medium text-foreground">
             {t('beta.preferences.tone.title')}
           </h3>
           <p className="text-[13px] text-muted-foreground mt-0.5">
@@ -97,7 +97,7 @@ export function ToneSelector({ className }: ToneSelectorProps) {
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 isSelected
                   ? 'border-primary/30 ring-2 ring-primary/20 bg-primary-soft'
-                  : 'border-neutral-200 dark:border-border bg-white dark:bg-card hover:border-neutral-300 dark:hover:border-neutral-600'
+                  : 'border-neutral-200 bg-white hover:border-neutral-300'
               )}
             >
               <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export function ToneSelector({ className }: ToneSelectorProps) {
                 />
                 <span
                   className={cn(
-                    'text-[13px] font-semibold',
+                    'text-[13px] font-medium',
                     isSelected
                       ? 'text-primary'
                       : 'text-foreground'

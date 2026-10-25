@@ -18,9 +18,9 @@ export default function ComparacionPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
+        <EsqueletoDePagina variante="detail" />
       </div>
     );
   }
@@ -31,7 +31,7 @@ export default function ComparacionPage() {
         title="Compara y elige"
         subtitle="Los postulados asegurables de tu inmueble, lado a lado."
         icon={UsersThree}
-        emptyDescription="Acá vas a comparar los postulados asegurables y elegir con un clic. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        emptyDescription="Aquí vas a comparar los postulados asegurables y elegir con un clic. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
       />
     );
   }

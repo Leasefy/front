@@ -23,6 +23,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CaretRight, Hourglass, MagnifyingGlass, User, Wrench, XCircle } from '@phosphor-icons/react';
 
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -51,6 +52,13 @@ const PESTANAS: { grupo: GrupoConElPropietario; nombre: string; corto: string }[
   { grupo: 'RECHAZADAS', nombre: 'Rechazadas por decidir', corto: 'Rechazadas' },
   { grupo: 'LA_HACE_EL', nombre: 'La hace él', corto: 'La hace él' },
 ];
+
+/** El renglón plegado: «2 esperan su respuesta · 1 rechazada por decidir · 1 la hace él». */
+const RESUMEN: Record<GrupoConElPropietario, (n: number) => string> = {
+  ESPERANDO: (n) => (n === 1 ? 'espera su respuesta' : 'esperan su respuesta'),
+  RECHAZADAS: (n) => (n === 1 ? 'rechazada por decidir' : 'rechazadas por decidir'),
+  LA_HACE_EL: (n) => (n === 1 ? 'la hace él' : 'las hace él'),
+};
 
 const VACIO: Record<GrupoConElPropietario, string> = {
   ESPERANDO: 'Nada espera la respuesta de un propietario.',
@@ -130,6 +138,11 @@ export function BandejaDeAprobacionesDelPropietario({
 }) {
   const esCelular = useIsMobile();
   const [grupo, setGrupo] = useState<GrupoConElPropietario | null>(null);
+  /*
+   * Ronda 30 (revisora r27, Mantenimientos): lo que está con el propietario se consulta; va plegado en un renglón
+   * con sus conteos (la misma solicitud ya está en la columna «Por aprobar» del tablero y en la cifra de arriba).
+   */
+  const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState('');
   const [buscado, setBuscado] = useState('');
   const [pagina, setPagina] = useState(1);
@@ -189,13 +202,24 @@ export function BandejaDeAprobacionesDelPropietario({
       data-testid="bandeja-de-aprobaciones"
       aria-label="Reparaciones con el propietario"
     >
-      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={cn(
+          'flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between',
+          abierto && 'border-b border-border',
+        )}
+      >
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-fg">Con el propietario</h2>
-          <p className="text-caption text-fg-muted">
-            Lo que espera su aprobación, lo que rechazó y lo que está haciendo él.
+          <p className="text-caption text-fg-muted" data-testid="bandeja-resumen">
+            {abierto
+              ? 'Lo que espera su aprobación, lo que rechazó y lo que está haciendo él.'
+              : PESTANAS.filter((p) => datos.conteos[p.grupo] > 0)
+                  .map((p) => `${datos.conteos[p.grupo]} ${RESUMEN[p.grupo](datos.conteos[p.grupo])}`)
+                  .join(' · ') || 'Nada con el propietario por ahora.'}
           </p>
         </div>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+        {abierto ? (
         <div className="relative w-full sm:w-72">
           <MagnifyingGlass
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle"
@@ -211,7 +235,24 @@ export function BandejaDeAprobacionesDelPropietario({
             data-testid="bandeja-buscar"
           />
         </div>
+        ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            hideArrow
+            className="shrink-0"
+            aria-expanded={abierto}
+            onClick={() => setAbierto((a) => !a)}
+            data-testid="bandeja-abrir"
+          >
+            {abierto ? 'Ocultar' : 'Ver'}
+          </Button>
+        </div>
       </div>
+
+      {abierto ? (
+      <>
 
       <div className="px-4 pt-3">
         <Tabs
@@ -374,6 +415,8 @@ export function BandejaDeAprobacionesDelPropietario({
           </div>
         )}
       </div>
+      </>
+      ) : null}
     </section>
   );
 }

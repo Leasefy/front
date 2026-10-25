@@ -78,12 +78,12 @@ interface Harness {
   container: HTMLDivElement
 }
 
-function mount(): Harness {
+function mount(props: { enCajon?: boolean; onResuelto?: () => void } = {}): Harness {
   const container = document.createElement('div')
   document.body.appendChild(container)
   const root = createRoot(container)
   act(() => {
-    root.render(<SiniestroApprovalClient claimId="claim-1" />)
+    root.render(<SiniestroApprovalClient claimId="claim-1" {...props} />)
   })
   return { root, container }
 }
@@ -189,5 +189,24 @@ describe('SiniestroApprovalClient', () => {
     const confirm = getByTestId(h.container, 'rechazar-confirm') as HTMLButtonElement
     expect(confirm.disabled).toBe(true)
     unmount(h)
+  })
+
+  // Ronda 30 (K4, Nico: «K4 cajón»): el mismo componente se monta en el cajón de
+  // la lista de Siniestros: sin la vuelta de página, y al rechazar cierra el
+  // cajón (onResuelto) en vez de volver atrás.
+  it('Test 7: en el cajón no pinta la vuelta de página y, rechazado, avisa para cerrar', () => {
+    vi.useFakeTimers()
+    CAN_APPROVE = true
+    const onResuelto = vi.fn()
+    hookState = { ...hookState, rejectResult: { ok: true } }
+    const h = mount({ enCajon: true, onResuelto })
+    expect(getByTestId(h.container, 'siniestro-back')).toBeNull()
+    expect(getByTestId(h.container, 'approval-aprobar-siniestro')).not.toBeNull()
+    act(() => {
+      vi.advanceTimersByTime(1600)
+    })
+    expect(onResuelto).toHaveBeenCalledTimes(1)
+    unmount(h)
+    vi.useRealTimers()
   })
 })

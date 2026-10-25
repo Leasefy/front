@@ -79,19 +79,19 @@ export function StepPortalImport({ updateState }: ImportStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+        <h2 className="text-h3 text-fg mb-1">
           {t('inmobiliaria.import.portal.title')}
         </h2>
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.import.portal.subtitle')}
         </p>
       </div>
 
       {/* Por qué hay que pasar por el panel del portal. Decirlo de frente sale
           mejor que un «Próximamente» que no explica nada. */}
-      <div className="rounded-md bg-surface-muted dark:bg-ink border border-border dark:border-border-strong p-3 flex items-start gap-2">
+      <div className="rounded-md bg-surface-muted border border-border p-3 flex items-start gap-2">
         <Info className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" aria-hidden="true" />
-        <p className="text-body-sm text-fg-muted dark:text-fg-subtle">
+        <p className="text-body-sm text-fg-muted">
           {t('inmobiliaria.import.portal.porQue')}
         </p>
       </div>
@@ -100,15 +100,15 @@ export function StepPortalImport({ updateState }: ImportStepProps) {
         {PORTALS.map((portal, index) => (
           <div
             key={portal.id}
-            className="animate-stagger-in rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5 flex flex-col gap-3"
+            className="animate-stagger-in rounded-lg border border-border bg-surface p-5 flex flex-col gap-3"
             style={{ animationDelay: retrasoEscalonado(index) }}
           >
-            <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', portal.color)}>
+            <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', portal.color)}>
               <Globe className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
             <div>
-              <p className="font-semibold text-fg dark:text-white text-sm">{portal.name}</p>
-              <p className="text-xs font-mono text-fg-subtle dark:text-fg-muted mt-0.5">
+              <p className="font-medium text-fg text-sm">{portal.name}</p>
+              <p className="text-caption font-mono text-fg-subtle mt-0.5">
                 {portal.domain}
               </p>
             </div>
@@ -116,7 +116,7 @@ export function StepPortalImport({ updateState }: ImportStepProps) {
               href={portal.panel}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-auto inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+              className="mt-auto inline-flex items-center gap-1.5 text-caption text-primary hover:underline"
             >
               {t('inmobiliaria.import.portal.abrirPanel')}
               <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />

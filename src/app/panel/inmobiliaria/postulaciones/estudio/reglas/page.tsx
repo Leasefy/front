@@ -586,7 +586,7 @@ function EstudioReglas() {
         >
           {tf(
             `${NS}.reglas.aviso`,
-            'La pantalla muestra cómo se va a configurar el estudio; hoy el agente usa sus reglas por defecto. Cuando se conecte, lo que elijas acá se aplica a los estudios nuevos.',
+            'La pantalla muestra cómo se va a configurar el estudio; hoy el agente usa sus reglas por defecto. Cuando se conecte, lo que elijas aquí se aplica a los estudios nuevos.',
           )}
         </AlertaAccionable>
 

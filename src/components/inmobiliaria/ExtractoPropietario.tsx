@@ -8,7 +8,6 @@ import {
   Printer,
   Envelope,
   Calendar,
-  Buildings,
   User,
   CurrencyCircleDollar,
   CheckCircle,
@@ -22,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar } from '@/components/ui/avatar';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -180,7 +180,7 @@ function formatMonthYear(monthStr: string, loc: string): string {
  * Format date for display
  */
 function formatDate(dateStr: string, loc: string): string {
-  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
+  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CO' : 'en-US', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -192,7 +192,7 @@ function formatDate(dateStr: string, loc: string): string {
  */
 function formatDateShort(dateStr: string | undefined, loc: string): string {
   if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
+  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CO' : 'en-US', {
     day: 'numeric',
     month: 'short',
   });
@@ -372,11 +372,9 @@ export function ExtractoPropietario({
       <div className="p-6 border-b border-border bg-surface-muted print:bg-transparent">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
-              <Buildings className="w-7 h-7 text-white" weight="fill" />
-            </div>
+            <Avatar kind="marca" name={agencyConfig?.name ?? ''} size="lg" className="shrink-0" />
             <div>
-              <h1 className="text-xl font-bold text-foreground">
+              <h1 className="text-h3 text-foreground">
                 {agencyConfig?.name}
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -419,7 +417,7 @@ export function ExtractoPropietario({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Personal Info */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <User className="w-4 h-4 text-primary" />
               {t('inmobiliaria.propietario.extracto.ownerInfo')}
             </div>
@@ -441,7 +439,7 @@ export function ExtractoPropietario({
               lista de propietarios: la lista llegaba con el banco plano y
               leer `bankAccount.bank` de ahí tumbaba el modal entero. */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Bank className="w-4 h-4 text-primary" />
               {t('inmobiliaria.propietario.extracto.bankAccount')}
             </div>
@@ -467,7 +465,7 @@ export function ExtractoPropietario({
 
       {/* Properties Table */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-4">
           <Receipt className="w-4 h-4 text-primary" />
           {t('inmobiliaria.propietario.extracto.propertyDetail')}
         </div>
@@ -553,7 +551,7 @@ export function ExtractoPropietario({
                             {prop.propertyTitle}
                           </span>
                           {direccionSiEsOtra(prop.propertyTitle, prop.propertyAddress) && (
-                            <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                            <span className="text-caption text-muted-foreground truncate max-w-[180px]">
                               {prop.propertyAddress}
                             </span>
                           )}
@@ -561,7 +559,7 @@ export function ExtractoPropietario({
                               se dice cuánto, como en el PDF (2026-09-13). */}
                           {prop.participacionLabel ? (
                             <span
-                              className="mt-1 w-fit rounded-full bg-primary-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-primary"
+                              className="mt-1 w-fit rounded-full bg-primary-soft px-2 py-0.5 font-mono text-caption tabular-nums text-primary"
                               data-testid="participacion-en-el-extracto"
                             >
                               {/* E-10: el mes de una cesión dice sus días («15 de 30 días del mes»). */}
@@ -587,7 +585,7 @@ export function ExtractoPropietario({
                             copropiedad. Causado o recaudado según `base`. */}
                         {formatCurrency(prop.rentCollected)}
                         {base === 'MIXTA' && (
-                          <span className="block text-[11px] font-normal text-muted-foreground" data-testid="extracto-base-de-la-fila">
+                          <span className="block text-caption font-normal text-muted-foreground" data-testid="extracto-base-de-la-fila">
                             {t(
                               baseDeLaLinea(prop) === 'RECAUDADO'
                                 ? 'inmobiliaria.propietario.extracto.filaRecaudado'
@@ -598,7 +596,7 @@ export function ExtractoPropietario({
                       </TableCell>
                       <TableCell className="text-center">
                         <span className={cn(
-                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-medium',
                           getCobroStatusColor(estado)
                         )}>
                           <StatusIcon className="w-3 h-3" weight="fill" />
@@ -607,7 +605,7 @@ export function ExtractoPropietario({
                       </TableCell>
                       <TableCell className="text-right text-sm text-primary">
                         {formatCurrency(prop.commissionAmount)}
-                        <span className="block text-xs text-muted-foreground" data-testid="extracto-comision-pct">
+                        <span className="block text-caption text-muted-foreground" data-testid="extracto-comision-pct">
                           {prop.commissionPercent} %
                         </span>
                       </TableCell>
@@ -621,13 +619,13 @@ export function ExtractoPropietario({
                         />
                       </TableCell>
                       <TableCell
-                        className={cn('text-right text-sm font-semibold text-success', celdaFija('derecha', 'cuerpo'))}
+                        className={cn('text-right text-sm font-medium text-success', celdaFija('derecha', 'cuerpo'))}
                       >
                         <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
                         {formatCurrency(prop.netAmount)}
                         {/* QA-PROP-95 C-10: en qué va el giro de esta línea. */}
                         {estadoDelGiroDeLaLinea(prop) && (
-                          <span className="block text-xs font-normal text-muted-foreground" data-testid="estado-del-giro">
+                          <span className="block text-caption font-normal text-muted-foreground" data-testid="estado-del-giro">
                             {estadoDelGiroDeLaLinea(prop)}
                           </span>
                         )}
@@ -640,7 +638,7 @@ export function ExtractoPropietario({
                 {/* El rótulo del total va en la columna de Propiedad (fija) y no
                     en una celda de cuatro columnas: una celda tan ancha, fija a
                     la izquierda, taparía lo que se corre por debajo. */}
-                <TableRow className="bg-muted/50 hover:bg-muted/50 font-semibold">
+                <TableRow className="bg-muted/50 hover:bg-muted/50 font-medium">
                   <TableCell className={cn('text-foreground', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cabecera-o-pie'))}>
                     <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
                     {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {extracto.lineItems.length === 1 && locale === 'es' ? 'propiedad' : t('inmobiliaria.propietario.extracto.properties')})
@@ -725,7 +723,7 @@ export function ExtractoPropietario({
               {/* «Causado» no es una palabra que un propietario use todos los
                   días: se dice qué es. Con las dos bases, las dos. */}
               {base !== 'RECAUDADO' && (
-                <p className="-mt-1.5 text-xs text-muted-foreground" data-testid="extracto-que-es-el-canon">
+                <p className="-mt-1.5 text-caption text-muted-foreground" data-testid="extracto-que-es-el-canon">
                   {t('inmobiliaria.propietario.extracto.queEsCanonCausado')}
                   {base === 'MIXTA' && ` ${t('inmobiliaria.propietario.extracto.queEsCanonRecaudado')}`}
                 </p>
@@ -771,7 +769,7 @@ export function ExtractoPropietario({
               )}
               <div className="border-t border-border pt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">{t('inmobiliaria.propietario.extracto.totalNet')}</span>
+                  <span className="text-sm font-medium text-foreground">{t('inmobiliaria.propietario.extracto.totalNet')}</span>
                   <span className="text-sm font-bold text-success">
                     {formatCurrency(extracto.totals.totalNet)}
                   </span>
@@ -781,8 +779,8 @@ export function ExtractoPropietario({
                   <div className="mt-2 space-y-1" data-testid="extracto-estado-del-giro">
                     {partesDelGiro(extracto.totals).map((p) => (
                       <div key={p.etiqueta} className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">{p.etiqueta}</span>
-                        <span className="text-xs tabular-nums text-foreground">{formatCurrency(p.valor)}</span>
+                        <span className="text-caption text-muted-foreground">{p.etiqueta}</span>
+                        <span className="text-caption tabular-nums text-foreground">{formatCurrency(p.valor)}</span>
                       </div>
                     ))}
                   </div>
@@ -795,7 +793,7 @@ export function ExtractoPropietario({
                 /* Con base CAUSADO la administración tampoco se recaudó
                    necesariamente: es lo que el contrato cobra. «Se recaudaron»
                    sólo cuando la base es RECAUDADO. */
-                <p className="border-t border-border pt-3 text-xs text-muted-foreground" data-testid="extracto-de-terceros">
+                <p className="border-t border-border pt-3 text-caption text-muted-foreground" data-testid="extracto-de-terceros">
                   {base === 'RECAUDADO'
                     ? 'Además se recaudaron'
                     : base === 'CAUSADO'
@@ -832,7 +830,7 @@ export function ExtractoPropietario({
       )}
 
       {/* Print Footer */}
-      <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
+      <div className="hidden print:block p-6 text-center text-caption text-muted-foreground border-t border-border">
         <p>{agencyConfig?.name} {tr("- NIT")} {agencyConfig?.nit}</p>
         <p>{[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}</p>
         <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
@@ -955,7 +953,7 @@ export function AccionesDelExtracto({
             <Button
               onClick={handleDownloadPDF}
               disabled={isDownloading}
-              className="gap-2 bg-primary hover:opacity-90 text-primary-fg"
+              className="gap-2"
               data-testid="extracto-descargar"
             >
               {isDownloading ? (

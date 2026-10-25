@@ -47,6 +47,12 @@ export interface InvitarAlPortalProps {
   sinEntregar?: { motivo?: string } | null;
   /** `{ motivo }` cuando no salió; `null` cuando salió (o al reintentar con éxito). */
   onSinEntregar?: (sinEntregar: { motivo?: string } | null) => void;
+  /**
+   * `caja` (por defecto): el bloque gris de siempre. `linea`: sin caja, un
+   * renglón con el botón al lado — para ir DENTRO de otra tarjeta sin armar
+   * tarjeta dentro de tarjeta (ficha del inmueble, revisión 21-10).
+   */
+  variante?: 'caja' | 'linea';
 }
 
 /**
@@ -75,6 +81,7 @@ export function InvitarAlPortal({
   onInvitado,
   sinEntregar = null,
   onSinEntregar,
+  variante = 'caja',
 }: InvitarAlPortalProps) {
   const [enviando, setEnviando] = useState(false);
   const tieneCorreo = !!correo?.trim();
@@ -132,7 +139,9 @@ export function InvitarAlPortal({
         sinEntregar
           ? // El motivo es largo (dice qué hacer): el botón va debajo, no al lado.
             'flex flex-col items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3'
-          : 'flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-muted px-4 py-3 dark:bg-ink'
+          : variante === 'linea'
+            ? 'flex flex-wrap items-center justify-between gap-3'
+            : 'flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-muted px-4 py-3 dark:bg-ink'
       }
       data-testid={sinEntregar ? 'invitacion-sin-entregar' : 'propietario-sin-cuenta'}
     >
@@ -151,7 +160,7 @@ export function InvitarAlPortal({
         ) : (
           <div className="min-w-0">
             <p className="text-sm font-medium text-fg">No tiene cuenta en Leasefy</p>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle">
+            <p className="text-caption text-fg-muted dark:text-fg-subtle">
               {tieneCorreo
                 ? 'Invítalo y podrás escribirle por aquí, sin salir del producto.'
                 : 'Agrega su correo en la ficha para poder invitarlo.'}

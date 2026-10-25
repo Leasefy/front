@@ -219,7 +219,21 @@ describe('Cláusulas propias de la inmobiliaria', () => {
     expect(h.api.actualizar).toHaveBeenCalledWith('c-1', { activa: false })
     expect(h.toast.success).toHaveBeenCalledWith(
       expect.stringContaining('Los firmados no cambian'),
+      expect.anything(),
     )
+  })
+
+  it('GLOW UP 21-10 — el aviso de «Dejar de ofrecer» trae «Deshacer», que la vuelve a ofrecer', async () => {
+    await montar()
+    await act(async () => {
+      boton('Dejar de ofrecer')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const opciones = h.toast.success.mock.calls.at(-1)?.[1] as { action?: { label: string; onClick: () => void } }
+    expect(opciones?.action?.label).toBe('Deshacer')
+    await act(async () => {
+      opciones!.action!.onClick()
+    })
+    expect(h.api.actualizar).toHaveBeenLastCalledWith('c-1', { activa: true })
   })
 
   it('sin permiso de editar no se ofrece escribir ni cambiar', async () => {
@@ -255,7 +269,7 @@ describe('el vacío de cláusulas propias', () => {
     ).toBe(true)
   })
 
-  it('enseña con ejemplos: es lo que explica qué se escribe acá', async () => {
+  it('enseña con ejemplos: es lo que explica qué se escribe aquí', async () => {
     h.api.listar.mockResolvedValue([])
     await montar()
     const vacio = contenedor.querySelector('[data-testid="empty-state"]')!

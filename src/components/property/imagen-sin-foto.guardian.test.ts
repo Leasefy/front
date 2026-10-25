@@ -83,11 +83,7 @@ const DECLARADOS: ReadonlyArray<Uso & { motivo: string }> = [
     src: 'property.thumbnail',
     motivo: 'applications.service.ts siempre llena `thumbnail` (respaldo `/placeholder-property.svg`).',
   },
-  {
-    archivo: 'src/app/para/inmobiliarias/page.tsx',
-    src: 'testimonial.image',
-    motivo: 'Datos estáticos de la landing, escritos en el mismo archivo.',
-  },
+  // Ronda 30: «Para inmobiliarias» ya no tiene testimonios (eran inventados): se saca de la lista.
   {
     archivo: 'src/components/home/TestimonialCarousel.tsx',
     src: 'testimonial.image',

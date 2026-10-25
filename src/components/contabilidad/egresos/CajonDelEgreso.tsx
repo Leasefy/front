@@ -296,7 +296,7 @@ export function CajonDelEgreso({
                 </div>
               </dl>
               <p className="text-sm text-fg-muted">
-                El valor y a quién se le pagó no se corrigen acá: la plata ya salió por ese valor.
+                El valor y a quién se le pagó no se corrigen aquí: la plata ya salió por ese valor.
                 Si estuvo mal, se anula el egreso y se registra otro.
               </p>
             </section>

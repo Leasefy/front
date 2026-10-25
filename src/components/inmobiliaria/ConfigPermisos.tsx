@@ -202,7 +202,7 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
           </div>
         </TooltipTrigger>
         <TooltipContent side="top">
-          <div className="text-xs">
+          <div className="text-caption">
             <p className="font-medium">{getActionLabel(action)}</p>
             <p className="text-fg-subtle">{actionDescription}</p>
             {isDangerous && isEnabled && (
@@ -454,7 +454,7 @@ export function ConfigPermisos({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-fg flex items-center gap-2">
+          <h2 className="text-base font-medium text-fg flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-fg-muted" />
             {t('inmobiliaria.config.permissions.permissionsTitle')}
           </h2>
@@ -519,7 +519,7 @@ export function ConfigPermisos({
             >
               <span className="hidden sm:inline">{getRoleLabel(role)}</span>
               <span className="sm:hidden">{getRoleLabel(role).slice(0, 3)}</span>
-              <span className="inline-flex rounded-full bg-surface-muted px-1.5 py-0.5 text-xs tabular-nums text-fg-muted">
+              <span className="inline-flex rounded-full bg-surface-muted px-1.5 py-0.5 text-caption tabular-nums text-fg-muted">
                 {getPermissionCount(role)}
               </span>
             </TabsTrigger>
@@ -603,7 +603,7 @@ export function ConfigPermisos({
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p className="text-xs">
+                                  <p className="text-caption">
                                     {allEnabled
                                       ? t('inmobiliaria.config.permissions.revokeAll', { action: getActionLabel(action).toLowerCase() })
                                       : t('inmobiliaria.config.permissions.grantAll', { action: getActionLabel(action).toLowerCase() })}
@@ -643,7 +643,7 @@ export function ConfigPermisos({
               data-testid="permisos-puntuales"
             >
               <div className="space-y-0.5 border-b border-border px-4 py-3">
-                <h3 id={`puntuales-${role}`} className="text-sm font-semibold text-fg">
+                <h3 id={`puntuales-${role}`} className="text-sm font-medium text-fg">
                   {t('inmobiliaria.config.permissions.puntualesTitulo')}
                 </h3>
                 <p className="text-caption text-fg-muted">
@@ -710,7 +710,7 @@ export function ConfigPermisos({
               🔴 Lo que un módulo no alcanza a decir (17-09-2026): el portafolio
               es uno solo y lo que parte un inmueble del otro es si tiene un
               contrato vigente. El back lo deriva de estos dos permisos
-              (`alcance-del-miembro.ts`); decirlo acá es lo que hace que la
+              (`alcance-del-miembro.ts`); decirlo aquí es lo que hace que la
               matriz sea honesta sobre lo que abre cada casilla.
             */}
             <div

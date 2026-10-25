@@ -14,7 +14,8 @@ interface StreamCompleteBannerProps {
   carrierCount: number
   totalCostCop: number
   isStubMode: boolean         // true when all carriers are stubs
-  onReQuote: () => void       // Phase 33 placeholder
+  /** Nico (23-10-2026): «Re-cotizar» va una sola vez, en el encabezado del caso; aquí sólo si se pasa. */
+  onReQuote?: () => void
   /** @deprecated — PDF download is now handled internally via usePdfDownload */
   onDownloadPdf?: () => void
   onBack: () => void          // navigate to cotizador overview
@@ -101,6 +102,7 @@ export function StreamCompleteBanner({
       {/* Right: CTAs */}
       <div className="flex items-center gap-2 flex-wrap">
         {/* Re-cotizar — Phase 33 placeholder, disabled */}
+        {onReQuote && (
         <Button
           variant="outline"
           size="sm"
@@ -113,6 +115,7 @@ export function StreamCompleteBanner({
           <ArrowCounterClockwise weight="regular" className="w-4 h-4" />
           {t('inmobiliaria.ai.cotizador.detail.banner.reQuoteButton')}
         </Button>
+        )}
 
         {/* Descargar PDF — wired via usePdfDownload (backend endpoint) */}
         <Button

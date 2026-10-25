@@ -81,15 +81,15 @@ export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio, comoPro
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-surface p-5 sm:p-6 dark:border-border-strong dark:bg-surface-muted">
+    <section className="space-y-4 rounded-lg border border-border bg-surface p-5 sm:p-6">
       {solicitud.respuesta ? (
         <div className="space-y-2" data-testid="caso-respuesta">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-fg dark:text-white">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">
             <ChatCircleText className="h-4 w-4 text-fg-muted" aria-hidden="true" />
             Respuesta de la inmobiliaria
           </h2>
-          <p className="whitespace-pre-wrap text-sm text-fg dark:text-white">{solicitud.respuesta.texto}</p>
-          <p className="text-xs text-fg-muted">
+          <p className="whitespace-pre-wrap text-sm text-fg">{solicitud.respuesta.texto}</p>
+          <p className="text-caption text-fg-muted">
             {fechaLegible(solicitud.respuesta.at)}
             {solicitud.respuesta.medio && solicitud.respuesta.medio !== 'PORTAL'
               ? ` · te la dieron ${MEDIO[solicitud.respuesta.medio] ?? ''}`
@@ -100,7 +100,7 @@ export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio, comoPro
 
       <div className="space-y-2" data-testid="caso-adjuntos">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-fg dark:text-white">Archivos</h2>
+          <h2 className="text-sm font-semibold text-fg">Archivos</h2>
           {!cerrada && (
             <>
               <input
@@ -139,8 +139,8 @@ export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio, comoPro
                   ) : (
                     <Imagen className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
                   )}
-                  <span className="min-w-0 flex-1 truncate text-fg dark:text-white">{a.nombre}</span>
-                  <span className="shrink-0 text-xs text-fg-muted">{fechaLegible(a.subidoAt)}</span>
+                  <span className="min-w-0 flex-1 truncate text-fg">{a.nombre}</span>
+                  <span className="shrink-0 text-caption text-fg-muted">{fechaLegible(a.subidoAt)}</span>
                 </button>
               </li>
             ))}

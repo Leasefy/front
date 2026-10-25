@@ -15,10 +15,10 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import {
   FacturasDeProveedor,
   estadoDe,
@@ -31,25 +31,36 @@ export default function GastosPage() {
   return (
     <PageGuard module="reportes" roles={ROLES_DE_LA_CONTABILIDAD} seccion="Contabilidad" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <Link
-            href="/panel/inmobiliaria/contabilidad"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Contabilidad
-          </Link>
-          <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-h2 text-fg">Gastos de la inmobiliaria</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Las facturas de los proveedores: el contador, la luz de la oficina, las cerraduras. Es lo
-            que le da gastos propios al P&G y filas al formato 1001 de la exógena. Lo que se le gira
-            al propietario no va acá — eso baja un pasivo y no es un gasto de la inmobiliaria.
-          </p>
-        </header>
+        <Link
+          href="/panel/inmobiliaria/contabilidad"
+          className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
+        >
+          Contabilidad
+        </Link>
         {/* `key`: si se llega de nuevo con otro `estado`, Next no remonta la
-            página y el filtro se quedaría en el anterior. */}
-        <FacturasDeProveedor key={estado} estadoInicial={estado} />
+            página y el filtro se quedaría en el anterior. El encabezado lo pinta la lista: la
+            acción principal lleva su permiso y su motivo. */}
+        <FacturasDeProveedor
+          key={estado}
+          estadoInicial={estado}
+          encabezado={(accionPrincipal) => (
+            <EncabezadoDePantalla
+              seccion="Dinero"
+              titulo="Gastos de la inmobiliaria"
+              descripcion="Registra la factura de un proveedor, cáusala para que quede en el libro y págala."
+              ayuda={
+                <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                  <p className="text-body-sm text-fg-muted">
+                    Lo que se le gira al propietario no va aquí: eso baja un pasivo y no es un gasto de
+                    la inmobiliaria. El pago de una factura causada sale por Egresos, con la firma de
+                    otra persona.
+                  </p>
+                </ParaEntenderMas>
+              }
+              accionPrincipal={accionPrincipal}
+            />
+          )}
+        />
       </div>
     </PageGuard>
   );

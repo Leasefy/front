@@ -156,7 +156,7 @@ function PegarEnlaces({ alTraer }: { alTraer: (urls: string[], alAvanzar: (l: nu
           data-testid="enlaces-texto"
         />
       </label>
-      <p className="mt-1.5 text-[12.5px] text-fg-subtle">
+      <p className="mt-1.5 text-[13px] text-fg-subtle">
         Fincaraíz, Metrocuadrado, Ciencuadras o tu página. Uno por línea, o como los copies: los separamos solos.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -172,7 +172,7 @@ function PegarEnlaces({ alTraer }: { alTraer: (urls: string[], alAvanzar: (l: nu
             'Traer'
           )}
         </Button>
-        {urls.length > 0 && !avance && <span className="font-mono text-[12.5px] text-fg-subtle">{urls.length === 1 ? '1 enlace' : `${urls.length} enlaces`}</span>}
+        {urls.length > 0 && !avance && <span className="font-mono text-[13px] text-fg-subtle">{urls.length === 1 ? '1 enlace' : `${urls.length} enlaces`}</span>}
       </div>
       {resultado && resultado.creados > 0 && (
         <Aviso tono="bien">
@@ -327,9 +327,8 @@ function SoltarCarpetas({ alSoltar }: { alSoltar: (archivos: ArchivoConRuta[]) =
         className={cn('rounded-lg border-2 border-dashed p-6 text-center transition-colors duration-fast', arrastrando ? 'border-primary bg-primary-soft' : 'border-border')}
         data-testid="carpetas-zona"
       >
-        <span className="mx-auto inline-flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary">
-          <FolderSimple size={24} weight="duotone" aria-hidden="true" />
-        </span>
+        {/* Ronda 30: la carpeta suelta, sin el círculo azul. */}
+        <FolderSimple size={32} weight="duotone" aria-hidden="true" className="mx-auto text-fg-subtle" />
         <p className="mt-3 text-[14.5px] font-medium text-fg">Arrastra aquí tus carpetas: una por inmueble</p>
         <p className="mx-auto mt-1 max-w-[460px] text-[13px] text-fg-subtle">
           O la carpeta que las tiene todas. Cada carpeta se vuelve un inmueble con sus fotos; la primera por nombre es la portada.

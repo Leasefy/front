@@ -53,6 +53,7 @@ vi.mock('@/components/inmobiliaria/cobranza/CobranzaTeTocaATi', () => ({
 }));
 vi.mock('@/components/inmobiliaria/cobranza/CobranzaDeudoresQuePesan', () => ({ CobranzaDeudoresQuePesan: nada }));
 vi.mock('@/components/inmobiliaria/cobranza/CobranzaStageCard', () => ({ CobranzaStageCard: nada }));
+vi.mock('@/components/inmobiliaria/cobranza/CarteraPorEtapa', () => ({ CarteraPorEtapa: nada }));
 vi.mock('@/components/inmobiliaria/cobranza/CobranzaFunnelChart', () => ({ CobranzaFunnelChart: nada }));
 vi.mock('@/components/inmobiliaria/cobranza/CobranzaTransitionsFeed', () => ({ CobranzaTransitionsFeed: nada }));
 vi.mock('@/components/inmobiliaria/cobranza/CobranzaNextActionsPanel', () => ({ CobranzaNextActionsPanel: nada }));

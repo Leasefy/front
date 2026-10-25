@@ -1392,7 +1392,7 @@ export function MigrarContratos({
                         ? ` · ${l.activables} para activar`
                         : ""}
                       {/* 2026-09-02 — por qué un lote todo activado sigue
-                          acá: sus contratos existen y no cobran. */}
+                          aquí: sus contratos existen y no cobran. */}
                       {l.activadosSinInmueble ? (
                         <span className="text-danger">
                           {` · ${l.activadosSinInmueble} ${
@@ -1557,7 +1557,7 @@ export function MigrarContratos({
         ) : null}
 
         {/* QA-MIGRACION-95 (MP-06): si se adivinó mal la hoja o la fila de los
-            encabezados, se elige acá (fuera del mapeo: una fila mal elegida
+            encabezados, se elige aquí (fuera del mapeo: una fila mal elegida
             puede dejar el archivo sin contratos y la salida sigue a la vista). */}
         {archivo && donde ? (
           <div className="mt-3">
@@ -1587,7 +1587,7 @@ export function MigrarContratos({
             <div>
               <p className="text-sm font-medium text-foreground">
                 {isDragActive
-                  ? "Suelta el archivo acá"
+                  ? "Suelta el archivo aquí"
                   : "Arrastra el archivo de contratos o haz clic para elegirlo"}
               </p>
               <p className="text-caption text-muted-foreground">
@@ -1852,7 +1852,7 @@ export function MigrarContratos({
                   {tituloDeLaVistaPrevia(vistaPrevia[0].valores.length)}
                 </h3>
                 <p className="text-caption text-fg-muted">
-                  Todavía no se crea nada. Si algo acá está en la fila
+                  Todavía no se crea nada. Si algo aquí está en la fila
                   equivocada, corrige el mapeo de arriba.
                 </p>
               </div>
@@ -2850,7 +2850,7 @@ function ListaDeTrabajo({
                 porcentaje.
                 <span className="block text-caption text-muted-foreground">
                   Activar crea los contratos y las consignaciones de verdad.
-                  Después se corrige desde cada contrato, no desde acá.
+                  Después se corrige desde cada contrato, no desde aquí.
                 </span>
               </span>
             </label>
@@ -2989,19 +2989,19 @@ function ListaDeTrabajo({
         </h3>
         <p className="mt-0.5 text-sm text-muted-foreground">
           {resumen.activables > 0
-            ? "Cada uno con el propietario al que le vamos a consignar el inmueble y el porcentaje que le vamos a cobrar. Si alguno quedó con el propietario equivocado, cámbialo acá — después de activar ya es un contrato y se edita desde el contrato."
+            ? "Cada uno con el propietario al que le vamos a consignar el inmueble y el porcentaje que le vamos a cobrar. Si alguno quedó con el propietario equivocado, cámbialo aquí — después de activar ya es un contrato y se edita desde el contrato."
             : /*
                * QA-MIGRACION-95 (06-10): «activables = 0» no quiere decir «todo
                * activado»: también es «a todos les falta algo». Decía «Ya están
                * activos» sobre contratos que no existían.
                */
               resumen.activados === 0
-              ? "Ninguno está activo todavía: a cada uno le falta algo que se completa acá, fila por fila, y al resolverlo pasa a listo solo."
+              ? "Ninguno está activo todavía: a cada uno le falta algo que se completa aquí, fila por fila, y al resolverlo pasa a listo solo."
               : resumen.pendientes > 0
-              ? `${resumen.activados} ${resumen.activados === 1 ? "ya está activo y se edita" : "ya están activos y se editan"} desde cada contrato; a ${resumen.pendientes === 1 ? "la otra le falta" : `las otras ${resumen.pendientes} les falta`} algo que se completa acá, fila por fila.`
+              ? `${resumen.activados} ${resumen.activados === 1 ? "ya está activo y se edita" : "ya están activos y se editan"} desde cada contrato; a ${resumen.pendientes === 1 ? "la otra le falta" : `las otras ${resumen.pendientes} les falta`} algo que se completa aquí, fila por fila.`
               : resumen.activadosSinPropietario
-              ? "Ya están activos. Los que no tienen propietario se consignan acá mismo; todo lo demás se edita desde cada contrato."
-              : "Ya están activos. De acá en adelante se editan desde cada contrato, no desde la migración."}
+              ? "Ya están activos. Los que no tienen propietario se consignan aquí mismo; todo lo demás se edita desde cada contrato."
+              : "Ya están activos. De aquí en adelante se editan desde cada contrato, no desde la migración."}
         </p>
       </div>
 
@@ -3050,7 +3050,7 @@ function ListaDeTrabajo({
 
       {/* T-0135 — lo que sigue pendiente de las acciones en bloque, con el
           número del servidor. Si se cerró la pestaña a mitad de «Aplicar a N»,
-          lo ya aplicado quedó guardado y acá se ve cuánto falta. */}
+          lo ya aplicado quedó guardado y aquí se ve cuánto falta. */}
       {faltanUso > 0 || faltanPropietario > 0 ? (
         <div
           className="space-y-2 rounded-lg border border-border bg-surface-muted p-3"
@@ -3348,7 +3348,7 @@ function Dato({
     <div className="rounded-lg border border-border p-3">
       <p className="text-caption text-muted-foreground">{etiqueta}</p>
       <p
-        className={`text-xl font-semibold tabular-nums ${
+        className={`text-xl font-medium tabular-nums ${
           tono === "ok" && valor > 0
             ? "text-success"
             : tono === "mal" && valor > 0

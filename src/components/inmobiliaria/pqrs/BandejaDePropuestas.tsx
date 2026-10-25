@@ -137,12 +137,12 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
       <div className="flex items-start gap-2">
         <Sparkle className="mt-0.5 h-5 w-5 shrink-0 text-primary" weight="duotone" />
         <div>
-          <h2 className="text-sm font-semibold text-fg">
+          <h2 className="text-sm font-medium text-fg">
             {lista.length === 1
               ? 'El agente detectó una posible PQRS'
               : `El agente detectó ${lista.length} posibles PQRS`}
           </h2>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             No se radica nada hasta que alguien lo confirme. Al confirmar, la PQRS
             queda con la fecha del mensaje original, no con la de hoy.
           </p>
@@ -164,7 +164,7 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
                   <Badge variant="secondary">
                     {TIPO_EN_PALABRAS[p.tipo] ?? p.tipo}
                   </Badge>
-                  <span className="flex items-center gap-1 text-xs text-fg-muted">
+                  <span className="flex items-center gap-1 text-caption text-fg-muted">
                     {p.origen === 'LLAMADA' ? (
                       <Phone className="h-3.5 w-3.5" />
                     ) : (
@@ -174,7 +174,7 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
                   </span>
                 </div>
                 <p className="mt-1 text-sm font-medium text-fg">{p.asunto}</p>
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {p.solicitanteNombre}
                   {p.solicitanteContacto ? ` · ${p.solicitanteContacto}` : ''}
                 </p>
@@ -184,11 +184,11 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
                   si el agente entendió bien antes de arrancar un reloj legal.
                 */}
                 {p.extracto && (
-                  <blockquote className="mt-2 border-l-2 border-border pl-2 text-xs italic text-fg-muted">
+                  <blockquote className="mt-2 border-l-2 border-border pl-2 text-caption italic text-fg-muted">
                     «{p.extracto}»
                   </blockquote>
                 )}
-                <p className="mt-2 text-xs text-fg-muted">
+                <p className="mt-2 text-caption text-fg-muted">
                   <strong className="text-fg">Se recibió el {fechaCorta(p.recibidaAt)}</strong>
                   {' — el plazo corre desde ahí, no desde hoy.'}
                 </p>

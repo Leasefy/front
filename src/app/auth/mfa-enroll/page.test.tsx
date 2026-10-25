@@ -144,7 +144,7 @@ describe('/auth/mfa-enroll', () => {
     expect(replaceMock).not.toHaveBeenCalled()
   })
 
-  it('si ya no hace falta inscribir, manda al inicio del rol — nadie queda varado acá', async () => {
+  it('si ya no hace falta inscribir, manda al inicio del rol — nadie queda varado aquí', async () => {
     authState.mfaEnrollRequired = false
     await render()
     expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')

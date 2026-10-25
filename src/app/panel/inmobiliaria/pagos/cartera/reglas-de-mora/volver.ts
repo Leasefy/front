@@ -13,6 +13,7 @@
 const COBROS = '/panel/inmobiliaria/pagos/cartera/cobros';
 const CONTRATOS = '/panel/inmobiliaria/contratos/';
 const FACTURACION = '/panel/inmobiliaria/facturacion';
+const CARTERA = '/panel/inmobiliaria/pagos/cartera';
 
 export interface DestinoDeVolver {
   href: string;
@@ -28,6 +29,11 @@ export function destinoDeVolver(volver: string | null): DestinoDeVolver {
   // hasta acá; vuelve a Facturación. Ruta exacta, sin nada detrás.
   if (volver === FACTURACION) {
     return { href: FACTURACION, label: 'Volver a Facturación' };
+  }
+  // Revisora r25 (Reglas de mora #4): el aviso de la Cartera («N cuotas en mora sin reglas»)
+  // trae a la persona hasta acá; vuelve a la Cartera, no a Cobros. Ruta exacta.
+  if (volver === CARTERA) {
+    return { href: CARTERA, label: 'Volver a Cartera' };
   }
   return { href: COBROS, label: 'Volver a cobros' };
 }

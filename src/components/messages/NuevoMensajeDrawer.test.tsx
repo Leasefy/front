@@ -337,7 +337,7 @@ describe('<NuevoMensajeDrawer>', () => {
     expect(container.querySelector('[data-testid="destinatario-user-3"]')).toBeTruthy();
   });
 
-  it('🔴 «hay gente pero ninguna acá» NO es «no hay a quién escribirle», y ofrece volver', async () => {
+  it('🔴 «hay gente pero ninguna aquí» NO es «no hay a quién escribirle», y ofrece volver', async () => {
     getDestinatarios.mockResolvedValue({ tipo: 'PERSONAS', personas: [PERSONA], agencias: [] });
     await render();
 

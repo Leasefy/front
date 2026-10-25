@@ -72,7 +72,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
 
   return (
     <div className="space-y-6">
-      <h2 className="text-base font-semibold text-fg">
+      <h2 className="text-base font-medium text-fg">
         {tf(`${K}.titulo`, 'Configura la consulta')}
       </h2>
 
@@ -107,7 +107,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
             /* Si la lista no cargó, la persona no está eligiendo nada: se dice. */
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-fg-muted">
-                {tf(`${K}.aseguradoras.errorRegistro`, 'No pudimos traer la lista de aseguradoras.')}
+                {tf(`${K}.aseguradoras.errorRegistro`, 'No se pudo traer la lista de aseguradoras.')}
               </p>
               <Button variant="outline" size="sm" hideArrow onClick={() => void registry.refetch()}>
                 {tf(`${K}.aseguradoras.reintentar`, 'Intentar de nuevo')}
@@ -153,7 +153,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
         <legend className="text-sm font-medium text-fg">
           {tf(`${K}.prioridad.titulo`, '¿Qué priorizamos?')}
         </legend>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {tf(`${K}.prioridad.subtitulo`, 'Decide cuál te recomendamos entre las que respalden al candidato.')}
         </p>
         {/* Tarjetas con lo que hace cada una (antes: un control segmentado

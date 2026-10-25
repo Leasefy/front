@@ -370,7 +370,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated, inicial }: Prop
                     searchPlaceholder="Nombre, correo o teléfono"
                     contentClassName="z-[400]"
                   />
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     Al elegirlo se llenan el nombre y el contacto; puedes corregirlos.
                   </p>
               </Collapse>
@@ -471,7 +471,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated, inicial }: Prop
               <div className="space-y-1.5">
                 <div className="flex items-baseline justify-between">
                   <Label htmlFor="pqrs-asunto">Asunto</Label>
-                  <span className="text-xs tabular-nums text-fg-muted">
+                  <span className="text-caption tabular-nums text-fg-muted">
                     {form.asunto.length}/{ASUNTO_MAX}
                   </span>
                 </div>
@@ -509,8 +509,8 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated, inicial }: Prop
                         aria-pressed={elegido}
                         className={
                           elegido
-                            ? 'relative isolate rounded-full border border-transparent px-3 py-1 text-xs font-medium text-primary'
-                            : 'relative isolate rounded-full border border-border bg-surface px-3 py-1 text-xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg'
+                            ? 'relative isolate rounded-full border border-transparent px-3 py-1 text-caption font-medium text-primary'
+                            : 'relative isolate rounded-full border border-border bg-surface px-3 py-1 text-caption text-fg-muted transition-colors hover:border-border-strong hover:text-fg'
                         }
                       >
                         {/* La marca del elegido (mismo borde y fondo cobalto)
@@ -532,7 +532,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated, inicial }: Prop
                   <Label htmlFor="pqrs-descripcion">
                     Descripción <span className="text-fg-muted font-normal">(opcional)</span>
                   </Label>
-                  <span className="text-xs tabular-nums text-fg-muted">
+                  <span className="text-caption tabular-nums text-fg-muted">
                     {form.descripcion.length}/{DESCRIPCION_MAX}
                   </span>
                 </div>

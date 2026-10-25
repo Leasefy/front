@@ -1,10 +1,11 @@
 'use client';
 
-import Link from 'next/link';
-import { CaretLeft } from '@phosphor-icons/react';
+import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Card } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import type { FinanzasInmuebleDetalle, FinanzasPagos } from '@/lib/api/owner-finanzas.types';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 interface InmuebleDetalleViewProps {
   detalle: FinanzasInmuebleDetalle;
@@ -21,20 +22,20 @@ export function InmuebleDetalleView({ detalle, pagos }: InmuebleDetalleViewProps
   const { property, contract, novedades } = detalle;
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <Link
-          href="/panel/portafolio"
-          className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg mb-4"
-        >
-          <CaretLeft className="w-4 h-4" /> Mi plata
-        </Link>
+    <div>
+      <div className="max-w-4xl p-6 lg:p-8">
+        <BackButton href="/panel/portafolio" label="Volver a Mi plata" className="mb-4" />
 
-        <h1 className="text-2xl font-semibold">{property.label}</h1>
-        <p className="text-sm text-fg-muted mt-1 capitalize">
-          {property.occupancyStatus}
-          {property.vacantSince ? ` · vacante desde ${formatDate(property.vacantSince)}` : ''}
-        </p>
+        <EncabezadoDePantalla
+          seccion="Mi plata"
+          titulo={property.label}
+          descripcion={
+            <span className="capitalize">
+              {property.occupancyStatus}
+              {property.vacantSince ? ` · vacante desde ${formatDate(property.vacantSince)}` : ''}
+            </span>
+          }
+        />
 
         {/* Contrato */}
         {contract ? (
@@ -64,7 +65,7 @@ export function InmuebleDetalleView({ detalle, pagos }: InmuebleDetalleViewProps
             {contract.preaviso.options.length > 0 && (
               <div className="mt-5 pt-4 border-t border-border">
                 <p className="text-sm font-medium mb-1">Opciones de preaviso</p>
-                <p className="text-xs text-fg-muted mb-3">
+                <p className="text-caption text-fg-muted mb-3">
                   Informativo. La decisión de terminar o renovar es tuya y de tu inmobiliaria.
                 </p>
                 <ul className="space-y-2">
@@ -101,7 +102,7 @@ export function InmuebleDetalleView({ detalle, pagos }: InmuebleDetalleViewProps
                       <p className="text-sm text-fg-muted">{n.payload.detalle}</p>
                     )}
                   </div>
-                  <span className="text-xs text-fg-muted shrink-0">{formatDate(n.occurredAt)}</span>
+                  <span className="text-caption text-fg-muted shrink-0">{formatDate(n.occurredAt)}</span>
                 </li>
               ))}
             </ul>
@@ -112,14 +113,14 @@ export function InmuebleDetalleView({ detalle, pagos }: InmuebleDetalleViewProps
         <Card className="p-4 sm:p-6 mt-6">
           <h2 className="text-base font-semibold mb-4">Historial de pagos</h2>
           {!pagos || pagos.items.length === 0 ? (
-            <p className="text-sm text-fg-muted">Todavía no hay pagos registrados.</p>
+            <VacioChico titulo="Todavía no hay pagos registrados." ilustracion="billetera" />
           ) : (
             <ul className="divide-y divide-border">
               {pagos.items.map((p) => (
                 <li key={p.paymentRef} className="py-3 flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-sm font-medium capitalize">{p.concepto}</p>
-                    <p className="text-xs text-fg-muted">
+                    <p className="text-caption text-fg-muted">
                       {formatDate(p.paidAt)}
                       {p.periodo ? ` · ${p.periodo}` : ''}
                     </p>

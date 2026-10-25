@@ -144,7 +144,7 @@ export function ValidacionPorWhatsapp({
         <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
           <CheckCircle weight="fill" className="h-8 w-8" aria-hidden="true" />
         </span>
-        <h2 className="font-heading text-2xl font-semibold text-fg text-balance">¡Recibimos tu validación!</h2>
+        <h2 className="font-heading text-2xl font-[420] text-fg text-balance">Recibimos tu validación</h2>
         <p className="max-w-md text-sm text-fg-muted">
           Estamos consultando a las aseguradoras. Tu respuesta llega en unos minutos y esta pantalla se actualiza
           sola.
@@ -168,7 +168,7 @@ export function ValidacionPorWhatsapp({
           <WhatsappLogo weight="fill" className="h-7 w-7" aria-hidden="true" />
         </span>
         <div className="flex flex-col gap-1">
-          <h2 className="font-heading text-2xl font-semibold leading-tight text-fg text-balance">
+          <h2 className="font-heading text-2xl font-[420] leading-tight text-fg text-balance">
             {preparando ? 'Estamos preparando tu validación' : 'Valida tu identidad por WhatsApp'}
           </h2>
           <p className="text-sm text-fg-muted">
@@ -179,10 +179,10 @@ export function ValidacionPorWhatsapp({
         </div>
       </div>
 
-      <ol className="flex flex-col gap-4 rounded-xl border border-border bg-surface-muted p-4 md:p-5">
+      <ol className="flex flex-col gap-4 rounded-lg border border-border bg-surface-muted p-4 md:p-5">
         {PASOS.map((paso, i) => (
           <li key={paso.titulo} className="flex gap-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface font-mono text-sm font-semibold text-primary ring-1 ring-border">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface font-mono text-sm tabular-nums text-fg-muted ring-1 ring-border">
               {i + 1}
             </span>
             <div>
@@ -197,11 +197,11 @@ export function ValidacionPorWhatsapp({
         <div
           data-testid="validacion-pendiente"
           role="status"
-          className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning-soft p-4"
+          className="flex items-start gap-3 rounded-lg border border-warning/40 bg-warning-soft p-4"
         >
           <WarningCircle weight="fill" className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
           <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold text-fg">Todavía no vemos tu validación</p>
+            <p className="text-sm font-medium text-fg">Todavía no vemos tu validación</p>
             <p className="text-sm text-fg-muted">
               Abre WhatsApp y termina los pasos que te envió Fianly. Si no te llegó o se te perdió el mensaje, te lo
               enviamos de nuevo.

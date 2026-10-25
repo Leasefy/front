@@ -11,6 +11,7 @@
  * para lo que gestione Leasefy (el panel del propietario independiente, hoy en
  * pausa).
  */
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useState } from 'react';
 import { FileArrowDown, Receipt, SealCheck } from '@phosphor-icons/react';
 
@@ -176,6 +177,7 @@ export function DocumentosTributarios() {
             </ul>
           ) : (
             <p className="text-body-sm text-fg-muted" data-testid="sin-facturas">
+              <Ilustracion nombre="factura" tamano={56} className="mb-2 block" />
               Todavía no hay facturas de la comisión a tu nombre.
             </p>
           )}

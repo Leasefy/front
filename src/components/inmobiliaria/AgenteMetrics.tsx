@@ -35,46 +35,30 @@ interface MetricCardProps {
   performance?: 'above' | 'average' | 'below';
 }
 
-function MetricCard({ label, value, motivo, icon, iconBg, performance }: MetricCardProps) {
-  // Determine card background based on performance
-  const cardBg = performance === 'above'
-    ? 'bg-success-soft border-success/30'
-    : performance === 'below'
-    ? 'bg-danger-soft border-danger/30'
-    : 'bg-surface dark:bg-bg border-border dark:border-border-strong';
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function MetricCard({ label, value, motivo, icon: _icon, iconBg: _iconBg, performance }: MetricCardProps) {
+  // Ronda 30 (Cadence 2): la cifra en arena, sin borde (vive dentro de la tarjeta de la ficha:
+  // antes era tarjeta en tarjeta), sin fondo verde/rojo ni el ícono en una caja de color.
+  // Cómo va se lee en el color de la cifra y en la leyenda de abajo.
   return (
-    <div
-      className={cn(
-        'p-4 rounded-lg border transition-transform duration-fast ease-standard hover: hover:-translate-y-0.5',
-        cardBg
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1 truncate">
-            {label}
-          </p>
-          <p
-            className={cn(
-              'text-xl font-bold truncate',
-              motivo ? 'text-fg-subtle' : 'text-fg dark:text-white',
-            )}
-            title={motivo ?? undefined}
-            aria-label={motivo ? `${label}: sin dato. ${motivo}` : undefined}
-          >
-            {value}
-          </p>
-        </div>
-        <div
-          className={cn(
-            'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-            iconBg
-          )}
-        >
-          {icon}
-        </div>
-      </div>
+    <div className="rounded-lg bg-surface-muted p-4">
+      <p className="mb-1 truncate text-caption text-fg-muted">{label}</p>
+      <p
+        className={cn(
+          'truncate font-mono text-xl tabular-nums',
+          motivo
+            ? 'text-fg-subtle'
+            : performance === 'above'
+              ? 'text-success'
+              : performance === 'below'
+                ? 'text-danger'
+                : 'text-fg',
+        )}
+        title={motivo ?? undefined}
+        aria-label={motivo ? `${label}: sin dato. ${motivo}` : undefined}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -110,7 +94,7 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
     <div className={cn('space-y-4', className)}>
       <div className="flex items-center gap-2">
         <ChartLineUp className="w-5 h-5 text-fg-muted" />
-        <h2 className="text-lg font-semibold text-fg dark:text-white">
+        <h2 className="text-lg font-medium text-fg dark:text-white">
           {t('inmobiliaria.agente.performanceMetrics')}
         </h2>
       </div>
@@ -161,7 +145,7 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
       </div>
 
       {/* Performance Legend */}
-      <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-fg-muted dark:text-fg-subtle">
+      <div className="flex flex-wrap items-center gap-4 pt-2 text-caption text-fg-muted dark:text-fg-subtle">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-success" />
           <span>{t('inmobiliaria.agente.aboveAverage')}</span>

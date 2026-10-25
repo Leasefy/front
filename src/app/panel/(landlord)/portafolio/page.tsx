@@ -7,6 +7,7 @@ import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholde
 import { MiPlataView } from '@/components/landlord/portal/finanzas/MiPlataView';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { ApiError } from '@/lib/api/client';
+import { useLlevarALoSuyo } from '@/components/portales/use-llevar-a-lo-suyo';
 
 /**
  * Mi plata (F3) — v8-02. Cableado a los endpoints de finanzas del back
@@ -30,19 +31,21 @@ export default function PortafolioPage() {
     reintentar,
     agencyId,
   } = useOwnerFinanzas();
+  // Ronda 28: al independiente, directo a sus arriendos (antes «Lo que te pagan está en Arriendos»).
+  const llevando = useLlevarALoSuyo(!isLoading && !fallo && (unavailable || !portafolio), '/panel/leases');
 
-  if (isLoading) {
+  if (isLoading || llevando) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="dashboard" className="mx-auto max-w-7xl" />
+        <EsqueletoDePagina variante="dashboard" />
       </div>
     );
   }
 
   if (fallo) {
     return (
-      <div className="min-h-screen bg-bg px-4 py-10 sm:px-6" data-testid="mi-plata-fallo">
+      <div className="p-6 lg:p-8" data-testid="mi-plata-fallo">
         <div className="mx-auto max-w-3xl">
           {/* El fallo entero (status + cuerpo, con la referencia de un 5xx); el armado a mano queda de respaldo. */}
           <FalloDeCarga
@@ -57,11 +60,16 @@ export default function PortafolioPage() {
 
   if (unavailable || !portafolio) {
     return (
+      // Revisora r25: esta pantalla sólo la ve el propietario independiente (al de inmobiliaria el layout lo lleva
+      // a su estado de cuenta). No se le habla de «tu inmobiliaria»: se le dice dónde está lo suyo.
       <PortalPlaceholder
+        seccion="Contratos y plata"
         title="Mi plata"
         subtitle="Tus pagos, la proyección de tu contrato y tu portafolio, en un solo lugar."
         icon={Wallet}
-        emptyDescription="Acá vas a ver cuánto te pagaron, cuándo y por qué concepto, la proyección de tus ingresos y el consolidado de todos tus inmuebles —con informe descargable. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        tituloDelVacio="Lo que te pagan está en Arriendos"
+        emptyDescription="Cuánto te paga cada inquilino y cuándo, inmueble por inmueble. El consolidado con informe descargable llega cuando una inmobiliaria te administra los inmuebles en Leasefy."
+        accion={{ label: 'Ver mis arriendos', href: '/panel/leases' }}
       />
     );
   }

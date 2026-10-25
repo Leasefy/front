@@ -239,7 +239,7 @@ export function InboxItemCard({
           horas» (QA 12-10-2026): ahora el canal y la hora bajan a otra línea. */}
       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <div className="flex flex-wrap items-center gap-2 min-w-0">
-          <span className="text-sm font-semibold text-fg truncate">
+          <span className="text-sm font-medium text-fg truncate">
             {item.inquilino || VACIO}
           </span>
           <Presence show={unread} as="span" direction="none" initial={false} className="shrink-0">
@@ -254,10 +254,10 @@ export function InboxItemCard({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {item.canal && (
-            <span className="text-xs text-fg-muted">{item.canal}</span>
+            <span className="text-caption text-fg-muted">{item.canal}</span>
           )}
           {recibidoTexto && (
-            <span className="text-xs text-fg-muted">· {recibidoTexto}</span>
+            <span className="text-caption text-fg-muted">· {recibidoTexto}</span>
           )}
         </div>
       </div>
@@ -290,7 +290,7 @@ export function InboxItemCard({
         </Button>
 
         {/*
-          Acá vivía «Aprobar respuesta sugerida», deshabilitado. Se quitó: el
+          Aquí vivía «Aprobar respuesta sugerida», deshabilitado. Se quitó: el
           hilo NO trae ninguna respuesta sugerida —el contrato del inbox no
           tiene ese campo— así que el botón prometía revisar algo que no
           existe. Cuando el agente empiece a proponer respuestas, vuelve.
@@ -417,7 +417,7 @@ export function InboxThreadPanel({
                     : 'bg-primary-soft'
                 }`}
               >
-                <p className="text-xs font-medium text-fg-muted mb-0.5">
+                <p className="text-caption font-medium text-fg-muted mb-0.5">
                   {tr(inbound ? 'Inquilino' : 'Agencia')}
                   {m.channel ? ` · ${m.channel}` : ''}
                 </p>
@@ -426,7 +426,7 @@ export function InboxThreadPanel({
                 </p>
                 {traduccion.estaTraducido(m.id, m.body) ? <MarcaDeTraducido /> : null}
                 {formatRecibido && (
-                  <p className="text-xs text-fg-muted mt-1">
+                  <p className="text-caption text-fg-muted mt-1">
                     {formatRecibido(m.occurredAt)}
                   </p>
                 )}

@@ -33,17 +33,16 @@ export function aFecha(d: Date | string): Date {
   return new Date(d)
 }
 
+/**
+ * «16 oct 2026, 5:35 p. m.» (ronda 26, revisora T5; VOZ §4). Antes salía «16 de
+ * oct de 2026, 05:35 p. m.»: con hora, el navegador mete «de» y el cero.
+ */
 export function fmtDateTime(d: Date | string | null | undefined): string {
   if (!d) return '—'
   const date = aFecha(d)
   if (!Number.isFinite(date.getTime())) return '—'
-  return date.toLocaleString('es-CO', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const hora = date.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' })
+  return `${fmtFecha(date)}, ${hora}`
 }
 
 export function fmtDuration(seconds: number | null | undefined): string {
@@ -61,7 +60,11 @@ export function fmtFecha(d: Date | string | null | undefined): string {
   if (!d) return '—'
   const date = aFecha(d)
   if (!Number.isFinite(date.getTime())) return '—'
-  return date.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }).replace(/\./g, '')
+  // Ronda 26 (T5, VOZ §4): «14 oct 2026». `toLocaleDateString` en es-CO mete «de» («14 de oct. de 2026»):
+  // se arma con las partes.
+  const partes = new Intl.DateTimeFormat('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }).formatToParts(date)
+  const parte = (tipo: Intl.DateTimeFormatPartTypes) => partes.find((p) => p.type === tipo)?.value ?? ''
+  return `${parte('day')} ${parte('month').replace(/\./g, '')} ${parte('year')}`
 }
 
 /** 12.345 — miles con punto, como el resto de Leasefy. */

@@ -102,7 +102,7 @@ export function InventarioDelInmueble(props: Props) {
           onActualizada={props.onActualizada}
         />
         {datos && !datos.disponible && (
-          <p className="px-1 text-xs text-muted-foreground" data-testid="nota-de-inventario">
+          <p className="px-1 text-caption text-muted-foreground" data-testid="nota-de-inventario">
             {t(`${B}.migracionPendiente`)}
           </p>
         )}
@@ -253,7 +253,7 @@ function InventarioPorVersiones({
   return (
     <div className="space-y-3" id="inventario" data-testid="inventario-del-inmueble">
       {inventarios.desdeCache && (
-        <p className="text-xs text-muted-foreground" role="status">
+        <p className="text-caption text-muted-foreground" role="status">
           {t(`${B}.desdeCache`)}
         </p>
       )}
@@ -275,16 +275,6 @@ function InventarioPorVersiones({
         >
           {aviso.texto && <p>{t(aviso.texto.clave, aviso.texto.params)}</p>}
         </AlertaAccionable>
-      )}
-
-      {copiaLocal && (
-        <PrepararParaSinSenal
-          guardadoEn={copiaLocal.guardadoEn}
-          preparando={copiaLocal.preparando}
-          ultimaPreparacion={copiaLocal.ultimaPreparacion}
-          sinSenal={sinSenal}
-          onPreparar={() => void copiaLocal.preparar()}
-        />
       )}
 
       {puedeEditar && (
@@ -318,6 +308,21 @@ function InventarioPorVersiones({
           </p>
 
           <ActaEntregaView
+            /* 🔴 «Trabajar sin señal» va DENTRO de la tarjeta del inventario (decisión de Nico,
+               como en InventarioDeLaConsignacion): es la copia de ESE inventario para llevarla a
+               la visita. 22-10: aquí iba suelto encima, y antes de que existiera el inventario. */
+            franja={
+              copiaLocal ? (
+                <PrepararParaSinSenal
+                  guardadoEn={copiaLocal.guardadoEn}
+                  preparando={copiaLocal.preparando}
+                  ultimaPreparacion={copiaLocal.ultimaPreparacion}
+                  sinSenal={sinSenal}
+                  onPreparar={() => void copiaLocal.preparar()}
+                  sinMarco
+                />
+              ) : undefined
+            }
             inventoryItems={items}
             contractDate={borrador?.updatedAt ?? datos.ultimoCompleto?.completadoEn ?? consignacion.contractDate}
             onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`)}

@@ -3,7 +3,7 @@
 /**
  * navigation-source — federated search over the panel's own navigation:
  * every sidebar destination, every module screen (the tabs) and the in-page
- * actions each destination contains (e.g. Inmuebles → "Nueva consignación",
+ * actions each destination contains (e.g. Inmuebles → "Nuevo mandato",
  * Equipo → "Nuevo agente").
  *
  * The catalog is static and mirrors `src/lib/nav/arquitectura-del-panel.ts`
@@ -87,7 +87,7 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Inmuebles', context: 'Captación y arriendo', href: `${P}/inmuebles`, keywords: 'propiedades apartamentos casas portafolio consignaciones inventario', permission: { module: 'portafolio', action: 'view' } },
   // No hay "Nueva propiedad": una inmobiliaria nunca administra un inmueble sin
   // propietario, así que entrar uno es siempre una consignación.
-  { kind: 'action', title: 'Nueva consignación', context: 'Inmuebles', href: `${P}/inmuebles/nuevo`, keywords: 'crear consignar propiedad inmueble publicar', permission: { module: 'portafolio', action: 'create' } },
+  { kind: 'action', title: 'Nuevo mandato', context: 'Inmuebles', href: `${P}/inmuebles/nuevo`, keywords: 'crear consignar consignación nueva consignación propiedad inmueble publicar', permission: { module: 'portafolio', action: 'create' } },
   { kind: 'action', title: 'Importar propiedades', context: 'Inmuebles', href: `${P}/inmuebles/importar`, keywords: 'importar excel csv masivo', permission: { module: 'portafolio', action: 'create' } },
   { kind: 'page', title: 'Postulaciones', context: 'Captación y arriendo', href: `${P}/postulaciones`, keywords: 'candidatos aplicaciones solicitudes recorrido' },
   // «Evaluación de candidatos» (`/postulaciones/estudio`) está OCULTA por ahora

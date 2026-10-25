@@ -29,12 +29,12 @@ function ProviderRow({ provider, isBackup }: { provider: RecommendedProvider; is
   return (
     <div data-testid={isBackup ? 'proveedor-backup' : 'proveedor-principal'} className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-fg">
+        <span className="text-sm font-medium text-fg">
           {provider.nombre}
         </span>
         {isBackup && <Badge variant="outline">backup</Badge>}
       </div>
-      <div className="flex flex-wrap items-center gap-3 text-xs text-fg-muted">
+      <div className="flex flex-wrap items-center gap-3 text-caption text-fg-muted">
         {provider.rating !== undefined && (
           <span className="inline-flex items-center gap-1">
             <Star size={13} weight="fill" className="text-warning" aria-hidden="true" />
@@ -49,7 +49,7 @@ function ProviderRow({ provider, isBackup }: { provider: RecommendedProvider; is
         )}
       </div>
       {provider.motivo && (
-        <p className="text-xs text-fg-muted leading-relaxed">
+        <p className="text-caption text-fg-muted leading-relaxed">
           {provider.motivo}
         </p>
       )}

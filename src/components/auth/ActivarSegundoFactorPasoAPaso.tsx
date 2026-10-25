@@ -38,8 +38,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppleLogo,
-  ArrowLeft,
-  ArrowRight,
   ArrowSquareOut,
   Check,
   CheckCircle,
@@ -49,7 +47,6 @@ import {
   GoogleLogo,
   GooglePlayLogo,
   Key,
-  ShieldCheck,
   WarningCircle,
   WindowsLogo,
 } from '@phosphor-icons/react';
@@ -65,7 +62,15 @@ import {
   verificarFactorNuevo,
   type FactorPorVerificar,
 } from '@/lib/auth/inscripcion-del-segundo-factor';
+import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock';
+import {
+  inscribirYVerificarConElMock,
+  liberarYVerificarConElMock,
+  resolverCodigoDelMock,
+  userIdDelToken,
+} from '@/lib/auth/mock-del-segundo-factor';
 import { POR_QUE_LO_PEDIMOS } from '@/lib/auth/por-que-el-segundo-factor';
+import { useMockDelSegundoFactor } from '@/lib/auth/use-mock-del-segundo-factor';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import { Appear, Collapse, CrossFade, FormError, motionScale, motionSpring } from '@leasefy/cadence';
@@ -154,6 +159,8 @@ export function ActivarSegundoFactorPasoAPaso({
   const [codigo, setCodigo] = useState('');
   const [verificando, setVerificando] = useState(false);
   const [errorDelCodigo, setErrorDelCodigo] = useState<string | null>(null);
+  // Sólo fuera de producción (`lib/config/entorno.ts`): en producción es siempre `false`.
+  const mockHabilitado = useMockDelSegundoFactor();
   /*
    * Hacia dónde se movió la persona: «Continuar» entra por la derecha y
    * «Atrás» por la izquierda. Se deriva del paso anterior durante el render
@@ -274,11 +281,37 @@ export function ActivarSegundoFactorPasoAPaso({
       setVerificando(true);
       setErrorDelCodigo(null);
       try {
+        const token = getAccessToken() ?? tokenRef.current;
+        // Mock (sólo fuera de producción): `123456` se cambia por el código real.
+        const resuelto = await resolverCodigoDelMock({
+          codigo: codigoCompleto,
+          userId: userIdDelToken(token),
+          factorId: actual.factorId,
+        });
+        if (!resuelto.ok) {
+          // Sin secreto de este factor: el back lo libera y el mock inscribe y
+          // verifica uno nuevo (una sola vez; si falla, el mensaje de siempre).
+          const recuperado =
+            resuelto.sinSecreto && token
+              ? await liberarYVerificarConElMock({ token, enElIngreso: true })
+              : null;
+          if (recuperado?.ok) {
+            activadoRef.current = true;
+            setPaso('listo');
+            onActivado(recuperado.factorId);
+            return;
+          }
+          verificandoRef.current = false;
+          setVerificando(false);
+          setCodigo('');
+          setErrorDelCodigo(recuperado ? recuperado.mensaje : resuelto.mensaje);
+          return;
+        }
         await verificarFactorNuevo({
           factorId: actual.factorId,
-          codigo: codigoCompleto,
+          codigo: resuelto.codigo,
           enElIngreso: true,
-          token: getAccessToken() ?? tokenRef.current,
+          token,
         });
       } catch (err) {
         verificandoRef.current = false;
@@ -299,6 +332,37 @@ export function ActivarSegundoFactorPasoAPaso({
     },
     [onActivado],
   );
+
+  /**
+   * Mock (sólo fuera de producción): inscribe el factor como siempre, guarda
+   * el secreto y completa el primer código con el TOTP calculado, sin QR.
+   */
+  const usarElMock = useCallback(async () => {
+    if (verificandoRef.current) return;
+    setPreparando(true);
+    setErrorAlPreparar(null);
+    try {
+      const token = getAccessToken() ?? tokenRef.current;
+      tokenRef.current = token;
+      if (!token) throw new Error('Tu sesión se cerró. Vuelve a entrar con tu contraseña.');
+      if (await consultaRef.current) return;
+      verificandoRef.current = true;
+      const { factorId } = await inscribirYVerificarConElMock({ token, enElIngreso: true });
+      activadoRef.current = true;
+      setPaso('listo');
+      onActivado(factorId);
+    } catch (err) {
+      verificandoRef.current = false;
+      setErrorAlPreparar(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos activar el mock. Intenta de nuevo en un momento.',
+          accion: 'activar el mock',
+        }),
+      );
+    } finally {
+      setPreparando(false);
+    }
+  }, [onActivado]);
 
   const copiarClave = useCallback(async () => {
     if (!factor?.secret) return;
@@ -321,12 +385,13 @@ export function ActivarSegundoFactorPasoAPaso({
           initial={{ scale: motionScale.pop, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={motionSpring.bouncy}
-          className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft"
+          className="mx-auto flex w-fit"
         >
-          <CheckCircle className="h-9 w-9 text-success" weight="fill" aria-hidden="true" />
+          {/* El visto suelto, sin círculo de color detrás. */}
+          <CheckCircle className="h-12 w-12 text-success" weight="fill" aria-hidden="true" />
         </motion.div>
         <div className="space-y-2">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-subtle">Listo</p>
+          <p className="text-caption text-fg-subtle">Listo</p>
           <h1
             ref={tituloRef}
             tabIndex={-1}
@@ -352,11 +417,7 @@ export function ActivarSegundoFactorPasoAPaso({
       {/* Qué es y por qué, en una frase. */}
       {sinEncabezado ? null : (
         <div className="space-y-3 text-center">
-          <div className="flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary-soft ring-1 ring-primary/10">
-              <ShieldCheck className="h-6 w-6 text-primary" weight="fill" aria-hidden="true" />
-            </div>
-          </div>
+          {/* Sin caja de ícono de color: el título y su frase bastan. */}
           <h1 className="text-balance font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
             Activa tu segundo factor
           </h1>
@@ -374,7 +435,7 @@ export function ActivarSegundoFactorPasoAPaso({
             id="paso-titulo"
             ref={tituloRef}
             tabIndex={-1}
-            className="min-w-0 text-balance text-[20px] font-semibold leading-tight tracking-[-0.015em] text-fg outline-none"
+            className="min-w-0 text-balance text-[20px] font-medium leading-tight tracking-[-0.015em] text-fg outline-none"
           >
             {paso === 'app'
               ? 'Descarga una app de autenticación en tu celular'
@@ -399,6 +460,7 @@ export function ActivarSegundoFactorPasoAPaso({
             preparando={preparando}
             error={errorAlPreparar}
             onContinuar={() => void irAEscanear()}
+            onUsarMock={mockHabilitado ? () => void usarElMock() : undefined}
           />
         ) : null}
 
@@ -424,7 +486,7 @@ export function ActivarSegundoFactorPasoAPaso({
             <div className="flex justify-center">
               {/* 🔴 Blanco a propósito, en claro y en oscuro: las cámaras leen un
                   QR oscuro sobre fondo claro. No es decoración. */}
-              <div className="rounded-md border border-border bg-white p-3 shadow-sm">
+              <div className="rounded-md border border-border bg-white p-3">
                 {/* Un data URI con el SVG de Supabase: `next/image` no tiene nada que optimizar. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -501,7 +563,6 @@ export function ActivarSegundoFactorPasoAPaso({
                 onClick={() => setPaso('app')}
                 className="sm:flex-none"
               >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 Atrás
               </Button>
               <Button
@@ -512,7 +573,6 @@ export function ActivarSegundoFactorPasoAPaso({
                 data-testid="ya-lo-agregue"
               >
                 Ya la agregué, continuar
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -521,7 +581,7 @@ export function ActivarSegundoFactorPasoAPaso({
         {paso === 'codigo' ? (
           <div className="space-y-5" aria-busy={verificando} data-testid="paso-codigo">
             <p className="text-pretty text-body-sm text-fg-muted">
-              En la app ya aparece tu cuenta nueva con un código de seis dígitos. Escríbelo acá: al
+              En la app ya aparece tu cuenta nueva con un código de seis dígitos. Escríbelo aquí: al
               completar el sexto dígito se revisa solo.
             </p>
             <CasillasDeCodigo
@@ -554,6 +614,7 @@ export function ActivarSegundoFactorPasoAPaso({
             <p className="text-pretty text-center text-caption text-fg-subtle">
               El código cambia cada 30 segundos. Si te lo rechaza, espera al siguiente.
             </p>
+            {mockHabilitado ? <AvisoDelMock /> : null}
             {/* El mismo pie del paso del QR (Nico, 02-10: «ahí con un link y el
                 otro bello con algo mejor, déjalo como está en el paso del QR»). */}
             <div className="flex flex-col-reverse gap-3 sm:flex-row">
@@ -566,7 +627,6 @@ export function ActivarSegundoFactorPasoAPaso({
                 className="sm:flex-none"
                 data-testid="volver-al-qr"
               >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 Atrás
               </Button>
               <Button
@@ -590,11 +650,24 @@ export function ActivarSegundoFactorPasoAPaso({
   );
 }
 
+/** Sólo fuera de producción: dice que `123456` es el atajo del mock, no seguridad real. */
+function AvisoDelMock() {
+  return (
+    <p
+      className="flex flex-wrap items-center justify-center gap-2 text-center text-caption text-fg-subtle"
+      data-testid="aviso-del-mock"
+    >
+      <InsigniaDelMock />
+      Con el mock activo, escribir 123456 envía el código real de este navegador.
+    </p>
+  );
+}
+
 function NumeroDeInstruccion({ n }: { n: number }) {
   return (
     <span
       aria-hidden="true"
-      className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-muted font-mono text-[11px] tabular-nums text-fg-muted"
+      className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-muted font-mono text-caption leading-none tabular-nums text-fg-muted"
     >
       {n}
     </span>
@@ -640,7 +713,7 @@ function AnilloDePasos({ actual }: { actual: number }) {
       </svg>
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center font-mono text-caption font-semibold tabular-nums text-fg"
+        className="absolute inset-0 flex items-center justify-center font-mono text-caption tabular-nums text-fg"
       >
         {actual + 1}/{total}
       </span>
@@ -653,11 +726,14 @@ function PasoDescargar({
   preparando,
   error,
   onContinuar,
+  onUsarMock,
 }: {
   plataforma: Plataforma | null;
   preparando: boolean;
   error: string | null;
   onContinuar: () => void;
+  /** Sólo fuera de producción; sin esto la opción no existe. */
+  onUsarMock?: () => void;
 }) {
   const tienda = (
     href: string,
@@ -671,8 +747,11 @@ function PasoDescargar({
       rel="noopener noreferrer"
       aria-label={`Descargar ${app} en ${etiqueta} (se abre en otra pestaña)`}
       className={cn(
-        buttonVariants({ variant: resaltada ? 'default' : 'outline', size: 'sm' }),
+        // Un solo azul en el paso: el de «Ya tengo la app». La tienda de tu
+        // celular se nota por el borde más oscuro, no por otro botón azul.
+        buttonVariants({ variant: 'outline', size: 'sm' }),
         'flex-1 justify-center gap-1.5 sm:flex-none',
+        resaltada && 'border-fg/40',
       )}
     >
       {etiqueta === 'App Store' ? (
@@ -759,8 +838,24 @@ function PasoDescargar({
         data-testid="ya-tengo-la-app"
       >
         {preparando ? 'Preparando tu código…' : 'Ya tengo la app, continuar'}
-        {preparando ? null : <ArrowRight className="h-4 w-4" aria-hidden="true" />}
       </Button>
+
+      {onUsarMock ? (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            hideArrow
+            onClick={onUsarMock}
+            disabled={preparando}
+            data-testid="usar-mock-de-autenticacion"
+          >
+            Usar mock de autenticación
+          </Button>
+          <InsigniaDelMock />
+        </div>
+      ) : null}
     </div>
   );
 }

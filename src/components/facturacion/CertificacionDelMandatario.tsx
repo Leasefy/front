@@ -141,7 +141,7 @@ export function CertificacionDelMandatario({
             en la misma pestaña y hay que poder decir cuál es cuál. */}
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h3 className="text-body font-semibold text-fg">
+            <h3 className="text-body font-medium text-fg">
               Certificaciones generadas
             </h3>
             <p className="text-caption text-fg-muted">

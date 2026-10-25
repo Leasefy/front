@@ -42,7 +42,7 @@
  */
 
 import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   CaretDown,
@@ -52,7 +52,9 @@ import {
   SortDescending,
   Warning,
 } from '@phosphor-icons/react';
-import { IconButton, SearchInput, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Avatar, IconButton, SearchInput, Stagger, StaggerItem } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { conteosDeLasPestanas, type PestanaDeInquilinos } from '@/lib/inquilinos/pestanas';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,7 +68,9 @@ import {
   TableRowAnimada,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { tiempoHastaElFin } from '@/lib/inmuebles/tiempo-hasta-el-fin';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { useI18n } from '@/lib/i18n';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
@@ -85,10 +89,8 @@ import {
   type ArriendoDeInquilino,
   type ConteosDeInquilinos,
   type EstadoDeArriendo,
-  type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
-import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 /**
  * La única variante de `/contratos/nuevo` que carga sin postulación: a secas
@@ -222,35 +224,19 @@ function fechaOGuion(
 export interface BarraDeInquilinosProps {
   buscar: string;
   onBuscar: (valor: string) => void;
-  estado: FiltroDeEstado;
-  onEstado: (estado: FiltroDeEstado) => void;
+  estado: PestanaDeInquilinos;
+  onEstado: (estado: PestanaDeInquilinos) => void;
   /**
    * Cuántas personas hay detrás de cada pestaña. `null` = sin número (todavía
    * no llegaron, o el conteo falló): un número equivocado es peor que ninguno.
    */
   conteos?: ConteosDeInquilinos | null;
-}
-
-const NUMERO = cifrasDeLaPantalla();
-
-/**
- * Una pestaña con su número al lado.
- *
- * 🔴 20-09 · Sin número, para saber si hay inquilinos terminados había que
- * clickear —lo que dispara otra consulta— y si no había ninguno la pantalla
- * quedaba vacía sin decir que esa pestaña nunca tuvo a nadie. El cero se dice
- * igual que cualquier otro número: es la respuesta a por qué está vacío.
- */
-function ConNumero({ etiqueta, cuantos }: { etiqueta: string; cuantos?: number }) {
-  if (cuantos === undefined) return <>{etiqueta}</>;
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      {etiqueta}
-      <span className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-        {NUMERO.format(cuantos)}
-      </span>
-    </span>
-  );
+  /**
+   * Pestañas por tarea (Nico, 22-10-2026): cuántos no tienen arriendo. Con el dato (número o
+   * `null` si no se sabe) aparece «Sin arriendo» y «Activos» deja de contarlos. Sin la prop, las
+   * tres pestañas de siempre.
+   */
+  sinArriendo?: number | null;
 }
 
 /**
@@ -267,64 +253,59 @@ export function BarraDeInquilinos({
   estado,
   onEstado,
   conteos = null,
+  sinArriendo,
 }: BarraDeInquilinosProps) {
   const { t } = useI18n();
+  const conPestanaSinArriendo = sinArriendo !== undefined;
+  const numeros = conPestanaSinArriendo
+    ? conteosDeLasPestanas(conteos, sinArriendo)
+    : { activos: conteos?.activos ?? null, sinArriendo: null, terminados: conteos?.terminados ?? null, todos: conteos?.todos ?? null };
   return (
-    <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-      <SearchInput
-        value={buscar}
-        onChange={(e) => onBuscar(e.target.value)}
-        onClear={() => onBuscar('')}
-        placeholder={t('inquilinos.buscarPlaceholder')}
-        inputSize="md"
-        className="w-full sm:max-w-md"
-        data-testid="inquilinos-buscar"
-      />
-      <SegmentedControl<FiltroDeEstado>
-        value={estado}
-        onChange={onEstado}
-        aria-label={t('inquilinos.filtroEstado')}
-        options={[
-          {
-            value: 'activos',
-            label: (
-              <ConNumero
-                etiqueta={t('inquilinos.filtros.activos')}
-                cuantos={conteos?.activos}
-              />
-            ),
-            ariaLabel: conteos
-              ? `${t('inquilinos.filtros.activos')}: ${conteos.activos}`
-              : t('inquilinos.filtros.activos'),
-          },
-          {
-            value: 'terminados',
-            label: (
-              <ConNumero
-                etiqueta={t('inquilinos.filtros.terminados')}
-                cuantos={conteos?.terminados}
-              />
-            ),
-            ariaLabel: conteos
-              ? `${t('inquilinos.filtros.terminados')}: ${conteos.terminados}`
-              : t('inquilinos.filtros.terminados'),
-          },
-          {
-            value: 'todos',
-            label: (
-              <ConNumero etiqueta={t('inquilinos.filtros.todos')} cuantos={conteos?.todos} />
-            ),
-            ariaLabel: conteos
-              ? `${t('inquilinos.filtros.todos')}: ${conteos.todos}`
-              : t('inquilinos.filtros.todos'),
-          },
+    <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
+      {/* Las pestañas por tarea, como en Contratos y Propietarios: el número de cada una es lo que
+          se ve al tocarla. Activos, Terminados y Todos se ven aunque estén en cero (el cero
+          responde por qué la pestaña está vacía); «Sin arriendo», sólo cuando hay alguien. */}
+      <PestanasDeEstado<PestanaDeInquilinos>
+        etiqueta={t('inquilinos.filtroEstado')}
+        data-testid="pestanas-de-inquilinos"
+        className="lg:shrink-0"
+        valor={estado}
+        onCambio={onEstado}
+        pestanas={[
+          { valor: 'activos', etiqueta: t('inquilinos.filtros.activos'), cuantos: numeros.activos, fija: true, testid: 'pestana-activos' },
+          ...(conPestanaSinArriendo
+            ? [{ valor: 'sinArriendo' as const, etiqueta: t('inquilinos.filtros.sinArriendo'), cuantos: numeros.sinArriendo, tono: 'aviso' as const, testid: 'pestana-sin-arriendo' }]
+            : []),
+          { valor: 'terminados', etiqueta: t('inquilinos.filtros.terminados'), cuantos: numeros.terminados, fija: true, testid: 'pestana-terminados' },
+          { valor: 'todos', etiqueta: t('inquilinos.filtros.todos'), cuantos: numeros.todos, fija: true, testid: 'pestana-todos' },
         ]}
       />
+      {/* Ronda 20: el `className` de SearchInput va al <input> y su envoltorio es `w-full`: el ancho
+          y el lugar (contra el borde derecho) los pone este contenedor. */}
+      <div className="w-full lg:ml-auto lg:w-96 lg:flex-none">
+        <SearchInput
+          value={buscar}
+          onChange={(e) => onBuscar(e.target.value)}
+          onClear={() => onBuscar('')}
+          placeholder={t('inquilinos.buscarPlaceholder')}
+          inputSize="md"
+          className="w-full"
+          data-testid="inquilinos-buscar"
+        />
+      </div>
     </div>
   );
 }
 
+/**
+ * El formato de la plata de la página (glow up 22-10: la cifra de arriba decía
+ * «,74» y la tabla no). Sin él, el de siempre.
+ */
+const FormatoDeLaPlata = createContext<((n: number) => string) | null>(null);
+
 export interface InquilinosTableProps {
+  /** El formato de la plata de la página; sin él, el de siempre. */
+  formato?: (n: number) => string;
   inquilinos: readonly Inquilino[];
   /** Abre el cajón de detalle. La fila entera, y el nombre por teclado. */
   onAbrir: (persona: Inquilino) => void;
@@ -353,7 +334,15 @@ function usePuedeCrearContrato(): boolean {
   return permisos ? permisos.canAccess('contratos', 'create') : true;
 }
 
-export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar, marcadas, onMarcar }: InquilinosTableProps) {
+export function InquilinosTable({ formato, ...props }: InquilinosTableProps) {
+  return (
+    <FormatoDeLaPlata.Provider value={formato ?? null}>
+      <TablaDeInquilinos {...props} />
+    </FormatoDeLaPlata.Provider>
+  );
+}
+
+function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, onMarcar }: Omit<InquilinosTableProps, 'formato'>) {
   const { t } = useI18n();
   const [ordenPropio, setOrdenPropio] = useState<OrdenDeInquilinos>({ campo: 'nombre', sentido: 'asc' });
   const { campo, sentido } = orden ?? ordenPropio;
@@ -369,6 +358,21 @@ export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar, marcada
     () => ordenarInquilinos(inquilinos, campo, sentido),
     [inquilinos, campo, sentido],
   );
+  /*
+   * Glow up 22-10 (rondas 13 y 14): la columna «Estado» sólo cuando alguna fila tiene algo que
+   * decir —sin arriendo, varios arriendos, o uno que no es activo («Empieza el…», «En firma»)—.
+   * En «Activos» quedaba vacía en 8 de cada 10 filas.
+   */
+  const conEstado = useMemo(
+    () =>
+      ordenados.some(
+        (p) => p.arriendos.length !== 1 || estadoParaMostrar(arriendoPrincipal(p) ?? p.arriendos[0]) !== 'ACTIVE',
+      ),
+    [ordenados],
+  );
+
+  // Ronda 20: la columna del desplegable sólo si alguien de la página tiene varios arriendos (vacía dejaba ≈64 px entre la casilla y el avatar).
+  const conDesplegable = useMemo(() => ordenados.some((p) => p.arriendos.length > 1), [ordenados]);
 
   const ordenarPor = (siguiente: CampoDeOrden) => {
     const nuevo = siguienteOrden({ campo, sentido }, siguiente);
@@ -414,7 +418,7 @@ export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar, marcada
 
   return (
     <div className="overflow-x-auto">
-      <Table className="min-w-[760px]" data-testid="inquilinos-tabla">
+      <Table className="min-w-[760px] [&_td]:px-3 [&_th]:px-3" data-testid="inquilinos-tabla">
         <TableHeader>
           <TableRow className="border-b border-border bg-muted/30">
             {marcadas && onMarcar && (
@@ -427,11 +431,10 @@ export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar, marcada
                 />
               </TableHead>
             )}
-            <TableHead className="w-10 p-4" />
+            {conDesplegable ? <TableHead className="w-10 p-4" /> : null}
             <Ordenable campo="nombre">{t('inquilinos.tabla.inquilino')}</Ordenable>
-            <TableHead className="p-4 text-left">{t('inquilinos.tabla.telefono')}</TableHead>
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.inmueble')}</TableHead>
-            <TableHead className="p-4 text-left">{t('inquilinos.tabla.estado')}</TableHead>
+            {conEstado ? <TableHead className="p-4 text-left">{t('inquilinos.tabla.estado')}</TableHead> : null}
             <Ordenable campo="canon">{t('inquilinos.tabla.canon')}</Ordenable>
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.vigencia')}</TableHead>
           </TableRow>
@@ -453,6 +456,8 @@ export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar, marcada
                 ) : undefined
               }
               persona={persona}
+              conEstado={conEstado}
+              conDesplegable={conDesplegable}
               desplegada={desplegados.has(persona.tenantId)}
               onAlternar={() => alternar(persona.tenantId)}
               onAbrir={() => onAbrir(persona)}
@@ -464,9 +469,48 @@ export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar, marcada
   );
 }
 
+/** «6 de mar de 2025» → «6 mar 2025»: la fecha corta de la casa, como en Contratos. */
+function sinDe(fecha: string): string {
+  return fecha.replace(/ de /g, ' ');
+}
+
+function VigenciaDeLaFila({
+  desde,
+  hasta,
+  formatDate,
+  locale,
+}: {
+  desde: string | null;
+  hasta: string | null;
+  formatDate: (f: string | Date) => string;
+  locale?: string;
+}) {
+  const inicio = sinDe(fechaOGuion(desde, formatDate));
+  const diaFin = diaDeVigencia(hasta);
+  if (diaFin === null) {
+    return (
+      <span className="whitespace-nowrap text-body-sm text-fg-muted">
+        {inicio} → —
+      </span>
+    );
+  }
+  const falta = tiempoHastaElFin(diaFin, locale === 'en' ? 'en' : 'es');
+  return (
+    <span className="whitespace-nowrap text-body-sm" title={`Desde ${inicio}`} data-testid="inquilino-vigencia">
+      <span className="sr-only">Desde {inicio}, hasta </span>
+      <span className="text-fg">{sinDe(fechaOGuion(hasta, formatDate))}</span>
+      {falta ? (
+        <span className={cn(falta.tono === 'pronto' ? 'text-warning' : 'text-fg-subtle')}> · {falta.texto}</span>
+      ) : null}
+    </span>
+  );
+}
+
 function FilaDeInquilino({
   casilla,
   persona,
+  conEstado = true,
+  conDesplegable = true,
   desplegada,
   onAlternar,
   onAbrir,
@@ -474,11 +518,16 @@ function FilaDeInquilino({
   /** La casilla de las acciones masivas, si la tabla las tiene. */
   casilla?: React.ReactNode;
   persona: Inquilino;
+  /** Sin la columna «Estado» (nadie en la página tiene algo que decir ahí). */
+  conEstado?: boolean;
+  /** Sin la celda del desplegable (nadie en la página tiene varios arriendos). */
+  conDesplegable?: boolean;
   desplegada: boolean;
   onAlternar: () => void;
   onAbrir: () => void;
 }) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency: formatoDeSiempre, formatDate, locale } = useI18n();
+  const formatCurrency = useContext(FormatoDeLaPlata) ?? formatoDeSiempre;
   const puedeCrearContrato = usePuedeCrearContrato();
   const vigentes = arriendosVigentes(persona);
   const varios = persona.arriendos.length > 1;
@@ -501,6 +550,7 @@ function FilaDeInquilino({
       >
         {casilla !== undefined && <TableCell className="w-10 py-4 pl-4 pr-0 align-middle">{casilla}</TableCell>}
         {/* Desplegar: sólo tiene sentido con más de un arriendo. */}
+        {conDesplegable ? (
         <TableCell className="p-4 align-middle">
           {varios ? (
             <IconButton
@@ -519,11 +569,12 @@ function FilaDeInquilino({
             />
           ) : null}
         </TableCell>
+        ) : null}
 
-        {/* Nombre + correo, como en la tabla de propietarios — pero SIN el
-            avatar: allá el ícono distingue persona de empresa, y acá todos
-            los inquilinos son personas, así que serían 52 px que no dicen
-            nada.
+        {/* Nombre + correo, con su Avatar (GLOW UP 21-10). Antes iba SIN avatar porque el de
+            entonces era el mismo muñequito para todos («52 px que no dicen nada»); el de Cadence 2
+            lleva sus iniciales y un tono que sale del nombre —se reconoce a la persona de un
+            vistazo— y es el mismo que la acompaña en Contratos y en Mensajes.
 
             allowlist: el nombre es un <button> porque es el ÚNICO camino de
             teclado al cajón desde que se fue la columna «Ver ficha» — un
@@ -539,33 +590,38 @@ function FilaDeInquilino({
             // Un nombre de empresa de 80 letras no puede empujar el estado y el
             // canon fuera de la tabla: se corta a 20rem y el completo va en `title`.
             title={persona.nombre}
-            className="block min-w-0 max-w-[20rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex min-w-0 max-w-[20rem] items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             data-testid="inquilino-abrir"
           >
-            <span className="block truncate font-medium text-fg group-hover:text-primary">
-              {persona.nombre}
-            </span>
-            <span className="block truncate text-sm text-fg-muted">
-              {persona.email ?? t('inquilinos.tabla.sinCorreo')}
+            <Avatar name={persona.nombre} size="sm" className="shrink-0" />
+            <span className="min-w-0">
+              <span className="block truncate font-medium text-fg group-hover:text-primary" data-testid="nombre-del-inquilino">
+                {persona.nombre}
+              </span>
+              <span className="block truncate text-sm text-fg-muted">
+                {persona.email ?? t('inquilinos.tabla.sinCorreo')}
+              </span>
             </span>
           </button>
-          {/* T-0128: creado por la migración sin documento. */}
-          <DatosPorCompletar pendientes={persona.datosPendientes} className="mt-1 flex" />
-        </TableCell>
-
-        <TableCell className="p-4 align-middle">
+          {/* Glow up 22-10: el teléfono va bajo el correo (su columna empujaba la vigencia fuera
+              de la tabla a 1440, y un teléfono escrito a mano ocupaba tres renglones). */}
           {persona.telefono ? (
-            <span className="font-mono text-sm tabular-nums text-fg">{persona.telefono}</span>
+            <span
+              className="ml-11 mt-0.5 block max-w-[18rem] truncate font-mono text-caption tabular-nums text-fg-muted"
+              title={persona.telefono}
+            >
+              {persona.telefono}
+            </span>
           ) : sinContacto ? (
             /* Sin correo NI teléfono no es un detalle estético: es a quién no
                se le puede cobrar ni avisar. */
-            <span className="inline-flex items-center gap-1.5 text-sm text-warning">
-              <Warning className="h-4 w-4 shrink-0" />
+            <span className="ml-11 mt-0.5 inline-flex items-center gap-1.5 text-caption text-warning">
+              <Warning className="h-3.5 w-3.5 shrink-0" />
               {t('inquilinos.sinContacto')}
             </span>
-          ) : (
-            <span className="text-sm text-fg-subtle">—</span>
-          )}
+          ) : null}
+          {/* T-0128: creado por la migración sin documento. */}
+          <DatosPorCompletar pendientes={persona.datosPendientes} className="mt-1 flex" />
         </TableCell>
 
         {/* Inmueble, estado, canon y vigencia describen el arriendo principal
@@ -592,9 +648,10 @@ function FilaDeInquilino({
             <Link
               href={`/panel/inmobiliaria/inmuebles/${principal.inmueble.id}?por=inmueble`}
               onClick={(e) => e.stopPropagation()}
-              className="block max-w-[14rem] truncate text-sm text-fg hover:text-primary"
+              className="block max-w-[16rem] truncate text-sm text-fg hover:text-primary"
+              title={principal.inmueble.address ?? undefined}
             >
-              {principal.inmueble.address}
+              {sinMayusculasSostenidas(principal.inmueble.address ?? '')}
               <span className="text-fg-muted"> · {principal.inmueble.city}</span>
             </Link>
           ) : (
@@ -604,35 +661,43 @@ function FilaDeInquilino({
           )}
         </TableCell>
 
-        <TableCell className="p-4 align-middle">
-          {sinArriendo ? (
-            /*
-             * Las DOS cosas, no una: que no tiene arriendo —o sea que no se le
-             * está cobrando nada— y por dónde dárselo. Decir sólo lo primero
-             * deja a alguien mirando una fila que no explica qué hacer.
-             */
-            <div className="flex flex-col items-start gap-1">
-              <Badge variant="secondary">{t('inquilinos.sinArriendo')}</Badge>
-              {puedeCrearContrato ? (
-                <Link
-                  href={rutaDelContratoManualPara(persona)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
-                  data-testid="inquilino-crear-contrato"
-                >
-                  <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
-                  {t('inquilinos.crearSuContrato')}
-                </Link>
-              ) : null}
-            </div>
-          ) : varios ? (
-            <span className="text-sm text-fg-muted tabular-nums">
-              {textoDeVigentes(t, vigentes.length)}
-            </span>
-          ) : principal ? (
-            <EstadoDelArriendo arriendo={principal} />
-          ) : null}
-        </TableCell>
+        {conEstado ? (
+          <TableCell className="p-4 align-middle">
+            {sinArriendo ? (
+              /*
+               * Las DOS cosas, no una: que no tiene arriendo —o sea que no se le
+               * está cobrando nada— y por dónde dárselo. Decir sólo lo primero
+               * deja a alguien mirando una fila que no explica qué hacer.
+               */
+              <div className="flex flex-col items-start gap-1">
+                <Badge variant="secondary">{t('inquilinos.sinArriendo')}</Badge>
+                {puedeCrearContrato ? (
+                  <Link
+                    href={rutaDelContratoManualPara(persona)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
+                    data-testid="inquilino-crear-contrato"
+                  >
+                    <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
+                    {t('inquilinos.crearSuContrato')}
+                  </Link>
+                ) : null}
+              </div>
+            ) : varios ? (
+              <span className="text-sm text-fg-muted tabular-nums">
+                {textoDeVigentes(t, vigentes.length)}
+              </span>
+            ) : principal ? (
+              // Glow up 22-10 (ronda 12): un arriendo activo no lleva chip —«Activo» en cada
+              // fila de la pestaña «Activos» no decía nada—; sólo lo que NO es activo se nombra.
+              estadoParaMostrar(principal) === 'ACTIVE' ? (
+                <span className="sr-only" data-estado="ACTIVE">{t('inquilinos.estados.activo')}</span>
+              ) : (
+                <EstadoDelArriendo arriendo={principal} />
+              )
+            ) : null}
+          </TableCell>
+        ) : null}
 
         <TableCell className="p-4 align-middle">
           {sinArriendo ? (
@@ -650,13 +715,9 @@ function FilaDeInquilino({
           {varios || !principal ? (
             <span className="text-sm text-fg-subtle">—</span>
           ) : (
-            /* Apiladas, no en una línea: «28 de feb de 2026 — 27 de feb de
-               2027» son ~230 px y empujaban la última columna fuera de la
-               pantalla. */
-            <div className="whitespace-nowrap font-mono text-xs tabular-nums text-fg-muted">
-              <div>{fechaOGuion(principal.desde, formatDate)}</div>
-              <div className="text-fg-subtle">→ {fechaOGuion(principal.hasta, formatDate)}</div>
-            </div>
+            /* Ronda 20: un renglón en sans y corto, «5 mar 2027 · en 4 meses»: lo que se mira es
+               cuándo termina. El inicio va en el `title` y para el lector de pantalla. */
+            <VigenciaDeLaFila desde={principal.desde} hasta={principal.hasta} formatDate={formatDate} locale={locale} />
           )}
         </TableCell>
 
@@ -666,7 +727,10 @@ function FilaDeInquilino({
           entrada de las filas); al contraer se va de una. */}
       {varios && desplegada && (
         <TableRowAnimada data-testid="inquilino-arriendos">
-          <TableCell colSpan={casilla !== undefined ? 8 : 7} className="bg-surface-muted/50 p-4">
+          <TableCell
+            colSpan={(casilla !== undefined ? 7 : 6) - (conEstado ? 0 : 1) - (conDesplegable ? 0 : 1)}
+            className="bg-surface-muted/50 p-4"
+          >
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
                 /* 🔴 La llave es el CONTRATO, no el `Lease`: desde el 20-09
@@ -686,7 +750,8 @@ function FilaDeInquilino({
 
 /** Un arriendo en una línea. Se usa en el despliegue y en la ficha. */
 export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino }) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency: formatoDeSiempre, formatDate } = useI18n();
+  const formatCurrency = useContext(FormatoDeLaPlata) ?? formatoDeSiempre;
 
   return (
     <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-surface px-3 py-2')}>
@@ -696,8 +761,9 @@ export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino 
         <Link
           href={`/panel/inmobiliaria/inmuebles/${arriendo.inmueble.id}?por=inmueble`}
           className="min-w-0 flex-1 truncate text-sm text-fg hover:text-primary"
+          title={arriendo.inmueble.address ?? undefined}
         >
-          {arriendo.inmueble.address}
+          {sinMayusculasSostenidas(arriendo.inmueble.address ?? '')}
           <span className="text-fg-muted"> · {arriendo.inmueble.city}</span>
         </Link>
       ) : (
@@ -729,7 +795,8 @@ function TarjetasDeInquilinos({
   inquilinos: readonly Inquilino[];
   onAbrir: (persona: Inquilino) => void;
 }) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency: formatoDeSiempre, formatDate } = useI18n();
+  const formatCurrency = useContext(FormatoDeLaPlata) ?? formatoDeSiempre;
   const puedeCrearContrato = usePuedeCrearContrato();
   return (
     <Stagger as="ul" className="divide-y divide-border" data-testid="inquilinos-tarjetas">
@@ -753,9 +820,10 @@ function TarjetasDeInquilinos({
               data-testid="inquilino-abrir"
             >
               <span className="flex items-start justify-between gap-3">
-                <span className="min-w-0">
+                <Avatar name={persona.nombre} size="sm" className="mt-0.5 shrink-0" />
+                <span className="min-w-0 flex-1">
                   {/* El nombre se ajusta en dos renglones; nunca «Ana So…». */}
-                  <span className="block break-words font-medium text-fg">{persona.nombre}</span>
+                  <span className="block break-words font-medium text-fg" data-testid="nombre-del-inquilino">{persona.nombre}</span>
                   <span className="block truncate text-sm text-fg-muted">
                     {persona.email ?? persona.telefono ?? t('inquilinos.tabla.sinCorreo')}
                   </span>
@@ -768,10 +836,20 @@ function TarjetasDeInquilinos({
                       {textoDeVigentes(t, vigentes.length)}
                     </span>
                   ) : principal ? (
-                    <EstadoDelArriendo arriendo={principal} />
+                    estadoParaMostrar(principal) === 'ACTIVE' ? (
+                      <span className="sr-only">{t('inquilinos.estados.activo')}</span>
+                    ) : (
+                      <EstadoDelArriendo arriendo={principal} />
+                    )
                   ) : null}
                 </span>
               </span>
+              {/* Glow up 22-10 (ronda 12): el inmueble es lo segundo con que se reconoce a un inquilino. */}
+              {!varios && principal?.inmueble?.address ? (
+                <span className="mt-1 block truncate text-caption text-fg-muted" title={principal.inmueble.address}>
+                  {sinMayusculasSostenidas(principal.inmueble.address)}
+                </span>
+              ) : null}
               {!sinArriendo ? (
                 <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
@@ -780,7 +858,7 @@ function TarjetasDeInquilinos({
                   <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
                     {varios || !principal
                       ? t('inquilinos.tabla.variosInmuebles', { n: persona.arriendos.length })
-                      : `${fechaOGuion(principal.desde, formatDate)} → ${fechaOGuion(principal.hasta, formatDate)}`}
+                      : `${sinDe(fechaOGuion(principal.desde, formatDate))} → ${sinDe(fechaOGuion(principal.hasta, formatDate))}`}
                   </span>
                 </span>
               ) : null}

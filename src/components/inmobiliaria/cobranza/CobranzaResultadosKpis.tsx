@@ -9,7 +9,7 @@
  * incumplidas y tasa de recuperación. No eran métricas sin datos todavía —
  * eran métricas que no podían existir, dijera lo que dijera la base.
  *
- * Las de verdad estaban en `/cobranza/resultados`, que salía del agregado
+ * Las de verdad estaban en `/cobranza/resultados` (hoy redirige al Resumen, ronda 30 K8), que salía del agregado
  * `GET /cobranza/recovery`. Esa pantalla se fusionó acá (decisión de Nico,
  * 2026-08-08): hacía el mismo trabajo que el Resumen y hasta tenía una tarjeta
  * al pie explicando que ella no era la analítica ni el reporte.
@@ -45,7 +45,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
-import { KpiCard, Stagger, StaggerItem } from '@leasefy/cadence'
+import { FranjaDeCifras, KpiCard } from '@leasefy/cadence'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
@@ -89,6 +89,11 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
       ov?.kpis.pagadoHoyCop ??
       null
 
+    // Ronda 30 (K8): lo que «Resultados» tenía de propio (revisora r25, #3): sin el
+    // agregado, la cifra es lo pagado HOY y se dice así, no «Valor recuperado»
+    // (mezclaba periodos). La pantalla se fusionó aquí.
+    const recuperadoEsDeHoy = rec?.recoveredValueCop == null && recuperadoCop != null
+
     const casosCerrados = rec?.casesClosed ?? null
     const gestionados = rec?.casesManaged ?? ov?.kpis.llamadasHoy ?? null
     const tiempoRecuperacion = rec?.avgRecoveryDays ?? null
@@ -118,10 +123,10 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
     return [
       {
         key: 'recuperado',
-        label: 'Valor recuperado',
+        label: recuperadoEsDeHoy ? 'Pagado hoy' : 'Valor recuperado',
         icon: CurrencyDollar,
         value: recuperadoCop != null ? formatCurrency(recuperadoCop) : null,
-        sublabel: 'Recaudo confirmado',
+        sublabel: recuperadoEsDeHoy ? 'Recaudo confirmado de hoy' : 'Recaudo confirmado',
       },
       {
         key: 'promesas-cumplidas',
@@ -234,22 +239,21 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
           (`layout`), en vez de saltar de golpe. */}
       {/* QA-IA-95 (IA-B-09): en cinco columnas a 1440 px los rótulos se cortaban («TASA DE RESPUES…»,
           «VARIACIÓN DE MO…»): las cinco en fila sólo con pantalla ancha. */}
-      <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 min-[1680px]:grid-cols-5 gap-3">
-        {metricas.map((m) => {
-          const MetricaIcon = m.icon
-          return (
-            <StaggerItem key={m.key} className="min-w-0 [&>*]:h-full">
-              <KpiCard
-                label={tr(m.label)}
-                value={m.value as string}
-                sublabel={tr(m.sublabel)}
-                icon={<MetricaIcon weight="duotone" aria-hidden="true" />}
-                data-testid={`cobranza-kpi-${m.key}`}
-              />
-            </StaggerItem>
-          )
-        })}
-      </Stagger>
+      {/* GLOW UP 21-10: una franja de cifras como el resto del panel (de a tres:
+          cinco en fila cortaban los rótulos a 1440 px, QA-IA-95). */}
+      <FranjaDeCifras fila="lg" columnas={metricas.length > 4 ? 3 : undefined} aria-label={tr("Cómo va el agente")}>
+        {/* Ronda 30 (coordinador, Resumen 491): sin los íconos duotone de cada cifra: eran
+            decoración (el rótulo ya dice qué es) y Cadence 2 no lleva íconos de adorno. */}
+        {metricas.map((m) => (
+          <KpiCard
+            key={m.key}
+            label={tr(m.label)}
+            value={m.value as string}
+            sublabel={tr(m.sublabel)}
+            data-testid={`cobranza-kpi-${m.key}`}
+          />
+        ))}
+      </FranjaDeCifras>
     </section>
   )
 }

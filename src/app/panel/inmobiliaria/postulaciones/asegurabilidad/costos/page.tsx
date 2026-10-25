@@ -16,19 +16,23 @@
  */
 
 import { formatCurrency } from '@/lib/types/inmobiliaria'
-import { Coins } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { Coins, MagnifyingGlass } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { useI18n } from '@/lib/i18n'
 import { useCostos } from '@/lib/hooks/cotizador/use-costos'
 import { CostKpiStrip } from '@/components/inmobiliaria/cotizador/CostKpiStrip'
 import { CostSourcePieChart } from '@/components/inmobiliaria/cotizador/CostSourcePieChart'
 import { MonthlyCostTrendChart } from '@/components/inmobiliaria/cotizador/MonthlyCostTrendChart'
 import { Badge } from '@/components/ui/badge'
-import { SectionLabel } from '@/components/ui/section-label'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { CrossFade } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const COLUMNAS = 3
 
@@ -61,6 +65,11 @@ export default function CostosPage() {
     refetchSummary,
     refetchSeries,
   } = useCostos()
+  // Ronda 30 (regla de Nico: toda tabla con buscador y paginación): la tabla de fuentes busca por el nombre de la
+  // fuente y se pagina con el pie de la casa. Los hooks van antes del esqueleto (que retorna temprano).
+  const [busqueda, setBusqueda] = useState('')
+  const [pagina, setPagina] = useState(1)
+  const [porPagina, setPorPagina] = useState<number>(PAGE_SIZE_OPTIONS[0])
 
   // Phase 38-05b: page-level skeleton on initial load only (D-38-04: skeleton only;
   // per-section table skeleton + inline empty prose preserved below; no EmptyState since
@@ -90,20 +99,24 @@ export default function CostosPage() {
   }))
 
   const tablaCargando = (isLoadingSummary || isLoadingSeries) && tableRows.length === 0
+  const plano = (v?: string | null) =>
+    (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const filasVisibles = busqueda.trim()
+    ? tableRows.filter((r) => plano(r.label).includes(plano(busqueda.trim())))
+    : tableRows
+  const ultimaPagina = Math.max(1, Math.ceil(filasVisibles.length / porPagina))
+  const paginaActual = Math.min(pagina, ultimaPagina)
+  const filasDeLaPagina = filasVisibles.slice((paginaActual - 1) * porPagina, paginaActual * porPagina)
 
   return (
     <CrossFade swapKey="costos">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
-      <header className="space-y-1.5">
-        <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cotizador.costos.pageTitle')}
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-          {t('inmobiliaria.ai.cotizador.costos.pageSubtitle')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t('inmobiliaria.ai.cotizador.costos.pageTitle')}
+        descripcion={t('inmobiliaria.ai.cotizador.costos.pageSubtitle')}
+      />
 
       {/* El fallo va ACÁ ARRIBA y reemplaza los datos, no debajo de ellos.
           Estaba al final de la página: se veían los KPI en cero, la tabla
@@ -127,7 +140,7 @@ export default function CostosPage() {
       {/* Main charts row: pie (left) + trend line (right) — side-by-side on md+ (D-35-09 / XR-03) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <section className="rounded-lg border border-border bg-surface p-5">
-          <h2 className="text-base font-semibold text-fg mb-4">
+          <h2 className="text-base font-medium text-fg mb-4">
             {t('inmobiliaria.ai.cotizador.costos.charts.costSourcePie.title')}
           </h2>
           <CostSourcePieChart
@@ -138,7 +151,7 @@ export default function CostosPage() {
         </section>
 
         <section className="rounded-lg border border-border bg-surface p-5">
-          <h2 className="text-base font-semibold text-fg mb-4">
+          <h2 className="text-base font-medium text-fg mb-4">
             {t('inmobiliaria.ai.cotizador.costos.charts.monthlyCostTrend.title')}
           </h2>
           <MonthlyCostTrendChart
@@ -156,10 +169,27 @@ export default function CostosPage() {
       {/* Per-source breakdown table — la tabla de la casa: la carga y el
           vacío viven dentro del cuerpo, con la cabecera siempre a la vista. */}
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
-        <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-fg">
+        <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cotizador.costos.sourceBreakdownTitle')}
           </h2>
+          {tableRows.length > 0 ? (
+            <div className="relative w-full sm:w-64">
+              <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+              <Input
+                type="search"
+                value={busqueda}
+                onChange={(e) => {
+                  setBusqueda(e.target.value)
+                  setPagina(1)
+                }}
+                placeholder="Buscar una fuente"
+                aria-label="Buscar una fuente de costo"
+                className="h-9 pl-9"
+                data-testid="costos-buscar"
+              />
+            </div>
+          ) : null}
         </div>
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">
@@ -185,12 +215,18 @@ export default function CostosPage() {
                     queSon="fuentes de costo"
                     icono={Coins}
                     titulo={t('inmobiliaria.ai.cotizador.costos.noCostSources')}
-                    descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el gasto aparece acá por fuente."
+                    descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el gasto aparece aquí por fuente."
                   />
                 </TableCell>
               </TableRow>
+            ) : filasVisibles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={COLUMNAS} className="p-0">
+                  <SinDatos queSon="fuentes de costo" hayFiltros onLimpiarFiltros={() => setBusqueda('')} />
+                </TableCell>
+              </TableRow>
             ) : (
-              tableRows.map(row => (
+              filasDeLaPagina.map(row => (
                 <TableRow key={row.key} className="hover:bg-surface-muted/50">
                   <TableCell className="px-4 py-3 text-sm text-fg">
                     {row.label}
@@ -216,6 +252,21 @@ export default function CostosPage() {
             )}
           </TableBody>
         </Table>
+        {filasVisibles.length > 0 ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={filasVisibles.length}
+              page={paginaActual}
+              pageSize={porPagina}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPagina}
+              onPageSizeChange={(n) => {
+                setPorPagina(n)
+                setPagina(1)
+              }}
+            />
+          </div>
+        ) : null}
       </section>
       </>
       )}

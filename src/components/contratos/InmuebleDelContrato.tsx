@@ -155,7 +155,7 @@ export function InmuebleDelContrato({
           <p className="text-muted-foreground mt-0.5">
             {error
               ? 'Recarga la página o entra a la ficha del inmueble.'
-              : 'El inventario y el historial viven en la consignación; sin ella no hay nada que mostrar acá.'}
+              : 'El inventario y el historial viven en la consignación; sin ella no hay nada que mostrar aquí.'}
           </p>
         </div>
       </div>

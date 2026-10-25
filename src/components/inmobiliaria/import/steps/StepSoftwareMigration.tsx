@@ -60,7 +60,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     id: 'daytona',
     name: 'Daytona Cyber',
     description: 'Segunda plataforma más usada',
-    color: 'bg-surface-muted dark:bg-ink',
+    color: 'bg-surface-muted',
     icon: Desktop,
     popular: true,
     sitio: 'https://daytona.cloud/',
@@ -136,7 +136,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     id: 'mispropiedades',
     name: 'MisPropiedades',
     description: 'Administración de arriendos en la nube',
-    color: 'bg-surface-muted dark:bg-ink',
+    color: 'bg-surface-muted',
     icon: Storefront,
     popular: false,
     sitio: 'https://www.mispropiedades.co/',
@@ -182,10 +182,10 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+        <h2 className="text-h3 text-fg mb-1">
           {t('inmobiliaria.import.software.title')}
         </h2>
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.import.software.subtitle')}
         </p>
       </div>
@@ -202,8 +202,8 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
               className={cn(
                 'animate-stagger-in rounded-lg border transition-[border-color,background-color,box-shadow]',
                 isExpanded
-                  ? 'border-primary/30 bg-primary-soft/50 dark:bg-primary/10'
-                  : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong bg-surface dark:bg-bg'
+                  ? 'border-primary/30 bg-primary-soft/50'
+                  : 'border-border hover:border-border bg-surface'
               )}
               style={{ animationDelay: retrasoEscalonado(index) }}
             >
@@ -219,14 +219,14 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                 >
                   <div className="flex items-center gap-3">
                     <div className={cn(
-                      'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                      'w-10 h-10 rounded-lg flex items-center justify-center shrink-0',
                       software.color
                     )}>
                       <SoftwareIcon className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-fg dark:text-white text-sm">
+                        <span className="font-medium text-fg text-sm">
                           {software.name}
                         </span>
                         {software.popular && (
@@ -235,7 +235,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
+                      <p className="text-caption text-fg-muted mt-0.5">
                         {software.description}
                       </p>
                     </div>
@@ -251,8 +251,8 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
 
                 {/* Expandable export instructions */}
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-border-faint dark:border-border-strong">
-                    <MonoLabel className="block text-xs text-fg-muted dark:text-fg-subtle mb-3">
+                  <div className="mt-4 pt-4 border-t border-border-faint">
+                    <MonoLabel className="block text-caption text-fg-muted mb-3">
                       Instrucciones de exportación
                     </MonoLabel>
                     <ol className="space-y-2.5">
@@ -262,12 +262,12 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                           className="animate-content-reveal flex items-start gap-3"
                           style={{ animationDelay: retrasoEscalonado(stepIndex) }}
                         >
-                          <div className="w-7 h-7 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0 mt-0.5">
-                            <span className="text-xs font-mono text-fg-muted dark:text-fg-subtle">
+                          <div className="w-7 h-7 rounded-full bg-surface-muted flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-caption font-mono text-fg-muted">
                               {stepIndex + 1}
                             </span>
                           </div>
-                          <span className="text-sm text-fg dark:text-fg-subtle leading-relaxed">
+                          <span className="text-sm text-fg leading-relaxed">
                             {step}
                           </span>
                         </li>
@@ -279,7 +279,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                         href={software.sitio}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                        className="mt-3 inline-flex items-center gap-1.5 text-caption text-primary hover:underline"
                       >
                         Ver el sitio de {software.name}
                         <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
@@ -304,18 +304,16 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
         className="w-full text-left flex items-start gap-4 p-5 rounded-lg border border-warning/30 bg-warning-soft hover:bg-warning-soft transition-colors group"
         data-testid="software-no-listado"
       >
-        <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center shrink-0">
-          <Question className="w-5 h-5 text-warning" />
-        </div>
+        <Question className="w-5 h-5 text-warning shrink-0" aria-hidden="true" />
         <div className="flex-1">
-          <p className="font-semibold text-fg dark:text-white text-sm">
+          <p className="font-medium text-fg text-sm">
             {t('inmobiliaria.import.software.otherSoftware')}
           </p>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
+          <p className="text-sm text-fg-muted mt-0.5">
             {t('inmobiliaria.import.software.otherSoftwareDesc')}
           </p>
         </div>
-        <MonoLabel className="text-xs text-warning group-hover:text-warning dark:group-hover:text-warning transition-colors self-center">
+        <MonoLabel className="text-caption text-warning group-hover:text-warning transition-colors self-center">
           {t('inmobiliaria.import.software.requestHelp')}
         </MonoLabel>
       </button>

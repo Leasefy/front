@@ -35,7 +35,7 @@ describe('/arrendar/[id] — paso 1 cumplido', () => {
   it('felicita, celebra y lleva al paso 2 con el inmueble', () => {
     guardarArriendoEnCurso({ propertyId: 'p-1', titulo: 'Apartamento en Bello', ciudad: 'Bello', tipo: 'apartamento', foto: null, canon: 1_100_000, ingresoTotal: 5_000_000, canonMaximo: 3_333_333 });
     montar();
-    expect(c!.textContent).toContain('¡Felicitaciones!');
+    expect(c!.textContent).toContain('Felicitaciones');
     expect(c!.textContent).toContain('Te alcanza para este apartamento');
     expect(confettiMock).toHaveBeenCalled();
     expect(c!.querySelector('[data-testid="continuar-paso-2"]')?.getAttribute('href')).toBe('/aprobacion?paso=2&canon=1100000&ciudad=Bello&tipo=apartamento');
@@ -90,5 +90,21 @@ describe('/arrendar/[id] — cerrar', () => {
     act(() => boton('seguir-en-aprobacion')!.click());
     expect(router.push).not.toHaveBeenCalled();
   });
-});
 
+  it('«Volver al inmueble» pregunta lo mismo que Cerrar (glow up r26: antes se iba sin preguntar)', () => {
+    guardado();
+    montar();
+    act(() => c!.querySelector<HTMLButtonElement>('[data-testid="volver-al-inmueble"]')!.click());
+    expect(router.push).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="confirmar-salida-aprobacion"]')?.textContent).toContain('Local en Centro, Caldas');
+  });
+
+  it('la respuesta dice cuánto del tope usa el canon y lo que queda al mes, sin «¡!»', () => {
+    guardado();
+    montar();
+    const uso = c!.querySelector('[data-testid="uso-del-tope"]')!.textContent ?? '';
+    expect(uso).toContain('55 %');
+    expect(uso).toMatch(/1\.800\.000/);
+    expect(c!.textContent).not.toContain('¡');
+  });
+});

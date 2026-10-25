@@ -38,7 +38,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
     badge: 'CRM',
     name: 'CRM inmobiliario',
     h1: 'Tu comercial, de punta a punta',
-    lead: 'Cada interesado, cada inmueble y cada asesor viviendo en un solo pipeline — sin planillas ni chats sueltos.',
+    lead: 'Cada interesado, cada inmueble y cada asesor viviendo en un solo embudo — sin planillas ni chats sueltos.',
     ctas: SHARED_CTAS,
     textureId: 't2',
     window: {
@@ -63,7 +63,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
             steps: [
               { title: 'Solicitud capturada', meta: 'WhatsApp · 8:02 a.m.', status: 'done' },
               { title: 'Contexto armado', meta: 'presupuesto, fechas, mascotas', status: 'done' },
-              { title: 'Asignada a Laura', meta: 'SLA 15 min', status: 'on' },
+              { title: 'Asignada a Laura', meta: 'responde en 15 min', status: 'on' },
               { title: 'Visita', meta: 'por agendar' },
             ],
           },
@@ -84,7 +84,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       {
         kicker: 'Captura',
         h3: 'Todo entra solo, con contexto',
-        body: 'WhatsApp, portales y referidos caen al mismo pipeline con presupuesto, fechas y necesidad ya organizados. Nada de copiar y pegar entre chats y planillas.',
+        body: 'WhatsApp, portales y referidos caen al mismo embudo con presupuesto, fechas y necesidad ya organizados. Nada de copiar y pegar entre chats y planillas.',
         vignette: {
           kind: 'chat',
           header: { label: 'WhatsApp · entrada', meta: '8:02 a.m.', family: 'chat' },
@@ -149,17 +149,17 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
     ],
     steps: [
       { title: 'Cargamos tu inventario y tu equipo', body: 'Inmuebles, asesores y etapas quedan montados contigo, no a punta de manuales.' },
-      { title: 'Conectamos tus canales', body: 'WhatsApp, portales y correo empiezan a alimentar el pipeline solos.' },
-      { title: 'Tu pipeline queda vivo', body: 'Desde ese día, ninguna solicitud vuelve a depender de la memoria de nadie.' },
+      { title: 'Conectamos tus canales', body: 'WhatsApp, portales y correo empiezan a alimentar el embudo solos.' },
+      { title: 'Tu embudo queda vivo', body: 'Desde ese día, ninguna solicitud vuelve a depender de la memoria de nadie.' },
     ],
     night: {
       kicker: 'Un martes cualquiera, 8:02 a.m.',
       h2: 'Ningún interesado se queda <em>sin respuesta</em>',
-      quote: 'El pipeline deja de depender de la memoria del equipo: cada conversación queda donde toca, con su historia completa.',
+      quote: 'El embudo deja de depender de la memoria del equipo: cada conversación queda donde toca, con su historia completa.',
       log: [
-        { time: '08:02', text: 'Nueva solicitud · Apto 402 · Laureles → <span class="lb">pipeline</span>' },
+        { time: '08:02', text: 'Nueva solicitud · Apto 402 · Laureles → <span class="lb">embudo</span>' },
         { time: '08:02', text: 'Contexto armado: presupuesto, fechas, mascotas' },
-        { time: '08:03', text: 'Asignada a Laura · SLA de respuesta 15 min' },
+        { time: '08:03', text: 'Asignada a Laura · responde en 15 min' },
         { time: '08:14', text: 'Primera respuesta enviada · <span class="lb">WhatsApp</span>' },
         { time: '18:40', text: 'Resumen del día: 23 solicitudes · 0 sin atender' },
       ],
@@ -236,7 +236,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
           kind: 'ledger',
           header: { label: 'Extracto', meta: '6:12 a.m.', family: 'sys' },
           data: {
-            columns: ['Movimiento', 'Contrato', 'Match'],
+            columns: ['Movimiento', 'Contrato', 'Cruce'],
             rows: [
               { cells: ['$2.450.000', 'CT-1042', 'Exacto'], tone: 'ok' },
               { cells: ['$1.980.000', 'CT-1103', 'Exacto'], tone: 'ok' },
@@ -286,7 +286,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       log: [
         { time: '01:00', text: 'Cobros del mes generados · 214 contratos' },
         { time: '06:12', text: 'Pago recibido · CT-1042 · <span class="lb">$2.450.000</span>' },
-        { time: '06:12', text: 'Conciliado contra el banco · match exacto' },
+        { time: '06:12', text: 'Conciliado contra el banco · cruce exacto' },
         { time: '09:00', text: 'Pago a propietario programado · viernes' },
         { time: '09:01', text: 'Comisión liquidada sola · sin planilla' },
       ],
@@ -296,7 +296,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
 
   cobranza: {
     slug: 'cobranza',
-    eyebrow: 'Agentes AI · 01',
+    eyebrow: 'Agentes IA · 01',
     badge: 'Agente',
     name: 'Cobranza',
     h1: 'La mora se persigue sola',
@@ -397,7 +397,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       { label: 'Canales', value: 'WhatsApp, correo' },
       { label: 'Se alimenta de', value: 'ERP de arriendos (cobros y pagos)' },
       { label: 'Supervisión', value: 'Tu equipo aprueba los casos escalados' },
-      { label: 'Incluido en', value: 'Planes con agentes AI' },
+      { label: 'Incluido en', value: 'Planes con agentes IA' },
     ],
     steps: [
       { title: 'Define tono y reglas', body: 'Decides cómo suena tu cobranza y cuándo escala. El agente obedece eso.' },
@@ -421,7 +421,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
 
   inquilino: {
     slug: 'inquilino',
-    eyebrow: 'Agentes AI · 02',
+    eyebrow: 'Agentes IA · 02',
     badge: 'Agente',
     name: 'Estudio del inquilino',
     h1: 'Verificación real, en minutos',
@@ -521,7 +521,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       { label: 'Revisa', value: 'Identidad, ingresos, obligaciones, comportamiento de pago' },
       { label: 'Se conecta con', value: 'CRM (candidatos), Asegurabilidad' },
       { label: 'Entrega', value: 'Score + veredicto con sustento, listo para firma' },
-      { label: 'Incluido en', value: 'Planes con agentes AI' },
+      { label: 'Incluido en', value: 'Planes con agentes IA' },
     ],
     steps: [
       { title: 'El candidato llega del CRM', body: 'Con su caso ya armado: inmueble, canon y datos de contacto.' },
@@ -545,7 +545,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
 
   avaluos: {
     slug: 'avaluos',
-    eyebrow: 'Agentes AI · 03',
+    eyebrow: 'Agentes IA · 03',
     badge: 'Agente',
     name: 'Avalúos',
     h1: 'El precio correcto, con datos',
@@ -643,7 +643,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       { label: 'Responde en', value: 'Segundos' },
       { label: 'Entrega', value: 'Rango de canon + comparativo + tiempo estimado' },
       { label: 'Se conecta con', value: 'CRM (inventario), Matching' },
-      { label: 'Incluido en', value: 'Planes con agentes AI' },
+      { label: 'Incluido en', value: 'Planes con agentes IA' },
     ],
     steps: [
       { title: 'Cargas el inmueble', body: 'Dirección, tipología y estado. Lo demás lo trae el agente.' },
@@ -667,11 +667,11 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
 
   conciliacion: {
     slug: 'conciliacion',
-    eyebrow: 'Agentes AI · 04',
+    eyebrow: 'Agentes IA · 04',
     badge: 'Agente',
     name: 'Conciliación',
     h1: 'Cuadre contra el banco, sin Excel',
-    lead: 'El match entre extracto y contrato deja de ser un Excel de viernes: cada pago encuentra su contrato solo.',
+    lead: 'El cruce entre extracto y contrato deja de ser un Excel de viernes: cada pago encuentra su contrato solo.',
     ctas: SHARED_CTAS,
     textureId: 't6',
     window: {
@@ -680,14 +680,14 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       vignettes: [
         {
           kind: 'stat',
-          header: { label: 'Match', meta: 'Hoy 6:12 a.m.', family: 'ag' },
-          data: { big: '209<em>/214</em>', label: 'Match exacto automático', sub: '3 ambiguas con sugerencia · 2 alertas' },
+          header: { label: 'Cruce', meta: 'Hoy 6:12 a.m.', family: 'ag' },
+          data: { big: '209<em>/214</em>', label: 'Cruce exacto automático', sub: '3 ambiguas con sugerencia · 2 alertas' },
         },
         {
           kind: 'ledger',
           header: { label: 'Extracto', meta: '214 mov.', family: 'ag' },
           data: {
-            columns: ['Movimiento', 'Contrato', 'Match'],
+            columns: ['Movimiento', 'Contrato', 'Cruce'],
             rows: [
               { cells: ['$2.450.000', 'CT-1042', 'Exacto'], tone: 'ok' },
               { cells: ['$1.980.000', 'CT-1103', 'Exacto'], tone: 'ok' },
@@ -710,14 +710,14 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
     },
     stories: [
       {
-        kicker: 'Match',
+        kicker: 'Cruce',
         h3: 'Banco y contratos, en la misma línea',
         body: 'El agente lee el extracto y encuentra el contrato de cada pago: por referencia, por monto, por historia. El cuadre deja de ser un deporte de viernes.',
         vignette: {
           kind: 'ledger',
-          header: { label: 'Match banco', meta: 'Automático', family: 'ag' },
+          header: { label: 'Cruce con el banco', meta: 'Automático', family: 'ag' },
           data: {
-            columns: ['Movimiento', 'Contrato', 'Match'],
+            columns: ['Movimiento', 'Contrato', 'Cruce'],
             rows: [
               { cells: ['$2.450.000', 'CT-1042', 'Exacto'], tone: 'ok' },
               { cells: ['$1.980.000', 'CT-1103', 'Exacto'], tone: 'ok' },
@@ -761,7 +761,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       },
     ],
     capabilities: [
-      { title: 'Match automático', body: 'Extracto contra contratos, todos los días, sin planilla.' },
+      { title: 'Cruce automático', body: 'Extracto contra contratos, todos los días, sin planilla.' },
       { title: 'Alertas de no identificados', body: 'Lo que no cuadra se ve hoy, no al cierre.' },
       { title: 'Avance a la vista', body: 'Cuántos movimientos cruzó el agente, con su tasa y el monto conciliado.' },
       { title: 'Trazabilidad total', body: 'Cada peso del banco con su inquilino, su cuota y su inmueble, y quién lo concilió.' },
@@ -770,13 +770,13 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       { label: 'Agente', value: '<b>Conciliación</b> · L-AG-04' },
       { label: 'Corre', value: 'Con cada extracto, todos los días' },
       { label: 'Se alimenta de', value: 'Extractos bancarios + ERP de arriendos' },
-      { label: 'Resuelve', value: 'Match banco–contrato, referencias ambiguas, parciales' },
+      { label: 'Resuelve', value: 'Cruce banco–contrato, referencias ambiguas, parciales' },
       { label: 'Escala', value: 'Solo pagos sin identificar' },
-      { label: 'Incluido en', value: 'Planes con agentes AI' },
+      { label: 'Incluido en', value: 'Planes con agentes IA' },
     ],
     steps: [
       { title: 'Conectas el extracto', body: 'El banco entra al sistema tal como llega.' },
-      { title: 'El agente cruza todo', body: 'Match por referencia, monto e historia de pago.' },
+      { title: 'El agente cruza todo', body: 'Cruce por referencia, monto e historia de pago.' },
       { title: 'Tesorería solo ve excepciones', body: 'Dos casos con sugerencia, no doscientas filas.' },
     ],
     night: {
@@ -785,7 +785,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       quote: 'Cada peso del extracto sabe a qué contrato pertenece — y lo que no cuadra salta de una.',
       log: [
         { time: '06:10', text: 'Extracto recibido · 214 movimientos' },
-        { time: '06:11', text: '209 pagos con match exacto · <span class="lb">automático</span>' },
+        { time: '06:11', text: '209 pagos con cruce exacto · <span class="lb">automático</span>' },
         { time: '06:11', text: '3 referencias ambiguas → sugerencia lista' },
         { time: '06:12', text: '2 sin identificar → alerta a tesorería' },
         { time: '06:12', text: 'Conciliado: 209 de 214 · quedan 5 con gestión' },
@@ -796,7 +796,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
 
   matching: {
     slug: 'matching',
-    eyebrow: 'Agentes AI · 05',
+    eyebrow: 'Agentes IA · 05',
     badge: 'Agente',
     name: 'Matching',
     h1: 'Opciones reales, el mismo día',
@@ -904,12 +904,12 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       { label: 'Cruza', value: 'Necesidad, presupuesto, inventario vivo' },
       { label: 'Se alimenta de', value: 'CRM + Avalúos' },
       { label: 'Mejora con', value: 'Cada arriendo cerrado' },
-      { label: 'Incluido en', value: 'Planes con agentes AI' },
+      { label: 'Incluido en', value: 'Planes con agentes IA' },
     ],
     steps: [
       { title: 'Llega el interesado', body: 'Del CRM, con su necesidad ya estructurada.' },
       { title: 'El agente cruza y prioriza', body: 'Contra el inventario vivo, con probabilidad de cierre.' },
-      { title: 'El asesor visita con tiro hecho', body: 'Opciones enviadas, visita agendada, feedback registrado.' },
+      { title: 'El asesor visita con tiro hecho', body: 'Opciones enviadas, visita agendada, comentarios registrados.' },
     ],
     night: {
       kicker: '9:31 a.m., entra un interesado',
@@ -928,7 +928,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
 
   asegurabilidad: {
     slug: 'asegurabilidad',
-    eyebrow: 'Agentes AI · 06',
+    eyebrow: 'Agentes IA · 06',
     badge: 'Agente',
     name: 'Asegurabilidad',
     h1: 'Contratos protegidos desde la firma',
@@ -1037,7 +1037,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       { label: 'Cotiza con', value: 'Aseguradoras integradas, en paralelo' },
       { label: 'Se conecta con', value: 'Estudio del inquilino, ERP' },
       { label: 'Avisa', value: 'Vencimientos y renovaciones, con tiempo' },
-      { label: 'Incluido en', value: 'Planes con agentes AI' },
+      { label: 'Incluido en', value: 'Planes con agentes IA' },
     ],
     steps: [
       { title: 'El contrato llega del CRM', body: 'Con el estudio del inquilino ya resuelto.' },

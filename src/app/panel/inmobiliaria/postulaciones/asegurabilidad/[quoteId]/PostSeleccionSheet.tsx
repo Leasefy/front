@@ -80,7 +80,7 @@ export function PostSeleccionSheet({ onAction, disabled = false, abierto, onAbie
       >
         <span className="flex items-center gap-2">
           <ListChecks className="w-4 h-4 text-primary" weight="duotone" aria-hidden="true" />
-          <span className="text-sm font-semibold text-fg">
+          <span className="text-sm font-medium text-fg">
             {tf(`${NS}.detail.postSeleccion.titulo`, '¿Qué quieres hacer ahora?')}
           </span>
         </span>

@@ -59,7 +59,8 @@ describe('los destinos de los estados vacíos', () => {
   })
 
   it('todos apuntan a una pantalla que existe', () => {
-    const rotos = destinos.filter((d) => !existsSync(rutaAArchivo(d.href)))
+    // El filtro de la URL (`?estado=CAUSADA`) no es parte de la ruta: se mira la pantalla.
+    const rotos = destinos.filter((d) => !existsSync(rutaAArchivo(d.href.split('?')[0].split('#')[0])))
     expect(
       rotos.map((r) => `${r.archivo} → ${r.href}`),
       'un estado vacío enlaza una ruta que no existe',

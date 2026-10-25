@@ -47,7 +47,7 @@ export function CuentaDeCobroDelPropietario({
       data-cuenta-hoja
       data-testid="cuenta-de-cobro-del-propietario"
       className={cn(
-        'mx-auto w-full max-w-[800px] rounded-lg border border-border bg-surface px-8 py-10 shadow-sm sm:px-12 sm:py-12',
+        'mx-auto w-full max-w-[800px] rounded-lg border border-border bg-surface px-5 py-8 sm:px-12 sm:py-12',
         className,
       )}
       aria-label={t(k('titulo'))}

@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -83,13 +84,23 @@ function ContenidoDeClausulas() {
     void cargar();
   }, [cargar]);
 
-  const alternarActiva = async (c: ClausulaPropia) => {
+  const alternarActiva = async (c: ClausulaPropia, deshaciendo = false) => {
     try {
       await clausulasPropiasApi.actualizar(c.id, { activa: !c.activa });
+      // GLOW UP 21-10: el cambio se hace al instante y se puede deshacer desde
+      // el aviso (antes, para arrepentirse había que encontrar la fila otra vez).
       toast.success(
         c.activa
           ? 'Ya no se ofrece en contratos nuevos. Los firmados no cambian.'
           : 'Vuelve a ofrecerse en los contratos nuevos.',
+        deshaciendo
+          ? undefined
+          : {
+              action: {
+                label: 'Deshacer',
+                onClick: () => void alternarActiva({ ...c, activa: !c.activa }, true),
+              },
+            },
       );
       await cargar();
     } catch (e) {
@@ -103,32 +114,26 @@ function ContenidoDeClausulas() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="space-y-6 p-6 lg:p-8">
       {/* 🔴 Sin «Volver a Contratos» (Nico, 18-09-2026: «tiene un devolver que
           ni se pa que está ahí»). Esta pantalla ES una pestaña de Contratos: el
           camino de vuelta son las pestañas de arriba, y un botón que repite lo
           que la navegación ya hace sólo agrega una decisión más. */}
-      <div className="space-y-6 p-4 md:p-6">
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="flex items-center gap-2 text-h2 text-fg">
-              <Scroll className="h-6 w-6 text-primary" weight="duotone" />
-              Cláusulas propias
-            </h1>
-            <p className="max-w-2xl text-sm text-fg-muted">
-              Lo que tu inmobiliaria agrega a sus contratos, además del texto
-              legal. El articulado de la ley no se edita: estas cláusulas se
-              suman al final y pasan por el mismo validador que revisa todo
-              contrato.
-            </p>
-          </div>
-          {puedeEditar && (
-            <Button hideArrow onClick={() => setEditando('nueva')}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              Escribir una cláusula
-            </Button>
-          )}
-        </header>
+        <EncabezadoDePantalla
+          seccion="Operación"
+          titulo="Cláusulas propias"
+          descripcion="Lo que tu inmobiliaria agrega a sus contratos, además del texto legal. El articulado de la ley no se edita: estas cláusulas se suman al final y pasan por el mismo validador que revisa todo contrato."
+          // Revisión de Operación (21-10): con la lista vacía, el único botón es el del vacío
+          // («Escribir la primera»); arriba repetía la misma acción.
+          accionPrincipal={
+            puedeEditar && (cargando || (clausulas?.length ?? 0) > 0) ? (
+              <Button size="sm" hideArrow onClick={() => setEditando('nueva')}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Escribir una cláusula
+              </Button>
+            ) : undefined
+          }
+        />
 
         <EstadoDeDatos
           cargando={cargando}
@@ -165,7 +170,7 @@ function ContenidoDeClausulas() {
                   : undefined
               }
             >
-              <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">
+              <p className="text-caption font-medium uppercase tracking-wide text-fg-subtle">
                 Por ejemplo
               </p>
               <ul className="mt-2 space-y-1.5 text-sm text-fg-muted">
@@ -173,7 +178,7 @@ function ContenidoDeClausulas() {
                 <li>El inquilino mantiene el jardín y la piscina.</li>
                 <li>No se permite subarrendar ni en plataformas.</li>
               </ul>
-              <p className="mt-4 border-t border-border pt-3 text-xs text-fg-subtle">
+              <p className="mt-4 border-t border-border pt-3 text-caption text-fg-subtle">
                 Si una cláusula choca con la Ley 820 te lo decimos antes de
                 guardarla, con la norma citada.
               </p>
@@ -211,7 +216,7 @@ function ContenidoDeClausulas() {
                         </Badge>
                       ))}
                     </div>
-                    <p className="mt-0.5 text-xs text-fg-muted">{c.resumen}</p>
+                    <p className="mt-0.5 text-caption text-fg-muted">{c.resumen}</p>
                   </div>
                   {puedeEditar && (
                     <div className="flex shrink-0 gap-2">
@@ -228,7 +233,6 @@ function ContenidoDeClausulas() {
             ))}
           </Stagger>
         </EstadoDeDatos>
-      </div>
 
       {editando && (
         <EditorDeClausula
@@ -384,7 +388,7 @@ function EditorDeClausula({
             el botón de guardar lo apunta con `form=`. */}
         <form id={ID_DEL_EDITOR} onSubmit={enviar} className="space-y-4">
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-foreground">
+            <span className="mb-1 block text-caption font-medium text-foreground">
               Título<span className="ml-0.5 text-danger">*</span>
             </span>
             <Input
@@ -400,7 +404,7 @@ function EditorDeClausula({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-foreground">
+            <span className="mb-1 block text-caption font-medium text-foreground">
               Una línea que la resuma<span className="ml-0.5 text-danger">*</span>
             </span>
             <Input
@@ -416,7 +420,7 @@ function EditorDeClausula({
           </label>
 
           <fieldset>
-            <legend className="mb-1 block text-xs font-medium text-foreground">
+            <legend className="mb-1 block text-caption font-medium text-foreground">
               ¿A qué contratos se ofrece?
             </legend>
             <div className="flex flex-wrap gap-2">
@@ -429,7 +433,7 @@ function EditorDeClausula({
                     onClick={() => alternarPlantilla(p.valor)}
                     aria-pressed={puesta}
                     className={cn(
-                      'rounded-full border px-3 py-1 text-xs transition-colors',
+                      'rounded-full border px-3 py-1 text-caption transition-colors',
                       puesta
                         ? 'border-primary bg-primary-soft text-primary'
                         : 'border-border text-fg-muted hover:border-primary/40',
@@ -444,7 +448,7 @@ function EditorDeClausula({
           </fieldset>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-foreground">
+            <span className="mb-1 block text-caption font-medium text-foreground">
               El texto de la cláusula<span className="ml-0.5 text-danger">*</span>
             </span>
             <textarea
@@ -470,10 +474,10 @@ function EditorDeClausula({
               className="empty:hidden"
             >
               {revisando && (
-                <p className="text-xs text-fg-muted">Revisando contra la ley…</p>
+                <p className="text-caption text-fg-muted">Revisando contra la ley…</p>
               )}
               {!revisando && motivos !== null && !rechazada && (
-                <p className="flex items-center gap-1.5 text-xs text-success">
+                <p className="flex items-center gap-1.5 text-caption text-success">
                   <CheckCircle className="h-4 w-4" weight="fill" />
                   El validador no encontró nada que la ley prohíba.
                 </p>
@@ -485,12 +489,12 @@ function EditorDeClausula({
                       key={m.codigo + m.donde}
                       className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2"
                     >
-                      <p className="flex items-start gap-1.5 text-xs text-danger">
+                      <p className="flex items-start gap-1.5 text-caption text-danger">
                         <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" weight="fill" />
                         <span>{m.mensaje}</span>
                       </p>
                       {/* La norma es lo que va a mirar un abogado. Se cita siempre. */}
-                      <p className="mt-1 pl-5 text-[11px] text-fg-muted">{m.norma}</p>
+                      <p className="mt-1 pl-5 text-caption text-fg-muted">{m.norma}</p>
                     </li>
                   ))}
                 </ul>
@@ -503,7 +507,7 @@ function EditorDeClausula({
             initial={false}
             distance="xs"
             role="alert"
-            className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
+            className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger"
           >
             {falla}
           </Presence>

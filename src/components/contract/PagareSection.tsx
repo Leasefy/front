@@ -67,7 +67,7 @@ export function PagareSection({ contractId, puedeEditar }: PagareSectionProps) {
         <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
           <Receipt className="w-4 h-4" />
         </div>
-        <h3 className="font-semibold text-fg">Pagaré y carta de instrucciones</h3>
+        <h3 className="font-medium text-fg">Pagaré y carta de instrucciones</h3>
       </div>
       {/* Cargando → el pagaré (o el fallo): se cruzan. `popLayout`: lo nuevo
           entra YA y lo viejo se va por encima. */}
@@ -162,7 +162,7 @@ function Contenido({
       {pagare.esSandbox && (
         <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2" data-testid="pagare-sandbox-banner">
           <WarningCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-warning">Sandbox — sin validez jurídica</p>
+          <p className="text-caption text-warning">Sandbox — sin validez jurídica</p>
         </div>
       )}
 
@@ -187,7 +187,7 @@ function Contenido({
       </div>
 
       {pagare.ultimoError && (
-        <p className="text-xs text-danger" data-testid="pagare-ultimo-error">{pagare.ultimoError}</p>
+        <p className="text-caption text-danger" data-testid="pagare-ultimo-error">{pagare.ultimoError}</p>
       )}
 
       <ul className="space-y-2" data-testid="firmantes-del-pagare">
@@ -247,7 +247,7 @@ function FirmanteDelPagareRow({
     <li className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted dark:bg-ink px-3 py-2">
       <div className="min-w-0">
         <p className="text-sm font-medium text-fg truncate">{firmante.nombre}</p>
-        <p className="text-xs text-fg-muted">{firmante.tipo === 'INQUILINO' ? 'Inquilino' : 'Codeudor'}</p>
+        <p className="text-caption text-fg-muted">{firmante.tipo === 'INQUILINO' ? 'Inquilino' : 'Codeudor'}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <Badge variant={e.tono === 'success' ? 'success' : e.tono === 'danger' ? 'destructive' : 'warning'}>
@@ -260,7 +260,7 @@ function FirmanteDelPagareRow({
             hideArrow
             onClick={() => void simular()}
             isLoading={simulando}
-            className="h-auto px-2 text-xs"
+            className="h-auto px-2 text-caption"
             data-testid="simular-firma-pagare"
           >
             Simular firma
@@ -278,7 +278,7 @@ function EstadoDelPagareResumen({ pagare }: { pagare: PagareResponse }) {
       <Badge variant={estado.tono === 'success' ? 'success' : estado.tono === 'danger' ? 'destructive' : 'secondary'}>
         {estado.etiqueta}
       </Badge>
-      {pagare.motivoDeCancelacion && <p className="mt-1 text-xs text-fg-muted">{pagare.motivoDeCancelacion}</p>}
+      {pagare.motivoDeCancelacion && <p className="mt-1 text-caption text-fg-muted">{pagare.motivoDeCancelacion}</p>}
     </div>
   );
 }

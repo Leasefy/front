@@ -28,8 +28,8 @@ export function SeccionMediosDePago() {
       cuandoVacio={
         <VacioDeSeccion
           icono={Wallet}
-          titulo="Todavía no pudimos leer tu inmobiliaria"
-          ayuda="Vuelve a intentar en un momento: las cuentas y los enlaces de pago cuelgan de la agencia."
+          titulo="Todavía no se pudo leer tu inmobiliaria"
+          ayuda="Vuelve a intentar en un momento: las cuentas y los enlaces de pago cuelgan de la inmobiliaria."
         />
       }
     >

@@ -98,11 +98,24 @@ describe('CaptacionesYArriendos', () => {
 
   it('la ficha de un asesor sólo muestra lo suyo', async () => {
     await pintar(<CaptacionesYArriendos userId="u1" />);
-    expect(container.querySelector('[data-testid="asesor-u1"]')).not.toBeNull();
+    // Ronda 30 (a propósito): en su ficha no se pinta el resumen por asesor (era una fila con
+    // los mismos números de las listas); lo de otros asesores sigue sin aparecer.
+    expect(container.querySelector('[data-testid="asesor-u1"]')).toBeNull();
     expect(container.querySelector('[data-testid="asesor-u2"]')).toBeNull();
-    // El arriendo es de Beto: no se le cuelga a Ana.
-    expect(container.textContent).toContain('Arriendos cerrados (0)');
-    expect(container.textContent).toContain('Captaciones (1)');
+    // El arriendo es de Beto: no se le cuelga a Ana. (23-10, a propósito: una tabla con dos pestañas y su conteo.)
+    expect(container.querySelector('[data-testid="pestana-arriendos"]')?.textContent).toContain('0');
+    expect(container.querySelector('[data-testid="pestana-captaciones"]')?.textContent).toContain('1');
+    expect(container.querySelector('[data-testid="fila-captaciones-c1"]')?.textContent).toContain('Apto 101');
+  });
+
+  it('es una tabla: las captaciones con su propietario, asesor y fecha; el asesor filtra (Nico 23-10)', async () => {
+    await pintar(<CaptacionesYArriendos />);
+    const tabla = container.querySelector('[data-testid="tabla-de-captaciones"]');
+    expect(tabla?.querySelector('table')).not.toBeNull();
+    const fila = container.querySelector('[data-testid="fila-captaciones-c1"]');
+    expect(fila?.textContent).toContain('Clara');
+    expect(fila?.textContent).toContain('Ana');
+    expect(container.querySelector('[data-testid="filtro-de-asesor"]')).not.toBeNull();
   });
 
   it('pide el rango al back tal cual', async () => {

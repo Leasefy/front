@@ -168,7 +168,7 @@ export function CobroFilters({
             show={activeFiltersCount > 0}
             initial={false}
             direction="none"
-            className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold min-w-[20px] text-center tabular-nums"
+            className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-caption font-semibold min-w-[20px] text-center tabular-nums"
           >
               {activeFiltersCount}
           </Presence>
@@ -183,7 +183,7 @@ export function CobroFilters({
               <div className="flex flex-col lg:flex-row gap-4 lg:items-center">
                 {/* Month Selector */}
                 <div className="shrink-0">
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  <label className="block text-caption font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.cobros.filters.monthLabel')}
                   </label>
                   <Select
@@ -206,7 +206,7 @@ export function CobroFilters({
 
                 {/* Status Tabs */}
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  <label className="block text-caption font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.cobros.filters.statusLabel')}
                   </label>
                   <div className="flex items-center gap-1.5 overflow-x-auto">
@@ -224,7 +224,7 @@ export function CobroFilters({
                           {t(tab.key)}
                           {count > 0 && (
                             <span className={cn(
-                              'px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center',
+                              'px-1.5 py-0.5 rounded-full text-caption min-w-[20px] text-center',
                               isActive
                                 ? 'bg-primary text-primary-foreground'
                                 : 'bg-muted-foreground/20 text-muted-foreground'
@@ -243,7 +243,7 @@ export function CobroFilters({
               <div className="flex flex-wrap gap-4">
                 {/* Property (Consignacion) Dropdown */}
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  <label className="block text-caption font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.cobros.filters.propertyLabel')}
                   </label>
                   <Select
@@ -271,7 +271,7 @@ export function CobroFilters({
 
                 {/* Propietario Dropdown */}
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  <label className="block text-caption font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.cobros.filters.ownerLabel')}
                   </label>
                   <Select

@@ -144,4 +144,41 @@ describe('<PreguntaDeLaRecomendacion>', () => {
     await montar();
     expect(container.textContent).toContain('Tu contrato terminó');
   });
+
+  it('GLOW UP 21-10: la página de la inmobiliaria abre en OTRA pestaña (no saca a la persona de su portal)', async () => {
+    pendientes.mockResolvedValue([PREGUNTA]);
+    votar.mockResolvedValue({ ok: true });
+    await montar();
+    await act(async () => botonQueDice('Sí')!.click());
+    await act(async () => botonQueDice('Enviar')!.click());
+    const enlace = $<HTMLAnchorElement>('a')!;
+    expect(enlace.getAttribute('target')).toBe('_blank');
+    expect(enlace.getAttribute('rel')).toContain('noopener');
+  });
+
+  it('GLOW UP 21-10: si votó en otra pestaña, al volver a esta la pregunta se va sola', async () => {
+    pendientes.mockResolvedValue([PREGUNTA]);
+    await montar();
+    expect(container.querySelector('[data-testid="pregunta-de-la-recomendacion"]')).not.toBeNull();
+    pendientes.mockResolvedValue([]);
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[data-testid="pregunta-de-la-recomendacion"]')).toBeNull();
+  });
+
+  it('recién contestada aquí, la relectura no le quita el «Gracias»', async () => {
+    pendientes.mockResolvedValue([PREGUNTA]);
+    votar.mockResolvedValue({ ok: true });
+    await montar();
+    await act(async () => botonQueDice('Sí')!.click());
+    await act(async () => botonQueDice('Enviar')!.click());
+    pendientes.mockResolvedValue([]);
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+    });
+    expect(container.textContent).toContain('Gracias');
+  });
 });

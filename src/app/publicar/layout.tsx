@@ -2,13 +2,13 @@ import { Metadata } from "next";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 export const metadata: Metadata = {
-  title: "Publicar Propiedad",
+  title: "Publicar inmueble",
   description:
-    "Publica tu propiedad en arriendo gratis. Llega a miles de inquilinos verificados en Colombia.",
+    "Publica tu inmueble en arriendo gratis. Llega a miles de inquilinos verificados en Colombia.",
   openGraph: {
-    title: "Publicar Propiedad | Leasefy",
+    title: "Publicar inmueble | Leasefy",
     description:
-      "Publica tu propiedad en arriendo gratis. Llega a miles de inquilinos verificados.",
+      "Publica tu inmueble en arriendo gratis. Llega a miles de inquilinos verificados.",
     type: "website",
   },
 };

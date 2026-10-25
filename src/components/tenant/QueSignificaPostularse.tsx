@@ -50,13 +50,13 @@ const PASOS = [
     icono: Buildings,
     titulo: 'Te dan una respuesta',
     texto:
-      'Te avisamos acá y por correo si te eligieron. Si no te eligieron también te lo decimos, no te quedas esperando.',
+      'Te avisamos aquí y por correo si te eligieron. Si no te eligieron también te lo decimos, no te quedas esperando.',
   },
   {
     clave: 'firma',
     icono: FileText,
     titulo: 'Firmas en línea',
-    texto: 'Si te eligen, el contrato se firma desde acá. No tienes que ir a ninguna oficina.',
+    texto: 'Si te eligen, el contrato se firma desde aquí. No tienes que ir a ninguna oficina.',
   },
 ]
 

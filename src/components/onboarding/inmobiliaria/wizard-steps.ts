@@ -12,8 +12,9 @@ import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
  * policy is an optional adjustment configured later in the agency panel.
  */
 export const WIZARD_STEPS: { key: OnboardingWizardStep; label: string; descripcion: string }[] = [
-  { key: 'agency', label: 'Agencia', descripcion: 'Dirección y contacto' },
-  { key: 'members', label: 'Miembros', descripcion: 'Tu equipo, si quieres' },
+  // Ronda 30: «Inmobiliaria» y «Equipo» (antes «Agencia» y «Miembros»): las palabras de Leasefy.
+  { key: 'agency', label: 'Inmobiliaria', descripcion: 'Dirección y contacto' },
+  { key: 'members', label: 'Equipo', descripcion: 'Tu equipo, si quieres' },
   { key: 'habeas_data', label: 'Habeas Data', descripcion: 'Términos y datos' },
   { key: 'complete', label: 'Confirmar', descripcion: 'Revisa y crea' },
 ]

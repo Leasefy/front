@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { Stagger, StaggerItem, Avatar } from '@leasefy/cadence';
 import {
   ChartBar,
   Buildings,
@@ -13,6 +13,8 @@ import { useI18n } from '@/lib/i18n';
 import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece';
 import { SIN_MEDIR, promedioMedido } from '@/lib/tasas';
 import type { Agente } from '@/lib/types/inmobiliaria';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 
 interface AgenteWorkloadChartProps {
   agentes: Agente[];
@@ -78,27 +80,18 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
   // Get max for scaling (at least OVERLOADED_THRESHOLD for consistent scale)
   const scaleMax = Math.max(stats.max, OVERLOADED_THRESHOLD);
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
+
+  const paginaDeCarga = useTablePagination(sortedAgentes, {});
 
   return (
     <div className={cn('rounded-lg border border-border bg-card overflow-hidden', className)}>
       {/* Header */}
       <div className="px-5 py-4 border-b border-border bg-muted/20">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Ronda 30: sin el ícono en una caja de color (Cadence 2). */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-              <ChartBar className="w-5 h-5 text-primary" weight="fill" />
-            </div>
             <div>
-              <h2 className="text-base font-semibold text-foreground">
+              <h2 className="text-base font-medium text-foreground">
                 {t('inmobiliaria.agente.workload')}
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -131,24 +124,24 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       </div>
 
       {/* Stats Row */}
-      <div className="px-5 py-3 border-b border-border bg-muted/10 grid grid-cols-4 gap-4">
+      <div className="px-5 py-3 border-b border-border bg-muted/10 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.agentsLabel')}</p>
-          <p className="text-lg font-bold text-foreground">{sortedAgentes.length}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.agente.agentsLabel')}</p>
+          <p className="font-mono text-lg tabular-nums text-foreground">{sortedAgentes.length}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.propertiesLabel')}</p>
-          <p className="text-lg font-bold text-foreground">{stats.total}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.agente.propertiesLabel')}</p>
+          <p className="font-mono text-lg tabular-nums text-foreground">{stats.total}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.averageLabel')}</p>
-          <p className="text-lg font-bold text-foreground" data-testid="carga-promedio">
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.agente.averageLabel')}</p>
+          <p className="font-mono text-lg tabular-nums text-foreground" data-testid="carga-promedio">
             {stats.avg === null ? SIN_MEDIR : stats.avg.toFixed(1)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.recommendedMax')}</p>
-          <p className="text-lg font-bold text-foreground">{RECOMMENDED_MAX}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.agente.recommendedMax')}</p>
+          <p className="font-mono text-lg tabular-nums text-foreground">{RECOMMENDED_MAX}</p>
         </div>
       </div>
 
@@ -158,7 +151,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
           // Las filas entran escalonadas con el techo del sistema (antes, un
           // retraso a mano por índice, sin tope).
           <Stagger className="divide-y divide-border">
-            {sortedAgentes.map((agente) => {
+            {paginaDeCarga.pageItems.map((agente) => {
               const propertyCount = agente.assignedPropertyIds.length;
               const percentage = scaleMax > 0 ? (propertyCount / scaleMax) * 100 : 0;
               const { level, color } = getWorkloadLevel(propertyCount);
@@ -176,26 +169,14 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                 >
                   <div className="flex items-center gap-4 mb-2">
                     {/* Avatar */}
-                    {agente.avatar ? (
-                      <img
-                        src={agente.avatar}
-                        alt={agente.name}
-                        className="w-8 h-8 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-                        <span className="text-xs font-semibold text-primary">
-                          {getInitials(agente.name)}
-                        </span>
-                      </div>
-                    )}
+                    <Avatar name={agente.name} src={agente.avatar || undefined} size="sm" />
 
                     {/* Name and Zone */}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground text-sm truncate">
                         {agente.name}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-caption text-muted-foreground truncate">
                         {agente.zone || t('inmobiliaria.agente.allZones')}
                       </p>
                     </div>
@@ -203,10 +184,10 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                     {/* Property Count */}
                     <div className="flex items-center gap-2 shrink-0">
                       <Buildings className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-bold text-sm text-foreground tabular-nums">
+                      <span className="font-mono text-sm text-foreground tabular-nums">
                         {propertyCount}
                       </span>
-                      <span className={cn('text-xs font-medium', color)}>
+                      <span className={cn('text-caption font-medium', color)}>
                         {workloadLabels[level]}
                       </span>
                     </div>
@@ -241,7 +222,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
           </Stagger>
         ) : (
           <div className="px-5 py-12 text-center">
-            <ChartBar className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+            <ChartBar className="w-8 h-8 mx-auto mb-3 text-muted-foreground/50" weight="light" />
             <p className="text-muted-foreground">
               {t('inmobiliaria.agente.noActiveAgentsToShow')}
             </p>
@@ -249,8 +230,22 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
         )}
       </div>
 
+      {/* Ronda 30 (regla de Nico: listas con paginación). */}
+      {sortedAgentes.length > 0 ? (
+        <div className="border-t border-border px-5 py-3">
+          <TablePagination
+            total={paginaDeCarga.total}
+            page={paginaDeCarga.page}
+            pageSize={paginaDeCarga.pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={paginaDeCarga.setPage}
+            onPageSizeChange={paginaDeCarga.setPageSize}
+          />
+        </div>
+      ) : null}
+
       {/* Legend Footer */}
-      <div className="px-5 py-3 border-t border-border bg-muted/10 flex flex-wrap items-center gap-4 text-xs">
+      <div className="px-5 py-3 border-t border-border bg-muted/10 flex flex-wrap items-center gap-4 text-caption">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-primary" />
           <span className="text-muted-foreground">{t('inmobiliaria.agente.legendNormal')}</span>

@@ -30,6 +30,7 @@
  * campo, y afirmar que la migración está por la ausencia del dato sería inventar.
  */
 
+import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { CheckCircle, Sparkle, Warning } from '@phosphor-icons/react';
 
@@ -51,6 +52,8 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { FaltaLaMigracion, Nota } from '../piezas';
 import { NOMBRE_DEL_LADO, propuestaQueSirve } from './mapeo';
 import { TituloDeBloque } from '@/components/finanzas/piezas';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 
 export interface EventosDeGastoProps {
   /** Los siete del back. `undefined` = un back que todavía no los manda. */
@@ -118,6 +121,9 @@ export function EventosDeGasto({
   );
   const apagado = useMemo(() => loQueNoSePuedeCausar(faltantes), [faltantes]);
 
+  // Ronda 30 (regla de Nico: toda tabla con su pie de paginación, aunque sean los siete eventos).
+  const pag = useTablePagination(lista);
+  const hayPropuestaDistinta = lista.some((e) => Boolean(e.propuesta) && !(e.cuenta && !propuestaQueSirve(e, e.cuenta.id)));
   return (
     <section className="space-y-4" data-testid="eventos-de-gasto">
       <TituloDeBloque
@@ -175,30 +181,34 @@ export function EventosDeGasto({
 
           <div className="overflow-hidden rounded-lg border border-border bg-surface">
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+              <Table className="max-md:block">
+                <TableHeader className="max-md:hidden">
                   <TableRow>
                     <TableHead className="min-w-[240px]">Evento</TableHead>
                     <TableHead>Lado</TableHead>
                     <TableHead className="min-w-[280px]">Cuenta del PUC</TableHead>
-                    <TableHead>Propuesta</TableHead>
+                    <TableHead className={cn(!hayPropuestaDistinta && 'hidden')}>Propuesta</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBodyAnimado>
-                  {lista.map((e) => (
-                    <TableRowAnimada key={e.evento} data-testid={`evento-de-gasto-${e.evento}`}>
-                      <TableCell className="max-w-[320px]">
+                <TableBodyAnimado className="max-md:block">
+                  {pag.pageItems.map((e) => (
+                    <TableRowAnimada
+                      key={e.evento}
+                      data-testid={`evento-de-gasto-${e.evento}`}
+                      className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                    >
+                      <TableCell className="max-w-[320px] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="font-medium text-fg">{e.nombre}</p>
                         {/* CB-05: una línea, y «Leer completo» la abre en su lugar. */}
                         <ExplicacionDelEvento texto={e.explicacion} testId={`explicacion-gasto-${e.evento}`} />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                         <Badge variant={e.lado === 'DEBE' ? 'secondary' : 'outline'}>
                           {NOMBRE_DEL_LADO[e.lado]}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex max-w-[26rem] items-center gap-2">
+                      <TableCell className="max-md:col-span-2 max-md:row-start-2 max-md:block max-md:p-0">
+                        <div className="flex max-w-[26rem] items-center gap-2 max-md:max-w-none">
                           <SelectorDeCuenta
                             cuentas={cuentas}
                             value={e.cuenta?.id ?? ''}
@@ -229,7 +239,15 @@ export function EventosDeGasto({
                           mensaje={errores?.[e.evento]}
                         />
                       </TableCell>
-                      <TableCell>
+                      {/* Ronda 30 (revisora r27): si ninguna fila trae una propuesta distinta, la columna no se pinta
+                          (eran «—» en todas); a 390 el «—» tampoco queda huérfano bajo el selector. */}
+                      <TableCell
+                        className={cn(
+                          'max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0',
+                          (!hayPropuestaDistinta || (e.cuenta && !propuestaQueSirve(e, e.cuenta.id))) && 'max-md:hidden',
+                          !hayPropuestaDistinta && 'hidden',
+                        )}
+                      >
                         {/* 🔴 CB-05: la propuesta repetía, fila por fila, la cuenta que ya
                             estaba elegida. Sólo se dice cuando DIFIERE (o no hay cuenta). */}
                         {e.cuenta && !propuestaQueSirve(e, e.cuenta.id) ? (
@@ -285,6 +303,16 @@ export function EventosDeGasto({
                   ))}
                 </TableBodyAnimado>
               </Table>
+            </div>
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={pag.total}
+                page={pag.page}
+                pageSize={pag.pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={pag.setPage}
+                onPageSizeChange={pag.setPageSize}
+              />
             </div>
           </div>
         </>

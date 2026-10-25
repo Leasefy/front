@@ -97,7 +97,10 @@ describe('B-17 · el abogado externo en Jurídico', () => {
     permisos.agencyRole = 'ADMIN';
     api.abogados.mockResolvedValue([]);
     api.configuracion.mockResolvedValue({ pactaHonorarios: true, honorariosPct: 10, honorariosTopeCop: 3_000_000 });
-    api.sugeridos.mockResolvedValue([]);
+    // Revisora r25 (Jurídico #1): cada tarjeta sale sólo con algo adentro → un sugerido para ver las cinco.
+    api.sugeridos.mockResolvedValue([
+      { contractId: 'ct-9', numero: '1686', tenantId: 'u-9', tenantName: 'Ana Pérez', direccion: 'Cra 76 #45-12', diasDeMora: 132, deudaCop: 4_000_000, pactaHonorarios: true },
+    ]);
     await montar();
     for (const seccion of ['pactado', 'abogados', 'sugeridos', 'casos', 'honorarios']) {
       expect(document.querySelector(`[data-testid="${seccion}"]`), seccion).not.toBeNull();

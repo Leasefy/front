@@ -30,6 +30,8 @@ import { TrendUp } from '@phosphor-icons/react'
 
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { KpiValor } from '@/components/estado/KpiValor'
 import {
@@ -43,7 +45,7 @@ import {
   Input,
   Label,
 } from '@/components/ui'
-import { leadsApi } from '@/lib/api/crm.service'
+import { leadsApi, type RenglonPorOrigen } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
@@ -53,6 +55,10 @@ import {
   revisarPlazoParaResponder,
 } from '@/lib/pipeline/limites-del-lead'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { cn } from '@/lib/utils'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 /** El primer día del mes en curso, en `YYYY-MM-DD`. */
 function primeroDelMes(): string {
@@ -65,6 +71,8 @@ function hoyIso(): string {
 }
 
 export function OrigenesClient() {
+  // Ronda 21 (390): una tarjeta por portal con interesados; la tabla se encogía y cortaba «Interesados».
+  const esCelular = useIsMobile()
   const [desde, setDesde] = useState(primeroDelMes)
   const [hasta, setHasta] = useState(hoyIso)
 
@@ -125,20 +133,179 @@ export function OrigenesClient() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Origen de los leads
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Cuántos leads trajo cada portal y cuántos terminaron en arriendo. Es
-          con lo que se decide qué cuenta seguir pagando.
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo="Origen de los interesados"
+        descripcion="Cuántos interesados trajo cada portal y cuántos terminaron en arriendo: con eso se decide qué cuenta seguir pagando."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: origen de los interesados" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                La columna que decide es «Arriendos cerrados», no «Interesados»: un portal que trae 400 interesados y no cierra
+                ninguno vale menos que uno que trae 12 y cierra 3.
+              </p>
+              <p>
+                Un portal configurado que no trajo nada sale en cero, no desaparece: ese cero es el dato con el que se
+                cancela una cuenta.
+              </p>
+              <p>
+                No hay costo por interesado: Leasefy no sabe cuánto pagas por cada portal, y un costo inventado sería peor que
+                no tenerlo.
+              </p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
 
-      {/* El plazo de respuesta (B-01). Va acá porque es la otra mitad del
-          mismo tema: de nada sirve saber qué portal trae leads si nadie los
-          contesta. */}
+      <Card>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-base">Por portal</CardTitle>
+          {/* Ronda 21: una barra, «Entró: [desde] – [hasta]» (antes dos campos con la etiqueta flotando encima). */}
+          {/* Revisora r23 (Orígenes #1): a 390 las dos fechas repartidas en un renglón se cortaban («22 oct 202…»).
+              Bajo `sm`, una por renglón a lo ancho con su «Desde» / «Hasta» a la vista; el «–» sólo en escritorio. */}
+          <div className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:flex sm:w-auto" role="group" aria-label="Cuándo entraron los interesados">
+            <span className="col-span-2 text-body-sm text-fg-muted sm:col-span-1">Entró</span>
+            <Label htmlFor="desde" className="text-body-sm font-normal text-fg-muted sm:sr-only">Desde</Label>
+            <CampoDeDia
+              id="desde"
+              value={desde}
+              onChange={(v) => setDesde(v)}
+              className="w-full sm:w-40"
+              testid="filtro-desde"
+            />
+            <span className="hidden text-fg-subtle sm:inline" aria-hidden="true">–</span>
+            <Label htmlFor="hasta" className="text-body-sm font-normal text-fg-muted sm:sr-only">Hasta</Label>
+            <CampoDeDia
+              id="hasta"
+              value={hasta}
+              onChange={(v) => setHasta(v)}
+              className="w-full sm:w-40"
+              testid="filtro-hasta"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {informe.noHabilitado ? (
+            <p className="text-muted-foreground text-sm" data-testid="informe-no-habilitado">
+              {motivoEnCristiano(informe.noHabilitado)}
+            </p>
+          ) : (
+            <EstadoDeDatos
+              principal
+              cargando={informe.cargando}
+              error={informe.errorCrudo}
+              vacio={vacio}
+              queEs="el informe por origen"
+              onReintentar={informe.refetch}
+              conservarContenido
+              esqueleto={<EsqueletoTabla filas={5} columnas={6} />}
+              cuandoVacio={
+                <EmptyState
+                  icon={TrendUp}
+                  title="Todavía no hay interesados en este rango"
+                  description="Cuando entren interesados con su origen, aquí se ve cuántos trajo cada portal y cuántos cerraron."
+                />
+              }
+            >
+              {/* La lectura, dicha en palabras y ANTES de la tabla (glow up 21-10):
+                  la conclusión es lo que se vino a buscar; la tabla la respalda. */}
+              {mejor || peor ? (
+                // Revisora r22 (#3): la lectura en renglones con su punto, sin caja con borde dentro de la tarjeta.
+                <div className="mb-4 space-y-1 text-sm text-fg-muted" data-testid="lectura">
+                  {mejor ? (
+                    <p className="flex items-baseline gap-2">
+                      <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-success" aria-hidden="true" />
+                      <span>
+                      Lo que más produjo: <strong>{mejor.nombre}</strong>, con{' '}
+                      {mejor.cerrados} arriendo{mejor.cerrados === 1 ? '' : 's'}{' '}
+                      de {mejor.leads} {mejor.leads === 1 ? 'interesado' : 'interesados'}.
+                      </span>
+                    </p>
+                  ) : null}
+                  {peor ? (
+                    <p className="flex items-baseline gap-2">
+                      <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-warning" aria-hidden="true" />
+                      <span>
+                      <strong>{peor.nombre}</strong> trajo {peor.leads} {peor.leads === 1 ? 'interesado' : 'interesados'}{' '}
+                      y no cerró ninguno en este
+                      rango. Míralo antes de renovar esa cuenta.
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+              {esCelular ? (
+                <PortalesEnTarjetas renglones={renglones} />
+              ) : (
+              // Revisora r22 (Orígenes #2): el `Table` de Cadence (cabeceras en mono MAYÚSCULA, como todas) y el
+              // total también en mono, en vez de un <table> hecho a mano.
+              <Table data-testid="tabla-por-origen">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Origen</TableHead>
+                    {/* 🔴 «Cerrados» primero: es la columna que decide. */}
+                    <TableHead className="text-right">Arriendos cerrados</TableHead>
+                    <TableHead className="text-right">Interesados</TableHead>
+                    <TableHead className="text-right">Conversión</TableHead>
+                    <TableHead className="text-right">Abiertos</TableHead>
+                    <TableHead className="text-right">Perdidos</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {renglones.map((r) => (
+                    <TableRow key={r.origen} data-testid={`fila-${r.origen}`}>
+                      {/* Ronda 21: un portal sin interesados sale en CERO (decisión), pero atenuado; y en
+                          vez de «0 %», la conversión dice «sin interesados» (un 0 % sin nadie no es un dato). */}
+                      <TableCell className={cn(r.leads === 0 && 'text-fg-muted')}>{r.nombre}</TableCell>
+                      <TableCell className={cn('text-right font-mono tabular-nums', r.leads === 0 ? 'text-fg-subtle' : 'font-medium text-fg')}>
+                        {r.cerrados}
+                      </TableCell>
+                      <TableCell className={cn('text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
+                        {r.leads}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {r.leads === 0 ? (
+                          <span className="text-caption text-fg-subtle">sin interesados</span>
+                        ) : (
+                          <span className="font-mono">{r.conversion} %</span>
+                        )}
+                      </TableCell>
+                      <TableCell className={cn('text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
+                        {r.abiertos}
+                      </TableCell>
+                      <TableCell className={cn('text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
+                        {r.perdidos}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                {totales ? (
+                  <TableFooter>
+                    <TableRow data-testid="fila-totales">
+                      <TableCell className="font-medium">Total</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums font-medium">{totales.cerrados}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{totales.leads}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{totales.conversion} %</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{totales.abiertos}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{totales.perdidos}</TableCell>
+                    </TableRow>
+                  </TableFooter>
+                ) : null}
+              </Table>
+              )}
+
+            </EstadoDeDatos>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* El plazo de respuesta (B-01). Va en la misma pantalla porque es la otra
+          mitad del tema (de nada sirve saber qué portal trae leads si nadie los
+          contesta), pero DESPUÉS del informe: se configura una vez y el informe
+          se consulta cada mes (glow up 21-10). */}
+      {/* Ronda 21: es un ajuste, no parte del informe: plegado debajo. */}
+      <MasDetalles etiqueta="Ajuste: cuánto tiene el asesor para responder" montadoSiempre>
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
@@ -162,7 +329,7 @@ export function OrigenesClient() {
                     {configuracion.datos?.horasParaResponderLead} horas
                   </KpiValor>
                 </strong>
-                . Pasado el plazo, el lead pasa al siguiente asesor del turno y
+                . Pasado el plazo, el interesado pasa al siguiente asesor del turno y
                 queda el registro de quién lo tenía.
               </p>
               <div className="flex flex-wrap items-end gap-3">
@@ -197,7 +364,9 @@ export function OrigenesClient() {
               </div>
               <ErrorDelCampo id="horas-lead-error" mensaje={errorDelPlazo} className="mt-0" />
               {configuracion.datos?.origenesDeLead?.length ? (
-                <div className="flex flex-wrap gap-1.5 pt-1">
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {/* Ronda 21: las pastillas dicen para qué son. */}
+                  <span className="text-caption text-fg-muted">Orígenes que se registran:</span>
                   {configuracion.datos.origenesDeLead.map((o) => (
                     <Badge key={o} variant="secondary">
                       {nombreDelOrigen(o)}
@@ -209,154 +378,45 @@ export function OrigenesClient() {
           )}
         </CardContent>
       </Card>
+      </MasDetalles>
 
-      <Card>
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <CardTitle className="text-base">Por portal</CardTitle>
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="desde">Desde</Label>
-              <CampoDeDia
-                id="desde"
-                value={desde}
-                onChange={(v) => setDesde(v)}
-                className="w-40"
-                testid="filtro-desde"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="hasta">Hasta</Label>
-              <CampoDeDia
-                id="hasta"
-                value={hasta}
-                onChange={(v) => setHasta(v)}
-                className="w-40"
-                testid="filtro-hasta"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {informe.noHabilitado ? (
-            <p className="text-muted-foreground text-sm" data-testid="informe-no-habilitado">
-              {motivoEnCristiano(informe.noHabilitado)}
-            </p>
-          ) : (
-            <EstadoDeDatos
-              principal
-              cargando={informe.cargando}
-              error={informe.errorCrudo}
-              vacio={vacio}
-              queEs="el informe por origen"
-              onReintentar={informe.refetch}
-              conservarContenido
-              esqueleto={<EsqueletoTabla filas={5} columnas={6} />}
-              cuandoVacio={
-                <EmptyState
-                  icon={TrendUp}
-                  title="Todavía no hay leads en este rango"
-                  description="Cuando entren leads con su origen, acá se ve cuántos trajo cada portal y cuántos cerraron."
-                />
-              }
-            >
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm" data-testid="tabla-por-origen">
-                  <thead>
-                    <tr className="text-muted-foreground border-b text-left">
-                      <th className="py-2 pr-4 font-medium">Origen</th>
-                      {/* 🔴 «Cerrados» primero: es la columna que decide. */}
-                      <th className="py-2 pr-4 text-right font-medium">
-                        Arriendos cerrados
-                      </th>
-                      <th className="py-2 pr-4 text-right font-medium">Leads</th>
-                      <th className="py-2 pr-4 text-right font-medium">
-                        Conversión
-                      </th>
-                      <th className="py-2 pr-4 text-right font-medium">Abiertos</th>
-                      <th className="py-2 text-right font-medium">Perdidos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {renglones.map((r) => (
-                      <tr
-                        key={r.origen}
-                        className="border-b last:border-0"
-                        data-testid={`fila-${r.origen}`}
-                      >
-                        <td className="py-2 pr-4">
-                          {r.nombre}
-                          {r.leads === 0 ? (
-                            <Badge variant="outline" className="ml-2">
-                              sin leads
-                            </Badge>
-                          ) : null}
-                        </td>
-                        <td className="py-2 pr-4 text-right font-semibold tabular-nums">
-                          {r.cerrados}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {r.leads}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {r.conversion} %
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {r.abiertos}
-                        </td>
-                        <td className="py-2 text-right tabular-nums">
-                          {r.perdidos}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  {totales ? (
-                    <tfoot>
-                      <tr className="font-medium" data-testid="fila-totales">
-                        <td className="py-2 pr-4">Total</td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {totales.cerrados}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {totales.leads}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {totales.conversion} %
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {totales.abiertos}
-                        </td>
-                        <td className="py-2 text-right tabular-nums">
-                          {totales.perdidos}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  ) : null}
-                </table>
-              </div>
+    </div>
+  )
+}
 
-              {/* La lectura, dicha en palabras: el número solo no decide. */}
-              {mejor || peor ? (
-                <div className="text-muted-foreground mt-4 space-y-1 text-sm" data-testid="lectura">
-                  {mejor ? (
-                    <p>
-                      Lo que más produjo: <strong>{mejor.nombre}</strong>, con{' '}
-                      {mejor.cerrados} arriendo{mejor.cerrados === 1 ? '' : 's'}{' '}
-                      de {mejor.leads} lead{mejor.leads === 1 ? '' : 's'}.
-                    </p>
-                  ) : null}
-                  {peor ? (
-                    <p>
-                      <strong>{peor.nombre}</strong> trajo {peor.leads} lead
-                      {peor.leads === 1 ? '' : 's'} y no cerró ninguno en este
-                      rango. Míralo antes de renovar esa cuenta.
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-            </EstadoDeDatos>
-          )}
-        </CardContent>
-      </Card>
+type RenglonDeOrigen = RenglonPorOrigen
+
+/** A 390: una tarjeta por portal con interesados; los que no trajeron nada, en un renglón. */
+function PortalesEnTarjetas({ renglones }: { renglones: readonly RenglonDeOrigen[] }) {
+  const conGente = renglones.filter((r) => r.leads > 0)
+  const enCero = renglones.filter((r) => r.leads === 0)
+  return (
+    // Revisora r22 (#3): sin cajas con borde dentro de la tarjeta: cada portal separado por una línea.
+    <div className="divide-y divide-border-faint" data-testid="portales-en-tarjetas">
+      {conGente.map((r) => (
+        <div key={r.origen} className="py-3 first:pt-0" data-testid={`tarjeta-${r.origen}`}>
+          <p className="font-medium text-fg">{r.nombre}</p>
+          <dl className="mt-2 grid grid-cols-3 gap-2 text-body-sm">
+            <div>
+              <dt className="text-caption text-fg-muted">Cerrados</dt>
+              <dd className="font-mono tabular-nums text-fg">{r.cerrados}</dd>
+            </div>
+            <div>
+              <dt className="text-caption text-fg-muted">Interesados</dt>
+              <dd className="font-mono tabular-nums text-fg">{r.leads}</dd>
+            </div>
+            <div>
+              <dt className="text-caption text-fg-muted">Conversión</dt>
+              <dd className="font-mono tabular-nums text-fg">{r.conversion} %</dd>
+            </div>
+          </dl>
+        </div>
+      ))}
+      {enCero.length > 0 ? (
+        <p className="text-caption text-fg-muted">
+          Sin interesados: {enCero.map((r) => r.nombre).join(' · ')}
+        </p>
+      ) : null}
     </div>
   )
 }

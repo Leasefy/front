@@ -155,7 +155,8 @@ describe('CarrierForm — edit mode', () => {
     })
 
     expect(byId('carrier-name').hasAttribute('disabled')).toBe(true)
-    expect(container.textContent).toContain('Configuradas')
+    // Ronda 30 (revisora): «Puestas», el mismo nombre de la tabla (antes «Configuradas»).
+    expect(container.textContent).toContain('Puestas')
     // Credenciales nunca se prellenan aunque el carrier ya las tenga.
     expect(byId('carrier-config_password').getAttribute('value')).toBe('')
   })

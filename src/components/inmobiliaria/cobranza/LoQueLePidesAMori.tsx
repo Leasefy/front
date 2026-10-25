@@ -154,16 +154,16 @@ export function resumenDelCambio(borrador: string, guardado: string, max = 60): 
 function TituloDeGrupo({ grupo }: { grupo: Grupo }) {
   return (
     <div className="pt-3">
-      <h3 className="flex items-center gap-2 text-sm font-medium text-foreground">
+      <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
         {grupo === 'no_se_puede' || grupo === 'otro_lado' ? <LockSimple size={14} aria-hidden /> : null}
         {TITULO_DEL_GRUPO[grupo]}
       </h3>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-fg-muted">
         {AYUDA_DEL_GRUPO[grupo]}
         {grupo === 'otro_lado' ? (
           <>
             {' '}
-            <a href={ACUERDOS_GENERALES} target="_blank" rel="noopener noreferrer" className={`text-foreground ${ENLACE}`}>
+            <a href={ACUERDOS_GENERALES} target="_blank" rel="noopener noreferrer" className={`text-fg ${ENLACE}`}>
               Ir a Acuerdos generales
               <span aria-hidden> ↗</span>
               <span className="sr-only"> (se abre en otra pestaña)</span>
@@ -177,7 +177,7 @@ function TituloDeGrupo({ grupo }: { grupo: Grupo }) {
 
 /** Lo que sale del texto al guardar (quitado o que no rige). */
 function SaleDelTexto({ dijo }: { dijo: string }) {
-  return <p className="text-xs text-muted-foreground">Al guardar, la quitamos de tu texto: «{dijo.trim().replace(/[.;,]+$/, '')}»</p>
+  return <p className="text-caption text-fg-muted">Al guardar, la quitamos de tu texto: «{dijo.trim().replace(/[.;,]+$/, '')}»</p>
 }
 
 /** Una regla de la revisión, con su duda y el botón para quitarla. */
@@ -212,19 +212,19 @@ function ReglaDeLaRevision({
               {nueva && !quitada ? <Badge variant="secondary">Nueva</Badge> : null}
             </div>
           ) : null}
-          <p className={`text-sm text-foreground ${quitada ? 'line-through opacity-60' : ''}`}>
+          <p className={`text-sm text-fg ${quitada ? 'line-through opacity-60' : ''}`}>
             {elegida?.entendio ?? regla.entendio}
 
           </p>
           {quitada ? (
             <>
               <SaleDelTexto dijo={regla.dijo} />
-              <Button type="button" variant="link" size="sm" onClick={onQuitar} className={`h-auto min-h-6 px-0 py-1 text-xs sm:hidden ${ENLACE}`}>
+              <Button type="button" variant="link" size="sm" onClick={onQuitar} className={`h-auto min-h-6 px-0 py-1 text-caption sm:hidden ${ENLACE}`}>
                 Volver a incluir
               </Button>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground">Escribiste: «{citaCorta(regla.dijo)}»</p>
+            <p className="text-caption text-fg-muted">Escribiste: «{citaCorta(regla.dijo)}»</p>
           )}
         </div>
         {quitada ? (
@@ -248,7 +248,7 @@ function ReglaDeLaRevision({
         <div id={`duda-${duda.id}`} data-testid={`duda-${duda.id}`} tabIndex={-1} className="space-y-2 outline-none">
           {elegida === undefined ? (
             <>
-              <p className="text-sm text-foreground">{duda.pregunta}</p>
+              <p className="text-sm text-fg">{duda.pregunta}</p>
               <RadioCardGroup
                 aria-label={duda.pregunta}
                 value=""
@@ -265,9 +265,9 @@ function ReglaDeLaRevision({
               </RadioCardGroup>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-fg-muted">
               {elegida.etiqueta} ·{' '}
-              <Button type="button" variant="link" size="sm" className={`h-auto min-h-6 px-0 py-1 text-xs ${ENLACE}`} onClick={() => onResponder(undefined)}>
+              <Button type="button" variant="link" size="sm" className={`h-auto min-h-6 px-0 py-1 text-caption ${ENLACE}`} onClick={() => onResponder(undefined)}>
                 Cambiar
               </Button>
             </p>
@@ -286,8 +286,8 @@ function LoQueNoRige({ grupo, reglas }: { grupo: 'otro_lado' | 'no_se_puede'; re
       <TituloDeGrupo grupo={grupo} />
       <ul className="divide-y divide-border">
         {reglas.map((r) => (
-          <li key={r.id} data-testid={`regla-${r.id}`} className="space-y-1 py-3 text-sm text-muted-foreground">
-            <p className="text-foreground">{r.entendio}</p>
+          <li key={r.id} data-testid={`regla-${r.id}`} className="space-y-1 py-3 text-sm text-fg-muted">
+            <p className="text-fg">{r.entendio}</p>
             {grupo === 'no_se_puede' && r.porQueNo ? <p>{r.porQueNo}</p> : null}
             <SaleDelTexto dijo={r.dijo} />
           </li>
@@ -703,7 +703,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
       type="button"
       variant="link"
       size="sm"
-      className={`-my-1 h-auto min-h-6 px-0 py-1 text-sm text-muted-foreground ${ENLACE}`}
+      className={`-my-1 h-auto min-h-6 px-0 py-1 text-sm text-fg-muted ${ENLACE}`}
       onClick={deshacerElCambio}
       disabled={ocupado !== null}
     >
@@ -711,7 +711,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
     </Button>
   )
   const hoySinReglas = (
-    <p data-testid="hoy-sin-reglas" className="text-sm text-muted-foreground">
+    <p data-testid="hoy-sin-reglas" className="text-sm text-fg-muted">
       Hoy Mori negocia sólo con los acuerdos generales y la ley.
       {/* Recién dejada sin reglas: se puede volver atrás mientras no haya escrito nada. */}
       {sePuedeVolverAtras && !sucio ? (
@@ -764,11 +764,11 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
       <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 max-w-3xl space-y-1">
-          <h2 id="heading-lo-que-le-pides-a-mori" tabIndex={-1} className="text-xl font-semibold text-foreground outline-none">
+          <h2 id="heading-lo-que-le-pides-a-mori" tabIndex={-1} className="text-lg font-normal text-fg outline-none">
             Lo que le pides a Mori
           </h2>
           {/* Igual en los dos modos; «En tus palabras» lo dice la etiqueta del campo. */}
-          <p className="text-sm text-muted-foreground">Lo que Mori puede aceptar o no al negociar.</p>
+          <p className="text-sm text-fg-muted">Lo que Mori puede aceptar o no al negociar.</p>
         </div>
         {!isLoading && !error && !enEdicion && puedeEditar && !sinMigrar && !ofreciendoBorrador ? (
           <Button
@@ -805,7 +805,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
       ) : (
         <div className="max-w-3xl space-y-4">
           <Presence show={ofreciendoBorrador}>
-            <p data-testid="borrador-sin-guardar" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-foreground">
+            <p data-testid="borrador-sin-guardar" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg">
               <span className="w-full">
                 {cambioDelBorrador ? `Tienes un cambio sin guardar: ${cambioDelBorrador}.` : 'Tienes un cambio sin guardar.'}
               </span>
@@ -816,7 +816,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
                 type="button"
                 variant="link"
                 size="sm"
-                className={`h-auto min-h-6 px-0 py-1 text-muted-foreground ${ENLACE}`}
+                className={`h-auto min-h-6 px-0 py-1 text-fg-muted ${ENLACE}`}
                 onClick={descartarBorrador}
               >
                 Descartar
@@ -824,7 +824,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
             </p>
           </Presence>
           <Presence show={sinMigrar}>
-            <p data-testid="instrucciones-sin-migrar" className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+            <p data-testid="instrucciones-sin-migrar" className="rounded-md bg-muted p-3 text-sm text-fg-muted">
               Todavía no se puede guardar: falta una actualización de la base de Leasefy. No es algo que puedas resolver
               desde el panel.
             </p>
@@ -833,7 +833,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
           {!enEdicion ? (
             <div data-testid="reglas-vigentes" className="space-y-1">
               {desde ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-fg-muted">
                   {/* «las guardaste tú» / «las guardó» enteros (a 390 no queda un «las» suelto); la
                       fecha y un correo largo sí se parten, o se saldrían en pantallas angostas. */}
                   <span>Rige desde el {desde}</span>
@@ -867,7 +867,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
                     <TituloDeGrupo grupo={g} />
                     <ul className="divide-y divide-border">
                       {del.map((r) => (
-                        <li key={r.id} data-testid={`vigente-${r.id}`} className="py-3 text-sm text-foreground">
+                        <li key={r.id} data-testid={`vigente-${r.id}`} className="py-3 text-sm text-fg">
                           {r.entendio}
                         </li>
                       ))}
@@ -881,7 +881,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="px-0 text-destructive hover:bg-transparent"
+                    className="px-0 text-danger hover:bg-transparent"
                     onClick={() => {
                       cerrarAvisoDeDeshacer()
                       setConfirmarBorrado(true)
@@ -894,7 +894,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
               ) : null}
             </div>
           ) : !puedeEditar ? (
-            <p data-testid="sin-reglas-sin-permiso" className="text-sm text-muted-foreground">
+            <p data-testid="sin-reglas-sin-permiso" className="text-sm text-fg-muted">
               Mori todavía no tiene reglas: negocia con los acuerdos generales y la ley. Sólo un administrador puede dárselas.
             </p>
           ) : ofreciendoBorrador ? (
@@ -903,7 +903,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
           ) : (
             <div className="space-y-2">
               {vigentes.length === 0 ? hoySinReglas : null}
-              <label htmlFor="instrucciones-de-mori" className="block text-sm font-medium text-foreground">
+              <label htmlFor="instrucciones-de-mori" className="block text-sm font-medium text-fg">
                 En tus palabras
               </label>
               <Textarea
@@ -923,12 +923,12 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
               />
               {faltaTexto ? <ErrorDelCampo id="instrucciones-de-mori-error" mensaje="Escribe qué le pides a Mori." /> : null}
               {texto.length >= CONTADOR_DESDE ? (
-                <p className="text-right text-xs text-muted-foreground">
+                <p className="text-right text-caption text-fg-muted">
                   {texto.length.toLocaleString('es-CO')} / {LARGO_MAXIMO.toLocaleString('es-CO')}
                 </p>
               ) : null}
               <Presence show={textoCambio}>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-fg-muted">
                   Cambiaste el texto: revísalo otra vez para guardar.
                   {contestoAlgo ? ' Tendrás que contestar las dudas de nuevo.' : ''}
                   {quitar.size > 0 ? ' Las que quitaste vuelven a aparecer.' : ''}
@@ -955,7 +955,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
               ) : null}
 
               <Presence show={datos?.revisionDisponible === false && !sinMigrar}>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-fg-muted">
                   La lectura con IA no está disponible en este momento. Mori sigue con las reglas que rigen hoy; vuelve a intentarlo en unos minutos.
                 </p>
               </Presence>
@@ -963,14 +963,14 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
           )}
 
           <Presence show={Boolean(fallo) && revision === null}>
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-sm text-danger">
               {fallo}
             </p>
           </Presence>
 
           <Presence show={ocupado === 'revisando'}>
             <div data-testid="mori-leyendo" className="space-y-3" aria-live="polite">
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2 text-sm text-fg-muted">
                 <Spinner className="h-4 w-4" /> Mori está leyendo tu texto…
               </p>
               <Skeleton className="h-3 w-40" />
@@ -985,9 +985,9 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
 
           {revision && !textoCambio ? (
             <div id="asi-lo-entendio-mori" data-testid="asi-lo-entendio-mori" className="space-y-1 border-t border-border pt-3">
-              <h3 className="font-medium text-foreground">Así lo entendió Mori</h3>
+              <h3 className="font-medium text-fg">Así lo entendió Mori</h3>
               {revision.reglas.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-fg-muted">
                   Mori no encontró reglas. Escribe una por frase, como «La primera cuota máximo en 8 días».
                 </p>
               ) : null}
@@ -1006,12 +1006,12 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
               {seDejanDeAplicar.length > 0 ? (
                 <div data-testid="se-dejan-de-aplicar">
                   <div className="pt-3">
-                    <h3 className="text-sm font-medium text-foreground">Se dejan de aplicar</h3>
-                    <p className="text-xs text-muted-foreground">Mori deja de usarlas cuando guardes.</p>
+                    <h3 className="text-sm font-medium text-fg">Se dejan de aplicar</h3>
+                    <p className="text-caption text-fg-muted">Mori deja de usarlas cuando guardes.</p>
                   </div>
                   <ul className="divide-y divide-border">
                     {seDejanDeAplicar.map((r) => (
-                      <li key={r.id} className="py-3 text-sm text-muted-foreground line-through">
+                      <li key={r.id} className="py-3 text-sm text-fg-muted line-through">
                         {r.entendio}
                       </li>
                     ))}
@@ -1022,8 +1022,8 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
               <LoQueNoRige grupo="no_se_puede" reglas={noSePuede} />
               {sinUsar.length > 0 ? (
                 <div data-testid="sin-usar" className="pt-3">
-                  <h3 className="text-sm font-medium text-foreground">Mori no usó esto de tu texto</h3>
-                  <ul className="space-y-1 pt-1 text-sm text-foreground">
+                  <h3 className="text-sm font-medium text-fg">Mori no usó esto de tu texto</h3>
+                  <ul className="space-y-1 pt-1 text-sm text-fg">
                     {sinUsar.map((f) => (
                       <li key={f}>«{citaCorta(f)}»</li>
                     ))}
@@ -1032,7 +1032,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
                     type="button"
                     variant="link"
                     size="sm"
-                    className={`h-auto min-h-6 px-0 py-1 text-xs ${ENLACE}`}
+                    className={`h-auto min-h-6 px-0 py-1 text-caption ${ENLACE}`}
                     onClick={() => document.getElementById('instrucciones-de-mori')?.focus()}
                   >
                     Acláralo en tu texto y vuelve a revisar
@@ -1041,8 +1041,8 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
               ) : null}
               {dudasSinRegla.length > 0 ? (
                 <div data-testid="dudas-sin-regla" className="pt-3">
-                  <h3 className="text-sm font-medium text-foreground">Mori no supo con qué regla va</h3>
-                  <ul className="space-y-1 pt-1 text-sm text-foreground">
+                  <h3 className="text-sm font-medium text-fg">Mori no supo con qué regla va</h3>
+                  <ul className="space-y-1 pt-1 text-sm text-fg">
                     {dudasSinRegla.map((d) => (
                       <li key={d.id}>{d.pregunta}</li>
                     ))}
@@ -1051,7 +1051,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
                     type="button"
                     variant="link"
                     size="sm"
-                    className={`h-auto min-h-6 px-0 py-1 text-xs ${ENLACE}`}
+                    className={`h-auto min-h-6 px-0 py-1 text-caption ${ENLACE}`}
                     onClick={() => document.getElementById('instrucciones-de-mori')?.focus()}
                   >
                     Acláralo en tu texto y vuelve a revisar
@@ -1061,7 +1061,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
 
 
               <Presence show={Boolean(fallo)}>
-                <p role="alert" className="pt-2 text-sm text-destructive">
+                <p role="alert" className="pt-2 text-sm text-danger">
                   {fallo}
                 </p>
               </Presence>
@@ -1105,8 +1105,9 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
 
       </div>
 
+      {/* Glow up 23-10: el rojo lo pone la variante del diálogo (Cadence), no clases a mano. */}
       <AlertDialog open={confirmarDescarte} onOpenChange={setConfirmarDescarte}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
             <AlertDialogTitle>{escribio ? '¿Descartar lo que escribiste?' : '¿Descartar los cambios?'}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1119,7 +1120,6 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Seguir editando</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 setConfirmarDescarte(false)
                 cancelar()
@@ -1132,7 +1132,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
       </AlertDialog>
 
       <AlertDialog open={confirmarBorrado} onOpenChange={setConfirmarBorrado}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Dejar a Mori sin reglas?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1142,7 +1142,7 @@ export function LoQueLePidesAMori({ puedeEditar }: { puedeEditar: boolean }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>No, dejarlas</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => void alBorrarTodo()}>Quitar {nReglas(vigentes.length)}</AlertDialogAction>
+            <AlertDialogAction onClick={() => void alBorrarTodo()}>Quitar {nReglas(vigentes.length)}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

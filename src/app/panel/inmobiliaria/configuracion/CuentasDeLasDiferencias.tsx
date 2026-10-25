@@ -230,7 +230,7 @@ export function CuentasDeLasDiferencias() {
       data-testid="cuentas-de-las-diferencias"
     >
       <header className="space-y-1">
-        <h3 id="cuentas-de-las-diferencias-titulo" className="flex items-center gap-2 text-base font-semibold text-fg">
+        <h3 id="cuentas-de-las-diferencias-titulo" className="flex items-center gap-2 text-base font-medium text-fg">
           <Bank className="h-4 w-4" aria-hidden="true" />
           Cuentas de las diferencias
         </h3>
@@ -353,6 +353,7 @@ export function CuentasDeLasDiferencias() {
                   </div>
                   <Button
                     size="sm"
+                    variant="ink"
                     hideArrow
                     isLoading={asentando}
                     disabled={!escritura.puede || !datos.disponible}
@@ -368,7 +369,7 @@ export function CuentasDeLasDiferencias() {
             <Dialog open={confirmando} onOpenChange={(v) => !v && !asentando && setConfirmando(false)}>
               <DialogContent variant="confirm" icon={<Bank weight="bold" />} data-testid="dialogo-asentarlas">
                 <DialogHeader>
-                  <DialogTitle>Asentar lo que falta</DialogTitle>
+                  <DialogTitle>¿Asentar lo que falta?</DialogTitle>
                   <DialogDescription>
                     {porAsentar && porAsentar.total > 0
                       ? porAsentar.total === 1
@@ -411,7 +412,7 @@ export function CuentasDeLasDiferencias() {
                               {diaLegible(g.fecha)} · {g.etiqueta}
                             </span>
                           </span>
-                          <span className="shrink-0 tabular-nums text-fg">{plata(g.valorCop)}</span>
+                          <span className="shrink-0 font-mono tabular-nums text-fg">{plata(g.valorCop)}</span>
                         </li>
                       ))}
                     </ul>

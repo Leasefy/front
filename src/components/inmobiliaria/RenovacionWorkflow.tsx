@@ -545,7 +545,7 @@ export function CuerpoDeRenovacion({
           </div>
         </div>
         <div className="mt-3.5 flex flex-wrap items-center gap-2">
-          <ChipDeVencimiento renovacion={renovacion} />
+          <ChipDeVencimiento renovacion={renovacion} hoy={elHoy} />
         </div>
         {!terminada ? (
           <Stepper

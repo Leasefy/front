@@ -70,7 +70,7 @@ export function OnboardingStepList({ pasos, etiqueta, nota, className }: Onboard
                 data-active={actual}
                 aria-current={actual ? 'step' : undefined}
                 className={cn(
-                  'relative isolate z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-[12px] font-medium tabular-nums transition-colors duration-base ease-standard',
+                  'relative isolate z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-caption tabular-nums transition-colors duration-base ease-standard',
                   hecho && 'bg-primary-soft text-primary',
                   actual && 'text-primary-fg',
                   paso.estado === 'pendiente' && 'border border-border bg-surface text-fg-subtle',

@@ -52,7 +52,17 @@ import {
   WarningCircle,
   Wrench,
   ArrowCounterClockwise,
+  DotsThree,
+  Prohibit,
 } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -78,8 +88,24 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Chip } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { sinElNumeroRepetido } from '@/lib/pantalla/pestanas-sin-repetir';
 import { ESPECIALIDADES, EN_PALABRAS } from './especialidades';
+
+/**
+ * El documento como se lee (revisora r27: «900123456» iba sin formato): los
+ * miles con punto y, si viene, el dígito de verificación tras el guion
+ * («900.123.456-7»). Lo que no sea un número (un pasaporte) va tal cual.
+ */
+export function documentoLegible(documento: string | null | undefined): string {
+  const crudo = (documento ?? '').trim();
+  const partes = /^([\d.\s]+?)(?:-(\d))?$/.exec(crudo);
+  if (!partes) return crudo;
+  const digitos = partes[1].replace(/[.\s]/g, '');
+  if (!/^\d+$/.test(digitos)) return crudo;
+  const conPuntos = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return partes[2] ? `${conPuntos}-${partes[2]}` : conPuntos;
+}
 import type { ProveedorDeMantenimiento } from '@/lib/api/proveedores-de-mantenimiento.service';
 
 type Cajon = 'activos' | 'inactivos' | 'todos';
@@ -267,14 +293,8 @@ export function TablaDeProveedores({
     </TableHead>
   );
 
-  const cajonChip = (valor: Cajon, etiqueta: string) => (
-    <Chip selected={cajon === valor} onClick={() => setCajon(valor)} data-testid={`cajon-${valor}`}>
-      {etiqueta}
-      <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-        {conteos[valor]}
-      </span>
-    </Chip>
-  );
+  // Revisora r25: la columna «Contacto» decía «—» en todas las filas; sale si alguna tiene.
+  const hayContacto = proveedores.some((p) => Boolean(p.telefono || p.correo));
 
   return (
     <section
@@ -288,8 +308,8 @@ export function TablaDeProveedores({
             <Wrench className="h-[18px] w-[18px] text-fg-muted" weight="duotone" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-foreground">A quién llamas</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <h2 className="text-base font-medium text-foreground">A quién llamas</h2>
+            <p className="mt-0.5 text-caption text-muted-foreground">
               Arriba quedan los que tienen algo pendiente en sus papeles: a esos
               no se les puede facturar ni mandar a un inmueble todavía.
             </p>
@@ -299,10 +319,19 @@ export function TablaDeProveedores({
 
       {/* UNA franja de filtros, pegada a la tabla. */}
       <div className="flex flex-col gap-3 border-b border-border px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          {cajonChip('activos', 'Activos')}
-          {cajonChip('inactivos', 'Inactivos')}
-          {cajonChip('todos', 'Todos')}
+        <div className="flex flex-wrap items-center gap-2 empty:hidden">
+          {/* Revisora r25 (T2): las pestañas de estado de la casa, sin «Inactivos 0». */}
+          <PestanasDeEstado<Cajon>
+            etiqueta="Activos e inactivos"
+            valor={cajon}
+            onCambio={setCajon}
+            // R2 (revisora r27): «Activos 1 · Todos 1» decía el número dos veces.
+            pestanas={sinElNumeroRepetido<Cajon>([
+              { valor: 'activos', etiqueta: 'Activos', cuantos: conteos.activos, fija: true, testid: 'cajon-activos' },
+              { valor: 'inactivos', etiqueta: 'Inactivos', cuantos: conteos.inactivos, testid: 'cajon-inactivos' },
+              { valor: 'todos', etiqueta: 'Todos', cuantos: conteos.todos, fija: true, testid: 'cajon-todos' },
+            ], 'todos', cajon)}
+          />
           <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border lg:block" />
           <Select value={especialidad} onValueChange={setEspecialidad}>
             <SelectTrigger
@@ -331,7 +360,7 @@ export function TablaDeProveedores({
           <Input
             className="pl-9"
             type="search"
-            placeholder="Nombre, documento, teléfono u oficio"
+            placeholder="Buscar proveedor"
             aria-label="Buscar proveedor"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
@@ -345,7 +374,7 @@ export function TablaDeProveedores({
           que poder conciliarse. */}
       {hayFiltros && (
         <p
-          className="border-b border-border px-5 py-2 text-xs text-fg-muted"
+          className="border-b border-border px-5 py-2 text-caption text-fg-muted"
           data-testid="alcance-de-proveedores"
         >
           {filtrados.length} de {proveedores.length}{' '}
@@ -361,11 +390,13 @@ export function TablaDeProveedores({
         </p>
       )}
 
-      <Table>
-        <TableHeader>
+      {/* Bajo 768 cada proveedor es una tarjeta (revisión de Operación, 21-10: la tabla
+          encogida dejaba los papeles fuera de la vista). */}
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             <EncabezadoOrdenable valor="nombre">Proveedor</EncabezadoOrdenable>
-            <TableHead className="whitespace-nowrap">Contacto</TableHead>
+            {hayContacto ? <TableHead className="whitespace-nowrap">Contacto</TableHead> : null}
             <TableHead className="whitespace-nowrap">Qué hace</TableHead>
             <EncabezadoOrdenable valor="calificacion">Calificación</EncabezadoOrdenable>
             <EncabezadoOrdenable valor="papeles">Papeles</EncabezadoOrdenable>
@@ -374,7 +405,7 @@ export function TablaDeProveedores({
         </TableHeader>
         {/* Buscar, filtrar, paginar, registrar o apagar: las filas entran
             escalonadas y las que sobran salen; el esqueleto se va de una. */}
-        <TableBodyAnimado>
+        <TableBodyAnimado className="max-md:block">
           {cargando && proveedores.length === 0 && <FilasDeCarga key="cargando" />}
 
           {/* Falló → vacío, en ese orden: con la petición muerta la lista llega
@@ -382,7 +413,7 @@ export function TablaDeProveedores({
               nadie pudo verificar. */}
           {!cargando && Boolean(error) && (
             <TableRowAnimada key="fallo">
-              <TableCell colSpan={COLUMNAS} className="p-0">
+              <TableCell colSpan={COLUMNAS - (hayContacto ? 0 : 1)} className="p-0">
                 <FalloDeCarga error={error} queEs="los proveedores" onReintentar={onReintentar} />
               </TableCell>
             </TableRowAnimada>
@@ -390,7 +421,7 @@ export function TablaDeProveedores({
 
           {!cargando && !error && filtrados.length === 0 && (
             <TableRowAnimada key="vacio">
-              <TableCell colSpan={COLUMNAS} className="p-0">
+              <TableCell colSpan={COLUMNAS - (hayContacto ? 0 : 1)} className="p-0">
                 <SinDatos
                   queSon="proveedores"
                   icono={Wrench}
@@ -414,30 +445,37 @@ export function TablaDeProveedores({
               data-testid="proveedor"
               // El apagado se atenúa en sus celdas: la opacidad de la fila la
               // maneja su entrada animada.
-              className={cn('border-b border-border last:border-0', !p.activo && '[&>td]:opacity-70')}
+              className={cn(
+                // Revisora r25 (§25.1 4b): a 390 una tarjeta corta —nombre, oficio y lo que le falta—; lo que
+                // está vacío (sin oficio, sin calificar) no se pinta en el celular.
+                'border-b border-border last:border-0 max-md:grid max-md:grid-cols-1 max-md:gap-y-1.5 max-md:px-4 max-md:py-4',
+                !p.activo && '[&>td]:opacity-70',
+              )}
             >
-              <TableCell className="max-w-[280px] px-5 py-4 align-top">
+              <TableCell className="max-w-[280px] px-5 py-4 align-top max-md:block max-md:max-w-none max-md:p-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-foreground">{p.nombre}</span>
                   {/* `secondary` en oscuro es casi blanco: el proveedor APAGADO
                       quedaba con el elemento más brillante de su fila. */}
                   {!p.activo && <Badge variant="outline">Inactivo</Badge>}
                 </div>
-                <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{p.documento}</p>
+                <p className="mt-0.5 text-caption tabular-nums text-muted-foreground">{documentoLegible(p.documento)}</p>
               </TableCell>
 
-              <TableCell className="max-w-[200px] px-5 py-4 align-top text-muted-foreground">
+              {hayContacto ? (
+              <TableCell className="max-w-[200px] px-5 py-4 align-top text-muted-foreground max-md:block max-md:max-w-none max-md:p-0">
                 {p.telefono || p.correo ? (
                   <>
                     {p.telefono ? (
                       <p className="tabular-nums text-foreground">{p.telefono}</p>
                     ) : null}
-                    {p.correo ? <p className="truncate text-xs">{p.correo}</p> : null}
+                    {p.correo ? <p className="truncate text-caption">{p.correo}</p> : null}
                   </>
                 ) : (
-                  <span>—</span>
+                  <span className="max-md:hidden">—</span>
                 )}
               </TableCell>
+              ) : null}
 
               {/*
                 🔴 19-09 (visto en el navegador, en TEMA OSCURO): los oficios
@@ -448,16 +486,26 @@ export function TablaDeProveedores({
                 borde, fondo y radio para decir «objeto aparte»; un oficio no
                 es un objeto aparte, es un dato de la fila. Va como texto.
               */}
-              <TableCell className="max-w-[180px] px-5 py-4 align-top text-muted-foreground">
+              <TableCell
+                className={cn(
+                  'max-w-[180px] px-5 py-4 align-top text-muted-foreground max-md:block max-md:max-w-none max-md:p-0',
+                  p.especialidades.length === 0 && 'max-md:hidden',
+                )}
+              >
                 {p.especialidades.length > 0
                   ? p.especialidades.map((e) => EN_PALABRAS.get(e) ?? e).join(' · ')
                   : '—'}
               </TableCell>
 
-              <TableCell className="px-5 py-4 align-top">
+              <TableCell
+                className={cn(
+                  'px-5 py-4 align-top max-md:block max-md:p-0',
+                  p.trabajosCalificados === 0 && p.reaperturasPorGarantia === 0 && 'max-md:hidden',
+                )}
+              >
                 <Estrellas calificacion={p.calificacion} trabajos={p.trabajosCalificados} />
                 {p.reaperturasPorGarantia > 0 && (
-                  <p className="mt-1 text-xs text-warning">
+                  <p className="mt-1 text-caption text-warning">
                     {p.reaperturasPorGarantia === 1
                       ? 'Un trabajo hubo que rehacerlo en garantía'
                       : `${p.reaperturasPorGarantia} trabajos hubo que rehacerlos en garantía`}
@@ -470,18 +518,18 @@ export function TablaDeProveedores({
                 Meterlos en un icono con globito ahorraría dos renglones y
                 escondería justo el dato por el que existe esta pantalla.
               */}
-              <TableCell className="max-w-[340px] px-5 py-4 align-top">
+              <TableCell className="max-w-[340px] px-5 py-4 align-top max-md:block max-md:max-w-none max-md:p-0">
                 {p.avisos.length > 0 ? (
                   <ul className="space-y-1" data-testid="avisos-del-proveedor">
                     {p.avisos.map((a) => (
-                      <li key={a} className="flex items-start gap-1.5 text-xs text-warning">
+                      <li key={a} className="flex items-start gap-1.5 text-caption text-warning">
                         <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span>{a}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <div className="text-xs">
+                  <div className="text-caption">
                     {/* «Al día» no grita: en una tabla sana es lo que dicen casi
                         todas las filas, y el único color de la columna tiene
                         que quedar para lo que sí pide una acción hoy. */}
@@ -498,8 +546,8 @@ export function TablaDeProveedores({
                 )}
               </TableCell>
 
-              <TableCell className="whitespace-nowrap px-3 py-4 align-top text-right">
-                <div className="flex justify-end gap-1">
+              <TableCell className="whitespace-nowrap px-3 py-4 align-top text-right max-md:block max-md:p-0 max-md:pt-1 max-md:text-left">
+                <div className="flex justify-end gap-1 max-md:-ml-2 max-md:justify-start">
                   {p.trabajosCalificados > 0 && (
                     <Button variant="ghost" size="sm" hideArrow onClick={() => onVerHistorial(p)}>
                       Historial
@@ -510,10 +558,26 @@ export function TablaDeProveedores({
                       <Button variant="secondary" size="sm" hideArrow onClick={() => onEditar(p)}>
                         Editar
                       </Button>
+                      {/* Revisora r27 (Fitts): lo que apaga, lejos de lo frecuente: «Desactivar»
+                          va en el «⋯», no pegado a «Editar». */}
                       {p.activo ? (
-                        <Button variant="ghost" size="sm" hideArrow onClick={() => onDesactivar(p)}>
-                          Desactivar
-                        </Button>
+                        <DropdownList>
+                          <DropdownListTrigger asChild>
+                            <IconButton
+                              variant="ghost"
+                              size="sm"
+                              icon={<DotsThree className="h-5 w-5" weight="bold" />}
+                              aria-label={`Más acciones de ${p.nombre}`}
+                              data-testid={`mas-acciones-${p.id}`}
+                            />
+                          </DropdownListTrigger>
+                          <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
+                            <DropdownListItem className="gap-3" onClick={() => onDesactivar(p)}>
+                              <Prohibit className="h-4 w-4" />
+                              <span className="text-sm">Desactivar</span>
+                            </DropdownListItem>
+                          </DropdownListContent>
+                        </DropdownList>
                       ) : (
                         <Button variant="ghost" size="sm" hideArrow onClick={() => onReactivar(p)}>
                           <ArrowCounterClockwise className="mr-1 h-4 w-4" />
@@ -569,10 +633,10 @@ function Estrellas({
   trabajos: number;
 }) {
   if (calificacion === null) {
-    return <span className="text-xs text-muted-foreground">Sin calificar todavía</span>;
+    return <span className="text-caption text-muted-foreground">Sin calificar todavía</span>;
   }
   return (
-    <span className="flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
+    <span className="flex items-center gap-1 whitespace-nowrap text-caption text-muted-foreground">
       <Star className="h-3.5 w-3.5 text-warning" weight="fill" />
       <span className="font-medium tabular-nums text-foreground">{calificacion.toFixed(1)}</span>
       <span>

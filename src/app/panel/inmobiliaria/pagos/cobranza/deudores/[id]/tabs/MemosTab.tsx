@@ -183,7 +183,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
         className="rounded-md border border-border bg-surface p-3 space-y-2"
         data-testid="memo-nota-form"
       >
-        <label htmlFor="memo-nota" className="text-xs font-medium text-fg-muted">
+        <label htmlFor="memo-nota" className="text-caption font-medium text-fg-muted">
           Añadir nota del equipo
         </label>
         <Textarea
@@ -225,7 +225,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
           </p>
           {/* Por qué está vacío, no solo que está vacío: el memo lo escribe el
               workflow después de cada llamada del agente. */}
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             El agente escribe un memo después de cada llamada que gestiona. Este
             caso todavía no tiene ninguno.
           </p>
@@ -251,7 +251,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span
                     className={[
-                      'text-xs font-medium px-1.5 py-0.5 rounded',
+                      'text-caption font-medium px-1.5 py-0.5 rounded',
                       esManual
                         ? 'bg-primary/10 text-primary'
                         : 'bg-surface-muted text-fg-muted',
@@ -259,7 +259,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
                   >
                     {esManual ? 'Nota del equipo' : 'Memo del agente'}
                   </span>
-                  <span className="text-xs text-fg-muted tabular-nums">
+                  <span className="text-caption text-fg-muted tabular-nums">
                     {new Date(m.created_at).toLocaleString(locale)}
                   </span>
                 </div>
@@ -271,12 +271,12 @@ export function MemosTab({ debtorId }: MemosTabProps) {
                 {/* La objeción literal es oro para la siguiente gestión: va
                     textual, entre comillas. */}
                 {m.last_objection_literal && (
-                  <p className="mt-1.5 text-xs text-fg-muted italic">
+                  <p className="mt-1.5 text-caption text-fg-muted italic">
                     Objeción: «{m.last_objection_literal}»
                   </p>
                 )}
 
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-caption text-fg-muted">
                   {desenlace && (
                     <span className="px-1.5 py-0.5 rounded bg-surface-muted">
                       {desenlace}
@@ -299,7 +299,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
                       size="sm"
                       hideArrow
                       onClick={() => setLlamadaAbierta(m.call_id)}
-                      className="ml-auto px-0 h-auto text-xs text-primary hover:underline"
+                      className="ml-auto px-0 h-auto text-caption text-primary hover:underline"
                       data-testid={`memo-ver-llamada-${m.id}`}
                     >
                       Ver la llamada

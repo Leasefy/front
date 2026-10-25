@@ -73,7 +73,7 @@ export function HistorialDeReparaciones({ recarga }: { recarga: number }) {
 
   return (
     <section className="space-y-3" aria-label="Historial" data-testid="historial-de-reparaciones">
-      <h2 className="text-sm font-semibold text-fg">Historial</h2>
+      <h2 className="text-h3 text-fg">Historial</h2>
       <div className="overflow-hidden rounded-lg border border-border bg-surface">
         <EstadoDeDatos
           cargando={cargando && !datos}

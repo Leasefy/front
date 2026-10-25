@@ -200,7 +200,8 @@ describe('el historial real del back', () => {
     expect(texto).toContain('Estado: En mantenimiento')
     expect(texto).toContain('Antes estaba disponible.')
     expect(texto).toContain('Nico García')
-    expect(texto).toContain('Consignación creada')
+    // 22-10: el título del back pasa por las palabras de la casa (mandato, no consignación).
+    expect(texto).toContain('Mandato registrado')
     // El hito derivado de la fecha de contrato NO se suma cuando el back ya lo trae.
     expect(texto).not.toContain('consignacionCreatedDesc')
     // 2 del historial + el vencimiento del arriendo (fecha guardada, sigue siendo un hecho).

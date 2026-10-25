@@ -8,27 +8,38 @@
  * mismo permiso: `cobros`/view para ver, `cobros`/edit para mover.
  */
 
-import Link from 'next/link';
-
+import { useTr } from '@/lib/i18n/use-tr';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { CobroJuridico } from '@/components/cartera/CobroJuridico';
 
 export default function CobroJuridicoPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr();
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <SectionLabel>Pagos · inquilinos</SectionLabel>
-          <h1 className="text-h2 text-fg">Cobro jurídico</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Lo que ya no se cobra con una llamada. El sistema sugiere desde el día 90 de mora sin póliza; pasar el
-            caso lo decide una persona y queda visible en el contrato y en la cartera.{' '}
-            <Link className="underline" href="/panel/inmobiliaria/pagos/cartera">
-              Volver a Cartera
-            </Link>
-          </p>
-        </header>
+        {/* Revisora r25 (Jurídico #2): Jurídico es una pestaña de Cartera → lleva su riel, como las
+            hermanas (antes sólo una vuelta «Cartera» arriba). */}
+        <div className="space-y-6">
+          <EncabezadoDePantalla
+            seccion={tr('Cobrar a inquilinos')}
+            titulo="Cobro jurídico"
+            descripcion="Lo que ya no se cobra con una llamada: pásalo a un abogado y lleva sus honorarios."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">
+                  El sistema sugiere desde el día 90 de mora sin póliza; pasar el caso lo decide una
+                  persona y queda visible en el contrato y en la cartera. Los honorarios son plata del
+                  abogado: no son ingreso de la inmobiliaria ni del propietario.
+                </p>
+              </ParaEntenderMas>
+            }
+          />
+          <PestanasDeCartera />
+        </div>
         <CobroJuridico />
       </div>
     </PageGuard>

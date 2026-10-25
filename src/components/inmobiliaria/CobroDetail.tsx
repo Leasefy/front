@@ -356,7 +356,7 @@ export function CobroDetail({
                 <ContactAction
                   icon={Envelope}
                   href={`mailto:${cobro.tenantEmail}`}
-                  label="Email"
+                  label="Correo"
                   className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
                 />
               )}
@@ -418,7 +418,7 @@ export function CobroDetail({
           </div>
 
           {/*
-            🔴 Antes acá vivían cuatro filas fijas (canon, admin, mora,
+            🔴 Antes aquí vivían cuatro filas fijas (canon, admin, mora,
             total). Eso es exactamente lo que la inmobiliaria dijo que no
             alcanza: no muestra el honorario de cobranza ni las retenciones,
             y con eso se acepta un abono parcial creyendo que el cliente

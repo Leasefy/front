@@ -14,12 +14,13 @@
  * exactamente igual en una factura; la diferencia sólo existe si está escrita.
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Info, Receipt } from '@phosphor-icons/react'
 
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
+import { MoneyInput } from '@/components/ui/money-input'
 import {
   Select,
   SelectContent,
@@ -48,6 +49,7 @@ const ETIQUETA_RENGLON: Record<string, string> = {
 
 export function ConceptosYLiquidacion() {
   const [conceptoId, setConceptoId] = useState('canon-arrendamiento')
+  const liquidacionRef = useRef<HTMLDivElement>(null)
   const [valor, setValor] = useState(2_000_000)
   const [uso, setUso] = useState<UsoDelInmueble>('VIVIENDA')
   const [paga, setPaga] = useState<PerfilTributario>(perfilPorDefecto('NATURAL'))
@@ -95,13 +97,11 @@ export function ConceptosYLiquidacion() {
           <label className="text-sm font-medium text-foreground" htmlFor="valor">
             Valor
           </label>
-          <Input
+          {/* Revisora r25: con separador de miles («2.000.000»), no un número pelado. */}
+          <MoneyInput
             id="valor"
-            type="number"
-            min={0}
-            step={50_000}
             value={valor}
-            onChange={(e) => setValor(Math.max(0, Number(e.target.value) || 0))}
+            onChange={(crudo) => setValor(Math.max(0, Number(crudo) || 0))}
           />
         </div>
 
@@ -122,12 +122,42 @@ export function ConceptosYLiquidacion() {
           </p>
         </div>
 
-        <Perfil titulo="Quien paga" perfil={paga} onCambio={setPaga} esPagador />
-        <Perfil titulo="Quien recibe" perfil={recibe} onCambio={setRecibe} />
+        <Perfil titulo="Quién paga" perfil={paga} onCambio={setPaga} esPagador />
+        <Perfil titulo="Quién recibe" perfil={recibe} onCambio={setRecibe} />
       </Card>
 
+      {/* Revisora r25: bajo lg la liquidación queda debajo de todo el formulario (≈1.100 px a 390). La respuesta
+          va pegada abajo, encima de la barra del celular, y «Ver por qué» baja a la liquidación entera. */}
+      <div
+        className="sticky bottom-20 z-10 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 lg:hidden"
+        data-testid="liquidacion-pegada"
+      >
+        {/* Ronda 30 (revisora r27): las dos cifras apiladas a la izquierda (antes «Paga $ … · Recibe / $ …» se
+            partía en dos renglones) y sin sombra (Cadence 2). */}
+        <dl className="min-w-0 space-y-0.5 text-body-sm text-fg">
+          <div className="flex items-baseline gap-2">
+            <dt className="w-14 text-fg-muted">Paga</dt>
+            <dd className="font-mono tabular-nums">{formatCurrency(cuenta.totalAPagarCop)}</dd>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <dt className="w-14 text-fg-muted">Recibe</dt>
+            <dd className="font-mono tabular-nums">{formatCurrency(cuenta.netoQueRecibeCop)}</dd>
+          </div>
+        </dl>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          hideArrow
+          className="shrink-0"
+          onClick={() => liquidacionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        >
+          Ver por qué
+        </Button>
+      </div>
+
       {/* Lo que sale */}
-      <Card className="space-y-4 p-5" data-testid="liquidacion">
+      <Card ref={liquidacionRef} className="space-y-4 p-5 max-lg:scroll-mt-24" data-testid="liquidacion">
         <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Receipt className="h-4 w-4 text-muted-foreground" />
           Liquidación
@@ -235,6 +265,10 @@ function Perfil({
             onCambio={(v) => onCambio({ ...perfil, agenteRetenedorIva: v })}
           >
             Practica ReteIVA
+            {/* Un campo apagado dice por qué (DESIGN §24). */}
+            {!perfil.agenteRetenedorRenta ? (
+              <span className="block text-caption text-fg-subtle">Primero marca la retención en la fuente.</span>
+            ) : null}
           </Casilla>
           <Casilla
             id="ret-ica"
@@ -304,8 +338,9 @@ function Fila({
     <div className="flex items-baseline justify-between gap-3">
       <dt className={atenuado ? 'text-muted-foreground' : 'text-foreground/80'}>{etiqueta}</dt>
       <dd
-        className={`shrink-0 tabular-nums ${
-          fuerte ? 'text-base font-semibold text-foreground' : 'text-foreground'
+        // Ronda 30 (revisora r27, R5): la plata en mono, como en la barra pegada de 390 y en el Valor.
+        className={`shrink-0 font-mono tabular-nums ${
+          fuerte ? 'text-base font-medium text-foreground' : 'text-foreground'
         }`}
         data-testid={testId}
       >

@@ -62,7 +62,7 @@ describe('«Mi arriendo» del inquilino migrado (CA-04)', () => {
   it('muestra el contrato con su inmobiliaria, sus fechas y el día de pago «sin definir»', async () => {
     await montar([CONTRATO]);
     const t = host.textContent ?? '';
-    expect(t).not.toContain('No tienes arriendos activos');
+    expect(t).not.toContain('Todavía no tienes un arriendo');
     expect(t).toContain('Contrato 1');
     expect(t).toContain('ZZ QA Migración 95 N');
     expect(t).toContain('CL 1 2 3, Medellín');
@@ -77,6 +77,6 @@ describe('«Mi arriendo» del inquilino migrado (CA-04)', () => {
 
   it('sin contratos ni arriendos, el vacío de siempre', async () => {
     await montar([]);
-    expect(host.textContent).toContain('No tienes arriendos activos');
+    expect(host.textContent).toContain('Todavía no tienes un arriendo');
   });
 });

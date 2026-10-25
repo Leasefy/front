@@ -25,14 +25,25 @@
  * los prenda (y el 14-09 ya costó ~680 correos reales desde un back local).
  */
 
+import { useNombresDelEquipo } from '@/components/dispersiones/lotes/use-nombres-del-equipo'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { agendaApi } from '@/lib/api/agenda.service'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
-import { CalendarCheck, UserPlus } from '@phosphor-icons/react'
+import { CalendarCheck, Copy, UserPlus } from '@phosphor-icons/react'
+import { useConsignaciones, usePipelineItems } from '@/lib/hooks/useInmobiliaria'
+import { pipelineApi } from '@/lib/api/inmobiliaria.service'
+import { AgendarVisitaDialog } from '@/components/inmobiliaria/AgendarVisitaDialog'
+import { useTr } from '@/lib/i18n/use-tr'
+import { paraHoy } from '@/lib/pipeline/para-hoy'
+import { diaCortoDelEmbudo, esUnaVisita } from '@/lib/pipeline/proxima-accion'
+import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa'
+import type { PipelineItem } from '@/lib/types/inmobiliaria'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
-import { Stagger, StaggerItem } from '@leasefy/cadence'
+import { Cifra, FranjaDeCifras, Stagger, StaggerItem } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Badge,
@@ -70,6 +81,36 @@ function avisarQueNoSeGuardo(error: unknown, titulo: string, accion: string) {
   })
 }
 
+/**
+ * Revisora r22 (Preparar visitas #5): la visita no trae el id del interesado; se busca en Prospección por su
+ * teléfono o su correo y el inmueble, para que el nombre abra su ficha. Sin coincidencia segura, no se enlaza.
+ */
+export function interesadoDeLaVisita(
+  v: { telefono: string | null; correo: string | null; inmueble: { id: string } | null },
+  items: readonly PipelineItem[],
+): PipelineItem | null {
+  const digitos = (t: string | null | undefined) => String(t ?? '').replace(/\D/g, '')
+  const tel = digitos(v.telefono)
+  const correo = (v.correo ?? '').trim().toLowerCase()
+  if (!tel && !correo) return null
+  const coinciden = items.filter(
+    (i) =>
+      (!v.inmueble || i.propertyId === v.inmueble.id) &&
+      ((tel.length >= 7 && digitos(i.candidatePhone).endsWith(tel.slice(-10))) ||
+        (correo !== '' && (i.candidateEmail ?? '').trim().toLowerCase() === correo)),
+  )
+  return coinciden.length === 1 ? coinciden[0]! : null
+}
+
+async function copiarElRecordatorio(texto: string) {
+  try {
+    await navigator.clipboard.writeText(texto)
+    toast.success('Recordatorio copiado', { description: 'Pégalo en el WhatsApp o el correo de la persona.' })
+  } catch {
+    toast.error('No pudimos copiarlo', { description: 'Tu navegador no nos dejó usar el portapapeles.' })
+  }
+}
+
 export function VisitasClient() {
   const { canAccess } = usePermissions()
   const puedeEditar = canAccess('pipeline', 'edit')
@@ -81,6 +122,54 @@ export function VisitasClient() {
     ['visitas'],
   )
   const asesores = useCrm(() => leadsApi.asesores(), [], [])
+  const { nombreDe } = useNombresDelEquipo()
+  /** Sin nombre conocido, «Asesor sin nombre»: el «Usuario 1a2b3c4d» del respaldo es un id interno. */
+  const nombreDelAsesor = (userId: string) => {
+    const nombre = nombreDe(userId)
+    return nombre.startsWith('Usuario ') ? 'Asesor sin nombre' : nombre
+  }
+
+  // Revisora r22 (#1): las visitas vencidas sin cerrar (las que Prospección pone en «Para hoy»): lo primero
+  // que hay que preparar es reagendarlas o marcar si llegó.
+  const { pipelineItems, refetch: releerElTablero } = usePipelineItems()
+  const itemsDelTablero = pipelineItems ?? []
+  const tr = useTr()
+  /*
+   * Revisora r24 (Preparar visitas #1): la vencida se cierra AQUÍ, con lo mismo que hace Prospección —«Sí llegó»
+   * la pasa a «Visita hecha» (`pipelineApi.moveStage`, como el cajón) y «Reagendar» abre el MISMO diálogo de
+   * cita (`AgendarVisitaDialog`)—. Antes la frase mandaba a la persona a buscarla en otra pantalla.
+   * «No llegó» no va: como en la Agenda, la vencida no sale de «Para hoy» con esa marca (pendiente de Nico).
+   */
+  const [agendandoA, setAgendandoA] = useState<PipelineItem | null>(null)
+  const { consignaciones } = useConsignaciones(undefined, { skip: !agendandoA })
+  async function marcarQueLlego(item: PipelineItem) {
+    const antes = item.stage
+    setTocando(item.id)
+    try {
+      await pipelineApi.moveStage(item.id, 'visit_done')
+      releerElTablero()
+      toast.success(tr('Visita hecha: {nombre}', { nombre: item.candidateName }), {
+        description: tr('Pasó a «Visita hecha» en Prospección.'),
+        action: {
+          label: tr('Deshacer'),
+          onClick: () => {
+            void pipelineApi.moveStage(item.id, antes).then(
+              () => releerElTablero(),
+              (e) => avisarQueNoSeGuardo(e, 'No se deshizo', 'deshacer la marca'),
+            )
+          },
+        },
+      })
+    } catch (e) {
+      avisarQueNoSeGuardo(e, 'No se marcó la visita como hecha', 'marcar la visita como hecha')
+    } finally {
+      setTocando(null)
+    }
+  }
+  const vencidas = useMemo(
+    () => paraHoy(itemsDelTablero, hoyEnColombia()).filter((p) => p.porQue === 'vencida' && esUnaVisita(p.item.nextAction)),
+    [itemsDelTablero],
+  )
 
   const [tocando, setTocando] = useState<string | null>(null)
   const [marcando, setMarcando] = useState(false)
@@ -105,6 +194,9 @@ export function VisitasClient() {
   const visitas = porAtender.datos?.visitas ?? []
   const pendientes = recordatorios.datos?.visitas ?? []
   const horas = porAtender.datos?.horasDeAvisoAlInquilino ?? 24
+  const todoVacio =
+    !porAtender.cargando && !recordatorios.cargando && !porAtender.errorCrudo && !recordatorios.errorCrudo &&
+    visitas.length === 0 && pendientes.length === 0
 
   // 🔴 Lo que falta, primero.
   const ordenadas = useMemo(
@@ -171,8 +263,14 @@ export function VisitasClient() {
     }
   }
 
+  // GLOW UP (21-10-2026): arriba, cuántas visitas tienen algo por resolver y de
+  // qué tipo; abajo, la lista de trabajo y los recordatorios. Las reglas (sin
+  // asesor no se confirma, el aviso al inquilino, «esta pantalla no envía») van
+  // en «¿Cómo funciona?».
+  const sinAsesor = ordenadas.filter((v) => v.faltaElAsesor).length
+  const sinAviso = ordenadas.filter((v) => v.faltaElAvisoAlInquilino).length
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6 p-6 lg:p-8">
       {/*
         🔴 Se llamaba «Visitas», y Nico preguntó lo obvio el 21-09: «¿para qué
         existe esta sección si existe la de Agenda?». La Agenda YA muestra las
@@ -193,14 +291,59 @@ export function VisitasClient() {
         Meter esta lista dentro de la Agenda sería empeorar las dos: un
         calendario no es el sitio donde se persigue lo que falta.
       */}
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Preparar visitas</h1>
-        <p className="text-muted-foreground text-sm">
-          Lo que le falta a cada visita para poder hacerse. Ninguna se confirma sin asesor, y
-          al inmueble ocupado se le avisa al inquilino {horas} horas antes. El calendario
-          completo está en Agenda.
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo={tr('Preparar visitas')}
+        descripcion={tr('Lo que le falta a cada visita para poder hacerse. El calendario completo está en Agenda.')}
+        acciones={
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/panel/inmobiliaria/agenda">{tr('Ver la agenda')}</Link>
+          </Button>
+        }
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: preparar visitas" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Ninguna visita se confirma sin asesor: asígnale uno desde su fila.</p>
+              <p>
+                Si el inmueble está ocupado, al inquilino se le avisa {horas} horas antes; cuando le avises, márcalo con
+                «Ya le avisé».
+              </p>
+              <p>
+                Los recordatorios aparecen 24 horas antes de cada visita confirmada. Esta pantalla no los envía: arma
+                el texto y deja la constancia.
+              </p>
+              <p>Agenda es el calendario (cuándo pasa cada cosa); esta pantalla es la lista de lo que falta.</p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
+
+      {!porAtender.noHabilitado && !porAtender.cargando && !porAtender.errorCrudo && ordenadas.length > 0 ? (
+        <FranjaDeCifras fila="md" aria-label="Lo que falta en las visitas" data-testid="franja-visitas">
+          <Cifra etiqueta="Próximas" valor={ordenadas.length} detalle="Visitas por atender" data-testid="cifra-proximas" />
+          <Cifra
+            etiqueta="Sin asesor"
+            valor={sinAsesor}
+            detalle={sinAsesor > 0 ? 'No se pueden confirmar' : 'Todas tienen asesor'}
+            tono={sinAsesor > 0 ? 'peligro' : 'exito'}
+            data-testid="cifra-sin-asesor"
+          />
+          <Cifra
+            etiqueta="Avisar al inquilino"
+            valor={sinAviso}
+            detalle={sinAviso > 0 ? 'Inmuebles ocupados' : 'Nada pendiente'}
+            tono={sinAviso > 0 ? 'aviso' : undefined}
+            data-testid="cifra-sin-aviso"
+          />
+          <Cifra
+            etiqueta="Recordatorios"
+            valor={pendientes.length}
+            detalle={pendientes.length > 0 ? 'Por mandar' : 'Ninguno pendiente'}
+            tono={pendientes.length > 0 ? 'aviso' : undefined}
+            data-testid="cifra-recordatorios"
+          />
+        </FranjaDeCifras>
+      ) : null}
 
       {sinHorario && sinHorario.sinHorario > 0 && (
         <div
@@ -237,9 +380,77 @@ export function VisitasClient() {
         </div>
       )}
 
+      {vencidas.length > 0 ? (
+        <section className="rounded-lg border border-border bg-surface" data-testid="visitas-vencidas">
+          <header className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4">
+            <h2 className="text-[15px] font-medium text-fg">
+              {vencidas.length === 1 ? tr('1 visita vencida sin cerrar') : tr('{n} visitas vencidas sin cerrar', { n: vencidas.length })}
+            </h2>
+          </header>
+          <ul className="mt-2 divide-y divide-border-faint">
+            {vencidas.map(({ item, dia }) => (
+              <li key={item.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-fg">{item.candidateName}</p>
+                  <p className="truncate text-body-sm text-fg-muted">
+                    {item.propertyTitle || item.propertyAddress}
+                    {dia ? <span className="font-mono"> · {diaCortoDelEmbudo(dia)}</span> : null}
+                  </p>
+                </div>
+                {/* A 390 las acciones bajan al pie de la tarjeta (w-full); «Ver ficha» queda como enlace callado. */}
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                  {puedeEditar && item.stage === 'visit_scheduled' ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={tocando === item.id}
+                      onClick={() => void marcarQueLlego(item)}
+                      data-testid={`vencida-llego-${item.id}`}
+                    >
+                      {tr('Sí llegó')}
+                    </Button>
+                  ) : null}
+                  {puedeEditar ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={tocando === item.id}
+                      onClick={() => setAgendandoA(item)}
+                      data-testid={`vencida-reagendar-${item.id}`}
+                    >
+                      {tr('Reagendar')}
+                    </Button>
+                  ) : null}
+                  <Link
+                    href={`/panel/inmobiliaria/pipeline?lead=${encodeURIComponent(item.id)}`}
+                    className="ml-auto text-body-sm text-fg-muted underline-offset-4 hover:text-fg hover:underline sm:ml-2"
+                    data-testid={`vencida-${item.id}`}
+                  >
+                    {tr('Ver ficha')}
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* Ronda 22: con las dos listas vacías, UN vacío con su acción (eran dos tarjetas iguales de ~320 px). */}
+      {todoVacio ? (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="nada-por-preparar">
+          {vencidas.length > 0
+            ? tr('Fuera de las vencidas, no hay visitas en los próximos 7 días ni recordatorios por mandar.')
+            : tr('Nada por preparar: no hay visitas en los próximos 7 días ni recordatorios por mandar.')}
+          {/* Revisora r23 (Preparar visitas #2): el enlace dice a dónde lleva; agendar se hace desde la ficha del interesado. */}
+          <Link href="/panel/inmobiliaria/pipeline" className="font-medium text-primary underline-offset-4 hover:underline">
+            {tr('Ir a Prospección')}
+          </Link>
+        </p>
+      ) : (
+      <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Por atender</CardTitle>
+          <CardTitle className="text-base">Visitas por preparar</CardTitle>
         </CardHeader>
         <CardContent>
           {porAtender.noHabilitado ? (
@@ -263,7 +474,7 @@ export function VisitasClient() {
                 <EmptyState
                   icon={CalendarCheck}
                   title="No hay visitas próximas"
-                  description="Cuando un interesado pida una visita desde el aviso, aparece acá para asignarle asesor."
+                  description="Cuando un interesado pida una visita desde el aviso, aparece aquí para asignarle asesor."
                 />
               }
             >
@@ -278,7 +489,20 @@ export function VisitasClient() {
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="space-y-0.5">
                         <p className="font-medium">
-                          {v.quien ?? 'Interesado'}
+                          {(() => {
+                            const delTablero = interesadoDeLaVisita(v, itemsDelTablero)
+                            return delTablero ? (
+                              <Link
+                                href={`/panel/inmobiliaria/pipeline?lead=${encodeURIComponent(delTablero.id)}`}
+                                className="underline-offset-4 hover:underline"
+                                data-testid={`abrir-interesado-${v.visitId}`}
+                              >
+                                {v.quien ?? 'Interesado'}
+                              </Link>
+                            ) : (
+                              v.quien ?? 'Interesado'
+                            )
+                          })()}
                           <span className="text-muted-foreground ml-2 text-sm font-normal">
                             {v.comoSeLee}
                           </span>
@@ -323,7 +547,8 @@ export function VisitasClient() {
                             <SelectContent>
                               {(asesores.datos ?? []).map((a) => (
                                 <SelectItem key={a.userId} value={a.userId}>
-                                  {a.userId.slice(0, 8)} · {a.leadsActivos} leads
+                                  {/* El nombre de la persona, nunca un pedazo de su id interno (glow up 22-10). */}
+                                  {nombreDelAsesor(a.userId)} · {a.leadsActivos} {a.leadsActivos === 1 ? 'interesado' : 'interesados'}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -354,7 +579,8 @@ export function VisitasClient() {
                       </div>
                     ) : null}
 
-                    {puedeEditar ? (
+                    {/* Ronda 22: «No llegó» sólo cuando la visita ya pasó (o para quitarlo si se marcó). */}
+                    {puedeEditar && (v.noShow || new Date(v.visitaEn).getTime() < Date.now()) ? (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -362,7 +588,7 @@ export function VisitasClient() {
                         onClick={() => void noShow(v.visitId, v.noShow)}
                         data-testid={`no-show-${v.visitId}`}
                       >
-                        {v.noShow ? 'No, sí llegó' : 'No llegó'}
+                        {v.noShow ? 'Sí llegó (deshacer)' : 'No llegó'}
                       </Button>
                     ) : null}
                   </StaggerItem>
@@ -414,17 +640,30 @@ export function VisitasClient() {
               }
             >
               <p className="text-muted-foreground mb-3 text-sm">
-                Esta pantalla NO envía: arma el texto y deja la constancia. El
-                envío sale por los avisos de la inmobiliaria.
+                Esta pantalla no envía: arma el texto y deja la constancia. El
+                envío sale por los avisos de la inmobiliaria; si lo mandas tú, cada uno trae «Copiar».
               </p>
               {/* Los recordatorios entran escalonados; el que se marca, sale. */}
               <Stagger as="ul" className="divide-y" data-testid="lista-recordatorios">
                 {pendientes.map((r) => (
-                  <StaggerItem as="li" key={r.visitId} className="space-y-1 py-3">
-                    <p className="text-sm">{r.mensaje}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {r.correo ?? r.telefono ?? 'sin correo ni teléfono'}
-                    </p>
+                  <StaggerItem as="li" key={r.visitId} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 py-3">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="text-sm">{r.mensaje}</p>
+                      <p className="text-muted-foreground text-caption">
+                        {r.correo ?? r.telefono ?? 'sin correo ni teléfono'}
+                      </p>
+                    </div>
+                    {/* Revisora r22 (#4): «Copiar» en cada recordatorio, como «Copiar el mensaje» de Qué ofrecer. */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      hideArrow
+                      onClick={() => void copiarElRecordatorio(r.mensaje)}
+                      data-testid={`copiar-recordatorio-${r.visitId}`}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copiar
+                    </Button>
                   </StaggerItem>
                 ))}
               </Stagger>
@@ -432,6 +671,21 @@ export function VisitasClient() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
+
+      {agendandoA ? (
+        <AgendarVisitaDialog
+          item={agendandoA}
+          consignaciones={consignaciones ?? []}
+          onCerrar={() => setAgendandoA(null)}
+          onAgendada={() => {
+            setAgendandoA(null)
+            releerElTablero()
+            invalidar('visitas')
+          }}
+        />
+      ) : null}
     </div>
   )
 }

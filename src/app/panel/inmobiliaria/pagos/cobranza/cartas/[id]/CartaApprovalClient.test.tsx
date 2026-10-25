@@ -75,12 +75,12 @@ interface Harness {
   container: HTMLDivElement
 }
 
-function mount(): Harness {
+function mount(props: { enCajon?: boolean; onResuelto?: () => void } = {}): Harness {
   const container = document.createElement('div')
   document.body.appendChild(container)
   const root = createRoot(container)
   act(() => {
-    root.render(<CartaApprovalClient artifactId="art-1" />)
+    root.render(<CartaApprovalClient artifactId="art-1" {...props} />)
   })
   return { root, container }
 }
@@ -313,5 +313,25 @@ describe('CartaApprovalClient — errores de aprobar y rechazar', () => {
       'Elige cómo se envía la carta y escribe la dirección.',
     )
     unmount(h)
+  })
+})
+
+// Ronda 30 (K4, Nico: «K4 cajón»): el mismo componente se monta en el cajón de la
+// lista de Cartas: sin la vuelta ni el encabezado de página; rechazada, cierra el
+// cajón (onResuelto) en vez de volver atrás.
+describe('CartaApprovalClient — en el cajón de la lista', () => {
+  it('no pinta la vuelta de página y, rechazada, avisa para cerrar', () => {
+    vi.useFakeTimers()
+    hookState = { ...hookState, rejectResult: { ok: true } }
+    const onResuelto = vi.fn()
+    const h = mount({ enCajon: true, onResuelto })
+    expect(getByTestId(h.container, 'carta-back')).toBeNull()
+    expect(getByTestId(h.container, 'approval-aprobar-carta')).not.toBeNull()
+    act(() => {
+      vi.advanceTimersByTime(1600)
+    })
+    expect(onResuelto).toHaveBeenCalledTimes(1)
+    unmount(h)
+    vi.useRealTimers()
   })
 })

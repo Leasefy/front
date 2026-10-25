@@ -258,7 +258,7 @@ export function AgenteFormModal({
       // demás se dice acá arriba del pie, por el traductor.
       const reparto = repartirErroresDelServidor(error, {
         campos: CAMPOS_DEL_FORMULARIO,
-        porDefecto: 'No pudimos enviar la invitación. Prueba de nuevo en un momento.',
+        porDefecto: 'No se pudo enviar la invitación. Prueba de nuevo en un momento.',
         accion: 'enviar la invitación',
       });
       const leido = leerElError(error);
@@ -334,7 +334,7 @@ export function AgenteFormModal({
           <DialogDescription>
             {variant === 'agent'
               ? t('inmobiliaria.agente.newAgentDescription')
-              : 'Envía una invitación por correo para unirse a tu agencia.'}
+              : 'Le llega un correo con el enlace para entrar a tu inmobiliaria.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -345,7 +345,7 @@ export function AgenteFormModal({
               <User className="w-4 h-4 text-muted-foreground" />
               {t('inmobiliaria.agente.fullName')} *
             </label>
-            <Input id={`${idDelFormulario}-name`} aria-invalid={!!errors.name || undefined} aria-describedby={`${idDelFormulario}-name-error`} maxLength={MAX_LARGO_NOMBRE_DEL_INVITADO} type="text" value={name} onChange={(e) => { setName(e.target.value); avisoDelCorreo.limpiar(); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} onBlur={() => { if (email.trim()) revisarElCorreo(); }} placeholder="Juan Perez" className={errorCls(!!errors.name)} />
+            <Input id={`${idDelFormulario}-name`} aria-invalid={!!errors.name || undefined} aria-describedby={`${idDelFormulario}-name-error`} maxLength={MAX_LARGO_NOMBRE_DEL_INVITADO} type="text" value={name} onChange={(e) => { setName(e.target.value); avisoDelCorreo.limpiar(); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} onBlur={() => { if (email.trim()) revisarElCorreo(); }} placeholder="Juan Pérez" className={errorCls(!!errors.name)} />
             <ErrorDelCampo id={`${idDelFormulario}-name-error`} mensaje={errors.name} className="mt-0" />
           </div>
 
@@ -353,7 +353,7 @@ export function AgenteFormModal({
           <div className="space-y-2">
             <label htmlFor={`${idDelFormulario}-email`} className="text-sm font-medium text-foreground flex items-center gap-2">
               <Envelope className="w-4 h-4 text-muted-foreground" />
-              Email *
+              Correo *
             </label>
             <Input id={`${idDelFormulario}-email`} aria-invalid={!!errors.email || undefined} aria-describedby={`${idDelFormulario}-email-error`} type="email" value={email} onChange={(e) => { setEmail(e.target.value); avisoDelCorreo.limpiar(); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} onBlur={revisarElCorreo} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
             <ErrorDelCampo id={`${idDelFormulario}-email-error`} mensaje={errors.email} className="mt-0" />
@@ -393,7 +393,7 @@ export function AgenteFormModal({
           <Collapse open={showAgentFields} className="space-y-5">
               {variant === 'member' && (
                 <div className="pt-2 border-t border-border">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Datos del agente</p>
+                  <p className="font-mono text-label uppercase text-muted-foreground">Datos del asesor</p>
                 </div>
               )}
 
@@ -401,7 +401,7 @@ export function AgenteFormModal({
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">{t('inmobiliaria.agente.role')}</label>
                 <RadioCardGroup
-                  className="grid grid-cols-3 gap-2"
+                  className="grid grid-cols-1 gap-2 sm:grid-cols-3"
                   value={agentRole}
                   onValueChange={(v) => setAgentRole(v as AgenteRole)}
                 >
@@ -419,7 +419,7 @@ export function AgenteFormModal({
 
               {/* Zone + Specialization — persisted on the AgencyMember (backend
                   InviteMemberDto supports zone + specialization). */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
@@ -478,7 +478,7 @@ export function AgenteFormModal({
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
+                  <p className="text-caption text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
                   <ErrorDelCampo id={`${idDelFormulario}-commissionSplit-error`} mensaje={errors.commissionSplit} className="mt-0" />
                 </div>
               </Collapse>
@@ -488,7 +488,7 @@ export function AgenteFormModal({
           {variant === 'member' && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Mensaje personalizado (opcional)</label>
-              <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Agrega un mensaje para el invitado..." rows={3} className="resize-none" />
+              <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Agrega un mensaje para quien invitas…" rows={3} className="resize-none" />
             </div>
           )}
 
@@ -515,7 +515,7 @@ export function AgenteFormModal({
           </Button>
           <Button type="submit" form={idDelFormulario} hideArrow disabled={isFormLoading} isLoading={isFormLoading}>
             {isFormLoading ? (
-              variant === 'agent' ? t('inmobiliaria.agente.creating') : 'Enviando...'
+              variant === 'agent' ? t('inmobiliaria.agente.creating') : 'Enviando…'
             ) : variant === 'agent' ? (
               t('inmobiliaria.agente.createAgent')
             ) : (

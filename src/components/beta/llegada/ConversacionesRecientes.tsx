@@ -129,7 +129,7 @@ export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbiert
               'absolute left-0 z-50 w-[min(460px,calc(100vw-2.5rem))]',
               abajo ? 'top-full mt-2' : 'bottom-full mb-2',
               'overflow-hidden rounded-[20px] border border-border bg-surface p-1.5',
-              'shadow-[0_18px_48px_-12px_rgba(20,19,15,0.22)] dark:shadow-[0_18px_48px_-12px_rgba(0,0,0,0.85)]'
+              'shadow-[0_18px_48px_-12px_rgba(20,19,15,0.22)]'
             )}
           >
             <div className="flex items-baseline justify-between gap-3 px-3 pb-1.5 pt-2">
@@ -169,7 +169,7 @@ export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbiert
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-baseline gap-2">
-                          <span className="truncate font-body text-[13.5px] font-semibold text-fg">{conv.title}</span>
+                          <span className="truncate font-body text-[13.5px] font-medium text-fg">{conv.title}</span>
                           <span className="shrink-0 font-mono text-[10.5px] uppercase tracking-[0.06em] text-fg-subtle">
                             {haceCuanto(conv.updatedAt, ahora)}
                           </span>

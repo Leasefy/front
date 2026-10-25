@@ -650,6 +650,34 @@ describe('ContratoDetallePage — la cuenta del contrato', () => {
     expect(container.querySelector('[data-testid="prorroga-montada"]')).toBeNull()
   })
 
+  /*
+   * GLOW UP (21-10-2026, Nico eligió «Pestañas por tarea»): lo que se consulta
+   * aparte de lo que se configura.
+   */
+  it('activo: Resumen · Cobro y reglas · Garantías · Documentos · Historial, cada bloque en la suya', async () => {
+    withContract(contract({ status: 'active' }))
+    await renderPage()
+    const pestanas = Array.from(container.querySelectorAll('[data-testid^="pestana-"]')).map((p) =>
+      p.getAttribute('data-testid'),
+    )
+    expect(pestanas).toEqual(['pestana-resumen', 'pestana-cobro', 'pestana-garantias', 'pestana-documentos', 'pestana-historial'])
+    const panel = (id: string) => container.querySelector(`[data-testid="panel-${id}"]`)!
+    expect(panel('resumen').getAttribute('data-state')).toBe('active')
+    expect(panel('resumen').querySelector('[data-testid="cobros"]')).not.toBeNull()
+    expect(panel('cobro').querySelector('[data-testid="conceptos"]')).not.toBeNull()
+    expect(panel('cobro').querySelector('[data-testid="prorroga-montada"]')).not.toBeNull()
+    expect(panel('cobro').querySelector('[data-testid="condiciones-montadas"]')).not.toBeNull()
+    expect(Array.from(panel('documentos').querySelectorAll('h3')).some((h) => h.textContent === 'Documento')).toBe(true)
+  })
+
+  it('en firma, «Documentos» va primero y abre ahí', async () => {
+    withContract(contract({ status: 'pending_tenant' }))
+    await renderPage()
+    const primera = container.querySelector('[data-testid^="pestana-"]')
+    expect(primera?.getAttribute('data-testid')).toBe('pestana-documentos')
+    expect(container.querySelector('[data-testid="panel-documentos"]')?.getAttribute('data-state')).toBe('active')
+  })
+
   it('mientras se firma, el documento manda: va antes que la cuenta', async () => {
     withContract(contract({ status: 'pending_tenant' }))
 

@@ -21,6 +21,7 @@
  * verdad.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -62,6 +63,9 @@ import {
 } from '@/lib/movimientos/en-palabras';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
 import { EsqueletoDeSeccion } from './piezas';
+import { MagnifyingGlass } from '@phosphor-icons/react';
+import { Input } from '@/components/ui/input';
+import { SinDatos } from '@/components/estado/SinDatos';
 
 const TODOS = 'todos';
 const POR_PAGINA = 50;
@@ -155,9 +159,23 @@ export function SeccionMovimientos() {
     setFiltros((f) => ({ ...f, [clave]: v }));
     setPagina(1);
   };
+  /* Ronda 30 (regla de Nico: «las tablas siempre con buscador»): el back no busca por texto,
+     así que el buscador mira lo que ya llegó en esta página (quién, qué hizo, módulo). */
+  const [busqueda, setBusqueda] = useState('');
+  const filasVisibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es');
+    const todas = datos?.filas ?? [];
+    if (!q) return todas;
+    return todas.filter((m) =>
+      [quienFue(m), m.accion, moduloEnPalabras(m.modulo), rolEnPalabras(m.actor.rol)].some((x) =>
+        (x ?? '').toLocaleLowerCase('es').includes(q),
+      ),
+    );
+  }, [datos, busqueda]);
   const hayFiltros = useMemo(
-    () => (Object.keys(filtros) as (keyof Filtros)[]).some((k) => filtros[k] !== TODOS),
-    [filtros],
+    () =>
+      (Object.keys(filtros) as (keyof Filtros)[]).some((k) => filtros[k] !== TODOS) || busqueda.trim() !== '',
+    [filtros, busqueda],
   );
 
   if (!datos && (cargando || error)) {
@@ -207,6 +225,20 @@ export function SeccionMovimientos() {
 
       <section className="overflow-x-clip rounded-lg border border-border bg-surface">
         <div className="flex flex-col gap-3 border-b border-border p-4">
+          <div className="relative w-full sm:w-80">
+            <MagnifyingGlass
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+              aria-hidden="true"
+            />
+            <Input
+              className="pl-9"
+              placeholder="Buscar persona o acción en esta página"
+              aria-label="Buscar en los movimientos de esta página"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              data-testid="buscar-movimientos"
+            />
+          </div>
           <div className="flex flex-wrap items-center gap-2" data-testid="filtros-de-movimientos">
             <span className="text-sm text-fg-muted">Filtrar por</span>
             <SelectorDeMes
@@ -269,6 +301,7 @@ export function SeccionMovimientos() {
                 hideArrow
                 onClick={() => {
                   setFiltros(SIN_FILTROS);
+                  setBusqueda('');
                   setPagina(1);
                 }}
                 data-testid="quitar-filtros"
@@ -279,18 +312,30 @@ export function SeccionMovimientos() {
           </div>
         </div>
 
-        {datos.filas.length === 0 ? (
-          <p className="p-8 text-center text-sm text-fg-muted" data-testid="movimientos-vacio">
-            {datos.disponible
-              ? hayFiltros
-                ? 'Nada coincide con estos filtros en este mes.'
-                : 'Nadie hizo nada en el panel este mes.'
-              : 'Sin movimientos todavía.'}
-          </p>
+        {filasVisibles.length === 0 ? (
+          <div data-testid="movimientos-vacio">
+            {/* Ronda 30: el vacío con SinDatos (por qué está vacío y su salida), antes un renglón gris. */}
+            {datos.disponible ? (
+              <SinDatos
+                hayFiltros={hayFiltros}
+                queSon="movimientos"
+                titulo={`Nadie hizo nada en el panel ${cuando}`}
+                descripcion="Cada vez que alguien del equipo crea, cambia o borra algo, queda aquí con su nombre y su rol."
+                onLimpiarFiltros={() => {
+                  setFiltros(SIN_FILTROS);
+                  setBusqueda('');
+                  setPagina(1);
+                }}
+              />
+            ) : (
+              <p className="p-8 text-center text-sm text-fg-muted"><Ilustracion nombre="portapapeles" tamano={80} className="mx-auto mb-2 block" />Sin movimientos todavía.</p>
+            )}
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+          <div className="md:overflow-x-auto">
+            {/* En el celular cada movimiento es una tarjeta: qué hizo y su resultado arriba. */}
+            <Table className="max-md:block">
+              <TableHeader className="max-md:hidden">
                 <TableRow>
                   <TableHead>Cuándo</TableHead>
                   <TableHead>Quién</TableHead>
@@ -298,8 +343,8 @@ export function SeccionMovimientos() {
                   <TableHead>Resultado</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {datos.filas.map((m) => {
+              <TableBody className="max-md:block">
+                {filasVisibles.map((m) => {
                   const r = resultadoDe(m.resultado);
                   return (
                     <TableRow
@@ -307,7 +352,7 @@ export function SeccionMovimientos() {
                       data-testid={`movimiento-${m.id}`}
                       tabIndex={0}
                       aria-label={`Abrir: ${m.accion}`}
-                      className="cursor-pointer focus-visible:bg-surface-muted"
+                      className="cursor-pointer focus-visible:bg-surface-muted max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:px-4 max-md:py-4"
                       onClick={() => setAbierto(m)}
                       onKeyDown={(ev) => {
                         if (ev.key === 'Enter' || ev.key === ' ') {
@@ -316,22 +361,22 @@ export function SeccionMovimientos() {
                         }
                       }}
                     >
-                      <TableCell className="whitespace-nowrap font-mono text-caption text-fg-muted">
+                      <TableCell className="whitespace-nowrap font-mono text-caption text-fg-muted max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
                         {cuandoEnBogota(m.fecha)}
                       </TableCell>
-                      <TableCell className="max-w-[14rem]">
+                      <TableCell className="max-w-[14rem] max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="truncate text-sm text-fg" title={quienFue(m)}>
                           {quienFue(m)}
                         </p>
                         <p className="text-caption text-fg-muted">{rolEnPalabras(m.actor.rol)}</p>
                       </TableCell>
-                      <TableCell className="max-w-[22rem]">
-                        <p className="truncate text-sm text-fg" title={m.accion}>
+                      <TableCell className="max-w-[22rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
+                        <p className="truncate text-sm text-fg max-md:font-medium" title={m.accion}>
                           {m.accion}
                         </p>
                         <p className="text-caption text-fg-muted">{moduloEnPalabras(m.modulo)}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                         <Badge variant={TONO[r]}>{RESULTADO_EN_PALABRAS[r]}</Badge>
                       </TableCell>
                     </TableRow>

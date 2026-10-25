@@ -74,12 +74,12 @@ const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
     text: 'text-warning',
   },
   purple: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-neutral-100',
+    text: 'text-neutral-600',
   },
   pink: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-neutral-100',
+    text: 'text-neutral-600',
   },
   indigo: {
     bg: 'bg-primary-soft',
@@ -131,7 +131,7 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
     <section className={cn('space-y-4', className)}>
       {/* Section header */}
       <div>
-        <h3 className="text-[15px] font-semibold text-foreground">
+        <h3 className="text-[15px] font-medium text-foreground">
           {t('beta.preferences.autonomy.title')}
         </h3>
         <p className="text-[13px] text-muted-foreground mt-0.5">
@@ -153,8 +153,8 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
             <div
               key={agentType}
               className={cn(
-                'rounded-lg border border-neutral-200 dark:border-border',
-                'bg-white dark:bg-card',
+                'rounded-lg border border-neutral-200',
+                'bg-white',
                 'border-l-[3px]',
                 borderColor,
                 'p-3.5'

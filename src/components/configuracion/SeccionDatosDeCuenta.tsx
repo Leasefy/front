@@ -13,8 +13,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowCounterClockwise, ArrowSquareOut, CaretRight, Check, Download, FileText } from '@phosphor-icons/react';
-import type { Icon } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, Check, Download, FileText } from '@phosphor-icons/react';
 
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
@@ -23,28 +22,11 @@ import { useI18n } from '@/lib/i18n';
 import { settingsApi } from '@/lib/api/settings.service';
 import { aFechaIso } from '@/lib/fechas-locales';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import { TarjetaDeAjustes } from './piezas';
+import { FilaQueAbre, FilaQueEnlaza, TarjetaDeAjustes } from './piezas';
 
 interface Props {
   /** El borrador local del recorrido inicial de ese panel y a dónde volver. */
   onboarding: { clave: string; ruta: string };
-}
-
-const CLASE_FILA =
-  'flex h-auto w-full items-center justify-between gap-4 rounded-none px-4 py-4 text-left hover:bg-surface-muted/60 sm:px-5';
-
-function Contenido({ icono: Icono, titulo, descripcion }: { icono: Icon; titulo: string; descripcion: string }) {
-  return (
-    <span className="flex min-w-0 items-center gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-        <Icono className="h-[18px] w-[18px] text-fg-muted" />
-      </span>
-      <span className="min-w-0 text-left">
-        <span className="block text-sm font-medium text-fg">{titulo}</span>
-        <span className="block text-sm text-fg-muted">{descripcion}</span>
-      </span>
-    </span>
-  );
 }
 
 export function SeccionDatosDeCuenta({ onboarding }: Props) {
@@ -87,7 +69,7 @@ export function SeccionDatosDeCuenta({ onboarding }: Props) {
     // Sólo el borrador local del recorrido: el perfil del back queda intacto.
     localStorage.removeItem(onboarding.clave);
     window.dispatchEvent(new Event('onboarding-updated'));
-    toast.success(es ? 'Listo: vuelves a los pasos iniciales' : 'Onboarding reset');
+    toast.success(es ? 'Listo: vuelves a los primeros pasos' : 'Back to the first steps');
     router.push(onboarding.ruta);
   };
 
@@ -98,28 +80,36 @@ export function SeccionDatosDeCuenta({ onboarding }: Props) {
 
   return (
     <>
+      {/* Glow up r26: las filas comunes de Configuración (el ícono suelto, sin
+          la caja gris) y cada una dice qué pasa al tocarla. */}
       <TarjetaDeAjustes>
-        <Button variant="ghost" hideArrow onClick={() => setAbierto(true)} data-testid="abrir-descargar-datos" className={CLASE_FILA}>
-          <Contenido
-            icono={Download}
-            titulo={es ? 'Descargar mis datos' : 'Download my data'}
-            descripcion={es ? 'Un archivo con toda tu información en Leasefy' : 'A file with all your information on Leasefy'}
-          />
-          <CaretRight className="h-4 w-4 shrink-0 text-fg-muted" />
-        </Button>
-        <Button variant="ghost" hideArrow onClick={reiniciar} data-testid="reiniciar-onboarding" className={CLASE_FILA}>
-          <Contenido
-            icono={ArrowCounterClockwise}
-            titulo={es ? 'Reiniciar los pasos iniciales' : 'Reset onboarding'}
-            descripcion={es ? 'Vuelve a ver el recorrido del comienzo' : 'Go through the first steps again'}
-          />
-          <CaretRight className="h-4 w-4 shrink-0 text-fg-muted" />
-        </Button>
+        <FilaQueAbre
+          testId="abrir-descargar-datos"
+          icono={Download}
+          titulo={es ? 'Descargar mis datos' : 'Download my data'}
+          descripcion={es ? 'Un archivo con todo lo que Leasefy guarda de ti' : 'A file with everything Leasefy stores about you'}
+          onClick={() => setAbierto(true)}
+        />
+        <FilaQueAbre
+          testId="reiniciar-onboarding"
+          icono={ArrowCounterClockwise}
+          titulo={es ? 'Volver a los primeros pasos' : 'Go through the first steps again'}
+          descripcion={
+            es
+              ? 'Te llevamos al recorrido del comienzo; tus datos no cambian'
+              : 'We take you back to the first steps; your data stays as it is'
+          }
+          onClick={reiniciar}
+        />
         {politicas.map((p) => (
-          <a key={p.href} href={p.href} target="_blank" rel="noreferrer" className={CLASE_FILA}>
-            <Contenido icono={FileText} titulo={p.titulo} descripcion={p.desc} />
-            <ArrowSquareOut className="h-4 w-4 shrink-0 text-fg-muted" />
-          </a>
+          <FilaQueEnlaza
+            key={p.href}
+            href={p.href}
+            icono={FileText}
+            titulo={p.titulo}
+            descripcion={p.desc}
+            etiquetaNuevaPestana={es ? '(se abre en otra pestaña)' : '(opens in a new tab)'}
+          />
         ))}
       </TarjetaDeAjustes>
 
@@ -152,9 +142,8 @@ export function SeccionDatosDeCuenta({ onboarding }: Props) {
               : ['Your profile and preferences', 'Applications and saved properties', 'Contracts and leases', 'Payments', 'Listed properties']
             ).map((item) => (
               <li key={item} className="flex items-center gap-2 text-sm text-fg">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success-soft">
-                  <Check className="h-3 w-3 text-success" />
-                </span>
+                {/* El chulo suelto (antes en un círculo verde). */}
+                <Check className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
                 {item}
               </li>
             ))}

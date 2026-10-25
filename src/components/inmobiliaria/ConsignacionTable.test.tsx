@@ -464,9 +464,10 @@ describe('<ConsignacionTable> — IN-02 (QA 04-10): la dirección no se repite',
 describe('<ConsignacionTable> — IN-03 y borrador (QA 04-10)', () => {
   it('IN-03: la comisión dice «10 %» una vez, no «% 10%»', () => {
     render([{ kind: 'consignacion', ...makeConsignacion({ commissionPercent: 10 }) }]);
-    const celdas = Array.from(container.querySelectorAll('tbody td')).map((td) => td.textContent ?? '');
-    const comision = celdas.find((c) => c.includes('%'))!;
-    expect(comision.trim()).toBe('10 %');
+    // GLOW UP 21-10: la comisión va debajo del canon (antes, su propia columna).
+    const comision = container.querySelector('[data-testid="comision-de-la-fila"]')!;
+    expect(comision.textContent?.trim()).toBe('10 %');
+    expect((container.textContent ?? '').match(/%/g)).toHaveLength(1);
   });
 
   it('una comisión que no venía en el archivo no se pinta como «0 %»: «Sin definir», con el porqué en el title', () => {

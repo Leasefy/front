@@ -24,8 +24,9 @@ describe('N-01 · el documento del inquilino sin «CC» inventado', () => {
     expect(s).toMatch(/documentoDelCliente\(/)
   })
 
-  it('la regla: el tipo si lo hay; si no, «NIT/CC»', () => {
-    expect(documentoDelCliente({ documento: '901444555' })).toBe('NIT/CC 901444555')
+  // Nico (22-10-2026): sin tipo, «Documento» (antes «NIT/CC»). Nunca un «CC» inventado.
+  it('la regla: el tipo si lo hay; si no, «Documento»', () => {
+    expect(documentoDelCliente({ documento: '901444555' })).toBe('Documento 901444555')
     expect(documentoDelCliente({ documento: '901444555', tipoDocumento: 'NIT' })).toBe('NIT 901444555')
     expect(documentoDelCliente({ documento: null })).toBeNull()
   })

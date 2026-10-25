@@ -45,6 +45,16 @@ vi.mock('@/lib/hooks/useNotifications', async () => {
       read: false,
       createdAt: '2026-10-01T09:00:00.000Z',
     },
+    // Revisora r27 (§3): con TODAS sin leer, «Sin leer» no sale (diría el número de «Todas»): una leída para probarla.
+    {
+      id: 'n-3',
+      type: 'payment_reminder',
+      category: 'payment',
+      title: 'Se registró tu pago de septiembre',
+      message: 'Ya está en tu estado de cuenta.',
+      read: true,
+      createdAt: '2026-09-05T09:00:00.000Z',
+    },
   ]
   return {
     useTenantNotifications: () => {
@@ -99,16 +109,17 @@ describe('Notificaciones del inquilino — movimiento', () => {
     expect(container.textContent).toContain('Tu postulación avanzó')
   })
 
+  // Glow up r26 (revisora r25): los filtros son las pestañas de estado de la casa (PestanasDeEstado), como en el
+  // portal del propietario; la marca del activo es su `aria-pressed`, una sola, y se va al filtro elegido.
   it('la marca del filtro activo es una sola y se va al filtro elegido', async () => {
-    const marcas = () => container.querySelectorAll('button > span.pointer-events-none.absolute[aria-hidden="true"]')
+    const marcas = () => container.querySelectorAll('[role="group"] button[aria-pressed="true"]')
     expect(marcas()).toHaveLength(1)
-    expect(boton('Todas')!.contains(marcas()[0])).toBe(true)
+    expect(marcas()[0]).toBe(boton('Todas'))
 
     await act(async () => boton('Sin leer')!.click())
 
     expect(marcas()).toHaveLength(1)
-    expect(boton('Sin leer')!.contains(marcas()[0])).toBe(true)
-    expect(boton('Todas')!.contains(marcas()[0])).toBe(false)
+    expect(marcas()[0]).toBe(boton('Sin leer'))
   })
 
   it('el «sin leer» del filtro cuenta hacia el número nuevo al marcar una como leída', async () => {
@@ -116,5 +127,20 @@ describe('Notificaciones del inquilino — movimiento', () => {
     const marcar = container.querySelectorAll<HTMLButtonElement>('button[aria-label="Marcar como leído"]')[0]
     await act(async () => marcar.click())
     await vi.waitFor(() => expect(boton('Sin leer')!.textContent).toContain('1'))
+  })
+
+  it('ocultar las leídas se puede deshacer (antes se escondían sin forma de volver a verlas)', async () => {
+    const marcar = container.querySelectorAll<HTMLButtonElement>('button[aria-label="Marcar como leído"]')[0]
+    await act(async () => marcar.click())
+    await act(async () => boton('Ocultar las leídas')!.click())
+    await vi.waitFor(() => expect(container.textContent).not.toContain('Tu pago vence pronto'))
+    await act(async () => boton('Mostrar las leídas')!.click())
+    await vi.waitFor(() => expect(container.textContent).toContain('Tu pago vence pronto'))
+  })
+
+  it('la no leída lleva su punto, sin caja de color ni fila teñida', () => {
+    expect(container.querySelectorAll('span.bg-primary.rounded-full[aria-hidden="true"]')).toHaveLength(2)
+    expect(container.innerHTML).not.toContain('#EEF1FF')
+    expect(container.innerHTML).not.toContain('#1A40FF')
   })
 })

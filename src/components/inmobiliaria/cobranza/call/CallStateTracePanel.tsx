@@ -21,7 +21,7 @@ export default function CallStateTracePanel({
       aria-label={t('inmobiliaria.ai.cobranza.call.stateTrace.title')}
       className="rounded-[22px] border border-border bg-surface p-4"
     >
-      <h2 className="text-sm font-semibold text-fg mb-3">
+      <h2 className="text-sm font-medium text-fg mb-3">
         {t('inmobiliaria.ai.cobranza.call.stateTrace.title')}
       </h2>
       {stateTrace.length === 0 ? (
@@ -46,7 +46,7 @@ export default function CallStateTracePanel({
                   to: row.toStage,
                 })}
               </p>
-              <p className="text-xs text-fg-subtle flex items-center gap-2">
+              <p className="text-caption text-fg-subtle flex items-center gap-2">
                 <span>{row.actor}</span>
                 <span aria-hidden="true">·</span>
                 <span>{relativeTime(row.at, locale)}</span>

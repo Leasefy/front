@@ -123,7 +123,7 @@ export default function CallTranscript({
       className="rounded-lg border border-border bg-surface"
     >
       <header className="px-4 py-3 border-b border-border">
-        <h2 className="text-sm font-semibold text-fg">
+        <h2 className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cobranza.call.transcript.title')}
         </h2>
       </header>
@@ -198,7 +198,7 @@ export default function CallTranscript({
               <StaggerItem as="li" key={turn.id} className="px-4 py-3 flex flex-col gap-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
-                    className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${sp.cls}`}
+                    className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${sp.cls}`}
                   >
                     {t(`inmobiliaria.ai.cobranza.call.transcript.${sp.label}`)}
                   </span>

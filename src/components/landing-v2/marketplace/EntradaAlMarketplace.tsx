@@ -101,10 +101,10 @@ export function EntradaAlMarketplace() {
             animate={reducido ? { opacity: 1 } : { y: '0%', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
             transition={reducido ? { duration: 0.15 } : { duration: 0.55, ease: [0.76, 0, 0.24, 1] }}
           />
-          {/* La línea azul que avanza mientras llega la página. */}
+          {/* La línea azul que avanza mientras llega la página (sin brillo: Cadence 2). */}
           <motion.div
             aria-hidden="true"
-            className="absolute left-0 top-0 h-[3px] bg-[#1A40FF] shadow-[0_0_12px_rgba(26,64,255,0.6)]"
+            className="absolute left-0 top-0 h-[3px] bg-[#1A40FF]"
             initial={{ width: '0%' }}
             animate={{ width: ['0%', '45%', '78%', '92%'] }}
             transition={{ duration: 3.2, times: [0, 0.2, 0.55, 1], ease: 'easeOut', delay: reducido ? 0 : 0.25 }}

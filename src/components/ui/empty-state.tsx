@@ -1,9 +1,11 @@
+import { Ilustracion, type NombreIlustracion } from '@leasefy/cadence';
 import type * as React from 'react';
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { CajaQueEntra } from '@/components/estado/entrada-del-estado';
+import { ilustracionDelVacio } from '@/lib/vacios/ilustracion-del-vacio';
 
 /**
  * EmptyState — EL estado vacío del panel. Canónico único.
@@ -77,6 +79,13 @@ export interface EmptyStateProps {
    * posición del botón sigan siendo los mismos en las ~130 que lo usan.
    */
   children?: React.ReactNode;
+  /**
+   * La ilustración 3D de Cadence 2 que pide la pantalla (casa, alcancia,
+   * billetera, escudo, monedas…), a 136 px. Sin ella se deduce de lo que falta
+   * (`ilustracionDelVacio`), a 112 px: desde el 23-10-2026 TODO vacío lleva la
+   * suya (Nico), también los chicos de un cajón o una tarjeta.
+   */
+  ilustracion?: NombreIlustracion;
   /** Additional CSS classes */
   className?: string;
 }
@@ -111,6 +120,7 @@ export function EmptyState({
   action,
   secondaryAction,
   children,
+  ilustracion,
   className,
 }: EmptyStateProps) {
   return (
@@ -125,13 +135,15 @@ export function EmptyState({
       className={cn('flex flex-col items-center justify-center px-6 py-12 text-center', className)}
       data-testid="empty-state"
     >
-      <span
-        className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
-        aria-hidden="true"
-      >
-        <IconComponent className="h-6 w-6" weight="duotone" />
-      </span>
-      <p className="text-[15px] font-semibold text-fg">{title}</p>
+      {/* Nico (23-10-2026): todo vacío lleva su ilustración 3D. La que pide la pantalla o, si no, la que sale de
+          lo que falta (`ilustracionDelVacio`); el ícono queda como pista para quien lee el código. */}
+      <Ilustracion
+        nombre={ilustracion ?? ilustracionDelVacio(title, description)}
+        tamano={ilustracion ? 136 : 112}
+        className="mb-2"
+        data-icono={IconComponent.displayName ?? undefined}
+      />
+      <p className="text-[15px] font-medium text-fg">{title}</p>
       <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-fg-muted">{description}</p>
       {children && <div className="mt-5 w-full max-w-sm text-left">{children}</div>}
       {action && <div className="mt-5">{renderAction(action, 'secondary', 'sm')}</div>}

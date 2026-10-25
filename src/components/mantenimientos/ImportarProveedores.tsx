@@ -15,7 +15,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { CheckCircle, PencilSimple, UploadSimple, WarningCircle } from '@phosphor-icons/react';
-import { Presence } from '@leasefy/cadence';
+import { Presence, StatusBadge } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button, Input } from '@/components/ui';
@@ -26,7 +27,6 @@ import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
 import { TipoDeDocumentoDelProveedor } from '@/components/inmobiliaria/mantenimiento/TipoDeDocumentoDelProveedor';
 import { EN_PALABRAS } from './especialidades';
 import { toast } from '@/components/ui/toast';
-import { cn } from '@/lib/utils';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { leerPlanilla, type PlanillaLeida } from '@/lib/importar/leer-planilla';
 import type { Mapeo } from '@/lib/importar/reconocer-columnas';
@@ -52,12 +52,13 @@ type Filtro = 'NUEVO' | 'CON_PROBLEMA' | 'YA_ESTABA' | 'HECHO';
 
 const contar = (n: number, uno: string, varios: string) => `${n.toLocaleString('es-CO')} ${n === 1 ? uno : varios}`;
 
-const ESTILO_DEL_ESTADO: Record<EstadoDeLaFilaImportada, { texto: string; clase: string }> = {
-  NUEVO: { texto: 'Se registra', clase: 'bg-success-soft text-success' },
-  CREADO: { texto: 'Registrado', clase: 'bg-success-soft text-success' },
-  YA_ESTABA: { texto: 'Ya estaba', clase: 'bg-surface-muted text-fg-muted' },
-  CON_PROBLEMA: { texto: 'Por corregir', clase: 'bg-warning-soft text-warning' },
-  NO_SE_CREO: { texto: 'No se registró', clase: 'bg-danger-soft text-danger' },
+/** El estado de cada fila: punto y palabra (StatusBadge), no una pastilla de color hecha a mano. */
+const ESTILO_DEL_ESTADO: Record<EstadoDeLaFilaImportada, { texto: string; tono: 'success' | 'neutral' | 'warning' | 'critical' }> = {
+  NUEVO: { texto: 'Se registra', tono: 'success' },
+  CREADO: { texto: 'Registrado', tono: 'success' },
+  YA_ESTABA: { texto: 'Ya estaba', tono: 'neutral' },
+  CON_PROBLEMA: { texto: 'Por corregir', tono: 'warning' },
+  NO_SE_CREO: { texto: 'No se registró', tono: 'critical' },
 };
 
 /** Una fila del archivo, con lo que dijo el back y, si le falta algo, cómo corregirla. */
@@ -84,32 +85,34 @@ function FilaDelArchivo({
     <li className="space-y-2 px-4 py-3" data-testid={`fila-importada-${fila.fila}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-medium text-fg">
-            <span className="font-normal text-fg-muted">Fila {fila.fila} · </span>
+          <p className="text-body-sm text-fg">
+            <span className="font-mono text-fg-muted">Fila {fila.fila} · </span>
             {fila.nombre || <span className="text-fg-muted">Sin nombre</span>}
           </p>
-          {datos.length > 0 && <p className="break-words text-xs text-fg-muted">{datos.join(' · ')}</p>}
+          {datos.length > 0 && <p className="break-words text-caption text-fg-muted">{datos.join(' · ')}</p>}
         </div>
-        <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', estilo.clase)}>{estilo.texto}</span>
+        <StatusBadge tone={estilo.tono} className="shrink-0">
+          {estilo.texto}
+        </StatusBadge>
       </div>
       {fila.existente && fila.estado === 'YA_ESTABA' && (
-        <p className="text-xs text-fg-muted">Está como «{fila.existente.nombre}». No se toca.</p>
+        <p className="text-caption text-fg-muted">Está como «{fila.existente.nombre}». No se toca.</p>
       )}
       {fila.problemas.map((p) => (
-        <p key={p} className="flex items-start gap-1.5 text-xs text-danger">
+        <p key={p} className="flex items-start gap-1.5 text-caption text-danger">
           <WarningCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           {p}
         </p>
       ))}
       {fila.avisos.map((a) => (
-        <p key={a} className="text-xs text-warning">
+        <p key={a} className="text-caption text-warning-700 dark:text-warning-100">
           {a}
         </p>
       ))}
       {onCorregir && !corrigiendo && (
         <button
           type="button"
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-caption text-primary underline-offset-4 hover:underline"
           onClick={() => setCorrigiendo(true)}
           data-testid={`corregir-fila-${fila.fila}`}
         >
@@ -119,7 +122,8 @@ function FilaDelArchivo({
       )}
       {onCorregir && (
         <Presence show={corrigiendo} direction="down">
-          <div className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_minmax(0,10rem)_auto] sm:items-end">
+          {/* En arena: la corrección vive dentro de la lista (nada de tarjeta con borde dentro de otra). */}
+          <div className="grid gap-3 rounded-xl bg-surface-muted p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_minmax(0,10rem)_auto] sm:items-end">
             <div className="min-w-0 space-y-1">
               <Label htmlFor={`nombre-${fila.fila}`} className="text-caption">Nombre</Label>
               <Input id={`nombre-${fila.fila}`} value={nombre} onChange={(e) => setNombre(e.target.value)} />
@@ -140,6 +144,7 @@ function FilaDelArchivo({
             <Button
               type="button"
               size="sm"
+              variant="ink"
               hideArrow
               onClick={() => {
                 onCorregir({
@@ -364,8 +369,8 @@ export function ImportarProveedores({
         )}
 
         {planilla && !resultado && (
-          <section className="space-y-3 rounded-lg border border-border p-4" data-testid="columnas-de-proveedores">
-            <p className="text-sm font-medium text-fg">Esta es la columna de cada dato; cámbiala si no es.</p>
+          <section className="space-y-3 rounded-xl bg-surface-muted p-4" data-testid="columnas-de-proveedores">
+            <p className="text-body-sm text-fg">Esta es la columna de cada dato; cámbiala si no es.</p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {CAMPOS_DEL_PROVEEDOR.map((c) => (
                 <div key={c.campo} className="min-w-0 space-y-1">
@@ -403,7 +408,7 @@ export function ImportarProveedores({
         )}
 
         {planilla && filas.length === 0 && !leyendo && (
-          <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-fg-muted">
+          <p className="rounded-xl bg-surface-muted px-4 py-3 text-body-sm text-fg-muted">
             Con estas columnas no sale ningún proveedor. Elige al menos la columna del nombre o la del documento.
           </p>
         )}
@@ -417,7 +422,7 @@ export function ImportarProveedores({
         {vista && (
           <section className="space-y-3" aria-busy={revisando} data-testid="revision-de-proveedores">
             {!vista.disponible && (
-              <p role="alert" className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
+              <p role="alert" className="rounded-xl bg-warning-soft px-3 py-2 text-caption text-fg">
                 Todavía no se pueden registrar proveedores: Leasefy tiene pendiente una actualización.
               </p>
             )}
@@ -428,33 +433,24 @@ export function ImportarProveedores({
                 {resultado.noSeCrearon > 0 ? ` · ${contar(resultado.noSeCrearon, 'no se registró', 'no se registraron')}` : ''}.
               </p>
             )}
-            <div role="tablist" aria-label="Filas del archivo" className="flex flex-wrap gap-2">
-              {pestanas
-                .filter((p) => p.n > 0 || p.id === filtro)
-                .map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={filtro === p.id}
-                    onClick={() => {
-                      setFiltro(p.id);
-                      setCuantas(DE_A);
-                    }}
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-sm transition-colors',
-                      filtro === p.id
-                        ? 'border-primary bg-primary-soft text-fg'
-                        : 'border-border text-fg-muted hover:text-fg',
-                    )}
-                    data-testid={`pestana-${p.id}`}
-                  >
-                    {p.texto} <span className="tabular-nums">{p.n.toLocaleString('es-CO')}</span>
-                  </button>
-                ))}
-            </div>
+            {/* Las pestañas de estado de la casa (las en cero no salen, salvo la elegida). */}
+            <PestanasDeEstado<Filtro>
+              etiqueta="Filas del archivo"
+              valor={filtro}
+              onCambio={(v) => {
+                setFiltro(v);
+                setCuantas(DE_A);
+              }}
+              pestanas={pestanas.map((p) => ({
+                valor: p.id,
+                etiqueta: p.texto,
+                cuantos: p.n,
+                tono: p.id === 'CON_PROBLEMA' ? ('aviso' as const) : undefined,
+                testid: `pestana-${p.id}`,
+              }))}
+            />
             {visibles.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-fg-muted">
+              <p className="rounded-xl bg-surface-muted px-4 py-3 text-body-sm text-fg-muted">
                 {filtro === 'CON_PROBLEMA' ? 'Ninguna fila tiene algo por corregir.' : 'No hay filas aquí.'}
               </p>
             ) : (

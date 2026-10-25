@@ -15,7 +15,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Handshake, Trash, UserCircle, Users } from '@phosphor-icons/react';
+import { Handshake, MagnifyingGlass, Trash, UserCircle, Users } from '@phosphor-icons/react';
+import { TablePagination } from '@/components/ui/pagination';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { Collapse, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
@@ -35,6 +38,7 @@ import {
   type ReglasDeComision,
 } from '@/lib/comercial/comercial';
 import { EsqueletoDeSeccion } from './piezas';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /** De 6 meses atrás a 6 adelante: desde cuándo rige. */
 function mesesParaElegir(hoy: string): string[] {
@@ -260,6 +264,17 @@ export function SeccionComercial() {
     void cargar();
   }, [cargar]);
 
+  /* Ronda 30 (regla de Nico: listas con buscador y paginación): con 20 asesores la lista
+     no se recorría a ojo. Todo sale de lo que ya llegó. */
+  const [busqueda, setBusqueda] = useState('');
+  const asesoresVisibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es');
+    const todos = datos?.asesores ?? [];
+    return q ? todos.filter((a) => (a.nombre ?? '').toLocaleLowerCase('es').includes(q)) : todos;
+  }, [datos, busqueda]);
+  const pagAsesores = useTablePagination(asesoresVisibles, { resetKey: busqueda });
+  const pagReglas = useTablePagination(datos?.reglas ?? [], {});
+
   const borrar = async (r: ReglaDeComision) => {
     await confirmar({
       titulo: `¿Borrar la regla que rige desde ${nombreDelMes(r.desdeMes).toLowerCase()}?`,
@@ -300,9 +315,9 @@ export function SeccionComercial() {
 
   return (
     <div className="space-y-6">
+      {/* Glow up 22-10: «la comisión de tus asesores» ya la dice el marco; aquí, dónde se ve. */}
       <p className="text-sm text-fg-muted">
-        Cuánto gana cada asesor. Es la comisión de tu equipo dentro de la inmobiliaria: Leasefy la calcula sobre lo que la
-        inmobiliaria de verdad ganó cada mes y la muestra en{' '}
+        Leasefy la calcula sobre lo que la inmobiliaria de verdad ganó cada mes y la muestra en{' '}
         <Link href="/panel/inmobiliaria/pipeline/comisiones" className="text-primary underline-offset-2 hover:underline">
           Comisiones y metas
         </Link>
@@ -318,14 +333,12 @@ export function SeccionComercial() {
         </div>
       </Presence>
 
-      <section className="rounded-lg border border-border bg-surface p-4 md:p-6 space-y-4 shadow-sm" data-testid="regla-de-todos">
+      <section className="rounded-lg border border-border bg-surface p-4 md:p-6 space-y-4" data-testid="regla-de-todos">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
-              <Users className="w-5 h-5 text-primary" aria-hidden="true" />
-            </div>
+            <Users className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
             <div className="min-w-0">
-              <h3 className="text-base font-semibold">Para todos los asesores</h3>
+              <h3 className="text-base font-medium">Para todos los asesores</h3>
               <p className="text-sm text-fg-muted" data-testid="texto-regla-de-todos">
                 {deTodos
                   ? `${textoDeLaRegla(deTodos)} · desde ${nombreDelMes(deTodos.desdeMes).toLowerCase()}`
@@ -354,21 +367,37 @@ export function SeccionComercial() {
         </Collapse>
       </section>
 
-      <section className="rounded-lg border border-border bg-surface p-4 md:p-6 space-y-4 shadow-sm" data-testid="reglas-por-asesor">
+      <section className="rounded-lg border border-border bg-surface p-4 md:p-6 space-y-4" data-testid="reglas-por-asesor">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
-            <UserCircle className="w-5 h-5 text-primary" aria-hidden="true" />
-          </div>
+          <UserCircle className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
           <div>
-            <h3 className="text-base font-semibold">Regla propia de un asesor</h3>
+            <h3 className="text-base font-medium">Regla propia de un asesor</h3>
             <p className="text-sm text-fg-muted">Si un asesor tiene la suya, gana a la de todos.</p>
           </div>
         </div>
         {datos.asesores.length === 0 ? (
-          <p className="text-sm text-fg-muted">Todavía no hay asesores en el equipo. Invítalos en Equipo.</p>
+          <VacioChico titulo="Todavía no hay asesores en el equipo." detalle="Invítalos en Equipo." ilustracion="equipo" />
         ) : (
+          <>
+          <div className="relative w-full sm:w-72">
+            <MagnifyingGlass
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+              aria-hidden="true"
+            />
+            <Input
+              className="pl-9"
+              placeholder="Buscar asesor"
+              aria-label="Buscar asesor"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              data-testid="buscar-asesor-comision"
+            />
+          </div>
+          {asesoresVisibles.length === 0 ? (
+            <SinDatos hayFiltros queSon="asesores" onLimpiarFiltros={() => setBusqueda('')} className="py-8" />
+          ) : null}
           <Stagger as="ul" className="divide-y divide-border">
-            {datos.asesores.map((a) => {
+            {pagAsesores.pageItems.map((a) => {
               const propia = ultimaPropia(datos.reglas, a.userId, hoy);
               const abierto = editandoAsesor === a.userId;
               return (
@@ -407,20 +436,31 @@ export function SeccionComercial() {
               );
             })}
           </Stagger>
+          {asesoresVisibles.length > 0 ? (
+            <TablePagination
+              total={pagAsesores.total}
+              page={pagAsesores.page}
+              pageSize={pagAsesores.pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={pagAsesores.setPage}
+              onPageSizeChange={pagAsesores.setPageSize}
+            />
+          ) : null}
+          </>
         )}
       </section>
 
       {datos.reglas.length > 0 ? (
         <section className="space-y-2" data-testid="historial-de-reglas">
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
-            <Handshake className="w-4 h-4" aria-hidden="true" />
+          <h3 className="flex items-center gap-2 text-sm font-medium">
+            <Handshake className="w-4 h-4 text-fg-muted" aria-hidden="true" />
             Todas las reglas
           </h3>
           <p className="text-caption text-fg-muted">
             Cada una rige desde su mes hasta que empieza otra. Las de meses ya pagados se quedan para que la nómina de ese mes no cambie.
           </p>
           <Stagger as="ul" className="rounded-lg border border-border divide-y divide-border bg-surface">
-            {datos.reglas.map((r) => (
+            {pagReglas.pageItems.map((r) => (
               <StaggerItem as="li" key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
@@ -441,6 +481,14 @@ export function SeccionComercial() {
               </StaggerItem>
             ))}
           </Stagger>
+          <TablePagination
+            total={pagReglas.total}
+            page={pagReglas.page}
+            pageSize={pagReglas.pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={pagReglas.setPage}
+            onPageSizeChange={pagReglas.setPageSize}
+          />
         </section>
       ) : null}
     </div>

@@ -127,7 +127,8 @@ describe('<DocumentReviewQueueView>', () => {
     // Los otros tres acompañan, en chico.
     expect(container.querySelector('[data-testid="count-inReview"]')?.textContent).toContain('1');
     expect(container.querySelector('[data-testid="count-approved"]')?.textContent).toContain('1');
-    expect(container.querySelector('[data-testid="count-rejected"]')?.textContent).toContain('0');
+    // Revisora r25: el tramo en cero no sale en la leyenda (antes «Rechazados 0»).
+    expect(container.querySelector('[data-testid="count-rejected"]')).toBeNull();
   });
 
   it('🔴 con la consulta caída no afirma «0»: dice que no sabe', () => {
@@ -154,14 +155,47 @@ describe('<DocumentReviewQueueView>', () => {
   it('el vacío deja ver los encabezados de columna: la tabla existe, los casos no', () => {
     render({ ...baseProps(), items: [] });
     expect(container.querySelector('table')).toBeTruthy();
-    expect(container.textContent).toContain('Candidato');
+    // Revisora r25: agrupado por candidato, el nombre va en la fila del grupo y las columnas son las del papel.
     expect(container.textContent).toContain('Documento');
+    expect(container.textContent).toContain('Estado');
+    // Sin cola no hay buscador: no hay nada que buscar.
+    expect(container.querySelector('[data-testid="buscar-soportes"]')).toBeNull();
+  });
+
+  it('revisora r25: agrupa por candidato, el nombre UNA vez y cuántos papeles le faltan', () => {
+    render(baseProps());
+    const grupos = container.querySelectorAll('[data-testid="grupo-candidato"]');
+    expect(grupos.length).toBe(1);
+    expect(grupos[0].textContent).toContain('Juan Pérez');
+    expect(container.querySelector('[data-testid="grupo-cuantos"]')?.textContent).toBe('2 papeles · 1 por revisar');
+    // El nombre no se repite en cada papel.
+    const filas = [...container.querySelectorAll('[data-testid="review-doc"]')];
+    expect(filas.every((f) => !f.textContent?.includes('Juan Pérez'))).toBe(true);
+  });
+
+  it('el buscador dentro de la tarjeta filtra por candidato, y sin resultados ofrece limpiar', () => {
+    render(baseProps());
+    const buscador = container.querySelector('[data-testid="buscar-soportes"]') as HTMLInputElement;
+    expect(buscador).toBeTruthy();
+    const escribir = (v: string) =>
+      act(() => {
+        const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+        set.call(buscador, v);
+        buscador.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    escribir('perez');
+    expect(container.querySelectorAll('[data-testid="review-doc"]').length).toBe(2);
+    escribir('nadie se llama así');
+    // (Las filas que se van salen con su animación: lo que se mira es que entra el vacío de la búsqueda.)
+    expect(container.querySelector('[data-caso="filtros"]')).not.toBeNull();
   });
 
   it('shows contextual actions per status when the user can review', () => {
     render(baseProps());
-    // PENDING doc → Tomar a revisión + Aprobar + Rechazar
-    expect(buttonByText('Tomar a revisión')).toBeTruthy();
+    // PENDING doc → Aprobar + Rechazar, y «Tomar a revisión» en el «⋯» de la fila.
+    // Ronda 30 (revisora r27), a propósito: tomar ya no es un botón suelto; se mira el disparador del menú.
+    expect(container.querySelector('[data-testid^="soporte-mas-acciones-"]')).toBeTruthy();
+    expect(buttonByText('Tomar a revisión')).toBeUndefined();
     // APPROVED doc → no "Aprobar" duplicate for it, but a Rechazar exists
     expect(buttonByText('Rechazar')).toBeTruthy();
   });
@@ -169,6 +203,7 @@ describe('<DocumentReviewQueueView>', () => {
   it('hides all action buttons when the user cannot review', () => {
     render({ ...baseProps(), canReview: false });
     expect(buttonByText('Tomar a revisión')).toBeUndefined();
+    expect(container.querySelector('[data-testid^="soporte-mas-acciones-"]')).toBeNull();
     expect(buttonByText('Aprobar')).toBeUndefined();
     expect(buttonByText('Rechazar')).toBeUndefined();
   });

@@ -126,10 +126,9 @@ function deleteButton(name: string): HTMLButtonElement {
   return btn as HTMLButtonElement
 }
 
+// Ronda 26: el formulario vive en un cajón (portal en el `body`), no dentro del contenedor.
 function submitButton(): HTMLButtonElement {
-  return Array.from(container.querySelectorAll('button')).find(
-    (b) => b.type === 'submit',
-  ) as HTMLButtonElement
+  return document.body.querySelector('form button[type="submit"]') as HTMLButtonElement
 }
 
 describe('CotizadorPage', () => {
@@ -138,8 +137,10 @@ describe('CotizadorPage', () => {
 
     await mount()
 
-    expect(container.textContent).toContain('fianly')
-    expect(container.textContent).toContain('sura')
+    // Ronda 28 (revisora r27): el nombre, no el código («fianly», «sura» sólo al Excel).
+    expect(container.textContent).toContain('Fianly')
+    expect(container.textContent).toContain('Sura')
+    expect(container.textContent).not.toContain('fianly')
     expect(container.textContent).toContain('Puestas')
     expect(container.textContent).toContain('Sin credenciales')
   })
@@ -172,11 +173,12 @@ describe('CotizadorPage', () => {
 
     await mount()
 
-    await act(async () => editButton('fianly').click())
+    await act(async () => editButton('Fianly').click())
 
-    const nameInput = container.querySelector('#carrier-name') as HTMLInputElement
+    const nameInput = document.body.querySelector('#carrier-name') as HTMLInputElement
     expect(nameInput.disabled).toBe(true)
-    expect(container.textContent).toContain('Puestas')
+    // Ronda 28 (revisora r27, T15): con todas iguales, la columna sale y lo dice la cifra (mismo dato).
+    expect(container.textContent).toContain('todas con credenciales puestas')
 
     await act(async () => {
       submitButton().click()
@@ -194,7 +196,7 @@ describe('CotizadorPage', () => {
 
     await mount()
 
-    await act(async () => editButton('fianly').click())
+    await act(async () => editButton('Fianly').click())
 
     function typeInto(el: HTMLInputElement, value: string) {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
@@ -204,9 +206,9 @@ describe('CotizadorPage', () => {
       })
     }
 
-    typeInto(container.querySelector('#carrier-config_base_url') as HTMLInputElement, 'https://fianly.example')
-    typeInto(container.querySelector('#carrier-config_username') as HTMLInputElement, 'leasify')
-    typeInto(container.querySelector('#carrier-config_password') as HTMLInputElement, 'secret123')
+    typeInto(document.body.querySelector('#carrier-config_base_url') as HTMLInputElement, 'https://fianly.example')
+    typeInto(document.body.querySelector('#carrier-config_username') as HTMLInputElement, 'leasify')
+    typeInto(document.body.querySelector('#carrier-config_password') as HTMLInputElement, 'secret123')
 
     await act(async () => {
       submitButton().click()
@@ -230,10 +232,32 @@ describe('CotizadorPage', () => {
     await mount()
 
     await act(async () => {
-      deleteButton('fianly').click()
+      deleteButton('Fianly').click()
     })
 
     expect(deleteCarrier).toHaveBeenCalledWith('fianly')
     expect(container.textContent).toContain('no se puede eliminar')
+  })
+
+  // Ronda 28 (revisora r27, bloqueante): una inactiva no ofrece «Desactivar» (no hacía nada) sino «Activar»,
+  // con el mismo PATCH del formulario y sólo `enabled`.
+  it('an inactive carrier offers «Activar» (PATCH enabled:true), not «Desactivar»', async () => {
+    listCarriers.mockResolvedValue([FIANLY, NEW_CARRIER])
+    updateCarrier.mockResolvedValue({ ...NEW_CARRIER, enabled: true })
+
+    await mount()
+
+    const fila = Array.from(container.querySelectorAll('tr')).find((tr) => tr.textContent?.includes('Sura'))
+    const botones = Array.from(fila?.querySelectorAll('button') ?? [])
+    expect(botones.some((b) => b.textContent?.includes('Desactivar'))).toBe(false)
+    const activar = botones.find((b) => b.textContent?.includes('Activar')) as HTMLButtonElement
+    expect(activar).toBeTruthy()
+
+    await act(async () => {
+      activar.click()
+    })
+
+    expect(updateCarrier).toHaveBeenCalledWith('sura', { enabled: true })
+    expect(listCarriers).toHaveBeenCalledTimes(2)
   })
 })

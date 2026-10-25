@@ -77,7 +77,8 @@ function render(props: AvaluoRegistrosViewProps) {
 /** The rendered filter <button> whose text is exactly `label` (excludes the pills). */
 function tabButton(label: string): HTMLButtonElement | undefined {
   return Array.from(container.querySelectorAll('button')).find(
-    (b) => b.textContent === label,
+    // Ronda 30: la pestaña abierta lleva su conteo («Firmado 12»); se busca por el nombre.
+    (b) => b.textContent === label || new RegExp(`^${label}\\s*[\\d.]+$`).test(b.textContent ?? ''),
   ) as HTMLButtonElement | undefined
 }
 
@@ -139,6 +140,9 @@ describe('AvaluoRegistrosView', () => {
     })
     expect(onStateChange).toHaveBeenCalledWith('rechazado')
 
+    // Ronda 30: las pestañas de la casa no avisan al tocar la que ya está abierta; se vuelve a
+    // «Todos» desde «Rechazado».
+    render(baseProps({ onStateChange, activeState: 'rechazado' }))
     act(() => {
       tabButton('Todos')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })

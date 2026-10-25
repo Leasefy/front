@@ -5,7 +5,12 @@
  * carga y el vacío con salida. Ninguna sección inventa el suyo.
  */
 
+import { ArrowSquareOut, CaretRight } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+
+import { Ilustracion } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
+import { ilustracionDelVacio } from '@/lib/vacios/ilustracion-del-vacio';
 
 export function EsqueletoDeSeccion({ filas = 4 }: { filas?: number }) {
   return (
@@ -32,11 +37,14 @@ export function VacioDeSeccion({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-14 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
-        <Icono className="h-5 w-5 text-fg-muted" weight="duotone" />
-      </div>
+      {/* Nico (23-10-2026): todo vacío con su ilustración 3D, la que sale de lo que falta. */}
+      <Ilustracion
+        nombre={ilustracionDelVacio(titulo, ayuda)}
+        tamano={112}
+        data-icono={Icono.displayName ?? undefined}
+      />
       <div className="space-y-1">
-        <p className="text-base font-semibold text-fg">{titulo}</p>
+        <p className="text-base font-medium text-fg">{titulo}</p>
         <p className="mx-auto max-w-sm text-sm text-fg-muted">{ayuda}</p>
       </div>
     </div>
@@ -67,9 +75,8 @@ export function FilaDeAjuste({
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-          <Icono className="h-[18px] w-[18px] text-fg-muted" />
-        </div>
+        {/* El ícono suelto, sin caja de color (Cadence 2). */}
+        <Icono className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-fg">{titulo}</p>
           <p className="text-sm text-fg-muted">{descripcion}</p>
@@ -77,5 +84,71 @@ export function FilaDeAjuste({
       </div>
       <div className="shrink-0">{children}</div>
     </div>
+  );
+}
+
+const CLASE_FILA_QUE_ABRE =
+  'flex h-auto w-full items-center justify-between gap-4 rounded-none px-4 py-4 text-left transition-colors hover:bg-surface-muted/60 sm:px-5';
+
+function CuerpoDeLaFila({ icono: Icono, titulo, descripcion }: { icono: Icon; titulo: string; descripcion: string }) {
+  return (
+    <span className="flex min-w-0 items-center gap-3">
+      {/* El ícono suelto, como en `FilaDeAjuste` (antes, una caja gris de 36 px). */}
+      <Icono className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+      <span className="min-w-0 text-left">
+        <span className="block text-sm font-medium text-fg">{titulo}</span>
+        <span className="block whitespace-normal text-sm font-normal text-fg-muted">{descripcion}</span>
+      </span>
+    </span>
+  );
+}
+
+/**
+ * Una fila de la tarjeta que ABRE algo (un modal, un cajón, otra pantalla): la
+ * misma fila que `FilaDeAjuste`, con el «›» a la derecha. Seguridad y Tus datos
+ * tenían cada una su copia (glow up r26).
+ */
+export function FilaQueAbre({
+  icono,
+  titulo,
+  descripcion,
+  onClick,
+  testId,
+}: {
+  icono: Icon;
+  titulo: string;
+  descripcion: string;
+  onClick: () => void;
+  testId?: string;
+}) {
+  return (
+    <Button variant="ghost" hideArrow onClick={onClick} data-testid={testId} className={CLASE_FILA_QUE_ABRE}>
+      <CuerpoDeLaFila icono={icono} titulo={titulo} descripcion={descripcion} />
+      <CaretRight className="h-4 w-4 shrink-0 text-fg-subtle" aria-hidden="true" />
+    </Button>
+  );
+}
+
+/** La misma fila, como enlace a otra pestaña (las políticas). */
+export function FilaQueEnlaza({
+  icono,
+  titulo,
+  descripcion,
+  href,
+  etiquetaNuevaPestana,
+}: {
+  icono: Icon;
+  titulo: string;
+  descripcion: string;
+  href: string;
+  /** Para el lector de pantalla: «se abre en otra pestaña». */
+  etiquetaNuevaPestana: string;
+}) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className={CLASE_FILA_QUE_ABRE}>
+      <CuerpoDeLaFila icono={icono} titulo={titulo} descripcion={descripcion} />
+      <ArrowSquareOut className="h-4 w-4 shrink-0 text-fg-subtle" aria-hidden="true" />
+      <span className="sr-only">{etiquetaNuevaPestana}</span>
+    </a>
   );
 }

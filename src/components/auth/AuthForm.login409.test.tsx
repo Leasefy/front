@@ -136,7 +136,7 @@ describe('AuthForm — login resolves null (409 bootstrap failure)', () => {
     await renderAndSubmitLogin()
 
     expect(submitButton().disabled).toBe(false)
-    expect(container.textContent).toContain('Error al iniciar sesión. Intenta de nuevo.')
+    expect(container.textContent).toContain('No pudimos iniciar tu sesión. Vuelve a intentarlo.')
     expect(pushMock).not.toHaveBeenCalled()
     expect(replaceMock).not.toHaveBeenCalled()
   })

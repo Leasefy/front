@@ -59,7 +59,46 @@ export function sinEmojis(texto: string): string {
     .trim();
 }
 
-/** Una frase del back lista para la pantalla: sin emojis y con la plata de la casa. */
+/**
+ * 🔴 Lo que es del equipo, no de quien usa la pantalla (revisora r25, B6 y B8,
+ * 23-10-2026). El back a veces deja en sus frases una nota interna: un código de
+ * QA y un nombre del equipo entre paréntesis («… en el 1003 (CB-K-09, Nico
+ * 05-10-2026)») o una frase que dice quién del equipo lo hace («La integración
+ * la hace Víctor.»). El arreglo de fondo es del back (va en «Datos para
+ * Víctor»); esto es el respaldo para que la pantalla no lo diga mientras tanto.
+ *
+ * `sinNotasInternas` borra el paréntesis con un código de QA (`CB-K-09`) o con
+ * un nombre del equipo seguido de una fecha («Nico 05-10-2026»), con el espacio
+ * de adelante. Un paréntesis con el nombre de una persona sin fecha («(Víctor
+ * Pérez)», un inquilino o un proveedor) se queda: puede ser de verdad.
+ */
+const PARENTESIS_INTERNO =
+  /\s*\((?=[^()]*(?:\b[A-Z]{2,}-[A-Z0-9]+(?:-[A-Z0-9]+)*\b|\b(?:Nico|V[ií]ctor)\s+\d{1,2}-\d{1,2}-\d{4}))[^()]*\)/g;
+
+export function sinNotasInternas(texto: string): string {
+  return texto
+    .replace(PARENTESIS_INTERNO, '')
+    .replace(/\s+([.,;:])/g, '$1')
+    .replace(/ {2,}/g, ' ')
+    .trim();
+}
+
+/**
+ * La frase que dice QUIÉN del equipo hace algo («La integración la hace
+ * Víctor.») se cambia por `enVez`. Sólo para avisos donde un nombre únicamente
+ * puede ser del equipo (el del proveedor de nómina electrónica): en una frase
+ * cualquiera, «Víctor» puede ser un inquilino.
+ */
+const FRASE_CON_EL_EQUIPO = /[^.!?]*\b(?:Nico|V[ií]ctor)\b[^.!?]*[.!?]?/g;
+
+export function sinElEquipoEnLaFrase(texto: string, enVez = ''): string {
+  return texto
+    .replace(FRASE_CON_EL_EQUIPO, () => (enVez ? ` ${enVez}` : ''))
+    .replace(/ {2,}/g, ' ')
+    .trim();
+}
+
+/** Una frase del back lista para la pantalla: sin notas del equipo, sin emojis y con la plata de la casa. */
 export function textoDelBack(texto: string): string {
-  return plataEnElTexto(sinEmojis(texto));
+  return plataEnElTexto(sinEmojis(sinNotasInternas(texto)));
 }

@@ -83,14 +83,14 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
       </div>
 
       {/* Monthly Breakdown - Stacked CSS Bar Chart */}
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
           <ChartBar className="w-4 h-4 text-fg-muted" />
           Recaudo mensual vs esperado
         </h3>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-4 mb-4 text-caption text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm bg-success" />
             <span>Recaudado</span>
@@ -119,11 +119,11 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                 {/* La columna entera (mora arriba, recaudo abajo) crece desde la base. */}
                 <BarraQueCrece className="w-full min-h-0 flex-1 flex flex-col justify-end gap-px">
                   <div
-                    className="w-full bg-danger dark:bg-danger/60 rounded-t"
+                    className="w-full bg-danger rounded-t"
                     style={{ height: `${latePct}%` }}
                   />
                   <div
-                    className="w-full bg-success dark:bg-success rounded-b"
+                    className="w-full bg-success rounded-b"
                     style={{ height: `${collectedPct}%` }}
                   />
                 </BarraQueCrece>
@@ -137,15 +137,15 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
       </div>
 
       {/* Mora Rate Trend */}
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
           <TrendUp className="w-4 h-4 text-fg-muted" />
           Tasa de mora mensual
         </h3>
         <div className="space-y-2">
           {byMonth.map((m) => (
             <div key={m.month} className="flex items-center gap-3 text-sm">
-              <span className="w-20 text-muted-foreground text-xs shrink-0">
+              <span className="w-20 text-muted-foreground text-caption shrink-0">
                 {m.month.split(' ')[0]}
               </span>
               {/* Un mes sin cobros emitidos caía en la banda verde «óptima»:
@@ -168,7 +168,7 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
               />
               <span
                 className={cn(
-                  'w-12 text-right text-xs font-medium',
+                  'w-12 text-right text-caption font-medium',
                   m.moraRate === null
                     ? 'text-fg-muted'
                     : m.moraRate <= 5
@@ -188,9 +188,9 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
       </div>
 
       {/* Top Delinquents Table */}
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
-        <div className="p-4 border-b border-border dark:border-border-strong">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-surface overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Warning className="w-4 h-4 text-danger" />
             Principales morosos
           </h3>
@@ -198,7 +198,7 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
-              <TableRow className="border-b border-border-faint dark:border-border-strong">
+              <TableRow className="border-b border-border-faint">
                 <TableHead className="text-left py-3 px-4">Inquilino</TableHead>
                 <TableHead className="text-left py-3 px-4">Propiedad</TableHead>
                 <TableHead className="text-right py-3 px-4">Dias mora</TableHead>
@@ -210,11 +210,11 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
               {topDelinquents.map((d, i) => (
                 <TableRow
                   key={i}
-                  className="border-b border-border-faint dark:border-border-strong/50 hover:bg-surface-muted dark:hover:bg-ink transition-colors"
+                  className="border-b border-border-faint hover:bg-surface-muted transition-colors"
                 >
                   <TableCell className="py-2.5 px-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-full bg-surface-muted flex items-center justify-center">
                         <User className="w-3.5 h-3.5 text-fg-muted" />
                       </div>
                       <span className="font-medium text-foreground">{d.tenantName}</span>
@@ -266,8 +266,8 @@ const COLOR_MAP = {
     text: 'text-danger',
   },
   violet: {
-    bg: 'bg-surface-muted dark:bg-ink',
-    text: 'text-fg-muted dark:text-fg-subtle',
+    bg: 'bg-surface-muted',
+    text: 'text-fg-muted',
   },
 } as const;
 
@@ -286,7 +286,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
+    <div className="p-4 rounded-lg border border-border bg-surface">
       <div className="flex items-center gap-3">
         <div
           className={cn(
@@ -297,8 +297,8 @@ function KPICard({
           <Icon className={cn('w-5 h-5', colors.text)} />
         </div>
         <div className="min-w-0">
-          <p className="text-lg font-bold text-foreground truncate">{value}</p>
-          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-lg font-medium text-foreground truncate">{value}</p>
+          <p className="text-caption text-muted-foreground">{label}</p>
           {subtitle && (
             <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>
           )}

@@ -13,6 +13,7 @@
  */
 
 import { formatCurrency } from '@/lib/format';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import type { ResumenDePagos } from './resumen-de-pagos';
 
 export type PeriodoDelPago = 'APPROVED' | 'PENDING_VALIDATION' | 'REJECTED' | 'NONE' | string | undefined | null;
@@ -72,6 +73,16 @@ export function estadoGeneralDelArriendo(
         tono: 'peligro',
       };
     case 'NONE':
+      // GLOW UP (21-10-2026): sin comprobante del período pero con las cuotas a la mano y nada vencido, el
+      // inquilino ESTÁ al día (la misma lectura de «Pagos»: «Estás al día»). Antes decía «Pendiente» en Mi
+      // arriendo mientras Pagos decía «Estás al día». Sin las cuotas no se afirma nada más que lo de siempre.
+      if (resumen) {
+        return {
+          etiqueta: 'Al día',
+          detalle: resumen.proxima ? `Próxima cuota el ${fechaCorta(resumen.proxima.fecha)}` : 'Sin cuotas vencidas',
+          tono: 'ok',
+        };
+      }
       return { etiqueta: 'Pendiente', detalle: 'Pago del período pendiente', tono: 'neutro' };
     default:
       return null;

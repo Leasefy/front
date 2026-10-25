@@ -13,6 +13,13 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection'
 import { leerErrorDeSupabase } from '@/lib/auth/errores-de-supabase'
 import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor'
 import { MENSAJE_DEL_TOPE } from '@/lib/auth/inscripcion-del-segundo-factor'
+import {
+  liberarYVerificarConElMock,
+  resolverCodigoDelMock,
+  userIdDelToken,
+} from '@/lib/auth/mock-del-segundo-factor'
+import { useMockDelSegundoFactor } from '@/lib/auth/use-mock-del-segundo-factor'
+import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 /**
@@ -76,6 +83,8 @@ function SegundoFactor() {
   const [verificando, setVerificando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const token = useRef<string | null>(null)
+  // Sólo fuera de producción (`lib/config/entorno.ts`): en producción es siempre `false`.
+  const mockHabilitado = useMockDelSegundoFactor()
 
   const cargarFactores = useCallback(async (accessToken: string) => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -135,10 +144,32 @@ function SegundoFactor() {
     setVerificando(true)
     setError(null)
     try {
+      // Mock (sólo fuera de producción): `123456` se cambia por el código real
+      // calculado con el secreto que este navegador guardó para ESTE factor.
+      const resuelto = await resolverCodigoDelMock({
+        codigo: elCodigo,
+        userId: userIdDelToken(token.current),
+        factorId,
+      })
+      if (!resuelto.ok) {
+        // Sin secreto de este factor: el back lo libera y el mock inscribe y
+        // verifica uno nuevo (una sola vez; si falla, el mensaje de siempre).
+        const recuperado =
+          resuelto.sinSecreto && token.current
+            ? await liberarYVerificarConElMock({ token: token.current, enElIngreso: true })
+            : null
+        if (recuperado?.ok) {
+          window.location.href = next
+          return
+        }
+        setError(recuperado ? recuperado.mensaje : resuelto.mensaje)
+        setCodigo('')
+        return
+      }
       const { data: desafio, error: errorDelDesafio } = await conTope(sb.auth.mfa.challenge({ factorId }))
       if (errorDelDesafio) throw errorDelDesafio
       const { error: errorDelCodigo } = await conTope(
-        sb.auth.mfa.verify({ factorId, challengeId: desafio.id, code: elCodigo }),
+        sb.auth.mfa.verify({ factorId, challengeId: desafio.id, code: resuelto.codigo }),
       )
       if (errorDelCodigo) throw errorDelCodigo
       // Recarga entera: el guard del panel lee la sesión nueva (aal2) al montar.
@@ -167,16 +198,15 @@ function SegundoFactor() {
   const titulo = paso === 'inscribir' ? 'Activa tu segundo factor' : 'Verificación de seguridad'
   const bajada =
     paso === 'inscribir'
-      ? 'El admin ve los datos de todas las inmobiliarias: entrar con el enlace del correo no alcanza. Actívalo una vez con tu app de autenticación.'
+      ? 'El admin ve los datos de todas las inmobiliarias: entrar con el enlace del correo no alcanza. Actívalo una vez con tu aplicación de autenticación.'
       : recienActivado
-        ? 'Ya quedó activado. Para entrar, escribe el código que muestra AHORA tu app (si es el mismo que acabas de usar, espera al siguiente).'
-        : 'Abre tu app de autenticación y escribe el código de seis dígitos.'
+        ? 'Ya quedó activado. Para entrar, escribe el código que tu aplicación muestra en este momento (si es el mismo que acabas de usar, espera al siguiente).'
+        : 'Abre tu aplicación de autenticación y escribe el código de seis dígitos.'
 
   return (
     <Marco>
-      <div className="flex h-14 w-14 items-center justify-center rounded-md bg-primary-soft ring-1 ring-primary/10">
-        <ShieldCheck className="h-7 w-7 text-primary" weight="fill" aria-hidden="true" />
-      </div>
+      {/* Glow up 22-10: el ícono suelto, sin su baldosa azul (un solo azul: el botón). */}
+      <ShieldCheck className="h-9 w-9 text-fg" weight="duotone" aria-hidden="true" />
 
       <CrossFade swapKey={paso === 'inscribir' ? 'inscribir' : recienActivado ? 'activado' : 'codigo'}>
         <TituloDeAcceso titulo={titulo} bajada={bajada} />
@@ -220,6 +250,15 @@ function SegundoFactor() {
                 autoFocus
               />
             </div>
+            {mockHabilitado ? (
+              <p
+                className="flex flex-wrap items-center justify-center gap-2 text-center text-caption text-fg-muted"
+                data-testid="aviso-del-mock"
+              >
+                <InsigniaDelMock variante="admin" />
+                Con el mock activo, escribir 123456 envía el código real de este navegador.
+              </p>
+            ) : null}
             <Button
               type="submit"
               isLoading={verificando}
@@ -243,7 +282,14 @@ function SegundoFactor() {
       </Presence>
 
       <div className="border-t border-border-faint pt-5">
-        <Button type="button" variant="link" size="sm" hideArrow onClick={() => void cerrarSesion()}>
+        {/* Ronda 26 (revisora): la salida para quien perdió el celular. */}
+        {paso !== 'inscribir' ? (
+          <p className="mb-3 text-body-sm text-fg-muted" data-testid="perdi-el-celular">
+            ¿Perdiste el celular? Pide a otra persona del equipo de Leasefy que te lo restablezca desde «Equipo Leasefy».
+          </p>
+        ) : null}
+        {/* Ronda 28 (revisora r27): alineado con el borde del texto (el relleno del enlace lo corría ≈16 px). */}
+        <Button type="button" variant="link" size="sm" hideArrow className="h-auto px-0" onClick={() => void cerrarSesion()}>
           Cerrar sesión
         </Button>
       </div>

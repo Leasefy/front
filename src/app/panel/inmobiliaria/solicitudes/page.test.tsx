@@ -176,6 +176,20 @@ describe('solicitudes — se llega desde la ficha de un contrato', () => {
     updatedAt: '2026-03-01T10:00:00.000Z',
   }
 
+  it('revisora r25: a 390 cada solicitud es una tarjeta (radicado, solicitante, estado y plazo), no una tabla que se corre', async () => {
+    listarMock.mockResolvedValue({
+      resumen: { total: 1, recibidas: 0, asignadas: 0, enProceso: 1, enCotizacion: 0, resueltas: 0, cerradas: 0 },
+      solicitudes: [UNA],
+    })
+    await montar()
+    const fila = container.querySelector('[data-testid="pqrs-fila"]')!
+    expect(fila.className).toContain('max-md:grid')
+    expect(container.querySelector('table')!.className).toContain('max-md:block')
+    // Lo que no cabe en la tarjeta (tipo, inmueble, responsable) se va del celular; queda en el cajón.
+    const ocultas = [...fila.querySelectorAll('td')].filter((td) => td.className.includes('max-md:hidden'))
+    expect(ocultas.length).toBe(3)
+  })
+
   it('`?pqrs=` abre ESA solicitud y `?volver=` ofrece la vuelta al contrato', async () => {
     listarMock.mockResolvedValue({
       resumen: {
@@ -255,16 +269,14 @@ describe('solicitudes — el resumen no afirma ceros que no sabe (S1 · S2 · S3
     resueltas: 0,
     cerradas: 0,
   }
-  const grilla = () => container.querySelector('.lg\\:grid-cols-6')
+  // GLOW UP 21-10: la franja de la tabla (plazo + estados), que también filtra.
+  const grilla = () => container.querySelector('[data-testid="pqrs-por-estado"]')
 
-  it('🔴 con la lista caída, las seis tarjetas dicen «—» y «No se pudo traer», no 0', async () => {
+  it('🔴 con la lista caída, las pestañas no dicen números y avisan «No se pudo traer», no 0', async () => {
     listarMock.mockRejectedValue(new ApiError(500, 'Internal server error'))
     await montar()
 
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
-    const valores = Array.from(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]'))
-    expect(valores).toHaveLength(6)
-    for (const v of valores) expect(v.textContent).toBe('—')
     expect(grilla()!.textContent).toContain('No se pudo traer')
     expect(grilla()!.textContent).not.toMatch(/\d/)
   })
@@ -275,17 +287,14 @@ describe('solicitudes — el resumen no afirma ceros que no sabe (S1 · S2 · S3
 
     expect(grilla()).not.toBeNull()
     expect(grilla()!.textContent).not.toMatch(/\d/)
-    expect(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]')).toHaveLength(0)
   })
 
   it('con la lista bien, el resumen muestra sus números', async () => {
     listarMock.mockResolvedValue({ resumen: RESUMEN, solicitudes: [OTRA] })
     await montar()
 
-    const valores = Array.from(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]')).map(
-      (v) => v.textContent,
-    )
-    expect(valores).toContain('1')
+    // Revisión 21-10: pestañas con su conteo (las en cero no salen).
+    expect(grilla()!.textContent).toMatch(/1/)
     expect(grilla()!.textContent).not.toContain('No se pudo traer')
   })
 

@@ -338,7 +338,7 @@ export function PilotoModoHeader() {
       className={cn(
         // A 390 px la píldora se compacta a punto + modo (sin flecha): el
         // encabezado desbordaba y la página medía 446–463 px de ancho (24-09).
-        'group inline-flex h-9 max-w-[240px] items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm sm:gap-2 sm:px-3 lg:max-w-[320px]',
+        'group inline-flex h-9 [@media(pointer:coarse)]:min-h-11 max-w-[240px] items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm sm:gap-2 sm:px-3 lg:max-w-[320px]',
         'text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
         'data-[state=open]:border-border-strong data-[state=open]:bg-surface-muted',
         !activo && data && 'text-fg-muted',

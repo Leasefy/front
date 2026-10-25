@@ -53,7 +53,7 @@ export function CabeceraDelAdmin({
             type="button"
             onClick={openPlanMobileSidebar}
             aria-label="Abrir el menú de navegación"
-            className="-ml-1.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-fg-muted outline-none transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-primary/40 lg:hidden"
+            className="-ml-1.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-fg-muted outline-none transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-primary/40 lg:hidden"
           >
             <List className="h-5 w-5" />
           </button>
@@ -103,7 +103,7 @@ export function CabeceraDelAdmin({
             type="button"
             onClick={onBuscar}
             aria-label="Buscar una pantalla"
-            className="flex h-11 w-11 items-center justify-center rounded-xl text-fg-muted outline-none transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-primary/40 lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-fg-muted outline-none transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-primary/40 lg:hidden"
           >
             <MagnifyingGlass className="h-5 w-5" />
           </button>

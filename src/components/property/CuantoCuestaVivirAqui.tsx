@@ -14,8 +14,9 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Cell, Pie, PieChart } from 'recharts'
-import { Sparkle } from '@phosphor-icons/react'
 import { enterTransition, Stagger, StaggerItem, usePrefersReducedMotion } from '@leasefy/cadence'
+
+import { AIRE_DE_SECCION, TITULO_DE_SECCION } from '@/components/property/ficha/PiezasDeLaFicha'
 
 import { apiClient } from '@/lib/api/client'
 import { formatCurrency } from '@/lib/format'
@@ -37,13 +38,18 @@ interface CostoDeVivir {
   motivo: string | null
 }
 
+/**
+ * Ronda 30 (diseño nuevo): los cinco tonos de la página de muestra —el voltaje
+ * para el canon y cuatro chispas cálidas para los servicios— y la ceniza para
+ * la administración. Antes: cielo, ámbar, lila y menta de Tailwind.
+ */
 const COLORES = {
   canon: 'hsl(var(--primary))',
-  administracion: '#64748b',
-  acueducto: '#0ea5e9',
-  energia: '#f59e0b',
-  gas: '#a855f7',
-  internet: '#10b981',
+  administracion: '#706B64',
+  acueducto: '#EB6834',
+  energia: '#1BAF7A',
+  gas: '#EDA100',
+  internet: '#E87BA4',
 }
 
 /** Las porciones de la dona, sin las que valen 0. Pura, para probarla. */
@@ -83,11 +89,11 @@ export function CuantoCuestaVivirAqui({ propertyId }: { propertyId: string }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={enterTransition(reducido)}
-      className="mt-12"
+      className={AIRE_DE_SECCION}
       data-testid="cuanto-cuesta-vivir-aqui"
     >
-      <h2 className="text-h3 text-fg">Cuánto cuesta vivir aquí</h2>
-      <div className="mt-6 grid items-center gap-8 rounded-2xl border border-border bg-surface p-6 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] md:p-8">
+      <h2 className={TITULO_DE_SECCION}>Cuánto cuesta vivir aquí</h2>
+      <div className="mt-[18px] grid items-center gap-[clamp(24px,4vw,48px)] rounded-[28px] border border-border-faint bg-surface p-[clamp(20px,3vw,32px)] min-[641px]:grid-cols-[minmax(0,240px)_minmax(0,1fr)]">
         <div className="relative mx-auto h-60 w-60">
           {/* El aro mide siempre 240 × 240 (h-60 w-60): con tamaño fijo no hay que
               medirlo y recharts no avisa «width(-1) and height(-1)» antes de pintarlo. */}
@@ -96,10 +102,10 @@ export function CuantoCuestaVivirAqui({ propertyId }: { propertyId: string }) {
                 data={porciones}
                 dataKey="valor"
                 nameKey="nombre"
-                innerRadius="72%"
+                innerRadius="78%"
                 outerRadius="100%"
-                paddingAngle={porciones.length > 1 ? 2 : 0}
-                cornerRadius={8}
+                paddingAngle={porciones.length > 1 ? 1.5 : 0}
+                cornerRadius={2}
                 stroke="none"
                 isAnimationActive={!reducido}
                 animationDuration={900}
@@ -110,27 +116,28 @@ export function CuantoCuestaVivirAqui({ propertyId }: { propertyId: string }) {
               </Pie>
           </PieChart>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-caption text-fg-muted">valor aprox. al mes</span>
-            <span className="font-mono text-xl font-semibold tabular-nums text-fg" data-testid="costo-total">
+            <span className="text-[13px] text-fg-subtle">valor aprox. al mes</span>
+            <span className="mt-0.5 font-mono text-[20px] font-normal tabular-nums text-fg" data-testid="costo-total">
               {formatCurrency(costo.totalCop)}
             </span>
           </div>
         </div>
-        <div className="space-y-5">
-          <Stagger className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+        <div className="min-w-0">
+          <Stagger className="grid grid-cols-2 gap-x-6 gap-y-4">
             {porciones.map((p) => (
-              <StaggerItem key={p.clave} className="flex items-start gap-3">
-                <span className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: p.color }} aria-hidden="true" />
-                <span>
-                  <span className="block text-sm text-fg-muted">{p.nombre}</span>
-                  <span className="block font-mono text-base font-medium tabular-nums text-fg">{formatCurrency(p.valor)}</span>
+              <StaggerItem key={p.clave} className="flex min-w-0 items-start gap-2.5">
+                <span className="mt-1 h-3 w-3 shrink-0 rounded-[3px]" style={{ background: p.color }} aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-[13.5px] leading-[1.35] text-fg-muted">{p.nombre}</span>
+                  <span className="mt-0.5 block font-mono text-[16px] font-normal tabular-nums text-fg">{formatCurrency(p.valor)}</span>
                 </span>
               </StaggerItem>
             ))}
           </Stagger>
           {costo.servicios ? (
-            <p className="flex items-start gap-2 text-caption text-fg-muted">
-              <Sparkle className="mt-0.5 h-4 w-4 shrink-0 text-primary" weight="fill" aria-hidden="true" />
+            <p className="mt-5 flex items-start gap-2 text-[13px] leading-normal text-fg-muted">
+              {/* Ronda 30: el cuadrito de voltaje, no la chispa de «IA». */}
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-[2px] bg-primary" aria-hidden="true" />
               <span>
                 {costo.fuente === 'ia'
                   ? 'Los servicios los estimó la IA de Leasefy según la ciudad, el estrato y el área. '
@@ -139,7 +146,7 @@ export function CuantoCuestaVivirAqui({ propertyId }: { propertyId: string }) {
               </span>
             </p>
           ) : costo.motivo ? (
-            <p className="text-caption text-fg-muted">{costo.motivo}</p>
+            <p className="mt-5 text-[13px] text-fg-muted">{costo.motivo}</p>
           ) : null}
         </div>
       </div>

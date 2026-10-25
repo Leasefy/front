@@ -23,11 +23,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { MagnifyingGlass, TrendUp } from '@phosphor-icons/react';
-import { Chip, CrossFade, Eyebrow, Presence, StatusBadge } from '@leasefy/cadence';
+import { TrendUp } from '@phosphor-icons/react';
+import { CrossFade, Presence, SearchInput, SegmentedControl, StatusBadge } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
@@ -91,18 +93,20 @@ function EstadoDeLaCarta({ carta }: { carta: CartaEnLaBandeja }) {
       <StatusBadge tone={tono} data-testid={`estado-${carta.contractId}`}>
         {rotulo}
       </StatusBadge>
-      {detalle && <span className="text-xs text-fg-muted">{detalle}</span>}
+      {detalle && <span className="text-caption text-fg-muted">{detalle}</span>}
       {estado !== 'SIN_INCREMENTO' && (
         // Juan (19-10): «no me salió qué tipo de carta enviamos».
-        <span className="max-w-[240px] text-xs text-fg-muted" data-testid={`tipo-de-carta-${carta.contractId}`}>
+        <span className="max-w-[240px] text-caption text-fg-muted" data-testid={`tipo-de-carta-${carta.contractId}`}>
           {tipoDeLaCarta(carta)}
         </span>
       )}
       {carta.ultimoIntento && !enviada && (
-        <span className="text-xs text-fg-muted">Último intento: {fechaCorta(carta.ultimoIntento)}</span>
+        <span className="text-caption text-fg-muted">
+          Último intento: <span className="font-mono">{fechaCorta(carta.ultimoIntento)}</span>
+        </span>
       )}
       {!carta.correoDelInquilino && !enviada && estado !== 'SIN_INCREMENTO' && (
-        <span className="max-w-[240px] text-xs text-fg-muted" data-testid={`sin-correo-${carta.contractId}`}>
+        <span className="max-w-[240px] text-caption text-fg-muted" data-testid={`sin-correo-${carta.contractId}`}>
           Sin correo del inquilino: entrégala por otro medio y registra la constancia en el contrato.
         </span>
       )}
@@ -115,11 +119,13 @@ function SituacionDelContratoCelda({ carta }: { carta: CartaEnLaBandeja }) {
   if (!carta.finDelContrato) return <span className="text-fg-muted">—</span>;
   const porRenovar = situacionDelContrato(carta) === 'por-renovar';
   return (
-    <div className="flex flex-col items-start gap-1">
-      <span className={cn('text-xs font-medium', porRenovar ? 'text-warning-700 dark:text-warning-100' : 'text-fg')}>
+    <div className="flex flex-col items-start gap-0.5">
+      <span className={cn('text-body-sm', porRenovar ? 'text-warning-700 dark:text-warning-100' : 'text-fg')}>
         {porRenovar ? 'Por renovar' : 'Ya renovado'}
       </span>
-      <span className="text-xs text-fg-muted tabular-nums">Vence el {fechaCorta(carta.finDelContrato)}</span>
+      <span className="text-caption text-fg-muted">
+        Vence el <span className="font-mono tabular-nums">{fechaCorta(carta.finDelContrato)}</span>
+      </span>
     </div>
   );
 }
@@ -129,7 +135,7 @@ function CanonCelda({ carta }: { carta: CartaEnLaBandeja }) {
     return (
       <div className="flex flex-col gap-1">
         <span className="font-mono tabular-nums text-fg">{PESOS.format(carta.canonAnteriorCop)}</span>
-        <span className="max-w-[260px] text-xs text-fg-muted">{carta.motivo ?? 'Este aniversario no sube el canon.'}</span>
+        <span className="max-w-[260px] text-caption text-fg-muted">{carta.motivo ?? 'Este aniversario no sube el canon.'}</span>
       </div>
     );
   }
@@ -139,9 +145,9 @@ function CanonCelda({ carta }: { carta: CartaEnLaBandeja }) {
       <span className="font-mono tabular-nums text-fg-muted line-through decoration-fg-subtle/60">
         {PESOS.format(carta.canonAnteriorCop)}
       </span>
-      <span className="font-mono tabular-nums font-medium text-fg">
+      <span className="font-mono tabular-nums text-fg">
         {PESOS.format(carta.canonNuevoCop)}
-        {pct && <span className="ml-1.5 whitespace-nowrap font-sans text-xs font-normal text-success">{pct}</span>}
+        {pct && <span className="ml-1.5 whitespace-nowrap text-caption text-success">{pct}</span>}
       </span>
     </div>
   );
@@ -164,10 +170,12 @@ function AccionDeLaCarta({
     );
   }
   const enviada = carta.estado === 'ENVIADA';
+  // Una sola chispa por pantalla: la carta de cada fila se abre en arena; la que
+  // falta por notificar la marca su estado, no un botón azul por fila.
   return (
     <Button
       size="sm"
-      variant={enviada || !editable ? 'outline' : 'default'}
+      variant={enviada || !editable ? 'ghost' : 'outline'}
       onClick={() => onAbrir(carta)}
       data-testid={`abrir-carta-${carta.contractId}`}
     >
@@ -181,11 +189,11 @@ function NombreDelContrato({ carta }: { carta: CartaEnLaBandeja }) {
     <div className="min-w-0">
       <Link
         href={`${RUTA_DEL_CONTRATO}/${carta.contractId}`}
-        className="font-medium text-fg underline-offset-2 hover:underline"
+        className="text-fg underline-offset-2 hover:underline"
       >
-        #{carta.externalId ?? carta.code} · {carta.inquilino ?? 'Sin inquilino'}
+        <span className="font-mono">#{carta.externalId ?? carta.code}</span> · {carta.inquilino ?? 'Sin inquilino'}
       </Link>
-      <p className="truncate text-xs text-fg-muted">
+      <p className="truncate text-caption text-fg-muted">
         {carta.documentoDelInquilino ? `C.C. ${carta.documentoDelInquilino} · ` : ''}
         {carta.inmueble ?? 'Sin dirección'}
       </p>
@@ -278,116 +286,122 @@ export function IncrementosDelPeriodo() {
     });
 
   const cargando = !error && cargadoPara !== mes;
+  const diasAntes = datos?.diasAntes ?? 30;
+
+  /*
+   * Glow up (23-10): lo que falta notificar va primero —las que ya pasaron sin
+   * constancia, luego las por notificar—; lo hecho y lo que no sube, al final.
+   * Mientras carga, sin números (nunca un 0 inventado).
+   */
+  const ORDEN: GrupoDeLaCarta[] = ['sin-constancia', 'por-notificar', 'notificadas', 'no-suben'];
+  const pestanas = [
+    { valor: 'todas' as const, etiqueta: 'Todas', cuantos: cargando ? null : conteos.todas, fija: true },
+    ...ORDEN.map((clave) => ({
+      valor: clave,
+      etiqueta: GRUPOS_DE_LA_CARTA.find((g) => g.clave === clave)?.rotulo ?? clave,
+      cuantos: cargando ? null : (conteos[clave] ?? 0),
+      tono: clave === 'sin-constancia' ? ('aviso' as const) : undefined,
+      testid: `grupo-${clave}`,
+    })),
+  ];
+
+  /** El mes que sigue al elegido, para la salida del vacío («Ver noviembre de 2026»). */
+  const posicionDelMes = meses.findIndex((m) => m.valor === mes);
+  const mesSiguiente = posicionDelMes >= 0 ? (meses[posicionDelMes + 1] ?? null) : null;
 
   return (
-    <div className="space-y-6 p-4 md:p-6 lg:p-8">
-      <header className="space-y-1">
-        <Eyebrow>Contratos</Eyebrow>
-        <h1 className="flex items-center gap-2 text-h2 text-fg">
-          <TrendUp className="h-6 w-6 text-primary" weight="duotone" aria-hidden="true" />
-          Incrementos
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          Cada contrato con incremento en el mes que elijas, esté por renovar o ya renovado. El canon sube en la
-          fecha; la carta es la constancia de que se le avisó al inquilino.
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Operación"
+        titulo="Incrementos"
+        descripcion="Los contratos que suben de canon en el mes que elijas, renovados o no, y en qué va la carta de cada uno."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: incrementos" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                Elige el mes y salen todos los contratos con aniversario en él, estén por renovar o ya renovados. El
+                canon sube en la fecha; la carta es la constancia de que se le avisó al inquilino.
+              </p>
+              <p>
+                Abre la carta de cada contrato para verla tal como sale y enviarla. Los que no suben (falta el IPC, un
+                local sin incremento) salen también, con el porqué.
+              </p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
 
       {error ? (
         <FalloDeCarga error={error} queEs="los incrementos" onReintentar={cargar} />
       ) : (
         <section className="overflow-hidden rounded-lg border border-border bg-card">
           {datos && !datos.disponible && (
-            <p className="border-b border-border bg-warning-soft px-4 py-3 text-xs text-fg md:px-5">
+            <p className="border-b border-border bg-warning-soft px-4 py-3 text-caption text-fg md:px-5">
               Falta una actualización de la base: se ven los incrementos, pero todavía no se pueden enviar las cartas.
             </p>
           )}
           {backSinPeriodo && (
-            <p className="border-b border-border bg-warning-soft px-4 py-3 text-xs text-fg md:px-5" data-testid="sin-periodo">
-              Leasefy todavía no filtra por mes: se ven las cartas de los próximos {datos?.diasAntes ?? 30} días.
+            <p className="border-b border-border bg-warning-soft px-4 py-3 text-caption text-fg md:px-5" data-testid="sin-periodo">
+              Leasefy todavía no filtra por mes: se ven las cartas de los próximos {diasAntes} días.
             </p>
           )}
 
-          {/* La franja de filtros de la casa: el mes y el buscador arriba; la
-              carta y el contrato debajo, con su conteo. */}
-          <div className="space-y-3 border-b border-border px-4 py-3 md:px-5">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2">
-                <label htmlFor="mes-del-incremento" className="shrink-0 text-sm text-fg-muted">
-                  Mes del incremento
-                </label>
-                <Select value={mes} onValueChange={elegirMes}>
-                  <SelectTrigger id="mes-del-incremento" className="w-[240px]" data-testid="mes-del-incremento">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={LO_DE_AHORA}>Próximos {datos?.diasAntes ?? 30} días y vencidas</SelectItem>
-                    {meses.map((m) => (
-                      <SelectItem key={m.valor} value={m.valor}>
-                        {m.rotulo.charAt(0).toUpperCase() + m.rotulo.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="relative w-full md:max-w-xs">
-                <MagnifyingGlass
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
-                  aria-hidden="true"
-                />
-                <Input
-                  className="pl-9"
-                  placeholder="Contrato, inquilino, cédula o inmueble"
-                  aria-label="Buscar incrementos"
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  data-testid="buscar-incrementos"
-                />
-              </div>
+          {/* El control de la tarea a la vista: el mes (de él sale todo) y el buscador. */}
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+              <label htmlFor="mes-del-incremento" className="shrink-0 text-body-sm text-fg-muted">
+                Mes del incremento
+              </label>
+              <Select value={mes} onValueChange={elegirMes}>
+                <SelectTrigger id="mes-del-incremento" className="w-full sm:w-[240px]" data-testid="mes-del-incremento">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={LO_DE_AHORA}>Próximos {diasAntes} días y vencidas</SelectItem>
+                  {meses.map((m) => (
+                    <SelectItem key={m.valor} value={m.valor}>
+                      {m.rotulo.charAt(0).toUpperCase() + m.rotulo.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            {/* El ancho va en una caja: la clase de SearchInput le cae al campo, no a su envoltorio. */}
+            <div className="w-full md:w-80">
+              <SearchInput
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                onClear={() => setBusqueda('')}
+                placeholder="Contrato, inquilino, cédula o inmueble"
+                aria-label="Buscar incrementos"
+                inputSize="md"
+                data-testid="buscar-incrementos"
+              />
+            </div>
+          </div>
 
-            <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
-              <div className="flex w-max items-center gap-2 md:w-auto md:flex-wrap">
-                <Chip selected={grupo === 'todas'} onClick={() => setGrupo('todas')}>
-                  Todas
-                  <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">{conteos.todas}</span>
-                </Chip>
-                {GRUPOS_DE_LA_CARTA.map((g) => (
-                  <Chip
-                    key={g.clave}
-                    selected={grupo === g.clave}
-                    onClick={() => setGrupo(g.clave)}
-                    data-testid={`grupo-${g.clave}`}
-                  >
-                    {g.rotulo}
-                    <span
-                      className={cn(
-                        'ml-1.5 rounded px-1.5 py-0.5 text-xs tabular-nums',
-                        g.clave === 'sin-constancia' && (conteos[g.clave] ?? 0) > 0
-                          ? 'bg-danger-soft text-danger'
-                          : 'bg-muted',
-                      )}
-                    >
-                      {conteos[g.clave] ?? 0}
-                    </span>
-                  </Chip>
-                ))}
-                <span className="mx-1 hidden h-5 w-px bg-border md:inline-block" aria-hidden="true" />
-                <Chip selected={situacion === 'todos'} onClick={() => setSituacion('todos')}>
-                  Todos los contratos
-                </Chip>
-                {SITUACIONES_DEL_CONTRATO.map((s) => (
-                  <Chip
-                    key={s.clave}
-                    selected={situacion === s.clave}
-                    onClick={() => setSituacion(s.clave)}
-                    data-testid={`situacion-${s.clave}`}
-                  >
-                    {s.rotulo}
-                  </Chip>
-                ))}
-              </div>
-            </div>
+          {/* En qué va la carta (pestañas con su conteo) y, aparte, si el contrato está renovado. */}
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5">
+            <PestanasDeEstado<GrupoDeLaCarta | 'todas'>
+              etiqueta="Filtrar por el estado de la carta"
+              pestanas={pestanas}
+              valor={grupo}
+              onCambio={setGrupo}
+            />
+            <SegmentedControl<SituacionDelContrato | 'todos'>
+              aria-label="Filtrar por la vigencia del contrato"
+              value={situacion}
+              onChange={setSituacion}
+              className="shrink-0 self-start md:self-auto"
+              options={[
+                { value: 'todos', label: 'Todos', ariaLabel: 'Todos los contratos' },
+                ...SITUACIONES_DEL_CONTRATO.map((s) => ({
+                  value: s.clave,
+                  ariaLabel: s.rotulo,
+                  label: <span data-testid={`situacion-${s.clave}`}>{s.rotulo}</span>,
+                })),
+              ]}
+            />
           </div>
 
           <Presence
@@ -395,14 +409,17 @@ export function IncrementosDelPeriodo() {
             initial={false}
             distance="xs"
             as="p"
-            className="border-b border-border px-4 py-2 text-xs text-fg-muted md:px-5"
+            className="border-b border-border px-4 py-2 text-caption text-fg-muted md:px-5"
             data-testid="alcance-de-incrementos"
           >
-            {visibles.length} de {todas.length} en {nombreDelMes(mes)}.{' '}
+            <span className="font-mono tabular-nums">
+              {visibles.length} de {todas.length}
+            </span>{' '}
+            en {nombreDelMes(mes)}.{' '}
             <button
               type="button"
               onClick={limpiar}
-              className="font-medium text-primary underline-offset-4 hover:underline"
+              className="text-primary underline-offset-4 hover:underline"
               data-testid="limpiar-filtros-incrementos"
             >
               Quitar los filtros
@@ -415,7 +432,7 @@ export function IncrementosDelPeriodo() {
             direction="none"
           >
             {cargando ? (
-              <div className="p-4 md:p-5">
+              <div className="p-4 md:p-5" aria-busy="true">
                 <EsqueletoTabla columnas={5} filas={6} />
               </div>
             ) : visibles.length === 0 ? (
@@ -423,6 +440,7 @@ export function IncrementosDelPeriodo() {
                 hayFiltros={hayFiltros}
                 queSon="incrementos"
                 icono={TrendUp}
+                ilustracion="monedas"
                 titulo={
                   mes === LO_DE_AHORA
                     ? 'No hay ninguna carta pendiente'
@@ -430,8 +448,15 @@ export function IncrementosDelPeriodo() {
                 }
                 descripcion={
                   mes === LO_DE_AHORA
-                    ? `Cada carta aparece sola ${datos?.diasAntes ?? 30} días antes del aniversario de su contrato.`
-                    : 'Elige otro mes para ver sus incrementos.'
+                    ? `Cada carta aparece sola ${diasAntes} días antes del aniversario de su contrato.`
+                    : 'Los contratos aparecen aquí en el mes de su aniversario. Elige otro mes para ver sus incrementos.'
+                }
+                accion={
+                  mesSiguiente ? (
+                    <Button variant="outline" onClick={() => elegirMes(mesSiguiente.valor)}>
+                      Ver {mesSiguiente.rotulo}
+                    </Button>
+                  ) : undefined
                 }
                 onLimpiarFiltros={hayFiltros ? limpiar : undefined}
               />
@@ -454,15 +479,11 @@ export function IncrementosDelPeriodo() {
                     </TableHeader>
                     <TableBody>
                       {pageItems.map((c) => (
-                        <TableRow
-                          key={`${c.contractId}-${c.desde}`}
-                          className={cn(c.alertaRoja && 'bg-destructive/5')}
-                          data-testid={`incremento-${c.contractId}`}
-                        >
+                        <TableRow key={`${c.contractId}-${c.desde}`} data-testid={`incremento-${c.contractId}`}>
                           <TableCell className="max-w-[320px] px-5 py-4">
                             <NombreDelContrato carta={c} />
                           </TableCell>
-                          <TableCell className="whitespace-nowrap py-4 tabular-nums">{fechaCorta(c.desde)}</TableCell>
+                          <TableCell className="whitespace-nowrap py-4 font-mono tabular-nums">{fechaCorta(c.desde)}</TableCell>
                           <TableCell className="py-4">
                             <CanonCelda carta={c} />
                           </TableCell>
@@ -484,18 +505,15 @@ export function IncrementosDelPeriodo() {
                 {/* Celular: una tarjeta por contrato. */}
                 <ul className="divide-y divide-border md:hidden" data-testid="tarjetas-de-incrementos">
                   {pageItems.map((c) => (
-                    <li
-                      key={`${c.contractId}-${c.desde}`}
-                      className={cn('space-y-3 px-4 py-4', c.alertaRoja && 'bg-destructive/5')}
-                    >
+                    <li key={`${c.contractId}-${c.desde}`} className="space-y-3 px-4 py-4">
                       <div className="flex items-start justify-between gap-3">
                         <NombreDelContrato carta={c} />
                         <EstadoDeLaCarta carta={c} />
                       </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <p className="text-xs text-fg-muted">Sube el</p>
-                          <p className="tabular-nums text-fg">{fechaCorta(c.desde)}</p>
+                          <p className="text-caption text-fg-muted">Sube el</p>
+                          <p className="font-mono text-body-sm tabular-nums text-fg">{fechaCorta(c.desde)}</p>
                         </div>
                         <SituacionDelContratoCelda carta={c} />
                       </div>

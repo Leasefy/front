@@ -114,7 +114,8 @@ describe('Verificar una Calificación Leasefy', () => {
     expect(t).toContain('Se le arrienda con condiciones');
     expect(t).toContain('1.500.000');
     expect(t).toContain('12 meses · 83 % a tiempo');
-    expect(t).toContain('17 de diciembre de 2026');
+    // Ronda 30 (a propósito): la fecha de la casa, «17 dic 2026» (antes «17 de diciembre de 2026»).
+    expect(t).toContain('17 dic 2026');
     expect(t).toContain('Condiciones sugeridas: Codeudor, fiador o póliza de arrendamiento (una de las tres)');
     expect(document.querySelector('[aria-label="Letra B"]')).not.toBeNull();
   });

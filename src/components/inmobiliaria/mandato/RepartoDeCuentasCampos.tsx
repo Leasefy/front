@@ -414,7 +414,7 @@ export function RepartoDeCuentasCampos({
       <div className="flex flex-wrap items-center justify-between gap-2">
         {/* La cuenta de lo repartido, sin rojo: dice cuánto falta mientras se
             escribe. Cuando la suma ya es un error, la frase se va al
-            porcentaje que la resuelve (arriba) y acá no se repite. */}
+            porcentaje que la resuelve (arriba) y aquí no se repite. */}
         <Presence
           as="p"
           show={conjunto?.campo !== 'porcentaje'}

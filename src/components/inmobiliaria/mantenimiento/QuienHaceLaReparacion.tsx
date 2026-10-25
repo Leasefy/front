@@ -14,8 +14,8 @@
  * El propietario también puede responder «La hago yo» desde su portal.
  */
 
-import { Info, UserCircle, Wrench } from '@phosphor-icons/react';
-import { Presence } from '@leasefy/cadence';
+import { Info, UserCircle } from '@phosphor-icons/react';
+import { Presence, StatusBadge } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -148,12 +148,10 @@ export function QuienHaceLaReparacion({
         : `Se la dejaron al propietario ${haceCuanto(laHace.desde)}.`;
     if (laHace.terminadaAt) {
       return (
-        <Presence show direction="up" className="space-y-1 rounded-lg border border-border bg-card p-4" data-testid="la-hizo-el-propietario">
-          <p className="flex items-center gap-2 text-sm font-semibold text-fg">
-            <Wrench className="h-4 w-4" aria-hidden="true" />
-            La hizo el propietario
-          </p>
-          <p className="text-sm text-fg-muted">
+        // Glow up 23-10: en arena dentro del cajón (sin tarjeta con borde) y el estado por su punto y su palabra.
+        <Presence show direction="up" className="space-y-2 rounded-xl bg-surface-muted p-4" data-testid="la-hizo-el-propietario">
+          <StatusBadge tone="success">La hizo el propietario</StatusBadge>
+          <p className="text-body-sm text-fg-muted">
             {quien} Avisó que quedó lista {haceCuanto(laHace.terminadaAt)}
             {laHace.terminadaNota ? `: «${laHace.terminadaNota}»` : '.'}
           </p>
@@ -164,15 +162,12 @@ export function QuienHaceLaReparacion({
       <Presence
         show
         direction="up"
-        className="space-y-3 rounded-lg border border-warning/40 bg-warning-soft/40 p-4"
+        className="space-y-3 rounded-xl bg-surface-muted p-4"
         data-testid="la-hace-el-propietario"
       >
-        <div className="space-y-1">
-          <p className="flex items-center gap-2 text-sm font-semibold text-fg">
-            <UserCircle className="h-4 w-4" aria-hidden="true" />
-            La hace el propietario
-          </p>
-          <p className="text-sm text-fg-muted">
+        <div className="space-y-2">
+          <StatusBadge tone="warning">La hace el propietario</StatusBadge>
+          <p className="text-body-sm text-fg-muted">
             {quien}
             {laHace.nota ? ` «${laHace.nota}»` : ''} No se le descuenta nada. Cuando quede, él lo avisa desde su portal.
           </p>
@@ -191,10 +186,10 @@ export function QuienHaceLaReparacion({
       <Presence
         show
         direction="up"
-        className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-3 rounded-xl bg-surface-muted p-4 sm:flex-row sm:items-center sm:justify-between"
         data-testid="se-la-puede-dejar"
       >
-        <p className="text-sm text-fg-muted">
+        <p className="text-body-sm text-fg-muted">
           ¿El propietario la va a hacer por su cuenta, con su plomero o él mismo?
         </p>
         <Button
@@ -212,7 +207,7 @@ export function QuienHaceLaReparacion({
 
   if (solicitud.porQueNoLaPuedeHacerElPropietario) {
     return (
-      <p className="flex items-start gap-2 text-sm text-fg-muted" data-testid="solo-la-inmobiliaria">
+      <p className="flex items-start gap-2 text-body-sm text-fg-muted" data-testid="solo-la-inmobiliaria">
         <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         {solicitud.porQueNoLaPuedeHacerElPropietario}
       </p>

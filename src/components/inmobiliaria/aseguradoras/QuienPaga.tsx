@@ -13,6 +13,7 @@
  * inquilino: eso lo dice el back (400) y lo dice esta ayuda.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
@@ -110,6 +111,7 @@ export function QuienPaga({ valor, onChange }: Props) {
             <p className="text-xs text-fg-muted">Cargando aseguradoras…</p>
           ) : aseguradoras.length === 0 ? (
             <p className="text-xs text-fg-muted" data-testid="sin-aseguradoras">
+              <Ilustracion nombre="escudo" tamano={56} className="mb-2 block" />
               No hay aseguradoras registradas.{' '}
               <Link className="underline" href="/panel/inmobiliaria/pagos/recaudo/aseguradoras">
                 Registrar una

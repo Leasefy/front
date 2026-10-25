@@ -110,7 +110,7 @@ export function MapaDelInmueble({ latitude, longitude, titulo, direccion, classN
   return (
     <div className={cn('space-y-3', className)}>
       <div
-        className="relative w-full h-56 sm:h-64 rounded-lg border border-border overflow-hidden"
+        className="relative w-full h-56 sm:h-64 rounded-lg border border-border-faint overflow-hidden"
         data-testid="mapa-del-inmueble"
         data-estado={estado}
       >
@@ -123,15 +123,29 @@ export function MapaDelInmueble({ latitude, longitude, titulo, direccion, classN
           cooperativeGestures
           locale={LOCALE_MAPA}
           attributionControl={false}
-          onLoad={() => setEstado('listo')}
+          onLoad={(e) => {
+            setEstado('listo');
+            // Los créditos del mapa (en inglés, de OpenStreetMap) quedan plegados en su «i»:
+            // MapLibre los abre solos en pantallas anchas y tapaban el mapa (revisión 21-10).
+            e?.target
+              ?.getContainer?.()
+              ?.querySelectorAll('.maplibregl-compact-show')
+              .forEach((el) => el.classList.remove('maplibregl-compact-show'));
+          }}
           onError={(e) => {
             if (esFalloDelTrabajador(e.error)) setEstado('fallo');
           }}
         >
           <NavigationControl position="top-right" showCompass={false} />
           <AttributionControl compact position="bottom-right" />
-          <Marker longitude={longitude} latitude={latitude} anchor="bottom">
-            <MapPin className="w-8 h-8 text-primary drop-shadow-sm" weight="fill" aria-hidden="true" />
+          {/* Ronda 30 (diseño nuevo): la marca del inmueble es el cuadrito de
+              voltaje con su halo, el mismo del marketplace (antes un alfiler
+              con sombra). */}
+          <Marker longitude={longitude} latitude={latitude} anchor="center">
+            <span
+              className="block h-3.5 w-3.5 rounded-[4px] bg-primary outline outline-[6px] outline-primary/20"
+              aria-hidden="true"
+            />
             <span className="sr-only">{titulo}</span>
           </Marker>
         </Map>
@@ -147,11 +161,13 @@ export function MapaDelInmueble({ latitude, longitude, titulo, direccion, classN
         </Presence>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      {/* Siempre en columna: en la ficha el mapa vive en un tercio del ancho y la
+          dirección quedaba aplastada a un glifo al lado de los enlaces (revisión 21-10). */}
+      <div className="flex flex-col gap-2">
         {direccion && (
           <p className="flex items-start gap-1.5 text-sm text-fg min-w-0">
             <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-fg-subtle" aria-hidden="true" />
-            <span className="truncate">{direccion}</span>
+            <span className="line-clamp-2">{direccion}</span>
           </p>
         )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 shrink-0">

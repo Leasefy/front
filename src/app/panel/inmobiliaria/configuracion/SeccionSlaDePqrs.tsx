@@ -34,6 +34,10 @@ import { pqrsApi } from '@/lib/api/pqrs-agencia.service';
 import type { ResponsableDePqrs } from '@/lib/api/pqrs-agencia.types';
 import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { EsqueletoDeSeccion, TarjetaDeAjustes, FilaDeAjuste } from './piezas';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+/** Ronda 30: «A nadie» / «Nadie» en el Select de Cadence (no admite opción vacía). */
+const NADIE = '__nadie__';
 
 /** Los cuatro tipos, en el orden en que los lee una persona. */
 const TIPOS: Array<{ valor: string; titulo: string; descripcion: string }> = [
@@ -237,16 +241,17 @@ export function SeccionSlaDePqrs() {
 
   return (
     <div className="space-y-4">
+      {/* Glow up 22-10: «cuánto te demoras, por tipo» lo dice el marco; aquí sólo lo que no dice. */}
       <p className="text-sm text-fg-muted">
-        Cuánto se demora tu inmobiliaria en responder, por tipo. Déjalo vacío para
-        regirte por el plazo legal de <strong>{datos.legalDiasHabiles} días hábiles</strong>{' '}
-        (Ley 1755 art. 14 y Ley 1480 art. 58).
+        Déjalo vacío para regirte por el plazo legal de{' '}
+        <span className="font-mono text-fg">{datos.legalDiasHabiles}</span> días hábiles (Ley 1755 art. 14 y
+        Ley 1480 art. 58).
       </p>
 
       {!datos.disponible && (
         <div
           role="alert"
-          className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning"
+          className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-caption text-warning"
         >
           {datos.motivo ?? 'Todavía no se puede configurar.'}
         </div>
@@ -276,7 +281,7 @@ export function SeccionSlaDePqrs() {
                   setBorrador({ ...borrador, [t.valor]: e.target.value })
                 }
               />
-              <span className="w-12 shrink-0 text-xs text-fg-muted">
+              <span className="w-12 shrink-0 text-caption text-fg-muted">
                 {borrador[t.valor]?.trim() ? 'horas' : 'legal'}
               </span>
             </div>
@@ -294,24 +299,32 @@ export function SeccionSlaDePqrs() {
               : 'Hoy no se le escala a nadie: elige quién recibe las PQRS vencidas para que el plazo legal no se pase sin que nadie se entere.'
           }
         >
-          <select
-            aria-label="A quién se escalan las PQRS vencidas"
-            value={jefeElegido ?? datos.escalarAUserId ?? ''}
+          {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). «A nadie» viaja como una
+              clave propia (el Select no admite opción vacía) y se guarda como antes (''). */}
+          <Select
+            value={(jefeElegido ?? datos.escalarAUserId ?? '') || NADIE}
             disabled={!isAdmin || guardandoJefe || !datos.disponible}
-            onChange={(e) => (conBarra ? setJefeElegido(e.target.value) : void guardarJefe(e.target.value))}
-            className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-64"
-            data-testid="pqrs-escalar-a"
+            onValueChange={(v) => {
+              const id = v === NADIE ? '' : v;
+              if (conBarra) setJefeElegido(id);
+              else void guardarJefe(id);
+            }}
           >
-            <option value="">A nadie</option>
-            {datos.escalarAUserId && !equipo.some((m) => m.userId === datos.escalarAUserId) && (
-              <option value={datos.escalarAUserId}>{datos.escalarANombre ?? 'Responsable actual'}</option>
-            )}
-            {equipo.map((m) => (
-              <option key={m.userId} value={m.userId}>
-                {m.nombre}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger aria-label="A quién se escalan las PQRS vencidas" className="w-full sm:w-64" data-testid="pqrs-escalar-a">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NADIE}>A nadie</SelectItem>
+              {datos.escalarAUserId && !equipo.some((m) => m.userId === datos.escalarAUserId) && (
+                <SelectItem value={datos.escalarAUserId}>{datos.escalarANombre ?? 'Responsable actual'}</SelectItem>
+              )}
+              {equipo.map((m) => (
+                <SelectItem key={m.userId} value={m.userId}>
+                  {m.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FilaDeAjuste>
       </TarjetaDeAjustes>
       {datos.responsablePorDefectoDisponible !== undefined && (
@@ -327,39 +340,43 @@ export function SeccionSlaDePqrs() {
                   : 'Sin responsable por defecto, la PQRS que llega sin responsable pide tu clic aunque el Piloto esté en Automático.'
             }
           >
-            <select
-              aria-label="Responsable por defecto de las PQRS"
-              value={porDefectoElegido ?? datos.responsablePorDefectoUserId ?? ''}
+            <Select
+              value={(porDefectoElegido ?? datos.responsablePorDefectoUserId ?? '') || NADIE}
               disabled={!isAdmin || guardandoPorDefecto || !datos.disponible || !datos.responsablePorDefectoDisponible}
-              onChange={(e) =>
-                conBarra ? setPorDefectoElegido(e.target.value) : void guardarPorDefecto(e.target.value)
-              }
-              className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-64"
-              data-testid="pqrs-responsable-por-defecto"
+              onValueChange={(v) => {
+                const id = v === NADIE ? '' : v;
+                if (conBarra) setPorDefectoElegido(id);
+                else void guardarPorDefecto(id);
+              }}
             >
-              <option value="">Nadie</option>
-              {datos.responsablePorDefectoUserId &&
-                !equipo.some((m) => m.userId === datos.responsablePorDefectoUserId) && (
-                  <option value={datos.responsablePorDefectoUserId}>
-                    {datos.responsablePorDefectoNombre ?? 'Responsable actual'}
-                  </option>
-                )}
-              {equipo.map((m) => (
-                <option key={m.userId} value={m.userId}>
-                  {m.nombre}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Responsable por defecto de las PQRS" className="w-full sm:w-64" data-testid="pqrs-responsable-por-defecto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NADIE}>Nadie</SelectItem>
+                {datos.responsablePorDefectoUserId &&
+                  !equipo.some((m) => m.userId === datos.responsablePorDefectoUserId) && (
+                    <SelectItem value={datos.responsablePorDefectoUserId}>
+                      {datos.responsablePorDefectoNombre ?? 'Responsable actual'}
+                    </SelectItem>
+                  )}
+                {equipo.map((m) => (
+                  <SelectItem key={m.userId} value={m.userId}>
+                    {m.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </FilaDeAjuste>
         </TarjetaDeAjustes>
       )}
       {!isAdmin && (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Sólo un administrador decide a quién se escalan las PQRS vencidas y quién es el responsable por defecto.
         </p>
       )}
 
-      <p className="text-xs text-fg-muted">
+      <p className="text-caption text-fg-muted">
         Cambiar esto <strong>no mueve las PQRS ya radicadas</strong>: cada una se
         juzga con el plazo que se le prometió el día que se radicó. Bajar el
         compromiso no vuelve vencidas de golpe a las que están abiertas.

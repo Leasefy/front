@@ -30,7 +30,6 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ArrowRight } from '@phosphor-icons/react'
 import { Alert, AlertAction, Presence } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -70,10 +69,11 @@ function BotonDeAccion({ accion, principal }: { accion: AccionDeAlerta; principa
     <>
       {accion.icon}
       {accion.label}
-      {!accion.icon && principal && <ArrowRight className="h-3.5 w-3.5" weight="bold" />}
     </>
   )
-  const variant = principal ? 'default' : 'ghost'
+  // Cadence 2: el arreglo de un aviso va en arena (secundario), sin flecha — el azul es de la
+  // acción principal de la pantalla y un aviso no debe competir con ella.
+  const variant = principal ? 'secondary' : 'ghost'
   if (accion.href) {
     return (
       <Button asChild size="sm" variant={variant} hideArrow>

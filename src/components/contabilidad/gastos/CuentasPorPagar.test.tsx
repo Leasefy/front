@@ -121,8 +121,10 @@ describe('🔴 CB-R21 · Cuentas por pagar', () => {
       numeroDeCuenta: '12345678',
     });
     expect(toastMock.success).toHaveBeenCalled();
-    // Vuelve a leer: la factura ya trae su egreso.
-    expect(gastos.facturas.listar).toHaveBeenCalledTimes(2);
+    // Vuelve a leer: la factura ya trae su egreso. (Ronda 30: sin contar las preguntas del conteo de
+    // las pestañas, que van con `limite: 1`.)
+    const deLaLista = gastos.facturas.listar.mock.calls.filter((c: unknown[]) => (c[0] as { limite?: number })?.limite !== 1);
+    expect(deLaLista).toHaveLength(2);
   });
 
   it('«Vencidas» pide `vencidas` al back', async () => {
@@ -136,6 +138,6 @@ describe('🔴 CB-R21 · Cuentas por pagar', () => {
       tab.click();
     });
     await listo();
-    expect(gastos.facturas.listar).toHaveBeenLastCalledWith(expect.objectContaining({ vencidas: true }));
+    expect(gastos.facturas.listar).toHaveBeenLastCalledWith(expect.objectContaining({ vencidas: true, limite: 200 }));
   });
 });

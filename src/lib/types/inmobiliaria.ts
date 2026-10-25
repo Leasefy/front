@@ -2206,11 +2206,13 @@ export function getDispersionStatusColor(status: DispersionStatus): string {
 }
 
 export function getDispersionStatusLabel(status: DispersionStatus): string {
+  // Ronda 19-21: el MISMO vocabulario en los cuatro pasos de Giros: un giro está por aprobar, aprobado
+  // (PROCESSING: lo aprobaron y falta registrar que salió) o girado.
   const labels: Record<DispersionStatus, string> = {
-    pending: 'Pendiente',
-    processing: 'Procesando',
-    completed: 'Completada',
-    failed: 'Fallida',
+    pending: 'Por aprobar',
+    processing: 'Aprobado',
+    completed: 'Girado',
+    failed: 'No salió',
   };
   return labels[status];
 }

@@ -16,26 +16,21 @@
  *
  * Shell + gates are copied from `casos/page.tsx` (Spinner loading → onboarding
  * `CompleteProfileFirst` → error `EmptyState`; `min-h-screen bg-[#f8f8f8]
- * dark:bg-bg` + `max-w-7xl`). Buttons sentence case (DESIGN §4).
+ *` + `max-w-7xl`). Buttons sentence case (DESIGN §4).
  */
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CrossFade, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, StaggerItem, StatusBadge } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Lifebuoy,
   Wrench,
   ChatCircle,
-  CaretRight,
-  CheckCircle,
-  Clock,
-  Warning,
   XCircle,
   Plus,
 } from '@phosphor-icons/react';
-import type { Icon } from '@phosphor-icons/react';
 
 import { useTenantPqrs } from '@/lib/hooks/use-tenant-pqrs';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -43,8 +38,8 @@ import { useI18n } from '@/lib/i18n';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { NuevaSolicitudModal } from '@/components/tenant/NuevaSolicitudModal';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Badge } from '@/components/ui/badge';
-import type { BadgeProps } from '@/components/ui/badge';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { VistasDeLaPestana, VISTAS_DE_SOLICITUDES } from '@/components/portales/VistasDeLaPestana';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { AvanceDeLaSolicitud } from '@/components/estado/AvanceDeLaSolicitud';
@@ -58,11 +53,15 @@ import type { SolicitudPqrs } from '@/lib/api/pqrs.types';
 // Neutral tone → badge (capped at `warning`; no alarm level at all)
 // ============================================================================
 
-const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>; icon: Icon }> = {
-  neutral: { variant: 'secondary', icon: CheckCircle },
-  info: { variant: 'default', icon: Clock },
-  attention: { variant: 'warning', icon: Warning },
+// GLOW UP (22-10): el estado con su punto y su palabra (StatusBadge), sin ícono en la pastilla.
+const TONO_DEL_ESTADO: Record<CaseTone, 'neutral' | 'info' | 'warning'> = {
+  neutral: 'neutral',
+  info: 'info',
+  attention: 'warning',
 };
+
+/** Respondida, resuelta o cerrada: ya no espera nada (va después de las abiertas). */
+const yaRespondida = (s: SolicitudPqrs) => s.estado === 'resuelta' || s.estado === 'cerrada' || Boolean(s.respuestaDetalle);
 
 /**
  * Per-row expected-response line — NEVER blank. Authoritative `slaVenceAt` renders
@@ -109,7 +108,7 @@ function ExpectedResponseLine({ s, locale }: { s: SolicitudPqrs; locale: string 
         {locale === 'es'
           ? `Respuesta estimada hacia el ${dateStr}`
           : `Estimated response around ${dateStr}`}
-        <span className="rounded-full bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium text-fg-subtle">
+        <span className="rounded-full bg-surface-muted px-1.5 py-0.5 text-caption text-fg-subtle">
           {locale === 'es' ? 'estimado' : 'estimate'}
         </span>
       </span>
@@ -131,34 +130,28 @@ function ExpectedResponseLine({ s, locale }: { s: SolicitudPqrs; locale: string 
 
 function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
   const TypeIcon = s.tipo === 'reparacion' ? Wrench : ChatCircle;
-  const badge = TONE_BADGE[pqrsStatusToTone(s.estado)];
-  const ToneIcon = badge.icon;
+  const tono = TONO_DEL_ESTADO[pqrsStatusToTone(s.estado)];
 
   return (
     <StaggerItem>
       <Link href={`/inquilino/casos/${encodeURIComponent(s.id)}`} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
-          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-            <TypeIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-          </div>
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5 flex items-center gap-4 hover:border-border-strong transition-colors">
+          <TypeIcon className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm sm:text-base font-semibold text-fg dark:text-white group-hover:text-primary transition-colors truncate">
+              <h3 className="text-sm sm:text-base font-medium text-fg group-hover:text-primary transition-colors truncate">
                 {s.asunto}
               </h3>
               {/* SO-20: el número de radicado. */}
               {s.radicado && (
-                <span className="font-mono text-xs text-fg-muted" data-testid="solicitud-radicado">
+                <span className="font-mono text-caption text-fg-muted" data-testid="solicitud-radicado">
                   {s.radicado}
                 </span>
               )}
-              <Badge variant={badge.variant} className="inline-flex items-center gap-1">
-                <ToneIcon className="w-3 h-3" aria-hidden="true" />
-                {pqrsStatusToLabel(s.estado)}
-              </Badge>
+              <StatusBadge tone={tono}>{pqrsStatusToLabel(s.estado)}</StatusBadge>
             </div>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
+            <p className="text-caption text-fg-muted mt-1">
               <ExpectedResponseLine s={s} locale={locale} />
             </p>
             {/* 21-10-2026 (Portofino): dónde va, como una barra que se llena. */}
@@ -168,8 +161,6 @@ function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
               {...avanceDeLaSolicitudDelPortal(s.estado, s.tipo === 'reparacion', s.mantenimiento)}
             />
           </div>
-
-          <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-primary transition-colors flex-shrink-0" />
         </div>
       </Link>
     </StaggerItem>
@@ -190,7 +181,7 @@ export default function SolicitudesPage() {
   const sinRadicar = disponible === false;
   const motivoSinRadicar =
     locale === 'es'
-      ? 'Para radicar desde acá necesitas un contrato vigente con tu inmobiliaria: escríbele a tu inmobiliaria.'
+      ? 'Para radicar desde aquí necesitas un contrato vigente con tu inmobiliaria: escríbele a tu inmobiliaria.'
       : 'To submit a request here you need an active lease with your property manager: write to them.';
   const [modalOpen, setModalOpen] = useState(false);
   /*
@@ -212,10 +203,61 @@ export default function SolicitudesPage() {
   // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
   const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);
 
+  const abiertas = items.filter((s) => !yaRespondida(s)).length;
+  // Lo que espera respuesta primero; dentro de cada grupo, el orden del back.
+  const ordenadas = [...items].sort((a, b) => Number(yaRespondida(a)) - Number(yaRespondida(b)));
+
+  const encabezado = (
+    <EncabezadoDePantalla
+      className="mb-6"
+      seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+      titulo={locale === 'es' ? 'Solicitudes' : 'Requests'}
+      descripcion={
+        abiertas === 1
+          ? locale === 'es'
+            ? 'Tienes 1 solicitud abierta: va primero, con la fecha en que te responden.'
+            : 'You have 1 open request: it comes first, with the date you will hear back.'
+          : abiertas > 1
+            ? locale === 'es'
+              ? `Tienes ${abiertas} solicitudes abiertas: van primero, con la fecha en que te responden.`
+              : `You have ${abiertas} open requests: they come first, with the date you will hear back.`
+            : locale === 'es'
+              ? 'Abre y sigue tus solicitudes de mantenimiento y tus quejas o reclamos, en un solo lugar.'
+              : 'Open and track your maintenance requests and your complaints, all in one place.'
+      }
+      // Revisora r25: sin contrato vigente el botón no se pinta (antes, apagado y a lo ancho a 390); el porqué lo
+      // dice el vacío, con su salida.
+      accionPrincipal={
+        sinRadicar ? undefined : (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setModalOpen(true)}
+            hideArrow
+            className="inline-flex items-center gap-2 max-lg:flex-1"
+            data-testid="nueva-solicitud"
+          >
+            <Plus className="w-4 h-4" />
+            {locale === 'es' ? 'Nueva solicitud' : 'New request'}
+          </Button>
+        )
+      }
+    />
+  );
+  // C3 (revisora r25): «Solicitudes» agrupa lo que está en curso y lo radicado; las dos vistas, el mismo título.
+  const vistas = (
+    <VistasDeLaPestana
+      className="mb-6"
+      etiqueta={locale === 'es' ? 'En curso o radicadas' : 'In progress or filed'}
+      actual="/inquilino/solicitudes"
+      vistas={VISTAS_DE_SOLICITUDES(locale === 'es')}
+    />
+  );
+
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -225,8 +267,8 @@ export default function SolicitudesPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="rental" />
         </div>
       </div>
@@ -237,13 +279,15 @@ export default function SolicitudesPage() {
   // fires on a genuine (non-404/403/0) failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
+          {encabezado}
+          {vistas}
           <EmptyState
             icon={XCircle}
-            title={locale === 'es' ? 'Error al cargar tus solicitudes' : 'Error loading your requests'}
+            title={locale === 'es' ? 'No pudimos cargar tus solicitudes' : "We couldn't load your requests"}
             description={error}
-            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', href: '/inquilino/solicitudes' }}
+            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', onClick: () => void refetch() }}
           />
         </div>
       </div>
@@ -251,41 +295,22 @@ export default function SolicitudesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="bg-bg">
+      <motion.div {...entrada} className="p-6 lg:p-8">
 
-        {/* Header */}
-        <header className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
-              {locale === 'es' ? 'Solicitudes' : 'Requests'}
-            </h1>
-            <p className="mt-1 text-fg-muted dark:text-fg-subtle">
-              {locale === 'es'
-                ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS, en un solo lugar.'
-                : 'Open and track your maintenance requests and PQRS, all in one place.'}
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            <Button
-              type="button"
-              onClick={() => setModalOpen(true)}
-              disabled={sinRadicar}
-              title={sinRadicar ? motivoSinRadicar : undefined}
-              hideArrow
-              className="inline-flex items-center gap-2"
-              data-testid="nueva-solicitud"
-            >
-              <Plus className="w-4 h-4" />
-              {locale === 'es' ? 'Nueva solicitud' : 'New request'}
-            </Button>
-            {sinRadicar && (
-              <p className="max-w-xs text-right text-sm text-fg-muted" data-testid="nueva-solicitud-motivo">
-                {motivoSinRadicar}
-              </p>
-            )}
-          </div>
-        </header>
+        {/* GLOW UP (21-10): el encabezado de todas las pantallas; «Nueva solicitud» es la única azul. */}
+        {encabezado}
+        {vistas}
+        {/* Con solicitudes viejas y sin contrato vigente, el porqué va en una línea, junto al trabajo (antes a la
+            derecha, lejos del botón apagado). Sin solicitudes, lo dice el vacío. */}
+        {sinRadicar && items.length > 0 && (
+          <p className="mb-6 text-sm text-fg-muted" data-testid="nueva-solicitud-motivo">
+            {motivoSinRadicar}{' '}
+            <Link href="/inquilino/mensajes" className="font-medium text-fg underline underline-offset-4 hover:text-primary">
+              {locale === 'es' ? 'Escribirle' : 'Write to them'}
+            </Link>
+          </p>
+        )}
 
         {/* List — real own-requests, or an honest empty-state (incl. not-live []).
             Vacío → primera solicitud se cruzan. Lo que ya estaba al llegar no se
@@ -295,36 +320,45 @@ export default function SolicitudesPage() {
           {items.length > 0 ? (
             <div className="space-y-3">
               <AnimatePresence initial={false}>
-                {items.map((s) => (
+                {ordenadas.map((s) => (
                   <SolicitudRow key={s.id} s={s} locale={locale} />
                 ))}
               </AnimatePresence>
             </div>
           ) : (
-            <div className="space-y-4">
-              <EmptyState
-                icon={Lifebuoy}
-                title={locale === 'es' ? 'Aún no tienes solicitudes' : 'No requests yet'}
-                description={
-                  locale === 'es'
-                    ? 'Abre una solicitud de mantenimiento o una PQRS y hazle seguimiento aquí.'
-                    : 'Open a maintenance request or a PQRS and track it here.'
-                }
-              />
-              <div className="flex justify-center">
-                <Button
-                  type="button"
-                  onClick={() => setModalOpen(true)}
-                  disabled={sinRadicar}
-                  title={sinRadicar ? motivoSinRadicar : undefined}
-                  hideArrow
-                  className="inline-flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  {locale === 'es' ? 'Nueva solicitud' : 'New request'}
-                </Button>
-              </div>
-            </div>
+            <section className="rounded-lg border border-border bg-surface">
+              {/* GLOW UP (21-10): un solo botón azul en la pantalla (el del encabezado); el vacío ofrece la misma
+                  acción en tono secundario y no la ofrece si todavía no se puede radicar. */}
+              {/* Revisora r25: sin contrato vigente, el vacío ES el porqué, con la salida a Mensajes (antes «Abre una
+                  solicitud…» con el botón apagado). */}
+              {sinRadicar ? (
+                <div data-testid="nueva-solicitud-motivo">
+                  <EmptyState
+                    icon={Lifebuoy}
+                    ilustracion="casa"
+                    title={locale === 'es' ? 'Para radicar necesitas un contrato vigente' : 'You need an active lease to file a request'}
+                    description={
+                      locale === 'es'
+                        ? 'Escríbele a tu inmobiliaria por Mensajes y ella te ayuda con lo que necesites.'
+                        : 'Write to your property manager in Messages and they will help you with what you need.'
+                    }
+                    action={{ label: locale === 'es' ? 'Escribirle a mi inmobiliaria' : 'Write to my property manager', href: '/inquilino/mensajes' }}
+                  />
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Lifebuoy}
+                  ilustracion="casa"
+                  title={locale === 'es' ? 'Aún no tienes solicitudes' : 'No requests yet'}
+                  description={
+                    locale === 'es'
+                      ? 'Abre una solicitud de mantenimiento o una PQRS y hazle seguimiento aquí.'
+                      : 'Open a maintenance request or a PQRS and track it here.'
+                  }
+                  action={{ label: locale === 'es' ? 'Nueva solicitud' : 'New request', onClick: () => setModalOpen(true) }}
+                />
+              )}
+            </section>
           )}
           </CrossFade>
         </section>

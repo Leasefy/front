@@ -52,10 +52,10 @@ export function CobranzaDeudoresQuePesan() {
       className="rounded-lg border border-border bg-card overflow-hidden"
     >
       <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-fg">{tr("Los que más pesan")}</h3>
+        <h3 className="text-sm font-medium text-fg">{tr("Los que más pesan")}</h3>
         <Link
           href={CASOS_HREF}
-          className="text-xs text-fg-muted hover:text-fg underline underline-offset-2"
+          className="text-caption text-fg-muted hover:text-fg underline underline-offset-2"
         >
           {tr("Ver todos los casos")}
         </Link>
@@ -93,7 +93,7 @@ export function CobranzaDeudoresQuePesan() {
                   </Link>
                 </TableCell>
               ) : (
-                <TableCell className="font-mono text-xs text-fg-muted">
+                <TableCell className="font-mono text-caption text-fg-muted">
                   {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
                 </TableCell>
               )}

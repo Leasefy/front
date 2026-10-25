@@ -2,17 +2,10 @@
 
 import React from 'react';
 import { Spinner } from '@/components/ui/spinner';
-import { usePathname } from 'next/navigation';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
-import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista';
-import { RETENCION, RETENCION_APROBAR, RETENCION_RIESGO } from '@/lib/nav/rutas-de-retencion';
 
 export default function RetencionLayout({ children }: { children: React.ReactNode }) {
   const { canAccess, isLoading } = usePermissionsContext();
-  const pathname = usePathname() ?? '';
-  // C-19: en la bandeja y en la cola, la salida al tablero del agente (además de
-  // las migas y las pestañas). La ficha de un caso trae la suya, a la bandeja.
-  const conVolver = pathname === RETENCION_RIESGO || pathname === RETENCION_APROBAR;
 
   if (isLoading) {
     return (
@@ -26,7 +19,7 @@ export default function RetencionLayout({ children }: { children: React.ReactNod
   if (!canAccess('retencion', 'view')) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3 px-6 text-center">
-        <p className="text-lg font-semibold text-fg">
+        <p className="text-lg font-medium text-fg">
           No tienes acceso a Retención
         </p>
         <p className="text-sm text-fg-muted max-w-sm">
@@ -43,11 +36,8 @@ export default function RetencionLayout({ children }: { children: React.ReactNod
   // propio), por eso se queda.
   return (
     <>
-      {conVolver ? (
-        <div className="px-6 pt-6 lg:px-8 lg:pt-8">
-          <VolverALaLista href={RETENCION} label="Volver al tablero de Retención" />
-        </div>
-      ) : null}
+      {/* Revisora r25: sin «Volver al tablero» en Riesgo y Por aprobar: las pestañas hermanas ya
+          llevan al tablero (dos navegaciones para lo mismo). */}
       {children}
     </>
   );

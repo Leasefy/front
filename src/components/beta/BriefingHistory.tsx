@@ -63,7 +63,7 @@ export function BriefingHistory() {
               variant={isActive ? 'default' : 'secondary'}
               hideArrow
               onClick={() => selectBriefing(briefing.id)}
-              className="px-2.5 py-1 h-auto rounded-full text-xs font-medium whitespace-nowrap"
+              className="px-2.5 py-1 h-auto rounded-full text-caption font-medium whitespace-nowrap"
             >
               {getDateLabel(briefing.date)}
             </Button>

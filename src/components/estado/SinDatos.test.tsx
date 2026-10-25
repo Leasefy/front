@@ -108,7 +108,7 @@ describe('<SinDatos>', () => {
     expect(container.textContent).not.toContain('Ningún solicitud')
 
     pintar({ queSon: 'solicitudes' })
-    expect(container.textContent).toContain('Lo que agregues aparece acá')
+    expect(container.textContent).toContain('Lo que agregues aparece aquí')
     expect(container.textContent).not.toContain('el primero')
   })
 
@@ -116,5 +116,16 @@ describe('<SinDatos>', () => {
     pintar({ hayFiltros: true, queSon: 'análisis' })
     expect(container.textContent).toContain('No hay análisis que coincidan')
     expect(container.textContent).not.toContain('análisi ')
+  })
+
+  it('🔴 la lupa es sólo para la búsqueda: el vacío de verdad lleva la ilustración de lo que falta (revisora r27, C10; Nico 23-10: siempre en 3D)', () => {
+    const ilustracion = () =>
+      container.querySelector('[data-testid="sin-datos"] [data-ilustracion]')?.getAttribute('data-ilustracion') ?? ''
+    pintar({ queSon: 'personas' })
+    expect(ilustracion()).toBe('cedula')
+    pintar({ hayFiltros: true, queSon: 'personas', onLimpiarFiltros: () => {} })
+    expect(ilustracion()).toBe('lupa')
+    pintar({ queSon: 'personas', ilustracion: 'equipo' })
+    expect(ilustracion()).toBe('equipo')
   })
 })

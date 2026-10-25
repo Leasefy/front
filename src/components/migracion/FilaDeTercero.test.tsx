@@ -300,7 +300,7 @@ describe('FilaDeTercero', () => {
 
     it('manda a corregir el correo, no el documento', async () => {
       await pintar({ fila: porCorreo, tipo: 'INQUILINO' });
-      expect(container.textContent).toContain('corrige el correo acá abajo');
+      expect(container.textContent).toContain('corrige el correo aquí abajo');
     });
 
     it('en el paso de inquilinos no manda a buscar la ficha en Propietarios', async () => {

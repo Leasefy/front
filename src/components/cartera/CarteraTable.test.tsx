@@ -151,10 +151,12 @@ describe('<CarteraTable>', () => {
     expect(texto).toContain('3010082450')
     expect(texto).toContain('Carrera 30a #25A-20')
     expect(texto).toContain('Marta Cifuentes')
-    expect(texto).toContain('2026-08')
+    // El mes de la cuota (2026-08) se lee con letras.
+    expect(texto).toMatch(/agosto/i)
     // El vencimiento y el abono parcial: dos datos que la tabla vieja tenía y
     // no pintaba.
-    expect(texto).toContain('cartera.tabla.vence:2026-08-05')
+    // Revisora r25 (Cartera #5): «5 ago 2026», como escribe la casa.
+    expect(texto).toContain('cartera.tabla.vence:5 ago 2026')
     expect(texto).toContain('cartera.tabla.abonado:$250.000')
     expect(texto).toContain('$3.500.000')
     expect(texto).toContain('cartera.tabla.diasDeMora:12')
@@ -363,8 +365,12 @@ describe('🔴 el interés de mora, aparte del capital (2026-09-16)', () => {
     ])
     expect(celda('cartera-intereses')).toContain('cartera.interes.sinReglas')
     expect(celda('cartera-intereses')).not.toContain('$0')
-    const link = filas()[0]!.querySelector('[data-testid="cartera-intereses"] a')
-    expect(link?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/reglas-de-mora')
+    // Revisora r25 (Cartera #3): la salida a configurarlas va UNA vez, en el aviso de arriba de la
+    // tabla (`cartera-configurar-reglas`, probado en CarteraCompleta.test); la celda no la repite.
+    expect(filas()[0]!.querySelector('[data-testid="cartera-intereses"] a')).toBeNull()
+    expect(filas()[0]!.querySelector('[data-testid="cartera-sin-reglas"]')?.getAttribute('title')).toBe(
+      'La inmobiliaria no tiene reglas de mora activas.',
+    )
   })
 
   it('una cuota pagada en mora sale con capital $0 y dice por qué debe', () => {

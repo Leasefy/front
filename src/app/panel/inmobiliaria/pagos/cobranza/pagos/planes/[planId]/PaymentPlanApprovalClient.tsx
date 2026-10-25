@@ -19,12 +19,14 @@
  */
 
 import * as React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { CrossFade, Presence } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { EnElPieDelCajon } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Input } from '@/components/ui'
 import { Textarea } from '@/components/ui/textarea'
@@ -110,9 +112,18 @@ export function diaParaMostrar(dia: string): string {
 
 interface Props {
   planId: string
+  /**
+   * Ronda 30 (K4, Nico: «K4 cajón»): montado en el cajón de Pagos en línea
+   * (`CajonDelCaso`). Sin la vuelta ni el encabezado de página (el deudor va en
+   * la cabecera del cajón; «Ver deudor» arriba del cuerpo). Rechazado,
+   * `onResuelto` cierra el cajón; aprobado se queda abierto: ahí está el enlace
+   * de pago que hay que mandarle al deudor.
+   */
+  enCajon?: boolean
+  onResuelto?: () => void
 }
 
-export default function PaymentPlanApprovalClient({ planId }: Props) {
+export default function PaymentPlanApprovalClient({ planId, enCajon = false, onResuelto }: Props) {
   const { t } = useI18n()
   const { canAccess } = usePermissionsContext()
   const canApprove = canAccess('cobranza', 'approve')
@@ -158,11 +169,21 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
   const envMissing = !process.env.NEXT_PUBLIC_AGENT_URL
 
+  // Ronda 30 (K4): en el cajón, «Rechazar» y «Modificar» están en el pie; su formulario se trae a la vista.
+  const formularioDeRechazo = useRef<HTMLElement>(null)
+  const formularioDeModificar = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (enCajon && rechazarOpen) formularioDeRechazo.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [enCajon, rechazarOpen])
+  useEffect(() => {
+    if (enCajon && modificarOpen) formularioDeModificar.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [enCajon, modificarOpen])
+
   // ── Early returns ─────────────────────────────────────────────────────────
 
   if (envMissing) {
     return (
-      <div className="p-4 lg:p-8">
+      <div className={enCajon ? undefined : 'p-6 lg:p-8'}>
         <div className="rounded-md border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           {t('inmobiliaria.ai.cobranza.planes.envMissing')}
         </div>
@@ -182,7 +203,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
   if (error && !plan) {
     return (
-      <div className="p-4 lg:p-8">
+      <div className={enCajon ? undefined : 'p-6 lg:p-8'}>
         <div className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.planes.loadError')}
         </div>
@@ -253,6 +274,8 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         setRejectReason('')
         setRejectComment('')
         setToast(t('inmobiliaria.ai.cobranza.planes.rechazarForm.success'))
+        // Ronda 30 (K4): en el cajón, rechazado se cierra tras leer el aviso (y la lista se refresca).
+        if (enCajon) setTimeout(() => onResuelto?.(), 1500)
       }
     } catch {
       // El hook sólo tira si el motivo falta o no es de la lista (en inglés,
@@ -376,37 +399,49 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 lg:p-8 space-y-6">
+    <div className={enCajon ? 'space-y-6' : 'p-6 lg:p-8 space-y-6'}>
+      {enCajon ? (
+        // En el cajón: el deudor va en su cabecera; aquí, su ficha a la mano.
+        <div className="flex justify-end" data-testid="plan-cajon-deudor">
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href={`/panel/inmobiliaria/pagos/cobranza/deudores/${plan.debtor.id}`}>
+              {t('inmobiliaria.ai.cobranza.planes.verDeudor')}
+            </Link>
+          </Button>
+        </div>
+      ) : (
+      <>
       <VolverALaLista
         href="/panel/inmobiliaria/pagos/cobranza/pagos"
         label={t('inmobiliaria.ai.volverA.pagos')}
       />
 
       {/* Header */}
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.planes.title')}
-          </h1>
-          <div className="mt-1 flex items-center gap-2 text-sm text-fg-muted">
-            <span className="font-medium text-fg">
-              {plan.debtor.nombreMasked || '—'}
-            </span>
-            <span>·</span>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.planes.title')}
+        descripcion={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            <span className="font-medium text-fg">{plan.debtor.nombreMasked || '—'}</span>
+            <span aria-hidden="true">·</span>
             <Mask field="cedula" value={plan.debtor.cedulaMasked} />
-          </div>
-        </div>
-        <Button asChild variant="outline" size="sm" hideArrow>
-          <Link href={`/panel/inmobiliaria/pagos/cobranza/deudores/${plan.debtor.id}`}>
-            {t('inmobiliaria.ai.cobranza.planes.verDeudor')} →
-          </Link>
-        </Button>
-      </header>
+          </span>
+        }
+        acciones={
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href={`/panel/inmobiliaria/pagos/cobranza/deudores/${plan.debtor.id}`}>
+              {t('inmobiliaria.ai.cobranza.planes.verDeudor')}
+            </Link>
+          </Button>
+        }
+      />
+      </>
+      )}
 
       {/* Comparison panel */}
       <section className="overflow-hidden rounded-md border border-border bg-surface">
         <div className="overflow-x-auto overscroll-contain">
-        <Table className="w-full text-sm">
+        <Table className="w-full text-body-sm">
           <TableHeader className="bg-surface-muted">
             <TableRow>
               <TableHead>{t('inmobiliaria.ai.cobranza.planes.comparisonHeader.campo')}</TableHead>
@@ -481,7 +516,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
             href="/panel/inmobiliaria/configuracion/agencia"
             className="mt-2 inline-block text-sm font-medium underline underline-offset-4 hover:opacity-80"
           >
-            {t('inmobiliaria.ai.cobranza.planes.configLink')} →
+            {t('inmobiliaria.ai.cobranza.planes.configLink')}
           </Link>
         </div>
       )}
@@ -493,9 +528,13 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         </p>
       )}
       {isPending && (
+      // Ronda 30 (K4): en el cajón van a su pie fijo (EnElPieDelCajon); en la página, aquí.
+      <EnElPieDelCajon>
       <div className="flex flex-wrap gap-2">
+        {/* Ronda 30 (revisora r27): aprobar va en tinta (decidir), no en voltaje. */}
         <Button
           type="button"
+          variant="ink"
           data-testid="approval-aprobar-plan"
           onClick={() => void handleAprobar()}
           disabled={aprobarDisabled}
@@ -527,6 +566,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           {t('inmobiliaria.ai.cobranza.planes.modificar')}
         </Button>
       </div>
+      </EnElPieDelCajon>
       )}
 
       {/* «El inquilino aceptó» — sólo con el plan aprobado (Nico, S5 Q4) */}
@@ -574,6 +614,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               <Button
                 type="button"
                 size="sm"
+                variant="ink"
                 data-testid="plan-aprobar-primero"
                 onClick={() => void handleAprobarPrimero()}
                 disabled={aprobarDisabled}
@@ -630,14 +671,14 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
             rel="noopener noreferrer"
             className="mt-2 inline-block break-all text-sm font-medium text-success underline underline-offset-4 hover:opacity-80"
           >
-            {t('inmobiliaria.ai.cobranza.planes.wompiLinkLabel')} →
+            {t('inmobiliaria.ai.cobranza.planes.wompiLinkLabel')}
           </a>
         </section>
       )}
 
-      {/* Rechazar inline form */}
+      {/* Rechazar inline form. En el cajón se trae a la vista al abrirse (el botón está en el pie). */}
       {rechazarOpen && (
-        <section className="space-y-3 rounded-md border border-border bg-surface p-4">
+        <section ref={formularioDeRechazo} className="space-y-3 rounded-md border border-border bg-surface p-4">
           <div className="space-y-1">
             <span className="block text-sm font-medium text-fg-muted">
               {t('inmobiliaria.ai.cobranza.planes.rechazarForm.reasonLabel')}
@@ -699,7 +740,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
       {/* Modificar inline form */}
       {modificarOpen && (
-        <section className="space-y-3 rounded-md border border-border bg-surface p-4">
+        <section ref={formularioDeModificar} className="space-y-3 rounded-md border border-border bg-surface p-4">
           <div>
             <label className="block text-sm font-medium text-fg-muted">
               {t('inmobiliaria.ai.cobranza.planes.modificarForm.descuento')}{' '}
@@ -718,7 +759,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               className="mt-2"
               aria-label={t('inmobiliaria.ai.cobranza.planes.modificarForm.descuento')}
             />
-            <div className="mt-1 flex justify-between text-xs text-fg-muted">
+            <div className="mt-1 flex justify-between text-caption text-fg-muted">
               <span>0%</span>
               <span>{maxDiscount}%</span>
             </div>

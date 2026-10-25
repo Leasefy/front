@@ -1260,7 +1260,7 @@ describe('<StepConfirmImport> — al terminar (TERMINADA sin fallidas)', () => {
     });
   });
 
-  it('con filas listas en ESTE lote todavía no aparece el aviso de carga terminada: hay trabajo acá', async () => {
+  it('con filas listas en ESTE lote todavía no aparece el aviso de carga terminada: hay trabajo aquí', async () => {
     searchParamsState.lote = 'lote-1';
     estadoLoteState.estado = lote({ listos: 679, listas: 679, activados: 2_145 });
     api.resumen.mockResolvedValue({ lote: 'lote-1', total: 2_864, pendientes: 40, listos: 679, activados: 2_145, descartados: 0 });

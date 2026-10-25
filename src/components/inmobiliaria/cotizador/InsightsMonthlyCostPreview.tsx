@@ -66,7 +66,7 @@ export function InsightsMonthlyCostPreview({
         queSon="costos mensuales"
         icono={CurrencyDollar}
         titulo={t('inmobiliaria.ai.cotizador.insights.costPreview.empty')}
-        descripcion="Cuando haya consultas con costo en más de un mes, la tendencia se grafica acá."
+        descripcion="Cuando haya consultas con costo en más de un mes, la tendencia se grafica aquí."
         // COTIZ-16 (19-10-2026): es ir a ver, no crear: sin el «+» de `crear`.
         accion={
           <Button asChild variant="outline">
@@ -122,7 +122,7 @@ export function InsightsMonthlyCostPreview({
       <div className="text-center">
         <Link
           href={COSTOS_HREF}
-          className="text-xs text-primary underline-offset-4 hover:underline font-medium"
+          className="text-caption text-primary underline-offset-4 hover:underline font-medium"
         >
           {t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll')}
         </Link>

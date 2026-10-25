@@ -67,7 +67,7 @@ export function FranjaDeMigracion({
           aria-hidden
           className="hidden shrink-0 text-fg-subtle sm:block"
         />
-        <span className="hidden shrink-0 rounded-full bg-primary-soft px-2.5 py-[3px] text-[12.5px] font-semibold text-primary sm:inline-flex">
+        <span className="hidden shrink-0 rounded-full bg-primary-soft px-2.5 py-[3px] text-[12.5px] font-medium text-primary sm:inline-flex">
           {t("beta.welcome.aviso.pastilla", { n: paso, total })}
         </span>
         <p className="min-w-0 flex-1 text-[13.5px] leading-snug text-fg-muted sm:truncate">

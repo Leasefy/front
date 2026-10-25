@@ -73,11 +73,10 @@ describe('ConciliacionResumen — la franja', () => {
     // franja lo convierte en ruido (Nico: no repetir información).
     expect(document.querySelector('[data-testid="conciliacion-total-en_cola"]')).toBeNull()
     expect(document.querySelector('[data-testid="conciliacion-total-monto"]')!.textContent).toContain(
-      'Monto conciliado',
+      'conciliados',
     )
-    expect(document.querySelector('[data-testid="conciliacion-total-tasa"]')!.textContent).toContain(
-      '92,5 %',
-    )
+    // Revisora r24 (Conciliación #5): la tasa decía lo mismo que la barra; sale del pie.
+    expect(document.querySelector('[data-testid="conciliacion-total-tasa"]')).toBeNull()
   })
 
   it('sin resumen del backend no pinta nada (fail-soft)', async () => {

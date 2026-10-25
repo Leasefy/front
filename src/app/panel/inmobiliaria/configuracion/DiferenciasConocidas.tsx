@@ -148,13 +148,13 @@ export function DiferenciasConocidas() {
       data-testid="diferencias-conocidas"
     >
       <header className="space-y-1">
-        <h3 id="diferencias-conocidas-titulo" className="flex items-center gap-2 text-base font-semibold text-fg">
+        <h3 id="diferencias-conocidas-titulo" className="flex items-center gap-2 text-base font-medium text-fg">
           <Scales className="h-4 w-4" aria-hidden="true" />
           Diferencias conocidas al conciliar
         </h3>
         <p className="text-body-sm text-fg-muted">
           Cuando una aseguradora o una empresa te paga y retiene un porcentaje, o el banco cobra una comisión fija, la
-          línea del extracto trae menos que la suma de los recibos. Si la configuras acá, la conciliación la reconoce y
+          línea del extracto trae menos que la suma de los recibos. Si la configuras aquí, la conciliación la reconoce y
           te propone la combinación con su regla escrita. <strong>Nunca la concilia sola.</strong>
         </p>
       </header>

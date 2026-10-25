@@ -198,6 +198,20 @@ describe('ListasClient', () => {
     expect(estado.textContent).toContain('sin verificar')
   })
 
+  it('con bloqueados abre en «Por revisar» (revisora r24 #2)', async () => {
+    api.listas = vi.fn(() => Promise.resolve(CON_COINCIDENCIA))
+    await pintar()
+    expect($('[data-testid="filtro-por-revisar"]')?.getAttribute('aria-pressed')).toBe('true')
+    expect($('[data-testid="consulta-c-2"]')).not.toBeNull()
+  })
+
+  it('sin listas ni consultas no se pinta la tabla: la lista para empezar ya lo dice (revisora r24 #1)', async () => {
+    api.listas = vi.fn(() => Promise.resolve({ ...SIN_LISTA, sinVerificar: 0, consultas: [] }))
+    await pintar()
+    expect($('[data-testid="parte-consultas"]')).toBeNull()
+    expect($('[data-testid="estado-de-las-listas"]')?.textContent).toContain('no se está comprobando a nadie')
+  })
+
   it('🔴 «cargar una lista» existe: la pantalla lo pedía y no había dónde', async () => {
     await pintar()
     expect($('[data-testid="abrir-cargar-lista"]')).not.toBeNull()

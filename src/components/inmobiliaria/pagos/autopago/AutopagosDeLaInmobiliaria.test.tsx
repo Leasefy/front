@@ -98,7 +98,7 @@ describe('Autopago — cobro automático apagado en el servidor', () => {
     const aviso = q('[data-testid="cobro-automatico"]');
     expect(aviso?.getAttribute('data-activo')).toBe('no');
     expect(aviso?.getAttribute('role')).toBe('status');
-    expect(aviso?.textContent).toContain('El cobro automático está apagado en el servidor.');
+    expect(aviso?.textContent).toContain('Leasefy todavía no prende el cobro automático.');
     expect(aviso?.textContent).toContain('ningún autopago de esta lista se cobra solo');
     expect(aviso?.querySelector('svg')).not.toBeNull();
     // El aviso va ANTES de la lista.
@@ -125,7 +125,7 @@ describe('Autopago — cobro automático prendido', () => {
     const aviso = q('[data-testid="cobro-automatico"]');
     expect(aviso?.getAttribute('data-activo')).toBe('si');
     expect(contenedor.textContent).toContain('El cobro automático está prendido');
-    expect(contenedor.textContent).not.toContain('apagado en el servidor');
+    expect(contenedor.textContent).not.toContain('todavía no prende');
   });
 });
 

@@ -120,7 +120,7 @@ function RecoveryMenuButton({
         {icon}
         <span className="text-sm font-medium truncate">{label}</span>
       </span>
-      <span className="text-[10px] font-normal text-fg-muted shrink-0">
+      <span className="text-caption font-normal text-fg-muted shrink-0">
         {proximamenteLabel}
       </span>
     </Button>
@@ -139,7 +139,7 @@ function RecoveryBlock({
   onGuardarNoAsegurable,
 }: {
   recovery: RecoveryEvent | null
-  onReQuote: () => void
+  onReQuote?: () => void
   /** Optional handlers; omit → the menu item degrades to "Próximamente". */
   onComplementarIngresos?: () => void
   onConsultarOtraEntidad?: () => void
@@ -160,13 +160,13 @@ function RecoveryBlock({
       <div className="px-5 pt-5 pb-4 border-b border-border">
         <div className="flex items-center gap-2.5">
           <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0" />
-          <span className="text-xs font-medium uppercase tracking-wide text-primary">
+          <span className="text-caption font-medium uppercase tracking-wide text-primary">
             {t('inmobiliaria.ai.cotizador.detail.recovery.eyebrow')}
           </span>
         </div>
         <h2
           id="recovery-heading"
-          className="mt-2.5 text-base font-semibold tracking-tight text-fg leading-tight"
+          className="mt-2.5 text-base font-medium tracking-tight text-fg leading-tight"
         >
           {t('inmobiliaria.ai.cotizador.detail.recovery.titulo')}
         </h2>
@@ -193,7 +193,7 @@ function RecoveryBlock({
                     {p.label}
                   </p>
                   {p.detail && (
-                    <p className="mt-0.5 text-xs text-fg-muted">
+                    <p className="mt-0.5 text-caption text-fg-muted">
                       {p.detail}
                     </p>
                   )}
@@ -217,7 +217,7 @@ function RecoveryBlock({
           candidato → nueva consulta; sugerir otro inmueble → matching); the
           rest are optional callbacks that degrade to "Próximamente". */}
       <div className="px-5 pb-4">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted">
+        <p className="mb-2 text-caption font-medium uppercase tracking-wide text-fg-muted">
           {tf('inmobiliaria.ai.cotizador.detail.recovery.menu.eyebrow', 'Otros caminos')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -287,18 +287,20 @@ function RecoveryBlock({
 
       {/* Footer — primary CTA reuses the existing re-quote flow. */}
       <div className="flex items-center justify-between gap-4 border-t border-border px-5 py-4">
-        <span className="text-xs text-fg-muted">
+        <span className="text-caption text-fg-muted">
           {t('inmobiliaria.ai.cotizador.detail.recovery.footerNote')}
         </span>
-        <Button
-          hideArrow
-          onClick={onReQuote}
-          className="group shrink-0"
-        >
-          <ArrowClockwise className="w-4 h-4" />
-          {t('inmobiliaria.ai.cotizador.detail.recovery.recotizar')}
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
-        </Button>
+        {onReQuote ? (
+          <Button
+            hideArrow
+            onClick={onReQuote}
+            className="group shrink-0"
+          >
+            <ArrowClockwise className="w-4 h-4" />
+            {t('inmobiliaria.ai.cotizador.detail.recovery.recotizar')}
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+          </Button>
+        ) : null}
       </div>
     </section>
   )
@@ -342,7 +344,7 @@ function CondicionadoBlock({
           <ListChecks weight="duotone" className="w-4 h-4 text-warning" />
           <h2
             id="condicionado-heading"
-            className="text-base font-semibold text-warning"
+            className="text-base font-medium text-warning"
           >
             {t('inmobiliaria.ai.cotizador.detail.condiciones.titulo')}
           </h2>
@@ -363,7 +365,7 @@ function CondicionadoBlock({
               <p className="text-sm text-fg leading-relaxed">
                 {e.condicion}
               </p>
-              <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-warning">
+              <p className="mt-0.5 text-caption font-medium uppercase tracking-wide text-warning">
                 {e.carrier}
               </p>
             </div>
@@ -380,7 +382,6 @@ function CondicionadoBlock({
             onClick={onResolverCondiciones}
           >
             {t('inmobiliaria.ai.cotizador.detail.condiciones.resolver')}
-            <ArrowRight className="w-4 h-4" />
           </Button>
         ) : (
           <Button
@@ -391,7 +392,7 @@ function CondicionadoBlock({
             title={t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
           >
             {t('inmobiliaria.ai.cotizador.detail.condiciones.resolver')}
-            <span className="text-[11px] font-normal opacity-70">
+            <span className="text-caption font-normal opacity-70">
               · {t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
             </span>
           </Button>
@@ -413,7 +414,7 @@ interface RecoveryAsegurabilidadProps {
   /** All carriers (used to aggregate the condicionado section). */
   carriers: CarrierState[]
   /** Reuses the existing re-quote flow (navigate to wizard with ?from=). */
-  onReQuote: () => void
+  onReQuote?: () => void
   /** Opens the counterfactual modal; omit to degrade the condicionado CTA. */
   onResolverCondiciones?: () => void
   /** Secondary-action menu (visión #10) — optional; omitted items degrade to "Próximamente". */

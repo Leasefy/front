@@ -74,7 +74,7 @@ describe('motivoInvalido', () => {
     ).toMatch(/mayor a 0/);
   });
 
-  it('el principal repetido como copropietario se ataja acá, no en el 400 del back', () => {
+  it('el principal repetido como copropietario se ataja aquí, no en el 400 del back', () => {
     expect(
       motivoInvalido([{ propietarioId: 'p-1', participacionBps: 5000 }], 'p-1'),
     ).toMatch(/repetido/);

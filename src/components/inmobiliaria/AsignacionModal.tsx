@@ -1,5 +1,6 @@
 'use client';
 
+import { Avatar } from '@leasefy/cadence';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { useState, useMemo, useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
@@ -62,15 +63,6 @@ export function AsignacionModal({
     return agentes.filter((a) => a.id !== consignacion.agenteId);
   }, [agentes, consignacion]);
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
 
   // Can confirm
   const canConfirm = selectedAgenteId && selectedAgenteId !== consignacion?.agenteId;
@@ -164,17 +156,7 @@ export function AsignacionModal({
           </label>
           {currentAgente ? (
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white text-sm font-semibold shrink-0">
-                {currentAgente.avatar ? (
-                  <img
-                    src={currentAgente.avatar}
-                    alt={currentAgente.name}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  getInitials(currentAgente.name)
-                )}
-              </div>
+              <Avatar name={currentAgente.name} src={currentAgente.avatar || undefined} size="md" />
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-fg dark:text-white text-sm truncate">
                   {currentAgente.name}

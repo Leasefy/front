@@ -88,8 +88,9 @@ describe('diasParaElSla', () => {
 
 describe('textoSla', () => {
   it('faltan días, hoy, o vencido hace N', () => {
-    expect(textoSla(en(3), 'RECIBIDA', ahora)).toEqual({ texto: '3 días', vencido: false })
-    expect(textoSla(en(1), 'EN_PROCESO', ahora)).toEqual({ texto: '1 día', vencido: false })
+    // Ronda 30 (revisora r27, VOZ §4): «en 3 días», a propósito.
+    expect(textoSla(en(3), 'RECIBIDA', ahora)).toEqual({ texto: 'en 3 días', vencido: false })
+    expect(textoSla(en(1), 'EN_PROCESO', ahora)).toEqual({ texto: 'en 1 día', vencido: false })
     expect(textoSla(en(0), 'ASIGNADA', ahora)).toEqual({ texto: 'Hoy', vencido: true })
     expect(textoSla(en(-1), 'EN_COTIZACION', ahora)).toEqual({ texto: 'Vencido hace 1 día', vencido: true })
     expect(textoSla(en(-4), 'RECIBIDA', ahora)).toEqual({ texto: 'Vencido hace 4 días', vencido: true })

@@ -109,11 +109,11 @@ export function PropuestaYCargoDeLaReparacion({
             </p>
           )}
           {pendiente.nota && (
-            <p className="text-xs italic text-fg-muted" data-testid="propuesta-nota">
+            <p className="text-caption italic text-fg-muted" data-testid="propuesta-nota">
               «{pendiente.nota}»
             </p>
           )}
-          <p className="text-xs text-fg-muted">{t(k('propuesta.aprobacionHumana'))}</p>
+          <p className="text-caption text-fg-muted">{t(k('propuesta.aprobacionHumana'))}</p>
           {onRevisar && cotizacion && (
             <Button
               size="sm"
@@ -156,11 +156,11 @@ export function PropuestaYCargoDeLaReparacion({
           {aprobacionVisible.estado === 'RECHAZADA' && (
             <>
               {aprobacionVisible.motivoDeRechazo && (
-                <p className="text-xs italic text-fg-muted" data-testid="aprobacion-motivo-de-rechazo">
+                <p className="text-caption italic text-fg-muted" data-testid="aprobacion-motivo-de-rechazo">
                   «{aprobacionVisible.motivoDeRechazo}»
                 </p>
               )}
-              <p className="text-xs text-fg">{t(k('aprobacionDelPropietario.queSigue'))}</p>
+              <p className="text-caption text-fg">{t(k('aprobacionDelPropietario.queSigue'))}</p>
               {onRevisar && (
                 <Button
                   size="sm"
@@ -174,7 +174,7 @@ export function PropuestaYCargoDeLaReparacion({
             </>
           )}
           {aprobacionVisible.estado === 'EMERGENCIA' && aprobacionVisible.aviso && (
-            <details className="text-xs text-fg-muted" data-testid="aprobacion-aviso">
+            <details className="text-caption text-fg-muted" data-testid="aprobacion-aviso">
               <summary className="cursor-pointer text-fg">
                 {t(k('aprobacionDelPropietario.avisoGenerado'))}: {aprobacionVisible.aviso.asunto}
               </summary>

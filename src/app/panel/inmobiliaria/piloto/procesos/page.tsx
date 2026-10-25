@@ -21,11 +21,9 @@
 
 import { useCallback, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft } from '@phosphor-icons/react'
 import { MonoLabel } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
 import { usePilotoProcesos } from '@/lib/hooks/piloto/use-piloto-procesos'
 import { usePilotoCatalogo } from '@/lib/hooks/piloto/use-piloto-catalogo'
@@ -33,6 +31,8 @@ import { PilotoProcesos } from '@/components/inmobiliaria/piloto/PilotoProcesos'
 import { PilotoCatalogo } from '@/components/inmobiliaria/piloto/PilotoCatalogo'
 import { PilotoCajon, type PilotoApertura } from '@/components/inmobiliaria/piloto/PilotoCajon'
 import type { TipoDeProceso } from '@/lib/api/piloto'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { BackButton } from '@/components/ui/back-button'
 
 function PilotoProcesosContent() {
   const { t } = useI18n()
@@ -48,22 +48,14 @@ function PilotoProcesosContent() {
 
   return (
     <div className="space-y-8 p-6 lg:p-8" data-testid="piloto-procesos-page">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-1">
-          <Button asChild variant="link" size="sm" hideArrow className="-ml-2 h-auto px-2 text-fg-muted">
-            <Link href="/panel/inmobiliaria/piloto">
-              <ArrowLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-              {t('inmobiliaria.piloto.procesos.volver')}
-            </Link>
-          </Button>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.piloto.catalogo.titulo')}
-          </h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            {t('inmobiliaria.piloto.catalogo.descripcion')}
-          </p>
-        </div>
-      </header>
+      <div className="space-y-3">
+        <BackButton href="/panel/inmobiliaria/piloto" label={t('inmobiliaria.piloto.procesos.volver')} />
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.nav.secAgentes')}
+          titulo={t('inmobiliaria.piloto.catalogo.titulo')}
+          descripcion={t('inmobiliaria.piloto.catalogo.descripcion')}
+        />
+      </div>
 
       <PilotoCatalogo
         data={catalogo.data}

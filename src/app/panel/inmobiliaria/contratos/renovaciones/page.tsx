@@ -5,7 +5,8 @@ import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { RenovacionesMarcadas } from '@/components/inmobiliaria/RenovacionesMarcadas';
 import { useState, useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
-import { Eyebrow } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useI18n } from '@/lib/i18n';
 import { useRenovaciones, renovacionesApi } from '@/lib/hooks/useInmobiliaria';
@@ -93,27 +94,34 @@ function RenovacionesContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Encabezado — el mismo de Contratos (eyebrow + título + qué es). */}
-      <header className="space-y-1">
-        <Eyebrow>Portafolio</Eyebrow>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.nav.renovaciones')}
-        </h1>
-        {/*
-          🔴 19-09 (visto en el navegador): decía «los contratos que entran en
-          sus últimos 90 días» y en la agencia de QA había ocho con MÁS de 90.
-          No es un error de datos: los 90 días
-          (`DIAS_DE_VENTANA_DE_RENOVACION`) son la ventana con la que el cron
-          CREA la renovación; una vez abierta se queda en la lista hasta que se
-          firma o se cierra, aunque el vencimiento se aleje. La lista son las
-          renovaciones abiertas, y eso es lo que ahora dice.
-        */}
-        <p className="text-sm text-muted-foreground max-w-2xl">
-          Las renovaciones abiertas y cómo va cada una: propuesta, aceptación
-          del inquilino y firma. Un contrato entra solo cuando le quedan 90
-          días —el preaviso de la Ley 820— y sigue acá hasta que se cierra.
-        </p>
-      </header>
+      {/*
+        El encabezado de todas las pantallas (revisión de Operación, 21-10): la sección
+        es «Contratos» (el grupo del menú), una línea de para qué es, y la ley en
+        «¿Cómo funciona?».
+
+        🔴 19-09 (visto en el navegador): los 90 días (`DIAS_DE_VENTANA_DE_RENOVACION`)
+        son la ventana con la que el cron CREA la renovación; una vez abierta se queda
+        en la lista hasta que se firma o se cierra, aunque el vencimiento se aleje.
+      */}
+      <EncabezadoDePantalla
+        seccion="Operación"
+        titulo={t('inmobiliaria.nav.renovaciones')}
+        descripcion="Las renovaciones abiertas y en qué paso va cada una: propuesta, respuesta del inquilino y firma."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: renovaciones" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                Un contrato entra solo cuando le quedan 90 días —el preaviso de la Ley 820— y sigue aquí hasta que la
+                renovación se firma o se cierra, aunque el vencimiento se aleje.
+              </p>
+              <p>
+                Toca una renovación para abrir su cajón: ahí se manda la propuesta, se registra la respuesta del
+                inquilino y se sube el contrato firmado.
+              </p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
 
       {/* N3: sin el IPC del año que rige, las renovaciones salen con el mismo
           canon. Se avisa arriba de la tabla, antes de que pase. */}
@@ -125,7 +133,7 @@ function RenovacionesContent() {
       {/* La carga, el fallo y el vacío viven DENTRO de la tarjeta de la tabla,
           como en Contratos: nada suelto por fuera.
 
-          🔴 UNA sola prop de apertura (19-09). Acá había cinco
+          🔴 UNA sola prop de apertura (19-09). Aquí había cinco
           —`onStartRenewal`, `onNotifyTenant`, `onViewDetails`,
           `onCalculateIPC`, `onViewHistory`— y las cinco apuntaban a este
           mismo `openWorkflow`. Del otro lado eso era un menú con cinco items
@@ -140,15 +148,20 @@ function RenovacionesContent() {
         onAbrir={openWorkflow}
         marcadas={puedeProponerEnBloque ? marcadas : undefined}
         onMarcar={puedeProponerEnBloque ? marcar : undefined}
+        pie={
+          /* Acciones masivas (Nico, 10-10-2026): la propuesta con el IPC a
+             varias. En el pie de la MISMA tabla, como en Contratos (r25). */
+          /* Revisora r27: «Marca renovaciones…» sólo sobraba como renglón
+             suelto; la barra sale al marcar la primera (y sube animada). */
+          puedeProponerEnBloque && renovaciones.length > 0 && marcadas.size > 0 ? (
+            <RenovacionesMarcadas
+              marcadas={renovaciones.filter((r) => marcadas.has(r.id))}
+              onQuitar={quitarLaSeleccion}
+              onCambiaron={() => void recargarRenovaciones()}
+            />
+          ) : null
+        }
       />
-      {/* Acciones masivas (Nico, 10-10-2026): la propuesta con el IPC a varias. */}
-      {puedeProponerEnBloque && renovaciones.length > 0 && (
-        <RenovacionesMarcadas
-          marcadas={renovaciones.filter((r) => marcadas.has(r.id))}
-          onQuitar={quitarLaSeleccion}
-          onCambiaron={() => void recargarRenovaciones()}
-        />
-      )}
 
       {/* Renovacion Workflow Sheet */}
       {selectedRenovacion && (

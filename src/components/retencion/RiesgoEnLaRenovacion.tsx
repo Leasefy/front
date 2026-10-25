@@ -58,7 +58,7 @@ export function RiesgoEnLaRenovacion({
       data-testid="renovacion-riesgo-vinci"
     >
       <div>
-        <p className="text-sm font-semibold text-fg">Riesgo de que se vaya · Vinci</p>
+        <p className="text-sm font-medium text-fg">Riesgo de que se vaya · Vinci</p>
         <p className="text-caption text-fg-muted">
           {riesgo
             ? `Con las señales del ERP (mora de las cuotas, PQRS, mantenimientos, fin, incremento, giros). En riesgo desde ${riesgo.umbral}/100${riesgo.medidoEn ? ` (medido ${fechaYHora(riesgo.medidoEn)})` : ''}.`

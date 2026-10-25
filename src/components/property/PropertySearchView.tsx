@@ -277,7 +277,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
       <Chip
         selected={!!selectedValue}
         onClick={() => setActiveFilter(activeFilter === id ? null : id)}
-        className="whitespace-nowrap"
+        className="whitespace-nowrap [@media(pointer:coarse)]:min-h-11"
         aria-expanded={activeFilter === id}
       >
         <span className="inline-flex items-center gap-1.5">
@@ -480,7 +480,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
               {/* Conteo + orden, a la derecha de la misma fila. */}
               <div className="ml-auto flex items-center gap-3">
                 <p className="text-sm text-fg-muted whitespace-nowrap">
-                  <span className="font-mono tabular-nums font-medium text-fg">{total}</span> {total === 1 ? 'propiedad' : 'propiedades'}
+                  <span className="font-mono tabular-nums font-medium text-fg">{total}</span> {total === 1 ? 'inmueble' : 'inmuebles'}
                 </p>
                 <div className="relative">
                   <Button

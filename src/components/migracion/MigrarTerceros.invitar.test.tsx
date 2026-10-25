@@ -213,7 +213,7 @@ describe('MigrarTerceros — propietarios', () => {
     api.resumen.mockResolvedValue(lote('PROPIETARIO'));
   });
 
-  it('no ofrece la casilla: un propietario no recibe invitación por acá', async () => {
+  it('no ofrece la casilla: un propietario no recibe invitación por aquí', async () => {
     await pintar('PROPIETARIO');
 
     expect(container.querySelector('[data-testid="invitar-al-crear"]')).toBeNull();

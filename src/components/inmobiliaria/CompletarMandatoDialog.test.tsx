@@ -398,10 +398,12 @@ describe('<CompletarMandatoDialog> — varios dueños (Nico, 2026-09-03)', () =>
     expect(payload.copropietarios).toBeUndefined();
   });
 
-  it('el diálogo es ancho: tres columnas de dueños con su propio scroll', () => {
+  it('el diálogo es ancho: tres columnas de dueños, sin caja con scroll propio', () => {
     montar();
     const grid = document.body.querySelector('[data-testid="mandato-propietarios-grid"]');
-    expect(grid?.className).toContain('overflow-y-auto');
+    // Ronda 30 (revisora r27, Nuevo mandato): sin scroll propio —a 1440 cortaba la sexta fila a la mitad—;
+    // el tope lo pone la lista visible (9, o 30 al buscar).
+    expect(grid?.className ?? '').not.toContain('overflow-y-auto');
     expect(grid?.querySelector('ul')?.className).toContain('lg:grid-cols-3');
   });
 });

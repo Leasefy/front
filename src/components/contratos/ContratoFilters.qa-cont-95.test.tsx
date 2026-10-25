@@ -27,7 +27,7 @@ describe('<ContratoFilters> · nombre accesible de cada filtro', () => {
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-      root!.render(<ContratoFilters filtros={FILTROS_INICIALES} onFiltros={vi.fn()} totalFiltrado={3} total={3} />)
+      root!.render(<ContratoFilters filtros={FILTROS_INICIALES} onFiltros={vi.fn()} totalFiltrado={3} conFiltros={false} onLimpiar={vi.fn()} />)
     })
     const nombre = (id: string) => document.body.querySelector(`[data-testid="${id}"]`)?.getAttribute('aria-label')
     expect(nombre('filtro-estado')).toBe('Filtrar por estado')

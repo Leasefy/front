@@ -35,7 +35,7 @@
 import { useMemo, useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
-import { Check, FileText, ArrowRight, SealCheck } from '@phosphor-icons/react';
+import { Check, FileText, SealCheck } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { SignaturePad } from '@/components/contract/SignaturePad';
@@ -200,22 +200,22 @@ export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcc
       <div className={cn('space-y-4', className)}>
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-primary-soft flex items-center justify-center flex-shrink-0">
             <SealCheck className="w-5 h-5 text-primary" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="font-semibold text-fg dark:text-white">
+            <h3 className="font-medium text-fg">
               {es ? 'Firmar para aceptar' : 'Sign to accept'}
             </h3>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle">
+            <p className="text-caption text-fg-muted">
               {es ? 'Firma electrónica del acuerdo' : 'Electronic signature of the agreement'}
             </p>
           </div>
         </div>
 
         {/* Factual "lo aprobó tu inmobiliaria" banner — the tenant only accepts. */}
-        <div className="rounded-xl border border-primary/20 bg-primary-soft p-4">
-          <p className="text-sm text-fg dark:text-white">
+        <div className="rounded-lg border border-primary/20 bg-primary-soft p-4">
+          <p className="text-sm text-fg">
             {es
               ? 'Este acuerdo ya fue aprobado por tu inmobiliaria. Al firmar, confirmas que lo aceptas.'
               : 'This agreement was already approved by your agency. By signing, you confirm that you accept it.'}
@@ -226,20 +226,20 @@ export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcc
         <SignaturePad onChange={setSignatureData} disabled={isAccepting} />
 
         {/* Consent checkboxes — single card with dividers (mirrors SignatureForm) */}
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface overflow-hidden">
+        <div className="rounded-lg border border-border bg-surface overflow-hidden">
           {consents.map((c, i) => (
             <div key={i}>
-              {i > 0 && <div className="border-t border-border dark:border-border-strong" />}
+              {i > 0 && <div className="border-t border-border" />}
               <label
                 className={cn(
                   'flex cursor-pointer items-start gap-3 p-4 transition-all',
-                  c.checked ? 'bg-primary-soft/50' : 'hover:bg-surface-muted dark:hover:bg-ink/50',
+                  c.checked ? 'bg-primary-soft/50' : 'hover:bg-surface-muted',
                 )}
               >
                 <div
                   className={cn(
                     'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
-                    c.checked ? 'bg-primary border-primary/30' : 'border-border dark:border-border-strong',
+                    c.checked ? 'bg-primary border-primary/30' : 'border-border',
                   )}
                 >
                   {c.checked && <Check className="w-3 h-3 text-white" aria-hidden="true" />}
@@ -251,7 +251,7 @@ export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcc
                   disabled={isAccepting}
                   className="sr-only"
                 />
-                <span className={cn('text-sm transition-colors', c.checked ? 'text-fg dark:text-white' : 'text-fg-muted dark:text-fg-subtle')}>
+                <span className={cn('text-sm transition-colors', c.checked ? 'text-fg' : 'text-fg-muted')}>
                   {c.label}
                 </span>
               </label>
@@ -275,13 +275,12 @@ export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcc
             <>
               <FileText className="w-4 h-4" aria-hidden="true" />
               {es ? 'Firmar y aceptar' : 'Sign and accept'}
-              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </>
           )}
         </Button>
 
         {/* Legal footnote (Ley 527/1999 e-signature) */}
-        <p className="text-center text-[11px] text-fg-muted dark:text-fg-subtle">
+        <p className="text-center text-[11px] text-fg-muted">
           {es
             ? 'Firma válida según Ley 527/1999 · Verificación por correo requerida'
             : 'Signature valid under Law 527/1999 · Email verification required'}

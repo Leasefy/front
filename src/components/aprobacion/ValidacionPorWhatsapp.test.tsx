@@ -114,7 +114,8 @@ describe('<ValidacionPorWhatsapp>', () => {
     await clic('ya-la-valide')
 
     expect(container.querySelector('[data-testid="validacion-recibida"]')?.textContent).toContain(
-      '¡Recibimos tu validación!',
+      // Ronda 30 (a propósito): sin los signos de exclamación.
+      'Recibimos tu validación',
     )
   })
 

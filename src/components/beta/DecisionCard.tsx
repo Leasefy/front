@@ -23,9 +23,9 @@ const RECOMMENDATION_STYLES: Record<
   },
   neutral: {
     labelKey: 'beta.decisions.neutral',
-    bg: 'bg-neutral-50 dark:bg-neutral-500/10',
-    text: 'text-neutral-600 dark:text-neutral-400',
-    border: 'border-neutral-200 dark:border-neutral-500/30',
+    bg: 'bg-neutral-50',
+    text: 'text-neutral-600',
+    border: 'border-neutral-200',
   },
   not_recommended: {
     labelKey: 'beta.decisions.notRecommended',
@@ -52,8 +52,8 @@ const CATEGORY_BG: Record<string, string> = {
   emerald: 'bg-success-soft text-success',
   blue: 'bg-primary-soft text-primary',
   amber: 'bg-warning-soft text-warning',
-  purple: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
-  pink: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+  purple: 'bg-neutral-100 text-neutral-600',
+  pink: 'bg-neutral-100 text-neutral-600',
   indigo: 'bg-primary-soft text-primary',
 };
 
@@ -97,11 +97,11 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
     <div
       className={cn(
         'ml-9',
-        'border border-neutral-200/60 dark:border-border/50',
+        'border border-neutral-200/60',
         'border-l-[3px]',
         borderColor,
         'rounded-md overflow-hidden',
-        'bg-white/80 dark:bg-card/80',
+        'bg-white/80',
         'transition-all duration-200',
         className
       )}
@@ -109,7 +109,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
       {/* Header */}
       <div className="px-3.5 pt-3 pb-2">
         <div className="flex items-center gap-2 mb-1">
-          <h4 className="text-sm font-semibold text-foreground flex-1">
+          <h4 className="text-sm font-medium text-foreground flex-1">
             {decision.title}
           </h4>
           <span
@@ -121,7 +121,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
             {meta.label}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-caption text-muted-foreground leading-relaxed">
           {decision.description}
         </p>
       </div>
@@ -145,9 +145,9 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
                 'transition-all duration-200',
                 // Interactive state
                 !isResolved && [
-                  'border-neutral-200 dark:border-border/60',
-                  'hover:border-neutral-300 dark:hover:border-border',
-                  'hover:bg-neutral-50/80 dark:hover:bg-neutral-800/30',
+                  'border-neutral-200',
+                  'hover:border-neutral-300',
+                  'hover:bg-neutral-50/80',
                   'cursor-pointer',
                 ],
                 // Selected state
@@ -158,7 +158,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
                 ],
                 // Non-selected (dimmed) state
                 isNotSelected && [
-                  'border-neutral-100 dark:border-border/30',
+                  'border-neutral-100',
                   'opacity-50',
                   'cursor-default',
                 ]
@@ -174,7 +174,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-medium text-foreground">
+                    <span className="text-caption font-medium text-foreground">
                       {option.label}
                     </span>
                     {/* Recommendation badge */}

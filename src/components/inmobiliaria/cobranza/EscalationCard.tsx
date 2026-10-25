@@ -115,11 +115,11 @@ export function EscalationCard({
       {/* Header: urgency + relative time */}
       <div className="flex items-center justify-between gap-2">
         <span
-          className={`inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 ${urgencyClass.bg} ${urgencyClass.text} ${urgencyClass.ring}`}
+          className={`inline-flex items-center gap-1 text-caption font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 ${urgencyClass.bg} ${urgencyClass.text} ${urgencyClass.ring}`}
         >
           {urgencyLabel}
         </span>
-        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+        <span className="inline-flex items-center gap-1 text-caption text-muted-foreground tabular-nums">
           <Clock className="w-3 h-3" aria-hidden="true" />
           {relative(escalation.created_at, locale)}
         </span>
@@ -132,10 +132,10 @@ export function EscalationCard({
         className="w-full text-left space-y-1 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm"
         aria-label={`Open escalation ${escalation.id}`}
       >
-        <p className="text-sm font-semibold text-foreground tabular-nums">
+        <p className="text-sm font-medium text-foreground tabular-nums">
           {debtorLabel}
         </p>
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-caption text-muted-foreground leading-relaxed">
           {/* La razón en palabras, no el slug (forced_transition_escalate_human). */}
           {escalationReasonLabel(escalation.reason) ?? truncate(escalation.reason, 80)}
         </p>

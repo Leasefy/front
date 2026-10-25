@@ -255,6 +255,94 @@ export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPoliti
 }
 
 /**
+ * La HOME (Ronda 30, Nico 23-10-2026: «la de producto en vivo debe ser la
+ * landing principal»). Es una página HTML estática, `public/landing/index.html`,
+ * que no arma React: no lleva nonce. Sus scripts son archivos nuestros
+ * (`/landing/js/*`, mismo origen) más las librerías de animación con versión
+ * FIJA de dos CDN (GSAP y ScrollTrigger de cdnjs; Lenis y Motion de jsDelivr),
+ * y las letras (Host Grotesk, DM Mono) vienen de Google Fonts. Esta política
+ * abre SÓLO eso —las carpetas exactas de esas versiones, no los CDN enteros— y
+ * SÓLO para la home: el resto del sitio sigue con la de nonce. No habla con
+ * ningún back (`connect-src 'self'`), no enmarca nada y sus imágenes son propias.
+ */
+export const RUTA_DE_LA_HOME = '/landing/index.html';
+
+export const TERCEROS_DE_LA_HOME = {
+  scripts: [
+    'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/',
+    'https://cdn.jsdelivr.net/npm/lenis@1.1.13/',
+    'https://cdn.jsdelivr.net/npm/motion@12.23.12/',
+  ],
+  estilos: ['https://fonts.googleapis.com'],
+  letras: ['https://fonts.gstatic.com'],
+} as const;
+
+/**
+ * Las INTERNAS de la home (Ronda 30): las páginas a las que lleva el mega menú
+ * «Producto» — las ocho de producto (y su índice, `/productos`) y las cuatro por
+ * público. Son páginas estáticas como la home (`public/internas/…`, sin React),
+ * con las MISMAS librerías y letras: llevan la política de la home y nada más.
+ */
+export const PRODUCTOS_DE_LAS_INTERNAS = ['crm', 'erp', 'cobranza', 'inquilino', 'avaluos', 'conciliacion', 'matching', 'asegurabilidad'] as const;
+export const PUBLICOS_DE_LAS_INTERNAS = ['inmobiliarias', 'propietarios', 'inquilinos', 'agentes'] as const;
+export const RUTAS_DE_LAS_INTERNAS = {
+  productos: '/internas/productos/index.html',
+  para: '/internas/para/index.html',
+} as const;
+
+/** La página estática que sirve esta ruta (sin prefijo de idioma), o `null` si no es una interna. */
+export function internaDeLaRuta(ruta: string): string | null {
+  if (ruta === '/productos') return RUTAS_DE_LAS_INTERNAS.productos;
+  const m = /^\/(productos|para)\/([a-z]+)$/.exec(ruta);
+  if (!m) return null;
+  if (m[1] === 'productos') return (PRODUCTOS_DE_LAS_INTERNAS as readonly string[]).includes(m[2]) ? RUTAS_DE_LAS_INTERNAS.productos : null;
+  return (PUBLICOS_DE_LAS_INTERNAS as readonly string[]).includes(m[2]) ? RUTAS_DE_LAS_INTERNAS.para : null;
+}
+
+/**
+ * La página YA ARMADA para buscadores que sirve esta ruta en este idioma (SEO, Nico 24-10-2026: «optimiza toda la
+ * landing para SEO, para que podamos aparecer en todo lado»): `public/paginas/<idioma>/…`, una por dirección, con su
+ * título, canonical, hreflang, JSON-LD, el contenido de su vista y el inglés en el HTML. La arma
+ * `scripts/landing/armar-paginas.mjs` desde las fuentes de arriba; `null` si la ruta no es de la landing estática.
+ */
+export function paginaArmada(ruta: string, idioma: 'es' | 'en'): string | null {
+  if (ruta === '/' || ruta === '') return `/paginas/${idioma}/index.html`;
+  if (internaDeLaRuta(ruta) === null) return null;
+  if (ruta === '/productos') return `/paginas/${idioma}/productos/index.html`;
+  return `/paginas/${idioma}${ruta}.html`;
+}
+
+/** ¿Esta ruta (sin prefijo de idioma) es la home, una de sus internas o un archivo de ellas? */
+export function esDeLaHome(ruta: string): boolean {
+  return ruta === '/' || ruta === '' || ruta.startsWith('/landing/') || ruta.startsWith('/internas/') || ruta.startsWith('/paginas/') || internaDeLaRuta(ruta) !== null;
+}
+
+export function politicaDeLaHome(env: Pick<EntornoDeLaPolitica, 'desarrollo' | 'soloReporte'>): string {
+  const directivas: Array<[string, string[]]> = [
+    ['default-src', ["'self'"]],
+    ['script-src', ["'self'", ...TERCEROS_DE_LA_HOME.scripts, "'report-sample'"]],
+    // Los `style="…"` del marcado; un estilo no ejecuta código (igual que en el resto).
+    ['style-src', ["'self'", "'unsafe-inline'", ...TERCEROS_DE_LA_HOME.estilos]],
+    ['font-src', ["'self'", 'data:', ...TERCEROS_DE_LA_HOME.letras]],
+    ['img-src', ["'self'", 'data:', 'blob:']],
+    ['media-src', ["'self'"]],
+    ['connect-src', ["'self'"]],
+    ['worker-src', ["'self'", 'blob:']],
+    ['frame-src', ["'none'"]],
+    ['frame-ancestors', ["'self'"]],
+    ['object-src', ["'none'"]],
+    ['base-uri', ["'self'"]],
+    ['form-action', ["'self'"]],
+    ['manifest-src', ["'self'"]],
+  ];
+  const partes = directivas.map(([nombre, valores]) => `${nombre} ${valores.join(' ')}`);
+  if (!env.desarrollo && !env.soloReporte) partes.push('upgrade-insecure-requests');
+  partes.push(`report-uri ${RUTA_DE_REPORTES_CSP}`);
+  partes.push(`report-to ${GRUPO_DE_REPORTES_CSP}`);
+  return partes.join('; ');
+}
+
+/**
  * ¿Obligatoria o sólo reporte? Por defecto REPORTE: pasar a obligatoria es una
  * decisión que se toma mirando `/api/csp-reporte` limpio, no un efecto
  * colateral de un despliegue. `CSP_MODO=obligatoria` la activa.

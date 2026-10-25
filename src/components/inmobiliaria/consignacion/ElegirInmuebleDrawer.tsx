@@ -9,7 +9,7 @@
  * inmueble nuevo o uno existente; si es existente le muestras en un drawer
  * los que tenemos con un buscador para que pueda decir cuál es.»
  *
- * Antes «Nueva consignación» sólo sabía crear un inmueble desde cero. Quien
+ * Antes «Nuevo mandato» sólo sabía crear un inmueble desde cero. Quien
  * migró su portafolio por Excel o por enlace ya tiene el inmueble cargado:
  * volver a escribirlo entero es cargarlo dos veces.
  *
@@ -20,6 +20,7 @@
 
 import { useMemo, useState } from 'react';
 import { MagnifyingGlass, HouseLine, CaretRight } from '@phosphor-icons/react';
+import { Ilustracion } from '@leasefy/cadence';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
@@ -220,9 +221,8 @@ export function ElegirInmuebleDrawer({
 function Vacio({ titulo, detalle, testId }: { titulo: string; detalle: string; testId: string }) {
   return (
     <div className="px-6 py-12 text-center" data-testid={testId}>
-      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted text-fg-subtle">
-        <HouseLine className="h-6 w-6" />
-      </div>
+      {/* Nico (23-10-2026): todo vacío con su ilustración 3D. */}
+      <Ilustracion nombre="casa" tamano={112} className="mx-auto mb-2" />
       <p className="text-sm font-medium text-fg">{titulo}</p>
       <p className="mt-1 text-sm text-fg-muted">{detalle}</p>
     </div>

@@ -326,7 +326,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
               crédito lado a lado, el detalle abajo); desde `md`, la grilla. */}
           <div className="md:overflow-x-auto">
             <div className="space-y-2 md:min-w-[640px]">
-              <div className="hidden grid-cols-[minmax(220px,2fr)_150px_150px_minmax(140px,1.4fr)_40px] gap-2 px-1 font-mono text-[11px] uppercase tracking-wide text-fg-muted md:grid">
+              <div className="hidden grid-cols-[minmax(220px,2fr)_150px_150px_minmax(140px,1.4fr)_40px] gap-2 px-1 font-mono text-caption uppercase tracking-wide text-fg-muted md:grid">
                 <span>Cuenta</span>
                 <span className="text-right">Débito</span>
                 <span className="text-right">Crédito</span>

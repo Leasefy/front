@@ -37,7 +37,7 @@ vi.mock('@/lib/api/client', () => ({ getAccessToken: () => null, hayRespuestaDeS
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('@/components/settings/MfaSetupSection', () => ({
-  MfaSetupSection: () => <div data-testid="mfa-setup">acá se inscribe</div>,
+  MfaSetupSection: () => <div data-testid="mfa-setup">aquí se inscribe</div>,
 }));
 
 import MfaVerifyPage from './mfa-verify/page';

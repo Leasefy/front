@@ -25,6 +25,14 @@ describe('destinoDeVolver — el «Volver» de Reglas de mora devuelve a donde e
     });
   });
 
+  it('r25: desde el aviso de la Cartera vuelve a la Cartera (sólo esa ruta exacta)', () => {
+    expect(destinoDeVolver('/panel/inmobiliaria/pagos/cartera')).toEqual({
+      href: '/panel/inmobiliaria/pagos/cartera',
+      label: 'Volver a Cartera',
+    });
+    expect(destinoDeVolver('/panel/inmobiliaria/pagos/cartera/x').label).toBe('Volver a cobros');
+  });
+
   it('otra ruta del panel que no es un contrato sigue yendo a Cobros', () => {
     expect(destinoDeVolver('/panel/inmobiliaria/inquilinos')).toEqual({
       href: '/panel/inmobiliaria/pagos/cartera/cobros',

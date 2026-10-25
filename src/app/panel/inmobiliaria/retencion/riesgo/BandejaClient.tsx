@@ -11,10 +11,15 @@
  * larga del encabezado se fue: repetía las cuentas que ya dicen los filtros
  * («Inquilinos (8)»); lo único que no decían —cuándo midió— quedó en la
  * cabecera de la tarjeta.
+ *
+ * 22-10-2026 · glow up: el encabezado común (vía `CabeceraDeVinci`) con cuándo midió debajo; las
+ * pestañas de la casa con su conteo DENTRO de la tarjeta (antes un segmentado); sin la cabecera «Casos»
+ * que repetía el título; sin «ERP».
  */
 import { useMemo, useState } from 'react'
-import { SegmentedControl } from '@leasefy/cadence'
-import { HeartStraight, UsersThree } from '@phosphor-icons/react'
+import { HeartStraight, MagnifyingGlass } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { Checkbox } from '@/components/ui/checkbox'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -22,7 +27,7 @@ import { SinDatos } from '@/components/estado/SinDatos'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { useRiesgoDeVinci } from '@/lib/hooks/retencion/use-vinci'
 import { fechaYHora } from '@/components/retencion/vinci'
-import { CabeceraDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
+import { CabeceraDeVinci } from '@/components/retencion/piezas'
 import { TablaDeCasos } from '@/components/retencion/TablaDeCasos'
 import type { Poblacion } from '@/lib/types/retencion'
 import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
@@ -35,19 +40,23 @@ export default function BandejaClient() {
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [soloEnRiesgo, setSoloEnRiesgo] = useState(true)
 
-  const casos = useMemo(
-    () =>
-      (data?.casos ?? [])
-        .filter((c) => (filtro === 'todos' ? true : c.poblacion === filtro))
-        .filter((c) => (soloEnRiesgo ? c.enRiesgo : true))
-        .sort((a, b) => b.puntaje - a.puntaje),
-    [data, filtro, soloEnRiesgo],
-  )
+  // Ronda 30 (revisora r27, regla de Nico: toda tabla con buscador): por el nombre de la persona.
+  const [busqueda, setBusqueda] = useState('')
+  const casos = useMemo(() => {
+    const plano = (v?: string | null) =>
+      (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const q = plano(busqueda.trim())
+    return (data?.casos ?? [])
+      .filter((c) => (filtro === 'todos' ? true : c.poblacion === filtro))
+      .filter((c) => (soloEnRiesgo ? c.enRiesgo : true))
+      .filter((c) => !q || plano(c.nombre).includes(q) || c.contratos.some((k) => plano(k.inmueble).includes(q)))
+      .sort((a, b) => b.puntaje - a.puntaje)
+  }, [data, filtro, soloEnRiesgo, busqueda])
   // La paginación de Contratos: sin el filtro del umbral son todos los que
   // Vinci midió (cientos en una inmobiliaria grande). Cambiar un filtro vuelve
   // a la página 1.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(casos, {
-    resetKey: `${filtro}:${soloEnRiesgo}`,
+    resetKey: `${filtro}:${soloEnRiesgo}:${busqueda}`,
   })
   const cuenta = (p: Filtro) =>
     (data?.casos ?? []).filter((c) => (p === 'todos' || c.poblacion === p) && (soloEnRiesgo ? c.enRiesgo : true)).length
@@ -58,7 +67,7 @@ export default function BandejaClient() {
   if (esRetencionApagada(error)) {
     return (
       <div className="space-y-6 p-6 lg:p-8">
-        <CabeceraDeVinci titulo="Casos en riesgo" />
+        <CabeceraDeVinci titulo="Riesgo de salida" />
         <RetencionApagada />
       </div>
     )
@@ -67,9 +76,16 @@ export default function BandejaClient() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <CabeceraDeVinci
-        titulo="Casos en riesgo"
-        descripcion="Propietarios que pueden sacar su inmueble e inquilinos que pueden no renovar, con qué señal del ERP sumó cuánto."
-      />
+        titulo="Riesgo de salida"
+        descripcion="Propietarios que pueden sacar su inmueble e inquilinos que pueden no renovar, con qué señal sumó cuánto."
+      >
+        {data?.disponible ? (
+          <p className="text-caption text-fg-muted" data-testid="vinci-casos-medido">
+            {data.deLoGuardado ? `Medido ${fechaYHora(data.leidoEn)} (el último barrido)` : `Medido ahora (${fechaYHora(data.leidoEn)})`}
+            {` · en riesgo desde ${data.umbral}/100 · toca un caso para ver por qué, qué ofrecerle y el plan`}
+          </p>
+        ) : null}
+      </CabeceraDeVinci>
 
       <EstadoDeDatos
         cargando={isLoading && !data}
@@ -84,37 +100,44 @@ export default function BandejaClient() {
               queSon="casos"
               icono={HeartStraight}
               titulo="Vinci no puede medir todavía"
-              descripcion={`Faltan datos del ERP (${data?.faltan.join(', ') ?? ''}). No se muestran casos inventados.`}
+              descripcion={`Faltan datos (${data?.faltan.join(', ') ?? ''}). No se muestran casos inventados.`}
             />
           </div>
         }
       >
         {data ? (
-          <TarjetaDeVinci
-            id="vinci-casos"
-            icono={UsersThree}
-            titulo="Casos"
-            descripcion={`${data.deLoGuardado ? `Medido ${fechaYHora(data.leidoEn)} (el último barrido)` : `Medido ahora (${fechaYHora(data.leidoEn)})`}. En riesgo desde ${data.umbral}/100. Toca un caso para ver por qué, qué ofrecerle y el plan.`}
-            cuerpo={false}
+          <section
+            aria-label="Casos"
+            className="overflow-hidden rounded-lg border border-border bg-card"
+            data-testid="vinci-casos-tarjeta"
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
-              <div className="max-w-full overflow-x-auto">
-                {/* `sm` y sin partir: a 390 px los tres rótulos se partían en dos
-                    renglones («Todos / (155)»); si no caben, el riel se corre. */}
-                <SegmentedControl<Filtro>
-                  size="sm"
-                  className="[&_button]:whitespace-nowrap"
-                  aria-label="Inquilinos o propietarios"
-                  value={filtro}
-                  onChange={setFiltro}
-                  options={[
-                    { value: 'todos', label: `Todos (${cuenta('todos')})` },
-                    { value: 'inquilino', label: `Inquilinos (${cuenta('inquilino')})` },
-                    { value: 'propietario', label: `Propietarios (${cuenta('propietario')})` },
+              <div className="min-w-0 empty:hidden">
+                <PestanasDeEstado<Filtro>
+                  etiqueta="Inquilinos o propietarios"
+                  valor={filtro}
+                  onCambio={setFiltro}
+                  pestanas={[
+                    { valor: 'todos', etiqueta: 'Todos', cuantos: cuenta('todos'), fija: true },
+                    { valor: 'inquilino', etiqueta: 'Inquilinos', cuantos: cuenta('inquilino'), fija: true },
+                    { valor: 'propietario', etiqueta: 'Propietarios', cuantos: cuenta('propietario'), fija: true },
                   ]}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div className="relative w-full sm:w-56">
+                  <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+                  <Input
+                    type="search"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Buscar por nombre o inmueble"
+                    aria-label="Buscar un caso por nombre"
+                    className="h-9 pl-9"
+                    data-testid="vinci-buscar"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
                 <Checkbox
                   id="vinci-solo-en-riesgo"
                   checked={soloEnRiesgo}
@@ -124,6 +147,7 @@ export default function BandejaClient() {
                 <label htmlFor="vinci-solo-en-riesgo" className="cursor-pointer text-sm text-fg">
                   Sólo los que pasan el umbral
                 </label>
+                </div>
               </div>
             </div>
             <TablaDeCasos
@@ -136,8 +160,8 @@ export default function BandejaClient() {
                   titulo={soloEnRiesgo ? 'Nadie pasa el umbral' : 'Nadie con señales de irse'}
                   descripcion={
                     soloEnRiesgo && escondidos > 0
-                      ? `Con las señales del ERP de hoy nadie llega a ${data.umbral}/100. ${escondidos === 1 ? 'Otro está' : `Otros ${escondidos} están`} por debajo o los lleva cobranza: quita «Sólo los que pasan el umbral» para ${escondidos === 1 ? 'verlo' : 'verlos'}.`
-                      : 'Con las señales del ERP de hoy no hay casos para mostrar con este filtro.'
+                      ? `Con las señales de hoy nadie llega a ${data.umbral}/100. ${escondidos === 1 ? 'Otro está' : `Otros ${escondidos} están`} por debajo o los lleva cobranza: quita «Sólo los que pasan el umbral» para ${escondidos === 1 ? 'verlo' : 'verlos'}.`
+                      : 'Con las señales de hoy no hay casos para mostrar con este filtro.'
                   }
                 />
               }
@@ -155,7 +179,7 @@ export default function BandejaClient() {
                 />
               </div>
             ) : null}
-          </TarjetaDeVinci>
+          </section>
         ) : null}
       </EstadoDeDatos>
     </div>

@@ -16,6 +16,7 @@
  * creer que la diferencia es del negocio. Se dice arriba, con el número.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Storefront } from '@phosphor-icons/react';
@@ -24,7 +25,9 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinLaMigracion } from '@/components/finanzas/piezas';
 import { explicar } from '@/components/finanzas/TasasDeUsura';
 import { Badge } from '@/components/ui/badge';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Button } from '@/components/ui/button';
+import { AccionesDeLaSeccion } from '@/components/configuracion/acciones-de-la-seccion';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +51,8 @@ import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { Sede, Sedes } from '@/lib/api/finanzas.types';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
 import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 
 const NUMERO = cifrasDeLaPantalla();
 
@@ -75,6 +80,8 @@ export function SeccionSedes() {
 
   const disponible = datos?.disponible !== false;
   const sedes = datos?.sedes ?? [];
+  // Ronda 30 (regla de Nico: tablas con paginación).
+  const pag = useTablePagination(sedes, {});
   const sinAsignar = datos?.sinAsignar ?? { inmuebles: 0, contratos: 0 };
 
   async function marcarPorDefecto(sede: Sede) {
@@ -102,7 +109,7 @@ export function SeccionSedes() {
       cuandoVacio={
         <VacioDeSeccion
           icono={Storefront}
-          titulo="Todavía no pudimos leer tus sedes"
+          titulo="Todavía no se pudieron leer tus sedes"
           ayuda="Vuelve a intentar en un momento: las sedes cuelgan de tu inmobiliaria."
         />
       }
@@ -113,16 +120,20 @@ export function SeccionSedes() {
             <SinLaMigracion motivo={datos.motivo} queSeEspera="crear y editar sedes" />
           ) : null}
 
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="max-w-2xl text-sm text-fg-muted">
-              Cada sede es un centro de costo: el tablero financiero se puede mirar consolidado o
-              por sede, y el deterioro de cartera también. Un inmueble o un contrato pertenece a
-              una sola.
-            </p>
+          {/* Glow up 22-10: el para qué ya lo dice el marco; el detalle, en la ayuda. Nico (23-10-2026): la ayuda y
+              «Crear una sede» arriba, a la derecha del título de la sección. */}
+          <AccionesDeLaSeccion>
+            <ParaEntenderMas etiqueta="¿Cómo funcionan las sedes?" titulo="Sedes">
+              <p className="text-body text-fg-muted">
+                Cada sede es un centro de costo: el tablero financiero se puede mirar consolidado o
+                por sede, y el deterioro de cartera también. Un inmueble o un contrato pertenece a
+                una sola.
+              </p>
+            </ParaEntenderMas>
             <Button size="sm" hideArrow disabled={!disponible} onClick={() => setEditando('nueva')}>
               Crear una sede
             </Button>
-          </div>
+          </AccionesDeLaSeccion>
 
           {sinAsignar.inmuebles > 0 || sinAsignar.contratos > 0 ? (
             <p
@@ -139,10 +150,11 @@ export function SeccionSedes() {
             </p>
           ) : null}
 
-          <div className="overflow-hidden rounded-lg border border-border">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+          <div className="overflow-hidden rounded-lg border border-border bg-surface">
+            <div className="md:overflow-x-auto">
+              {/* En el celular cada sede es una tarjeta. */}
+              <Table className="max-md:block">
+                <TableHeader className="max-md:hidden">
                   <TableRow>
                     <TableHead>Sede</TableHead>
                     <TableHead>Código</TableHead>
@@ -152,37 +164,47 @@ export function SeccionSedes() {
                     <TableHead>&nbsp;</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="max-md:block">
                   {sedes.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted">
+                    <TableRow className="max-md:block">
+                      <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted max-md:block">
+                        <Ilustracion nombre="edificio" tamano={80} className="mx-auto mb-2 block" />
                         Todavía no hay sedes. Sin ellas el tablero muestra la inmobiliaria entera,
                         que es exactamente lo que hacía hasta ahora.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    sedes.map((s) => (
-                      <TableRow key={s.id} data-testid={`sede-${s.codigo}`}>
-                        <TableCell className="font-medium text-fg">
+                    pag.pageItems.map((s) => (
+                      <TableRow
+                        key={s.id}
+                        data-testid={`sede-${s.codigo}`}
+                        className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:px-4 max-md:py-4"
+                      >
+                        <TableCell className="font-medium text-fg max-md:col-span-2 max-md:block max-md:p-0">
                           <span className="flex flex-wrap items-center gap-2">
                             {s.nombre}
                             {s.esPorDefecto ? <Badge variant="secondary">Por defecto</Badge> : null}
                             {!s.activa ? <Badge variant="outline">Inactiva</Badge> : null}
                           </span>
                           {s.direccion ? (
-                            <span className="block text-xs text-fg-muted">{s.direccion}</span>
+                            <span className="block text-caption text-fg-muted">{s.direccion}</span>
                           ) : null}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{s.codigo}</TableCell>
-                        <TableCell className="text-fg-muted">{s.ciudad || '—'}</TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="font-mono text-caption max-md:hidden">{s.codigo}</TableCell>
+                        <TableCell className="text-fg-muted max-md:col-start-1 max-md:block max-md:p-0 max-md:text-caption">
+                          <span className="font-mono md:hidden">{s.codigo} · </span>
+                          {s.ciudad || '—'}
+                        </TableCell>
+                        <TableCell className="text-right font-mono tabular-nums max-md:col-start-1 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted">
                           {NUMERO.format(s.inmuebles)}
+                          <span className="font-sans md:hidden"> {s.inmuebles === 1 ? 'inmueble' : 'inmuebles'}</span>
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-right font-mono tabular-nums max-md:col-start-1 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted">
                           {NUMERO.format(s.contratos)}
+                          <span className="font-sans md:hidden"> {s.contratos === 1 ? 'contrato' : 'contratos'}</span>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex justify-end gap-1">
+                        <TableCell className="max-md:col-span-2 max-md:block max-md:p-0 max-md:pt-1">
+                          <div className="flex justify-end gap-1 max-md:justify-start max-md:-ml-2">
                             {!s.esPorDefecto ? (
                               <Button
                                 variant="ghost"
@@ -211,6 +233,18 @@ export function SeccionSedes() {
                 </TableBody>
               </Table>
             </div>
+            {sedes.length > 0 ? (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={pag.total}
+                  page={pag.page}
+                  pageSize={pag.pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={pag.setPage}
+                  onPageSizeChange={pag.setPageSize}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -324,7 +358,7 @@ function EditorDeSede({
             <Checkbox className="mt-1" checked={porDefecto} data-testid="sede-por-defecto" onCheckedChange={(marcada: boolean) => setPorDefecto(marcada)} />
             <span>
               Que sea la sede por defecto
-              <span className="block text-xs text-fg-muted">
+              <span className="block text-caption text-fg-muted">
                 Lo que se cree sin sede explícita cae ahí. Sólo puede haber una.
               </span>
             </span>
@@ -334,7 +368,7 @@ function EditorDeSede({
               <Checkbox className="mt-1" checked={activa} data-testid="sede-activa" onCheckedChange={(marcada: boolean) => setActiva(marcada)} />
               <span>
                 Activa
-                <span className="block text-xs text-fg-muted">
+                <span className="block text-caption text-fg-muted">
                   Desactivarla la saca del selector; lo que ya está asignado no se mueve.
                 </span>
               </span>

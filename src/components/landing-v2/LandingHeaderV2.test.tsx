@@ -78,7 +78,8 @@ describe('LandingHeaderV2', () => {
   it('trae los mismos enlaces del nav de la landing', () => {
     montar({ fxExterno: true })
     const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-    expect(rutas).toEqual(['/es/propiedades', '/publica', '#producto', '/es/avaluo', '/es/blog', '/es/contacto'])
+    // Ronda 30 (Nico 23-10): la MISMA barra que la home nueva — Marketplace · Producto · Planes · Avalúos · Contacto; «Publicar gratis» a la derecha; sin Blog ni «Agentes AI».
+    expect(rutas).toEqual(['/es/propiedades', '#producto', '#planes', '/es/avaluo', '/es/contacto'])
   })
 
   it('el marketplace va primero y se llama igual en todas partes (Nico, 16-10-2026)', () => {
@@ -91,7 +92,7 @@ describe('LandingHeaderV2', () => {
     montar({ activo: 'inmuebles' })
     const enElMarketplace = [...container.querySelectorAll('nav.main a')].map((a) => a.textContent?.trim())
     expect(enElMarketplace).toEqual(enLaLanding)
-    expect(enLaLanding.slice(0, 2)).toEqual([expect.stringContaining('Marketplace'), 'Publicar gratis'])
+    expect(enLaLanding.slice(0, 2)).toEqual([expect.stringContaining('Marketplace'), expect.stringContaining('Producto')])
   })
 
   describe('dónde estás', () => {
@@ -208,21 +209,22 @@ describe('LandingHeaderV2', () => {
       authState.agencyRole = 'VIEWER'
       montar({ fxExterno: true })
       const numeros = [...container.querySelectorAll('#mmenu nav a .n')].map((n) => n.textContent)
-      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06'])
+      // Ronda 30 (Nico 23-10): la MISMA barra que la home nueva — Marketplace · Producto · Planes · Avalúos · Contacto; «Publicar gratis» a la derecha; sin Blog ni «Agentes AI».
+      expect(numeros).toEqual(['01', '02', '03', '04', '05'])
     })
 
     it('la inmobiliaria que publica ve 07 en el menu movil, con «Buscar inmueble» de primero', () => {
       entrarComo('agency')
       montar({ fxExterno: true })
       const enlaces = [...container.querySelectorAll('#mmenu nav a')]
-      expect(enlaces.map((a) => a.querySelector('.n')?.textContent)).toEqual(['01', '02', '03', '04', '05', '06', '07'])
+      expect(enlaces.map((a) => a.querySelector('.n')?.textContent)).toEqual(['01', '02', '03', '04', '05', '06'])
       expect(enlaces[0]?.getAttribute('href')).toBe('/es/propiedades')
     })
 
     it('la inmobiliaria SÍ ve «Publicar inmueble», y desde aquí también publica con el rápido (Nico, 09-10 y 20-10)', () => {
       entrarComo('agency')
       montar({ fxExterno: true })
-      const enlace = container.querySelector('nav.main a[data-nav="publicar"]')
+      const enlace = container.querySelector('#hdr a[data-nav="publicar"]')
       expect(enlace?.getAttribute('href')).toBe('/publica')
       expect([...container.querySelectorAll('#mmenu nav a')].some((a) => a.getAttribute('href') === '/publica')).toBe(true)
     })
@@ -231,18 +233,18 @@ describe('LandingHeaderV2', () => {
       entrarComo('agency')
       authState.agencyRole = 'CONTADOR'
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[data-nav="publicar"]')).toBeNull()
+      expect(container.querySelector('#hdr a[data-nav="publicar"]')).toBeNull()
     })
 
     it('sin sesión, «Publicar inmueble» va al publicador rápido de /publica', () => {
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[data-nav="publicar"]')?.getAttribute('href')).toBe('/publica')
+      expect(container.querySelector('#hdr a[data-nav="publicar"]')?.getAttribute('href')).toBe('/publica')
     })
 
     it('para el resto, el menu movil trae 07 (con «Publicar inmueble», 09-10-2026; sin «Planes» desde el 12-10)', () => {
       montar({ fxExterno: true })
       const numeros = [...container.querySelectorAll('#mmenu nav a .n')].map((n) => n.textContent)
-      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06', '07'])
+      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06'])
     })
   })
 
@@ -303,17 +305,17 @@ describe('LandingHeaderV2', () => {
       // suave del home las siga atendiendo.
       montar()
       const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-      expect(rutas).toEqual(['/es/propiedades', '/publica', '/es#producto', '/es/avaluo', '/es/blog', '/es/contacto'])
+      expect(rutas).toEqual(['/es/propiedades', '/es#producto', '/es#planes', '/es/avaluo', '/es/contacto'])
       const movil = [...container.querySelectorAll('#mmenu nav a')].map((a) => a.getAttribute('href'))
       expect(movil).toContain('/es#producto')
     })
 
-    it('«Ver planes» está oculto por ahora (Nico, 12-10-2026)', () => {
+    it('«Planes» va en el menú como en la home; el botón «Ver planes» ya no está (Ronda 30, Nico 23-10)', () => {
       montar()
       const textos = [...container.querySelectorAll('a')].map((a) => a.textContent ?? '')
       expect(textos.some((t) => t.includes('Ver planes'))).toBe(false)
       const movil = [...container.querySelectorAll('#mmenu nav a')].map((a) => a.textContent ?? '')
-      expect(movil.some((t) => t.includes('Planes'))).toBe(false)
+      expect(movil.some((t) => t.includes('Planes'))).toBe(true)
     })
   })
 })

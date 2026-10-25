@@ -27,7 +27,9 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Checkbox } from '@/components/ui'
-import { BackButton, Collapse, CrossFade, Presence } from '@leasefy/cadence'
+import { BackButton, Collapse, CrossFade, Presence, StatusBadge } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { EnElPieDelCajon } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
 import {
   useSiniestroApproval,
   type SiniestroInsurer,
@@ -58,9 +60,16 @@ function normalizarAseguradora(nombre: string | null | undefined): string {
 
 interface Props {
   claimId: string
+  /**
+   * Ronda 30 (K4, Nico: «K4 cajón»): montado en el cajón de la lista de
+   * Siniestros (`CajonDelCaso`). Sin miga ni encabezado de página (los pone el
+   * cajón) y, al resolverse, `onResuelto` cierra el cajón en vez de volver atrás.
+   */
+  enCajon?: boolean
+  onResuelto?: () => void
 }
 
-export default function SiniestroApprovalClient({ claimId }: Props) {
+export default function SiniestroApprovalClient({ claimId, enCajon = false, onResuelto }: Props) {
   const { t } = useI18n()
   const router = useRouter()
   const { agency, isLoading: authLoading } = useAuth()
@@ -142,19 +151,34 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
     }
   }, [pdfSrc])
 
-  // Navigate back after rejectResult lands.
+  // Navigate back after rejectResult lands. En el cajón, se cierra (y la lista se refresca).
   React.useEffect(() => {
     if (rejectResult?.ok) {
-      const timer = setTimeout(() => router.back(), 1500)
+      const timer = setTimeout(() => (enCajon ? onResuelto?.() : router.back()), 1500)
       return () => clearTimeout(timer)
     }
-  }, [rejectResult, router])
+  }, [rejectResult, router, enCajon, onResuelto])
+
+  // Ronda 30 (K4): en el cajón, aprobado y radicado ante TODAS las aseguradoras
+  // elegidas, se cierra tras un momento para leer el resultado. Si alguna falló,
+  // se queda abierto con la lista de cuáles: eso hay que leerlo.
+  React.useEffect(() => {
+    if (!enCajon || !approveResult) return
+    if (approveResult.insurerResults.some((r) => !r.sent)) return
+    const timer = setTimeout(() => onResuelto?.(), 1500)
+    return () => clearTimeout(timer)
+  }, [approveResult, enCajon, onResuelto])
 
   // Phase 38-05a: skeleton during initial auth hydration (first loading state on
   // this page — useSiniestroApproval has no initial fetch, only mutation state).
   // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
   // siniestro); los avisos de aprobar/rechazar entran y salen con `Presence`
   // y el formulario de rechazo se despliega con su altura (`Collapse`).
+  const formularioDeRechazo = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (enCajon && rechazarOpen) formularioDeRechazo.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [enCajon, rechazarOpen])
+
   if (authLoading && !agency) {
     return (
       <CrossFade swapKey="esqueleto">
@@ -166,7 +190,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
   if (envMissing) {
     return (
       <CrossFade swapKey="sin-agente">
-      <div className="p-4 lg:p-8">
+      <div className="p-6 lg:p-8">
         <div className="rounded-md border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           {t('inmobiliaria.ai.cobranza.siniestros.envMissing')}
         </div>
@@ -208,8 +232,10 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
 
   return (
     <CrossFade swapKey="siniestro">
-    <div className="p-4 lg:p-8 space-y-6">
-      {/* Header + Back */}
+    <div className={enCajon ? 'space-y-6' : 'p-6 lg:p-8 space-y-6'}>
+      {/* Header + Back (en el cajón los pone la cabecera del cajón) */}
+      {!enCajon && (
+      <>
       <div className="flex items-center justify-between">
         <BackButton
           variant="subtle"
@@ -218,19 +244,19 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           label={t('inmobiliaria.ai.cobranza.siniestros.back')}
         />
       </div>
-      <header className="space-y-1">
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cobranza.siniestros.title')}
-        </h1>
-        {/* De quién y con qué aseguradora. La pantalla no lo decía: se aprobaba
-            la radicación de un siniestro sin saber sobre qué póliza. */}
-        {siniestro && (
-          <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
-            {siniestro.debtorName ?? 'Deudor sin nombre'}
-            {siniestro.aseguradora ? ` · ${siniestro.aseguradora}` : ''}
-          </p>
-        )}
-      </header>
+      {/* De quién y con qué aseguradora. La pantalla no lo decía: se aprobaba
+          la radicación de un siniestro sin saber sobre qué póliza. */}
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.siniestros.title')}
+        descripcion={
+          siniestro
+            ? `${siniestro.debtorName ?? 'Deudor sin nombre'}${siniestro.aseguradora ? ` · ${siniestro.aseguradora}` : ''}`
+            : undefined
+        }
+      />
+      </>
+      )}
 
       {siniestro && !aseguradoraNotificable && (
         <div className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
@@ -245,7 +271,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
         aria-label={t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
         className="space-y-2"
       >
-        <h2 className="text-sm font-medium text-fg-muted">
+        <h2 className="text-body font-medium text-fg">
           {t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
         </h2>
         <iframe
@@ -253,7 +279,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           title={t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
           src={pdfBlobUrl ?? 'about:blank'}
           loading="lazy"
-          className="w-full h-96 rounded border border-border"
+          className="w-full h-[28rem] rounded-md border border-border bg-surface-muted max-md:h-[70vh]"
         />
         <Presence show={pdfError} className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.error')}
@@ -262,7 +288,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
 
       {/* Insurer checkbox group */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-fg-muted">
+        <h2 className="text-body font-medium text-fg">
           {t('inmobiliaria.ai.cobranza.siniestros.insurers.title')}
         </h2>
         <div className="flex flex-wrap gap-3">
@@ -291,10 +317,14 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
         </Presence>
       </section>
 
-      {/* Action buttons */}
+      {/* Action buttons. Ronda 30 (K4): en el cajón van a su pie fijo (EnElPieDelCajon). */}
+      <EnElPieDelCajon>
       <div className="flex flex-wrap gap-2">
+        {/* Ronda 30 (K4): aprobar va en tinta (`ink`), como en Planes de pago: sobre la lista,
+            el azul es de la pantalla. */}
         <Button
           type="button"
+          variant="ink"
           data-testid="approval-aprobar-siniestro"
           onClick={() => void handleAprobar()}
           disabled={aprobarDisabled}
@@ -326,6 +356,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           {t('inmobiliaria.ai.cobranza.siniestros.rechazar.label')}
         </Button>
       </div>
+      </EnElPieDelCajon>
 
       {/* Antes se pintaba el cuerpo crudo de la respuesta o «approve 500». */}
       <Presence show={Boolean(approveError) || approveFallo != null}
@@ -357,7 +388,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           data-testid="siniestro-results"
           className="space-y-2 rounded-md border border-success/30 bg-success-soft p-4"
         >
-          <h2 className="text-sm font-semibold text-success">
+          <h2 className="text-sm font-medium text-success">
             {approveResult?.insurerResults.some((r) => !r.sent)
               ? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.partial')
               : t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.title')}
@@ -375,12 +406,18 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
                   <span className="font-medium text-fg">
                     {t(`inmobiliaria.ai.cobranza.siniestros.insurers.${ins}`)}
                   </span>
-                  <span
-                    className={sent ? 'text-success' : 'text-warning'}
-                  >
-                    {sent
-                      ? `✓ ${t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.title')}`
-                      : `⚠ ${result?.error ?? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.partial')}`}
+                  {/* Ronda 30: el resultado se lee por el punto y la palabra de StatusBadge (antes «✓»/«⚠» escritos a mano). */}
+                  <span className="flex min-w-0 items-center gap-2 text-right">
+                    {!sent ? (
+                      <span className="min-w-0 text-fg-muted">
+                        {result?.error ?? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.partial')}
+                      </span>
+                    ) : null}
+                    <StatusBadge tone={sent ? 'success' : 'warning'} className="shrink-0">
+                      {sent
+                        ? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.radicado')
+                        : t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.sinRadicar')}
+                    </StatusBadge>
                   </span>
                 </li>
               )
@@ -389,6 +426,8 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
       </Presence>
 
       {/* Inline Rechazar form */}
+      {/* En el cajón, «Rechazar» está en el pie: el formulario se trae a la vista al abrirse. */}
+      <div ref={formularioDeRechazo}>
       <Collapse open={rechazarOpen && !rejectResult?.ok}>
         <RechazarForm
           decisionType="siniestro"
@@ -397,6 +436,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           isSubmitting={isRejecting}
         />
       </Collapse>
+      </div>
 
       {/*
         DEFERRED: Modificar button (single-button placeholder → note) deferred

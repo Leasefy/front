@@ -234,12 +234,12 @@ export function CompletarSolicitudDialog({
             />
             <ErrorDelCampo id="cierre-costo-final-error" mensaje={errorDelCosto ?? undefined} />
             {cambiaElCosto ? (
-              <p className="text-xs text-warning" data-testid="cierre-costo-cambia">
+              <p className="text-caption text-warning" data-testid="cierre-costo-cambia">
                 Lo aprobado fue {formatCurrency(costoAprobado)}. Al confirmar, el descuento (o el cargo) se ajusta a{' '}
                 {formatCurrency(costoFinal)} y quien lo paga lo verá en su estado de cuenta.
               </p>
             ) : (
-              <p className="text-xs text-fg-muted">Lo aprobado: {formatCurrency(costoAprobado)}.</p>
+              <p className="text-caption text-fg-muted">Lo aprobado: {formatCurrency(costoAprobado)}.</p>
             )}
           </div>
         )}

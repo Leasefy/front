@@ -104,7 +104,7 @@ export function ComplianceSparkline({ buckets, ariaLabel }: ComplianceSparklineP
       </svg>
       {hover !== null && buckets[hover] && (
         <div
-          className="absolute top-0 right-0 text-xs font-mono tabular-nums text-muted-foreground pointer-events-none"
+          className="absolute top-0 right-0 text-caption font-mono tabular-nums text-muted-foreground pointer-events-none"
           aria-hidden="true"
         >
           {buckets[hover].date}: {buckets[hover].flag_rate_pct}%

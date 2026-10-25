@@ -369,7 +369,7 @@ export function FilaDeTercero({
       requestAnimationFrame(() => document.getElementById(idDeCelda(conCelda[0]))?.focus());
     }
     if (r.mensaje) {
-      setErrorDeFila(`${r.mensaje} Lo que escribiste sigue acá — reintenta Guardar.`);
+      setErrorDeFila(`${r.mensaje} Lo que escribiste sigue aquí — reintenta Guardar.`);
     }
   };
 
@@ -498,7 +498,7 @@ export function FilaDeTercero({
             {valorEditable(fila.datos.nombre) || 'sin texto'}
           </p>
           <p className="text-sm text-fg-muted">
-            Una ficha es una sola persona, así que no la creamos así. Edita el nombre acá abajo
+            Una ficha es una sola persona, así que no la creamos así. Edita el nombre aquí abajo
             para dejar a una sola persona, o no traigas esta fila y carga a las demás por su
             cuenta (desde {seccionDeLaFicha} o en otro archivo).
           </p>
@@ -527,13 +527,13 @@ export function FilaDeTercero({
             {duplicado.referencia?.fila ? (
               <>
                 Si es la misma persona repetida en el archivo, deja una sola y no traigas ésta. Si
-                son dos personas distintas, corrige {queCorregir} acá abajo.
+                son dos personas distintas, corrige {queCorregir} aquí abajo.
               </>
             ) : chocaPorCorreo ? (
               <>
                 Si es la misma persona, la fila se engancha a esa cuenta y
                 <strong className="font-medium text-fg"> no le pisa ni un dato</strong>. Si son dos
-                personas distintas, corrige el correo acá abajo: la cuenta del portal se crea por
+                personas distintas, corrige el correo aquí abajo: la cuenta del portal se crea por
                 correo, así que con el mismo correo las dos entrarían a la misma cuenta.
               </>
             ) : (
@@ -541,7 +541,7 @@ export function FilaDeTercero({
                 Si es la misma persona, la fila se engancha a la ficha que ya está y
                 <strong className="font-medium text-fg"> no le pisa ni un dato</strong> — la ficha
                 se edita desde {seccionDeLaFicha}. Si son dos personas distintas, corrige el
-                documento acá abajo.
+                documento aquí abajo.
               </>
             )}
           </p>

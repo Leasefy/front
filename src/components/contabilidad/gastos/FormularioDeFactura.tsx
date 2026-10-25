@@ -515,7 +515,7 @@ export function FormularioDeFactura({
       <CajonCuerpo className="space-y-6">
           {/* ── El proveedor ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-fg">Proveedor</h3>
+            <h3 className="text-sm font-medium text-fg">Proveedor</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label id="factura-proveedor-rotulo" htmlFor="factura-proveedor">Del registro</Label>
@@ -642,7 +642,7 @@ export function FormularioDeFactura({
 
           {/* ── El documento ──────────────────────────────────────────── */}
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-fg">El documento</h3>
+            <h3 className="text-sm font-medium text-fg">El documento</h3>
             <div className="grid gap-3 sm:grid-cols-4">
               <div className="space-y-1.5">
                 <Label htmlFor="factura-prefijo">Prefijo</Label>
@@ -759,7 +759,7 @@ export function FormularioDeFactura({
           {/* ── Las líneas ────────────────────────────────────────────── */}
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-fg">Líneas</h3>
+              <h3 className="text-sm font-medium text-fg">Líneas</h3>
               <Button
                 variant="outline"
                 size="sm"
@@ -878,7 +878,7 @@ export function FormularioDeFactura({
 
           {/* ── Los totales ───────────────────────────────────────────── */}
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-fg">Totales y retenciones</h3>
+            <h3 className="text-sm font-medium text-fg">Totales y retenciones</h3>
             <div className="grid gap-3 sm:grid-cols-4">
               <div className="space-y-1.5">
                 <Label htmlFor="factura-total">Total de la factura</Label>

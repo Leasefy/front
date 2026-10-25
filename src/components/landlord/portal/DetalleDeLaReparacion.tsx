@@ -56,7 +56,7 @@ export const ESTADO_CORTO: Record<EstadoDeLaAprobacion, { texto: string; tono: s
  */
 export function estadoCorto(a: { estado: EstadoDeLaAprobacion; laHaceElPropietario?: boolean }) {
   if (a.estado === 'ANULADA' && a.laHaceElPropietario) {
-    return { texto: 'La haces tú', tono: 'bg-primary-soft text-primary' };
+    return { texto: 'La haces tú', tono: 'bg-surface-muted text-fg' };
   }
   return ESTADO_CORTO[a.estado];
 }
@@ -113,7 +113,7 @@ function tipoDeLaReparacion(tipo: string | null): string | null {
 function Seccion({ titulo, children, testid }: { titulo: string; children: React.ReactNode; testid: string }) {
   return (
     <section className="space-y-2 border-t border-border-faint pt-5 first:border-t-0 first:pt-0" data-testid={testid}>
-      <h3 className="text-sm font-semibold text-fg">{titulo}</h3>
+      <h3 className="text-sm font-medium text-fg">{titulo}</h3>
       {children}
     </section>
   );

@@ -93,10 +93,10 @@ export function nombreDeLaForma(variantKey: string, maxCuotas: number | null): s
 
 /** Qué hace cada forma, en una frase. */
 export function queHaceLaForma(variantKey: string, maxCuotas: number | null): string {
-  if (variantKey === FORMA_COMO_HOY) return 'Laura ofrece las cuotas que autoriza cada inmobiliaria, como hoy.'
-  if (maxCuotas === null) return 'Laura ofrece menos cuotas que las que autoriza la inmobiliaria.'
+  if (variantKey === FORMA_COMO_HOY) return 'Mori ofrece las cuotas que autoriza cada inmobiliaria, como hoy.'
+  if (maxCuotas === null) return 'Mori ofrece menos cuotas que las que autoriza la inmobiliaria.'
   const tope = maxCuotas <= 1 ? 'sólo el pago total' : `como mucho ${maxCuotas} cuotas`
-  return `Laura ofrece ${tope}, aunque la inmobiliaria autorice más. A quien ya tiene ${maxCuotas <= 1 ? 'pago total' : `${maxCuotas} o menos`}, no le cambia nada.`
+  return `Mori ofrece ${tope}, aunque la inmobiliaria autorice más. A quien ya tiene ${maxCuotas <= 1 ? 'pago total' : `${maxCuotas} o menos`}, no le cambia nada.`
 }
 
 /** La recomendación en una frase. */
@@ -115,8 +115,8 @@ export function fraseDeLaRecomendacion(e: EstadoDelExperimento): string {
 
 /** El estado de la corrida para la pill. */
 export function estadoParaMostrar(e: EstadoDelExperimento): { texto: string; tono: 'ok' | 'warn' | 'muted' | 'info' } {
-  if (e.estado === 'running') return { texto: 'corriendo', tono: 'ok' }
-  if (e.estado === 'paused') return { texto: 'en pausa', tono: 'warn' }
-  if (e.estado === 'completed') return { texto: 'terminado', tono: 'info' }
-  return { texto: 'sin empezar', tono: 'muted' }
+  if (e.estado === 'running') return { texto: 'Corriendo', tono: 'ok' }
+  if (e.estado === 'paused') return { texto: 'En pausa', tono: 'warn' }
+  if (e.estado === 'completed') return { texto: 'Terminado', tono: 'info' }
+  return { texto: 'Sin empezar', tono: 'muted' }
 }

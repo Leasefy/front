@@ -485,24 +485,24 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
           <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
             <PencilSimple className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
-              <p className="text-xs text-warning/90 mt-0.5">
+              <p className="text-caption font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
+              <p className="text-caption text-warning/90 mt-0.5">
                 {t(k('reviewBannerDesc'), { confidence: String(confidencePct) })}
               </p>
               {detectadosLegibles.length > 0 ? (
-                <p className="text-xs text-warning/90 mt-0.5" data-testid="documentos-detectados">
+                <p className="text-caption text-warning/90 mt-0.5" data-testid="documentos-detectados">
                   {t(k('detectados'))}: {detectadosLegibles.join(' · ')}
                 </p>
               ) : null}
               {extracted.inmuebleReferencia ? (
-                <p className="text-xs text-warning/90 mt-0.5">
+                <p className="text-caption text-warning/90 mt-0.5">
                   {t(k('inmuebleLeido'), { inmueble: extracted.inmuebleReferencia })}
                 </p>
               ) : null}
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">{t(k('manualNote'))}</p>
+          <p className="text-caption text-muted-foreground">{t(k('manualNote'))}</p>
         )}
 
         {catalogosError !== null ? (
@@ -518,13 +518,13 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
             <div className="flex items-start gap-2.5">
               <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
               <div>
-                <p className="text-xs font-semibold text-danger">{t(k('conflictosTitle'))}</p>
-                <p className="text-xs text-danger/90 mt-0.5">{t(k('conflictosDesc'))}</p>
+                <p className="text-caption font-semibold text-danger">{t(k('conflictosTitle'))}</p>
+                <p className="text-caption text-danger/90 mt-0.5">{t(k('conflictosDesc'))}</p>
               </div>
             </div>
             <ul className="space-y-1.5 pl-7">
               {conflictos.map((c) => (
-                <li key={c.campo} className="text-xs" data-testid={`conflicto-${c.campo}`}>
+                <li key={c.campo} className="text-caption" data-testid={`conflicto-${c.campo}`}>
                   <span className="font-medium text-foreground">{t(k(`campos.${c.campo}`))}:</span>
                   <span className="mt-1 flex flex-wrap gap-1.5">
                     {c.valores.map((v) => (
@@ -532,7 +532,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                         key={`${v.documento}:${v.valor}`}
                         type="button"
                         onClick={() => usarValor(c.campo, v.valor)}
-                        className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-foreground hover:border-primary hover:text-primary"
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-caption text-foreground hover:border-primary hover:text-primary"
                         title={t(k('usarValorDe'), { documento: v.documento })}
                         data-testid={`usar-${c.campo}`}
                       >
@@ -577,7 +577,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                   className="rounded-lg border border-primary/30 bg-primary-soft p-3 space-y-2"
                   data-testid="proveedor-nuevo"
                 >
-                  <p className="text-xs font-medium text-primary inline-flex items-center gap-1.5">
+                  <p className="text-caption font-medium text-primary inline-flex items-center gap-1.5">
                     <UserPlus className="w-4 h-4" weight="bold" />
                     {extracted?.proveedorNit
                       ? t(k('proveedorNuevo'), {
@@ -612,7 +612,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                   </div>
                   {candidatos.length > 0 ? (
                     <div className="space-y-1" data-testid="proveedor-candidatos">
-                      <p className="text-xs text-muted-foreground">{t(k('proveedorCandidatos'))}</p>
+                      <p className="text-caption text-muted-foreground">{t(k('proveedorCandidatos'))}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {candidatos.map((c) => (
                           <button
@@ -622,7 +622,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                               set('vendorId', c.vendorId);
                               setCandidatos([]);
                             }}
-                            className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-foreground hover:border-primary hover:text-primary"
+                            className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-caption text-foreground hover:border-primary hover:text-primary"
                             data-testid={`candidato-${c.vendorId}`}
                           >
                             <span className="font-medium">{c.name}</span>
@@ -752,7 +752,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
           <aside className="space-y-4">
             {files.length > 0 ? (
               <div className="rounded-lg border border-border bg-card p-3 space-y-2" data-testid="factura-adjunto">
-                <p className="text-xs font-semibold text-foreground">{t(k('adjuntoLabel'))}</p>
+                <p className="text-caption font-semibold text-foreground">{t(k('adjuntoLabel'))}</p>
                 {miniaturaUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- URL local de un File, no una imagen remota optimizable
                   <img
@@ -769,21 +769,21 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                   </div>
                 )}
                 {files.length > 1 ? (
-                  <p className="text-xs text-muted-foreground">+{files.length - 1}</p>
+                  <p className="text-caption text-muted-foreground">+{files.length - 1}</p>
                 ) : null}
                 {adjuntoUrl ? (
                   <a
                     href={adjuntoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:underline"
                     data-testid="factura-adjunto-ver"
                   >
                     <ArrowSquareOut className="w-3.5 h-3.5" />
                     {t(k('adjuntoVer'))}
                   </a>
                 ) : extracted ? (
-                  <p className="text-xs text-muted-foreground" data-testid="factura-adjunto-no-guardado">
+                  <p className="text-caption text-muted-foreground" data-testid="factura-adjunto-no-guardado">
                     {t(k('adjuntoNoGuardado'))}
                   </p>
                 ) : null}
@@ -792,10 +792,10 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
 
             {items.length > 0 ? (
               <div className="rounded-lg border border-border bg-card p-3 space-y-1.5" data-testid="factura-items">
-                <p className="text-xs font-semibold text-foreground">{t(k('itemsLabel'))}</p>
+                <p className="text-caption font-semibold text-foreground">{t(k('itemsLabel'))}</p>
                 <ul className="space-y-1">
                   {items.map((it, i) => (
-                    <li key={`${it.descripcion}:${i}`} className="flex items-baseline justify-between gap-2 text-xs">
+                    <li key={`${it.descripcion}:${i}`} className="flex items-baseline justify-between gap-2 text-caption">
                       <span className="text-foreground min-w-0 truncate" title={it.descripcion}>
                         {it.cantidad !== null && it.cantidad !== 1 ? `${it.cantidad} × ` : ''}
                         {it.descripcion}
@@ -840,9 +840,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
   if (step === 'error') {
     return envolver(
       <div className="flex flex-col items-center justify-center gap-4 py-10 px-6 text-center">
-        <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
-          <WarningCircle className="w-7 h-7 text-danger" />
-        </div>
+        <WarningCircle className="w-7 h-7 text-danger shrink-0" aria-hidden="true" />
         <div className="space-y-1">
           <h3 className="text-h4 font-semibold text-foreground">{t(k('errorTitle'))}</h3>
           <p className="text-body-sm text-muted-foreground max-w-sm" data-testid="factura-error">
@@ -867,7 +865,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
   return envolver(
     <div className="space-y-5">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-primary-soft flex items-center justify-center flex-shrink-0">
           <Sparkle className="w-5 h-5 text-primary" weight="fill" />
         </div>
         <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
@@ -904,9 +902,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
         }`}
         data-testid="factura-ia-dropzone"
       >
-        <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center mb-1">
-          <Receipt className="w-6 h-6 text-primary" />
-        </div>
+        <Receipt className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
         <p className="text-body-sm font-medium text-foreground">
           {files.length === 0 ? t(k('uploadTitle')) : t(k('uploadMore'))}
         </p>
@@ -924,7 +920,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
               <span className="min-w-0 flex-1 truncate text-foreground" title={f.name}>
                 {f.name}
               </span>
-              <span className="text-xs text-muted-foreground tabular-nums">{tamano(f.size)}</span>
+              <span className="text-caption text-muted-foreground tabular-nums">{tamano(f.size)}</span>
               <button
                 type="button"
                 onClick={() => quitar(i)}
@@ -940,7 +936,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:underline"
             >
               <Plus className="w-3.5 h-3.5" />
               {t(k('agregarOtro'))}

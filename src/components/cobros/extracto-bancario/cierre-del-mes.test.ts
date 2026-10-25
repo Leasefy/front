@@ -19,7 +19,7 @@ describe('la plata de un archivo', () => {
     expect(aPesos('abc')).toBe('mal');
   });
 
-  it('dice la plata y los porcentajes como se leen acá', () => {
+  it('dice la plata y los porcentajes como se leen aquí', () => {
     expect(pesos(-4000)).toBe('−$\u00a04.000');
     expect(pesos(null)).toBe('—');
     expect(porcentaje(83.15)).toBe('83,15 %');

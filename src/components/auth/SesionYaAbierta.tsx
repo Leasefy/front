@@ -142,7 +142,7 @@ export function SesionYaAbierta({ destino, onCambiarDeCuenta }: Props) {
           <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
             Algo no salió bien
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-h2 tracking-tight text-foreground">
             No pudimos abrir tu sesión
           </h1>
           <p className="mt-2 text-sm text-muted-foreground" data-testid="sesion-rebote-frase">
@@ -187,7 +187,7 @@ export function SesionYaAbierta({ destino, onCambiarDeCuenta }: Props) {
         <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
           Ya estás dentro
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-h2 tracking-tight text-foreground">
           ¿Sigues con esta cuenta?
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">

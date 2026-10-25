@@ -51,11 +51,12 @@ describe('<Badge>', () => {
   })
 
   it('el tema claro NO se toca: sigue el tinte del DS', () => {
-    // #F1EFEB sobre blanco es discreto y no era el problema. Si esta clase
-    // desapareciera, el arreglo de oscuro se habría llevado el claro por
-    // delante.
+    // La arena del DS sobre blanco es discreta y no era el problema. Si esta
+    // clase desapareciera, el arreglo de oscuro se habría llevado el claro por
+    // delante. (Cadence 2, 20-10-2026: el gris suelto #F1EFEB pasó a ser el
+    // token `surface-muted`, la arena.)
     const el = pintar(<Badge variant="secondary">Vivienda urbana</Badge>)
-    expect(el.className).toContain('bg-[#F1EFEB]')
+    expect(el.className).toContain('bg-surface-muted')
   })
 
   it('las variantes con color propio no reciben la corrección', () => {

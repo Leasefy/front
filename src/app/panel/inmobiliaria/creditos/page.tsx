@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, Stagger, StaggerItem, Ilustracion } from '@leasefy/cadence';
 import { useEffect, useState, useCallback } from 'react';
 import {
   Sparkle,
@@ -211,6 +211,7 @@ function CreditosContent() {
         {!isLoading && packs.length === 0 && !error && (
           <div className="rounded-lg border border-dashed border-border p-8 text-center">
             <p className="text-sm text-muted-foreground">
+              <Ilustracion nombre="monedas" tamano={80} className="mx-auto mb-2 block" />
               No hay packs de créditos disponibles por el momento.
             </p>
           </div>

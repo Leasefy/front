@@ -94,7 +94,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
         queSon="gastos"
         icono={Coins}
         titulo="Todavía no hay gasto"
-        descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el reparto por fuente se grafica acá."
+        descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el reparto por fuente se grafica aquí."
       />
     )
   }
@@ -152,7 +152,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
   const renderLegend = (props: { payload?: Array<{ value: string; color: string; payload: PieDatum }> }) => {
     const { payload = [] } = props
     return (
-      <ul className="flex flex-col gap-1.5 text-xs">
+      <ul className="flex flex-col gap-1.5 text-caption">
         {payload.map((entry, idx) => {
           const datum = entry.payload
           if (datum?.isMuted) {

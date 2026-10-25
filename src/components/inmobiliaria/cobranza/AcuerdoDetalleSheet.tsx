@@ -10,8 +10,9 @@
  *   · «Escuchar la llamada» sólo si el compromiso tiene `call_id`. En el demo
  *     casi ninguno lo tiene (los sembrados no salieron de una llamada), así que
  *     el enlace aparece sólo cuando hay algo del otro lado.
- *   · «Revisar y aprobar» sólo para planes, y lleva al detalle real del plan,
- *     que es donde vive la aprobación. No se duplica esa pantalla acá.
+ *   · «Revisar y aprobar» sólo para planes, y abre el detalle real del plan
+ *     (`PaymentPlanApprovalClient`) en un cajón encima (ronda 30, K4). No se
+ *     duplica esa pantalla acá.
  *   · «Ver deudor» siempre: es donde están las acciones (llamar, memo, pausar).
  *
  * Es el MISMO cajón que el resto del panel: `Sheet` de `@/components/ui/sheet`
@@ -20,12 +21,15 @@
  * acá: le pasaba a todos los cajones.
  */
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, PhoneCall } from '@phosphor-icons/react'
 
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet'
 import { Badge, Button } from '@/components/ui'
 import { useI18n } from '@/lib/i18n'
+import { CajonDelCaso } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
+import PaymentPlanApprovalClient from '@/app/panel/inmobiliaria/pagos/cobranza/pagos/planes/[planId]/PaymentPlanApprovalClient'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { channelLabel } from '@/lib/cobranza/call-vocab'
 import {
@@ -40,12 +44,14 @@ const VACIO = '—'
 export interface AcuerdoDetalleSheetProps {
   acuerdo: AcuerdoRow | null
   onClose: () => void
+  /** Ronda 30 (K4): el plan se resolvió desde su cajón; la lista de acuerdos se vuelve a leer. */
+  onPlanResuelto?: () => void
 }
 
 /** Etiqueta de sección, en el registro del DS. */
 function Rotulo({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+    <h3 className="text-caption font-medium uppercase tracking-wide text-fg-muted">
       {children}
     </h3>
   )
@@ -79,10 +85,17 @@ function Dato({
 export function AcuerdoDetalleSheet({
   acuerdo,
   onClose,
+  onPlanResuelto,
 }: AcuerdoDetalleSheetProps) {
   const ultimo = useUltimoPresente(acuerdo)
+  // Ronda 30 (K4, Nico: «K4 cajón»): «Revisar y aprobar» abre el plan en un cajón
+  // encima de éste (antes iba a la página `pagos/planes/[planId]`, que sigue viva;
+  // con Cmd/Ctrl todavía abre allá). Resuelto, se cierran los dos.
+  const [planAbierto, setPlanAbierto] = useState<string | null>(null)
+  const cerrarElPlan = () => setPlanAbierto(null)
 
   return (
+    <>
     <Sheet
       open={Boolean(acuerdo)}
       onOpenChange={(abierto) => {
@@ -96,13 +109,33 @@ export function AcuerdoDetalleSheet({
         layout="manual"
         aria-describedby={undefined}
       >
-        {ultimo && <CuerpoDelAcuerdo acuerdo={ultimo} />}
+        {ultimo && <CuerpoDelAcuerdo acuerdo={ultimo} onRevisarPlan={setPlanAbierto} />}
       </SheetContent>
     </Sheet>
+    <CajonDelCaso
+      abierto={planAbierto !== null}
+      onCerrar={cerrarElPlan}
+      titulo="Plan de pago"
+      descripcion="Compara lo que propuso el agente con tus límites y apruébalo, ajústalo o recházalo."
+      data-testid="acuerdo-plan-cajon"
+    >
+      {planAbierto ? (
+        <PaymentPlanApprovalClient
+          planId={planAbierto}
+          enCajon
+          onResuelto={() => {
+            cerrarElPlan()
+            onClose()
+            onPlanResuelto?.()
+          }}
+        />
+      ) : null}
+    </CajonDelCaso>
+    </>
   )
 }
 
-function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
+function CuerpoDelAcuerdo({ acuerdo, onRevisarPlan }: { acuerdo: AcuerdoRow; onRevisarPlan: (planId: string) => void }) {
   const { formatCurrency, formatDate, formatRelativeDate } = useI18n()
 
   const estado = ACUERDO_ESTADO[acuerdo.estado]
@@ -189,7 +222,6 @@ function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
             <Button asChild variant="outline" hideArrow>
               <Link href={`${BASE}/deudores/${acuerdo.debtorId}`}>
                 Ver deudor
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </Button>
           }
@@ -204,10 +236,16 @@ function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
           )}
           {acuerdo.planId && (
             <Button asChild hideArrow>
-              <Link href={`${BASE}/pagos/planes/${acuerdo.planId}`}>
+              <Link
+                href={`${BASE}/pagos/planes/${acuerdo.planId}`}
+                onClick={(e) => {
+                  if (!acuerdo.planId || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                  e.preventDefault()
+                  onRevisarPlan(acuerdo.planId)
+                }}
+              >
                 {/* QA-IA-95 (05-10-2026, IA-B-03): «aprobar» sólo si espera la aprobación; uno vigente o cerrado se ve. */}
                 {acuerdo.estado === 'por_aprobar' ? 'Revisar y aprobar' : 'Ver el plan'}
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </Button>
           )}

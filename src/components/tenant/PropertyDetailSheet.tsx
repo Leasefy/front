@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
-import { MapPin, Heart, Camera, Bed, Bathtub, CornersOut, House, ArrowSquareOut, CaretRight, ArrowsOut } from '@phosphor-icons/react';
+import { MapPin, Heart, Camera, Bed, Bathtub, House, ArrowSquareOut, ArrowsOut } from '@phosphor-icons/react';
 
 import {
   RELLENO_DEL_CAJON,
@@ -100,7 +100,7 @@ export function PropertyDetailSheet({
         <SheetContent side="right" size="md">
           {/* Header — la ✕ la pone `SheetContent`, la misma de todo el producto */}
           <SheetHeader
-            title="Detalle de propiedad"
+            title="Detalle del inmueble"
             description={`${property.neighborhood}, ${property.city}`}
           />
 
@@ -115,8 +115,6 @@ export function PropertyDetailSheet({
                 priority
               />
 
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
               {/* View photos button */}
               {/* «Ver 0 fotos» abría una galería vacía. */}
@@ -144,7 +142,6 @@ export function PropertyDetailSheet({
                   <span className="text-sm font-bold text-white">
                     {matchData.matchScore}%
                   </span>
-                  <span className="text-[10px] text-white/80">match</span>
                 </div>
               )}
             </div>
@@ -154,10 +151,10 @@ export function PropertyDetailSheet({
             <div className={`${RELLENO_DEL_CAJON} py-5 space-y-5`}>
               {/* Match Data Section */}
               {matchData && (
-                <div className="flex items-center gap-3 p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex items-center gap-3 p-3 bg-surface-muted border border-border rounded-lg">
                   <div
                     className={cn(
-                      'flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg',
+                      'flex items-center justify-center w-12 h-12 rounded-lg font-bold text-lg',
                       getMatchScoreBgColor(matchData.matchScore),
                       'text-white'
                     )}
@@ -171,7 +168,7 @@ export function PropertyDetailSheet({
                       </span>
                       <span
                         className={cn(
-                          'text-[10px] font-medium px-2 py-0.5 rounded-full',
+                          'text-caption font-medium px-2 py-0.5 rounded-full',
                           matchData.acceptanceProbability === 'alta'
                             ? 'bg-success-soft text-success'
                             : matchData.acceptanceProbability === 'media'
@@ -182,23 +179,17 @@ export function PropertyDetailSheet({
                         {getAcceptanceProbabilityLabel(matchData.acceptanceProbability)}
                       </span>
                     </div>
-                    <p className="text-xs text-fg-muted mt-0.5 truncate">
+                    <p className="text-caption text-fg-muted mt-0.5 truncate">
                       {matchData.recommendation}
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Location */}
-              <div className="flex items-center gap-1.5 text-sm text-fg-muted">
-                <MapPin className="w-4 h-4" />
-                <span>
-                  {property.neighborhood}, {property.city}
-                </span>
-              </div>
+              {/* Ronda 30: el barrio y la ciudad ya los dicen el encabezado del cajón y «Ubicación» (antes tres veces). */}
 
               {/* Title */}
-              <h2 className="text-xl font-semibold text-fg leading-tight">
+              <h2 className="text-h3 text-fg leading-tight">
                 {property.title}
               </h2>
 
@@ -206,13 +197,13 @@ export function PropertyDetailSheet({
                   "/mes", no admin line. Never `formatCurrency(null)` (C6). */}
               {property.listingType === 'sale' ? (
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-fg">
+                  <span className="font-mono text-2xl font-normal tabular-nums text-fg">
                     {property.salePrice != null ? formatCurrency(property.salePrice) : 'Sin dato'}
                   </span>
                 </div>
               ) : (
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-fg">
+                  <span className="font-mono text-2xl font-normal tabular-nums text-fg">
                     {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : 'Sin dato'}
                   </span>
                   <span className="text-sm text-fg-muted">
@@ -220,7 +211,7 @@ export function PropertyDetailSheet({
                   </span>
                   {property.adminFee > 0 && (
                     <span className="text-sm text-fg-muted">
-                      (+{formatCurrency(property.adminFee)} admin)
+                      + <span className="font-mono tabular-nums">{formatCurrency(property.adminFee)}</span> de administración
                     </span>
                   )}
                 </div>
@@ -228,19 +219,19 @@ export function PropertyDetailSheet({
 
               {/* Stats Grid */}
               <div className="grid grid-cols-4 gap-2">
-                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-lg">
                   <ArrowsOut className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg">
                     {areaConocida(property.area) ? formatArea(property.area) : '—'}
                   </span>
                 </div>
-                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-lg">
                   <Bed className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg">
                     {property.bedrooms != null ? `${property.bedrooms} hab` : '—'}
                   </span>
                 </div>
-                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-lg">
                   <Bathtub className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg">
                     {property.bathrooms != null
@@ -248,7 +239,7 @@ export function PropertyDetailSheet({
                       : '—'}
                   </span>
                 </div>
-                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-lg">
                   <House className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg truncate text-center text-[13px]">
                     {typeLabels[property.type]}
@@ -258,7 +249,7 @@ export function PropertyDetailSheet({
 
               {/* Description */}
               <div>
-                <h3 className="text-sm font-semibold text-fg mb-2">
+                <h3 className="text-sm font-medium text-fg mb-2">
                   Descripción
                 </h3>
                 <p className="text-sm text-fg-muted leading-relaxed">
@@ -276,7 +267,7 @@ export function PropertyDetailSheet({
               {/* Gallery Thumbnails */}
               {property.images.length > 1 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-fg mb-3">
+                  <h3 className="text-sm font-medium text-fg mb-3">
                     Galería
                   </h3>
                   <div className="grid grid-cols-4 gap-2">
@@ -307,20 +298,18 @@ export function PropertyDetailSheet({
               )}
 
               {/* Location Card */}
-              <div className="bg-surface-muted border border-border rounded-xl p-4">
+              <div className="bg-surface-muted border border-border rounded-lg p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 bg-primary-soft rounded-xl">
-                      <MapPin className="w-5 h-5 text-primary" />
-                    </div>
+                    <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
                     <div>
-                      <h3 className="text-sm font-semibold text-fg">
+                      <h3 className="text-sm font-medium text-fg">
                         Ubicación
                       </h3>
                       <p className="text-sm text-fg-muted mt-0.5">
                         {property.neighborhood}, {property.city}
                       </p>
-                      <p className="text-xs text-fg-subtle mt-0.5">
+                      <p className="text-caption text-fg-subtle mt-0.5">
                         {property.address}
                       </p>
                     </div>
@@ -331,9 +320,9 @@ export function PropertyDetailSheet({
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary transition-colors"
+                    className="flex shrink-0 items-center gap-1 text-sm font-medium text-fg underline underline-offset-4 hover:text-primary transition-colors"
                   >
-                    Ver en Maps
+                    Ver en el mapa
                     <ArrowSquareOut className="w-3 h-3" />
                   </a>
                 </div>
@@ -345,26 +334,8 @@ export function PropertyDetailSheet({
           </SheetBody>
 
           {/* Sticky Footer — el precio a la izquierda, las acciones a la derecha */}
-          <SheetFooter
-            start={
-              <div className="min-w-0">
-                {property.listingType === 'sale' ? (
-                  <span className="text-lg font-bold text-fg">
-                    {property.salePrice != null ? formatCurrency(property.salePrice) : 'Sin dato'}
-                  </span>
-                ) : (
-                  <>
-                    <span className="text-lg font-bold text-fg">
-                      {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : 'Sin dato'}
-                    </span>
-                    <span className="text-sm text-fg-muted">
-                      /mes
-                    </span>
-                  </>
-                )}
-              </div>
-            }
-          >
+          {/* Ronda 30: sin el precio en el pie (el mismo número ya está arriba, con la administración). */}
+          <SheetFooter>
               {/* Wishlist Button */}
               <IconButton
                 variant="ghost"
@@ -375,7 +346,7 @@ export function PropertyDetailSheet({
                     ? 'bg-danger-soft border-danger/30'
                     : 'bg-surface-muted border-border hover:bg-surface-muted'
                 )}
-                aria-label={wishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                aria-label={wishlisted ? 'Quitar de guardados' : 'Guardar'}
                 icon={
                   <Heart
                     className={cn(
@@ -396,7 +367,7 @@ export function PropertyDetailSheet({
               */}
               {property.listingType === 'sale' ? (
                 <Button asChild hideArrow>
-                  <Link href={`/propiedades/${property.id}`}>Contactar / agendar visita</Link>
+                  <Link href={`/propiedades/${property.id}`} target="_blank" rel="noopener noreferrer">Contactar / agendar visita</Link>
                 </Button>
               ) : (
                 /* Postulación — el gate enseña el camino si todavía no puede
@@ -405,7 +376,7 @@ export function PropertyDetailSheet({
                   propertyId={property.id}
                   canonCop={property.monthlyRent ?? undefined}
                 >
-                  Postularme a esta propiedad
+                  Postularme a este inmueble
                 </PostularButton>
               )}
           </SheetFooter>

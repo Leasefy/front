@@ -96,3 +96,12 @@ describe('<AvisoSinPorcentaje>', () => {
     expect(container.querySelector('[data-testid="aviso-sin-porcentaje"]')).toBeNull();
   });
 });
+
+describe('Por girar — cada cifra con sus decimales (revisora r25, C9)', () => {
+  it('no usa plataPareja: los centavos de una cifra no le ponen «,00» a la otra', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const fuente = readFileSync(join(process.cwd(), 'src/components/liquidaciones/PorGirarDeLaInmobiliaria.tsx'), 'utf8');
+    expect(fuente).not.toMatch(/plataPareja\(/);
+  });
+});

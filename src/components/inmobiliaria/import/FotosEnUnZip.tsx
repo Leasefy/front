@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { motionDuration, motionEase } from '@leasefy/cadence';
@@ -106,7 +107,7 @@ export function FotosEnUnZip() {
 
   return (
     <div className="space-y-5" data-testid="fotos-en-un-zip">
-      <div className="rounded-xl border border-border bg-surface p-5">
+      <div className="rounded-lg border border-border bg-surface p-5">
         <p className="text-[15px] font-medium text-fg">Cómo armar el ZIP</p>
         <ul className="mt-2 space-y-1 text-caption text-fg-muted">
           <li>· Una carpeta por inmueble, con su código: el de tu sistema anterior (por ejemplo «4021») o el de Leasefy.</li>
@@ -121,15 +122,16 @@ export function FotosEnUnZip() {
           onChange={(e) => leer(e.target.files?.[0])}
           data-testid="zip-de-fotos"
         />
-        <button
+        <Button
           type="button"
+          hideArrow
           onClick={() => entrada.current?.click()}
           disabled={leyendo || subiendo}
-          className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-[14px] font-medium text-primary-fg transition-colors duration-fast hover:bg-primary-600 active:scale-[0.97] disabled:opacity-60"
+          className="mt-4"
         >
           <FileZip className="h-4 w-4" aria-hidden />
           {leyendo ? 'Leyendo el ZIP…' : lista ? 'Elegir otro ZIP' : 'Elegir el ZIP'}
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -150,7 +152,7 @@ export function FotosEnUnZip() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: motionDuration.base, ease: motionEase.enter }}
-          className="rounded-xl border border-border bg-surface"
+          className="rounded-lg border border-border bg-surface"
         >
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
             <p className="text-[14.5px] text-fg">

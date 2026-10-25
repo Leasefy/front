@@ -28,6 +28,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AccionesDeLaSeccion } from '@/components/configuracion/acciones-de-la-seccion';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import {
   Dialog,
@@ -78,7 +79,13 @@ import {
 } from '@/lib/habeas-data/en-palabras';
 import { descargarBlob } from '@/lib/reportes/exportables';
 import { EsqueletoDeSeccion } from './piezas';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { MagnifyingGlass } from '@phosphor-icons/react';
+import { TablePagination } from '@/components/ui/pagination';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 
 type Pestana = 'abiertas' | 'respondidas' | 'todas';
 
@@ -130,12 +137,33 @@ export function SeccionProteccionDeDatos() {
     void cargar();
   }, [cargar]);
 
+  const conteo = useMemo(() => {
+    const todas = lista?.solicitudes ?? [];
+    return {
+      abiertas: todas.filter((s) => s.estado === 'ABIERTA').length,
+      respondidas: todas.filter((s) => s.estado === 'RESPONDIDA').length,
+      todas: todas.length,
+    };
+  }, [lista]);
+
   const filas = useMemo(() => {
     const todas = lista?.solicitudes ?? [];
     if (pestana === 'abiertas') return todas.filter((s) => s.estado === 'ABIERTA');
     if (pestana === 'respondidas') return todas.filter((s) => s.estado === 'RESPONDIDA');
     return todas;
   }, [lista, pestana]);
+  /* Ronda 30 (regla de Nico: tablas con buscador y paginación). Todo sobre lo que ya llegó. */
+  const [busqueda, setBusqueda] = useState('');
+  const filasVisibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es');
+    if (!q) return filas;
+    return filas.filter((s) =>
+      [s.titular.nombre, s.titular.documento, TIPO_EN_PALABRAS[s.tipo]].some((x) =>
+        (x ?? '').toString().toLocaleLowerCase('es').includes(q),
+      ),
+    );
+  }, [filas, busqueda]);
+  const pag = useTablePagination(filasVisibles, { resetKey: `${busqueda}|${pestana}` });
 
   if (!lista && (cargando || error)) {
     return (
@@ -167,7 +195,8 @@ export function SeccionProteccionDeDatos() {
           <p className="text-sm text-fg" data-testid="frase-del-resumen">
             {fraseDelResumen(lista)}
           </p>
-          <div className="flex items-center gap-2">
+          {/* Nico (23-10-2026): las acciones arriba, a la derecha del título; la ayuda a la izquierda del principal. */}
+          <AccionesDeLaSeccion>
             <ParaEntenderMas etiqueta="Los plazos de la ley" titulo="Solicitudes de los titulares (Ley 1581)">
               <div className="space-y-3 text-sm text-fg">
                 <p>
@@ -182,7 +211,7 @@ export function SeccionProteccionDeDatos() {
                   llegó la solicitud, sin sábados, domingos ni festivos.
                 </p>
                 <p>
-                  Te avisamos cuando a una solicitud abierta le quedan{' '}
+                  Leasefy te avisa cuando a una solicitud abierta le quedan{' '}
                   <span className="font-mono">3</span> días hábiles o menos.
                 </p>
                 <p>
@@ -192,10 +221,10 @@ export function SeccionProteccionDeDatos() {
                 </p>
               </div>
             </ParaEntenderMas>
-            <Button hideArrow onClick={() => setRegistrando(true)} data-testid="registrar-solicitud">
+            <Button hideArrow size="sm" onClick={() => setRegistrando(true)} data-testid="registrar-solicitud">
               Registrar una solicitud
             </Button>
-          </div>
+          </AccionesDeLaSeccion>
         </div>
       ) : (
         <p
@@ -209,38 +238,65 @@ export function SeccionProteccionDeDatos() {
       )}
 
       <section className="overflow-x-clip rounded-lg border border-border bg-surface">
-        <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
-          <span className="text-sm text-fg-muted">Mostrar</span>
-          <div role="tablist" aria-label="Filtrar solicitudes" className="flex gap-1">
-            {PESTANAS.map((p) => (
-              <Button
-                key={p.id}
-                role="tab"
-                aria-selected={pestana === p.id}
-                variant={pestana === p.id ? 'secondary' : 'ghost'}
-                size="sm"
-                hideArrow
-                onClick={() => setPestana(p.id)}
-                data-testid={`pestana-${p.id}`}
-              >
-                {p.etiqueta}
-              </Button>
-            ))}
-          </div>
+        {/* Glow up 22-10: las pestañas con su conteo dentro de la tarjeta (antes «Mostrar» y tres
+            botones sin número). Las abiertas con el punto ámbar: son las que corren contra el plazo. */}
+        <div className="border-b border-border px-4 py-2.5 empty:hidden">
+          <PestanasDeEstado<Pestana>
+            etiqueta="Filtrar solicitudes"
+            valor={pestana}
+            onCambio={setPestana}
+            pestanas={PESTANAS.map((p) => ({
+              valor: p.id,
+              etiqueta: p.etiqueta,
+              cuantos: conteo[p.id],
+              fija: p.id !== 'respondidas',
+              tono: p.id === 'abiertas' && conteo.abiertas > 0 ? ('aviso' as const) : undefined,
+              testid: `pestana-${p.id}`,
+            }))}
+          />
         </div>
 
-        {filas.length === 0 ? (
-          <p className="p-8 text-center text-sm text-fg-muted" data-testid="solicitudes-vacio">
-            {pestana === 'abiertas'
-              ? 'No hay solicitudes abiertas.'
-              : pestana === 'respondidas'
-                ? 'Todavía no hay solicitudes respondidas.'
-                : 'Todavía no hay solicitudes registradas.'}
-          </p>
+        {filas.length > 0 ? (
+          <div className="border-b border-border px-4 py-3">
+            <div className="relative w-full sm:w-80">
+              <MagnifyingGlass
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+                aria-hidden="true"
+              />
+              <Input
+                className="pl-9"
+                placeholder="Buscar titular o documento"
+                aria-label="Buscar solicitudes"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                data-testid="buscar-solicitudes"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {filasVisibles.length === 0 ? (
+          <div data-testid="solicitudes-vacio">
+            {/* Ronda 30: el vacío con SinDatos (por qué y su salida). */}
+            <SinDatos
+              hayFiltros={busqueda.trim() !== ''}
+              queSon="solicitudes"
+              titulo={
+                pestana === 'abiertas'
+                  ? 'No hay solicitudes abiertas.'
+                  : pestana === 'respondidas'
+                    ? 'Todavía no hay solicitudes respondidas.'
+                    : 'Todavía no hay solicitudes registradas.'
+              }
+              descripcion="Cuando un titular pida conocer, corregir o suprimir sus datos, regístralo con «Registrar una solicitud» y aquí corre su plazo."
+              onLimpiarFiltros={() => setBusqueda('')}
+            />
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+          <div className="md:overflow-x-auto">
+            {/* En el celular cada solicitud es una tarjeta: titular y plazo arriba. */}
+            <Table className="max-md:block">
+              <TableHeader className="max-md:hidden">
                 <TableRow>
                   <TableHead>Titular</TableHead>
                   <TableHead>Qué pide</TableHead>
@@ -248,14 +304,14 @@ export function SeccionProteccionDeDatos() {
                   <TableHead>Plazo</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {filas.map((s) => (
+              <TableBody className="max-md:block">
+                {pag.pageItems.map((s) => (
                   <TableRow
                     key={s.id}
                     data-testid={`solicitud-${s.id}`}
                     tabIndex={0}
                     aria-label={`Abrir la solicitud de ${s.titular.nombre}`}
-                    className="cursor-pointer focus-visible:bg-surface-muted"
+                    className="cursor-pointer focus-visible:bg-surface-muted max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:px-4 max-md:py-4"
                     onClick={() => setAbierta(s)}
                     onKeyDown={(ev) => {
                       if (ev.key === 'Enter' || ev.key === ' ') {
@@ -264,24 +320,27 @@ export function SeccionProteccionDeDatos() {
                       }
                     }}
                   >
-                    <TableCell className="max-w-[14rem]">
-                      <p className="truncate text-sm text-fg" title={s.titular.nombre}>
+                    <TableCell className="max-w-[14rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
+                      <p className="truncate text-sm text-fg max-md:font-medium" title={s.titular.nombre}>
                         {s.titular.nombre}
                       </p>
                       <p className="font-mono text-caption text-fg-muted">
                         {s.titular.tipoDocumento} {s.titular.documento}
                       </p>
                     </TableCell>
-                    <TableCell className="text-sm text-fg">{TIPO_EN_PALABRAS[s.tipo]}</TableCell>
-                    <TableCell className="whitespace-nowrap font-mono text-sm text-fg-muted">
-                      {s.recibidaEl}
+                    <TableCell className="text-sm text-fg max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
+                      {TIPO_EN_PALABRAS[s.tipo]}
+                      <span className="text-fg-muted md:hidden"> · llegó el {fechaCorta(s.recibidaEl)}</span>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell className="whitespace-nowrap text-sm text-fg-muted max-md:hidden">
+                      {fechaCorta(s.recibidaEl)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-span-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                       <Badge variant={TONO[s.estadoDelPlazo]}>
                         {ESTADO_DEL_PLAZO_EN_PALABRAS[s.estadoDelPlazo]}
                       </Badge>
                       <p className="mt-1 text-caption text-fg-muted" data-testid={`plazo-${s.id}`}>
-                        {plazoEnPalabras(s)} · vence el <span className="font-mono">{s.venceEl}</span>
+                        {plazoEnPalabras(s)} · vence el {fechaCorta(s.venceEl)}
                       </p>
                     </TableCell>
                   </TableRow>
@@ -290,6 +349,18 @@ export function SeccionProteccionDeDatos() {
             </Table>
           </div>
         )}
+        {filasVisibles.length > 0 ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={pag.total}
+              page={pag.page}
+              pageSize={pag.pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={pag.setPage}
+              onPageSizeChange={pag.setPageSize}
+            />
+          </div>
+        ) : null}
       </section>
 
       <CajonDeLaSolicitud
@@ -346,8 +417,8 @@ function CajonDeLaSolicitud({
       );
       toast.success(
         datos.encontrados === 0
-          ? 'No encontramos datos con ese documento. El archivo lo dice.'
-          : 'Descargamos lo que la inmobiliaria guarda de este titular.',
+          ? 'No hay datos con ese documento. El archivo lo dice.'
+          : 'Se descargó lo que la inmobiliaria guarda de este titular.',
       );
     } catch (e) {
       toast.error(mensajeDelFallo(e, 'No se pudieron reunir los datos del titular.'));
@@ -391,7 +462,7 @@ function CajonDeLaSolicitud({
         <>
           <CajonCabecera
             titulo={`${TIPO_EN_PALABRAS[s.tipo]} · ${s.titular.nombre}`}
-            descripcion={`Llegó el ${s.recibidaEl} por ${CANAL_EN_PALABRAS[s.canal].toLowerCase()} · vence el ${s.venceEl}`}
+            descripcion={`Llegó el ${fechaCorta(s.recibidaEl)} por ${CANAL_EN_PALABRAS[s.canal].toLowerCase()} · vence el ${fechaCorta(s.venceEl)}`}
           >
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant={TONO[s.estadoDelPlazo]}>
@@ -455,8 +526,8 @@ function CajonDeLaSolicitud({
                   <Dato etiqueta="Quién y cuándo">
                     {s.respondidaPor ?? '—'}
                     {s.respondidaEl ? (
-                      <span className="block font-mono text-caption text-fg-muted">
-                        {s.respondidaEl.slice(0, 10)}
+                      <span className="block text-caption text-fg-muted">
+                        {fechaCorta(s.respondidaEl.slice(0, 10))}
                       </span>
                     ) : null}
                   </Dato>
@@ -584,7 +655,7 @@ function RegistrarSolicitud({
         ...(f.recibidaEl ? { recibidaEl: f.recibidaEl } : {}),
       };
       const creada = await habeasDataApi.crear(datos);
-      toast.success(`Registrada. Vence el ${creada.venceEl}.`);
+      toast.success(`Registrada. Vence el ${fechaCorta(creada.venceEl)}.`);
       onRegistrada(creada);
     } catch (e) {
       toast.error(mensajeDelFallo(e, 'No se pudo registrar la solicitud.'));

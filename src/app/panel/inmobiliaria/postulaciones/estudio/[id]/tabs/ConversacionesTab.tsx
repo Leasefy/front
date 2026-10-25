@@ -49,7 +49,7 @@ export function ConversacionesTab(_props: ConversacionesTabProps) {
         title={tf(`${NS}.detalle.conversaciones.empty.title`, 'Todavía no podemos mostrar el hilo')}
         description={tf(
           `${NS}.detalle.conversaciones.empty.description`,
-          'Los mensajes con el candidato se guardan contra su postulación, y esta ficha se abre con el identificador del análisis. Falta la conexión entre los dos: hasta que exista, cualquier conversación que mostráramos acá no sería necesariamente la de esta persona.',
+          'Los mensajes con el candidato se guardan contra su postulación, y esta ficha se abre con el identificador del análisis. Falta la conexión entre los dos: hasta que exista, cualquier conversación que mostráramos aquí no sería necesariamente la de esta persona.',
         )}
       />
     </div>

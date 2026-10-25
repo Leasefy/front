@@ -111,9 +111,8 @@ function CallbackInner() {
     <CallbackShell>
       {err ? (
         <div className="space-y-7" data-testid="admin-callback-error">
-          <div className="flex h-14 w-14 items-center justify-center rounded-md bg-danger-soft">
-            <WarningCircle className="h-7 w-7 text-danger" weight="fill" aria-hidden="true" />
-          </div>
+          {/* Glow up 22-10: el ícono suelto, sin su baldosa de color. */}
+          <WarningCircle className="h-9 w-9 text-danger" weight="duotone" aria-hidden="true" />
           <TituloDeAcceso titulo="No pudimos abrir el enlace" bajada={err} />
           {codigoDelError ? (
             <MonoLabel className="block">Referencia: {codigoDelError}</MonoLabel>

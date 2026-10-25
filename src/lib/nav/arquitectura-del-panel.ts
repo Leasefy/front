@@ -3,23 +3,18 @@ import {
   Kanban,
   Buildings,
   ClipboardText,
-  FilePlus,
   Wrench,
   Lifebuoy,
-  Chat,
   CalendarBlank,
   CurrencyDollar,
   Receipt,
   Bank,
-  Calculator,
   UserCircle,
   UsersThree,
   FileText,
   ChartLine,
   Scales,
   GitMerge,
-  // ShieldCheck,  ← reactivar junto con «Evaluación de candidatos» (postulaciones/estudio)
-  ListChecks,
   Umbrella,
   ArrowsClockwise,
   Lightning,
@@ -40,7 +35,6 @@ import {
   CalendarCheck,
   Signature,
   ShieldWarning,
-  Toolbox,
   Scroll,
   Vault,
   ArrowsLeftRight,
@@ -48,6 +42,12 @@ import {
   HeartStraight,
   SealCheck,
   Gavel,
+  // ShieldCheck,  ← reactivar junto con «Evaluación de candidatos» (postulaciones/estudio)
+  ListChecks,
+  Storefront,
+  EnvelopeSimple,
+  BookOpenText,
+  FolderSimple,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { ROLES_QUE_CONCILIAN, ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
@@ -271,6 +271,12 @@ export interface PantallaDelPanel {
    * sea la Sala de un agente (ver `pestanasDelModulo`).
    */
   exact?: boolean;
+  /**
+   * Otras rutas que son esta misma pantalla (por prefijo, con borde de segmento). «Giros a
+   * propietarios» (22-10-2026) es UNA entrada para Liquidaciones, Dispersiones y los lotes al
+   * banco: sus rutas no cambian (hay enlaces a ellas en toda la plataforma).
+   */
+  tambienEn?: readonly string[];
   /** AGENCY_MODULES key que la gobierna ('view'); null = sin gate de módulo. */
   module: string | null;
   /** Alternativas: alcanza con ver UNO (ver `NavItemWithModule.modulos`). */
@@ -345,6 +351,8 @@ export interface ModuloDelPanel extends PantallaDelPanel {
 
 export interface GrupoDelPanel {
   key: 'agentes' | 'captacion' | 'operacion' | 'dinero' | 'directorio' | 'pie';
+  /** El rótulo de la barra cuando el nombre largo no cabe (≤ 12 letras en DM Mono). */
+  labelCortoKey?: string;
   /** Clave i18n de la cabecera; null = sin cabecera (el pie). */
   labelKey: string | null;
   modulos: ModuloDelPanel[];
@@ -428,6 +436,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
   // contrato que sale de acá ya se vive en Operación (Nico, 2026-09-12).
   {
     key: 'captacion',
+    // Decisión 20 de Nico (22-10): en la barra, «CAPTACIÓN» (el nombre largo no cabía en DM Mono); las páginas siguen con el largo.
+    labelCortoKey: 'inmobiliaria.nav.secCaptacionCorta',
     labelKey: 'inmobiliaria.nav.secCaptacion',
     modulos: [
       {
@@ -544,7 +554,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // QA-CONT CR-04 (Nico, 03-10-2026): sin el abogado externo, como
         // Inquilinos (E-05): tiene `contratos` para lo jurídico pero «sólo sus
         // casos» (O-05); la lista entera con cánones y deudas no es suya.
-        key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', dataTourTarget: 'sidebar-contratos',
+        key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FileText, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', dataTourTarget: 'sidebar-contratos',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.renovaciones', href: r('/contratos/renovaciones'), icon: ArrowsClockwise, module: 'operaciones' },
           // 🔴 Portofino 22-10-2026: los incrementos de un MES, renovados o no.
@@ -585,7 +595,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // como sub-pantalla de Mantenimientos porque el riel no se dibuja con
       // una card sola: quedaría inalcanzable desde el menú. Mismo criterio
       // que «Portales» con Inmuebles.
-      { key: 'proveedores', labelKey: 'inmobiliaria.nav.proveedores', href: r('/mantenimientos/proveedores'), icon: Toolbox, module: 'operaciones', scope: 'administracion' },
+      { key: 'proveedores', labelKey: 'inmobiliaria.nav.proveedores', href: r('/mantenimientos/proveedores'), icon: Storefront, module: 'operaciones', scope: 'administracion' },
       // 🔴 Portofino 22-10-2026: «necesito que creemos también dentro de
       // operación la parte de servicios públicos»: quién está al día, las
       // facturas que suben los inquilinos, la entrada por días y la salida.
@@ -593,7 +603,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       { key: 'solicitudes', labelKey: 'inmobiliaria.nav.solicitudes', href: r('/solicitudes'), icon: Lifebuoy, module: 'operaciones', scope: 'administracion', ia: true, hintKey: 'inmobiliaria.nav.pqrs' },
       // 21-10-2026: «Mensajes» es un permiso (se da desde «Permisos de esta
       // persona»); `canAccess('mensajes')` cae al rol con un back anterior.
-      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: 'mensajes', scope: 'administracion' },
+      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: EnvelopeSimple, module: 'mensajes', scope: 'administracion' },
     ],
   },
 
@@ -684,11 +694,19 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // se veían dentro de cada cobro o contrato. La pantalla tiene las dos
           // pestañas; los egresos piden además `dispersiones` (adentro).
           { labelKey: 'inmobiliaria.nav.recibos', href: r('/pagos/recibos'), icon: Scroll, module: 'cobros', cara: 'inquilinos' },
+          // Revisora r27 (C12): los días hábiles y festivos vivían bajo Pagos sin entrar a ningún riel
+          // (sólo por la URL). Corrigen los plazos de la factura electrónica y de las PQRS, que son del
+          // lado de los inquilinos. El gate es el de su página (`configuracion:view`): es un ajuste.
+          { labelKey: 'inmobiliaria.nav.diasHabiles', href: r('/pagos/calendario'), icon: CalendarCheck, module: 'configuracion', cara: 'inquilinos' },
           // Lo que SALE (cara propietarios). Las facturas de proveedor (CxP)
           // cuelgan de Liquidaciones: hoy no tienen listado propio, y no se
           // inventa uno.
-          { labelKey: 'inmobiliaria.nav.liquidaciones', href: r('/pagos/liquidaciones'), icon: Wallet, module: null, roles: CONTADOR_ROLES, cara: 'propietarios' },
-          { labelKey: 'inmobiliaria.nav.dispersiones', href: r('/pagos/dispersiones'), icon: PaperPlaneTilt, module: 'dispersiones', cara: 'propietarios' },
+          // 🔴 GIROS A PROPIETARIOS (Nico, 22-10-2026: «unirlas»): Liquidaciones y Dispersiones eran
+          // dos entradas hermanas y nada decía que son la misma tarea en orden. Ahora es UNA (`/pagos/giros`,
+          // que abre en el paso 1, liquidar) y queda marcada en los cuatro (`PasosDeLosGiros`). El gate
+          // es `dispersiones` —girar es eso—, que de fábrica tienen ADMIN y CONTADOR, los mismos de
+          // Liquidaciones (back, `role-defaults.ts`). Cada página conserva su `PageGuard`.
+          { labelKey: 'inmobiliaria.nav.girosAPropietarios', href: r('/pagos/giros'), tambienEn: [r('/pagos/liquidaciones'), r('/pagos/dispersiones')], icon: PaperPlaneTilt, module: 'dispersiones', cara: 'propietarios' },
           // 🔴 Lo que está EN LA CUENTA (cara tesorería) — Nico, 18-09 de
           // noche. Estas cuatro pantallas existían desde el 17 y el 18 pero
           // nunca entraron a la navegación: vivían como cinco enlaces azules
@@ -718,12 +736,11 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       },
       { key: 'facturacion', labelKey: 'inmobiliaria.nav.facturacion', href: r('/facturacion'), icon: Receipt, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
       // Conciliación (la Sala de su agente) se mudó a «Agentes IA» el 2026-09-16.
-      { key: 'contabilidad', labelKey: 'inmobiliaria.nav.contabilidadCorta', href: r('/contabilidad'), icon: Calculator, module: null, roles: CONTABILIDAD_ROLES, scope: 'finanzas' },
-      // 🔴 NÓMINA es un módulo de PAGO (Nico, 17-09): `moduloPago` hace que la
-      // fila no exista para quien no lo compró — ni siquiera un instante mientras
-      // cargan los permisos, porque el gate falla cerrado. Y `CONTADOR_ROLES`
-      // porque «la ven sólo administrador y contador».
-      { key: 'nomina', labelKey: 'inmobiliaria.nav.nomina', href: r('/nomina'), icon: IdentificationBadge, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', moduloPago: 'nomina' },
+      { key: 'contabilidad', labelKey: 'inmobiliaria.nav.contabilidadCorta', href: r('/contabilidad'), icon: BookOpenText, module: null, roles: CONTABILIDAD_ROLES, scope: 'finanzas' },
+      // 🔴 NÓMINA es un módulo de PAGO. Decisión 29 de Nico (22-10, cambia la del 17-09): «debe de aparecer y si
+      // la inmobiliaria lo quiere, que lo pague». La fila se ve siempre (para administrador y contador); sin el
+      // módulo, la pantalla dice que es de pago y ofrece el plan. `moduloPago` sigue en el filtro para otros.
+      { key: 'nomina', labelKey: 'inmobiliaria.nav.nomina', href: r('/nomina'), icon: IdentificationBadge, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
     ],
   },
 
@@ -744,7 +761,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // externo: el back le niega la sección entera (E-05).
       { key: 'inquilinos', labelKey: 'inquilinos.titulo', href: r('/inquilinos'), icon: UsersThree, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion' },
       // ROLES (14-10-2026): el back le cierra los documentos al abogado externo (sólo sus casos).
-      { key: 'documentos', labelKey: 'inmobiliaria.nav.documentos', href: r('/documentos'), icon: FileText, module: 'documentos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'general', exact: true },
+      { key: 'documentos', labelKey: 'inmobiliaria.nav.documentos', href: r('/documentos'), icon: FolderSimple, module: 'documentos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'general', exact: true },
     ],
   },
 
@@ -847,8 +864,18 @@ export function pestanasDelModulo(m: ModuloDelPanel): PantallaDelPanel[] {
   return [raiz, ...(m.pantallas ?? []).map((p) => ({ ...p, scope: p.scope ?? m.scope }))];
 }
 
+/** Lo largo de lo que calzó (el href o una de `tambienEn`), o null si nada calza. */
+function largoDelCalce(p: PantallaDelPanel, pathname: string): number | null {
+  let largo: number | null =
+    pathname === p.href || (!p.exact && pathname.startsWith(`${p.href}/`)) ? p.href.length : null;
+  for (const otra of p.tambienEn ?? []) {
+    if ((pathname === otra || pathname.startsWith(`${otra}/`)) && (largo === null || otra.length > largo)) largo = otra.length;
+  }
+  return largo;
+}
+
 function coincide(p: PantallaDelPanel, pathname: string): boolean {
-  return pathname === p.href || (!p.exact && pathname.startsWith(`${p.href}/`));
+  return largoDelCalce(p, pathname) !== null;
 }
 
 function sinQuery(pathname: string): string {
@@ -864,10 +891,20 @@ function sinQuery(pathname: string): string {
  * entrar a la sala se vería dentro de Pagos.
  */
 export function moduloDeLaRuta(pathname: string): ModuloDelPanel | null {
+  return modulosDeLaRuta(pathname)[0] ?? null;
+}
+
+/**
+ * Todos los módulos que calzan con la ruta, del href más largo al más corto (el
+ * primero es `moduloDeLaRuta`). Revisora r27 (C12): `/pagos/cartera/juridico` es la
+ * fila del abogado externo (`soloEsosRoles`) y también una pestaña de Cartera; quien
+ * no ve esa fila tiene que caer en el módulo de arriba para ver el riel de su sección.
+ */
+export function modulosDeLaRuta(pathname: string): ModuloDelPanel[] {
   const ruta = sinQuery(pathname);
-  const candidatos = modulosDelPanel().filter((m) => ruta === m.href || ruta.startsWith(`${m.href}/`));
-  if (candidatos.length === 0) return null;
-  return candidatos.sort((a, b) => b.href.length - a.href.length)[0] ?? null;
+  return modulosDelPanel()
+    .filter((m) => ruta === m.href || ruta.startsWith(`${m.href}/`))
+    .sort((a, b) => b.href.length - a.href.length);
 }
 
 /**
@@ -913,7 +950,11 @@ export function grupoDelModulo(modulo: ModuloDelPanel): GrupoDelPanel | null {
 /** La pestaña activa dentro de un módulo: la de href más largo que coincida. */
 export function pestanaActiva(pestanas: PantallaDelPanel[], pathname: string): PantallaDelPanel | null {
   const ruta = sinQuery(pathname);
-  return pestanas.filter((p) => coincide(p, ruta)).sort((a, b) => b.href.length - a.href.length)[0] ?? null;
+  return (
+    pestanas
+      .filter((p) => coincide(p, ruta))
+      .sort((a, b) => (largoDelCalce(b, ruta) ?? 0) - (largoDelCalce(a, ruta) ?? 0))[0] ?? null
+  );
 }
 
 /** La pantalla (N2 o N3) dueña de una ruta, con su módulo. */

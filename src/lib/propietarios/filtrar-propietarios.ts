@@ -24,6 +24,7 @@
 
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { faltaDelDocumentoDelPropietario } from '@/lib/propietarios/falta-del-documento';
+import { datosPendientesDelPropietario } from '@/lib/propietarios/giros-del-propietario';
 
 export type CampoDeOrden =
   | 'name'
@@ -41,6 +42,15 @@ export type TipoDePropietario = 'all' | 'person' | 'company';
  */
 export type FaltaDeLaLista = 'tipoDocumento' | null;
 
+/**
+ * Las pestañas por tarea (Nico, 22-10-2026: «Por girar · Por completar · Con
+ * inmuebles · Todos», abre en «Por girar»). Cada una es un TRABAJO, no un tipo
+ * de persona: a quién hay que girarle, a quién le falta un dato y quién tiene
+ * algo consignado. Persona o empresa pasó a «Filtros».
+ */
+export type VistaDePropietarios = 'porGirar' | 'porCompletar' | 'conInmuebles' | 'todos';
+export const VISTAS_DE_PROPIETARIOS: readonly VistaDePropietarios[] = ['porGirar', 'porCompletar', 'conInmuebles', 'todos'];
+
 export interface FiltrosDePropietarios {
   busqueda: string;
   tipo: TipoDePropietario;
@@ -49,6 +59,8 @@ export interface FiltrosDePropietarios {
   sentido: SentidoDeOrden;
   /** AVISO-TIPO-DOC: opcional, así los filtros armados a mano siguen valiendo. */
   falta?: FaltaDeLaLista;
+  /** La pestaña por tarea. Ausente = «todos» (los filtros armados a mano siguen valiendo). */
+  vista?: VistaDePropietarios;
 }
 
 export const FILTROS_INICIALES: FiltrosDePropietarios = {
@@ -58,7 +70,27 @@ export const FILTROS_INICIALES: FiltrosDePropietarios = {
   campo: 'name',
   sentido: 'asc',
   falta: null,
+  vista: 'todos',
 };
+
+/** «Por girar»: tiene un giro atrasado (vencido y sin girar). La misma regla que la cifra «Giros atrasados». */
+export function estaPorGirar(p: Pick<Propietario, 'pendingBalance'>): boolean {
+  return (p.pendingBalance ?? 0) > 0;
+}
+
+/**
+ * «Por completar»: a su ficha le falta un dato que frena algo —documento, tipo,
+ * cuenta, día de giro— o tiene inmuebles en copropiedad sin su porcentaje (no se
+ * le giran hasta ponerlo). Lo mismo que marca la fila con «Datos por completar».
+ */
+export function estaPorCompletar(p: Propietario): boolean {
+  return datosPendientesDelPropietario(p).length > 0 || (p.inmueblesSinPorcentaje?.length ?? 0) > 0;
+}
+
+/** «Con inmuebles»: es dueño de algo consignado, como principal o en copropiedad. */
+export function tieneInmuebles(p: Pick<Propietario, 'propertyCount' | 'copropiedadesCount'>): boolean {
+  return (p.propertyCount ?? 0) + (p.copropiedadesCount ?? 0) > 0;
+}
 
 /** ¿Hay algo puesto que explique por qué la lista es más corta? El orden no cuenta. */
 export function hayFiltros(filtros: FiltrosDePropietarios): boolean {
@@ -148,7 +180,32 @@ function soloFiltrar(
     resultado = resultado.filter((p) => p.documentType === 'NIT');
   }
 
+  if (filtros.vista === 'porGirar') {
+    resultado = resultado.filter(estaPorGirar);
+  } else if (filtros.vista === 'porCompletar') {
+    resultado = resultado.filter(estaPorCompletar);
+  } else if (filtros.vista === 'conInmuebles') {
+    resultado = resultado.filter(tieneInmuebles);
+  }
+
   return resultado;
+}
+
+/**
+ * Cuántos hay detrás de cada pestaña, con la misma regla de los chips: lo que
+ * verías al tocarla ahora (la búsqueda, el tipo y lo que falta se respetan).
+ * Sin un cierre que se llame cuatro veces: ver la nota del 22-09 de abajo.
+ */
+export function conteosDeLasVistas(
+  propietarios: readonly Propietario[],
+  filtros: FiltrosDePropietarios,
+): Record<VistaDePropietarios, number> {
+  return {
+    porGirar: soloFiltrar(propietarios, { ...filtros, vista: 'porGirar' }).length,
+    porCompletar: soloFiltrar(propietarios, { ...filtros, vista: 'porCompletar' }).length,
+    conInmuebles: soloFiltrar(propietarios, { ...filtros, vista: 'conInmuebles' }).length,
+    todos: soloFiltrar(propietarios, { ...filtros, vista: 'todos' }).length,
+  };
 }
 
 export function filtrarPropietarios(

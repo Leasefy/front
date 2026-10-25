@@ -50,8 +50,8 @@ const COLOR_MAP = {
     text: 'text-success',
   },
   violet: {
-    bg: 'bg-surface-muted dark:bg-ink',
-    text: 'text-fg-muted dark:text-fg-subtle',
+    bg: 'bg-surface-muted',
+    text: 'text-fg-muted',
   },
 } as const;
 
@@ -129,9 +129,9 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
       </div>
 
       {/* Agent Ranking Table */}
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
-        <div className="p-4 border-b border-border dark:border-border-strong">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-surface overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Users className="w-4 h-4 text-fg-muted" />
             Ranking de agentes
           </h3>
@@ -139,7 +139,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
-              <TableRow className="border-b border-border-faint dark:border-border-strong">
+              <TableRow className="border-b border-border-faint">
                 <TableHead className="text-left py-3 px-4 w-12">
                   #
                 </TableHead>
@@ -172,10 +172,10 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                   <TableRow
                     key={agent.id}
                     className={cn(
-                      'border-b border-border-faint dark:border-border-strong/50 transition-colors',
+                      'border-b border-border-faint transition-colors',
                       isTop
-                        ? 'bg-warning-soft/50 dark:bg-warning/10 hover:bg-warning-soft'
-                        : 'hover:bg-surface-muted dark:hover:bg-ink'
+                        ? 'bg-warning-soft/50 hover:bg-warning-soft'
+                        : 'hover:bg-surface-muted'
                     )}
                   >
                     {/* Rank */}
@@ -203,7 +203,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
 
                     {/* Closings */}
                     <TableCell className="py-3 px-4 text-right">
-                      <span className="font-semibold text-foreground">
+                      <span className="font-medium text-foreground">
                         {agent.closings}
                       </span>
                     </TableCell>
@@ -223,7 +223,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                           }
                           className="flex-1"
                         />
-                        <span className="text-xs text-muted-foreground w-10 text-right">
+                        <span className="text-caption text-muted-foreground w-10 text-right">
                           {agent.conversionRate}%
                         </span>
                       </div>
@@ -247,7 +247,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
 
         {/* Pie: sólo si hay más de una página. */}
         {shouldPaginate && (
-          <div className="border-t border-border dark:border-border-strong px-4 py-3">
+          <div className="border-t border-border px-4 py-3">
             <TablePagination
               total={totalAgentes}
               page={page}
@@ -261,8 +261,8 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
       </div>
 
       {/* Performance Comparison - Horizontal Bars */}
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
           <ChartLineUp className="w-4 h-4 text-fg-muted" />
           Tasa de conversion por agente
         </h3>
@@ -320,7 +320,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
+    <div className="p-4 rounded-lg border border-border bg-surface">
       <div className="flex items-center gap-3">
         <div
           className={cn(
@@ -331,8 +331,8 @@ function KPICard({
           <Icon className={cn('w-5 h-5', colors.text)} />
         </div>
         <div>
-          <p className="text-2xl font-bold text-foreground">{value}</p>
-          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-2xl font-medium text-foreground">{value}</p>
+          <p className="text-caption text-muted-foreground">{label}</p>
         </div>
       </div>
     </div>

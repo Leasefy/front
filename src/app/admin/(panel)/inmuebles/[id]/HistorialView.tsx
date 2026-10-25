@@ -1,5 +1,8 @@
 import Link from 'next/link'
-import { fmtCOP } from '@/lib/admin/format'
+import { fmtCOP, fmtFecha } from '@/lib/admin/format'
+
+/** «1,5» — los decimales con coma, como el resto de Leasefy (antes «1.5»). */
+const decimal = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 })
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   ESTADO_DE_CONTRATO,
@@ -19,7 +22,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
-import { Card, Eyebrow, MonoLabel } from '@leasefy/cadence'
+import { Card, Eyebrow, FranjaDeCifras, MonoLabel } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { BackButton } from '@/components/ui/back-button'
 
@@ -78,7 +81,7 @@ function Seccion({
   return (
     <section className="mt-8">
       <Eyebrow className="mb-1">{label}</Eyebrow>
-      <h2 className="text-lg font-semibold text-fg mb-3">{title}</h2>
+      <h2 className="text-h3 text-fg mb-3">{title}</h2>
       {children}
     </section>
   )
@@ -89,7 +92,8 @@ function Seccion({
  * calculado por el back y lo pinta. 🔴 Interno de Leasefy — la inmobiliaria no
  * ve nada de esto (Nico, 2026-09-12). Sin estado propio: se prueba sin red.
  */
-export function HistorialView({ historial }: { historial: HistorialDelInmueble }) {
+/** `enCajon` (ronda 26): dentro del cajón de la lista, sin encabezado (el título del cajón ya dice cuál es). */
+export function HistorialView({ historial, enCajon = false }: { historial: HistorialDelInmueble; enCajon?: boolean }) {
   const { inmueble, contratos, ocupacion, reparaciones, canon, riesgo } = historial
 
   const columnasDeContratos: Column<ContratoDelHistorial>[] = [
@@ -183,26 +187,32 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
   ]
 
   return (
-    <div className="space-y-6 p-6 lg:p-8">
-      <BackButton href="/admin/inmuebles" label="Volver a inmuebles" />
+    <div className={enCajon ? 'space-y-5' : 'space-y-6 p-6 lg:p-8'}>
+      {enCajon ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone="neutral">{ESTADO_DE_INMUEBLE[inmueble.status]}</Pill>
+          <span className="text-caption text-fg-muted">Interno de Leasefy: la inmobiliaria no lo ve.</span>
+        </div>
+      ) : (
+        <>
+          <BackButton href="/admin/inmuebles" label="Volver a inmuebles" />
 
-      <PageHeader
-        title={`#${inmueble.code}${inmueble.externalId ? ` · ${inmueble.externalId} en la inmobiliaria` : ''}`}
-        description={`${inmueble.address} · ${inmueble.city}${inmueble.agencia ? ` · ${inmueble.agencia.name}` : ''}`}
-        right={<Pill tone="info">{ESTADO_DE_INMUEBLE[inmueble.status]}</Pill>}
-      />
+          <PageHeader
+            title={`#${inmueble.code}${inmueble.externalId ? ` · ${inmueble.externalId} en la inmobiliaria` : ''}`}
+            description={`${inmueble.address} · ${inmueble.city}${inmueble.agencia ? ` · ${inmueble.agencia.name}` : ''}`}
+            junto={<Pill tone="neutral">{ESTADO_DE_INMUEBLE[inmueble.status]}</Pill>}
+          />
 
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-danger flex items-center gap-2">
-        <span className="inline-block w-2 h-2 bg-danger" />
-        interno de leasefy · la inmobiliaria no ve esta pantalla
-      </div>
+          <p className="-mt-2 text-caption text-fg-muted">Interno de Leasefy: la inmobiliaria no ve esta pantalla.</p>
+        </>
+      )}
 
       {/* Medidor de riesgo, con cada señal y sus puntos a la vista */}
       <Card className="p-5" data-testid="riesgo">
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <div>
             <MonoLabel className="block">riesgo</MonoLabel>
-            <div className={`text-3xl font-semibold mt-1 ${COLOR_DEL_NIVEL[riesgo.nivel]}`}>
+            <div className={`text-3xl font-medium mt-1 ${COLOR_DEL_NIVEL[riesgo.nivel]}`}>
               {NIVEL_DE_RIESGO[riesgo.nivel]}
               {riesgo.nivel !== 'sin_datos' && (
                 <span className="text-base font-normal text-fg-muted tabular-nums"> · {riesgo.puntaje} / 100</span>
@@ -230,19 +240,16 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
       </Card>
 
       {/* Los números que resumen la historia */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <KpiCard
-          label="contratos"
-          value={contratos.total}
-          hint={`${contratos.activos} activo${contratos.activos === 1 ? '' : 's'} · ${contratos.terminados} terminado${contratos.terminados === 1 ? '' : 's'}`}
-        />
+      <FranjaDeCifras fila="lg">
+        {/* Glow up 22-10: contratos y veces arrendado en UNA cifra (antes dos del mismo peso: cinco en la franja). */}
         <KpiCard
           label="veces arrendado"
           value={contratos.vecesArrendado}
           hint={[
+            `${contratos.total} contrato${contratos.total === 1 ? '' : 's'}: ${contratos.activos} activo${contratos.activos === 1 ? '' : 's'} · ${contratos.terminados} terminado${contratos.terminados === 1 ? '' : 's'}`,
             contratos.rotacionPorAno === null
               ? 'historia corta para medir rotación'
-              : `${contratos.rotacionPorAno} por año · dura ${contratos.duracionPromedioDias === null ? '—' : dias(contratos.duracionPromedioDias)}`,
+              : `${decimal(contratos.rotacionPorAno)} por año · dura ${contratos.duracionPromedioDias === null ? '—' : dias(contratos.duracionPromedioDias)}`,
             contratos.renovaciones > 0
               ? `${contratos.renovaciones} renovación${contratos.renovaciones === 1 ? '' : 'es'}`
               : null,
@@ -252,7 +259,7 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
         />
         <KpiCard
           label="desocupado"
-          value={ocupacion.porcentajeDesocupado === null ? '—' : `${ocupacion.porcentajeDesocupado} %`}
+          value={ocupacion.porcentajeDesocupado === null ? '—' : `${decimal(ocupacion.porcentajeDesocupado)} %`}
           tone={
             ocupacion.porcentajeDesocupado === null
               ? 'default'
@@ -264,7 +271,7 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
           }
           hint={
             ocupacion.desde
-              ? `${dias(ocupacion.diasDesocupado)} de ${dias(ocupacion.diasObservados)} desde ${ocupacion.desde}`
+              ? `${dias(ocupacion.diasDesocupado)} de ${dias(ocupacion.diasObservados)} desde el ${fmtFecha(ocupacion.desde)}`
               : 'sin contratos que arrendaran'
           }
         />
@@ -282,10 +289,10 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
               ? canon.inicial === null
                 ? 'canon publicado'
                 : 'sin variación medible'
-              : `${canon.variacionPct >= 0 ? '+' : ''}${canon.variacionPct} % desde ${fmtCOP(canon.inicial)}`
+              : `${canon.variacionPct >= 0 ? '+' : '−'}${decimal(Math.abs(canon.variacionPct))} % desde ${fmtCOP(canon.inicial)}`
           }
         />
-      </div>
+      </FranjaDeCifras>
 
       <Seccion label="ocupación" title="Vacancias entre contratos">
         <Card className="p-4 mb-3 text-sm flex flex-wrap items-center gap-x-6 gap-y-1" data-testid="ocupacion-ahora">
@@ -322,8 +329,8 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
               <TableBody>
                 {ocupacion.vacancias.map((v) => (
                   <TableRow key={`${v.desde}-${v.hasta}`}>
-                    <TableCell className="font-mono text-caption tabular-nums">{v.desde}</TableCell>
-                    <TableCell className="font-mono text-caption tabular-nums">{v.hasta}</TableCell>
+                    <TableCell className="font-mono text-caption tabular-nums">{fmtFecha(v.desde)}</TableCell>
+                    <TableCell className="font-mono text-caption tabular-nums">{fmtFecha(v.hasta)}</TableCell>
                     <TableCell className={`px-3 py-2.5 font-mono text-caption tabular-nums ${v.dias >= 60 ? 'text-danger' : v.dias >= 30 ? 'text-warning' : ''}`}>
                       {dias(v.dias)}
                     </TableCell>
@@ -359,7 +366,7 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
                   <span className={t.recurrente ? 'text-danger' : 'text-fg-muted'}> · cada {dias(t.cadaDias)}</span>
                 )}
                 {t.recurrente && (
-                  <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] text-danger">tendencia</span>
+                  <span className="ml-2 text-caption text-danger">tendencia</span>
                 )}
               </div>
             ))}

@@ -11,11 +11,11 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
 import { MapeoContable, parteDe } from '@/components/contabilidad/mapeo/MapeoContable';
 
 export default function MapeoContablePage() {
@@ -24,24 +24,25 @@ export default function MapeoContablePage() {
   return (
     <PageGuard module="reportes" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Contabilidad" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
+        <div className="space-y-3">
           <Link
             href="/panel/inmobiliaria/contabilidad"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+            className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-h2 text-fg">Mapeo contable</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            A qué cuenta del PUC va cada movimiento que el sistema asienta solo —los recibos de caja
-            cuando entran, los giros a propietarios cuando el banco paga el lote, y las líneas de una
-            factura de proveedor cuando se causa—. Sin una cuenta en un evento, ese asiento no se
-            genera. En «Rubros del P&G» se dice, además, qué cuentas se leen para comparar el libro
-            contra el presupuesto.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Dinero"
+            titulo="Mapeo contable"
+            // Revisora r25 (Mapeo, UI #3): una línea; los ejemplos, en la ayuda.
+            descripcion="A qué cuenta del PUC va cada movimiento que Leasefy asienta solo."
+            ayuda={
+              <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                <p className="text-body-sm text-fg-muted">Son los recibos de caja cuando entran, los giros a propietarios cuando el banco paga el lote y las líneas de una factura de proveedor cuando se causa. Sin una cuenta en un evento, ese asiento no se genera. En «Rubros del estado de resultados» (el P&G) se dice, además, qué cuentas se leen para comparar el libro contra el presupuesto.</p>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         {/* `key`: si se llega de nuevo a esta ruta con otra `parte`, Next no
             remonta la página y la pestaña se quedaría en la anterior. */}
         <MapeoContable key={parte} inicial={parte} />

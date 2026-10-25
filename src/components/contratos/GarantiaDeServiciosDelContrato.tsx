@@ -40,6 +40,7 @@ import { diaLegible } from '@/lib/mandato/textos';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 import { CampoDeMes } from '@/components/ui/campo-de-mes';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const PESOS = plataEnPantalla(localeDeLasCifras, { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
@@ -138,7 +139,7 @@ export function GarantiaDeServiciosDelContrato({
   return (
     <section className="space-y-4 rounded-lg border border-border bg-card p-5" data-testid="garantia-de-servicios">
       <div>
-        <h3 className="text-base font-semibold">Garantía de servicios públicos</h3>
+        <h3 className="text-base font-medium">Garantía de servicios públicos</h3>
         <p className="text-caption text-muted-foreground">
           Plata del inquilino para las facturas de servicios que lleguen después de la entrega. Se exige{' '}
           {datos.momento === 'INICIO'
@@ -277,7 +278,7 @@ function Cuenta({ datos, onSoporte }: { datos: GarantiaDeServicios; onSoporte: (
         ))}
         <div>
           <dt className="text-muted-foreground">Saldo del inquilino</dt>
-          <dd className="font-semibold" data-testid="garantia-saldo">
+          <dd className="font-medium" data-testid="garantia-saldo">
             {PESOS.format(c.saldoCop)}
           </dd>
         </div>
@@ -550,18 +551,19 @@ function NuevoMovimiento({
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-caption">
           Tipo
-          <select
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value as TipoDeMovimientoDeGarantia)}
-            className="mt-1 block h-9 rounded-md border border-input bg-background px-2 text-sm"
-            data-testid="movimiento-tipo"
-          >
-            {tipos.map((t) => (
-              <option key={t} value={t}>
-                {NOMBRE_DEL_TIPO[t]}
-              </option>
-            ))}
-          </select>
+          {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). */}
+          <Select value={tipo} onValueChange={(v) => setTipo(v as TipoDeMovimientoDeGarantia)}>
+            <SelectTrigger className="mt-1" aria-label="Tipo de movimiento" data-testid="movimiento-tipo">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {tipos.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {NOMBRE_DEL_TIPO[t]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
         <label className="text-caption">
           Valor

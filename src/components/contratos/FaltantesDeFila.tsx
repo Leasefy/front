@@ -95,15 +95,15 @@ export function explicacionDe(
   if (faltante === 'fechas') {
     const sinInicio = vacio(datos.startDate)
     const sinFin = vacio(datos.endDate)
-    const porque = 'El archivo no la trae o no se pudo leer como fecha (día/mes/año). Escríbela acá.'
-    if (sinInicio && sinFin) return { titulo: 'Faltan las fechas del contrato', porque: 'El archivo no las trae o no se pudieron leer como fecha (día/mes/año). Escríbelas acá.' }
+    const porque = 'El archivo no la trae o no se pudo leer como fecha (día/mes/año). Escríbela aquí.'
+    if (sinInicio && sinFin) return { titulo: 'Faltan las fechas del contrato', porque: 'El archivo no las trae o no se pudieron leer como fecha (día/mes/año). Escríbelas aquí.' }
     if (sinInicio) return { titulo: 'Falta la fecha de inicio', porque }
     if (sinFin) return { titulo: 'Falta la fecha de terminación', porque }
   }
   if (faltante === 'canon' && vacio(datos.monthlyRent)) {
     return {
       titulo: 'Falta el canon',
-      porque: 'El archivo no lo trae o no se pudo leer como pesos (por ejemplo «2.1M»). Escríbelo acá.',
+      porque: 'El archivo no lo trae o no se pudo leer como pesos (por ejemplo «2.1M»). Escríbelo aquí.',
     }
   }
   return EXPLICACION[faltante] ?? {
@@ -133,7 +133,7 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
      * nombra la causa sin acusar al archivo.
      */
     porque:
-      "El archivo señala el inmueble por su código y ningún inmueble tuyo lo tiene todavía. Casi siempre es que la importación de inmuebles quedó a medias: el inmueble está preparado pero sin activar, o no se subió. No lo pegamos por la dirección cuando el código no existe — pegarlo por parecido lo dejaría en el inmueble equivocado. Actívalo desde Inmuebles, elígelo acá abajo, o créalo.",
+      "El archivo señala el inmueble por su código y ningún inmueble tuyo lo tiene todavía. Casi siempre es que la importación de inmuebles quedó a medias: el inmueble está preparado pero sin activar, o no se subió. No lo pegamos por la dirección cuando el código no existe — pegarlo por parecido lo dejaría en el inmueble equivocado. Actívalo desde Inmuebles, elígelo aquí abajo, o créalo.",
   },
   inmueble_ambiguo: {
     titulo: "Hay más de un inmueble con esa dirección",
@@ -173,7 +173,7 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   },
   inquilino_nombre: {
     titulo: "Falta el nombre del inquilino",
-    porque: "Sin nombre no se puede crear la cuenta ni el contrato. Escríbelo acá.",
+    porque: "Sin nombre no se puede crear la cuenta ni el contrato. Escríbelo aquí.",
   },
   consecutivo_repetido: {
     titulo: "Ese consecutivo viene en más de una fila del archivo",
@@ -1291,7 +1291,7 @@ function RepartoEditable({
   if (duenos.length < 2 || !canon || canon <= 0)
     return (
       <p className="text-caption text-warning" data-testid="reparto-sin-lista">
-        Esta fila no trae la lista de dueños para repartir acá. Corrige «Valor Canon» en el archivo y
+        Esta fila no trae la lista de dueños para repartir aquí. Corrige «Valor Canon» en el archivo y
         súbelo de nuevo, o quita esa columna del mapeo: el contrato entra sin el porcentaje de cada
         dueño y lo pones en el mandato. Después pulsa «Volver a cruzar con lo ya cargado».
       </p>

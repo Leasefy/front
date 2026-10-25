@@ -229,7 +229,7 @@ function TarjetaDePropuesta({ t: p, posteriores, ensayo }: PropsComunes & { t: T
       }
     >
       <p className="font-body text-[15px] leading-relaxed text-fg">
-        {p.frase} <strong className="font-semibold">{p.pregunta}</strong>
+        {p.frase} <strong className="font-medium">{p.pregunta}</strong>
       </p>
       {p.porQue && <p className="mt-1.5 font-body text-[14px] leading-snug text-fg-muted">{p.porQue}</p>}
       {/* §4.1: la frase, lo que va a quedar, lo que implica… y justo encima

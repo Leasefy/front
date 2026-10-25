@@ -112,17 +112,17 @@ export function CarrierOverridePopover({
     <div className="w-72 p-4 space-y-4">
       {/* Header */}
       <div>
-        <p className="text-sm font-semibold text-fg capitalize">
+        <p className="text-sm font-medium text-fg capitalize">
           {row.global.name}
         </p>
-        <p className="text-xs text-fg-muted font-mono">
+        <p className="text-caption text-fg-muted font-mono">
           {row.global.route}
         </p>
       </div>
 
       {/* Enabled toggle */}
       <div className="flex items-center justify-between gap-3">
-        <label className="text-xs text-fg">
+        <label className="text-caption text-fg">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.enabledLabel')}
         </label>
         <Switch
@@ -135,7 +135,7 @@ export function CarrierOverridePopover({
 
       {/* Priority */}
       <div className="space-y-1">
-        <label className="text-xs text-fg">
+        <label className="text-caption text-fg">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.priorityLabel')}
         </label>
         <Input
@@ -150,14 +150,14 @@ export function CarrierOverridePopover({
           disabled={!canConfigure}
           className="h-8 text-sm"
         />
-        <Presence as="p" show={Boolean(priorityError)} className="text-xs text-danger">
+        <Presence as="p" show={Boolean(priorityError)} className="text-caption text-danger">
           {priorityError}
         </Presence>
       </div>
 
       {/* Mode */}
       <div className="space-y-1">
-        <label className="text-xs text-fg">
+        <label className="text-caption text-fg">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.modeLabel')}
         </label>
         <Select
@@ -177,7 +177,7 @@ export function CarrierOverridePopover({
 
       {/* Max Canon COP */}
       <div className="space-y-1">
-        <label className="text-xs text-fg">
+        <label className="text-caption text-fg">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.maxCanonLabel')}
         </label>
         <Input

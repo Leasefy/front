@@ -307,7 +307,7 @@ describe('D1 — un fallo de carga no es «no hay dispersiones»', () => {
     const zona = q('dispersiones-lista') as HTMLElement;
     expect(q('fallo-de-carga', zona)).not.toBeNull();
     expect(q('sin-datos', zona)).toBeNull();
-    expect(host.textContent).not.toContain('Todavía no hay dispersiones');
+    expect(host.textContent).not.toContain('Todavía no hay giros');
 
     await act(async () => {
       (q('reintentar', zona) as HTMLButtonElement).click();
@@ -322,7 +322,7 @@ describe('D1 — un fallo de carga no es «no hay dispersiones»', () => {
     await montar();
     const vacio = q('sin-datos') as HTMLElement;
     expect(vacio.getAttribute('data-caso')).toBe('vacio');
-    expect(vacio.textContent).toContain('Todavía no hay dispersiones de');
+    expect(vacio.textContent).toContain('Todavía no hay giros de');
   });
 
   it('D8: una búsqueda sin coincidencias dice «ningún resultado», no que el mes está vacío', async () => {
@@ -337,6 +337,22 @@ describe('D1 — un fallo de carga no es «no hay dispersiones»', () => {
   });
 });
 
+describe('revisora r22, Giros #1 — «Generar» con el mes ya generado', () => {
+  it('con giros del mes, «Generar» deja de ser la acción azul y dice que suma a quien falte', async () => {
+    await montar();
+    const b = q('generar-los-giros') as HTMLAnchorElement;
+    expect(b.textContent).toContain('Generar los que falten');
+    expect(b.getAttribute('href')).toContain('/pagos/dispersiones/generar?mes=');
+  });
+
+  it('sin giros del mes, sigue siendo «Generar los giros del mes»', async () => {
+    lista = { ...lista, dispersiones: [] };
+    m.getSummary.mockResolvedValue(resumenDelBack({ dispersionsPending: 0 }));
+    await montar();
+    expect((q('generar-los-giros') as HTMLAnchorElement).textContent).toContain('Generar los giros del mes');
+  });
+});
+
 describe('D2 — «Aprobar todas»', () => {
   it('pregunta antes, y no aprueba nada hasta confirmar', async () => {
     await montar();
@@ -344,7 +360,7 @@ describe('D2 — «Aprobar todas»', () => {
       (q('resumen-aprobar-todas') as HTMLButtonElement).click();
     });
     const dialogo = document.querySelector('[role="alertdialog"]');
-    expect(dialogo?.textContent).toContain('Vas a aprobar 3 dispersiones por');
+    expect(dialogo?.textContent).toContain('Vas a aprobar 3 giros por');
     expect(dialogo?.textContent).toContain('¿Seguimos?');
     expect(m.approve).not.toHaveBeenCalled();
   });
@@ -450,7 +466,7 @@ describe('D3 — la agencia aprueba por lote', () => {
 describe('23-09 — la liquidación que ya está en un lote', () => {
   it('🔴 un 409 DISPERSION_EN_UN_LOTE dice el mensaje del back y abre ESE lote, no «No se pudo aprobar»', async () => {
     const msg =
-      'Esta liquidación está en un lote (APROBADO): se gira con ese lote. Girarla también por acá le pagaría dos veces al propietario.';
+      'Esta liquidación está en un lote (APROBADO): se gira con ese lote. Girarla también por aquí le pagaría dos veces al propietario.';
     m.approve.mockRejectedValue(
       new ApiError(409, msg, 'DISPERSION_EN_UN_LOTE', {
         code: 'DISPERSION_EN_UN_LOTE',
@@ -574,8 +590,8 @@ describe('02-10 — aprobar y girar con la regla de oro', () => {
   it('🔴 aprobar con un 5xx: «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
     m.approve.mockRejectedValue(fallo500());
     const { titulo, descripcion } = await aprobarDesdeElCajon();
-    expect(titulo).toBe('No se pudo aprobar la dispersión');
-    expect(descripcion).toContain('No pudimos aprobar la dispersión: algo falló de nuestro lado');
+    expect(titulo).toBe('No se pudo aprobar el giro');
+    expect(descripcion).toContain('No pudimos aprobar el giro: algo falló de nuestro lado');
     expect(descripcion).toContain('ab12cd34');
     expect(descripcion).not.toMatch(/conexi[oó]n/);
   });

@@ -13,7 +13,6 @@ import { Alert, Eyebrow } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Pill } from '@/components/admin/Pill'
 
 type FieldErrors = Partial<Record<keyof PlanFormValues, string>>
 
@@ -109,11 +108,8 @@ export function PlanForm({
   }
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-6 rounded-lg border border-border bg-surface p-6">
-      <div className="flex items-center justify-between">
-        <Eyebrow>{isEdit ? 'Editar plan' : 'Nuevo plan'}</Eyebrow>
-        <Pill tone="info">Para inmobiliarias</Pill>
-      </div>
+    // Glow up 22-10: vive en un cajón (el título lo pone el cajón); antes era una tarjeta encima de la tabla.
+    <form onSubmit={submit} noValidate className="space-y-6">
 
       {/* Identity */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -264,10 +260,10 @@ export function PlanForm({
       )}
 
       <div className="flex items-center gap-3">
-        <Button hideArrow type="submit"  disabled={isSubmitting}>
+        <Button hideArrow type="submit" disabled={isSubmitting} isLoading={isSubmitting}>
           {isSubmitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear plan'}
         </Button>
-        <Button variant="ghost" hideArrow type="button"  onClick={onCancel} disabled={isSubmitting}>
+        <Button variant="outline" hideArrow type="button" onClick={onCancel} disabled={isSubmitting}>
           Cancelar
         </Button>
       </div>

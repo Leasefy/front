@@ -80,8 +80,10 @@ export const ESTADO_LABEL: Record<PqrsEstado, string> = {
 
 /** Una clase por estado, sólo tokens semánticos (nada de hex ni `text-white`). */
 export const ESTADO_BADGE: Record<PqrsEstado, string> = {
-  RECIBIDA: 'bg-primary/10 text-primary',
-  ASIGNADA: 'bg-primary/10 text-primary',
+  // Revisora r25 (T3): «Recibida» y «Asignada» iban en azul; son estados quietos, en
+  // neutro. El ámbar y el rojo los pone el plazo, no el estado.
+  RECIBIDA: 'bg-surface-muted text-fg',
+  ASIGNADA: 'bg-surface-muted text-fg',
   // QA-CONT-95 I-09: el color de relleno como tinta no se lee (4,36:1 y 3,23:1);
   // el tono de texto de la casa sí (-700 en claro, -100 en oscuro).
   EN_PROCESO: 'bg-warning-soft text-warning-700 dark:text-warning-100',
@@ -132,7 +134,8 @@ export function textoSla(
 ): TextoSla {
   if (ESTADOS_TERMINALES.includes(estado)) return { texto: '—', vencido: false }
   const dias = diasParaElSla(slaVenceAt, ahora)
-  if (dias > 0) return { texto: dias === 1 ? '1 día' : `${dias} días`, vencido: false }
+  // Ronda 30 (revisora r27, VOZ §4): bajo «Vence», «en 17 días» (antes «17 días» suelto).
+  if (dias > 0) return { texto: dias === 1 ? 'en 1 día' : `en ${dias} días`, vencido: false }
   if (dias === 0) return { texto: 'Hoy', vencido: true }
   const atras = Math.abs(dias)
   return { texto: atras === 1 ? 'Vencido hace 1 día' : `Vencido hace ${atras} días`, vencido: true }

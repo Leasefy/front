@@ -26,6 +26,7 @@ import { PortadaSinFotos } from '@/components/property/PortadaSinFotos';
 import { videoDelInmueble } from '@/lib/marketplace/video';
 import { useTarjetasDeInmobiliarias } from '@/lib/marketplace/use-inmobiliarias';
 import {
+  AIRE_DE_SECCION,
   CostosDelArriendo,
   DatosClave,
   Descripcion,
@@ -40,6 +41,13 @@ import {
   TotalAlMes,
 } from '@/components/property/ficha/PiezasDeLaFicha';
 import { formatCurrency, formatArea } from '@/lib/format';
+import { cn } from '@/lib/utils';
+
+/**
+ * Ronda 30 (diseño nuevo): el ancho de la página de muestra —hasta 1320 px de
+ * contenido y un margen de 16 a 56 px según la pantalla—.
+ */
+const ANCHO_DE_LA_FICHA = 'mx-auto w-full max-w-[1432px] px-[clamp(16px,4vw,56px)]';
 
 // MapLibre toca `window`: sin SSR, con un esqueleto de la misma altura.
 const MapaDelInmueble = dynamic(
@@ -143,7 +151,7 @@ export interface PropertyDetailViewProps {
 export function PropertyDetailView({
   propertyId,
   listingHref = '/propiedades',
-  listingLabel = 'Propiedades',
+  listingLabel = 'Inmuebles',
 }: PropertyDetailViewProps) {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { user } = useAuth();
@@ -177,20 +185,20 @@ export function PropertyDetailView({
   if (propertyLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="pt-20 container-platform">
+        <div className={cn(ANCHO_DE_LA_FICHA, 'pt-[66px]')}>
           <div className="animate-pulse space-y-6">
-            <div className="h-[45vh] md:h-[65vh] bg-surface-muted rounded-xl" />
+            <div className="h-[min(46vh,420px)] md:h-[clamp(380px,58vh,600px)] bg-surface-muted rounded-lg" />
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 py-10">
               <div className="lg:col-span-7 space-y-4">
                 <div className="h-4 bg-surface-muted rounded w-40" />
                 <div className="h-8 bg-surface-muted rounded w-3/4" />
                 <div className="h-10 bg-surface-muted rounded w-48" />
                 <div className="grid grid-cols-4 gap-3 mt-6">
-                  {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-surface-muted rounded-xl" />)}
+                  {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-surface-muted rounded-md" />)}
                 </div>
               </div>
               <div className="lg:col-span-5 hidden lg:block">
-                <div className="h-64 bg-surface-muted rounded-xl" />
+                <div className="h-64 bg-surface-muted rounded-[28px]" />
               </div>
             </div>
           </div>
@@ -203,14 +211,14 @@ export function PropertyDetailView({
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-normal text-foreground tracking-tight">
-            Propiedad no encontrada
+          <h1 className="text-[clamp(26px,2.5vw,34px)] font-[360] leading-[1.1] tracking-[-0.03em] text-fg">
+            No encontramos este inmueble
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            La propiedad que buscas no existe o ha sido removida.
+          <p className="mt-2 text-[15px] text-fg-muted">
+            El inmueble que buscas no existe o ya no está publicado.
           </p>
           <Link href={listingHref}>
-            <Button className="mt-6">Volver a propiedades</Button>
+            <Button className="mt-6">Ver los inmuebles</Button>
           </Link>
         </div>
       </div>
@@ -254,11 +262,11 @@ export function PropertyDetailView({
           La miga se queda —dice dónde estás— pero el que devuelve es el botón.
         */}
         <div className="pt-6">
-          <div className="container-platform">
+          <div className={ANCHO_DE_LA_FICHA}>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <Link
                 href={listingHref}
-                className="group inline-flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-3 pr-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                className="group inline-flex h-[38px] items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface pl-3 pr-4 text-[14px] font-medium text-fg transition-colors hover:border-fg-subtle [@media(pointer:coarse)]:h-11"
               >
                 <ArrowLeft
                   className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
@@ -269,13 +277,13 @@ export function PropertyDetailView({
 
               <nav
                 aria-label="Ruta"
-                className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
+                className="flex min-w-0 max-w-full items-center gap-2 text-[14px] text-fg-subtle"
               >
-                <Link href={listingHref} className="hover:text-foreground transition-colors">
+                <Link href={listingHref} className="transition-colors hover:text-fg">
                   {listingLabel}
                 </Link>
                 <CaretRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                <span className="truncate text-foreground/70">{property.title}</span>
+                <span className="min-w-0 truncate text-fg-muted">{property.title}</span>
               </nav>
             </div>
           </div>
@@ -283,14 +291,14 @@ export function PropertyDetailView({
 
         {/* Las fotos en mosaico: se acomoda a cuántas hay, nunca un hueco gris
             (Nico, 09-10-2026, ficha «perfecta» con el plano de Redfin/Zillow). */}
-        <section className="pt-4 md:pt-6">
-          <div className="container-platform">
+        <section className="pt-[18px]">
+          <div className={ANCHO_DE_LA_FICHA}>
             {property.images.length === 0 ? (
               /* Sin fotos (importado por CSV, o el agente todavía no las subió):
                  un espacio acotado y con marca, no una imagen rota en un hero
                  de 65vh en blanco (Nico, 2026-09-02). */
               <div
-                className="relative flex h-[240px] md:h-[320px] flex-col items-center justify-start overflow-hidden rounded-xl pt-8 text-center md:pt-10"
+                className="relative flex h-[240px] md:h-[320px] flex-col items-center justify-start overflow-hidden rounded-lg pt-8 text-center md:pt-10"
                 data-testid="hero-sin-fotos"
                 role="img"
                 aria-label={`Sin fotos de ${property.title}`}
@@ -317,16 +325,17 @@ export function PropertyDetailView({
         </section>
 
         {/* Main Content - Two Column Layout */}
-        <section className="container-platform py-10 md:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
+        <section className={cn(ANCHO_DE_LA_FICHA, 'pb-[clamp(64px,7vw,110px)] pt-[clamp(32px,4vw,52px)]')}>
+          {/* Ronda 30 (diseño nuevo): dos columnas 7/5 con 40–64 px de aire. */}
+          <div className="grid grid-cols-1 gap-[clamp(40px,4.5vw,64px)] lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
             {/* Left Column - Property Info */}
-            <div className="lg:col-span-7">
+            <div className="min-w-0">
               {/* Header */}
-              <div className="mb-8">
-                <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="inline-flex items-center gap-1.5">
+              <div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="inline-flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                    <span className="text-[14px] text-muted-foreground">{barrioYCiudad(property.neighborhood, property.city)}</span>
+                    <span className="text-[14.5px] text-fg-muted">{barrioYCiudad(property.neighborhood, property.city)}</span>
                   </span>
                   {/* AVISO-1 (QA 19-10): la fecha de PUBLICACIÓN, nunca la de creación del inmueble. */}
                   {publicadoHace(property.publicadoEn ?? undefined) && (
@@ -334,7 +343,7 @@ export function PropertyDetailView({
                   )}
                 </div>
 
-                <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-heading font-semibold text-foreground tracking-[-0.02em] leading-[1.15]">
+                <h1 className="mt-3 text-balance text-[clamp(34px,3.7vw,54px)] font-[360] leading-[1.04] tracking-[-0.04em] text-fg">
                   {property.title}
                 </h1>
 
@@ -356,7 +365,7 @@ export function PropertyDetailView({
                   <SobreTopeAlert
                     monthlyRent={property.monthlyRent ?? 0}
                     referencia={referenciaCanon(aprobacion)}
-                    className="mb-8"
+                    className="mt-8"
                   />
                 )}
 
@@ -374,12 +383,12 @@ export function PropertyDetailView({
                   canon={property.monthlyRent ?? 0}
                   ciudad={property.city}
                   tipo={property.type}
-                  className="mb-8"
+                  className="mt-8"
                 />
               )}
 
               {/*
-                Acá iba `SocialProofBanner`: "7 viendo ahora" con un punto que
+                Aquí iba `SocialProofBanner`: "7 viendo ahora" con un punto que
                 latía, "38 visitas hoy" y una insignia de "demanda muy alta".
                 Nada de eso se medía — salía de `generateMockStats(propertyId)`,
                 un número derivado de las letras del id, y el contador de
@@ -402,8 +411,8 @@ export function PropertyDetailView({
               {/* Map / Location. Con coordenadas reales va el mapa (mismo
                   componente que la ficha del panel); sin ellas queda la
                   tarjeta con el enlace por barrio y ciudad. */}
-              <div className="mt-12">
-                <h2 className="text-[13px] font-semibold text-foreground uppercase tracking-wide mb-4">Ubicación</h2>
+              <section className={AIRE_DE_SECCION} aria-labelledby="ubicacion">
+                <h2 id="ubicacion" className="mb-3.5 font-mono text-[13px] font-normal uppercase tracking-[0.08em] text-fg-subtle">Ubicación</h2>
                 {tieneCoordenadas(property.latitude, property.longitude) ? (
                   <MapaDelInmueble
                     latitude={property.latitude as number}
@@ -412,12 +421,11 @@ export function PropertyDetailView({
                     direccion={`${barrioYCiudad(property.neighborhood, property.city)}, Colombia`}
                   />
                 ) : (
-                <div className="border border-border rounded-xl bg-surface-muted p-8 flex flex-col items-center justify-center gap-5 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-primary" strokeWidth={1.5} />
-                  </div>
+                <div className="flex flex-col items-center justify-center gap-5 rounded-lg border border-border-faint bg-surface-muted p-8 text-center">
+                  {/* Ronda 30: el pin suelto, sin la caja azul. */}
+                  <MapPin className="w-7 h-7 text-fg-subtle" strokeWidth={1.5} aria-hidden="true" />
                   <div>
-                    <p className="text-[17px] font-heading font-semibold text-foreground">
+                    <p className="text-[17px] font-heading font-medium text-foreground">
                       {property.neighborhood}
                     </p>
                     <p className="text-[14px] text-muted-foreground mt-1">{property.city}, Colombia</p>
@@ -426,28 +434,28 @@ export function PropertyDetailView({
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(barrioYCiudad(property.neighborhood, property.city) + ', Colombia')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-primary bg-primary/10 rounded-xl hover:bg-primary/15 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-5 py-2.5 text-[13px] font-medium text-fg transition-colors hover:bg-surface-muted"
                   >
                     <ArrowSquareOut className="w-4 h-4" />
                     Ver en Google Maps
                   </a>
                 </div>
                 )}
-              </div>
+              </section>
 
               {/* Pie: quién lo publicó y cuándo se actualizó. */}
               {/* Nico, 10-10-2026: cuánto cuesta vivir aquí, con los servicios estimados. */}
               <CuantoCuestaVivirAqui propertyId={propertyId} />
 
-              <p className="mt-12 border-t border-border pt-6 text-[13px] text-fg-subtle" data-testid="pie-de-la-ficha">
+              <p className="mt-12 border-t border-border-faint pt-[22px] text-[13.5px] text-fg-subtle" data-testid="pie-de-la-ficha">
                 {property.agencyName ? `Publicado por ${property.agencyName}` : 'Publicado en Leasefy'}
                 {property.updatedAt && ` · Actualizado el ${new Date(property.updatedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}`}
               </p>
             </div>
 
             {/* Right Column - Sticky CTA. En el celular también se ve (debajo de la
-                ficha): ahí se agenda la visita; «Visita» de la barra lleva hasta acá. */}
-            <div className="lg:col-span-5">
+                ficha): ahí se agenda la visita; «Visita» de la barra lleva hasta aquí. */}
+            <aside className="min-w-0" aria-label={property.listingType === 'sale' ? 'Contactar o agendar visita' : 'Postularme o agendar visita'}>
               <StickyCTA
                 propertyId={property.id}
                 arrendado={property.status === 'rented'}
@@ -466,7 +474,7 @@ export function PropertyDetailView({
                 visitTypes={property.visitTypes}
                 ficha={fichaDelInmueble(property)}
               />
-            </div>
+            </aside>
           </div>
 
           <MasDeLaInmobiliaria p={property} t={inmobiliaria} />

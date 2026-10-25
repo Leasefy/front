@@ -5,11 +5,11 @@
  */
 
 import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { ProvisionesDeNominaPanel } from '@/components/nomina/ProvisionesDeNomina';
 
 /**
@@ -26,20 +26,24 @@ export default function ProvisionesDeNominaPage() {
   return (
     <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <Link
-            href="/panel/inmobiliaria/nomina"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        <div className="space-y-3">
+          <Link href="/panel/inmobiliaria/nomina" className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg">
             Nómina
           </Link>
-          <SectionLabel>Nómina</SectionLabel>
-          <h1 className="text-h2 text-fg">Prestaciones sociales</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Prima, cesantías, intereses sobre cesantías y vacaciones: lo causado cada mes por persona, y el cruce cuando se pagan. Las cuatro bases NO son la misma — vacaciones no lleva auxilio de transporte ni horas extras.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Dinero"
+            titulo="Prestaciones sociales"
+            descripcion="Prima, cesantías, intereses y vacaciones: lo causado cada mes por persona y su pago."
+            ayuda={
+              <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: Prestaciones sociales" variante="secundario">
+                <div className="space-y-3 text-body-sm text-fg-muted">
+                  <p>Lo causado cada mes por persona, y el cruce cuando se pagan.</p>
+                  <p>Las cuatro bases NO son la misma: vacaciones no lleva auxilio de transporte ni horas extras.</p>
+                </div>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         <ProvisionesDeNominaPanel />
       </div>
     </PageGuard>

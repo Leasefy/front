@@ -154,7 +154,7 @@ describe('la llegada del chat', () => {
     const onPromptClick = vi.fn();
     pintar(<BetaWelcome onPromptClick={onPromptClick} />);
     const atajos = [...container.querySelectorAll('[data-testid^="atajo-"]')].map((b) => b.textContent);
-    expect(atajos).toEqual(['Cobros y recaudos', 'Contratos', 'Propiedades']);
+    expect(atajos).toEqual(['Cobros y recaudos', 'Contratos', 'Inmuebles']); // manual de voz: «inmueble», no «propiedad»
     act(() => container.querySelector<HTMLButtonElement>('[data-testid="atajo-contratos"]')!.click());
     expect(onPromptClick).toHaveBeenCalledWith('¿Hay contratos próximos a vencer?');
   });

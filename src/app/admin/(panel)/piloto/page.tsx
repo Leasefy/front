@@ -1,8 +1,10 @@
 'use client'
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { useMemo, useState } from 'react'
 import { Airplane } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
@@ -29,10 +31,14 @@ const cuando = (iso: string | null) => {
     : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })
 }
 
-/** El botón de la fila, corto para que los tres quepan en una línea (el nombre entero va en `aria-label`). */
-const ACCION: Record<EstadoDelPilotoPorLeasefy, string> = { prueba: 'Prueba', contratado: 'Contratar', apagado: 'Apagar' }
+/**
+ * Cada opción del selector de la fila, corta para que las tres quepan en una línea (el nombre entero va en
+ * `aria-label`). Ronda 26 (revisora r25): son ESTADOS, no verbos («Prueba» era un sustantivo suelto y «Apagar»
+ * se ofrecía a lo que nunca se encendió).
+ */
+const ACCION: Record<EstadoDelPilotoPorLeasefy, string> = { prueba: 'En prueba', contratado: 'Contratado', apagado: 'Apagado' }
 
-const tono = (e: EstadoDelPilotoPorLeasefy) => (e === 'contratado' ? 'ok' : e === 'apagado' ? 'bad' : 'info')
+const tono = (e: EstadoDelPilotoPorLeasefy) => (e === 'contratado' ? 'ok' : e === 'apagado' ? 'bad' : 'warn')
 
 const SEGMENTOS: Segmento<PilotoDeLaInmobiliaria>[] = [
   { valor: 'todas', nombre: 'Todas', cumple: () => true },
@@ -61,6 +67,8 @@ interface Cambio {
 export default function PilotoDeLasInmobiliariasPage() {
   const { data, isLoading, error, refetch } = useApiQuery<PilotoDeLaInmobiliaria[]>((signal) => listarElPiloto(signal), [])
   const [cambio, setCambio] = useState<Cambio | null>(null)
+  // Ronda 30 (revisora y K4 de Nico): la fila tiene UN «Cambiar» que abre el cajón; ahí se elige el plan.
+  const [eligiendo, setEligiendo] = useState<PilotoDeLaInmobiliaria | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [fallo, setFallo] = useState<string | null>(null)
   const [hecho, setHecho] = useState<string | null>(null)
@@ -79,7 +87,12 @@ export default function PilotoDeLasInmobiliariasPage() {
   function abrir(fila: PilotoDeLaInmobiliaria, estado: EstadoDelPilotoPorLeasefy) {
     setHecho(null)
     setFallo(null)
-    setCambio({ fila, estado, motivo: '' })
+    setCambio((antes) => ({ fila, estado, motivo: antes?.fila.tenant_id === fila.tenant_id ? antes.motivo : '' }))
+    setEligiendo(null)
+  }
+  function cerrar() {
+    setCambio(null)
+    setEligiendo(null)
   }
 
   async function guardar() {
@@ -98,39 +111,57 @@ export default function PilotoDeLasInmobiliariasPage() {
     }
   }
 
+  const detalleComun =
+    data && data.length > 1 && data.every((f) => f.detalle === data[0].detalle) ? data[0].detalle : null
+
   const columnas: Column<PilotoDeLaInmobiliaria>[] = [
     {
       header: 'Inmobiliaria',
-      cell: (f) => <span className="font-medium text-fg">{f.legal_name}</span>,
+      // Ronda 26 (revisora r25): «Cómo está hoy» ya no es una columna con la misma frase larga en cada fila;
+      // va callada debajo del nombre.
+      cell: (f) => (
+        <div className="min-w-0">
+          <span className="text-body-sm font-medium text-fg">{f.legal_name}</span>
+          {/* Ronda 30 (revisora r27): si la frase es la misma en todas, se dice una vez arriba de la tabla y aquí
+              queda sólo para lectores de pantalla (mismo data-testid). */}
+          <span
+            className={detalleComun ? 'sr-only' : 'block text-caption text-fg-muted'}
+            data-testid={`admin-piloto-detalle-${f.tenant_id}`}
+          >
+            {f.detalle}
+          </span>
+        </div>
+      ),
       orden: (f) => f.legal_name,
       texto: (f) => f.legal_name,
     },
     {
-      header: 'Plan del Piloto',
-      cell: (f) => <Pill tone={tono(f.estado)}>{EL_ESTADO[f.estado].nombre}</Pill>,
-      orden: (f) => EL_ESTADO[f.estado].nombre,
-      texto: (f) => EL_ESTADO[f.estado].nombre,
-    },
-    {
-      header: 'En la inmobiliaria',
-      cell: (f) => <Pill tone={f.activo ? 'ok' : 'muted'}>{f.activo ? 'Encendido' : 'Sin encender'}</Pill>,
-      orden: (f) => (f.activo ? 1 : 0),
-      texto: (f) => (f.activo ? 'Encendido' : 'Sin encender'),
-    },
-    {
-      header: 'Cómo está hoy',
+      // Ronda 30 (revisora r27): UNA columna «En prueba · sin encender» (antes «Plan del piloto» y «En la
+      // inmobiliaria» en dos columnas, que parecían contradecirse).
+      header: 'Estado',
       cell: (f) => (
-        <span className="text-caption text-fg-muted" data-testid={`admin-piloto-detalle-${f.tenant_id}`}>
-          {f.detalle}
+        <span className="flex flex-wrap items-center gap-1.5">
+          <Pill tone={tono(f.estado)}>{EL_ESTADO[f.estado].nombre}</Pill>
+          <span className={f.activo ? 'text-caption text-success' : 'text-caption text-fg-muted'}>
+            {f.activo ? 'encendido' : 'sin encender'}
+          </span>
         </span>
       ),
-      texto: (f) => f.detalle,
+      orden: (f) => `${EL_ESTADO[f.estado].nombre}-${f.activo ? 1 : 0}`,
+      texto: (f) => `${EL_ESTADO[f.estado].nombre} · ${f.activo ? 'Encendido' : 'Sin encender'}`,
     },
     {
       header: 'Último cambio',
       cell: (f) => (
-        <span className="text-caption text-fg-subtle">
-          {f.updated_at ? cuando(f.updated_at) : 'Nadie lo ha cambiado'}
+        <span className="text-caption text-fg-muted">
+          {f.updated_at ? (
+            <span className="font-mono tabular-nums">{cuando(f.updated_at)}</span>
+          ) : (
+            <span className="text-fg-subtle" title="Nadie lo ha cambiado">
+              <span aria-hidden="true">—</span>
+              <span className="sr-only">Nadie lo ha cambiado</span>
+            </span>
+          )}
           {f.updated_by ? <span className="block">{f.updated_by}</span> : null}
         </span>
       ),
@@ -141,28 +172,24 @@ export default function PilotoDeLasInmobiliariasPage() {
     {
       header: '',
       cell: (f) => (
-        <div className="flex gap-1.5 whitespace-nowrap" role="group" aria-label={`Cambiar el Piloto de ${f.legal_name}`}>
-          {ESTADOS_DEL_PILOTO.map((e) => (
-            <Button
-              key={e}
-              type="button"
-              variant={f.estado === e ? 'secondary' : 'outline'}
-              size="sm"
-              hideArrow
-              aria-pressed={f.estado === e}
-              aria-label={`Dejarlo en «${EL_ESTADO[e].nombre}»`}
-              title={EL_ESTADO[e].nombre}
-              disabled={guardando}
-              onClick={(ev) => {
-                ev.stopPropagation()
-                abrir(f, e)
-              }}
-              data-testid={`admin-piloto-${e}-${f.tenant_id}`}
-            >
-              {ACCION[e]}
-            </Button>
-          ))}
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          hideArrow
+          disabled={guardando}
+          aria-label={`Cambiar el plan del piloto de ${f.legal_name}`}
+          onClick={(ev) => {
+            ev.stopPropagation()
+            setHecho(null)
+            setFallo(null)
+            setCambio(null)
+            setEligiendo(f)
+          }}
+          data-testid={`admin-piloto-cambiar-${f.tenant_id}`}
+        >
+          Cambiar
+        </Button>
       ),
     },
   ]
@@ -171,21 +198,57 @@ export default function PilotoDeLasInmobiliariasPage() {
     <div className="space-y-6 p-6 lg:p-8" data-testid="admin-piloto">
       <PageHeader
         title="Piloto automático"
-        description="El Piloto automático de cada inmobiliaria: en prueba (30 días), contratado (sin vencimiento) o apagado por Leasefy. Cada cambio pide un motivo y queda en la bitácora con quién lo hizo."
+        description="El piloto automático de cada inmobiliaria: en prueba, contratado o apagado."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="El piloto automático" variante="secundario">
+            <p className="text-body-sm text-fg-muted">En prueba dura 30 días; contratado no vence; apagado lo decide Leasefy. Cada cambio pide un motivo y queda en la bitácora con quién lo hizo.</p>
+          </ParaEntenderMas>
+        }
       />
 
-      {!isLoading && data && (
-        <p className="text-sm text-fg-muted" data-testid="admin-piloto-conteo">
-          {data.length} inmobiliarias · {conteo.activos} con el Piloto encendido · {conteo.prueba} en prueba ·{' '}
-          {conteo.contratado} contratado · {conteo.apagado} apagado por Leasefy
-        </p>
-      )}
+      {/* Glow up 22-10: LA RESPUESTA (para cuántas corre el piloto); antes una frase con cinco cifras del mismo peso. */}
+      {!isLoading && data && data.length > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6" data-testid="admin-piloto-conteo">
+          <CifraHeroe
+            rotulo="Con el piloto encendido"
+            cifra={conteo.activos.toLocaleString('es-CO')}
+            contexto={`de ${data.length.toLocaleString('es-CO')} ${data.length === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
+            // Ronda 26 (revisora r25): la barra cuenta lo MISMO que la cifra (encendido o no); antes contaba el plan
+            // y no se leían juntas. El plan, en las pestañas de la tabla.
+            tramos={[
+              { clave: 'encendido', etiqueta: 'Encendido', monto: conteo.activos, tono: 'exito', cifra: conteo.activos.toLocaleString('es-CO'), siempre: true },
+              {
+                clave: 'sin-encender',
+                etiqueta: 'Sin encender',
+                monto: data.length - conteo.activos,
+                tono: 'neutro',
+                cifra: (data.length - conteo.activos).toLocaleString('es-CO'),
+              },
+            ]}
+            total={data.length}
+            // Ronda 28 (revisora r27, T6): con ninguna encendida, UNA frase (antes «0 de 5» con barra gris y
+            // leyenda 0 / 5).
+            esCero={conteo.activos === 0}
+            cuandoEsCero={
+              data.length === 1
+                ? 'La inmobiliaria todavía no tiene el piloto encendido.'
+                : `Ninguna de las ${data.length.toLocaleString('es-CO')} inmobiliarias tiene el piloto encendido todavía.`
+            }
+          />
+        </div>
+      ) : null}
 
       {hecho && (
         <Alert variant="success" role="status" data-testid="admin-piloto-hecho">
           {hecho}
         </Alert>
       )}
+
+      {detalleComun ? (
+        <p className="text-body-sm text-fg-muted" data-testid="admin-piloto-detalle-comun">
+          En todas: {detalleComun.charAt(0).toLowerCase() + detalleComun.slice(1)}
+        </p>
+      ) : null}
 
       <DataTable
         columns={columnas}
@@ -195,27 +258,64 @@ export default function PilotoDeLasInmobiliariasPage() {
         error={error ? new Error(mensajeDelFalloDelPiloto(error)) : null}
         onReintentar={refetch}
         emptyTitle="Todavía no hay inmobiliarias"
-        emptyIcon={<Airplane weight="bold" />}
-        aria-label="El Piloto automático de cada inmobiliaria"
+        emptyIcon={<Airplane weight="duotone" />}
+        aria-label="El piloto automático de cada inmobiliaria"
         filaTestid={(f) => `admin-piloto-fila-${f.tenant_id}`}
         filaMarcada={(f) => f.tenant_id === cambio?.fila.tenant_id}
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar una inmobiliaria"
         segmentos={SEGMENTOS}
         exportar="piloto-automatico"
+        masEnElExcel={[{ header: 'Cómo está hoy', texto: (f) => f.detalle }]}
       />
 
       <Cajon
-        abierto={cambio !== null}
-        onOpenChange={(abierto) => (abierto || guardando ? null : setCambio(null))}
+        abierto={cambio !== null || eligiendo !== null}
+        onOpenChange={(abierto) => (abierto || guardando ? null : cerrar())}
         data-testid="admin-piloto-confirmar"
       >
         <CajonCabecera
-          titulo={cambio ? `¿Dejar el Piloto de ${cambio.fila.legal_name} en «${EL_ESTADO[cambio.estado].nombre}»?` : 'Piloto automático'}
+          titulo={
+            cambio
+              ? `¿Dejar el Piloto de ${cambio.fila.legal_name} en «${EL_ESTADO[cambio.estado].nombre}»?`
+              : eligiendo
+                ? `¿En qué dejas el Piloto de ${eligiendo.legal_name}?`
+                : 'Piloto automático'
+          }
           descripcion={cambio ? EL_ESTADO[cambio.estado].queHace : undefined}
         />
         <CajonCuerpo>
           <div className="space-y-4">
+            {(() => {
+              const fila = cambio?.fila ?? eligiendo
+              if (!fila) return null
+              return (
+                // El selector de tres: la opción de hoy marcada y sin acción; la elegida, en tinta.
+                <div
+                  className="inline-flex flex-wrap gap-0.5 rounded-md border border-border bg-surface-muted p-0.5"
+                  role="group"
+                  aria-label={`Plan del piloto de ${fila.legal_name}`}
+                >
+                  {ESTADOS_DEL_PILOTO.map((e) => (
+                    <Button
+                      key={e}
+                      type="button"
+                      variant={cambio?.estado === e ? 'ink' : fila.estado === e ? 'secondary' : 'ghost'}
+                      size="sm"
+                      hideArrow
+                      aria-pressed={cambio?.estado === e}
+                      aria-label={fila.estado === e ? `Hoy está en «${EL_ESTADO[e].nombre}»` : `Dejarlo en «${EL_ESTADO[e].nombre}»`}
+                      title={EL_ESTADO[e].nombre}
+                      disabled={guardando || fila.estado === e}
+                      onClick={() => abrir(fila, e)}
+                      data-testid={`admin-piloto-${e}-${fila.tenant_id}`}
+                    >
+                      {ACCION[e]}
+                    </Button>
+                  ))}
+                </div>
+              )
+            })()}
             {cambio ? (
               <p className="text-body-sm text-fg-muted">
                 <span className="font-medium text-fg">Hoy: </span>
@@ -225,6 +325,7 @@ export default function PilotoDeLasInmobiliariasPage() {
             {cambio?.estado === 'apagado' ? (
               <Alert variant="warning">Si la inmobiliaria lo tiene encendido, deja de correr desde ya.</Alert>
             ) : null}
+            {cambio ? (
             <div className="space-y-1.5">
               <label htmlFor="motivo-del-piloto" className="text-body-sm font-medium text-fg">
                 ¿Por qué? <span className="text-danger">*</span>
@@ -241,6 +342,7 @@ export default function PilotoDeLasInmobiliariasPage() {
               />
               <p className="text-caption text-fg-subtle">Queda en la bitácora con tu correo y la fecha.</p>
             </div>
+            ) : null}
             {fallo ? (
               <Alert variant="danger" role="alert" data-testid="admin-piloto-fallo">
                 {fallo}
@@ -248,8 +350,8 @@ export default function PilotoDeLasInmobiliariasPage() {
             ) : null}
           </div>
         </CajonCuerpo>
-        <CajonPie ayuda={motivoValido ? undefined : 'Escribe al menos 5 letras.'}>
-          <Button variant="outline" hideArrow type="button" onClick={() => setCambio(null)} disabled={guardando}>
+        <CajonPie ayuda={!cambio ? 'Elige en qué lo dejas.' : motivoValido ? undefined : 'Escribe al menos 5 letras.'}>
+          <Button variant="outline" hideArrow type="button" onClick={cerrar} disabled={guardando}>
             Cancelar
           </Button>
           <Button
@@ -257,7 +359,8 @@ export default function PilotoDeLasInmobiliariasPage() {
             type="button"
             variant={cambio?.estado === 'apagado' ? 'destructive' : 'default'}
             onClick={() => void guardar()}
-            disabled={!motivoValido || guardando}
+            disabled={!cambio || !motivoValido || guardando}
+            isLoading={guardando}
             data-testid="admin-piloto-guardar"
           >
             {guardando ? 'Guardando…' : 'Sí, cambiarlo'}

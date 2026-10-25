@@ -77,19 +77,19 @@ export function CasoSidebar({ metadata, finalVerdict, isConnected }: CasoSidebar
       {/* Zone eyebrow */}
       <h2 className="flex items-center gap-2.5">
         <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0" />
-        <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+        <span className="text-caption font-medium uppercase tracking-wide text-fg-muted">
           {tf(`${NS}.caso.eyebrow`, 'Caso')}
         </span>
       </h2>
 
       {/* Estado general — badge asegurabilidad */}
       <div>
-        <p className="text-xs font-medium text-fg-muted">
+        <p className="text-caption font-medium text-fg-muted">
           {tf(`${NS}.caso.estadoLabel`, 'Estado general')}
         </p>
         <span
           className={
-            'mt-1.5 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ' +
+            'mt-1.5 inline-flex items-center rounded-full border px-2.5 py-0.5 text-caption font-medium ' +
             (aseg ? ASEG_BADGE[aseg] : 'bg-surface-muted text-fg-muted border-border')
           }
         >
@@ -99,7 +99,7 @@ export function CasoSidebar({ metadata, finalVerdict, isConnected }: CasoSidebar
 
       {/* Candidato — cédula enmascarada (hash prefijo, NUNCA cédula cruda) */}
       <div className="pt-2 border-t border-border">
-        <p className="text-xs font-medium text-fg-muted">
+        <p className="text-caption font-medium text-fg-muted">
           {tf(`${NS}.caso.candidato`, 'Candidato')}
         </p>
         {/* COTIZ-18 (19-10-2026): el nombre que se escribió en el asistente. */}
@@ -121,20 +121,20 @@ export function CasoSidebar({ metadata, finalVerdict, isConnected }: CasoSidebar
 
       {/* Inmueble — canon / ciudad / tipo */}
       <div className="pt-2 border-t border-border space-y-2">
-        <p className="text-xs font-medium text-fg-muted">
+        <p className="text-caption font-medium text-fg-muted">
           {tf(`${NS}.caso.inmueble`, 'Inmueble')}
         </p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               {tf(`${NS}.caso.canon`, 'Canon')}
             </p>
-            <p className="mt-0.5 text-sm font-semibold text-fg tabular-nums">
+            <p className="mt-0.5 text-sm font-medium text-fg tabular-nums">
               {canon}
             </p>
           </div>
           <div>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               {tf(`${NS}.caso.ciudad`, 'Ciudad')}
             </p>
             <p className="mt-0.5 text-sm font-medium text-fg">
@@ -143,7 +143,7 @@ export function CasoSidebar({ metadata, finalVerdict, isConnected }: CasoSidebar
           </div>
         </div>
         <div>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {tf(`${NS}.caso.tipo`, 'Tipo de inmueble')}
           </p>
           <p className="mt-0.5 text-sm font-medium text-fg capitalize">
@@ -154,7 +154,7 @@ export function CasoSidebar({ metadata, finalVerdict, isConnected }: CasoSidebar
 
       {/* Fecha */}
       <div className="pt-2 border-t border-border">
-        <p className="text-xs font-medium text-fg-muted">
+        <p className="text-caption font-medium text-fg-muted">
           {tf(`${NS}.caso.fecha`, 'Fecha de consulta')}
         </p>
         <p className="mt-0.5 text-sm font-medium text-fg tabular-nums">

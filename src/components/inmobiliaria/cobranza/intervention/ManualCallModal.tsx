@@ -156,7 +156,7 @@ export function ManualCallModal({
           ) : (
             <div className="space-y-3">
               <label className="block">
-                <span className="text-xs font-medium text-fg-subtle">
+                <span className="text-caption font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.manualCall.reasonLabel')}
                 </span>
                 <Textarea
@@ -180,7 +180,7 @@ export function ManualCallModal({
             </div>
           ))}
 
-        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-caption text-danger" data-testid="intervencion-error">
             {error}
         </Presence>
 

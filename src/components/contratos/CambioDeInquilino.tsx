@@ -156,7 +156,7 @@ export function CambioDeInquilino({
       }
       const { porCampo, orden, sueltos } = repartirErroresDelServidor(err, {
         campos: CAMPOS,
-        porDefecto: "No pudimos registrar el cambio de inquilino.",
+        porDefecto: "No se pudo registrar el cambio de inquilino.",
         accion: "registrar el cambio de inquilino",
       });
       setErrores(porCampo);

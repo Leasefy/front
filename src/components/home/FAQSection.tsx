@@ -89,7 +89,7 @@ export function FAQSection() {
 
             {/* CTA Button - Luxterra style: 35px height, 2px border-radius */}
             <a
-              href="mailto:info@leasefy.co"
+              href="mailto:hola@leasefy.co"
               className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-sm border border-border text-[15px] text-foreground tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors group/btn overflow-hidden"
             >
               <span className="relative overflow-hidden h-[20px]">

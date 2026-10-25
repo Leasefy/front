@@ -147,7 +147,7 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
     const esSuyo = aviso.por === 'INQUILINO';
     return (
       <div
-        className="rounded-xl border border-warning/30 bg-warning-soft p-6 lg:p-8"
+        className="rounded-lg border border-warning/30 bg-warning-soft p-6 lg:p-8"
         data-testid="aviso-de-no-renovacion"
       >
         <div className="flex items-start gap-3">

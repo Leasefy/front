@@ -73,7 +73,7 @@ describe('el rechazo NO es un callejón', () => {
     // La primera es la que más se usa en Colombia: que el titular sea otro.
     expect(t).toContain('Que alguien se postule por ti')
     expect(t).toContain('codeudor')
-    expect(t).toContain('Seguir viendo propiedades')
+    expect(t).toContain('Seguir viendo inmuebles')
   })
 
   it('siempre deja un camino al catálogo', () => {
@@ -196,7 +196,7 @@ describe('una demo no promete un catálogo que no puede dar', () => {
 
   it('con sesión no ofrece "mi catálogo"', () => {
     const txt = pintar(demo(), { conSesion: true })
-    expect(txt).toContain('Ver propiedades')
+    expect(txt).toContain('Ver inmuebles')
     expect(txt).not.toContain('Ver mi catálogo')
   })
 

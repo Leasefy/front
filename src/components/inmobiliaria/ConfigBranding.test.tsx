@@ -221,7 +221,7 @@ describe('<ConfigBranding>', () => {
       })
 
       expect(updateAgency).not.toHaveBeenCalled()
-      expect(container.textContent).toContain('Color inválido. Usa el formato #RRGGBB.')
+      expect(container.textContent).toContain('Ese color no se reconoce: escríbelo como #1A40FF.')
     })
 
     it('does not call the API when nothing changed', async () => {

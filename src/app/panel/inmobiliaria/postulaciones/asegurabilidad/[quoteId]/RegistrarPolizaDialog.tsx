@@ -80,7 +80,7 @@ export function RegistrarPolizaDialog({ abierto, onOpenChange, agencyId, quoteId
       setError(
         faltaLaActualizacion(err)
           ? SIN_LA_ACTUALIZACION
-          : mensajeParaLaPersona(err, { porDefecto: 'No pudimos guardar la póliza. Intenta de nuevo.', accion: 'guardar la póliza' }),
+          : mensajeParaLaPersona(err, { porDefecto: 'No se pudo guardar la póliza. Intenta de nuevo.', accion: 'guardar la póliza' }),
       )
     } finally {
       setGuardando(false)

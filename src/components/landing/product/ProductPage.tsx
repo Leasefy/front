@@ -7,6 +7,7 @@ import { ClipDelProducto } from '@/components/landing-v2/ClipDelProducto'
 import { PRODUCTS } from '@/lib/landing/products'
 import { CAPTURAS, type PasoDelRecorrido } from '@/lib/landing/capturas'
 import type { ProductSlug } from '@/lib/landing/types'
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje'
 
 interface ProductPageProps {
   slug: ProductSlug
@@ -38,8 +39,16 @@ export function ProductPage({ slug }: ProductPageProps) {
 
   return (
     <article className="landing-pp landing-pr" data-testid="product-page">
-      <section className="landing-pr-portada">
-        <div className="landing-pr-portada-texto">
+      <section className="landing-pr-portada relative">
+        {/* Cadence 2 · PIX (Nico, 23-10: «las internas de producto con la nueva interfaz, más dots»): la corriente de
+            voltaje de la landing nueva, abajo del héroe y detrás de la pantalla. */}
+        <CorrienteDeVoltaje
+          className="absolute inset-x-0 bottom-0 h-[58%] w-full opacity-80 [mask-image:linear-gradient(to_top,#000_0%,rgba(0,0,0,.6)_40%,transparent_92%)]"
+          forma="horizonte"
+          fuerza={0.5}
+          semilla={slug.length * 7 + 3}
+        />
+        <div className="landing-pr-portada-texto relative z-[1]">
           <p className="landing-pp__eyebrow">
             <span className="landing-pp__eyebrow-k" data-testid="product-eyebrow">
               {product.eyebrow}
@@ -65,7 +74,7 @@ export function ProductPage({ slug }: ProductPageProps) {
             </div>
           </div>
         </div>
-        <div className="landing-pr-portada-escena">
+        <div className="landing-pr-portada-escena relative z-[1]">
           <MarcoDeCaptura
             captura={capturas.portada}
             notas={capturas.notas}

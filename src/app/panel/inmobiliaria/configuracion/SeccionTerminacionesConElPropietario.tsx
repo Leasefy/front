@@ -46,8 +46,8 @@ export function SeccionTerminacionesConElPropietario() {
   return (
     <div className="space-y-4" data-testid="terminaciones-con-el-propietario">
       <div className="space-y-1">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
-          <CalendarX className="h-4 w-4" aria-hidden="true" />
+        <h3 className="flex items-center gap-2 text-base font-medium text-fg">
+          <CalendarX className="h-4 w-4 text-fg-muted" aria-hidden="true" />
           ¿Qué terminaciones decide el propietario?
         </h3>
         <p className="text-sm text-fg-muted">

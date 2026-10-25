@@ -1,4 +1,5 @@
 'use client';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
 import { MantenimientosMarcados } from '@/components/inmobiliaria/MantenimientosMarcados';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -14,11 +15,12 @@ import {
   CAMPOS_DEL_MANTENIMIENTO,
   type CampoDelMantenimiento,
 } from '@/components/inmobiliaria/MantenimientoForm';
-import { Wrench, Plus, CurrencyDollar, SquaresFour, Kanban } from '@phosphor-icons/react';
+import { Plus, SquaresFour, Kanban } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { AnimatedNumber, CrossFade, SegmentedControl } from '@leasefy/cadence';
+import { CrossFade, SegmentedControl } from '@leasefy/cadence';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import type {
   SolicitudMantenimiento,
@@ -92,6 +94,8 @@ type MantenimientoViewMode = 'cards' | 'kanban';
 // Helper Functions
 // ============================================================================
 
+/** El número tal cual (sin separador de miles): la cuenta de solicitudes. */
+
 function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
   const activeMantenimientos = mantenimientos.filter((m) =>
     ['reported', 'quoted', 'approved', 'in_progress'].includes(m.status)
@@ -116,67 +120,6 @@ function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
   };
 }
 
-// ============================================================================
-// Stat Card Component
-// ============================================================================
-
-interface StatCardProps {
-  icon: React.ElementType;
-  label: string;
-  value: string | number;
-  subValue?: string;
-  subValueColor?: 'warning' | 'info' | 'default';
-  bgColor: string;
-  iconColor: string;
-  /** La cifra llegó después de cargar: cuenta desde 0 (como `KpiValor`). */
-  contarDesdeCero?: boolean;
-}
-
-/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
-const enteroTalCual = (n: number) => String(Math.round(n));
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  subValue,
-  subValueColor = 'default',
-  bgColor,
-  iconColor,
-  contarDesdeCero = false,
-}: StatCardProps) {
-  const subValueColors = {
-    warning: 'text-warning font-medium',
-    info: 'text-primary',
-    default: 'text-muted-foreground',
-  };
-
-  return (
-    <div className="p-4 rounded-lg border border-border bg-card">
-      <div className="flex items-center gap-3">
-        <div className={cn('w-10 h-10 rounded-md flex items-center justify-center', bgColor)}>
-          <Icon className={cn('w-5 h-5', iconColor)} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-2xl font-bold text-foreground">
-            {/* La cifra cuenta al llegar y cuando cambia (aprobar, cerrar). */}
-            {typeof value === 'number' ? (
-              <AnimatedNumber value={value} from={contarDesdeCero ? 0 : undefined} format={enteroTalCual} />
-            ) : (
-              value
-            )}
-          </p>
-          <p className="text-xs text-muted-foreground">{label}</p>
-          {subValue && (
-            <p className={cn('text-xs mt-0.5', subValueColors[subValueColor])}>
-              {subValue}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ============================================================================
 // Main Component
@@ -235,6 +178,11 @@ function MantenimientosContent() {
   } = useConsignaciones();
 
   const [mantenimientoView, setMantenimientoView] = useState<MantenimientoViewMode>('kanban');
+  // Revisión de Operación (21-10): el tablero sólo desde 1024 px; en el celular y la tableta
+  // abre en lista (las columnas del tablero se corrían de lado). Se puede cambiar igual.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) setMantenimientoView('cards');
+  }, []);
 
   // Los KPI de arriba y la lista salen de la misma consulta: un solo
   // «Reintentar» arregla las dos cosas.
@@ -269,6 +217,15 @@ function MantenimientosContent() {
 
   // Calculate quick stats
   const stats = useMemo(() => getQuickStats(mantenimientos), [mantenimientos]);
+  /** Cuántos hay en cada etapa del arreglo (la franja de arriba). */
+  const etapas = useMemo(
+    () => ({
+      porCotizar: mantenimientos.filter((m) => m.status === 'reported').length,
+      enArreglo: mantenimientos.filter((m) => m.status === 'approved' || m.status === 'in_progress').length,
+      cerradas: mantenimientos.filter((m) => m.status === 'completed').length,
+    }),
+    [mantenimientos],
+  );
 
   /*
    * Después de cada mutación se relee del servidor, en vez de parchear la fila
@@ -720,34 +677,27 @@ function MantenimientosContent() {
   const isLoading = isLoadingMantenimientos || isLoadingConsignaciones;
   // ¿Se vio la carga? Entonces las cifras que llegan cuentan desde 0; las que
   // ya estaban al montarse (caché) no se animan.
-  const huboCarga = useRef(false);
-  if (isLoading) huboCarga.current = true;
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header — el nombre del menú y nada más. Antes decía la pestaña en la
-          que estabas, y antes de eso siempre «Operaciones», que no es como se
-          llama esto en ningún menú. */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">Mantenimientos</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            Las solicitudes de arreglo de tus inmuebles, desde que entran hasta que se cierran.
-          </p>
-        </div>
-        {/* La acción principal va arriba a la derecha, como en el resto de las
-            páginas (Inmuebles, Contratos…). Antes estaba metida en la barra de
-            pestañas de la tabla: «raro» (Nico, 2026-09-03). */}
-        <div className="flex items-center gap-2 shrink-0">
+    // GLOW UP (21-10): el mismo margen del resto del panel (p-6 lg:p-8; 16 px en el celular).
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* El encabezado de todas las pantallas (revisión de Operación, 21-10). La acción
+          principal arriba a la derecha (Nico, 2026-09-03: dentro de la tabla era «raro»). */}
+      <EncabezadoDePantalla
+        seccion="Operación"
+        titulo="Mantenimientos"
+        descripcion="Las solicitudes de arreglo de tus inmuebles, desde que entran hasta que se cierran."
+        accionPrincipal={
           <div className="flex flex-col items-end gap-1">
             <Button
+              size="sm"
               hideArrow
               onClick={handleNewMantenimiento}
               disabled={!puedeCrear}
               title={motivoParaNoCrear ?? undefined}
               data-testid="nueva-solicitud"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="h-4 w-4" />
               {t('inmobiliaria.operaciones.maintenance.new')}
             </Button>
             {motivoParaNoCrear && (
@@ -756,8 +706,8 @@ function MantenimientosContent() {
               </p>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* El cartel rojo que había acá decía lo mismo para cualquier fallo, no
           ofrecía nada que apretar y convivía con los KPI en cero: la pantalla
@@ -765,61 +715,43 @@ function MantenimientosContent() {
           cuenta donde vive —en la lista, con su «Reintentar»— y los números
           que no se pudieron traer no se inventan. */}
 
-      {/* Quick Stats - Informational Only. Esqueleto → cifras con un fundido. */}
-      <CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
+      {/* GLOW UP 21-10 · el trabajo de esta pantalla es que cada arreglo quede RESUELTO: cotizar →
+          que lo apruebe quien decide → arreglar → cerrar con fotos. Antes eran dos tarjetas sueltas
+          («activos», «cotizaciones pendientes»); ahora la franja dice cuántos hay en cada etapa y
+          qué pide cada una (punto en lo que te toca a ti). Lo que no se pudo traer va con raya. */}
+      {/* Revisora r25: dos solicitudes se contaban tres veces (franja de 5, la bandeja y el
+          tablero). Ahora UNA respuesta arriba —cuántas hay por resolver y dónde está cada una—,
+          al estilo de la Deuda del mes; las cerradas, en el pie. Lo que no se pudo traer no se
+          inventa: con el fallo no se pinta (el fallo se cuenta en la lista, con su «Reintentar»). */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="p-4 rounded-lg border border-border bg-card animate-pulse">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-md bg-muted" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-8 bg-muted rounded w-12" />
-                  <div className="h-3 bg-muted rounded w-24" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Un cero que en realidad es «no lo pudimos traer» afirma algo
-              falso, y encima tranquiliza: «no tienes nada pendiente». Cuando
-              la consulta falló va una raya. */}
-          <StatCard
-            icon={Wrench}
-            label={t('inmobiliaria.operaciones.stats.activeMaintenance')}
-            value={mantenimientosError ? '—' : stats.active}
-            subValue={
-              mantenimientosError
-                ? 'No se pudo traer'
-                : stats.quoted > 0
-                  ? t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.quoted })
-                  : undefined
-            }
-            subValueColor={stats.quoted > 0 && !mantenimientosError ? 'info' : 'default'}
-            bgColor="bg-primary-soft"
-            iconColor="text-primary"
-            contarDesdeCero={huboCarga.current}
-          />
-          <StatCard
-            icon={CurrencyDollar}
-            label={t('inmobiliaria.operaciones.stats.pendingQuotes')}
-            value={mantenimientosError ? '—' : stats.quoted}
-            subValue={
-              mantenimientosError
-                ? 'No se pudo traer'
-                : stats.esperanAlPropietario > 0
-                  ? `${stats.esperanAlPropietario} ${stats.esperanAlPropietario === 1 ? 'espera' : 'esperan'} al propietario`
-                  : undefined
-            }
-            bgColor="bg-neutral-100 dark:bg-neutral-800"
-            iconColor="text-neutral-600 dark:text-neutral-300"
-            contarDesdeCero={huboCarga.current}
-          />
-        </div>
+        <div className="h-32 animate-pulse rounded-lg bg-surface-muted" aria-hidden="true" />
+      ) : mantenimientosError ? null : (
+        <CifraHeroe
+          data-testid="etapas-de-mantenimiento"
+          rotulo="Por resolver"
+          cifra={stats.active}
+          contexto={`${stats.active === 1 ? 'solicitud abierta' : 'solicitudes abiertas'}${
+            stats.esperanAlPropietario > 0
+              ? ` · ${stats.esperanAlPropietario} ${stats.esperanAlPropietario === 1 ? 'espera' : 'esperan'} al propietario`
+              : ''
+          }`}
+          total={stats.active}
+          // Revisora r27: los tramos son las columnas del tablero (antes «Esperan al propietario» contaba otra vez la
+          // misma solicitud de «Por aprobar»: queda sólo en el contexto); los que están en cero no se listan.
+          tramos={[
+            { clave: 'por-cotizar', etiqueta: 'Por cotizar', monto: etapas.porCotizar, tono: 'aviso', cifra: etapas.porCotizar },
+            { clave: 'por-aprobar', etiqueta: 'Por aprobar', monto: stats.quoted, tono: 'aviso', cifra: stats.quoted },
+            { clave: 'en-arreglo', etiqueta: 'En arreglo', monto: etapas.enArreglo, tono: 'exito', cifra: etapas.enArreglo },
+          ]}
+          pie={
+            etapas.cerradas > 0
+              ? `${etapas.cerradas} ${etapas.cerradas === 1 ? 'cerrada' : 'cerradas'}, con su costo a cargo de quien corresponde.`
+              : undefined
+          }
+          esCero={stats.active === 0}
+          cuandoEsCero="Nada por resolver: no hay solicitudes abiertas."
+        />
       )}
-      </CrossFade>
 
       {/* 🔴 D12: lo que espera al propietario y lo que él rechazó. */}
       <BandejaDeAprobacionesDelPropietario
@@ -840,27 +772,10 @@ function MantenimientosContent() {
               {/* El conteo se calla si no se pudo traer: «0 solicitudes
                   activas» sobre una consulta muerta es tranquilizar con
                   un dato que nadie tiene. */}
+              {/* Revisora r27: el conteo ya lo dice la cifra de arriba («N solicitudes abiertas»): aquí sólo el fallo. */}
               {mantenimientosError ? (
                 <span className="text-fg-muted">Solicitudes sin cargar</span>
-              ) : (
-                <>
-                  <AnimatedNumber
-                    className="font-medium text-foreground"
-                    value={mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
-                    format={enteroTalCual}
-                  />
-                  {' '}
-                  {/* SO-11: «1 solicitud activa», no «1 solicitudes activas». */}
-                  {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length === 1
-                    ? 'solicitud activa'
-                    : t('inmobiliaria.operaciones.maintenance.activeRequests')}
-                  {stats.quoted > 0 && (
-                    <span className="ml-2 text-primary">
-                      ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.quoted })})
-                    </span>
-                  )}
-                </>
-              )}
+              ) : null}
             </p>
           </div>
           <SegmentedControl<MantenimientoViewMode>

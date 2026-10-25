@@ -1,16 +1,16 @@
 'use client'
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
-import { ArrowsClockwise, CheckCircle, IdentificationCard, Scales } from '@phosphor-icons/react'
-import { legible } from '@/lib/admin/textos-del-admin'
-import { MonoLabel } from '@leasefy/cadence'
+import { CheckCircle } from '@phosphor-icons/react'
+import { estadoDelProceso } from '@/lib/admin/textos-del-admin'
 
 // ─── Types (match ADMIN-API-CONTRACT.md — Failed states) ───────────────────
 
@@ -55,8 +55,8 @@ const centralColumns: Column<FailedRow>[] = [
   {
     header: 'Estado',
     orden: (r) => r.status,
-    texto: (r) => legible(r.status),
-    cell: (r) => <Pill tone="bad">{legible(r.status)}</Pill>,
+    texto: (r) => estadoDelProceso(r.status),
+    cell: (r) => <Pill tone="bad">{estadoDelProceso(r.status)}</Pill>,
   },
   {
     header: 'Deudor',
@@ -84,8 +84,8 @@ const crmColumns: Column<FailedRow>[] = [
   {
     header: 'Estado',
     orden: (r) => r.status,
-    texto: (r) => legible(r.status),
-    cell: (r) => <Pill tone="warn">{legible(r.status)}</Pill>,
+    texto: (r) => estadoDelProceso(r.status),
+    cell: (r) => <Pill tone="warn">{estadoDelProceso(r.status)}</Pill>,
   },
   {
     header: 'Deudor',
@@ -113,8 +113,8 @@ const legalColumns: Column<LegalPackageRow>[] = [
   {
     header: 'Estado',
     orden: (r) => r.legal_status,
-    texto: (r) => legible(r.legal_status),
-    cell: (r) => <Pill tone="bad">{legible(r.legal_status)}</Pill>,
+    texto: (r) => estadoDelProceso(r.legal_status),
+    cell: (r) => <Pill tone="bad">{estadoDelProceso(r.legal_status)}</Pill>,
   },
   {
     header: 'Deudor',
@@ -164,7 +164,12 @@ export default function FailedStatesPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Procesos fallidos"
-        description="Lo que se cayó y espera a alguien: reportes a centrales de riesgo, sincronización con los CRM y paquetes legales atascados más de 72 horas. Sólo lectura."
+        description="Lo que se cayó y espera a alguien: centrales, CRM y paquetes legales."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Los procesos fallidos" variante="secundario">
+            <p className="text-body-sm text-fg-muted">Reportes a las centrales de riesgo, sincronización con los CRM y paquetes legales. Esta pantalla es de sólo lectura.</p>
+          </ParaEntenderMas>
+        }
       />
 
       {isLoading && <LoadingBlock />}
@@ -172,41 +177,38 @@ export default function FailedStatesPage() {
 
       {data && (
         <>
-          {/* Counters */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <KpiCard
-              icon={<IdentificationCard />}
-              label="Centrales de riesgo"
-              value={central.length}
-              hint="Datacrédito / TransUnion"
-              tone={central.length > 0 ? 'bad' : 'ok'}
-            />
-            <KpiCard
-              icon={<ArrowsClockwise />}
-              label="Sincronización con CRM"
-              value={crm.length}
-              hint="Wasi / Domus / WebProp / Sinco"
-              tone={crm.length > 0 ? 'warn' : 'ok'}
-            />
-            <KpiCard
-              icon={<Scales />}
-              label="Legal atascado · más de 72 h"
-              value={legal.length}
-              hint="Certicámara sin acuse de recibo"
-              tone={legal.length > 0 ? 'bad' : 'ok'}
-            />
-          </div>
+          {/* Glow up 22-10: LA RESPUESTA (cuánto espera a alguien) en una cifra con la barra por tipo; sin nada
+              caído, sólo el vacío (antes salían además las tres tablas vacías). */}
+          {total > 0 ? (
+            <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+              <CifraHeroe
+                rotulo="Esperan a alguien"
+                cifra={total.toLocaleString('es-CO')}
+                contexto={total === 1 ? 'proceso caído' : 'procesos caídos'}
+                tramos={[
+                  { clave: 'centrales', etiqueta: 'Centrales de riesgo', monto: central.length, tono: 'critico', cifra: String(central.length), siempre: true },
+                  { clave: 'crm', etiqueta: 'Sincronización con CRM', monto: crm.length, tono: 'aviso', cifra: String(crm.length), siempre: true },
+                  { clave: 'legal', etiqueta: 'Legal atascado más de 72 h', monto: legal.length, tono: 'critico', cifra: String(legal.length), siempre: true },
+                ]}
+                total={total}
+                data-testid="procesos-fallidos"
+              />
+            </div>
+          ) : null}
 
           {total === 0 && (
-            <EmptyBlock icono={<CheckCircle weight="bold" />} title="No hay nada caído" hint="Todo lo de abajo está al día." />
+            <EmptyBlock
+              icono={<CheckCircle weight="duotone" />}
+              tono="exito"
+              title="No hay nada caído"
+              hint="Los reportes a las centrales, la sincronización con los CRM y los paquetes legales están al día."
+            />
           )}
 
           {/* Centrales */}
-          {(central.length > 0 || total === 0) && (
+          {central.length > 0 && (
             <section className="space-y-3">
-              <MonoLabel className="block">
-                Centrales de riesgo — Datacrédito y TransUnion
-              </MonoLabel>
+              <h2 className="text-subtitle font-medium text-fg">Centrales de riesgo: Datacrédito y TransUnion</h2>
               <DataTable
                 id="centrales"
                 columns={centralColumns}
@@ -224,11 +226,9 @@ export default function FailedStatesPage() {
           )}
 
           {/* CRM */}
-          {(crm.length > 0 || total === 0) && (
+          {crm.length > 0 && (
             <section className="space-y-3">
-              <MonoLabel className="block">
-                Sincronización con CRM — Wasi, Domus, WebProp y Sinco
-              </MonoLabel>
+              <h2 className="text-subtitle font-medium text-fg">Sincronización con CRM: Wasi, Domus, WebProp y Sinco</h2>
               <DataTable
                 id="crm"
                 columns={crmColumns}
@@ -246,11 +246,9 @@ export default function FailedStatesPage() {
           )}
 
           {/* Legal */}
-          {(legal.length > 0 || total === 0) && (
+          {legal.length > 0 && (
             <section className="space-y-3">
-              <MonoLabel className="block">
-                Legal atascado más de 72 h — Certicámara sin acuse
-              </MonoLabel>
+              <h2 className="text-subtitle font-medium text-fg">Legal atascado más de 72 h: Certicámara sin acuse</h2>
               <DataTable
                 id="legal"
                 columns={legalColumns}

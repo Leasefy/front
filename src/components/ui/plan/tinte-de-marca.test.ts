@@ -6,7 +6,7 @@
  *
  * Antes existía `.tinte-de-marca`, que en claro reemplazaba `--primary` por el
  * hex que la agencia elige en Configuración → Marca y en oscuro volvía al del
- * tema. Medido en vivo antes de sacarlo: el botón «Nueva consignación» del
+ * tema. Medido en vivo antes de sacarlo: el botón «Nuevo mandato» del
  * sidebar salía **#4E53A2** mientras «Nuevo propietario», dos columnas a la
  * derecha, salía con el primario del tema. Dos azules distintos para el mismo
  * rol en la misma pantalla.

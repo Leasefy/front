@@ -181,7 +181,7 @@ export function DetalleDeAsiento({ asiento: delPadre, abierto, onCerrar, onRever
                 </div>
               }
             >
-              <p className="font-mono text-xs uppercase tracking-wide text-fg-muted">
+              <p className="font-mono text-caption uppercase tracking-wide text-fg-muted">
                 Asiento n.º {asiento.numero}
               </p>
               <SheetTitle>{conLaPlataPegada(asiento.descripcion)}</SheetTitle>

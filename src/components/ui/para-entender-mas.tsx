@@ -99,6 +99,7 @@ export function ParaEntenderMas({
           setAbierto(true);
         }}
         data-testid="para-entender-mas"
+        data-variante={variante}
       >
         <Question className="h-4 w-4" />
         {etiqueta}

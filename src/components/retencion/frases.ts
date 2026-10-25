@@ -24,7 +24,7 @@ export function fraseDeLasMetricas(m: MetricasDeVinci): string {
     const enGestion = m.enGestion.inquilinos + m.enGestion.propietarios
     return enGestion > 0
       ? `Todavía no se cerró ningún caso: hay ${plural(enGestion, 'plan', 'planes')} de retención en gestión.`
-      : 'Todavía no hay planes de retención: cuando Vinci abra uno, acá ves si se quedó o se fue.'
+      : 'Todavía no hay planes de retención: cuando Vinci abra uno, aquí ves si se quedó o se fue.'
   }
   const partes = [
     `Vinci retuvo ${plural(m.contratosRetenidos, 'contrato', 'contratos')} (renovaron)`,

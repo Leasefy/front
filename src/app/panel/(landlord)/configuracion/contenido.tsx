@@ -98,12 +98,14 @@ function NotificacionesDelPropietario() {
 }
 
 function EliminarCuentaDelPropietario() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { getActive } = useLeases();
   const activos = getActive().length;
   return (
     <SeccionEliminarCuenta
       bloqueo={activos > 0 ? t('landlordSettings.dangerZone.activeLeasesWarning', { count: activos }) : null}
+      // El bloqueo con su salida: dónde están esos arriendos (glow up r26).
+      salidaDelBloqueo={{ href: '/panel/leases', etiqueta: locale === 'en' ? 'See my leases' : 'Ver mis arriendos' }}
     />
   );
 }

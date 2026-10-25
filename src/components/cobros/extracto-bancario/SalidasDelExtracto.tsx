@@ -19,6 +19,7 @@
  * El clic queda en la bitácora con la persona.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import {
   createContext,
   useCallback,
@@ -346,6 +347,7 @@ export function AvisosDeLasSalidas({
               </motion.p>
             ) : vista.cantidad === 0 ? (
               <motion.p key="ninguna" {...aparecer} className="text-body-sm text-fg-muted" data-testid="seguras-ninguna">
+                <Ilustracion nombre="banco" tamano={56} className="mb-2 block" />
                 No hay salidas seguras para conciliar.
                 {vista.quedanParaUnaPersona === 1
                   ? ' La pendiente la decides en la tabla.'

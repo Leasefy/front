@@ -378,9 +378,10 @@ describe('«Tu suscripción» con su glow up (Nico, 03-10-2026)', () => {
     const aspa = p.querySelector<HTMLButtonElement>('button[aria-label="common.close"]')!;
     expect(aspa.className).toContain('rounded-full');
     expect(aspa.className).toMatch(/\bborder\b/);
-    // `surface-muted` y `plan-primary` en oscuro son grises amarillentos sobre el negro.
-    // (El `active:bg-surface-muted` del botón secundario de Cadence es el de presionar: se vale.)
-    const fondos = Array.from(p.querySelectorAll('*')).flatMap((el) => Array.from(el.classList));
+    // `surface-muted` y `plan-primary` en oscuro eran grises amarillentos sobre el negro:
+    // ninguna FRANJA del panel los lleva. Los botones sí van en arena desde Cadence 2
+    // (20-10-2026, Nico: «el estilo de botones de Mollie»): el secundario ES arena.
+    const fondos = Array.from(p.querySelectorAll('*:not(button):not(a)')).flatMap((el) => Array.from(el.classList));
     expect(fondos).not.toContain('bg-surface-muted');
     expect(fondos).not.toContain('bg-plan-primary');
   });
@@ -424,5 +425,27 @@ describe('«Tu suscripción» con su glow up (Nico, 03-10-2026)', () => {
     expect(ver.className).toContain('rounded-full');
     expect(gestionar.className).toContain('rounded-full');
     expect(popover().textContent).not.toContain('Ver Planes');
+  });
+});
+
+// ── Responsive: the right cluster must leave room for the hamburger (T-0173) ──
+
+describe('PlanHeader — right cluster on phones (T-0173)', () => {
+  it('hides the secondary icons (subscription, invite) below sm so the cluster never covers the menu toggle', () => {
+    render();
+    const invitar = botonDelEquipo()!;
+    const suscripcion = container.querySelector<HTMLButtonElement>('button[aria-label="Tu suscripción"]')!;
+    for (const el of [invitar, suscripcion]) {
+      expect(el).toBeTruthy();
+      expect(el.className).toMatch(/(^|\s)hidden(\s|$)/);
+      expect(el.className).toContain('sm:inline-flex');
+    }
+  });
+
+  it('keeps the menu toggle and the bell always visible', () => {
+    render();
+    const toggle = container.querySelector<HTMLButtonElement>('button[aria-label="Abrir menú de navegación"]')!;
+    expect(toggle.className).toContain('flex-shrink-0');
+    expect(toggle.className).not.toMatch(/(^|\s)hidden(\s|$)/);
   });
 });

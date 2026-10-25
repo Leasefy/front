@@ -70,7 +70,7 @@ export function ReportPDFExport({ title }: ReportPDFExportProps) {
           /* Remove shadows and decorative borders */
           .rounded-lg,
           .rounded-md,
-          .rounded-xl {
+          .rounded-lg {
             box-shadow: none !important;
           }
 

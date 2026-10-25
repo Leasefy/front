@@ -25,7 +25,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { TablePagination } from '@/components/ui/pagination';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -42,7 +41,7 @@ import { hoy, primerDiaDelMes, rangoInvertido } from '@/lib/contabilidad/fechas'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { FranjaDeInforme, TarjetaDeInforme } from '../piezas';
+import { FranjaDeInforme, TarjetaDeInforme, EsqueletoDeTabla } from '../piezas';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { DescargarElInforme } from './DescargarElInforme';
@@ -319,32 +318,38 @@ export function BalanceDePrueba() {
   return (
     /* 🔴 20-09 · Antes eran DOS tarjetas: el rango de fechas y la casilla en
        una, la tabla en otra, separadas por 20 px. Nico lo dijo de Facturación
-       —«porque esto no está pegado a la tabla»— y valía igual acá: un filtro
+       —«porque esto no está pegado a la tabla»— y valía igual aquí: un filtro
        es el encabezado de su tabla, no otra cosa. Ahora es UNA tarjeta. */
     <TarjetaDeInforme
       testId="informe-balance-de-prueba"
+      /* Ronda 30 (Nico; la revisora r27 pedía menos renglones de controles): período,
+         casilla y descargas en UNA barra (antes las descargas caían a un segundo renglón).
+         El período toma su ancho y no el de `max-w-xl`; la casilla dice lo mismo más corto. */
+      filtrosClassName="flex flex-wrap items-start gap-x-4 gap-y-3"
       filtros={
         <>
-          <div className="w-full max-w-md">
-            <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
+          <div className="min-w-0 max-w-full">
+            <RangoDeFechas atajos desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
           </div>
-          <div className="flex items-center gap-2 pb-2">
+          <div className="flex min-h-9 items-center gap-2">
             <Checkbox
               id="balance-solo-con-movimiento"
               checked={soloConMovimiento}
               onCheckedChange={(v) => setSoloConMovimiento(v === true)}
             />
-            <Label htmlFor="balance-solo-con-movimiento" className="font-normal">
-              Sólo cuentas con movimiento o saldo
+            <Label htmlFor="balance-solo-con-movimiento" className="font-normal [@media(pointer:coarse)]:flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center">
+              Sólo con movimiento o saldo
             </Label>
           </div>
           {/* CB-C-13 (QA-FACT-CONTA-95 r2): lo que el contador firma se baja. */}
-          <DescargarElInforme
-            informe="Balance de prueba"
-            periodo={rango}
-            tablas={() => (balance ? tablasDelBalanceDePrueba(balance) : [])}
-            disabled={!balance || vacio}
-          />
+          <div className="flex min-h-9 items-center md:ml-auto">
+            <DescargarElInforme
+              informe="Balance de prueba"
+              periodo={rango}
+              tablas={() => (balance ? tablasDelBalanceDePrueba(balance) : [])}
+              disabled={!balance || vacio}
+            />
+          </div>
         </>
       }
     >
@@ -355,9 +360,7 @@ export function BalanceDePrueba() {
         queEs="el balance de prueba"
         onReintentar={cargar}
         esqueleto={
-          <div className="flex items-center justify-center py-16">
-            <Spinner />
-          </div>
+          <EsqueletoDeTabla />
         }
         cuandoVacio={
           <div className="overflow-x-clip">

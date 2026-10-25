@@ -197,7 +197,10 @@ describe('Portafolio — los conteos que la franja recibe', () => {
       refetch: vi.fn(),
     })
     montar()
-    expect(container.textContent).toContain('propertyCountSinContar')
+    // Revisora r24 (Inmuebles #2): el total ya no va en la barra; lo dice «Todos N» de los filtros. Con la lista
+    // caída, ninguno de los dos lo afirma.
+    expect(ultimo().total).toBeNull()
+    expect(container.textContent).not.toContain('portafolio.stats.propertyCount')
   })
 
   it('🔴 con la lista caída tampoco pagina: no hay páginas 2 y 3 de nada', () => {
@@ -237,8 +240,8 @@ describe('Portafolio — los conteos que la franja recibe', () => {
       refetch: vi.fn(),
     })
     montar()
-    expect(container.textContent).toContain('portafolio.stats.propertyCount')
-    expect(container.textContent).not.toContain('propertyCountSinContar')
+    // El total lo dice «Todos N» (revisora r24, Inmuebles #2: antes también la barra, con la misma cifra).
+    expect(ultimo().total).toBe(1)
   })
 
   it('🔴 si falla la SEGUNDA fuente tampoco se dice el total, aunque la lista cargue', () => {
@@ -256,7 +259,7 @@ describe('Portafolio — los conteos que la franja recibe', () => {
     montar()
     expect(ultimo().conteo).toBeNull()
     expect(ultimo().total).toBeNull()
-    expect(container.textContent).toContain('propertyCountSinContar')
+    expect(container.textContent).not.toContain('portafolio.stats.propertyCount')
   })
 
   it('🔴 el arrendado lo dice el CONTRATO, no la disponibilidad del mandato', () => {
@@ -327,7 +330,9 @@ describe('Portafolio — los conteos que la franja recibe', () => {
       refetch: vi.fn(),
     })
     montar()
-    expect(container.textContent).toContain('portafolio.stats.propertyCountUno')
+    // Revisora r24 (Inmuebles #2): la cifra la dice «Todos N» (un número, sin «1 inmuebles»); la barra ya no la repite.
+    expect(ultimo().total).toBe(1)
+    expect(container.textContent).not.toContain('portafolio.stats.propertyCount')
     act(() => root.unmount())
     root = createRoot(container)
     consignacionesMock.mockReturnValue({
@@ -337,8 +342,8 @@ describe('Portafolio — los conteos que la franja recibe', () => {
       refetch: vi.fn(),
     })
     montar()
-    expect(container.textContent).toContain('portafolio.stats.propertyCount')
-    expect(container.textContent).not.toContain('propertyCountUno')
+    expect(ultimo().total).toBe(2)
+    expect(container.textContent).not.toContain('portafolio.stats.propertyCount')
   })
 
   /* QA con avatares (04-10): «Dejar en borrador» y la lista lo daba disponible. */

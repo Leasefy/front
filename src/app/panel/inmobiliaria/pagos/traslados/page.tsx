@@ -9,7 +9,7 @@
  */
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { TrasladoDeComisionPanel } from '@/components/tesoreria/TrasladoDeComision';
 
@@ -22,10 +22,12 @@ export default function TrasladosPage() {
             mostrar esa diferencia»), cinco renglones aparte. Nico, 21-09: «lo
             mismo, esto parece un vómito, organízala!!». Arriba queda una línea
             y el porqué entero se va detrás del botón. */}
-        <header className="space-y-1.5">
-          <SectionLabel>Tesorería</SectionLabel>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h1 className="text-h2 text-fg">Traslado de la comisión a tu cuenta</h1>
+        {/* Glow up: el encabezado común, con la sección de la cara del riel («Cuadrar la caja»), como Cuadre y Pendientes. */}
+        <EncabezadoDePantalla
+          seccion="Cuadrar la caja"
+          titulo="Traslado de la comisión a tu cuenta"
+          descripcion="Tu comisión está en la cuenta de recaudo. Aquí se propone moverla y se aprueba."
+          ayuda={
             <ParaEntenderMas
               etiqueta="Por qué hay que trasladarla"
               descripcion="Qué es tuyo dentro de la cuenta de recaudo, y por qué no sale solo."
@@ -48,17 +50,14 @@ export default function TrasladosPage() {
                   sobra es tu comisión sin trasladar.
                 </p>
                 <p>
-                  Acá se <strong className="text-fg">propone</strong> con su desglose renglón por
+                  Aquí se <strong className="text-fg">propone</strong> con su desglose renglón por
                   renglón y una persona lo <strong className="text-fg">aprueba</strong>. No sale
                   solo: mover plata entre cuentas deja comprobante y lleva firma.
                 </p>
               </div>
             </ParaEntenderMas>
-          </div>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Tu comisión está en la cuenta de recaudo. Acá se propone moverla y se aprueba.
-          </p>
-        </header>
+          }
+        />
         <TrasladoDeComisionPanel />
       </div>
     </PageGuard>

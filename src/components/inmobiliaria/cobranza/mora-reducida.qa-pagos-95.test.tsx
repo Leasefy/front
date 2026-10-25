@@ -20,7 +20,9 @@ vi.mock('@/lib/i18n', () => ({
 vi.mock('@leasefy/cadence', () => ({
   Stagger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   StaggerItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  KpiCard: (p: { label: string; value: string | null; sublabel: string; 'data-testid': string }) => (
+  // GLOW UP 21-10: las cifras van en la franja común; aquí sólo importa su texto.
+  FranjaDeCifras: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  KpiCard:(p: { label: string; value: string | null; sublabel: string; 'data-testid': string }) => (
     <div data-testid={p['data-testid']}>
       {p.label}|{p.value ?? '—'}|{p.sublabel}
     </div>

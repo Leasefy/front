@@ -77,8 +77,8 @@ export function MoriRecuerdaLaFactura({
       data-testid="mori-recuerda"
     >
       <div className="min-w-0 space-y-0.5">
-        <p className="text-sm font-medium text-fg">Mori recuerda la factura</p>
-        <p className="max-w-2xl text-xs text-fg-muted">
+        <p className="text-body-sm text-fg">Mori recuerda la factura</p>
+        <p className="max-w-2xl text-caption text-fg-muted">
           {prendido
             ? `El día ${dia} del mes siguiente y 7 días después, Mori le escribe por WhatsApp a quien no ha subido la factura pagada (o se la rechazaron) y le explica el riesgo de corte. Si ya lo está cobrando, se lo dice en esa gestión.`
             : 'Apagado. Al prenderlo, Mori le recuerda por WhatsApp al inquilino la factura que no ha subido, con el riesgo de corte, dos veces al mes.'}

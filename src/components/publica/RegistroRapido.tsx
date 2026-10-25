@@ -71,11 +71,9 @@ export function RegistroRapido({
 
   return (
     <div className="mx-auto w-full max-w-[460px]" data-testid="registro-rapido">
-      <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-fg-subtle">
-        <i className="inline-block size-2 rounded-[2px] bg-primary" aria-hidden="true" />
-        Último paso antes de publicar
-      </p>
-      <h1 className="mt-4 text-[28px] font-medium leading-[1.1] tracking-[-0.03em] text-fg sm:text-[32px]">
+      {/* Glow up 23-10: igual que «¿Lo publicas para arriendo o para venta?» (sin el cuadrito azul, título liviano). */}
+      <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-fg-subtle">Último paso antes de publicar</p>
+      <h1 className="mt-4 text-[28px] font-[420] leading-[1.1] tracking-[-0.03em] text-fg sm:text-[32px]">
         {perfil === 'agency' ? 'Tu inmobiliaria' : perfil === 'landlord' ? 'Tus datos' : '¿Quién va a publicar?'}
       </h1>
       <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
@@ -97,9 +95,7 @@ export function RegistroRapido({
               className="group flex w-full items-center gap-4 rounded-lg border border-border bg-surface p-4 text-left transition-[transform,border-color] duration-fast hover:-translate-y-px hover:border-primary/60 active:scale-[0.99]"
               data-testid={`registro-${p === 'agency' ? 'inmobiliaria' : 'propietario'}`}
             >
-              <span className="inline-flex size-11 items-center justify-center rounded-md bg-primary-soft text-primary">
-                <I size={22} weight="duotone" aria-hidden="true" />
-              </span>
+              <I size={26} weight="duotone" className="shrink-0 text-fg-muted transition-colors duration-fast group-hover:text-primary" aria-hidden="true" />
               <span>
                 <span className="block text-[15px] font-medium text-fg">{t}</span>
                 <span className="block text-[13px] text-fg-subtle">{d}</span>

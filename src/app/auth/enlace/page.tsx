@@ -219,7 +219,7 @@ function EnlaceContent() {
           <CrossFade swapKey={aviso ? 'aviso' : error ? 'error' : 'verificando'}>
           {aviso ? (
             <>
-              <h1 className="text-xl font-semibold text-fg mb-2">{aviso.titulo}</h1>
+              <h1 className="text-xl font-medium text-fg mb-2">{aviso.titulo}</h1>
               <p className="text-sm text-fg-muted mb-6">{aviso.cuerpo}</p>
               {aviso.boton && (
                 <Button asChild className="h-12 w-full rounded-full text-[14px]">
@@ -229,7 +229,7 @@ function EnlaceContent() {
             </>
           ) : error ? (
             <>
-              <h1 className="text-xl font-semibold text-fg mb-2">
+              <h1 className="text-xl font-medium text-fg mb-2">
                 No pudimos abrir el enlace
               </h1>
               <p className="text-sm text-fg-muted mb-6" role="alert">
@@ -242,7 +242,7 @@ function EnlaceContent() {
             </>
           ) : (
             <>
-              <h1 className="text-xl font-semibold text-fg mb-2">
+              <h1 className="text-xl font-medium text-fg mb-2">
                 Verificando tu enlace
               </h1>
               <p className="text-sm text-fg-muted">Un segundo…</p>

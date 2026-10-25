@@ -18,7 +18,8 @@ void React;
 
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 
-import { RenovacionesTable } from './RenovacionesTable';
+import { RenovacionesTable, cuantoFalta } from './RenovacionesTable';
+import { diasParaVencer } from '@/lib/renovaciones/dias-para-vencer';
 import type { Renovacion } from '@/lib/types/inmobiliaria';
 
 function renovacion(overrides: Partial<Renovacion> = {}): Renovacion {
@@ -101,10 +102,13 @@ describe('<RenovacionesTable>', () => {
     expect(vacio!.textContent).toContain('Sin renovaciones en curso');
   });
 
-  it('con filtros puestos el vacío dice «ningún resultado» y ofrece quitarlos', () => {
+  it('con filtros puestos el vacío dice «ningún resultado» y ofrece quitarlos', async () => {
     render({ data: [renovacion()] });
 
-    act(() => chip('Críticas').click());
+    // «Críticas» en cero ya no sale (pestañas de estado, sin ceros): el
+    // filtro que no encuentra nada es la búsqueda.
+    escribir('zzz-no-existe');
+    await esperarLasSalidas();
     const vacio = container.querySelector('[data-testid="sin-datos"]')!;
     expect(vacio.getAttribute('data-caso')).toBe('filtros');
 
@@ -128,7 +132,8 @@ describe('<RenovacionesTable>', () => {
   });
 
   it('cada fila muestra lo real: fecha sin corrimiento de zona, días y cajón del back', () => {
-    render({ data: [renovacion()] });
+    // Los días se cuentan con la fecha de la fila (B1, r27): del 16 nov al 31 dic, 45.
+    render({ data: [renovacion()], hoy: new Date(2026, 10, 16) });
 
     const fila = container.querySelector('[data-testid="renovacion-r-1"]')!;
     // 2026-12-31 (DATE, medianoche UTC) sigue siendo 31 dic en Bogotá.
@@ -136,8 +141,10 @@ describe('<RenovacionesTable>', () => {
     expect(fila.textContent).toContain('45 días');
     expect(fila.textContent).toContain('$\u00a02.100.000');
     expect(fila.textContent).toContain('Pendiente');
-    // Sin propuesta no se pinta una: raya.
-    expect(fila.textContent).toContain('—');
+    // Sin propuesta en ninguna fila, la columna «Propuesto» no se pinta
+    // (revisora r25: decía «—» en las diez filas).
+    expect(container.querySelector('thead')!.textContent).not.toContain('proposed');
+    expect(container.querySelector('thead')!.textContent).not.toContain('Propuesto');
   });
 
   it('los conteos de los cajones se cuentan sobre la lista real', async () => {
@@ -280,7 +287,7 @@ describe('<RenovacionesTable> — lo que se arregló el 19-09', () => {
     render({ data: [renovacion()] });
     const franja = container.querySelector('[data-testid="filtro-estado"]')!.closest('div.flex.flex-col.gap-3')!;
     expect(franja.querySelector('[data-testid="buscar-renovaciones"]')).not.toBeNull();
-    expect(franja.textContent).toContain('Críticas');
+    expect(franja.textContent).toContain('Urgentes');
   });
 
   it('con la búsqueda puesta dice el alcance y deja quitarlo', () => {
@@ -308,5 +315,46 @@ describe('estaCerrada (CONTR-9, QA de agentes 17-10)', () => {
     expect(estaCerrada('completed')).toBe(true);
     expect(estaCerrada('terminated')).toBe(true);
     for (const s of ['pending', 'notified', 'negotiating', 'approved', 'signed']) expect(estaCerrada(s)).toBe(false);
+  });
+
+  it('🔴 B1: «vence hoy» sólo hoy; lo que ya venció dice hace cuánto', () => {
+    expect(cuantoFalta(-3)).toBe('venció hace 3 días');
+    expect(cuantoFalta(-1)).toBe('venció hace 1 día');
+    expect(cuantoFalta(0)).toBe('vence hoy');
+    expect(cuantoFalta(3)).toBe('en 3 días');
+    // 🔴 r27: el back corta los negativos en 0, así que los tres llegan como
+    // los manda hoy (0, 0 y 3) y la tabla los cuenta con la fecha de la fila.
+    render({
+      hoy: new Date(2026, 9, 23, 15),
+      data: [
+        renovacion({ id: 'v', leaseEndDate: '2026-10-20T00:00:00.000Z', daysUntilExpiry: 0, urgencyBucket: '0-30' }),
+        renovacion({ id: 'h', leaseEndDate: '2026-10-23T00:00:00.000Z', daysUntilExpiry: 0, urgencyBucket: '0-30' }),
+        renovacion({ id: 'p', leaseEndDate: '2026-10-26T00:00:00.000Z', daysUntilExpiry: 3, urgencyBucket: '0-30' }),
+      ],
+    });
+    const fila = (id: string) => container.querySelector(`[data-testid="renovacion-${id}"]`)!.textContent;
+    expect(fila('v')).toContain('venció hace 3 días');
+    expect(fila('v')).not.toContain('vence hoy');
+    expect(fila('h')).toContain('vence hoy');
+    expect(fila('p')).toContain('en 3 días');
+  });
+
+  it('🔴 B1: los días salen de la fecha de la fila: −3, 0 y 3 (y lo del back sólo sin fecha)', () => {
+    const hoy = new Date(2026, 9, 23, 23, 30);
+    expect(diasParaVencer({ leaseEndDate: '2026-10-20T00:00:00.000Z', daysUntilExpiry: 0 }, hoy)).toBe(-3);
+    expect(diasParaVencer({ leaseEndDate: '2026-10-23', daysUntilExpiry: 0 }, hoy)).toBe(0);
+    expect(diasParaVencer({ leaseEndDate: '2026-10-26T00:00:00.000Z', daysUntilExpiry: 3 }, hoy)).toBe(3);
+    expect(diasParaVencer({ leaseEndDate: '', daysUntilExpiry: 12 }, hoy)).toBe(12);
+  });
+
+  it('el nombre que llegó en MAYÚSCULAS se lee en tipo oración, como en Contratos', () => {
+    render({ data: [renovacion({ tenantName: 'JESUS DAVID RODRIGUEZ' })] });
+    expect(container.querySelector('[data-testid="renovacion-r-1"]')!.textContent).toContain('Jesus David Rodriguez');
+  });
+
+  it('con todas en el mismo estado la columna se va y el estado se dice una vez', () => {
+    render({ data: [renovacion({ id: 'a' }), renovacion({ id: 'b', tenantName: 'Otro' })] });
+    expect(container.querySelector('[data-testid="estado-de-todas"]')!.textContent).toContain('Pendiente');
+    expect(container.querySelector('[data-testid="renovacion-a"]')!.textContent).not.toContain('Pendiente');
   });
 });

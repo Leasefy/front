@@ -154,7 +154,9 @@ describe('Niti: la pantalla propia y la pestaña de Portales', () => {
     const raizDeLaPantalla = q('[data-testid="calidad-de-las-publicaciones"]');
     expect(raizDeLaPantalla?.className).toContain('p-6');
     expect(raizDeLaPantalla?.className).toContain('lg:p-8');
-    expect(q('h1')?.textContent).toBe('Calidad de publicaciones · Niti');
+    // Revisora r25: el sobretítulo es la sección del menú («Agentes IA»); el nombre del agente
+    // va en el cuerpo (la ayuda: «Niti revisa tus inmuebles…»). El h1 = el riel.
+    expect(q('h1')?.textContent).toBe('Calidad de publicaciones');
     expect(q('[data-testid="calidad-encabezado"]')?.textContent).toContain('Agentes IA');
   });
 
@@ -186,11 +188,12 @@ describe('Niti: consultando y sin verificar', () => {
     expect(h.api.inmuebles).not.toHaveBeenCalled();
   });
 
-  it('si el resumen no se pudo leer: «Sin verificar» (nunca «Apagado»), el fallo y reintentar', async () => {
+  it('si el resumen no se pudo leer: nunca «Apagado», el fallo (una vez) y reintentar', async () => {
     h.api.resumen.mockRejectedValue(new Error('500'));
     await montar('pagina');
-    expect(pildora()?.getAttribute('data-estado')).toBe('sin-verificar');
-    expect(pildora()?.textContent).not.toContain('Apagado');
+    // Revisora r24 (Calidad #3): sin el estado leído no hay píldora; el cartel del fallo lo dice.
+    expect(pildora()).toBeNull();
+    expect(texto()).not.toContain('Apagado');
     expect(q('[data-testid="calidad-apagado"]')).toBeNull();
     expect(h.api.inmuebles).not.toHaveBeenCalled();
     const reintentar = Array.from(contenedor.querySelectorAll('button')).find((b) =>
@@ -238,11 +241,11 @@ describe('Niti prendido', () => {
     expect(cifras).toContain('37');
     expect(cifras).toContain('120');
     expect(cifras).toContain('42');
-    expect(cifras).toMatch(/0[.,]42/);
-    expect(cifras).toMatch(/5/);
+    // Revisora r24 (Calidad #4) y Nico (04-10): ninguna pantalla con dólares; el gasto de Leasefy no va.
+    expect(cifras).not.toMatch(/US\$|0[.,]42/);
   });
 
-  it('a 390 px el filtro es un select (los cuatro segmentos no caben)', async () => {
+  it('a 390 px el filtro son las pestañas de la casa, que se deslizan (ya no un select)', async () => {
     const original = window.matchMedia;
     window.matchMedia = ((consulta: string) => ({
       matches: /max-width/.test(consulta),
@@ -256,8 +259,12 @@ describe('Niti prendido', () => {
     })) as unknown as typeof window.matchMedia;
     try {
       await montar('pagina');
-      expect(q('[data-testid="calidad-filtro-movil"]')).not.toBeNull();
-      expect(q('[role="radiogroup"], [role="tablist"]')).toBeNull();
+      expect(q('[data-testid="calidad-filtro-movil"]')).toBeNull();
+      const pestanas = q('[data-testid="calidad-filtro"]');
+      expect(pestanas?.className).toContain('overflow-x-auto');
+      // Con su conteo donde el resumen lo sabe: todos 120 · con algo por arreglar 37.
+      expect(pestanas?.textContent).toContain('Todos120');
+      expect(pestanas?.textContent).toContain('Con algo por arreglar37');
     } finally {
       window.matchMedia = original;
     }
@@ -275,6 +282,16 @@ describe('Niti prendido', () => {
     expect(contenedor.querySelector('[data-testid="calidad-error-de-la-pasada"]')?.textContent).toContain(
       'sin conexión con el back',
     );
+  });
+
+  it('revisora r25: la fila es compacta —lo más grave en una línea— y el detalle va plegado (montado)', async () => {
+    await montar();
+    const id = ITEM.propertyId;
+    expect(contenedor.querySelector(`[data-testid="calidad-lo-mas-grave-${id}"]`)?.textContent).toBeTruthy();
+    const detalle = contenedor.querySelector(`[data-testid="calidad-detalle-${id}"]`)!;
+    expect(detalle).not.toBeNull();
+    // Plegado: lo de adentro está en la página, oculto.
+    expect(detalle.querySelector('[hidden]')).not.toBeNull();
   });
 
   it('pide la primera página con «todos» y pinta lo del contrato tal cual', async () => {
@@ -298,7 +315,7 @@ describe('Niti prendido', () => {
 
   it('cambiar el filtro vuelve a la página 1 con ese filtro', async () => {
     await montar();
-    await clic(botones('Posible tomado')[0]);
+    await clic(botones('Quizás ya se arrendó')[0]);
     expect(h.api.inmuebles).toHaveBeenLastCalledWith('agencia-1', { page: 1, limit: 20, filtro: 'posible_tomado' });
   });
 });

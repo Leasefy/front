@@ -129,13 +129,6 @@ const EN_PANTALLA: Record<string, Promesa> = {
       '(De paso: hoy ningún archivo importa esta tarjeta — la de `preview-ds` es ' +
       'otra, definida ahí mismo.)',
   },
-  'components/inmobiliaria/cobranza/CobranzaImportCard.tsx': {
-    estado: 'HONESTO',
-    de: 'micro',
-    nota:
-      'Importar cartera. Llama a `POST /cartera/import` y degrada a «Próximamente ' +
-      '— requiere despliegue» con 404 o red caída.',
-  },
   'components/inmobiliaria/cotizador/RecoveryAsegurabilidad.tsx': {
     estado: 'FALTA',
     de: 'micro',
@@ -145,17 +138,10 @@ const EN_PANTALLA: Record<string, Promesa> = {
       '`un-contrato-sin-back-se-declara.test.ts`. El micro cotiza; no hay ruta para ' +
       'tomar una cotización y seguir.',
   },
-  'components/inmobiliaria/pagos/PagoFallidoTabla.tsx': {
-    estado: 'HONESTO',
-    de: 'back',
-    nota:
-      'La acción de la fila es la primera que DECLARA el WorkItem del back. Sin ' +
-      'acción declarada, el botón queda apagado en vez de fingir (T-323).',
-  },
   'components/inmobiliaria/pagos/PrioridadInbox.tsx': {
     estado: 'HONESTO',
     de: 'back',
-    nota: 'Igual que `PagoFallidoTabla`: la acción sale del WorkItem o no hay botón.',
+    nota: 'La acción sale del WorkItem del back o no hay botón (como hacía `PagoFallidoTabla`, que ya no promete nada desde la ronda 26).',
   },
   'components/landlord/portal/PortalPlaceholder.tsx': {
     estado: 'HONESTO',
@@ -199,11 +185,6 @@ const EN_PANTALLA: Record<string, Promesa> = {
       'WhatsApp ruteado por la inmobiliaria (Ley 2300). El back ya dice si se ' +
       'puede contactar (`/agent/contact/can-contact`); lo que falta es que la ' +
       'agencia lo tenga prendido.',
-  },
-  'lib/hooks/cobranza/use-cartera-import.ts': {
-    estado: 'HONESTO',
-    de: 'micro',
-    nota: 'El mensaje de degradación que pinta `CobranzaImportCard`.',
   },
 };
 

@@ -38,7 +38,10 @@ import {
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SinDatos } from '@/components/estado/SinDatos';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { toast } from '@/components/ui/toast';
 import {
   copropiedadesApi,
@@ -61,6 +64,7 @@ export function Copropiedades() {
   const [error, setError] = useState<unknown>(null);
   const [busqueda, setBusqueda] = useState('');
   const [creando, setCreando] = useState(false);
+  const [vista, setVista] = useState<'activas' | 'inactivas' | 'todas'>('activas');
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -82,36 +86,78 @@ export function Copropiedades() {
   }, [cargar]);
 
   const texto = busqueda.trim().toLowerCase();
-  const visibles = (filas ?? []).filter(
+  const activas = (filas ?? []).filter((c) => c.activa);
+  const inactivas = (filas ?? []).filter((c) => !c.activa);
+  /** Sin ninguna copropiedad todavía: la barra no ofrece buscar ni registrar (lo ofrece el vacío). */
+  const sinNinguna = filas !== null && filas !== undefined && filas.length === 0;
+  // Con todas activas no hay nada que separar: la pestaña «Activas» sería la lista entera.
+  const vistaReal = inactivas.length === 0 ? 'todas' : vista;
+  const deLaVista = vistaReal === 'activas' ? activas : vistaReal === 'inactivas' ? inactivas : (filas ?? []);
+  const visibles = deLaVista.filter(
     (c) =>
       texto === '' ||
       c.nombre.toLowerCase().includes(texto) ||
       c.nit.includes(texto.replace(/\D/g, '')),
   );
+  const inmueblesAsignados = activas.reduce((t, c) => t + c.inmuebles, 0);
+  const cifras = localeDeLasCifras();
 
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(visibles, { resetKey: `${texto}|${visibles.length}` });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* LA RESPUESTA: cuántas copropiedades hay y a cuántos inmuebles cubren. */}
+      {filas && filas.length > 0 && !error ? (
+        <CifraHeroe
+          tamano="mediana"
+          rotulo="Copropiedades activas"
+          cifra={activas.length.toLocaleString(cifras)}
+          contexto={`con ${inmueblesAsignados.toLocaleString(cifras)} ${inmueblesAsignados === 1 ? 'inmueble asignado' : 'inmuebles asignados'}`}
+          data-testid="cifra-de-copropiedades"
+        />
+      ) : null}
       <TarjetaDeInforme
         testId="copropiedades"
+        filtrosClassName="flex flex-wrap items-center gap-3"
+        // Revisora r27 (Copropiedades, UI): sin ninguna, la barra no tiene nada que ofrecer (ni pestañas, ni
+        // buscador, ni botón: la acción la lleva el vacío) y no se pinta; antes quedaba una franja blanca.
         filtros={
+          sinNinguna ? undefined : (
           <>
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <Label htmlFor="buscar-copropiedad">Buscar</Label>
+            {inactivas.length > 0 ? (
+              <PestanasDeEstado
+                etiqueta="Estado de las copropiedades"
+                valor={vistaReal}
+                onCambio={setVista}
+                pestanas={[
+                  { valor: 'activas', etiqueta: 'Activas', cuantos: activas.length, fija: true },
+                  { valor: 'inactivas', etiqueta: 'Inactivas', cuantos: inactivas.length },
+                  { valor: 'todas', etiqueta: 'Todas', cuantos: (filas ?? []).length, fija: true },
+                ]}
+              />
+            ) : null}
+            {/* Revisora r25 (Copropiedades #1 y #2): a 390 el buscador a lo ancho y el botón debajo (antes
+                quedaba en 64 px, «Busc»); sin ninguna copropiedad, ni buscador ni botón en la barra: la
+                acción la lleva el vacío. */}
+            {sinNinguna ? null : (
+            <div className="w-full min-w-0 sm:w-auto sm:flex-1">
+              <Label htmlFor="buscar-copropiedad" className="sr-only">Buscar</Label>
               <Input
                 id="buscar-copropiedad"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Nombre o NIT"
+                placeholder="Buscar por nombre o NIT"
                 className="w-full sm:max-w-xs"
               />
             </div>
-            {falta ? null : (
+            )}
+            {falta || sinNinguna ? null : (
               <Button
-                variant="outline"
+                size="sm"
+                variant={creando ? 'outline' : 'default'}
                 hideArrow
+                className="max-sm:w-full"
                 onClick={() => setCreando((v) => !v)}
                 data-testid="abrir-nueva-copropiedad"
               >
@@ -120,31 +166,9 @@ export function Copropiedades() {
               </Button>
             )}
           </>
+          )
         }
       >
-        {/* 🔴 CB-29 (QA de Contabilidad, 03-10-2026): la fila no abre nada, y no
-            decía dónde se le asignan los inmuebles. Se asignan desde el
-            CONTRATO (Condiciones → «¿A qué copropiedad pertenece el
-            inmueble?»): la pantalla lo dice, con el enlace, y no inventa otra
-            forma de asignarlos. */}
-        {falta ? null : (
-          <div className="border-b border-border px-4 py-3">
-            <Nota testId="donde-se-asignan-los-inmuebles">
-              <p>
-                Cada inmueble se asigna a su copropiedad desde la ficha de su contrato: Condiciones →
-                «¿A qué copropiedad pertenece el inmueble?». La columna «Inmuebles» cuenta los que ya
-                están asignados.{' '}
-                <Link
-                  href="/panel/inmobiliaria/contratos"
-                  className="font-medium text-primary underline-offset-2 hover:underline"
-                >
-                  Ir a Contratos
-                </Link>
-              </p>
-            </Nota>
-          </div>
-        )}
-
         {creando ? (
           <FormularioDeCopropiedad
             onListo={() => {
@@ -156,24 +180,33 @@ export function Copropiedades() {
         ) : null}
 
         {cargando && filas === null ? (
-          <div className="flex items-center justify-center py-16">
-            <Spinner />
+          <div className="divide-y divide-border" aria-hidden="true">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                <Skeleton className="h-4 flex-1 rounded-sm bg-surface-muted" />
+                <Skeleton className="h-4 w-24 rounded-sm bg-surface-muted" />
+                <Skeleton className="h-4 w-10 rounded-sm bg-surface-muted" />
+              </div>
+            ))}
           </div>
         ) : (
           <div className={cn(cargando && 'opacity-60')} aria-busy={cargando || undefined}>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Copropiedad</TableHead>
-                  <TableHead>NIT</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead numeric>Inmuebles</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBodyAnimado>
+            <Table className="max-md:block">
+              {/* Sin filas (el vacío o el fallo), sólo el vacío: los nombres de columna sobre nada no dicen nada. */}
+              {error || pageItems.length === 0 ? null : (
+                <TableHeader className="max-md:hidden">
+                  <TableRow>
+                    <TableHead>Copropiedad</TableHead>
+                    <TableHead>NIT</TableHead>
+                    <TableHead>Dirección</TableHead>
+                    <TableHead numeric>Inmuebles</TableHead>
+                  </TableRow>
+                </TableHeader>
+              )}
+              <TableBodyAnimado className="max-md:block">
                 {error ? (
-                  <TableRow key="fallo" className="hover:bg-transparent">
-                    <TableCell colSpan={COLUMNAS} className="p-0">
+                  <TableRow key="fallo" className="hover:bg-transparent max-md:block">
+                    <TableCell colSpan={COLUMNAS} className="p-0 max-md:block">
                       <SinDatos
                         queSon="copropiedades"
                         icono={Buildings}
@@ -188,8 +221,8 @@ export function Copropiedades() {
                     </TableCell>
                   </TableRow>
                 ) : pageItems.length === 0 ? (
-                  <TableRow key="vacio" className="hover:bg-transparent">
-                    <TableCell colSpan={COLUMNAS} className="p-0">
+                  <TableRow key="vacio" className="hover:bg-transparent max-md:block">
+                    <TableCell colSpan={COLUMNAS} className="p-0 max-md:block">
                       {texto !== '' ? (
                         <SinDatos
                           queSon="copropiedades"
@@ -222,7 +255,7 @@ export function Copropiedades() {
                              que va a fallar. */
                           accion={
                             falta ? undefined : (
-                              <Button variant="outline" hideArrow onClick={() => setCreando(true)}>
+                              <Button hideArrow onClick={() => setCreando(true)} data-testid="abrir-nueva-copropiedad">
                                 Registrar la primera
                               </Button>
                             )
@@ -234,22 +267,27 @@ export function Copropiedades() {
                 ) : (
                   pageItems.map((c) => (
                     // Sin hover: la fila no abre nada (CB-29), no debe parecer un botón.
-                    <TableRowAnimada key={c.id} data-testid="fila-de-copropiedad" className="hover:bg-transparent">
-                      <TableCell>
+                    <TableRowAnimada
+                      key={c.id}
+                      data-testid="fila-de-copropiedad"
+                      className="hover:bg-transparent max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
+                    >
+                      <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                         <span className={cn('text-fg', !c.activa && 'text-fg-muted line-through')}>
                           {c.nombre}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap font-mono tabular-nums">
+                      <TableCell className="whitespace-nowrap font-mono tabular-nums max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
                         {nitLegible(c)}
                       </TableCell>
-                      <TableCell className="max-w-[320px]">
+                      <TableCell className="max-w-[320px] max-md:col-span-2 max-md:row-start-3 max-md:block max-md:max-w-none max-md:p-0 max-md:text-caption">
                         <span className="block truncate text-fg-muted" title={c.direccion ?? ''}>
                           {c.direccion ?? '—'}
                         </span>
                       </TableCell>
-                      <TableCell numeric className="tabular-nums">
+                      <TableCell numeric className="tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                         {c.inmuebles.toLocaleString(localeDeLasCifras())}
+                        <span className="text-caption text-fg-muted md:hidden"> {c.inmuebles === 1 ? 'inmueble' : 'inmuebles'}</span>
                       </TableCell>
                     </TableRowAnimada>
                   ))
@@ -272,6 +310,29 @@ export function Copropiedades() {
           </div>
         )}
       </TarjetaDeInforme>
+
+        {/* 🔴 CB-29 (QA de Contabilidad, 03-10-2026): la fila no abre nada, y no
+            decía dónde se le asignan los inmuebles. Se asignan desde el
+            CONTRATO (Condiciones → «¿A qué copropiedad pertenece el
+            inmueble?»): la pantalla lo dice, con el enlace, y no inventa otra
+            forma de asignarlos. */}
+      {falta ? null : (
+        <MasDetalles etiqueta="Dónde se le asigna su copropiedad a un inmueble" etiquetaAbierto="Ocultar" montadoSiempre>
+            <Nota testId="donde-se-asignan-los-inmuebles">
+              <p>
+                Cada inmueble se asigna a su copropiedad desde la ficha de su contrato: Condiciones →
+                «¿A qué copropiedad pertenece el inmueble?». La columna «Inmuebles» cuenta los que ya
+                están asignados.{' '}
+                <Link
+                  href="/panel/inmobiliaria/contratos"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Ir a Contratos
+                </Link>
+              </p>
+            </Nota>
+        </MasDetalles>
+      )}
 
       {/* Sin la migración la lista llega vacía y no hay nada que decir salvo
           la verdad: lo que falta, quién lo aplica, y qué pasa mientras tanto. */}

@@ -484,7 +484,7 @@ function OnboardingWizard({
                 >
                   <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" weight="fill" aria-hidden />
                   <p className="text-body-sm text-fg">
-                    Cambiaste la razón social. Confirma los datos de la agencia y sigues donde ibas.
+                    Cambiaste la razón social. Confirma los datos de la inmobiliaria y sigues donde ibas.
                   </p>
                 </div>
               )}

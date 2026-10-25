@@ -50,12 +50,12 @@ function SignatureIndicator({
       <div>
         <p className="text-sm font-medium text-fg">{label}</p>
         {isSigned && signedAt && (
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Firmado {formatDate(signedAt)}
           </p>
         )}
         {!isSigned && (
-          <p className="text-xs text-fg-muted">Pendiente</p>
+          <p className="text-caption text-fg-muted">Pendiente</p>
         )}
       </div>
     </div>
@@ -146,7 +146,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
               </h3>
               <span
                 className={cn(
-                  'text-xs px-2 py-0.5 rounded-sm flex-shrink-0 font-medium',
+                  'text-caption px-2 py-0.5 rounded-sm flex-shrink-0 font-medium',
                   status.className
                 )}
               >
@@ -171,7 +171,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                     : 'bg-surface-muted dark:bg-surface-muted'
                 )}
               />
-              <span className="text-xs text-fg-muted">Arr.</span>
+              <span className="text-caption text-fg-muted">Arr.</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div
@@ -182,16 +182,16 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                     : 'bg-surface-muted dark:bg-surface-muted'
                 )}
               />
-              <span className="text-xs text-fg-muted">Inq.</span>
+              <span className="text-caption text-fg-muted">Inq.</span>
             </div>
           </div>
 
           {/* Rent amount */}
           <div className="text-right flex-shrink-0 mr-2">
-            <p className="text-lg font-semibold text-fg">
+            <p className="text-lg font-medium text-fg">
               {formatCanon(contract.monthlyRent)}
             </p>
-            <p className="text-xs text-fg-muted">/mes</p>
+            <p className="text-caption text-fg-muted">/mes</p>
           </div>
 
           {/* Expand indicator */}
@@ -209,7 +209,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
         <div className="ml-[60px] grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Card 1: Contract Details */}
           <div className="bg-surface border border-border rounded-lg p-5">
-            <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
+            <p className="text-caption font-medium text-fg-muted uppercase tracking-wider mb-4">
               Detalles del contrato
             </p>
             <div className="space-y-3.5">
@@ -240,7 +240,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
 
           {/* Card 2: Signatures */}
           <div className="bg-surface border border-border rounded-lg p-5">
-            <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
+            <p className="text-caption font-medium text-fg-muted uppercase tracking-wider mb-4">
               Estado de firmas
             </p>
             <div className="space-y-4">
@@ -259,7 +259,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
 
           {/* Card 3: Contact & Actions */}
           <div className="bg-surface border border-border rounded-lg p-5">
-            <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
+            <p className="text-caption font-medium text-fg-muted uppercase tracking-wider mb-4">
               Contacto arrendatario
             </p>
             <div className="space-y-2.5 mb-5">

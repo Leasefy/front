@@ -35,6 +35,7 @@ import { PESOS, QUE_ES_LA_MODALIDAD, diaLegible } from '@/lib/mandato/textos';
 import { EsqueletoDeSeccion } from './piezas';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 type Borrador = Omit<CobroAlArrendar, 'id'> & { id?: string; clave: string };
 
@@ -133,15 +134,16 @@ function ModalidadPorDefecto({
     <section className="space-y-4 p-5 rounded-lg bg-card border border-border">
       <div className="flex items-center gap-2">
         <HandCoins className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-        <h3 className="text-base font-semibold text-foreground">Modalidad de los mandatos</h3>
+        <h3 className="text-base font-medium text-foreground">Modalidad de los mandatos</h3>
       </div>
       <p className="text-sm text-muted-foreground">
         Con qué base se le gira al propietario. Cada mandato la puede cambiar en la ficha del inmueble; los que
         no tengan una propia usan ésta.
       </p>
       {/* Radios del sistema de diseño (21-09): el del navegador mide 13 px. */}
+      {/* Ronda 30: las opciones como filas con una línea fina (antes cajas con borde dentro de la tarjeta). */}
       <RadioGroup
-        className="space-y-2"
+        className="divide-y divide-border border-y border-border"
         value={valor ?? ''}
         onValueChange={(nuevo) => setValor((nuevo || null) as typeof valor)}
       >
@@ -154,7 +156,7 @@ function ModalidadPorDefecto({
         ).map(([v, nombre, ayuda]) => (
           <label
             key={v || 'ninguna'}
-            className="flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer hover:bg-surface-hover"
+            className="flex items-start gap-3 px-1 py-3 cursor-pointer hover:bg-surface-hover"
           >
             <RadioGroupItem
               value={v ?? ''}
@@ -163,13 +165,13 @@ function ModalidadPorDefecto({
             />
             <span>
               <span className="block text-sm text-foreground">{nombre}</span>
-              <span className="block text-xs text-muted-foreground">{ayuda}</span>
+              <span className="block text-caption text-muted-foreground">{ayuda}</span>
             </span>
           </label>
         ))}
       </RadioGroup>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           {config.modalidadDeMandatoDesde
             ? `La actual rige desde el ${diaLegible(config.modalidadDeMandatoDesde)}.`
             : 'Intereses de mora: por defecto, garantizado → de la inmobiliaria; sobre recaudo → del propietario.'}
@@ -244,7 +246,7 @@ function CobrosAlArrendar({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Receipt className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-          <h3 className="text-base font-semibold text-foreground">Cobros al propietario al arrendar</h3>
+          <h3 className="text-base font-medium text-foreground">Cobros al propietario al arrendar</h3>
         </div>
         <Button
           variant="ghost"
@@ -269,7 +271,7 @@ function CobrosAlArrendar({
       </p>
 
       {filas.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hay cobros configurados.</p>
+        <VacioChico titulo="No hay cobros configurados." ilustracion="sobre_cobro" />
       ) : (
         <div className="space-y-3">
           {filas.map((f) => (
@@ -309,7 +311,7 @@ function CobrosAlArrendar({
                 <Trash className="w-4 h-4" aria-hidden="true" />
               </Button>
               {f.tipo === 'VALOR_FIJO' && f.valor > 0 ? (
-                <p className="sm:col-span-5 text-xs text-muted-foreground -mt-1">{PESOS.format(f.valor)}</p>
+                <p className="sm:col-span-5 text-caption text-muted-foreground -mt-1">{PESOS.format(f.valor)}</p>
               ) : null}
             </div>
           ))}
@@ -373,7 +375,7 @@ function IvaDeLaComision({
     <section className="space-y-4 p-5 rounded-lg bg-card border border-border" data-testid="iva-de-la-comision">
       <div className="flex items-center gap-2">
         <Percent className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-        <h3 className="text-base font-semibold text-foreground">IVA de la comisión de administración</h3>
+        <h3 className="text-base font-medium text-foreground">IVA de la comisión de administración</h3>
       </div>
       <p className="text-sm text-foreground" data-testid="efecto-del-iva">
         {config.ivaDeLaComision.efecto}
@@ -390,7 +392,9 @@ function IvaDeLaComision({
             key={String(v)}
             size="sm"
             hideArrow
-            variant={actual === v ? 'default' : 'outline'}
+            // Ronda 30: la elegida en tinta (antes en voltaje: el azul es la acción, no un estado).
+            variant={actual === v ? 'ink' : 'outline'}
+            aria-pressed={actual === v}
             disabled={guardando}
             onClick={() => {
               if (conBarra) setElegido(v);
@@ -401,7 +405,7 @@ function IvaDeLaComision({
           </Button>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         La tarifa ({config.ivaDeLaComision.ivaPorcentaje.toLocaleString(localeDeLasCifras())} %) se edita en Perfil, en
         «Impuestos y retenciones». Confírmalo con tu contador.
       </p>

@@ -134,7 +134,7 @@ function Dato({ icon: Icon, label, value, quote = false, mono = false }: DatoPro
         aria-hidden="true"
       />
       <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-fg-muted leading-tight">
+        <p className="text-caption font-medium uppercase tracking-wide text-fg-muted leading-tight">
           {label}
         </p>
         {quote ? (
@@ -191,14 +191,14 @@ export function PromesaCard({ promesa }: { promesa: Promesa }) {
       >
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-fg truncate">
+            <span className="text-sm font-medium text-fg truncate">
               {promesa.inquilino}
             </span>
             <Badge variant={token.variant} size="sm">
               {token.label}
             </Badge>
           </div>
-          <div className="flex items-center gap-3 text-xs text-fg-muted">
+          <div className="flex items-center gap-3 text-caption text-fg-muted">
             <span className="inline-flex items-center gap-1 font-mono tabular-nums">
               <CurrencyDollar className="w-3.5 h-3.5" aria-hidden="true" />
               {formatCurrency(promesa.valorCop)}
@@ -277,7 +277,7 @@ export function PromesaCard({ promesa }: { promesa: Promesa }) {
           />
 
           <div className="sm:col-span-2 flex items-center justify-between gap-3 border-t border-border pt-3">
-            <p className="text-xs text-fg-muted leading-relaxed">
+            <p className="text-caption text-fg-muted leading-relaxed">
               El mensaje original, el canal y el seguimiento se ven completos en el
               detalle del deudor.
             </p>

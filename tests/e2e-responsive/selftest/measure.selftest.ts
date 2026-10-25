@@ -51,7 +51,17 @@ test('a control that only one sample catches under the sticky header or bottom n
 
 test('the last control of a page without bottom padding IS still reported under the bottom nav', async ({ page }) => {
   const found = await occluded(page, PAGE_WITH_BARS(rows(60, 44), 0));
-  expect(found.filter((s) => /Row/.test(s)).length).toBeGreaterThan(0);
+  const rowsFound = found.filter((s) => /Row/.test(s));
+  expect(rowsFound.length).toBeGreaterThan(0);
+  expect(rowsFound.some((s) => /Row 59/.test(s))).toBe(true);
+});
+
+test('the first control under a fixed header with no offset IS still reported (scroll clamps at 0)', async ({ page }) => {
+  const html = `<!doctype html><html><body style="margin:0">
+<header style="position:fixed;left:0;right:0;top:0;height:65px;background:#fff;z-index:10">Header</header>
+<main>${rows(30, 44)}</main></body></html>`;
+  const found = await occluded(page, html);
+  expect(found.some((s) => /Row 0\b/.test(s))).toBe(true);
 });
 
 // ---- blocking modals (WU-9 item 1) -----------------------------------------------------------

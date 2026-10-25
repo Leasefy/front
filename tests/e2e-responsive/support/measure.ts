@@ -553,13 +553,23 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
   // scrolls it to the middle. Candidates are re-tested centred; only the ones still covered there
   // (a bar that cannot be scrolled clear of, e.g. content at the page end without bottom padding,
   // or a persistent overlay) are real.
+  // Out of scope: focus-obscured (WCAG 2.4.11). A control reachable by centring can still land under
+  // the sticky header when keyboard focus scrolls it with block:nearest (missing scroll-padding);
+  // this check does not model that.
+  // Cost: capped at MAX_CONFIRM candidates (the rest stay reported, conservative) and no
+  // per-candidate sleep: scrollIntoView + elementFromPoint force a synchronous layout, so one short
+  // wait before the pass (lazy content) is enough.
+  const MAX_CONFIRM = 60;
+  let confirmed = 0;
+  await sleep(60);
   for (const r of rec.values()) {
     if (r.seen === 0 || r.ok > 0) continue;
     if (overlayEl && !overlayEl.contains(r.el)) continue;
+    if (confirmed >= MAX_CONFIRM) break;
+    confirmed++;
     const sx = window.scrollX;
     r.el.scrollIntoView({ block: 'center', inline: xScroller(r.el) ? 'center' : 'nearest', behavior: 'instant' as ScrollBehavior });
     window.scrollTo(sx, window.scrollY);
-    await sleep(60);
     const b = r.el.getBoundingClientRect();
     const cx0 = Math.max(b.left, 0);
     const cx1 = Math.min(b.right, vw);
@@ -573,6 +583,7 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
       continue;
     }
     r.by = centred ? sel(centred) : 'unknown';
+    r.y = scroller ? scroller.scrollTop : window.scrollY; // where it was actually re-confirmed
   }
   scrollTo(0);
 

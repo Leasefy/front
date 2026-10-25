@@ -14,6 +14,8 @@
    ════════════════════════════════════════════════════════════════════ */
 (function () {
   var raiz = document.documentElement;
+  /* en el artefacto de revisión (sin el front) los enlaces van a leasefy.co; en el front, al mismo origen */
+  var ORIGEN = window.LF_ORIGEN || "";
 
   /* 1 ── ¿hay sesión? Sólo SI hay (la cookie de @supabase/ssr), no de quién. */
   try {
@@ -81,9 +83,9 @@
 
     /* 1 ── con sesión, lo que crea cuenta o entra lleva al panel (los del encabezado ya vienen en pareja) */
     if (conSesion) {
-      Array.prototype.forEach.call(document.querySelectorAll('a[href^="/auth"]'), function (a) {
+      Array.prototype.forEach.call(document.querySelectorAll('a[href^="' + ORIGEN + '/auth"]'), function (a) {
         if (a.hasAttribute("data-sin-sesion") || a.closest("[data-sin-sesion]")) return;
-        a.setAttribute("href", "/ir-al-panel");
+        a.setAttribute("href", ORIGEN + "/ir-al-panel");
         a.textContent = LF.t("Ir al panel");
       });
     }
@@ -108,7 +110,7 @@
         };
         var tarjeta = function (i, copia) {
           var a = crear("a", "vi");
-          a.href = "/propiedades/" + encodeURIComponent(i.id);
+          a.href = ORIGEN + "/propiedades/" + encodeURIComponent(i.id);
           if (copia) { a.setAttribute("aria-hidden", "true"); a.tabIndex = -1; }
           var foto = crear("span", "vi-foto");
           var img = crear("img", "foto");
@@ -166,13 +168,13 @@
       var k = crear("p", "lf-pub-k"); k.appendChild(crear("i")); k.appendChild(document.createTextNode(LF.t("Publica gratis")));
       var h = crear("h2", null, LF.t("¿Quién va a publicar?")); h.id = "lfPubTitulo";
       var op = crear("div", "lf-pub-op");
-      op.appendChild(opcion("/auth?mode=register&role=landlord&returnUrl=" + encodeURIComponent("/publica?perfil=landlord"), CASA,
+      op.appendChild(opcion(ORIGEN + "/auth?mode=register&role=landlord&returnUrl=" + encodeURIComponent("/publica?perfil=landlord"), CASA,
         LF.t("Soy propietario"), LF.t("Publico mi inmueble, sin inmobiliaria."), "publica-propietario"));
-      op.appendChild(opcion("/auth?mode=register&role=agency&returnUrl=" + encodeURIComponent("/publica?perfil=agency"), EDIFICIOS,
+      op.appendChild(opcion(ORIGEN + "/auth?mode=register&role=agency&returnUrl=" + encodeURIComponent("/publica?perfil=agency"), EDIFICIOS,
         LF.t("Soy inmobiliaria"), LF.t("Publico los inmuebles que administro."), "publica-inmobiliaria"));
       var pie = crear("p", "lf-pub-pie", LF.t("¿Ya tienes cuenta?") + " ");
       var entrar = crear("a", null, LF.t("Inicia sesión"));
-      entrar.href = "/auth?returnUrl=" + encodeURIComponent("/publica");
+      entrar.href = ORIGEN + "/auth?returnUrl=" + encodeURIComponent("/publica");
       entrar.setAttribute("data-testid", "publicar-ya-tengo-cuenta");
       pie.appendChild(entrar);
       d.appendChild(x); d.appendChild(k); d.appendChild(h);
@@ -188,7 +190,7 @@
       return d;
     }
     if (!conSesion) {
-      Array.prototype.forEach.call(document.querySelectorAll('a[href="/publica"]'), function (a) {
+      Array.prototype.forEach.call(document.querySelectorAll('a[href="' + ORIGEN + '/publica"]'), function (a) {
         a.addEventListener("click", function (e) {
           if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; /* abrir en otra pestaña sigue igual */
           if (!window.HTMLDialogElement) return; /* navegador viejo: va a /publica, que también abre la cuenta */

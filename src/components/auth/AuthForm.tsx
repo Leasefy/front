@@ -1204,7 +1204,8 @@ export function AuthForm({
         {/* Sin eyebrow («● ACCESO»): el título ya dice qué es (Nico, 2026-09-03). */}
         <h1
           className={cn(
-            'font-heading font-medium leading-[1.1] tracking-[-0.03em] text-fg',
+            // Títulos livianos, como los de la landing (glow up del acceso, Nico 24-10): peso 420, nunca negrilla.
+            'font-heading font-[420] leading-[1.1] tracking-[-0.03em] text-fg',
             variante === 'ventana' ? 'text-[26px] sm:text-[28px]' : 'text-[30px]',
           )}
         >

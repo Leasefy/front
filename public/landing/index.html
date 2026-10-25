@@ -319,12 +319,12 @@ section{position:relative;overflow-x:clip}
 /* ── héroe ── */
 .hero-alto{position:relative;height:290vh}
 .hero-pega{position:sticky;top:0;height:100vh;overflow:hidden;padding-top:var(--hdr);display:flex;flex-direction:column;align-items:center}
-.hero-txt{text-align:center;width:100%;max-width:1220px;padding:0 var(--gutter);margin-top:clamp(20px,4.5vh,56px);position:relative;z-index:1}
+.hero-txt{text-align:center;width:100%;max-width:1220px;padding:0 var(--gutter);margin-top:clamp(48px,10vh,120px);position:relative;z-index:1}
 .hero h1.t-xl{font-size:clamp(44px,5.5vw,84px)}
 .hero h1{margin-top:0}
 .hero .lead{margin:20px auto 0;max-width:680px}
 .hero-cta{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap}
-.hero-escena{position:relative;width:min(1100px,86vw,calc((100vh - 214px)/.68));margin-top:clamp(28px,4.5vh,52px);perspective:2200px;z-index:2}
+.hero-escena{position:relative;width:min(1100px,86vw,calc((100vh - 214px)/.68));margin-top:clamp(12px,1.5vh,28px);perspective:2200px;z-index:2}
 .hero-escena .disp{transform-origin:50% 100%}
 .hero-escena .f1{width:clamp(130px,15vw,230px);left:-13%;top:-6%}
 .hero-escena .f2{width:clamp(110px,12vw,190px);right:-11%;top:22%}
@@ -336,6 +336,7 @@ section{position:relative;overflow-x:clip}
 @media (max-width:899px){
   .hero-alto{height:auto}
   .hero-pega{position:relative;height:auto;overflow:visible;padding-bottom:40px}
+  .hero-txt{margin-top:clamp(36px,6.5vh,64px)}
   .hero-escena{width:min(310px,76vw);margin-top:44px}
   .hero-escena .f1{width:120px;left:-30%;top:4%}
   .hero-escena .f2{width:110px;right:-30%;top:46%}

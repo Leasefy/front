@@ -22,6 +22,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Host+Grotesk:wght@300..700&display=swap" rel="stylesheet">
 <script src="/internas/productos/js/00-arranque.js"></script>
 <script src="/landing/js/idioma.js"></script>
+<script src="/landing/js/conexion.js"></script>
 <style>
 /* Productos Leasefy · la identidad de la landing 2 (papel, tinta y voltaje) sobre la estructura de producción:
    portada clara con la corriente PIX → por qué importa (pantalla fija) → capacidades → ficha → puesta en marcha → noche → demo */
@@ -497,7 +498,7 @@ section{position:relative;overflow-x:clip}
   <div class="wrap">
     <a href="/" class="logo" aria-label="Leasefy, inicio"><svg viewBox="0 0 947 235" aria-hidden="true"><use href="#lfLogo"/></svg></a>
     <nav class="nav" aria-label="Principal">
-      <a href="/propiedades"><i aria-hidden="true"></i>Marketplace</a>
+      <a href="/propiedades"><i aria-hidden="true"></i>Marketplace<b class="mk-n" data-mk-total hidden></b></a>
       <div class="pm" id="pm">
         <button type="button" class="pm-btn" id="pmBtn" aria-expanded="false" aria-controls="pmPanel">Producto<svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></button>
         <div class="pm-panel" id="pmPanel" role="region" aria-label="Producto: el sistema, los agentes y para quién es">
@@ -520,8 +521,9 @@ section{position:relative;overflow-x:clip}
     <div class="hdr-cta">
       <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
       <a class="btn btn-s btn-sm pub" href="/publica">Publicar gratis</a>
-      <a class="btn btn-s btn-sm" href="/auth">Entrar</a>
-      <a class="btn btn-p btn-sm" href="/auth?mode=register">Crear cuenta</a>
+      <a class="btn btn-s btn-sm" href="/auth" data-sin-sesion>Entrar</a>
+      <a class="btn btn-p btn-sm" href="/auth?mode=register" data-sin-sesion>Crear cuenta</a>
+      <a class="btn btn-p btn-sm" href="/ir-al-panel" data-con-sesion>Ir al panel</a>
     </div>
     <button class="mbtn" id="mbtn" aria-expanded="false" aria-controls="menu">Menú</button>
   </div>
@@ -542,7 +544,7 @@ section{position:relative;overflow-x:clip}
   <a class="it" href="/avaluo"><span>04</span>Avalúos</a>
   <a class="it" href="/contacto"><span>05</span>Contacto</a>
   <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
-  <div class="acc"><a class="btn btn-p" href="/auth?mode=register">Crear cuenta</a><a class="btn btn-s" href="/auth">Entrar</a><a class="btn btn-s" href="/publica">Publicar gratis</a></div>
+  <div class="acc"><a class="btn btn-p" href="/auth?mode=register" data-sin-sesion>Crear cuenta</a><a class="btn btn-s" href="/auth" data-sin-sesion>Entrar</a><a class="btn btn-p" href="/ir-al-panel" data-con-sesion>Ir al panel</a><a class="btn btn-s" href="/publica">Publicar gratis</a></div>
 </div>
 
 <main id="vista" tabindex="-1"></main>

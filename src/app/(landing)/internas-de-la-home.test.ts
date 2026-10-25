@@ -144,13 +144,14 @@ describe('las internas de la home se sirven estáticas (Ronda 30, Nico)', () => 
     expect(d.querySelector('meta[name="viewport"]')).not.toBeNull()
     expect(d.querySelector('meta[name="description"]')?.getAttribute('content')?.length).toBeGreaterThan(40)
     const enLaPagina = [...d.querySelectorAll('script')]
-    // Los propios, las cuatro librerías (GSAP, ScrollTrigger, Lenis y Motion) y los dos del idioma de la home
-    // (/landing/js/idioma.js e idioma-aplicar.js: el inglés, Nico 23-10).
-    expect(enLaPagina.length).toBe(scripts.length + 4 + 2)
+    // Los propios, las cuatro librerías (GSAP, ScrollTrigger, Lenis y Motion), los dos del idioma de la home
+    // (/landing/js/idioma.js e idioma-aplicar.js: el inglés, Nico 23-10) y la conexión con Leasefy
+    // (/landing/js/conexion.js: sesión, inmuebles publicados y «Publicar gratis», Nico 24-10).
+    expect(enLaPagina.length).toBe(scripts.length + 4 + 3)
     for (const s of enLaPagina) {
       const src = s.getAttribute('data-src')
       expect(src, `script en línea: ${s.textContent?.slice(0, 60)}`).toBeTruthy()
-      if (src!.startsWith(`/internas/${p}/js/`) || src!.startsWith('/landing/js/idioma')) expect(existsSync(join('public', src!)), src!).toBe(true)
+      if (src!.startsWith(`/internas/${p}/js/`) || src!.startsWith('/landing/js/idioma') || src === '/landing/js/conexion.js') expect(existsSync(join('public', src!)), src!).toBe(true)
       else expect(TERCEROS_DE_LA_HOME.scripts.some((t) => src!.startsWith(t)), src!).toBe(true)
     }
     for (const f of scripts) expect(html).toContain(`<script src="/internas/${p}/js/${f}"></script>`)

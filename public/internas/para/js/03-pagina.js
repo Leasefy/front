@@ -104,7 +104,7 @@
   if (MOV) {
     gsap.registerPlugin(ScrollTrigger);
     if (window.Lenis) {
-      lenis = new Lenis({ duration: 1.05, easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); }, smoothWheel: true });
+      lenis = new Lenis({ lerp: .05, wheelMultiplier: .9, smoothWheel: true });
       lenis.on("scroll", ScrollTrigger.update);
       gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
       gsap.ticker.lagSmoothing(0);

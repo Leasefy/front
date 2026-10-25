@@ -58,25 +58,42 @@ LF.orbes = (function () {
   /* La landing va siempre en claro (Nico, 22-10): la orbe sólo se pinta «oscura» sobre la medianoche. */
   var oscuroTema = function () { return false; };
 
-  function Orbe(host) {
-    this.host = host;
+  /* UN solo contexto WebGL para todas las orbes (Nico 24-10: la de Mori salía con la carita triste).
+     Chrome sostiene 16 contextos por página y apaga el más viejo; la home tenía 14 orbes + 3 corrientes.
+     Ahora cada orbe se pinta por turno en este lienzo escondido y se copia a su propio lienzo 2D. */
+  var G = null;
+  function motor() {
+    if (G) return G.gl ? G : null;
+    G = {};
     var cv = document.createElement("canvas");
-    host.appendChild(cv);
     var gl = cv.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: false });
-    if (!gl) { this.respaldo(); return; }
+    if (!gl) return null;
     var sh = function (tipo, src) { var s = gl.createShader(tipo); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
     var vs = sh(gl.VERTEX_SHADER, VERT), fs = sh(gl.FRAGMENT_SHADER, FRAG);
-    if (!vs || !fs) { this.respaldo(); return; }
+    if (!vs || !fs) return null;
     var pr = gl.createProgram(); gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
-    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { this.respaldo(); return; }
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null;
     gl.useProgram(pr);
     var b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     var loc = gl.getAttribLocation(pr, "a_pos"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    this.u = {}; var self = this;
-    ["u_a", "u_b", "u_c", "u_d", "u_e", "u_col"].forEach(function (n) { self.u[n] = gl.getUniformLocation(pr, n); });
+    var u = {};
+    ["u_a", "u_b", "u_c", "u_d", "u_e", "u_col"].forEach(function (n) { u[n] = gl.getUniformLocation(pr, n); });
     gl.clearColor(0, 0, 0, 0);
-    this.gl = gl; this.cv = cv;
+    cv.width = cv.height = 2;
+    /* si el navegador igual lo apaga (memoria), se rearma al volver y mientras tanto quedan los respaldos */
+    cv.addEventListener("webglcontextlost", function (e) { e.preventDefault(); G = null; lista.forEach(function (o) { o.respaldo(); }); });
+    G = { gl: gl, cv: cv, u: u };
+    return G;
+  }
+
+  function Orbe(host) {
+    this.host = host;
+    if (!motor()) { this.respaldo(); return; }
+    var cv = document.createElement("canvas");
+    host.appendChild(cv);
+    this.cv = cv; this.ctx = cv.getContext("2d");
+    var self = this;
     var p = PAL[host.dataset.orbe] || PAL.aurora;
     this.col = colores(p);
     this.orq = host.dataset.orq === "1" ? 1 : 0;
@@ -93,11 +110,13 @@ LF.orbes = (function () {
   }
   Orbe.prototype.respaldo = function () {
     var p = PAL[this.host.dataset.orbe] || PAL.aurora;
+    this.ctx = null;
     this.host.innerHTML = "";
     this.host.style.borderRadius = "50%";
     this.host.style.background = "radial-gradient(circle at 34% 30%," + p.light + " 0,transparent 42%),radial-gradient(circle at 66% 70%," + p.accent + " 0,transparent 55%)," + p.core;
   };
   Orbe.prototype.medir = function () {
+    if (!this.ctx) return;
     var lado = Math.max(1, this.host.offsetWidth);
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.lado = lado;
@@ -112,11 +131,15 @@ LF.orbes = (function () {
     this.fF += dt * s.flujo; this.fG += dt * s.giro; this.fR += dt * s.ritmo; this.fO += dt * s.onda; this.fOr += dt * s.orbita;
   };
   Orbe.prototype.pintar = function () {
-    var gl = this.gl, s = this.act, u = this.u;
-    gl.viewport(0, 0, this.cv.width, this.cv.height);
+    var m = this.ctx && motor();
+    if (!m) return;
+    var gl = m.gl, s = this.act, u = m.u, w = this.cv.width, h = this.cv.height;
+    /* el lienzo compartido crece hasta la orbe más grande y no se achica (cambiarle el tamaño cada cuadro cuesta) */
+    if (m.cv.width < w || m.cv.height < h) { m.cv.width = Math.max(m.cv.width, w); m.cv.height = Math.max(m.cv.height, h); }
+    gl.viewport(0, 0, w, h);
     gl.clear(gl.COLOR_BUFFER_BIT);
     var detalle = Math.min(1, Math.max(0, (this.lado - 18) / 90));
-    var aa = (1.5 * 2 * K) / Math.max(this.cv.width, 1);
+    var aa = (1.5 * 2 * K) / Math.max(w, 1);
     gl.uniform4f(u.u_a, this.fF, this.fG, Math.sin(this.fR) * s.respiracion, this.fO);
     gl.uniform4f(u.u_b, s.latido, s.nucleo, s.saturacion, s.opacidad);
     gl.uniform4f(u.u_c, s.halo, s.deformacion, 0, this.oscuro);
@@ -124,11 +147,14 @@ LF.orbes = (function () {
     gl.uniform4f(u.u_e, this.fOr, aa, K, 0);
     gl.uniform3fv(u.u_col, this.col);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    /* WebGL pinta desde abajo a la izquierda: la orbe queda en la franja de abajo del lienzo compartido */
+    this.ctx.clearRect(0, 0, w, h);
+    this.ctx.drawImage(m.cv, 0, m.cv.height - h, w, h, 0, 0, w, h);
   };
   function cuadro(t) {
     var dt = Math.min(0.05, (t - previo) / 1000 || 0.016); previo = t;
     var alguno = false;
-    lista.forEach(function (o) { if (o.visible) { alguno = true; o.paso(dt); o.pintar(); } });
+    lista.forEach(function (o) { if (o.visible && o.ctx) { alguno = true; o.paso(dt); o.pintar(); } });
     if (alguno && LF.MOV) requestAnimationFrame(cuadro); else corriendo = false;
   }
   function arrancar() {

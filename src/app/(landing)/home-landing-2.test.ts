@@ -131,11 +131,10 @@ describe('la home es la landing 2 (Ronda 30, Nico)', () => {
     const pedidas = new Set([...`${HTML}\n${JS}`.matchAll(/\/landing\/img\/[^"' )]+\.(?:webp|jpg|png)/g)].map((m) => m[0]))
     expect(pedidas.size).toBeGreaterThan(20)
     for (const img of pedidas) expect(existsSync(join('public', img)), img).toBe(true)
-    // La vitrina las arma el JS con el nombre suelto: `['/landing/img/' + v[0] + '.webp']`.
-    const vitrina = /var VIT = \[([\s\S]*?)\];/.exec(JS)?.[1] ?? ''
-    const deLaVitrina = [...vitrina.matchAll(/\["([^"]+)",/g)].map((m) => m[1])
-    expect(deLaVitrina.length).toBeGreaterThan(5)
-    for (const n of deLaVitrina) expect(existsSync(join(CARPETA, 'img', `${n}.webp`)), n).toBe(true)
+    // La franja del marketplace NO trae inmuebles escritos a mano (Nico 24-10: conectada con producción):
+    // la llena conexion.js con lo publicado, de /api/vitrina-de-la-home.
+    expect(JS).not.toMatch(/var VIT = \[/)
+    expect(readFileSync(join(CARPETA, 'js', 'conexion.js'), 'utf8')).toContain('/api/vitrina-de-la-home')
     // Nada relativo: la página se sirve en /es, no en /landing/.
     expect(`${HTML}\n${JS}`).not.toMatch(/["']img\//)
   })

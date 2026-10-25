@@ -12,21 +12,7 @@
   LF.orbes.iniciar();
   LF.corriente.iniciar();
 
-  /* listings de la vitrina (en producción salen del marketplace) */
-  var VIT = [
-    ["fotos/01", "2.600.000", "Apartamento · 2 hab · Sabaneta"], ["fotos/04", "4.200.000", "Casa · 3 hab · Envigado"],
-    ["fotos-co/torre-poblado", "1.750.000", "Apartaestudio · 1 hab · Laureles"], ["local-voltaje", "3.900.000", "Local · Belén"],
-    ["fotos/00", "6.800.000", "Casa · 4 hab · Rionegro"], ["fotos/02", "5.300.000", "Apartamento · 3 hab · El Poblado"],
-    ["fotos/03", "2.100.000", "Casa · 2 hab · Itagüí"], ["edificio-voltaje", "1.600.000", "Apartamento · 2 hab · Bello"]
-  ];
-  var vt = $("#vitTrack");
-  if (vt) {
-    var html = "";
-    for (var k = 0; k < 2; k++) VIT.forEach(function (v) {
-      html += '<a class="vi" href="/propiedades"' + (k ? ' aria-hidden="true" tabindex="-1"' : "") + '><span class="vi-foto"><img src="/landing/img/' + v[0] + '.webp" alt="" loading="lazy"></span><span><b>$ ' + v[1] + ' <em>' + LF.t("/mes") + '</em></b><span>' + LF.t(v[2]) + '</span><small>' + LF.t("Tu Inmobiliaria") + '</small></span></a>';
-    });
-    vt.innerHTML = html;
-  }
+  /* la franja del marketplace la llena conexion.js con lo publicado (nunca inmuebles escritos a mano) */
 
   /* menú del celular y aviso del marketplace (funcionan siempre) */
   var mb = $("#mbtn");
@@ -121,7 +107,7 @@
   gsap.registerPlugin(ScrollTrigger);
   var lenis = null;
   if (window.Lenis) {
-    lenis = new Lenis({ duration: 1.05, easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); }, smoothWheel: true });
+    lenis = new Lenis({ lerp: .05, wheelMultiplier: .9, smoothWheel: true });
     lenis.on("scroll", ScrollTrigger.update);
     gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
     gsap.ticker.lagSmoothing(0);

@@ -2009,6 +2009,23 @@ select:-webkit-autofill:active {
   white-space: nowrap;
 }
 
+/* ── Toasts: nunca por encima del header, tampoco al entrar ──────────────────
+   `toast.tsx` baja el Toaster bajo el header sticky (4rem + 0.5rem), pero
+   sonner anima los toasts de arriba con `--y: translateY(-100%)` (entrada y
+   salida): durante ~250 ms el toast pasa por encima del header y tapa el menú,
+   la píldora del Piloto y el centro de procesos. Medido a 360 px: el toast
+   arranca en top=45 con el header en 0–65. Se reemplaza el desplazamiento de
+   cuerpo entero por uno corto (4 px: nunca pasa de la línea del Toaster) y el
+   resto lo hace el fundido de opacidad que sonner ya trae.
+   Los selectores llevan `[data-sonner-toaster]` delante para ganarle en
+   especificidad a la hoja que sonner inyecta en runtime. */
+[data-sonner-toaster] [data-sonner-toast][data-y-position='top']:not([data-mounted='true']) {
+  --y: translateY(-4px);
+}
+[data-sonner-toaster] [data-sonner-toast][data-removed='true'][data-front='true'][data-swipe-out='false'][data-y-position='top'] {
+  --y: translateY(-4px);
+}
+
 /* ── Landing "nueva": seamless section bands ──────────────────────────────────
    Handle uses #fbfaf9 (≈white). These fade the gray into white at the section
    edges so adjacent white sections blend with no hard seam. Variants pick which

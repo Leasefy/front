@@ -328,3 +328,17 @@ describe('cargando', () => {
     expect(texto()).toContain('Cargando tu aprobación')
   })
 })
+
+describe('vacío en móvil (T-0173)', () => {
+  it('el CTA puede partirse en dos líneas: no ensancha la página a 360/412 px', () => {
+    montar(null)
+    render()
+    const cta = Array.from(container.querySelectorAll('a')).find((a) =>
+      a.getAttribute('href') === '/aprobacion',
+    ) as HTMLAnchorElement
+    expect(cta).toBeTruthy()
+    expect(cta.className).toContain('whitespace-normal')
+    // Nico's CTA is `w-full sm:w-auto` on phones: it fills the card instead of widening the page.
+    expect(cta.className).toContain('w-full')
+  })
+})

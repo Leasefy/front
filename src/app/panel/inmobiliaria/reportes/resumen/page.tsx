@@ -558,7 +558,7 @@ function ResumenDelNegocio() {
             </div>
             <Link
               href="/panel/inmobiliaria/pipeline"
-              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline [@media(pointer:coarse)]:min-h-11"
             >
               {t('inmobiliaria.common.viewAll')}
             </Link>
@@ -590,7 +590,7 @@ function ResumenDelNegocio() {
             </div>
             <Link
               href="/panel/inmobiliaria/configuracion/equipo"
-              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline [@media(pointer:coarse)]:min-h-11"
             >
               {t('inmobiliaria.common.viewAllM')}
             </Link>

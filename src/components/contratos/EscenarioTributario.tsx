@@ -310,7 +310,7 @@ function Contenido({
       {/* De dónde sale: las cuatro responsabilidades que lo definen. Sin esto
           el nombre es un veredicto sin pruebas, y nadie puede corregirlo. */}
       <details className="text-sm" data-testid="escenario-ejes">
-        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+        <summary className="relative hit-area-44 cursor-pointer text-muted-foreground hover:text-foreground">
           De dónde sale
         </summary>
         <ul className="mt-2 space-y-1.5 pl-1">

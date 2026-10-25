@@ -369,6 +369,9 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
             variant="secondary"
             size="sm"
             hideArrow
+            // 360 px: the nowrap label ("Enviar ahora los de septiembre de 2026") pushed the
+            // whole page to 376 px; let it wrap inside the card instead.
+            className="h-auto min-h-9 max-w-full whitespace-normal py-2 text-left [@media(pointer:coarse)]:min-h-11"
             data-testid="extracto-mensual-enviar-ahora"
             disabled={cargandoResumen || enviando}
             onClick={() => setConfirmando(true)}

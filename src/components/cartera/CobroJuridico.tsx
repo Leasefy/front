@@ -443,7 +443,7 @@ export function CobroJuridico() {
                   {puedeMover && (
                     <span className="flex items-center gap-2">
                       <select
-                        className="h-9 rounded-md border border-border bg-surface px-2 text-body-sm"
+                        className="h-9 rounded-md border border-border bg-surface px-2 text-body-sm [@media(pointer:coarse)]:min-h-11"
                         value={abogadoElegido[s.contractId] ?? ''}
                         onChange={(e) =>
                           setAbogadoElegido((prev) => ({ ...prev, [s.contractId]: e.target.value }))
@@ -684,7 +684,7 @@ export function CobroJuridico() {
             <label className="text-sm">
               <span className="block text-caption text-fg-muted">Por defecto, los paga el inquilino</span>
               <select
-                className="mt-1 rounded-md border border-border bg-surface p-2 text-sm"
+                className="mt-1 rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
                 value={config?.pactaHonorarios === null || config?.pactaHonorarios === undefined ? '' : String(config.pactaHonorarios)}
                 disabled={!puedeMover || ocupado}
                 onChange={(e) => void guardarConfig({ pactaHonorarios: e.target.value === 'true' })}
@@ -700,7 +700,7 @@ export function CobroJuridico() {
                 <span className="block text-caption text-fg-muted">% de la deuda al pasar</span>
                 <input
                   id="honorarios-pct"
-                  className="mt-1 w-28 rounded-md border border-border bg-surface p-2 text-sm"
+                  className="mt-1 w-28 rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
                   inputMode="decimal"
                   defaultValue={config?.honorariosPct ?? ''}
                   disabled={!puedeMover || ocupado}
@@ -728,7 +728,7 @@ export function CobroJuridico() {
                 <span className="block text-caption text-fg-muted">Tope por caso (pesos)</span>
                 <input
                   id="honorarios-tope"
-                  className="mt-1 w-40 rounded-md border border-border bg-surface p-2 text-sm"
+                  className="mt-1 w-40 rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
                   inputMode="numeric"
                   defaultValue={config?.honorariosTopeCop ?? ''}
                   disabled={!puedeMover || ocupado}
@@ -788,7 +788,7 @@ export function CobroJuridico() {
               <div>
                 <input
                   id="abogado-nombre"
-                  className="rounded-md border border-border bg-surface p-2 text-sm"
+                  className="rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
                   placeholder="Nombre del abogado"
                   aria-label="Nombre del abogado"
                   value={nombre}
@@ -805,7 +805,7 @@ export function CobroJuridico() {
               <div>
                 <input
                   id="abogado-documento"
-                  className="rounded-md border border-border bg-surface p-2 text-sm"
+                  className="rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
                   placeholder="Cédula o NIT (opcional)"
                   aria-label="Cédula o NIT del abogado"
                   value={documento}

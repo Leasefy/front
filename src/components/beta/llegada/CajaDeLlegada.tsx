@@ -122,7 +122,7 @@ export function CajaDeLlegada({
   const encendida = enfocada || hayTexto;
   // Sin la franja de arriba la caja se veía chica (Nico, 02-10): más aire.
   const altoMinimo = compacta ? 'min-h-[28px]' : aviso ? 'min-h-[56px]' : 'min-h-[92px]';
-  const boton = compacta ? 'h-9' : 'h-10';
+  const boton = compacta ? 'h-9 [@media(pointer:coarse)]:h-11' : 'h-10 [@media(pointer:coarse)]:h-11';
   const redondo = compacta ? 'size-9' : 'size-10';
 
   // Sin ejemplos (la conversación), el texto fijo hace de ejemplo quieto.

@@ -327,3 +327,17 @@ describe('el cajón del celular: el foco', () => {
     expect(dialogo()).toBeTruthy()
   })
 })
+
+describe('PlanSidebar — el pie nunca tapa el menú (T-0173)', () => {
+  it('la lista del menú se encoge y se desplaza; el pie no se encoge ni deja ver lo que pasa por detrás', async () => {
+    await pintar()
+    const nav = container.querySelector('aside nav')!
+    expect(nav.className).toContain('min-h-0')
+    expect(nav.className).toContain('flex-1')
+    expect(nav.className).toContain('overflow-y-auto')
+    const pie = container.querySelector('aside [data-testid="pie-de-la-barra"]')!
+    expect(pie.className).toContain('shrink-0')
+    expect(pie.className).toContain('bg-bg')
+    expect(nav.nextElementSibling === pie).toBe(true)
+  })
+})

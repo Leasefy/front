@@ -277,7 +277,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
       <Chip
         selected={!!selectedValue}
         onClick={() => setActiveFilter(activeFilter === id ? null : id)}
-        className="whitespace-nowrap"
+        className="whitespace-nowrap [@media(pointer:coarse)]:min-h-11"
         aria-expanded={activeFilter === id}
       >
         <span className="inline-flex items-center gap-1.5">

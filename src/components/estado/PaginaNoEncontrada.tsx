@@ -160,7 +160,7 @@ export function PaginaNoEncontrada() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="inline-flex items-center gap-1.5 text-body-sm font-medium text-fg transition-colors hover:text-primary"
+                className="inline-flex items-center gap-1.5 text-body-sm font-medium text-fg transition-colors hover:text-primary [@media(pointer:coarse)]:min-h-11"
                 data-testid="no-encontrada-volver"
               >
                 <ArrowLeft className="h-4 w-4" />

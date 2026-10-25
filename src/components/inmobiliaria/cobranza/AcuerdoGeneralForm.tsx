@@ -302,9 +302,9 @@ export function AcuerdoGeneralForm({
         {sucio ? (
           // La misma pieza de la vuelta (BackButton sin href = botón): con algo
           // escrito, antes de irse pregunta.
-          <VueltaConPregunta onClick={salir} label="Acuerdos de pago" variant="subtle" data-testid="acuerdo-general-volver" />
+          <VueltaConPregunta onClick={salir} label="Acuerdos de pago" variant="subtle" className="[@media(pointer:coarse)]:min-h-11" data-testid="acuerdo-general-volver" />
         ) : (
-          <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
+          <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" className="[@media(pointer:coarse)]:min-h-11" />
         )}
         <EncabezadoDePantalla
           className="mt-3"

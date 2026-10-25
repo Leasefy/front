@@ -227,13 +227,13 @@ function ReporteViewerContent() {
            enlaces en gris (antes dos botones de contorno del mismo peso). */
         acciones={
           <>
-            <Button asChild variant="link" size="sm" hideArrow className="px-0 text-fg-muted">
+            <Button asChild variant="link" size="sm" hideArrow className="px-0 text-fg-muted [@media(pointer:coarse)]:min-h-11">
               <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/suscripcion">
                 <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
                 {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
               </Link>
             </Button>
-            <Button asChild variant="link" size="sm" hideArrow className="px-0 text-fg-muted">
+            <Button asChild variant="link" size="sm" hideArrow className="px-0 text-fg-muted [@media(pointer:coarse)]:min-h-11">
               <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/thresholds">
                 <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
                 {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}

@@ -1279,7 +1279,7 @@ export function AuthForm({
                     <button
                       type="button"
                       onClick={() => handleModeSwitch('forgot-password')}
-                      className="text-[13px] text-fg-subtle hover:text-fg transition-colors"
+                      className="text-[13px] text-fg-subtle hover:text-fg transition-colors [@media(pointer:coarse)]:min-h-11"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>

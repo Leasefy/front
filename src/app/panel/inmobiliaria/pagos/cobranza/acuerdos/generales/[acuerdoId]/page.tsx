@@ -40,7 +40,7 @@ function Marco({ titulo, children }: { titulo: string; children: React.ReactNode
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <div>
-        <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
+        <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" className="[@media(pointer:coarse)]:min-h-11" />
         <EncabezadoDePantalla className="mt-3" seccion="Cobranza" titulo={titulo} />
       </div>
       {children}
@@ -85,7 +85,7 @@ function EditarAcuerdoGeneral() {
         {/* El fallo ocupa la pantalla: su propia salida arriba, a la vista (guardián el-fallo-de-una-ficha-tiene-salida). */}
         <div className="space-y-6 p-6 lg:p-8">
           <div>
-            <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" />
+            <BackButton href={VOLVER} label="Acuerdos de pago" variant="subtle" className="[@media(pointer:coarse)]:min-h-11" />
             <EncabezadoDePantalla className="mt-3" seccion="Cobranza" titulo="Acuerdo general" />
           </div>
           <FalloDeCarga
@@ -108,7 +108,7 @@ function EditarAcuerdoGeneral() {
             titulo="Ese acuerdo general ya no existe"
             descripcion="Puede que alguien lo haya borrado. Los demás siguen en Acuerdos de pago."
             accion={
-              <Button asChild size="sm" hideArrow>
+              <Button asChild size="sm" hideArrow className="[@media(pointer:coarse)]:min-h-11">
                 <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
               </Button>
             }

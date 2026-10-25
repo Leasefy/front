@@ -556,7 +556,7 @@ function CobranzaConfiguracionContent() {
             ahí (`?volver=acuerdos`), para no inventar una vuelta que no existe
             cuando entraste por el menú. */}
         {volverA === 'acuerdos' && (
-          <BackButton href={`${COBRANZA_BASE}/acuerdos`} label="Acuerdos de pago" variant="subtle" className="mb-2" />
+          <BackButton href={`${COBRANZA_BASE}/acuerdos`} label="Acuerdos de pago" variant="subtle" className="mb-2 [@media(pointer:coarse)]:min-h-11" />
         )}
         <EncabezadoDePantalla
           seccion="Cobranza"

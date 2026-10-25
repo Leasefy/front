@@ -79,7 +79,7 @@ function ScoringGuide() {
         variant="outline"
         hideArrow
         onClick={() => setOpen(!open)}
-        className={cn('gap-2.5 rounded-lg', open && 'bg-surface-muted')}
+        className={cn('h-auto min-h-10 max-w-full gap-2.5 whitespace-normal rounded-lg py-2 text-left', open && 'bg-surface-muted')}
       >
         <Question className="w-4 h-4" />
         <span>{t('landlord.candidates.scoringGuideToggle')}</span>
@@ -615,7 +615,7 @@ export default function CandidatosPage() {
         </FranjaDeCifras>
 
         {/* Status funnel — exclusive selector → SegmentedControl */}
-        <div className="mb-6">
+        <div className="mb-6 max-w-full overflow-x-auto">
           <SegmentedControl<StatusFunnel>
             value={statusFunnel}
             onChange={setStatusFunnel}

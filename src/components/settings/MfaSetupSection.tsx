@@ -13,6 +13,14 @@ import {
   verificarConElSdk,
   verificarFactorNuevo,
 } from '@/lib/auth/inscripcion-del-segundo-factor';
+import {
+  inscribirYVerificarConElMock,
+  liberarYVerificarConElMock,
+  resolverCodigoDelMock,
+  userIdDelToken,
+} from '@/lib/auth/mock-del-segundo-factor';
+import { useMockDelSegundoFactor } from '@/lib/auth/use-mock-del-segundo-factor';
+import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock';
 import { toast } from '@/components/ui/toast';
 import { ErrorDelSegundoFactor } from '@/lib/auth/errores-del-segundo-factor';
 import { FRASES_DE_SUPABASE, codigoDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
@@ -138,6 +146,8 @@ export function MfaSetupSection({
   const [errorDelModal, setErrorDelModal] = useState<string | null>(null);
   const quitandoRef = useRef(false);
   const yaArrancoRef = useRef(false);
+  // Sólo fuera de producción (`lib/config/entorno.ts`): en producción es siempre `false`.
+  const mockHabilitado = useMockDelSegundoFactor();
 
   // Check if MFA is already enrolled on mount
   useEffect(() => {
@@ -230,13 +240,39 @@ export function MfaSetupSection({
 
     setIsLoading(true);
     try {
+      const token = getAccessToken() ?? accessTokenRef.current;
+      // Mock (sólo fuera de producción): `123456` se cambia por el código real.
+      const resuelto = await resolverCodigoDelMock({
+        codigo: currentCode,
+        userId: userIdDelToken(token),
+        factorId: currentEnroll.factorId,
+      });
+      if (!resuelto.ok) {
+        // Sin secreto de este factor: el back lo libera y el mock inscribe y
+        // verifica uno nuevo (una sola vez; si falla, el mensaje de siempre).
+        const recuperado =
+          resuelto.sinSecreto && token ? await liberarYVerificarConElMock({ token, enElIngreso }) : null;
+        if (recuperado?.ok) {
+          setState('enrolled');
+          setFactorId(recuperado.factorId);
+          setEnrollData(null);
+          setCode('');
+          toast.success('Autenticación de dos factores activada con el mock');
+          onEnrolled?.();
+          onActivado?.(recuperado.factorId);
+          return;
+        }
+        toast.error(recuperado ? recuperado.mensaje : resuelto.mensaje);
+        setCode('');
+        return;
+      }
       // En el login, por el SDK (la sesión queda en `aal2`); en Configuración,
       // por HTTP con tope. Los porqués, en `verificarFactorNuevo`.
       await verificarFactorNuevo({
         factorId: currentEnroll.factorId,
-        codigo: currentCode,
+        codigo: resuelto.codigo,
         enElIngreso,
-        token: getAccessToken() ?? accessTokenRef.current,
+        token,
       });
 
       setState('enrolled');
@@ -249,6 +285,35 @@ export function MfaSetupSection({
     } catch (err) {
       // Casi siempre ya viene en español (`errores-del-segundo-factor.ts`).
       toast.error(mensajeDelSegundoFactor(err, 'No se pudo verificar el código.', 'verificar el código'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Mock (sólo fuera de producción): inscribe el factor como siempre, guarda
+   * el secreto y completa el primer código con el TOTP calculado, sin QR.
+   */
+  const handleUsarMock = async () => {
+    setIsLoading(true);
+    try {
+      const token = getAccessToken() ?? accessTokenRef.current;
+      accessTokenRef.current = token;
+      if (!token) throw sinSesion();
+      const { factorId: nuevo } = await inscribirYVerificarConElMock({ token, enElIngreso });
+      setState('enrolled');
+      setFactorId(nuevo);
+      toast.success('Autenticación de dos factores activada con el mock');
+      onEnrolled?.();
+      onActivado?.(nuevo);
+    } catch (err) {
+      toast.error(
+        mensajeDelSegundoFactor(
+          err,
+          'No pudimos activar el mock. Prueba de nuevo en un momento.',
+          'activar el mock',
+        ),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -323,7 +388,21 @@ export function MfaSetupSection({
 
       let tokenNuevo: string | null;
       try {
-        tokenNuevo = await verificarConElSdk(factorId, codigo);
+        // Mock (sólo fuera de producción): `123456` se cambia por el código real.
+        const resuelto = await resolverCodigoDelMock({
+          codigo,
+          userId: userIdDelToken(getAccessToken() ?? accessTokenRef.current),
+          factorId,
+        });
+        if (!resuelto.ok) {
+          quitandoRef.current = false;
+          setIsLoading(false);
+          setCodigoDeLaApp('');
+          setErrorDelModal(resuelto.mensaje);
+          onCambioDeFactor?.(false);
+          return;
+        }
+        tokenNuevo = await verificarConElSdk(factorId, resuelto.codigo);
         const token = tokenNuevo ?? getAccessToken();
         if (!token) throw sinSesion();
         await apiDeAuth(`/factors/${factorId}`, token, { method: 'DELETE' });
@@ -545,8 +624,9 @@ export function MfaSetupSection({
 
         {/* Code input */}
         <div>
-          <label htmlFor="codigo-del-segundo-factor" className="block text-sm font-medium text-fg mb-2">
+          <label htmlFor="codigo-del-segundo-factor" className="mb-2 flex items-center gap-2 text-sm font-medium text-fg">
             El código de 6 dígitos de tu app
+            {mockHabilitado ? <InsigniaDelMock /> : null}
           </label>
           <Input
             id="codigo-del-segundo-factor"
@@ -602,17 +682,35 @@ export function MfaSetupSection({
           <p className="text-sm text-fg-muted">Además de la contraseña, un código de tu app al entrar</p>
         </div>
       </div>
-      {/* El único azul de Seguridad (antes, un verde pintado a mano). */}
-      <Button
-        size="sm"
-        hideArrow
-        onClick={() => void handleStartEnroll()}
-        isLoading={isLoading}
-        disabled={isLoading}
-        className="shrink-0"
-      >
-        Activar
-      </Button>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {mockHabilitado ? (
+          <>
+            <InsigniaDelMock />
+            <Button
+              variant="outline"
+              size="sm"
+              hideArrow
+              onClick={() => void handleUsarMock()}
+              disabled={isLoading}
+              className="shrink-0"
+              data-testid="usar-mock-de-autenticacion"
+            >
+              Usar mock de autenticación
+            </Button>
+          </>
+        ) : null}
+        {/* El único azul de Seguridad (antes, un verde pintado a mano). */}
+        <Button
+          size="sm"
+          hideArrow
+          onClick={() => void handleStartEnroll()}
+          isLoading={isLoading}
+          disabled={isLoading}
+          className="shrink-0"
+        >
+          Activar
+        </Button>
+      </div>
     </div>
   );
 }

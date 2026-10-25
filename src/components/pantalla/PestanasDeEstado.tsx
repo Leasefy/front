@@ -77,7 +77,7 @@ export function PestanasDeEstado<V extends string>({
             data-testid={p.testid}
             data-tono={p.tono}
             className={cn(
-              'inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-body-sm transition-colors',
+              'inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-body-sm transition-colors [@media(pointer:coarse)]:min-h-11',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--menu-activa-tinta)]',
               activa
                 ? 'bg-[color:var(--menu-activa)] font-medium text-[color:var(--menu-activa-tinta)]'

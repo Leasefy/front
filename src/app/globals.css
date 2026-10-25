@@ -620,6 +620,9 @@
   }
 
   html {
+    /* T-0173 WU-10: the sticky page header is 65 px; scrollIntoView and focus
+       scrolling must land controls below it, not under its icons. */
+    scroll-padding-top: 5rem;
     /* Prevent pull-to-refresh / rubber-band glitches on mobile */
     overscroll-behavior-y: none;
   }
@@ -697,6 +700,69 @@
   /* ==========================================================
    * LAYOUT UTILITIES
    * ========================================================== */
+
+  /* Touch hit area (T-0173 WU-6): on coarse pointers a ::after centred on the
+     control grows its tappable area to at least 44x44 without moving or
+     resizing what is drawn. The element must be positioned (`relative`, or
+     already absolute/fixed). Desktop (fine pointer) is untouched. */
+  @media (pointer: coarse) {
+    .hit-area-44::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  /* T-0173 WU-12: edge-anchored controls (the tab-strip scroll chevrons, 4 px
+     from the viewport edge) must not grow the hit area outward: the overflow
+     widened the page past the viewport. -start keeps the left edge and grows
+     right; -end keeps the right edge and grows left. Vertical stays centred. */
+  @media (pointer: coarse) {
+    .hit-area-44-start::after,
+    .hit-area-44-end::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translateY(-50%);
+    }
+    .hit-area-44-start::after {
+      left: 0;
+    }
+    .hit-area-44-end::after {
+      right: 0;
+    }
+  }
+
+  /* T-0173 WU-6: @leasefy/cadence Chip and Tabs triggers are 26-34 px tall and
+     cadence is not editable from front, so touch gets a 44 px floor here.
+     Chip = a role=checkbox button WITHOUT data-state (the Radix Checkbox has
+     one). Segmented controls are raised in the WU-8 block below.
+     Move these into cadence and delete this block. */
+  @media (pointer: coarse) {
+    button[role="checkbox"][aria-checked]:not([data-state]),
+    [role="tab"][data-variant="underline"] {
+      min-height: 44px;
+    }
+  }
+
+  /* T-0173 WU-8: cadence SegmentedControl (a radiogroup of button[role=radio]
+     with no Radix data-state; 28-32 px) and TabsList variant=segmented
+     triggers (26 px) get the same touch floor. The rail grows with them; the
+     wrappers that scroll inside (visitas, candidatos) only scroll on x, so
+     the extra height is free. Delete with the block above once cadence ships
+     the fix. */
+  @media (pointer: coarse) {
+    button[role="radio"][aria-checked]:not([data-state]),
+    [role="tab"][data-variant="segmented"] {
+      min-height: 44px;
+    }
+  }
 
   /* Section padding - Consistent vertical rhythm */
   .section-padding {
@@ -1941,6 +2007,23 @@ select:-webkit-autofill:active {
   align-items: center;
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* ── Toasts: nunca por encima del header, tampoco al entrar ──────────────────
+   `toast.tsx` baja el Toaster bajo el header sticky (4rem + 0.5rem), pero
+   sonner anima los toasts de arriba con `--y: translateY(-100%)` (entrada y
+   salida): durante ~250 ms el toast pasa por encima del header y tapa el menú,
+   la píldora del Piloto y el centro de procesos. Medido a 360 px: el toast
+   arranca en top=45 con el header en 0–65. Se reemplaza el desplazamiento de
+   cuerpo entero por uno corto (4 px: nunca pasa de la línea del Toaster) y el
+   resto lo hace el fundido de opacidad que sonner ya trae.
+   Los selectores llevan `[data-sonner-toaster]` delante para ganarle en
+   especificidad a la hoja que sonner inyecta en runtime. */
+[data-sonner-toaster] [data-sonner-toast][data-y-position='top']:not([data-mounted='true']) {
+  --y: translateY(-4px);
+}
+[data-sonner-toaster] [data-sonner-toast][data-removed='true'][data-front='true'][data-swipe-out='false'][data-y-position='top'] {
+  --y: translateY(-4px);
 }
 
 /* ── Landing "nueva": seamless section bands ──────────────────────────────────

@@ -704,6 +704,7 @@ function AgendaContent() {
                   size="sm"
                   hideArrow
                   aria-label="Semana anterior"
+                  className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                   onClick={() => setLunes((l) => { const d = new Date(l); d.setDate(d.getDate() - 7); return d; })}
                 >
                   <CaretLeft className="h-4 w-4" />
@@ -716,6 +717,7 @@ function AgendaContent() {
                   size="sm"
                   hideArrow
                   aria-label="Semana siguiente"
+                  className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                   onClick={() => setLunes((l) => { const d = new Date(l); d.setDate(d.getDate() + 7); return d; })}
                 >
                   <CaretRight className="h-4 w-4" />

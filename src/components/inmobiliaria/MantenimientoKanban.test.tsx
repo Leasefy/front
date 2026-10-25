@@ -163,6 +163,22 @@ describe('<MantenimientoKanban> — las tarjetas se pueden arrastrar', () => {
     expect(onViewDetails).toHaveBeenCalledWith(expect.objectContaining({ id: 'sol-1' }));
   });
 
+  it('revisora r25: las columnas vacías van plegadas (angostas) y siguen siendo zonas donde soltar', () => {
+    montar({
+      data: [
+        hacerSolicitud({ id: 'a', status: 'reported' }),
+        hacerSolicitud({ id: 'b', status: 'in_progress' }),
+      ],
+    });
+    expect(container.querySelector('[data-testid="columna-reported"]')!.getAttribute('data-plegada')).toBeNull();
+    expect(container.querySelector('[data-testid="columna-quoted"]')!.getAttribute('data-plegada')).toBe('si');
+    const plantilla = (container.querySelector('[data-testid="tablero-de-mantenimientos"]') as HTMLElement).style.getPropertyValue(
+      '--columnas-del-tablero',
+    );
+    // Seis pistas: «Canceladas» (Portofino 21-10) también, vacía y angosta.
+    expect(plantilla).toBe('minmax(0,1fr) minmax(0,11rem) minmax(0,11rem) minmax(0,1fr) minmax(0,11rem) minmax(0,11rem)');
+  });
+
   it('cada solicitud cae en la columna de su estado', () => {
     montar({
       data: [
@@ -198,11 +214,13 @@ describe('soltar la tarjeta en otra columna', () => {
     expect(onStatusChange).toHaveBeenCalledWith('sol-1', 'quoted');
   });
 
-  it('🔴 SO-15: las cinco columnas en una grilla (a 1440 se ven todas), sin desplazamiento lateral', () => {
+  it('🔴 SO-15: las seis columnas en una grilla (a 1440 se ven todas), sin desplazamiento lateral', () => {
     montar();
     const columna = document.body.querySelector('[data-testid="columna-completed"]')!;
     const grilla = columna.parentElement!;
-    expect(grilla.className).toContain('xl:grid-cols-6');
+    // Revisora r25: las seis pistas (con «Canceladas», Portofino 21-10) siguen en la grilla de xl; las vacías, angostas (ver la prueba de plegadas).
+    expect(grilla.className).toContain('xl:[grid-template-columns:var(--columnas-del-tablero)]');
+    expect((grilla as HTMLElement).style.getPropertyValue('--columnas-del-tablero').split(' ').length).toBe(6);
     expect(grilla.className).not.toContain('overflow-x-auto');
     expect(columna.className).not.toContain('min-w-[280px]');
   });

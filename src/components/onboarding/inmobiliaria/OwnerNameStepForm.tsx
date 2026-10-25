@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { ArrowRight } from '@phosphor-icons/react'
 import { Collapse, FormField, FormLabel, FormControl, FormError } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -387,12 +386,11 @@ export function OwnerNameStepForm({
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            {corrigiendo ? 'Guardando...' : 'Creando tu cuenta...'}
+            {corrigiendo ? 'Guardando…' : 'Creando tu cuenta…'}
           </>
         ) : (
           <>
-            {corrigiendo ? 'Guardar y volver al asistente' : 'Continuar'}
-            <ArrowRight className="h-4 w-4" weight="bold" aria-hidden />
+            {corrigiendo ? 'Guardar y volver al asistente' : 'Empezar el registro'}
           </>
         )}
       </Button>

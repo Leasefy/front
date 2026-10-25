@@ -113,94 +113,33 @@ const escape = () =>
 
 async function abrirYPasarAConfirmar() {
   await renderPage()
-  act(() => { boton(container, 'Eliminar mi cuenta').click() })
+  act(() => { boton(container, 'Eliminar cuenta').click() })
   act(() => { boton(dialogo()!, 'Continuar').click() })
   await vi.waitFor(() => expect(textoDelModal()).toContain('Confirmar eliminación'))
 }
 
-describe('Perfil del propietario — el modal de baja', () => {
-  it('es un diálogo con nombre y una sola ✕, la de la primitiva', async () => {
+/*
+ * Ronda 30 — decisión de Nico (23-10): «Eliminar la cuenta» vive SÓLO en Configuración. Estas pruebas miraban el
+ * diálogo de tres pasos que vivía aquí; se cambiaron A PROPÓSITO por las del camino hacia Configuración. Lo que
+ * cuidaban (la palabra exacta, decir por qué cuando el back no deja, no prometer borrar, los 30 días) ahora lo
+ * prueba `components/configuracion/SeccionEliminarCuenta.test.tsx`, que es donde vive la baja.
+ */
+describe('Perfil del propietario — la baja vive en Configuración', () => {
+  it('dice dónde eliminar la cuenta y lleva a Configuración', async () => {
     await renderPage()
-    act(() => { boton(container, 'Eliminar mi cuenta').click() })
-
-    const d = dialogo()!
-    expect(d).not.toBeNull()
-    const titulo = document.getElementById(d.getAttribute('aria-labelledby') ?? '')
-    expect(titulo?.textContent).toBe('¿Eliminar tu cuenta?')
-    expect(d.querySelectorAll('[aria-label="Cerrar"]')).toHaveLength(1)
+    const aviso = container.querySelector('[data-testid="perfil-eliminar-cuenta"]')
+    expect(aviso?.textContent).toContain('Para eliminar tu cuenta, ve a Configuración')
+    const enlace = container.querySelector<HTMLAnchorElement>('[data-testid="perfil-ir-a-eliminar-cuenta"]')
+    expect(enlace?.getAttribute('href')).toBe('/panel/configuracion/eliminar-cuenta')
   })
 
-  it('no promete borrar lo que el backend no borra: dice qué se pierde y qué no', async () => {
+  it('Mi perfil ya no abre la baja: sin el botón ni el diálogo', async () => {
     await renderPage()
-    act(() => { boton(container, 'Eliminar mi cuenta').click() })
-
-    const texto = textoDelModal()
-    expect(texto).not.toContain('Se eliminará permanentemente')
-    expect(texto).not.toContain('Propiedades publicadas y candidatos')
-    expect(texto).toContain('Perderás:')
-    expect(texto).toContain('El acceso a tu panel de propietario')
-    expect(texto).toContain('No se elimina:')
-    expect(texto).toContain('Tus inmuebles, contratos y pagos')
-    // El bloqueo real del backend (403 con un arriendo activo).
-    expect(texto).toContain('contratos de arriendo activos')
-    expect(texto).toContain('30 días')
-  })
-
-  it('Escape cierra en el aviso', async () => {
-    await renderPage()
-    act(() => { boton(container, 'Eliminar mi cuenta').click() })
-    expect(dialogo()).not.toBeNull()
-    escape()
-    expect(dialogo()).toBeNull()
-  })
-
-  it('el botón rojo sólo se habilita con la palabra exacta', async () => {
-    await abrirYPasarAConfirmar()
-    expect(boton(dialogo()!, 'Eliminar cuenta').disabled).toBe(true)
-    escribirLaPalabra('eliminar')
-    expect(boton(dialogo()!, 'Eliminar cuenta').disabled).toBe(false)
-  })
-
-  it('mientras borra no se sale; la despedida tampoco se cierra', async () => {
-    let terminar: () => void = () => {}
-    deleteAccountMock.mockImplementationOnce(
-      () => new Promise((r) => { terminar = () => r({ success: true, message: 'ok' }) }),
-    )
-    await abrirYPasarAConfirmar()
-    escribirLaPalabra('ELIMINAR')
-
-    await act(async () => { boton(dialogo()!, 'Eliminar cuenta').click() })
-    expect(deleteAccountMock).toHaveBeenCalledTimes(1)
-    expect(dialogo()!.querySelector('[aria-label="Cerrar"]')).toBeNull()
-    escape()
-    expect(dialogo()).not.toBeNull()
-
-    await act(async () => { terminar() })
-    await vi.waitFor(() => expect(textoDelModal()).toContain('Cuenta eliminada'))
-    expect(dialogo()!.querySelector('[aria-label="Cerrar"]')).toBeNull()
-    escape()
-    expect(dialogo()).not.toBeNull()
-  })
-
-  it('si el backend la bloquea, dice por qué y sigue en el paso de confirmar', async () => {
-    deleteAccountMock.mockRejectedValueOnce(
-      new Error('No puedes eliminar tu cuenta con contratos de arriendo activos. Primero finaliza tus contratos.'),
-    )
-    await abrirYPasarAConfirmar()
-    escribirLaPalabra('ELIMINAR')
-
-    await act(async () => { boton(dialogo()!, 'Eliminar cuenta').click() })
-    expect(toastError).toHaveBeenCalledWith(expect.stringContaining('contratos de arriendo activos'))
-    expect(textoDelModal()).toContain('Confirmar eliminación')
-    expect(dialogo()!.querySelector('[aria-label="Cerrar"]')).not.toBeNull()
+    expect(Array.from(container.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'settings.account.deleteAccount')).toBe(false)
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
   })
 })
 
-/**
- * 02-10-2026 · Sistema de errores. Antes, CUALQUIER fallo al guardar decía
- * «Error al guardar los cambios», y la pantalla rellenaba lo que faltaba con
- * datos de muestra que «Guardar» mandaba como propios.
- */
 describe('Perfil del propietario — guardar los datos', () => {
   const updateProfileMock = vi.fn()
 
@@ -305,22 +244,15 @@ describe('Perfil del propietario — guardar los datos', () => {
   })
 })
 
-describe('Perfil del propietario — la zona de peligro', () => {
-  it('cuenta la ventana de 30 días y el soporte, no «irreversible»', async () => {
-    await renderPage()
-    const texto = container.textContent ?? ''
-    expect(texto).not.toContain('irreversibles')
-    expect(texto).toContain('sólo el soporte de Leasefy puede recuperarla')
-  })
-})
-
-/**
- * 🔴 02-10-2026 (Nico): «que sólo quede lo que es verdad y lo que se guarda de
- * verdad». La ficha decía «Verificado» en correo, teléfono, identidad y
- * propiedad de TODO propietario, «Propietario desde Enero 2024» a todos, «5 de
- * 5 pasos completados», y dejaba editar un correo que «Guardar» nunca mandaba.
- */
 describe('Perfil del propietario — sólo lo que es verdad', () => {
+  it('ronda 28: la foto es un renglón de «Información personal», sin «Cambiar foto o nombre» ni los atajos que repetían el menú', async () => {
+    await renderPage()
+    expect(container.querySelector('[data-testid="perfil-foto"]')).not.toBeNull()
+    expect(container.textContent).not.toContain('Cambiar foto o nombre')
+    expect(container.textContent).not.toContain('Mis contratos')
+    expect([...container.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Cambiar foto')).toBe(true)
+  })
+
   it('no hay insignias «Verificado» ni la fecha inventada', async () => {
     await renderPage()
     const texto = container.textContent ?? ''
@@ -336,7 +268,15 @@ describe('Perfil del propietario — sólo lo que es verdad', () => {
     })
     await renderPage()
     const texto = container.textContent ?? ''
-    expect(texto).toContain('2 de 5 pasos completados')
+    // Glow up 22-10: la lista de la casa (mismo dato: 2 de 5 listos, faltan 3).
+    // Revisora r25: sólo lo que falta y sin el «2/5»: salen los 3 pasos pendientes, no los 2 hechos.
+    expect(texto).toContain('Para completar tu perfil te faltan 3 pasos')
+    expect(texto).not.toContain('2/5')
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-basic-info"]')).toBeNull()
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-phone"]')).toBeNull()
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-id-number"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-address"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="perfil-lo-que-falta-emergency-contact"]')).not.toBeNull()
     expect(texto).not.toContain('Perfil completo')
     expect(texto).not.toMatch(/Verificar (teléfono|identidad)/)
   })

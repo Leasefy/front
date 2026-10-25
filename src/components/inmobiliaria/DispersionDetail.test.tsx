@@ -260,7 +260,7 @@ describe('<DispersionDetail> D4 — quien aprobó no marca girada', () => {
     const boton = q('dispersion-marcar-girada') as HTMLButtonElement;
     expect(input.disabled).toBe(true);
     expect(boton.disabled).toBe(true);
-    expect(q('dispersion-aprobador-no-gira')?.textContent).toContain('Tú aprobaste esta dispersión');
+    expect(q('dispersion-aprobador-no-gira')?.textContent).toContain('Tú aprobaste este giro');
 
     act(() => boton.click());
     expect(onProcess).not.toHaveBeenCalled();

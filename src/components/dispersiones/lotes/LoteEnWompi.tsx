@@ -171,7 +171,7 @@ export function LoteEnWompi({ loteId, estado, vista, puedeEditar, onCambio }: Lo
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-base font-semibold text-fg">Wompi · Pagos a terceros</h2>
+          <h2 className="text-base font-medium text-fg">Wompi · Pagos a terceros</h2>
           {vista.conexion?.ambiente === 'SANDBOX' && (
             <Badge variant="secondary">Sandbox: no mueve plata</Badge>
           )}
@@ -226,7 +226,7 @@ export function LoteEnWompi({ loteId, estado, vista, puedeEditar, onCambio }: Lo
           </p>
           {/* 🔴 Sin barra propia (Nico, 23-09: «todas las cargas déjalas que
               sucedan allí»): el avance del envío lo pinta el centro de
-              procesos. Acá queda el dato del lote, en una frase. */}
+              procesos. Aquí queda el dato del lote, en una frase. */}
           {envio.mensaje && (
             <Banner
               variant={

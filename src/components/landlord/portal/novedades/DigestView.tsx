@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, CaretLeft } from '@phosphor-icons/react';
+import { Bell } from '@phosphor-icons/react';
+import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { nombreDelMes } from '@/lib/recaudo/meses';
 import { Card } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
@@ -17,7 +20,7 @@ import type { Digest } from '@/lib/api/owner-novedades.types';
  * `unavailable || !digest`).
  */
 export function DigestView({ digest }: { digest: Digest }) {
-  const { formatCurrency, formatDate } = useI18n();
+  const { formatCurrency, formatDate, locale } = useI18n();
   const p = digest.payload;
 
   if (!p) {
@@ -32,19 +35,18 @@ export function DigestView({ digest }: { digest: Digest }) {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <Link
-          href="/panel/novedades"
-          className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg mb-4"
-        >
-          <CaretLeft className="w-4 h-4" /> Novedades
-        </Link>
+    <div>
+      <div className="max-w-3xl space-y-0 p-6 lg:p-8">
+        <BackButton href="/panel/novedades" label="Volver a Novedades" className="mb-4" />
 
-        <h1 className="text-2xl font-semibold font-mono tabular-nums">{p.periodo}</h1>
-        <p className="text-sm text-fg-muted mt-1">
-          {digest.deliveredAt ? `Enviado el ${formatDate(digest.deliveredAt)}` : `Generado el ${formatDate(digest.generatedAt)}`}
-        </p>
+        {/* El mes con su nombre («julio de 2026»), no «2026-07». */}
+        <EncabezadoDePantalla
+          seccion="Novedades"
+          titulo={`Resumen de ${nombreDelMes(p.periodo, locale === 'en' ? 'en' : 'es')}`}
+          descripcion={
+            digest.deliveredAt ? `Enviado el ${formatDate(digest.deliveredAt)}` : `Generado el ${formatDate(digest.generatedAt)}`
+          }
+        />
 
         {/* Recaudo + ocupación */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
@@ -91,7 +93,7 @@ export function DigestView({ digest }: { digest: Digest }) {
               <p className="font-medium font-mono tabular-nums">{p.solicitudes.abiertas}</p>
             </div>
           </div>
-          {p.solicitudes.nota && <p className="text-xs text-fg-muted mt-3">{p.solicitudes.nota}</p>}
+          {p.solicitudes.nota && <p className="text-caption text-fg-muted mt-3">{p.solicitudes.nota}</p>}
         </Card>
 
         {/* Daños resueltos */}

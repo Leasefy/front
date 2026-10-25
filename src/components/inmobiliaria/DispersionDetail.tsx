@@ -470,7 +470,7 @@ export function DispersionDetail({
   const registrarElGiro =
     !ofreceLote && (conReferencia || (esperaReferencia && !esQuienAprobo)) ? (
       <StaggerItem as="section" key="registrar-el-giro" className="space-y-3" data-testid="dispersion-registrar-el-giro">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
           <Lightning className="w-4 h-4 text-primary" />
           {t('inmobiliaria.dispersiones.detailView.registrarElGiro')}
         </h3>
@@ -530,7 +530,7 @@ export function DispersionDetail({
    */
   const ayudaDelPie = ofreceLote ? (
     <p className="text-caption text-muted-foreground" data-testid="dispersion-por-lote">
-      {tr("Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en Lotes, no desde acá.")}
+      {tr("Tu inmobiliaria aprueba y paga los giros por lote, con código: este se aprueba en el paso 3, Archivo del banco, no desde aquí.")}
     </p>
   ) : conReferencia && esQuienAprobo ? (
     <p
@@ -538,7 +538,7 @@ export function DispersionDetail({
       data-testid="dispersion-aprobador-no-gira"
       className="text-caption text-warning"
     >
-      {tr("Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del equipo. Es el segundo par de ojos sobre la plata del propietario.")}
+      {tr("Tú aprobaste este giro: su referencia la carga otra persona del equipo. Es el segundo par de ojos sobre la plata del propietario.")}
     </p>
   ) : undefined;
 
@@ -566,15 +566,13 @@ export function DispersionDetail({
         <Stagger className="space-y-6" distance="xs" layout={false}>
         {/* Propietario Section */}
         <StaggerItem as="section" key="propietario" className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <User className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.propietario')}
           </h3>
           <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
-                <User className="w-6 h-6 text-primary" />
-              </div>
+              <User className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
               <div>
                 <p className="font-medium text-foreground">{dispersion.propietarioName}</p>
                 {propietario && (
@@ -603,7 +601,7 @@ export function DispersionDetail({
                     icon={WhatsappLogo}
                     href={`https://wa.me/${propietario.phone.replace(/\D/g, '')}`}
                     label={tr("WhatsApp")}
-                    className="bg-success-soft hover:bg-success-soft text-success dark:bg-success/30 dark:hover:bg-success/50 dark:text-success"
+                    className="bg-success-soft hover:bg-success-soft text-success"
                   />
                 )}
                 {propietario.email && (
@@ -611,7 +609,7 @@ export function DispersionDetail({
                     icon={Envelope}
                     href={`mailto:${propietario.email}`}
                     label={t('inmobiliaria.dispersiones.detailView.email')}
-                    className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
+                    className="bg-primary-soft hover:bg-primary-soft text-primary"
                   />
                 )}
               </div>
@@ -623,7 +621,7 @@ export function DispersionDetail({
 
         {/* Bank Account Section */}
         <StaggerItem as="section" key="cuenta" className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Bank className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.bankAccount')}
           </h3>
@@ -646,13 +644,13 @@ export function DispersionDetail({
             ) : (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.bank')}</p>
+                <p className="text-caption text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.bank')}</p>
                 <p className="text-sm font-medium text-foreground capitalize">
                   {dispersion.propietarioBankAccount.bank.replace(/_/g, ' ')}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountType')}</p>
+                <p className="text-caption text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountType')}</p>
                 <p className="text-sm font-medium text-foreground capitalize">
                   {/* 🔴 QA 22-09: todo lo que no fuera «savings» se pintaba
                       «Corriente» —también el tipo que no conocemos—. Sin dato, «—». */}
@@ -664,7 +662,7 @@ export function DispersionDetail({
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountNumber')}</p>
+                <p className="text-caption text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountNumber')}</p>
                 <div className="flex items-center gap-1">
                   <p className="text-sm font-medium text-foreground font-mono">
                     {dispersion.propietarioBankAccount.accountNumber}
@@ -673,7 +671,7 @@ export function DispersionDetail({
                 </div>
               </div>
               <div className="col-span-2" data-testid="dispersion-titular">
-                <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountHolder')}</p>
+                <p className="text-caption text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountHolder')}</p>
                 {/* 🔴 22-09: «Titular: Nombre · CC 123», el del GIRO (copiado al
                     generarse) y, si es de otra persona, se dice. Decía «—». */}
                 {dispersion.titularDeLaCuenta ? (
@@ -733,7 +731,7 @@ export function DispersionDetail({
 
         {/* Amount Summary Section */}
         <StaggerItem as="section" key="montos" className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <CurrencyCircleDollar className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.summaryTitle')}
           </h3>
@@ -751,7 +749,7 @@ export function DispersionDetail({
               {/* 🔴 Decía «Recaudado» siempre, y la dispersión gira por defecto
                   con base CAUSADO: el canon del mes, haya pagado el inquilino
                   o no. El rótulo sigue a `baseDelCanon`; el número no cambia. */}
-              <p className="text-xs text-muted-foreground mb-1" data-testid="dispersion-rotulo-canon">
+              <p className="text-caption text-muted-foreground mb-1" data-testid="dispersion-rotulo-canon">
                 {t(
                   dispersion.baseDelCanon === 'RECAUDADO'
                     ? 'inmobiliaria.dispersiones.detailView.canonRecaudado'
@@ -763,7 +761,7 @@ export function DispersionDetail({
               </p>
             </div>
             <div className="p-4 rounded-lg bg-primary-soft text-center">
-              <p className="text-xs text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
+              <p className="text-caption text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
               <p className="text-lg font-bold text-primary font-mono tabular-nums">
                 {formatCurrency(dispersion.totalCommission)}
               </p>
@@ -777,7 +775,7 @@ export function DispersionDetail({
               </div>
             )}
             <div className="p-4 rounded-lg bg-success-soft text-center">
-              <p className="text-xs text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
+              <p className="text-caption text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
               {/* Con deducciones, lo que se gira es el neto a girar del back
                   (entero o $0), no el neto guardado, que puede quedar en contra. */}
               <p className="text-lg font-bold text-success font-mono tabular-nums" data-testid="dispersion-neto">
@@ -816,7 +814,7 @@ export function DispersionDetail({
           />
           {/* «Causado» no se entiende solo, y es la diferencia con lo recaudado. */}
           {dispersion.baseDelCanon !== 'RECAUDADO' && (
-            <p className="text-xs text-muted-foreground" data-testid="dispersion-que-es-el-canon">
+            <p className="text-caption text-muted-foreground" data-testid="dispersion-que-es-el-canon">
               {t('inmobiliaria.dispersiones.detailView.queEsCanonCausado')}
             </p>
           )}
@@ -824,7 +822,7 @@ export function DispersionDetail({
 
         {/* Commission Breakdown Section */}
         <StaggerItem as="section" key="desglose" className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Receipt className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.propertyBreakdown')}
           </h3>
@@ -839,7 +837,7 @@ export function DispersionDetail({
 
         {/* Status Timeline Section */}
         <StaggerItem as="section" key="historial" className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.history')}
           </h3>
@@ -905,11 +903,11 @@ export function DispersionDetail({
           <StaggerItem
             as="section"
             key="referencia"
-            className="p-4 rounded-lg bg-success-soft border border-success/30 dark:border-success/40"
+            className="p-4 rounded-lg bg-success-soft border border-success/30"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-success font-medium">
+                <p className="text-caption text-success font-medium">
                   {t('inmobiliaria.dispersiones.detailView.transferReference')}
                 </p>
                 <p className="text-sm font-mono font-semibold text-success mt-0.5">
@@ -939,7 +937,7 @@ export function DispersionDetail({
           <StaggerItem
             as="section"
             key="error"
-            className="p-4 rounded-lg bg-danger-soft border border-danger/30 dark:border-danger/40"
+            className="p-4 rounded-lg bg-danger-soft border border-danger/30"
           >
             <div className="flex items-start gap-3">
               <Warning className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
@@ -969,7 +967,7 @@ export function DispersionDetail({
         izquierda={
           <Button
             variant="ghost"
-            className="text-primary hover:text-primary dark:hover:text-primary hover:bg-primary-soft dark:hover:bg-primary/20"
+            className="text-primary hover:text-primary hover:bg-primary-soft"
             onClick={handleDownloadPDF}
             disabled={isDownloadingPDF}
           >
@@ -1012,7 +1010,7 @@ export function DispersionDetail({
         )}
 
         {/* Por lote: el único camino que el back acepta. Reemplaza a Aprobar,
-            Marcar girada y Reintentar, que acá darían 409. */}
+            Marcar girada y Reintentar, que aquí darían 409. */}
         {ofreceLote && (
           <Button asChild hideArrow className="gap-2">
             <Link href={rutaDeLotesDelMes(dispersion.month)} data-testid="dispersion-ir-a-lotes">
@@ -1025,7 +1023,7 @@ export function DispersionDetail({
         {/* Aprobar — primer par de ojos (pendiente → en espera de giro) */}
         {isPending && onApprove && !apruebaPorLote && (
           <Button
-            className="bg-primary hover:opacity-90 text-primary-fg"
+           
             onClick={handleApprove}
             disabled={isProcessing || registreLaDevolucion}
             title={
@@ -1052,7 +1050,7 @@ export function DispersionDetail({
         {/* Marcar girada — segundo par de ojos, con referencia */}
         {esperaReferencia && onProcess && !apruebaPorLote && (
           <Button
-            className="bg-primary hover:opacity-90 text-primary-fg"
+           
             onClick={handleProcess}
             // Quien aprobó no la marca girada: se deshabilita ANTES, con la
             // explicación encima, y no después de un 409.

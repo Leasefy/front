@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react'
 import { Flask } from '@phosphor-icons/react'
 import { Presence } from '@leasefy/cadence'
 
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -71,15 +72,21 @@ export function FormasDeOfrecerElAcuerdo({ puedeCambiar }: { puedeCambiar: boole
       aria-labelledby="heading-formas-del-acuerdo"
     >
       <div>
-        <h2 id="heading-formas-del-acuerdo" className="text-xl font-semibold text-foreground">
+        <h2 id="heading-formas-del-acuerdo" className="text-lg font-normal text-foreground">
           Formas de ofrecer el acuerdo
         </h2>
+        {/* Revisora r25: eran 4 renglones; queda una línea y el cómo, plegado. */}
         <p className="text-sm text-fg-muted mt-1 max-w-2xl">
-          Leasefy prueba formas de ofrecer el acuerdo para saber cuál recupera más plata. Mientras una prueba
-          corre, Mori le ofrece el acuerdo a la mitad de tus deudores, escogidos al azar, como hoy, y a la otra
-          mitad de la forma nueva (por ejemplo, con menos cuotas). Nunca ofrece más de lo que autoriza tu
-          inmobiliaria, y cada deudor recibe siempre la misma forma, por llamada y por WhatsApp.
+          Leasefy prueba formas de ofrecer el acuerdo para saber cuál recupera más plata, sin pasar nunca de lo que
+          autoriza tu inmobiliaria.
         </p>
+        <MasDetalles etiqueta="Cómo funciona la prueba" etiquetaAbierto="Ocultar" className="mt-2">
+          <p className="text-sm text-fg-muted max-w-2xl">
+            Mientras una prueba corre, Mori le ofrece el acuerdo a la mitad de tus deudores, escogidos al azar, como
+            hoy, y a la otra mitad de la forma nueva (por ejemplo, con menos cuotas). Cada deudor recibe siempre la
+            misma forma, por llamada y por WhatsApp.
+          </p>
+        </MasDetalles>
       </div>
       <div className="border-t border-border-faint" />
 

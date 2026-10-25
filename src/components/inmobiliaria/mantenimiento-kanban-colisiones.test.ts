@@ -110,7 +110,7 @@ describe('detectarColumnaDelPuntero — dónde cree el tablero que soltaste', ()
       expect(detectar(detectarColumnaDelPuntero, args)).toBe('quoted');
     });
 
-    it('en el borde DERECHO de Cotizadas — acá la vieja saltaba a «Aprobadas»', () => {
+    it('en el borde DERECHO de Cotizadas — aquí la vieja saltaba a «Aprobadas»', () => {
       const args = argsDeSoltar({
         punteroX: rectDeColumna(1).right - 6,
         agarre: AGARRE,

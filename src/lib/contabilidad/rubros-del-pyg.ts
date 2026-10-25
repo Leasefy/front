@@ -51,7 +51,7 @@ export const NOMBRE_DE_LA_FUENTE: Record<FuenteDelReal, string> = {
   COMISION_CAUSADA: 'La comisión causada del mes',
   RECARGOS_RECAUDADOS: 'Los recargos recaudados del mes',
   COSTOS_DE_LA_PLATA: 'El 4x1000 y la pasarela',
-  CUENTAS_DEL_PUC: 'Las cuentas del PUC mapeadas acá',
+  CUENTAS_DEL_PUC: 'Las cuentas del PUC mapeadas aquí',
   SIN_FUENTE: 'Todavía nada: sólo se presupuesta',
 };
 
@@ -146,7 +146,7 @@ export function explicacionDeLaSegundaLectura(rubro: MapeoDeRubro): string | nul
   if (!tieneFuentePropia(rubro)) return null;
   return (
     `Este rubro se mide con ${NOMBRE_DE_LA_FUENTE[rubro.fuenteDelReal].toLowerCase()} y eso no cambia. ` +
-    'Las cuentas de acá son una segunda lectura, para ver si el libro y la operación dicen lo mismo.'
+    'Las cuentas de aquí son una segunda lectura, para ver si el libro y la operación dicen lo mismo.'
   );
 }
 

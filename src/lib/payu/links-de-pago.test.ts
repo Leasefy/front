@@ -16,6 +16,8 @@ describe('instanteEnBogota', () => {
     expect(texto).toContain('5')
     expect(texto).toMatch(/oct/)
     expect(texto).toContain('8:02')
+    // r25: el día como lo escribe la casa.
+    expect(texto.startsWith('5 oct 2026, ')).toBe(true)
   })
 
   it('un instante ilegible se devuelve tal cual, no como «Invalid Date»', () => {

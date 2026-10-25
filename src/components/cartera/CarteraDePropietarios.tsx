@@ -63,6 +63,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { PropietariosQueDeben } from '@/components/cartera/PropietariosQueDeben'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -150,6 +151,13 @@ export function CarteraDePropietarios() {
     [propietarios, hastaMes],
   )
 
+  /* Ronda 30 (revisora r27): «a N propietarios» cuenta a los que se les debe algo hasta el mes en
+     curso, no todas las filas; y «Girado» sólo se pinta si alguien tiene un giro hecho. */
+  const conSaldo = useMemo(
+    () => (datos?.propietarios ?? []).filter((p) => partirPorElMesEnCurso(p.meses, hastaMes).pendienteCop > 0).length,
+    [datos, hastaMes],
+  )
+  const conGirado = (datos?.totales.giradoCop ?? 0) > 0
   const hayFiltros = busqueda.trim().length > 0
   const paginado = useTablePagination(propietarios, { resetKey: busqueda })
 
@@ -174,55 +182,39 @@ export function CarteraDePropietarios() {
       }
     >
       <div className="space-y-6">
-        <div
-          className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0"
-          data-testid="resumen-por-pagar"
-        >
-          {/* 🔴 «Por girar» → UNA sola cifra (Nico, 04-10-2026): la del back,
-              la misma del Tablero, Liquidaciones y el chat, neta de
-              deducciones. Lo de los meses siguientes, aparte. */}
-          <div className="p-4" data-testid="por-girar-por-pagar">
-            <p className="text-xs text-fg-muted" title={definicionDePorGirar(hastaMes)}>
-              {rotuloDePorGirar(hastaMes)}
-            </p>
-            <p
-              className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg"
-              data-testid="por-girar-cifra"
-            >
-              {formatCurrency(datos?.porGirar?.porGirarCop ?? visibles.pendienteCop)}
-            </p>
-            {datos?.porGirar ? (
-              <p className="mt-0.5 text-caption text-fg-muted" data-testid="proximos-giros">
-                {rotuloDeProximosGiros(
-                  datos.porGirar.proximosGiros.desdeMes,
-                  datos.porGirar.proximosGiros.hastaMes,
-                )}
-                :{' '}
-                <span className="font-mono tabular-nums">
-                  {formatCurrency(datos.porGirar.proximosGiros.totalCop)}
+        {/* Ronda 26 (revisora r25, Por pagar #1): LA RESPUESTA en una cifra —lo que hay que girar hasta el mes
+            en curso, la misma del Tablero y de Giros— con los próximos giros al pie; «Ya girado» en una línea y
+            «Neto liquidado» fuera (girado + pendiente: no sirve para decidir). Antes tres tarjetas del mismo peso. */}
+        <div className="space-y-2" data-testid="resumen-por-pagar">
+          <CifraHeroe
+            data-testid="por-girar-por-pagar"
+            rotulo={<span title={definicionDePorGirar(hastaMes)}>{rotuloDePorGirar(hastaMes)}</span>}
+            cifra={
+              <span data-testid="por-girar-cifra">
+                {formatCurrency(datos?.porGirar?.porGirarCop ?? visibles.pendienteCop)}
+              </span>
+            }
+            contexto={`a ${conSaldo.toLocaleString('es-CO')} ${conSaldo === 1 ? 'propietario' : 'propietarios'} con saldo, de ${datos?.meses.length ?? 0} ${datos?.meses.length === 1 ? 'mes' : 'meses'}`}
+            pie={
+              datos?.porGirar ? (
+                <span data-testid="proximos-giros">
+                  {rotuloDeProximosGiros(
+                    datos.porGirar.proximosGiros.desdeMes,
+                    datos.porGirar.proximosGiros.hastaMes,
+                  )}
+                  :{' '}
+                  <span className="font-mono tabular-nums">
+                    {formatCurrency(datos.porGirar.proximosGiros.totalCop)}
+                  </span>
                 </span>
-              </p>
-            ) : null}
-            <p className="mt-0.5 text-xs text-fg-muted">
-              {datos?.propietarios.length ?? 0}{' '}
-              {datos?.propietarios.length === 1 ? 'propietario' : 'propietarios'} ·{' '}
-              {datos?.meses.length ?? 0} {datos?.meses.length === 1 ? 'mes' : 'meses'}
-            </p>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-fg-muted">Ya girado</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg-muted">
-              {formatCurrency(datos?.totales.giradoCop ?? 0)}
-            </p>
-            <p className="mt-0.5 text-xs text-fg-muted">Dispersiones completadas</p>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-fg-muted">Neto liquidado</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg">
-              {formatCurrency(datos?.totales.netoCop ?? 0)}
-            </p>
-            <p className="mt-0.5 text-xs text-fg-muted">Girado más pendiente</p>
-          </div>
+              ) : undefined
+            }
+          />
+          <p className="text-caption text-fg-muted">
+            Ya girado:{' '}
+            <span className="font-mono tabular-nums">{formatCurrency(datos?.totales.giradoCop ?? 0)}</span> en
+            giros completados.
+          </p>
         </div>
 
         {/* Los meses que no se pudieron liquidar, con su porqué. */}
@@ -269,7 +261,7 @@ export function CarteraDePropietarios() {
                 <TableHead className="whitespace-nowrap">Propietario</TableHead>
                 <TableHead className="whitespace-nowrap text-right">Meses</TableHead>
                 <TableHead className="whitespace-nowrap text-right">Neto</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Girado</TableHead>
+                {conGirado ? <TableHead className="whitespace-nowrap text-right">Girado</TableHead> : null}
                 <TableHead className="whitespace-nowrap text-right">
                   Se le debe hasta {mesEnTitulo(hastaMes)}
                 </TableHead>
@@ -296,6 +288,7 @@ export function CarteraDePropietarios() {
                     key={propietario.propietarioId}
                     propietario={propietario}
                     hastaMes={hastaMes}
+                    conGirado={conGirado}
                     abierto={abiertos.has(propietario.propietarioId)}
                     onAlternar={() => alternar(propietario.propietarioId)}
                   />
@@ -312,9 +305,11 @@ export function CarteraDePropietarios() {
                   <TableCell className="text-right text-fg-muted">
                     <Peso valor={visibles.netoCop} />
                   </TableCell>
-                  <TableCell className="text-right text-fg-muted">
-                    <Peso valor={visibles.giradoCop} />
-                  </TableCell>
+                  {conGirado ? (
+                    <TableCell className="text-right text-fg-muted">
+                      <Peso valor={visibles.giradoCop} />
+                    </TableCell>
+                  ) : null}
                   <TableCell className="text-right font-semibold text-fg">
                     <Peso valor={visibles.pendienteCop} />
                   </TableCell>
@@ -348,11 +343,11 @@ export function CarteraDePropietarios() {
           generada, el back liquida con base CAUSADO (`liquidacionDelMes`): lo
           que el contrato causa en el mes, lo haya pagado el inquilino o no. Decía
           «sólo se le debe lo que el inquilino efectivamente pagó», que es la base
-          RECAUDADO. La base no se cambia acá —la decide Nico—; se dice la verdad.
+          RECAUDADO. La base no se cambia aquí —la decide Nico—; se dice la verdad.
           Convención compartida: «Canon causado» con CAUSADO, «Canon recaudado»
           sólo con RECAUDADO.
         */}
-        <p className="text-xs text-fg-muted" data-testid="pie-de-la-base">
+        <p className="text-caption text-fg-muted" data-testid="pie-de-la-base">
           {t('cartera.porPagar.pieCausado')}
         </p>
       </div>
@@ -366,10 +361,13 @@ const VOLVER_A = '/panel/inmobiliaria/pagos/cartera/por-pagar'
 function FilasDelPropietario({
   propietario,
   hastaMes,
+  conGirado = true,
   abierto,
   onAlternar,
 }: {
   propietario: PropietarioEnCartera
+  /** Sin ningún giro hecho, la columna «Girado» no se pinta (ronda 30). */
+  conGirado?: boolean
   /** `AAAA-MM`: el mes en curso, último que entra en «Se le debe». */
   hastaMes: string
   abierto: boolean
@@ -402,7 +400,8 @@ function FilasDelPropietario({
             href={`${rutaDelEstadoDeCuenta('propietario', propietario.propietarioId)}?volver=${encodeURIComponent(VOLVER_A)}`}
             data-testid="propietario-estado-de-cuenta"
             title={`Ver el estado de cuenta de ${propietario.nombre || 'este propietario'}`}
-            className="ml-6 mt-0.5 inline-block text-xs text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            // Ronda 26 (revisora r25, Por pagar #3): en gris; azul en cada fila eran N azules.
+            className="ml-6 mt-0.5 inline-block text-caption text-fg-muted underline underline-offset-4 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Estado de cuenta
           </Link>
@@ -413,9 +412,11 @@ function FilasDelPropietario({
         <TableCell className="text-right text-fg-muted">
           <Peso valor={propietario.totales.netoCop} />
         </TableCell>
-        <TableCell className="text-right text-fg-muted">
-          <Peso valor={propietario.totales.giradoCop} />
-        </TableCell>
+        {conGirado ? (
+          <TableCell className="text-right text-fg-muted">
+            <Peso valor={propietario.totales.giradoCop} />
+          </TableCell>
+        ) : null}
         <TableCell className="text-right font-medium text-fg">
           <Peso valor={partes.pendienteCop} />
         </TableCell>
@@ -492,7 +493,7 @@ function DetalleDeMeses({ meses }: { meses: readonly MesDelPropietario[] }) {
             <TableCell className="text-right font-medium text-fg">
               <Peso valor={mes.netoCop} />
             </TableCell>
-            <TableCell className="whitespace-nowrap text-xs text-fg-muted">
+            <TableCell className="whitespace-nowrap text-caption text-fg-muted">
               {NOMBRE_DEL_ESTADO_DEL_GIRO[mes.estado]}
             </TableCell>
             <TableCell className="text-right text-fg">

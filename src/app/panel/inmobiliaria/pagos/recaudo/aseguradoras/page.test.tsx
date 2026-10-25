@@ -25,6 +25,8 @@ const { api, toastMock } = vi.hoisted(() => ({
 
 vi.mock('@/lib/api/aseguradoras.service', () => ({ aseguradorasApi: api }));
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
+// Ronda 26: el registro va en un cajón; el doble lo pinta como DOM plano (sin Radix ni portal).
+vi.mock('@/components/ui/sheet', async () => await import('@/components/ui/sheet-test-stub'));
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => ({ canAccess: () => true, isLoading: false }),
 }));
@@ -89,6 +91,8 @@ async function clic(selector: string) {
 }
 
 async function registrar() {
+  // Ronda 26 (revisora r25, Aseguradoras #1): «Registrar una aseguradora» abre el cajón con el formulario.
+  await clic('[data-testid="abrir-registro-de-aseguradora"]');
   await escribir('#aseguradora-nombre', 'Seguros Bolívar S.A.');
   await escribir('#aseguradora-nit', '860.002.503-2');
   await clic('[data-testid="registrar-aseguradora"]');

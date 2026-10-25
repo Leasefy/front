@@ -85,12 +85,10 @@ export function AgenteHorarioVisitas({
         aria-expanded={open}
         className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-surface-muted/40 transition-colors"
       >
-        <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <Clock className="w-4 h-4 text-primary" />
-        </div>
+        <Clock className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold text-fg">{t(k('horarioAgenteTitle'))}</h3>
-          <p className="text-xs text-fg-muted mt-0.5">{t(k('horarioAgenteDesc'))}</p>
+          <h3 className="text-base font-medium text-fg">{t(k('horarioAgenteTitle'))}</h3>
+          <p className="text-caption text-fg-muted mt-0.5">{t(k('horarioAgenteDesc'))}</p>
         </div>
         <CaretDown className={cn('w-4 h-4 text-fg-muted flex-shrink-0 transition-transform', open && 'rotate-180')} />
       </button>
@@ -103,7 +101,7 @@ export function AgenteHorarioVisitas({
         {schedule ? (
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-xs text-fg-muted">{t(k('duracionCita'))}</label>
+              <label className="mb-1.5 block text-caption text-fg-muted">{t(k('duracionCita'))}</label>
               <select
                 value={slotDuration}
                 onChange={(e) => setSlotDuration(Number(e.target.value))}

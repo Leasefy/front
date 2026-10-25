@@ -79,7 +79,7 @@ export function MotivoDePerdidaDialog({
               onClick={() => setMotivo(m)}
               className={cn(
                 'rounded-full border px-3 py-1.5 text-sm transition-colors',
-                motivo === m ? 'border-primary bg-primary-soft text-primary' : 'border-border text-fg-muted hover:text-fg',
+                motivo === m ? 'border-fg bg-surface-muted text-fg' : 'border-border text-fg-muted hover:text-fg',
               )}
               data-testid="motivo-de-perdida-opcion"
             >

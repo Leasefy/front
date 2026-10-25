@@ -32,7 +32,7 @@ export const PESTANAS_DE_LIQUIDACIONES: readonly PestanaDelRiel[] = [
   // PG-16 (03-10-2026): «Por aprobar» a secas, al lado de las liquidaciones de
   // los propietarios, se leía «liquidaciones por aprobar»; es la cola de las
   // facturas de PROVEEDOR. Se llama como lo que es.
-  { href: `${RAIZ}/por-aprobar`, labelKey: 'inmobiliaria.nav.facturasDeProveedores', icon: CheckSquareOffset },
+  { href: `${RAIZ}/por-aprobar`, labelKey: 'inmobiliaria.nav.facturasDeProveedores', labelCortoKey: 'inmobiliaria.nav.facturasDeProveedoresCorta', icon: CheckSquareOffset },
 ]
 
 export function PestanasDeLiquidaciones() {

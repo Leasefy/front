@@ -31,9 +31,9 @@
  */
 
 import Link from 'next/link'
-import { ArrowRight, MagnifyingGlass } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import {
   etiquetaDeRevision,
   fraseDeHallazgos,
@@ -51,11 +51,6 @@ const copFormatter = plataEnPantalla(localeDeLasCifras, {
   maximumFractionDigits: 0,
 })
 
-/** tasa_conciliacion ya viene 0–100 (un decimal) o null. */
-function formatTasa(tasa: number | null): string {
-  if (tasa === null) return '—'
-  return `${numberFormatter.format(tasa)} %`
-}
 
 // ── Franja de KPIs ───────────────────────────────────────────────────────────
 
@@ -64,71 +59,127 @@ export interface ConciliacionResumenProps {
   isLoading?: boolean
   /** Esqueleto opcional (apagado por defecto — el host ya muestra el suyo). */
   showSkeleton?: boolean
+  /** Con él, la tarjeta también lleva lo que espera tu decisión («Revisar») y los tipos de caso. */
+  colaHref?: string
 }
 
-export function ConciliacionResumen({ data, isLoading, showSkeleton }: ConciliacionResumenProps) {
+export function ConciliacionResumen({ data, isLoading, showSkeleton, colaHref }: ConciliacionResumenProps) {
   if (isLoading && showSkeleton) {
+    // Revisora r24 (Conciliación #4): el esqueleto con la forma de lo que llega —rótulo, cifra,
+    // barra y leyenda—, no las cuatro cajas de antes.
     return (
       <div
-        className="grid grid-cols-2 gap-4 lg:grid-cols-4"
+        className="space-y-4 rounded-lg border border-border bg-surface p-5"
         data-testid="conciliacion-resumen-loading"
+        aria-label="cargando"
       >
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-[88px] rounded-lg border border-border bg-surface-muted animate-pulse" />
-        ))}
+        <div className="h-3.5 w-40 animate-pulse rounded-sm bg-surface-muted" />
+        <div className="h-9 w-56 animate-pulse rounded-sm bg-surface-muted" />
+        <div className="h-2 w-full animate-pulse rounded-full bg-surface-muted" />
+        <div className="flex gap-8">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-8 w-24 animate-pulse rounded-sm bg-surface-muted" />
+          ))}
+        </div>
       </div>
     )
   }
 
-  // FAIL-SOFT: sin resumen no se pinta nada; el host conserva su vacío.
   if (!data) return null
 
-  const { totals, tasa_conciliacion } = data
+  const { totals } = data
+  const n = (x: number) => numberFormatter.format(x)
+  const falta = Math.max(0, totals.movimientos - totals.conciliados)
+  const enCola = Math.min(falta, Math.max(0, totals.en_cola ?? 0))
+  const porCruzar = Math.max(0, falta - enCola)
+  const hallazgos = hallazgosPorTipo(data.taxonomy)
 
-  // Cada cifra con su formato: cuando el resumen se refresca, cuenta desde la
-  // anterior (`AnimatedNumber`); el texto final es el mismo de antes.
-  const kpis: { id: string; label: string; valor: number | null; formato: (n: number) => string }[] = [
-    { id: 'movimientos', label: 'Movimientos', valor: totals.movimientos, formato: (n) => numberFormatter.format(n) },
-    { id: 'conciliados', label: 'Conciliados', valor: totals.conciliados, formato: (n) => numberFormatter.format(n) },
-    { id: 'tasa', label: 'Tasa de conciliación', valor: tasa_conciliacion, formato: (n) => formatTasa(n) },
-    {
-      id: 'monto',
-      label: 'Monto conciliado',
-      valor: totals.monto_conciliado_cop,
-      formato: (n) => copFormatter.format(n),
-    },
-  ]
-
+  /*
+   * Revisora r24 (Conciliación #1 y #5): UNA tarjeta con LA RESPUESTA —lo que falta por conciliar—
+   * y, en la barra, lo conciliado, lo que espera tu decisión (con «Revisar») y lo que falta cruzar.
+   * Antes la cifra medía al agente («Lo que lleva cruzado el agente: 8 de 11») y lo que te tocaba
+   * iba en otra tarjeta debajo. La tasa sale del pie: decía lo mismo que la barra.
+   */
   return (
-    <section aria-labelledby="lo-que-cruzo-el-agente" className="space-y-2">
-      {/*
-        🔴 21-09-2026, abriendo la pantalla: arriba decía «Hay 3 movimientos
-        del banco esperando en Movimientos» y aquí abajo «Movimientos 0», en
-        la misma pantalla. No es un error de ninguno de los dos: son cosas
-        distintas —lo que el banco mandó y todavía nadie cruzó, contra lo que
-        el AGENTE ya cruzó— contadas las dos como «movimientos». El encabezado
-        le pone dueño a estas cuatro cifras; sin él, una de las dos miente.
-      */}
-      <p id="lo-que-cruzo-el-agente" className="text-caption text-fg-muted">
-        Lo que lleva cruzado el agente
-      </p>
-      <div
-        className="grid grid-cols-2 gap-4 lg:grid-cols-4"
-        data-testid="conciliacion-resumen"
-      >
-      {kpis.map((kpi) => (
-        <div
-          key={kpi.id}
-          className="rounded-lg border border-border bg-surface p-4"
-          data-testid={`conciliacion-total-${kpi.id}`}
-        >
-          <p className="text-caption text-fg-muted">{kpi.label}</p>
-          <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">
-            {kpi.valor === null ? formatTasa(null) : <AnimatedNumber value={kpi.valor} format={kpi.formato} />}
-          </p>
-        </div>
-      ))}
-      </div>
+    <section
+      aria-labelledby="falta-por-conciliar"
+      className="rounded-lg border border-border bg-surface p-5"
+      data-testid="conciliacion-resumen"
+    >
+      <CifraHeroe
+        rotulo={<span id="falta-por-conciliar">Falta por conciliar</span>}
+        cifra={
+          <span data-testid="conciliacion-total-falta">
+            <AnimatedNumber value={falta} format={(x) => numberFormatter.format(x)} />{' '}
+            <span className="text-fg-muted">{falta === 1 ? 'movimiento' : 'movimientos'}</span>
+          </span>
+        }
+        contexto={
+          <span data-testid="conciliacion-total-movimientos">
+            de los <AnimatedNumber value={totals.movimientos} format={(x) => numberFormatter.format(x)} /> del extracto
+          </span>
+        }
+        total={totals.movimientos}
+        tramos={[
+          {
+            clave: 'conciliados',
+            etiqueta: 'Conciliados',
+            monto: totals.conciliados,
+            tono: 'exito',
+            siempre: true,
+            cifra: <span data-testid="conciliacion-total-conciliados">{n(totals.conciliados)}</span>,
+          },
+          {
+            clave: 'en-cola',
+            etiqueta: 'Esperan tu decisión',
+            monto: enCola,
+            tono: 'aviso',
+            cifra: n(enCola),
+            extra:
+              colaHref && enCola > 0 ? (
+                <Link
+                  href={colaHref}
+                  className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid="conciliacion-hallazgos-cta"
+                >
+                  {etiquetaDeRevision(enCola)}
+                </Link>
+              ) : null,
+          },
+          { clave: 'por-cruzar', etiqueta: 'Por cruzar', monto: porCruzar, tono: 'neutro', cifra: n(porCruzar) },
+        ]}
+        tamano="mediana"
+        pie={
+          <div className="space-y-2 border-t border-border-faint pt-3">
+            {colaHref && hallazgos.length > 0 ? (
+              <Stagger
+                as="ul"
+                className="flex flex-wrap gap-2"
+                data-testid="conciliacion-hallazgos-tipos"
+              >
+                {hallazgos.map((h) => (
+                  <StaggerItem
+                    as="li"
+                    key={h.tipo}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-caption text-fg-muted"
+                    data-testid={`conciliacion-hallazgo-${h.tipo}`}
+                  >
+                    <span className="font-mono tabular-nums text-fg">{n(h.cantidad)}</span>
+                    {h.etiqueta}
+                  </StaggerItem>
+                ))}
+              </Stagger>
+            ) : null}
+            <p data-testid="conciliacion-total-monto">
+              <span className="font-mono tabular-nums text-fg">
+                <AnimatedNumber value={totals.monto_conciliado_cop} format={(x) => copFormatter.format(x)} />
+              </span>{' '}
+              conciliados
+            </p>
+          </div>
+        }
+        data-testid={colaHref ? 'conciliacion-hallazgos' : undefined}
+      />
     </section>
   )
 }
@@ -157,22 +208,13 @@ export function HallazgosDelAgente({ data, colaHref }: HallazgosDelAgenteProps) 
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-2">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-              <MagnifyingGlass
-                className="h-4 w-4 text-fg-muted"
-                weight="duotone"
-                aria-hidden="true"
-              />
-            </span>
-            <h2 className="text-base font-semibold text-fg">Lo que encontró el agente</h2>
-          </div>
+          <h2 className="text-base font-medium text-fg">Lo que encontró el agente</h2>
 
           {enCola > 0 ? (
             <p className="text-body-sm text-fg-muted">{frase}</p>
           ) : (
             <p className="text-body-sm text-fg-muted">
-              Nada pendiente de tu ojo. Cuando un movimiento no cierre contra un cobro, aparece acá.
+              Nada pendiente de tu ojo. Cuando un movimiento no cierre contra un cobro, aparece aquí.
             </p>
           )}
 
@@ -187,7 +229,7 @@ export function HallazgosDelAgente({ data, colaHref }: HallazgosDelAgenteProps) 
                   className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-caption text-fg-muted"
                   data-testid={`conciliacion-hallazgo-${h.tipo}`}
                 >
-                  <span className="font-semibold tabular-nums text-fg">
+                  <span className="font-medium tabular-nums text-fg">
                     <AnimatedNumber value={h.cantidad} format={(n) => String(Math.round(n))} />
                   </span>
                   {h.etiqueta}
@@ -202,7 +244,6 @@ export function HallazgosDelAgente({ data, colaHref }: HallazgosDelAgenteProps) 
           <Button asChild variant="secondary" hideArrow className="shrink-0">
             <Link href={colaHref} data-testid="conciliacion-hallazgos-cta">
               {etiquetaDeRevision(enCola)}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
         </Presence>

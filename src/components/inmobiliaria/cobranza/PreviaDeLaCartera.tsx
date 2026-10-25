@@ -119,7 +119,7 @@ export function PreviaDeLaCartera({ leida, mapeo, onMapeo, filas, cruce, fecha, 
 
       {/* ── Columnas ─────────────────────────────────────────────────── */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-fg">{tr('Cómo leímos tus columnas')}</h3>
+        <h3 className="text-sm font-medium text-fg">{tr('Cómo leímos tus columnas')}</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           {visibles.map((c) => {
             const falta = c.requerido && !mapeo[c.campo] && !(c.campo === 'nombre' && (mapeo.nombres || mapeo.apellidos))
@@ -179,7 +179,7 @@ export function PreviaDeLaCartera({ leida, mapeo, onMapeo, filas, cruce, fecha, 
       {/* ── Muestra ──────────────────────────────────────────────────── */}
       {buenas.length > 0 ? (
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-fg">{tr('Así quedan')}</h3>
+          <h3 className="text-sm font-medium text-fg">{tr('Así quedan')}</h3>
           <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full min-w-[640px] text-sm" data-testid="previa-filas">
               <thead className="bg-surface-muted text-left text-fg-muted">

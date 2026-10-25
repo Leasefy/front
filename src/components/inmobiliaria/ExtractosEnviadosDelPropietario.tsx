@@ -111,11 +111,11 @@ export function ExtractosEnviadosDelPropietario({ propietarioId, version = 0 }: 
                 <div className="min-w-0 space-y-0.5">
                   <p className="text-sm font-medium text-foreground">
                     {mesEnTitulo(h.month, locale)}
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    <span className="ml-2 text-caption font-normal text-muted-foreground">
                       {t(`inmobiliaria.propietarios.detail.extractos.${h.origen}`)}
                     </span>
                   </p>
-                  <p className={cn('text-xs', h.estado === 'FALLIDO' ? 'text-danger' : 'text-muted-foreground')}>
+                  <p className={cn('text-caption', h.estado === 'FALLIDO' ? 'text-danger' : 'text-muted-foreground')}>
                     {h.estado === 'ENVIADO'
                       ? [
                           h.enviadoAt ? formatDate(h.enviadoAt, locale) : null,

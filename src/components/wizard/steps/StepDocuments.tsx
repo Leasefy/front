@@ -73,7 +73,7 @@ export function StepDocuments() {
   const StaleDocWarning = () => (
     <div className="flex items-start gap-2 p-3 bg-warning-soft border border-warning/30 rounded-sm">
       <Warning className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-warning">
+      <p className="text-caption text-warning">
         Vuelve a adjuntar este archivo — se desconectó al recargar la página
       </p>
     </div>
@@ -88,7 +88,7 @@ export function StepDocuments() {
           <p className="text-sm text-warning font-medium">
             Importante sobre tus documentos
           </p>
-          <p className="text-xs text-warning/80 mt-1">
+          <p className="text-caption text-warning/80 mt-1">
             Los archivos se guardan temporalmente. Si cierras esta página, tendrás que
             volver a subirlos.
           </p>
@@ -102,7 +102,7 @@ export function StepDocuments() {
           <h3 className="text-sm font-medium text-foreground">
             Documentos obligatorios
           </h3>
-          <span className="text-xs text-danger">*</span>
+          <span className="text-caption text-danger">*</span>
         </div>
 
         <div className="space-y-6">

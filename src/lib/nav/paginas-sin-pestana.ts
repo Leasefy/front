@@ -56,6 +56,10 @@ export const PAGINAS_SIN_PESTANA: Readonly<Record<string, PaginaSinPestana>> = {
     padres: [],
   },
   // Las de Mori que se abren desde un enlace o por URL (QA-AGENTES 16-10).
+  // Revisora r25: la cola y el equipo de Asegurabilidad (pestañas ocultas,
+  // rutas vivas) decían «Detalle» en la miga; dicen su nombre.
+  ['/panel/inmobiliaria/postulaciones/asegurabilidad/cola']: { labelKey: 'inmobiliaria.ai.nav.cotizadorCola', padres: [] },
+  ['/panel/inmobiliaria/postulaciones/asegurabilidad/equipo']: { labelKey: 'inmobiliaria.ai.nav.cotizadorEquipo', padres: [] },
   [`${COBRANZA}/escalaciones`]: { labelKey: 'inmobiliaria.ai.cobranza.escalaciones.pageTitle', padres: [] },
   [`${COBRANZA}/analitica`]: { labelKey: 'inmobiliaria.ai.cobranza.analitica.title', padres: [] },
   [`${COBRANZA}/pendientes`]: { labelKey: 'inmobiliaria.ai.cobranza.pendientes.pageTitle', padres: [] },

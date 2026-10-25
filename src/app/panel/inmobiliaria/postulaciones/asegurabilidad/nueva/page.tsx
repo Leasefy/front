@@ -30,11 +30,11 @@ import { tipoQueViaja } from '@/lib/cotizador/tipo-de-inmueble'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CotizadorWizardSkeleton } from '@/components/skeleton/panel/CotizadorWizardSkeleton'
 import { Button } from '@/components/ui/button'
-import { SectionLabel } from '@/components/ui/section-label'
 import { falloDeLaRespuesta } from '@/lib/hooks/cotizador/fallo-de-la-respuesta'
 import { leerFallo } from '@/lib/errores/traductor-de-errores'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { CrossFade, Presence } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const EMPTY_CANDIDATO = { cedula: '', nombre: '', ciudad: '' }
 
@@ -492,15 +492,11 @@ export default function NuevaCotizacionPage() {
         {/* Encabezado de la casa. Antes era una franja a todo lo ancho con su
             propio fondo y un `min-h-screen`: la única pestaña de la sección
             que no se veía como las demás. */}
-        <header className="space-y-1.5">
-          <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cotizador.nueva.title')}
-          </h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            {t('inmobiliaria.ai.cotizador.nueva.subtitle')}
-          </p>
-        </header>
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.nav.secAgentes')}
+          titulo={t('inmobiliaria.ai.cotizador.nueva.title')}
+          descripcion={t('inmobiliaria.ai.cotizador.nueva.subtitle')}
+        />
 
         {/* El asistente va en una columna angosta bajo el encabezado: el paso
             actual y el formulario comparten el mismo ancho. */}
@@ -553,9 +549,10 @@ export default function NuevaCotizacionPage() {
             <div
               role="region"
               aria-label={t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.ariaLabel')}
-              className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary-soft px-4 py-3"
+              className="mb-4 flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-4 py-3"
             >
-              <p className="text-sm text-primary">
+              {/* Ronda 30: el aviso en arena (antes un bloque azul voltaje: el azul es la acción). */}
+              <p className="text-sm text-fg">
                 {t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.message')}
               </p>
               <Button

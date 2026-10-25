@@ -100,7 +100,7 @@ export function ImagenesPanel({ vision }: ImagenesPanelProps) {
 
                 {/* Photo quality — Progress */}
                 <div data-testid="vision-quality" className="space-y-1">
-                  <div className="flex items-center justify-between text-xs text-fg-muted">
+                  <div className="flex items-center justify-between text-caption text-fg-muted">
                     <span>{t(`${KEY}.calidadFoto`)}</span>
                     <span className="font-mono">{pct}%</span>
                   </div>
@@ -116,11 +116,11 @@ export function ImagenesPanel({ vision }: ImagenesPanelProps) {
                       'bg-warning-soft p-3',
                     )}
                   >
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-warning mb-1.5">
+                    <p className="flex items-center gap-1.5 text-caption font-medium text-warning mb-1.5">
                       <Warning size={14} weight="duotone" aria-hidden="true" />
                       {t(`${KEY}.visionLimite`)}
                     </p>
-                    <ul className="list-disc list-inside space-y-0.5 text-xs text-warning">
+                    <ul className="list-disc list-inside space-y-0.5 text-caption text-warning">
                       {v.cannot_determine.map((c, i) => (
                         <li key={i}>{c}</li>
                       ))}

@@ -178,7 +178,7 @@ describe('El encabezado dice el tipo de documento (P-19)', () => {
   });
 
   it('sin el tipo (un back anterior) queda como antes', () => {
-    expect(documentoDelCliente({ documento: '52123456' })).toBe('NIT/CC 52123456');
+    expect(documentoDelCliente({ documento: '52123456' })).toBe('Documento 52123456') // Nico 22-10: «Documento», no «NIT/CC»;
     expect(documentoDelCliente({ documento: '900555006', tipoDocumento: 'NIT' })).toBe('NIT 900555006');
     expect(documentoDelCliente({ documento: null, tipoDocumento: 'CC' })).toBeNull();
   });

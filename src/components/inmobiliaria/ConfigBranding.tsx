@@ -341,11 +341,11 @@ export function ConfigBranding({
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
           <Image className="w-5 h-5 text-fg-muted" weight="duotone" />
-          <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.agencyLogo')}</h3>
+          <h3 className="text-base font-medium">{t('inmobiliaria.config.brandingSection.agencyLogo')}</h3>
         </div>
 
         {!canEdit && (
-          <p className="text-xs text-fg-muted flex items-center gap-1">
+          <p className="text-caption text-fg-muted flex items-center gap-1">
             <Info className="w-3.5 h-3.5" />
             {t('inmobiliaria.config.profile.adminOnlyHint')}
           </p>
@@ -406,7 +406,7 @@ export function ConfigBranding({
                   <span className="text-primary font-medium">{t('inmobiliaria.config.brandingSection.clickHere')}</span>
                 </p>
               )}
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-caption text-muted-foreground mt-1">
                 JPG, PNG, WebP (max 5MB)
               </p>
             </div>
@@ -437,7 +437,7 @@ export function ConfigBranding({
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
           <Palette className="w-5 h-5 text-fg-muted" weight="duotone" />
-          <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.brandColors')}</h3>
+          <h3 className="text-base font-medium">{t('inmobiliaria.config.brandingSection.brandColors')}</h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -492,9 +492,9 @@ export function ConfigBranding({
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
           <ShareNetwork className="w-5 h-5 text-fg-muted" weight="duotone" />
-          <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.socials')}</h3>
+          <h3 className="text-base font-medium">{t('inmobiliaria.config.brandingSection.socials')}</h3>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           {t('inmobiliaria.config.brandingSection.socialsDesc')}
         </p>
 
@@ -553,7 +553,7 @@ export function ConfigBranding({
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
           <Eye className="w-5 h-5 text-fg-muted" weight="duotone" />
-          <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.preview')}</h3>
+          <h3 className="text-base font-medium">{t('inmobiliaria.config.brandingSection.preview')}</h3>
         </div>
 
         {/* allowlist: the Preview block is a live branding MOCKUP rendered with the
@@ -571,13 +571,13 @@ export function ConfigBranding({
                 />
               ) : (
                 <div
-                  className="w-8 h-8 rounded-md flex items-center justify-center text-white font-bold text-sm"
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-white font-medium text-sm"
                   style={{ backgroundColor: colors.primaryColor }}
                 >
                   {(agency.name || 'A').charAt(0).toUpperCase()}
                 </div>
               )}
-              <span className="font-semibold text-foreground">
+              <span className="font-medium text-foreground">
                 {agency.name || t('inmobiliaria.config.brandingSection.myAgency')}
               </span>
             </div>
@@ -589,7 +589,7 @@ export function ConfigBranding({
 
           {/* Buttons Preview */}
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground font-medium">{t('inmobiliaria.config.brandingSection.buttons')}</p>
+            <p className="text-caption text-muted-foreground font-medium">{t('inmobiliaria.config.brandingSection.buttons')}</p>
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
@@ -620,7 +620,7 @@ export function ConfigBranding({
 
           {/* Links Preview */}
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground font-medium">{t('inmobiliaria.config.brandingSection.links')}</p>
+            <p className="text-caption text-muted-foreground font-medium">{t('inmobiliaria.config.brandingSection.links')}</p>
             <div className="flex flex-wrap gap-4">
               <a
                 href="#"

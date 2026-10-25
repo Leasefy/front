@@ -35,7 +35,10 @@ export function AgentHeaderBreadcrumb() {
   if (!ws) return null;
 
   // La pestaña más profunda cuyo href es la ruta actual (o un prefijo).
+  // Una pestaña con segmentos (C2, r25: Cobranza agrupada en 7) cuenta por sus
+  // segmentos: la miga dice la pantalla («Cartas»), no el grupo («Contactos»).
   const current = ws.items
+    .flatMap((it) => (it.segmentos && it.segmentos.length > 0 ? it.segmentos : [it]))
     .filter((it) => pathname === it.href || (!it.exact && pathname.startsWith(`${it.href}/`)))
     .sort((a, b) => b.href.length - a.href.length)[0];
 

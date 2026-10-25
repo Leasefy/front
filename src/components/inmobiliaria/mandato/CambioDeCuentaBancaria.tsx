@@ -42,6 +42,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SelectorDeArchivo } from '@/components/ui/selector-de-archivo';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { mapBankCodeToWire } from '@/lib/api/inmobiliaria.service';
@@ -443,7 +444,7 @@ export function CambioDeCuentaBancaria({
       await cargar();
     } catch (e) {
       toast.error('No se pudo confirmar.', {
-        description: mensajeDelFallo(e, 'No pudimos confirmar el cambio con ese código.'),
+        description: mensajeDelFallo(e, 'No se pudo confirmar el cambio con ese código.'),
       });
       await cargar();
     } finally {
@@ -499,7 +500,7 @@ export function CambioDeCuentaBancaria({
         <p className="text-sm text-muted-foreground">
           {tieneCuenta
             ? 'Cambiar la cuenta pide la certificación bancaria, la confirmación del propietario y la aprobación de un administrador.'
-            : 'La primera cuenta se registra en «Editar». Los cambios después pasan por acá.'}
+            : 'La primera cuenta se registra en «Editar». Los cambios después pasan por aquí.'}
         </p>
       ) : (
         <div className="space-y-3">
@@ -608,7 +609,7 @@ export function CambioDeCuentaBancaria({
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
                   {/* 🔴 23-09: quien pidió el cambio no lo aprueba si hay otro
-                      administrador. El back decide y dice por qué; acá el botón
+                      administrador. El back decide y dice por qué; aquí el botón
                       se apaga con ese mismo porqué, nunca un cable muerto. */}
                   <Button
                     size="sm"
@@ -1064,24 +1065,31 @@ function PedirCambioDeCuenta({
             />
             <div className="space-y-1.5">
               <Label htmlFor="banco-nuevo">Banco</Label>
-              <select
-                id="banco-nuevo"
-                className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
-                value={banco}
-                aria-invalid={Boolean(erroresDelServidor.banco) || undefined}
-                aria-describedby="banco-nuevo-error"
-                onChange={(e) => {
-                  setBanco(e.target.value as BankCode);
+              {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). */}
+              <Select
+                name="banco-nuevo"
+                value={banco || undefined}
+                onValueChange={(v) => {
+                  setBanco(v as BankCode);
                   limpiarDelServidor('banco');
                 }}
               >
-                <option value="">Escoge el banco</option>
-                {COLOMBIAN_BANKS.map((b) => (
-                  <option key={b.code} value={b.code}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="banco-nuevo"
+                  className="w-full"
+                  aria-invalid={Boolean(erroresDelServidor.banco) || undefined}
+                  aria-describedby="banco-nuevo-error"
+                >
+                  <SelectValue placeholder="Escoge el banco" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOMBIAN_BANKS.map((b) => (
+                    <SelectItem key={b.code} value={b.code}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <ErrorDelCampo id="banco-nuevo-error" mensaje={erroresDelServidor.banco} className="mt-0" />
             </div>
             <RadioGroup
@@ -1221,7 +1229,7 @@ function AprobarCambio({
     <Dialog open onOpenChange={(v) => !v && onCerrar()}>
       <DialogContent size="md" variant="confirm" icon={<Stamp weight="bold" />}>
         <DialogHeader>
-          <DialogTitle>Aprobar el giro a la cuenta nueva</DialogTitle>
+          <DialogTitle>¿Aprobar el giro a la cuenta nueva?</DialogTitle>
           <DialogDescription>
             {esReparto(cambio.cuentaNueva)
               ? `Reparto en ${cambio.cuentaNueva.reparto!.length} cuentas.${
@@ -1325,7 +1333,7 @@ function CerrarCambio({
         icon={rechazo ? <XCircle weight="bold" /> : <Prohibit weight="bold" />}
       >
         <DialogHeader>
-          <DialogTitle>{rechazo ? 'Rechazar el cambio de cuenta' : 'Anular el cambio de cuenta'}</DialogTitle>
+          <DialogTitle>{rechazo ? "¿Rechazar el cambio de cuenta?" : "¿Anular el cambio de cuenta?"}</DialogTitle>
           <DialogDescription>
             {rechazo
               ? 'La ficha vuelve a la cuenta anterior y el giro deja de estar retenido.'

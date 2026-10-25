@@ -62,7 +62,9 @@ export function PorCuenta({ datos, filtro, onFiltro }: Props) {
 
   return (
     <section className="space-y-3" data-testid="por-cuenta">
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Cuenta">
+      {/* Ronda 30 (revisora r27): a 390 un riel de una línea que se desliza (antes tres renglones de
+          pastillas arriba de la cifra); la elegida en tinta suave, no en azul (el azul es la acción). */}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible" role="radiogroup" aria-label="Cuenta">
         {pastillas.map((p) => {
           const activa = p.filtro === filtro;
           return (
@@ -73,8 +75,8 @@ export function PorCuenta({ datos, filtro, onFiltro }: Props) {
               aria-checked={activa}
               onClick={() => onFiltro(p.filtro)}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors [transition-duration:var(--motion-duration-fast)] motion-reduce:transition-none',
-                activa ? 'border-primary bg-primary-soft text-fg' : 'border-border bg-surface text-fg-muted hover:text-fg',
+                'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm transition-colors [transition-duration:var(--motion-duration-fast)] motion-reduce:transition-none',
+                activa ? 'border-fg bg-surface-muted text-fg' : 'border-border bg-surface text-fg-muted hover:text-fg',
               )}
               data-testid={`cuenta-${p.filtro ?? 'todas'}`}
             >

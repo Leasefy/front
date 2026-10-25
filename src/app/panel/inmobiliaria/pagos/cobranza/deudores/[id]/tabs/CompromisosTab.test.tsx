@@ -151,7 +151,7 @@ describe('CompromisosTab', () => {
     expect(container.textContent).not.toContain('pending_human_review')
   })
 
-  it('vacío → explica qué aparecería acá', () => {
+  it('vacío → explica qué aparecería aquí', () => {
     conDatos()
     render()
 

@@ -30,6 +30,18 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
+// «Lo que falta del mes» (decisión 17) pide su propia liquidación del mes y tiene sus pruebas
+// (`components/giros/LoQueFaltaDelMes.test.tsx`): aquí no debe gastar las respuestas de la página.
+vi.mock('@/components/giros/LoQueFaltaDelMes', async () => {
+  const R = await import('react');
+  const { MesDeLosGiros } = await import('@/components/giros/MesDeLosGiros');
+  // Sólo el selector ÚNICO de mes (la pieza real): las pruebas L2 eligen el mes con él.
+  return {
+    LoQueFaltaDelMes: ({ mes, onCambiarMes }: { mes: string; onCambiarMes?: (m: string) => void }) =>
+      onCambiarMes ? R.createElement(MesDeLosGiros, { mes, onCambiar: onCambiarMes }) : null,
+  };
+});
+
 // El Select de Radix no abre en happy-dom: un par de botones con el mismo contrato.
 vi.mock('@/components/ui/select', async () => {
   const R = await import('react');
@@ -209,7 +221,9 @@ describe('Liquidaciones pide y pinta la plata real del mes', () => {
     const total = q('tesoreria-neto-total');
     // 540.000 + 360.000
     expect(total?.textContent).toContain('900.000');
-    expect(total?.className).toContain('text-success');
+    // Revisora r24 (Giros #6): el neto en tinta; el verde decoraba (sólo el negativo lleva color).
+    expect(total?.className).not.toContain('text-success');
+    expect(total?.className).toContain('text-fg');
   });
 
   it('sin propietarios muestra el vacío, sin un neto de $0 al lado', async () => {
@@ -268,7 +282,7 @@ describe('L1 — un solo estado a la vez', () => {
     await montar();
 
     const netos = Array.from(host.querySelectorAll('[data-testid="tesoreria-neto-fila"]'));
-    expect(netos[0].className).toContain('text-success');
+    expect(netos[0].className).not.toContain('text-success');
     expect(netos[1].className).toContain('text-danger');
     expect(netos[1].className).not.toContain('text-success');
     expect(netos[1].textContent).toContain('Queda debiendo');
@@ -580,7 +594,7 @@ describe('PG-06 y PG-15 (QA de Pagos, 03-10-2026)', () => {
     expect(encabezados).not.toContain('inmobiliaria.tesoreria.colDeducciones');
     const ajustes = Array.from(host.querySelectorAll('[data-testid="tesoreria-ajustes-fila"]'));
     expect(ajustes[0]!.textContent).toContain('inmobiliaria.tesoreria.colAFavor');
-    expect(ajustes[0]!.textContent).toMatch(/\+\$\s?50\.000/);
+    expect(ajustes[0]!.textContent).toMatch(/\+\s\$\s?50\.000/);
     expect(ajustes[1]!.textContent).toContain('—');
   });
 });

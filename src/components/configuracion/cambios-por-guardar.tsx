@@ -346,7 +346,7 @@ export function BarraDeGuardado({ className }: { className?: string }) {
           <div
             role="region"
             aria-label="Cambios sin guardar"
-            className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-4 py-3 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)] sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 rounded-lg border border-border-strong bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0 space-y-0.5" aria-live="polite">
               {recienGuardado ? (

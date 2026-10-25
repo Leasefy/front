@@ -266,6 +266,8 @@ export interface ChatConversation {
   tema?: string;
   lastMessage: string;
   lastMessageTime: string;
+  /** ISO del último mensaje (o null sin mensajes): para ordenar la bandeja por actividad. */
+  lastMessageAt?: string | null;
   unreadCount: number;
   updatedAt: string;
 }
@@ -409,6 +411,7 @@ export function mapToConversation(backend: BackendConversation): ChatConversatio
     tema: rotuloDelTema(backend.tema),
     lastMessage: lastMessage?.content ?? '',
     lastMessageTime: lastMessage ? formatTime(lastMessage.createdAt) : '',
+    lastMessageAt: lastMessage?.createdAt ?? null,
     unreadCount: backend.unreadCount,
     updatedAt: backend.updatedAt,
   };

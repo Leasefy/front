@@ -7,7 +7,7 @@
  * Postulaciones y Candidatos: si difirieran, la misma persona tendría dos
  * puestos según la pantalla.
  */
-import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { useTr } from '@/lib/i18n/use-tr'
 import type { PuestoEnLaListaCorta } from '@/lib/api/listas-cortas.service'
 
@@ -20,16 +20,15 @@ export function MarcaDeListaCorta({
 }) {
   const tr = useTr()
   if (!puesto || puesto.puesto === null) return null
+  // Revisora r24 (Postulaciones #2): neutra —el azul es la acción— y el puesto en mono.
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary',
-        className,
-      )}
+    <Badge
+      variant="secondary"
+      className={className}
       title={puesto.razones.join(' ')}
       data-testid={`lista-corta-${puesto.applicationId}`}
     >
-      {tr('Lista corta ·')} {puesto.puesto}.º
-    </span>
+      {tr('Lista corta ·')} <span className="font-mono">{puesto.puesto}.º</span>
+    </Badge>
   )
 }

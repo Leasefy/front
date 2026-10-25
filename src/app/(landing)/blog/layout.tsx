@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { alternativasSoloEnEspanol } from "@/lib/idioma/metadata";
 
 export const metadata: Metadata = {
   title: {
@@ -20,9 +21,8 @@ export const metadata: Metadata = {
     description:
       "Consejos, guías y artículos sobre arriendos en Colombia para propietarios e inquilinos.",
   },
-  alternates: {
-    canonical: "/blog",
-  },
+  // SEO (24-10): el canonical es la dirección final (/es…): la de sin prefijo redirige.
+  alternates: alternativasSoloEnEspanol("/blog"),
 };
 
 export default function BlogLayout({

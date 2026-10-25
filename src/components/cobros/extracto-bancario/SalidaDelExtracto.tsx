@@ -154,7 +154,7 @@ export function SalidaDelExtracto({ movimiento: m, puedeConciliar, ocupado, onCa
                 key={p.llave}
                 className={
                   p.sePuedeAplicarSola
-                    ? 'flex flex-col gap-1.5 rounded-md border border-primary bg-primary-soft px-2.5 py-1.5'
+                    ? 'flex flex-col gap-1.5 rounded-md border border-success/40 bg-success-soft px-2.5 py-1.5'
                     : 'flex flex-col gap-1.5 rounded-md border border-border bg-surface-muted px-2.5 py-1.5'
                 }
                 data-testid={`propuesta-de-salida-${m.id}-${p.llave}`}
@@ -164,9 +164,9 @@ export function SalidaDelExtracto({ movimiento: m, puedeConciliar, ocupado, onCa
                   <p className="flex flex-wrap items-center gap-x-2 text-body-sm text-fg">
                     <span className="font-medium">{p.destino?.etiqueta ?? p.tipo}</span>
                     {p.destino?.fecha && <span className="text-fg-muted">· {diaLegible(p.destino.fecha)}</span>}
-                    <span className="tabular-nums text-fg-muted">· {plata(p.valorCop)}</span>
+                    <span className="font-mono tabular-nums text-fg-muted">· {plata(p.valorCop)}</span>
                     {p.sePuedeAplicarSola && (
-                      <span className="inline-flex items-center gap-1 text-caption font-medium text-primary">
+                      <span className="inline-flex items-center gap-1 text-caption font-medium text-success">
                         <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Segura
                       </span>
                     )}

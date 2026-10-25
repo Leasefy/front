@@ -524,7 +524,7 @@ export function PilotoCajon({
                   <ul className="space-y-2">
                     {/*
                       En una carta, leer el documento no es «dónde seguir»: es
-                      parte de decidir acá. Un solo enlace, y abre el sub-cajón.
+                      parte de decidir aquí. Un solo enlace, y abre el sub-cajón.
                       *
                       Los enlaces que manda el micro para una carta se omiten a
                       propósito, y son dos: el PDF —que no es un enlace sino una
@@ -534,7 +534,7 @@ export function PilotoCajon({
                       para lo mismo, una de ellas muerta (Nico, 2026-09-06).
                       *
                       🔴 Si el micro llega a mandar un enlace de carta que NO
-                      sea uno de esos dos, acá deja de verse. Revisar
+                      sea uno de esos dos, aquí deja de verse. Revisar
                       `src/piloto/detalle.ts`, resolvedor `carta`.
                     */}
                     {artifactId && (
@@ -593,7 +593,7 @@ export function PilotoCajon({
           <SheetFooter className="[&>div>*]:w-full [&>div]:w-full">
             {abierta ? (
               /* Una acción que pide datos toma el pie entero: el formulario
-                 vive acá y no en otro diálogo encima del cajón. */
+                 vive aquí y no en otro diálogo encima del cajón. */
               <PilotoAccionForm
                 accion={abierta}
                 errores={erroresDelFormulario}

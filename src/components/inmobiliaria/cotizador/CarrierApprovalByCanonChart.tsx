@@ -39,7 +39,7 @@ export function CarrierApprovalByCanonChart({ data, isLoading = false }: Carrier
   if (data.length === 0) {
     return (
       <div className="h-[220px] flex items-center justify-center">
-        <p className="text-xs text-fg-subtle text-center py-8">
+        <p className="text-caption text-fg-subtle text-center py-8">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.noApprovalData')}
         </p>
       </div>

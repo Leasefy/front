@@ -14,12 +14,12 @@ export function ConversationListSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
       {/* Group header */}
-      <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-16 mx-1" />
+      <div className="h-3 bg-neutral-200 rounded w-16 mx-1" />
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="px-3 py-2.5 space-y-1.5">
-          <div className="h-3.5 bg-neutral-200 dark:bg-neutral-700 rounded w-3/4" />
-          <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded w-1/2" />
-          <div className="h-2.5 bg-neutral-100 dark:bg-neutral-800 rounded w-1/4" />
+          <div className="h-3.5 bg-neutral-200 rounded w-3/4" />
+          <div className="h-3 bg-neutral-100 rounded w-1/2" />
+          <div className="h-2.5 bg-neutral-100 rounded w-1/4" />
         </div>
       ))}
     </div>
@@ -43,11 +43,11 @@ export function ChatMessageSkeleton() {
 
       {/* Assistant bubble - left aligned with avatar */}
       <div className="flex gap-2.5 items-start">
-        <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-neutral-700 shrink-0" />
+        <div className="w-7 h-7 rounded-full bg-neutral-200 shrink-0" />
         <div className="flex-1 space-y-1.5 max-w-[80%]">
-          <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-full" />
-          <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-5/6" />
-          <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-2/3" />
+          <div className="h-4 bg-neutral-200 rounded w-full" />
+          <div className="h-4 bg-neutral-200 rounded w-5/6" />
+          <div className="h-4 bg-neutral-200 rounded w-2/3" />
         </div>
       </div>
 
@@ -69,19 +69,19 @@ export function DecisionHistorySkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
       {/* Section header */}
-      <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-24 mx-1" />
+      <div className="h-3 bg-neutral-200 rounded w-24 mx-1" />
       {Array.from({ length: 2 }).map((_, i) => (
         <div
           key={i}
-          className="p-3 rounded-lg border border-neutral-200/60 dark:border-border/50 space-y-2"
+          className="p-3 rounded-lg border border-neutral-200/60 space-y-2"
         >
           <div className="flex items-start justify-between gap-2">
-            <div className="h-3.5 bg-neutral-200 dark:bg-neutral-700 rounded flex-1" />
-            <div className="h-4 bg-neutral-100 dark:bg-neutral-800 rounded-full w-14 shrink-0" />
+            <div className="h-3.5 bg-neutral-200 rounded flex-1" />
+            <div className="h-4 bg-neutral-100 rounded-full w-14 shrink-0" />
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-            <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded w-2/5" />
+            <div className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
+            <div className="h-3 bg-neutral-100 rounded w-2/5" />
           </div>
         </div>
       ))}
@@ -101,7 +101,7 @@ export function BriefingCardSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="h-6 bg-neutral-200 dark:bg-neutral-700 rounded-full"
+            className="h-6 bg-neutral-200 rounded-full"
             style={{ width: i === 0 ? 48 : 56 }}
           />
         ))}
@@ -109,23 +109,23 @@ export function BriefingCardSkeleton() {
 
       {/* Date label + greeting */}
       <div className="space-y-2">
-        <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-32" />
-        <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-3/4" />
-        <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded w-full" />
-        <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded w-2/3" />
+        <div className="h-3 bg-neutral-200 rounded w-32" />
+        <div className="h-4 bg-neutral-200 rounded w-3/4" />
+        <div className="h-3 bg-neutral-100 rounded w-full" />
+        <div className="h-3 bg-neutral-100 rounded w-2/3" />
       </div>
 
       {/* 4 section bars */}
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-md border border-neutral-200/60 dark:border-border/50 border-l-[3px] border-l-neutral-300 dark:border-l-neutral-600 p-3 space-y-2"
+          className="rounded-md border border-neutral-200/60 border-l-[3px] border-l-neutral-300 p-3 space-y-2"
         >
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-700 shrink-0" />
-            <div className="h-3.5 bg-neutral-200 dark:bg-neutral-700 rounded flex-1" />
+            <div className="w-4 h-4 rounded bg-neutral-200 shrink-0" />
+            <div className="h-3.5 bg-neutral-200 rounded flex-1" />
           </div>
-          <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded w-5/6" />
+          <div className="h-3 bg-neutral-100 rounded w-5/6" />
         </div>
       ))}
     </div>
@@ -141,30 +141,30 @@ export function PreferencesSkeleton() {
     <div className="max-w-2xl mx-auto w-full px-6 py-8 space-y-8 animate-pulse">
       {/* Page header */}
       <div className="space-y-2">
-        <div className="h-5 bg-neutral-200 dark:bg-neutral-700 rounded w-32" />
-        <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded w-64" />
+        <div className="h-5 bg-neutral-200 rounded w-32" />
+        <div className="h-3 bg-neutral-100 rounded w-64" />
       </div>
 
       {/* 3 sections */}
       {Array.from({ length: 3 }).map((_, sectionIdx) => (
         <div key={sectionIdx} className="space-y-4">
           {/* Section header */}
-          <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-40" />
+          <div className="h-4 bg-neutral-200 rounded w-40" />
 
           {/* Toggle rows */}
           {Array.from({ length: 3 }).map((_, rowIdx) => (
             <div key={rowIdx} className="flex items-center justify-between">
               <div className="space-y-1 flex-1">
-                <div className="h-3.5 bg-neutral-200 dark:bg-neutral-700 rounded w-28" />
-                <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded w-48" />
+                <div className="h-3.5 bg-neutral-200 rounded w-28" />
+                <div className="h-3 bg-neutral-100 rounded w-48" />
               </div>
-              <div className="w-10 h-5 bg-neutral-200 dark:bg-neutral-700 rounded-full shrink-0" />
+              <div className="w-10 h-5 bg-neutral-200 rounded-full shrink-0" />
             </div>
           ))}
 
           {/* Divider */}
           {sectionIdx < 2 && (
-            <div className="border-t border-neutral-200 dark:border-border" />
+            <div className="border-t border-neutral-200" />
           )}
         </div>
       ))}

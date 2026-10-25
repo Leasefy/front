@@ -100,7 +100,9 @@ vi.mock('@/lib/i18n', () => ({
 
 // Stub the heavy children so we can assert on their presence/props.
 vi.mock('@/components/inmobiliaria/cotizador/QuoteHeader', () => ({
-  QuoteHeader: () => React.createElement('div', { 'data-testid': 'quote-header' }),
+  // Nico (23-10-2026): «Pedir explicación» y «Re-cotizar» viven en el encabezado del caso (prop `acciones`).
+  QuoteHeader: ({ acciones }: { acciones?: React.ReactNode }) =>
+    React.createElement('div', { 'data-testid': 'quote-header' }, acciones),
 }))
 vi.mock('@/components/inmobiliaria/cotizador/CarrierStreamGrid', () => ({
   CarrierStreamGrid: () => React.createElement('div', { 'data-testid': 'carrier-grid' }),

@@ -24,6 +24,7 @@
  * necesario que haya postulaciones para crear un nuevo contrato»).
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useMemo, useState } from 'react'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useRouter } from 'next/navigation'
@@ -167,7 +168,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
             <EmptyState
               icon={User}
               title="No hay postulaciones aprobadas esperando contrato"
-              description="Cuando apruebes a un candidato, aparece acá para armarle el contrato."
+              description="Cuando apruebes a un candidato, aparece aquí para armarle el contrato."
               action={{ label: 'Ver postulaciones', href: '/panel/inmobiliaria/postulaciones' }}
             />
           ) : (
@@ -187,6 +188,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
 
               {elegibles.length === 0 ? (
                 <p className="py-8 text-center text-sm text-fg-muted">
+                  <Ilustracion nombre="lupa" tamano={80} className="mx-auto mb-2 block" />
                   Ninguna postulación coincide con «{busqueda}».
                 </p>
               ) : (
@@ -216,7 +218,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
                           <span className="block truncate text-sm font-medium text-fg">
                             {c.tenantName}
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-fg-muted">
+                          <span className="flex items-center gap-1 text-caption text-fg-muted">
                             <House className="h-3 w-3 shrink-0" />
                             <span className="truncate">{c.propertyTitle}</span>
                           </span>

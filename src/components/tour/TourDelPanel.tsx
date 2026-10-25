@@ -836,7 +836,7 @@ export function TourDelPanel() {
       {/* 🔴 La POSICIÓN vive en este envoltorio, no en la tarjeta: framer-motion
           escribe `transform` en línea para animar, y eso le gana a las clases
           `-translate-x-1/2` de Tailwind — la bienvenida quedaba arrancando en el
-          centro en vez de centrada. Acá el centrado es flex y no hay transform
+          centro en vez de centrada. Aquí el centrado es flex y no hay transform
           que pisar. */}
       <div
         className={

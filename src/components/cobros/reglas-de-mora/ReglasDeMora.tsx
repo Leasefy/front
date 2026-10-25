@@ -31,7 +31,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Info, Lightbulb, PencilSimple, Percent, Plus, Receipt, Scales } from '@phosphor-icons/react';
+import { Info, Lightbulb, PencilSimple, Percent, Plus, Receipt } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,7 +47,6 @@ import { TablePagination } from '@/components/ui/pagination';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { SinDatos } from '@/components/estado/SinDatos';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
@@ -249,25 +248,25 @@ export function ReglasDeMora() {
     <div className="space-y-5">
       <p className="flex items-start gap-2 text-caption text-fg-muted" data-testid="aviso-motor" data-motor={String(motorPrendido)}>
         <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        {/* Revisora r25 (Reglas de mora #1): sin «motor» (VOZ, «No se dice»). */}
         {motorPrendido === true ? (
           <span>
-            El motor de cobros con reglas está <strong className="font-medium text-fg">prendido</strong>: estas reglas
-            se aplican en el recálculo de cada madrugada sobre los cobros vencidos.
+            El cobro con reglas está <strong className="font-medium text-fg">prendido</strong>: estas reglas se
+            aplican cada madrugada, cuando se recalculan los cobros vencidos.
           </span>
         ) : motorPrendido === false ? (
           <span>
-            El motor de cobros con reglas está <strong className="font-medium text-fg">apagado</strong>: hoy se cobra el
-            % mensual fijo de la configuración y estas reglas no le cambian un peso a nadie. Se pueden dejar
-            listas y{' '}
+            El cobro con reglas está <strong className="font-medium text-fg">apagado</strong>: hoy se cobra el %
+            mensual fijo de la configuración y estas reglas no le cambian un peso a nadie. Puedes dejarlas listas y{' '}
             <Link href="/panel/inmobiliaria/configuracion" className="underline underline-offset-2 hover:text-fg">
-              prenderlo en configuración
+              prenderlo en Configuración
             </Link>
             .
           </span>
         ) : (
           <span>
-            Se aplican sólo con el motor de cobros con reglas prendido en la inmobiliaria. Hasta entonces se
-            pueden dejar listas y revisarlas en frío: no le cambian un peso a nadie.
+            Se aplican sólo con el cobro con reglas prendido en la inmobiliaria. Hasta entonces puedes dejarlas
+            listas y revisarlas en frío: no le cambian un peso a nadie.
           </span>
         )}
       </p>
@@ -281,29 +280,37 @@ export function ReglasDeMora() {
         {lista.length === 0 ? (
           <div className="space-y-5" data-testid="reglas-vacio">
             {/* El vacío es la tabla sin filas: va encerrado en la misma tarjeta
-                que la tabla, como todos los vacíos del panel (Nico, 2026-09-01). */}
+                que la tabla, como todos los vacíos del panel (Nico, 2026-09-01).
+                Revisora r25 (Reglas de mora #2): las sugerencias van DENTRO del vacío y son la
+                acción principal; «Crear una regla» desde cero queda como secundaria (antes dos
+                caminos para lo mismo: el botón del vacío y, debajo, las dos tarjetas). */}
+            {/* Ronda 30 (revisora r27, «tarjeta en tarjeta»): el vacío es UNA línea arriba y las dos
+                sugerencias son FILAS de la misma tarjeta (antes dos tarjetas punteadas dentro del vacío). */}
             <div className="overflow-hidden rounded-lg border border-border bg-card">
-              <SinDatos
-                queSon={t('reglasDeMora.queSon')}
-                icono={Scales}
-                titulo={t('reglasDeMora.vacio.titulo')}
-                descripcion={t('reglasDeMora.vacio.descripcion')}
-                crear={puedeCrear ? { label: t('reglasDeMora.vacio.crear'), onClick: abrirNueva } : undefined}
-              />
+              <div className="space-y-1 border-b border-border px-5 py-4">
+                <p className="font-medium text-fg">{t('reglasDeMora.vacio.titulo')}</p>
+                <p className="text-body-sm text-fg-muted">{t('reglasDeMora.vacio.descripcion')}</p>
+              </div>
+              {puedeCrear ? (
+                <>
+                  <Sugerencias
+                    titulo={t('reglasDeMora.sugerencias.vacioTitulo')}
+                    descripcion={t('reglasDeMora.sugerencias.vacioDescripcion')}
+                    plantillas={faltantes}
+                    enCurso={plantillaEnCurso}
+                    onUsar={usarPlantilla}
+                    principal
+                    comoFilas
+                  />
+                  <div className="border-t border-border px-5 py-3">
+                    <Button variant="ghost" size="sm" hideArrow onClick={abrirNueva} data-testid="crear-el-primero">
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      {t('reglasDeMora.vacio.crear')}
+                    </Button>
+                  </div>
+                </>
+              ) : null}
             </div>
-
-            {/* 🔴 Fuera de la tarjeta y con encabezado propio: acá empieza otra
-                cosa. Antes esto colgaba pelado del vacío y las dos tarjetas se
-                leían como las reglas que la agencia ya tenía. */}
-            {puedeCrear && (
-              <Sugerencias
-                titulo={t('reglasDeMora.sugerencias.vacioTitulo')}
-                descripcion={t('reglasDeMora.sugerencias.vacioDescripcion')}
-                plantillas={faltantes}
-                enCurso={plantillaEnCurso}
-                onUsar={usarPlantilla}
-              />
-            )}
           </div>
         ) : (
           <div className="space-y-5">
@@ -510,14 +517,45 @@ function Sugerencias({
   plantillas,
   enCurso,
   onUsar,
+  principal = false,
+  comoFilas = false,
 }: {
   titulo: string;
   descripcion: string;
   plantillas: readonly PlantillaDeRegla[];
   enCurso: PlantillaDeRegla['id'] | null;
   onUsar: (plantilla: PlantillaDeRegla) => void;
+  /** En el vacío, la primera sugerencia es LA acción de la pantalla (su botón, el único azul). */
+  principal?: boolean;
+  /** Ronda 30: dentro de una tarjeta, las sugerencias son filas (no tarjetas punteadas). */
+  comoFilas?: boolean;
 }) {
   if (plantillas.length === 0) return null;
+
+  if (comoFilas) {
+    return (
+      <section data-testid="reglas-sugerencias" aria-label={titulo}>
+        <div className="space-y-0.5 px-5 pt-4">
+          <h2 className="text-sm font-medium text-fg">{titulo}</h2>
+          <p className="max-w-2xl text-caption text-fg-muted">{descripcion}</p>
+        </div>
+        <ul className="divide-y divide-border">
+          {plantillas.map((plantilla, i) => (
+            <li key={plantilla.id}>
+              <TarjetaDePlantilla
+                principal={principal && i === 0}
+                plantilla={plantilla}
+                ocupada={enCurso === plantilla.id}
+                deshabilitada={enCurso !== null}
+                onUsar={() => onUsar(plantilla)}
+                comoFila
+              />
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-3" data-testid="reglas-sugerencias" aria-label={titulo}>
@@ -529,9 +567,10 @@ function Sugerencias({
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        {plantillas.map((plantilla) => (
+        {plantillas.map((plantilla, i) => (
           <TarjetaDePlantilla
             key={plantilla.id}
+            principal={principal && i === 0}
             plantilla={plantilla}
             ocupada={enCurso === plantilla.id}
             deshabilitada={enCurso !== null}
@@ -548,14 +587,51 @@ function TarjetaDePlantilla({
   ocupada,
   deshabilitada,
   onUsar,
+  principal = false,
+  comoFila = false,
 }: {
+  principal?: boolean;
   plantilla: PlantillaDeRegla;
   ocupada: boolean;
   deshabilitada: boolean;
   onUsar: () => void;
+  comoFila?: boolean;
 }) {
   const { t } = useI18n();
   const Icono = ICONO_DE_LA_PLANTILLA[plantilla.id];
+  if (comoFila) {
+    return (
+      <div
+        className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+        data-testid={`plantilla-${plantilla.id}`}
+      >
+        <div className="flex min-w-0 items-start gap-3">
+          <Icono className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+          <div className="min-w-0 space-y-1">
+            <p className="flex flex-wrap items-center gap-2 font-medium text-fg">
+              {plantilla.titulo}
+              <Badge variant="outline">{t('reglasDeMora.sugerencias.etiqueta')}</Badge>
+            </p>
+            <p className="text-sm text-fg-muted">{plantilla.explicacion}</p>
+            <p className="text-caption text-fg-subtle">
+              {describirRegla({ ...plantilla.valores, topeCop: plantilla.valores.topeCop ?? null })}
+            </p>
+          </div>
+        </div>
+        <Button
+          className="shrink-0 self-start sm:self-center"
+          variant={principal ? 'default' : 'secondary'}
+          size="sm"
+          hideArrow
+          onClick={onUsar}
+          isLoading={ocupada}
+          disabled={deshabilitada}
+        >
+          {t('reglasDeMora.sugerencias.usar')}
+        </Button>
+      </div>
+    );
+  }
   return (
     <div
       // Punteado y sin fondo de tarjeta: el borde discontinuo es lo que en
@@ -568,7 +644,7 @@ function TarjetaDePlantilla({
           <Icono className="h-4 w-4" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1 space-y-1">
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+          <Badge variant="outline">
             {t('reglasDeMora.sugerencias.etiqueta')}
           </Badge>
           <p className="font-medium text-fg">{plantilla.titulo}</p>
@@ -579,7 +655,7 @@ function TarjetaDePlantilla({
         {describirRegla({ ...plantilla.valores, topeCop: plantilla.valores.topeCop ?? null })}
       </p>
       <div>
-        <Button variant="secondary" size="sm" hideArrow onClick={onUsar} isLoading={ocupada} disabled={deshabilitada}>
+        <Button variant={principal ? 'default' : 'secondary'} size="sm" hideArrow onClick={onUsar} isLoading={ocupada} disabled={deshabilitada}>
           {t('reglasDeMora.sugerencias.usar')}
         </Button>
       </div>

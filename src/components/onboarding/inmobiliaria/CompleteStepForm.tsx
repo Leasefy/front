@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
-import { ArrowRight, WarningCircle } from '@phosphor-icons/react'
+import { WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { CrossFade, Presence } from '@leasefy/cadence'
@@ -34,8 +34,8 @@ export interface CompleteStepFormProps {
 }
 
 const MISSING_STEP_LABELS: Record<string, string> = {
-  agency: 'Datos de la agencia',
-  members: 'Miembros',
+  agency: 'Datos de la inmobiliaria',
+  members: 'Equipo',
   payment_provider: 'Medio de pago',
   policy: 'Política',
   habeas_data: 'Habeas data',
@@ -275,7 +275,6 @@ export function CompleteStepForm({
             data-testid="complete-step-go-to-missing"
           >
             Ir a {labelFor(targetStep)}
-            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </Button>
         )}
       </div>
@@ -334,7 +333,6 @@ export function CompleteStepForm({
         ) : (
           <>
             Crear mi inmobiliaria
-            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

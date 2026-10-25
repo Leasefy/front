@@ -16,10 +16,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Money, Plus } from '@phosphor-icons/react';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -28,7 +28,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import {
   gastosApi,
   type FacturaDeProveedor,
@@ -43,7 +44,7 @@ import {
   sePuedePagar,
 } from '@/lib/contabilidad/pagar-factura';
 import { Monto } from '../Monto';
-import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
+import { AccionConMotivo, FaltaLaMigracion, EsqueletoDeTabla } from '../piezas';
 import { usePuedeRegistrar } from '../use-puede-registrar';
 import { PagarFactura, numeroDeLaFactura } from './PagarFactura';
 
@@ -112,43 +113,69 @@ export function CuentasPorPagar({
     void cargar();
   }, [cargar]);
 
+  /* Ronda 30 (revisora r27, C11): el conteo de las tres pestañas (una factura por pregunta: el back
+     manda el total). Si alguna falla, esa pestaña va sin número. Se vuelve a contar tras pagar. */
+  const [conteos, setConteos] = useState<Partial<Record<Vista, number>>>({});
+  const contar = useCallback(() => {
+    void Promise.all(
+      VISTAS.map((v) =>
+        gastosApi.facturas
+          .listar({ ...v.filtro, limite: 1 })
+          .then((r) => [v.valor, r?.total] as const)
+          .catch(() => null),
+      ),
+    ).then((res) => {
+      const c: Partial<Record<Vista, number>> = {};
+      for (const x of res) if (x && typeof x[1] === 'number') c[x[0]] = x[1];
+      setConteos(c);
+    });
+  }, []);
+  useEffect(() => {
+    contar();
+  }, [contar]);
+
   const actual = VISTAS.find((v) => v.valor === vista)!;
   const facturas = pagina?.facturas ?? [];
 
   return (
     <section className="space-y-4" data-testid="cuentas-por-pagar">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={vista} onValueChange={(v) => setVista(v as Vista)}>
-          <TabsList className="max-w-full overflow-x-auto">
-            {VISTAS.map((v) => (
-              <TabsTrigger key={v.valor} value={v.valor} data-testid={`cxp-vista-${v.valor}`}>
-                {v.nombre}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        {conRegistrar ? (
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href={GASTOS} data-testid="cxp-registrar-en-gastos">
-              <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-              Registrar factura
-            </Link>
-          </Button>
-        ) : null}
-      </div>
-
-      <Nota>
-        Las facturas de proveedor se registran y se causan en Contabilidad, en Gastos. Aquí ves las
-        causadas y las mandas a pagar: el pago queda en Egresos, donde se arma el lote y lo aprueba
-        otra persona antes de girar.
-      </Nota>
+      {/* Ronda 30 (revisora r27): las pestañas DENTRO de la tarjeta de la tabla y con su conteo; la nota de
+          dos renglones, plegada; «Registrar factura» no sale cuando el vacío ya lleva «Ir a Gastos». */}
+      <div className="rounded-lg border border-border bg-card">
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <PestanasDeEstado
+            etiqueta="Qué facturas ver"
+            valor={vista}
+            onCambio={(v) => setVista(v as Vista)}
+            pestanas={VISTAS.map((v) => ({
+              valor: v.valor,
+              etiqueta: v.nombre,
+              cuantos: v.valor === vista && pagina ? pagina.total : (conteos[v.valor] ?? null),
+              fija: true,
+              testid: `cxp-vista-${v.valor}`,
+            }))}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <MasDetalles etiqueta="Cómo se pagan" etiquetaAbierto="Ocultar" className="text-caption" classNameDelContenido="max-w-md text-caption text-fg-muted">
+              Las facturas de proveedor se registran y se causan en Contabilidad, en Gastos. Aquí ves las
+              causadas y las mandas a pagar: el pago queda en Egresos, donde se arma el lote y lo aprueba
+              otra persona antes de girar.
+            </MasDetalles>
+            {conRegistrar && !(vista === 'por-pagar' && pagina && facturas.length === 0) ? (
+              <Button asChild variant="outline" size="sm" hideArrow>
+                <Link href={GASTOS} data-testid="cxp-registrar-en-gastos">
+                  <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                  Registrar factura
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        </div>
 
       {error ? (
         <FalloDeCarga error={error} queEs="las cuentas por pagar" onReintentar={cargar} />
       ) : cargando && !pagina ? (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <EsqueletoDeTabla queEs="Cargando las cuentas por pagar…" filas={4} />
       ) : pagina && !pagina.disponible ? (
         <FaltaLaMigracion
           motivo={pagina.motivo}
@@ -156,9 +183,9 @@ export function CuentasPorPagar({
           mientrasTanto="Mientras no esté, las facturas de proveedor no se pueden registrar ni pagar desde Leasefy."
         />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <Table>
-            <TableHeader>
+        <div className="overflow-x-auto">
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 <TableHead>Proveedor</TableHead>
                 <TableHead>Factura</TableHead>
@@ -170,33 +197,57 @@ export function CuentasPorPagar({
                 </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="max-md:block">
               {facturas.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted">
-                    {actual.vacio}
+                <TableRow className="max-md:block">
+                  <TableCell colSpan={6} className="p-0 max-md:block">
+                    {/* Revisora r25 (C5): el vacío con su salida —las facturas se causan en Gastos—
+                        (antes una línea gris). */}
+                    <SinDatos
+                      queSon="facturas"
+                      icono={Money}
+                      titulo={actual.vacio.replace(/\.$/, '')}
+                      descripcion={
+                        actual.valor === 'pagadas'
+                          ? 'Cuando pagues una factura causada, queda aquí con su egreso.'
+                          : actual.valor === 'vencidas'
+                            ? 'Las que están por pagar todavía no pasan de su fecha.'
+                            : 'Las facturas de los proveedores se registran y se causan en Gastos de la inmobiliaria.'
+                      }
+                      accion={
+                        actual.valor === 'por-pagar' ? (
+                          <Button asChild size="sm" variant="secondary" hideArrow>
+                            <Link href={GASTOS}>Ir a Gastos</Link>
+                          </Button>
+                        ) : undefined
+                      }
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
                 facturas.map((f) => {
                   const estado = estadoDePago(f, dia);
                   return (
-                    <TableRow key={f.id} data-testid={`cxp-fila-${f.id}`}>
-                      <TableCell>
+                    <TableRow
+                      key={f.id}
+                      data-testid={`cxp-fila-${f.id}`}
+                      className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
+                    >
+                      <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                         <p className="text-sm font-medium text-fg">{f.proveedorNombre}</p>
                         <p className="text-caption text-fg-muted">{f.concepto}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">
+                      <TableCell className="whitespace-nowrap text-sm max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
                         <p>{numeroDeLaFactura(f) || 'Sin número'}</p>
                         <p className="text-caption text-fg-muted">{diaLegible(f.fecha)}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">
+                      <TableCell className="whitespace-nowrap text-sm max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-right max-md:text-caption max-md:text-fg-muted max-md:before:content-['Vence_']">
                         {f.fechaDeVencimiento ? diaLegible(f.fechaDeVencimiento) : 'Sin fecha'}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                         <Monto valor={f.netoCop} className="text-sm" />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                         {estado ? (
                           <Badge variant={TONO[estado]}>{NOMBRE_DEL_ESTADO_DE_PAGO[estado]}</Badge>
                         ) : null}
@@ -209,7 +260,7 @@ export function CuentasPorPagar({
                           </Link>
                         ) : null}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
                         {sePuedePagar(f) ? (
                           <AccionConMotivo
                             puede={escritura.puede}
@@ -230,6 +281,7 @@ export function CuentasPorPagar({
           </Table>
         </div>
       )}
+      </div>
 
       {pagina && pagina.total > facturas.length ? (
         <p className="text-caption text-fg-muted">
@@ -247,6 +299,7 @@ export function CuentasPorPagar({
         onPagada={() => {
           setPagando(null);
           void cargar();
+          contar();
         }}
       />
     </section>

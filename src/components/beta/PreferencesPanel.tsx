@@ -42,7 +42,7 @@ export function PreferencesPanel({ className }: PreferencesPanelProps) {
       <div className="max-w-2xl mx-auto w-full px-6 py-8 space-y-8">
         {/* Page header */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground">{t('beta.preferences.title')}</h2>
+          <h2 className="text-h3 text-foreground">{t('beta.preferences.title')}</h2>
           <p className="text-[13px] text-muted-foreground mt-1">
             {t('beta.preferences.subtitle')}
           </p>
@@ -52,25 +52,25 @@ export function PreferencesPanel({ className }: PreferencesPanelProps) {
         <AutonomySettings />
 
         {/* Divider */}
-        <div className="border-t border-neutral-200 dark:border-border" />
+        <div className="border-t border-neutral-200" />
 
         {/* 2. Notification settings */}
         <NotificationSettings />
 
         {/* Divider */}
-        <div className="border-t border-neutral-200 dark:border-border" />
+        <div className="border-t border-neutral-200" />
 
         {/* 3. Tone selector */}
         <ToneSelector />
 
         {/* Divider */}
-        <div className="border-t border-neutral-200 dark:border-border" />
+        <div className="border-t border-neutral-200" />
 
         {/* 4. Threshold settings */}
         <ThresholdSettings />
 
         {/* Global reset */}
-        <div className="border-t border-neutral-200 dark:border-border pt-6 pb-4">
+        <div className="border-t border-neutral-200 pt-6 pb-4">
           <Button
             variant="outline"
             hideArrow

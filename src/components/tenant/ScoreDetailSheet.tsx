@@ -116,7 +116,7 @@ export function ScoreDetailSheet({
         <SheetFooter className="[&>div]:w-full">
           {!isPaid ? (
             /*
-              Acá había un botón primario "Evaluar mi perfil" cableado a
+              Aquí había un botón primario "Evaluar mi perfil" cableado a
               `purchaseEvaluation()`, que solo escribe una advertencia en
               consola: la evaluación de autoservicio del inquilino no existe
               todavía. Se tocaba y no pasaba absolutamente nada — ni aviso, ni
@@ -130,12 +130,12 @@ export function ScoreDetailSheet({
             <div className="w-full space-y-3">
               <p className="text-sm text-fg-muted text-center">
                 {locale === 'es'
-                  ? 'Tu evaluación la hace la inmobiliaria cuando te postulas a una propiedad. No tienes que pedirla ni pagarla aparte.'
+                  ? 'Tu evaluación la hace la inmobiliaria cuando te postulas a un inmueble. No tienes que pedirla ni pagarla aparte.'
                   : 'Your evaluation is run by the agency when you apply to a property. You do not need to request or pay for it separately.'}
               </p>
               <Button asChild className="w-full" size="lg">
                 <Link href="/inquilino/para-ti">
-                  {locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me'}
+                  {locale === 'es' ? 'Ver inmuebles para mí' : 'View properties for me'}
                 </Link>
               </Button>
             </div>
@@ -164,24 +164,11 @@ export function ScoreDetailSheet({
 function LockedContent({ locale }: { locale: string }) {
   return (
     <div className="space-y-6">
-      {/* Blurred decorative score */}
-      <div className="relative flex flex-col items-center py-8">
-        <div className="blur-md select-none pointer-events-none">
-          <div className="w-24 h-24 rounded-full bg-success-soft flex items-center justify-center mb-3">
-            <span className="text-5xl font-bold text-success">A</span>
-          </div>
-          <p className="text-center text-lg font-semibold text-fg">92 / 100</p>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center">
-            <Lock className="w-7 h-7 text-fg-subtle" />
-          </div>
-        </div>
-      </div>
-
+      {/* Ronda 30: sin la nota de adorno borrosa («A · 92 / 100», un número que no es el suyo) ni su círculo de color. */}
+      <Lock className="h-7 w-7 text-fg-subtle" aria-hidden="true" />
       {/* Explanation */}
       <div>
-        <h3 className="text-base font-semibold text-fg mb-2">
+        <h3 className="text-base font-medium text-fg mb-2">
           {locale === 'es'
             ? '¿Qué es la evaluación de inquilino?'
             : 'What is the tenant evaluation?'}
@@ -191,8 +178,8 @@ function LockedContent({ locale }: { locale: string }) {
             (docs/VOCABULARIO.md). */}
         <p className="text-sm text-fg-muted leading-relaxed">
           {locale === 'es'
-            ? 'Un score verificable que muestra tu confiabilidad como inquilino. La inmobiliaria lo genera al estudiar tu postulación, y queda acá para que lo compartas.'
-            : 'A verifiable score that shows your reliability as a tenant. The agency generates it when reviewing your application, and it stays here for you to share.'}
+            ? 'Una calificación verificable que muestra tu confiabilidad como inquilino. La inmobiliaria la genera al estudiar tu postulación, y queda aquí para que la compartas.'
+            : 'A verifiable rating that shows your reliability as a tenant. The agency generates it when reviewing your application, and it stays here for you to share.'}
         </p>
       </div>
 
@@ -200,8 +187,8 @@ function LockedContent({ locale }: { locale: string }) {
       <div className="space-y-3">
         {[
           {
-            es: 'Score verificable con código único',
-            en: 'Verifiable score with unique code',
+            es: 'Calificación verificable con código único',
+            en: 'Verifiable rating with unique code',
           },
           {
             es: 'PDF descargable para compartir',
@@ -212,7 +199,7 @@ function LockedContent({ locale }: { locale: string }) {
             en: 'Valid for 90 days',
           },
           {
-            es: 'Compartible por WhatsApp y email',
+            es: 'Se comparte por WhatsApp o por correo',
             en: 'Shareable via WhatsApp and email',
           },
         ].map((benefit, i) => (
@@ -251,21 +238,20 @@ function UnlockedContent({
     <div className="space-y-6">
       {/* Score Display */}
       <div className="flex flex-col items-center py-4">
-        <div className={cn('w-20 h-20 rounded-full flex items-center justify-center mb-3', colors.bg)}>
-          <span className={cn('text-4xl font-bold', colors.text)}>{score.level}</span>
-        </div>
-        <p className="text-2xl font-bold font-mono tabular-nums text-fg">{score.numericScore} / 100</p>
+        {/* Ronda 30 (Cadence 2): la letra sola, en su color, sin el círculo de fondo. */}
+        <span className={cn('mb-2 font-mono text-5xl font-normal', colors.text)}>{score.level}</span>
+        <p className="text-2xl font-normal font-mono tabular-nums text-fg">{score.numericScore} / 100</p>
         <RiskBadge grade={score.level} showLabel className="mt-2" />
       </div>
 
       {/* AI Explanation */}
-      <div className="rounded-xl bg-surface-muted p-4">
+      <div className="rounded-lg bg-surface-muted p-4">
         <p className="text-sm text-fg-muted leading-relaxed">{score.aiExplanation}</p>
       </div>
 
       {/* Category Breakdown */}
       <div>
-        <h4 className="text-sm font-semibold text-fg mb-3">
+        <h4 className="text-sm font-medium text-fg mb-3">
           {locale === 'es' ? 'Desglose por categoría' : 'Category breakdown'}
         </h4>
         <div className="space-y-4">
@@ -274,8 +260,8 @@ function UnlockedContent({
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm text-fg">{cat.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-fg-muted">{Math.round(cat.weight * 100)}%</span>
-                  <span className="text-sm font-semibold text-fg">{cat.score}</span>
+                  <span className="font-mono text-caption tabular-nums text-fg-muted">{Math.round(cat.weight * 100)}%</span>
+                  <span className="font-mono text-sm tabular-nums text-fg">{cat.score}</span>
                 </div>
               </div>
               {/* La barra se llena al abrir el detalle, con `transform` (no `width`). */}
@@ -295,7 +281,7 @@ function UnlockedContent({
       {/* Drivers */}
       {score.drivers.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-fg mb-3">
+          <h4 className="text-sm font-medium text-fg mb-3">
             {locale === 'es' ? 'Factores positivos' : 'Positive factors'}
           </h4>
           <div className="space-y-2">
@@ -312,7 +298,7 @@ function UnlockedContent({
       {/* Flags */}
       {score.flags.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-fg mb-3">
+          <h4 className="text-sm font-medium text-fg mb-3">
             {locale === 'es' ? 'Puntos a considerar' : 'Points to consider'}
           </h4>
           <div className="space-y-2">
@@ -329,12 +315,12 @@ function UnlockedContent({
       {/* Verification Code */}
       {verificationCode && (
         <div>
-          <h4 className="text-sm font-semibold text-fg mb-2">
+          <h4 className="text-sm font-medium text-fg mb-2">
             {locale === 'es' ? 'Código de verificación' : 'Verification code'}
           </h4>
           <button
             onClick={onCopyCode}
-            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-surface-muted border border-border hover:border-border-strong transition-colors"
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-surface-muted border border-border hover:border-border-strong transition-colors"
           >
             <span className="font-mono text-lg font-semibold tracking-wider text-fg">
               {verificationCode}
@@ -348,7 +334,7 @@ function UnlockedContent({
               )}
             </CrossFade>
           </button>
-          <p className="text-xs text-fg-muted mt-1.5">
+          <p className="text-caption text-fg-muted mt-1.5">
             {locale === 'es'
               ? 'Cualquier persona puede verificar tu evaluación con este código.'
               : 'Anyone can verify your evaluation with this code.'}

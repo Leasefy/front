@@ -18,7 +18,6 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { CheckCircle, WarningCircle } from '@phosphor-icons/react';
 
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
@@ -40,7 +39,7 @@ import { nombreDelMes } from '@/lib/recaudo/meses';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { FranjaDeInforme, TarjetaDeInforme } from '../piezas';
+import { FranjaDeInforme, TarjetaDeInforme, EsqueletoDeTabla } from '../piezas';
 import { Monto } from '../Monto';
 import { CampoDeDia } from '../CampoDeDia';
 
@@ -327,9 +326,7 @@ export function CarteraLibroVsCuotas() {
         queEs="la conciliación de la cartera"
         onReintentar={cargar}
         esqueleto={
-          <div className="flex items-center justify-center py-16">
-            <Spinner />
-          </div>
+          <EsqueletoDeTabla />
         }
       >
         {conciliacion ? (

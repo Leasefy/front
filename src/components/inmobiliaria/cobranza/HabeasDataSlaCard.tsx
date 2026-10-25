@@ -150,17 +150,17 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
               {toDebtorRef(debtor_id)}
             </span>
           )}
-          <p className="mt-1 text-xs text-muted-foreground tabular-nums font-mono">
+          <p className="mt-1 text-caption text-muted-foreground tabular-nums font-mono">
             {relativeFromIso(timestamp, locale)}
           </p>
         </div>
         <MonoLabel
           className={[
-            'text-xs tabular-nums whitespace-nowrap',
+            'text-caption tabular-nums whitespace-nowrap',
             remaining_days <= 0
-              ? 'text-danger font-semibold'
+              ? 'text-danger font-medium'
               : color === 'red' || color === 'red-pulse'
-                ? 'text-danger font-semibold'
+                ? 'text-danger font-medium'
                 : color === 'yellow'
                   ? 'text-warning'
                   : 'text-success',

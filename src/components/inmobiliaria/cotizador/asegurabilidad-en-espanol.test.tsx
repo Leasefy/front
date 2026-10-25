@@ -59,3 +59,21 @@ describe('Asegurabilidad › Resumen en español de la casa (QA-IA-95)', () => {
     expect(t).not.toMatch(/\bStub\b|SLA:|\bREST\b/)
   })
 })
+
+describe('Asegurabilidad › Resumen: una respuesta y como máximo cuatro cifras (revisora r25)', () => {
+  it('con las opcionales, arriba cuántas salieron asegurables; la franja con cuatro; lo demás plegado', () => {
+    const kpis = {
+      quotesHoy: 6, approvalRate: 0.5, primaPromedioMonthlyCop: 54600, costPerQuoteCop: 10,
+      asegurablesCount: 12, tasaAsegurabilidad: 0.6, multiOpcionCount: 4, sinAseguradoraCount: 3,
+      tiempoRespuestaSeconds: 30, arriendosCerrados: 2, valorAseguradoCop: 1_000_000,
+    } as never
+    act(() => root.render(<CotizadorKpiStrip kpis={kpis} />))
+    expect(container.querySelector('[data-testid="cotizador-asegurables"]')?.textContent).toContain('12')
+    expect(container.querySelector('[data-testid="cotizador-asegurables"]')?.textContent).toContain('60 %')
+    const franja = container.querySelector('[data-testid="cotizador-cifras"]')!.textContent ?? ''
+    expect(franja).toMatch(/\$\s54\.600/)
+    expect(franja).not.toMatch(/\$\s1\.000\.000/) // el valor asegurado va plegado
+    expect(franja).not.toMatch(/\b30s\b/) // el tiempo de respuesta, también
+    expect(container.querySelector('[data-testid="cotizador-mas-cifras"]')).not.toBeNull()
+  })
+})

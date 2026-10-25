@@ -250,12 +250,12 @@ export function EscalationResolveModal({
               aria-hidden="true"
             />
             <div className="flex-1 space-y-2">
-              <p className="text-xs font-semibold text-danger">
+              <p className="text-caption font-medium text-danger">
                 {t(
                   'inmobiliaria.ai.cobranza.escalaciones.resolveModal.escalatedToLegalWarning',
                 )}
               </p>
-              <label className="flex items-center gap-2 text-xs text-danger cursor-pointer">
+              <label className="flex items-center gap-2 text-caption text-danger cursor-pointer">
                 <Checkbox
                   checked={ackLegal}
                   onCheckedChange={(c) => setAckLegal(c === true)}
@@ -295,7 +295,7 @@ export function EscalationResolveModal({
               'inmobiliaria.ai.cobranza.escalaciones.resolveModal.textLabel',
             )}
           />
-          <div className="mt-1 flex items-start justify-between gap-3 text-[11px]">
+          <div className="mt-1 flex items-start justify-between gap-3 text-caption">
             {/* Vacío, el mínimo es una pista; escrito y corto (o largo), un error. */}
             <ErrorDelCampo
               id="resolve-text-error"
@@ -309,7 +309,7 @@ export function EscalationResolveModal({
           </div>
         </div>
 
-        <Presence as="p" show={Boolean(submitError)} role="alert" className="text-xs text-danger" data-testid="escalacion-resolver-error">
+        <Presence as="p" show={Boolean(submitError)} role="alert" className="text-caption text-danger" data-testid="escalacion-resolver-error">
             {submitError}
         </Presence>
 

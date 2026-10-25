@@ -22,13 +22,20 @@
  * otro fallo es un error real, con su reintento.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
-import { CheckCircle, ClipboardText, WarningCircle, X } from '@phosphor-icons/react';
+import { CheckCircle, X } from '@phosphor-icons/react';
 import { IconButton, Presence, Stagger, StaggerItem, motionDuration, motionEase, motionScale } from '@leasefy/cadence';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import {
+  AvisoDelEnlace,
+  CargandoElEnlace,
+  DatoDelEnlace,
+  MarcoDelEnlace,
+  TituloDelEnlace,
+} from '@/components/enlace-publico/MarcoDelEnlace';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import type { OtpAdapter } from '@/components/contract/OTPVerification';
 import { toast } from '@/components/ui/toast';
@@ -118,38 +125,35 @@ export default function FirmarActaPage() {
   };
 
   return (
-    <main className="min-h-screen bg-bg px-4 py-8 sm:py-12">
-      <section className="mx-auto w-full max-w-2xl space-y-6 rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-8">
-        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-soft">
-          <ClipboardText className="h-5 w-5 text-primary" aria-hidden="true" />
-        </div>
-
-        {cargando && !datos ? (
-          <p className="text-body-sm text-fg-muted">Cargando el acta…</p>
-        ) : enlaceInvalido ? (
-          <div className="space-y-2" data-testid="enlace-invalido">
-            <h1 className="text-h2">Enlace no válido</h1>
-            <p className="flex items-start gap-2 text-body-sm text-fg-muted">
-              <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              Este enlace para firmar el acta no es válido. Pídele a tu inmobiliaria uno nuevo.
-            </p>
-          </div>
-        ) : enlaceVencido ? (
-          <div className="space-y-2" data-testid="enlace-vencido">
-            <h1 className="text-h2">Este enlace venció</h1>
-            <p className="flex items-start gap-2 text-body-sm text-warning">
-              <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              Pídele a tu inmobiliaria que te mande un enlace nuevo para firmar el acta.
-            </p>
-          </div>
-        ) : error && !datos ? (
-          <FalloDeCarga error={error} queEs="el acta" onReintentar={cargar} enmarcado={false} />
-        ) : datos ? (
-          <ActaParaFirmar datos={datos} adapter={adapter} onFirmar={firmar} />
-        ) : null}
-      </section>
-    </main>
+    <MarcoDelEnlace
+      ancho="xl"
+      de={datos?.inmobiliaria.nombre}
+      vista={
+        cargando && !datos ? 'cargando' : enlaceInvalido ? 'invalido' : enlaceVencido ? 'vencido' : error && !datos ? 'error' : 'acta'
+      }
+    >
+      {cargando && !datos ? (
+        <CargandoElEnlace texto="Cargando el acta…" />
+      ) : enlaceInvalido ? (
+        <AvisoDelEnlace tono="invalido" titulo="Enlace no válido" data-testid="enlace-invalido">
+          <p>Este enlace para firmar el acta no es válido. Pídele a tu inmobiliaria uno nuevo.</p>
+        </AvisoDelEnlace>
+      ) : enlaceVencido ? (
+        <AvisoDelEnlace tono="vencido" titulo="Este enlace venció" data-testid="enlace-vencido">
+          <p>Pídele a tu inmobiliaria que te mande un enlace nuevo para firmar el acta.</p>
+        </AvisoDelEnlace>
+      ) : error && !datos ? (
+        <FalloDeCarga error={error} queEs="el acta" onReintentar={cargar} enmarcado={false} />
+      ) : datos ? (
+        <ActaParaFirmar datos={datos} adapter={adapter} onFirmar={firmar} />
+      ) : null}
+    </MarcoDelEnlace>
   );
+}
+
+/** El título de cada parte del acta: liviano, sin negrilla. */
+function TituloDeParte({ children }: { children: ReactNode }) {
+  return <h2 className="text-body font-medium text-fg">{children}</h2>;
 }
 
 function ActaParaFirmar({
@@ -169,47 +173,41 @@ function ActaParaFirmar({
 
   return (
     <>
-      <div className="space-y-1">
-        <h1 className="text-h2">Firma el acta {deDevolucion ? 'de devolución' : 'de entrega'}</h1>
-        <p className="text-body-sm text-fg-muted">
-          {inmobiliaria.nombre} te pide firmar el acta {deDevolucion ? 'con la que entregas' : 'con la que recibes'}{' '}
-          <strong className="text-fg">{acta.inmueble}</strong>
-          {acta.direccion ? ` — ${acta.direccion}` : ''}. Revisa lo que dice antes de firmar.
-        </p>
+      <TituloDelEnlace
+        rotulo={deDevolucion ? 'Acta de devolución' : 'Acta de entrega'}
+        titulo={`Firma el acta ${deDevolucion ? 'de devolución' : 'de entrega'}`}
+        descripcion={
+          <>
+            {inmobiliaria.nombre} te pide firmar el acta {deDevolucion ? 'con la que entregas' : 'con la que recibes'}{' '}
+            <strong className="font-medium text-fg">{acta.inmueble}</strong>
+            {acta.direccion ? ` — ${acta.direccion}` : ''}. Revisa lo que dice antes de firmar.
+          </>
+        }
+      />
+
+      {/* Lo esencial del acta, en una ficha: quién, cuándo y en qué estado. */}
+      <div className="space-y-4 rounded-md border border-border px-4 py-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+          {acta.inquilino && <DatoDelEnlace rotulo="Inquilino">{acta.inquilino}</DatoDelEnlace>}
+          {entrega && <DatoDelEnlace rotulo={deDevolucion ? 'Devolución' : 'Entrega'}>{entrega}</DatoDelEnlace>}
+          <DatoDelEnlace rotulo="Estado general">
+            {ESTADO_GENERAL[acta.estadoGeneral] ?? acta.estadoGeneral}
+          </DatoDelEnlace>
+        </dl>
+        {acta.observaciones && (
+          <div className="space-y-1 border-t border-border-faint pt-3">
+            <p className="text-caption text-fg-muted">Observaciones</p>
+            <p className="whitespace-pre-wrap text-body-sm text-fg">{acta.observaciones}</p>
+          </div>
+        )}
       </div>
 
-      <dl className="grid gap-x-6 gap-y-2 text-body-sm sm:grid-cols-2">
-        {acta.inquilino && (
-          <div>
-            <dt className="text-caption text-fg-muted">Inquilino</dt>
-            <dd className="text-fg">{acta.inquilino}</dd>
-          </div>
-        )}
-        {entrega && (
-          <div>
-            <dt className="text-caption text-fg-muted">{deDevolucion ? 'Devolución' : 'Entrega'}</dt>
-            <dd className="text-fg">{entrega}</dd>
-          </div>
-        )}
-        <div>
-          <dt className="text-caption text-fg-muted">Estado general</dt>
-          <dd className="text-fg">{ESTADO_GENERAL[acta.estadoGeneral] ?? acta.estadoGeneral}</dd>
-        </div>
-      </dl>
-
-      {acta.observaciones && (
-        <div className="space-y-1">
-          <p className="text-caption text-fg-muted">Observaciones</p>
-          <p className="whitespace-pre-wrap text-body-sm text-fg">{acta.observaciones}</p>
-        </div>
-      )}
-
       <div className="space-y-3" data-testid="fotos-del-acta-publica">
-        <h2 className="text-sm font-semibold text-fg">Fotos por espacio</h2>
+        <TituloDeParte>Fotos por espacio</TituloDeParte>
         <Stagger className="space-y-3">
           {acta.espacios.map((e) => (
             <StaggerItem key={`${e.clave ?? ''}|${e.espacio}`}>
-              <p className="mb-1.5 text-body-sm font-medium text-fg">{e.espacio}</p>
+              <p className="mb-1.5 text-body-sm text-fg-muted">{e.espacio}</p>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {e.fotos.map((url, i) => (
                   <button
@@ -230,10 +228,10 @@ function ActaParaFirmar({
 
       {acta.inventario.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-fg">Inventario</h2>
+          <TituloDeParte>Inventario</TituloDeParte>
           <ul className="divide-y divide-border rounded-md border border-border">
             {acta.inventario.map((item, i) => (
-              <li key={`${item.nombre}-${i}`} className="flex items-start justify-between gap-3 px-3 py-2 text-body-sm">
+              <li key={`${item.nombre}-${i}`} className="flex items-start justify-between gap-3 px-4 py-2.5 text-body-sm">
                 <div className="min-w-0">
                   <p className="text-fg">
                     {item.nombre}
@@ -250,22 +248,22 @@ function ActaParaFirmar({
 
       {deDevolucion && acta.deposito !== null && (
         <div className="space-y-2" data-testid="deposito-del-acta">
-          <h2 className="text-sm font-semibold text-fg">Depósito y descuentos</h2>
-          <div className="space-y-1 text-body-sm">
+          <TituloDeParte>Depósito y descuentos</TituloDeParte>
+          <div className="space-y-1.5 rounded-md border border-border px-4 py-3 text-body-sm">
             <p className="flex justify-between gap-3">
               <span className="text-fg-muted">Depósito</span>
-              <span className="tabular-nums text-fg">{formatCurrency(acta.deposito)}</span>
+              <span className="font-mono tabular-nums text-fg">{formatCurrency(acta.deposito)}</span>
             </p>
             {acta.descuentos.map((d, i) => (
               <p key={`${d.concepto}-${i}`} className="flex justify-between gap-3">
                 <span className="text-fg-muted">{d.concepto}</span>
-                <span className="tabular-nums text-danger">−{formatCurrency(d.valor)}</span>
+                <span className="font-mono tabular-nums text-danger">−{formatCurrency(d.valor)}</span>
               </p>
             ))}
             {acta.aDevolver !== null && (
-              <p className="flex justify-between gap-3 border-t border-border pt-1 font-medium">
+              <p className="flex items-baseline justify-between gap-3 border-t border-border-faint pt-2">
                 <span className="text-fg">Se te devuelve</span>
-                <span className="tabular-nums text-fg">{formatCurrency(acta.aDevolver)}</span>
+                <span className="font-mono text-body tabular-nums text-fg">{formatCurrency(acta.aDevolver)}</span>
               </p>
             )}
           </div>
@@ -273,7 +271,7 @@ function ActaParaFirmar({
       )}
 
       {datos.estado === 'YA_FIRMASTE' ? (
-        <Presence show className="flex items-start gap-2 rounded-lg border border-success/30 bg-success-soft p-3" data-testid="ya-firmaste">
+        <Presence show className="flex items-start gap-2.5 rounded-md bg-success-soft px-4 py-3" data-testid="ya-firmaste">
           <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
           <p className="text-body-sm text-fg">
             {`Ya firmaste esta acta${firmaDelInquilino?.firmadaEl ? ` el ${fechaLegible(firmaDelInquilino.firmadaEl)}` : ''}`.replace(/\.?$/, '.')}{' '}
@@ -289,7 +287,8 @@ function ActaParaFirmar({
           {datos.porQue}
         </p>
       ) : (
-        <div className="space-y-2" data-testid="firmar-el-acta">
+        <div className="space-y-3 border-t border-border-faint pt-6" data-testid="firmar-el-acta">
+          <TituloDeParte>Tu firma</TituloDeParte>
           <p className="text-body-sm text-fg-muted">
             Para firmar te mandamos un código a {datos.correo ?? 'tu correo'}.
           </p>

@@ -85,6 +85,36 @@ vi.mock('@/components/contabilidad/gastos/CuentasPorPagar', () => ({
   ),
 }));
 
+/*
+ * GLOW UP (20-10-2026): «Para facturar te faltan N pasos» pide la resolución,
+ * la DIAN y los correos al back; tiene su propia prueba. Acá importa DÓNDE va
+ * y que sus botones lleven a donde dicen.
+ */
+vi.mock('@/components/facturacion/LoQueNecesitasParaFacturar', () => ({
+  LoQueNecesitasParaFacturar: ({
+    onVerCorreos,
+    onVerResoluciones,
+  }: {
+    onVerCorreos: () => void;
+    onVerResoluciones: () => void;
+  }) => (
+    <div data-testid="lo-que-necesitas-simulado">
+      <button type="button" data-testid="simulado-ver-correos" onClick={onVerCorreos}>
+        correos
+      </button>
+      <button type="button" data-testid="simulado-ver-resoluciones" onClick={onVerResoluciones}>
+        resoluciones
+      </button>
+    </div>
+  ),
+}));
+vi.mock('@/components/facturacion/ResolucionDeFacturacion', () => ({
+  ResolucionDeFacturacion: () => <div data-testid="resolucion-simulada" />,
+}));
+vi.mock('@/components/facturacion/CajonDeLaResolucion', () => ({
+  CajonDeLaResolucion: () => null,
+}));
+
 import FacturacionPage from './page';
 
 const K = 'inmobiliaria.facturacion.';
@@ -122,7 +152,8 @@ async function activarPestana(el: Element) {
 describe('/panel/inmobiliaria/facturacion', () => {
   /** La tarjeta abre en «Nueva factura»; las columnas se ven en «Ventas». */
   async function irAVentas() {
-    const ventas = qa('[role="tab"]').find((t) => t.textContent === `${K}tab_ventas`)!;
+    // GLOW UP: lo emitido (facturas y notas) es la pestaña «Emitidas».
+    const ventas = qa('[role="tab"]').find((t) => t.textContent === 'Emitidas')!;
     await activarPestana(ventas);
   }
 
@@ -178,9 +209,8 @@ describe('/panel/inmobiliaria/facturacion', () => {
 
   it('las pestañas viven dentro de la tarjeta de la tabla, antes de la tabla', async () => {
     /*
-     * 🔴 En «Compras», que desde el 17-09 es la ÚNICA que sigue dibujando la
-     * tabla acá dentro: «Electrónica» ya tiene motor (la cola de transmisión y
-     * las entregas) y pinta sus propias tablas.
+     * 🔴 En «Compras», que sigue dibujando la tabla acá dentro (las facturas de
+     * proveedor de Gastos).
      */
     const compras = qa('[role="tab"]').find(
       (t) => t.textContent === `${K}tab_compras`,
@@ -198,40 +228,77 @@ describe('/panel/inmobiliaria/facturacion', () => {
     // La lista de pestañas precede a la tabla dentro de la misma tarjeta.
     expect(listas[0].compareDocumentPosition(tabla!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
+    /*
+     * GLOW UP (Nico, 20-10-2026): de ocho pestañas del mismo peso a CINCO, por
+     * lo que se viene a hacer. Las notas van con las facturas emitidas; el
+     * documento soporte, con las compras; la resolución dejó de ser pestaña (se
+     * toca una vez al año): se carga desde un cajón y se administra en su vista.
+     */
     expect(qa('[role="tab"]').map((t) => t.textContent)).toEqual([
       `${K}tab_nueva`,
-      `${K}tab_ventas`,
-      `${K}tab_compras`,
+      'Emitidas',
       `${K}tab_electronica`,
-      `${K}tab_notas`,
-      // El documento soporte y el mandato: no listan documentos de
-      // `FacturacionTab`, hacen otra cosa (17-09-2026).
-      `${K}tab_soporte`,
-      `${K}tab_mandato`,
-      // La resolución de la DIAN: el permiso con el que se numera. Va última
-      // porque se toca una vez al año, no todos los meses.
-      `${K}tab_resolucion`,
+      `${K}tab_compras`,
+      'Certificados',
     ]);
   });
 
-  it('🔴 «Electrónica», «Documento soporte» y «Mandato» tienen motor: ya no hay vacío', async () => {
-    const ir = async (tab: string) =>
-      activarPestana(
-        qa('[role="tab"]').find((t) => t.textContent === `${K}tab_${tab}`)!,
-      );
+  it('🔴 «Electrónica», «Documento soporte» y los certificados tienen motor: ya no hay vacío', async () => {
+    const ir = async (texto: string) =>
+      activarPestana(qa('[role="tab"]').find((t) => t.textContent === texto)!);
 
-    await ir('electronica');
-    // La cola de transmisión Y las entregas: son dos estados distintos y las
-    // dos viven en la misma pestaña.
+    await ir(`${K}tab_electronica`);
+    // La cola de transmisión Y las entregas: dos estados distintos en la misma pestaña.
     expect(q('[data-testid="cola-simulada"]')).not.toBeNull();
     expect(q('[data-testid="entregas-simulada"]')).not.toBeNull();
 
-    await ir('soporte');
+    // El documento soporte vive con las compras, en su propio interruptor.
+    await ir(`${K}tab_compras`);
+    const soporte = qa('[data-testid="facturacion-compras-vista"] [role="radio"]').find(
+      (b) => b.textContent === `${K}tab_soporte`,
+    ) as HTMLButtonElement;
+    await act(async () => {
+      soporte.click();
+    });
     expect(q('[data-testid="soporte-simulado"]')).not.toBeNull();
+    expect(q('[data-testid="cxp-simulada"]')).toBeNull();
 
-    await ir('mandato');
+    await ir('Certificados');
     expect(q('[data-testid="certificacion-simulada"]')).not.toBeNull();
-    expect(q('[data-testid="sin-correo-simulado"]')).not.toBeNull();
+    // 🔴 La lista de a quién le falta el correo ya no es un listado infinito al
+    // fondo de esta pestaña (Nico, 21-09): se abre en su cajón.
+    expect(q('[data-testid="sin-correo-simulado"]')).toBeNull();
+  });
+
+  it('🔴 GLOW UP · lo que falta para facturar va arriba, sólo en «Por facturar», y abre los correos en un cajón', async () => {
+    const lista = q('[data-testid="lo-que-necesitas-simulado"]')!;
+    expect(lista).not.toBeNull();
+    // Fuera de la tarjeta del trabajo, antes que ella.
+    const tarjeta = q('[data-testid="facturacion-tarjeta"]')!;
+    expect(tarjeta.contains(lista)).toBe(false);
+    expect(lista.compareDocumentPosition(tarjeta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await act(async () => {
+      (q('[data-testid="simulado-ver-correos"]') as HTMLButtonElement).click();
+    });
+    expect(document.querySelector('[data-testid="sin-correo-simulado"]')).not.toBeNull();
+
+    // En otra pestaña no se pinta: es lo de antes de facturar el mes.
+    await irAVentas();
+    expect(q('[data-testid="lo-que-necesitas-simulado"]')).toBeNull();
+  });
+
+  it('🔴 GLOW UP · la resolución se administra en su vista, con «Volver a la facturación»', async () => {
+    await act(async () => {
+      (q('[data-testid="facturacion-ir-a-resoluciones"]') as HTMLButtonElement).click();
+    });
+    expect(q('[data-testid="resolucion-simulada"]')).not.toBeNull();
+    expect(q('[data-testid="facturacion-tarjeta"]')).toBeNull();
+    await act(async () => {
+      (q('[data-testid="facturacion-volver"]') as HTMLButtonElement).click();
+    });
+    expect(q('[data-testid="facturacion-tarjeta"]')).not.toBeNull();
+    expect(q('[data-testid="resolucion-simulada"]')).toBeNull();
   });
 
   it('🔴 CB-R21 · «Compras» muestra las facturas de proveedor de Gastos (una sola fuente)', async () => {
@@ -255,8 +322,13 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(q('[data-testid="emitidas-simulada-ventas"]')).not.toBeNull();
     expect(q('[data-testid="facturacion-mes-emitidas"]')).not.toBeNull();
 
-    const notas = qa('[role="tab"]').find((t) => t.textContent === `${K}tab_notas`)!;
-    await activarPestana(notas);
+    // GLOW UP: las notas van con lo emitido, en su interruptor.
+    const notas = qa('[data-testid="facturacion-emitidas-vista"] [role="radio"]').find(
+      (b) => b.textContent === 'Notas crédito y débito',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      notas.click();
+    });
     expect(q('[data-testid="emitidas-simulada-notas"]')).not.toBeNull();
   });
 
@@ -276,23 +348,24 @@ describe('/panel/inmobiliaria/facturacion', () => {
     // La leyenda de estados no filtraba nada.
     expect(texto).not.toContain(`${K}estadosLabel`);
     expect(texto).not.toContain(`${K}estadoAceptada`);
-    // Las ocho pestañas y, en el vacío, la salida a lo ya emitido (F4): un
-    // botón que hace algo, no uno decorativo.
+    // Las cinco pestañas (GLOW UP, 20-10) y ningún botón decorativo.
     const botones = qa('button');
-    expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(8);
-    // En «Ventas» el único botón que no es pestaña es el selector de mes del
-    // DS —cuyo disparador ES un `<button role="combobox">`—, y ése sí hace
-    // algo: cambia el mes del listado. El otro es «Cómo se factura» del
-    // encabezado, que abre la explicación. Ningún botón decorativo.
+    expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(5);
+    // En «Ventas», fuera de las pestañas, del selector de mes del DS (un
+    // `<button role="combobox">`) y del interruptor facturas | notas (`radio`),
+    // sólo quedan los del encabezado, y cada uno hace algo: «Cómo se factura»
+    // abre la explicación, «Resolución y numeración» abre su vista y «Facturar
+    // el mes» vuelve a «Por facturar».
     expect(
       botones
         .filter(
           (b) =>
             b.getAttribute('role') !== 'tab' &&
-            b.getAttribute('role') !== 'combobox',
+            b.getAttribute('role') !== 'combobox' &&
+            b.getAttribute('role') !== 'radio',
         )
         .map((b) => b.getAttribute('data-testid')),
-    ).toEqual(['para-entender-mas']);
+    ).toEqual(['para-entender-mas', 'facturacion-ir-a-resoluciones', 'facturacion-ir-a-facturar']);
     expect(q('[data-testid="facturacion-mes-emitidas"]')!.getAttribute('role')).toBe(
       'combobox',
     );

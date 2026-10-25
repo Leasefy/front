@@ -176,13 +176,17 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
             {error}
           </p>
         ) : !propios || !delRol ? (
-          <p className="text-sm text-fg-muted">Leyendo sus permisos…</p>
+          <div className="space-y-2" aria-busy="true" aria-label="Leyendo sus permisos…">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-8 animate-pulse rounded-md bg-surface-muted" />
+            ))}
+          </div>
         ) : (
           // Sin scroll propio: el cuerpo del modal ya es lo único que scrollea.
           <div className="space-y-4">
             {todas.length > 0 ? (
               <section aria-labelledby="diferencias-titulo" className="rounded-md border border-border p-3">
-                <h3 id="diferencias-titulo" className="text-sm font-semibold text-fg">
+                <h3 id="diferencias-titulo" className="text-sm font-medium text-fg">
                   Lo propio de esta persona
                 </h3>
                 <ul className="mt-1 space-y-0.5 text-sm" data-testid="diferencias-con-el-rol">
@@ -198,7 +202,9 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
               </section>
             ) : null}
 
-            <table className="w-full text-sm" data-testid="matriz-de-la-persona">
+            {/* Ronda 30: a 390 la matriz se desplaza en su caja, no empuja el modal de lado. */}
+            <div className="-mx-1 overflow-x-auto px-1">
+            <table className="w-full min-w-[30rem] text-sm" data-testid="matriz-de-la-persona">
               <caption className="sr-only">Qué puede hacer esta persona en cada módulo</caption>
               <thead>
                 <tr className="border-b border-border text-left text-fg-muted">
@@ -248,9 +254,10 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
                 ))}
               </tbody>
             </table>
+            </div>
 
             <section aria-labelledby="puntuales-persona" className="rounded-md border border-border p-3">
-              <h3 id="puntuales-persona" className="text-sm font-semibold text-fg">
+              <h3 id="puntuales-persona" className="text-sm font-medium text-fg">
                 {t('inmobiliaria.config.permissions.puntualesTitulo')}
               </h3>
               <ul className="mt-2 space-y-2">

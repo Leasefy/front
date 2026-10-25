@@ -67,7 +67,8 @@ export const STATUS_BADGE: Record<
 > = {
   borrador: { variant: 'secondary', label: 'Borrador' },
   en_revisión: { variant: 'warning', label: 'En revisión' },
-  firmado: { variant: 'success', label: 'Listo para pago' },
+  // El pago va al solicitar (pay-first): «firmado» ya no está «listo para pago».
+  firmado: { variant: 'success', label: 'Firmado' },
   rechazado: { variant: 'destructive', label: 'Rechazado' },
   entregado: { variant: 'success', label: 'Entregado' },
 }

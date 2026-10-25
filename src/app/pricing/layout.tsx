@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { alternativasSoloEnEspanol } from "@/lib/idioma/metadata";
 
 export const metadata: Metadata = {
   title: "Precios y Planes",
@@ -18,9 +19,8 @@ export const metadata: Metadata = {
       "Planes transparentes para propietarios e inmobiliarias. Administración de arriendos desde 5% del arriendo mensual. Sin contratos de permanencia.",
     type: "website",
   },
-  alternates: {
-    canonical: "/pricing",
-  },
+  // SEO (24-10): el canonical es la dirección final (/es…): la de sin prefijo redirige.
+  alternates: alternativasSoloEnEspanol("/pricing"),
 };
 
 export default function PricingLayout({

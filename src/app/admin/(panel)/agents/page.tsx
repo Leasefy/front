@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useCallback, useRef } from 'react'
 import { Robot } from '@phosphor-icons/react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
@@ -8,6 +8,10 @@ import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
+import { nombreDelModelo, proveedor } from '@/lib/admin/textos-del-admin'
+import { CajonDeLaFicha, useFichaEnLaUrl } from '@/components/admin/screen/CajonDeLaFicha'
+import { confirmar } from '@/components/ui/confirmar'
+import { DetalleDelAgente } from './DetalleDelAgente'
 
 /** Minimal Vapi assistant shape returned by GET /agents (BACK.md §8.2). */
 interface Agent {
@@ -23,7 +27,26 @@ interface Agent {
 
 /** /admin/agents — Vapi assistant list (FRONT.md §6.2 · BACK.md §8.2). */
 export default function AgentsPage() {
-  const router = useRouter()
+  // Ronda 26 (revisora r25): las instrucciones se editan en un cajón ancho sobre la lista (antes otra
+  // página). Con cambios sin guardar, cerrar pregunta primero.
+  const { ver, abrir } = useFichaEnLaUrl()
+  const sucio = useRef(false)
+  const alEnsuciar = useCallback((v: boolean) => {
+    sucio.current = v
+  }, [])
+  const cerrar = async () => {
+    if (sucio.current) {
+      const ok = await confirmar({
+        titulo: '¿Cerrar sin guardar las instrucciones?',
+        descripcion: 'Los cambios que hiciste en este agente se pierden.',
+        accion: 'Cerrar sin guardar',
+        cancelar: 'Seguir editando',
+      })
+      if (!ok) return
+    }
+    sucio.current = false
+    abrir(null)
+  }
   const agents = useApiQuery<Agent[]>(
     (signal) => adminApi('/agents', { signal }),
     [],
@@ -37,25 +60,26 @@ export default function AgentsPage() {
       cell: (r) => (
         <span className="flex items-center gap-2">
           <span className="font-medium text-fg">{r.name ?? 'Sin nombre'}</span>
-          {r.default && <Pill tone="info">Principal</Pill>}
+          {r.default && <Pill tone="neutral">Principal</Pill>}
         </span>
       ),
     },
     {
       header: 'Modelo',
       orden: (r) => r.model?.model,
-      texto: (r) => `${r.model?.provider ?? ''} / ${r.model?.model ?? ''}`,
+      texto: (r) => nombreDelModelo(r.model?.model),
       cell: (r) => (
-        <span className="font-mono text-fg-muted">
-          {r.model?.provider ?? '—'} / {r.model?.model ?? '—'}
+        <span className="text-caption text-fg-muted">
+          {nombreDelModelo(r.model?.model)}
+          {r.model?.provider ? <span className="block">de {proveedor(r.model.provider)}</span> : null}
         </span>
       ),
     },
     {
       header: 'Voz',
       orden: (r) => r.voice?.provider,
-      texto: (r) => r.voice?.provider,
-      cell: (r) => <span className="text-fg-muted">{r.voice?.provider ?? '—'}</span>,
+      texto: (r) => (r.voice?.provider ? proveedor(r.voice.provider) : ''),
+      cell: (r) => <span className="text-fg-muted">{r.voice?.provider ? proveedor(r.voice.provider) : '—'}</span>,
     },
     {
       header: 'Silencio',
@@ -74,15 +98,7 @@ export default function AgentsPage() {
       ordenPrimero: 'desc',
       texto: (r) => fmtDateTime(r.updatedAt),
       cell: (r) => (
-        <span className="whitespace-nowrap font-mono tabular-nums text-fg-muted">{fmtDateTime(r.updatedAt)}</span>
-      ),
-    },
-    {
-      header: 'ID',
-      align: 'right',
-      texto: (r) => r.id,
-      cell: (r) => (
-        <span className="font-mono text-caption text-fg-subtle">{r.id.slice(0, 8)}</span>
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.updatedAt)}</span>
       ),
     },
   ]
@@ -91,25 +107,39 @@ export default function AgentsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Agentes de voz"
-        description="Las instrucciones de cada agente de voz (Vapi). Se editan acá, sin entrar al tablero de Vapi."
+        description="Las instrucciones de cada agente de voz, editables aquí sin entrar a Vapi."
       />
       <DataTable
+        errorTitulo="No pudimos cargar los agentes de voz"
         columns={columns}
         rows={agents.data}
         getKey={(r) => r.id}
         isLoading={agents.isLoading}
         error={agents.error}
         emptyTitle="No hay agentes de voz"
-        emptyHint="Si debería haber, revisa la llave de Vapi (VAPI_API_KEY) en el back."
-        emptyIcon={<Robot weight="bold" />}
+        emptyHint="Si debería haber, revisa la conexión con Vapi en el servidor."
+        emptyIcon={<Robot weight="duotone" />}
         onReintentar={agents.refetch}
         aria-label="Agentes de voz"
-        onRowClick={(r) => router.push(`/admin/agents/${r.id}`)}
+        onRowClick={(r) => abrir(r.id)}
         queSon={['agente', 'agentes']}
         buscar="Nombre, modelo o voz"
         ordenInicial={{ columna: 4, sentido: 'desc' }}
         exportar="agentes-de-voz"
+        masEnElExcel={[
+          { header: 'ID', texto: (r) => r.id },
+          { header: 'Proveedor del modelo', texto: (r) => r.model?.provider ?? '' },
+        ]}
       />
+      <CajonDeLaFicha
+        ver={ver}
+        onCerrar={cerrar}
+        titulo={agents.data?.find((a) => a.id === ver)?.name ?? 'El agente'}
+        enlace={`/admin/agents/${ver}`}
+        tamano="xl"
+      >
+        <DetalleDelAgente key={ver} id={ver} enCajon onSucio={alEnsuciar} />
+      </CajonDeLaFicha>
     </div>
   )
 }

@@ -162,7 +162,7 @@ export function ExtractoDelPropietarioDialog({
             aria-labelledby="mes-del-extracto-etiqueta"
             className="flex flex-wrap items-center gap-x-3 gap-y-1"
           >
-            <span id="mes-del-extracto-etiqueta" className="text-xs font-medium text-fg">
+            <span id="mes-del-extracto-etiqueta" className="text-caption font-medium text-fg">
               {t('inmobiliaria.propietario.extracto.elegirMes')}
             </span>
             <SelectorDeMes mes={mes} onCambiar={setMes} testId="extracto-mes" />

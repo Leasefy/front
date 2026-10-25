@@ -110,8 +110,8 @@ export function PropertyGrid({
   // Show skeleton grid when loading
   if (externalLoading) {
     return (
-      <div className="contenedor-consulta space-y-8" role="status" aria-label="Cargando propiedades">
-        <span className="sr-only">Cargando propiedades...</span>
+      <div className="contenedor-consulta space-y-8" role="status" aria-label="Cargando inmuebles">
+        <span className="sr-only">Cargando inmuebles…</span>
         <div className="grilla-inmuebles gap-6">
           {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
             <PropertyCardSkeleton key={index} />
@@ -125,7 +125,7 @@ export function PropertyGrid({
     return (
       <EmptyState
         icon={MagnifyingGlass}
-        title="No encontramos propiedades"
+        title="No encontramos inmuebles"
         description="Intenta ajustar los filtros para ver más opciones."
         action={{ label: 'Limpiar filtros', href: '/propiedades' }}
       />
@@ -186,7 +186,7 @@ export function PropertyGrid({
               <>
                 Cargar más
                 <span className="ml-2 text-muted-foreground">
-                  ({remainingCount} {remainingCount === 1 ? 'propiedad' : 'propiedades'})
+                  ({remainingCount} {remainingCount === 1 ? 'inmueble' : 'inmuebles'})
                 </span>
               </>
             )}

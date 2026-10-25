@@ -102,7 +102,23 @@ const CLAVES_COLA = [
   'colaPasos.rechazado',
 ]
 
-const TODAS = [...CLAVES_SALA, ...CLAVES_ESTADOS, ...CLAVES_PASOS, ...CLAVES_COLA].map(
+/** Glow up 22-10 (Avalúos del panel, 99d487198): la cifra de arriba, el servicio caído y el método en palabras. */
+const CLAVES_DEL_GLOW_UP = [
+  'escribenos',
+  'sinServicioBoton',
+  'sinServicioLista',
+  'listosTitulo',
+  'deTotal',
+  'deTotalUno',
+  'rechazados',
+  'rechazadosUno',
+  'filtrarPorEstado',
+  'metodos.avm',
+  'metodos.comparables',
+  'metodos.comparablesIa',
+]
+
+const TODAS = [...CLAVES_SALA, ...CLAVES_ESTADOS, ...CLAVES_PASOS, ...CLAVES_COLA, ...CLAVES_DEL_GLOW_UP].map(
   (c) => `${NS}.${c}`,
 )
 
@@ -154,7 +170,7 @@ describe('las claves de Avalúos existen en los dos idiomas', () => {
     // a hardcodear su copy. Se borraron en la migración; que no vuelvan.
     const bloque = leer(es, NS) as Record<string, unknown>
     const declaradas = new Set(
-      [...CLAVES_SALA, ...CLAVES_ESTADOS, ...CLAVES_PASOS, ...CLAVES_COLA].map(
+      [...CLAVES_SALA, ...CLAVES_ESTADOS, ...CLAVES_PASOS, ...CLAVES_COLA, ...CLAVES_DEL_GLOW_UP].map(
         (c) => c.split('.')[0],
       ),
     )

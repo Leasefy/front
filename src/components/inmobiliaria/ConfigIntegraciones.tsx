@@ -235,6 +235,8 @@ export function ConfigIntegraciones({
         {CATEGORY_TABS.map((tab) => {
           const Icon = tab.icon;
           const count = tab.value === 'all' ? integrations.length : categoryCounts[tab.value];
+          // Ronda 30: una categoría en cero no se pinta (salvo la elegida).
+          if (tab.value !== 'all' && !count && selectedCategory !== tab.value) return null;
 
           return (
             <Chip
@@ -244,7 +246,7 @@ export function ConfigIntegraciones({
               icon={<Icon className="w-4 h-4" />}
             >
               {tab.label}
-              <span className="text-xs opacity-70">({count})</span>
+              <span className="font-mono text-caption opacity-70">{count}</span>
             </Chip>
           );
         })}
@@ -271,22 +273,14 @@ export function ConfigIntegraciones({
               >
                 <div className="flex items-start gap-4">
                   {/* Icon */}
-                  <div
-                    className={cn(
-                      'w-12 h-12 rounded-lg flex items-center justify-center shrink-0',
-                      integration.isEnabled && integration.status === 'active'
-                        ? 'bg-primary-soft text-primary'
-                        : 'bg-surface-muted text-fg-muted'
-                    )}
-                  >
-                    <Icon className="w-6 h-6" weight="duotone" />
-                  </div>
+                  {/* Ronda 30: el ícono suelto (antes en una caja azul cuando estaba activa). */}
+                  <Icon className="mt-0.5 h-6 w-6 shrink-0 text-fg-muted" weight="light" aria-hidden="true" />
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="font-semibold text-foreground">
+                        <h3 className="font-medium text-foreground">
                           {integration.name}
                         </h3>
                         <p className="text-sm text-muted-foreground mt-0.5">
@@ -303,6 +297,7 @@ export function ConfigIntegraciones({
                           checked={integration.isEnabled}
                           onCheckedChange={() => handleToggle(integration)}
                           disabled={isToggling}
+                          aria-label={`${integration.isEnabled ? 'Apagar' : 'Prender'} ${integration.name}`}
                         />
                       </div>
                     </div>
@@ -322,13 +317,13 @@ export function ConfigIntegraciones({
                       </Badge>
 
                       {/* Category Badge */}
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-caption">
                         {getIntegrationCategoryLabel(integration.category)}
                       </Badge>
 
                       {/* Last Sync */}
                       {integration.lastSyncAt && integration.status === 'active' && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <span className="text-caption text-muted-foreground flex items-center gap-1">
                           <ArrowsClockwise className="w-3 h-3" />
                           {t('inmobiliaria.config.integrations.syncedAt', { time: formatRelativeTime(integration.lastSyncAt) })}
                         </span>
@@ -337,10 +332,10 @@ export function ConfigIntegraciones({
 
                     {/* Error Message */}
                     {integration.status === 'error' && integration.errorMessage && (
-                      <div className="mt-3 p-2.5 rounded-md bg-danger-soft border border-danger/30">
+                      <div className="mt-3">
                         <div className="flex items-start gap-2">
                           <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" />
-                          <p className="text-xs text-danger">
+                          <p className="text-caption text-danger">
                             {integration.errorMessage}
                           </p>
                         </div>
@@ -351,10 +346,10 @@ export function ConfigIntegraciones({
                     {integration.isEnabled &&
                       integration.status === 'pending' &&
                       !integration.apiKeyConfigured && (
-                        <div className="mt-3 p-2.5 rounded-md bg-warning-soft border border-warning/30">
+                        <div className="mt-3">
                           <div className="flex items-start gap-2">
                             <Key className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                            <p className="text-xs text-warning">
+                            <p className="text-caption text-warning">
                               {t('inmobiliaria.config.integrations.apiKeyNotConfigured')}
                             </p>
                           </div>
@@ -412,7 +407,7 @@ export function ConfigIntegraciones({
           <div className="space-y-4">
             <dl className="grid grid-cols-2 gap-3">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-fg-subtle">
+                <dt className="font-mono text-label uppercase text-fg-subtle">
                   {t('inmobiliaria.config.integrations.detailStatus')}
                 </dt>
                 <dd className="mt-1 text-sm text-fg">
@@ -422,7 +417,7 @@ export function ConfigIntegraciones({
                 </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-fg-subtle">
+                <dt className="font-mono text-label uppercase text-fg-subtle">
                   {t('inmobiliaria.config.integrations.detailCategory')}
                 </dt>
                 <dd className="mt-1 text-sm text-fg">
@@ -432,7 +427,7 @@ export function ConfigIntegraciones({
                 </dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-xs uppercase tracking-wide text-fg-subtle">
+                <dt className="font-mono text-label uppercase text-fg-subtle">
                   {t('inmobiliaria.config.integrations.detailLastSync')}
                 </dt>
                 <dd className="mt-1 text-sm text-fg">
@@ -446,13 +441,13 @@ export function ConfigIntegraciones({
             {selectedIntegration?.status === 'error' && selectedIntegration.errorMessage && (
               <div className="flex gap-2 rounded-md border border-danger/30 bg-danger-soft p-3">
                 <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
-                <p className="text-xs text-danger">{selectedIntegration.errorMessage}</p>
+                <p className="text-caption text-danger">{selectedIntegration.errorMessage}</p>
               </div>
             )}
 
             <div className="flex gap-2 rounded-md border border-border bg-surface-hover p-3">
               <Key className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 {t('inmobiliaria.config.integrations.keysNotHere')}
               </p>
             </div>

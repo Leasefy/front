@@ -140,7 +140,7 @@ export function KPICard({
       {trend && (
         <div
           className={cn(
-            'absolute top-5 right-5 flex items-center gap-1 text-xs font-medium',
+            'absolute top-5 right-5 flex items-center gap-1 text-caption font-medium',
             trend.isPositive ? 'text-success' : 'text-danger'
           )}
         >

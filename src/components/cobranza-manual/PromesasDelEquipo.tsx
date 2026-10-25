@@ -9,6 +9,7 @@
  * incumplidas, después las que esperan su fecha. El estado es el de HOY (el
  * back lo calcula con los recibos de caja).
  */
+import { Ilustracion } from '@leasefy/cadence';
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -95,6 +96,7 @@ export function PromesasDelEquipo() {
 
       <Presence show={visibles.length === 0} initial={false}>
         <p className="text-sm text-fg-muted">
+          <Ilustracion nombre="calendario_pago" tamano={56} className="mb-2 block" />
           Ninguna promesa espera su fecha. Se registran con «Registrar gestión» en la Cartera, el estado de cuenta o
           el detalle del deudor.
         </p>

@@ -313,7 +313,8 @@ describe('<CompleteStepForm>', () => {
 
     expect(container.querySelector('[data-testid="complete-step-form"]')).toBeFalsy()
     const missing = byTestId('complete-step-missing')
-    expect(missing.textContent).toContain('Miembros')
+    // Ronda 30 (a propósito): el paso se llama «Equipo» (antes «Miembros»).
+    expect(missing.textContent).toContain('Equipo')
     expect(missing.textContent).toContain('Política')
 
     const goBtn = byTestId('complete-step-go-to-missing') as HTMLButtonElement

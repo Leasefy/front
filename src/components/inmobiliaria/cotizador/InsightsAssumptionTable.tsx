@@ -93,7 +93,7 @@ export function InsightsAssumptionTable({
                   queSon="supuestos"
                   icono={ListChecks}
                   titulo={t('inmobiliaria.ai.cotizador.insights.assumptions.empty')}
-                  descripcion="Cuando el modelo registre un supuesto sobre una aseguradora, aparece acá con su estado."
+                  descripcion="Cuando el modelo registre un supuesto sobre una aseguradora, aparece aquí con su estado."
                 />
               </TableCell>
             </TableRow>
@@ -129,7 +129,7 @@ export function InsightsAssumptionTable({
                     <Badge variant={stateVariant}>{stateLabel}</Badge>
                   </TableCell>
                   {/* Updated At (hidden on xs) */}
-                  <TableCell className="px-4 py-2.5 text-xs text-fg-muted whitespace-nowrap hidden sm:table-cell">
+                  <TableCell className="px-4 py-2.5 text-caption text-fg-muted whitespace-nowrap hidden sm:table-cell">
                     {formattedDate}
                   </TableCell>
                 </TableRow>

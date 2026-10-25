@@ -78,7 +78,7 @@ export interface DisputaDetailPanelProps {
 /** Encabezado de sección, en el registro de etiqueta del DS. */
 function Rotulo({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+    <h3 className="text-caption font-medium uppercase tracking-wide text-fg-muted">
       {children}
     </h3>
   )
@@ -191,12 +191,12 @@ export function DisputaDetailPanel({
       {/* Quién, en qué estado, desde cuándo */}
       <header className="space-y-2">
         <div className="flex items-start justify-between gap-3 flex-wrap">
-          <h2 className="text-lg font-semibold text-fg">{debtorLabel(dispute)}</h2>
+          <h2 className="text-h3 text-fg">{debtorLabel(dispute)}</h2>
           <Badge variant={estado.variant} className="shrink-0">
             {estado.label}
           </Badge>
         </div>
-        <p className="text-xs text-fg-muted tabular-nums">
+        <p className="text-caption text-fg-muted tabular-nums">
           Abierta el{' '}
           {Number.isNaN(abierta.getTime())
             ? '—'
@@ -239,7 +239,7 @@ export function DisputaDetailPanel({
             </div>
           )}
           {dispute.resolved_at && (
-            <p className="text-xs text-fg-muted tabular-nums">
+            <p className="text-caption text-fg-muted tabular-nums">
               Resuelta {formatRelativeDate(dispute.resolved_at).toLowerCase()}
             </p>
           )}
@@ -249,7 +249,7 @@ export function DisputaDetailPanel({
                 weight="duotone"
                 aria-hidden="true"
               />
-              <p className="text-xs text-fg-muted leading-relaxed">
+              <p className="text-caption text-fg-muted leading-relaxed">
                 {recomendacion}
               </p>
           </Presence>
@@ -259,7 +259,7 @@ export function DisputaDetailPanel({
         <section className="space-y-4 border-t border-border pt-5">
           <div className="space-y-1">
             <Rotulo>Resolver</Rotulo>
-            <p className="text-xs text-fg-muted leading-relaxed">
+            <p className="text-caption text-fg-muted leading-relaxed">
               Es una decisión humana. No reactiva la cobranza: el agente sólo
               entrega una recomendación.
             </p>
@@ -268,7 +268,7 @@ export function DisputaDetailPanel({
           <div className="space-y-1.5">
             <label
               htmlFor="resolver-outcome"
-              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+              className="block text-caption font-medium uppercase tracking-wide text-fg-muted"
             >
               Resultado <span className="text-danger">*</span>
             </label>
@@ -301,7 +301,7 @@ export function DisputaDetailPanel({
           <div className="space-y-1.5">
             <label
               htmlFor="resolver-note"
-              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+              className="block text-caption font-medium uppercase tracking-wide text-fg-muted"
             >
               Nota de resolución <span className="text-danger">*</span>
             </label>
@@ -322,13 +322,13 @@ export function DisputaDetailPanel({
             />
             <div className="flex items-start justify-between gap-3">
               <ErrorDelCampo id="resolver-note-error" mensaje={errorDeLaNota} className="mt-0" />
-              <span className="ml-auto shrink-0 text-xs text-fg-muted tabular-nums">
+              <span className="ml-auto shrink-0 text-caption text-fg-muted tabular-nums">
                 {noteLen} / {NOTE_MAX}
               </span>
             </div>
           </div>
 
-          <Presence as="p" show={Boolean(submitError)} role="alert" className="text-xs text-danger" data-testid="disputa-resolver-error">
+          <Presence as="p" show={Boolean(submitError)} role="alert" className="text-caption text-danger" data-testid="disputa-resolver-error">
               {submitError}
           </Presence>
 

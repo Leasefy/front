@@ -121,6 +121,8 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     expect(cards().map((c) => c.href)).toEqual([
       '/panel/inmobiliaria/contratos',
       '/panel/inmobiliaria/contratos/renovaciones',
+      // Ronda 30: «Incrementos» (Portofino 22-10) entró al riel con la unión de bugs-nico-1.
+      '/panel/inmobiliaria/contratos/incrementos',
       '/panel/inmobiliaria/contratos/firmas',
       // Y «Cláusulas propias» el 18-09-2026. Este test sostiene que bajar un
       // piso no se lleva el riel, no cuántas cards hay.
@@ -138,10 +140,10 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     // del módulo que mira todas, y el riel le pone una línea detrás.
     expect(lista.map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'liquidaciones',
-      'dispersiones',
+      // Giros a propietarios (Nico, 22-10-2026): Liquidaciones y Dispersiones son UNA entrada.
+      'girosAPropietarios',
     ])
-    expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['liquidaciones'])
+    expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['girosAPropietarios'])
   })
 
   it('la lista de cobros emitidos deja marcada a Cartera: es una lectura suya, no un módulo', () => {
@@ -233,6 +235,27 @@ describe('🔴 SeccionesDelModulo — dentro de una sala de «Agentes IA» no ap
     expect(contenedor.querySelector('[data-testid="selector-de-caras"]')).toBeNull()
   })
 
+  it('🔴 el administrador en Cobro jurídico ve el riel de Cobrar a inquilinos, con Cartera marcada (revisora r27, C12)', () => {
+    // «Jurídico» es también una fila SÓLO del abogado externo (`soloEsosRoles`); para el
+    // administrador esa fila no existe y el riel tiene que salir del módulo de arriba.
+    render('/panel/inmobiliaria/pagos/cartera/juridico')
+    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['cartera'])
+    expect(cards().map((c) => c.label)).toContain('recaudo')
+  })
+
+  it('el abogado externo en Jurídico sigue sin riel: su fila es una sola sección', () => {
+    permisos.isAdmin = false
+    permisos.agencyRole = 'ABOGADO_EXTERNO'
+    permisos.modulos = ['cobros']
+    render('/panel/inmobiliaria/pagos/cartera/juridico')
+    expect(cards()).toEqual([])
+  })
+
+  it('Días hábiles y festivos queda marcada en el riel de su sección (revisora r27, C12)', () => {
+    render('/panel/inmobiliaria/pagos/calendario')
+    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['diasHabiles'])
+  })
+
   it('y en Pagos, Cobranza ya no es una card de la cara de los inquilinos', () => {
     render('/panel/inmobiliaria/pagos/cartera')
     expect(cards().map((c) => c.label)).not.toContain('cobranza')
@@ -277,6 +300,16 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     }))
   }
 
+  it('en un teléfono el selector y el riel van en renglones separados (T-0173: el riel quedaba en ~90 px y las secciones inalcanzables)', () => {
+    render('/panel/inmobiliaria/pagos')
+    const renglon = contenedor.querySelector('[data-testid="selector-de-caras"]')!.parentElement!
+    expect(renglon.className).toContain('flex-col')
+    expect(renglon.className).toContain('sm:flex-row')
+    const separador = renglon.querySelector(':scope > span[aria-hidden="true"]')!
+    expect(separador.className).toContain('hidden')
+    expect(separador.className).toContain('sm:block')
+  })
+
   it('la cara es un SELECTOR aparte, no una pestaña más del riel', () => {
     render('/panel/inmobiliaria/pagos')
     expect(caras().map((c) => c.clave)).toEqual(['inquilinos', 'propietarios', 'tesoreria'])
@@ -320,7 +353,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     // el 2026-09-16 la raíz es de esa cara.
     expect(caras().map((c) => c.href)).toEqual([
       '/panel/inmobiliaria/pagos',
-      '/panel/inmobiliaria/pagos/liquidaciones',
+      // Propietarios entra por «Giros a propietarios», que abre en el paso 1 (22-10-2026).
+      '/panel/inmobiliaria/pagos/giros',
       '/panel/inmobiliaria/pagos/cuadre',
     ])
   })
@@ -338,6 +372,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       'cartera',
       // Juan (Portofino, 15-10-2026): «¿dónde se ven los recibos de caja?».
       'recibos',
+      // Revisora r27 (C12): los días hábiles, con el gate de su página (`configuracion`).
+      'diasHabiles',
     ])
   })
 
@@ -346,10 +382,10 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
     expect(cards().map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'liquidaciones',
-      'dispersiones',
+      // Giros a propietarios (Nico, 22-10-2026): Liquidaciones y Dispersiones son UNA entrada.
+      'girosAPropietarios',
     ])
-    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['dispersiones'])
+    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['girosAPropietarios'])
   })
 
   /*
@@ -364,8 +400,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
     expect(cards().map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'liquidaciones',
-      'dispersiones',
+      // Giros a propietarios (Nico, 22-10-2026): Liquidaciones y Dispersiones son UNA entrada.
+      'girosAPropietarios',
     ])
     expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['tableroFinanciero'])
   })
@@ -413,8 +449,7 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     render('/panel/inmobiliaria/pagos/dispersiones')
     expect(cards().map((c) => c.href)).toEqual([
       '/panel/inmobiliaria/pagos/tablero',
-      '/panel/inmobiliaria/pagos/liquidaciones',
-      '/panel/inmobiliaria/pagos/dispersiones',
+      '/panel/inmobiliaria/pagos/giros',
     ])
     render('/panel/inmobiliaria/pagos/cartera')
     expect(cards().map((c) => c.href)).toEqual([
@@ -424,6 +459,7 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       '/panel/inmobiliaria/pagos/recaudo-bancario',
       '/panel/inmobiliaria/pagos/cartera',
       '/panel/inmobiliaria/pagos/recibos',
+      '/panel/inmobiliaria/pagos/calendario',
     ])
     render('/panel/inmobiliaria/pagos/cuadre')
     expect(cards().map((c) => c.href)).toEqual([
@@ -506,12 +542,14 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       'cartera',
       // Juan (Portofino, 15-10-2026): «¿dónde se ven los recibos de caja?».
       'recibos',
+      // Revisora r27 (C12): los días hábiles, con el gate de su página (`configuracion`).
+      'diasHabiles',
     ])
     render('/panel/inmobiliaria/pagos/liquidaciones')
     expect(cards().map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'liquidaciones',
-      'dispersiones',
+      // Giros a propietarios (Nico, 22-10-2026): Liquidaciones y Dispersiones son UNA entrada.
+      'girosAPropietarios',
     ])
     render('/panel/inmobiliaria/pagos/traslados')
     expect(cards().map((c) => c.label)).toEqual([

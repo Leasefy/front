@@ -275,7 +275,7 @@ export function EntregasYAcuse() {
                       descripcion={
                         datos && !datos.disponible
                           ? faltaEnLaBase('La entrega de los documentos y su acuse')
-                          : 'Cada documento que emites se le manda por correo a su cliente, y acá queda la constancia de si le llegó.'
+                          : 'Cada documento que emites se le manda por correo a su cliente, y aquí queda la constancia de si le llegó.'
                       }
                     />
                   </TableCell>

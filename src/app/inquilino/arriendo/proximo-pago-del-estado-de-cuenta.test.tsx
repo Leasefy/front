@@ -161,10 +161,18 @@ async function pintar() {
 describe('«Mi arriendo» · Próximo pago', () => {
   it('sale del estado de cuenta: la cuota de noviembre vence el 1, no el 5', async () => {
     const texto = await pintar();
-    expect(texto).toMatch(/\$ ?1\.650\.000 · 1 de nov/);
-    expect(texto).not.toMatch(/5 de nov/);
+    expect(texto).toMatch(/\$ ?1\.650\.000 · 1 nov/); // Ronda 30: fecha corta de la casa
+    expect(texto).not.toMatch(/\b5 (de )?nov/); // Ronda 30: fecha corta de la casa
     // Y el estado general dice lo vencido de octubre, prorrateado.
     expect(texto).toContain('1.485.000');
+  });
+
+  it('LA RESPUESTA en grande (glow up 22-10): lo que paga cada mes y, al pie, si está al día', async () => {
+    await pintar();
+    const cifras = host.querySelector('[data-testid="cifras-del-arriendo"]');
+    expect(cifras?.textContent).toContain('Pagas cada mes');
+    expect(cifras?.textContent).toMatch(/1\.650\.000/);
+    expect(cifras?.querySelector('[data-testid="cifra-estado-del-arriendo"]')).not.toBeNull();
   });
 
   it('sin estado de cuenta no inventa un próximo pago con el modelo viejo', async () => {
@@ -176,7 +184,7 @@ describe('«Mi arriendo» · Próximo pago', () => {
     });
     const texto = await pintar();
     expect(texto).toContain('Carrera 80 # 30-15 Apto 402');
-    expect(texto).not.toMatch(/5 de nov/);
+    expect(texto).not.toMatch(/\b5 (de )?nov/); // Ronda 30: fecha corta de la casa
   });
 
   it('con dos arriendos, cada tarjeta dice el próximo pago de SU contrato', async () => {
@@ -192,8 +200,9 @@ describe('«Mi arriendo» · Próximo pago', () => {
       ],
     } as unknown as EstadoDeCuenta;
     const texto = await pintar();
-    expect(texto).toMatch(/\$ ?1\.650\.000 · 1 de nov/);
-    expect(texto).toMatch(/\$ ?3\.200\.000 · 15 de oct/);
+    expect(texto).toMatch(/\$ ?1\.650\.000 · 1 nov/); // Ronda 30: fecha corta de la casa
+    // Ronda 30: la fecha corta de la casa («15 oct», antes «15 de oct»).
+    expect(texto).toMatch(/\$ ?3\.200\.000 · 15 oct/);
   });
 });
 

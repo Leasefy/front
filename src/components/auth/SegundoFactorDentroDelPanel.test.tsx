@@ -324,7 +324,7 @@ describe('SegundoFactorDentroDelPanel — sin pendiente', () => {
     expect(hay('segundo-factor-dentro-del-panel')).toBe(false)
   })
 
-  it('si el contexto suelta mfaEnrollRequired SIN activar acá (otra pestaña), monta el panel de una', async () => {
+  it('si el contexto suelta mfaEnrollRequired SIN activar aquí (otra pestaña), monta el panel de una', async () => {
     await pintar()
     expect(hay('panel-real')).toBe(false)
 

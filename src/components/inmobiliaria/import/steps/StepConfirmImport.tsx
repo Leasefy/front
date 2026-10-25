@@ -363,6 +363,12 @@ function StepConfirmImportCuerpo({
   const [irACrear, setIrACrear] = useState(false);
   /* Con una carga TERMINADA que aún tiene filas por revisar: volver a la lista. */
   const [verRevisionDeNuevo, setVerRevisionDeNuevo] = useState(false);
+  /* «Revisar las N» de la tarjeta de la carga terminada: lo mismo que «Revisar las que faltan», de una. */
+  useEffect(() => {
+    if (!state.abrirLaRevision) return;
+    setVerRevisionDeNuevo(true);
+    updateState({ importedCount: 0, abrirLaRevision: false });
+  }, [state.abrirLaRevision, updateState]);
   const [revisando, setRevisando] = useState(false);
   /* Lo que va mirando «Volver a revisar»: con 1.654 pendientes son varios
      minutos, y un botón que sólo gira no dice si avanza. */
@@ -1218,7 +1224,7 @@ function StepConfirmImportCuerpo({
       data-testid="revision-progreso"
       aria-live="polite"
     >
-      <p className="text-sm text-fg-muted dark:text-fg-subtle">
+      <p className="text-sm text-fg-muted">
         Volviendo a revisar lo pendiente
         {progresoDeRevision
           ? ` — ${progresoDeRevision.revisadas} miradas · ${progresoDeRevision.liberadas} liberadas · quedan ${progresoDeRevision.restantes}`
@@ -1242,19 +1248,19 @@ function StepConfirmImportCuerpo({
 
   const avisoDeCargaTerminada = (
     <div
-      className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4 dark:border-border-strong dark:bg-white/[0.02]"
+      className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
       data-testid="lote-terminado"
     >
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-sm font-medium text-fg dark:text-white">
+        <p className="text-sm font-medium text-fg">
           Los inmuebles de esta carga ya se crearon — {resumenLote?.activados}{" "}
           {resumenLote?.activados === 1 ? "inmueble" : "inmuebles"} en tu
           portafolio.
         </p>
         {(resumenLote?.pendientes ?? 0) > 0 && (
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             Quedan {resumenLote?.pendientes} filas con datos por corregir. No
-            frenan nada: puedes arreglarlas acá o dejarlas fuera y seguir.
+            frenan nada: puedes arreglarlas aquí o dejarlas fuera y seguir.
           </p>
         )}
         {!sabemosDeOtrasCargas ? (
@@ -1262,7 +1268,7 @@ function StepConfirmImportCuerpo({
             Revisando si queda algo pendiente en otras cargas…
           </p>
         ) : listosEnOtrasCargas > 0 ? (
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             Antes de seguir: {cuantasOtrasCargas}{" "}
             {cuantasOtrasCargas === 1 ? "carga anterior tiene" : "cargas anteriores tienen"}{" "}
             {listosEnOtrasCargas} inmuebles preparados que todavía no existen.
@@ -1447,7 +1453,7 @@ function StepConfirmImportCuerpo({
           ) : null}
         </div>
         {creandoActivo ? (
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Cuando termine ves el motivo de cada una y puedes reintentarlas.
           </p>
         ) : (
@@ -1463,7 +1469,7 @@ function StepConfirmImportCuerpo({
                     <span className="font-mono tabular-nums">Fila {f.fila}</span>
                     {" · "}
                     {f.datos?.title ?? f.datos?.address ?? "Sin dirección"}
-                    <span className="block text-xs text-danger">{f.errorDeActivacion}</span>
+                    <span className="block text-caption text-danger">{f.errorDeActivacion}</span>
                   </span>
                   <Button
                     type="button"
@@ -1479,7 +1485,7 @@ function StepConfirmImportCuerpo({
               ))}
             </ul>
             {filasFallidas.length > 0 && filasFallidas.length < nFallidas ? (
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Mostramos {filasFallidas.length} de {nFallidas.toLocaleString(localeDeLasCifras())}.
               </p>
             ) : null}
@@ -1499,7 +1505,7 @@ function StepConfirmImportCuerpo({
         </div>
 
         <div className="animate-fade-in-up space-y-2">
-          <h2 className="text-2xl font-semibold text-fg dark:text-white">
+          <h2 className="text-h3 text-fg">
             ¡Importación completada!
           </h2>
           {/*
@@ -1513,11 +1519,11 @@ function StepConfirmImportCuerpo({
            * entraron; decir sólo las nuevas hacía ver una importación
            * completa como un fracaso de 679.
            */}
-          <p className="text-fg-muted dark:text-fg-subtle" data-testid="resumen-creadas">
+          <p className="text-fg-muted" data-testid="resumen-creadas">
             {lineaDeCreados(creacion, nCreadas)}
           </p>
           {detalleDeReusados(creacion) ? (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="resumen-reusados">
+            <p className="text-sm text-fg-muted" data-testid="resumen-reusados">
               {detalleDeReusados(creacion)}
             </p>
           ) : null}
@@ -1596,7 +1602,7 @@ function StepConfirmImportCuerpo({
             contrato vigente al activarlo, o una persona en la ficha.
           */}
           {onSalir && aEnviar.length > 0 && nCreadas > 0 && (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="aviso-propietario-en-contratos">
+            <p className="text-sm text-fg-muted" data-testid="aviso-propietario-en-contratos">
               {fraseDeLaComision(aEnviar)} Los puedes cambiar cuando quieras
               desde la ficha de cada inmueble.
             </p>
@@ -1687,7 +1693,7 @@ function StepConfirmImportCuerpo({
     return (
       <div className="space-y-6" data-testid="creacion-progreso">
         <div>
-          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+          <h2 className="text-h3 text-fg mb-1">
             {creacionFallida
               ? "La creación se detuvo"
               : creandoEnElServidor
@@ -1700,11 +1706,11 @@ function StepConfirmImportCuerpo({
               portafolio y no se repite: toca «Reintentar» para que siga donde quedó.
             </p>
           ) : creandoEnElServidor ? (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="creacion-puedes-cerrar">
+            <p className="text-sm text-fg-muted" data-testid="creacion-puedes-cerrar">
               Puedes cerrar esta página: las seguimos creando.
             </p>
           ) : (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               Los que se crearon ya están en tu portafolio. Abajo ves el motivo de cada fallida.
             </p>
           )}
@@ -1716,7 +1722,7 @@ function StepConfirmImportCuerpo({
           data-testid="creacion-avance"
         >
           <p className="text-sm text-fg">
-            <span className="font-mono text-2xl font-semibold tabular-nums">
+            <span className="font-mono text-2xl tabular-nums">
               {hechas.toLocaleString(localeDeLasCifras())}
             </span>{" "}
             de{" "}
@@ -1734,7 +1740,7 @@ function StepConfirmImportCuerpo({
           </p>
           <Progress value={pct} size="xs" />
           {(creacion?.pendientes ?? 0) > 0 && creandoActivo ? (
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Faltan {(creacion?.pendientes ?? 0).toLocaleString(localeDeLasCifras())}.
             </p>
           ) : null}
@@ -1835,7 +1841,7 @@ function StepConfirmImportCuerpo({
                   <p className="text-sm text-fg-muted" data-testid="subida-pide-el-archivo">
                     Para seguir, vuelve con «Anterior» al paso de subir el archivo, selecciona el
                     MISMO archivo (tiene que tener {totalDelLote.toLocaleString(localeDeLasCifras())} filas) y
-                    avanza hasta acá: retomamos desde donde quedó.
+                    avanza hasta aquí: retomamos desde donde quedó.
                   </p>
                 )}
                 <Button
@@ -1937,7 +1943,7 @@ function StepConfirmImportCuerpo({
             >
               ¿Ya terminó? Consultar de nuevo
             </Button>
-            <p className="text-xs text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               El proceso sigue del lado del servidor — nada se perdió.
             </p>
           </div>
@@ -2024,8 +2030,8 @@ function StepConfirmImportCuerpo({
           </Button>
         </div>
         {!estadoLote.puedeReintentar && totalAEnviar > 0 ? (
-          <p className="text-xs text-fg-subtle">
-            Tus datos siguen acá — no hace falta volver a subir el archivo.
+          <p className="text-caption text-fg-subtle">
+            Tus datos siguen aquí — no hace falta volver a subir el archivo.
           </p>
         ) : null}
       </div>
@@ -2039,12 +2045,12 @@ function StepConfirmImportCuerpo({
     return (
       <div className="space-y-6" data-testid="crear-todas-paso">
         <div>
-          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+          <h2 className="text-h3 text-fg mb-1">
             {yaSeCrearonAlgunas
               ? `Faltan ${listas.toLocaleString(localeDeLasCifras())} por crear`
               : "Todo listo para crear"}
           </h2>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             {listas === 1 ? "Se crea" : "Se crean"}{" "}
             <span className="font-mono tabular-nums font-medium text-fg">
               {listas.toLocaleString(localeDeLasCifras())}
@@ -2056,12 +2062,12 @@ function StepConfirmImportCuerpo({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-md bg-success-soft p-4">
-            <MonoLabel className="block text-xs text-success mb-1">Listas para crear</MonoLabel>
-            <p className="text-2xl font-bold text-success">{listas.toLocaleString(localeDeLasCifras())}</p>
+            <MonoLabel className="block text-caption text-success mb-1">Listas para crear</MonoLabel>
+            <p className="text-2xl font-medium text-success">{listas.toLocaleString(localeDeLasCifras())}</p>
           </div>
-          <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
-            <MonoLabel className="block text-xs text-fg-muted mb-1">Por revisar (no se tocan)</MonoLabel>
-            <p className="text-2xl font-bold text-fg-muted">{porRevisar.toLocaleString(localeDeLasCifras())}</p>
+          <div className="rounded-md bg-surface-muted p-4">
+            <MonoLabel className="block text-caption text-fg-muted mb-1">Por revisar (no se tocan)</MonoLabel>
+            <p className="text-2xl font-medium text-fg-muted">{porRevisar.toLocaleString(localeDeLasCifras())}</p>
           </div>
         </div>
 
@@ -2140,10 +2146,10 @@ function StepConfirmImportCuerpo({
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+          <h2 className="text-h3 text-fg mb-1">
             Revisa lo que falta
           </h2>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             Una sola lista con todo lo que necesita una decisión. Lo que ya está completo no aparece:
             se crea al final, todo junto. Cerrar esta pestaña no pierde nada.
           </p>
@@ -2151,33 +2157,33 @@ function StepConfirmImportCuerpo({
 
         {resumenLote && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
-              <MonoLabel className="block text-xs text-fg-muted mb-1">
+            <div className="rounded-md bg-surface-muted p-4">
+              <MonoLabel className="block text-caption text-fg-muted mb-1">
                 Total
               </MonoLabel>
-              <p className="text-2xl font-bold text-fg">{resumenLote.total}</p>
+              <p className="text-2xl font-medium text-fg">{resumenLote.total}</p>
             </div>
             <div className="rounded-md bg-warning-soft p-4">
-              <MonoLabel className="block text-xs text-warning mb-1">
+              <MonoLabel className="block text-caption text-warning mb-1">
                 Por revisar
               </MonoLabel>
-              <p className="text-2xl font-bold text-warning">
+              <p className="text-2xl font-medium text-warning">
                 {resumenLote.pendientes}
               </p>
             </div>
             <div className="rounded-md bg-success-soft p-4">
-              <MonoLabel className="block text-xs text-success mb-1">
+              <MonoLabel className="block text-caption text-success mb-1">
                 Listas para crear
               </MonoLabel>
-              <p className="text-2xl font-bold text-success">
+              <p className="text-2xl font-medium text-success">
                 {listasParaCrear}
               </p>
             </div>
             <div className="rounded-md bg-primary-soft p-4">
-              <MonoLabel className="block text-xs text-primary mb-1">
+              <MonoLabel className="block text-caption text-primary mb-1">
                 Ya creadas
               </MonoLabel>
-              <p className="text-2xl font-bold text-primary">
+              <p className="text-2xl font-medium text-primary">
                 {resumenLote.activados}
               </p>
             </div>
@@ -2371,7 +2377,7 @@ function StepConfirmImportCuerpo({
           ? createPortal(salidaDelPaso, ranuraDelPie)
           : null}
         {/* Sin pie montado (primer render, o la página suelta) la salida no se
-            puede perder: se dibuja acá. */}
+            puede perder: se dibuja aquí. */}
         {!ranuraDelPie && salidaDelPaso ? (
           <div className="flex justify-end">{salidaDelPaso}</div>
         ) : null}
@@ -2383,25 +2389,23 @@ function StepConfirmImportCuerpo({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+        <h2 className="text-h3 text-fg mb-1">
           Resumen de importación
         </h2>
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">
+        <p className="text-sm text-fg-muted">
           Subimos tu archivo, ubicamos las direcciones en el mapa y te mostramos lo que falta.
           Los inmuebles se crean al final, todos juntos.
         </p>
       </div>
 
-      <div className="rounded-lg border border-border dark:border-border-strong p-6 space-y-4">
+      <div className="rounded-lg border border-border p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-            <FileArrowUp className="w-6 h-6 text-primary" />
-          </div>
+          <FileArrowUp className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
           <div>
-            <h3 className="font-semibold text-fg dark:text-white">
+            <h3 className="font-medium text-fg">
               {t("inmobiliaria.import.confirm.title")}
             </h3>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               {state.fileName}
             </p>
           </div>
@@ -2409,10 +2413,10 @@ function StepConfirmImportCuerpo({
 
         <div className="grid grid-cols-2 gap-4 pt-2">
           <div className="rounded-md bg-primary-soft p-4">
-            <MonoLabel className="block text-xs text-primary mb-1">
+            <MonoLabel className="block text-caption text-primary mb-1">
               Inmuebles del archivo
             </MonoLabel>
-            <p className="text-3xl font-bold text-primary">{totalAEnviar}</p>
+            <p className="text-3xl font-medium text-primary">{totalAEnviar}</p>
           </div>
 
           <div
@@ -2423,7 +2427,7 @@ function StepConfirmImportCuerpo({
           >
             <MonoLabel
               className={cn(
-                "block text-xs mb-1",
+                "block text-caption mb-1",
                 remainingErrorsCount > 0 ? "text-warning" : "text-success",
               )}
             >
@@ -2431,7 +2435,7 @@ function StepConfirmImportCuerpo({
             </MonoLabel>
             <p
               className={cn(
-                "text-3xl font-bold",
+                "text-3xl font-medium",
                 remainingErrorsCount > 0 ? "text-warning" : "text-success",
               )}
             >
@@ -2448,14 +2452,14 @@ function StepConfirmImportCuerpo({
       */}
       <ResumenDeLoQueSeLeyo inmuebles={state.properties} />
 
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface-muted dark:bg-white/[0.02] p-5">
+      <div className="rounded-lg border border-border bg-surface-muted p-5">
         <div className="flex items-start gap-3">
-          <UserCircle className="w-5 h-5 text-fg-subtle dark:text-fg-muted mt-0.5 flex-shrink-0" />
+          <UserCircle className="w-5 h-5 text-fg-subtle mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="font-semibold text-fg dark:text-white text-sm">
+            <h3 className="font-medium text-fg text-sm">
               Asignación de agentes
             </h3>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
+            <p className="text-sm text-fg-muted mt-1">
               Las propiedades se importarán sin agente asignado. Podrás asignar
               agentes individualmente o en lote desde el portafolio después de
               importar.
@@ -2466,9 +2470,9 @@ function StepConfirmImportCuerpo({
 
       {/*
         La barra de la subida: con muro sale por la ranura viva (fuera del
-        `inert`, con su «Detener» vivo) y sin muro, acá mismo.
+        `inert`, con su «Detener» vivo) y sin muro, aquí mismo.
 
-        🔴 Acá NO va la barra de la re-revisión, aunque vivió acá hasta el
+        🔴 Aquí NO va la barra de la re-revisión, aunque vivió aquí hasta el
         2026-09-11. Este `return` es el resumen PREVIO a subir: sólo se llega
         con `lote === null`, y revisar exige un lote. Vive con la de activación,
         dentro del `if (lote)`.
@@ -2547,13 +2551,13 @@ function ResumenDeLoQueSeLeyo({ inmuebles }: { inmuebles: ImportProperty[] }) {
       className="rounded-lg border border-border bg-surface-muted p-5"
       data-testid="resumen-de-lectura-inmuebles"
     >
-      <h3 className="text-sm font-semibold text-fg">
+      <h3 className="text-sm font-medium text-fg">
         {/* MP-07 (QA-MIGRACION-95): «de sus 1 fila» con un solo inmueble. */}
         {resumen.total === 1
           ? "Qué trae el archivo, de su única fila"
           : `Qué trae el archivo, de sus ${resumen.total} filas`}
       </h3>
-      <p className="mt-0.5 text-xs text-fg-muted">
+      <p className="mt-0.5 text-caption text-fg-muted">
         Esto es lo que se pudo LEER. A qué propietario y a qué contrato queda
         cada inmueble lo resuelve el servidor al activarlos, y lo dice fila por
         fila.
@@ -2565,7 +2569,7 @@ function ResumenDeLoQueSeLeyo({ inmuebles }: { inmuebles: ImportProperty[] }) {
             <span className="text-fg-muted"> de {resumen.total} · </span>
             <span className="text-fg">{r.que}</span>
             {r.porque ? (
-              <span className="block text-xs text-fg-muted">{r.porque}</span>
+              <span className="block text-caption text-fg-muted">{r.porque}</span>
             ) : null}
           </li>
         ))}

@@ -168,7 +168,7 @@ export function AgencyCheckoutOverlay({
         : state === 'processing'
           ? 'Un momento, por favor.'
           : state === 'error'
-            ? (error ?? 'Ocurrió un error. Intenta de nuevo.')
+            ? (error ?? 'El pago no se pudo abrir de nuestro lado. Vuelve a intentarlo.')
             : state === 'scheduled'
               ? scheduled?.pendingPlanEffectiveAt
                 ? `Tu plan cambiará a ${planName} el ${formatDate(scheduled.pendingPlanEffectiveAt)}. Hasta entonces, sigues con tu plan actual.`
@@ -201,7 +201,7 @@ export function AgencyCheckoutOverlay({
               >
                 <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
                 {popupBlocked
-                  ? 'No se abrió la pestaña — abre el pago acá'
+                  ? 'No se abrió la pestaña — abre el pago aquí'
                   : '¿No ves la pestaña? Ábrela de nuevo'}
               </a>
             )}

@@ -11,7 +11,8 @@
  * `/dispersiones/preview`, sólo que para todos los meses.
  */
 
-import { SectionLabel } from '@/components/ui/section-label'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CarteraDePropietarios } from '@/components/cartera/CarteraDePropietarios'
 import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
@@ -21,22 +22,27 @@ export default function CarteraPorPagarPage() {
   return (
     <PageGuard module="dispersiones" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <SectionLabel>Pagos · propietarios</SectionLabel>
-          <h1 className="text-h2 text-fg">Por pagar a propietarios</h1>
-          {/*
-            🔴 Decía «lo recaudado a su nombre», y la liquidación del
-            propietario no sale de lo recaudado: es lo que el contrato cobra
-            (base CAUSADO) con sus deducciones — confirmado por Juan Camilo el
-            2026-09-16, y es lo que calcula `CarteraDePropietarios`. Mismos
-            rótulos que el resto (`base-del-canon.ts`); ningún número cambia.
-          */}
-          <p className="max-w-2xl text-sm text-muted-foreground" data-testid="que-se-le-debe">
-            Lo que hay que girarle a cada propietario, mes a mes: el{' '}
-            {ROTULO_DEL_CANON.CAUSADO.toLowerCase()} a su nombre ({QUE_ES_EL_CANON_CAUSADO}) menos
-            la comisión y lo que se le cobra a él.
-          </p>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Pagar a propietarios"
+          titulo="Por pagar a propietarios"
+          // Ronda 26 (revisora r25, Por pagar #4): la descripción en una línea; qué es el canon causado, a la ayuda.
+          descripcion="Lo que se le gira a cada propietario, mes a mes."
+          ayuda={
+            <ParaEntenderMas etiqueta="Qué se le gira" titulo="Qué se le gira al propietario" variante="secundario">
+              {/*
+                🔴 Decía «lo recaudado a su nombre», y la liquidación del
+                propietario no sale de lo recaudado: es lo que el contrato cobra
+                (base CAUSADO) con sus deducciones — confirmado por Juan Camilo el
+                2026-09-16, y es lo que calcula `CarteraDePropietarios`.
+              */}
+              <p className="text-body-sm text-fg-muted" data-testid="que-se-le-debe">
+                Lo que hay que girarle a cada propietario, mes a mes: el{' '}
+                {ROTULO_DEL_CANON.CAUSADO.toLowerCase()} a su nombre ({QUE_ES_EL_CANON_CAUSADO}) menos
+                la comisión y lo que se le cobra a él.
+              </p>
+            </ParaEntenderMas>
+          }
+        />
 
         <PestanasDeCartera />
 

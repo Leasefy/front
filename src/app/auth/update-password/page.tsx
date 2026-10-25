@@ -281,11 +281,12 @@ function UpdatePasswordContent() {
                 initial={{ scale: motionScale.pop, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={motionSpring.bouncy}
-                className="mx-auto w-16 h-16 bg-success-soft rounded-full flex items-center justify-center mb-4"
+                className="mx-auto mb-4 flex w-fit items-center justify-center"
               >
-                <CheckCircle className="h-9 w-9 text-success" weight="fill" />
+                {/* Ronda 30: el visto suelto, sin el círculo de color (Cadence 2). */}
+                <CheckCircle className="h-10 w-10 text-success" weight="fill" />
               </motion.div>
-              <h1 className="text-xl font-semibold text-fg mb-2">
+              <h1 className="text-xl font-medium text-fg mb-2">
                 {esPrimeraVez ? 'Tu cuenta quedó lista' : 'Contraseña actualizada'}
               </h1>
               <p className="text-sm text-fg-muted mb-6">
@@ -302,7 +303,7 @@ function UpdatePasswordContent() {
                   <Button className="w-full">{vaALaInvitacion ? 'Ver la invitación' : 'Ver mi arriendo'}</Button>
                 </Link>
               ) : (
-                <p className="text-xs text-fg-subtle" role="status" data-testid="cerrando-sesion-del-enlace">
+                <p className="text-caption text-fg-subtle" role="status" data-testid="cerrando-sesion-del-enlace">
                   {cerrandoSesion ? 'Cerrando la sesión del enlace…' : 'Un momento…'}
                 </p>
               )}
@@ -313,7 +314,7 @@ function UpdatePasswordContent() {
                 <div className="mx-auto w-12 h-12 bg-surface-muted rounded-full flex items-center justify-center mb-4">
                   <Lock className="h-5 w-5 text-fg" />
                 </div>
-                <h1 className="text-2xl font-semibold text-fg mb-1">
+                <h1 className="text-h2 text-fg mb-1">
                   {esPrimeraVez ? 'Crea tu contraseña' : 'Nueva contraseña'}
                 </h1>
                 <p className="text-sm text-fg-muted">
@@ -408,7 +409,7 @@ function UpdatePasswordContent() {
                   {authLoading || mfaRequired
                     ? 'Cargando sesión...'
                     : isSubmitting
-                      ? 'Guardando...'
+                      ? 'Guardando…'
                       : 'Guardar contraseña'}
                 </Button>
               </form>
@@ -416,7 +417,7 @@ function UpdatePasswordContent() {
               {/* A quien nunca tuvo contraseña no se le pregunta si la
                   recordó. */}
               {esPrimeraVez ? null : (
-                <p className="text-center text-xs text-fg-muted mt-6">
+                <p className="text-center text-caption text-fg-muted mt-6">
                   ¿Recordaste tu contraseña?{' '}
                   <Link href="/auth" className="text-fg hover:underline">
                     Iniciar sesión
@@ -476,10 +477,9 @@ function EnlaceQueYaNoSirve({ esPrimeraVez, vuelta }: { esPrimeraVez: boolean; v
   return (
     <div data-testid="enlace-que-ya-no-sirve">
       <div className="text-center mb-8">
-        <div className="mx-auto w-12 h-12 bg-warning-soft rounded-full flex items-center justify-center mb-4">
-          <Lock className="h-5 w-5 text-warning" />
-        </div>
-        <h1 className="text-2xl font-semibold text-fg mb-1">Este enlace ya no sirve</h1>
+        {/* Ronda 30: el candado suelto (sin círculo de color) y el título liviano, como los demás estados. */}
+        <Lock className="mx-auto mb-4 h-7 w-7 text-fg-subtle" aria-hidden="true" />
+        <h1 className="text-xl font-medium text-fg mb-2">Este enlace ya no sirve</h1>
         <p className="text-sm text-fg-muted">
           {esPrimeraVez
             ? 'Ya se usó o venció. Escribe tu correo y te mandamos uno nuevo para crear tu contraseña.'

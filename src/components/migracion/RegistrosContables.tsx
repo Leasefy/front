@@ -32,6 +32,9 @@ import Link from "next/link";
 import { useDropzone } from "react-dropzone";
 import { ArrowRight, BookOpen, Info, Receipt, Scales, Warning } from "@phosphor-icons/react";
 import { SegmentedControl } from "@leasefy/cadence";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MasDetalles } from "@/components/pantalla/MasDetalles";
 
 import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
 import type { FormaDeArchivoContable } from "@/lib/migracion/que-archivo-contable-es";
@@ -91,6 +94,7 @@ export function RegistrosContables({
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [camino, setCamino] = useState<Camino>("apertura");
+  const enElCelular = useIsMobile();
   /*
    * 8.ª tanda (14-10): el archivo de «Sube tu archivo contable», con la puerta
    * a la que va. Cada camino lo recibe como `archivoInicial` y lo lee una vez.
@@ -174,7 +178,7 @@ export function RegistrosContables({
       setCuentas((previo) => previo ?? []);
       setFalloDeCuentas(true);
       setError(
-        mensajeDeContabilidad(c.reason, "No pudimos leer el plan de cuentas."),
+        mensajeDeContabilidad(c.reason, "No se pudo leer el plan de cuentas."),
       );
     }
     if (a.status === "fulfilled") {
@@ -235,7 +239,7 @@ export function RegistrosContables({
             <div className="flex min-w-0 items-start gap-2">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <p className="text-sm text-fg">
-                No pudimos leer lo que ya está cargado. Reintenta antes de
+                No se pudo leer lo que ya está cargado. Reintenta antes de
                 registrar nada: sin esa lista podrías cargar dos veces la misma
                 apertura.
               </p>
@@ -303,48 +307,18 @@ export function RegistrosContables({
            * dónde. Ahora lo dice, y un solo botón lo reconoce.
            */}
           <section
-            className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
+            className="space-y-4 rounded-lg border border-border-faint bg-surface p-6"
             data-testid="contables-guia"
           >
             <div>
               <h2 className="text-sm font-medium text-fg">
                 Qué traer de tu sistema anterior
               </h2>
+              {/* Ronda 30 (revisora r27): una línea por bloque; el detalle, en «¿Qué archivo traigo?». */}
               <p className="mt-1 max-w-2xl text-sm text-fg-muted">
-                Tres archivos, cada uno con su lugar. Los saldos iniciales no son
-                obligatorios: el paso queda listo cuando cargas registros contables,
-                sean los saldos iniciales o el libro diario.
+                Tres archivos, cada uno a su lugar. Los saldos iniciales no son obligatorios: el paso queda listo con ellos o con el libro diario.
               </p>
             </div>
-            <ol className="grid gap-3 md:grid-cols-3">
-              <PasoDeLaGuia
-                numero={1}
-                icono={<Scales className="h-4 w-4" />}
-                titulo="El balance de prueba por tercero"
-                cuando="Al cierre del año anterior (por ejemplo, al 31 de diciembre)."
-                para="Son los saldos iniciales: lo que había en bancos, lo que debía cada inquilino y lo que se le debía a cada propietario."
-                etiqueta="Recomendado"
-                testid="guia-balance"
-              />
-              <PasoDeLaGuia
-                numero={2}
-                icono={<BookOpen className="h-4 w-4" />}
-                titulo="Los movimientos de este año"
-                cuando="El libro diario o auxiliar, del día siguiente a esos saldos hasta tu fecha de corte."
-                para="Completan el año: retenciones, exógena y resultados. Lo de antes de los saldos iniciales no entra (ya está en ellos)."
-                etiqueta="Si tu sistema lo exporta"
-                testid="guia-libro"
-              />
-              <PasoDeLaGuia
-                numero={3}
-                icono={<Receipt className="h-4 w-4" />}
-                titulo="Los comprobantes"
-                cuando="De todos los años: facturas, recibos de caja, egresos."
-                para="Quedan como historia en la ficha de cada contrato. No cambian la contabilidad."
-                etiqueta="Opcional"
-                testid="guia-comprobantes"
-              />
-            </ol>
             <ZonaDeArchivo
               rootProps={zonaContable.getRootProps()}
               inputProps={zonaContable.getInputProps()}
@@ -354,6 +328,38 @@ export function RegistrosContables({
               titulo="Sube tu archivo contable"
               detalle="Reconocemos cuál de los tres es y lo llevamos a su lugar."
             />
+            {/* Revisora r25: la zona primero; qué archivo traer, plegado (se consulta una vez). */}
+            <MasDetalles etiqueta="¿Qué archivo traigo?" montadoSiempre classNameDelContenido="mt-3" data-testid="contables-que-archivo">
+              <ol className="grid gap-3 md:grid-cols-3">
+                <PasoDeLaGuia
+                  numero={1}
+                  icono={<Scales className="h-4 w-4" />}
+                  titulo="El balance de prueba por tercero"
+                  cuando="Al cierre del año anterior (por ejemplo, al 31 de diciembre)."
+                  para="Son los saldos iniciales: lo que había en bancos, lo que debía cada inquilino y lo que se le debía a cada propietario."
+                  etiqueta="Recomendado"
+                  testid="guia-balance"
+                />
+                <PasoDeLaGuia
+                  numero={2}
+                  icono={<BookOpen className="h-4 w-4" />}
+                  titulo="Los movimientos de este año"
+                  cuando="El libro diario o auxiliar, del día siguiente a esos saldos hasta tu fecha de corte."
+                  para="Completan el año: retenciones, exógena y resultados. Lo de antes de los saldos iniciales no entra (ya está en ellos)."
+                  etiqueta="Si tu sistema lo exporta"
+                  testid="guia-libro"
+                />
+                <PasoDeLaGuia
+                  numero={3}
+                  icono={<Receipt className="h-4 w-4" />}
+                  titulo="Los comprobantes"
+                  cuando="De todos los años: facturas, recibos de caja, egresos."
+                  para="Quedan como historia en la ficha de cada contrato. No cambian la contabilidad."
+                  etiqueta="Opcional"
+                  testid="guia-comprobantes"
+                />
+              </ol>
+            </MasDetalles>
             {reconociendo ? (
               <p className="text-sm text-fg-muted" role="status">
                 Revisando qué archivo es…
@@ -409,7 +415,7 @@ export function RegistrosContables({
            * (glow-up 30-09) — antes el segmentado y su texto flotaban entre
            * dos islas.
            */}
-          <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
+          <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="text-sm font-medium text-fg">
                 O elige a mano dónde va
@@ -447,53 +453,68 @@ export function RegistrosContables({
                 </p>
               ) : null}
             </div>
-            <SegmentedControl<Camino>
-              value={camino}
-              onChange={setCamino}
-              aria-label="Cómo cargar los registros"
-              options={[
-                {
-                  value: "apertura",
-                  label: (
-                    <span className="flex items-center gap-2">
-                      <Scales className="h-4 w-4" />
-                      Saldos iniciales
-                    </span>
-                  ),
-                },
-                {
-                  value: "historico",
-                  // «Subir» y no «migrar»: Nico pasó por acá y no vio que
-                  // el archivo se podía subir. El sustantivo del botón tiene
-                  // que ser el objeto que la persona tiene en la mano.
-                  label: (
-                    <span className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      Subir el libro diario
-                    </span>
-                  ),
-                },
-                {
-                  // El tercer camino, y el que el archivo real de la
-                  // inmobiliaria necesita: comprobantes SIN líneas por cuenta.
-                  // Va aparte del libro diario a propósito — meterlos ahí
-                  // serían 116 mil asientos descuadrados.
-                  value: "documentos",
-                  label: (
-                    <span className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4" />
-                      Subir los comprobantes
-                    </span>
-                  ),
-                },
-              ]}
-            />
+            {/* Revisora r25: a 390 el segmentado se partía en tres renglones («Subir / el libro / diario»); en el
+                celular es un Select con las mismas tres opciones. */}
+            {enElCelular ? (
+              <Select value={camino} onValueChange={(v) => setCamino(v as Camino)}>
+                <SelectTrigger aria-label="Cómo cargar los registros" data-testid="camino-en-el-celular">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="apertura">Saldos iniciales</SelectItem>
+                  <SelectItem value="historico">Subir el libro diario</SelectItem>
+                  <SelectItem value="documentos">Subir los comprobantes</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <SegmentedControl<Camino>
+                value={camino}
+                onChange={setCamino}
+                aria-label="Cómo cargar los registros"
+                options={[
+                  {
+                    value: "apertura",
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <Scales className="h-4 w-4" />
+                        Saldos iniciales
+                      </span>
+                    ),
+                  },
+                  {
+                    value: "historico",
+                    // «Subir» y no «migrar»: Nico pasó por acá y no vio que
+                    // el archivo se podía subir. El sustantivo del botón tiene
+                    // que ser el objeto que la persona tiene en la mano.
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        Subir el libro diario
+                      </span>
+                    ),
+                  },
+                  {
+                    // El tercer camino, y el que el archivo real de la
+                    // inmobiliaria necesita: comprobantes SIN líneas por cuenta.
+                    // Va aparte del libro diario a propósito — meterlos ahí
+                    // serían 116 mil asientos descuadrados.
+                    value: "documentos",
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <Receipt className="h-4 w-4" />
+                        Subir los comprobantes
+                      </span>
+                    ),
+                  },
+                ]}
+              />
+            )}
             <p className="max-w-2xl text-sm text-fg-muted">
               {camino === "apertura"
-                ? "Los saldos de cada cuenta al cierre del año anterior, en un asiento. Súbelos desde el balance de prueba por tercero o escríbelos. Con esto queda listo el paso."
+                ? "Los saldos de cada cuenta al cierre del año anterior: súbelos o escríbelos."
                 : camino === "historico"
-                  ? "Los movimientos de este año, exportados de tu sistema anterior en Excel o CSV: sólo los posteriores a los saldos iniciales, que ya traen todo lo de antes."
-                  : "El export de comprobantes: facturas, comprobantes de ingreso y de egreso, con su fecha y su concepto. No son asientos —no traen cuenta por línea— y por eso van a la ficha del contrato, no al libro diario."}
+                  ? "Los movimientos de este año posteriores a los saldos iniciales, en Excel o CSV."
+                  : "Facturas y comprobantes de ingreso y de egreso: van a la ficha de cada contrato, no al libro diario."}
             </p>
           </section>
 
@@ -516,7 +537,7 @@ export function RegistrosContables({
               onDejarDeContinuar={() => setContinuar(null)}
               onIrAlPuc={onIrAlPuc}
               /* El archivo de comprobantes metido en el libro diario tiene su
-                 puerta acá al lado: el aviso la abre en vez de nombrarla. */
+                 puerta aquí al lado: el aviso la abre en vez de nombrarla. */
               onIrAComprobantes={() => setCamino("documentos")}
               onIrASaldosIniciales={(archivo) => llevarA(archivo, "apertura")}
               archivoInicial={archivoPara("historico")}

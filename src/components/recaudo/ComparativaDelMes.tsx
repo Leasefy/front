@@ -28,6 +28,7 @@
  *     otra, y lo único que dice «no se pudo leer» es la comparación.
  */
 
+import type { ReactNode } from 'react';
 import { ArrowDown, ArrowUp, Equals } from '@phosphor-icons/react';
 
 import { Spinner } from '@/components/ui/spinner';
@@ -104,6 +105,8 @@ export function VsMesAnterior({
   sentido,
   fallo,
   valorMostrado,
+  formato = formatCurrency,
+  callarSinComparacion = false,
 }: {
   id: string;
   comparativa: Comparativa | null;
@@ -112,6 +115,13 @@ export function VsMesAnterior({
   fallo: boolean;
   /** La cifra grande de la tarjeta; si el corte da otra, se dice cuál. */
   valorMostrado: number;
+  /** El formato de la plata de la página (ronda 11: el mismo «,00» que las cifras de arriba). */
+  formato?: (n: number | null | undefined) => string;
+  /**
+   * Ronda 11: cuando NINGUNA cifra tiene contra qué compararse, la página lo dice
+   * UNA vez arriba y cada cifra calla (antes «Sin comparación con …» ×5).
+   */
+  callarSinComparacion?: boolean;
 }) {
   const { t, locale } = useI18n();
   if (!comparativa) {
@@ -125,7 +135,10 @@ export function VsMesAnterior({
 
   const v: VariacionDeLaCifra = comparativa.vsMesAnterior[cifra];
   const mesAnterior = soloElMes(comparativa.mesAnterior, locale);
-  if (v.pct === null) {
+  // Revisión de Dinero (22-10): «+4.113,6 % vs. el 21 de septiembre» no informa nada: con una
+  // base casi en cero, una variación de mil por ciento o más se dice como «sin comparación».
+  if (v.pct === null || Math.abs(v.pct) >= 1000) {
+    if (callarSinComparacion) return null;
     return (
       <p className="text-caption text-fg-muted" data-testid={`vs-${id}`} data-estado="sin-comparacion">
         {t(`${C}.vs.sinComparacion`, { mes: mesAnterior })}
@@ -161,10 +174,18 @@ export function VsMesAnterior({
       )}
       {v.actualCop !== valorMostrado && (
         <span className="text-fg-muted">
-          · {t(`${C}.vs.aEsaFecha`, { dia: comparativa.dia, valor: formatCurrency(v.actualCop) })}
+          · {t(`${C}.vs.aEsaFecha`, { dia: comparativa.dia, valor: formato(v.actualCop) })}
         </span>
       )}
     </p>
+  );
+}
+
+/** ¿Ninguna de las cinco cifras tiene contra qué compararse? (sin mes anterior, o con una base casi en cero). */
+export function sinComparacionEnNinguna(comparativa: Comparativa | null): boolean {
+  if (!comparativa) return false;
+  return Object.values(comparativa.vsMesAnterior).every(
+    (v) => v.pct === null || Math.abs(v.pct) >= 1000,
   );
 }
 
@@ -172,16 +193,21 @@ export function VsMesAnterior({
 export function TarjetaDeProyeccion({
   proyeccion: p,
   month,
+  formato = formatCurrency,
 }: {
   proyeccion: ProyeccionDelCierre;
   month: string;
+  /** El formato de la plata de la página (ronda 11: el mismo «,00» que las cifras de arriba). */
+  formato?: (n: number | null | undefined) => string;
 }) {
   const { t, locale } = useI18n();
   const cerrado = p.estado === 'MES_CERRADO';
-  const cifra = p.cierreCop === null ? null : formatCurrency(p.cierreCop);
+  const cifra = p.cierreCop === null ? null : formato(p.cierreCop);
 
   return (
     <section
+      // Nico (22-10): con `self-start` quedaba más corta que el gráfico y dejaba un hueco blanco debajo;
+      // ahora las dos tarjetas de la fila terminan a la misma altura.
       className="space-y-3 rounded-lg border border-border bg-surface p-5 sm:p-6"
       aria-labelledby="proyeccion-titulo"
       data-testid="proyeccion"
@@ -205,22 +231,30 @@ export function TarjetaDeProyeccion({
           {p.rango && (
             <p className="text-body-sm text-fg" data-testid="proyeccion-rango">
               {t(`${C}.proyeccion.rango`, {
-                min: formatCurrency(p.rango.minCop),
-                max: formatCurrency(p.rango.maxCop),
+                min: formato(p.rango.minCop),
+                max: formato(p.rango.maxCop),
                 peor: tasaEnPct(Math.min(...p.historia.map((h) => h.tasa))),
                 mejor: tasaEnPct(Math.max(...p.historia.map((h) => h.tasa))),
               })}
             </p>
           )}
+          {p.tasa === 0 ? (
+            <p className="text-caption leading-relaxed text-fg-muted" data-testid="proyeccion-sin-tasa">
+              {locale === 'en'
+                ? 'In the months used, nothing still due came in before the close: the projection is what already came in.'
+                : 'En los meses de la historia no entró nada de lo por vencer antes del cierre: la proyección es lo que ya llegó.'}
+            </p>
+          ) : (
           <p className="text-caption leading-relaxed text-fg-muted" data-testid="proyeccion-formula">
             {t(`${C}.proyeccion.formula`, {
-              llego: formatCurrency(p.llegoCop),
-              porVencer: formatCurrency(p.porVencerCop),
+              llego: formato(p.llegoCop),
+              porVencer: formato(p.porVencerCop),
               tasa: tasaEnPct(p.tasa),
               meses: listaDeMeses(p.historia.map((h) => h.month), locale),
-              cierre: formatCurrency(p.cierreCop ?? 0),
+              cierre: formato(p.cierreCop ?? 0),
             })}
           </p>
+          )}
           {p.historia.length < p.mesesPedidos && (
             <p className="text-caption text-warning" data-testid="proyeccion-historia-corta">
               {t(`${C}.proyeccion.historiaCorta`, {
@@ -239,8 +273,8 @@ export function TarjetaDeProyeccion({
           </p>
           <p className="text-caption text-fg-muted">
             {t(`${C}.proyeccion.sinHistoriaCifras`, {
-              llego: formatCurrency(p.llegoCop),
-              porVencer: formatCurrency(p.porVencerCop),
+              llego: formato(p.llegoCop),
+              porVencer: formato(p.porVencerCop),
             })}
           </p>
         </>
@@ -265,12 +299,15 @@ export function ComparativaDelMes({
   cargando,
   error,
   onReintentar,
+  formato = formatCurrency,
 }: {
   month: string;
   comparativa: Comparativa | null;
   cargando: boolean;
   error: unknown;
   onReintentar: () => void | Promise<unknown>;
+  /** El formato de la plata de la página (ronda 11: el mismo «,00» que las cifras de arriba). */
+  formato?: (n: number | null | undefined) => string;
 }) {
   const { t, locale } = useI18n();
   const mes = soloElMes(month, locale);
@@ -289,38 +326,90 @@ export function ComparativaDelMes({
     >
       {comparativa && (
         <div className="grid gap-4 lg:grid-cols-3" data-testid="comparativa">
-          <CuerpoDelGrafico comparativa={comparativa} mes={mes} />
-          <TarjetaDeProyeccion proyeccion={comparativa.proyeccion} month={month} />
+          {/* Ronda 26 (revisora r25, Recaudo #1, §3): con la tasa en 0 la proyección ES lo que llegó, y la
+              tarjeta repetía la cifra de arriba por cuarta vez. Sin la tarjeta: una línea bajo el día a día. */}
+          {proyeccionSinTasa(comparativa.proyeccion) ? (
+            <CuerpoDelGrafico
+              comparativa={comparativa}
+              mes={mes}
+              formato={formato}
+              ancho
+              pie={
+                <p className="text-caption leading-relaxed text-fg-muted" data-testid="proyeccion-sin-tasa">
+                  {locale === 'en'
+                    ? 'No close projection: in previous months nothing still due came in before the close. For now, the close is what already came in.'
+                    : 'No hay proyección del cierre: en los meses anteriores no entró nada de lo por vencer antes del cierre. Por ahora, el cierre es lo que ya llegó.'}
+                </p>
+              }
+            />
+          ) : (
+            <>
+              <CuerpoDelGrafico comparativa={comparativa} mes={mes} formato={formato} />
+              <TarjetaDeProyeccion proyeccion={comparativa.proyeccion} month={month} formato={formato} />
+            </>
+          )}
         </div>
       )}
     </EstadoDeDatos>
   );
 }
 
-function CuerpoDelGrafico({ comparativa: c, mes }: { comparativa: Comparativa; mes: string }) {
+/** La proyección que no dice nada nuevo: proyectada con tasa 0 = lo que ya llegó. */
+function proyeccionSinTasa(p: Comparativa['proyeccion']): boolean {
+  return p.estado === 'PROYECTADA' && p.tasa === 0;
+}
+
+function CuerpoDelGrafico({
+  comparativa: c,
+  mes,
+  formato = formatCurrency,
+  ancho = false,
+  pie,
+}: {
+  comparativa: Comparativa;
+  mes: string;
+  formato?: (n: number | null | undefined) => string;
+  /** Sin la tarjeta de la proyección al lado: ocupa toda la fila. */
+  ancho?: boolean;
+  /** Una línea al pie (la proyección que no se pinta en tarjeta). */
+  pie?: ReactNode;
+}) {
   const { t, locale } = useI18n();
   const mesAnterior = soloElMes(c.mesAnterior, locale);
   const hayRecibos = c.dias.some((d) => (d.esteMesCop ?? 0) > 0 || (d.mesAnteriorCop ?? 0) > 0);
   const llego = c.vsMesAnterior.llego;
-  const resumen = t(`${C}.diaADia.resumen`, {
+  // Ronda 12: sin mes con qué comparar, el día a día es sólo de este mes.
+  const sinMesAnterior = sinComparacionEnNinguna(c);
+  const resumen = sinMesAnterior
+    ? locale === 'en'
+      ? `By day ${c.dia}, ${formato(llego.actualCop)} had come in.`
+      : `Al día ${c.dia} llegaron ${formato(llego.actualCop)}.`
+    : t(`${C}.diaADia.resumen`, {
     dia: c.dia,
     mes,
-    actual: formatCurrency(llego.actualCop),
+    actual: formato(llego.actualCop),
     diaAnterior: c.diaDelMesAnterior,
     mesAnterior,
-    anterior: formatCurrency(llego.anteriorCop ?? 0),
+    anterior: formato(llego.anteriorCop ?? 0),
   });
 
   return (
     <section
-      className="min-w-0 space-y-4 rounded-lg border border-border bg-surface p-5 sm:p-6 lg:col-span-2"
+      className={cn(
+        'min-w-0 space-y-4 rounded-lg border border-border bg-surface p-5 sm:p-6',
+        ancho ? 'lg:col-span-3' : 'lg:col-span-2',
+      )}
       aria-labelledby="dia-a-dia-titulo"
     >
       <div className="space-y-1">
         <h2 id="dia-a-dia-titulo" className="text-sm font-semibold text-fg">
-          {t(`${C}.diaADia.titulo`, { mes: conMayuscula(mes), mesAnterior })}
+          {sinMesAnterior
+            ? locale === 'en'
+              ? `Day by day: ${conMayuscula(mes)}`
+              : `Día a día de ${mes}`
+            : t(`${C}.diaADia.titulo`, { mes: conMayuscula(mes), mesAnterior })}
         </h2>
-        <p className="text-caption text-fg-muted">
+        <p className="text-caption text-fg-muted" hidden={sinMesAnterior}>
           {c.enCurso
             ? t(`${C}.diaADia.descripcionEnCurso`, {
                 mes,
@@ -338,8 +427,10 @@ function CuerpoDelGrafico({ comparativa: c, mes }: { comparativa: Comparativa; m
             nombreMesAnterior={conMayuscula(mesAnterior)}
             resumen={resumen}
             rotuloDelDia={(dia) => t(`${C}.diaADia.dia`, { dia })}
+            sinMesAnterior={sinMesAnterior}
           />
-          <p className="font-mono text-caption tabular-nums text-fg-muted" data-testid="dia-a-dia-resumen">
+          {/* Ronda 12: la frase en letra normal (sólo las cifras van en mono, adentro). */}
+          <p className="text-caption tabular-nums text-fg-muted" data-testid="dia-a-dia-resumen">
             {resumen}
           </p>
         </>
@@ -348,6 +439,7 @@ function CuerpoDelGrafico({ comparativa: c, mes }: { comparativa: Comparativa; m
           {t(`${C}.diaADia.sinRecibos`, { mes, mesAnterior })}
         </p>
       )}
+      {pie}
     </section>
   );
 }

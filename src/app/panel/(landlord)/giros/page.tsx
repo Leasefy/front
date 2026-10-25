@@ -11,14 +11,21 @@
  * QA 11-10: el banco había devuelto el giro de Paula y lo retenido no se le
  * decía en ninguna parte del portal; sólo veía «Giro atrasado · 58 días».
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Bank, FileArrowDown, Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { StatusBadge } from '@leasefy/cadence';
+import { giradoEnElAnio } from '@/lib/propietario/el-mes-del-contrato';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -26,7 +33,7 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { SelectorDeArchivo } from '@/components/ui/selector-de-archivo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatCurrency } from '@/lib/format';
-import { fechaCorta, fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
+import { fechaCorta, fechaLarga, hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { nombreDelMes } from '@/lib/recaudo/meses';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
 import {
@@ -36,11 +43,12 @@ import {
   type GiroDelPropietario,
 } from '@/lib/api/portal-del-propietario.service';
 
-const ESTADO: Record<EstadoDelGiro, { texto: string; clase: string }> = {
-  GIRADO: { texto: 'Girado', clase: 'bg-success-soft text-success' },
-  EN_CAMINO: { texto: 'En camino', clase: 'bg-surface-muted text-fg-muted' },
-  DEVUELTO: { texto: 'Devuelto por el banco', clase: 'bg-danger-soft text-danger' },
-  REGIRADO: { texto: 'Devuelto y vuelto a girar', clase: 'bg-surface-muted text-fg-muted' },
+// Glow up 22-10: el estado con su punto y su palabra (StatusBadge), no una pastilla teñida.
+const ESTADO: Record<EstadoDelGiro, { texto: string; tono: 'success' | 'neutral' | 'critical' | 'warning' }> = {
+  GIRADO: { texto: 'Girado', tono: 'success' },
+  EN_CAMINO: { texto: 'En camino', tono: 'neutral' },
+  DEVUELTO: { texto: 'Devuelto por el banco', tono: 'critical' },
+  REGIRADO: { texto: 'Devuelto y vuelto a girar', tono: 'warning' },
 };
 
 function CambiarCuenta({ ficha, onListo }: { ficha: CuentaDeGiro; onListo: () => void }) {
@@ -172,7 +180,7 @@ function TarjetaDeLaCuenta({ ficha, onCambio }: { ficha: CuentaDeGiro; onCambio:
       )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-muted">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-muted">
             <Bank className="h-5 w-5 text-fg-muted" aria-hidden="true" />
           </span>
           <div className="min-w-0">
@@ -220,7 +228,7 @@ function FilaDelGiro({ g }: { g: GiroDelPropietario }) {
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <span className={`rounded-full px-2.5 py-0.5 text-caption ${e.clase}`}>{e.texto}</span>
+        <StatusBadge tone={e.tono}>{e.texto}</StatusBadge>
         <Button
           variant="outline"
           size="sm"
@@ -248,6 +256,8 @@ function FilaDelGiro({ g }: { g: GiroDelPropietario }) {
 
 export default function MisGirosPage() {
   const [cuentas, setCuentas] = useState<CuentaDeGiro[] | null>(null);
+  // Revisora r27 (regla de Nico: listas con filtro y paginación): los giros por año, de a una página.
+  const [anioElegido, setAnioElegido] = useState<string | null>(null);
   const [giros, setGiros] = useState<GiroDelPropietario[] | null>(null);
   const [cargando, setCargando] = useState(true);
   const [fallo, setFallo] = useState<unknown>(null);
@@ -270,34 +280,99 @@ export default function MisGirosPage() {
     void cargar();
   }, [cargar]);
 
+  const anios = useMemo(
+    () => [...new Set((giros ?? []).map((g) => g.mes.slice(0, 4)))].sort((a, b) => b.localeCompare(a)),
+    [giros],
+  );
+  const anio = anioElegido && anios.includes(anioElegido) ? anioElegido : (anios[0] ?? null);
+  const delAnio = useMemo(() => (giros ?? []).filter((g) => !anio || g.mes.startsWith(anio)), [giros, anio]);
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(delAnio, {
+    resetKey: anio ?? '',
+  });
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1.5">
-        <SectionLabel>Tu plata</SectionLabel>
-        <h1 className="text-h2 text-fg">Mis giros</h1>
-        <p className="max-w-2xl text-body-sm text-fg-muted">
-          A qué cuenta te giran, lo que ya te giraron mes por mes y el extracto de cada mes.
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Mi plata"
+        // Revisora r25: el título es el de la pestaña y la descripción va en el orden de la pantalla (la cuenta, al final).
+        titulo="Giros"
+        descripcion="Lo que ya te giraron mes por mes, el extracto de cada mes y a qué cuenta te giran."
+      />
       <EstadoDeDatos cargando={cargando} error={fallo} queEs="tus giros" onReintentar={cargar}>
         <div className="space-y-6">
-          {(cuentas ?? []).map((f) => (
-            <TarjetaDeLaCuenta key={f.propietarioId} ficha={f} onCambio={cargar} />
-          ))}
-          <section className="rounded-lg border border-border bg-surface p-5">
-            <h2 className="text-subtitle text-fg">Lo que te giraron</h2>
+          {/* Un giro devuelto es lo único urgente: su cuenta va primero (con el aviso y «Cambiar cuenta»). */}
+          {(cuentas ?? [])
+            .filter((f) => f.giroDevuelto)
+            .map((f) => (
+              <TarjetaDeLaCuenta key={f.propietarioId} ficha={f} onCambio={cargar} />
+            ))}
+          {/* LA RESPUESTA (glow up 22-10): cuánto te han girado este año, en grande; la lista, debajo. */}
+          <section className="space-y-5 rounded-lg border border-border bg-surface p-5" data-testid="lo-que-te-giraron">
+            {giros && giros.length > 0 && (
+              <CifraHeroe
+                rotulo={`Te han girado en ${hoyEnColombia().slice(0, 4)}`}
+                cifra={<span data-testid="girado-en-el-anio">{formatCurrency(giradoEnElAnio(giros, hoyEnColombia()))}</span>}
+                contexto={(() => {
+                  const anio = hoyEnColombia().slice(0, 4);
+                  // Los mismos que suma la cifra: girados (o vueltos a girar) de este año.
+                  const n = giros.filter((g) => g.mes.startsWith(anio) && (g.estado === 'GIRADO' || g.estado === 'REGIRADO')).length;
+                  return n === 0 ? 'Todavía no te han girado este año' : n === 1 ? 'en 1 giro' : `en ${n} giros`;
+                })()}
+              />
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-subtitle text-fg">Mes por mes</h2>
+              {anios.length > 1 ? (
+                <PestanasDeEstado<string>
+                  etiqueta="Ver los giros de un año"
+                  valor={anio ?? ''}
+                  onCambio={setAnioElegido}
+                  pestanas={anios.map((a) => ({
+                    valor: a,
+                    etiqueta: a,
+                    cuantos: (giros ?? []).filter((g) => g.mes.startsWith(a)).length,
+                    fija: true,
+                  }))}
+                />
+              ) : null}
+            </div>
             {giros && giros.length > 0 ? (
-              <ul className="divide-y divide-border-faint" data-testid="lista-de-giros">
-                {giros.map((g) => (
-                  <FilaDelGiro key={g.id} g={g} />
-                ))}
-              </ul>
+              <>
+                <ul className="divide-y divide-border-faint" data-testid="lista-de-giros">
+                  {pageItems.map((g) => (
+                    <FilaDelGiro key={g.id} g={g} />
+                  ))}
+                </ul>
+                {shouldPaginate ? (
+                  <div className="border-t border-border pt-3">
+                    <TablePagination
+                      total={total}
+                      page={page}
+                      pageSize={pageSize}
+                      pageSizeOptions={PAGE_SIZE_OPTIONS}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                    />
+                  </div>
+                ) : null}
+              </>
             ) : (
               <p className="mt-2 text-body-sm text-fg-muted" data-testid="sin-giros">
-                Todavía no te han girado nada por Leasefy. Lo que está por girar lo ves en tu estado de cuenta.
+                Todavía no te han girado nada por Leasefy. Lo que está por girar lo ves en{' '}
+                {/* Revisora r27: el vacío lleva a donde dice (antes lo nombraba sin enlace). */}
+                <Link href="/panel/estado-de-cuenta" className="font-medium text-fg underline underline-offset-4 hover:text-primary">
+                  tu estado de cuenta
+                </Link>
+                .
               </p>
             )}
           </section>
+          {/* La cuenta a la que te giran (sin novedades), después de lo girado: se consulta, no se hace. */}
+          {(cuentas ?? [])
+            .filter((f) => !f.giroDevuelto)
+            .map((f) => (
+              <TarjetaDeLaCuenta key={f.propietarioId} ficha={f} onCambio={cargar} />
+            ))}
         </div>
       </EstadoDeDatos>
     </div>

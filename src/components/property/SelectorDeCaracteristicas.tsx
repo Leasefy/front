@@ -55,10 +55,11 @@ function Chip({
       className={cn(
         'flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13.5px] transition-colors duration-fast sm:px-3 sm:text-sm',
         disabled && 'cursor-not-allowed opacity-50',
+        // Glow up 23-10: lo marcado lo dice la casilla (voltaje); el chip sólo se afirma, sin bloque azul.
         activa
           ? aviso
-            ? 'border border-warning bg-warning-soft font-medium text-fg'
-            : 'border border-primary bg-primary-soft font-medium text-fg'
+            ? 'border border-warning bg-warning-soft text-fg'
+            : 'border border-primary/50 bg-surface text-fg'
           : 'border border-border bg-surface text-fg-muted hover:border-border-strong',
       )}
     >
@@ -86,7 +87,7 @@ export function SelectorDeCaracteristicas({
     <div className="space-y-4" data-testid={testId} role="group" aria-labelledby={tituloId} {...ariaDelError}>
       {caracteristicasPorGrupo().map(({ grupo, nombre, items }) => (
         <fieldset key={grupo} className="min-w-0" data-testid={`caracteristicas-${grupo}`}>
-          <legend className="mb-2 text-[12px] font-medium uppercase tracking-[0.08em] text-fg-subtle">{nombre}</legend>
+          <legend className="mb-2 text-label text-fg-subtle">{nombre}</legend>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {items.map((c) => {
               const activa = value.includes(c.id);
@@ -107,7 +108,7 @@ export function SelectorDeCaracteristicas({
 
       {desconocidas.length > 0 && (
         <fieldset className="min-w-0" data-testid="caracteristicas-desconocidas">
-          <legend className="mb-1 text-[12px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+          <legend className="mb-1 text-label text-fg-subtle">
             Guardadas que ya no están en la lista
           </legend>
           <p className="mb-2 text-[13px] text-fg-muted">

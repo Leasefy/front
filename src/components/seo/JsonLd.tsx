@@ -9,38 +9,30 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
 // Organization Schema
 // ============================================
 export function OrganizationJsonLd() {
+  // SEO (24-10-2026): los mismos datos que la landing (scripts/landing/paginas-seo.mjs). Antes: un logo que no
+  // existía (/logo.png), contacto@ (el correo es hola@leasefy.co), Bogotá (la sede es Medellín) y redes sin confirmar.
   const schema = {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": `${siteUrl}/#organizacion`,
     name: "Leasefy",
-    alternateName: "Leasefy",
     url: siteUrl,
-    logo: `${siteUrl}/logo.png`,
+    logo: { "@type": "ImageObject", url: `${siteUrl}/icons/icon-512x512.png`, width: 512, height: 512 },
     description:
-      "Plataforma de arriendos en Colombia con scoring de riesgo AI, contratos digitales y pagos automatizados.",
-    foundingDate: "2024",
-    founders: [
-      {
-        "@type": "Person",
-        name: "Leasefy Team",
-      },
-    ],
+      "Software inmobiliario para inmobiliarias de Colombia: CRM, ERP y agentes AI que automatizan arriendos, cobranza, contratos, conciliación y pagos a propietarios.",
+    email: "hola@leasefy.co",
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Bogotá",
+      addressLocality: "Medellín",
+      addressRegion: "Antioquia",
       addressCountry: "CO",
     },
     contactPoint: {
       "@type": "ContactPoint",
-      contactType: "customer service",
-      email: "contacto@leasefy.co",
-      availableLanguage: ["Spanish"],
+      contactType: "sales",
+      email: "hola@leasefy.co",
+      availableLanguage: ["es", "en"],
     },
-    sameAs: [
-      "https://twitter.com/leasefy",
-      "https://linkedin.com/company/leasefy",
-      "https://instagram.com/leasefy",
-    ],
     areaServed: {
       "@type": "Country",
       name: "Colombia",
@@ -71,7 +63,7 @@ export function WebsiteJsonLd() {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${siteUrl}/propiedades?q={search_term_string}`,
+        urlTemplate: `${siteUrl}/es/propiedades?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
@@ -94,7 +86,7 @@ export function LocalBusinessJsonLd() {
     "@type": "RealEstateAgent",
     name: "Leasefy",
     url: siteUrl,
-    logo: `${siteUrl}/logo.png`,
+    logo: `${siteUrl}/icons/icon-512x512.png`,
     image: `${siteUrl}/og-image.jpg`,
     description:
       "Plataforma digital de arriendos con scoring de inquilinos AI y contratos inteligentes.",
@@ -241,7 +233,7 @@ export function ArticleJsonLd({
       name: "Leasefy",
       logo: {
         "@type": "ImageObject",
-        url: `${siteUrl}/logo.png`,
+        url: `${siteUrl}/icons/icon-512x512.png`,
         width: 200,
         height: 60,
       },

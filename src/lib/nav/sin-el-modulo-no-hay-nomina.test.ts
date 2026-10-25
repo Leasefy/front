@@ -54,33 +54,19 @@ function filasVisibles(c: NavFilterContext): string[] {
 
 const HREF_DE_NOMINA = '/panel/inmobiliaria/nomina';
 
-describe('🔴 la fila de Nómina no existe sin el módulo comprado', () => {
-  it('sin la lista de módulos (todavía no llegó) NO se muestra', () => {
-    expect(filasVisibles(ctx())).not.toContain(HREF_DE_NOMINA);
+// Decisión 29 de Nico (22-10-2026), cambia la del 17-09: «debe de aparecer y si la inmobiliaria lo quiere, que lo
+// pague». La fila de Nómina se ve aunque el módulo no esté comprado; la pantalla dice que es de pago y ofrece el plan.
+describe('la fila de Nómina se ve aunque el módulo no esté comprado (decisión 29)', () => {
+  it('sin la lista de módulos (todavía no llegó) se muestra', () => {
+    expect(filasVisibles(ctx())).toContain(HREF_DE_NOMINA);
   });
 
-  it('con la lista VACÍA tampoco', () => {
-    expect(filasVisibles(ctx({ modulosPagos: [] }))).not.toContain(HREF_DE_NOMINA);
+  it('con la lista VACÍA también', () => {
+    expect(filasVisibles(ctx({ modulosPagos: [] }))).toContain(HREF_DE_NOMINA);
   });
 
-  it('con otro módulo de pago prendido tampoco', () => {
-    expect(
-      filasVisibles(ctx({ modulosPagos: ['otro-modulo'] })),
-    ).not.toContain(HREF_DE_NOMINA);
-  });
-
-  it('con `nomina` prendido SÍ se muestra', () => {
-    expect(filasVisibles(ctx({ modulosPagos: ['nomina'] }))).toContain(
-      HREF_DE_NOMINA,
-    );
-  });
-
-  it('🔴 ni un administrador de plataforma la ve si la inmobiliaria no la compró', () => {
-    // `isAdmin` salta TODOS los gates de permiso y de rol. El de módulo de pago
-    // no es un permiso: es un contrato, y no se salta.
-    expect(
-      filasVisibles(ctx({ isAdmin: true, modulosPagos: [] })),
-    ).not.toContain(HREF_DE_NOMINA);
+  it('con `nomina` prendido, igual', () => {
+    expect(filasVisibles(ctx({ modulosPagos: ['nomina'] }))).toContain(HREF_DE_NOMINA);
   });
 });
 
@@ -134,28 +120,16 @@ describe('el gate del módulo de pago, aislado', () => {
 });
 
 describe('nada más del panel se rompe', () => {
-  it('las demás filas se ven igual con el módulo prendido o apagado', () => {
+  it('el menú es el mismo con el módulo prendido o apagado (decisión 29)', () => {
     const apagada = filasVisibles(ctx({ modulosPagos: [] }));
     const prendida = filasVisibles(ctx({ modulosPagos: ['nomina'] }));
-    // La única diferencia es Nómina.
-    expect(prendida.filter((h) => h !== HREF_DE_NOMINA)).toEqual(apagada);
+    expect(prendida).toEqual(apagada);
   });
 
-  it('`nomina` es la ÚNICA fila con `moduloPago` hoy', () => {
+  it('ninguna fila del menú se esconde hoy por un módulo de pago', () => {
     const conModuloPago = ARQUITECTURA_DEL_PANEL.flatMap((g) =>
       g.modulos.filter((m) => m.moduloPago != null).map((m) => m.key),
     );
-    expect(conModuloPago).toEqual(['nomina']);
-  });
-
-  it('la fila de Nómina viaja con su `moduloPago` hasta el filtro final', () => {
-    const filas: NavItemWithModule[] = filasDelSidebar(
-      t,
-      ctx({ modulosPagos: ['nomina'] }),
-    );
-    const nomina = filas.find((f) => f.href === HREF_DE_NOMINA);
-    // Sin esto, `filterAgencyNav` no tendría con qué volver a mirar el gate y la
-    // fila sobreviviría a un cambio de estado de los módulos de pago.
-    expect(nomina?.moduloPago).toBe('nomina');
+    expect(conModuloPago).toEqual([]);
   });
 });

@@ -123,7 +123,7 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
         </p>
       ) : (
         <p className="text-xs text-fg-muted" data-testid="estudio-sin-pago">
-          {tr("No tiene un estudio pagado y vigente acá. El estudio lo paga el solicitante, no se devuelve y le sirve")}{' '}
+          {tr("No tiene un estudio pagado y vigente aquí. El estudio lo paga el solicitante, no se devuelve y le sirve")}{' '}
           {estado?.vigenciaDias ?? 60} {tr("días para cualquier inmueble de la inmobiliaria.")}
         </p>
       )}

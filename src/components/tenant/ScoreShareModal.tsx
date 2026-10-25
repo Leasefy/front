@@ -58,19 +58,19 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
       <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>
-            {locale === 'es' ? 'Compartir evaluación' : 'Share evaluation'}
+            {locale === 'es' ? 'Compartir tu evaluación' : 'Share evaluation'}
           </DialogTitle>
           <DialogDescription>
             {locale === 'es'
-              ? 'Comparte tu score verificado con propietarios o inmobiliarias.'
-              : 'Share your verified score with landlords or agencies.'}
+              ? 'Comparte tu calificación verificada con propietarios o inmobiliarias.'
+              : 'Share your verified rating with landlords or agencies.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Verification Code */}
           <div>
-            <p className="text-xs text-fg-muted mb-1.5">
+            <p className="text-caption text-fg-muted mb-1.5">
               {locale === 'es' ? 'Código de verificación' : 'Verification code'}
             </p>
             <button
@@ -90,7 +90,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
 
           {/* Shareable Link */}
           <div>
-            <p className="text-xs text-fg-muted mb-1.5">
+            <p className="text-caption text-fg-muted mb-1.5">
               {locale === 'es' ? 'Enlace verificable' : 'Verifiable link'}
             </p>
             <button
@@ -127,7 +127,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
               className="flex-1"
             >
               <EnvelopeSimple className="w-4 h-4" />
-              Email
+              {locale === 'es' ? 'Correo' : 'Email'}
             </Button>
           </div>
         </div>

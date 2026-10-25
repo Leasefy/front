@@ -93,7 +93,7 @@ export function SeccionPermisos() {
       });
       return true;
     } catch (error) {
-      // 🔴 Acá había `t(...) || 'Error al guardar permisos'`. Ese `||` NUNCA
+      // 🔴 Acá había `t(...) || 'No se pudieron guardar los permisos'`. Ese `||` NUNCA
       // corre: `t()` de una clave que falta devuelve LA CLAVE. La clave ya
       // existe en los dos idiomas; el mensaje concreto sale del traductor
       // (02-10-2026: antes era el `message` crudo, también ante un 5xx).

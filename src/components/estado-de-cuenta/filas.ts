@@ -451,7 +451,8 @@ export function documentoDelCliente(cliente: {
 }): string | null {
   if (!cliente.documento) return null;
   const tipo = cliente.tipoDocumento?.trim();
-  return `${tipo || 'NIT/CC'} ${cliente.documento}`;
+  // Nico (22-10): sin el tipo, «Documento» (antes «NIT/CC»; el manual de voz pide una sola palabra).
+  return `${tipo || 'Documento'} ${cliente.documento}`;
 }
 
 /** Con qué sombrero entra el cliente al documento. */

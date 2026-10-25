@@ -498,7 +498,8 @@ describe('Documentos — los botones del vacío piden el permiso que el backend 
 })
 
 describe('Documentos — contadores, errores del acta y consignaciones caídas (D1 · D2 · D3)', () => {
-  const chipActas = () => container.querySelector('[data-testid="chip-actas"]')
+  // GLOW UP 22-10: el conteo de las actas va en su pestaña (la última de la fila de estados), sin número en cero.
+  const chipActas = () => container.querySelector('[data-testid="tab-actas"]')
 
   async function abrirNuevaActa() {
     abrirPestana('actas')
@@ -514,14 +515,18 @@ describe('Documentos — contadores, errores del acta y consignaciones caídas (
     useActasEntregaMock.mockReturnValue({ ...SIN_ACTAS, errorCrudo: new ApiError(403, 'Forbidden resource') })
     await renderPage()
 
-    expect(chipActas()?.textContent).toBe('—')
+    // Ni «0» ni ningún número: la pestaña se nombra sin contar lo que no se pudo leer.
+    expect(chipActas()?.textContent).not.toMatch(/\d/)
   })
 
-  it('sin error el chip cuenta las actas', async () => {
+  it('sin error el chip cuenta las actas (y en cero no muestra número)', async () => {
     canAccessMock.mockImplementation(permisosDe('AGENTE'))
     await renderPage()
+    expect(chipActas()?.textContent).not.toMatch(/\d/)
 
-    expect(chipActas()?.textContent).toBe('0')
+    useActasEntregaMock.mockReturnValue({ ...SIN_ACTAS, actas: [{ id: 'a-1', status: 'draft', createdAt: '2026-10-03T15:00:00Z' }] })
+    await renderPage()
+    expect(chipActas()?.textContent).toMatch(/1$/)
   })
 
   it('🔴 guardar un acta que el back rechaza muestra LO QUE DIJO el back, no una clave fija', async () => {
@@ -730,6 +735,23 @@ describe('Documentos — escribir plantillas propias', () => {
     expect(container.querySelector('[data-testid="plantilla-nueva"]')).toBeNull()
     abrirPestana('plantillas')
     expect(container.querySelector('[data-testid="plantilla-nueva"]')).not.toBeNull()
+  })
+
+  it('T-0173: los botones de la cabecera envuelven en un teléfono, no ensanchan la página (433 px a 360)', async () => {
+    canAccessMock.mockImplementation(permisosDe('ADMIN'))
+    useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, plantillas: [PROPIA] })
+    await renderPage()
+    abrirPestana('plantillas')
+    const boton = container.querySelector('[data-testid="documentos-generar"]')!
+    expect(container.querySelector('[data-testid="plantilla-nueva"]')).not.toBeNull()
+    // Cada contenedor de botones hasta la cabecera: nada puede ser shrink-0 sin `sm:`,
+    // o su ancho máximo (los dos botones lado a lado) empuja el documento más allá del teléfono.
+    for (let el = boton.parentElement; el && el.tagName !== 'HEADER'; el = el.parentElement) {
+      const clases = el.className.split(/s+/)
+      expect(clases).not.toContain('shrink-0')
+    }
+    // The header actions stretch to the phone width (`[&>*]:w-full`) and only go auto from `sm:`.
+    expect(boton.parentElement!.className).toContain('[&>*]:w-full')
   })
 
   it('un VIEWER no ve ninguno de los botones de escribir', async () => {

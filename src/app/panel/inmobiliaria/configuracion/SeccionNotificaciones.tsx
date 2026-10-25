@@ -189,7 +189,7 @@ export function SeccionNotificaciones() {
                 : 'Sign-in and signing codes, signing invitations and signed copies, payment receipts, the result of your imports and plan notices cannot be turned off.'
             }
           >
-            <span data-testid="notificaciones-obligatorias" className="text-xs text-fg-subtle">
+            <span data-testid="notificaciones-obligatorias" className="text-caption text-fg-subtle">
               {es ? 'Siempre' : 'Always'}
             </span>
           </FilaDeAjuste>

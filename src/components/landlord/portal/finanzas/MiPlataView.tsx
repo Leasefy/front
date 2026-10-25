@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Buildings, ChartPieSlice, CurrencyDollar, ChatCircleText, CaretRight } from '@phosphor-icons/react';
-import { PageHeader, KpiCard } from '@leasefy/cadence';
+import { KpiCard } from '@leasefy/cadence';
 import { Card } from '@/components/ui';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { useI18n } from '@/lib/i18n';
@@ -13,6 +13,7 @@ import type {
   FinanzasRecaudoAnual,
 } from '@/lib/api/owner-finanzas.types';
 import { DescargarInformeButton } from './DescargarInformeButton';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 interface MiPlataViewProps {
   agencyId: string | null;
@@ -53,11 +54,12 @@ export function MiPlataView({
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
-          title="Mi plata"
-          subtitle="Tus pagos, la proyección de tu contrato y tu portafolio, en un solo lugar."
-          actions={<DescargarInformeButton agencyId={agencyId} />}
+      <div className="p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion="Contratos y plata"
+          titulo="Mi plata"
+          descripcion="Tus pagos, la proyección de tu contrato y tu portafolio, en un solo lugar."
+          acciones={<DescargarInformeButton agencyId={agencyId} />}
         />
 
         {/* KPIs */}
@@ -77,7 +79,7 @@ export function MiPlataView({
               queSon="inmuebles"
               icono={Buildings}
               titulo="Todavía no vemos inmuebles tuyos"
-              descripcion="Acá aparecen los inmuebles que tu inmobiliaria administra a tu nombre, con su canon y su inquilino. Si crees que falta alguno, escríbele a tu inmobiliaria: el portafolio lo arma ella."
+              descripcion="Aquí aparecen los inmuebles que tu inmobiliaria administra a tu nombre, con su canon y su inquilino. Si crees que falta alguno, escríbele a tu inmobiliaria: el portafolio lo arma ella."
             />
           ) : (
             <ul className="divide-y divide-border">
@@ -99,7 +101,7 @@ export function MiPlataView({
                       {inm.contract && (
                         <div className="text-right">
                           <p className="font-medium font-mono tabular-nums">{formatCurrency(inm.contract.canonCop)}</p>
-                          <p className="text-xs text-fg-muted">
+                          <p className="text-caption text-fg-muted">
                             Vence {formatDate(inm.contract.endDate)}
                           </p>
                         </div>
@@ -131,7 +133,7 @@ export function MiPlataView({
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm">Vence {formatDate(c.endDate)}</p>
-                    <p className="text-xs text-fg-muted">
+                    <p className="text-caption text-fg-muted">
                       <span className="font-mono tabular-nums">{c.daysLeft}</span> días · {c.preaviso.windowOpen ? 'ventana de preaviso abierta' : 'preaviso más adelante'}
                     </p>
                   </div>
@@ -193,7 +195,7 @@ export function MiPlataView({
               {proyeccion.assumptions.length > 0 && (
                 <ul className="mt-4 space-y-1">
                   {proyeccion.assumptions.map((a, i) => (
-                    <li key={i} className="text-xs text-fg-muted">• {a}</li>
+                    <li key={i} className="text-caption text-fg-muted">• {a}</li>
                   ))}
                 </ul>
               )}

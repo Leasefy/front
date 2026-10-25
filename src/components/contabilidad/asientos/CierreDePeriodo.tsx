@@ -231,7 +231,7 @@ export function CierreDePeriodo({
         </div>
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <h2 id={`${id}-titulo`} className="text-sm font-semibold text-fg">
+            <h2 id={`${id}-titulo`} className="text-sm font-medium text-fg">
               Período contable
             </h2>
             <ParaEntenderMas

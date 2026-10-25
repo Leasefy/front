@@ -195,7 +195,7 @@ export function RecibosDeCajaHistorial({
                         >
                           {formatCurrency(recibo.valorCop)}
                         </p>
-                        <p className="truncate text-xs text-fg-muted">
+                        <p className="truncate text-caption text-fg-muted">
                           {numero
                             ? t('recibos.historial.numero', { numero })
                             : t('recibos.historial.sinNumero')}
@@ -203,10 +203,10 @@ export function RecibosDeCajaHistorial({
                           {recibo.referencia ? ` · ${recibo.referencia}` : ''}
                         </p>
                         {recibo.notas && (
-                          <p className="mt-1 text-xs text-fg-muted">{recibo.notas}</p>
+                          <p className="mt-1 text-caption text-fg-muted">{recibo.notas}</p>
                         )}
                         {!vivo && recibo.anuladoAt && (
-                          <p className="mt-1 text-xs text-danger">
+                          <p className="mt-1 text-caption text-danger">
                             {t('recibos.historial.anuladoEl', {
                               fecha: formatDate(new Date(recibo.anuladoAt), {
                                 day: 'numeric',
@@ -220,7 +220,7 @@ export function RecibosDeCajaHistorial({
                     </div>
 
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
-                      <span className="text-xs text-fg-muted">
+                      <span className="text-caption text-fg-muted">
                         {recibo.fecha
                           ? formatDate(new Date(recibo.fecha), { day: 'numeric', month: 'short' })
                           : '—'}
@@ -231,7 +231,7 @@ export function RecibosDeCajaHistorial({
                             variant="ghost"
                             size="sm"
                             hideArrow
-                            className="h-auto px-2 py-1 text-xs text-danger"
+                            className="h-auto px-2 py-1 text-caption text-danger"
                             onClick={() => {
                               setAAnular(recibo);
                               setMotivo('');

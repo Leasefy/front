@@ -16,6 +16,8 @@
  * que lo deduce de lo que sí tiene.
  */
 
+import { nombreDelMes } from '@/lib/recaudo/meses';
+
 const FORMATO = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export function esMesValido(mes: string): boolean {
@@ -77,12 +79,13 @@ export function mesesQueFaltan(
  */
 export function avisoDeMesesQueFaltan(meses: readonly string[]): string | null {
   if (meses.length === 0) return null;
-  const nombrados = meses.slice(0, 6).join(', ');
+  // Revisora r25 (B3): los meses en palabras («noviembre de 2024»), nunca como código «2024-11».
+  const nombrados = meses.slice(0, 6).map((m) => nombreDelMes(m)).join(', ');
   const resto = meses.length > 6 ? ` y ${meses.length - 6} más` : '';
   return (
     `${meses.length} ${meses.length === 1 ? 'mes' : 'meses'} sin tasa de usura cargada ` +
-    `(${nombrados}${resto}). El interés de mora de esos meses se liquida SIN topear: ` +
+    `(${nombrados}${resto}). El interés de mora de esos meses se liquida sin topear: ` +
     'puede quedar por encima de lo que permite el art. 884 del Código de Comercio. ' +
-    'Cárgalas acá con la certificación de la Superfinanciera.'
+    'Cárgalas aquí con la certificación de la Superfinanciera.'
   );
 }

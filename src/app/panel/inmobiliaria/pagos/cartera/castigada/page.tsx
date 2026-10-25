@@ -13,24 +13,33 @@
  * permiso: lo verifica el back.
  */
 
-import { SectionLabel } from '@/components/ui/section-label'
+import { useTr } from '@/lib/i18n/use-tr'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
 import { CastigoDeCartera } from '@/components/cartera/CastigoDeCartera'
 
 export default function CarteraCastigadaPage() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <SectionLabel>Pagos · inquilinos</SectionLabel>
-          <h1 className="text-h2 text-fg">Cartera castigada</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Castigar es dejar de perseguir una deuda incobrable: sale de la
-            cartera activa y la cobranza no la toca. El inquilino sigue
-            debiéndola y la puede pagar; si paga, entra como recuperación.
-          </p>
-        </header>
+        <EncabezadoDePantalla
+          seccion={tr('Cobrar a inquilinos')}
+          titulo="Cartera castigada"
+          descripcion="Las deudas incobrables que salieron de la cartera activa: la cobranza no las toca."
+          ayuda={
+            <ParaEntenderMas etiqueta="Qué es castigar" titulo="Qué es castigar una deuda" variante="secundario">
+              <p className="text-body-sm text-fg-muted">
+                Castigar es dejar de perseguir una deuda incobrable: sale de la cartera activa y la
+                cobranza no la toca. El inquilino sigue debiéndola y la puede pagar; si paga, entra
+                como recuperación.
+              </p>
+            </ParaEntenderMas>
+          }
+        />
 
         <PestanasDeCartera />
 

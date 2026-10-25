@@ -48,7 +48,7 @@ export class BetaErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex flex-col items-center justify-center h-full px-6 py-12">
           <WarningCircle className="w-12 h-12 text-danger mb-4" weight="fill" />
-          <h2 className="text-lg font-semibold text-foreground mb-2">
+          <h2 className="text-h3 text-foreground mb-2">
             Algo salio mal
           </h2>
           <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">

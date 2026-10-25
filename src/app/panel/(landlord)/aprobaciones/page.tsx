@@ -17,11 +17,15 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Siren, Hourglass, Wrench } from '@phosphor-icons/react';
+import { CheckCircle, XCircle, Wrench } from '@phosphor-icons/react';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Presence } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -127,15 +131,15 @@ function Pendiente({
     <Card className="p-5 space-y-3" data-testid="aprobacion-pendiente">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {aprobacion.inmobiliaria} · {aprobacion.inmueble}
           </p>
-          <h3 className="text-base font-semibold text-fg">{aprobacion.reparacion.titulo}</h3>
+          <h3 className="text-base font-medium text-fg">{aprobacion.reparacion.titulo}</h3>
           {aprobacion.reparacion.descripcion && (
             <p className="text-sm text-fg-muted">{aprobacion.reparacion.descripcion}</p>
           )}
         </div>
-        <p className="shrink-0 font-mono tabular-nums text-lg font-semibold text-fg">
+        <p className="shrink-0 font-mono tabular-nums text-lg font-medium text-fg">
           {formatCurrency(aprobacion.valorCop)}
         </p>
       </div>
@@ -151,32 +155,29 @@ function Pendiente({
       {aprobacion.diferidaEn?.length ? (
         // Portofino 22-10: la inmobiliaria la difirió: se le descuenta por partes.
         <div className="space-y-1.5" data-testid="aprobacion-diferida">
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Si la apruebas, no se te descuenta de una vez: se te descuenta de tus giros {planEnFrase(aprobacion.diferidaEn)}. Pedida el {fecha(aprobacion.pedidaAt)}.
           </p>
+          {/* Glow up 23-10: cada mes en arena con su cifra en mono (antes pastillas con borde). */}
           <ul className="flex flex-wrap gap-1.5">
             {[...aprobacion.diferidaEn]
               .sort((a, b) => a.mes.localeCompare(b.mes))
               .map((m) => (
-                <li
-                  key={m.mes}
-                  className="rounded-full border border-border bg-surface-muted px-2.5 py-0.5 text-caption text-fg"
-                >
-                  {mesCorto(m.mes)} · {formatCurrency(m.valorCop)}
+                <li key={m.mes} className="rounded-lg bg-surface-muted px-2.5 py-1 text-caption text-fg">
+                  {mesCorto(m.mes)} · <span className="font-mono tabular-nums">{formatCurrency(m.valorCop)}</span>
                 </li>
               ))}
           </ul>
         </div>
       ) : (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Si la apruebas, el valor se descuenta de tu próxima liquidación sin pagar. Pedida el {fecha(aprobacion.pedidaAt)}.
         </p>
       )}
       {rechazando && (
         <div>
-          <textarea
+          <Textarea
             id={`motivo-${aprobacion.id}`}
-            className="w-full rounded-md border border-border bg-surface p-2 text-sm text-fg"
             rows={2}
             maxLength={MAX_LARGO_DEL_MOTIVO}
             placeholder="¿Por qué la rechazas? (opcional, lo lee tu inmobiliaria)"
@@ -193,13 +194,13 @@ function Pendiente({
         </div>
       )}
       <Presence show={laHagoYo} direction="down" className="space-y-1.5">
-        <p className="text-sm text-fg">
+        <p className="text-body-sm text-fg">
           La haces tú, por tu cuenta (con tu plomero o tú mismo): no se te descuenta nada y tu inmobiliaria no manda a nadie.
           Cuando quede, le avisas con «Ya quedó».
         </p>
-        <textarea
+        <Textarea
           id={`la-hago-yo-${aprobacion.id}`}
-          className="w-full rounded-md border border-border bg-surface p-2 text-sm text-fg"
+          aria-label="Quién la va a hacer"
           rows={2}
           maxLength={500}
           placeholder="¿Quién la va a hacer? (opcional, lo lee tu inmobiliaria)"
@@ -209,13 +210,13 @@ function Pendiente({
         />
       </Presence>
       {soloLaInmobiliaria && (
-        <p className="text-xs text-fg-muted" data-testid="la-hace-la-inmobiliaria">
+        <p className="text-caption text-fg-muted" data-testid="la-hace-la-inmobiliaria">
           Es de prioridad {aprobacion.prioridad === 'EMERGENCY' ? 'Emergencia' : 'Alta'}: la hace tu inmobiliaria, no da
           espera.
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button hideArrow onClick={() => void decidir('aprobar')} disabled={enviando !== null} data-testid="aprobacion-aprobar">
+        <Button variant="ink" hideArrow onClick={() => void decidir('aprobar')} disabled={enviando !== null} data-testid="aprobacion-aprobar">
           <CheckCircle className="h-4 w-4" />
           {enviando === 'aprobar' ? 'Aprobando…' : 'Aprobar'}
         </Button>
@@ -298,12 +299,22 @@ export default function AprobarReparacionesPage() {
   }, [cargar]);
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1">
-          <h1 className="text-h2 text-fg">Aprobar reparaciones</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">Las reparaciones a tu cargo las apruebas tú, o las haces tú mismo si no son urgentes. Nada se te descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día.</p>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Solicitudes"
+          titulo="Aprobar reparaciones"
+          descripcion="Las reparaciones a tu cargo: apruébalas, recházalas o hazlas tú mismo si no son urgentes."
+          ayuda={
+            <ParaEntenderMas etiqueta="¿Cuándo se me descuenta?" titulo="Nada se te descuenta sin tu aprobación">
+              {/* Revisora r25: salió de la descripción (2 renglones). */}
+              <p className="text-body-sm text-fg">
+                Las reparaciones a tu cargo las apruebas tú, o las haces tú mismo si no son urgentes. Nada se te
+                descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día.
+              </p>
+            </ParaEntenderMas>
+          }
+        />
         <EstadoDeDatos
           cargando={cargando}
           error={error}
@@ -313,19 +324,21 @@ export default function AprobarReparacionesPage() {
             !datos || (datos.pendientes.length === 0 && datos.historial.length === 0 && queHagoYo.length === 0)
           }
           cuandoVacio={
-            <Card className="p-6">
-              <p className="text-sm text-fg-muted" data-testid="aprobaciones-vacio">
-                No tienes reparaciones por aprobar. Cuando tu inmobiliaria necesite tu aprobación para descontarte una
-                reparación, va a aparecer acá.
-              </p>
-            </Card>
+            <section className="rounded-lg border border-border bg-surface" data-testid="aprobaciones-vacio">
+              <EmptyState
+                icon={Wrench}
+                ilustracion="escudo"
+                title="No tienes reparaciones por aprobar"
+                description="Cuando tu inmobiliaria necesite tu aprobación para descontarte una reparación, va a aparecer aquí."
+              />
+            </section>
           }
         >
           {/* Nico, 11-10: el costo final que pasa lo aprobado vuelve a pedirte aprobación. */}
           <SobrecostosPorAprobar alCambiar={() => void cargar()} />
           {datos && datos.pendientes.length > 0 && (
             <section className="space-y-3" aria-label="Por aprobar">
-              <h2 className="text-sm font-semibold text-fg">Por aprobar</h2>
+              <h2 className="text-sm font-medium text-fg">Por aprobar</h2>
               {datos.pendientes.map((a) => (
                 <Pendiente key={a.id} aprobacion={a} onDecidida={() => void cargar()} />
               ))}

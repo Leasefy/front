@@ -22,6 +22,7 @@
  * Descargar · Ver resultado · Reintentar · Detener.
  */
 
+import { Button } from '@/components/ui/button';
 import { useState } from 'react'
 import Link from 'next/link'
 import {
@@ -59,6 +60,10 @@ import { useDetenerEnElNavegador } from './detener-en-el-navegador'
 import { DetalleDelProceso } from './DetalleDelProceso'
 import {
   NOMBRE_DEL_ESTADO,
+  fallasDelProceso,
+  resultadoDelProceso,
+  sinEnviarDelProceso,
+  textoDelProceso,
   avanceEnPalabras,
   estaActivo,
   etapaYMensaje,
@@ -155,13 +160,27 @@ export function FilaDeProceso({
   const reintentar = p.estado === 'FALLO' ? reintentoDirecto(p) : null
   const IconoTipo = ICONO_DEL_TIPO[p.tipo] ?? (p.archivo?.tipo === 'application/zip' ? FileZip : FileArrowDown)
 
+  const resultadoFinal = resultadoDelProceso(p)
+  const fallas = resultadoFinal === 'sin-enviar' ? sinEnviarDelProceso(p) : fallasDelProceso(p)
   const estadoEnPalabras = p.interrumpido
     ? 'Se interrumpió'
     : p.cancelacionPedida && activo
       ? 'Deteniendo…'
       : deteniendo
         ? 'Deteniendo…'
-        : NOMBRE_DEL_ESTADO[p.estado]
+        : resultadoFinal === 'con-fallas'
+          ? 'Terminó con fallas'
+          : resultadoFinal === 'sin-enviar'
+            ? 'Terminó sin enviar'
+          : resultadoFinal === 'nada-salio'
+            ? NOMBRE_DEL_ESTADO.FALLO
+            : NOMBRE_DEL_ESTADO[p.estado]
+  const colorDelEstado =
+    resultadoFinal === 'con-fallas' || resultadoFinal === 'sin-enviar'
+      ? 'text-warning-700 dark:text-warning-100'
+      : resultadoFinal === 'nada-salio'
+        ? COLOR_DEL_ESTADO.FALLO
+        : COLOR_DEL_ESTADO[p.estado]
 
   const descargar = async () => {
     setBajando(true)
@@ -243,6 +262,11 @@ export function FilaDeProceso({
         >
           {p.estado === 'CORRIENDO' ? (
             <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent motion-safe:animate-spin" />
+          ) : p.estado === 'TERMINADO' && resultadoFinal !== 'limpio' ? (
+            <WarningCircle
+              weight="fill"
+              className={cn('h-4 w-4', resultadoFinal === 'nada-salio' ? 'text-danger' : 'text-warning-500')}
+            />
           ) : p.estado === 'TERMINADO' ? (
             <CheckCircle weight="fill" className="h-4 w-4 text-success" />
           ) : p.estado === 'FALLO' ? (
@@ -257,12 +281,13 @@ export function FilaDeProceso({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <p className="min-w-0 flex-1 truncate text-body-sm font-medium text-fg" title={p.titulo}>
-            {p.titulo}
+          <p className="min-w-0 flex-1 text-body-sm font-medium text-fg max-sm:line-clamp-2 sm:truncate" title={textoDelProceso(p.titulo)}>
+            {textoDelProceso(p.titulo)}
           </p>
           <span
-            className={cn('shrink-0 text-caption font-medium', COLOR_DEL_ESTADO[p.estado])}
+            className={cn('shrink-0 text-caption font-medium', colorDelEstado)}
             data-testid="estado-del-proceso"
+            data-resultado={resultadoFinal}
           >
             {estadoEnPalabras}
           </span>
@@ -321,7 +346,7 @@ export function FilaDeProceso({
             title={compacta ? mensaje : undefined}
             data-testid="mensaje-del-proceso"
           >
-            {mensaje}
+            {textoDelProceso(mensaje)}
           </p>
         )}
 
@@ -333,18 +358,20 @@ export function FilaDeProceso({
 
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           {p.archivo && !p.archivo.vencido && p.estado === 'TERMINADO' && (
-            <button
+            <Button
               type="button"
+              size="sm"
+              variant="outline"
+              hideArrow
               onClick={() => void descargar()}
               disabled={bajando}
-              className="inline-flex h-7 items-center gap-1.5 rounded-full bg-primary px-3 text-caption font-medium text-primary-fg transition-opacity hover:opacity-90 disabled:opacity-60"
               data-testid="descargar-proceso"
               title={p.archivo.nombre}
             >
               <DownloadSimple weight="bold" className="h-3.5 w-3.5" aria-hidden="true" />
               {bajando ? 'Descargando…' : 'Descargar'}
               {tamano && <span className="font-mono tabular-nums opacity-80">{tamano}</span>}
-            </button>
+            </Button>
           )}
           {p.estado === 'FALLO' &&
             (reintentar ? (
@@ -377,7 +404,11 @@ export function FilaDeProceso({
             </AccionSuave>
           )}
           <AccionSuave onClick={verDetalle} testId="ver-detalle-proceso" icono={ListBullets}>
-            Ver detalle
+            {resultadoFinal === 'sin-enviar' && fallas > 0
+              ? `Ver ${fallas === 1 ? 'el que no salió' : `los ${fallas} que no salieron`}`
+              : resultadoFinal !== 'limpio' && fallas > 0
+                ? `Ver ${fallas === 1 ? 'el que falló' : `los ${fallas} que fallaron`}`
+                : 'Ver detalle'}
           </AccionSuave>
         </div>
       </div>
@@ -388,8 +419,10 @@ export function FilaDeProceso({
   )
 }
 
+// Ronda 30 (revisora r27): la misma altura y el mismo molde que «Descargar» (Button sm outline); antes un chip h-7
+// redondo al lado de un botón h-9: dos moldes en la misma fila.
 const CLASE_ACCION_SUAVE =
-  'inline-flex h-7 items-center gap-1 rounded-full border border-border bg-surface px-2.5 text-caption font-medium text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-60'
+  'inline-flex h-9 items-center gap-1.5 rounded-[13px] border border-border bg-surface px-4 text-[14px] font-medium text-fg transition-colors hover:bg-surface-muted disabled:opacity-60 [&_svg]:size-4 [@media(pointer:coarse)]:min-h-11'
 
 function AccionSuave({
   onClick,

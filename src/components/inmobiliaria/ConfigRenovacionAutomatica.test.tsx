@@ -125,7 +125,7 @@ describe('leerIpc / escribirIpc', () => {
     expect(leerIpc('5,')).toBeUndefined()
   })
 
-  it('lo guardado se pinta con coma, como se escribe acá', () => {
+  it('lo guardado se pinta con coma, como se escribe aquí', () => {
     expect(escribirIpc(5.2)).toBe('5,2')
     expect(escribirIpc(null)).toBe('')
     expect(escribirIpc(undefined)).toBe('')

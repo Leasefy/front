@@ -172,14 +172,14 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
       // Un 400 de la ciudad va debajo de la ciudad; lo demás, al aviso.
       const reparto = repartirErroresDelServidor(e, {
         campos: ['ciudad'],
-        porDefecto: 'No pudimos crear los inmuebles.',
+        porDefecto: 'No se pudieron crear los inmuebles.',
         accion: 'crear los inmuebles',
       })
       setErrorDeLaCiudad(reparto.porCampo.ciudad ?? null)
       const sueltos = reparto.sueltos.join(' · ')
       const guardado =
         ` — se alcanzaron a crear ${acumulado.creados}. Lo creado quedó guardado: pulsa «Continuar» para seguir con los que faltan.`
-      if (acumulado.creados > 0) setError(`${sueltos || 'No pudimos crear los inmuebles.'}${guardado}`)
+      if (acumulado.creados > 0) setError(`${sueltos || 'No se pudieron crear los inmuebles.'}${guardado}`)
       else setError(sueltos || null)
       if (reparto.porCampo.ciudad) setEnfocarLaCiudad(true)
     } finally {

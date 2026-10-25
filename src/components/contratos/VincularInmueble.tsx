@@ -70,7 +70,7 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
         if (!vigente) return
         setError(
           mensajeParaLaPersona(e, {
-            porDefecto: 'No pudimos traer los inmuebles.',
+            porDefecto: 'No se pudieron traer los inmuebles.',
             accion: 'traer los inmuebles',
           }),
         )

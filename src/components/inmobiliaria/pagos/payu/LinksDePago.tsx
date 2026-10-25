@@ -21,10 +21,12 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { TablePagination } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { useTr } from '@/lib/i18n/use-tr';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatDate, plataPareja } from '@/lib/format';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useLinksDePago } from '@/lib/hooks/use-payu';
 import { useI18n } from '@/lib/i18n';
 import { mesTopeDeLosLinks } from '@/lib/payu/links-de-pago';
@@ -72,6 +74,7 @@ export function LinksDePago({
   esperanEnLaBandeja,
 }: LinksDePagoProps) {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const idDelTitulo = useId();
   const esMovil = useIsMobile();
 
@@ -142,29 +145,22 @@ export function LinksDePago({
             onClick={() => puedeAvanzar && cambiarMes(sumarMeses(mes, 1))}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {data && (
-            <span className="text-caption tabular-nums text-fg-muted" data-testid="conteo-de-links">
-              {total === 1 ? t('inmobiliaria.cobros.linksDePago.conteoUno') : t('inmobiliaria.cobros.linksDePago.conteoVarios', { total })}
-            </span>
-          )}
-          <Select
-            value={estado ?? TODOS}
-            onValueChange={(v) => setEstado(v === TODOS ? undefined : (v as EstadoDelLinkDePago))}
-          >
-            <SelectTrigger className="w-52" aria-label={t('inmobiliaria.cobros.linksDePago.filtroEstado')} data-testid="filtro-de-estado-del-link">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={TODOS}>{t('inmobiliaria.cobros.linksDePago.todos')}</SelectItem>
-              {ESTADOS_DEL_LINK_DE_PAGO.map((e) => (
-                <SelectItem key={e} value={e}>
-                  {t(`${P}.estado.${e}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Revisora r25 (Agente de pagos #3): el estado en pestañas DENTRO de la tarjeta (antes un Select
+            «Todos los estados»). El back cuenta sólo lo que se pide: el número va en la abierta (y deja
+            de ir aparte en «N cuotas»). Los conteos por estado y «Sin pagar» de una vez son para Víctor. */}
+        <PestanasDeEstado
+          etiqueta={t('inmobiliaria.cobros.linksDePago.filtroEstado')}
+          valor={estado ?? TODOS}
+          onCambio={(v) => setEstado(v === TODOS ? undefined : (v as EstadoDelLinkDePago))}
+          data-testid="filtro-de-estado-del-link"
+          pestanas={[TODOS, ...ESTADOS_DEL_LINK_DE_PAGO].map((e) => ({
+            valor: e,
+            etiqueta: e === TODOS ? tr('Todas') : t(`${P}.estado.${e}`),
+            cuantos: (estado ?? TODOS) === e && data ? total : null,
+            fija: true,
+            testid: `filtro-del-link-${e}`,
+          }))}
+        />
       </div>
 
       {resumen ? <div className="border-b border-border px-4 py-3">{resumen}</div> : null}
@@ -172,7 +168,7 @@ export function LinksDePago({
       <EstadoDeDatos
         cargando={cargando && !data}
         error={error}
-        queEs="los links de pago"
+        queEs="los enlaces de pago"
         onReintentar={recargar}
         vacio={Boolean(data) && total === 0}
         esqueleto={<EsqueletoTabla filas={5} columnas={4} />}
@@ -233,6 +229,11 @@ interface FilasProps {
 function TablaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
   const { t, locale } = useI18n();
   const localeCorto = locale === 'en' ? 'en' : 'es';
+  // Revisora r24 (Agente de pagos #5): centavos parejos en toda la página y la pagada en «—», no «$ 0».
+  const plataDeLaPagina = plataPareja(items.map((x) => x.montoCop), localeCorto);
+  const plata = (cop: number) => (cop === 0 ? '—' : plataDeLaPagina(cop));
+  // Revisora r24 (Agente de pagos #6): «1 oct 2026».
+  const vence = (iso: string) => (localeCorto === 'es' ? fechaCorta(iso) : formatDate(iso, localeCorto));
   return (
     <Table data-testid="tabla-de-links">
       <TableHeader>
@@ -250,10 +251,10 @@ function TablaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
               <Cuota link={l} />
             </TableCell>
             <TableCell className="whitespace-nowrap align-top font-mono tabular-nums">
-              {formatDate(l.fechaDeVencimiento, localeCorto)}
+              {vence(l.fechaDeVencimiento)}
             </TableCell>
             <TableCell className="whitespace-nowrap text-right align-top font-mono tabular-nums">
-              {formatCurrency(l.montoCop, localeCorto)}
+              {plata(l.montoCop)}
             </TableCell>
             <TableCell className="align-top">
               <EstadoDelLink link={l} esperaEnLaBandeja={esperanEnLaBandeja?.get(l.cuotaId)} />
@@ -269,6 +270,11 @@ function TablaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
 function ListaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
   const { t, locale } = useI18n();
   const localeCorto = locale === 'en' ? 'en' : 'es';
+  // Revisora r24 (Agente de pagos #5): centavos parejos en toda la página y la pagada en «—», no «$ 0».
+  const plataDeLaPagina = plataPareja(items.map((x) => x.montoCop), localeCorto);
+  const plata = (cop: number) => (cop === 0 ? '—' : plataDeLaPagina(cop));
+  // Revisora r24 (Agente de pagos #6): «1 oct 2026».
+  const vence = (iso: string) => (localeCorto === 'es' ? fechaCorta(iso) : formatDate(iso, localeCorto));
   return (
     <ul className="divide-y divide-border-faint" data-testid="lista-de-links">
       {items.map((l) => (
@@ -276,12 +282,12 @@ function ListaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
           <div className="flex items-start justify-between gap-3">
             <Cuota link={l} />
             <p className="whitespace-nowrap font-mono tabular-nums text-fg">
-              {formatCurrency(l.montoCop, localeCorto)}
+              {plata(l.montoCop)}
             </p>
           </div>
           <p className="text-caption text-fg-muted">
             {t('inmobiliaria.cobros.linksDePago.columnas.vence')}{' '}
-            <span className="font-mono tabular-nums">{formatDate(l.fechaDeVencimiento, localeCorto)}</span>
+            <span className="font-mono tabular-nums">{vence(l.fechaDeVencimiento)}</span>
           </p>
           <EstadoDelLink link={l} esperaEnLaBandeja={esperanEnLaBandeja?.get(l.cuotaId)} />
         </li>

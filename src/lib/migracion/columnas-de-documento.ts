@@ -97,7 +97,7 @@ export const COLUMNAS_DE_DOCUMENTO: readonly (ColumnaDePlantilla & {
     obligatoria: false,
     ejemplo: 'INGRESO - NOMBRE CANON SEPTIEMBRE REF 901780503',
     alias: ['concepto', 'detalle', 'descripcion', 'observaciones', 'nota'],
-    ayuda: 'De acá sale a qué contrato se cuelga el comprobante: el REF o el nombre del tercero.',
+    ayuda: 'De aquí sale a qué contrato se cuelga el comprobante: el REF o el nombre del tercero.',
   },
   {
     campo: 'debitos',

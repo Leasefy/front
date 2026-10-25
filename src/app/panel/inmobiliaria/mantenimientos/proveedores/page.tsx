@@ -30,11 +30,12 @@
  * `@/components/mantenimientos/TablaDeProveedores`, con el porqué escrito ahí.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TipoDeDocumentoDelProveedor } from '@/components/inmobiliaria/mantenimiento/TipoDeDocumentoDelProveedor';
 import { EJEMPLO_DEL_TIPO_DE_DOCUMENTO, revisarDocumentoDelProveedor } from '@/lib/mantenimiento/documento-del-proveedor';
 import { Plus, Star, UploadSimple } from '@phosphor-icons/react';
-import { CrossFade, Eyebrow, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -121,33 +122,30 @@ function ContenidoDeProveedores() {
       {/* 🔴 Sin «Volver a Mantenimientos» (Nico, 18-09-2026: «¿para qué el
           devolverse?»). Proveedores es una FILA del menú, no una sub-pantalla
           de Mantenimientos: el botón prometía subir un nivel que no existe. */}
-      <div className="space-y-6 p-4 md:p-6">
-        {/* El encabezado de la casa: eyebrow, título y qué es —el mismo de
-            Contratos y Renovaciones—. El icono se fue al encabezado de la
-            tarjeta, que es donde lo llevan las demás tablas. */}
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1">
-            <Eyebrow>Operación</Eyebrow>
-            <h1 className="text-h2 text-fg">Proveedores</h1>
-            <p className="max-w-2xl text-sm text-fg-muted">
-              A quién llamas para cada oficio, con sus papeles al día y cómo le ha
-              ido. La calificación se pone al cerrar cada trabajo, no desde aquí.
-            </p>
-          </div>
-          {puedeEditar && (
-            <div className="flex flex-wrap gap-2">
-              {/* Portofino 22-10: «subir un Excel en Proveedores». */}
-              <Button variant="outline" hideArrow onClick={() => setImportando(true)} data-testid="importar-proveedores-boton">
-                <UploadSimple className="mr-1.5 h-4 w-4" />
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* El encabezado de todas las pantallas (revisión de Operación, 21-10). */}
+        <EncabezadoDePantalla
+          seccion="Operación"
+          titulo="Proveedores"
+          descripcion="A quién llamas para cada oficio, con sus papeles al día y cómo le ha ido."
+          acciones={
+            puedeEditar ? (
+              /* Portofino 22-10: «subir un Excel en Proveedores». */
+              <Button size="sm" variant="outline" hideArrow onClick={() => setImportando(true)} data-testid="importar-proveedores-boton">
+                <UploadSimple className="h-4 w-4" />
                 Importar
               </Button>
-              <Button hideArrow onClick={() => setEditando('nuevo')}>
-                <Plus className="mr-1.5 h-4 w-4" />
+            ) : undefined
+          }
+          accionPrincipal={
+            puedeEditar ? (
+              <Button size="sm" hideArrow onClick={() => setEditando('nuevo')}>
+                <Plus className="h-4 w-4" />
                 Registrar proveedor
               </Button>
-            </div>
-          )}
-        </header>
+            ) : undefined
+          }
+        />
 
         <TablaDeProveedores
           proveedores={proveedores ?? []}
@@ -431,7 +429,7 @@ function FormularioDeProveedor({
           </div>
 
           <fieldset>
-            <legend className="mb-1 block text-xs font-medium text-foreground">
+            <legend className="mb-1 block text-caption font-medium text-foreground">
               Qué hace
             </legend>
             <div className="flex flex-wrap gap-2">
@@ -444,7 +442,7 @@ function FormularioDeProveedor({
                     onClick={() => alternar(e.valor)}
                     aria-pressed={puesta}
                     className={cn(
-                      'rounded-full border px-3 py-1 text-xs transition-colors',
+                      'rounded-full border px-3 py-1 text-caption transition-colors',
                       puesta
                         ? 'border-primary bg-primary-soft text-primary'
                         : 'border-border text-fg-muted hover:border-primary/40',
@@ -651,7 +649,7 @@ function Campo({
 }) {
   return (
     <div className="block">
-      <label htmlFor={`proveedor-${nombre}`} className="mb-1 block text-xs font-medium text-foreground">
+      <label htmlFor={`proveedor-${nombre}`} className="mb-1 block text-caption font-medium text-foreground">
         {label}
         {requerido && <span className="ml-0.5 text-danger">*</span>}
       </label>
@@ -719,7 +717,7 @@ function HistorialDeCalificaciones({
                   <Star className="h-4 w-4 text-warning" weight="fill" />
                   <span className="font-medium tabular-nums">{c.estrellas}</span>
                 </span>
-                <span className="text-xs text-fg-muted tabular-nums">
+                <span className="text-caption text-fg-muted tabular-nums">
                   {new Date(c.fecha).toLocaleDateString('es-CO')}
                 </span>
               </div>

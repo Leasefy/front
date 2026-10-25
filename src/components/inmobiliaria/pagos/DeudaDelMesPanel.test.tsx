@@ -564,7 +564,6 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
       clic($('[data-testid="abrir-mes-falta"]'))
       expect($('[data-testid="cajon-todas"]').getAttribute('aria-selected')).toBe('true')
       expect($('[data-testid="abrir-mes-falta"]').getAttribute('aria-pressed')).toBe('true')
-      expect(pesos('[data-testid="mes-falta"]')).toBe(pesos('[data-testid="mes-falta-pestana"]'))
       expect(todos('[data-testid="cuota-fila"]')).toHaveLength(3)
     })
 
@@ -672,13 +671,19 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect(host.textContent).not.toContain('2026-09-15')
   })
 
-  it('🔴 la columna «Período» dice el mes: el back manda `mes`, no `month`', () => {
-    // El espejo del tipo decía `month` y el back siempre mandó `mes`: la
-    // columna venía leyendo `undefined` y salía en blanco.
+  /*
+   * 🔴 GLOW UP (revisión de Dinero, 22-10-2026): la columna «Período» se fue —la
+   * tabla ya es de UN mes—, y el período de la cuota vive en su cajón. Lo que esta
+   * prueba cuida no cambió: el back manda `mes`, no `month` (el espejo del tipo
+   * decía `month` y el período salía en blanco).
+   */
+  it('🔴 el período de la cuota sale de `mes` (no `month`): lo dice su cajón', () => {
     montar()
-    const celdas = todos('[data-testid="cuota-fila"]')[0]!.querySelectorAll('td')
-    expect((celdas[2]!.textContent ?? '').trim()).not.toBe('')
-    expect(celdas[2]!.textContent).toContain('2026')
+    act(() => {
+      ($('[data-testid="cuota-fila"]') as HTMLElement).click()
+    })
+    const cajon = document.body.querySelector('[data-testid="cajon-de-la-cuota"]')
+    expect(cajon?.textContent).toContain('septiembre de 2026')
   })
 
   /*

@@ -93,13 +93,13 @@ export const CobranzaStageCard = React.forwardRef<
         ].join(' ')}
       >
         {/* Display name — primary (human-first hierarchy) */}
-        <p className={`text-sm font-semibold leading-tight ${colors.text}`}>
+        <p className={`text-sm font-medium leading-tight ${colors.text}`}>
           {displayName}
         </p>
 
         {/* Stage code + day range — secondary, muted */}
         {/* QA-IA-95 (IA-B-09): sin el código crudo de la etapa («S1»); sólo el rango de días de mora. */}
-        <p className={`text-xs tracking-wide uppercase mt-0.5 min-h-4 ${colors.text} opacity-60`}>
+        <p className={`text-caption tracking-wide uppercase mt-0.5 min-h-4 ${colors.text} opacity-60`}>
           {dayRange ?? ''}
         </p>
 
@@ -107,7 +107,7 @@ export const CobranzaStageCard = React.forwardRef<
         {isLoading ? (
           <div className="h-8 w-12 rounded bg-surface-muted animate-pulse mt-2" />
         ) : (
-          <p className="text-3xl font-bold text-fg mt-2 font-mono tabular-nums">
+          <p className="text-3xl font-medium text-fg mt-2 font-mono tabular-nums">
             <AnimatedNumber
               value={count}
               from={contarDesdeCero ? 0 : undefined}
@@ -119,7 +119,7 @@ export const CobranzaStageCard = React.forwardRef<
         {/* Días promedio — el endpoint devuelve el flotante crudo, y en pantalla
             salía «3.97885756959325 días promedio». Nadie lee catorce decimales:
             se redondea al día, que es la unidad en la que se piensa la mora. */}
-        <p className="text-xs text-fg-subtle mt-1">
+        <p className="text-caption text-fg-subtle mt-1">
           {/* QA-IA-95 (IA-B-09): son días EN LA ETAPA (no de mora), con su número gramatical («1 día»). */}
           <span className="font-mono tabular-nums">{Math.round(avgDaysInStage)}</span>{' '}
           {Math.round(avgDaysInStage) === 1 ? (locale === 'es' ? 'día' : 'day') : locale === 'es' ? 'días' : 'days'}{' '}
@@ -131,17 +131,17 @@ export const CobranzaStageCard = React.forwardRef<
           {weeklyDelta > 0 ? (
             <>
               <ArrowUp size={12} className="text-danger" />
-              <span className="text-xs text-danger font-mono tabular-nums">+{weeklyDelta}</span>
+              <span className="text-caption text-danger font-mono tabular-nums">+{weeklyDelta}</span>
             </>
           ) : weeklyDelta < 0 ? (
             <>
               <ArrowDown size={12} className="text-success" />
-              <span className="text-xs text-success font-mono tabular-nums">{weeklyDelta}</span>
+              <span className="text-caption text-success font-mono tabular-nums">{weeklyDelta}</span>
             </>
           ) : (
             <>
               <Minus size={12} className="text-fg-subtle" />
-              <span className="text-xs text-fg-subtle font-mono tabular-nums">0</span>
+              <span className="text-caption text-fg-subtle font-mono tabular-nums">0</span>
             </>
           )}
         </div>

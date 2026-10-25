@@ -3,7 +3,8 @@
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
@@ -19,6 +20,32 @@ import { fmtFecha, fmtNumero } from '@/lib/admin/format'
 type KeyStatus = 'ok' | 'warn' | 'overdue' | 'never'
 
 /** GET /api/v1/admin/keys row (ADMIN-API-CONTRACT.md — Keys). Never key values. */
+/**
+ * Cada llave en español (ronda 26, revisora: «Admin allowlist», «The ONLY connection
+ * allowed…» salían en inglés). El nombre y las notas del back van al Excel.
+ */
+const LLAVE: Record<string, { nombre: string; para: string }> = {
+  ADMIN_AGENT_DATABASE_URL: { nombre: 'Conexión del admin a la base de los agentes', para: 'La única conexión que el admin usa para leer lo de los agentes.' },
+  ADMIN_EMAILS: { nombre: 'Correos que entran al admin', para: 'La lista del equipo de Leasefy que puede abrir este admin.' },
+  VAPI_API_KEY: { nombre: 'Llave de Vapi', para: 'Las llamadas de voz de los agentes.' },
+  SUPABASE_SERVICE_KEY: { nombre: 'Llave de servicio de Supabase', para: 'Las cuentas y los archivos.' },
+  ANTHROPIC_API_KEY: { nombre: 'Llave de Anthropic', para: 'La inteligencia artificial de los agentes.' },
+  WOMPI_PUBLIC_KEY: { nombre: 'Llave pública de Wompi', para: 'Los pagos en línea.' },
+  KAPSO_API_KEY: { nombre: 'Llave de Kapso', para: 'Los mensajes de WhatsApp.' },
+  RESEND_API_KEY: { nombre: 'Llave de Resend', para: 'Los correos que manda Leasefy.' },
+  UPSTASH_REDIS_REST_URL: { nombre: 'Dirección de Redis (Upstash)', para: 'Sólo para revisar que la memoria rápida responde. Opcional.' },
+  UPSTASH_REDIS_REST_TOKEN: { nombre: 'Llave de Redis (Upstash)', para: 'Sólo para revisar que la memoria rápida responde. Opcional.' },
+  REDIS_URL: { nombre: 'Conexión a Redis', para: 'Las colas de tareas en segundo plano.' },
+}
+
+function nombreDeLaLlave(r: { env_var: string }): string {
+  return LLAVE[r.env_var]?.nombre ?? 'Otra llave'
+}
+
+function paraQueSirve(r: { env_var: string }): string {
+  return LLAVE[r.env_var]?.para ?? '—'
+}
+
 interface KeyRow {
   env_var: string
   label: string
@@ -39,9 +66,10 @@ const ORDEN_DEL_ESTADO: Record<KeyStatus, number> = { overdue: 0, never: 1, warn
 
 const SEGMENTOS: Segmento<KeyRow>[] = [
   { valor: 'todas', nombre: 'Todas', cumple: () => true },
-  { valor: 'atender', nombre: 'Para atender', cumple: (k) => k.status !== 'ok' || !k.env_present },
-  { valor: 'al-dia', nombre: 'Al día', cumple: (k) => k.status === 'ok' && k.env_present },
+  // Ronda 30 (revisora r27: «Para atender» contaba las 11): lo que rompe servicios primero, luego la rotación.
   { valor: 'faltan', nombre: 'Faltan en el servidor', cumple: (k) => !k.env_present },
+  { valor: 'rotar', nombre: 'Por rotar', cumple: (k) => k.status !== 'ok' },
+  { valor: 'al-dia', nombre: 'Al día', cumple: (k) => k.status === 'ok' && k.env_present },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -87,12 +115,11 @@ export default function KeysPage() {
   const columns: Column<KeyRow>[] = [
     {
       header: 'Llave',
-      orden: (r) => r.label,
-      texto: (r) => r.label,
+      orden: (r) => nombreDeLaLlave(r),
+      texto: (r) => nombreDeLaLlave(r),
       cell: (r) => (
         <div>
-          <div className="font-medium text-fg">{r.label}</div>
-          <code className="font-mono text-caption text-fg-subtle">{r.env_var}</code>
+          <div className="font-medium text-fg">{nombreDeLaLlave(r)}</div>
         </div>
       ),
     },
@@ -107,11 +134,11 @@ export default function KeysPage() {
       header: 'Última rotación',
       orden: (r) => r.last_rotated_at,
       ordenPrimero: 'desc',
-      texto: (r) => (r.last_rotated_at ? fmtFecha(r.last_rotated_at) : 'Nunca'),
+      texto: (r) => (r.last_rotated_at ? fmtFecha(r.last_rotated_at) : ''),
       cell: (r) =>
         r.last_rotated_at ? (
           <div>
-            <div className="whitespace-nowrap text-body-sm text-fg">{fmtFecha(r.last_rotated_at)}</div>
+            <div className="whitespace-nowrap font-mono text-body-sm tabular-nums text-fg">{fmtFecha(r.last_rotated_at)}</div>
             <div className="text-caption text-fg-subtle">
               {(() => {
                 const d = daysSince(r.last_rotated_at)
@@ -120,7 +147,8 @@ export default function KeysPage() {
             </div>
           </div>
         ) : (
-          <span className="text-caption text-danger">Nunca</span>
+          // El estado ya dice «Nunca rotada»: aquí no se repite en rojo.
+          <span className="text-caption text-fg-subtle">—</span>
         ),
     },
     {
@@ -130,28 +158,70 @@ export default function KeysPage() {
       cell: (r) => <Pill tone={statusTone(r.status)}>{statusLabel(r.status)}</Pill>,
     },
     {
-      header: 'Notas',
-      texto: (r) => r.notes,
-      cell: (r) => <span className="text-caption text-fg-muted">{r.notes ?? '—'}</span>,
+      header: 'Para qué sirve',
+      texto: (r) => paraQueSirve(r),
+      cell: (r) => <span className="text-caption text-fg-muted">{paraQueSirve(r)}</span>,
     },
   ]
+
+  const faltan = (keys ?? []).filter((k) => !k.env_present).length
+  const nuncaRotadaNinguna = Boolean(keys && keys.length > 1 && keys.every((k) => k.status === 'never'))
+  const fraseDeLaRotacion =
+    counts.overdue > 0
+      ? `${counts.overdue} ${counts.overdue === 1 ? 'vencida' : 'vencidas'}: hay que rotarlas`
+      : counts.never > 0
+        ? `${counts.never} nunca se han rotado`
+        : 'todas rotadas a tiempo'
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Llaves"
-        description={`Las llaves de los servicios externos (Vapi, Wompi, Anthropic…). Por la Ley 2157 y SAGRILAFT se rotan cada 90 días; avisa cuando faltan ${KEY_ROTATION_WARN_DAYS} o menos. Nunca se muestra el valor de una llave.`}
+        description="Las llaves de los servicios externos y cuándo se rotaron; nunca su valor."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo funciona" titulo="La rotación de las llaves" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Por la Ley 2157 y SAGRILAFT se rotan cada 90 días; la pantalla avisa cuando faltan {KEY_ROTATION_WARN_DAYS} días o menos.</p>
+              <p>El registro vive en el código del servidor: cada rotación se anota ahí y queda en el historial de cambios.</p>
+            </div>
+          </ParaEntenderMas>
+        }
       />
 
-      <section aria-label="Cifras de las llaves" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard label="Al día" value={keys ? counts.ok : '—'} tone="ok" />
-        <KpiCard label="Por rotar pronto" value={keys ? counts.warn : '—'} tone={counts.warn ? 'warn' : 'default'} />
-        <KpiCard label="Vencidas" value={keys ? counts.overdue : '—'} tone={counts.overdue ? 'bad' : 'default'} />
-        <KpiCard label="Nunca rotadas" value={keys ? counts.never : '—'} />
-      </section>
+      {/* Glow up 22-10: LA RESPUESTA (cuántas están al día) en una cifra con la barra por estado; antes, 4 tarjetas
+          del mismo peso pintadas. */}
+      {keys && keys.length > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          {/* Ronda 30 (revisora r27): lo que rompe servicios es que una llave FALTE en el servidor: con alguna
+              faltando, la cifra es ésa y la rotación va al pie. */}
+          <CifraHeroe
+            rotulo={faltan > 0 ? 'Faltan en el servidor' : 'Llaves al día'}
+            cifra={faltan > 0 ? `${faltan} de ${keys.length}` : `${counts.ok} de ${keys.length}`}
+            contexto={
+              faltan > 0
+                ? 'sin ellas, esos servicios no funcionan'
+                : fraseDeLaRotacion
+            }
+            pie={faltan > 0 ? `Rotación: ${fraseDeLaRotacion}.` : undefined}
+            tramos={faltan > 0 ? [
+              { clave: 'estan', etiqueta: 'En el servidor', monto: keys.length - faltan, tono: 'exito', cifra: String(keys.length - faltan), siempre: true },
+              { clave: 'faltan', etiqueta: 'Faltan', monto: faltan, tono: 'critico', cifra: String(faltan) },
+            ] : [
+              { clave: 'ok', etiqueta: 'Al día', monto: counts.ok, tono: 'exito', cifra: String(counts.ok), siempre: true },
+              { clave: 'warn', etiqueta: 'Por rotar pronto', monto: counts.warn, tono: 'aviso', cifra: String(counts.warn) },
+              { clave: 'overdue', etiqueta: 'Vencidas', monto: counts.overdue, tono: 'critico', cifra: String(counts.overdue) },
+              { clave: 'never', etiqueta: 'Nunca rotadas', monto: counts.never, tono: 'neutro', cifra: String(counts.never) },
+            ]}
+            total={keys.length}
+            data-testid="llaves-al-dia"
+          />
+        </div>
+      ) : null}
 
       <DataTable
-        columns={columns}
+        // Ronda 30 (revisora r27, T15): si ninguna se ha rotado, «Última rotación —» y «Estado: Nunca rotada» se
+        // repetían en las 11 filas: salen (lo dice el pie de la cifra y van al Excel).
+        columns={nuncaRotadaNinguna ? columns.filter((c) => c.header !== 'Última rotación' && c.header !== 'Estado') : columns}
         rows={keys}
         getKey={(r) => r.env_var}
         isLoading={isLoading}
@@ -161,18 +231,21 @@ export default function KeysPage() {
         emptyHint="El registro de rotaciones del servidor está vacío."
         aria-label="Llaves"
         queSon={['llave', 'llaves']}
-        buscar="Nombre de la llave o variable"
+        buscar="Nombre de la llave"
         textoExtra={(r) => r.env_var}
         segmentos={SEGMENTOS}
-        ordenInicial={{ columna: 3, sentido: 'asc' }}
+        // Ronda 26 (T8): a 390 la tarjeta pone a la derecha el estado (lo que responde: ¿hay que rotarla?).
+        cifraDelCelular={nuncaRotadaNinguna ? 'En el servidor' : 'Estado'}
+        ordenInicial={nuncaRotadaNinguna ? { columna: 1, sentido: 'asc' } : { columna: 3, sentido: 'asc' }}
         exportar="llaves"
-        masEnElExcel={[{ header: 'Variable', texto: (r) => r.env_var }]}
+        masEnElExcel={[
+          { header: 'Variable', texto: (r) => r.env_var },
+          ...(nuncaRotadaNinguna ? [{ header: 'Estado', texto: () => 'Nunca rotada' }] : []),
+          { header: 'Nombre en el servidor', texto: (r) => r.label },
+          { header: 'Notas del servidor', texto: (r) => r.notes ?? '' },
+        ]}
       />
 
-      <p className="text-caption text-fg-muted">
-        El registro vive en el código del servidor (<code className="font-mono">src/config/key-rotation-log.ts</code>):
-        cada rotación se anota ahí y queda en el historial de git.
-      </p>
     </div>
   )
 }

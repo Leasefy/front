@@ -266,10 +266,13 @@ export function useLandlordProperties() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Ronda 28: el error entero, para distinguir la PAUSA del panel independiente (503 con su `code`) de un fallo.
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchProperties = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await landlordApi.getMyProperties();
       setProperties(result.properties);
@@ -277,6 +280,7 @@ export function useLandlordProperties() {
     } catch (err) {
       const message = falloAlCargar(err, 'tus inmuebles');
       setError(message);
+      setErrorCrudo(err);
       setProperties([]);
     } finally {
       setIsLoading(false);
@@ -287,7 +291,7 @@ export function useLandlordProperties() {
     fetchProperties();
   }, [fetchProperties]);
 
-  return { properties, summary, isLoading, error, refetch: fetchProperties };
+  return { properties, summary, isLoading, error, errorCrudo, refetch: fetchProperties };
 }
 
 // ============================================================================

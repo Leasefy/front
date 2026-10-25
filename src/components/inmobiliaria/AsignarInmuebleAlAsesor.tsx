@@ -26,6 +26,7 @@
  * agencia. Mandar el otro no falla ni avisa: asigna a nadie.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useMemo, useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -130,7 +131,7 @@ export function AsignarInmuebleAlAsesor({
       onAsignado();
       onCerrar();
     } catch (err) {
-      toast.error('No pudimos asignar el inmueble', {
+      toast.error('No se pudo asignar el inmueble', {
         description: mensajeParaLaPersona(err, {
           porDefecto: 'Prueba de nuevo en un momento.',
           accion: 'asignar el inmueble',
@@ -169,13 +170,11 @@ export function AsignarInmuebleAlAsesor({
               className="rounded-lg border border-border bg-surface-muted px-4 py-6 text-center"
               data-testid="asignar-inmueble-vacio"
             >
-              <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg-muted">
-                <Buildings className="h-6 w-6" weight="duotone" aria-hidden="true" />
-              </span>
+              <Ilustracion nombre="casa" tamano={96} className="mx-auto mb-2" />
               <p className="text-sm font-medium text-fg">
                 No hay otro inmueble para darle
               </p>
-              <p className="mt-1 text-xs text-fg-muted">
+              <p className="mt-1 text-caption text-fg-muted">
                 O ya los lleva todos, o tu portafolio todavía está vacío.
               </p>
             </div>
@@ -198,6 +197,7 @@ export function AsignarInmuebleAlAsesor({
                 className="rounded-lg border border-border bg-surface-muted px-4 py-6 text-center text-sm text-fg-muted"
                 data-testid="asignar-inmueble-sin-resultados"
               >
+                <Ilustracion nombre="lupa" tamano={80} className="mx-auto mb-2 block" />
                 Ningún inmueble de tu portafolio coincide con «{busqueda.trim()}».
               </p>
             ) : (
@@ -222,19 +222,19 @@ export function AsignarInmuebleAlAsesor({
                           <span className="block truncate text-sm font-medium text-fg">
                             {c.propertyTitle}
                           </span>
-                          <span className="block truncate text-xs text-fg-muted">
+                          <span className="block truncate text-caption text-fg-muted">
                             {[c.propertyAddress, c.propertyCity].filter(Boolean).join(' · ')}
                           </span>
                           {/* Que se lo estás quitando a alguien tiene que decirse
                               ANTES del clic, no después en el aviso de éxito. */}
                           {loLleva && (
-                            <span className="block truncate text-xs text-warning">
+                            <span className="block truncate text-caption text-warning">
                               Hoy lo lleva {loLleva}
                             </span>
                           )}
                         </span>
                         {guardando === c.id ? (
-                          <span className="shrink-0 text-xs text-fg-muted">Asignando…</span>
+                          <span className="shrink-0 text-caption text-fg-muted">Asignando…</span>
                         ) : (
                           <Check className="h-4 w-4 shrink-0 text-fg-subtle" />
                         )}
@@ -246,7 +246,7 @@ export function AsignarInmuebleAlAsesor({
             )}
 
             {ocultas > 0 && (
-              <p className="text-xs text-fg-muted" data-testid="asignar-inmueble-hay-mas">
+              <p className="text-caption text-fg-muted" data-testid="asignar-inmueble-hay-mas">
                 Se muestran {visibles.length} de {filtradas.length}. Busca para llegar a los
                 otros {ocultas}.
               </p>

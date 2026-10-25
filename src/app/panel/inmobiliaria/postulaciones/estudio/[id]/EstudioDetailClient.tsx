@@ -168,7 +168,7 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
         <h1 className="text-h2 text-fg">
           {tf(`${NS}.detalle.titulo`, 'Detalle del estudio')}
         </h1>
-        <p className="text-fg-subtle mt-0.5 text-xs tabular-nums">{runId.slice(0, 8)}</p>
+        {/* Glow up 22-10: sin el pedazo del id interno del estudio bajo el título (no le dice nada a la persona). */}
       </header>
 
       {/* Error banner (no bloqueante) */}

@@ -81,7 +81,14 @@ function resumen(c: Pick<ComisionDeVenta, 'comisionCop' | 'porcentaje' | 'precio
 
 // ── La sección del mandato ─────────────────────────────────────────────────
 
-export function VentaDelInmueble({ consignacionId }: { consignacionId: string }) {
+export function VentaDelInmueble({
+  consignacionId,
+  sinTitulo = false,
+}: {
+  consignacionId: string
+  /** En su propia tarjeta (que ya lleva el título), sin el rótulo ni la línea de arriba. */
+  sinTitulo?: boolean
+}) {
   const comisiones = useCrm(
     () => captacionApi.comisionesDeVenta(consignacionId),
     [consignacionId],
@@ -101,8 +108,8 @@ export function VentaDelInmueble({ consignacionId }: { consignacionId: string })
   }
 
   return (
-    <div className="space-y-2 border-t pt-4" data-testid="venta-del-inmueble">
-      <p className="text-sm font-medium">La venta del inmueble</p>
+    <div className={sinTitulo ? 'space-y-2' : 'space-y-2 border-t pt-4'} data-testid="venta-del-inmueble">
+      {sinTitulo ? null : <p className="text-sm font-medium">La venta del inmueble</p>}
 
       <EstadoDeDatos
         cargando={comisiones.cargando && !datos}

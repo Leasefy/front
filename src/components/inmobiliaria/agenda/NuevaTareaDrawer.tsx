@@ -379,7 +379,7 @@ function Campo({
         <label className="block text-sm font-medium text-fg" htmlFor={`tarea-${nombre}`}>
           {label}
         </label>
-        {contador ? <span className="text-xs tabular-nums text-fg-muted">{contador}</span> : null}
+        {contador ? <span className="font-mono text-caption tabular-nums text-fg-muted">{contador}</span> : null}
       </div>
       {children}
       {error || hint ? (

@@ -1,136 +1,103 @@
 'use client';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { VistasDeLaPestana, VISTAS_DE_CONTRATO_Y_DOCUMENTOS } from '@/components/portales/VistasDeLaPestana';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { Handshake, MapPin, Calendar, CurrencyDollar, PenNib, Clock, CheckCircle, XCircle, WarningCircle } from '@phosphor-icons/react';
+import { PenNib } from '@phosphor-icons/react';
+import { StatusBadge } from '@leasefy/cadence';
 
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useI18n } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
 import { formatCanon, formatDate } from './format';
-import { EmptyState } from '@/components/ui/empty-state';
+import { SinArriendoTodavia } from '@/components/tenant/SinArriendoTodavia';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
-import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 
 // ============================================================================
-// Status config for badges
+// El estado, en la voz del inquilino (las etiquetas de la casa son las del panel: «Pendiente firma del inquilino»).
 // ============================================================================
 
-const STATUS_CONFIG: Record<ContractStatus, { color: string; icon: typeof CheckCircle }> = {
-  draft: { color: 'bg-surface-muted text-fg-muted', icon: Clock },
-  pending_landlord: { color: 'bg-warning-soft text-warning', icon: Clock },
-  pending_tenant: { color: 'bg-primary-soft text-primary', icon: PenNib },
-  rejected_pending_modifications: { color: 'bg-warning-soft text-warning', icon: Clock },
-  signed: { color: 'bg-primary-soft text-primary', icon: CheckCircle },
-  active: { color: 'bg-success-soft text-success', icon: CheckCircle },
-  expired: { color: 'bg-surface-muted text-fg-muted', icon: XCircle },
-  cancelled: { color: 'bg-danger-soft text-danger', icon: XCircle },
+type Tono = 'success' | 'neutral' | 'critical' | 'warning' | 'info';
+
+const ESTADO_PARA_EL_INQUILINO: Record<ContractStatus, { es: string; en: string; tono: Tono }> = {
+  draft: { es: 'Borrador', en: 'Draft', tono: 'neutral' },
+  pending_landlord: { es: 'Espera la firma del propietario', en: 'Waiting for the owner to sign', tono: 'neutral' },
+  pending_tenant: { es: 'Te toca firmar', en: 'Your signature is needed', tono: 'warning' },
+  rejected_pending_modifications: { es: 'En ajustes', en: 'Being adjusted', tono: 'neutral' },
+  signed: { es: 'Firmado', en: 'Signed', tono: 'info' },
+  active: { es: 'Vigente', en: 'Active', tono: 'success' },
+  expired: { es: 'Terminado', en: 'Ended', tono: 'neutral' },
+  cancelled: { es: 'Cancelado', en: 'Cancelled', tono: 'critical' },
 };
 
 // ============================================================================
 // Contract Card
 // ============================================================================
 
+/*
+ * GLOW UP (22-10): el estado con su punto y su palabra (StatusBadge) en vez de una pastilla con ícono; sin el
+ * cartel «Requiere tu firma» en caja con borde dentro de la tarjeta ni el anillo azul (eran tres azules para lo
+ * mismo: el estado ya dice «Te toca firmar» y el botón es el azul); la plata y las fechas en mono; el botón a la
+ * derecha en escritorio (antes ocupaba todo el ancho a 1440).
+ */
 function ContractCard({ contract }: { contract: Contract }) {
   const { locale } = useI18n();
-  const statusCfg = STATUS_CONFIG[contract.status];
-  const StatusIcon = statusCfg.icon;
+  const es = locale === 'es';
+  const estado = ESTADO_PARA_EL_INQUILINO[contract.status];
   const isPendingTenant = contract.status === 'pending_tenant';
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border bg-surface p-6 transition-[border-color,box-shadow]',
-        isPendingTenant
-          ? 'border-primary/30 ring-2 ring-primary/10'
-          : 'border-border'
-      )}
+    <article
+      className="rounded-lg border border-border bg-surface p-5 sm:p-6"
+      data-testid={`contrato-del-inquilino-${contract.id}`}
     >
-      {/* Action needed banner */}
-      {isPendingTenant && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-primary-soft border border-primary/30">
-          <PenNib className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-primary">
-            {locale === 'es' ? 'Requiere tu firma' : 'Requires your signature'}
-          </span>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
-            <MapPin className="w-5 h-5 text-fg-muted" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h2 className="min-w-0 truncate text-body font-medium text-fg">
+              {contract.propertyId === null ? (es ? 'Sin inmueble' : 'No property') : contract.propertyAddress}
+            </h2>
+            {estado && <StatusBadge tone={estado.tono}>{es ? estado.es : estado.en}</StatusBadge>}
           </div>
-          <div className="min-w-0">
-            <h3 className="font-semibold text-fg truncate">
-              {contract.propertyId === null ? 'Sin inmueble' : contract.propertyAddress}
-            </h3>
-            {contract.propertyCity && (
-              <p className="text-sm text-fg-muted">
-                {contract.propertyCity}
-              </p>
-            )}
-          </div>
-        </div>
-        <span className={cn(
-          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0',
-          statusCfg.color
-        )}>
-          <StatusIcon className="w-3.5 h-3.5" />
-          {CONTRACT_STATUS_LABELS[contract.status]}
-        </span>
-      </div>
+          {contract.propertyCity && <p className="text-sm text-fg-muted">{contract.propertyCity}</p>}
 
-      {/* Details grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
-        <div>
-          <p className="text-xs text-fg-muted mb-0.5">
-            {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
-          </p>
-          <p className="text-sm font-semibold text-fg">
-            {formatCanon(contract.monthlyRent) ?? '—'}
-          </p>
+          <dl className="mt-4 grid max-w-lg grid-cols-3 gap-4">
+            <div>
+              <dt className="text-caption text-fg-muted">{es ? 'Canon mensual' : 'Monthly rent'}</dt>
+              <dd className="font-mono text-sm tabular-nums text-fg">{formatCanon(contract.monthlyRent) ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-caption text-fg-muted">{es ? 'Inicio' : 'Start'}</dt>
+              <dd className="font-mono text-sm tabular-nums text-fg">{formatDate(contract.startDate) ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-caption text-fg-muted">{es ? 'Fin' : 'End'}</dt>
+              <dd className="font-mono text-sm tabular-nums text-fg">{formatDate(contract.endDate) ?? '—'}</dd>
+            </div>
+          </dl>
         </div>
-        <div>
-          <p className="text-xs text-fg-muted mb-0.5">
-            {locale === 'es' ? 'Inicio' : 'Start'}
-          </p>
-          <p className="text-sm font-medium text-fg">
-            {formatDate(contract.startDate) ?? '—'}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-fg-muted mb-0.5">
-            {locale === 'es' ? 'Fin' : 'End'}
-          </p>
-          <p className="text-sm font-medium text-fg">
-            {formatDate(contract.endDate) ?? '—'}
-          </p>
-        </div>
-      </div>
 
-      {/* Actions */}
-      {isPendingTenant ? (
-        <Link
-          href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary hover:opacity-90 text-white text-sm font-semibold transition-colors"
-        >
-          <PenNib className="w-4 h-4" />
-          {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
-        </Link>
-      ) : (
-        <Link
-          href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-sm font-medium text-fg hover:bg-surface-muted transition-colors"
-        >
-          {locale === 'es' ? 'Ver contrato' : 'View contract'}
-        </Link>
-      )}
-    </div>
+        {/* El Button de Cadence (no un enlace pintado a mano): firmar es la azul; ver, la de borde. */}
+        {isPendingTenant ? (
+          <Button asChild size="sm" hideArrow className="w-full sm:w-auto">
+            <Link href={`/inquilino/contratos/${contract.id}/firmar`}>
+              <PenNib className="w-4 h-4" aria-hidden="true" />
+              {es ? 'Revisar y firmar' : 'Review and sign'}
+            </Link>
+          </Button>
+        ) : (
+          <Button asChild size="sm" variant="outline" hideArrow className="w-full sm:w-auto">
+            <Link href={`/inquilino/contratos/${contract.id}/firmar`}>
+              {es ? 'Ver contrato' : 'View contract'}
+            </Link>
+          </Button>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -148,20 +115,48 @@ export default function ContratosPage() {
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }
 
+  const es = locale === 'es';
+  const porFirmar = contracts.filter((c) => c.status === 'pending_tenant').length;
+  // C3 (revisora r25): el título es el de la pestaña, y debajo, cómo pasar a los documentos (antes, Documentos
+  // quedaba huérfana: nada llevaba a ella).
+  const encabezado = (
+    <>
+    <EncabezadoDePantalla
+      className="mb-6"
+      seccion={es ? 'Mi arriendo' : 'My rental'}
+      titulo={es ? 'Contrato y documentos' : 'Contract and documents'}
+      descripcion={
+        porFirmar === 1
+          ? es ? 'Tienes un contrato por firmar: va primero.' : 'You have one contract to sign: it comes first.'
+          : porFirmar > 1
+            ? es ? `Tienes ${porFirmar} contratos por firmar: van primero.` : `You have ${porFirmar} contracts to sign: they come first.`
+            : es ? 'Revisa y firma tus contratos de arrendamiento.' : 'Review and sign your rental contracts.'
+      }
+    />
+    <VistasDeLaPestana
+      className="mb-8"
+      etiqueta={es ? 'Contrato o documentos' : 'Contract or documents'}
+      actual="/inquilino/contratos"
+      vistas={VISTAS_DE_CONTRATO_Y_DOCUMENTOS(es)}
+    />
+    </>
+  );
+
   // El mensaje crudo del backend —en inglés, con su jerga— no le sirve a un
   // inquilino, y este cartel no ofrecía ninguna salida. `FalloDeCarga` escribe
   // qué pasó y ofrece reintentar sólo si reintentar puede cambiar algo.
   if (error) {
     return (
-      <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
+          {encabezado}
           <FalloDeCarga
             error={errorCrudo ?? error}
             queEs="tus contratos"
@@ -180,37 +175,17 @@ export default function ContratosPage() {
   });
 
   return (
-    <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-medium text-fg tracking-tight">
-            {/* Sentence case, como el resto del panel. */}
-            {locale === 'es' ? 'Mis contratos' : 'My contracts'}
-          </h1>
-          <p className="mt-1 text-fg-muted">
-            {locale === 'es'
-              ? 'Revisa y firma tus contratos de arrendamiento'
-              : 'Review and sign your rental contracts'}
-          </p>
-        </header>
+    <div className="bg-bg">
+      <motion.div {...entrada} className="p-6 lg:p-8">
+        {encabezado}
 
         {/* Empty state */}
         {sorted.length === 0 ? (
           <div>
-            <EmptyState
-              icon={Handshake}
-              title={locale === 'es' ? 'Sin contratos aún' : 'No contracts yet'}
-              /* "aplicación" está muerto: docs/VOCABULARIO.md. */
-              description={locale === 'es'
-                ? 'Cuando te elijan en una postulación y generen el contrato, aparecerá aquí para que lo firmes.'
-                : 'When you are selected for an application and the contract is generated, it will appear here for you to sign.'}
-              /* Era la única pantalla vacía sin ninguna acción: un callejón.
-                 Para llegar a un contrato hay que postularse primero. */
-              action={{
-                label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
-                href: '/inquilino/para-ti',
-              }}
+            {/* Revisora r27 (CA): el mismo vacío en las pestañas de «Mi arriendo». */}
+            <SinArriendoTodavia
+              queVaAqui="Cuando te elijan en una postulación, aquí firmas tu contrato y lo descargas."
+              whatGoesHere="When you are chosen in an application, you sign and download your lease here."
             />
           </div>
         ) : (

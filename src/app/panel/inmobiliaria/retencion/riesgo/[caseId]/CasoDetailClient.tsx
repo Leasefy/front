@@ -18,7 +18,6 @@
  * antes salía en la cabecera de «Por qué» y otra vez al pie del desglose.
  */
 import { useState } from 'react'
-import { Stat } from '@leasefy/cadence'
 import { ClockCounterClockwise, Gift, HeartStraight, ListChecks, Scales } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
 import { Badge } from '@/components/ui/badge'
@@ -51,7 +50,8 @@ import {
   fechaCorta,
   fechaYHora,
 } from '@/components/retencion/vinci'
-import { CabeceraDeVinci, FranjaDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
+import { CabeceraDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import type { CasoDeVinci, OfertaDeVinci, Poblacion, TipoDeOferta } from '@/lib/types/retencion'
 import { RETENCION_RIESGO } from '@/lib/nav/rutas-de-retencion'
 import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
@@ -128,7 +128,7 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
       <div className="space-y-5">
         {caso.ofertasSugeridas.length > 0 ? (
           <div>
-            <p className="text-label uppercase text-fg-muted">Vinci sugiere</p>
+            <p className="font-mono text-label uppercase text-fg-muted">Vinci sugiere</p>
             <ul className="mt-2 space-y-2">
               {caso.ofertasSugeridas.map((o) => (
                 <li key={o.tipo} className="text-sm text-fg">
@@ -193,7 +193,7 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
         <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="las ofertas" onReintentar={() => refetch()}>
           {data && data.length > 0 ? (
             <div>
-              <p className="text-label uppercase text-fg-muted">Registradas</p>
+              <p className="font-mono text-label uppercase text-fg-muted">Registradas</p>
               <ul className="mt-2 divide-y divide-border-faint border-y border-border-faint" data-testid="vinci-ofertas">
                 {data.map((o) => {
                   const estado = ESTADO_DE_LA_OFERTA[o.estado]
@@ -222,6 +222,7 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
                             <Button
                               type="button"
                               size="sm"
+                              variant="outline"
                               hideArrow
                               isLoading={ocupado === `a:${o.id}`}
                               onClick={() =>
@@ -369,7 +370,7 @@ function Plan({ caso }: { caso: CasoDeVinci }) {
                     Se fue
                   </Button>
                 </div>
-                <p className="text-caption text-fg-muted">Vinci también lo cierra solo cuando el ERP lo muestra (renovó, se fue o se quedó).</p>
+                <p className="text-caption text-fg-muted">Vinci también lo cierra solo cuando tu cartera lo muestra (renovó, se fue o se quedó).</p>
               </div>
             ) : null}
           </div>
@@ -391,7 +392,11 @@ function Historial({ caseId }: { caseId: string }) {
               <li key={d.id} className="px-5 py-3 text-sm text-fg">
                 {/* Sin mono ni `tabular-nums`: la fecha lleva coma y el ancho fijo la separaba («sept ,  5:10»). */}
                 <p className="text-caption text-fg-muted">{fechaYHora(d.createdAt)}</p>
-                <p className="mt-0.5">{QUE_ES_CADA_DECISION[d.decisionType] ?? d.decisionType}</p>
+                <p className="mt-0.5">
+                  {/* Ronda 30: un tipo que el front no conoce se lee en palabras, no con su código. */}
+                  {QUE_ES_CADA_DECISION[d.decisionType] ??
+                    d.decisionType.replace(/_/g, ' ').replace(/^./, (c) => c.toLocaleUpperCase('es'))}
+                </p>
                 {typeof d.payload?.texto === 'string' ? <p className="mt-1 text-fg-muted">«{d.payload.texto}»</p> : null}
                 {d.decisionType === 'mensaje_no_salio' && typeof d.payload?.mensaje === 'string' ? (
                   <p className="mt-1 text-fg-muted">{d.payload.mensaje}</p>
@@ -404,7 +409,7 @@ function Historial({ caseId }: { caseId: string }) {
             queSon="acciones"
             icono={ClockCounterClockwise}
             titulo="Todavía nada con este caso"
-            descripcion="Lo que Vinci proponga, prepare o mande por este caso queda acá, con la hora."
+            descripcion="Lo que Vinci proponga, prepare o mande por este caso queda aquí, con la hora."
             className="py-10"
           />
         )}
@@ -462,19 +467,17 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
           <div className="space-y-6">
             <CabeceraDeVinci
               antes={<VolverALaLista href={RETENCION_RIESGO} label="Volver a los casos" className="mb-3" />}
-              titulo={
-                <span className="flex flex-wrap items-center gap-3">
-                  {caso.nombre ?? 'Sin nombre registrado'}
-                  {caso.enCobranza ? (
-                    <Badge variant="warning" title={POR_QUE_EN_COBRANZA}>
-                      En cobranza
-                    </Badge>
-                  ) : caso.enRiesgo ? (
-                    <Badge variant="destructive">En riesgo</Badge>
-                  ) : (
-                    <Badge variant="secondary">Bajo el umbral</Badge>
-                  )}
-                </span>
+              titulo={caso.nombre ?? 'Sin nombre registrado'}
+              junto={
+                caso.enCobranza ? (
+                  <Badge variant="warning" title={POR_QUE_EN_COBRANZA}>
+                    En cobranza
+                  </Badge>
+                ) : caso.enRiesgo ? (
+                  <Badge variant="destructive">En riesgo</Badge>
+                ) : (
+                  <Badge variant="secondary">Bajo el umbral</Badge>
+                )
               }
               descripcion={
                 <>
@@ -482,27 +485,36 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
                   {caso.contratos.length > 0
                     ? ` · ${caso.contratos.map((c) => `contrato ${c.numero}${c.inmueble ? ` (${c.inmueble})` : ''}`).join(' · ')}`
                     : ''}
-                  {!caso.tieneTelefono && !caso.tieneCorreo ? ' · sin teléfono ni correo en el ERP' : ''}
+                  {!caso.tieneTelefono && !caso.tieneCorreo ? ' · sin teléfono ni correo registrados' : ''}
                 </>
               }
             />
 
-            <section aria-label="El caso en números" className="overflow-hidden rounded-lg border border-border bg-card">
-              <FranjaDeVinci columnas={3} data-testid="vinci-caso-numeros">
-                <Stat compact label="Puntaje" value={`${caso.puntaje}/100`} delta={`En riesgo desde ${caso.umbral}`} />
-                <Stat compact label="Canon en juego" value={formatCurrency(caso.canonEnJuegoCop)} delta="Al mes" />
-                <Stat
-                  compact
-                  label={caso.contratos.length > 1 ? 'Próximo fin' : 'Fin del contrato'}
-                  value={fin ? (fechaCorta(fin.fechaDeFin) ?? '—') : '—'}
-                  delta={fin ? enCuanto(fin.diasParaVencer) : 'Sin fecha de fin'}
-                />
-              </FranjaDeVinci>
+            {/* GLOW UP 22-10: LA RESPUESTA del caso —qué tan cerca está de irse— en una cifra; lo que hay en
+                juego y cuándo vence, en una línea debajo. Antes, tres cifras del mismo peso. */}
+            <section aria-label="El caso en números" className="rounded-lg border border-border bg-card px-5 py-5" data-testid="vinci-caso-numeros">
+              <CifraHeroe
+                rotulo="Puntaje de riesgo"
+                cifra={`${caso.puntaje}/100`}
+                contexto={`en riesgo desde ${caso.umbral}`}
+                pie={
+                  <span className="flex flex-wrap gap-x-1.5">
+                    <span>
+                      Canon en juego <span className="font-mono tabular-nums text-fg">{formatCurrency(caso.canonEnJuegoCop)}</span> al mes
+                    </span>
+                    <span>
+                      · {caso.contratos.length > 1 ? 'Próximo fin' : 'Fin del contrato'}{' '}
+                      <span className="font-mono tabular-nums text-fg">{fin ? (fechaCorta(fin.fechaDeFin) ?? '—') : '—'}</span>
+                      {fin ? (enCuanto(fin.diasParaVencer) ? ` (${enCuanto(fin.diasParaVencer)!.toLowerCase()})` : '') : ' · sin fecha de fin'}
+                    </span>
+                  </span>
+                }
+              />
             </section>
 
             <div className="grid items-start gap-6 lg:grid-cols-3">
               <div className="min-w-0 space-y-6 lg:col-span-2">
-                <TarjetaDeVinci id="vinci-por-que" icono={Scales} titulo="Por qué" descripcion="Cada señal del ERP y lo que sumó al puntaje.">
+                <TarjetaDeVinci id="vinci-por-que" icono={Scales} titulo="Por qué" descripcion="Cada señal de tu cartera y lo que sumó al puntaje.">
                   <DesgloseDelPuntaje senales={caso.senales} puntaje={caso.puntaje} suma={caso.suma} sinTotal />
                 </TarjetaDeVinci>
                 <Ofertas caso={caso} />

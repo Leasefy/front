@@ -123,9 +123,10 @@ describe('«Mi arriendo»', () => {
     }
     const texto = host.textContent ?? '';
     expect(texto).toContain('Calle 45 # 70-12 Apto 301');
-    expect(texto).toMatch(/1 de nov\.? de 2025/);
-    expect(texto).toMatch(/31 de oct\.? de 2026/);
-    expect(texto).not.toMatch(/30 de oct\.? de 2026/);
+    expect(texto).toMatch(/1 nov 2025/); // Ronda 30: fecha corta de la casa
+    // Ronda 30: la fecha corta de la casa («31 oct 2026», antes «31 de oct de 2026»); el día sigue siendo el 31.
+    expect(texto).toMatch(/31 oct 2026/);
+    expect(texto).not.toMatch(/30 oct 2026/);
     expect(texto).toContain('Día 1');
     expect(texto).not.toContain('Sin definir');
   });

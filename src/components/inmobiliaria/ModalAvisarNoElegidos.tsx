@@ -23,6 +23,7 @@
  * «No salió».
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useState } from 'react'
 import { CheckCircle, WarningCircle } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
@@ -199,7 +200,7 @@ export function ModalAvisarNoElegidos({
           {errorDelElegido !== null && (
             <div className="rounded-md border border-danger bg-danger-soft px-4 py-3">
               <p className="text-sm font-medium text-danger">
-                No pudimos aprobar a {elegido.tenantName}
+                No se pudo aprobar a {elegido.tenantName}
               </p>
               <p className="mt-1 text-sm text-fg-muted" data-testid="error-del-elegido">
                 {mensajeParaLaPersona(errorDelElegido, {
@@ -213,6 +214,7 @@ export function ModalAvisarNoElegidos({
 
           {esperando.length === 0 ? (
             <p className="text-sm text-fg-muted">
+              <Ilustracion nombre="cedula" tamano={56} className="mb-2 block" />
               No hay nadie más esperando respuesta para este inmueble.
             </p>
           ) : (
@@ -247,7 +249,7 @@ export function ModalAvisarNoElegidos({
                         className="min-w-0 flex-1 cursor-pointer"
                       >
                         <span className="block truncate text-sm text-fg">{c.tenantName}</span>
-                        <span className="block truncate text-xs text-fg-muted">
+                        <span className="block truncate text-caption text-fg-muted">
                           {c.tenantEmail}
                         </span>
                         {estado === 'falló' && motivos[c.id] && (
@@ -257,19 +259,19 @@ export function ModalAvisarNoElegidos({
                         )}
                       </label>
                       {estado === 'listo' && (
-                        <span className="flex items-center gap-1 text-xs text-success">
+                        <span className="flex items-center gap-1 text-caption text-success">
                           <CheckCircle className="h-4 w-4" weight="fill" aria-hidden="true" />
                           Avisado
                         </span>
                       )}
                       {estado === 'falló' && (
-                        <span className="flex items-center gap-1 text-xs text-danger">
+                        <span className="flex items-center gap-1 text-caption text-danger">
                           <WarningCircle className="h-4 w-4" weight="fill" aria-hidden="true" />
                           No salió
                         </span>
                       )}
                       {estado === 'enviando' && (
-                        <span className="text-xs text-fg-muted">Enviando…</span>
+                        <span className="text-caption text-fg-muted">Enviando…</span>
                       )}
                     </li>
                   )
@@ -290,7 +292,7 @@ export function ModalAvisarNoElegidos({
                     maxLength={MAX_LARGO_DEL_TEXTO_AL_CANDIDATO}
                     className="resize-none"
                   />
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     Lo firma tu inmobiliaria, así que revísalo antes de mandarlo.
                   </p>
                 </div>

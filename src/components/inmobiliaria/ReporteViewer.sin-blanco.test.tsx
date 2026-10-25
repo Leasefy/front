@@ -112,7 +112,7 @@ describe('ReporteViewer — ningún cajón queda en blanco', () => {
 
   it('los extractos dicen dónde están, sin botón de descarga', async () => {
     const cajon = await abrir('extractos-propietarios')
-    expect(cajon.textContent).toContain('Ir a dispersiones')
+    expect(cajon.textContent).toContain('Ir a Giros a propietarios')
     expect(cajon.textContent).not.toContain('Descargar')
   })
 })

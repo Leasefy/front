@@ -202,7 +202,7 @@ export function IdleSessionGuard() {
       data-lenis-prevent
     >
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 text-center shadow-xl">
-        <h2 id="idle-title" className="text-lg font-semibold text-fg">
+        <h2 id="idle-title" className="text-lg font-medium text-fg">
           ¿Sigues ahí?
         </h2>
         <p id="idle-desc" className="mt-2 text-sm text-fg-muted">
@@ -212,12 +212,12 @@ export function IdleSessionGuard() {
         {/* aria-live para que un lector de pantalla anuncie la cuenta regresiva
             sin que el usuario tenga que ir a buscarla. */}
         <p
-          className="mt-4 text-4xl font-semibold tabular-nums text-fg"
+          className="mt-4 text-4xl font-medium tabular-nums text-fg"
           aria-live="assertive"
         >
           {segundosRestantes}
         </p>
-        <p className="mt-1 text-xs text-fg-subtle">segundos</p>
+        <p className="mt-1 text-caption text-fg-subtle">segundos</p>
 
         {/*
           El `Button` de la casa, no un `<button>` con grises a mano (Nico,

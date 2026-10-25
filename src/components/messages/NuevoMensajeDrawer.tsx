@@ -25,8 +25,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Buildings, MagnifyingGlass, PaperPlaneTilt, Users } from '@phosphor-icons/react';
-import { SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
+import { Buildings, MagnifyingGlass, PaperPlaneTilt } from '@phosphor-icons/react';
+import { Avatar, Ilustracion, SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { mensajeDelHiloDirecto } from './fallo-del-hilo-directo';
 
@@ -58,16 +58,6 @@ import { EntraAlCambiar } from '@/components/portales/EntraAlCambiar';
 function perfilDe(role: string): PerfilEnLaConversacion {
   if (role === 'TENANT' || role === 'LANDLORD' || role === 'AGENT') return role;
   return 'DESCONOCIDO';
-}
-
-function iniciales(nombre: string): string {
-  return nombre
-    .split(' ')
-    .map((p) => p[0])
-    .filter(Boolean)
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 /** Las tres pestañas del lado de la inmobiliaria. */
@@ -287,7 +277,7 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
                 {busqueda
                   ? 'Prueba con otro nombre o con el correo.'
                   : esLadoAgencia
-                    ? 'Acá van a aparecer los propietarios y los inquilinos con un inmueble o un contrato en la inmobiliaria.'
+                    ? 'Aquí van a aparecer los propietarios y los inquilinos con un inmueble o un contrato en la inmobiliaria.'
                     : 'Vas a poder escribirle a tu inmobiliaria cuando tengas un inmueble o un contrato con ella.'}
               </p>
             </div>
@@ -368,9 +358,8 @@ function VacioDeLaPestana({
       className="flex flex-col items-center justify-center px-6 py-16 text-center"
       data-testid="pestana-vacia"
     >
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
-        <Users className="h-6 w-6 text-fg-muted" weight="duotone" />
-      </div>
+      {/* Nico (23-10-2026): todo vacío con su ilustración 3D. */}
+      <Ilustracion nombre={hayBusqueda ? 'lupa' : 'cedula'} tamano={112} className="mb-2" />
       <p className="mb-1 text-sm font-semibold text-fg">No hay {quienes} en esta lista</p>
       <p className="max-w-xs text-sm text-fg-muted">
         {hayBusqueda
@@ -419,13 +408,8 @@ function FilaPersona({
         className={FILA}
         data-testid={`destinatario-${persona.id}`}
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-soft text-sm font-semibold text-primary">
-          {persona.avatarUrl ? (
-            <img src={persona.avatarUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            iniciales(nombre)
-          )}
-        </span>
+        {/* GLOW UP (21-10): el Avatar de Cadence 2 (la foto si la hay; si no, iniciales y el tono del nombre). */}
+        <Avatar name={nombre} src={persona.avatarUrl || undefined} className="shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="truncate text-sm font-medium text-fg">{nombre}</span>

@@ -20,6 +20,7 @@
 
 import { useState } from 'react'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useRouter } from 'next/navigation'
 import { ArrowClockwise } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
@@ -41,15 +42,13 @@ export default function MantenimientoTicketsPage() {
   const activeFilters = hasActiveFilters(filters)
 
   return (
-    <div className="p-4 lg:p-8">
-      <header className="mb-5">
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.mantenimiento.inbox.title')}
-        </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-          {t('inmobiliaria.ai.mantenimiento.inbox.subtitle')}
-        </p>
-      </header>
+    <div className="p-6 lg:p-8">
+      <EncabezadoDePantalla
+        className="mb-6"
+        seccion="Mantenimientos"
+        titulo={t('inmobiliaria.ai.mantenimiento.inbox.title')}
+        descripcion={t('inmobiliaria.ai.mantenimiento.inbox.subtitle')}
+      />
 
       <div className="flex flex-col md:flex-row gap-6">
         {/* Filters — sidebar on md+, stacked on sm */}

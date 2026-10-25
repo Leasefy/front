@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ContactForm } from '@/components/landing/contact/ContactForm'
 import { landingRobots } from '@/lib/landing/landing-stage'
+import { alternativasSoloEnEspanol } from '@/lib/idioma/metadata'
 
 // Thin route shell (landing-react-port SLICE 7, T7.1). New path — no
 // conflict with the live site — ships at its final URL from day one,
@@ -12,6 +13,8 @@ export const metadata: Metadata = {
   description:
     'Cuéntanos cómo opera tu inmobiliaria hoy y te mostramos, con tus propios casos, cómo se ve en piloto automático.',
   robots: landingRobots(),
+  // SEO (24-10): canonical a la dirección final; contacto existe sólo en español.
+  alternates: alternativasSoloEnEspanol('/contacto'),
 }
 
 export default function ContactPage() {

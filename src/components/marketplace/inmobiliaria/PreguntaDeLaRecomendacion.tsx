@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { motionDuration, motionEase } from '@leasefy/cadence';
-import { Check, ThumbsDown, ThumbsUp } from '@phosphor-icons/react';
+import { ArrowUpRight, Check, ThumbsDown, ThumbsUp } from '@phosphor-icons/react';
 
 import { marketplaceApi, paginaDe, type PreguntaPendiente } from '@/lib/api/marketplace.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -38,15 +38,35 @@ export function PreguntaDeLaRecomendacion({ className }: { className?: string })
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lista, setLista] = useState(false);
+  const yaContesto = useRef(false);
 
   useEffect(() => {
     let vigente = true;
-    marketplaceApi
-      .pendientes()
-      .then((r) => vigente && setPregunta(r.find((p) => !laDejoParaDespues(p)) ?? null))
-      .catch(() => undefined);
+    const leer = () =>
+      marketplaceApi
+        .pendientes()
+        .then((r) => {
+          if (!vigente) return;
+          // Recién contestó aquí: el «Gracias» se queda, no lo reemplaza la relectura.
+          if (yaContesto.current) return;
+          setPregunta(r.find((p) => !laDejoParaDespues(p)) ?? null);
+        })
+        .catch(() => undefined);
+    void leer();
+    /*
+     * GLOW UP 21-10 (reunión con Nico: «ya calificó y no se actualizó acá»).
+     * Si votó en otra pestaña —la página de la inmobiliaria, el otro portal—,
+     * al volver a esta la pregunta se vuelve a leer y se va sola.
+     */
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') void leer();
+    };
+    window.addEventListener('focus', alVolver);
+    document.addEventListener('visibilitychange', alVolver);
     return () => {
       vigente = false;
+      window.removeEventListener('focus', alVolver);
+      document.removeEventListener('visibilitychange', alVolver);
     };
   }, []);
 
@@ -63,6 +83,7 @@ export function PreguntaDeLaRecomendacion({ className }: { className?: string })
         recomienda,
         comentario: comentario.trim() || null,
       });
+      yaContesto.current = true;
       setLista(true);
     } catch (e) {
       setError(mensajeParaLaPersona(e, { porDefecto: 'No pudimos guardar tu respuesta.', accion: 'guardar tu respuesta' }));
@@ -104,8 +125,16 @@ export function PreguntaDeLaRecomendacion({ className }: { className?: string })
             </span>
             <div>
               <p className="text-[15px] font-medium text-fg">Gracias. Tu respuesta ayuda a quien busca arriendo.</p>
-              <Link href={paginaDe(pregunta.inmobiliaria)} className="mt-1 inline-block text-[13.5px] font-medium text-primary hover:underline">
+              {/* En OTRA pestaña: antes sacaba a la persona de su portal (reunión 21-10). */}
+              <Link
+                href={paginaDe(pregunta.inmobiliaria)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-flex items-center gap-1 text-[13.5px] font-medium text-primary hover:underline"
+              >
                 Ver la página de {nombre}
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                <span className="sr-only"> (se abre en otra pestaña)</span>
               </Link>
             </div>
           </motion.div>

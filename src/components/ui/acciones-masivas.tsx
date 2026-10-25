@@ -38,9 +38,14 @@
  * ── Reglas ─────────────────────────────────────────────────────────────────
  *
  * · **La barra no se esconde cuando no hay nada marcado.** Esconder un control
- *   se lee como «falta la función»: queda a la vista, apagada y diciendo qué
- *   hay que hacer para prenderla. Lo que sí se esconde es «Quitar la
- *   selección», porque sin selección no tiene nada que quitar.
+ *   se lee como «falta la función»: queda a la vista diciendo qué hay que hacer
+ *   para prenderla. 🔴 21-10-2026 (revisión de diseño de Operación): pero SIN
+ *   los botones apagados ni la sombra de barra fija — cuatro botones muertos y
+ *   una instrucción de dos renglones pegados abajo eran ruido en cada tabla.
+ *   Sin nada marcado es UNA línea callada al pie de la tabla («Marca contratos
+ *   para…», que ya nombra las acciones); al marcar la primera fila sube la
+ *   barra completa. Las pantallas con una acción que sirve SIN marcar nada
+ *   («Marcar todas», cambiar de tabla) pasan `siempreConAcciones`.
  * · **Un acento por barra** (DESIGN §1): el botón que ejecuta. Todo lo demás
  *   —quitar, cancelar— va en `ghost` o `secondary`.
  * · **El número va en palabras, no sólo en el botón**: «Marcaste 208
@@ -119,6 +124,8 @@ export interface BarraDeAccionesMasivasProps {
    * Sin ella, la barra de siempre.
    */
   compacta?: boolean
+  /** Las acciones se muestran aunque no haya nada marcado (porque alguna sirve así). */
+  siempreConAcciones?: boolean
   testid: string
   className?: string
 }
@@ -136,9 +143,11 @@ export function BarraDeAccionesMasivas({
   cuandoNoHayNada,
   variant = 'suelta',
   compacta = false,
+  siempreConAcciones = false,
   testid,
   className,
 }: BarraDeAccionesMasivasProps) {
+  const enReposo = marcadas === 0 && !siempreConAcciones
   const [singular, plural] = queSon
   const nombre = marcadas === 1 ? singular : plural
   /*
@@ -165,22 +174,29 @@ export function BarraDeAccionesMasivas({
       transition={enterTransition(reducido)}
       data-testid={testid}
       className={cn(
-        // Pegada al borde de abajo mientras se recorren las filas. El `z-30`
-        // la deja por encima de las columnas ancladas de la tabla, que van en
-        // z-20, y por debajo de los modales.
-        'sticky bottom-0 z-30 flex flex-col bg-surface px-4',
-        compacta ? 'gap-2 py-2.5' : 'gap-3 py-3',
-        'sm:flex-row sm:items-center sm:justify-between',
-        variant === 'pie'
-          ? 'border-t border-border shadow-[0_-6px_16px_-8px_rgba(0,0,0,0.25)]'
-          : 'rounded-lg border border-border shadow-lg',
+        'flex flex-col bg-surface px-4',
+        enReposo
+          ? // En reposo: una línea callada, sin sombra ni pegarse abajo.
+            cn('py-2.5', variant === 'pie' ? 'border-t border-border' : 'rounded-lg border border-border')
+          : cn(
+              // Pegada al borde de abajo mientras se recorren las filas. El `z-30`
+              // la deja por encima de las columnas ancladas de la tabla, que van en
+              // z-20, y por debajo de los modales.
+              'sticky bottom-0 z-30',
+              compacta ? 'gap-2 py-2.5' : 'gap-3 py-3',
+              'sm:flex-row sm:items-center sm:justify-between',
+              variant === 'pie'
+                ? 'border-t border-border shadow-[0_-6px_16px_-8px_rgba(0,0,0,0.25)]'
+                : 'rounded-lg border border-border shadow-lg',
+            ),
         className,
       )}
+      data-en-reposo={enReposo ? '' : undefined}
     >
       <div className="min-w-0 space-y-0.5">
         <p className="text-body-sm text-fg" data-testid={`${testid}-resumen`}>
           {marcadas === 0 ? (
-            <span className="text-fg-muted">
+            <span className={cn('text-fg-muted', enReposo && 'text-caption')}>
               {cuandoNoHayNada ?? 'Todavía no has marcado nada.'}
             </span>
           ) : sugerida ? (
@@ -215,7 +231,9 @@ export function BarraDeAccionesMasivas({
         className={cn(
           'flex shrink-0 items-center gap-2',
           compacta ? 'justify-end' : 'flex-wrap',
+          enReposo && 'hidden',
         )}
+        aria-hidden={enReposo || undefined}
       >
         {marcadas > 0 && (
           <Button

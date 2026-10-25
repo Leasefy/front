@@ -216,7 +216,7 @@ describe('Presupuesto · CB-09', () => {
     await pintar();
     expect(container.textContent).not.toContain('2025-10');
     expect(container.textContent).toContain('Octubre de 2025');
-    expect(container.textContent).toContain('Presupuesto vs. real vs. octubre de 2025');
+    expect(container.textContent).toContain('Contra lo real y contra octubre de 2025'); // ronda 30: título sin «vs.»
   });
 
   it('🔴 Real = libro, la operación al lado; la plata de la casa y el aviso sin 🔴', async () => {

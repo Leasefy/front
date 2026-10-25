@@ -187,7 +187,7 @@ describe('borradorDe / hayCambios / problemaDeLaConfiguracion', () => {
     expect(hayCambios(c, { ...borradorDe(c), saldo2815En1009: true })).toBe(true);
   });
 
-  it('un tope mal escrito frena el guardado acá', () => {
+  it('un tope mal escrito frena el guardado aquí', () => {
     expect(
       problemaDeLaConfiguracion({
         girosAPropietariosEn1001: false,

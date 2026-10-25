@@ -223,7 +223,7 @@ function InputWrapper({
       {id ? (
         <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={hint} className="mt-0" />
       ) : hint ? (
-        <p className="text-xs text-fg-subtle">{hint}</p>
+        <p className="text-caption text-fg-subtle">{hint}</p>
       ) : null}
     </div>
   );
@@ -589,7 +589,7 @@ export function PropietarioForm({
           ) : (
             <User className="w-5 h-5 text-primary" />
           )}
-          <h3 className="font-semibold">
+          <h3 className="font-medium">
             {isCompany ? t('inmobiliaria.propietario.form.companyInfo') : t('inmobiliaria.propietario.form.personalInfo')}
           </h3>
         </div>
@@ -800,7 +800,7 @@ export function PropietarioForm({
         >
           <div className="flex items-center gap-2 text-fg">
             <Bank className="w-5 h-5 text-fg-subtle" />
-            <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
+            <h3 className="font-medium">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
           </div>
           <p className="text-sm text-fg-muted">{t('inmobiliaria.propietario.form.bankDataHidden')}</p>
         </div>
@@ -810,7 +810,7 @@ export function PropietarioForm({
       <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-2 text-fg">
           <Bank className="w-5 h-5 text-success" />
-          <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
+          <h3 className="font-medium">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
         </div>
 
         <div className="p-4 rounded-lg bg-primary-soft border border-primary/30">
@@ -1010,10 +1010,10 @@ function CuentaRegistrada({
     >
       <div className="flex items-center gap-2 text-fg">
         <Bank className="w-5 h-5 text-success" />
-        <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
+        <h3 className="font-medium">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
       </div>
       <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-1.5">
-        <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+        <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
           {t('inmobiliaria.propietario.form.cuentaRegistrada')}
         </p>
         <p className="text-sm font-medium text-fg">{[banco, tipo].filter(Boolean).join(' · ') || '—'}</p>

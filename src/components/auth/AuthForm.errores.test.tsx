@@ -182,7 +182,7 @@ describe('AuthForm — iniciar sesión', () => {
 
   it('🔴 un 4xx sin código conocido no muestra el inglés de Supabase', async () => {
     await entrar(errorDeSupabase('AuthApiError', 'Something new from GoTrue', 400))
-    expect(texto()).toContain('Error al iniciar sesión. Intenta de nuevo.')
+    expect(texto()).toContain('No pudimos iniciar tu sesión. Vuelve a intentarlo.')
     expect(texto()).not.toContain('Something new')
   })
 

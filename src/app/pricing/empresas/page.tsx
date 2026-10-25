@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 const PLAN_PRICING = {
   starter: { name: 'Starter', monthlyFee: 0, evalCost: 42000, evalLimit: 'Sin límite (pago por uso)', color: 'bg-muted' },
   pro: { name: 'Pro', monthlyFee: 149000, evalCost: 21000, evalLimit: 'Hasta 30/mes', color: 'bg-primary' },
-  flex: { name: 'Flex', monthlyFee: null, evalCost: 0, evalLimit: 'Ilimitadas', color: 'bg-gradient-to-r from-warning to-warning' },
+  flex: { name: 'Flex', monthlyFee: null, evalCost: 0, evalLimit: 'Ilimitadas', color: 'bg-warning' },
 };
 
 /**
@@ -39,7 +39,7 @@ function MejorOpcion({ visible }: { visible: boolean }) {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, transition: motionTransition.exit }}
           transition={motionSpring.bouncy}
-          className="text-[8px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full uppercase"
+          className="text-[12px] font-medium bg-white/20 px-1.5 py-0.5 rounded-full uppercase"
         >
           Mejor opción
         </motion.span>
@@ -99,7 +99,7 @@ export default function EmpresasCalculadoraPage() {
                 >
                   <Calculator className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] uppercase tracking-[0.2em] text-white/40 font-mono font-medium">
+                <span className="text-[13px] uppercase tracking-[0.2em] text-white/40 font-mono font-medium">
                   Comparador de planes
                 </span>
               </div>
@@ -110,7 +110,7 @@ export default function EmpresasCalculadoraPage() {
               </h1>
 
               <p className="text-[17px] text-white/50 mt-4 leading-relaxed">
-                Compara cuánto pagas por evaluaciones AI según tu plan. Encuentra el plan ideal para tu volumen de operación.
+                Compara cuánto pagas por evaluaciones con IA según tu plan. Encuentra el plan ideal para tu volumen de operación.
               </p>
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function EmpresasCalculadoraPage() {
 
               {/* Left - Calculator Config */}
               <div className="lg:col-span-5">
-                <div className="bg-surface rounded-[20px] overflow-hidden border border-border">
+                <div className="bg-surface rounded-lg overflow-hidden border border-border">
                   <div className="px-6 py-4 border-b border-border">
                     <h2 className="text-[16px] font-heading font-medium text-foreground">
                       ¿Cuántas evaluaciones al mes?
@@ -134,7 +134,7 @@ export default function EmpresasCalculadoraPage() {
                     {/* Quantity Slider */}
                     <div>
                       <div className="flex items-center justify-between mb-4">
-                        <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                        <label className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider">
                           Evaluaciones / mes
                         </label>
                         <input
@@ -143,7 +143,7 @@ export default function EmpresasCalculadoraPage() {
                           max="200"
                           value={quantity}
                           onChange={(e) => setQuantity(Math.max(1, Math.min(200, parseInt(e.target.value) || 1)))}
-                          className="w-16 h-9 px-2 text-center text-[14px] font-bold font-mono tabular-nums bg-muted/50 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10"
+                          className="w-16 h-9 px-2 text-center text-[14px] font-medium font-mono tabular-nums bg-muted/50 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10"
                         />
                       </div>
 
@@ -182,7 +182,7 @@ export default function EmpresasCalculadoraPage() {
                         </motion.div>
                       </div>
 
-                      <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+                      <div className="flex justify-between mt-2 text-[12px] text-muted-foreground">
                         <span>1</span>
                         <span>25</span>
                         <span>50</span>
@@ -192,7 +192,7 @@ export default function EmpresasCalculadoraPage() {
 
                     {/* Plan comparison table */}
                     <div>
-                      <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
+                      <label className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
                         Costo por plan
                       </label>
                       <div className="rounded-[14px] overflow-hidden border border-border">
@@ -207,7 +207,7 @@ export default function EmpresasCalculadoraPage() {
                             </span>
                             <MejorOpcion visible={bestPlan === 'starter'} />
                           </div>
-                          <span className={cn("text-[13px] font-semibold font-mono tabular-nums", bestPlan === 'starter' ? 'text-background' : 'text-foreground')}>
+                          <span className={cn("text-[13px] font-medium font-mono tabular-nums", bestPlan === 'starter' ? 'text-background' : 'text-foreground')}>
                             <AnimatedNumber value={starterTotal} format={formatCOP} />
                           </span>
                         </div>
@@ -224,11 +224,11 @@ export default function EmpresasCalculadoraPage() {
                             <MejorOpcion visible={bestPlan === 'pro'} />
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={cn("text-[13px] font-semibold font-mono tabular-nums", bestPlan === 'pro' ? 'text-background' : 'text-foreground')}>
+                            <span className={cn("text-[13px] font-medium font-mono tabular-nums", bestPlan === 'pro' ? 'text-background' : 'text-foreground')}>
                               <AnimatedNumber value={proTotalWithExcess} format={formatCOP} />
                             </span>
                             {starterSavingsVsPro > 0 && (
-                              <span className={cn("text-[10px] font-bold font-mono tabular-nums px-1.5 py-0.5 rounded-full", bestPlan === 'pro' ? 'bg-success/20 text-success' : 'bg-success-soft text-success')}>
+                              <span className={cn("text-[12px] font-medium font-mono tabular-nums px-1.5 py-0.5 rounded-full", bestPlan === 'pro' ? 'bg-success/20 text-success' : 'bg-success-soft text-success')}>
                                 -{Math.round((starterSavingsVsPro / starterTotal) * 100)}%
                               </span>
                             )}
@@ -246,7 +246,7 @@ export default function EmpresasCalculadoraPage() {
                             </span>
                             <MejorOpcion visible={bestPlan === 'flex'} />
                           </div>
-                          <span className={cn("text-[13px] font-semibold", bestPlan === 'flex' ? 'text-success' : 'text-success')}>
+                          <span className={cn("text-[13px] font-medium", bestPlan === 'flex' ? 'text-success' : 'text-success')}>
                             $0 por eval
                           </span>
                         </div>
@@ -259,13 +259,12 @@ export default function EmpresasCalculadoraPage() {
               {/* Right - Results */}
               <div className="lg:col-span-7 space-y-6">
                 {/* Recommendation Card */}
-                <div className="relative bg-foreground text-background rounded-[20px] overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-white/[0.05] to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="relative bg-foreground text-background rounded-lg overflow-hidden">
 
                   <div className="relative p-8">
                     <div className="flex items-start justify-between mb-8">
                       <div>
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-1">Recomendación</p>
+                        <p className="text-[12px] uppercase tracking-[0.2em] text-white/40 mb-1">Recomendación</p>
                         {/* El plan recomendado cambia cruzándose en el lugar (`popLayout`). */}
                         <div className="relative">
                           <CrossFade swapKey={bestPlan} mode="popLayout">
@@ -277,7 +276,7 @@ export default function EmpresasCalculadoraPage() {
                           </CrossFade>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 bg-success text-white text-[11px] font-bold px-3 py-1.5 rounded-full">
+                      <div className="flex items-center gap-1.5 bg-success text-white text-[13px] font-medium px-3 py-1.5 rounded-full">
                         <CheckCircle className="w-3 h-3" />
                         Mejor para ti
                       </div>
@@ -286,11 +285,11 @@ export default function EmpresasCalculadoraPage() {
                     {/* Details Grid */}
                     <div className="grid grid-cols-2 gap-6 mb-8">
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">Evaluaciones</p>
+                        <p className="text-[12px] uppercase tracking-wider text-white/40">Evaluaciones</p>
                         <p className="text-[14px] font-medium font-mono tabular-nums">{quantity} eval/mes</p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">Precio por eval</p>
+                        <p className="text-[12px] uppercase tracking-wider text-white/40">Precio por eval</p>
                         <p className="text-[14px] font-medium font-mono tabular-nums">
                           {bestPlan === 'starter' && formatCOP(42000)}
                           {bestPlan === 'pro' && formatCOP(21000)}
@@ -298,7 +297,7 @@ export default function EmpresasCalculadoraPage() {
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">Suscripción</p>
+                        <p className="text-[12px] uppercase tracking-wider text-white/40">Suscripción</p>
                         <p className="text-[14px] font-medium font-mono tabular-nums">
                           {bestPlan === 'starter' && 'Gratis'}
                           {bestPlan === 'pro' && formatCOP(149000) + '/mes'}
@@ -306,7 +305,7 @@ export default function EmpresasCalculadoraPage() {
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">Ahorro vs Starter</p>
+                        <p className="text-[12px] uppercase tracking-wider text-white/40">Ahorro vs Starter</p>
                         <p className="text-[14px] font-medium font-mono text-success tabular-nums">
                           {bestPlan === 'starter' && '—'}
                           {bestPlan === 'pro' && formatCOP(starterSavingsVsPro)}
@@ -319,7 +318,7 @@ export default function EmpresasCalculadoraPage() {
                     <div className="pt-6 mb-8 border-t border-white/10">
                       <div className="flex items-end justify-between">
                         <div>
-                          <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Costo total evaluaciones</p>
+                          <p className="text-[12px] uppercase tracking-wider text-white/40 mb-1">Costo total evaluaciones</p>
                           <p className="text-[40px] font-mono font-light tracking-tight leading-none tabular-nums">
                             {bestPlan === 'flex' ? (
                               <span className="text-success">$0</span>
@@ -328,7 +327,7 @@ export default function EmpresasCalculadoraPage() {
                             )}
                           </p>
                         </div>
-                        <p className="text-[12px] text-white/40 mb-2">COP/mes</p>
+                        <p className="text-[13px] text-white/40 mb-2">COP/mes</p>
                       </div>
                     </div>
 
@@ -350,7 +349,7 @@ export default function EmpresasCalculadoraPage() {
                 </div>
 
                 {/* Features comparison */}
-                <div className="bg-surface rounded-[20px] p-6 border border-border">
+                <div className="bg-surface rounded-lg p-6 border border-border">
                   <h3 className="text-[14px] font-medium text-foreground mb-5">Comparación de evaluaciones por plan</h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -369,14 +368,14 @@ export default function EmpresasCalculadoraPage() {
                           "w-3.5 h-3.5 flex-shrink-0",
                           item.pro ? 'text-success' : 'text-muted-foreground/40'
                         )} />
-                        <span className="text-[12px] text-foreground/80">{item.feature}</span>
+                        <span className="text-[13px] text-foreground/80">{item.feature}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Enterprise Banner: aparece y se va con `Presence` al cruzar las 50 evaluaciones */}
-                  <Presence show={quantity >= 50} className="relative bg-muted/50 rounded-[20px] p-6 overflow-hidden border border-border">
+                  <Presence show={quantity >= 50} className="relative bg-muted/50 rounded-lg p-6 overflow-hidden border border-border">
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-md bg-foreground/5 flex items-center justify-center flex-shrink-0">
                         <Buildings className="w-5 h-5 text-foreground/60" />
@@ -384,22 +383,22 @@ export default function EmpresasCalculadoraPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="text-[15px] font-medium text-foreground">Plan Flex recomendado</h3>
-                          <span className="text-[9px] font-bold bg-foreground text-background px-1.5 py-0.5 rounded-full uppercase">
+                          <span className="text-[12px] font-medium bg-foreground text-background px-1.5 py-0.5 rounded-full uppercase">
                             Recomendado
                           </span>
                         </div>
-                        <p className="text-[12px] text-muted-foreground mb-4 leading-relaxed">
+                        <p className="text-[13px] text-muted-foreground mb-4 leading-relaxed">
                           Con {quantity}+ evaluaciones al mes, el plan Flex te da evaluaciones ilimitadas y gratuitas, más acceso a los 19 agentes AI. Solo pagas 1% del canon administrado.
                         </p>
                         <div className="flex flex-wrap gap-2">
                           <a href="mailto:ventas@leasefy.co?subject=Plan%20Flex%20-%20Evaluaciones">
-                            <Button size="sm" hideArrow className="h-8 rounded-full gap-1.5 text-[12px]">
+                            <Button size="sm" hideArrow className="h-8 rounded-full gap-1.5 text-[13px]">
                               <Envelope className="w-3 h-3" />
                               ventas@leasefy.co
                             </Button>
                           </a>
                           <a href="tel:+573001234567">
-                            <Button size="sm" variant="outline" className="h-8 rounded-full gap-1.5 text-[12px]">
+                            <Button size="sm" variant="outline" className="h-8 rounded-full gap-1.5 text-[13px]">
                               <Phone className="w-3 h-3" />
                               +57 300 123 4567
                             </Button>
@@ -431,13 +430,13 @@ export default function EmpresasCalculadoraPage() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-3 pr-4">Evaluaciones/mes</th>
-                    <th className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-3 px-4">Starter (Gratis)</th>
-                    <th className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-3 px-4">
-                      <span className="flex items-center gap-1.5">Pro ($149K/mes) <span className="bg-primary text-primary-fg uppercase tracking-wide font-mono text-[8px] px-1.5 py-0.5 rounded-full">Popular</span></span>
+                    <th className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider py-3 pr-4">Evaluaciones/mes</th>
+                    <th className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider py-3 px-4">Starter (Gratis)</th>
+                    <th className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider py-3 px-4">
+                      <span className="flex items-center gap-1.5">Pro ($ 149.000/mes) <span className="bg-primary text-primary-fg uppercase tracking-wide font-mono text-[12px] px-1.5 py-0.5 rounded-full">Popular</span></span>
                     </th>
-                    <th className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-3 pl-4">
-                      <span className="flex items-center gap-1.5">Flex (1% canon) <span className="bg-gradient-to-r from-warning to-warning text-white text-[8px] px-1.5 py-0.5 rounded-full">Todo incluido</span></span>
+                    <th className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider py-3 pl-4">
+                      <span className="flex items-center gap-1.5">Flex (1% canon) <span className="bg-warning text-white text-[12px] px-1.5 py-0.5 rounded-full">Todo incluido</span></span>
                     </th>
                   </tr>
                 </thead>
@@ -452,23 +451,23 @@ export default function EmpresasCalculadoraPage() {
 
                     return (
                       <tr key={qty} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                        <td className="text-[13px] font-semibold text-foreground py-3 pr-4 font-mono tabular-nums">{qty}</td>
+                        <td className="text-[13px] font-medium text-foreground py-3 pr-4 font-mono tabular-nums">{qty}</td>
                         <td className={cn(
                           "text-[13px] py-3 px-4 font-mono tabular-nums",
-                          isCheapestStarter && qty < 50 ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                          isCheapestStarter && qty < 50 ? 'font-medium text-foreground' : 'text-muted-foreground'
                         )}>
                           {formatCOP(sTotal)}
                         </td>
                         <td className={cn(
                           "text-[13px] py-3 px-4 font-mono tabular-nums",
-                          !isCheapestStarter && qty < 50 ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                          !isCheapestStarter && qty < 50 ? 'font-medium text-foreground' : 'text-muted-foreground'
                         )}>
                           {formatCOP(pTotal)}
-                          {qty > 30 && <span className="text-[10px] text-warning ml-1">({qty - 30} extra)</span>}
+                          {qty > 30 && <span className="text-[12px] text-warning ml-1">({qty - 30} extra)</span>}
                         </td>
                         <td className={cn(
                           "text-[13px] py-3 pl-4",
-                          qty >= 50 ? 'font-semibold text-success' : 'text-success'
+                          qty >= 50 ? 'font-medium text-success' : 'text-success'
                         )}>
                           $0 por eval
                         </td>
@@ -479,7 +478,7 @@ export default function EmpresasCalculadoraPage() {
               </table>
             </div>
 
-            <p className="text-[12px] text-muted-foreground mt-4">
+            <p className="text-[13px] text-muted-foreground mt-4">
               * Plan Flex: las evaluaciones son gratuitas e ilimitadas. El costo del plan es 1% del canon total administrado.
               Ej: 100 unidades x $2M canon = $2.000.000 COP/mes.
             </p>

@@ -6,7 +6,7 @@ import { Phone, ChatTeardropDots, EnvelopeSimple, CaretDown } from '@phosphor-ic
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
-import { type CarteraStage, stageColorClasses, stageDisplayName } from '@/lib/cartera'
+import { type CarteraStage, stageColorClasses, stageDayRange, stageDisplayName } from '@/lib/cartera'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useTr } from '@/lib/i18n/use-tr'
 
@@ -18,15 +18,30 @@ interface CobranzaNextActionsPanelProps {
 function ChannelIcon({ channel }: { channel: 'voice' | 'whatsapp' | 'email' }) {
   if (channel === 'voice') return <Phone size={14} className="text-fg-muted" />
   if (channel === 'whatsapp') return <ChatTeardropDots size={14} className="text-success" />
-  return <EnvelopeSimple size={14} className="text-primary" />
+  // Revisora r25: sin un segundo azul en la pantalla.
+  return <EnvelopeSimple size={14} className="text-fg-muted" />
 }
 
+/** El día y la hora («23 oct, 9:30 a. m.»): sólo la hora no decía de qué día era (revisora r25). */
 function formatTime(iso: string): string {
   try {
-    return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+    return new Date(iso).toLocaleString('es-CO', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'America/Bogota',
+    })
   } catch {
     return ''
   }
+}
+
+/** El nombre completo de la etapa con su rango de días; nunca el código («S3»). */
+function STAGE_LABELS_FULL(s: CarteraStage, locale: string): string {
+  const nombre = stageDisplayName(s, locale)
+  const rango = stageDayRange(s, locale)
+  return rango ? `${nombre} · ${rango}` : nombre
 }
 
 function StageBadge({ stage }: { stage: string }) {
@@ -41,8 +56,8 @@ function StageBadge({ stage }: { stage: string }) {
   const label = isValid ? stageDisplayName(s, locale) : stage
   return (
     <span
-      title={stage}
-      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
+      title={isValid ? STAGE_LABELS_FULL(s, locale) : undefined}
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
     >
       {label}
     </span>
@@ -66,8 +81,8 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       <p className="text-sm text-fg-subtle">
         {t('inmobiliaria.ai.cobranza.overview.nextActions.empty')}
       </p>
-      <p className="text-xs text-fg-muted max-w-xs">
-        {tr("El agente programa los contactos solo; acá aparecen a medida que los agenda.")}
+      <p className="text-caption text-fg-muted max-w-xs">
+        {tr("El agente programa los contactos solo; aquí aparecen a medida que los agenda.")}
       </p>
     </div>
   )
@@ -98,7 +113,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
               <p className="text-sm font-medium text-fg truncate">
                 {action.debtorNameRedacted}
               </p>
-              <p className="text-xs text-fg-subtle">
+              <p className="text-caption text-fg-subtle">
                 {formatTime(action.plannedFor)}
               </p>
             </div>
@@ -116,7 +131,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       {/* Flat list — md+ */}
       <div className="hidden md:block rounded-lg border border-border bg-card">
         <div className="px-5 py-4 border-b border-border-faint">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.overview.nextActions.title')}
           </h2>
         </div>
@@ -126,7 +141,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       {/* Accordion — sm */}
       <details className="md:hidden rounded-lg border border-border bg-card group">
         <summary className="px-5 py-4 cursor-pointer flex items-center justify-between list-none">
-          <span className="text-base font-semibold text-fg">
+          <span className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.overview.nextActions.title')}
           </span>
           <CaretDown

@@ -64,7 +64,7 @@ export function filasDelSidebar(
       // cabecera que queda sin filas debajo.
       filas.push({
         kind: 'section',
-        label: t(g.labelKey),
+        label: t(g.labelCortoKey ?? g.labelKey),
         href: `#sec-${g.key}`,
         icon: g.modulos[0]!.icon,
         module: null,

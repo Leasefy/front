@@ -17,17 +17,19 @@
  */
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { SectionLabel } from '@/components/ui/section-label'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { HistorialDeProcesos } from '@/components/procesos/HistorialDeProcesos'
 
 export default function CentroDeProcesosPage() {
   return (
     <PageGuard>
       <div className="space-y-6 p-6 lg:p-8" data-testid="centro-de-procesos-page">
-        <header className="space-y-1.5">
-          <SectionLabel>General</SectionLabel>
-          <h1 className="text-h2 text-fg">Centro de procesos</h1>
-        </header>
+        <EncabezadoDePantalla
+          // Ronda 30 (revisora r27, R4): sin sobretítulo —«General» no es una sección del menú—; como
+          // Notificaciones, se abre desde la barra de arriba (el botón de procesos queda marcado).
+          titulo="Centro de procesos"
+          descripcion="Las cargas y descargas de archivos de la plataforma, con su estado y su resultado."
+        />
         <HistorialDeProcesos />
       </div>
     </PageGuard>

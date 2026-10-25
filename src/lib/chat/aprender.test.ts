@@ -47,7 +47,7 @@ describe('valeLaPenaOfrecer', () => {
     const deshecha = { ...base, resultado: { propuestaId: 'p-1', estado: 'deshecha', titulo: '', resumen: 'x', deshacer: null } } as typeof base
     expect(valeLaPenaOfrecer(deshecha, null)).toBe(true);
     expect(propuestaDeshecha(deshecha)).toBe('p-1');
-    expect(valeLaPenaOfrecer(base, 'acá le decimos la 81 al edificio de la Calle 81 Sur')).toBe(true);
+    expect(valeLaPenaOfrecer(base, 'aquí le decimos la 81 al edificio de la Calle 81 Sur')).toBe(true);
     expect(valeLaPenaOfrecer(base, '¿cuánto tengo en cartera?')).toBe(false);
   });
 

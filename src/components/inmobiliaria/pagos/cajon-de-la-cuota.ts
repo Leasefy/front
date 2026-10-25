@@ -1,3 +1,4 @@
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 /**
  * Cómo se lee el cajón de una cuota: su nombre, su color y su fecha.
  *
@@ -80,12 +81,10 @@ export function varianteDeLaFila(
  * `new Date(iso)` y formatearlo en Colombia (UTC-5) lo corre al día anterior.
  */
 export function fechaLocal(iso: string, locale: 'es' | 'en'): string {
+  // 22-10 (revisión): en celdas «1 nov 2026» (la forma de la casa), no «01 de nov de 2026».
+  if (locale === 'es') return fechaCorta(iso)
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
   if (!m) return iso
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-  return d.toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
 }

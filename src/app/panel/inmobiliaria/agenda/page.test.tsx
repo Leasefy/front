@@ -309,13 +309,13 @@ describe('A3 — sin `operaciones:edit` no se dibuja lo que el back rechaza con 
     expect(container.querySelector('[data-testid="agenda-fila"]')).not.toBeNull()
   })
 
-  it('CONTADOR/VIEWER con la agenda vacía: el vacío no ofrece «Agendar una visita»', async () => {
+  it('CONTADOR/VIEWER con la agenda vacía: el vacío no ofrece «Agendar visita»', async () => {
     _puedeEditar = false
     getAgendaMock.mockResolvedValue(AGENDA_VACIA)
     await montar()
 
     expect(container.textContent).toContain('emptyTitle')
-    expect(container.textContent).not.toContain('Agendar una visita')
+    expect(container.textContent).not.toContain('Agendar visita')
   })
 
   it('AG-11 (04-10-2026): la asesora (pipeline sin operaciones) también agenda y crea tareas', async () => {
@@ -331,6 +331,18 @@ describe('A3 — sin `operaciones:edit` no se dibuja lo que el back rechaza con 
     } finally {
       _soloPipeline = false
     }
+  })
+
+  it('decisión 24 de Nico: con atrasadas, la pantalla abre en «Atrasadas» (una vez)', async () => {
+    getAgendaMock.mockResolvedValue({
+      ...CON_VISITA_PENDIENTE,
+      porVista: { ...(CON_VISITA_PENDIENTE as { porVista?: Record<string, number> }).porVista, proximas: 1, vencidas: 3 },
+    })
+    await montar()
+    expect(getAgendaMock).toHaveBeenLastCalledWith(expect.objectContaining({ vista: 'vencidas' }))
+    expect(
+      container.querySelector('[data-testid="agenda-pestana-vencidas"]')?.getAttribute('aria-pressed'),
+    ).toBe('true')
   })
 
   it('AG-02: «Vencidas» va aparte de «Próximas»', async () => {
@@ -507,6 +519,27 @@ describe('agenda — la columna de la persona no se lee al revés', () => {
 
     const rol = container.querySelector('[data-testid="agenda-rol-persona"]')
     expect(rol?.textContent).toContain('colResponsable')
+  })
+
+  it('revisora r25: una tarea sin responsable dice en Persona quién la creó (no «—»)', async () => {
+    getAgendaMock.mockResolvedValue({
+      resumen: AGENDA_VACIA.resumen,
+      eventos: [
+        evento({
+          id: 'tarea-2',
+          tipo: 'tarea',
+          origen: 'usuario',
+          titulo: 'Revisar el acta',
+          creadaPorId: 'otra-persona',
+          creadaPorNombre: 'Ana Restrepo',
+        }),
+      ],
+    })
+    await montar()
+
+    const rol = container.querySelector('[data-testid="agenda-rol-persona"]')
+    expect(rol?.textContent).toBe('La creó')
+    expect(rol?.parentElement?.textContent).toContain('Ana Restrepo')
   })
 })
 

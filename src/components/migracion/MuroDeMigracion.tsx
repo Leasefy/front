@@ -81,7 +81,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { ArrowRight, Check, Lock, Warning, X } from "@phosphor-icons/react";
+import { Check, Lock, Warning, X } from "@phosphor-icons/react";
 
 import { ApiError } from "@/lib/api/client";
 
@@ -1078,12 +1078,12 @@ export function PanelDeMigracion({
         */}
         <header className="shrink-0 border-b border-border-faint px-5 pb-5 pt-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between gap-4">
-            <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
+            <p className="font-mono text-caption text-fg-subtle">
               {t("migracion.muro.eyebrow")}
             </p>
             <div className="flex items-center gap-4">
               <p
-                className="font-mono text-[11px] tabular-nums text-fg-subtle"
+                className="font-mono text-caption tabular-nums text-fg-subtle"
                 data-testid="muro-progreso"
               >
                 {t("migracion.muro.progresoDe", {
@@ -1298,7 +1298,6 @@ export function PanelDeMigracion({
                     hideArrow
                   >
                     {t("migracion.muro.veredicto.seguir")}
-                    <ArrowRight className="ml-1.5 h-4 w-4" />
                   </Button>
                 </div>
               ) : listo ? (
@@ -1309,7 +1308,6 @@ export function PanelDeMigracion({
                   hideArrow
                 >
                   {t("migracion.muro.yaTermine")}
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
               ) : paso && paso.estado === "listo" && siguiente !== null ? (
                 <Button
@@ -1320,7 +1318,6 @@ export function PanelDeMigracion({
                   {t("migracion.muro.siguiente", {
                     paso: t(`migracion.pasos.${pasos[siguiente].id}.corto`),
                   })}
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
               ) : (
                 <p className="text-sm text-fg-subtle" data-testid="muro-falta">
@@ -1437,7 +1434,7 @@ function BarraDePasos({
               <span
                 data-testid={`muro-barra-${paso.id}`}
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-caption font-semibold tabular-nums transition-[color,background-color,border-color,box-shadow]",
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-caption font-medium tabular-nums transition-[color,background-color,border-color,box-shadow]",
                   hecho
                     ? "border-2 border-primary bg-primary text-primary-fg"
                     : habilitado
@@ -1488,7 +1485,7 @@ function BarraDePasos({
                   dejaba «· 2» colgando arriba de «inquilinos». */}
               <p
                 className={cn(
-                  "mt-0.5 font-mono text-[11px] leading-snug",
+                  "mt-0.5 font-mono text-caption leading-snug",
                   hecho ? "text-fg-muted" : "text-fg-subtle",
                 )}
                 title={hecho && paso.detalle ? paso.detalle : undefined}
@@ -1620,7 +1617,7 @@ function PasoEnFoco({
       className="xl:grid xl:grid-cols-[minmax(0,5fr)_minmax(0,13fr)] xl:items-start xl:gap-x-12 2xl:grid-cols-[minmax(0,4fr)_minmax(0,14fr)]"
     >
       <div className="min-w-0 xl:sticky xl:top-0">
-        <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
+        <p className="font-mono text-caption text-fg-subtle">
           {t("migracion.muro.pasoDe", { n: indice + 1, total: pasos.length })}
         </p>
         <h2
@@ -1693,7 +1690,6 @@ function PasoEnFoco({
               {t("migracion.muro.irAlPaso", {
                 paso: t(`migracion.pasos.${frena.id}.corto`),
               })}
-              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </Aviso>
         ) : !permitido ? (
@@ -1836,14 +1832,12 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
 
   return (
     <section
-      className="mb-6 flex items-start gap-4 rounded-lg bg-primary-soft p-5 sm:gap-5 sm:p-6"
+      className="mb-6 flex items-start gap-4 rounded-lg bg-success-soft p-5 sm:gap-5 sm:p-6"
       data-testid="muro-todo-listo"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg">
-        <Check className="h-5 w-5" weight="bold" />
-      </span>
+      <Check className="mt-0.5 h-6 w-6 shrink-0 text-success" weight="bold" aria-hidden="true" />
       <div className="min-w-0 flex-1">
-        <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
+        <p className="font-mono text-caption text-fg-subtle">
           {t("migracion.muro.todoListo.eyebrow")}
         </p>
         <h2 className="mt-1 text-lg font-medium tracking-tight text-fg">

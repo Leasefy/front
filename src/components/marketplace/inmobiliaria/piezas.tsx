@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { motionDuration, motionEase } from '@leasefy/cadence';
+import { FotoEnEstrias, motionDuration, motionEase } from '@leasefy/cadence';
 import {
   Check,
   ChatCircleDots,
@@ -32,7 +32,7 @@ import {
 import { useAqui, useSeguir } from '@/lib/marketplace/use-inmobiliarias';
 import { useCuentaParaSeguir } from '../CuentaParaPublicar';
 import { cn } from '@/lib/utils';
-import { portadaDe } from '@/lib/marketplace/portadas';
+import { esPortadaDeLeasefy, portadaDe } from '@/lib/marketplace/portadas';
 
 /**
  * ══ LAS PIEZAS DE LA INMOBILIARIA EN EL MARKETPLACE (Nico, 09-10-2026) ══════
@@ -469,50 +469,66 @@ export function TarjetaDeOpinion({ o }: { o: OpinionPublica }) {
 
 /** La tarjeta de «Inmobiliarias en Leasefy»: portada, logo, sello, zonas, Pregúntale y Seguir. */
 export function TarjetaDeInmobiliaria({ t }: { t: TarjetaDeInmobiliaria }) {
+  // Ronda 30 (diseño nuevo del marketplace): la tarjeta ancha. A la izquierda su portada —la de Leasefy se
+  // dibuja en estrías de voltaje (FotoEnEstrias) y al pasar el mouse se ve la foto—; a la derecha su logo,
+  // nombre con el sello, zonas y cuántos publica, «% la recomienda» y Pregúntale · Seguir. Antes, una
+  // tarjeta angosta con un degradado del color de su marca.
+  const portada = portadaDe(t.portadaUrl);
+  const deLeasefy = !t.portadaUrl || esPortadaDeLeasefy(t.portadaUrl);
   return (
     <article
-      className="overflow-hidden rounded-lg border border-border bg-surface transition-shadow duration-base hover:shadow-md"
+      className="grid overflow-hidden rounded-[26px] border border-border-faint bg-surface md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
       data-testid="inmobiliaria-del-marketplace"
     >
       <Link
         href={paginaDe(t)}
-        className="relative block h-24 bg-surface-muted"
+        className="group relative block h-[120px] overflow-hidden bg-surface-muted md:h-auto md:min-h-[220px]"
         aria-label={`Ver la página de ${t.nombre}`}
       >
-        {portadaDe(t.portadaUrl) ? (
-          <Image src={portadaDe(t.portadaUrl)} alt="" fill sizes="320px" className="object-cover" />
-        ) : (
-          <span
-            className="absolute inset-0"
-            aria-hidden
-            style={{ background: `linear-gradient(135deg, ${colorDe(t)}40, ${colorDe(t)}12)` }}
+        {portada && (
+          <Image src={portada} alt="" fill sizes="(min-width: 768px) 40vw, 100vw" className="object-cover" />
+        )}
+        {deLeasefy && (
+          <FotoEnEstrias
+            src={portada}
+            alt=""
+            paso={9}
+            proporcion={2}
+            className="!absolute inset-0 !h-full transition-opacity duration-[700ms] ease-enter group-hover:opacity-0 group-focus-visible:opacity-0"
+            style={{ aspectRatio: 'auto' }}
           />
         )}
       </Link>
-      <div className="p-4 pt-0">
-        <LogoDeLaInmobiliaria i={t} tamano={52} className="relative z-10 -mt-6 ring-4 ring-surface" />
+      <div className="flex min-w-0 flex-col justify-center px-5 pb-[22px] md:px-7 md:py-[26px]">
+        <LogoDeLaInmobiliaria
+          i={t}
+          tamano={56}
+          className="relative z-10 -mt-[30px] ring-4 ring-surface md:mt-0 md:ring-1 md:ring-border"
+        />
         <Link
           href={paginaDe(t)}
-          className="mt-2 flex items-center gap-1 text-[15px] font-medium text-fg hover:underline"
+          className="mt-3.5 flex min-w-0 items-center gap-[7px] text-[20px] font-[450] leading-[1.25] tracking-[-0.015em] text-fg hover:text-primary"
         >
           <span className="truncate">{t.nombre}</span>
-          {t.verificada && <SelloVerificada />}
+          {t.verificada && <SelloVerificada className="h-[18px] w-[18px]" />}
         </Link>
-        <p className="truncate text-[13px] text-fg-muted">
+        <p className="mt-1 text-[14px] text-fg-muted">
           {t.zonas.length > 0 ? t.zonas.join(' · ') : (t.ciudad ?? '')}
-          {' · '}
+          {(t.zonas.length > 0 || t.ciudad) && ' · '}
           <span className="font-mono tabular-nums">{t.inmuebles}</span> {t.inmuebles === 1 ? 'inmueble' : 'inmuebles'}
         </p>
-        <Recomienda r={t.recomendacion} conVotos className="mt-1.5" />
-        <div className="mt-3 flex items-center gap-2">
+        <div>
+          <Recomienda r={t.recomendacion} conVotos className="mt-1" />
+        </div>
+        <div className="mt-[18px] flex flex-wrap items-center gap-2.5">
           <Link
             href={paginaDe(t)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border px-3 text-[13px] text-fg transition-colors duration-base hover:border-border-strong"
+            className="inline-flex h-[38px] items-center gap-[7px] rounded-[13px] border border-border bg-surface px-[15px] text-[14px] font-medium text-fg transition-colors duration-base hover:border-border-strong active:scale-[0.97]"
           >
-            <ChatCircleDots className="h-4 w-4" aria-hidden />
+            <ChatCircleDots className="h-[15px] w-[15px]" aria-hidden />
             Pregúntale
           </Link>
-          <BotonSeguir i={t} tamano="sm" />
+          <BotonSeguir i={t} tamano="sm" className="h-[38px] rounded-[13px] px-[15px] text-[14px]" />
         </div>
       </div>
     </article>

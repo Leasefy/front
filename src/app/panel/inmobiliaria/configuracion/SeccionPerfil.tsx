@@ -9,10 +9,13 @@
 
 import { ConfigPenalidadDeTerminacion } from '@/components/inmobiliaria/ConfigPenalidadDeTerminacion';
 import { ConfigCicloDeVidaDelContrato } from '@/components/inmobiliaria/ConfigCicloDeVidaDelContrato';
+import { useRef } from 'react';
 import { toast } from '@/components/ui/toast';
 import { Buildings, Info } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { IndiceDeLaPagina } from '@/components/pantalla/IndiceDeLaPagina';
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
 import {
   ConfigPerfilAgencia,
   ConfigExtractoMensual,
@@ -48,6 +51,7 @@ export function datosQueFaltan(agency: AgencyProfile): string[] {
 }
 
 export function SeccionPerfil() {
+  const raiz = useRef<HTMLDivElement>(null);
   const { config, isLoading, errorCrudo, refetch } = useInmobiliariaConfig();
   const agency = config?.agency ?? null;
   const isAgencyAdmin = agency?.memberRole === 'ADMIN';
@@ -106,13 +110,24 @@ export function SeccionPerfil() {
       cuandoVacio={
         <VacioDeSeccion
           icono={Buildings}
-          titulo="Todavía no pudimos leer tu inmobiliaria"
+          titulo="Todavía no se pudo leer tu inmobiliaria"
           ayuda="Vuelve a intentar en un momento. Si sigue igual, escríbenos: la cuenta puede no tener una agencia asociada."
         />
       }
     >
       {agency && (
-        <div className="space-y-6">
+        // Ronda 30 (Nico, 23-10): la página medía ≈6.400 px; se parte en pestañas de la casa (la pestaña queda en la
+        // URL, ?pestana=). Se agrupa lo que había, sin quitar nada; todas montadas, como antes.
+        <PestanasDeLaFicha
+          etiqueta="Partes del perfil de la inmobiliaria"
+          pestanas={[
+            {
+              id: 'empresa',
+              etiqueta: 'Datos de la empresa',
+              contenido: (
+                <div ref={raiz} className="space-y-6">
+                  {/* «En esta sección»: los datos de la empresa siguen siendo varios bloques. */}
+                  <IndiceDeLaPagina raiz={raiz} />
           {faltan.length > 0 && (
             <div className="flex items-start gap-2.5 rounded-lg border border-border bg-surface-muted px-4 py-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
@@ -123,14 +138,42 @@ export function SeccionPerfil() {
             </div>
           )}
           <ConfigPerfilAgencia agency={agency} onSave={guardarLosDatosDeLaEmpresa} canEdit={isAgencyAdmin} />
-          {/* Justo después de los datos de la empresa: es una decisión del
-              negocio que cambia un número de todas las pantallas. */}
-          <ConfigTasaDeRecaudo agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
-          <ConfigPenalidadDeTerminacion agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
-          <ConfigCicloDeVidaDelContrato agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
-          <ConfigExtractoMensual agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
-          <ConfigRenovacionAutomatica agency={agency} onSave={guardarLaRenovacion} canEdit={isAgencyAdmin} />
-        </div>
+                </div>
+              ),
+            },
+            {
+              id: 'cobro-y-contrato',
+              etiqueta: 'Cobro y contrato',
+              contenido: (
+                <div className="space-y-6">
+          <div id="cfg-tasa-de-recaudo" data-indice="Tasa de recaudo" className="scroll-mt-16">
+            <ConfigTasaDeRecaudo agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          </div>
+          <div id="cfg-terminacion-anticipada" data-indice="Terminación anticipada" className="scroll-mt-16">
+            <ConfigPenalidadDeTerminacion agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          </div>
+          <div id="cfg-ciclo-del-contrato" data-indice="Ciclo del contrato" className="scroll-mt-16">
+            <ConfigCicloDeVidaDelContrato agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          </div>
+          <div id="cfg-renovacion-automatica" data-indice="Renovación automática" className="scroll-mt-16">
+            <ConfigRenovacionAutomatica agency={agency} onSave={guardarLaRenovacion} canEdit={isAgencyAdmin} />
+          </div>
+                </div>
+              ),
+            },
+            {
+              id: 'extracto',
+              etiqueta: 'Extracto al propietario',
+              contenido: (
+                <div className="space-y-6">
+          <div id="cfg-extracto-al-propietario" data-indice="Extracto al propietario" className="scroll-mt-16">
+            <ConfigExtractoMensual agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          </div>
+                </div>
+              ),
+            },
+          ]}
+        />
       )}
     </EstadoDeDatos>
   );

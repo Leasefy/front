@@ -21,7 +21,7 @@ function StagePill({ stage }: { stage: string }) {
 
   return (
     <span
-      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
       title={stage}
     >
       {/* El nombre de la etapa (QA-AGENTES 16-10: decía «S2 → S3»). */}
@@ -39,7 +39,7 @@ export function CobranzaTransitionsFeed({
 
   return (
     <div className="rounded-lg border border-border bg-surface p-5">
-      <h2 className="text-base font-semibold text-fg">
+      <h2 className="text-base font-medium text-fg">
         {t('inmobiliaria.ai.cobranza.overview.transitions.title')}
       </h2>
 
@@ -56,7 +56,7 @@ export function CobranzaTransitionsFeed({
           <p className="text-sm font-medium text-fg-subtle">
             {t('inmobiliaria.ai.cobranza.overview.transitions.empty')}
           </p>
-          <p className="text-xs text-fg-subtle max-w-xs">
+          <p className="text-caption text-fg-subtle max-w-xs">
             {t('inmobiliaria.ai.cobranza.overview.transitions.emptyHelper')}
           </p>
         </div>
@@ -80,7 +80,7 @@ export function CobranzaTransitionsFeed({
                 {/* Stage transition */}
                 <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
                   <StagePill stage={item.fromStage} />
-                  <span className="text-fg-subtle text-xs">→</span>
+                  <span className="text-fg-subtle text-caption">→</span>
                   <StagePill stage={item.toStage} />
                 </div>
 
@@ -89,7 +89,7 @@ export function CobranzaTransitionsFeed({
                   <p className="text-sm font-medium text-fg truncate">
                     {item.debtorNameRedacted}
                   </p>
-                  <p className="text-xs text-fg-subtle truncate">
+                  <p className="text-caption text-fg-subtle truncate">
                     {motivoDeLaTransicion(item.reason)}
                   </p>
                 </div>
@@ -97,7 +97,7 @@ export function CobranzaTransitionsFeed({
                 {/* Actor + time */}
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <span
-                    className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                    className={`text-caption px-1.5 py-0.5 rounded font-medium ${
                       laHizoUnaPersona(item.actor)
                         ? 'bg-surface-muted text-fg-subtle'
                         : 'bg-surface-muted text-fg-muted'
@@ -110,7 +110,7 @@ export function CobranzaTransitionsFeed({
                       ? t('inmobiliaria.ai.cobranza.overview.transitions.humanActor')
                       : t('inmobiliaria.ai.cobranza.overview.transitions.agentActor')}
                   </span>
-                  <span className="text-xs text-fg-subtle">
+                  <span className="text-caption text-fg-subtle">
                     {relativeTime(item.transitionedAt, locale)}
                   </span>
                 </div>

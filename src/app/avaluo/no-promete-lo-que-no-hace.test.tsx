@@ -39,7 +39,7 @@ vi.mock('@/lib/avaluo/wizard-url', () => ({
 }))
 
 import AvaluoPage from './page'
-import { metadata } from './layout'
+import { TEXTOS_DEL_AVALUO } from './textos-para-buscadores'
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -99,10 +99,11 @@ describe('/avaluo — sin promesas que el servicio no cumple', () => {
   })
 
   it('el título y la descripción para buscadores tampoco prometen «certificado» ni crédito hipotecario o litigios', () => {
-    const titulo = String(metadata.title ?? '')
-    const descripcion = String(metadata.description ?? '')
-    expect(titulo).not.toMatch(/certificado/i)
-    expect(descripcion).not.toMatch(/crédito hipotecario|litigios|certificado/i)
-    expect(String(metadata.openGraph?.description ?? '')).not.toMatch(/certificado/i)
+    // SEO (24-10): en los dos idiomas (generateMetadata del layout los toma de aquí)
+    for (const t of Object.values(TEXTOS_DEL_AVALUO)) {
+      expect(t.title).not.toMatch(/certificado|certificate/i)
+      expect(t.description).not.toMatch(/crédito hipotecario|litigios|certificado|mortgage|litigation|certificate/i)
+      expect(t.og).not.toMatch(/certificado|certificate/i)
+    }
   })
 })

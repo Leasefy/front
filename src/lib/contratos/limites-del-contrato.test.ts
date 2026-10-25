@@ -61,7 +61,7 @@ describe('revisarTerminosDelContrato — el espejo del DTO', () => {
     )
   })
 
-  it('lo vacío no se juzga acá: cada pantalla dice su «Requerido»', () => {
+  it('lo vacío no se juzga aquí: cada pantalla dice su «Requerido»', () => {
     expect(revisarTerminosDelContrato({})).toEqual({})
   })
 

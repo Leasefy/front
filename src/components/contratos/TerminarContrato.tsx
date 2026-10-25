@@ -271,7 +271,7 @@ export function TerminarContrato({
       // referencia, la red) al toast, por el traductor.
       const { porCampo, orden, sueltos } = repartirErroresDelServidor(err, {
         campos: CAMPOS_DE_LA_TERMINACION,
-        porDefecto: "No pudimos terminar el contrato.",
+        porDefecto: "No se pudo terminar el contrato.",
         accion: "terminar el contrato",
       });
       setErrores(porCampo);

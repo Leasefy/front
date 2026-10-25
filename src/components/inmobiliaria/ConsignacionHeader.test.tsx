@@ -28,7 +28,7 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }));
 
-import { ConsignacionHeader } from './ConsignacionHeader';
+import { ConsignacionHeader, direccionSinRepetir } from './ConsignacionHeader';
 
 const BASE_CONSIGNACION: Consignacion = {
   id: 'c1',
@@ -82,9 +82,16 @@ function findViewPortalButton(): HTMLButtonElement | undefined {
 }
 
 describe('<ConsignacionHeader> — property thumbnail', () => {
-  it('shows the placeholder icon when no photo is available yet', () => {
+  it('sin foto: la portada es el 3D de la casa, no una foto; «Agregar fotos» sólo si está arrendado (22-10)', () => {
     render();
-    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('[data-testid="portada-sin-foto"]')).not.toBeNull();
+    // Disponible: «Agregar fotos» ya es un paso de la lista de lo que falta; no se repite en la portada.
+    expect(container.querySelector('[data-testid="portada-agregar-fotos"]')).toBeNull();
+    expect(container.querySelector('[data-testid="portada-abrir"]')).toBeNull();
+    act(() => root.unmount());
+    root = createRoot(container);
+    render({ contratoVigente: true });
+    expect(container.querySelector('[data-testid="portada-agregar-fotos"]')?.getAttribute('href')).toBe('#fotos');
   });
 
   it('renders the property photo when propertyThumbnailUrl is provided', () => {
@@ -96,31 +103,23 @@ describe('<ConsignacionHeader> — property thumbnail', () => {
 
   it('falls back to the placeholder when the property has zero photos', () => {
     render({ propertyThumbnailUrl: '' });
-    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('[data-testid="portada-sin-foto"]')).not.toBeNull();
   });
 });
 
-describe('<ConsignacionHeader> — Ver en Portal', () => {
-  it('is enabled and fires onViewPortal when propertyId is present', () => {
-    const onViewPortal = vi.fn();
-    render({ onViewPortal });
-    const button = findViewPortalButton();
-    expect(button).toBeTruthy();
-    expect(button?.disabled).toBe(false);
-    act(() => { button?.click(); });
-    expect(onViewPortal).toHaveBeenCalledTimes(1);
+describe('<ConsignacionHeader> — Ver el aviso público (revisión 21-10)', () => {
+  // Ya no es un botón suelto arriba: vive en el menú ⋯ (Radix, que en happy-dom no se
+  // abre) y en «Arrendarlo», junto al interruptor del marketplace. Arriba sólo queda lo
+  // que se puede hacer.
+  it('no hay botón «Ver el aviso público» suelto en la fila de arriba', () => {
+    render({ onViewPortal: vi.fn() });
+    expect(findViewPortalButton()).toBeUndefined();
   });
 
-  it('is disabled when propertyId is missing, and does not fire onViewPortal', () => {
-    const onViewPortal = vi.fn();
-    render({
-      consignacion: { ...BASE_CONSIGNACION, propertyId: '' },
-      onViewPortal,
-    });
-    const button = findViewPortalButton();
-    expect(button?.disabled).toBe(true);
-    act(() => { button?.click(); });
-    expect(onViewPortal).not.toHaveBeenCalled();
+  it('el menú lo ofrece sólo con un inmueble asociado (fuente: sin inmueble no hay aviso)', () => {
+    const fuente = readFileSync(resolve(process.cwd(), 'src/components/inmobiliaria/ConsignacionHeader.tsx'), 'utf8');
+    expect(fuente).toContain('{canViewPortal ? (');
+    expect(fuente).toContain('data-testid="menu-ver-aviso"');
   });
 });
 
@@ -203,7 +202,7 @@ describe('<ConsignacionHeader> — un mandato TERMINADO se ve y se comporta dist
     expect(container.querySelector('[data-testid="terminada-con-contrato"]')).not.toBeNull();
     // El chip «Arrendado» (que sale de `availability`, no del contrato) ya no describe nada.
     expect(container.textContent).not.toContain('inmobiliaria.consignaciones.availability.rented');
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.status.terminated');
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.header.estadoDelMandato.terminated');
   });
 
   it('sin fecha conocida lo dice sin inventarla, y sin contrato no avisa de contrato', () => {
@@ -213,14 +212,14 @@ describe('<ConsignacionHeader> — un mandato TERMINADO se ve y se comporta dist
     expect(container.querySelector('[data-testid="terminada-con-contrato"]')).toBeNull();
   });
 
-  it('el kebab no ofrece «Terminar» otra vez, no hay «Cambiar estado», «Ver en Portal» explica por qué y hay «Reactivar consignación» (21-10-2026)', () => {
+  it('el kebab no ofrece «Terminar» otra vez, no hay «Cambiar estado» ni botones apagados, y hay «Reactivar consignación» (21-10-2026)', () => {
     const onReactivar = vi.fn();
     render({ consignacion: terminada, onReactivar });
     expect(container.querySelector('[aria-label="inmobiliaria.consignaciones.header.moreActions"]')).toBeNull();
     expect(conTexto('inmobiliaria.consignaciones.header.changeStatus')).toBeUndefined();
-    const portal = findViewPortalButton()!;
-    expect(portal.disabled).toBe(true);
-    expect(portal.getAttribute('title')).toBe('inmobiliaria.consignaciones.header.terminada.viewOnPortal');
+    // Revisión 21-10: lo que no se puede, no se ofrece (antes era un «Ver en Portal» apagado).
+    expect(findViewPortalButton()).toBeUndefined();
+    expect(Array.from(container.querySelectorAll('button')).filter((b) => b.disabled)).toHaveLength(0);
     // «Nueva consignación» llevaba a un asistente que no puede reabrir ESTE inmueble.
     expect(container.querySelector('[data-testid="header-nueva-consignacion"]')).toBeNull();
     const reactivar = container.querySelector<HTMLButtonElement>('[data-testid="header-reactivar-consignacion"]')!;
@@ -261,5 +260,55 @@ describe('<ConsignacionHeader> — el menú no ofrece lo que no existe', () => {
     // …y la acción que sí funciona sigue ahí.
     expect(fuente).toContain('terminateConsignment');
     expect(fuente).toContain('onTerminate?.()');
+  });
+});
+
+describe('<ConsignacionHeader> — la portada de la revisión 21-10', () => {
+  it('pinta las migas, la acción de la página y la franja que le pasan', () => {
+    render({
+      migas: <nav data-testid="migas-stub">Inmuebles</nav>,
+      accionPrevia: <button data-testid="accion-previa-stub">Pedir cita</button>,
+      franja: <dl data-testid="franja-stub" />,
+    });
+    expect(container.querySelector('[data-testid="migas-stub"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="accion-previa-stub"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="franja-stub"]')).not.toBeNull();
+  });
+
+  it('el mandato activo no anuncia «Consignación activa» (es lo normal); otro estado sí', () => {
+    render();
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.header.estadoDelMandato.active');
+    act(() => { root.render(<ConsignacionHeader consignacion={{ ...BASE_CONSIGNACION, status: 'pending' }} />); });
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.header.estadoDelMandato.pending');
+  });
+
+  it('los hechos del mandato (desde, comisión) ya no van en la portada', () => {
+    render();
+    expect(container.querySelector('[data-testid="hechos-del-mandato"]')).toBeNull();
+    expect(container.querySelector('[data-testid="comision-del-mandato"]')).toBeNull();
+  });
+
+  it('el estado se cambia tocándolo: el disparador dice «Cambiar estado» para el lector de pantalla', () => {
+    render();
+    const disparador = container.querySelector('[data-testid="cambiar-estado"]');
+    expect(disparador?.textContent).toContain('inmobiliaria.consignaciones.availability.available');
+    expect(disparador?.textContent).toContain('inmobiliaria.consignaciones.header.changeStatus');
+  });
+
+  it('una sola acción azul: «Editar»', () => {
+    render();
+    expect(container.querySelector('[data-testid="header-editar"]')).not.toBeNull();
+    expect(findViewPortalButton()).toBeUndefined();
+  });
+});
+
+describe('direccionSinRepetir', () => {
+  const base = { propertyTitle: 'Apartamento en Acuarela del Rio, Caldas', propertyAddress: 'CL 140 SUR CR 47 -108', propertyZone: 'ACUARELA DEL RIO', propertyCity: 'Caldas' };
+  it('no repite barrio ni ciudad que ya dice el título (sin importar mayúsculas ni tildes)', () => {
+    expect(direccionSinRepetir(base)).toBe('CL 140 SUR CR 47 -108');
+    expect(direccionSinRepetir({ ...base, propertyTitle: 'Apartamento en Acuarela del Río' })).toBe('CL 140 SUR CR 47 -108, Caldas');
+  });
+  it('con un título que no los nombra, van los dos', () => {
+    expect(direccionSinRepetir({ ...base, propertyTitle: 'Apto 302' })).toBe('CL 140 SUR CR 47 -108, ACUARELA DEL RIO, Caldas');
   });
 });

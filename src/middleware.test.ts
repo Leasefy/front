@@ -30,7 +30,9 @@ describe('middleware — CSP con nonce', () => {
   })
 
   it('una CSP que manda el cliente en la petición no se respeta: se pisa', () => {
-    const req = new NextRequest('https://leasefy.co/es', {
+    // Ronda 30 (Nico): la home es la landing 2 (estática, con su propia política); el nonce se mira en una
+    // página pública de React.
+    const req = new NextRequest('https://leasefy.co/es/propiedades', {
       headers: { 'content-security-policy': "script-src 'nonce-elegidoPorElAtacante'" },
     })
     const r = middleware(req)
@@ -43,7 +45,8 @@ describe('middleware — CSP con nonce', () => {
   it('con CSP_MODO=obligatoria la cabecera es la que bloquea', () => {
     vi.stubEnv('CSP_MODO', 'obligatoria')
     // `/` ya no es un documento: manda a `/es` o `/en` (idioma, 16-10-2026).
-    const r = middleware(new NextRequest('https://leasefy.co/es'))
+    // Ronda 30 (Nico): la home es la landing 2, con su propia política; la de nonce se mira en /es/propiedades.
+    const r = middleware(new NextRequest('https://leasefy.co/es/propiedades'))
     expect(r.headers.get('Content-Security-Policy')).toContain("'strict-dynamic'")
     expect(r.headers.get('Content-Security-Policy-Report-Only')).toBeNull()
   })

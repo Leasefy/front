@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import { Export, Funnel, SortAscending, SortDescending, X } from '@phosphor-icons/react'
-import { SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Stagger, StaggerItem } from '@leasefy/cadence'
+import type { TonoDeEsfera } from '@leasefy/cadence'
 import { toast } from 'sonner'
 
 import {
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { TablePagination } from '@/components/ui/pagination'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 import { useEstadoDeLaTabla } from '@/lib/admin/use-estado-de-la-tabla'
@@ -55,6 +57,8 @@ export interface Column<T> {
   texto?: (row: T) => ValorDeCelda
   /** `false` = no se muestra en la tarjeta del celular. */
   enCelular?: boolean
+  /** Ronda 28 (revisora r27): en la tarjeta del celular, a lo ancho (las dos columnas) — p. ej. una insignia larga. */
+  enCelularAncho?: boolean
 }
 
 /** La paginación del SERVIDOR: el back corta la página y manda el total. */
@@ -97,9 +101,13 @@ export function DataTable<T>({
   emptyTitle = 'Sin resultados',
   emptyHint,
   emptyIcon,
+  emptyTono,
+  cifraDelCelular,
   emptyAction,
   onReintentar,
+  errorTitulo,
   barra,
+  buscadorPropio,
   acciones,
   pie,
   filaMarcada,
@@ -136,11 +144,26 @@ export function DataTable<T>({
   emptyTitle?: string
   emptyHint?: string
   emptyIcon?: React.ReactNode
+  /** Ronda 26 (T9): `exito` cuando no tener nada está bien (la esfera no es azul: el azul es de la acción). */
+  emptyTono?: TonoDeEsfera
+  /**
+   * Ronda 26 (T8): el encabezado de la columna que va como cifra en la tarjeta del
+   * celular (la que responde). Sin esto, la primera columna numérica; siempre con su rótulo.
+   */
+  cifraDelCelular?: string
   /** Lo que se puede hacer desde el vacío (p. ej. «Nueva…»). */
   emptyAction?: React.ReactNode
   onReintentar?: () => void
+  /** El título del fallo, dicho con lo que no cargó («No pudimos cargar las metas»; revisora r27). */
+  errorTitulo?: string
   /** Filtros propios de la pantalla (desplegables), en la misma barra. */
   barra?: React.ReactNode
+  /**
+   * Ronda 28 (revisora r27, T13): el buscador PROPIO de la pantalla (uno que busca en el servidor, con su
+   * botón), en el lugar del buscador de la tabla: a 390 va a lo ancho y SIEMPRE a la vista; sólo los
+   * desplegables de `barra` se pliegan detrás de «Filtros (n)».
+   */
+  buscadorPropio?: React.ReactNode
   /** Botones de la pantalla al lado de «Exportar». */
   acciones?: React.ReactNode
   /** El paginador propio de la pantalla (si ya corta la página ella). */
@@ -197,6 +220,8 @@ export function DataTable<T>({
   const { get, setFilters } = useEstadoDeLaTabla()
   const esCelular = useIsMobile()
   const [exportando, setExportando] = useState(false)
+  /** En el celular los filtros propios se pliegan detrás de «Filtros». */
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
   const k = (nombre: string) => (id ? `${id}.${nombre}` : nombre)
 
   const busqueda = buscar ? get(k('q')) : ''
@@ -326,7 +351,7 @@ export function DataTable<T>({
 
   let cuerpo: React.ReactNode
   if (isLoading && !rows) cuerpo = <LoadingBlock suelto={false} />
-  else if (error) cuerpo = <ErrorBlock error={error} onReintentar={onReintentar} suelto={false} />
+  else if (error) cuerpo = <ErrorBlock error={error} onReintentar={onReintentar} titulo={errorTitulo} suelto={false} />
   else if (filasVisibles.length === 0)
     cuerpo =
       hayFiltros && hayDatosSinFiltro ? (
@@ -334,19 +359,21 @@ export function DataTable<T>({
           title="Nada con estos filtros"
           hint={hayBusqueda ? `No hay resultados para «${busqueda.trim()}».` : 'Prueba con otros filtros.'}
           icono={<Funnel weight="bold" />}
+          tono="neutro"
           suelto={false}
           accion={
-            <Button variant="outline" hideArrow onClick={limpiar}>
+            <Button variant="outline" size="sm" hideArrow onClick={limpiar}>
               Limpiar filtros
             </Button>
           }
         />
       ) : (
-        <EmptyBlock title={emptyTitle} hint={emptyHint} icono={emptyIcon} accion={emptyAction} suelto={false} />
+        <EmptyBlock title={emptyTitle} hint={emptyHint} icono={emptyIcon} accion={emptyAction} tono={emptyTono} suelto={false} />
       )
   else if (esCelular && tarjetas)
     cuerpo = (
       <TarjetasDeLaTabla
+        cifraDelCelular={cifraDelCelular}
         columns={columns}
         rows={filasVisibles}
         getKey={getKey}
@@ -391,11 +418,13 @@ export function DataTable<T>({
       </Table>
     )
 
-  const conBuscador = Boolean(buscar)
+  const conBuscador = Boolean(buscar) || Boolean(buscadorPropio)
   const conSegmentos = Boolean(segmentos?.length)
-  const conteoVisible = queSon && rows && (paginacion ? paginacion.total > 0 : calculo.total > 0)
-  const barraArriba = conBuscador || barra || acciones || exportar
-  const barraAbajo = conSegmentos || (hayFiltros && hayDatosSinFiltro) || conteoVisible
+  // Ronda 28 (revisora r27, T3): con FALLO, sin barra (antes el buscador y «Exportar» apagado encima del
+  // cartel). Sin datos, la barra se queda (Nico: las tablas SIEMPRE con buscador, filtros y paginación).
+  // El buscador PROPIO (el que busca en el servidor) se queda con el fallo: puede ser la búsqueda la que falló.
+  const barraArriba = error ? Boolean(buscadorPropio) : Boolean(conBuscador || barra || acciones || exportar)
+  const conExportarEnLaFila = !error && Boolean(exportar) && Boolean(conBuscador || barra)
 
   const paginador = paginacion ? (
     paginacion.total > 0 ? (
@@ -419,38 +448,97 @@ export function DataTable<T>({
     />
   ) : null
 
+  // Ronda 28 (revisora r27, T14): «N cosas» suelto sólo cuando dice algo que nada más dice: sin paginador
+  // («Mostrando 1–N de N») y sin pestañas con su conteo, o cuando la búsqueda o un filtro recortan.
+  const seVeElPaginador = !pie && Boolean(paginador)
+  const recortado = hayBusqueda || propiosPuestos > 0
+  const conteoVisible =
+    !error &&
+    queSon &&
+    rows &&
+    (paginacion ? paginacion.total > 0 : calculo.total > 0) &&
+    !seVeElPaginador &&
+    (!conSegmentos || recortado)
+  const barraAbajo = !error && (conSegmentos || (hayFiltros && hayDatosSinFiltro) || conteoVisible)
+
+  const botonExportar = (soloIcono: boolean) =>
+    exportar ? (
+      <Button
+        variant="secondary"
+        size="sm"
+        hideArrow
+        isLoading={exportando}
+        onClick={() => void bajarExcel()}
+        disabled={exportando || (paginacion ? paginacion.total === 0 : calculo.ordenadas.length === 0)}
+        className={cn('gap-2', soloIcono ? 'shrink-0 px-2.5 sm:hidden' : conExportarEnLaFila && 'max-sm:hidden')}
+        aria-label={soloIcono ? 'Exportar a Excel' : undefined}
+        title={soloIcono ? 'Exportar a Excel' : undefined}
+      >
+        <Export className="h-4 w-4" aria-hidden />
+        {soloIcono ? null : exportando ? 'Armando el Excel…' : 'Exportar a Excel'}
+      </Button>
+    ) : null
+
   return (
     <div className={cn('overflow-hidden rounded-lg border border-border bg-surface', className)}>
       {barraArriba || barraAbajo ? (
         <div className="space-y-3 border-b border-border p-4">
           {barraArriba ? (
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-              {conBuscador ? (
-                <div className="w-full min-w-0 sm:max-w-sm sm:flex-1">
-                  <Buscador
-                    id={k('buscar')}
-                    value={busqueda}
-                    onChange={(v) => poner({ [k('q')]: v })}
-                    placeholder={typeof buscar === 'string' ? buscar : 'Buscar'}
-                  />
-                </div>
-              ) : null}
-              {barra ? <div className="min-w-0 sm:flex-1">{barra}</div> : null}
-              {acciones || exportar ? (
-                <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-                  {acciones}
-                  {exportar ? (
+            /* 🔴 21-10 (Nico: «esos selects por ahí tirados»): UNA línea, todo al
+               centro y a la misma altura — buscador, filtros, y Exportar a la
+               derecha. En el celular el buscador va a lo ancho y los filtros se
+               pliegan detrás de «Filtros (n)». */
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              {buscadorPropio || (!error && (conBuscador || barra)) ? (
+                <div
+                  className={cn(
+                    'flex w-full min-w-0 items-center gap-2',
+                    buscadorPropio
+                      ? 'sm:w-auto sm:min-w-[20rem] sm:flex-1'
+                      : conBuscador
+                        ? 'sm:w-auto sm:min-w-[16rem] sm:max-w-sm sm:flex-1'
+                        : 'sm:hidden',
+                  )}
+                >
+                  {buscadorPropio ? (
+                    <div className="min-w-0 flex-1">{buscadorPropio}</div>
+                  ) : conBuscador ? (
+                    <div className="min-w-0 flex-1">
+                      <Buscador
+                        id={k('buscar')}
+                        value={busqueda}
+                        onChange={(v) => poner({ [k('q')]: v })}
+                        placeholder={typeof buscar === 'string' ? buscar : 'Buscar'}
+                      />
+                    </div>
+                  ) : null}
+                  {barra && !error ? (
                     <Button
                       variant="secondary"
+                      size="sm"
                       hideArrow
-                      onClick={() => void bajarExcel()}
-                      disabled={exportando || (paginacion ? paginacion.total === 0 : calculo.ordenadas.length === 0)}
-                      className="gap-2"
+                      className={cn('shrink-0 gap-2 sm:hidden', !conBuscador && 'w-full')}
+                      aria-expanded={filtrosAbiertos}
+                      onClick={() => setFiltrosAbiertos((v) => !v)}
+                      data-testid="tabla-boton-filtros"
                     >
-                      <Export className="h-4 w-4" aria-hidden />
-                      {exportando ? 'Armando…' : 'Exportar'}
+                      <Funnel className="h-4 w-4" aria-hidden />
+                      Filtros{propiosPuestos > 0 ? ` (${propiosPuestos})` : ''}
                     </Button>
                   ) : null}
+                  {/* Ronda 28 (T3): a 390, «Exportar» al lado del buscador y de «Filtros» (antes en su renglón). */}
+                  {conExportarEnLaFila ? botonExportar(true) : null}
+                </div>
+              ) : null}
+              {barra && !error ? (
+                <div className={cn('min-w-0 sm:block', filtrosAbiertos ? 'block' : 'hidden')} data-testid="tabla-filtros-propios">
+                  {barra}
+                </div>
+              ) : null}
+              {!error && (acciones || exportar) ? (
+                <div className={cn('flex flex-wrap items-center gap-2 sm:ml-auto', !acciones && conExportarEnLaFila && 'max-sm:hidden')}>
+                  {acciones}
+                  {botonExportar(false)}
                 </div>
               ) : null}
             </div>
@@ -458,25 +546,29 @@ export function DataTable<T>({
           {barraAbajo ? (
             <div className="flex flex-wrap items-center gap-3">
               {conSegmentos ? (
-                <div className="min-w-0 max-w-full overflow-x-auto">
-                  <SegmentedControl<string>
-                    size="sm"
-                    aria-label="Ver"
-                    value={vista}
-                    onChange={(v) => poner({ [k('vista')]: v === primerSegmento ? undefined : v })}
-                    options={segmentos!.map((s) => ({
-                      value: s.valor,
-                      label: <ConConteo nombre={s.nombre} cuantos={calculo.conteo[s.valor] ?? 0} />,
-                      ariaLabel: `${s.nombre}: ${calculo.conteo[s.valor] ?? 0}`,
-                    }))}
-                  />
-                </div>
+                /* Glow up 22-10: las pestañas de estado del panel, con su conteo en
+                   mono; una pestaña en cero no se pinta (salvo la primera y la
+                   elegida); en el celular se desliza dentro de su riel. */
+                <PestanasDeEstado<string>
+                  etiqueta="Ver"
+                  className="min-w-0 max-w-full"
+                  valor={vista}
+                  onCambio={(v) => poner({ [k('vista')]: v === primerSegmento ? undefined : v })}
+                  pestanas={segmentos!.map((s) => ({
+                    valor: s.valor,
+                    etiqueta: s.nombre,
+                    // Ronda 26 (T3): con fallo o cargando, sin conteo (un «0» sería inventado).
+                    cuantos: error || (isLoading && !rows) ? null : calculo.conteo[s.valor] ?? 0,
+                    fija: s.fija || s.valor === primerSegmento,
+                    tono: s.tono && (calculo.conteo[s.valor] ?? 0) > 0 ? s.tono : undefined,
+                    testid: `pestana-${id ? `${id}-` : ''}${s.valor}`,
+                  }))}
+                />
               ) : null}
               {hayFiltros && hayDatosSinFiltro ? (
-                <Button variant="link" size="sm" hideArrow onClick={limpiar} className="gap-1.5 text-warning">
-                  <Funnel className="h-4 w-4" weight="fill" aria-hidden />
-                  Limpiar filtros
+                <Button variant="ghost" size="sm" hideArrow onClick={limpiar} className="gap-1.5 text-fg-muted">
                   <X className="h-3.5 w-3.5" aria-hidden />
+                  Limpiar filtros
                 </Button>
               ) : null}
               {conteoVisible ? (
@@ -491,25 +583,16 @@ export function DataTable<T>({
         </div>
       ) : null}
       {cuerpo}
-      {pie || paginador ? <div className="border-t border-border bg-muted/10 px-4 py-3">{pie ?? paginador}</div> : null}
+      {pie || paginador ? <div className="border-t border-border px-4 py-3">{pie ?? paginador}</div> : null}
     </div>
   )
 }
 
-const NUMERO = new Intl.NumberFormat('es-CO')
-
-function ConConteo({ nombre, cuantos }: { nombre: string; cuantos: number }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-      {nombre}
-      <span className="rounded bg-muted px-1.5 py-0.5 text-caption tabular-nums">{NUMERO.format(cuantos)}</span>
-    </span>
-  )
-}
-
 /**
- * En el celular, cada fila es una tarjeta: la primera columna arriba y las demás
- * con su nombre. Las columnas sin nombre (los botones) van al pie de la tarjeta.
+ * En el celular, cada fila es una tarjeta (el patrón de `CuotasDelMesTabla`):
+ * arriba, la primera columna —lo que la fila ES— y, a su derecha, la primera
+ * cifra de la tabla (la primera columna alineada a la derecha), en mono; debajo,
+ * las demás con su nombre. Las columnas sin nombre (los botones) van al pie.
  */
 function TarjetasDeLaTabla<T>({
   columns,
@@ -520,6 +603,7 @@ function TarjetasDeLaTabla<T>({
   rowClassName,
   filaTestid,
   ariaLabel,
+  cifraDelCelular,
 }: {
   columns: Column<T>[]
   rows: T[]
@@ -529,10 +613,15 @@ function TarjetasDeLaTabla<T>({
   rowClassName?: (row: T) => string | undefined
   filaTestid?: (row: T) => string
   ariaLabel?: string
+  cifraDelCelular?: string
 }) {
   const [principal, ...resto] = columns
-  const conNombre = resto.filter((c) => c.header.trim() && c.enCelular !== false)
-  const sinNombre = resto.filter((c) => !c.header.trim() && c.enCelular !== false)
+  const visibles = resto.filter((c) => c.enCelular !== false)
+  const cifra =
+    (cifraDelCelular ? visibles.find((c) => c.header === cifraDelCelular) : undefined) ??
+    visibles.find((c) => c.align === 'right' && c.header.trim())
+  const conNombre = visibles.filter((c) => c.header.trim() && c !== cifra)
+  const sinNombre = visibles.filter((c) => !c.header.trim())
   return (
     <Stagger as="ul" layout={false} className="divide-y divide-border" aria-label={ariaLabel}>
       {rows.map((row, i) => (
@@ -560,12 +649,23 @@ function TarjetasDeLaTabla<T>({
           }
           tabIndex={onRowClick ? 0 : undefined}
         >
-          {principal ? <div className="min-w-0 break-words">{principal.cell(row)}</div> : null}
+          {principal || cifra ? (
+            <div className="flex items-start justify-between gap-4">
+              {principal ? <div className="min-w-0 flex-1 break-words">{principal.cell(row)}</div> : null}
+              {cifra ? (
+                <div className="shrink-0 text-right">
+                  {/* Ronda 26 (T8): la cifra con su rótulo (antes un «0» suelto). */}
+                  <div className="text-caption text-fg-subtle">{cifra.header}</div>
+                  <div className="font-mono text-body-sm tabular-nums text-fg">{cifra.cell(row)}</div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {conNombre.length ? (
             <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
               {conNombre.map((c, ci) => (
-                <div key={ci} className="min-w-0">
-                  <dt className="text-caption uppercase tracking-wide text-fg-subtle">{c.header}</dt>
+                <div key={ci} className={cn('min-w-0', c.enCelularAncho && 'col-span-2')}>
+                  <dt className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{c.header}</dt>
                   <dd className="min-w-0 break-words text-body-sm text-fg">{c.cell(row)}</dd>
                 </div>
               ))}

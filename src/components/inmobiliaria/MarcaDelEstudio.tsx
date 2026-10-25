@@ -46,7 +46,9 @@ export function ChipDeLaMarcaDelEstudio({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full bg-warning-soft px-2.5 py-0.5 text-caption font-medium text-warning',
+        // 22-10 (revisión): en neutro, no en ámbar. El estudio es OPCIONAL (Nico,
+        // 04-10): no tenerlo no es una alarma.
+        'inline-flex items-center rounded-full bg-surface-muted px-2.5 py-0.5 text-caption font-medium text-fg-muted',
         className,
       )}
       data-testid="marca-del-estudio"

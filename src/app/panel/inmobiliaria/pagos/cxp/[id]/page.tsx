@@ -33,6 +33,9 @@ import { cn } from '@/lib/utils';
 import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
@@ -253,7 +256,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
             <Receipt className="w-8 h-8 text-fg-subtle" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="text-h3 text-foreground">
               {t(k('notFound'))}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -277,85 +280,56 @@ function ApBillDetailContent({ billId }: { billId: string }) {
 
   const statusLabel = statusMap[bill.status] ?? bill.status;
 
+  const pastilla = (tam: 'grande' | 'chica') => (
+    <span
+      className={cn(
+        'inline-flex items-center border font-medium',
+        tam === 'grande' ? 'self-start rounded-md px-3 py-1.5 text-sm' : 'rounded-sm px-2 py-0.5 text-caption',
+        colors.text,
+        colors.bg,
+        colors.border,
+      )}
+    >
+      {statusLabel}
+    </span>
+  );
+
+  /*
+   * GLOW UP 21-10. Arriba lo que se viene a mirar (cuánto, para qué, cuándo
+   * vence, el soporte); los identificadores internos —el id del proveedor y de
+   * quien la creó o aprobó, que el back todavía no trae con nombre— quedan
+   * plegados en «Ver detalles», sin borrarlos.
+   */
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Back nav */}
       <BackButton variant="subtle" href={LISTA_DE_FACTURAS} label={t(k('backToList'))} />
 
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
-            <Receipt className="w-5 h-5 text-fg-muted" />
-          </div>
-          <div>
-            <h1 className="text-h2 text-fg">
-              {bill.invoiceNumber}
-            </h1>
-            <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 max-w-2xl">
-              {bill.costCenterCode}
-            </p>
-          </div>
-        </div>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.facturasDeProveedores')}
+        titulo={bill.invoiceNumber}
+        junto={pastilla('grande')}
+        descripcion={`${t(k('labelCostCenter'))}: ${bill.costCenterCode}`}
+      />
 
-        {/* Status pill */}
-        <span
-          className={cn(
-            'inline-flex items-center self-start px-3 py-1.5 rounded-md border text-sm font-medium',
-            colors.text,
-            colors.bg,
-            colors.border,
-          )}
-        >
-          {statusLabel}
-        </span>
-      </header>
-
-      {/* M1 info banner */}
       <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
-        <Info
-          className="w-5 h-5 text-primary dark:text-primary flex-shrink-0 mt-0.5"
-          weight="fill"
-        />
+        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
-          <p className="text-xs font-semibold text-primary dark:text-primary">
-            {t(k('m1BannerTitle'))}
-          </p>
-          <p className="text-xs text-primary dark:text-primary/90 mt-0.5">
-            {t(k('m1BannerDesc'))}
-          </p>
+          <p className="text-caption font-medium text-primary">{t(k('m1BannerTitle'))}</p>
+          <p className="text-caption text-primary mt-0.5">{t(k('m1BannerDesc'))}</p>
         </div>
       </div>
 
-      {/* Detail card */}
+      {/* LA RESPUESTA: cuánto es y para cuándo. El valor ya no se repite en la lista de abajo. */}
+      <CifraHeroe
+        data-testid="ap-bill-valor"
+        rotulo={t(k('labelAmount'))}
+        cifra={formatCOP(bill.amountCop)}
+        contexto={`${t(k('labelDue'))}: ${formatDate(bill.dueDate, locale)}`}
+        tamano="mediana"
+      />
+
       <section className="rounded-lg border border-border bg-card p-6">
         <div className="divide-y divide-border">
-          <DetailRow label={t(k('labelInvoiceNumber'))}>
-            <span className="font-mono">{bill.invoiceNumber}</span>
-          </DetailRow>
-
-          <DetailRow label={t(k('labelVendor'))}>
-            <span className="font-mono text-xs text-muted-foreground">
-              {bill.vendorId}
-            </span>
-          </DetailRow>
-
-          <DetailRow label={t(k('labelCostCenter'))}>
-            {bill.costCenterCode}
-          </DetailRow>
-
-          <DetailRow label={t(k('labelStatus'))}>
-            <span
-              className={cn(
-                'inline-flex items-center px-2 py-0.5 rounded-sm border text-xs font-medium',
-                colors.text,
-                colors.bg,
-                colors.border,
-              )}
-            >
-              {statusLabel}
-            </span>
-          </DetailRow>
 
           {bill.concepto ? (
             <DetailRow label={t(k('labelConcepto'))}>
@@ -363,33 +337,11 @@ function ApBillDetailContent({ billId }: { billId: string }) {
             </DetailRow>
           ) : null}
 
-          <DetailRow label={t(k('labelAmount'))}>
-            <span className="font-mono tabular-nums text-base font-semibold text-foreground">
-              {formatCOP(bill.amountCop)}
-            </span>
-          </DetailRow>
+          <DetailRow label={t(k('labelDue'))}>{formatDate(bill.dueDate, locale)}</DetailRow>
 
-          <DetailRow label={t(k('labelIssued'))}>
-            {formatDate(bill.issuedAt, locale)}
-          </DetailRow>
+          <DetailRow label={t(k('labelIssued'))}>{formatDate(bill.issuedAt, locale)}</DetailRow>
 
-          <DetailRow label={t(k('labelDue'))}>
-            {formatDate(bill.dueDate, locale)}
-          </DetailRow>
-
-          <DetailRow label={t(k('labelCreatedBy'))}>
-            <span className="font-mono text-xs">{bill.createdBy}</span>
-          </DetailRow>
-
-          <DetailRow label={t(k('labelApprovedBy'))}>
-            {bill.approvedBy != null ? (
-              <span className="font-mono text-xs">{bill.approvedBy}</span>
-            ) : (
-              <span className="text-muted-foreground italic">
-                {t(k('noApprover'))}
-              </span>
-            )}
-          </DetailRow>
+          <DetailRow label={t(k('labelStatus'))}>{pastilla('chica')}</DetailRow>
 
           {bill.adjuntoUrl ? (
             <DetailRow label={t(k('labelAdjunto'))}>
@@ -406,6 +358,28 @@ function ApBillDetailContent({ billId }: { billId: string }) {
             </DetailRow>
           ) : null}
         </div>
+
+        <MasDetalles className="mt-4" montadoSiempre>
+          <div className="divide-y divide-border">
+            <DetailRow label={t(k('labelInvoiceNumber'))}>
+              <span className="font-mono">{bill.invoiceNumber}</span>
+            </DetailRow>
+            <DetailRow label={t(k('labelVendor'))}>
+              <span className="font-mono text-caption text-muted-foreground">{bill.vendorId}</span>
+            </DetailRow>
+            <DetailRow label={t(k('labelCostCenter'))}>{bill.costCenterCode}</DetailRow>
+            <DetailRow label={t(k('labelCreatedBy'))}>
+              <span className="font-mono text-caption">{bill.createdBy}</span>
+            </DetailRow>
+            <DetailRow label={t(k('labelApprovedBy'))}>
+              {bill.approvedBy != null ? (
+                <span className="font-mono text-caption">{bill.approvedBy}</span>
+              ) : (
+                <span className="text-muted-foreground italic">{t(k('noApprover'))}</span>
+              )}
+            </DetailRow>
+          </div>
+        </MasDetalles>
       </section>
     </div>
   );

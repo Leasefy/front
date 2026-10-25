@@ -123,7 +123,7 @@ function useApiData<T>(
       return result;
     } catch (e) {
       setErrorCrudo(e);
-      setError(e instanceof Error ? e.message : 'Error al cargar datos');
+      setError(e instanceof Error ? e.message : 'No se pudieron cargar los datos');
       return null;
     } finally {
       setIsLoading(false);
@@ -141,7 +141,7 @@ function useApiData<T>(
       setErrorCrudo(null);
     } catch (e) {
       setErrorCrudo(e);
-      setError(e instanceof Error ? e.message : 'Error al cargar datos');
+      setError(e instanceof Error ? e.message : 'No se pudieron cargar los datos');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
@@ -790,7 +790,7 @@ export function useAgencyBilling() {
       setInvoices(i);
     } catch (e) {
       setErrorCrudo(e);
-      setError(e instanceof Error ? e.message : 'Error al cargar facturacion');
+      setError(e instanceof Error ? e.message : 'No se pudo cargar la facturación');
     } finally {
       setIsLoading(false);
     }

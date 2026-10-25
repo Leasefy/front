@@ -5,6 +5,7 @@ import { useI18n } from '@/lib/i18n'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { useMantenimientoOverview } from '@/lib/hooks/mantenimiento/use-mantenimiento-overview'
 import { MantenimientoKpiStrip } from '@/components/inmobiliaria/mantenimiento/MantenimientoKpiStrip'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 /**
  * Maintenance Triage Center — overview (DASH-01).
@@ -30,22 +31,18 @@ export default function MantenimientoOverviewPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.mantenimiento.overview.title')}
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
-            {t('inmobiliaria.ai.mantenimiento.overview.subtitle')}
-          </p>
-        </div>
-        {generatedAtLabel && (
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap mt-1">
-            {t('inmobiliaria.ai.mantenimiento.overview.lastUpdated')} {generatedAtLabel}
-          </p>
-        )}
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.mantenimientos')}
+        titulo={t('inmobiliaria.ai.mantenimiento.overview.title')}
+        descripcion={t('inmobiliaria.ai.mantenimiento.overview.subtitle')}
+        junto={
+          generatedAtLabel ? (
+            <span className="text-caption text-fg-muted">
+              {t('inmobiliaria.ai.mantenimiento.overview.lastUpdated')} <span className="font-mono">{generatedAtLabel}</span>
+            </span>
+          ) : null
+        }
+      />
 
       {/* El fallo va ARRIBA de los números, no debajo: si la consulta murió, lo
           primero que hay que leer es que no hay datos —y con qué reintentar—,

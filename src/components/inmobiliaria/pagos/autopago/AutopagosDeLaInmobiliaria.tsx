@@ -76,10 +76,11 @@ function AvisoDelCobroAutomatico({ activo }: { activo: boolean }) {
     >
       <Power className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" weight="bold" aria-hidden="true" />
       <div>
-        <p className="text-body-sm font-medium text-fg">El cobro automático está apagado en el servidor.</p>
+        {/* Revisora r27 (Autopago): «en el servidor» es jerga técnica; lo que importa es quién lo prende. */}
+        <p className="text-body-sm font-medium text-fg">Leasefy todavía no prende el cobro automático.</p>
         <p className="mt-0.5 text-body-sm text-fg-muted">
-          Leasefy lo está probando antes de prenderlo. Mientras siga apagado, ningún autopago de esta lista se cobra
-          solo, aunque diga «Activo».
+          Lo está probando antes de prenderlo. Mientras tanto, ningún autopago de esta lista se cobra solo, aunque
+          diga «Activo».
         </p>
       </div>
     </div>
@@ -205,7 +206,8 @@ export function AutopagosDeLaInmobiliaria() {
           <AvisoDelCobroAutomatico activo={data.cobroAutomaticoActivo} />
           <section
             aria-label="Contratos con autopago"
-            className="rounded-lg border border-border bg-surface"
+            // Revisora r27 (Autopago, UI): el vacío va suelto, como en Aseguradoras y Estudios; el borde, sólo con filas.
+            className={data.items.length === 0 ? undefined : 'rounded-lg border border-border bg-surface'}
             data-testid="autopagos"
           >
             {data.items.length === 0 ? (
@@ -213,7 +215,7 @@ export function AutopagosDeLaInmobiliaria() {
                 queSon="autopagos"
                 icono={Repeat}
                 titulo="Ningún inquilino tiene autopago"
-                descripcion="El inquilino lo inscribe desde su portal, con un tope que él mismo pone. Cuando alguno lo haga, aparece acá."
+                descripcion="El inquilino lo inscribe desde su portal, con un tope que él mismo pone. Cuando alguno lo haga, aparece aquí."
               />
             ) : esMovil ? (
               <Lista items={data.items} />

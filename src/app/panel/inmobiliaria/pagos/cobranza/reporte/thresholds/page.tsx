@@ -20,10 +20,15 @@
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
+import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
+import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
 import { ThresholdEditor } from '@/components/inmobiliaria/cobranza/ThresholdEditor'
 import { ThresholdVersionsTable } from '@/components/inmobiliaria/cobranza/ThresholdVersionsTable'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { CrossFade, Presence } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 
 function ThresholdsContent() {
   const { t, locale } = useI18n()
@@ -35,27 +40,40 @@ function ThresholdsContent() {
     error,
     updateThresholds,
     rollbackTo,
+    refetch,
   } = useThresholds()
+  // Ronda 30 (revisora r27): junto a cada umbral, cómo está HOY (lo mismo que mide el Reporte diario).
+  const { data: reporte } = useDailyReport()
+  const hoy = reporte
+    ? {
+        pkr: sinDeudores(reporte) ? null : (reporte.summary.pkr_pct ?? reporte.summary.pkr_7d_pct ?? null),
+        morosidad: reporte.summary.indice_morosidad_pct ?? null,
+        violaciones: reporte.summary.compliance_violations_count ?? null,
+        fueraDeHorario: reporte.summary.calls_outside_window_count ?? null,
+      }
+    : undefined
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div>
-        <h1 className="text-h2 font-heading text-foreground mt-2">
-          {t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle')}
-        </h1>
-        {/* MORI-23 (QA-AGENTES 16-10): la pantalla no decía para qué eran
-            estas cifras ni dónde se ven. */}
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          {locale.startsWith('es')
-            ? 'Cuándo te avisa el Reporte diario —en la pantalla y en el correo— y cuántos deudores muestra. Cada cambio queda guardado como una versión y puedes volver a una anterior.'
-            : 'When the Daily report warns you —on screen and by email— and how many debtors it shows. Every change is saved as a version you can go back to.'}
-        </p>
-        {active?.version != null && (
-          <p className="mt-1 text-xs text-muted-foreground">
-            {locale.startsWith('es') ? `Rige la versión ${active.version}.` : `Version ${active.version} is active.`}
-          </p>
-        )}
-      </div>
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* MORI-23 (QA-AGENTES 16-10): la pantalla no decía para qué eran estas
+          cifras ni dónde se ven. GLOW UP 21-10: el encabezado común, con la
+          versión que rige junto al título. */}
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle')}
+        descripcion={
+          locale.startsWith('es')
+            ? 'Cuándo te avisa el Reporte diario y cuántos deudores muestra. Cada cambio queda como una versión.'
+            : 'When the Daily report warns you and how many debtors it shows. Every change is saved as a version.'
+        }
+        junto={
+          active?.version != null ? (
+            <span className="text-caption text-fg-muted">
+              {locale.startsWith('es') ? `Rige la versión ${active.version}` : `Version ${active.version} is active`}
+            </span>
+          ) : null
+        }
+      />
 
       {/* Phase 38-05a: PageSkeleton primitive (list variant) replaces inline
          spinner. No page-level EmptyState — the threshold editor always
@@ -66,9 +84,16 @@ function ThresholdsContent() {
       <CrossFade swapKey={isLoading && !active ? 'cargando' : active ? 'editor' : 'nada'} className="space-y-6">
       {isLoading && !active && <PageSkeleton variant="list" />}
 
-      {/* `error` ya es la frase del traductor (antes: «Error: 500»). */}
-      <Presence show={Boolean(error)} role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
-          {error}
+      {/* Revisora r25 (#2): sin datos, el fallo de la casa con su reintento
+          (antes la frase cruda y la pantalla en blanco debajo). Con datos, una
+          línea: lo que se ve sigue valiendo. */}
+      {error && !active && !isLoading ? (
+        <FalloDeCarga error={falloDelTexto(error)} queEs="los umbrales" onReintentar={() => refetch()} />
+      ) : null}
+      <Presence show={Boolean(error) && Boolean(active)} role="status" className="rounded-lg bg-warning-soft px-3 py-2 text-body-sm text-fg">
+          {locale.startsWith('es')
+            ? 'No pudimos actualizar los umbrales. Estás viendo los últimos que sí cargaron.'
+            : "We couldn't refresh the thresholds. You're seeing the last ones that loaded."}
       </Presence>
 
       {active && (
@@ -79,6 +104,7 @@ function ThresholdsContent() {
           <ThresholdEditor
             key={active.version ?? 'por-defecto'}
             active={active}
+            hoy={hoy}
             onSubmit={async (body) => {
               const row = await updateThresholds(body)
               return { version: row.version }

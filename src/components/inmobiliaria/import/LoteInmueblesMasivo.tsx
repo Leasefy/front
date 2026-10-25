@@ -325,13 +325,13 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio, fir
 
   return (
     <section
-      className="rounded-md border border-border dark:border-border-strong p-4 space-y-4"
+      className="rounded-md border border-border p-4 space-y-4"
       aria-label="Acciones en bloque sobre las filas"
       data-testid="lote-inmuebles-masivo"
     >
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-fg dark:text-white">Completar de golpe</h3>
-        <p className="text-xs text-fg-muted dark:text-fg-subtle">
+        <h3 className="text-sm font-medium text-fg">Completar de golpe</h3>
+        <p className="text-caption text-fg-muted">
           Elige a cuáles filas aplica. Llega a todas las del grupo, no sólo a las que ves en esta página.
         </p>
       </div>
@@ -364,18 +364,18 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio, fir
           onCheckedChange={(c) => setSeleccionado(c === true)}
           data-testid="masivo-inmuebles-seleccionar"
         />
-        <span className="text-sm text-fg-muted dark:text-fg-subtle">
+        <span className="text-sm text-fg-muted">
           Seleccionar {cantidad === 1 ? 'la 1' : `las ${N(cantidad)}`}
           {alcanceElegido === 'pendientes' ? '' : ' de este grupo'}
         </span>
       </label>
 
       {seleccionado && cantidad > 0 ? (
-        <div className="space-y-4 border-t border-border-faint dark:border-border-strong pt-4">
+        <div className="space-y-4 border-t border-border-faint pt-4">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-fg dark:text-white">Poner un valor por defecto</p>
+            <p className="text-sm font-medium text-fg">Poner un valor por defecto</p>
             <div className="flex flex-wrap items-end gap-3">
-              <label className="space-y-1 text-xs text-fg-muted">
+              <label className="space-y-1 text-caption text-fg-muted">
                 <span className="block">Campo</span>
                 <select
                   className="h-10 rounded-md border border-border bg-surface px-2 text-sm text-fg"
@@ -396,7 +396,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio, fir
                   ))}
                 </select>
               </label>
-              <label className="space-y-1 text-xs text-fg-muted" htmlFor={campoDeValorId}>
+              <label className="space-y-1 text-caption text-fg-muted" htmlFor={campoDeValorId}>
                 <span className="block">Valor</span>
                 {campo.tipo === 'opciones' ? (
                   <select
@@ -457,18 +457,18 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio, fir
                 disabled={bloqueado}
                 onCheckedChange={(c) => setReemplazar(c === true)}
               />
-              <span className="text-xs text-fg-muted dark:text-fg-subtle">
+              <span className="text-caption text-fg-muted">
                 También reemplazar lo que ya tienen (si no, sólo se llenan las que están vacías)
               </span>
             </label>
             {campo.ayuda ? (
-              <p className="text-xs text-warning" data-testid="masivo-inmuebles-ayuda-canon">
+              <p className="text-caption text-warning" data-testid="masivo-inmuebles-ayuda-canon">
                 {campo.ayuda}
               </p>
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-border-faint dark:border-border-strong pt-3">
+          <div className="flex flex-wrap items-center gap-2 border-t border-border-faint pt-3">
             {puedeDescartar ? (
               <Button
                 type="button"
@@ -484,7 +484,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio, fir
                 No traer {cantidad === 1 ? 'esta fila' : 'ninguna de estas'}
               </Button>
             ) : (
-              <span className="text-xs text-fg-subtle" data-testid="masivo-inmuebles-sin-permiso">
+              <span className="text-caption text-fg-subtle" data-testid="masivo-inmuebles-sin-permiso">
                 Descartar filas en bloque requiere el permiso de eliminar inmuebles: pídeselo a un administrador.
               </span>
             )}
@@ -494,7 +494,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio, fir
 
       {avance ? (
         <div role="status" className="space-y-1" data-testid="masivo-inmuebles-avance">
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {N(avance.procesadas)} de {N(avance.total)} filas…
           </p>
           <progress className="w-full h-1.5" value={avance.procesadas} max={Math.max(avance.total, 1)} />
@@ -556,13 +556,13 @@ function Resultado({
             {resultado.fallidas.length > 0 ? ` · ${N(resultado.fallidas.length)} no se pudieron` : ''}.
           </p>
           {resultado.interrumpida ? (
-            <p className="text-xs text-warning">
+            <p className="text-caption text-warning">
               Se cortó antes de terminar ({resultado.interrumpida.motivo}). Lo aplicado quedó aplicado: repite la
               acción y retoma lo que falta.
             </p>
           ) : null}
           {[...porMotivo.entries()].map(([motivo, n]) => (
-            <p key={motivo} className="text-xs text-fg-muted">
+            <p key={motivo} className="text-caption text-fg-muted">
               {N(n)} · {motivo}
             </p>
           ))}

@@ -26,11 +26,14 @@ export function LayoutDeConfiguracionDeCuenta<Id extends string>({
 
   return (
     <MarcoDeConfiguracion
+      seccion={config.seccion?.[l]}
       titulo={config.titulo[l]}
       subtitulo={config.subtitulo[l]}
       navAria={l === 'es' ? 'Secciones de configuración' : 'Settings sections'}
       menu={menu}
       activaId={seccionDeLaRuta(config, pathname)?.id ?? null}
+      // Cinco a ocho secciones: en el celular van todas a la vista (glow up r26).
+      navEnCelular="riel"
     >
       {children}
     </MarcoDeConfiguracion>

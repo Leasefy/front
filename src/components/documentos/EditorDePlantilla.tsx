@@ -312,8 +312,9 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
           </p>
           {fallaDelCatalogo ? (
             <p className="text-caption text-warning" data-testid="catalogo-caido">
-              No pudimos traer la lista de datos disponibles. Puedes escribir la plantilla
-              igual: al guardar, el sistema revisa las variables y te dice si alguna no la
+              {/* Ronda 30: sin primera persona («No se pudo…», antes «No pudimos…»). */}
+              No se pudo traer la lista de datos disponibles. Puedes escribir la plantilla
+              igual: al guardar, Leasefy revisa las variables y te dice si alguna no la
               sabe llenar.
             </p>
           ) : (

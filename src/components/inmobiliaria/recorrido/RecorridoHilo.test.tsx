@@ -134,11 +134,11 @@ describe('RecorridoHilo', () => {
        propio y una barra decorativa de once segmentos— arriba del formulario de
        contrato y de la cola de estudios. Nico, 21-09: «hay muchas pantallas que
        colocamos información ahí dispuesta y eso llena las pantallas de carga
-       cognitiva innecesaria». Lo que se fija acá no es la estética: es que el
+       cognitiva innecesaria». Lo que se fija aquí no es la estética: es que el
        contenido caro no esté montado para quien no lo pidió. */
     const el = montar(<RecorridoHilo paso="evaluacion" />)
     expect(el.querySelector('[data-testid="modal"]')).toBeNull()
-    expect(el.textContent).not.toContain('Acá cambia de manos')
+    expect(el.textContent).not.toContain('Aquí cambia de manos')
     expect(el.querySelectorAll('[data-paso]')).toHaveLength(0)
     // …pero hay por dónde pedirlo.
     expect(el.querySelector('[data-testid="para-entender-mas"]')?.textContent)

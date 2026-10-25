@@ -1,4 +1,5 @@
 import { formatCurrency } from '@/lib/format';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 
 /**
  * La fecha del movimiento viene como día UTC (`@db.Date`, «2026-10-04» o
@@ -11,16 +12,16 @@ export function diaLegible(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   const esUnDia = /^\d{4}-\d{2}-\d{2}(T00:00:00(\.0+)?Z)?$/.test(iso);
-  return d.toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: esUnDia ? 'UTC' : 'America/Bogota',
-  });
+  // Ronda 30 (revisora r27): «16 oct 2026», con `fechaCorta` de la casa (antes «16 de oct de 2026»).
+  const dia = esUnDia
+    ? iso.slice(0, 10)
+    : new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  return fechaCorta(dia);
 }
 
 export function plata(n: number): string {
-  return n < 0 ? `−${formatCurrency(-n)}` : formatCurrency(n);
+  // Ronda 30: «− $ 350.000», con el espacio (VOZ); antes «−$ 350.000».
+  return n < 0 ? `− ${formatCurrency(-n)}` : formatCurrency(n);
 }
 
 export function mesLegible(yyyyMm: string): string {

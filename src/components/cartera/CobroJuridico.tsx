@@ -20,10 +20,14 @@
  * Permisos: `cobros:view` para ver; `cobros:edit` para mover.
  */
 
+import { cn } from '@/lib/utils';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Gavel, Prohibit } from '@phosphor-icons/react';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { Cifra, FranjaDeCifras, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import {
   AlertDialog,
@@ -62,6 +66,7 @@ import {
   type ConfiguracionJuridica,
   type HonorarioJuridico,
 } from '@/lib/api/juridico.service';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /** Lo que se dice cuando el error no trae nada legible. */
 const POR_DEFECTO = 'Prueba de nuevo en un momento.';
@@ -350,183 +355,67 @@ export function CobroJuridico() {
 
   const porPagar = honorarios.filter((h) => h.estado === 'POR_PAGAR_AL_ABOGADO');
   const enJuridico = casos.filter((c) => c.estado === 'EN_JURIDICO');
+  const todoEnCero = sugeridos.length === 0 && enJuridico.length === 0 && porPagar.length === 0;
 
   return (
     <EstadoDeDatos cargando={cargando} error={error} queEs="el cobro jurídico" onReintentar={cargar}>
       <div className="space-y-6" data-testid="cobro-juridico">
-        {/* Lo pactado por defecto (lo decide la inmobiliaria: el abogado externo no lo ve, B-17) */}
-        {!esAbogadoExterno && (
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="pactado">
-          <p className="flex items-center gap-2 text-body font-semibold text-fg">
-            <Gavel className="h-4 w-4" aria-hidden="true" />
-            Honorarios del abogado
-          </p>
-          <p className="mt-1 text-body-sm text-fg-muted">
-            Los honorarios van a cargo del inquilino SÓLO si el contrato lo pacta. Al pasar el caso entran a su estado
-            de cuenta como un cobro más —de una sola vez, sin IVA y sin intereses de mora—, calculado como un
-            porcentaje de la deuda, con tope. Son del abogado: quedan como cuenta por pagar, no como ingreso de la
-            inmobiliaria ni del propietario.
-          </p>
-          <div className="mt-3 flex flex-wrap items-end gap-3">
-            <label className="text-sm">
-              <span className="block text-xs text-fg-muted">Por defecto, los paga el inquilino</span>
-              <select
-                className="mt-1 rounded-md border border-border bg-surface p-2 text-sm"
-                value={config?.pactaHonorarios === null || config?.pactaHonorarios === undefined ? '' : String(config.pactaHonorarios)}
-                disabled={!puedeMover || ocupado}
-                onChange={(e) => void guardarConfig({ pactaHonorarios: e.target.value === 'true' })}
-                data-testid="pacta-por-defecto"
-              >
-                <option value="">Sin definir (no se cobran)</option>
-                <option value="true">Sí</option>
-                <option value="false">No</option>
-              </select>
-            </label>
-            <div>
-              <label className="text-sm" htmlFor="honorarios-pct">
-                <span className="block text-xs text-fg-muted">% de la deuda al pasar</span>
-                <input
-                  id="honorarios-pct"
-                  className="mt-1 w-28 rounded-md border border-border bg-surface p-2 text-sm"
-                  inputMode="decimal"
-                  defaultValue={config?.honorariosPct ?? ''}
-                  disabled={!puedeMover || ocupado}
-                  onChange={() => limpiarLoPactado('honorariosPct')}
-                  onBlur={(e) => {
-                    // 🔁 Espejo del tope del back: lo que no cabe no viaja.
-                    const error = errorDelPorcentajeDeHonorarios(e.target.value);
-                    if (error) {
-                      setErroresDeLoPactado((previos) => ({ ...previos, honorariosPct: error }));
-                      return;
-                    }
-                    const pct = leerPorcentajeDeHonorarios(e.target.value);
-                    if (pct !== null && pct > 0 && pct !== config?.honorariosPct) {
-                      void guardarConfig({ honorariosPct: pct });
-                    }
-                  }}
-                  {...ariaDe('honorarios-pct', erroresDeLoPactado.honorariosPct)}
-                  data-testid="honorarios-pct"
-                />
-              </label>
-              <ErrorDelCampo id="honorarios-pct-error" mensaje={erroresDeLoPactado.honorariosPct} />
-            </div>
-            <div>
-              <label className="text-sm" htmlFor="honorarios-tope">
-                <span className="block text-xs text-fg-muted">Tope por caso (pesos)</span>
-                <input
-                  id="honorarios-tope"
-                  className="mt-1 w-40 rounded-md border border-border bg-surface p-2 text-sm"
-                  inputMode="numeric"
-                  defaultValue={config?.honorariosTopeCop ?? ''}
-                  disabled={!puedeMover || ocupado}
-                  onChange={() => limpiarLoPactado('honorariosTopeCop')}
-                  onBlur={(e) => {
-                    // 🔁 Espejo del tope del back ($2.000.000.000): lo que no
-                    // cabe se dice debajo del campo y no viaja.
-                    const error = errorDelTopeDeHonorarios(e.target.value);
-                    if (error) {
-                      setErroresDeLoPactado((previos) => ({ ...previos, honorariosTopeCop: error }));
-                      return;
-                    }
-                    const tope = leerTopeDeHonorarios(e.target.value);
-                    if (tope !== null && tope !== config?.honorariosTopeCop) {
-                      void guardarConfig({ honorariosTopeCop: tope });
-                    }
-                  }}
-                  {...ariaDe('honorarios-tope', erroresDeLoPactado.honorariosTopeCop)}
-                  data-testid="honorarios-tope"
-                />
-              </label>
-              <ErrorDelCampo id="honorarios-tope-error" mensaje={erroresDeLoPactado.honorariosTopeCop} />
-            </div>
+        {/* GLOW UP 3.ª vuelta · LA RESPUESTA: la deuda que ya no se cobra con una llamada (los
+            sugeridos), y al lado lo que ya está en manos de un abogado y lo que se le debe. */}
+        {!esAbogadoExterno ? (
+          <div className="space-y-4">
+            <CifraHeroe
+              rotulo="Deuda sugerida para jurídico"
+              cifra={formatCurrency(sugeridos.reduce((t, x) => t + x.deudaCop, 0))}
+              contexto={
+                sugeridos.length === 0
+                  ? 'ningún contrato cumple hoy'
+                  : `en ${sugeridos.length} ${sugeridos.length === 1 ? 'contrato' : 'contratos'} con 90 días o más de mora y sin póliza`
+              }
+              // C3 (revisora r25): sin contratos que cumplan, UNA línea y no «$ 0». Revisora r25
+              // (Jurídico #1): con todo en cero, esa línea lo dice todo y no hay tarjetas debajo.
+              esCero={sugeridos.length === 0}
+              cuandoEsCero={
+                todoEnCero
+                  ? 'Nadie para jurídico hoy: ningún contrato con 90 días o más de mora sin póliza y ningún caso con abogado.'
+                  : 'Hoy ningún contrato cumple para jurídico: 90 días o más de mora y sin póliza.'
+              }
+              data-testid="cifra-del-juridico"
+            />
+            {/* Revisora r25 (Jurídico #1): cada cifra sólo con algo adentro (antes «0 casos» y «$ 0 · 0
+                honorarios» encima de «Ningún caso…» y «No hay honorarios…»). */}
+            {enJuridico.length > 0 || porPagar.length > 0 ? (
+              <FranjaDeCifras aria-label="Lo que ya está en jurídico">
+                {enJuridico.length > 0 ? (
+                  <Cifra
+                    etiqueta="En jurídico"
+                    valor={enJuridico.length}
+                    detalle={enJuridico.length === 1 ? 'caso con abogado' : 'casos con abogado'}
+                  />
+                ) : null}
+                {porPagar.length > 0 ? (
+                  <Cifra
+                    // Revisora r25 (Jurídico #3): «Por pagar a los abogados» se cortaba a 390.
+                    etiqueta="Honorarios por pagar"
+                    valor={formatCurrency(porPagar.reduce((t, h) => t + h.honorarioCop, 0))}
+                    detalle={`${porPagar.length} ${porPagar.length === 1 ? 'honorario del abogado' : 'honorarios de los abogados'}`}
+                    tono="aviso"
+                  />
+                ) : null}
+              </FranjaDeCifras>
+            ) : null}
           </div>
-        </section>
-        )}
+        ) : null}
 
-        {/* Abogados */}
-        {!esAbogadoExterno && (
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="abogados">
-          <p className="text-body font-semibold text-fg">Abogados</p>
-          <ul className="mt-2 space-y-1 text-body-sm">
-            {abogados.length === 0 && <li className="text-fg-muted">Todavía no hay abogados registrados.</li>}
-            {abogados.map((a) => (
-              <li key={a.id} className="flex items-center justify-between gap-2">
-                <span>
-                  {a.nombre}
-                  {a.documento ? <span className="text-fg-muted"> · {a.documento}</span> : null}
-                  {!a.activo && <span className="text-fg-muted"> · inactivo</span>}
-                </span>
-                {puedeMover && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    hideArrow
-                    disabled={ocupado}
-                    onClick={() => void alternarAbogado(a)}
-                  >
-                    {a.activo ? 'Desactivar' : 'Activar'}
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
-          {puedeMover && (
-            <div className="mt-3 flex flex-wrap items-start gap-2">
-              <div>
-                <input
-                  id="abogado-nombre"
-                  className="rounded-md border border-border bg-surface p-2 text-sm"
-                  placeholder="Nombre del abogado"
-                  aria-label="Nombre del abogado"
-                  value={nombre}
-                  maxLength={MAX_LARGO_DEL_NOMBRE_DEL_ABOGADO}
-                  onChange={(e) => {
-                    setNombre(e.target.value);
-                    setErroresDelAbogado((previos) => ({ ...previos, nombre: undefined }));
-                  }}
-                  {...ariaDe('abogado-nombre', erroresDelAbogado.nombre)}
-                  data-testid="abogado-nombre"
-                />
-                <ErrorDelCampo id="abogado-nombre-error" mensaje={erroresDelAbogado.nombre} />
-              </div>
-              <div>
-                <input
-                  id="abogado-documento"
-                  className="rounded-md border border-border bg-surface p-2 text-sm"
-                  placeholder="Cédula o NIT (opcional)"
-                  aria-label="Cédula o NIT del abogado"
-                  value={documento}
-                  maxLength={MAX_LARGO_DEL_DOCUMENTO_DEL_ABOGADO}
-                  onChange={(e) => {
-                    setDocumento(e.target.value);
-                    setErroresDelAbogado((previos) => ({ ...previos, documento: undefined }));
-                  }}
-                  {...ariaDe('abogado-documento', erroresDelAbogado.documento)}
-                  data-testid="abogado-documento"
-                />
-                <ErrorDelCampo id="abogado-documento-error" mensaje={erroresDelAbogado.documento} />
-              </div>
-              <Button hideArrow disabled={ocupado} onClick={() => void registrarAbogado()} data-testid="registrar-abogado">
-                Registrar
-              </Button>
-            </div>
-          )}
-        </section>
-        )}
-
-        {/* Movimiento (ola 2, 03-10-2026): al pasar un caso a jurídico, el
-            sugerido SALE de su lista y el caso ENTRA en la de abajo; lo mismo
-            al cerrar un caso o marcar un honorario pagado. */}
-
-        {/* Sugeridos */}
-        {!esAbogadoExterno && (
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="sugeridos">
-          <p className="text-body font-semibold text-fg">Sugeridos para jurídico</p>
+        {/* Sugeridos (r25 #1: sólo con algo adentro; vacío, la cifra de arriba ya lo dice) */}
+        {!esAbogadoExterno && sugeridos.length > 0 && (
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="sugeridos">
+          <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Sugeridos para jurídico</p>
           <p className="mt-1 text-body-sm text-fg-muted">
             90 días o más de mora y sin póliza. Es una sugerencia: pasar el caso lo decide una persona.
           </p>
           {sugeridos.length === 0 ? (
-            <p className="mt-2 text-body-sm text-fg-muted">Ningún contrato cumple hoy.</p>
+            <VacioChico className="mt-2" titulo="Ningún contrato cumple hoy." ilustracion="reloj_mora" />
           ) : (
             <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
               {sugeridos.map((s) => (
@@ -536,15 +425,25 @@ export function CobroJuridico() {
                   className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
                   data-testid={`sugerido-${s.contractId}`}
                 >
-                  <span>
-                    Contrato {s.numero} · {s.tenantName ?? 'Sin nombre'} · {s.direccion} ·{' '}
-                    <strong>{s.diasDeMora} días</strong> · {formatCurrency(s.deudaCop)}
-                    {s.pactaHonorarios ? ' · pacta honorarios' : ' · sin honorarios pactados'}
+                  {/* Una fila que se lee de corrido (revisión 21-10): quién y dónde a la
+                      izquierda; la deuda y los días de mora en mono a la derecha. */}
+                  <span className="flex min-w-0 flex-1 items-center justify-between gap-4">
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-fg">{s.tenantName ?? 'Sin nombre'}</span>
+                      <span className="block truncate text-caption text-fg-muted">
+                        Contrato {s.numero} · {s.direccion}
+                        {s.pactaHonorarios ? ' · pacta honorarios' : ' · sin honorarios pactados'}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block font-mono tabular-nums text-fg">{formatCurrency(s.deudaCop)}</span>
+                      <span className="block font-mono text-caption tabular-nums text-danger">{s.diasDeMora} días</span>
+                    </span>
                   </span>
                   {puedeMover && (
                     <span className="flex items-center gap-2">
                       <select
-                        className="rounded-md border border-border bg-surface p-1.5 text-sm"
+                        className="h-9 rounded-md border border-border bg-surface px-2 text-body-sm [@media(pointer:coarse)]:min-h-11"
                         value={abogadoElegido[s.contractId] ?? ''}
                         onChange={(e) =>
                           setAbogadoElegido((prev) => ({ ...prev, [s.contractId]: e.target.value }))
@@ -560,8 +459,11 @@ export function CobroJuridico() {
                             </option>
                           ))}
                       </select>
+                      {/* Una por fila, en contorno: con varias sugeridas, varios azules
+                          competían entre sí. */}
                       <Button
                         size="sm"
+                        variant="outline"
                         hideArrow
                         disabled={ocupado}
                         onClick={() => void pasar(s)}
@@ -578,11 +480,19 @@ export function CobroJuridico() {
         </section>
         )}
 
-        {/* Casos en jurídico */}
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="casos">
-          <p className="text-body font-semibold text-fg">En jurídico</p>
+        {/* El abogado externo no tiene la cifra de arriba: sin casos ni honorarios, UNA línea. */}
+        {esAbogadoExterno && enJuridico.length === 0 && porPagar.length === 0 ? (
+          <p className="text-body-sm text-fg-muted" data-testid="juridico-sin-nada">
+            No tienes casos en jurídico ni honorarios por cobrar.
+          </p>
+        ) : null}
+
+        {/* Casos en jurídico (r25 #1: sólo con algo adentro) */}
+        {enJuridico.length > 0 ? (
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="casos">
+          <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">En jurídico</p>
           {enJuridico.length === 0 ? (
-            <p className="mt-2 text-body-sm text-fg-muted">Ningún caso en jurídico.</p>
+            <VacioChico className="mt-2" titulo="Ningún caso en jurídico." ilustracion="sobre_cobro" />
           ) : (
             <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
               {enJuridico.map((c) => (
@@ -639,15 +549,18 @@ export function CobroJuridico() {
           )}
         </section>
 
-        {/* Cuenta por pagar al abogado */}
-        <section className="rounded-lg border border-border bg-surface p-4" data-testid="honorarios">
-          <p className="text-body font-semibold text-fg">Por pagar a los abogados</p>
+        ) : null}
+
+        {/* Cuenta por pagar al abogado (r25 #1: sólo con algo adentro) */}
+        {porPagar.length > 0 ? (
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="honorarios">
+          <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Por pagar a los abogados</p>
           <p className="mt-1 text-body-sm text-fg-muted">
             Lo que se le cargó al inquilino al pasar cada caso a jurídico. Es plata del abogado: no es ingreso de la
             inmobiliaria ni del propietario.
           </p>
           {porPagar.length === 0 ? (
-            <p className="mt-2 text-body-sm text-fg-muted">No hay honorarios pendientes.</p>
+            <VacioChico className="mt-2" titulo="No hay honorarios pendientes." ilustracion="monedas" />
           ) : (
             <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
               {porPagar.map((h) => (
@@ -683,6 +596,7 @@ export function CobroJuridico() {
             </Stagger>
           )}
         </section>
+        ) : null}
         <AlertDialog
           open={cerrando !== null}
           onOpenChange={(abierto) => {
@@ -749,6 +663,176 @@ export function CobroJuridico() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        {/* Revisión de Operación (21-10): primero el trabajo (sugeridos, casos, honorarios por
+            pagar); la configuración —lo pactado y los abogados— plegada al final. */}
+        <MasDetalles etiqueta="Configuración: lo pactado y los abogados" montadoSiempre>
+          <div className="space-y-6">
+        {/* Lo pactado por defecto (lo decide la inmobiliaria: el abogado externo no lo ve, B-17) */}
+        {!esAbogadoExterno && (
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="pactado">
+          <p className="flex items-center gap-2 text-[17px] font-[460] tracking-[-0.01em] text-fg">
+            <Gavel className="h-4 w-4" aria-hidden="true" />
+            Honorarios del abogado
+          </p>
+          <p className="mt-1 text-body-sm text-fg-muted">
+            Los honorarios van a cargo del inquilino SÓLO si el contrato lo pacta. Al pasar el caso entran a su estado
+            de cuenta como un cobro más —de una sola vez, sin IVA y sin intereses de mora—, calculado como un
+            porcentaje de la deuda, con tope. Son del abogado: quedan como cuenta por pagar, no como ingreso de la
+            inmobiliaria ni del propietario.
+          </p>
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <label className="text-sm">
+              <span className="block text-caption text-fg-muted">Por defecto, los paga el inquilino</span>
+              <select
+                className="mt-1 rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
+                value={config?.pactaHonorarios === null || config?.pactaHonorarios === undefined ? '' : String(config.pactaHonorarios)}
+                disabled={!puedeMover || ocupado}
+                onChange={(e) => void guardarConfig({ pactaHonorarios: e.target.value === 'true' })}
+                data-testid="pacta-por-defecto"
+              >
+                <option value="">Sin definir (no se cobran)</option>
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <div>
+              <label className="text-sm" htmlFor="honorarios-pct">
+                <span className="block text-caption text-fg-muted">% de la deuda al pasar</span>
+                <input
+                  id="honorarios-pct"
+                  className="mt-1 w-28 rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
+                  inputMode="decimal"
+                  defaultValue={config?.honorariosPct ?? ''}
+                  disabled={!puedeMover || ocupado}
+                  onChange={() => limpiarLoPactado('honorariosPct')}
+                  onBlur={(e) => {
+                    // 🔁 Espejo del tope del back: lo que no cabe no viaja.
+                    const error = errorDelPorcentajeDeHonorarios(e.target.value);
+                    if (error) {
+                      setErroresDeLoPactado((previos) => ({ ...previos, honorariosPct: error }));
+                      return;
+                    }
+                    const pct = leerPorcentajeDeHonorarios(e.target.value);
+                    if (pct !== null && pct > 0 && pct !== config?.honorariosPct) {
+                      void guardarConfig({ honorariosPct: pct });
+                    }
+                  }}
+                  {...ariaDe('honorarios-pct', erroresDeLoPactado.honorariosPct)}
+                  data-testid="honorarios-pct"
+                />
+              </label>
+              <ErrorDelCampo id="honorarios-pct-error" mensaje={erroresDeLoPactado.honorariosPct} />
+            </div>
+            <div>
+              <label className="text-sm" htmlFor="honorarios-tope">
+                <span className="block text-caption text-fg-muted">Tope por caso (pesos)</span>
+                <input
+                  id="honorarios-tope"
+                  className="mt-1 w-40 rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
+                  inputMode="numeric"
+                  defaultValue={config?.honorariosTopeCop ?? ''}
+                  disabled={!puedeMover || ocupado}
+                  onChange={() => limpiarLoPactado('honorariosTopeCop')}
+                  onBlur={(e) => {
+                    // 🔁 Espejo del tope del back ($2.000.000.000): lo que no
+                    // cabe se dice debajo del campo y no viaja.
+                    const error = errorDelTopeDeHonorarios(e.target.value);
+                    if (error) {
+                      setErroresDeLoPactado((previos) => ({ ...previos, honorariosTopeCop: error }));
+                      return;
+                    }
+                    const tope = leerTopeDeHonorarios(e.target.value);
+                    if (tope !== null && tope !== config?.honorariosTopeCop) {
+                      void guardarConfig({ honorariosTopeCop: tope });
+                    }
+                  }}
+                  {...ariaDe('honorarios-tope', erroresDeLoPactado.honorariosTopeCop)}
+                  data-testid="honorarios-tope"
+                />
+              </label>
+              <ErrorDelCampo id="honorarios-tope-error" mensaje={erroresDeLoPactado.honorariosTopeCop} />
+            </div>
+          </div>
+        </section>
+        )}
+
+        {/* Abogados */}
+        {!esAbogadoExterno && (
+        <section className={cn(SUPERFICIE_DE_LA_FICHA, 'px-6 py-5')} data-testid="abogados">
+          <p className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Abogados</p>
+          <ul className="mt-2 space-y-1 text-body-sm">
+            {abogados.length === 0 && <VacioChico as="li" titulo="Todavía no hay abogados registrados." ilustracion="equipo" />}
+            {abogados.map((a) => (
+              <li key={a.id} className="flex items-center justify-between gap-2">
+                <span>
+                  {a.nombre}
+                  {a.documento ? <span className="text-fg-muted"> · {a.documento}</span> : null}
+                  {!a.activo && <span className="text-fg-muted"> · inactivo</span>}
+                </span>
+                {puedeMover && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    hideArrow
+                    disabled={ocupado}
+                    onClick={() => void alternarAbogado(a)}
+                  >
+                    {a.activo ? 'Desactivar' : 'Activar'}
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+          {puedeMover && (
+            <div className="mt-3 flex flex-wrap items-start gap-2">
+              <div>
+                <input
+                  id="abogado-nombre"
+                  className="rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
+                  placeholder="Nombre del abogado"
+                  aria-label="Nombre del abogado"
+                  value={nombre}
+                  maxLength={MAX_LARGO_DEL_NOMBRE_DEL_ABOGADO}
+                  onChange={(e) => {
+                    setNombre(e.target.value);
+                    setErroresDelAbogado((previos) => ({ ...previos, nombre: undefined }));
+                  }}
+                  {...ariaDe('abogado-nombre', erroresDelAbogado.nombre)}
+                  data-testid="abogado-nombre"
+                />
+                <ErrorDelCampo id="abogado-nombre-error" mensaje={erroresDelAbogado.nombre} />
+              </div>
+              <div>
+                <input
+                  id="abogado-documento"
+                  className="rounded-md border border-border bg-surface p-2 text-sm [@media(pointer:coarse)]:min-h-11"
+                  placeholder="Cédula o NIT (opcional)"
+                  aria-label="Cédula o NIT del abogado"
+                  value={documento}
+                  maxLength={MAX_LARGO_DEL_DOCUMENTO_DEL_ABOGADO}
+                  onChange={(e) => {
+                    setDocumento(e.target.value);
+                    setErroresDelAbogado((previos) => ({ ...previos, documento: undefined }));
+                  }}
+                  {...ariaDe('abogado-documento', erroresDelAbogado.documento)}
+                  data-testid="abogado-documento"
+                />
+                <ErrorDelCampo id="abogado-documento-error" mensaje={erroresDelAbogado.documento} />
+              </div>
+              <Button hideArrow disabled={ocupado} onClick={() => void registrarAbogado()} data-testid="registrar-abogado">
+                Registrar
+              </Button>
+            </div>
+          )}
+        </section>
+        )}
+
+        {/* Movimiento (ola 2, 03-10-2026): al pasar un caso a jurídico, el
+            sugerido SALE de su lista y el caso ENTRA en la de abajo; lo mismo
+            al cerrar un caso o marcar un honorario pagado. */}
+
+          </div>
+        </MasDetalles>
       </div>
     </EstadoDeDatos>
   );

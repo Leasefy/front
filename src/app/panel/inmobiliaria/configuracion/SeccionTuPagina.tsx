@@ -12,9 +12,11 @@
  * valida con la MISMA regla del back (`lib/marketplace/nombre-corto.ts`).
  */
 
+import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Input } from '@/components/ui/input';
 import { ArrowSquareOut, Check, Globe, Stack, UploadSimple } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -52,7 +54,7 @@ export function SeccionTuPagina() {
       cuandoVacio={
         <VacioDeSeccion
           icono={Globe}
-          titulo="Todavía no pudimos leer tu inmobiliaria"
+          titulo="Todavía no se pudo leer tu inmobiliaria"
           ayuda="Vuelve a intentar en un momento: sin los datos de la agencia no hay página que mostrar."
         />
       }
@@ -119,7 +121,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       alGuardar();
       return true;
     } catch (e) {
-      const texto = mensajeParaLaPersona(e, { porDefecto: 'No pudimos guardar tu página.', accion: 'guardar tu página' });
+      const texto = mensajeParaLaPersona(e, { porDefecto: 'No se pudo guardar tu página.', accion: 'guardar tu página' });
       if (/nombre corto/i.test(texto)) setErrorDelNombre(texto);
       else toast.error(texto);
       return false;
@@ -161,7 +163,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       toast.success('La portada quedó en tu página.');
       alGuardar();
     } catch (e) {
-      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos subir la portada.', accion: 'subir la portada' }));
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo subir la portada.', accion: 'subir la portada' }));
     } finally {
       setSubiendo(false);
     }
@@ -176,7 +178,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       toast.success(src ? 'Elegiste esa portada para tu página.' : 'Quedó la portada de Leasefy.');
       alGuardar();
     } catch (e) {
-      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos cambiar la portada.', accion: 'cambiar la portada' }));
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo cambiar la portada.', accion: 'cambiar la portada' }));
     } finally {
       setEligiendo(null);
     }
@@ -191,7 +193,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       toast.success('Tu logo quedó en tu página.');
       alGuardar();
     } catch (e) {
-      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos subir el logo.', accion: 'subir el logo' }));
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo subir el logo.', accion: 'subir el logo' }));
     } finally {
       setSubiendoLogo(false);
     }
@@ -205,7 +207,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       toast.success('Tu página muestra tus iniciales.');
       alGuardar();
     } catch (e) {
-      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos quitar el logo.', accion: 'quitar el logo' }));
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo quitar el logo.', accion: 'quitar el logo' }));
     } finally {
       setSubiendoLogo(false);
     }
@@ -260,13 +262,14 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
           <label htmlFor="lema" className="block text-[14px] font-medium text-fg">
             Lema <span className="font-normal text-fg-muted">(opcional)</span>
           </label>
-          <input
+          {/* Ronda 30: el campo de Cadence (antes un <input> armado a mano). */}
+          <Input
             id="lema"
             value={lema}
             maxLength={160}
             onChange={(e) => setLema(e.target.value)}
             placeholder="Arriendos en Laureles y Belén desde 1998"
-            className="mt-1.5 h-11 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-fg placeholder:text-fg-placeholder focus:border-primary focus:outline-none"
+            className="mt-1.5"
           />
           <p className="mt-1.5 text-[13px] text-fg-muted">Sale debajo de tu nombre.</p>
         </div>
@@ -294,7 +297,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
               className="relative z-10 -mt-8 ring-4 ring-surface"
             />
             <div className="min-w-0 pt-3">
-              <p className="truncate font-heading text-[18px] font-semibold text-fg">{agency.name}</p>
+              <p className="truncate font-heading text-[18px] font-medium text-fg">{agency.name}</p>
               <p className="truncate text-[13px] text-fg-muted">{lema.trim() || 'Tu lema sale aquí'}</p>
             </div>
           </div>
@@ -402,11 +405,11 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
           {REDES.map((r) => (
             <label key={r.clave} className="block">
               <span className="text-[13px] text-fg">{r.nombre}</span>
-              <input
+              <Input
                 value={redes[r.clave]}
                 onChange={(e) => setRedes((x) => ({ ...x, [r.clave]: e.target.value }))}
                 placeholder={r.ejemplo}
-                className="mt-1 h-10 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-fg placeholder:text-fg-placeholder focus:border-primary focus:outline-none"
+                className="mt-1"
               />
             </label>
           ))}
@@ -414,14 +417,9 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       </div>
 
       <div className={conBarra ? 'hidden' : 'flex justify-end'}>
-        <button
-          type="button"
-          onClick={() => void guardar()}
-          disabled={guardando}
-          className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-[14px] font-medium text-primary-fg hover:bg-primary-600 disabled:opacity-60 active:scale-[0.97]"
-        >
+        <Button type="button" hideArrow onClick={() => void guardar()} disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar mi página'}
-        </button>
+        </Button>
       </div>
 
       <div className="rounded-lg border border-border p-4">
@@ -431,12 +429,10 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
           video de Instagram o TikTok de cada uno.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Link
-            href="/panel/inmobiliaria/inmuebles/nuevo"
-            className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-[13.5px] font-medium text-primary-fg hover:bg-primary-600"
-          >
-            Publicar un inmueble
-          </Link>
+          {/* Una sola azul en la sección (Guardar mi página): publicar va en secundaria. */}
+          <Button asChild size="sm" variant="secondary" hideArrow>
+            <Link href="/panel/inmobiliaria/inmuebles/nuevo">Publicar un inmueble</Link>
+          </Button>
           <Link
             href="/panel/inmobiliaria/inmuebles/importar"
             className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-4 text-[13.5px] font-medium text-fg hover:border-border-strong"

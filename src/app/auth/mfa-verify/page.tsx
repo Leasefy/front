@@ -8,6 +8,13 @@ import { ShieldCheck, SignOut, UserCircle } from '@phosphor-icons/react';
 import { getSupabase } from '@/lib/supabase/client';
 import { getAccessToken, hayRespuestaDeSesion } from '@/lib/api/client';
 import { decodeAccessToken } from '@/lib/auth/jwt';
+import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock';
+import {
+  liberarYVerificarConElMock,
+  resolverCodigoDelMock,
+  userIdDelToken,
+} from '@/lib/auth/mock-del-segundo-factor';
+import { useMockDelSegundoFactor } from '@/lib/auth/use-mock-del-segundo-factor';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -153,6 +160,8 @@ export default function MfaVerifyPage() {
   // nunca es «el código cambió», es que esa entrada de la app no es la de
   // esta cuenta (Nico, 01-10: «le coloqué el de todos los que tengo»).
   const [rechazados, setRechazados] = useState(0);
+  // Sólo fuera de producción (`lib/config/entorno.ts`): en producción es siempre `false`.
+  const mockHabilitado = useMockDelSegundoFactor();
   // Antes del segundo factor el perfil del back puede no haber cargado: el
   // correo se lee del token (al instante, si ya está) o de la sesión de
   // Supabase. Mientras se busca, la píldora guarda su sitio: que la tarjeta no
@@ -359,6 +368,38 @@ export default function MfaVerifyPage() {
         if (refreshError) throw refreshError;
       }
 
+      // Mock (sólo fuera de producción): `123456` se cambia por el código real
+      // calculado con el secreto que este navegador guardó para ESTE factor.
+      const resuelto = await resolverCodigoDelMock({
+        codigo,
+        userId:
+          vigente?.session?.user?.id ??
+          userIdDelToken(vigente?.session?.access_token ?? getAccessToken()) ??
+          user?.id ??
+          null,
+        factorId,
+      });
+      if (!resuelto.ok) {
+        // Sin secreto de este factor: el back lo libera y el mock inscribe y
+        // verifica uno nuevo (una sola vez; si falla, el mensaje de siempre).
+        const tokenVigente = vigente?.session?.access_token ?? getAccessToken();
+        const recuperado =
+          resuelto.sinSecreto && tokenVigente
+            ? await liberarYVerificarConElMock({ token: tokenVigente, enElIngreso: true })
+            : null;
+        if (recuperado?.ok) {
+          setMfaVerified();
+          router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user?.role));
+          return;
+        }
+        verificandoRef.current = false;
+        setIsLoading(false);
+        setHayError(true);
+        setCode('');
+        toast.error(recuperado ? recuperado.mensaje : resuelto.mensaje);
+        return;
+      }
+
       // Create a challenge
       const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId,
@@ -369,7 +410,7 @@ export default function MfaVerifyPage() {
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challenge.id,
-        code: codigo,
+        code: resuelto.codigo,
       });
       if (verifyError) throw verifyError;
 
@@ -505,7 +546,7 @@ export default function MfaVerifyPage() {
 
         <div className="relative z-10 flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">
           <div
-            className="relative flex w-full flex-col justify-center px-6 py-10 sm:px-10 lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:shadow-[0_24px_64px_-16px_rgba(20,19,15,0.45)] lg:ring-1 lg:ring-black/5"
+            className="relative flex w-full flex-col justify-center px-6 py-10 sm:px-10 lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:ring-1 lg:ring-black/5"
             data-lenis-prevent
             data-testid="mfa-tarjeta"
           >
@@ -544,7 +585,7 @@ export default function MfaVerifyPage() {
                     : sinLaApp
                       ? 'Si perdiste la app de autenticación o el celular donde la tenías, lo restableces con un código que te mandamos al correo.'
                       : inscribiendo
-                        ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo acá una vez: son dos minutos.'
+                        ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo aquí una vez: son dos minutos.'
                         : 'Abre tu app de autenticación y escribe el código de seis dígitos.'}
                 </p>
                 </CrossFade>
@@ -577,7 +618,7 @@ export default function MfaVerifyPage() {
 
               {/*
                 🔴 Sin factor inscrito NO se pide un código: no existe. Se
-                ofrece inscribirlo, acá mismo, porque Configuración → Seguridad
+                ofrece inscribirlo, aquí mismo, porque Configuración → Seguridad
                 está del otro lado del muro que esta pantalla levanta.
               */}
               <CrossFade swapKey={cuerpoDeLaTarjeta}>
@@ -621,6 +662,16 @@ export default function MfaVerifyPage() {
                     disabled={isLoading}
                     autoFocus
                   />
+
+                  {mockHabilitado ? (
+                    <p
+                      className="flex flex-wrap items-center justify-center gap-2 text-center text-caption text-fg-subtle"
+                      data-testid="aviso-del-mock"
+                    >
+                      <InsigniaDelMock />
+                      Con el mock activo, escribir 123456 envía el código real de este navegador.
+                    </p>
+                  ) : null}
 
                   {/* Al tercer rechazo aparece la salida, subiendo 8 px. */}
                   <Presence show={rechazados >= 3}>

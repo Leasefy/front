@@ -127,7 +127,8 @@ describe('InvitacionesPendientes', () => {
     // desapercibido durante un día entero.
     const aviso = host.querySelector('[data-testid="invitaciones-pendientes"]');
     expect(aviso).not.toBeNull();
-    expect(aviso!.textContent).toContain('A 1446 inquilinos no les ha llegado');
+    // 22-10 (revisión de diseño, ronda 12): el total con separador de miles, «1.446».
+    expect(aviso!.textContent).toContain('A 1.446 inquilinos no les ha llegado');
   });
 
   it('🔴 «enviar a todos» sigue llamando por tandas hasta agotar', async () => {

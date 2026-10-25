@@ -95,7 +95,7 @@ export function EscenarioTributario({
     >
       <div className="flex items-center gap-2">
         <Scales className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-base font-semibold text-foreground">
+        <h3 className="text-base font-medium text-foreground">
           Escenario tributario
         </h3>
       </div>
@@ -182,7 +182,7 @@ function Contenido({
     <>
       <div className="space-y-1">
         <p
-          className="text-sm font-semibold text-foreground"
+          className="text-sm font-medium text-foreground"
           data-testid="escenario-nombre"
         >
           {sinDefinir ? escenario.nombre : `${etiqueta(escenario.codigo)} · ${escenario.nombre}`}
@@ -197,7 +197,7 @@ function Contenido({
           los nueve del catálogo, ése es el que se factura, y la pantalla lo
           tiene que decir — si no, «confirmado» parece salido de la nada. Y
           cuando NO se pudo usar (un escenario con IVA en una vivienda), el
-          motivo va acá, con la salida. */}
+          motivo va aquí, con la salida. */}
       {/* 🔴 QA-CONT-95 B-32: el archivo dice un escenario y la ficha del
           propietario otro (Constructora Ñandú: «Escenario 1 · entre personas
           naturales» siendo una empresa que retiene). No se elige solo: la
@@ -310,7 +310,7 @@ function Contenido({
       {/* De dónde sale: las cuatro responsabilidades que lo definen. Sin esto
           el nombre es un veredicto sin pruebas, y nadie puede corregirlo. */}
       <details className="text-sm" data-testid="escenario-ejes">
-        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+        <summary className="relative hit-area-44 cursor-pointer text-muted-foreground hover:text-foreground">
           De dónde sale
         </summary>
         <ul className="mt-2 space-y-1.5 pl-1">
@@ -355,7 +355,7 @@ function Contenido({
                 <span className="font-medium text-foreground">
                   Administración del contrato
                 </span>
-                , acá mismo en la ficha. Si es del propietario, va en su ficha.
+                , aquí mismo en la ficha. Si es del propietario, va en su ficha.
               </p>
               {llevaAConfirmar}
             </div>

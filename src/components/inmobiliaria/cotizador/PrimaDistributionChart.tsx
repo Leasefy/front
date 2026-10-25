@@ -186,7 +186,7 @@ export function PrimaDistributionChart({
         queSon="primas"
         icono={ChartBar}
         titulo="Todavía no hay distribución de prima"
-        descripcion="Cuando haya primas cotizadas en varios rangos de canon, la distribución por aseguradora se grafica acá."
+        descripcion="Cuando haya primas cotizadas en varios rangos de canon, la distribución por aseguradora se grafica aquí."
         className="py-10"
       />
     )

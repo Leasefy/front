@@ -16,8 +16,6 @@ import {
   Warning,
   GridFour,
   List,
-  CaretRight,
-  Users,
   UserCircle,
   Funnel,
 } from '@phosphor-icons/react';
@@ -31,9 +29,11 @@ import { TerceroIACapture } from '@/components/inmobiliaria/TerceroIACapture';
 import { usePropietarios } from '@/lib/hooks/useInmobiliaria';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { plataPareja } from '@/lib/format';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import {
   Dialog,
   DialogContent,
@@ -71,7 +71,10 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   FILTROS_INICIALES,
   conteosDePropietarios,
+  conteosDeLasVistas,
+  estaPorGirar,
   filtrarPropietarios,
+  type VistaDePropietarios,
   type FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
 import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
@@ -80,7 +83,7 @@ import { generadoSinGirarDeLaLista } from '@/lib/propietarios/giros-del-propieta
 // AVISO-TIPO-DOC (05-10-2026): el aviso y la lista filtrada por lo que falta.
 import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
 import { FALTA_TIPO_DE_DOCUMENTO, PARAMETRO_FALTA } from '@/lib/propietarios/falta-del-documento';
-import { SegmentedControl, KpiCard, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { SegmentedControl, Cifra, FranjaDeCifras, KpiCard, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
 
@@ -150,6 +153,9 @@ function Modal({
  * Propietarios List Page
  * Main CRM view for managing property owners
  */
+/** Con separador de miles: «1.751», como en las pestañas (ronda 12). */
+const MILES = new Intl.NumberFormat('es-CO');
+
 function PropietariosContent() {
   const { t } = useI18n();
   const router = useRouter();
@@ -202,18 +208,37 @@ function PropietariosContent() {
    */
   // AVISO-TIPO-DOC: `?falta=tipo-de-documento` (el enlace del aviso) entra ya filtrado.
   const faltaEnLaUrl = searchParams.get(PARAMETRO_FALTA) === FALTA_TIPO_DE_DOCUMENTO;
+  /*
+   * Pestañas por tarea (Nico, 22-10-2026): la lista ABRE en «Por girar», que es el trabajo de
+   * todos los meses. `vista` arranca sin elegir y se resuelve con la lista: con nadie atrasado,
+   * sin la plata a la vista, o si se entró a buscar algo (`?falta`, `?persona`), abre en «Todos».
+   * En cuanto la persona toca una pestaña (o busca), queda la que ve.
+   */
   const [filtros, setFiltros] = useState<FiltrosDePropietarios>(() => ({
     ...FILTROS_INICIALES,
+    vista: undefined,
     falta: faltaEnLaUrl ? 'tipoDocumento' : null,
   }));
-  const propietariosFiltrados = useMemo(
-    () => filtrarPropietarios(propietarios, filtros),
-    [propietarios, filtros],
+  const entroABuscarAlguien = faltaEnLaUrl || Boolean(searchParams.get('persona'));
+  const hayAQuienGirarle = useMemo(
+    () => propietarios.some((p) => p.plataOculta !== true && estaPorGirar(p)),
+    [propietarios],
   );
-  /* Los números de los chips salen de la lista COMPLETA, no de la página. */
+  const vistaActual: VistaDePropietarios =
+    filtros.vista ?? (!entroABuscarAlguien && hayAQuienGirarle ? 'porGirar' : 'todos');
+  const filtrosEnPantalla = useMemo(() => ({ ...filtros, vista: vistaActual }), [filtros, vistaActual]);
+  const propietariosFiltrados = useMemo(
+    () => filtrarPropietarios(propietarios, filtrosEnPantalla),
+    [propietarios, filtrosEnPantalla],
+  );
+  /* Los números de los chips y de las pestañas salen de la lista COMPLETA, no de la página. */
   const conteos = useMemo(
-    () => conteosDePropietarios(propietarios, filtros),
-    [propietarios, filtros],
+    () => conteosDePropietarios(propietarios, filtrosEnPantalla),
+    [propietarios, filtrosEnPantalla],
+  );
+  const conteosDeVistas = useMemo(
+    () => conteosDeLasVistas(propietarios, filtrosEnPantalla),
+    [propietarios, filtrosEnPantalla],
   );
 
   const [viewMode, setViewMode] = useState<ViewMode>('table');
@@ -382,6 +407,8 @@ function PropietariosContent() {
       generadoSinGirar,
     };
   }, [propietarios]);
+  // Un solo formato de plata en las cifras de arriba (glow up 22-10: «$ 1.281.714.293,74» junto a «$ 2.466.800»).
+  const plataDeLasCifras = plataPareja([stats.totalMonthlyRent, stats.totalPending, stats.generadoSinGirar]);
 
   // Pagination calculations — sobre lo FILTRADO, que es lo que se ve.
   const paginationData = useMemo(() => {
@@ -605,40 +632,80 @@ function PropietariosContent() {
   const copropiedadesDelBorrado = propietarioQueSeBorra?.copropiedadesCount ?? 0;
   const borradoBloqueado = inmueblesDelBorrado > 0 || copropiedadesDelBorrado > 0;
 
+  /** Cambiar de pestaña: vuelve a la página 1 (desde la 3 la lista quedaba en blanco). */
+  const verVista = (vista: VistaDePropietarios) => {
+    setFiltros((f) => ({ ...f, vista }));
+    setCurrentPage(1);
+  };
+
+  /*
+   * Lo que dice una pestaña sin nadie. Con una búsqueda o un filtro puesto, a quién buscar en
+   * «Todos»; sin nada puesto, que ese trabajo está hecho (con su ilustración).
+   */
+  const busquedaPuesta = filtros.busqueda.trim();
+  const vacioDeLaPestana =
+    busquedaPuesta || filtros.tipo !== 'all' || filtros.falta ? (
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between" data-testid="vacio-de-la-pestana">
+        <p className="text-body-sm text-fg">
+          {busquedaPuesta
+            ? t('inmobiliaria.propietarios.vistas.vacioConBusqueda', { busqueda: busquedaPuesta })
+            : t('inmobiliaria.propietario.table.noResults')}
+        </p>
+        {vistaActual !== 'todos' && conteosDeVistas.todos > 0 ? (
+          <Button variant="outline" size="sm" hideArrow onClick={() => verVista('todos')}>
+            {t('inmobiliaria.propietarios.vistas.verEnTodos', { count: MILES.format(conteosDeVistas.todos) })}
+          </Button>
+        ) : null}
+      </div>
+    ) : vistaActual === 'porGirar' ? (
+      <SinDatos
+        queSon="propietarios"
+        ilustracion="alcancia"
+        titulo={t('inmobiliaria.propietarios.vistas.vacioPorGirar')}
+        descripcion={t('inmobiliaria.propietarios.vistas.vacioPorGirarDetalle')}
+      />
+    ) : vistaActual === 'porCompletar' ? (
+      <SinDatos
+        queSon="propietarios"
+        ilustracion="carpeta"
+        titulo={t('inmobiliaria.propietarios.vistas.vacioPorCompletar')}
+        descripcion={t('inmobiliaria.propietarios.vistas.vacioPorCompletarDetalle')}
+      />
+    ) : vistaActual === 'conInmuebles' ? (
+      <SinDatos
+        queSon="propietarios"
+        ilustracion="casa"
+        titulo={t('inmobiliaria.propietarios.vistas.vacioConInmuebles')}
+        descripcion={t('inmobiliaria.propietarios.vistas.vacioConInmueblesDetalle')}
+      />
+    ) : undefined;
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{t('inmobiliaria.common.title')}</span>
-            <CaretRight className="w-3 h-3" />
-            <span className="text-foreground">{t('inmobiliaria.propietarios.title')}</span>
-          </div>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.propietarios.title')}
-          </h1>
-          <p className="text-body text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.propietarios.subtitle')}
-          </p>
-        </div>
-
-        {/* P-22: a 390 px los dos no caben en una línea («Nuevo propietario»
-            se salía del borde y la página medía 416 px): se acomodan en dos,
-            cada uno a lo ancho. */}
-        {puedeCrear && (
-          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-            <Button variant="secondary" hideArrow onClick={() => setShowIACapture(true)} className="flex-1 sm:flex-none">
-              <Sparkle className="w-5 h-5 text-primary" weight="fill" />
+      {/* GLOW UP 21-10: el encabezado de todas las pantallas. «Crear con IA» es secundaria y su
+          orbe va en tinta: el azul es sólo de la acción principal. P-22: a 390 px las dos van a lo
+          ancho (la principal primero), que es lo que hace `EncabezadoDePantalla`. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secDirectorio')}
+        titulo={t('inmobiliaria.propietarios.title')}
+        descripcion={t('inmobiliaria.propietarios.subtitle')}
+        acciones={
+          puedeCrear ? (
+            <Button variant="secondary" size="sm" hideArrow onClick={() => setShowIACapture(true)}>
+              <Sparkle className="w-4 h-4" />
               {t('inmobiliaria.propietarios.addOwnerIA')}
             </Button>
-            <Button hideArrow onClick={() => setShowAddModal(true)} className="flex-1 sm:flex-none">
-              <UserPlus className="w-5 h-5" />
+          ) : undefined
+        }
+        accionPrincipal={
+          puedeCrear ? (
+            <Button size="sm" hideArrow onClick={() => setShowAddModal(true)}>
+              <UserPlus className="w-4 h-4" />
               {t('inmobiliaria.propietarios.addOwner')}
             </Button>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
       {/* AVISO-TIPO-DOC: los propietarios cuyo documento frena la factura por
           mandato (sólo para quien puede arreglarlo; se va solo al completarlos). */}
@@ -664,56 +731,6 @@ function PropietariosContent() {
         </div>
       </Presence>
 
-      {/* Summary Stats — P-22: a 390 px, en dos columnas, «$96.600.000» se
-          cortaba («$96.600.0») y las etiquetas también («PROPIETA…»). Una
-          columna en el celular, dos en tableta y cuatro desde `xl`, donde la
-          cifra cabe con el menú abierto. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard
-          label={t('inmobiliaria.propietarios.title')}
-          value={valorDeTile(String(stats.totalPropietarios))}
-          icon={<Users />}
-        />
-        <KpiCard
-          label={t('inmobiliaria.propietarios.properties')}
-          value={valorDeTile(String(stats.totalProperties))}
-          icon={<Buildings />}
-        />
-        <KpiCard
-          label={t('inmobiliaria.propietarios.monthlyRevenue')}
-          value={plataOculta ? tileSinPlata : valorDeTile(formatCurrency(stats.totalMonthlyRent))}
-          sublabel={plataOculta ? sinAccesoALaPlata : undefined}
-          icon={<CurrencyDollar />}
-        />
-        {/* Sin dato, la etiqueta tampoco puede decir «Sin pendientes» ni
-            pintarse en verde: es la misma afirmación que el «$0». Sin acceso
-            a la plata (P-21), tampoco. */}
-        <KpiCard
-          label={
-            kpiSinDato || plataOculta
-              ? 'Giros atrasados'
-              : stats.pendingCount > 0
-                ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
-                : t('inmobiliaria.propietarios.noPending')
-          }
-          value={
-            plataOculta
-              ? tileSinPlata
-              : valorDeTile(
-                  stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
-                )
-          }
-          sublabel={
-            plataOculta
-              ? sinAccesoALaPlata
-              : !kpiSinDato && (stats.generadoSinGirar ?? 0) > 0
-                ? t('inmobiliaria.propietarios.generadoSinGirar', { monto: formatCurrency(stats.generadoSinGirar ?? 0) })
-                : undefined
-          }
-          icon={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
-          deltaDirection={kpiSinDato || plataOculta ? 'neutral' : stats.pendingCount > 0 ? 'down' : 'up'}
-        />
-      </div>
 
       {/* AVISO-TIPO-DOC: qué filtra la lista y cómo volver a verla entera. */}
       <Presence
@@ -745,44 +762,150 @@ function PropietariosContent() {
           Sin entrada propia: la página ya entra con el `template.tsx`; lo que
           se anima adentro son los cambios (filas, tarjetas, la cifra). */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        {/* View Toggle Header */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <SegmentedControl<ViewMode>
-            value={viewMode}
-            onChange={setViewMode}
-            aria-label={t('inmobiliaria.propietarios.viewTable')}
-            options={[
-              {
-                value: 'table',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <List className="w-4 h-4" />
-                    {t('inmobiliaria.propietarios.viewTable')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.propietarios.viewTable'),
-              },
-              {
-                value: 'grid',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <GridFour className="w-4 h-4" />
-                    {t('inmobiliaria.propietarios.viewCards')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.propietarios.viewCards'),
-              },
-            ]}
-          />
-          {/* El mismo «0» que los tiles, un renglón más abajo: sin dato, no se dice. */}
+          {/* Summary Stats — P-22: a 390 px, en dos columnas, «$96.600.000» se
+              cortaba («$96.600.0») y las etiquetas también («PROPIETA…»). Una
+              columna en el celular, dos en tableta y cuatro desde `xl`, donde la
+              cifra cabe con el menú abierto. */}
+          {/* Ronda 20: sin la cifra «Propietarios», que repetía la pestaña «Todos»; con tres cifras, a 390
+              van de a dos y «Giros atrasados» a lo ancho (la cifra se achica para caber, `CifraQueCabe`). */}
+          <FranjaDeCifras
+            data-testid="cifras-de-propietarios"
+            className="rounded-none border-0 border-b border-border"
+          >
+            {/* Ronda 21 (390): «Giros atrasados» primero y a lo ancho —es la respuesta de la pantalla—;
+                debajo el canon ENTERO a lo ancho (la plata no se abrevia), con los inmuebles en su línea. */}
+            <KpiCard
+              label={t('inmobiliaria.propietarios.properties')}
+              value={valorDeTile(MILES.format(stats.totalProperties))}
+              icon={<Buildings />}
+              className="max-md:hidden"
+            />
+            <KpiCard
+              label={t('inmobiliaria.propietarios.monthlyRevenue')}
+              value={plataOculta ? tileSinPlata : valorDeTile(plataDeLasCifras(stats.totalMonthlyRent))}
+              sublabel={
+                plataOculta ? (
+                  sinAccesoALaPlata
+                ) : kpiSinDato ? undefined : (
+                  // `KpiCard` tipa `sublabel` como texto pero lo pinta como hijo (igual que `value`).
+                  (<span className="md:hidden">
+                    {MILES.format(stats.totalProperties)} {stats.totalProperties === 1 ? 'inmueble' : 'inmuebles'}
+                  </span>) as unknown as string
+                )
+              }
+              icon={<CurrencyDollar />}
+              className="max-md:col-span-2"
+            />
+            {/* Sin dato, la etiqueta tampoco puede decir «Sin pendientes» ni
+                pintarse en verde: es la misma afirmación que el «$0». Sin acceso
+                a la plata (P-21), tampoco. */}
+            <Cifra
+              etiqueta={
+                kpiSinDato || plataOculta
+                  ? 'Giros atrasados'
+                  : stats.pendingCount > 0
+                    ? // Ronda 20: el monto sin el conteo; cuántos son lo dice la pestaña «Por girar».
+                      'Giros atrasados'
+                    : t('inmobiliaria.propietarios.noPending')
+              }
+              valor={
+                plataOculta
+                  ? tileSinPlata
+                  : valorDeTile(
+                      stats.pendingCount > 0 ? plataDeLasCifras(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
+                    )
+              }
+              detalle={
+                plataOculta
+                  ? sinAccesoALaPlata
+                  : undefined
+              }
+              // El punto ámbar dice «hay giros atrasados» (antes, el ícono de alerta de la tarjeta).
+              tono={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? 'aviso' : undefined}
+              // GLOW UP 21-10: la cifra ES el filtro «con giros atrasados» (antes un chip aparte en la
+              // barra): un toque y la lista muestra a quién hay que girarle; otro toque la vuelve entera.
+              onClick={
+                !kpiSinDato && !plataOculta && (stats.pendingCount > 0 || vistaActual === 'porGirar')
+                  ? () => verVista(vistaActual === 'porGirar' ? 'todos' : 'porGirar')
+                  : undefined
+              }
+              activa={vistaActual === 'porGirar'}
+              className="max-md:order-first max-md:col-span-2"
+              data-testid="cifra-giros-atrasados"
+            />
+          </FranjaDeCifras>
+          {/* Ronda 22: lo generado y sin girar en su renglón, con su enlace (la cifra es un botón —decisión de
+              Nico— y un enlace no puede ir dentro de un botón). */}
+          {!kpiSinDato && !plataOculta && (stats.generadoSinGirar ?? 0) > 0 ? (
+            <p className="flex flex-wrap items-center gap-x-2 border-b border-border px-5 py-2.5 text-body-sm text-fg-muted" data-testid="generado-sin-girar">
+              <span className="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />
+              {t('inmobiliaria.propietarios.generadoSinGirar', { monto: plataDeLasCifras(stats.generadoSinGirar ?? 0) })}
+              <Link href="/panel/inmobiliaria/pagos/dispersiones" className="font-medium text-primary underline-offset-4 hover:underline">
+                Ver en Giros a propietarios
+              </Link>
+            </p>
+          ) : null}
+
+        {/* Pestañas por tarea (Nico, 22-10-2026) a la izquierda; tabla o tarjetas a la derecha. */}
+        <div className="flex flex-col gap-2 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:gap-4">
+          {propietarios.length > 0 && !kpiSinDato ? (
+            <PestanasDeEstado<VistaDePropietarios>
+              etiqueta={t('inmobiliaria.propietarios.vistas.etiqueta')}
+              data-testid="pestanas-de-propietarios"
+              valor={vistaActual}
+              onCambio={verVista}
+              pestanas={[
+                ...(plataOculta
+                  ? []
+                  : [{ valor: 'porGirar' as const, etiqueta: t('inmobiliaria.propietarios.vistas.porGirar'), cuantos: conteosDeVistas.porGirar, tono: 'aviso' as const, testid: 'vista-por-girar' }]),
+                { valor: 'porCompletar', etiqueta: t('inmobiliaria.propietarios.vistas.porCompletar'), cuantos: conteosDeVistas.porCompletar, tono: 'aviso', testid: 'vista-por-completar' },
+                { valor: 'conInmuebles', etiqueta: t('inmobiliaria.propietarios.vistas.conInmuebles'), cuantos: conteosDeVistas.conInmuebles, testid: 'vista-con-inmuebles' },
+                { valor: 'todos', etiqueta: t('inmobiliaria.propietarios.vistas.todos'), cuantos: conteosDeVistas.todos, fija: true, testid: 'vista-todos' },
+              ]}
+            />
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center justify-between gap-3 md:justify-end">
+            {/* El mismo «0» que los tiles, un renglón más abajo: sin dato, no se dice. */}
           {!kpiSinDato && (
             <span className="text-sm text-muted-foreground tabular-nums">
-              <AnimatedNumber value={paginationData.totalItems} format={(n) => String(Math.round(n))} />{' '}
+              <AnimatedNumber value={paginationData.totalItems} format={(n) => MILES.format(Math.round(n))} />{' '}
               {paginationData.totalItems === 1
                 ? t('inmobiliaria.propietarios.propietarioUno')
                 : t('inmobiliaria.propietarios.title').toLowerCase()}
             </span>
           )}
+            <div className="max-md:hidden">
+            <SegmentedControl<ViewMode>
+              value={viewMode}
+              onChange={setViewMode}
+              aria-label={t('inmobiliaria.propietarios.viewTable')}
+              options={[
+                {
+                  value: 'table',
+                  label: (
+                    <span className="flex items-center gap-2">
+                      <List className="w-4 h-4" />
+                      {t('inmobiliaria.propietarios.viewTable')}
+                    </span>
+                  ),
+                  ariaLabel: t('inmobiliaria.propietarios.viewTable'),
+                },
+                {
+                  value: 'grid',
+                  label: (
+                    <span className="flex items-center gap-2">
+                      <GridFour className="w-4 h-4" />
+                      {t('inmobiliaria.propietarios.viewCards')}
+                    </span>
+                  ),
+                  ariaLabel: t('inmobiliaria.propietarios.viewCards'),
+                },
+              ]}
+            />
+            </div>
+          </div>
         </div>
 
         {/* Content */}
@@ -841,7 +964,7 @@ function PropietariosContent() {
                 propietarios={paginationData.paginatedItems}
                 totalFiltrado={paginationData.totalItems}
                 total={propietarios.length}
-                filtros={filtros}
+                filtros={filtrosEnPantalla}
                 conteos={conteos}
                 onFiltros={(nuevos) => {
                   setFiltros(nuevos);
@@ -853,6 +976,10 @@ function PropietariosContent() {
                 onDelete={handleDelete}
                 onExport={handleExport}
                 plataOculta={plataOculta}
+                filtroDeSaldoAfuera
+                tipoEnFiltros
+                formato={plataDeLasCifras}
+                vacio={vacioDeLaPestana}
                 marcadas={marcadas}
                 onMarcar={marcar}
               />
@@ -873,7 +1000,7 @@ function PropietariosContent() {
                 propietarios={paginationData.paginatedItems}
                 totalFiltrado={paginationData.totalItems}
                 total={propietarios.length}
-                filtros={filtros}
+                filtros={filtrosEnPantalla}
                 conteos={conteos}
                 onFiltros={(nuevos) => {
                   setFiltros(nuevos);
@@ -884,10 +1011,13 @@ function PropietariosContent() {
                 onDelete={handleDelete}
                 onExport={handleExport}
                 plataOculta={plataOculta}
+                filtroDeSaldoAfuera
+                tipoEnFiltros
+                formato={plataDeLasCifras}
               />
               {paginationData.totalItems === 0 ? (
               /* En tarjetas no hay barra de filtros —vive dentro de la tabla—,
-                 así que acá el vacío filtrado tiene que traer su propia salida:
+                 así que aquí el vacío filtrado tiene que traer su propia salida:
                  si no, la única forma de volver es adivinar que hay que cambiar
                  de vista. */
               <SinDatos
@@ -895,7 +1025,7 @@ function PropietariosContent() {
                 queSon="propietarios"
                 icono={UserCircle}
                 onLimpiarFiltros={() => {
-                  setFiltros(FILTROS_INICIALES);
+                  setFiltros({ ...FILTROS_INICIALES, vista: 'todos' });
                   setCurrentPage(1);
                 }}
               />

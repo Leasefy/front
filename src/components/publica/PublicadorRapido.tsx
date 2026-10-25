@@ -44,6 +44,7 @@ import { ParaQuePublica } from './ParaQuePublica';
 import { Pastilla, TarjetaDeInmueble, type EstadoDeLaTarjeta, type LlegandoALaTarjeta } from './TarjetaDeInmueble';
 import { TodoPublicado } from './TodoPublicado';
 import { TraerMuchos, type CaminoParaMuchos, type ResultadoDeCarpetas, type ResultadoDeEnlaces, type ResultadoDelExcel } from './TraerMuchos';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 /**
  * ══ EL PUBLICADOR RÁPIDO ════════════════════════════════════════════════════
@@ -751,7 +752,7 @@ export function PublicadorRapido({
               />
             ),
           )}
-          {visibles.length === 0 && <p className="py-8 text-center text-[14px] text-fg-subtle">No hay inmuebles en este filtro.</p>}
+          {visibles.length === 0 && <VacioChico className="justify-center py-8" titulo="No hay inmuebles en este filtro." ilustracion="lupa" />}
         </div>
       ) : (
         <div className="mt-8 space-y-5">

@@ -89,7 +89,7 @@ export default function CallAudioPlayer({
         <p className="text-sm text-fg">
           {t('inmobiliaria.ai.cobranza.call.player.absent')}
         </p>
-        <p className="mt-1 text-xs text-fg-muted">
+        <p className="mt-1 text-caption text-fg-muted">
           {t('inmobiliaria.ai.cobranza.call.player.absentHint')}
         </p>
       </PlayerSlot>
@@ -110,7 +110,7 @@ export default function CallAudioPlayer({
           <button
             type="button"
             onClick={retry}
-            className="rounded-full border border-border px-3 py-1 text-xs text-fg hover:bg-surface-muted"
+            className="rounded-full border border-border px-3 py-1 text-caption text-fg hover:bg-surface-muted"
           >
             {t('inmobiliaria.ai.cobranza.call.player.retry')}
           </button>
@@ -182,7 +182,7 @@ export default function CallAudioPlayer({
         anuncia como sintético es exactamente el problema que evitamos.
       */}
       {esDemo && (
-        <p className="mb-2 text-xs text-fg-muted">
+        <p className="mb-2 text-caption text-fg-muted">
           {t('inmobiliaria.ai.cobranza.call.player.syntheticNotice')}
         </p>
       )}
@@ -230,7 +230,7 @@ export default function CallAudioPlayer({
 
         {/* Time + progress */}
         <div className="flex-1 flex items-center gap-3">
-          <span className="text-xs tabular-nums text-fg-muted min-w-[4ch]">
+          <span className="text-caption tabular-nums text-fg-muted min-w-[4ch]">
             {formatSec(currentTime)}
           </span>
           <input
@@ -250,7 +250,7 @@ export default function CallAudioPlayer({
             className="flex-1 h-11 accent-[#14130F] cursor-pointer"
             // h-11 gives a 44px tap row; the visual thumb sits centered inside.
           />
-          <span className="text-xs tabular-nums text-fg-muted min-w-[4ch]">
+          <span className="text-caption tabular-nums text-fg-muted min-w-[4ch]">
             {formatSec(duration)}
           </span>
         </div>
@@ -262,7 +262,7 @@ export default function CallAudioPlayer({
         role="group"
         aria-label={t('inmobiliaria.ai.cobranza.call.player.speed')}
       >
-        <span className="text-xs text-fg-subtle">
+        <span className="text-caption text-fg-subtle">
           {t('inmobiliaria.ai.cobranza.call.player.speed')}
         </span>
         <SegmentedControl

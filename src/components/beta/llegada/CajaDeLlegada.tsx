@@ -122,7 +122,7 @@ export function CajaDeLlegada({
   const encendida = enfocada || hayTexto;
   // Sin la franja de arriba la caja se veía chica (Nico, 02-10): más aire.
   const altoMinimo = compacta ? 'min-h-[28px]' : aviso ? 'min-h-[56px]' : 'min-h-[92px]';
-  const boton = compacta ? 'h-9' : 'h-10';
+  const boton = compacta ? 'h-9 [@media(pointer:coarse)]:h-11' : 'h-10 [@media(pointer:coarse)]:h-11';
   const redondo = compacta ? 'size-9' : 'size-10';
 
   // Sin ejemplos (la conversación), el texto fijo hace de ejemplo quieto.
@@ -197,7 +197,7 @@ export function CajaDeLlegada({
             className={cn(
               'relative z-[1] border bg-surface',
               compacta ? 'rounded-[26px]' : 'rounded-[30px]',
-              'shadow-[0_12px_40px_-18px_rgba(20,19,15,0.18)] dark:shadow-[0_12px_40px_-18px_rgba(0,0,0,0.7)]',
+              'shadow-[0_12px_40px_-18px_rgba(20,19,15,0.18)]',
               'transition-[border-color,box-shadow] duration-reveal',
               encendida || dictado.escuchando ? 'border-border-faint' : 'border-border'
             )}

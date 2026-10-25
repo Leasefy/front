@@ -35,7 +35,7 @@ const DAYS_AFTER_OPTIONS = [1, 3, 7, 15, 30] as const;
 type Channel = 'email' | 'sms' | 'whatsapp';
 
 const CHANNELS: { value: Channel; label: string; icon: React.ElementType }[] = [
-  { value: 'email', label: 'Email', icon: Envelope },
+  { value: 'email', label: 'Correo', icon: Envelope },
   { value: 'sms', label: 'SMS', icon: DeviceMobile },
   { value: 'whatsapp', label: 'WhatsApp', icon: WhatsappLogo },
 ];
@@ -139,7 +139,7 @@ function DaySelector({
         })}
       </div>
       {selected.length === 0 && (
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
+        <p className="text-caption text-muted-foreground flex items-center gap-1">
           <Info className="w-3.5 h-3.5" />
           {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneDay')}
         </p>
@@ -179,7 +179,7 @@ function ChannelToggle({
       className={cn(
         'flex items-center justify-between p-4 rounded-lg border transition-colors',
         enabled
-          ? 'border-primary/30 bg-primary-soft/50 dark:border-primary/30 dark:bg-primary/20'
+          ? 'border-primary/30 bg-primary-soft/50'
           : 'border-border bg-card'
       )}
     >
@@ -228,7 +228,7 @@ function MessagePreview({
   // Highlight variables in template
   const highlightedTemplate = template.replace(
     /\{([^}]+)\}/g,
-    '<span class="px-1.5 py-0.5 rounded bg-primary-soft text-primary text-xs font-medium">{$1}</span>'
+    '<span class="px-1.5 py-0.5 rounded bg-primary-soft text-primary text-caption font-medium">{$1}</span>'
   );
 
   return (
@@ -369,7 +369,7 @@ export function RecordatorioConfig({
         <StaggerItem as="section" key="antes" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Calendar className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-medium text-foreground">
               {t('inmobiliaria.cobros.recordatorioConfig.preExpiry')}
             </h3>
           </div>
@@ -387,7 +387,7 @@ export function RecordatorioConfig({
         <StaggerItem as="section" key="despues" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Warning className="w-4 h-4 text-warning" />
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-medium text-foreground">
               {t('inmobiliaria.cobros.recordatorioConfig.postExpiry')}
             </h3>
           </div>
@@ -405,7 +405,7 @@ export function RecordatorioConfig({
         <StaggerItem as="section" key="canales" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Bell className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-medium text-foreground">
               {t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
             </h3>
           </div>
@@ -445,7 +445,7 @@ export function RecordatorioConfig({
         <StaggerItem as="section" key="plantillas" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Envelope className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-medium text-foreground">
               {t('inmobiliaria.cobros.recordatorioConfig.messageTemplates')}
             </h3>
           </div>
@@ -457,7 +457,7 @@ export function RecordatorioConfig({
             title={t('inmobiliaria.cobros.recordatorioConfig.overdueTemplate')}
             template={MORA_TEMPLATE}
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {t('inmobiliaria.cobros.recordatorioConfig.templateNote')}
           </p>
         </StaggerItem>
@@ -476,7 +476,7 @@ export function RecordatorioConfig({
         </Button>
         <Button
           type="button"
-          className="bg-primary hover:opacity-90 text-primary-fg"
+         
           onClick={handleSave}
           disabled={!isValid || isSaving}
         >

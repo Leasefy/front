@@ -128,7 +128,7 @@ describe('<ConfigPerfilAgencia>', () => {
     expect(text).toContain('901.234.567-8')
     expect(text).toContain('Juan Perez')
     // Reminder arrays from the agency row
-    expect(text).toContain('3d, 1d')
+    expect(text).toContain('3 días, 1 día')
   })
 
   it('renders the extended design fields in view mode', () => {
@@ -752,7 +752,7 @@ describe('<ConfigPerfilAgencia> — perfil fiscal de la agencia (agenteRetenedor
     expect(props.onSave).not.toHaveBeenCalled()
   })
 
-  it('responsableIva se muestra de sólo lectura (no hay botones para tocarlo acá) y enlaza a Mandato', () => {
+  it('responsableIva se muestra de sólo lectura (no hay botones para tocarlo aquí) y enlaza a Mandato', () => {
     render({ agency: { ...AGENCY, responsableIva: null } })
     expect(container.querySelector('[data-testid^="fiscal-responsableIva-"]')).toBeNull()
     const link = container.querySelector('a[href="/panel/inmobiliaria/configuracion/mandato"]')

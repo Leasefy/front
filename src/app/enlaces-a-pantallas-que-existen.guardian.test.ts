@@ -45,7 +45,9 @@ function rutasDeclaradas(d: string, prefijo = '', out: string[] = []): string[] 
   return out;
 }
 
-const DECLARADAS = rutasDeclaradas(APP).map((r) => r.split('/'));
+// Ronda 30 (Nico): la home es la landing 2. `/` ya no tiene `page.tsx`: la
+// sirve `src/middleware.ts` desde `public/landing/index.html` (estática).
+const DECLARADAS = [...rutasDeclaradas(APP), '/'].map((r) => r.split('/'));
 
 function atiende(camino: string): boolean {
   const trozos = camino.split('/');

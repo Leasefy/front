@@ -32,9 +32,10 @@ describe('configuración de cuenta — URLs', () => {
 
   it('el menú sale en el idioma pedido y en el orden declarado', () => {
     const es = menuDeCuenta(CONFIGURACION_DEL_PROPIETARIO, 'es')
-    expect(es.map((g) => g.label)).toEqual(['Tu cuenta', 'Tu operación', 'Privacidad'])
+    // «Tu cuenta» pasó a ser el sobretítulo; el primer grupo se llama «General» (glow up r26).
+    expect(es.map((g) => g.label)).toEqual(['General', 'Tu operación', 'Privacidad'])
     expect(es[0]?.entradas[0]).toMatchObject({ id: 'plan', label: 'Tu plan', href: '/panel/configuracion' })
     const en = menuDeCuenta(CONFIGURACION_DEL_INQUILINO, 'en')
-    expect(en[0]?.label).toBe('Your account')
+    expect(en[0]?.label).toBe('General')
   })
 })

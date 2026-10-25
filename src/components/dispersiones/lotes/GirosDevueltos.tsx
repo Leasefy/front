@@ -268,7 +268,7 @@ export function AccionesDelGiro({
     );
   }
 
-  if (!puedeEditar || !disponible) return <span className="text-xs text-fg-subtle">—</span>;
+  if (!puedeEditar || !disponible) return <span className="text-caption text-fg-subtle">—</span>;
 
   return (
     <Button
@@ -488,7 +488,7 @@ export function MarcarDevueltoDialog({
                 ))}
               </select>
               {MOTIVOS_DE_DEVOLUCION.find((m) => m.motivo === motivo)?.exigeCorregirCuenta ? (
-                <p className="flex items-start gap-1.5 text-xs text-warning">
+                <p className="flex items-start gap-1.5 text-caption text-warning">
                   <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   Con este motivo se le va a exigir al propietario corregir su cuenta antes del
                   siguiente giro.
@@ -502,7 +502,7 @@ export function MarcarDevueltoDialog({
                 value={fecha}
                 onChange={(v) => setFecha(v)}
               />
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 La del extracto, no la de hoy: de ella depende la fecha del egreso.
               </p>
             </div>
@@ -696,7 +696,7 @@ export function RegirarDialog({
                 value={fecha}
                 onChange={(v) => setFecha(v)}
               />
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 {/* QA 23-09: pintaba «2026-09-23T00:00:00.000Z». Es una fecha
                     CIVIL (`@db.Date`): en palabras y sin pasar por la zona. */}
                 El giro se devolvió el {diaLegible(giro?.fechaDeLaDevolucion)}.

@@ -14,10 +14,12 @@ export type SeccionDelInquilino = 'notificaciones' | 'seguridad' | 'preferencias
 
 export const CONFIGURACION_DEL_INQUILINO: ConfiguracionDeCuenta<SeccionDelInquilino> = {
   raiz: '/inquilino/configuracion',
+  seccion: { es: 'Tu cuenta', en: 'Your account' },
   titulo: { es: 'Configuración', en: 'Settings' },
-  subtitulo: { es: 'Tus avisos, tu acceso y tus datos, en un solo lugar', en: 'Your alerts, your access and your data, in one place' },
+  subtitulo: { es: 'Tus avisos, tu acceso y tus datos, en un solo lugar.', en: 'Your alerts, your access and your data, in one place.' },
   grupos: [
-    { id: 'cuenta', label: { es: 'Tu cuenta', en: 'Your account' } },
+    // «General» y no «Tu cuenta»: «Tu cuenta» ya es el sobretítulo (glow up r26).
+    { id: 'cuenta', label: { es: 'General', en: 'General' } },
     { id: 'privacidad', label: { es: 'Privacidad', en: 'Privacy' } },
   ],
   secciones: [
@@ -34,7 +36,7 @@ export const CONFIGURACION_DEL_INQUILINO: ConfiguracionDeCuenta<SeccionDelInquil
       grupo: 'cuenta',
       slug: 'seguridad',
       label: { es: 'Seguridad', en: 'Security' },
-      desc: { es: 'Doble factor, contraseña y sesiones', en: 'Two-factor, password and sessions' },
+      desc: { es: 'Segundo factor, contraseña y sesión abierta', en: 'Second factor, password and open session' },
       icon: Shield,
     },
     {
@@ -50,7 +52,7 @@ export const CONFIGURACION_DEL_INQUILINO: ConfiguracionDeCuenta<SeccionDelInquil
       grupo: 'privacidad',
       slug: 'datos',
       label: { es: 'Tus datos', en: 'Your data' },
-      desc: { es: 'Descárgalos, reinicia los pasos iniciales y lee nuestras políticas', en: 'Download them, reset onboarding and read our policies' },
+      desc: { es: 'Tu copia de lo que guardamos, los primeros pasos y nuestras políticas', en: 'Your copy of what we store, the first steps and our policies' },
       icon: Eye,
     },
     {
@@ -58,7 +60,7 @@ export const CONFIGURACION_DEL_INQUILINO: ConfiguracionDeCuenta<SeccionDelInquil
       grupo: 'privacidad',
       slug: 'eliminar-cuenta',
       label: { es: 'Eliminar cuenta', en: 'Delete account' },
-      desc: { es: 'Borra tu cuenta de Leasefy', en: 'Delete your Leasefy account' },
+      desc: { es: 'Qué pasa si te vas y cómo volver', en: 'What happens if you leave and how to come back' },
       icon: TrashSimple,
     },
   ],

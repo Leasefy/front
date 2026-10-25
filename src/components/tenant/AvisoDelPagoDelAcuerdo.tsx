@@ -67,14 +67,14 @@ export function AvisoDelPagoDelAcuerdo({
       distance="xs"
       role="status"
       data-testid="aviso-del-pago-del-acuerdo"
-      className={cn('rounded-xl border border-warning/30 bg-warning-soft p-5 sm:p-6', className)}
+      className={cn('rounded-lg border border-warning/30 bg-warning-soft p-5 sm:p-6', className)}
     >
       <div className="flex items-start gap-3">
         <Clock className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" aria-hidden="true" />
         <div className="flex-1 min-w-0 space-y-1.5">
-          <p className="text-sm font-semibold text-fg dark:text-white">{t.titulo}</p>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">{t.cuota}</p>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">{t.planEntero}</p>
+          <p className="text-sm font-semibold text-fg">{t.titulo}</p>
+          <p className="text-sm text-fg-muted">{t.cuota}</p>
+          <p className="text-sm text-fg-muted">{t.planEntero}</p>
         </div>
       </div>
       <div className="mt-4 flex justify-end">

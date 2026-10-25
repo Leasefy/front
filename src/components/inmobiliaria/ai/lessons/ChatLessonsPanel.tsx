@@ -33,6 +33,7 @@ import {
   Lightning,
   Warning,
   Info,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 
 import { useAuth } from '@/lib/auth'
@@ -46,6 +47,42 @@ import { isAgentConfigured, type CertifyDecision } from '@/lib/api/ai-hub-lesson
 import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion'
 import { useChatLessons } from '@/lib/hooks/use-chat-lessons'
 import { ChatLessonCard } from './ChatLessonCard'
+import { TablePagination } from '@/components/ui/pagination'
+import { Input } from '@/components/ui/input'
+import { SinDatos } from '@/components/estado/SinDatos'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+
+/** Ronda 30 (regla de Nico: listas con paginación): cada grupo de lecciones, de a 10. */
+function LeccionesPaginadas<T extends { id: string }>({
+  items,
+  render,
+}: {
+  items: T[]
+  render: (item: T) => React.ReactNode
+}) {
+  const pag = useTablePagination(items, {})
+  return (
+    <>
+      <Stagger className="space-y-3">
+        {pag.pageItems.map((item) => (
+          <StaggerItem key={item.id}>{render(item)}</StaggerItem>
+        ))}
+      </Stagger>
+      {items.length > pag.pageSize ? (
+        <div className="pt-3">
+          <TablePagination
+            total={pag.total}
+            page={pag.page}
+            pageSize={pag.pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={pag.setPage}
+            onPageSizeChange={pag.setPageSize}
+          />
+        </div>
+      ) : null}
+    </>
+  )
+}
 import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 const STATUS_ORDER = ['candidate', 'certified', 'rejected'] as const
@@ -107,6 +144,18 @@ export function ChatLessonsPanel() {
 
   const candidateCount = grouped.candidate.length
 
+  // Ronda 30 (regla de Nico: listas con buscador): se busca en el texto de cada lección.
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return grouped
+    const filtra = (xs: typeof lessons) =>
+      xs.filter((l) => (l.recommendation ?? '').toLocaleLowerCase('es').includes(q))
+    return { candidate: filtra(grouped.candidate), certified: filtra(grouped.certified), rejected: filtra(grouped.rejected) }
+  }, [grouped, busqueda])
+  const sinCoincidencias =
+    busqueda.trim() !== '' && visibles.candidate.length + visibles.certified.length + visibles.rejected.length === 0
+
   async function handleDecide(lessonId: string, decision: CertifyDecision) {
     setPendingId(lessonId)
     try {
@@ -143,14 +192,14 @@ export function ChatLessonsPanel() {
   // lecciones, → fallo, → vacío); lo que ya estaba al montarse no se anima.
   if (!isAgentConfigured()) {
     return (
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-5 py-6">
+      <div className="rounded-lg border border-border bg-surface-muted px-5 py-6">
         <div className="flex items-start gap-3">
-          <Info weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
+          <Info className="h-5 w-5 text-fg-muted mt-0.5 flex-shrink-0" aria-hidden="true" />
           <div>
             <p className="text-sm font-medium text-fg">
-              El servicio del asistente no está conectado en este entorno.
+              El asistente de Leasefy no está disponible en este momento.
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+            <p className="text-sm text-fg-muted mt-0.5">
               Las lecciones aparecerán aquí cuando el asistente esté disponible.
             </p>
           </div>
@@ -211,10 +260,10 @@ export function ChatLessonsPanel() {
           show={!enabled && grouped.certified.length > 0}
           initial={false}
           role="status"
-          className="flex items-start gap-3 rounded-lg border border-[#B7791F]/30 bg-[#F8F0E0]/60 dark:border-[#B7791F]/40 dark:bg-[#B7791F]/10 px-4 py-3"
+          className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3"
         >
-          <Warning weight="duotone" className="h-5 w-5 text-[#B7791F] dark:text-[#D2992F] mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-[#7A5410] dark:text-[#D2992F]">
+          <Warning className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" aria-hidden="true" />
+          <p className="text-sm text-warning-700 dark:text-warning-100">
             <span className="font-medium">El aprendizaje está desactivado.</span>{' '}
             Tienes lecciones certificadas, pero todavía no influyen en el asistente.
             Se aplicarán cuando se active el aprendizaje para tu inmobiliaria.
@@ -223,48 +272,65 @@ export function ChatLessonsPanel() {
 
       {/* Read-only notice for VIEWER / CONTADOR with candidates waiting. */}
       {!canCertify && candidateCount > 0 && (
-        <div className="flex items-start gap-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-4 py-3">
-          <Lightning weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            Estás viendo las lecciones en modo lectura. Solo administradores y
-            agentes pueden certificarlas.
+        <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted px-4 py-3">
+          <Lightning className="h-5 w-5 text-fg-muted mt-0.5 flex-shrink-0" aria-hidden="true" />
+          <p className="text-sm text-fg-muted">
+            Estás viendo las lecciones en modo lectura. Sólo administradores y
+            asesores pueden certificarlas.
           </p>
         </div>
       )}
 
+      <div className="relative w-full sm:w-80">
+        <MagnifyingGlass
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+          aria-hidden="true"
+        />
+        <Input
+          className="pl-9"
+          placeholder="Buscar en las lecciones"
+          aria-label="Buscar en las lecciones"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          data-testid="buscar-lecciones"
+        />
+      </div>
+      {sinCoincidencias ? (
+        <SinDatos hayFiltros queSon="lecciones" onLimpiarFiltros={() => setBusqueda('')} />
+      ) : null}
+
       {STATUS_ORDER.map((status) => {
-        const items = grouped[status]
+        const items = visibles[status]
         if (items.length === 0) return null
         return (
           <section key={status} aria-labelledby={`lessons-group-${status}`}>
             <div className="mb-3">
               <h2
                 id={`lessons-group-${status}`}
-                className="font-heading text-sm font-semibold text-neutral-900 dark:text-white"
+                className="font-heading text-sm font-medium text-fg"
               >
                 {GROUP_TITLE[status]}
-                <span className="ml-1.5 text-xs font-normal text-fg-muted tabular-nums">
+                <span className="ml-1.5 font-mono text-caption font-normal text-fg-muted tabular-nums">
                   <AnimatedNumber value={items.length} format={(n) => String(Math.round(n))} />
                 </span>
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="text-caption text-fg-muted">
                 {GROUP_HINT[status]}
               </p>
             </div>
             {/* Certificar o descartar mueve la lección de grupo: sale de éste
                 y entra en el otro. */}
-            <Stagger className="space-y-3">
-              {items.map((lesson) => (
-                <StaggerItem key={lesson.id}>
-                  <ChatLessonCard
-                    lesson={lesson}
-                    canCertify={canCertify}
-                    pendingId={pendingId}
-                    onDecide={handleDecide}
-                  />
-                </StaggerItem>
-              ))}
-            </Stagger>
+            <LeccionesPaginadas
+              items={items}
+              render={(lesson) => (
+                <ChatLessonCard
+                  lesson={lesson}
+                  canCertify={canCertify}
+                  pendingId={pendingId}
+                  onDecide={handleDecide}
+                />
+              )}
+            />
           </section>
         )
       })}
@@ -272,7 +338,7 @@ export function ChatLessonsPanel() {
       {/* agency context guard — keeps the unused warning honest in builds where
           agency may be momentarily null without breaking the panel. */}
       {!agency && (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Selecciona una inmobiliaria para ver sus lecciones.
         </p>
       )}

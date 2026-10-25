@@ -10,9 +10,7 @@
  */
 
 import Link from 'next/link';
-import { Warning } from '@phosphor-icons/react';
 
-import { Badge } from '@/components/ui/badge';
 import {
   FALTA_EL_PORCENTAJE,
   rutaParaPonerElPorcentaje,
@@ -38,10 +36,12 @@ export function SinPorcentajeDelPropietario({
       data-testid="sin-porcentaje-del-propietario"
       title={FALTA_EL_PORCENTAJE}
     >
-      <Badge variant="warning" className="gap-1">
-        <Warning className="h-3.5 w-3.5" aria-hidden="true" />
-        {texto}
-      </Badge>
+      {/* Glow up 22-10: un renglón que se parte (el chip no se partía y a 390 se salía del borde).
+          Frena el giro: va en tinta de aviso, no en gris. */}
+      <span className="inline-flex min-w-0 items-baseline gap-1.5 text-caption text-warning-ink">
+        <span className="h-1.5 w-1.5 shrink-0 translate-y-[-1px] rounded-full bg-warning-500" aria-hidden="true" />
+        <span className="min-w-0">{texto}</span>
+      </span>
       {lista.length === 1 ? (
         <Link
           href={rutaParaPonerElPorcentaje(lista[0].consignacionId)}

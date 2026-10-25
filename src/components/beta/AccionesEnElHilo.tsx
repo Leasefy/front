@@ -241,7 +241,7 @@ function TarjetaDeConfirmacion({
         flag={flag}
         description={
           <>
-            {c.frase} <strong className="font-semibold">{c.pregunta}</strong>
+            {c.frase} <strong className="font-medium">{c.pregunta}</strong>
           </>
         }
         message={c.porQue || undefined}

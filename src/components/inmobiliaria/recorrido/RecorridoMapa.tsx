@@ -103,7 +103,7 @@ export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaPro
         <span
           data-paso={p.numero}
           className={cn(
-            'absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border font-mono text-xs tabular-nums',
+            'absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border font-mono text-caption tabular-nums',
             MARCA[estado],
           )}
         >
@@ -112,7 +112,7 @@ export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaPro
 
         <p
           className={cn(
-            'text-sm font-semibold leading-snug',
+            'text-sm font-medium leading-snug',
             estado === 'pendiente' ? 'text-fg-muted' : 'text-fg',
             estado === 'actual' && 'text-primary',
           )}
@@ -121,12 +121,12 @@ export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaPro
         </p>
         {/* Sin alto forzado: el paso ocupa lo que su texto necesita. Eso es lo
             que hacía que el más largo se cortara a media frase. */}
-        <p className="mt-1 text-xs leading-relaxed text-fg-muted">{t(p.descKey)}</p>
+        <p className="mt-1 text-caption leading-relaxed text-fg-muted">{t(p.descKey)}</p>
 
         {href ? (
           <Link
             href={href}
-            className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            className="mt-1.5 inline-flex items-center gap-1 text-caption font-medium text-primary hover:underline"
           >
             {t('inmobiliaria.recorrido.verPaso')}
             <ArrowRight className="h-3.5 w-3.5" />
@@ -135,7 +135,7 @@ export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaPro
           esDeLaInmobiliaria &&
           !esLaPantallaActual && (
             // Honestidad: es un paso suyo y todavía no tiene pantalla propia.
-            <p className="mt-1.5 text-xs text-fg-subtle">{t('inmobiliaria.recorrido.sinPantalla')}</p>
+            <p className="mt-1.5 text-caption text-fg-subtle">{t('inmobiliaria.recorrido.sinPantalla')}</p>
           )
         )}
       </li>
@@ -153,14 +153,14 @@ export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaPro
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className={cn('h-2 w-2 rounded-full', tono)} aria-hidden="true" />
         <h3 className="text-sm font-medium text-fg">{titulo}</h3>
-        <span className="font-mono text-xs tabular-nums text-fg-subtle">{rango}</span>
+        <span className="font-mono text-caption tabular-nums text-fg-subtle">{rango}</span>
         {/* El cambio de manos ya no es una banda entre dos grillas: con los
             tramos lado a lado, vive donde de verdad pasa — al entrar en el
             segundo. Es lo más importante del mapa, por eso se dibuja. */}
         {cambioDeManos && (
           <span
             data-corte
-            className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-soft px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-primary"
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-soft px-2.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-primary"
           >
             <ArrowsLeftRight className="h-3 w-3" weight="bold" aria-hidden="true" />
             {t('inmobiliaria.recorrido.cambioDeManos')}

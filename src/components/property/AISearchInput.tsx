@@ -103,11 +103,11 @@ export function AISearchInput({
           onFocus={() => setConFoco(true)}
           onBlur={() => setConFoco(false)}
           placeholder={placeholder}
-          aria-label="Búsqueda inteligente de propiedades"
+          aria-label="Búsqueda inteligente de inmuebles"
           disabled={isMagnifyingGlassing}
           enterKeyHint="search"
           autoComplete="off"
-          className="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-placeholder disabled:cursor-not-allowed"
+          className="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-placeholder disabled:cursor-not-allowed [@media(pointer:coarse)]:min-h-11"
         />
 
         {/* El ✕ nace al escribir (desde el 96 %, como un flotante) y sale al

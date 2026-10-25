@@ -68,7 +68,8 @@ describe('los dos portales (guardián de los layouts)', () => {
     const layout = leer('src/app/panel/(landlord)/layout.tsx')
     expect(layout).toMatch(/<ProtectedRoute allowedRoles=\{\['landlord', 'tenant'\]\}>/)
     expect(layout).toMatch(/esCuentaDeInquilino && !administrados\.cargando && !esPropietarioConfirmado/)
-    expect(layout).toMatch(/router\.replace\('\/inquilino'\)/)
+    // Ronda 30: desde «Cambiar de cuenta» (21-10) vuelve al inicio de SU rol (para el inquilino, /inquilino).
+    expect(layout).toMatch(/router\.replace\((?:'\/inquilino'|getRoleHomeRoute\(user\?\.role\))\)/)
     expect(layout).toMatch(/\[\.\.\.AGENCY_OWNER_NAV_ITEMS, PORTAL_DEL_INQUILINO\]/)
   })
 

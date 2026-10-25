@@ -47,9 +47,11 @@ describe('el aviso', () => {
 
   it('nombra los meses y dice qué pasa con ellos', () => {
     const aviso = avisoDeMesesQueFaltan(['2026-07', '2026-08'])!;
-    expect(aviso).toContain('2026-07');
-    expect(aviso).toContain('2026-08');
-    expect(aviso).toContain('SIN topear');
+    // Revisora r25 (B3): en palabras, no como código.
+    expect(aviso).toContain('julio de 2026');
+    expect(aviso).toContain('agosto de 2026');
+    expect(aviso).not.toContain('2026-07');
+    expect(aviso).toContain('sin topear');
     expect(aviso).toContain('884');
   });
 
@@ -57,8 +59,8 @@ describe('el aviso', () => {
     const meses = rangoDeMeses('2025-01', '2025-12');
     const aviso = avisoDeMesesQueFaltan(meses)!;
     expect(aviso).toContain('12 meses sin tasa');
-    expect(aviso).toContain('2025-06');
+    expect(aviso).toContain('junio de 2025');
     expect(aviso).toContain('y 6 más');
-    expect(aviso).not.toContain('2025-07');
+    expect(aviso).not.toContain('julio de 2025');
   });
 });

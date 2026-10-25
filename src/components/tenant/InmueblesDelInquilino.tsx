@@ -32,7 +32,7 @@ export function InmueblesDelInquilino({ arriendos, escogidos, onCambiar }: Props
 
   return (
     <section data-testid="inmuebles-del-inquilino" aria-label="Tus inmuebles" className="mb-6">
-      <p className="mb-2 font-mono text-xs uppercase tracking-wider text-fg-muted">Tus inmuebles</p>
+      <p className="mb-2 text-label text-fg-subtle">Tus inmuebles</p>
       <div role="group" aria-label="Escoge de qué inmuebles ver y pagar" className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -40,12 +40,20 @@ export function InmueblesDelInquilino({ arriendos, escogidos, onCambiar }: Props
           data-testid="inmueble-todos"
           onClick={() => onCambiar(arriendos.map((a) => a.leaseId))}
           className={cn(
-            'relative isolate inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors',
-            todos ? 'border-primary/40 text-primary' : 'border-border bg-surface text-fg hover:bg-surface-muted',
+            // Glow up 23-10: lo escogido con el tono de la fila activa del menú (como las pestañas de estado).
+            'relative isolate inline-flex h-10 items-center gap-2 rounded-full border px-4 text-body-sm transition-colors',
+            todos
+              ? 'border-transparent font-medium text-[color:var(--menu-activa-tinta)]'
+              : 'border-border bg-surface text-fg hover:bg-surface-muted',
           )}
         >
-          {todos && <MotionIndicator layoutId="inmuebles-del-inquilino-todos" className="inset-0 -z-10 rounded-full bg-primary-soft" />}
-          Todos <span className="font-mono text-xs">({arriendos.length})</span>
+          {todos && (
+            <MotionIndicator
+              layoutId="inmuebles-del-inquilino-todos"
+              className="inset-0 -z-10 rounded-full bg-[color:var(--menu-activa)]"
+            />
+          )}
+          Todos <span className="font-mono text-caption tabular-nums">({arriendos.length})</span>
         </button>
         {arriendos.map((a) => {
           const activo = !todos && escogidos.includes(a.leaseId);
@@ -58,14 +66,16 @@ export function InmueblesDelInquilino({ arriendos, escogidos, onCambiar }: Props
               data-testid={`escoger-${a.leaseId}`}
               onClick={() => alternar(a.leaseId)}
               className={cn(
-                'inline-flex min-h-10 max-w-full items-center gap-2 rounded-full border px-4 py-1.5 text-left text-sm transition-colors',
-                activo ? 'border-primary/40 bg-primary-soft text-primary' : 'border-border bg-surface text-fg hover:bg-surface-muted',
+                'inline-flex min-h-10 max-w-full items-center gap-2 rounded-full border px-4 py-1.5 text-left text-body-sm transition-colors',
+                activo
+                  ? 'border-transparent bg-[color:var(--menu-activa)] text-[color:var(--menu-activa-tinta)]'
+                  : 'border-border bg-surface text-fg hover:bg-surface-muted',
               )}
             >
               <House className="h-4 w-4 flex-shrink-0" weight={activo ? 'fill' : 'regular'} />
               <span className="min-w-0">
                 <span className="block truncate">{nombreDelInmueble(a)}</span>
-                <span className="block font-mono text-[11px] text-fg-muted">
+                <span className="block font-mono text-caption tabular-nums text-fg-muted">
                   {a.contratoNumero !== null ? `Contrato ${a.contratoNumero}` : 'Sin número de contrato'}
                   {debe > 0 ? ` · ${formatCurrency(debe)}` : ''}
                 </span>

@@ -43,6 +43,39 @@ import { SeccionComercial } from './SeccionComercial';
 import { SeccionPreferencias } from './SeccionPreferencias';
 import { SeccionSeguridad } from './SeccionSeguridad';
 import { seccionPorId, type SeccionId } from './secciones';
+import { useRef } from 'react';
+import { IndiceDeLaPagina } from '@/components/pantalla/IndiceDeLaPagina';
+
+/**
+ * Ronda 30: Costos de la plata son cinco bloques seguidos (más de tres pantallas);
+ * «En esta sección» lleva a cada uno y marca en cuál vas.
+ */
+function CostosDeLaPlataConIndice() {
+  const raiz = useRef<HTMLDivElement>(null);
+  return (
+    <div className="space-y-6" ref={raiz}>
+      <IndiceDeLaPagina raiz={raiz} />
+      <div id="costos-de-mover-la-plata" data-indice="El 4x1000 y la pasarela">
+        <SeccionCostosDeLaPlata />
+      </div>
+      <div id="diferencias-conocidas" data-indice="Diferencias conocidas">
+        <DiferenciasConocidas />
+      </div>
+      {/* C2-DESHACER (Nico, P1): las cuentas del asiento automático de las diferencias. */}
+      <div id="cuentas-de-las-diferencias" data-indice="Sus cuentas">
+        <CuentasDeLasDiferencias />
+      </div>
+      {/* E-03 (QA-PAGOS-95 r2): las cuentas del PUC del traslado de la comisión (no tenían pantalla). */}
+      <div id="cuentas-del-traslado" data-indice="El traslado de la comisión">
+        <CuentasDelTraslado />
+      </div>
+      {/* D-CONCILIACION (Nico, P9/P10/P12): alerta a los 30 días, efectivo y cuenta contable por cuenta bancaria. */}
+      <div id="cierre-y-efectivo" data-indice="Cierre y efectivo">
+        <ConciliacionCierreYEfectivo />
+      </div>
+    </div>
+  );
+}
 
 export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
   switch (id) {
@@ -68,18 +101,7 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       // 02-10-2026 (S2-D): las diferencias conocidas de la conciliación (la
       // retención, la comisión) son de la misma familia: lo que cuesta mover
       // la plata. Misma puerta (sólo el administrador).
-      return (
-        <div className="space-y-6">
-          <SeccionCostosDeLaPlata />
-          <DiferenciasConocidas />
-          {/* C2-DESHACER (Nico, P1): las cuentas del asiento automático de las diferencias. */}
-          <CuentasDeLasDiferencias />
-          {/* E-03 (QA-PAGOS-95 r2): las cuentas del PUC del traslado de la comisión (no tenían pantalla). */}
-          <CuentasDelTraslado />
-          {/* D-CONCILIACION (Nico, P9/P10/P12): alerta a los 30 días, efectivo y cuenta contable por cuenta bancaria. */}
-          <ConciliacionCierreYEfectivo />
-        </div>
-      );
+      return <CostosDeLaPlataConIndice />;
     case 'sedes':
       return <SeccionSedes />;
     case 'mandato':

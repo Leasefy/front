@@ -110,7 +110,7 @@ export function PanelAntesDeComenzar({
           />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">Tu perfil</span>
+          <span className="block text-caption text-fg-subtle">Tu perfil</span>
           <span className="block truncate font-heading text-[17px] font-medium leading-tight tracking-[-0.01em] text-fg">
             {PERFIL_INMOBILIARIA.titulo}
           </span>

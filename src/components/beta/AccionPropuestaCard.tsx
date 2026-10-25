@@ -99,7 +99,7 @@ export function AccionPropuestaCard({
       <div className="flex flex-wrap items-center gap-2.5">
         <span
           aria-hidden
-          className="inline-flex size-[26px] shrink-0 items-center justify-center rounded-full bg-primary-soft text-[10px] font-semibold text-primary"
+          className="inline-flex size-[26px] shrink-0 items-center justify-center rounded-full bg-primary-soft text-[10px] font-medium text-primary"
         >
           {propuesta.titulo.slice(0, 1)}
         </span>

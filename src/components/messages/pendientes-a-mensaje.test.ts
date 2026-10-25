@@ -127,7 +127,7 @@ describe('mensajeDeCuota', () => {
 });
 
 describe('mensajeDeGiro', () => {
-  it('el tono se invierte: acá el que debe es la inmobiliaria', () => {
+  it('el tono se invierte: aquí el que debe es la inmobiliaria', () => {
     const texto = mensajeDeGiro(
       {
         id: 'cp-1',
@@ -149,7 +149,7 @@ describe('mensajeDeGiro', () => {
 });
 
 describe('mensajeDeDocumento', () => {
-  it('el enlace va tal cual viene del back: acá no se arma ninguna URL', () => {
+  it('el enlace va tal cual viene del back: aquí no se arma ninguna URL', () => {
     const texto = mensajeDeDocumento(
       { id: 'doc-1', tipo: 'CONTRATO', nombre: 'Contrato 2026', url: 'https://x.test/c.pdf' },
       'Ana',

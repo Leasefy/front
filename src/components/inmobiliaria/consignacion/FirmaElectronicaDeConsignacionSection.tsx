@@ -10,6 +10,7 @@
  * en C2 — la sección entera se oculta, nunca un error en pantalla.
  */
 
+import { TarjetaDeLaFicha } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FileText, PaperPlaneTilt, Prohibit, UploadSimple, WarningCircle } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
@@ -79,14 +80,13 @@ export function FirmaElectronicaDeConsignacionSection({
   if (noDisponible) return null;
 
   return (
-    <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden" data-testid="firma-electronica-consignacion">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-border-faint dark:border-border-strong">
-        <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
-          <FileText className="w-4 h-4" />
-        </div>
-        <h3 className="font-semibold text-fg">Firma electrónica del contrato de consignación</h3>
-      </div>
-      <div className="p-5">
+    // 21-10 (revisión de la ficha): la misma tarjeta de las demás secciones.
+    <TarjetaDeLaFicha
+      title="Firma electrónica del contrato de consignación"
+      icon={<FileText className="h-4 w-4" />}
+      data-testid="firma-electronica-consignacion"
+    >
+      <div>
         {cargando ? (
           <div className="flex items-center justify-center py-8">
             <Spinner size="sm" variant="muted" />
@@ -102,7 +102,7 @@ export function FirmaElectronicaDeConsignacionSection({
           />
         )}
       </div>
-    </div>
+    </TarjetaDeLaFicha>
   );
 }
 
@@ -154,7 +154,7 @@ function ProcesoCerrado({ proceso }: { proceso: ProcesoDeFirmaResponse }) {
           {estado.etiqueta}
         </Badge>
         {proceso.motivoDeCancelacion && (
-          <p className="mt-1 text-xs text-fg-muted">{proceso.motivoDeCancelacion}</p>
+          <p className="mt-1 text-caption text-fg-muted">{proceso.motivoDeCancelacion}</p>
         )}
       </div>
       {proceso.estado === 'FIRMADO' && <DocumentoDelProceso consignacionId={proceso.consignacionId} />}
@@ -395,16 +395,16 @@ function FirmanteRow({
         <p className="text-sm font-medium text-fg truncate">
           {firmante.nombre}
           {firmante.tipo === 'REPRESENTANTE_DE_LA_AGENCIA' && (
-            <span className="ml-1.5 text-xs font-normal text-fg-muted">(representante)</span>
+            <span className="ml-1.5 text-caption font-normal text-fg-muted">(representante)</span>
           )}
         </p>
         {firmante.invitacion === 'SIN_CORREO' && (
-          <p className="flex items-center gap-1 text-xs text-warning">
+          <p className="flex items-center gap-1 text-caption text-warning">
             <WarningCircle className="w-3.5 h-3.5" /> Sin correo registrado
           </p>
         )}
         {firmante.invitacion === 'FALLO' && (
-          <p className="flex items-center gap-1 text-xs text-danger">
+          <p className="flex items-center gap-1 text-caption text-danger">
             <WarningCircle className="w-3.5 h-3.5" /> No se pudo enviar la invitación
           </p>
         )}

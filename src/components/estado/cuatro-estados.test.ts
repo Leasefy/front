@@ -94,6 +94,9 @@ const MIRA_EL_ERROR = /\berror\b|isError/
 const VACIO_SIN_MIRAR_EL_ERROR = [
   'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/[quoteId]/RecomendacionRail.tsx',
   'src/components/inmobiliaria/cobranza/TopScriptsTable.tsx',
+  // Ronda 30 (K8): sólo importa los TIPOS de use-pendientes; los datos y su error llegan por props del
+  // tablero de Cobranza, que ya pinta el fallo. Su único vacío es «nada coincide con la búsqueda».
+  'src/components/inmobiliaria/cobranza/ListaDePendientes.tsx',
 ]
 
 /**

@@ -44,6 +44,7 @@
  * y no sale nada, en silencio.
  */
 
+import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -68,7 +69,10 @@ import {
   Textarea,
   toast,
 } from '@/components/ui'
-import { AnimatedNumber, CrossFade, Eyebrow, Presence, SegmentedControl } from '@leasefy/cadence'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
+import { AnimatedNumber, CrossFade, Presence, SegmentedControl } from '@leasefy/cadence'
 
 import {
   cobranzaSecuenciaApi,
@@ -95,6 +99,8 @@ import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from 
 import { nombreDelMes } from '@/lib/recaudo/meses'
 import { CampoDeMes } from '@/components/ui/campo-de-mes'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 
 const CANALES: { value: CanalDeCobranza; label: string }[] = [
   { value: 'CORREO', label: 'Correo' },
@@ -394,7 +400,10 @@ function PagosRecordatorios() {
   if (cargando) {
     return (
       <CrossFade swapKey="cargando">
-        <div className="p-6 text-sm text-fg-muted lg:p-8">Cargando las condiciones de cobro…</div>
+        {/* C6 (r25): esqueleto, no un texto suelto. */}
+        <div className="space-y-6 p-6 lg:p-8" aria-busy="true" aria-label="Cargando las condiciones de cobro">
+          <EsqueletoTarjetas cantidad={3} />
+        </div>
       </CrossFade>
     )
   }
@@ -402,28 +411,32 @@ function PagosRecordatorios() {
   if (error) {
     return (
       <CrossFade swapKey="fallo">
-      <div className="space-y-4 p-6 lg:p-8">
-        <Aviso tono="warning">{error}</Aviso>
-        <Button hideArrow onClick={() => void cargar()}>
-          Reintentar
-        </Button>
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* Revisora r25 (#2): con su encabezado y el fallo de la casa (antes un
+            aviso suelto y un «Reintentar» azul). */}
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo="Recordatorios"
+          descripcion="Cuándo se le avisa a quien debe y a quién le llega cada aviso."
+        />
+        <FalloDeCarga error={falloDelTexto(error)} queEs="los recordatorios" onReintentar={() => cargar()} />
       </div>
       </CrossFade>
     )
   }
 
+  // El paso 1 está hecho cuando hay condiciones activas y guardadas.
+  const condicionesListas = Boolean(secuencia?.disponible && secuencia?.activa)
+
   return (
     <CrossFade swapKey="condiciones">
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-2">
-        <Eyebrow>Cobranza</Eyebrow>
-        <h1 className="text-h2 text-fg">Recordatorios</h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          Las condiciones con las que esta inmobiliaria cobra, y el disparo desde la cartera. Nada
-          sale solo: el recordatorio y los avisos los manda una persona, después de ver a cuántos le
-          va a llegar.
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo="Recordatorios"
+        descripcion="Cuándo se le avisa a quien debe y a quién le llega cada aviso, antes de mandarlo."
+        data-testid="recordatorios-encabezado"
+      />
 
       {secuencia && !secuencia.disponible && (
         <Aviso tono="warning">{secuencia.motivo}</Aviso>
@@ -433,18 +446,37 @@ function PagosRecordatorios() {
       <Card>
         <CardContent className="space-y-6 p-5 lg:p-6">
           <div className="space-y-1">
-            <Eyebrow>Condiciones de cobro</Eyebrow>
-            <h2 className="text-base font-semibold text-fg">El reglaje</h2>
-            <p className="max-w-2xl text-sm text-fg-muted">
+            {/* Revisora r27 (Recordatorios, UI): un rótulo por bloque (antes sobretítulo «1 · Condiciones de
+                cobro» y título «Cuándo se avisa» para lo mismo); el número del paso queda junto al título. */}
+            <h2 className="text-body font-medium text-fg"><span className="mr-2 font-mono text-caption tabular-nums text-fg-subtle" aria-hidden="true">1</span>Cuándo se avisa</h2>
+            <p className="max-w-2xl text-body-sm text-fg-muted">
               Un recordatorio al inicio del mes y, si no pagan, avisos con el interés ya generado,
               separados por los días que definas.
             </p>
           </div>
 
+          {/* Con las condiciones ya definidas, el paso 1 queda hecho: se ve en
+              una línea y el formulario se pliega (sólo el paso actual abierto). */}
+          {condicionesListas ? (
+            <p className="text-body-sm text-fg" data-testid="recordatorios-resumen">
+              Recordatorio el día{' '}
+              <span className="font-mono">{secuencia?.diaDelRecordatorio}</span> · avisos cada{' '}
+              <span className="font-mono">{secuencia?.diasEntreAvisos}</span> días · hasta{' '}
+              <span className="font-mono">{secuencia?.maxAvisosConInteres}</span> con interés · por{' '}
+              {CANALES.find((c) => c.value === secuencia?.canalPreferido)?.label ?? 'correo'}
+            </p>
+          ) : null}
+          <MasDetalles
+            etiqueta="Cambiar las condiciones"
+            etiquetaAbierto="Ocultar las condiciones"
+            abiertoAlInicio={!condicionesListas}
+            montadoSiempre
+            classNameDelContenido="space-y-6"
+          >
           <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-card px-4 py-3.5">
             <div className="min-w-0 space-y-0.5">
               <p className="text-sm font-medium text-fg">Secuencia activa</p>
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Significa que las condiciones ya están definidas y finanzas puede disparar la
                 secuencia. <span className="font-medium text-fg">No envía nada por su cuenta.</span>
               </p>
@@ -560,18 +592,19 @@ function PagosRecordatorios() {
           </div>
 
           <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               El interés lo calcula el motor de mora con tus{' '}
               <Link
                 href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora"
-                className="font-medium text-primary underline-offset-4 hover:underline"
+                className="font-medium text-fg underline underline-offset-2"
               >
                 reglas de mora
               </Link>
-              . Acá se define cuándo se avisa, no cuánto se cobra.
+              . Aquí se define cuándo se avisa, no cuánto se cobra.
             </p>
             <Button
               hideArrow
+              variant="secondary"
               onClick={() => void guardar()}
               disabled={!hayCambios || guardando || !secuencia?.disponible}
               className="shrink-0"
@@ -579,6 +612,7 @@ function PagosRecordatorios() {
               {guardando ? 'Guardando…' : 'Guardar condiciones'}
             </Button>
           </div>
+          </MasDetalles>
         </CardContent>
       </Card>
 
@@ -587,8 +621,7 @@ function PagosRecordatorios() {
         <CardContent className="space-y-5 p-5 lg:p-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="space-y-1">
-              <Eyebrow>Así queda tu secuencia</Eyebrow>
-              <h2 className="text-base font-semibold text-fg">Qué va a pasar y cuándo</h2>
+              <h2 className="text-body font-medium text-fg"><span className="mr-2 font-mono text-caption tabular-nums text-fg-subtle" aria-hidden="true">2</span>Qué va a pasar y cuándo</h2>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="mes">Mes que se cobra</Label>
@@ -609,7 +642,7 @@ function PagosRecordatorios() {
           <Presence show={hayCambios} initial={false}>
             <Aviso tono="info">
               Estás viendo el calendario de las condiciones <strong>guardadas</strong>. Guarda los
-              cambios para verlos reflejados acá.
+              cambios para verlos reflejados aquí.
             </Aviso>
           </Presence>
 
@@ -623,11 +656,11 @@ function PagosRecordatorios() {
                   {p.conInteres ? (
                     <CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-warning" weight="duotone" aria-hidden="true" />
                   ) : (
-                    <BellRinging className="mt-0.5 h-5 w-5 shrink-0 text-primary" weight="duotone" aria-hidden="true" />
+                    <BellRinging className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" weight="duotone" aria-hidden="true" />
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-fg">{p.titulo}</p>
-                    <p className="text-xs text-fg-muted">
+                    <p className="text-caption text-fg-muted">
                       {fechaLegible(p.fecha)}
                       {p.conInteres
                         ? ' · con el interés ya generado'
@@ -649,8 +682,7 @@ function PagosRecordatorios() {
       <Card>
         <CardContent className="space-y-5 p-5 lg:p-6">
           <div className="space-y-1">
-            <Eyebrow>Disparo desde la cartera</Eyebrow>
-            <h2 className="text-base font-semibold text-fg">
+            <h2 className="text-body font-medium text-fg"><span className="mr-2 font-mono text-caption tabular-nums text-fg-subtle" aria-hidden="true">3</span>
               A quién le va a llegar el aviso de {nombreDelMes(mes)}
             </h2>
             <p className="max-w-2xl text-sm text-fg-muted">
@@ -662,23 +694,27 @@ function PagosRecordatorios() {
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="paso">Paso</Label>
-              <select
-                id="paso"
-                value={paso === null ? '' : String(paso)}
-                onChange={(e) => {
-                  setPaso(e.target.value === '' ? null : Number(e.target.value))
+              {/* Revisora r25 (UI): el Select de la casa, no un <select> nativo. */}
+              <Select
+                value={paso === null ? 'hoy' : String(paso)}
+                onValueChange={(v) => {
+                  setPaso(v === 'hoy' ? null : Number(v))
                   setPrevia(null)
                   setSeleccion(null)
                 }}
-                className="h-10 rounded-md border border-border bg-card px-3 text-sm text-fg"
               >
-                <option value="">El que toque hoy</option>
-                {(calendario?.pasos ?? []).map((p) => (
-                  <option key={p.paso} value={p.paso}>
-                    {p.titulo}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="paso" className="h-10 w-auto min-w-[12rem]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hoy">El que toque hoy</SelectItem>
+                  {(calendario?.pasos ?? []).map((p) => (
+                    <SelectItem key={p.paso} value={String(p.paso)}>
+                      {p.titulo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Canal</Label>
@@ -717,7 +753,7 @@ function PagosRecordatorios() {
                     <AnimatedNumber value={previa.revisados} format={(n) => String(Math.round(n))} />
                   </strong>{' '}
                   cuotas de {nombreDelMes(previa.mes)}, le va a llegar a{' '}
-                  <strong className="text-primary">
+                  <strong className="font-mono font-medium text-fg">
                     <AnimatedNumber value={previa.lesLlega} format={(n) => String(Math.round(n))} />
                   </strong>{' '}
                   por{' '}
@@ -730,13 +766,13 @@ function PagosRecordatorios() {
                   es CARTERA. Sin esta línea, quien ve pasar la lista de 40 a 6
                   concluye que el sistema está roto.
                 */}
-                <p className="mt-1 text-xs text-fg-muted" data-testid="exige-cartera">
+                <p className="mt-1 text-caption text-fg-muted" data-testid="exige-cartera">
                   {previa.exigeCartera
                     ? 'Este paso lleva el interés generado: sólo entra quien ya pasó los días de plazo de su contrato. Deber y estar en cartera no son lo mismo.'
                     : 'Este paso es el recordatorio: entra quien deba el mes, aunque todavía esté dentro de su plazo. Todavía no hay interés que cobrar.'}
                 </p>
                 {excluidos.length > 0 && (
-                  <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
+                  <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-fg-muted">
                     {excluidos.map((e) => (
                       <li key={e.motivo} data-testid={`excluidos-${e.motivo}`}>
                         {e.etiqueta}: <strong className="text-fg">{e.cuantos}</strong>
@@ -751,7 +787,7 @@ function PagosRecordatorios() {
                 */}
                 {(previa.excluidos.PLAZO_SIN_FIJAR ?? 0) > 0 && (
                   <div
-                    className="mt-3 flex items-start gap-2 rounded-lg bg-warning-soft p-3 text-xs text-warning ring-1 ring-warning/30"
+                    className="mt-3 flex items-start gap-2 rounded-lg bg-warning-soft p-3 text-caption text-warning ring-1 ring-warning/30"
                     data-testid="aviso-plazo-sin-fijar"
                   >
                     <Warning className="mt-0.5 h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
@@ -770,7 +806,7 @@ function PagosRecordatorios() {
                   eso es una lista en la que nadie confía. */}
               <div className="max-h-96 overflow-auto rounded-lg border border-border">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-surface-muted text-left text-xs uppercase tracking-wide text-fg-muted">
+                  <thead className="sticky top-0 bg-surface-muted text-left text-caption uppercase tracking-wide text-fg-muted">
                     <tr>
                       <th className="w-10 px-3 py-2 font-medium">
                         <span className="sr-only">Enviar</span>
@@ -806,7 +842,7 @@ function PagosRecordatorios() {
                           {d.nombre}
                           {/* Deuda y cartera se distinguen en la fila, no sólo
                               en el conteo de arriba. */}
-                          <span className="ml-2 text-xs text-fg-muted">
+                          <span className="ml-2 text-caption text-fg-muted">
                             {d.esCartera
                               ? `cartera · ${d.diasDeMora} ${d.diasDeMora === 1 ? 'día' : 'días'} de mora`
                               : d.motivo === 'PLAZO_SIN_FIJAR'
@@ -820,7 +856,7 @@ function PagosRecordatorios() {
                         </td>
                         <td className="px-3 py-2">
                           {d.leLlega ? (
-                            <span className="inline-flex items-center gap-1.5 text-primary">
+                            <span className="inline-flex items-center gap-1.5 text-fg">
                               {previa.canal === 'CORREO' ? (
                                 <EnvelopeSimple className="h-4 w-4" weight="duotone" aria-hidden="true" />
                               ) : (
@@ -839,7 +875,7 @@ function PagosRecordatorios() {
               </div>
 
               <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   Se manda una sola vez por paso y canal. La Ley 2300 permite un contacto al día por
                   persona: quien tenga varios inmuebles recibe un aviso, no uno por contrato.
                 </p>

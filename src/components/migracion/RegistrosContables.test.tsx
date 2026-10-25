@@ -254,7 +254,7 @@ describe('una carga de asientos a medias', () => {
     expect(q('doble-migrar-asientos')?.getAttribute('data-continuar')).toBe('');
   });
 
-  it('descartar desde acá llama al back sin abrir el libro diario', async () => {
+  it('descartar desde aquí llama al back sin abrir el libro diario', async () => {
     api.migracion.cargas.mockResolvedValue([CARGA]);
     await pintar();
 

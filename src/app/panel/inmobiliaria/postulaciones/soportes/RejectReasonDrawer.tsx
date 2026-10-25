@@ -58,9 +58,7 @@ export function RejectReasonDrawer({
       <SheetContent side="right" size="sm" aria-describedby={undefined}>
         <SheetHeader
           leading={
-            <div className="w-9 h-9 rounded-md bg-danger-soft flex items-center justify-center flex-shrink-0">
-              <WarningCircle className="w-5 h-5 text-danger" />
-            </div>
+            <WarningCircle className="w-5 h-5 text-danger shrink-0" aria-hidden="true" />
           }
           title="Rechazar documento"
           description={documentName ? <span className="block truncate">{documentName}</span> : undefined}
@@ -88,6 +86,13 @@ export function RejectReasonDrawer({
             aria-describedby={error ? 'reject-reason-error' : undefined}
           />
           <ErrorDelCampo id="reject-reason-error" mensaje={error} className="mt-0" />
+          {/* Ronda 30: el botón apagado dice qué falta; y cuánto queda del tope. */}
+          <p className="flex justify-between gap-3 text-caption text-fg-muted">
+            <span>{trimmed.length === 0 && !error ? 'Escribe el motivo para poder rechazar.' : ''}</span>
+            <span className="font-mono tabular-nums">
+              {reason.length} / {MAX_LARGO_DEL_MOTIVO_DE_RECHAZO}
+            </span>
+          </p>
         </SheetBody>
 
         <SheetFooter>

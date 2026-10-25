@@ -27,6 +27,6 @@ export function avisoDeReemplazo(cantidad: number): string {
  */
 export function alcanceDeLasIncompletas(cantidad: number): string {
   return cantidad === 1
-    ? 'Sólo cambia la fila si únicamente le falta el documento o su tipo; si no, sigue acá.'
-    : 'Sólo cambia las filas a las que únicamente les falta el documento o su tipo; las demás siguen acá.';
+    ? 'Sólo cambia la fila si únicamente le falta el documento o su tipo; si no, sigue aquí.'
+    : 'Sólo cambia las filas a las que únicamente les falta el documento o su tipo; las demás siguen aquí.';
 }

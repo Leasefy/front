@@ -15,8 +15,10 @@
  * ícono de dominio por fila (mensaje, propuesta, oferta, aviso); el mensaje
  * que saldría en un pozo, tal cual. La llave de envío apagada se dice UNA vez
  * arriba: antes cada mensaje listo repetía la misma frase del micro debajo.
+ * 22-10-2026 · glow up: el encabezado común; el ícono de cada fila suelto; las acciones de la fila en
+ * borde (un solo azul en la pantalla); «tu decisión» en vez de «tu clic».
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { Icon } from '@phosphor-icons/react'
 import {
@@ -26,11 +28,15 @@ import {
   EnvelopeSimple,
   Lightbulb,
   ListChecks,
+  MagnifyingGlass,
   WarningCircle,
 } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -128,6 +134,7 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
         <Button
           type="button"
           size="sm"
+          variant="outline"
           hideArrow
           isLoading={ocupado === 'hacer'}
           onClick={() => void correr('hacer', () => hacerlo(agency!.id, d.id), (r) => (r as { mensaje: string }).mensaje)}
@@ -148,6 +155,7 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
           <Button
             type="button"
             size="sm"
+            variant="outline"
             hideArrow
             isLoading={ocupado === 'hacer'}
             onClick={() => void correr('hacer', () => hacerlo(agency!.id, d.id), (r) => (r as { mensaje: string }).mensaje)}
@@ -181,6 +189,7 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
         <Button
           type="button"
           size="sm"
+          variant="outline"
           hideArrow
           isLoading={ocupado === 'aprobar'}
           onClick={() =>
@@ -217,18 +226,17 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
   const causa = porQue(d)
   return (
     <li className="flex gap-4 px-5 py-5" data-testid="vinci-por-aprobar">
-      <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-muted sm:flex">
-        <Icono className="h-[18px] w-[18px] text-fg-muted" weight="duotone" aria-hidden="true" />
-      </div>
+      {/* Glow up 22-10: el ícono suelto, sin su pozo de color. */}
+      <Icono className="mt-0.5 hidden h-[18px] w-[18px] shrink-0 text-fg-subtle sm:block" aria-hidden="true" />
       <div className="min-w-0 flex-1 space-y-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg">{titulo}</p>
+            <p className="text-sm font-medium text-fg">{titulo}</p>
             {subtitulo ? <p className="mt-0.5 text-sm text-fg-muted">{subtitulo}</p> : null}
             <p className="mt-0.5 text-caption text-fg-muted">
-              {fechaYHora(d.createdAt)}
+              <span className="font-mono">{fechaYHora(d.createdAt)}</span>
               {' · '}
-              <Link href={casoDeRetencion(d.caseId)} className="text-primary hover:underline">
+              <Link href={casoDeRetencion(d.caseId)} className="text-fg underline underline-offset-2 hover:no-underline">
                 ver el caso
               </Link>
             </p>
@@ -251,11 +259,25 @@ export default function RevisionesClient() {
   const data = cola?.decisiones
   const envioApagado = cola?.envioHabilitado === false
   const n = data?.length ?? 0
+  /*
+   * Ronda 30 (revisora r27, regla de Nico: toda tabla con buscador y paginación): hasta 100 decisiones iban
+   * todas seguidas. Se busca por el nombre de la persona y se pagina con el pie de la casa.
+   */
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const plano = (v?: string | null) =>
+      (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const q = plano(busqueda.trim())
+    return q ? (data ?? []).filter((d) => plano(nombreDe(d)).includes(q)) : (data ?? [])
+  }, [data, busqueda])
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(visibles, {
+    resetKey: busqueda,
+  })
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <CabeceraDeVinci
         titulo="Por aprobar"
-        descripcion="Lo que Vinci dejó esperando tu clic: propuestas, mensajes listos, ofertas que cuestan plata y mensajes que no salieron."
+        descripcion="Lo que Vinci dejó esperando tu decisión: propuestas, mensajes listos, ofertas que cuestan plata y mensajes que no salieron."
       />
       {/* 🔴 IA-C-01 (QA 04-10): apagada no hay decisiones que mostrar, ni se pinta el texto del micro. */}
       {esRetencionApagada(error) ? (
@@ -273,8 +295,8 @@ export default function RevisionesClient() {
             <SinDatos
               queSon="decisiones por aprobar"
               icono={CheckCircle}
-              titulo="Nada esperando tu clic"
-              descripcion="Cuando Vinci deje un mensaje listo, una propuesta o una oferta que cueste plata, aparece acá."
+              titulo="Nada esperando tu decisión"
+              descripcion="Cuando Vinci deje un mensaje listo, una propuesta o una oferta que cueste plata, aparece aquí."
             />
           </div>
         }
@@ -291,16 +313,47 @@ export default function RevisionesClient() {
           ) : null}
           <TarjetaDeVinci
             id="vinci-cola"
-            icono={ListChecks}
-            titulo="Esperando tu clic"
+            titulo="Esperan tu decisión"
             descripcion={`${n} ${n === 1 ? 'decisión' : 'decisiones'} de Vinci.`}
             cuerpo={false}
           >
-            <ul className="divide-y divide-border-faint">
-              {(data ?? []).map((d) => (
-                <Fila key={d.id} d={d} envioApagado={envioApagado} onListo={refetch} />
-              ))}
-            </ul>
+            {n > 1 ? (
+              <div className="border-b border-border-faint px-5 py-3">
+                <div className="relative w-full sm:max-w-sm">
+                  <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+                  <Input
+                    type="search"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Buscar por nombre"
+                    aria-label="Buscar una decisión por el nombre de la persona"
+                    className="h-9 pl-9"
+                    data-testid="vinci-cola-buscar"
+                  />
+                </div>
+              </div>
+            ) : null}
+            {visibles.length === 0 ? (
+              <SinDatos queSon="decisiones" hayFiltros onLimpiarFiltros={() => setBusqueda('')} />
+            ) : (
+              <ul className="divide-y divide-border-faint">
+                {pageItems.map((d) => (
+                  <Fila key={d.id} d={d} envioApagado={envioApagado} onListo={refetch} />
+                ))}
+              </ul>
+            )}
+            {shouldPaginate && total > 0 ? (
+              <div className="border-t border-border-faint px-4 py-3">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            ) : null}
           </TarjetaDeVinci>
         </div>
       </EstadoDeDatos>

@@ -130,7 +130,7 @@ export function StepIncome() {
         label="Ingresos adicionales"
         htmlFor="additionalIncome"
         error={getError('additionalIncome')}
-        hint="Arriendos, inversiones, trabajo freelance, etc."
+        hint="Arriendos, inversiones, trabajos independientes…"
       >
         <CurrencyInput
           id="additionalIncome"
@@ -153,7 +153,7 @@ export function StepIncome() {
         >
           <LightInput
             id="additionalIncomeSource"
-            placeholder="Ej: Arriendo de propiedad, trabajo freelance"
+            placeholder="Ej.: arriendo de un inmueble, trabajo independiente"
             value={income.additionalIncomeSource || ''}
             onChange={(e) => handleSourceChange(e.target.value)}
             onBlur={() => handleBlur('additionalIncomeSource')}

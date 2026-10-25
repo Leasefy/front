@@ -1,7 +1,6 @@
 'use client'
 
 import { Controller, useForm, type FieldPath } from 'react-hook-form'
-import { ArrowRight } from '@phosphor-icons/react'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -166,12 +165,11 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            Guardando...
+            Guardando…
           </>
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" />
           </>
         )}
       </Button>

@@ -39,7 +39,7 @@ export function WizardStep2Propiedad({
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-semibold text-fg">
+      <h2 className="text-base font-medium text-fg">
         {t('inmobiliaria.ai.cotizador.nueva.step2.heading')}
       </h2>
 
@@ -96,7 +96,7 @@ export function WizardStep2Propiedad({
           >
             <Minus size={16} />
           </Button>
-          <span className="min-w-[2rem] text-center text-base font-semibold text-fg tabular-nums">
+          <span className="min-w-[2rem] text-center text-base font-medium text-fg tabular-nums">
             {value.codeudoresCount}
           </span>
           <Button
@@ -109,7 +109,7 @@ export function WizardStep2Propiedad({
           >
             <Plus size={16} />
           </Button>
-          <span className="text-xs text-fg-muted">
+          <span className="text-caption text-fg-muted">
             {t('inmobiliaria.ai.cotizador.nueva.step2.codeudoresHint')}
           </span>
         </div>

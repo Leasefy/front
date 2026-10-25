@@ -29,8 +29,9 @@ function NotificacionesDelInquilino() {
       id: 'push',
       claves: ['pushAll'],
       icono: DeviceMobile,
-      titulo: es ? 'Notificaciones push' : 'Push notifications',
-      descripcion: es ? 'Avisos en tu dispositivo' : 'Alerts on your device',
+      // «push» es jerga (revisora r25, R2): lo que la persona ve es un aviso en su celular.
+      titulo: es ? 'Avisos en el celular' : 'Phone alerts',
+      descripcion: es ? 'En tu celular, aunque no tengas Leasefy abierto' : 'On your phone, even when Leasefy is closed',
     },
     {
       id: 'pagos',

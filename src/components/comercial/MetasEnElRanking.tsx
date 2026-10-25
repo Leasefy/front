@@ -47,7 +47,7 @@ export function MetasEnElRanking() {
     <Appear>
       <section className="rounded-lg border border-border bg-surface p-4 space-y-3" data-testid="metas-en-el-ranking">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <h3 className="flex items-center gap-2 text-sm font-medium">
             <Target className="w-4 h-4 text-primary" aria-hidden="true" />
             Metas de {nombreDelMes(datos.mes).toLowerCase()}
           </h3>

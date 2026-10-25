@@ -54,7 +54,7 @@ export function HistorialDeVersiones({ versiones }: { versiones: VersionDelInven
                     {t(v.estado === 'COMPLETO' ? `${B}.estadoCompleto` : `${B}.estadoBorrador`)}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   {v.estado === 'COMPLETO'
                     ? t(`${B}.completadaEl`, { fecha: instanteLegible(v.completadoEn) })
                     : t(`${B}.editadaEl`, { fecha: instanteLegible(v.updatedAt) })}

@@ -134,7 +134,8 @@ describe('E-15 · un fallo no se ve como «no hay pendientes»', () => {
     pendientes.mockRejectedValueOnce(new ApiError(500, 'x', 'ERROR_INTERNO'));
     pendientes.mockResolvedValueOnce({ total: 3, personas: [persona(1)] });
     await montar();
-    expect(porTestId('invitaciones-sin-leer')!.textContent).toContain('No pudimos revisar');
+    // Ronda 30 (a propósito): sin primera persona («No se pudo revisar», antes «No pudimos revisar»).
+    expect(porTestId('invitaciones-sin-leer')!.textContent).toContain('No se pudo revisar');
     await clic(boton('Reintentar')!);
     expect(porTestId('invitaciones-pendientes')).not.toBeNull();
   });

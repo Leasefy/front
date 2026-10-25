@@ -118,7 +118,7 @@ function GoogleIcon({ className }: { className?: string }) {
  */
 function NotaLegal() {
   return (
-    <p className="mt-4 text-[11.5px] leading-relaxed text-fg-subtle" data-testid="auth-nota-legal">
+    <p className="mt-4 text-[13px] leading-relaxed text-fg-subtle" data-testid="auth-nota-legal">
       Al continuar, aceptas nuestros{' '}
       <Link href="/terminos" className="text-fg-muted underline-offset-2 hover:text-fg hover:underline">
         Términos
@@ -152,7 +152,7 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.05)] transition-[transform,box-shadow,border-color] duration-fast ease-standard hover:-translate-y-px hover:border-border-strong hover:shadow-[0_6px_16px_-8px_rgba(20,19,15,0.25)] active:translate-y-0 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg transition-[transform,border-color] duration-fast ease-standard hover:border-border-strong active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isLoading ? (
         <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
@@ -199,7 +199,7 @@ function AvisoBanner({ mensaje, confirmacion = false }: { mensaje: string | null
           ? 'px-3.5 py-2.5 rounded-lg bg-success-soft border border-success/30'
           : 'px-3.5 py-2.5 rounded-lg bg-warning-soft border border-warning/30'}
       >
-        <p className={confirmacion ? 'text-[12.5px] text-success' : 'text-[12.5px] text-warning'}>{texto}</p>
+        <p className={confirmacion ? 'text-[13px] text-success' : 'text-[13px] text-warning'}>{texto}</p>
       </div>
     </Presence>
   );
@@ -211,7 +211,7 @@ function ErrorBanner({ mensaje }: { mensaje: string | null }) {
   return (
     <Presence show={Boolean(mensaje)} initial={false}>
       <div className="px-3.5 py-2.5 rounded-lg bg-danger-soft border border-danger/30">
-        <p className="text-[12.5px] text-danger">{texto}</p>
+        <p className="text-[13px] text-danger">{texto}</p>
       </div>
     </Presence>
   );
@@ -257,7 +257,7 @@ function SugerenciaDeCorreo({
   // no puede saltar al ritmo del teclado.
   return (
     <Presence show={visible} distance="xs" initial={false}>
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]" data-testid="sugerencia-de-correo">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]" data-testid="sugerencia-de-correo">
       <button type="button" onClick={() => onUsar(sugerencia)} className="text-fg-muted transition-colors hover:text-fg">
         ¿Quisiste decir <span className="font-medium text-[#1A40FF]">{sugerencia}</span>?
       </button>
@@ -356,7 +356,7 @@ function ReenvioDeConfirmacion({
     <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
       {/* «¿No te llegó?» → «Listo, te lo reenviamos» (o el tope): se cruzan,
           no se reemplazan de golpe. La cuenta regresiva del botón NO entra
-          acá: cambia cada segundo y no es un cambio de estado. */}
+          aquí: cambia cada segundo y no es un cambio de estado. */}
       <CrossFade
         swapKey={reenvio.agotado ? 'agotado' : reenvio.estado === 'enviado' ? 'enviado' : 'ofrecer'}
       >
@@ -407,7 +407,7 @@ function ReenvioDeConfirmacion({
 }
 
 /** Lo que dice el login cuando el error no se reconoce (nunca el inglés de Supabase). */
-const POR_DEFECTO_AL_ENTRAR = 'Error al iniciar sesión. Intenta de nuevo.';
+const POR_DEFECTO_AL_ENTRAR = 'No pudimos iniciar tu sesión. Vuelve a intentarlo.';
 
 /**
  * Los errores de Supabase al crear la cuenta que son de UN campo: van debajo
@@ -1193,7 +1193,7 @@ export function AuthForm({
             initial={{ scale: motionScale.pop, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={motionSpring.bouncy}
-            className="w-10 h-10 mb-5 rounded-xl bg-success-soft flex items-center justify-center"
+            className="w-10 h-10 mb-5 rounded-lg bg-success-soft flex items-center justify-center"
           >
             <CheckCircle className="w-5 h-5 text-success" weight="fill" />
           </motion.div>
@@ -1204,7 +1204,8 @@ export function AuthForm({
         {/* Sin eyebrow («● ACCESO»): el título ya dice qué es (Nico, 2026-09-03). */}
         <h1
           className={cn(
-            'font-heading font-medium leading-[1.1] tracking-[-0.03em] text-fg',
+            // Títulos livianos, como los de la landing (glow up del acceso, Nico 24-10): peso 420, nunca negrilla.
+            'font-heading font-[420] leading-[1.1] tracking-[-0.03em] text-fg',
             variante === 'ventana' ? 'text-[26px] sm:text-[28px]' : 'text-[30px]',
           )}
         >
@@ -1245,7 +1246,7 @@ export function AuthForm({
               <fieldset disabled={isLoading} className="min-w-0 space-y-4">
                 <div className="space-y-1.5">
                   <AuthInput
-                    label="Email"
+                    label="Correo"
                     type="email"
                     placeholder="tu@email.com"
                     {...correoDeLogin}
@@ -1278,7 +1279,7 @@ export function AuthForm({
                     <button
                       type="button"
                       onClick={() => handleModeSwitch('forgot-password')}
-                      className="text-[12.5px] text-fg-subtle hover:text-fg transition-colors"
+                      className="text-[13px] text-fg-subtle hover:text-fg transition-colors [@media(pointer:coarse)]:min-h-11"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>
@@ -1306,7 +1307,7 @@ export function AuthForm({
                 <Button
                   type="submit"
                   disabled={isLoading || !hidratado}
-                  className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
+                  className="h-12 w-full rounded-full text-[14px] active:scale-[0.995]"
                 >
                   {isLoading ? (
                     <>
@@ -1350,7 +1351,7 @@ export function AuthForm({
               <fieldset disabled={isLoading} className="min-w-0 space-y-4">
                 <div className="space-y-1.5">
                   <AuthInput
-                    label="Email"
+                    label="Correo"
                     type="email"
                     placeholder="tu@email.com"
                     {...correoDeRegistro}
@@ -1415,7 +1416,7 @@ export function AuthForm({
                     </button>
                   </p>
                 )}
-                <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
+                <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] active:scale-[0.995]">
                   {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : (textos?.registroBoton ?? 'Crear cuenta')}
                 </Button>
               </fieldset>
@@ -1479,7 +1480,7 @@ export function AuthForm({
                 )}
               </Button>
             </form>
-            <p className="text-[12.5px] leading-relaxed text-fg-subtle">
+            <p className="text-[13px] leading-relaxed text-fg-subtle">
               También puedes tocar el botón «Confirmar mi correo» del mismo correo. Si no lo ves, revisa spam.
             </p>
             {webmail && (
@@ -1507,7 +1508,7 @@ export function AuthForm({
         {mode === 'register' && registerStep === 'confirm-email' && !conCodigo && (
           <div className="space-y-5">
             {/*
-              Acá había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar
+              Aquí había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar
               sesión» (Nico, 2026-09-07: «¿para qué, si debe ir al correo?»).
               Estaba mal: el enlace del correo vuelve por /auth/callback ya
               con la sesión abierta, así que el paso 3 no existe, y el botón
@@ -1521,9 +1522,9 @@ export function AuthForm({
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
               </span>
-              <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
+              <ol className="text-[13px] text-fg-muted space-y-1.5 list-decimal list-inside">
                 <li>Abre el correo que te enviamos (revisa también spam)</li>
-                <li>Toca el enlace de confirmación: te trae de vuelta acá con la sesión ya abierta</li>
+                <li>Toca el enlace de confirmación: te trae de vuelta aquí con la sesión ya abierta</li>
               </ol>
             </div>
             {webmail && (
@@ -1561,7 +1562,7 @@ export function AuthForm({
             <fieldset disabled={isLoading} className="min-w-0 space-y-4">
               <div className="space-y-1.5">
                 <AuthInput
-                  label="Email"
+                  label="Correo"
                   type="email"
                   placeholder="tu@email.com"
                   {...correoDeRecuperacion}
@@ -1582,9 +1583,9 @@ export function AuthForm({
               <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
               <ErrorBanner mensaje={error} />
               <Button type="submit" disabled={isLoading || !hidratado} className="w-full h-11 rounded-full text-[14px]">
-                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
+                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando…</>) : 'Enviar enlace de recuperación'}
               </Button>
-              <p className="text-[12px] text-fg-subtle leading-relaxed">
+              <p className="text-[13px] text-fg-subtle leading-relaxed">
                 Ingresa el email asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.
               </p>
             </fieldset>
@@ -1598,7 +1599,7 @@ export function AuthForm({
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
               </span>
-              <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
+              <ol className="text-[13px] text-fg-muted space-y-1.5 list-decimal list-inside">
                 <li>Abre el correo que te enviamos (revisa también spam)</li>
                 <li>Toca el enlace del correo</li>
                 <li>Crea tu nueva contraseña</li>

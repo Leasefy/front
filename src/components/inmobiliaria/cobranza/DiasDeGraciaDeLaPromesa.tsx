@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react'
 import { Handshake } from '@phosphor-icons/react'
 import { Presence } from '@leasefy/cadence'
 
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -76,14 +77,21 @@ export function DiasDeGraciaDeLaPromesa({ puedeCambiar }: { puedeCambiar: boolea
       aria-labelledby="heading-promesas"
     >
       <div>
-        <h2 id="heading-promesas" className="text-xl font-semibold text-foreground">
+        <h2 id="heading-promesas" className="text-lg font-normal text-foreground">
           Promesas de pago
         </h2>
+        {/* Revisora r25: una línea; el cómo se marca, plegado. */}
         <p className="text-sm text-fg-muted mt-1 max-w-2xl">
-          Cada mañana revisamos las promesas vencidas contra los pagos que entraron (consignación, pasarela o
-          caja). Si pagaron el monto prometido a tiempo, la promesa queda cumplida; si no, o si pagaron sólo una
-          parte, queda incumplida y se sigue cobrando lo que falta. Sólo se marca: no se manda nada a nadie.
+          Cada mañana revisamos las promesas vencidas contra los pagos que entraron. Sólo se marca: no se manda nada
+          a nadie.
         </p>
+        <MasDetalles etiqueta="Cómo se marca cada promesa" etiquetaAbierto="Ocultar" className="mt-2">
+          <p className="text-sm text-fg-muted max-w-2xl">
+            Se cruzan con los pagos por consignación, pasarela o caja. Si pagaron el monto prometido a tiempo, la
+            promesa queda cumplida; si no, o si pagaron sólo una parte, queda incumplida y se sigue cobrando lo que
+            falta.
+          </p>
+        </MasDetalles>
       </div>
       <div className="border-t border-border-faint" />
 

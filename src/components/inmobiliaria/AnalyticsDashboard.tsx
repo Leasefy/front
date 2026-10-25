@@ -57,8 +57,8 @@ const SECTION_ICONS: Record<AdvancedKPI['category'], {
   },
   performance: {
     icon: ChartLineUp,
-    color: 'text-fg-muted dark:text-fg-subtle',
-    bgColor: 'bg-surface-muted dark:bg-ink',
+    color: 'text-fg-muted',
+    bgColor: 'bg-surface-muted',
   },
 };
 
@@ -115,14 +115,14 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
       className="p-4 rounded-lg border border-border bg-card transition-colors duration-base hover:border-foreground/15"
     >
       <div className="flex items-start justify-between mb-2">
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">{kpi.label}</p>
+        <p className="text-sm text-fg-muted">{kpi.label}</p>
         {tendencia && TrendIcon && (
           <div
             className={cn(
-              'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium',
+              'flex items-center gap-1 px-1.5 py-0.5 rounded text-caption font-medium',
               isPositiveTrend && 'bg-success-soft text-success',
               isNegativeTrend && 'bg-danger-soft text-danger',
-              !isPositiveTrend && !isNegativeTrend && 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
+              !isPositiveTrend && !isNegativeTrend && 'bg-surface-muted text-fg-muted'
             )}
           >
             <TrendIcon className="w-3 h-3" weight="bold" />
@@ -130,12 +130,12 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
           </div>
         )}
       </div>
-      <p className="text-xl font-bold text-fg dark:text-white mb-2">
+      <p className="text-xl font-medium text-fg mb-2">
         {kpi.formattedValue}
       </p>
       {progress !== null && kpi.targetLabel && (
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center justify-between text-caption">
             <span className="text-fg-subtle flex items-center gap-1">
               <Target className="w-3 h-3" />
               {kpi.targetLabel}
@@ -175,12 +175,12 @@ function KPISection({
     <div className="space-y-3">
       {/* Section Header */}
       <div className="flex items-center gap-3">
-        <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', config.bgColor)}>
+        <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center', config.bgColor)}>
           <Icon className={cn('w-5 h-5', config.color)} weight="duotone" />
         </div>
         <div>
-          <h3 className="font-semibold text-fg dark:text-white">{t(`inmobiliaria.analytics.sections.${category}.title`)}</h3>
-          <p className="text-xs text-fg-muted">{t(`inmobiliaria.analytics.sections.${category}.description`)}</p>
+          <h3 className="font-medium text-fg">{t(`inmobiliaria.analytics.sections.${category}.title`)}</h3>
+          <p className="text-caption text-fg-muted">{t(`inmobiliaria.analytics.sections.${category}.description`)}</p>
         </div>
       </div>
       {/* KPIs Grid */}
@@ -205,8 +205,8 @@ function BarChart({ chart }: { chart: AnalyticsChart }) {
       {chart.labels.map((label, idx) => (
         <div key={label} className="space-y-1">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-fg-muted dark:text-fg-subtle">{label}</span>
-            <span className="font-medium text-fg dark:text-white">
+            <span className="text-fg-muted">{label}</span>
+            <span className="font-medium text-fg">
               {chart.datasets[0].data[idx]}
               {chart.id.includes('ocupacion') ? '%' : ''}
             </span>
@@ -299,7 +299,7 @@ function AreaLineChart({ chart }: { chart: AnalyticsChart }) {
           );
         })}
       </svg>
-      <div className="flex justify-between text-xs text-fg-muted px-5 -mt-2">
+      <div className="flex justify-between text-caption text-fg-muted px-5 -mt-2">
         {chart.labels.map((label) => (
           <span key={label}>{label}</span>
         ))}
@@ -308,7 +308,7 @@ function AreaLineChart({ chart }: { chart: AnalyticsChart }) {
         {chart.datasets.map((dataset) => (
           <div key={dataset.label} className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: dataset.color }} />
-            <span className="text-xs text-fg-muted dark:text-fg-subtle">{dataset.label}</span>
+            <span className="text-caption text-fg-muted">{dataset.label}</span>
           </div>
         ))}
       </div>
@@ -375,10 +375,10 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-2xl font-bold text-fg dark:text-white" data-testid="dona-al-dia">
+            <p className="text-2xl font-medium text-fg" data-testid="dona-al-dia">
               {textoDeTasa(segments[0]?.percentage ?? null, 0)}
             </p>
-            <p className="text-xs text-fg-muted">{t('inmobiliaria.analytics.dashboard.upToDate')}</p>
+            <p className="text-caption text-fg-muted">{t('inmobiliaria.analytics.dashboard.upToDate')}</p>
           </div>
         </div>
       </div>
@@ -386,8 +386,8 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
         {segments.map((segment, idx) => (
           <div key={idx} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: segment.color }} />
-            <span className="flex-1 text-sm text-fg-muted dark:text-fg-subtle">{segment.label}</span>
-            <span className="text-sm font-medium text-fg dark:text-white">
+            <span className="flex-1 text-sm text-fg-muted">{segment.label}</span>
+            <span className="text-sm font-medium text-fg">
               {textoDeTasa(segment.percentage, 0)}
             </span>
           </div>
@@ -408,17 +408,17 @@ function ChartCard({ chart }: { chart: AnalyticsChart }) {
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
-            <ChartIcon className="w-4 h-4 text-fg-muted dark:text-fg-subtle" weight="duotone" />
+          <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
+            <ChartIcon className="w-4 h-4 text-fg-muted" weight="duotone" />
           </div>
           <div>
-            <h3 className="font-semibold text-fg dark:text-white">{chart.title}</h3>
+            <h3 className="font-medium text-fg">{chart.title}</h3>
             {chart.description && (
-              <p className="text-xs text-fg-muted dark:text-fg-subtle">{chart.description}</p>
+              <p className="text-caption text-fg-muted">{chart.description}</p>
             )}
           </div>
         </div>
-        <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle bg-surface-muted dark:bg-ink px-2.5 py-1 rounded-full">
+        <span className="text-caption font-medium text-fg-muted bg-surface-muted px-2.5 py-1 rounded-full">
           {getPeriodLabel(chart.period)}
         </span>
       </div>
@@ -478,12 +478,12 @@ export function AnalyticsDashboard({
       {data.charts && data.charts.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-warning-soft flex items-center justify-center">
+            <div className="w-9 h-9 rounded-lg bg-warning-soft flex items-center justify-center">
               <ChartBar className="w-5 h-5 text-warning" weight="duotone" />
             </div>
             <div>
-              <h3 className="font-semibold text-fg dark:text-white">{t('inmobiliaria.analytics.dashboard.visualizations')}</h3>
-              <p className="text-xs text-fg-muted">{t('inmobiliaria.analytics.dashboard.visualizationsDesc')}</p>
+              <h3 className="font-medium text-fg">{t('inmobiliaria.analytics.dashboard.visualizations')}</h3>
+              <p className="text-caption text-fg-muted">{t('inmobiliaria.analytics.dashboard.visualizationsDesc')}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

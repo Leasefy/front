@@ -36,7 +36,8 @@ function montar(props: Partial<React.ComponentProps<typeof AISearchInput>> = {})
   return base
 }
 
-const campo = () => container.querySelector('input[aria-label="Búsqueda inteligente de propiedades"]') as HTMLInputElement
+// Ronda 30 (a propósito): «inmuebles» (antes «propiedades»).
+const campo = () => container.querySelector('input[aria-label="Búsqueda inteligente de inmuebles"]') as HTMLInputElement
 
 describe('<AISearchInput>', () => {
   it('Enter busca con el texto recortado', () => {

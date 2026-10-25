@@ -9,6 +9,7 @@ import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import type { InmobiliariaDeLaLista } from '@/lib/admin/inmobiliarias-de-la-lista'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { Pill } from '@/components/admin/Pill'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -29,6 +30,8 @@ import {
   type PlanFormValues,
 } from './plan-form-schema'
 import { Alert } from '@leasefy/cadence'
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { Button } from '@/components/ui/button'
 
 // ── Cell helpers ──────────────────────────────────────────────────────────────
@@ -57,6 +60,19 @@ type FormMode =
   | { kind: 'none' }
   | { kind: 'create' }
   | { kind: 'edit'; plan: AdminPlan }
+
+/**
+ * Ronda 28 (revisora r27, bloqueante): la descripción del plan viene de la base y trae jerga («Scoring
+ * premium»). Al mostrarla, en español; el dato se corrige en la base (anotado para Víctor).
+ */
+function descripcionLegible(texto: string): string {
+  return texto
+    .replace(/\bscoring\b/gi, (m) => (m[0] === 'S' ? 'Calificación del inquilino' : 'calificación del inquilino'))
+    .replace(/\bscore\b/gi, (m) => (m[0] === 'S' ? 'Puntaje' : 'puntaje'))
+    .replace(/\bdashboard\b/gi, (m) => (m[0] === 'D' ? 'Tablero' : 'tablero'))
+    .replace(/\bmatching\b/gi, (m) => (m[0] === 'M' ? 'Afinidad' : 'afinidad'))
+    .replace(/\bemail(s?)\b/gi, (m, plural: string) => `${m[0] === 'E' ? 'C' : 'c'}orreo${plural}`)
+}
 
 /**
  * /admin/plans — los planes que puede elegir una inmobiliaria (catálogo AGENCY,
@@ -188,7 +204,14 @@ export default function PlansPage() {
     }
   }
 
-  const columnas: Column<AdminPlan>[] = [
+  // Ronda 28 (revisora r27): la respuesta arriba (cuántas inmobiliarias tienen plan) y, si ninguna tiene
+  // uno, sin la columna «En uso» de «—» en todas las filas (va al Excel siempre).
+  const totalInmobiliarias = inmobiliarias.data?.length ?? 0
+  const conPlan = inmobiliarias.data ? inmobiliarias.data.filter((i) => i.plan).length : 0
+  const enUsoTodoEnCero = Boolean(enUso) && plans.every((p) => !(enUso?.get(p.tier) ?? 0))
+  const hayDesactivados = plans.some((p) => !p.isActive)
+
+  const todasLasColumnas: Column<AdminPlan>[] = [
     {
       header: 'Plan',
       className: 'min-w-[240px]',
@@ -198,14 +221,12 @@ export default function PlansPage() {
         <div className="min-w-0 max-w-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-fg">{p.name}</span>
-            {p.isDefault ? <Pill tone="info">Por defecto</Pill> : null}
+            {p.isDefault ? <Pill tone="neutral">Por defecto</Pill> : null}
             {p.scoringIncluded ? <Pill tone="ok">Con calificación del inquilino</Pill> : null}
           </div>
-          <div className="mt-0.5 text-caption text-fg-subtle">
-            Código <span className="font-mono">{p.tier}</span>
-            {p.level != null ? ` · nivel ${p.level}` : ''}
-          </div>
-          {p.description ? <p className="mt-1 line-clamp-2 text-caption text-fg-muted">{p.description}</p> : null}
+          {/* Ronda 26: el código del plan (en inglés) va sólo al Excel. */}
+          {p.level != null ? <div className="mt-0.5 text-caption text-fg-subtle">Nivel {p.level}</div> : null}
+          {p.description ? <p className="mt-1 line-clamp-2 text-caption text-fg-muted">{descripcionLegible(p.description)}</p> : null}
         </div>
       ),
     },
@@ -213,24 +234,32 @@ export default function PlansPage() {
       header: 'Precio',
       orden: (p) => p.monthlyPrice,
       ordenPrimero: 'desc',
-      texto: (p) => `${precioDelPlan(p)} · ${COBRO[p.billingMode] ?? p.billingMode}`,
+      texto: (p) => `${precioDelPlan(p)} · ${COBRO[p.billingMode] ?? 'Otro cobro'}`,
       cell: (p) => (
         <div>
-          <div className="whitespace-nowrap text-body-sm tabular-nums text-fg">{precioDelPlan(p)}</div>
-          <div className="text-caption text-fg-subtle">{COBRO[p.billingMode] ?? p.billingMode}</div>
+          <div className="whitespace-nowrap font-mono text-body-sm tabular-nums text-fg">{precioDelPlan(p)}</div>
+          <div className="text-caption text-fg-muted">{COBRO[p.billingMode] ?? 'Otro cobro'}</div>
         </div>
       ),
     },
     {
       header: 'Topes',
       cell: (p) => (
-        <dl className="grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5 text-caption">
-          <dt className="text-fg-subtle">Inmuebles</dt>
-          <dd className="tabular-nums text-fg">{tope(p.maxProperties)}</dd>
-          <dt className="text-fg-subtle">Usuarios</dt>
-          <dd className="tabular-nums text-fg">{tope(p.maxUsers)}</dd>
-          <dt className="whitespace-nowrap text-fg-subtle">Evaluaciones al mes</dt>
-          <dd className="tabular-nums text-fg">{tope(p.monthlyEvalCap)}</dd>
+        // Ronda 28 (revisora r27, bloqueante): el tope DEBAJO de su rótulo, en tres columnas que se parten
+        // (a 390 «Evaluaciones al mes Ilimi…» se cortaba en el borde); el valor en gris, sin competir con el precio.
+        <dl className="grid min-w-0 grid-cols-3 gap-x-4 gap-y-1 text-caption">
+          {(
+            [
+              ['Inmuebles', p.maxProperties],
+              ['Usuarios', p.maxUsers],
+              ['Evaluaciones al mes', p.monthlyEvalCap],
+            ] as const
+          ).map(([nombre, valor]) => (
+            <div key={nombre} className="min-w-0">
+              <dt className="text-fg-subtle">{nombre}</dt>
+              <dd className="font-mono tabular-nums text-fg-muted">{tope(valor)}</dd>
+            </div>
+          ))}
         </dl>
       ),
     },
@@ -242,9 +271,11 @@ export default function PlansPage() {
       texto: (p) => enUso?.get(p.tier) ?? 0,
       cell: (p) => {
         const n = enUso?.get(p.tier)
-        return enUso ? (
-          <span className="whitespace-nowrap tabular-nums text-fg">
-            {fmtNumero(n ?? 0)} {n === 1 ? 'inmobiliaria' : 'inmobiliarias'}
+        return enUso && !n ? (
+          <span className="text-fg-subtle">—</span>
+        ) : enUso ? (
+          <span className="whitespace-nowrap text-fg">
+            <span className="font-mono tabular-nums">{fmtNumero(n ?? 0)}</span> {n === 1 ? 'inmobiliaria' : 'inmobiliarias'}
           </span>
         ) : (
           <span className="text-fg-subtle">—</span>
@@ -279,34 +310,65 @@ export default function PlansPage() {
     },
   ]
 
+  const columnas = enUsoTodoEnCero ? todasLasColumnas.filter((c) => c.header !== 'En uso') : todasLasColumnas
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Planes de inmobiliaria"
-        description="Los planes que puede elegir una inmobiliaria. Crea, edita y desactiva; un plan desactivado no se borra y se puede reactivar. El código de un plan no cambia después de crearlo."
-        right={
-          form.kind === 'none' ? (
-            <Button hideArrow onClick={openCreate}>
-              Nuevo plan
-            </Button>
-          ) : undefined
+        description="Los planes que puede elegir una inmobiliaria, con su precio y sus topes."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo funciona" titulo="Los planes" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Crea, edita y desactiva planes. Un plan desactivado no se borra: deja de aparecer al elegir o cambiar de plan y se puede reactivar. Quien ya lo tiene, lo conserva.</p>
+              <p>El código de un plan no cambia después de crearlo. Sólo un plan activo puede ser el plan por defecto.</p>
+            </div>
+          </ParaEntenderMas>
+        }
+        principal={
+          <Button size="sm" hideArrow onClick={openCreate}>
+            Nuevo plan
+          </Button>
         }
       />
 
+      {inmobiliarias.data && totalInmobiliarias > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Inmobiliarias con plan"
+            cifra={`${fmtNumero(conPlan)} de ${fmtNumero(totalInmobiliarias)}`}
+            contexto={`en ${fmtNumero(plans.filter((p) => p.isActive).length)} ${plans.filter((p) => p.isActive).length === 1 ? 'plan activo' : 'planes activos'}`}
+            tamano="mediana"
+            esCero={conPlan === 0}
+            cuandoEsCero={`Ninguna de las ${fmtNumero(totalInmobiliarias)} inmobiliarias tiene un plan todavía: los ${fmtNumero(plans.filter((p) => p.isActive).length)} de abajo están listos para elegir.`}
+            data-testid="planes-cifra"
+          />
+        </div>
+      ) : null}
+
       {rowError ? <Alert variant="danger">{rowError}</Alert> : null}
 
-      {form.kind !== 'none' && (
-        <PlanForm
-          mode={form.kind}
-          initialValues={form.kind === 'edit' ? planToFormValues(form.plan) : undefined}
-          otherDefaultExists={otherDefaultExists}
-          isSubmitting={submitting}
-          submitError={formError}
-          serverFieldErrors={serverFieldErrors}
-          onSubmit={handleSubmit}
-          onCancel={closeForm}
+      <Cajon abierto={form.kind !== 'none'} onOpenChange={(a) => (a ? null : closeForm())}>
+        <CajonCabecera
+          titulo={form.kind === 'edit' ? `Editar «${form.plan.name}»` : 'Nuevo plan'}
+          descripcion="Para inmobiliarias. El código no se puede cambiar después de crearlo."
         />
-      )}
+        <CajonCuerpo>
+          {form.kind !== 'none' ? (
+            <PlanForm
+              key={form.kind === 'edit' ? form.plan.id : 'nuevo'}
+              mode={form.kind}
+              initialValues={form.kind === 'edit' ? planToFormValues(form.plan) : undefined}
+              otherDefaultExists={otherDefaultExists}
+              isSubmitting={submitting}
+              submitError={formError}
+              serverFieldErrors={serverFieldErrors}
+              onSubmit={handleSubmit}
+              onCancel={closeForm}
+            />
+          ) : null}
+        </CajonCuerpo>
+      </Cajon>
 
       <DataTable
         columns={columnas}
@@ -319,22 +381,25 @@ export default function PlansPage() {
         emptyTitle="Todavía no hay planes"
         emptyHint="Crea el primero con «Nuevo plan»."
         emptyAction={
-          form.kind === 'none' ? (
-            <Button hideArrow onClick={openCreate}>
-              Nuevo plan
-            </Button>
-          ) : undefined
+          <Button size="sm" variant="outline" hideArrow onClick={openCreate}>
+            Nuevo plan
+          </Button>
         }
-        emptyIcon={<Stack weight="bold" />}
+        emptyIcon={<Stack weight="duotone" />}
         aria-label="Planes de inmobiliaria"
         queSon={['plan', 'planes']}
         buscar="Nombre, código o descripción"
         textoExtra={(p) => `${p.tier} ${p.description ?? ''}`}
-        segmentos={[
-          { valor: 'activos', nombre: 'Activos', cumple: (p) => p.isActive },
-          { valor: 'desactivados', nombre: 'Desactivados', cumple: (p) => !p.isActive },
-          { valor: 'todos', nombre: 'Todos', cumple: () => true },
-        ]}
+        // Ronda 28 (revisora r27, T14): sin desactivados, «Activos 5 · Todos 5» decía lo mismo dos veces.
+        segmentos={
+          hayDesactivados
+            ? [
+                { valor: 'activos', nombre: 'Activos', cumple: (p) => p.isActive },
+                { valor: 'desactivados', nombre: 'Desactivados', cumple: (p) => !p.isActive },
+                { valor: 'todos', nombre: 'Todos', cumple: () => true },
+              ]
+            : undefined
+        }
         exportar="planes-de-inmobiliaria"
         masEnElExcel={[
           { header: 'Código', texto: (p) => p.tier },
@@ -343,6 +408,7 @@ export default function PlansPage() {
           { header: 'Usuarios', texto: (p) => p.maxUsers },
           { header: 'Evaluaciones al mes', texto: (p) => p.monthlyEvalCap },
           { header: 'Por defecto', texto: (p) => p.isDefault },
+          ...(enUsoTodoEnCero ? [{ header: 'En uso', texto: (p: AdminPlan) => enUso?.get(p.tier) ?? 0 }] : []),
         ]}
       />
     </div>

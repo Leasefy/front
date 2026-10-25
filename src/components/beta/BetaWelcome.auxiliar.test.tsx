@@ -78,7 +78,7 @@ describe('la llegada del chat del auxiliar de cartera (CF-01)', () => {
     pintarComo('ADMIN');
     expect(container.textContent).toContain('Pregúntale a tu inmobiliaria por cartera, contratos, inmuebles y pagos.');
     const atajos = [...container.querySelectorAll('[data-testid^="atajo-"]')].map((b) => b.textContent);
-    expect(atajos).toEqual(['Cobros y recaudos', 'Contratos', 'Propiedades']);
+    expect(atajos).toEqual(['Cobros y recaudos', 'Contratos', 'Inmuebles']); // manual de voz: «inmueble», no «propiedad»
     expect(container.querySelector('[data-testid="fila-del-equipo"]')).not.toBeNull();
     expect(plantillasDelRol('ADMIN')).toBe(CHAT_TEMPLATES);
   });

@@ -70,8 +70,8 @@ const AGENT_BG: Record<string, string> = {
   amber:
     'bg-warning-soft text-warning',
   purple:
-    'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
-  pink: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+    'bg-neutral-100 text-neutral-600',
+  pink: 'bg-neutral-100 text-neutral-600',
   indigo:
     'bg-primary-soft text-primary',
 };
@@ -80,8 +80,8 @@ const STATUS_DOT: Record<string, string> = {
   emerald: 'bg-success',
   blue: 'bg-primary',
   amber: 'bg-warning',
-  purple: 'bg-neutral-100 dark:bg-neutral-800',
-  pink: 'bg-neutral-100 dark:bg-neutral-800',
+  purple: 'bg-neutral-100',
+  pink: 'bg-neutral-100',
   indigo: 'bg-primary',
 };
 
@@ -155,7 +155,7 @@ function StepItem({
               'w-px flex-1 min-h-[20px]',
               step.status === 'completed'
                 ? 'bg-success-soft'
-                : 'bg-neutral-200 dark:bg-neutral-700'
+                : 'bg-neutral-200'
             )}
           />
         )}
@@ -270,7 +270,7 @@ function MiniChatInput({
       className={cn(
         'flex items-center gap-2',
         'px-3 py-2.5',
-        'border-t border-neutral-200/60 dark:border-border/40'
+        'border-t border-neutral-200/60'
       )}
     >
       <input
@@ -409,8 +409,8 @@ export function WorkspaceView({
       <div
         className={cn(
           'md:hidden flex items-center',
-          'border-b border-neutral-200/60 dark:border-border/40',
-          'bg-white/80 dark:bg-card/80 backdrop-blur-xl',
+          'border-b border-neutral-200/60',
+          'bg-white/80 backdrop-blur-xl',
           'px-1 flex-shrink-0'
         )}
       >
@@ -442,7 +442,7 @@ export function WorkspaceView({
             className={cn(
               'flex-shrink-0 w-8 h-8 rounded-md ml-1',
               'text-muted-foreground hover:text-foreground',
-              'hover:bg-neutral-100 dark:hover:bg-neutral-800'
+              'hover:bg-neutral-100'
             )}
             aria-label={t('beta.workspace.close')}
           />
@@ -461,8 +461,8 @@ export function WorkspaceView({
             // Desktop: fixed-width side panel
             'hidden md:flex md:flex-col',
             'w-64 flex-shrink-0',
-            'border-r border-neutral-200/60 dark:border-border/40',
-            'bg-white/50 dark:bg-card/30 backdrop-blur-xl',
+            'border-r border-neutral-200/60',
+            'bg-white/50 backdrop-blur-xl',
             // Mobile: shown only when steps tab is active
             mobileTab === 'steps' && '!flex !w-full md:!w-64'
           )}
@@ -473,7 +473,7 @@ export function WorkspaceView({
             className={cn(
               'flex items-center justify-between',
               'px-4 py-3 flex-shrink-0',
-              'border-b border-neutral-200/40 dark:border-border/30'
+              'border-b border-neutral-200/40'
             )}
           >
             <div className="flex items-center gap-2">
@@ -481,14 +481,14 @@ export function WorkspaceView({
                 className="w-4 h-4 text-primary"
                 weight="duotone"
               />
-              <span className="text-[13px] font-semibold text-foreground">
+              <span className="text-[13px] font-medium text-foreground">
                 {t('beta.workspace.stepsTitle')}
               </span>
             </div>
             {totalSteps > 0 && (
               <Badge
                 variant={completedCount === totalSteps ? 'success' : 'default'}
-                className="justify-center min-w-[36px] px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+                className="justify-center min-w-[36px] px-2 py-0.5 text-[11px] font-medium tabular-nums"
               >
                 {completedCount}/{totalSteps}
               </Badge>
@@ -529,20 +529,20 @@ export function WorkspaceView({
             className={cn(
               'flex items-start justify-between gap-3',
               'px-5 py-3.5 flex-shrink-0',
-              'border-b border-neutral-200/40 dark:border-border/30',
-              'bg-white/40 dark:bg-card/20 backdrop-blur-xl'
+              'border-b border-neutral-200/40',
+              'bg-white/40 backdrop-blur-xl'
             )}
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-[15px] font-semibold text-foreground truncate">
+                <h2 className="text-[15px] font-medium text-foreground truncate">
                   {meta.title}
                 </h2>
 
                 {/* Response type badge */}
                 <Badge
                   variant={meta.type === 'actionable' ? 'warning' : 'default'}
-                  className="px-2 py-0.5 text-[10px] font-semibold"
+                  className="px-2 py-0.5 text-[10px] font-medium"
                 >
                   {meta.type === 'actionable'
                     ? t('beta.workspace.typeActionable')
@@ -587,7 +587,7 @@ export function WorkspaceView({
                   'hidden md:flex',
                   'flex-shrink-0 w-8 h-8 rounded-md',
                   'text-muted-foreground hover:text-foreground',
-                  'hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  'hover:bg-neutral-100'
                 )}
                 aria-label={t('beta.workspace.close')}
               />
@@ -610,8 +610,8 @@ export function WorkspaceView({
               className={cn(
                 'flex items-center gap-2 flex-wrap',
                 'px-5 py-3 flex-shrink-0',
-                'border-t border-neutral-200/40 dark:border-border/30',
-                'bg-white/40 dark:bg-card/20 backdrop-blur-xl'
+                'border-t border-neutral-200/40',
+                'bg-white/40 backdrop-blur-xl'
               )}
             >
               {meta.actions.map((action) => (
@@ -629,8 +629,8 @@ export function WorkspaceView({
             // Desktop: fixed-width side panel
             'hidden md:flex md:flex-col',
             'w-80 flex-shrink-0',
-            'border-l border-neutral-200/60 dark:border-border/40',
-            'bg-white/50 dark:bg-card/30 backdrop-blur-xl',
+            'border-l border-neutral-200/60',
+            'bg-white/50 backdrop-blur-xl',
             // Mobile: shown only when chat tab is active
             mobileTab === 'chat' && '!flex !w-full md:!w-80'
           )}
@@ -641,14 +641,14 @@ export function WorkspaceView({
             className={cn(
               'flex items-center gap-2',
               'px-4 py-3 flex-shrink-0',
-              'border-b border-neutral-200/40 dark:border-border/30'
+              'border-b border-neutral-200/40'
             )}
           >
             <Sparkle
               className="w-4 h-4 text-primary"
               weight="fill"
             />
-            <span className="text-[13px] font-semibold text-foreground">
+            <span className="text-[13px] font-medium text-foreground">
               {t('beta.workspace.chatTitle')}
             </span>
           </div>
@@ -675,9 +675,9 @@ export function WorkspaceView({
                           'rounded-br-sm',
                         ]
                       : [
-                          'bg-neutral-100 dark:bg-neutral-800/60',
+                          'bg-neutral-100',
                           'text-foreground',
-                          'border border-neutral-200/60 dark:border-border/40',
+                          'border border-neutral-200/60',
                           'rounded-bl-sm',
                         ]
                   )}

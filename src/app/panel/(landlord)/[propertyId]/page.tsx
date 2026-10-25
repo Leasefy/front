@@ -4,14 +4,16 @@ import { useState, useCallback, useMemo, useEffect, use } from 'react';
 import Link from 'next/link';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { useRouter } from 'next/navigation';
-import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, Download, Shield, CalendarCheck } from '@phosphor-icons/react';
+import { MapPin, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, Download, Shield } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button, Spinner, Card } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { Skeleton } from '@/components/ui/skeleton';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import { MonoLabel } from '@leasefy/cadence';
+import { Avatar, MonoLabel } from '@leasefy/cadence';
 import {
   Dialog,
   DialogContent,
@@ -274,10 +276,10 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                 variant={row.score >= 70 ? 'success' : row.score >= 50 ? 'warning' : 'danger'}
               />
             </div>
-            <span className="text-xs text-plan-secondary">{row.score}</span>
+            <span className="text-caption text-plan-secondary">{row.score}</span>
           </div>
         ) : (
-          <span className="text-xs text-plan-muted">—</span>
+          <span className="text-caption text-plan-muted">—</span>
         )
       ),
     },
@@ -368,7 +370,6 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           handleCloseDetail();
           toast('Candidato rechazado', {
             description: `${candidate?.fullName} ha sido rechazado y notificado.`,
-            icon: '❌',
           });
         } else {
           handleCloseDetail();
@@ -450,15 +451,14 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
             <div className="bg-muted p-4 rounded-sm">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-success-soft" />
                   <div>
                     <p className="text-sm font-medium text-plan-primary">Excelente</p>
-                    <p className="text-xs text-plan-secondary">Perfil muy confiable</p>
+                    <p className="text-caption text-plan-secondary">Perfil muy confiable</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-plan-primary">92</p>
-                  <p className="text-xs text-plan-secondary">de 100</p>
+                  <p className="text-2xl font-medium text-plan-primary">92</p>
+                  <p className="text-caption text-plan-secondary">de 100</p>
                 </div>
               </div>
               <div className="h-2 bg-success-soft rounded-full" />
@@ -481,14 +481,14 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                   <p className="text-sm font-medium text-plan-primary">
                     {RISK_LEVELS[selectedCandidate.riskLevel].label}
                   </p>
-                  <p className="text-xs text-plan-secondary">
+                  <p className="text-caption text-plan-secondary">
                     {RISK_LEVELS[selectedCandidate.riskLevel].description}
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-plan-primary">{selectedCandidate.numericScore}</p>
-                <p className="text-xs text-plan-secondary">de 100</p>
+                <p className="font-mono text-h3 tabular-nums text-plan-primary">{selectedCandidate.numericScore}</p>
+                <p className="text-caption text-plan-secondary">de 100</p>
               </div>
             </div>
             <PlanProgressBar
@@ -501,7 +501,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           {/* Category Breakdown */}
           {selectedCandidate.riskScore?.categories && (
             <div>
-              <MonoLabel className="block text-xs text-plan-secondary mb-3">Desglose por categoría</MonoLabel>
+              <MonoLabel className="block text-caption text-plan-secondary mb-3">Desglose por categoría</MonoLabel>
               <div className="space-y-3">
                 {selectedCandidate.riskScore.categories.map((cat) => (
                   <div key={cat.name}>
@@ -514,7 +514,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                       size="sm"
                       variant={cat.score >= 80 ? 'success' : cat.score >= 60 ? 'default' : 'warning'}
                     />
-                    <p className="text-xs text-plan-muted mt-1">
+                    <p className="text-caption text-plan-muted mt-1">
                       {cat.factors.join(' · ')}
                     </p>
                   </div>
@@ -526,7 +526,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           {/* Key Drivers (Positive Factors) */}
           {selectedCandidate.riskScore?.drivers && selectedCandidate.riskScore.drivers.length > 0 && (
             <div>
-              <MonoLabel className="text-xs text-plan-secondary mb-2 flex items-center gap-1">
+              <MonoLabel className="text-caption text-plan-secondary mb-2 flex items-center gap-1">
                 <TrendUp className="w-3 h-3" />
                 Factores positivos
               </MonoLabel>
@@ -544,7 +544,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           {/* Risk Flags (if any) */}
           {selectedCandidate.riskScore?.flags && selectedCandidate.riskScore.flags.length > 0 && (
             <div>
-              <MonoLabel className="text-xs text-plan-secondary mb-2 flex items-center gap-1">
+              <MonoLabel className="text-caption text-plan-secondary mb-2 flex items-center gap-1">
                 <Warning className="w-3 h-3" />
                 Puntos a considerar
               </MonoLabel>
@@ -553,13 +553,13 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                   <li key={flag.id} className={`flex items-start gap-2 text-sm p-2 rounded ${
                     flag.severity === 'high' ? 'bg-danger-soft text-danger' :
                     flag.severity === 'medium' ? 'bg-warning-soft text-warning' :
-                    'bg-primary-soft text-primary'
+                    'bg-surface-muted text-fg'
                   }`}>
                     <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <div>
                       <p>{flag.message}</p>
                       {flag.suggestion && (
-                        <p className="text-xs mt-1 opacity-75">{flag.suggestion}</p>
+                        <p className="text-caption mt-1 opacity-75">{flag.suggestion}</p>
                       )}
                     </div>
                   </li>
@@ -571,7 +571,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           {/* Suggested Conditions */}
           {selectedCandidate.riskScore?.suggestedConditions && selectedCandidate.riskScore.suggestedConditions.length > 0 && (
             <div>
-              <MonoLabel className="text-xs text-plan-secondary mb-2 flex items-center gap-1">
+              <MonoLabel className="text-caption text-plan-secondary mb-2 flex items-center gap-1">
                 <Info className="w-3 h-3" />
                 Recomendaciones
               </MonoLabel>
@@ -579,7 +579,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                 {selectedCandidate.riskScore.suggestedConditions.map((cond) => (
                   <li key={cond.id} className="text-sm bg-muted p-2 rounded">
                     <p className="font-medium text-plan-primary">{cond.condition}</p>
-                    <p className="text-xs text-plan-secondary mt-0.5">{cond.reason}</p>
+                    <p className="text-caption text-plan-secondary mt-0.5">{cond.reason}</p>
                   </li>
                 ))}
               </ul>
@@ -625,7 +625,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
       <div className="space-y-4">
         {/* Employment */}
         <div>
-          <MonoLabel className="block text-xs text-plan-secondary mb-2">Información Laboral</MonoLabel>
+          <MonoLabel className="block text-caption text-plan-secondary mb-2">Información Laboral</MonoLabel>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Empresa</span>
@@ -651,35 +651,35 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
         </div>
         {/* Income */}
         <div>
-          <MonoLabel className="block text-xs text-plan-secondary mb-2">Información Financiera</MonoLabel>
+          <MonoLabel className="block text-caption text-plan-secondary mb-2">Información Financiera</MonoLabel>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Salario mensual</span>
-              <span className="text-plan-primary font-medium">${selectedCandidate.monthlySalary?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+              <span className="text-plan-primary font-medium">${selectedCandidate.monthlySalary?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
             </div>
             {selectedCandidate.additionalIncome > 0 && (
               <div className="flex justify-between">
                 <span className="text-plan-secondary">Ingresos adicionales</span>
-                <span className="text-plan-primary">${selectedCandidate.additionalIncome?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+                <span className="text-plan-primary">${selectedCandidate.additionalIncome?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-plan-secondary">Ingreso total</span>
-              <span className="text-plan-primary font-semibold">${selectedCandidate.totalIncome?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+              <span className="font-mono tabular-nums text-plan-primary">${selectedCandidate.totalIncome?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-plan-secondary">Obligaciones mensuales</span>
-              <span className="text-plan-primary">${selectedCandidate.monthlyObligations?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+              <span className="text-plan-primary">${selectedCandidate.monthlyObligations?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
             </div>
             <div className="flex justify-between bg-success-soft p-2 rounded">
               <span className="text-success">Disponible para arriendo</span>
-              <span className="text-success font-semibold">${selectedCandidate.availableForRent?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+              <span className="font-mono tabular-nums text-success">${selectedCandidate.availableForRent?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
             </div>
           </div>
         </div>
         {/* Housing */}
         <div>
-          <MonoLabel className="block text-xs text-plan-secondary mb-2">Vivienda Actual</MonoLabel>
+          <MonoLabel className="block text-caption text-plan-secondary mb-2">Vivienda Actual</MonoLabel>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Dirección</span>
@@ -697,7 +697,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
         </div>
         {/* References */}
         <div>
-          <MonoLabel className="block text-xs text-plan-secondary mb-2">Referencias</MonoLabel>
+          <MonoLabel className="block text-caption text-plan-secondary mb-2">Referencias</MonoLabel>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Arrendadores anteriores</span>
@@ -717,8 +717,11 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
     ) : (
       <div className="space-y-3">
         {isLoadingDocs ? (
-          <div className="flex items-center justify-center py-8">
-            <Spinner size="md" />
+          /* Los renglones de los documentos mientras llegan (antes, una rueda). */
+          <div className="space-y-2" aria-busy="true" data-testid="documentos-del-candidato-cargando">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
           </div>
         ) : (
           <>
@@ -740,21 +743,21 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     mimeType: realDoc?.mimeType,
                     createdAt: realDoc?.createdAt,
                   })}
-                  className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${uploaded ? (verified ? 'bg-success-soft hover:bg-success-soft/60' : 'bg-primary-soft hover:bg-primary-soft/60') : 'bg-muted hover:bg-muted/80'}`}
+                  className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${uploaded ? (verified ? 'bg-success-soft hover:bg-success-soft/60' : 'bg-surface-muted hover:bg-surface-muted/80') : 'bg-muted hover:bg-muted/80'}`}
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className={`w-5 h-5 ${verified ? 'text-success' : uploaded ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <FileText className={`w-5 h-5 ${verified ? 'text-success' : uploaded ? 'text-fg' : 'text-muted-foreground'}`} />
                     <div>
                       <p className="text-sm font-medium text-plan-primary">{labels.name}</p>
-                      <p className="text-xs text-plan-secondary">{realDoc ? realDoc.fileName : labels.subtitle}</p>
+                      <p className="text-caption text-plan-secondary">{realDoc ? realDoc.fileName : labels.subtitle}</p>
                     </div>
                   </div>
                   {verified ? (
-                    <span className="text-xs font-medium text-success bg-success-soft px-2 py-1 rounded">Verificado</span>
+                    <span className="text-caption font-medium text-success bg-success-soft px-2 py-1 rounded">Verificado</span>
                   ) : uploaded ? (
-                    <span className="text-xs font-medium text-primary bg-primary-soft px-2 py-1 rounded">Subido</span>
+                    <span className="text-caption font-medium text-fg bg-surface px-2 py-1 rounded border border-border">Subido</span>
                   ) : (
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
+                    <span className="text-caption font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
                   )}
                 </button>
               );
@@ -783,13 +786,13 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                       <FileText className={`w-5 h-5 ${doc.verified ? 'text-success' : 'text-primary'}`} />
                       <div>
                         <p className="text-sm font-medium text-plan-primary">{labels.name}</p>
-                        <p className="text-xs text-plan-secondary">{doc.fileName}</p>
+                        <p className="text-caption text-plan-secondary">{doc.fileName}</p>
                       </div>
                     </div>
                     {doc.verified ? (
-                      <span className="text-xs font-medium text-success bg-success-soft px-2 py-1 rounded">Verificado</span>
+                      <span className="text-caption font-medium text-success bg-success-soft px-2 py-1 rounded">Verificado</span>
                     ) : (
-                      <span className="text-xs font-medium text-primary bg-primary-soft px-2 py-1 rounded">Subido</span>
+                      <span className="text-caption font-medium text-fg bg-surface px-2 py-1 rounded border border-border">Subido</span>
                     )}
                   </button>
                 );
@@ -813,9 +816,9 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
+        <EsqueletoDePagina variante="detail" />
       </div>
     );
   }
@@ -830,8 +833,8 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
   // reintentar; cualquier otro → con reintentar.
   if (!property) {
     return (
-      <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="bg-bg">
+        <div className="p-6 lg:p-8">
           <FalloDeCarga
             error={errorPropiedad ?? new ApiError(404, 'property not found')}
             queEs="esta propiedad"
@@ -844,84 +847,55 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="bg-bg">
+      <div className="p-6 lg:p-8">
 
         {/* Back Link */}
         <div className="mb-6">
           <BackButton href="/panel/propiedades" label="Volver a mis propiedades" />
         </div>
 
-        {/* Property Header - Premium Glass Style */}
-        <header className="relative rounded-lg overflow-hidden mb-8">
-          {/* Background Image with Overlay */}
-          <div className="absolute inset-0">
-            <PortadaDelInmueble
-              property={property}
-              alt={property.title}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+        {/* GLOW UP (21-10-2026): el encabezado común, con la foto al lado. Antes era
+            una portada con vidrio esmerilado (fuera del sistema) y repetía las cifras
+            de candidatos que ya dicen las tarjetas y las pestañas de abajo. */}
+        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start" data-testid="cabecera-del-inmueble">
+          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg lg:h-28 lg:w-28">
+            <PortadaDelInmueble property={property} alt={property.title} compacta />
           </div>
-
-          {/* Content */}
-          <div className="relative px-6 py-8 lg:px-8 lg:py-10">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-              {/* Property Image Thumbnail */}
-              <div className="relative w-32 h-32 lg:w-36 lg:h-36 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-white/20">
-                <PortadaDelInmueble
-                  property={property}
-                  alt={property.title}
-                  compacta
-                />
-              </div>
-
-              {/* Property Info */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl lg:text-3xl font-semibold text-white">
-                  {property.title}
-                </h1>
-                <p className="text-white/70 mt-2 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4" />
+          <EncabezadoDePantalla
+            className="min-w-0 flex-1"
+            seccion="Mis inmuebles"
+            titulo={property.title}
+            junto={
+              activeContract ? (
+                <span className="rounded-full bg-success-soft px-3 py-1 text-body-sm text-success" data-testid="inmueble-arrendado">
+                  Arrendado
+                </span>
+              ) : undefined
+            }
+            descripcion={
+              <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" aria-hidden="true" />
                   {barrioYCiudad(property.neighborhood, property.city)}
-                </p>
-                <div className="mt-4 inline-flex items-baseline gap-1.5 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-lg border border-white/10">
-                  <span className="text-3xl font-bold text-white">
-                    {formatCanon(property.monthlyRent)}
-                  </span>
-                  <span className="text-lg font-normal text-white/70">/mes</span>
-                </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="flex gap-3 lg:gap-4">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/10 text-center min-w-[80px]">
-                  <p className="text-2xl font-bold text-white">{counts.all}</p>
-                  <p className="text-xs text-white/60">Candidatos</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/10 text-center min-w-[80px]">
-                  <p className="text-2xl font-bold text-warning">{counts.pending}</p>
-                  <p className="text-xs text-white/60">Pendientes</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/10 text-center min-w-[80px]">
-                  <p className="text-2xl font-bold text-success">{counts.approved}</p>
-                  <p className="text-xs text-white/60">Aprobados</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+                </span>
+                <span className="font-mono tabular-nums text-fg" data-testid="canon-del-inmueble">
+                  {formatCanon(property.monthlyRent)}/mes
+                </span>
+              </span>
+            }
+          />
+        </div>
 
         {/* Rented Property View */}
         {activeContract ? (
           <div className="space-y-6">
             {/* Active lease banner */}
-            <div className="rounded-lg border border-success/30 dark:border-success/40 bg-success-soft dark:bg-[#2C7A53]/15 px-5 py-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-success-soft dark:bg-[#2C7A53]/15 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-success dark:text-[#3EAE70]" />
-              </div>
+            <div className="rounded-lg border border-success/30 bg-success-soft px-5 py-4 flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-success shrink-0" aria-hidden="true" />
               <div>
-                <p className="text-sm font-semibold text-success dark:text-[#3EAE70]">Propiedad arrendada</p>
-                <p className="text-xs text-success/70 dark:text-success/70 mt-0.5">
+                <p className="text-sm font-medium text-success">Propiedad arrendada</p>
+                <p className="text-caption text-success/70 mt-0.5">
                   Contrato activo{inicioContratoTexto ? ` desde ${inicioContratoTexto}` : ''}
                 </p>
               </div>
@@ -955,8 +929,8 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                 {/* Contract details card */}
                 <div className="rounded-lg border border-border bg-surface p-6 space-y-5">
                   <div>
-                    <MonoLabel className="block text-xs tracking-wider text-fg-muted">Contrato</MonoLabel>
-                    <p className="text-lg font-semibold text-fg mt-0.5">{getContractTypeLabel(activeContract)}</p>
+                    <MonoLabel className="block text-caption tracking-wider text-fg-muted">Contrato</MonoLabel>
+                    <p className="text-lg font-medium text-fg mt-0.5">{getContractTypeLabel(activeContract)}</p>
                   </div>
 
                   <div className="h-px bg-border-faint" />
@@ -964,12 +938,12 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                   {/* Parties */}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-2">Arrendador</MonoLabel>
+                      <MonoLabel className="block text-caption tracking-wider text-fg-muted mb-2">Arrendador</MonoLabel>
                       <p className="font-medium text-fg">{activeContract.landlordName}</p>
                       <p className="text-sm text-fg-muted">{activeContract.landlordEmail}</p>
                     </div>
                     <div>
-                      <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-2">Arrendatario</MonoLabel>
+                      <MonoLabel className="block text-caption tracking-wider text-fg-muted mb-2">Arrendatario</MonoLabel>
                       <p className="font-medium text-fg">{activeContract.tenantName}</p>
                       <p className="text-sm text-fg-muted">{activeContract.tenantEmail}</p>
                     </div>
@@ -980,27 +954,27 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                   {/* Guarantee & Dates */}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs text-fg-muted">Garantía</p>
+                      <p className="text-caption text-fg-muted">Garantía</p>
                       <p className="text-sm font-medium text-fg mt-0.5">
                         {activeContract.guaranteeType === 'poliza' ? 'Póliza de arrendamiento' : 'Codeudor'}
                       </p>
                       {activeContract.guaranteeDetails && (
-                        <p className="text-xs text-fg-muted mt-0.5">{activeContract.guaranteeDetails}</p>
+                        <p className="text-caption text-fg-muted mt-0.5">{activeContract.guaranteeDetails}</p>
                       )}
                     </div>
                     <div>
-                      <p className="text-xs text-fg-muted">Firmado</p>
+                      <p className="text-caption text-fg-muted">Firmado</p>
                       <div className="mt-0.5 space-y-1">
                         {activeContract.landlordSignature && (
-                          <p className="text-xs text-success dark:text-[#3EAE70] flex items-center gap-1">
+                          <p className="text-caption text-success flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
-                            Arrendador — {new Date(activeContract.landlordSignature.signedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
+                            Arrendador — {new Date(activeContract.landlordSignature.signedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                           </p>
                         )}
                         {activeContract.tenantSignature && (
-                          <p className="text-xs text-success dark:text-[#3EAE70] flex items-center gap-1">
+                          <p className="text-caption text-success flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
-                            Arrendatario — {new Date(activeContract.tenantSignature.signedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
+                            Arrendatario — {new Date(activeContract.tenantSignature.signedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                           </p>
                         )}
                       </div>
@@ -1012,7 +986,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
               {/* Sidebar actions */}
               <div className="space-y-4">
                 <div className="rounded-lg border border-border bg-surface p-5 space-y-3">
-                  <h3 className="text-sm font-semibold text-fg">Acciones rápidas</h3>
+                  <h3 className="text-sm font-medium text-fg">Acciones rápidas</h3>
                   {/*
                     F3 — un contrato MIGRADO sin correo de inquilino (T-0031)
                     no tiene `tenantId`. Sin este guard, ambos links armaban
@@ -1025,24 +999,20 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                         href={`/panel/${propertyId}/contract/${activeContract.tenantId}`}
                         className="flex items-center gap-3 w-full rounded-lg border border-border p-3 text-left hover:bg-surface-muted transition-colors"
                       >
-                        <div className="w-9 h-9 rounded-md bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                          <FileText className="w-4 h-4 text-primary dark:text-[#5570FF]" />
-                        </div>
+                        <FileText className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                         <div>
                           <p className="text-sm font-medium text-fg">Ver contrato</p>
-                          <p className="text-xs text-fg-muted">Detalles y cláusulas</p>
+                          <p className="text-caption text-fg-muted">Detalles y cláusulas</p>
                         </div>
                       </Link>
                       <Link
                         href={`/panel/mensajes?to=${activeContract.tenantId}`}
                         className="flex items-center gap-3 w-full rounded-lg border border-border p-3 text-left hover:bg-surface-muted transition-colors"
                       >
-                        <div className="w-9 h-9 rounded-md bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                          <Chat className="w-4 h-4 text-primary dark:text-[#5570FF]" />
-                        </div>
+                        <Chat className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                         <div>
                           <p className="text-sm font-medium text-fg">Enviar mensaje</p>
-                          <p className="text-xs text-fg-muted">Contactar al arrendatario</p>
+                          <p className="text-caption text-fg-muted">Contactar al arrendatario</p>
                         </div>
                       </Link>
                     </>
@@ -1051,14 +1021,14 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
 
                 {/* Tenant summary card */}
                 <div className="rounded-lg border border-border bg-surface p-5">
-                  <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-3">Arrendatario</MonoLabel>
+                  <MonoLabel className="block text-caption tracking-wider text-fg-muted mb-3">Arrendatario</MonoLabel>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center text-sm font-semibold text-primary dark:text-[#5570FF]">
-                      {activeContract.tenantName.charAt(0)}
-                    </div>
+                    {/* Cadence 2: el Avatar del sistema, nunca iniciales a mano (y un contrato
+                        migrado sin nombre ya no tumba la pantalla). */}
+                    <Avatar name={activeContract.tenantName || 'Arrendatario'} size="md" />
                     <div>
-                      <p className="font-medium text-fg text-sm">{activeContract.tenantName}</p>
-                      <p className="text-xs text-fg-muted">{activeContract.tenantEmail}</p>
+                      <p className="font-medium text-fg text-sm">{activeContract.tenantName || 'Sin nombre registrado'}</p>
+                      <p className="text-caption text-fg-muted">{activeContract.tenantEmail}</p>
                     </div>
                   </div>
                 </div>
@@ -1067,43 +1037,8 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           </div>
         ) : (
           <>
-            {/* Stats Row - Compact Style */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
-                    <Users className="w-5 h-5 text-fg-muted" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-fg">{counts.all}</p>
-                    <p className="text-xs text-fg-muted">Total candidatos</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-warning-soft dark:bg-[#B7791F]/15 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-warning dark:text-[#D2992F]" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-fg">{counts.pending}</p>
-                    <p className="text-xs text-fg-muted">Pendientes</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-success-soft dark:bg-[#2C7A53]/15 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-success dark:text-[#3EAE70]" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-fg">{counts.approved}</p>
-                    <p className="text-xs text-fg-muted">Aprobados</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
+            {/* Ronda 30 (§3, el mismo número una vez): sin la fila de tres tarjetas «Total candidatos · Pendientes ·
+                Aprobados»; esos conteos ya van en las pestañas de abajo (Todos · Pendientes · Aprobados). */}
             {/* Tabs - segmented filter over the candidate/visit views */}
             <Tabs value={activeTab} onValueChange={setTab}>
               <TabsList variant="segmented" className="mb-6">
@@ -1115,7 +1050,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                   >
                     {tab.label}
                     {tab.count !== undefined && (
-                      <span className="px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-primary-soft dark:group-data-[state=active]:bg-[#1A40FF]/15 group-data-[state=active]:text-primary dark:group-data-[state=active]:text-[#5570FF]">
+                      <span className="px-1.5 py-0.5 rounded-sm text-caption font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-surface group-data-[state=active]:text-fg">
                         {tab.count}
                       </span>
                     )}
@@ -1151,7 +1086,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     onRowClick={handleRowClick}
                     emptyMessage={
                       activeTab === 'all'
-                        ? 'Aún no hay candidatos para esta propiedad'
+                        ? 'Todavía nadie se postuló a este inmueble'
                         : `No hay candidatos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
                     }
                     stickyHeader
@@ -1180,7 +1115,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                       sortable: true,
                       render: (row: Visit) => (
                         <span className="text-sm text-plan-secondary">
-                          {new Date(row.requestedDate + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(row.requestedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       ),
                     },
@@ -1208,7 +1143,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     },
                   ]}
                   keyExtractor={(row) => row.id}
-                  emptyMessage="No hay visitas para esta propiedad"
+                  emptyMessage="Todavía no hay visitas a este inmueble"
                   stickyHeader
                 />
               </div>
@@ -1268,7 +1203,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     <Shield className="w-5 h-5 text-success flex-shrink-0" />
                     <div>
                       <p className="text-sm font-medium text-success">Documento verificado</p>
-                      <p className="text-xs text-success">Verificación automática completada</p>
+                      <p className="text-caption text-success">Verificación automática completada</p>
                     </div>
                   </div>
                 )}
@@ -1287,12 +1222,12 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     </>
                   )}
                   <div className="mt-3 text-center">
-                    <p className="text-xs text-fg-muted">
+                    <p className="text-caption text-fg-muted">
                       {previewDoc.mimeType?.split('/')[1]?.toUpperCase() ?? 'Archivo'}
                       {previewDoc.createdAt && ` · Subido el ${new Date(previewDoc.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`}
                     </p>
                     {previewDoc.size != null && (
-                      <p className="text-xs text-fg-muted font-mono tabular-nums">
+                      <p className="text-caption text-fg-muted font-mono tabular-nums">
                         {previewDoc.size > 1024 * 1024
                           ? `${(previewDoc.size / (1024 * 1024)).toFixed(1)} MB`
                           : `${Math.round(previewDoc.size / 1024)} KB`}
@@ -1303,9 +1238,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 rounded-xl bg-surface-hover flex items-center justify-center mb-4">
-                  <FileText className="w-8 h-8 text-fg-subtle" />
-                </div>
+                <FileText className="w-8 h-8 text-fg-subtle shrink-0" aria-hidden="true" />
                 <p className="text-base font-medium text-fg mb-1">Documento pendiente</p>
                 <p className="text-sm text-fg-muted max-w-xs">
                   El candidato aún no ha subido este documento. Se le ha notificado para completar su documentación.

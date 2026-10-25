@@ -13,6 +13,7 @@
 
 import { CurrencyDollar, Wallet, TrendUp, Info } from '@phosphor-icons/react'
 import { CrossFade, IconButton } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import {
@@ -56,7 +57,8 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       label: t('inmobiliaria.ai.cotizador.costos.kpiCostPerQuote'),
       value: enPesos(kpis?.costPerQuoteCop),
       Icon: CurrencyDollar,
-      iconColor: 'text-primary',
+      // Ronda 30: sin el ícono en azul (el azul es de la acción).
+      iconColor: 'text-fg-muted',
       caption: null,
     },
     {
@@ -78,6 +80,58 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
     },
   ]
 
+  /*
+   * Ronda 30 (la vara de Deuda del mes): LA RESPUESTA es lo que se gasta al mes (CifraHeroe); el costo por
+   * cotización y la proyección a 30 días acompañan al pie, en una línea. Antes eran tres tarjetas del mismo peso.
+   * Mientras carga, el esqueleto de siempre.
+   */
+  if (!isLoading) {
+    const [costo, gasto, proyeccion] = cards
+    return (
+      <section className="rounded-lg border border-border bg-card px-5 py-5" data-testid="costos-cifra">
+        <CifraHeroe
+          tamano="mediana"
+          rotulo={gasto.label}
+          cifra={gasto.value}
+          pie={
+            <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+              <span>
+                {costo.label} <span className="font-mono tabular-nums text-fg">{costo.value}</span>
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>
+                {proyeccion.label} <span className="font-mono tabular-nums text-fg">{proyeccion.value}</span>
+              </span>
+              {proyeccion.caption ? (
+                <span className="inline-flex items-center gap-1">
+                  <span aria-hidden="true">·</span>
+                  {proyeccion.caption}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <IconButton
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          icon={<Info className="h-3 w-3" />}
+                          aria-label={t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}
+                          className="flex-shrink-0"
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs text-caption">
+                        {t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
+              ) : null}
+            </span>
+          }
+        />
+      </section>
+    )
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {cards.map(({ key, label, value, Icon, iconColor, caption }) => (
@@ -87,19 +141,20 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
         >
           <div className="flex items-center gap-2 mb-1">
             <Icon weight="duotone" className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
-            <p className="text-xs text-fg-muted truncate">{label}</p>
+            <p className="text-caption text-fg-muted truncate">{label}</p>
           </div>
           {/* Hueco → cifra con un fundido (`CrossFade`). */}
           <CrossFade swapKey={isLoading ? 'cargando' : 'cifra'}>
           {isLoading ? (
             <div className="h-6 w-16 rounded bg-surface-muted animate-pulse mt-1" />
           ) : (
-            <p className="text-xl font-semibold text-fg mt-1">{value}</p>
+            // Ronda 30: la plata en mono tabular, como en el resto de la casa.
+            <p className="mt-1 font-mono text-xl font-medium tabular-nums text-fg">{value}</p>
           )}
           </CrossFade>
           {caption && (
             <div className="flex items-center gap-1 mt-2">
-              <p className="text-xs text-fg-muted leading-snug">
+              <p className="text-caption text-fg-muted leading-snug">
                 {caption}
               </p>
               <TooltipProvider>
@@ -114,7 +169,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
                       className="flex-shrink-0"
                     />
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs text-xs">
+                  <TooltipContent side="bottom" className="max-w-xs text-caption">
                     {t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}
                   </TooltipContent>
                 </Tooltip>

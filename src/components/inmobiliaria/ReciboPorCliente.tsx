@@ -327,12 +327,12 @@ function TarjetaDePeriodo({
               </Badge>
             )}
           </p>
-          <p className="flex items-center gap-1.5 truncate text-xs text-fg-muted">
+          <p className="flex items-center gap-1.5 truncate text-caption text-fg-muted">
             <Buildings className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {periodo.propertyTitle}
           </p>
           {conceptos.length > 0 && (
-            <p className="truncate text-xs text-fg-muted">{conceptos.join(' · ')}</p>
+            <p className="truncate text-caption text-fg-muted">{conceptos.join(' · ')}</p>
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
@@ -347,7 +347,7 @@ function TarjetaDePeriodo({
           {/* 🔴 Capital e interés, por separado: es lo que caja está cobrando. */}
           {interes > 0 && (
             <span
-              className="text-xs text-fg-muted"
+              className="text-caption text-fg-muted"
               data-testid={`periodo-capital-e-interes-${periodo.month}`}
             >
               {t(k('capitalEInteres'), {
@@ -376,7 +376,7 @@ function TarjetaDePeriodo({
             </Badge>
           )}
           {periodo.paidAmount > 0 && (
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {t(k('abonado'), { monto: formatCurrency(periodo.paidAmount) })}
             </span>
           )}
@@ -410,7 +410,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
           {cartera.nombre}
         </p>
         {cartera.inmuebles > 1 && (
-          <span className="text-xs text-fg-muted" data-testid="cartera-varios-inmuebles">
+          <span className="text-caption text-fg-muted" data-testid="cartera-varios-inmuebles">
             {t(k('variosInmuebles'), { count: cartera.inmuebles })}
           </span>
         )}
@@ -423,7 +423,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
       */}
       <div className="grid grid-cols-2 gap-2" data-testid="cartera-partida">
         <div className="rounded-lg border border-border bg-surface px-3 py-2">
-          <p className="text-xs text-fg-muted">{t(k('vencidoLabel'))}</p>
+          <p className="text-caption text-fg-muted">{t(k('vencidoLabel'))}</p>
           <p
             className="font-mono text-base font-semibold tabular-nums text-warning"
             data-testid="cartera-vencido"
@@ -432,13 +432,13 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
           </p>
           {/* El interés sólo corre sobre lo vencido: se dice ahí. */}
           {interesCop > 0 && (
-            <p className="text-xs text-fg-muted" data-testid="cartera-intereses">
+            <p className="text-caption text-fg-muted" data-testid="cartera-intereses">
               {t(k('deLosCualesIntereses'), { monto: formatCurrency(interesCop) })}
             </p>
           )}
         </div>
         <div className="rounded-lg border border-border bg-surface px-3 py-2">
-          <p className="text-xs text-fg-muted">{t(k('futuroLabel'))}</p>
+          <p className="text-caption text-fg-muted">{t(k('futuroLabel'))}</p>
           <p
             className="font-mono text-base font-semibold tabular-nums text-fg"
             data-testid="cartera-futuro"
@@ -450,7 +450,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
 
       {adelantoSolo && (
         <p
-          className="rounded-lg border border-border bg-surface-muted p-3 text-xs text-fg"
+          className="rounded-lg border border-border bg-surface-muted p-3 text-caption text-fg"
           data-testid="aviso-adelanto"
         >
           {t(k('soloAdelanto'), { nombre: cartera.nombre })}
@@ -464,7 +464,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
       >
         {vencidas.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
               {t(k('grupoVencido'))}
             </p>
             {vencidas.map((c) => (
@@ -475,7 +475,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
 
         {futuras.length > 0 && (
           <div className="space-y-2" data-testid="grupo-futuro">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
               {t(k('grupoFuturo'))}
             </p>
             {futuras.map((c) => (
@@ -542,7 +542,7 @@ export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDe
         <Receipt className="h-4 w-4 text-fg-muted" aria-hidden="true" />
         {t(k('titulo'))}
       </p>
-      <p className="text-xs text-fg-muted">{t(k('ayuda'))}</p>
+      <p className="text-caption text-fg-muted">{t(k('ayuda'))}</p>
 
       <ul className="space-y-2">
         {plan.partes.map((parte) => {
@@ -584,7 +584,7 @@ export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDe
               {/* Art. 1653: dentro del mes, primero los intereses. Decirlo acá
                   es lo que evita la llamada «¿por qué no bajó el canon?». */}
               {parte.aIntereses > 0 && (
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {t(k('intereses'), {
                     intereses: formatCurrency(parte.aIntereses),
                     capital: formatCurrency(parte.aCapital),
@@ -592,10 +592,10 @@ export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDe
                 </p>
               )}
               {conceptos.length > 0 && (
-                <p className="truncate text-xs text-fg-muted">{conceptos.join(' · ')}</p>
+                <p className="truncate text-caption text-fg-muted">{conceptos.join(' · ')}</p>
               )}
               {parte.quedaPendiente > 0 && (
-                <p className="text-xs text-warning" data-testid={`plan-queda-${parte.month}`}>
+                <p className="text-caption text-warning" data-testid={`plan-queda-${parte.month}`}>
                   {t(k('queda'), { monto: formatCurrency(parte.quedaPendiente) })}
                 </p>
               )}
@@ -605,13 +605,13 @@ export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDe
       </ul>
 
       {aIntereses > 0 && (
-        <p className="text-xs text-fg-muted" data-testid="plan-interes-primero">
+        <p className="text-caption text-fg-muted" data-testid="plan-interes-primero">
           {t('recibos.form.cartera.interesPrimero')}
         </p>
       )}
 
       {hayAdelanto && (
-        <p className="text-xs text-fg-muted" data-testid="plan-hay-adelanto">
+        <p className="text-caption text-fg-muted" data-testid="plan-hay-adelanto">
           {comoAnticipo ? t(k('hayAnticipo')) : t(k('hayAdelanto'))}
         </p>
       )}
@@ -840,7 +840,7 @@ export function AvisoSinConciliar({ periodos }: AvisoSinConciliarProps) {
       data-testid="aviso-sin-conciliar"
     >
       <Warning className="h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-      <div className="space-y-1 text-xs text-fg">
+      <div className="space-y-1 text-caption text-fg">
         <p>{t('recibos.form.plan.sinConciliar')}</p>
         <ul className="space-y-0.5">
           {periodos.map((p) => (

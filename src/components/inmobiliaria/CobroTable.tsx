@@ -11,8 +11,6 @@ import {
   CurrencyCircleDollar,
   Warning,
   CheckCircle,
-  User,
-  HouseLine,
   Envelope,
   WhatsappLogo,
   Prohibit,
@@ -128,7 +126,8 @@ export function CobroTable({
    */
   // N-14 (QA-PAGOS-95): «Oct 2026» con mayúscula sólo al inicio. La clase
   // `capitalize` subía cada palabra («Oct De 2026»).
-  const formatMonth = (month: string): string => mesEnTitulo(month, 'es', 'short');
+  // Ronda 30 (revisora r27): «oct 2026» en un renglón (antes «Oct / de / 2026»), como escribe la casa.
+  const formatMonth = (month: string): string => mesEnTitulo(month, 'es', 'short').replace(/ de /, ' ').toLowerCase();
 
   // Sort cobros
   const sortedCobros = useMemo(() => {
@@ -288,10 +287,9 @@ export function CobroTable({
                 )}
                 {/* Property */}
                 <TableCell className="p-4">
+                  {/* Ronda 30 (revisora r27): sin la caja azul de la casa ni el avatar —decoraban en
+                      voltaje y se comían el ancho: a 1440 la tabla no cabía—. */}
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
-                      <HouseLine className="w-5 h-5 text-primary" />
-                    </div>
                     <div className="min-w-0">
                       <p className="font-medium text-fg truncate max-w-[180px]">
                         {cobro.propertyTitle}
@@ -306,11 +304,8 @@ export function CobroTable({
                 {/* Tenant */}
                 <TableCell className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-                    </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-fg truncate max-w-[140px]">
+                      <p className="font-medium text-fg truncate max-w-[160px]">
                         {cobro.tenantName}
                       </p>
                       <div className="flex items-center gap-2">
@@ -343,14 +338,14 @@ export function CobroTable({
 
                 {/* Month */}
                 <TableCell className="p-4">
-                  <span className="text-fg">
+                  <span className="whitespace-nowrap text-fg">
                     {formatMonth(cobro.month)}
                   </span>
                 </TableCell>
 
                 {/* Total */}
                 <TableCell className="p-4">
-                  <span className="font-semibold text-fg">
+                  <span className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
                     {formatCurrency(cobro.totalAmount)}
                   </span>
                 </TableCell>
@@ -358,11 +353,11 @@ export function CobroTable({
                 {/* Paid */}
                 <TableCell className="p-4">
                   <span className={cn(
-                    'font-medium',
+                    'whitespace-nowrap font-mono tabular-nums',
                     cobro.paidAmount >= cobro.totalAmount
                       ? 'text-success'
                       : cobro.paidAmount > 0
-                      ? 'text-primary'
+                      ? 'text-fg'
                       : 'text-fg-muted'
                   )}>
                     {formatCurrency(cobro.paidAmount)}
@@ -372,11 +367,11 @@ export function CobroTable({
                 {/* Pending */}
                 <TableCell className="p-4">
                   <span className={cn(
-                    'font-medium',
+                    'whitespace-nowrap font-mono tabular-nums',
                     cobro.pendingAmount > 0 && cobro.daysLate > 0
                       ? 'text-danger'
                       : cobro.pendingAmount > 0
-                      ? 'text-warning'
+                      ? 'text-fg'
                       : 'text-fg-muted'
                   )}>
                     {formatCurrency(cobro.pendingAmount)}
@@ -487,17 +482,18 @@ export function CobroTable({
                 </span>
               </TableCell>
               <TableCell className="p-4">
-                <span className="font-bold text-fg">
+                <span className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
                   {formatCurrency(summary.totalExpected)}
                 </span>
               </TableCell>
               <TableCell className="p-4">
-                <span className="font-bold text-success">
+                <span className="whitespace-nowrap font-mono font-medium tabular-nums text-success">
                   {formatCurrency(summary.totalCollected)}
                 </span>
               </TableCell>
               <TableCell className="p-4">
-                <span className="font-bold text-warning">
+                {/* Ronda 30: el mismo color que en las filas (rojo si algo está en mora), no café. */}
+                <span className={cn('whitespace-nowrap font-mono font-medium tabular-nums', cobros.some((c) => c.pendingAmount > 0 && c.daysLate > 0) ? 'text-danger' : 'text-fg')}>
                   {formatCurrency(summary.totalPending)}
                 </span>
               </TableCell>

@@ -24,11 +24,15 @@
  * en rojo antes de la tabla — igual que en el balance de prueba.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { CaretRight } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { periodoEnPalabras } from '@/lib/contabilidad/informe-descargable';
 import {
   Table,
   TableBody,
@@ -61,7 +65,7 @@ import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { DescargarElInforme } from './DescargarElInforme';
 import { tablasDelMayor } from '@/lib/contabilidad/tablas-de-los-informes';
-import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
+import { Bloqueos, Nota, TarjetaDeInforme, EsqueletoDeTabla } from '../piezas';
 
 /** Las clases del PUC que se pueden pedir sueltas. */
 const CLASES = [
@@ -118,6 +122,20 @@ export function LibroMayor() {
   const recortados = mayor ? mayor.meses.length - meses.length : 0;
   const descuadre = mayor ? descuadreDelMayor(mayor, formatCurrency) : null;
 
+  /* Ronda 30 (Nico, 23-10-2026): a 390 cada cuenta es UNA tarjeta (código, nombre, saldo y
+     movimiento del último mes) y el mes a mes se abre en el cajón de la casa. Desde md, la
+     tabla de siempre. Mismo patrón que el balance de prueba de esta pantalla. */
+  const esCelular = useIsMobile();
+  const ultimoMes = meses.length > 0 ? meses[meses.length - 1] : null;
+  const [abierta, setAbierta] = useState<string | null>(null);
+  // La cuenta se recuerda al cerrar: el cajón no se vacía mientras sale.
+  const [cajonAbierto, setCajonAbierto] = useState(false);
+  const abrirCuenta = useCallback((codigo: string) => {
+    setAbierta(codigo);
+    setCajonAbierto(true);
+  }, []);
+  const cuentaAbierta = mayor && abierta ? mayor.filas.find((f) => f.codigo === abierta) ?? null : null;
+
   return (
     /* 🔴 20-09 · Eran cuatro bloques sueltos —filtros, avisos, tabla y
        totales—, cada uno con su borde o flotando en el aire. Ahora es UNA
@@ -126,38 +144,48 @@ export function LibroMayor() {
        vacío. */
     <TarjetaDeInforme
       testId="libro-mayor"
-      filtrosClassName="grid gap-3 sm:grid-cols-4"
+      /* Ronda 30 (Nico; la revisora r27 pedía menos renglones de controles): UNA barra
+         —período, «agrupar por» y clase— en vez de una grilla de dos renglones. Las dos
+         listas se explican solas («Por cuenta (4 dígitos)», «Todas las clases»), así que su
+         etiqueta queda para el lector de pantalla. Las descargas bajan al pie del informe,
+         junto a «Volver a calcular»: se bajan después de revisarlo. */
+      filtrosClassName="flex flex-wrap items-start gap-x-4 gap-y-3"
       filtros={
         <>
-        <div className="sm:col-span-2">
+        <div className="min-w-0 max-w-full">
           <RangoDeFechas
+            atajos
             desde={rango.desde}
             hasta={rango.hasta}
             onChange={setRango}
             disabled={cargando}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="nivel-del-mayor">Agrupar por</Label>
+        <div className="w-full md:w-auto">
+          <Label htmlFor="nivel-del-mayor" className="sr-only">
+            Agrupar por
+          </Label>
           <select
             id="nivel-del-mayor"
-            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
+            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg md:h-9 md:w-auto"
             value={nivel}
             onChange={(e) => setNivel(e.target.value as NivelDelMayor)}
             data-testid="nivel-del-mayor"
           >
             {NIVELES_DEL_MAYOR.map((n) => (
               <option key={n} value={n}>
-                {NOMBRE_DEL_NIVEL[n]}
+                {`Por ${NOMBRE_DEL_NIVEL[n].charAt(0).toLowerCase()}${NOMBRE_DEL_NIVEL[n].slice(1)}`}
               </option>
             ))}
           </select>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="clase-del-mayor">Clase</Label>
+        <div className="w-full md:w-auto">
+          <Label htmlFor="clase-del-mayor" className="sr-only">
+            Clase
+          </Label>
           <select
             id="clase-del-mayor"
-            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
+            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg md:h-9 md:w-auto"
             value={clase}
             onChange={(e) => setClase(e.target.value)}
             data-testid="clase-del-mayor"
@@ -169,23 +197,11 @@ export function LibroMayor() {
             ))}
           </select>
         </div>
-        {/* CB-C-13 (QA-FACT-CONTA-95 r2): lo que el contador firma se baja. */}
-        <div className="sm:col-span-4">
-          <DescargarElInforme
-            informe="Libro mayor"
-            periodo={rango}
-            tablas={() => (mayor ? tablasDelMayor(mayor, meses) : [])}
-            disabled={!mayor || mayor.filas.length === 0}
-          />
-        </div>
         </>
       }
     >
       {cargando && !mayor ? (
-        <div className="flex flex-col items-center gap-3 py-16">
-          <Spinner size="lg" />
-          <p className="text-sm text-fg-muted">Armando el mayor…</p>
-        </div>
+        <EsqueletoDeTabla queEs="Armando el mayor…" />
       ) : error && !mayor ? (
         <div className="p-4">
           <FalloDeCarga error={error} queEs="el libro mayor" onReintentar={cargar} />
@@ -220,12 +236,17 @@ export function LibroMayor() {
           <div>
             {mayor.filas.length === 0 ? (
               <p className="p-8 text-center text-sm text-fg-muted">
+                <Ilustracion nombre="lupa" tamano={80} className="mx-auto mb-2 block" />
                 No hay movimientos en este rango con estos filtros.
               </p>
+            ) : esCelular ? (
+              <TarjetasDelMayor filas={mayor.filas} ultimoMes={ultimoMes} onAbrir={abrirCuenta} />
             ) : (
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+                {/* Desde md, la tabla de siempre (con su respaldo de tarjetas por CSS mientras
+                    `useIsMobile` todavía no sabe el ancho, en la primera pintada). */}
+                <Table className="max-md:block">
+                  <TableHeader className="max-md:hidden">
                     <TableRow>
                       <TableHead className="sticky left-0 bg-surface">Cuenta</TableHead>
                       <TableHead className="text-right">Saldo anterior</TableHead>
@@ -257,27 +278,31 @@ export function LibroMayor() {
                       </TableRow>
                     ) : null}
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="max-md:block">
                     {mayor.filas.map((f) => (
-                      <TableRow key={f.codigo} data-testid={`mayor-${f.codigo}`}>
-                        <TableCell className="sticky left-0 whitespace-nowrap bg-surface">
+                      <TableRow
+                        key={f.codigo}
+                        data-testid={`mayor-${f.codigo}`}
+                        className="max-md:grid max-md:grid-cols-2 max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
+                      >
+                        <TableCell className="sticky left-0 whitespace-nowrap bg-surface max-md:static max-md:col-span-2 max-md:block max-md:whitespace-normal max-md:p-0">
                           <span className="font-mono text-caption">{f.codigo}</span> {f.nombre}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Saldo anterior">
                           <Monto valor={f.saldoAnteriorCop} vacioSiCero className="text-sm" />
                         </TableCell>
                         {meses.map((m) => {
                           const delMes = f.porMes.find((p) => p.mes === m);
                           return (
                             <Fragment key={m}>
-                              <TableCell className="text-right">
+                              <TableCell className="text-right max-md:hidden">
                                 <Monto
                                   valor={delMes?.debitosCop ?? 0}
                                   vacioSiCero
                                   className="text-sm"
                                 />
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-right max-md:hidden">
                                 <Monto
                                   valor={delMes?.creditosCop ?? 0}
                                   vacioSiCero
@@ -287,14 +312,16 @@ export function LibroMayor() {
                             </Fragment>
                           );
                         })}
-                        <TableCell className="text-right">
+                        {/* Ronda 30 (Nico, 23-10-2026): el mes a mes del celular ya no va dentro de
+                            la tarjeta: se abre en el cajón (`CajonDelMayor`). */}
+                        <TableCell className="text-right max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Débitos">
                           <Monto valor={f.debitosCop} vacioSiCero className="text-sm" />
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Créditos">
                           <Monto valor={f.creditosCop} vacioSiCero className="text-sm" />
                         </TableCell>
-                        <TableCell className="text-right">
-                          <Monto valor={f.saldoFinalCop} className="text-sm font-medium" />
+                        <TableCell className="text-right max-md:block max-md:p-0 max-md:text-left max-md:before:block max-md:before:font-sans max-md:before:text-caption max-md:before:text-fg-subtle max-md:before:content-[attr(data-etiqueta)]" data-etiqueta="Saldo final">
+                          <Monto valor={f.saldoFinalCop} className="text-sm text-fg" />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -315,17 +342,189 @@ export function LibroMayor() {
                   anclada, así que desplazarse funciona — lo que faltaba era
                   avisar que hay algo más allá del borde. */}
               {meses.length > 2 ? (
-                <span data-testid="el-mayor-se-desplaza">
+                <span data-testid="el-mayor-se-desplaza" className="max-md:hidden">
                   {' '}· {meses.length} meses: la tabla se desplaza de lado, con la cuenta fija.
                 </span>
               ) : null}
             </p>
-            <Button variant="ghost" size="sm" hideArrow onClick={cargar} data-testid="recargar-mayor">
-              Volver a calcular
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* CB-C-13 (QA-FACT-CONTA-95 r2): lo que el contador firma se baja.
+                  Ronda 30 (Nico): en el pie, para que la barra de arriba sea una sola. */}
+              <DescargarElInforme
+                informe="Libro mayor"
+                periodo={rango}
+                tablas={() => tablasDelMayor(mayor, meses)}
+                disabled={mayor.filas.length === 0}
+              />
+              <Button variant="ghost" size="sm" hideArrow onClick={cargar} data-testid="recargar-mayor">
+                Volver a calcular
+              </Button>
+            </div>
           </div>
+
+          <CajonDelMayor
+            fila={cuentaAbierta}
+            abierto={cajonAbierto && cuentaAbierta !== null}
+            meses={meses}
+            periodo={periodoEnPalabras(rango)}
+            onCerrar={() => setCajonAbierto(false)}
+          />
         </>
       ) : null}
     </TarjetaDeInforme>
+  );
+}
+
+// ── A 390: una tarjeta por cuenta y el mes a mes en el cajón ───────────────
+// Ronda 30 (Nico, 23-10-2026). Nada se calcula distinto: las cifras son las de la fila.
+
+type FilaDelMayor = Mayor['filas'][number];
+
+/**
+ * El movimiento de un mes en la naturaleza de la cuenta: lo que subió (o bajó) su saldo.
+ * Débito: débitos − créditos; crédito: créditos − débitos. Es lo mismo que separa el saldo
+ * de ese mes del anterior, con los débitos y créditos que ya trae la fila.
+ */
+export function movimientoDelMes(fila: FilaDelMayor, mes: string): number {
+  const delMes = fila.porMes.find((p) => p.mes === mes);
+  const debitos = delMes?.debitosCop ?? 0;
+  const creditos = delMes?.creditosCop ?? 0;
+  return fila.naturaleza === 'CREDITO' ? creditos - debitos : debitos - creditos;
+}
+
+function movimientoEnTexto(valor: number): string {
+  return valor > 0 ? `+${formatCurrency(valor)}` : formatCurrency(valor);
+}
+
+function TarjetasDelMayor({
+  filas,
+  ultimoMes,
+  onAbrir,
+}: {
+  filas: FilaDelMayor[];
+  ultimoMes: string | null;
+  onAbrir: (codigo: string) => void;
+}) {
+  return (
+    <div data-testid="tarjetas-del-mayor">
+      {/* Las etiquetas UNA vez, como el encabezado de una tabla: no en cada tarjeta. */}
+      <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2 text-caption text-fg-subtle">
+        <span>Cuenta</span>
+        <span className="text-right">
+          {ultimoMes ? `Saldo final y movimiento de ${mesDelMayor(ultimoMes)}` : 'Saldo final'}
+        </span>
+      </div>
+      <ul className="divide-y divide-border">
+        {filas.map((f) => {
+          const movimiento = ultimoMes ? movimientoDelMes(f, ultimoMes) : null;
+          return (
+            <li key={f.codigo}>
+              <button
+                type="button"
+                data-testid={`mayor-${f.codigo}`}
+                aria-haspopup="dialog"
+                onClick={() => onAbrir(f.codigo)}
+                className="grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 px-4 py-3.5 text-left hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+              >
+                <span className="min-w-0">
+                  <span className="block font-mono text-caption tabular-nums text-fg-muted">{f.codigo}</span>
+                  <span className="block break-words text-body-sm text-fg">{f.nombre}</span>
+                </span>
+                <span className="text-right">
+                  <Monto valor={f.saldoFinalCop} className="block text-body-sm text-fg" />
+                  {movimiento !== null ? (
+                    <span
+                      className="block whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted"
+                      data-testid={`mayor-${f.codigo}-movimiento`}
+                    >
+                      {movimiento === 0 ? 'sin movimiento' : movimientoEnTexto(movimiento)}
+                    </span>
+                  ) : null}
+                </span>
+                <CaretRight className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function CajonDelMayor({
+  fila,
+  abierto,
+  meses,
+  periodo,
+  onCerrar,
+}: {
+  fila: FilaDelMayor | null;
+  abierto: boolean;
+  meses: string[];
+  periodo: string;
+  onCerrar: () => void;
+}) {
+  const f = fila;
+
+  return (
+    <Cajon abierto={abierto} onOpenChange={(v) => (!v ? onCerrar() : undefined)} tamano="sm" data-testid="cajon-del-mayor">
+      {f ? (
+        <>
+          <CajonCabecera titulo={`${f.codigo} · ${f.nombre}`} descripcion={`Mes a mes · ${periodo}`} />
+          <CajonCuerpo className="space-y-5">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3" data-testid="cajon-del-mayor-totales">
+              {(
+                [
+                  ['Saldo anterior', f.saldoAnteriorCop],
+                  ['Débitos', f.debitosCop],
+                  ['Créditos', f.creditosCop],
+                  ['Saldo final', f.saldoFinalCop],
+                ] as const
+              ).map(([etiqueta, valor]) => (
+                <div key={etiqueta} className="min-w-0">
+                  <dt className="text-caption text-fg-muted">{etiqueta}</dt>
+                  <dd>
+                    <Monto
+                      valor={valor}
+                      vacioSiCero={etiqueta !== 'Saldo final'}
+                      className={etiqueta === 'Saldo final' ? 'text-body-sm font-medium text-fg' : 'text-body-sm'}
+                    />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
+            {meses.length > 0 ? (
+              <section className="space-y-2">
+                <h3 className="text-body-sm font-medium text-fg">Mes a mes</h3>
+                <div className="rounded-md border border-border">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-4 border-b border-border px-3 py-2 text-caption text-fg-subtle">
+                    <span>Mes</span>
+                    <span className="text-right">Débitos</span>
+                    <span className="text-right">Créditos</span>
+                  </div>
+                  <ul
+                    className="divide-y divide-border"
+                    aria-label={`Mes a mes de ${f.codigo}`}
+                    data-testid={`mayor-${f.codigo}-mes-a-mes`}
+                  >
+                    {meses.map((m) => {
+                      const delMes = f.porMes.find((p) => p.mes === m);
+                      return (
+                        <li key={m} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-4 px-3 py-2.5">
+                          <span className="text-body-sm text-fg-muted">{mesDelMayor(m)}</span>
+                          <Monto valor={delMes?.debitosCop ?? 0} vacioSiCero className="text-right text-body-sm" />
+                          <Monto valor={delMes?.creditosCop ?? 0} vacioSiCero className="text-right text-body-sm" />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </section>
+            ) : null}
+          </CajonCuerpo>
+        </>
+      ) : null}
+    </Cajon>
   );
 }

@@ -19,6 +19,7 @@
  * un `Select`: doscientos inmuebles no se encuentran bajando una lista.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { House, User, UserPlus } from '@phosphor-icons/react'
 import { SegmentedControl, Presence } from '@leasefy/cadence'
@@ -287,7 +288,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
   return (
     <section className="space-y-5 rounded-lg border border-border bg-card p-5" data-testid="partes-manuales">
       <div>
-        <h2 className="text-base font-semibold text-fg">¿Sobre qué inmueble y para quién?</h2>
+        <h2 className="text-h3 text-fg">¿Sobre qué inmueble y para quién?</h2>
         <p className="mt-0.5 text-sm text-fg-muted">
           El propietario sale del inmueble consignado. El resto del contrato es igual que cualquier otro.
         </p>
@@ -300,6 +301,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
         </label>
         {consignaciones !== null && elegibles.length === 0 && !errorInmuebles ? (
           <p className="rounded-md border border-dashed border-border bg-surface-muted px-3 py-2 text-sm text-fg-muted" data-testid="sin-inmuebles">
+            <Ilustracion nombre="casa" tamano={56} className="mb-2 block" />
             No hay inmuebles consignados libres. Consigna uno desde Inmuebles y vuelve.
           </p>
         ) : (
@@ -307,7 +309,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             value={valor.propertyId || undefined}
             onChange={elegirInmueble}
             options={opcionesInmueble}
-            placeholder={consignaciones === null ? 'Cargando inmuebles…' : 'Busca por código, título o dirección'}
+            placeholder={consignaciones === null ? 'Cargando inmuebles…' : 'Buscar por código, título o dirección'}
             searchPlaceholder="Escribe #código, título o dirección"
             disabled={consignaciones === null}
             invalid={Boolean(errores.propertyId)}
@@ -363,7 +365,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                 })
               }}
               options={opcionesInquilino}
-              placeholder={cargandoInquilinos ? 'Cargando inquilinos…' : 'Busca por nombre, correo o teléfono'}
+              placeholder={cargandoInquilinos ? 'Cargando inquilinos…' : 'Buscar por nombre, correo o teléfono'}
               searchPlaceholder="Nombre, correo o teléfono"
               disabled={cargandoInquilinos}
               invalid={Boolean(errores.tenantId)}
@@ -371,7 +373,8 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             />
             {!cargandoInquilinos && inquilinos.length === 0 && (
               <p className="text-caption text-fg-muted" data-testid="sin-inquilinos">
-                Todavía no hay inquilinos con arriendos acá. Cárgalo como nuevo.
+                <Ilustracion nombre="cedula" tamano={56} className="mb-2 block" />
+                Todavía no hay inquilinos con arriendos aquí. Cárgalo como nuevo.
               </p>
             )}
             <ErrorDelCampo id="inquilino-del-contrato-error" mensaje={errores.tenantId} className="mt-0" />

@@ -125,12 +125,15 @@ describe('ReclamosClient', () => {
     expect(fila).toContain('¿Por qué no aprobaron mi postulación?')
   })
 
-  it('🔴 la regla se lee ANTES de escribir, no dentro del formulario', async () => {
-    // Antes este recordatorio vivía DENTRO del campo de respuesta, así que
-    // sólo lo leía quien ya había decidido responder — y para entonces la
-    // frase con el puntaje suele estar pensada. Ahora está arriba, y esta
-    // prueba exige justamente eso: visible SIN abrir nada.
+  it('🔴 la regla va PLEGADA junto a la caja de respuesta (decisión de Nico, 23-10)', async () => {
+    // Estuvo arriba, siempre abierta. Nico (23-10): «qué sí y qué no decir»
+    // plegada junto a la caja donde se escribe. Con los mismos datos.
     await pintar()
+    expect($('[data-testid="que-se-puede-decir"]')).toBeNull()
+    await clic('[data-testid="responder-r-1"]')
+    const guia = $('[data-testid="guia-de-la-respuesta"]')!
+    expect(guia.querySelector('button')!.getAttribute('aria-expanded')).toBe('false')
+    expect(guia.querySelector('button')!.textContent).toContain('Qué sí y qué no decirle')
     const regla = $('[data-testid="que-se-puede-decir"]')?.textContent ?? ''
     expect(regla).toContain('Su puntaje')
     expect(regla).toContain('centrales de riesgo')

@@ -138,7 +138,8 @@ describe('<CandidatosDelInmueble>', () => {
     ])
 
     expect(container.textContent).toContain('1 espera tu decisión')
-    const nombres = filas().map((b) => b.querySelector('span span')?.textContent)
+    // 22-10: el avatar es el de Cadence; el nombre es el primer renglón del texto.
+    const nombres = filas().map((b) => b.querySelector('span.min-w-0 > span')?.textContent)
     expect(nombres).toHaveLength(3)
     expect(nombres[0]).toBe('Diego Peña')
   })

@@ -608,7 +608,7 @@ function Campo({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-xs font-medium text-fg">
+      <label htmlFor={id} className="block text-caption font-medium text-fg">
         {label}
         {/* El espacio va en el texto (no sólo en el margen): «Correo (obligatorio)». */}
         {marca ? <span className="font-normal text-fg-muted">{' '}({marca.toLowerCase()})</span> : null}

@@ -22,7 +22,7 @@ export default async function ArcoPage() {
     <I18nProvider>
       <main
         id="main-content"
-        className="min-h-screen flex flex-col items-center justify-start py-16 px-4 bg-background"
+        className="min-h-screen flex flex-col items-center justify-start px-4 pb-16 pt-8 sm:pt-16 bg-bg"
       >
         <ElegirInmobiliaria inmobiliarias={inmobiliarias} />
       </main>

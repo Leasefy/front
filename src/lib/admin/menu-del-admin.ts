@@ -92,7 +92,7 @@ export const PANTALLAS_DEL_ADMIN: Record<string, DatosDeLaPantalla> = {
   '/admin': { seccion: null, icono: SquaresFour, nombre: 'Resumen', queHay: 'La operación de hoy de un vistazo' },
 
   '/admin/tenants': { seccion: 'inmobiliarias', icono: Buildings, nombre: 'Inmobiliarias', queHay: 'Cada inmobiliaria, su plan y su actividad' },
-  '/admin/onboarding': { seccion: 'inmobiliarias', icono: RocketLaunch, nombre: 'Onboarding', queHay: 'Cómo van las inmobiliarias nuevas' },
+  '/admin/onboarding': { seccion: 'inmobiliarias', icono: RocketLaunch, nombre: 'Inmobiliarias nuevas', queHay: 'Cómo arrancan las inmobiliarias' },
   '/admin/registration-profiles': { seccion: 'inmobiliarias', icono: UserCirclePlus, nombre: 'Perfiles de registro', queHay: 'Qué perfiles se pueden registrar' },
   '/admin/plans': { seccion: 'inmobiliarias', icono: Stack, nombre: 'Planes', queHay: 'El catálogo de planes de las inmobiliarias' },
   '/admin/pricing-config': { seccion: 'inmobiliarias', icono: Tag, nombre: 'Precios', queHay: 'El modelo de cobro a las inmobiliarias' },
@@ -102,13 +102,15 @@ export const PANTALLAS_DEL_ADMIN: Record<string, DatosDeLaPantalla> = {
   '/admin/kill-switch': { seccion: 'inmobiliarias', icono: Power, nombre: 'Pausa de emergencia', queHay: 'Pausar los agentes de una inmobiliaria' },
 
   '/admin/piloto': { seccion: 'agentes', icono: AirTrafficControl, nombre: 'Piloto automático', queHay: 'En prueba, contratado o apagado' },
+  // Ronda 30 (Nico, 23-10): su propia pantalla; antes una pestaña de «Inmobiliarias nuevas».
+  '/admin/cobranza-por-voz': { seccion: 'agentes', icono: PhoneCall, nombre: 'Cobranza por voz', queHay: 'Cuándo llamó y cobró Mori por primera vez' },
   '/admin/agents': { seccion: 'agentes', icono: Robot, nombre: 'Agentes de voz', queHay: 'Las instrucciones de cada agente' },
   '/admin/maestro': { seccion: 'agentes', icono: GraduationCap, nombre: 'Maestro', queHay: 'Lo que aprende de todas las Nairas' },
   '/admin/chat-preguntas': { seccion: 'agentes', icono: ChatsCircle, nombre: 'Preguntas del chat', queHay: 'Qué pregunta la gente y qué falta' },
   '/admin/chat-feedback': { seccion: 'agentes', icono: ThumbsUp, nombre: 'Pulgares del chat', queHay: 'Dónde falla el chat' },
   '/admin/qa': { seccion: 'agentes', icono: ListChecks, nombre: 'Calidad de llamadas', queHay: 'Puntaje y alertas de cada llamada' },
   '/admin/ab-tests': { seccion: 'agentes', icono: Flask, nombre: 'Experimentos', queHay: 'Pruebas A/B de los agentes' },
-  '/admin/templates': { seccion: 'agentes', icono: ChatText, nombre: 'Plantillas', queHay: 'Plantillas de WhatsApp por idioma' },
+  '/admin/templates': { seccion: 'agentes', icono: ChatText, nombre: 'Avisos', queHay: 'Lo que dicen las notificaciones y los correos de Leasefy' },
 
   '/admin/calls': { seccion: 'cobranza', icono: PhoneCall, nombre: 'Llamadas', queHay: 'Todas las llamadas, de todas las inmobiliarias' },
   '/admin/cartera': { seccion: 'cobranza', icono: Wallet, nombre: 'Cartera', queHay: 'La cartera por etapa de cobro' },

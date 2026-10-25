@@ -147,7 +147,7 @@ export function ConfigTasaDeRecaudo({ agency, onSave, canEdit = true }: ConfigTa
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-foreground">
           <ChartLineUp className="w-5 h-5 text-fg-muted" weight="duotone" />
-          <h3 id="tasa-de-recaudo-titulo" className="text-base font-semibold">
+          <h3 id="tasa-de-recaudo-titulo" className="text-base font-medium">
             {t('inmobiliaria.tasaDeRecaudo.ajuste.titulo')}
           </h3>
         </div>
@@ -182,9 +182,9 @@ export function ConfigTasaDeRecaudo({ agency, onSave, canEdit = true }: ConfigTa
               label={t(`inmobiliaria.tasaDeRecaudo.ajuste.opcion.${base}.titulo`)}
               badge={
                 base === guardada ? (
-                  <span className="text-xs font-medium text-primary">{t('inmobiliaria.tasaDeRecaudo.ajuste.enUso')}</span>
+                  <span className="text-caption font-medium text-primary">{t('inmobiliaria.tasaDeRecaudo.ajuste.enUso')}</span>
                 ) : base === BASE_POR_DEFECTO ? (
-                  <span className="text-xs text-fg-muted">{t('inmobiliaria.tasaDeRecaudo.ajuste.porDefecto')}</span>
+                  <span className="text-caption text-fg-muted">{t('inmobiliaria.tasaDeRecaudo.ajuste.porDefecto')}</span>
                 ) : undefined
               }
               description={
@@ -192,12 +192,12 @@ export function ConfigTasaDeRecaudo({ agency, onSave, canEdit = true }: ConfigTa
                   <span className="block text-sm text-fg-muted">
                     {t(`inmobiliaria.tasaDeRecaudo.ajuste.opcion.${base}.explicacion`)}
                   </span>
-                  <span className="block text-xs text-fg-muted">
+                  <span className="block text-caption text-fg-muted">
                     {t(`inmobiliaria.tasaDeRecaudo.ajuste.opcion.${base}.ejemplo`)}
                   </span>
                   {medida && datos && (
                     <span
-                      className="block text-xs font-medium text-fg tabular-nums"
+                      className="block text-caption font-medium text-fg tabular-nums"
                       data-testid={`tasa-de-recaudo-con-tus-numeros-${base}`}
                     >
                       {t('inmobiliaria.tasaDeRecaudo.ajuste.conTusNumeros', {
@@ -215,17 +215,17 @@ export function ConfigTasaDeRecaudo({ agency, onSave, canEdit = true }: ConfigTa
       </RadioCardGroup>
 
       {cargando && !datos && (
-        <p className="text-xs text-muted-foreground" role="status" aria-live="polite">
+        <p className="text-caption text-muted-foreground" role="status" aria-live="polite">
           {t('inmobiliaria.tasaDeRecaudo.ajuste.cargando')}
         </p>
       )}
       {!cargando && falloAlCargar && !datos && (
-        <p className="flex items-center gap-2 text-xs text-fg-muted" data-testid="tasa-de-recaudo-sin-numeros">
+        <p className="flex items-center gap-2 text-caption text-fg-muted" data-testid="tasa-de-recaudo-sin-numeros">
           <Warning className="h-4 w-4 shrink-0" />
           {t('inmobiliaria.tasaDeRecaudo.ajuste.errorNumeros')}
         </p>
       )}
-      {!canEdit && <p className="text-xs text-muted-foreground">{t('inmobiliaria.tasaDeRecaudo.ajuste.soloAdmin')}</p>}
+      {!canEdit && <p className="text-caption text-muted-foreground">{t('inmobiliaria.tasaDeRecaudo.ajuste.soloAdmin')}</p>}
     </section>
   );
 }

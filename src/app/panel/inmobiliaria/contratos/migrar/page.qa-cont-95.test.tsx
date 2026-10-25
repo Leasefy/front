@@ -28,7 +28,7 @@ vi.mock('@/components/migracion/VeredictoDeMigracion', () => ({
   FilasFrenadas: () => null,
 }))
 vi.mock('@/lib/hooks/use-migracion-con-deuda', () => ({ useDeudaDeMigracion: () => ({ deuda: null, recargar: vi.fn() }) }))
-vi.mock('@leasefy/cadence', () => ({ Eyebrow: ({ children }: { children?: React.ReactNode }) => children }))
+// GLOW UP 21-10: el encabezado común (con su «¿Cómo funciona?») usa Cadence de verdad; ya no se simula.
 
 import MigrarContratosPage from './page'
 

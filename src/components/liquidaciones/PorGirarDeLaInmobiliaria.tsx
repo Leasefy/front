@@ -11,6 +11,7 @@
  * Si la ruta no responde (un back anterior), no se pinta nada.
  */
 
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { useEffect, useState } from 'react';
 import { AnimatedNumber, Presence } from '@leasefy/cadence';
 
@@ -23,7 +24,11 @@ import {
 } from '@/lib/propietarios/por-girar';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
-export function PorGirarDeLaInmobiliaria() {
+/**
+ * Revisora r22 (Giros #3): con el mes elegido ya girado, «Por girar hasta octubre: $ X» al lado de «Octubre está girado
+ * completo» se leía como una contradicción. Esa plata es de meses anteriores, y la cifra lo dice.
+ */
+export function PorGirarDeLaInmobiliaria({ mesGirado, nombreDelMes }: { mesGirado?: boolean; nombreDelMes?: string } = {}) {
   const [cifra, setCifra] = useState<PorGirarDelBack | null>(null);
 
   useEffect(() => {
@@ -43,6 +48,10 @@ export function PorGirarDeLaInmobiliaria() {
     };
   }, []);
 
+  // Revisora r25 (Giros #1, C9): cada cifra con SUS decimales, como el neto y la tabla de al
+  // lado. Con `plataPareja` (ronda 19) los centavos de «próximos giros» le ponían «,00» a
+  // «Por girar» y la vista decía «$ 2.371.800,00» junto a «$ 6.783.700».
+  const plataDeLaFranja = (v: number) => formatCurrency(v);
   return (
     <Presence show={cifra !== null} initial={false}>
       {cifra ? (
@@ -51,24 +60,31 @@ export function PorGirarDeLaInmobiliaria() {
           data-testid="por-girar-liquidaciones"
         >
           <div className="min-w-0">
-            <p className="text-sm text-muted-foreground">{rotuloDePorGirar(cifra.hastaMes)}</p>
+            <p className="text-sm text-muted-foreground">
+              {mesGirado && cifra.porGirarCop > 0 ? 'Por girar, de meses anteriores' : rotuloDePorGirar(cifra.hastaMes)}
+            </p>
             <p
-              className="mt-1 whitespace-nowrap font-mono text-2xl font-semibold tabular-nums text-fg"
+              className="mt-1 whitespace-nowrap font-mono text-2xl tabular-nums text-fg"
               data-testid="por-girar-cifra"
             >
-              <AnimatedNumber value={cifra.porGirarCop} format={formatCurrency} />
+              <AnimatedNumber value={cifra.porGirarCop} format={plataDeLaFranja} />
             </p>
-            <p className="mt-1 text-caption text-fg-muted">{definicionDePorGirar(cifra.hastaMes)}</p>
+            {/* Revisora r23 (Giros #3): el subtexto «{Mes} ya está girado: esta plata es de meses anteriores»
+                repetía la tarjeta «Lo que falta del mes» y el rótulo de la cifra. Fuera. */}
+            {/* GLOW UP (21-10): la cifra primero; lo que cuenta, plegado (la misma frase del Tablero y de Cartera). */}
+            <MasDetalles etiqueta="Qué cuenta esta cifra" montadoSiempre className="mt-1">
+              <p className="text-caption text-fg-muted">{definicionDePorGirar(cifra.hastaMes)}</p>
+            </MasDetalles>
           </div>
           <div className="min-w-0 sm:border-l sm:border-border sm:pl-5">
             <p className="text-sm text-muted-foreground">
               {rotuloDeProximosGiros(cifra.proximosGiros.desdeMes, cifra.proximosGiros.hastaMes)}
             </p>
             <p
-              className="mt-1 whitespace-nowrap font-mono text-2xl font-semibold tabular-nums text-fg-muted"
+              className="mt-1 whitespace-nowrap font-mono text-2xl tabular-nums text-fg-muted"
               data-testid="proximos-giros"
             >
-              <AnimatedNumber value={cifra.proximosGiros.totalCop} format={formatCurrency} />
+              <AnimatedNumber value={cifra.proximosGiros.totalCop} format={plataDeLaFranja} />
             </p>
             <p className="mt-1 text-caption text-fg-muted">
               Todavía no se debe girar: va aparte y no se suma a «Por girar».

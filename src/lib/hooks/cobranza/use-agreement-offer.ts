@@ -14,7 +14,7 @@
  * NO envía nada al inquilino ni acuña el link de pago definitivo: eso ocurre
  * en la aprobación humana (`/payment-plans/{id}/approve`), que es una acción
  * aparte. Verificado en el handler: offer no contacta al inquilino (T-323 /
- * Ley 2300). El plan queda «Pendiente aprobación», tal como promete el aviso.
+ * Ley 2300). El plan queda «Por aprobar», tal como promete el aviso.
  *
  * Body (el backend valida `.strict()`): { agencyId, debtorId, callId,
  * stage, totalDueCop, interestsCop, initialAmountCop?, installmentCount?,

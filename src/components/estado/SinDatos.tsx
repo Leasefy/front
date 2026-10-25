@@ -21,12 +21,14 @@
  * Ver `src/components/estado/EstadoDeDatos.tsx`.
  */
 
+import { Ilustracion, type NombreIlustracion } from '@leasefy/cadence'
 import Link from 'next/link'
-import { MagnifyingGlass, Plus, type Icon } from '@phosphor-icons/react'
+import { MagnifyingGlass, Plus, Tray, type Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CajaQueEntra } from './entrada-del-estado'
 import { useTr } from '@/lib/i18n/use-tr'
+import { ilustracionDelVacio } from '@/lib/vacios/ilustracion-del-vacio'
 
 export interface SinDatosProps {
   /**
@@ -37,7 +39,10 @@ export interface SinDatosProps {
   hayFiltros?: boolean
   /** En plural y en minúscula: «inmuebles», «contratos», «propietarios». */
   queSon: string
-  /** El icono del dominio. Sólo se usa en el vacío de verdad. */
+  /**
+   * El icono del dominio. Sólo se usa en el vacío de verdad. Sin él, una bandeja vacía:
+   * la lupa dice «tu búsqueda no encontró nada» y es sólo para `hayFiltros` (revisora r27, C10).
+   */
   icono?: Icon
   /** Texto propio para el vacío de verdad; si no, se arma con `queSon`. */
   titulo?: string
@@ -57,6 +62,11 @@ export interface SinDatosProps {
   accion?: React.ReactNode
   /** Volver a ver todo. Sólo aparece cuando SÍ hay filtros. */
   onLimpiarFiltros?: () => void
+  /**
+   * Cadence 2: una ilustración 3D (casa, alcancia, billetera, escudo, monedas) en lugar del ícono,
+   * para el vacío GRANDE que invita a empezar o dice «todo al día». Con filtros puestos no se usa.
+   */
+  ilustracion?: NombreIlustracion
   className?: string
 }
 
@@ -64,6 +74,7 @@ export function SinDatos({
   hayFiltros = false,
   queSon,
   icono: IconoDelDominio,
+  ilustracion,
   titulo,
   descripcion,
   crear,
@@ -72,7 +83,7 @@ export function SinDatos({
   className,
 }: SinDatosProps) {
   const tr = useTr();
-  const Icono = hayFiltros ? MagnifyingGlass : (IconoDelDominio ?? MagnifyingGlass)
+  const Icono = hayFiltros ? MagnifyingGlass : (IconoDelDominio ?? Tray)
 
   const tituloFinal = hayFiltros
     ? `Ningún resultado`
@@ -96,7 +107,7 @@ export function SinDatos({
    */
   const descripcionFinal = hayFiltros
     ? `No hay ${queSon} que coincidan con lo que buscaste. Prueba con otra búsqueda o quita los filtros.`
-    : (descripcion ?? `Lo que agregues aparece acá.`)
+    : (descripcion ?? `Lo que agregues aparece aquí.`)
 
   return (
     // Entra con `Appear` de Cadence salvo dentro de un `EstadoDeDatos` que ya lo anima.
@@ -105,9 +116,14 @@ export function SinDatos({
       data-testid="sin-datos"
       data-caso={hayFiltros ? 'filtros' : 'vacio'}
     >
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
-        <Icono weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
-      </div>
+      {/* Nico (23-10-2026): todo vacío con su ilustración 3D. Con filtros, la lupa (lo que falta es lo buscado);
+          sin ellos, la que pide la pantalla o la que sale de lo que son («pagos» → billetera). */}
+      <Ilustracion
+        nombre={hayFiltros ? 'lupa' : (ilustracion ?? ilustracionDelVacio(queSon, titulo, descripcion))}
+        tamano={136}
+        className="mx-auto"
+        data-icono={Icono.displayName ?? undefined}
+      />
 
       <div className="mt-4 space-y-1.5">
         <p className="text-[15px] font-semibold text-fg">{tituloFinal}</p>

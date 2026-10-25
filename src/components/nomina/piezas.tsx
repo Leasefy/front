@@ -36,6 +36,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { cn } from '@/lib/utils';
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { nombreDelMes } from '@/lib/recaudo/meses';
 
 // ── El cartel del módulo no habilitado ──────────────────────────────────────
 
@@ -60,7 +61,7 @@ export function ModuloNoHabilitado({
       <div className="flex items-start gap-3">
         <Lock className="mt-0.5 h-6 w-6 shrink-0 text-fg-muted" aria-hidden="true" />
         <div className="space-y-2">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             Nómina no está habilitada para tu inmobiliaria
           </h2>
           <p className="text-fg-muted">
@@ -105,7 +106,7 @@ export function SinLaMigracion({
         <p className="font-medium">Todavía no se puede {queSeEspera}.</p>
         {/* 🔴 20-09 · Igual que en `contabilidad/piezas`: el motivo del back
             está escrito para quien despliega —trae el identificador de la
-            migración y el nombre de quien la aplica— y acá lo lee una
+            migración y el nombre de quien la aplica— y aquí lo lee una
             inmobiliaria. `enCristiano` lo traduce; el original queda en el
             `title` para quien tenga que diagnosticar. */}
         <p className="text-fg-muted" title={motivo ?? undefined}>
@@ -336,7 +337,7 @@ export function TituloDeBloque({
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1">
-        <h2 className="text-base font-semibold text-fg">{titulo}</h2>
+        <h2 className="text-base font-medium text-fg">{titulo}</h2>
         <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
           {explicacion}
         </p>
@@ -397,9 +398,14 @@ export function LeyendaDeEstados() {
   );
 }
 
-/** `YYYY-MM` + quincena, en palabras. */
+/**
+ * `YYYY-MM` + quincena, en palabras: «Marzo de 2026» y «Marzo de 2026 · 1.ª quincena»
+ * (glow up, 3.ª vuelta: antes «2026-03 · quincena 1»). Lo que no sea un mes se devuelve tal cual.
+ */
 export function etiquetaDelPeriodo(mes: string, quincena: number | null): string {
-  return quincena == null ? mes : `${mes} · quincena ${quincena}`;
+  const nombre = /^\d{4}-(0[1-9]|1[0-2])$/.test(mes) ? nombreDelMes(mes) : mes;
+  const conMayuscula = nombre.charAt(0).toUpperCase() + nombre.slice(1);
+  return quincena == null ? conMayuscula : `${conMayuscula} · ${quincena}.ª quincena`;
 }
 
 /** Centésimas a texto: 750 → «7,5». */

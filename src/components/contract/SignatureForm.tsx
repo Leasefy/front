@@ -188,8 +188,8 @@ export function SignatureForm({
             <SealCheck className="w-5 h-5 text-success" />
           </div>
           <div>
-            <h3 className="font-semibold text-fg">Firma electrónica</h3>
-            <p className="text-xs text-fg-muted">Como {role}</p>
+            <h3 className="font-medium text-fg">Firma electrónica</h3>
+            <p className="text-caption text-fg-muted">Como {role}</p>
           </div>
         </div>
         <div className="rounded-lg border border-success/30 bg-success-soft p-4">
@@ -198,9 +198,9 @@ export function SignatureForm({
               <Check className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-success">{textos?.firmado ?? 'Contrato firmado'}</p>
+              <p className="font-medium text-success">{textos?.firmado ?? 'Contrato firmado'}</p>
               <p className="text-sm text-success">
-                {signerName ? `Por ${signerName}` : 'Firma completada exitosamente'}
+                {signerName ? `Por ${signerName}` : 'Listo: la firma quedó registrada'}
               </p>
             </div>
           </div>
@@ -214,8 +214,8 @@ export function SignatureForm({
       <div className={cn('space-y-4', className)}>
         {/* Header - Simplified */}
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-fg">Firma electrónica</h3>
-          <span className="px-2.5 py-1 rounded-md bg-primary-soft text-xs font-medium text-primary">
+          <h3 className="font-medium text-fg">Firma electrónica</h3>
+          <span className="px-2.5 py-1 rounded-md bg-primary-soft text-caption font-medium text-primary">
             {role}
           </span>
         </div>
@@ -365,7 +365,7 @@ export function SignatureForm({
         </Button>
 
         {/* Legal footnote */}
-        <p className="text-center text-[11px] text-fg-muted">
+        <p className="text-center text-caption text-fg-muted">
           Firma válida según Ley 527/1999 · Verificación por correo requerida
         </p>
       </div>

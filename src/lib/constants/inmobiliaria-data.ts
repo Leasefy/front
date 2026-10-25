@@ -146,8 +146,9 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'comisiones-agente',
-    title: 'Comisiones por agente',
-    description: 'Desglose de comisiones generadas por cada agente',
+    // Ronda 30 (revisora r27, VOZ §7.7): «agente» es la IA; la persona es el asesor.
+    title: 'Comisiones por asesor',
+    description: 'Desglose de comisiones generadas por cada asesor',
     icon: 'Users',
     category: 'agentes',
     format: 'excel',
@@ -157,7 +158,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'ocupacion-portafolio',
     title: 'Ocupación del portafolio',
-    description: 'Porcentaje de ocupación por zona y tipo de propiedad',
+    description: 'Porcentaje de ocupación por zona y tipo de inmueble',
     icon: 'ChartPie',
     category: 'operativo',
     // Decía `pdf`, y por esa sola etiqueta la descarga caía en la rama «PDF en
@@ -179,8 +180,8 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'rendimiento-agentes',
-    title: 'Rendimiento de agentes',
-    description: 'KPIs comparativos de desempeño del equipo comercial',
+    title: 'Rendimiento de los asesores',
+    description: 'Cierres, comisiones y tiempos de cada asesor, comparados',
     icon: 'ChartBar',
     category: 'agentes',
     format: 'pdf',
@@ -190,7 +191,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'flujo-caja',
     title: 'Flujo de caja',
-    description: 'Ingresos vs dispersiones con proyección mensual',
+    description: 'Lo que entró y lo que se giró, con la proyección del mes',
     icon: 'CurrencyDollar',
     category: 'financiero',
     format: 'excel',
@@ -202,7 +203,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     // «Descargar CSV» baja el mismo rango que muestra el back.
     id: 'rentabilidad-inmueble',
     title: 'Rentabilidad por inmueble',
-    description: 'Esperado vs recaudado, comisión, gastos, neto al propietario y ocupación por inmueble',
+    description: 'Lo esperado, lo recaudado y el neto de cada inmueble',
     icon: 'ChartLineUp',
     category: 'financiero',
     format: 'excel',

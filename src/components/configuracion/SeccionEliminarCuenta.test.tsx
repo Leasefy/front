@@ -83,4 +83,42 @@ describe('SeccionEliminarCuenta', () => {
     const confirmar = [...modal!.querySelectorAll('button')].find((b) => b.textContent?.includes('Eliminar'))
     expect(confirmar?.disabled).toBe(true)
   })
+
+  /*
+   * Ronda 30 (decisión de Nico, 23-10): la baja vive SÓLO en Configuración. Lo que cuidaban las pruebas del diálogo
+   * que había en Mi perfil (inquilino y propietario) se prueba aquí, donde vive ahora.
+   */
+  const escribir = (valor: string) => {
+    const input = container.querySelector<HTMLInputElement>('#confirmar-eliminar-cuenta')!
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(input, valor)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+  const elBotonRojo = () =>
+    [...container.querySelector('[data-testid="modal"]')!.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Eliminar'),
+    )!
+
+  it('el botón rojo sólo se habilita con la palabra exacta', async () => {
+    await act(async () => root.render(<SeccionEliminarCuenta />))
+    await act(async () => boton().click())
+    escribir('eliminar')
+    expect(elBotonRojo().disabled).toBe(true)
+    escribir('ELIMINAR')
+    expect(elBotonRojo().disabled).toBe(false)
+  })
+
+  it('si el back no la deja, dice por qué y la confirmación sigue abierta', async () => {
+    const { settingsApi } = await import('@/lib/api/settings.service')
+    const { toast } = await import('@/components/ui/toast')
+    vi.mocked(settingsApi.deleteAccount).mockRejectedValueOnce(new Error('Tienes un arriendo activo.'))
+    await act(async () => root.render(<SeccionEliminarCuenta />))
+    await act(async () => boton().click())
+    escribir('ELIMINAR')
+    await act(async () => elBotonRojo().click())
+    expect(vi.mocked(toast.error)).toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="modal"]')).not.toBeNull()
+  })
 })

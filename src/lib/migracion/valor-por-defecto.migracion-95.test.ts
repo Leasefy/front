@@ -19,7 +19,7 @@ describe('las frases del valor por defecto (TE-08)', () => {
     expect(avisoDeReemplazo(1250)).toBe('Ojo: se pierde el valor que ya traían las 1.250.');
   });
   it('🔴 «Crear con datos por completar» con una sola fila no dice «las fila»', () => {
-    expect(alcanceDeLasIncompletas(1)).toBe('Sólo cambia la fila si únicamente le falta el documento o su tipo; si no, sigue acá.');
+    expect(alcanceDeLasIncompletas(1)).toBe('Sólo cambia la fila si únicamente le falta el documento o su tipo; si no, sigue aquí.');
     expect(alcanceDeLasIncompletas(3)).toMatch(/^Sólo cambia las filas /);
   });
 });

@@ -195,7 +195,7 @@ export function FormularioDeLaAccion({
                   <WarningCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
                   <div className="flex-1 space-y-2">
                     {campo.aviso && (
-                      <p id={`${id}-aviso`} className="text-caption font-semibold text-danger">
+                      <p id={`${id}-aviso`} className="text-caption font-medium text-danger">
                         {campo.aviso}
                       </p>
                     )}

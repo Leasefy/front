@@ -83,12 +83,13 @@
  * algo que mostrar.
  */
 
+import { useTr } from '@/lib/i18n/use-tr'
 import Link from 'next/link'
 import { CaretRight, Clock, Robot, User as UserIcon, Gear } from '@phosphor-icons/react'
 import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { SectionLabel } from '@/components/ui/section-label'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { Card, Badge } from '@/components/ui'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
@@ -154,6 +155,8 @@ function FeedActorChip({ actorType }: { actorType: OverviewFeedEntry['actorType'
 }
 
 function PagosHome() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   const { t } = useI18n()
   const { data, isLoading: ovLoading, errorCrudo: ovError, refetch: ovRefetch } =
     useAgentOverview('pagos')
@@ -170,40 +173,18 @@ function PagosHome() {
   const hayAtencion = items.length > 0
 
   return (
-    <div className="space-y-8 p-6 lg:p-8">
-      {/* Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
-          {/* 🔴 La CARA, en el título. El selector de arriba dice de qué lado
-              del contrato estás; si la pantalla no lo repite, al bajar la vista
-              ya no se sabe. Y esta pantalla es de una sola cara: lo que deben
-              los inquilinos (ver `cara: 'inquilinos'` en
-              `arquitectura-del-panel.ts`). */}
-          <SectionLabel>Pagos · inquilinos</SectionLabel>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.pagos_home.title')}
-          </h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            {t('inmobiliaria.ai.pagos_home.subtitle')}
-          </p>
-        </div>
-        {/* 🔴 Acá vivían CINCO enlaces azules apretados a la derecha del
-            título —Tablero financiero · Cuadre del día · Recaudo del banco ·
-            Traslado de la comisión · Pendiente de aplicar—. Nico, 18-09 de
-            noche: «esos links que están al lado derecho menos [se entienden],
-            ¿eso es como tabs? porque está a nivel de UX muy mal logrado».
-
-            Las dos observaciones eran ciertas y la segunda explica la primera:
-            parecían pestañas (texto azul en fila, arriba, donde van las
-            pestañas) sin serlo, y eran cinco pantallas de pleno derecho
-            escondidas en una esquina del encabezado porque nadie las había
-            metido en la navegación. Hoy son secciones de su cara —tres de
-            ellas estrenaron la tercera, «Cuadrar la caja»— y el tablero,
-            que mira las tres, va primero en el riel con su línea.
-
-            La regla que deja: una pantalla que no cabe en la navegación no se
-            cuelga del título. O es una sección, o no existe. */}
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* GLOW UP (22-10-2026): el encabezado común. El título es el del riel
+          («Deuda del mes»), no el del módulo: h1 = riel = menú. Sigue siendo de
+          la cara INQUILINOS (ver `cara: 'inquilinos'` en `arquitectura-del-panel.ts`).
+          Los cinco enlaces que colgaban del título (18-09) siguen siendo
+          secciones del riel: una pantalla que no cabe en la navegación no se
+          cuelga del título. */}
+      <EncabezadoDePantalla
+        seccion={tr('Cobrar a inquilinos')}
+        titulo={t('inmobiliaria.nav.deudaDelMes')}
+        descripcion={t('inmobiliaria.ai.pagos_home.subtitle')}
+      />
 
       {/* Qué necesita tu atención — SÓLO si hay algo. Es la bandeja del agente
           (tabla `payment` del micro, dominio de cobranza por voz), así que para
@@ -217,18 +198,25 @@ function PagosHome() {
         <CrossFade swapKey={wiError ? 'fallo' : 'bandeja'} initial={false}>
       {wiError ? (
         <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>
-          <h2 className="text-base font-semibold text-fg">
+          {/* 22-10 (revisión): con el asistente caído, UN renglón callado en vez de una tarjeta
+              de 300 px encima de la deuda (que es lo que la persona vino a ver). */}
+          <h2 className="sr-only">
             {t('inmobiliaria.ai.pagos_home.resumen.atencion.titulo')}
           </h2>
           {/* 🔴 Antes esto era un cartel rojo fijo, sin salida (Nico,
               2026-09-04: «¿por qué dice que no puede cargar y no da opción de
               reintentar?»). `FalloDeCarga` distingue los cuatro tipos de fallo
               y sólo ofrece reintentar cuando reintentar puede cambiar algo. */}
-          <FalloDeCarga
-            error={wiError}
-            queEs="lo que necesita tu atención"
-            onReintentar={reintentarAtencion}
-          />
+          {/* Ronda 14: el punto alineado con el primer renglón aunque la frase se parta. */}
+          <p className="grid grid-cols-[auto_1fr] items-start gap-x-2 text-body-sm text-fg-muted" data-testid="atencion-sin-asistente">
+            <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />
+            <span className="min-w-0">
+            El asistente de pagos no responde ahora: lo que necesita tu atención no se pudo leer.{' '}
+            <button type="button" onClick={() => reintentarAtencion()} className="font-medium text-primary underline-offset-4 hover:underline">
+              Reintentar
+            </button>
+            </span>
+          </p>
         </section>
       ) : hayAtencion || wiLoading ? (
         <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>
@@ -254,7 +242,8 @@ function PagosHome() {
           que falta, y el recibo de caja. */}
       <DeudaDelMesPanel />
 
-      {/* Actividad reciente — acotada a 5. */}
+      {/* Actividad reciente — acotada a 5. 22-10: sin asistente no se pinta (ya lo dice el renglón de arriba). */}
+      {ovError ? null : (
       <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.actividad.aria')}>
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-base font-semibold text-fg">
@@ -315,6 +304,7 @@ function PagosHome() {
         )}
         </CrossFade>
       </section>
+      )}
     </div>
   )
 }
@@ -327,16 +317,16 @@ function PagosHome() {
  * pedirlas sólo le pintaría un «no pudimos cargar».
  */
 function PagosDelAuxiliar() {
+  // C1 (revisora r25): el sobretítulo es la cara del riel, «Cobrar a inquilinos».
+  const tr = useTr()
   const { t } = useI18n()
   return (
-    <div className="space-y-8 p-6 lg:p-8" data-testid="pagos-del-auxiliar">
-      <header className="space-y-1.5">
-        <SectionLabel>Pagos · inquilinos</SectionLabel>
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.pagos_home.title')}</h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-          {t('inmobiliaria.ai.pagos_home.subtitle')}
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8" data-testid="pagos-del-auxiliar">
+      <EncabezadoDePantalla
+        seccion={tr('Cobrar a inquilinos')}
+        titulo={t('inmobiliaria.nav.deudaDelMes')}
+        descripcion={t('inmobiliaria.ai.pagos_home.subtitle')}
+      />
       <DeudaDelMesPanel />
     </div>
   )

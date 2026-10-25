@@ -30,6 +30,8 @@ export interface SeccionDeCuenta<Id extends string = string> {
 
 export interface ConfiguracionDeCuenta<Id extends string = string> {
   raiz: string;
+  /** El sobretítulo del encabezado (dónde estás: la cuenta, que se abre desde el avatar). */
+  seccion?: Texto;
   titulo: Texto;
   subtitulo: Texto;
   grupos: readonly { id: string; label: Texto }[];

@@ -658,6 +658,13 @@ describe('useTenantCases — acuerdo fold (ACUE-01)', () => {
     expect(casesOf(r).filter((c) => c.type === 'pqrs')).toHaveLength(1);
   });
 
+  it('GLOW UP: dice qué fuentes fallaron y que no fallaron todas', () => {
+    mockAcuerdosError = 'acuerdo boom';
+    const r = renderHook();
+    expect(r.current!.fuentesQueFallaron).toEqual(['acuerdos']);
+    expect(r.current!.todasFallaron).toBe(false);
+  });
+
   it('the acuerdo error is appended LAST — a pqrs error keeps priority over it', () => {
     mockPqrsError = 'pqrs boom';
     mockAcuerdosError = 'acuerdo boom';

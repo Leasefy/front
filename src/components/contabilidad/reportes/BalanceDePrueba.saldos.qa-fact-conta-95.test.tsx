@@ -111,6 +111,10 @@ describe('CB-C-14 · sólo cuenta la respuesta del último pedido', () => {
     root = createRoot(contenedor);
     await act(async () => root!.render(<BalanceDePrueba />));
     const quitar = (id: string) => (contenedor!.querySelector(`[data-testid="${id}"]`) as HTMLButtonElement).click();
+    // GLOW UP 21-10: con los atajos de período, las dos fechas se ven con «Otro rango».
+    await act(async () =>
+      ([...contenedor!.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find((b) => b.textContent === 'Otro rango'))!.click(),
+    );
     await act(async () => quitar('rango-desde-quitar'));
     await act(async () => quitar('rango-hasta-quitar'));
     expect(texto(contenedor, 'total-debitos')).toBe('$185');

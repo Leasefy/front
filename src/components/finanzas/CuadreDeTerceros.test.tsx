@@ -157,7 +157,7 @@ describe('el veredicto de arriba', () => {
     expect(veredicto?.getAttribute('data-estado')).toBe('a-favor');
     expect(veredicto?.getAttribute('role')).toBe('status');
     // La comisión sale como REFERENCIA, no como término de la identidad.
-    expect(testId('cifra-comision-referencia')?.textContent).toContain('NO entra en la identidad');
+    expect(testId('cifra-comision-referencia')?.textContent).toContain('No entra en la identidad');
   });
 });
 

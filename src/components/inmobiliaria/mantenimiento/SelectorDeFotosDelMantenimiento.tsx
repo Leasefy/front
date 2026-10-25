@@ -101,10 +101,10 @@ export function SelectorDeFotosDelMantenimiento({
 
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-medium text-fg dark:text-fg-subtle">
+      <label htmlFor={id} className="block text-sm font-medium text-fg">
         {etiqueta}
       </label>
-      {pista ? <p className="text-caption text-fg-muted dark:text-fg-subtle">{pista}</p> : null}
+      {pista ? <p className="text-caption text-fg-muted">{pista}</p> : null}
 
       <div className="flex flex-wrap gap-3 mt-3">
         <AnimatePresence initial={false}>
@@ -116,7 +116,7 @@ export function SelectorDeFotosDelMantenimiento({
               animate={{ opacity: 1, scale: 1 }}
               exit={salida}
               transition={{ ...motionTransition.enter, layout: motionTransition.layout }}
-              className="relative w-24 h-24 rounded-xl overflow-hidden group"
+              className="relative w-24 h-24 rounded-lg overflow-hidden group"
               data-testid={testIdFoto}
             >
               {vistas[index] ? (
@@ -158,9 +158,9 @@ export function SelectorDeFotosDelMantenimiento({
 
         {/* Agregar: hasta el tope del back (30 por solicitud). */}
         {fotos.length < MAX_FOTOS_DEL_MANTENIMIENTO && !deshabilitado && (
-          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 hover:bg-primary-soft transition-colors duration-base">
+          <label className="w-24 h-24 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 hover:bg-primary-soft transition-colors duration-base">
             <Camera className="w-6 h-6 text-fg-subtle" />
-            <span className="text-caption text-fg-muted dark:text-fg-subtle">{textoAgregar}</span>
+            <span className="text-caption text-fg-muted">{textoAgregar}</span>
             {/* allowlist: hidden type=file behind a custom camera dropzone tile (playbook hidden/file-input allowlist) */}
             <input
               id={id}

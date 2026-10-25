@@ -24,13 +24,17 @@
  */
 
 import { useState } from 'react'
+import type * as React from 'react'
 import Link from 'next/link'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Signature } from '@phosphor-icons/react'
-import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CrossFade, Presence, Stagger, StaggerItem, StatusBadge } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Button,
@@ -94,48 +98,43 @@ export function FirmasClient() {
     }
   }
 
+  // GLOW UP (21-10-2026): la pantalla se lee por lo que te toca. Arriba, cuántas
+  // hay en cada estado; abajo, primero lo que pide una decisión tuya (las
+  // vencidas y los recordatorios) y después lo que corre solo (el Piloto y lo
+  // que va a tiempo). Los tres estados se explican en «¿Cómo funciona?» y cada
+  // grupo dice en una línea qué se espera de ti.
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <header className="max-w-2xl space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Invitaciones a firmar
-        </h1>
-        <p className="text-sm text-fg-muted">
-          Los contratos que ya se mandaron a firmar y todavía nadie firma. Acá
-          ves cuáles siguen a tiempo, cuáles se vencieron y qué te toca hacer
-          con cada uno.
-        </p>
-      </header>
-
-      {/* 🔴 Los tres estados, explicados antes de la lista (Nico, 18-09-2026:
-          «que se entienda muy bien qué debe hacer el usuario con los diferentes
-          estados de esa pantalla»). Sin esto, la pantalla mostraba secciones
-          —«vencidas», «por recordar»— sin decir nunca qué significan ni qué se
-          espera de quien las mira. */}
-      <section
-        className="grid gap-4 rounded-lg border border-border bg-surface p-5 sm:grid-cols-3"
-        data-testid="los-tres-estados"
-      >
-        {[
-          {
-            que: 'A tiempo',
-            como: 'Se mandó hace menos de 7 días. No tienes que hacer nada: el sistema manda los dos recordatorios solo.',
-          },
-          {
-            que: 'Le toca recordatorio',
-            como: 'Pasaron los días del primer o segundo aviso. Sale de acá con un clic, o puedes llamar tú.',
-          },
-          {
-            que: 'Se venció',
-            como: 'Nadie firmó en 7 días: el contrato volvió a borrador. El inmueble SIGUE reservado hasta que canceles o lo vuelvas a mandar.',
-          },
-        ].map((e) => (
-          <div key={e.que} className="space-y-0.5">
-            <p className="text-sm font-medium text-fg">{e.que}</p>
-            <p className="text-sm leading-relaxed text-fg-muted">{e.como}</p>
-          </div>
-        ))}
-      </section>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Operación"
+        titulo="Invitaciones a firmar"
+        descripcion="Los contratos mandados a firmar que nadie ha firmado: primero lo que te toca."
+        ayuda={
+          <ParaEntenderMas
+            etiqueta="¿Cómo funciona?"
+            titulo="Cómo funciona: invitaciones a firmar"
+            variante="secundario"
+          >
+            {/* 🔴 Los tres estados (Nico, 18-09-2026: «que se entienda muy bien
+                qué debe hacer el usuario con los diferentes estados de esa
+                pantalla»). */}
+            <div className="space-y-4 text-body-sm" data-testid="los-tres-estados">
+              {ESTADOS.map((e) => (
+                <div key={e.que} className="space-y-0.5">
+                  <p className="font-medium text-fg">{e.que}</p>
+                  <p className="leading-relaxed text-fg-muted">{e.como}</p>
+                </div>
+              ))}
+              <p className="leading-relaxed text-fg-muted">
+                La invitación vence a los 7 días con dos recordatorios. Al vencerse,
+                el contrato vuelve a borrador y se le avisa al asesor, pero el
+                inmueble no se libera solo: liberarlo es una decisión tuya, al
+                cancelar.
+              </p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
 
       <Presence show={Boolean(resultado)} initial={false} distance="xs" as="p" className="text-sm" data-testid="resultado-cancelacion">
         {resultado}
@@ -165,79 +164,119 @@ export function FirmasClient() {
             <EmptyState
               icon={Signature}
               title="No hay nadie pendiente de firmar"
-              description="Ningún contrato está esperando firma en este momento, así que no hay nada que hacer acá. Cuando mandes uno a firmar desde su ficha, aparece en esta lista con los días que le quedan."
+              description="Cuando mandes un contrato a firmar desde su ficha, aparece aquí con los días que le quedan."
+              action={{ label: 'Ver contratos', href: '/panel/inmobiliaria/contratos' }}
             />
           }
         >
           <div className="space-y-6">
-            {vencidas.length > 0 ? (
-              <Card data-testid="vencidas">
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Se vencieron ({vencidas.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* La que se cancela sale y las de abajo suben (`key` = el contrato). */}
-                  <Stagger as="ul" className="divide-y">
-                    {vencidas.map((v) => (
-                      <StaggerItem
-                        as="li"
-                        key={v.contractId}
-                        className="space-y-2 py-3"
-                        data-testid={`vencida-${v.contractId}`}
-                      >
-                        <p className="text-sm">{v.aviso}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {v.contratoVolvioABorrador
-                            ? 'El contrato volvió a borrador.'
-                            : 'El contrato ya no estaba esperando firma: no se tocó.'}{' '}
-                          {/* 🔴 Lo que NO pasó, dicho en voz alta. */}
-                          El inmueble NO se liberó.
-                        </p>
+            {/*
+              Revisión de Operación (21-10): una línea con lo que importa —cuántas te tocan y
+              cuántas corren solas— en vez de cuatro cifras grandes que casi siempre están en
+              cero. Los grupos de abajo dicen cada estado con su «qué hacer».
+            */}
+            {/* Glow up 22-10 (la vara de Deuda del mes): LA RESPUESTA en una cifra —cuántas te
+                tocan— y la barra con los cuatro estados; lo que corre solo, en la leyenda. */}
+            {(() => {
+              const teTocan = vencidas.length + recordatorios.length
+              const total = teTocan + porVencer.length + aTiempo.length
+              return (
+                <section className="rounded-lg border border-border bg-card px-5 py-5" data-testid="franja-firmas">
+                  <CifraHeroe
+                    rotulo="Te tocan"
+                    cifra={<span data-testid="cifra-vencidas">{teTocan}</span>}
+                    contexto={
+                      total === 1
+                        ? 'de 1 invitación sin firmar'
+                        : `de ${total} invitaciones sin firmar`
+                    }
+                    tramos={[
+                      { clave: 'vencidas', etiqueta: 'Se vencieron', monto: vencidas.length, tono: 'critico', cifra: String(vencidas.length) },
+                      { clave: 'recordatorios', etiqueta: 'Recordatorio por mandar', monto: recordatorios.length, tono: 'aviso', cifra: String(recordatorios.length) },
+                      { clave: 'por-vencer', etiqueta: 'Se les pasó el plazo', monto: porVencer.length, tono: 'neutro', cifra: String(porVencer.length) },
+                      { clave: 'a-tiempo', etiqueta: 'A tiempo', monto: aTiempo.length, tono: 'exito', cifra: String(aTiempo.length) },
+                    ]}
+                    pie={
+                      <span data-testid="cifra-a-tiempo">
+                        {porVencer.length + aTiempo.length === 1
+                          ? '1 corre sola: el Piloto la vence a tiempo.'
+                          : `${porVencer.length + aTiempo.length} corren solas: el Piloto las vence a tiempo.`}
+                      </span>
+                    }
+                  />
+                </section>
+              )
+            })()}
 
-                        {puedeEditar ? (
-                          /* «Cancelar» se cruza con el motivo. `popLayout`: el
-                             campo se monta YA y el botón se va por encima. */
-                          <CrossFade
-                            swapKey={cancelando === v.contractId ? 'motivo' : 'boton'}
-                            mode="popLayout"
-                          >
-                            {cancelando === v.contractId ? (
-                              <div className="space-y-2">
-                                <Input
-                                  value={motivo}
-                                  onChange={(e) => setMotivo(e.target.value)}
-                                  placeholder="Por qué se cancela"
-                                  data-testid={`motivo-${v.contractId}`}
+            {vencidas.length > 0 ? (
+              <Grupo
+                titulo="Se vencieron"
+                cuantos={vencidas.length}
+                queHacer="Te toca: cancelar la invitación o volver a mandarla desde la ficha del contrato. El inmueble sigue reservado mientras tanto."
+                teToca
+                data-testid="vencidas"
+              >
+                {/* La que se cancela sale y las de abajo suben (`key` = el contrato). */}
+                <Stagger as="ul" className="divide-y divide-border">
+                  {vencidas.map((v) => (
+                    <StaggerItem
+                      as="li"
+                      key={v.contractId}
+                      className="space-y-2 py-3"
+                      data-testid={`vencida-${v.contractId}`}
+                    >
+                      <p className="text-sm">{v.aviso}</p>
+                      <p className="text-muted-foreground text-caption">
+                        {v.contratoVolvioABorrador
+                          ? 'El contrato volvió a borrador.'
+                          : 'El contrato ya no estaba esperando firma: no se tocó.'}{' '}
+                        {/* 🔴 Lo que NO pasó, dicho en voz alta. */}
+                        El inmueble NO se liberó.
+                      </p>
+
+                      {puedeEditar ? (
+                        /* «Cancelar» se cruza con el motivo. `popLayout`: el
+                           campo se monta YA y el botón se va por encima. */
+                        <CrossFade
+                          swapKey={cancelando === v.contractId ? 'motivo' : 'boton'}
+                          mode="popLayout"
+                        >
+                          {cancelando === v.contractId ? (
+                            <div className="space-y-2">
+                              <Input
+                                value={motivo}
+                                onChange={(e) => setMotivo(e.target.value)}
+                                placeholder="Por qué se cancela"
+                                data-testid={`motivo-${v.contractId}`}
+                              />
+                              <label className="flex items-center gap-2 text-sm">
+                                <Checkbox
+                                  checked={liberar}
+                                  onCheckedChange={(c) => setLiberar(c === true)}
+                                  data-testid={`liberar-${v.contractId}`}
                                 />
-                                <label className="flex items-center gap-2 text-sm">
-                                  <Checkbox
-                                    checked={liberar}
-                                    onCheckedChange={(c) => setLiberar(c === true)}
-                                    data-testid={`liberar-${v.contractId}`}
-                                  />
-                                  Liberar el inmueble (vuelve a estar disponible)
-                                </label>
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    disabled={motivo.trim().length < 5}
-                                    onClick={() => void cancelar(v.contractId)}
-                                    data-testid={`confirmar-cancelar-${v.contractId}`}
-                                  >
-                                    Cancelar la invitación
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setCancelando(null)}
-                                  >
-                                    Volver
-                                  </Button>
-                                </div>
+                                Liberar el inmueble (vuelve a estar disponible)
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  size="sm"
+                                  disabled={motivo.trim().length < 5}
+                                  onClick={() => void cancelar(v.contractId)}
+                                  data-testid={`confirmar-cancelar-${v.contractId}`}
+                                >
+                                  Cancelar la invitación
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setCancelando(null)}
+                                >
+                                  Volver
+                                </Button>
                               </div>
-                            ) : (
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -250,48 +289,72 @@ export function FirmasClient() {
                               >
                                 Cancelar la invitación
                               </Button>
-                            )}
-                          </CrossFade>
-                        ) : null}
-                      </StaggerItem>
-                    ))}
-                  </Stagger>
-                </CardContent>
-              </Card>
+                              <Button size="sm" variant="ghost" asChild>
+                                <Link href={`/panel/inmobiliaria/contratos/${v.contractId}`}>
+                                  Abrir el contrato
+                                </Link>
+                              </Button>
+                            </div>
+                          )}
+                        </CrossFade>
+                      ) : null}
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              </Grupo>
+            ) : null}
+
+            {recordatorios.length > 0 ? (
+              <Grupo
+                titulo="Recordatorios por mandar"
+                cuantos={recordatorios.length}
+                queHacer="Te toca: mandarle el recordatorio a cada uno o llamarlo. Esta pantalla no envía: arma el texto y deja la constancia."
+                teToca
+                data-testid="recordatorios"
+              >
+                <Stagger as="ul" className="divide-y divide-border">
+                  {recordatorios.map((r) => (
+                    <StaggerItem
+                      as="li"
+                      key={r.contractId}
+                      className="space-y-1 py-3"
+                      data-testid={`recordatorio-${r.contractId}`}
+                    >
+                      <p className="text-sm">{r.mensaje}</p>
+                      <p className="text-muted-foreground text-caption">
+                        Recordatorio {r.numero} de {r.de} ·{' '}
+                        {r.correo ?? 'sin correo'}
+                      </p>
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              </Grupo>
             ) : null}
 
             {/* 🔴 24-09-2026: abrir esta pantalla ya NO vence nada — antes la
                 lectura devolvía contratos a borrador sin preguntarle al modo
                 del Piloto. Lo que se quedó sin firma al cumplirse el plazo lo
-                vence el Piloto según su modo; acá se ve mientras tanto. */}
+                vence el Piloto según su modo; aquí se ve mientras tanto. */}
             {porVencer.length > 0 ? (
-              <Card data-testid="por-vencer">
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Se les pasó el plazo ({porVencer.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-3 text-sm">
-                    Nadie firmó a tiempo. El Piloto las vence según su modo: en
-                    Automático devuelve el contrato a borrador solo, en Copiloto
-                    te espera en la Bandeja del Piloto con un clic y en Manual te
-                    lo propone. El inmueble sigue reservado.
-                  </p>
-                  <Stagger as="ul" className="divide-y">
-                    {porVencer.map((p) => (
-                      <StaggerItem
-                        as="li"
-                        key={p.invitacionId}
-                        className="py-3 text-sm"
-                        data-testid={`por-vencer-${p.contractId}`}
-                      >
-                        {p.tenantName ?? 'Contrato sin nombre del inquilino'}
-                      </StaggerItem>
-                    ))}
-                  </Stagger>
-                </CardContent>
-              </Card>
+              <Grupo
+                titulo="Se les pasó el plazo"
+                cuantos={porVencer.length}
+                queHacer="Nadie firmó a tiempo. El Piloto las vence según su modo: en Automático devuelve el contrato a borrador solo, en Copiloto te espera en la Bandeja del Piloto con un clic y en Manual te lo propone. El inmueble sigue reservado."
+                data-testid="por-vencer"
+              >
+                <Stagger as="ul" className="divide-y divide-border">
+                  {porVencer.map((p) => (
+                    <StaggerItem
+                      as="li"
+                      key={p.invitacionId}
+                      className="py-3 text-sm"
+                      data-testid={`por-vencer-${p.contractId}`}
+                    >
+                      {p.tenantName ?? 'Contrato sin nombre del inquilino'}
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              </Grupo>
             ) : null}
 
             {/* 🔴 QA-CONT-95 D-10/UC-13 (04-10-2026): el primero de los tres
@@ -299,79 +362,92 @@ export function FirmasClient() {
                 #57 esperando firma, la pantalla decía «No hay nadie pendiente
                 de firmar». */}
             {aTiempo.length > 0 ? (
-              <Card data-testid="a-tiempo">
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    A tiempo ({aTiempo.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Stagger as="ul" className="divide-y">
-                    {aTiempo.map((a) => (
-                      <StaggerItem
-                        as="li"
-                        key={a.contractId}
-                        className="space-y-1 py-3"
-                        data-testid={`a-tiempo-${a.contractId}`}
-                      >
-                        <p className="text-sm">
-                          <Link
-                            href={`/panel/inmobiliaria/contratos/${a.contractId}`}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {a.code != null ? `Contrato #${a.code}` : 'Contrato'}
-                          </Link>
-                          {' · '}
-                          {a.tenantName ?? 'Sin nombre del inquilino'}
-                          {' · '}
-                          {a.esperaA === 'INQUILINO'
-                            ? 'espera la firma del inquilino'
-                            : 'el inquilino ya firmó: falta la firma de la inmobiliaria'}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          {lineaDelPlazo(a)}
-                        </p>
-                      </StaggerItem>
-                    ))}
-                  </Stagger>
-                </CardContent>
-              </Card>
-            ) : null}
-
-            {recordatorios.length > 0 ? (
-              <Card data-testid="recordatorios">
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Recordatorios por mandar ({recordatorios.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-3 text-sm">
-                    Esta pantalla no envía: arma el texto y deja la constancia.
-                  </p>
-                  <Stagger as="ul" className="divide-y">
-                    {recordatorios.map((r) => (
-                      <StaggerItem
-                        as="li"
-                        key={r.contractId}
-                        className="space-y-1 py-3"
-                        data-testid={`recordatorio-${r.contractId}`}
-                      >
-                        <p className="text-sm">{r.mensaje}</p>
-                        <p className="text-muted-foreground text-xs">
-                          Recordatorio {r.numero} de {r.de} ·{' '}
-                          {r.correo ?? 'sin correo'}
-                        </p>
-                      </StaggerItem>
-                    ))}
-                  </Stagger>
-                </CardContent>
-              </Card>
+              <Grupo
+                titulo="A tiempo"
+                cuantos={aTiempo.length}
+                queHacer="No tienes que hacer nada: el sistema manda los dos recordatorios solo."
+                data-testid="a-tiempo"
+              >
+                <Stagger as="ul" className="divide-y divide-border">
+                  {aTiempo.map((a) => (
+                    <StaggerItem
+                      as="li"
+                      key={a.contractId}
+                      className="space-y-1 py-3"
+                      data-testid={`a-tiempo-${a.contractId}`}
+                    >
+                      <p className="text-sm">
+                        <Link
+                          href={`/panel/inmobiliaria/contratos/${a.contractId}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {a.code != null ? `Contrato #${a.code}` : 'Contrato'}
+                        </Link>
+                        {' · '}
+                        {a.tenantName ?? 'Sin nombre del inquilino'}
+                        {' · '}
+                        {a.esperaA === 'INQUILINO'
+                          ? 'espera la firma del inquilino'
+                          : 'el inquilino ya firmó: falta la firma de la inmobiliaria'}
+                      </p>
+                      <p className="text-muted-foreground text-caption">
+                        {lineaDelPlazo(a)}
+                      </p>
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              </Grupo>
             ) : null}
           </div>
         </EstadoDeDatos>
       )}
     </div>
+  )
+}
+
+const ESTADOS = [
+  {
+    que: 'A tiempo',
+    como: 'Se mandó hace menos de 7 días. No tienes que hacer nada: el sistema manda los dos recordatorios solo.',
+  },
+  {
+    que: 'Le toca recordatorio',
+    como: 'Pasaron los días del primer o segundo aviso. Sale de aquí con un clic, o puedes llamar tú.',
+  },
+  {
+    que: 'Se venció',
+    como: 'Nadie firmó en 7 días: el contrato volvió a borrador. El inmueble SIGUE reservado hasta que canceles o lo vuelvas a mandar.',
+  },
+]
+
+/** Un grupo de la lista: su título, lo que se espera de ti y sus filas. */
+function Grupo({
+  titulo,
+  cuantos,
+  queHacer,
+  teToca = false,
+  children,
+  'data-testid': testId,
+}: {
+  titulo: string
+  cuantos: number
+  queHacer: string
+  teToca?: boolean
+  children: React.ReactNode
+  'data-testid': string
+}) {
+  return (
+    <Card data-testid={testId}>
+      <CardHeader className="space-y-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <CardTitle className="text-base font-medium">{titulo}</CardTitle>
+          <span className="font-mono text-caption tabular-nums text-fg-muted">{cuantos}</span>
+          {teToca ? <StatusBadge tone="warning">Te toca</StatusBadge> : null}
+        </div>
+        <p className="text-body-sm text-fg-muted">{queHacer}</p>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   )
 }
 

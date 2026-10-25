@@ -100,7 +100,7 @@ export function ProgresoDeLoteInmuebles({
           <p className="text-sm text-info">
             Esto está tardando más de lo esperado. Seguimos trabajando del lado
             del servidor — te avisamos apenas termine, no hace falta que esperes
-            acá.
+            aquí.
           </p>
         </div>
       ) : null}

@@ -19,6 +19,7 @@ import { ClockCounterClockwise } from '@phosphor-icons/react'
 import type { ActorType, TrazaEntry } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { Badge } from '@/components/ui/badge'
 import { relativeTime, type TranslateFn } from './ColaHumana'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 
@@ -136,13 +137,12 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
       >
         <ClockCounterClockwise
           className="w-7 h-7 mx-auto text-muted-foreground mb-2"
-          weight="duotone"
           aria-hidden="true"
         />
         <p className="text-sm font-medium text-foreground">
           {t('inmobiliaria.ai.workspace.traza.emptyTitle')}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-caption text-muted-foreground mt-0.5">
           {t('inmobiliaria.ai.workspace.traza.emptyBody')}
         </p>
       </div>
@@ -180,13 +180,11 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
                 <p className="text-sm font-medium text-foreground">
                   {actionLabel(t, entry.action, agente)}
                 </p>
-                <span
-                  className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-full ring-1 ${meta.cls}`}
-                >
+                <Badge variant={entry.actorType === 'agent' ? 'default' : 'secondary'}>
                   {actorLabel(t, entry.actorType)}
-                </span>
+                </Badge>
               </div>
-              <p className="text-[11px] text-muted-foreground tabular-nums">
+              <p className="text-caption text-muted-foreground tabular-nums">
                 {[relativeTime(entry.occurredAt, t), absolute(entry.occurredAt), entry.actorId ?? '']
                   .filter(Boolean)
                   .join(' · ')}
@@ -194,7 +192,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
               {hasDetails && flatDetails && (
                 /* Flat object (all-primitive values) → readable label/value rows */
                 <details className="group">
-                  <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground select-none">
+                  <summary className="cursor-pointer text-caption text-muted-foreground hover:text-foreground select-none">
                     {t('inmobiliaria.ai.workspace.traza.detalles')}
                   </summary>
                   <dl className="mt-1 max-h-40 overflow-y-auto rounded-md bg-muted/40 p-2 divide-y divide-border">
@@ -203,8 +201,8 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
                         key={label}
                         className="py-1 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
                       >
-                        <dt className="text-[11px] text-muted-foreground min-w-0 truncate">{label}</dt>
-                        <dd className="text-[11px] font-medium text-foreground tabular-nums text-right break-words">
+                        <dt className="text-caption text-muted-foreground min-w-0 truncate">{label}</dt>
+                        <dd className="text-caption text-foreground tabular-nums text-right break-words">
                           {value === null ? '—' : String(value)}
                         </dd>
                       </div>
@@ -214,11 +212,11 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
               )}
               {hasDetails && !flatDetails && (
                 <details className="group">
-                  <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground select-none">
+                  <summary className="cursor-pointer text-caption text-muted-foreground hover:text-foreground select-none">
                     {techSummary}
                   </summary>
                   {/* Plain <pre> JSON — never raw-HTML sinks (T-34-07-02). */}
-                  <pre className="mt-1 text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-words max-h-40 overflow-y-auto rounded-md bg-muted/40 p-2">
+                  <pre className="mt-1 text-caption font-mono text-muted-foreground whitespace-pre-wrap break-words max-h-40 overflow-y-auto rounded-md bg-muted/40 p-2">
                     {JSON.stringify(entry.details, null, 2)}
                   </pre>
                 </details>

@@ -22,12 +22,12 @@
  * confirmación con el número y el total que va a tomar.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import { ArrowRight, Bank, Plus } from '@phosphor-icons/react';
-import { Banner, MotionIndicator } from '@leasefy/cadence';
+import { Banner } from '@leasefy/cadence';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -59,8 +59,10 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLotesDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import { lotesDeDispersionApi, type LoteResumen } from '@/lib/api/lotes-de-dispersion.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { formatDateTime } from '@/lib/format';
+import { plataPareja } from '@/lib/format';
 import { nombreDelMes } from '@/lib/utils/mes';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { esMesValido, mesActual } from '@/lib/recaudo/meses';
 import { cn } from '@/lib/utils';
 import { NOMBRE_DEL_ESTADO, TONO_DEL_ESTADO } from './estado-del-lote';
@@ -68,6 +70,7 @@ import { useNombresDelEquipo } from './use-nombres-del-equipo';
 import { ElegirAQuienPagarle, type EleccionDelLote } from './ElegirAQuienPagarle';
 import { ElegirBancoDeOrigen, type EleccionDelBanco } from './ElegirBancoDeOrigen';
 import { useI18n } from '@/lib/i18n';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { APROBADO_POR_TI } from '@/lib/doble-control/el-administrador';
 
 type Filtro = 'todos' | 'en_curso' | 'PAGADO' | 'ANULADO';
@@ -152,14 +155,39 @@ function pasaElFiltro(lote: LoteResumen, filtro: Filtro): boolean {
   return lote.estado === filtro;
 }
 
-export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}) {
+export function ListaDeLotes({
+  mesInicial,
+  filtroInicial,
+  onCambiarMes,
+  sinArmar = false,
+  mes: mesDeAfuera,
+}: {
+  mesInicial?: string | null;
+  /** Giros a propietarios, paso 4 (22-10-2026): abre en los lotes que faltan por marcar pagados. */
+  filtroInicial?: Filtro;
+  /** El riel de los pasos sigue el mes que se elige aquí. */
+  onCambiarMes?: (mes: string) => void;
+  /** Paso 4 (ronda 19): sin la tarjeta para armar el lote, que es del paso 3. */
+  sinArmar?: boolean;
+  /** El mes lo elige el selector único de Giros: la lista no pinta el suyo. */
+  mes?: string;
+} = {}) {
   const router = useRouter();
   const { canAccess } = usePermissions();
-  const { lotes, cargando, error, refetch } = useLotesDeDispersion({});
+  // Ronda 22: con el mes del selector único de Giros, la lista es la de ESE mes (salía noviembre con octubre arriba).
+  const { lotes, cargando, error, refetch } = useLotesDeDispersion(mesDeAfuera ? { month: mesDeAfuera } : {});
   const { nombreDe } = useNombresDelEquipo();
-  const [filtro, setFiltro] = useState<Filtro>('todos');
+  const [filtro, setFiltro] = useState<Filtro>(filtroInicial ?? 'todos');
   // «Ir a Lotes» desde una dispersión trae su mes en `?mes=`.
-  const [mes, setMes] = useState(() => (mesInicial && esMesValido(mesInicial) ? mesInicial : mesActual()));
+  const [mesPropio, setMes] = useState(() => (mesInicial && esMesValido(mesInicial) ? mesInicial : mesActual()));
+  const mes = mesDeAfuera ?? mesPropio;
+  const elegirMes = useCallback(
+    (nuevo: string) => {
+      setMes(nuevo);
+      onCambiarMes?.(nuevo);
+    },
+    [onCambiarMes],
+  );
   const [armando, setArmando] = useState(false);
   const [pendientes, setPendientes] = useState<PendientesDelMes | null>(null);
   const [errorDePendientes, setErrorDePendientes] = useState<string | null>(null);
@@ -167,6 +195,7 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
   // Una firma y no el arreglo: `lotes` puede llegar como arreglo nuevo en cada
   // render, y como dependencia volvería a pedir los candidatos sin parar.
   const firmaDeLotes = lotes.map((l) => `${l.id}:${l.estado}`).join('|');
+  const variosMesesEnLaLista = new Set(lotes.map((l) => l.month)).size > 1;
 
   useEffect(() => {
     let vigente = true;
@@ -191,8 +220,8 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
         if (vigente) {
           setErrorDePendientes(
             mensajeParaLaPersona(e, {
-              porDefecto: 'No se pudieron contar las dispersiones del mes.',
-              accion: 'contar las dispersiones del mes',
+              porDefecto: 'No se pudieron contar los giros del mes.',
+              accion: 'contar los giros del mes',
             }),
           );
         }
@@ -204,10 +233,29 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
   }, [mes, firmaDeLotes]);
 
   const puedeArmar = canAccess('dispersiones', 'create');
+  /*
+   * Revisora r23 (Giros #4): el paso 4 abría en «En curso 0» con «Ningún lote con ese filtro»: la persona no
+   * eligió ese filtro, lo eligió la pantalla. Si al llegar los lotes no hay ninguno en curso, abre en «Todos».
+   * Sólo la primera vez: lo que la persona elija después, se respeta.
+   */
+  const yaSeAjustoElFiltro = useRef(false);
+  // Sólo después de una lectura de verdad: con la lista todavía vacía por estar cargando, no se decide nada.
+  const huboLectura = useRef(false);
+  if (cargando) huboLectura.current = true;
+  useEffect(() => {
+    if (yaSeAjustoElFiltro.current || cargando || error || !huboLectura.current) return;
+    yaSeAjustoElFiltro.current = true;
+    if (filtro !== 'todos' && !lotes.some((l) => pasaElFiltro(l, filtro))) setFiltro('todos');
+  }, [cargando, error, lotes, filtro]);
   const visibles = useMemo(() => lotes.filter((l) => pasaElFiltro(l, filtro)), [lotes, filtro]);
   // Un lote por mes y por corrida: la lista crece sola y no tiene techo.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(visibles, { resetKey: filtro });
+
+  const esCelular = useIsMobile();
+  // Una columna que dice lo mismo en todas las filas de la página no ayuda a decidir.
+  const conArmadoPor = new Set(pageItems.map((l) => l.creadoPorUserId)).size > 1;
+  const conAprobadoPor = new Set(pageItems.map((l) => l.aprobadoPorUserId ?? '')).size > 1;
 
   const irAlLote = useCallback(
     (id: string) => router.push(`/panel/inmobiliaria/pagos/dispersiones/lotes/${id}`),
@@ -228,12 +276,16 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
 
   return (
     <div className="space-y-6" data-testid="lista-de-lotes">
+      {/* Revisora r23 (Giros #3): dentro de Giros la tarjeta «Lo que falta del mes» ya dice si hay algo por
+          armar; sin giros esperando lote, esta caja repetía lo mismo. Sola (sin el mes de afuera), sigue. */}
+      {!sinArmar && !(mesDeAfuera && pendientes?.esperan === 0 && !errorDePendientes) && (
       <section
         className="space-y-4 rounded-lg border border-border bg-surface p-4 shadow-sm"
         data-testid="mes-de-los-lotes"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <SelectorDeMes mes={mes} onCambiar={setMes} testId="mes-del-lote" />
+          {/* Con el selector único de Giros arriba, aquí no va otro (la frase de abajo ya nombra el mes). */}
+          {mesDeAfuera ? null : <SelectorDeMes mes={mes} onCambiar={elegirMes} testId="mes-del-lote" />}
           {puedeArmar && pendientes && pendientes.esperan > 0 && (
             <Button onClick={() => setArmando(true)} hideArrow data-testid="armar-lote-del-mes">
               <Plus className="h-4 w-4" />
@@ -251,34 +303,23 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
           portal del banco.
         </p>
       </section>
+      )}
 
       {lotes.length > 0 && (
       <div className="rounded-lg border border-border bg-surface shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-          <div className="flex flex-wrap gap-1" role="tablist" aria-label="Filtrar por estado">
-            {FILTROS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                role="tab"
-                aria-selected={filtro === f.id}
-                onClick={() => setFiltro(f.id)}
-                className={cn(
-                  'relative isolate rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                  filtro === f.id ? 'text-primary-fg' : 'text-fg-muted hover:bg-surface-muted',
-                )}
-              >
-                {/* La píldora del filtro elegido SE DESLIZA al nuevo. */}
-                {filtro === f.id ? (
-                  <MotionIndicator layoutId="lotes-filtro" className="inset-0 -z-10 rounded-full bg-primary" />
-                ) : null}
-                {f.nombre}
-              </button>
-            ))}
-          </div>
-          <span className="font-mono text-xs text-fg-muted tabular-nums">
-            {visibles.length} {visibles.length === 1 ? 'lote' : 'lotes'}
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 empty:hidden">
+          <PestanasDeEstado
+            etiqueta="Filtrar por estado"
+            valor={filtro}
+            onCambio={setFiltro}
+            pestanas={FILTROS.map((f) => ({
+              valor: f.id,
+              etiqueta: f.nombre,
+              cuantos: lotes.filter((l) => pasaElFiltro(l, f.id)).length,
+              fija: f.id === 'todos',
+              testid: `filtro-de-lotes-${f.id}`,
+            }))}
+          />
         </div>
 
         {visibles.length === 0 ? (
@@ -289,17 +330,55 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
             action={{ label: 'Ver todos', onClick: () => setFiltro('todos') }}
             className="m-4"
           />
+        ) : esCelular ? (
+          /* Ronda 21 (390): una tarjeta por lote —mes, estado y total— y su acción; la tabla encogida
+             escondía el Total. */
+          <ul className="divide-y divide-border" data-testid="lotes-en-tarjetas">
+            {pageItems.map((lote) => {
+              const paraMarcar = sinArmar && lote.estado === 'ARCHIVO_GENERADO';
+              return (
+                <li key={lote.id}>
+                  <Link
+                    href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${lote.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface-muted/60"
+                    data-testid={`lote-tarjeta-${lote.id}`}
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-medium text-fg">{nombreDelMes(lote.month)}</span>
+                      <span className="mt-1 flex items-center gap-2">
+                        <Badge variant={TONO_DEL_ESTADO[lote.estado]}>{NOMBRE_DEL_ESTADO[lote.estado]}</Badge>
+                        <span className="text-caption text-fg-muted">
+                          {lote.cantidad} {lote.cantidad === 1 ? 'pago' : 'pagos'}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block whitespace-nowrap font-mono tabular-nums text-fg">
+                        {plataPareja(pageItems.map((l) => l.totalCop))(lote.totalCop)}
+                      </span>
+                      <span className={cn('mt-1 inline-flex items-center gap-1 text-caption', paraMarcar ? 'font-medium text-fg' : 'text-fg-muted')}>
+                        {paraMarcar ? 'Marcar pagado' : 'Abrir'}
+                        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Mes</TableHead>
+                  {/* Revisora r24 (Giros #5): «Mes» sólo si la lista mezcla meses. */}
+                  {variosMesesEnLaLista ? <TableHead>Mes</TableHead> : null}
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Pagos</TableHead>
                   <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Armado por</TableHead>
-                  <TableHead>Aprobado por</TableHead>
+                  {/* Ronda 21: «Armado por» y «Aprobado por» sólo cuando no dicen lo mismo en todas las filas. */}
+                  {conArmadoPor ? <TableHead>Armado por</TableHead> : null}
+                  {conAprobadoPor ? <TableHead>Aprobado por</TableHead> : null}
                   <TableHead>Armado</TableHead>
                   <TableHead className="sr-only">Abrir</TableHead>
                 </TableRow>
@@ -307,6 +386,7 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
               {/* Filas escalonadas con techo; cada filtro o página monta un
                   cuerpo nuevo. */}
               <TableBodyAnimado key={`${filtro}|${page}|${pageSize}`}>
+                {/* Ronda 19: los mismos decimales en toda la columna Total. */}
                 {pageItems.map((lote) => {
                   const enTotal = lote._count?.items ?? lote.cantidad;
                   return (
@@ -316,7 +396,9 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
                       onClick={() => irAlLote(lote.id)}
                       data-testid={`lote-${lote.id}`}
                     >
-                      <TableCell className="font-medium text-fg">{nombreDelMes(lote.month)}</TableCell>
+                      {variosMesesEnLaLista ? (
+                        <TableCell className="font-medium text-fg">{nombreDelMes(lote.month)}</TableCell>
+                      ) : null}
                       <TableCell>
                         <Badge variant={TONO_DEL_ESTADO[lote.estado]}>{NOMBRE_DEL_ESTADO[lote.estado]}</Badge>
                       </TableCell>
@@ -327,19 +409,34 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums text-fg">
-                        {formatCurrency(lote.totalCop)}
+                        {plataPareja(pageItems.map((l) => l.totalCop))(lote.totalCop)}
                       </TableCell>
-                      <TableCell className="text-fg-muted">{nombreDe(lote.creadoPorUserId, lote.creadoPorNombre)}</TableCell>
-                      <TableCell className="text-fg-muted">
-                        {lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, lote.aprobadoPorNombre) : '—'}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-fg-muted">
-                        {formatDateTime(lote.createdAt)}
+                      {conArmadoPor ? (
+                        <TableCell className="text-fg-muted">{nombreDe(lote.creadoPorUserId, lote.creadoPorNombre)}</TableCell>
+                      ) : null}
+                      {conAprobadoPor ? (
+                        <TableCell className="text-fg-muted">
+                          {lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, lote.aprobadoPorNombre) : '—'}
+                        </TableCell>
+                      ) : null}
+                      <TableCell className="font-mono text-caption text-fg-muted">
+                        {fechaCorta(diaEnColombia(lote.createdAt))}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button asChild variant="ghost" size="sm" hideArrow onClick={(e) => e.stopPropagation()}>
-                          <Link href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${lote.id}`}>
-                            Abrir
+                        {/* Ronda 19-21: en el paso 4 la fila dice lo que se viene a hacer con un lote que ya salió
+                            del banco («Marcar pagado»); el detalle es donde se marca, con la referencia. */}
+                        <Button
+                          asChild
+                          variant={sinArmar && lote.estado === 'ARCHIVO_GENERADO' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          hideArrow
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Link
+                            href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${lote.id}`}
+                            data-testid={sinArmar && lote.estado === 'ARCHIVO_GENERADO' ? 'marcar-pagado-en-la-fila' : undefined}
+                          >
+                            {sinArmar && lote.estado === 'ARCHIVO_GENERADO' ? 'Marcar pagado' : 'Abrir'}
                             <ArrowRight className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
@@ -415,9 +512,9 @@ function FraseDelMes({
   if (pendientes.esperan === 0) {
     return (
       <p className="text-sm text-fg-muted" data-testid="frase-del-mes">
-        Ninguna dispersión de {delMes} espera lote. Si todavía no las generaste, se generan en{' '}
+        Ningún giro de {delMes} espera lote. Si todavía no los generaste, se generan en el paso{' '}
         <Link href="/panel/inmobiliaria/pagos/dispersiones" className="text-primary underline-offset-4 hover:underline">
-          Dispersiones
+          2, Revisar y aprobar
         </Link>
         .
       </p>
@@ -427,7 +524,7 @@ function FraseDelMes({
   return (
     <p className="text-body text-fg" data-testid="frase-del-mes">
       <span className="font-mono tabular-nums">{esperan}</span>{' '}
-      {esperan === 1 ? 'dispersión' : 'dispersiones'} de {delMes} {esperan === 1 ? 'espera' : 'esperan'} lote
+      {esperan === 1 ? 'giro' : 'giros'} de {delMes} {esperan === 1 ? 'espera' : 'esperan'} lote
       {girables > 0 && (
         <>
           : {girables === esperan ? (girables === 1 ? 'se gira' : 'se giran') : (

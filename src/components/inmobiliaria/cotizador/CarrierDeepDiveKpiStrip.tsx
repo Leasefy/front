@@ -72,7 +72,7 @@ export function CarrierDeepDiveKpiStrip({ kpis, isLoading = false }: CarrierDeep
         >
           <div className="flex items-center gap-2 mb-1">
             <Icon weight="duotone" className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
-            <p className="text-xs text-fg-muted truncate">{label}</p>
+            <p className="text-caption text-fg-muted truncate">{label}</p>
           </div>
           {/* Hueco → cifra con un fundido (`CrossFade`). */}
           <CrossFade swapKey={isLoading ? 'cargando' : 'cifra'}>
@@ -81,7 +81,7 @@ export function CarrierDeepDiveKpiStrip({ kpis, isLoading = false }: CarrierDeep
           ) : (
             <p
               className={[
-                'text-xl font-semibold text-fg mt-1',
+                'text-xl font-medium text-fg mt-1',
                 valueMono ? 'font-mono tabular-nums' : '',
               ].join(' ').trim()}
             >

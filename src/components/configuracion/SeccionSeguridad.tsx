@@ -12,50 +12,15 @@
  */
 
 import { useState } from 'react';
-import { CaretRight, Lock, Monitor } from '@phosphor-icons/react';
+import { Lock, Monitor } from '@phosphor-icons/react';
 
-import { Button } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { CambiarContrasenaModal } from '@/components/settings/CambiarContrasenaModal';
 import { SesionesActivasDrawer } from '@/components/settings/SesionesActivasDrawer';
+import { FilaQueAbre, TarjetaDeAjustes } from './piezas';
 
 const NS = 'inmobiliaria.config.security';
-
-function Fila({
-  icono,
-  titulo,
-  descripcion,
-  onClick,
-  testId,
-}: {
-  icono: React.ReactNode;
-  titulo: string;
-  descripcion: string;
-  onClick: () => void;
-  testId: string;
-}) {
-  return (
-    <Button
-      variant="ghost"
-      hideArrow
-      onClick={onClick}
-      data-testid={testId}
-      className="flex h-auto w-full items-center justify-between rounded-none px-4 py-4 text-left hover:bg-surface-muted/60 sm:px-5"
-    >
-      <span className="flex min-w-0 items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-          {icono}
-        </span>
-        <span className="min-w-0 text-left">
-          <span className="block text-sm font-medium text-fg">{titulo}</span>
-          <span className="block text-sm text-fg-muted">{descripcion}</span>
-        </span>
-      </span>
-      <CaretRight className="h-4 w-4 shrink-0 text-fg-muted" />
-    </Button>
-  );
-}
 
 export function SeccionSeguridad() {
   const { t } = useI18n();
@@ -64,27 +29,27 @@ export function SeccionSeguridad() {
 
   return (
     <>
-      <section className="overflow-hidden rounded-lg border border-border bg-surface">
-        <div className="divide-y divide-border">
-          <MfaSetupSection />
+      {/* La misma tarjeta y las mismas filas que Notificaciones y Preferencias
+          (glow up r26): el ícono suelto, sin la caja gris. */}
+      <TarjetaDeAjustes>
+        <MfaSetupSection />
 
-          <Fila
-            testId="abrir-cambiar-contrasena"
-            icono={<Lock className="h-[18px] w-[18px] text-fg-muted" />}
-            titulo={t(`${NS}.changePassword`)}
-            descripcion={t(`${NS}.changePasswordDesc`)}
-            onClick={() => setContrasenaAbierta(true)}
-          />
+        <FilaQueAbre
+          testId="abrir-cambiar-contrasena"
+          icono={Lock}
+          titulo={t(`${NS}.changePassword`)}
+          descripcion={t(`${NS}.changePasswordDesc`)}
+          onClick={() => setContrasenaAbierta(true)}
+        />
 
-          <Fila
-            testId="abrir-sesiones-activas"
-            icono={<Monitor className="h-[18px] w-[18px] text-fg-muted" />}
-            titulo={t(`${NS}.activeSessions`)}
-            descripcion={t(`${NS}.activeSessionsDesc`)}
-            onClick={() => setSesionesAbiertas(true)}
-          />
-        </div>
-      </section>
+        <FilaQueAbre
+          testId="abrir-sesiones-activas"
+          icono={Monitor}
+          titulo={t(`${NS}.activeSessions`)}
+          descripcion={t(`${NS}.activeSessionsDesc`)}
+          onClick={() => setSesionesAbiertas(true)}
+        />
+      </TarjetaDeAjustes>
 
       <CambiarContrasenaModal
         abierto={contrasenaAbierta}

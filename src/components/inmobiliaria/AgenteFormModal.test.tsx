@@ -39,9 +39,23 @@ afterEach(() => {
 });
 
 describe('los roles del sistema', () => {
-  it('son los SIETE del back (AgencyMemberRole), cada uno con nombre', () => {
+  // 21-10-2026: con los roles auxiliares (comercial, administrativo, contable y de
+  // mantenimiento, commit 53ab76b57) el back tiene ONCE; esta prueba seguía con siete.
+  it('son los ONCE del back (AgencyMemberRole), cada uno con nombre', () => {
     expect(ROLES_DEL_SISTEMA.map((r) => r.toUpperCase()).sort()).toEqual(
-      ['ADMIN', 'AGENTE', 'CONTADOR', 'VIEWER', 'COORDINADOR', 'AUXILIAR_CARTERA', 'ABOGADO_EXTERNO'].sort(),
+      [
+        'ADMIN',
+        'AGENTE',
+        'CONTADOR',
+        'VIEWER',
+        'COORDINADOR',
+        'AUXILIAR_CARTERA',
+        'ABOGADO_EXTERNO',
+        'AUXILIAR_COMERCIAL',
+        'AUXILIAR_ADMINISTRATIVO',
+        'AUXILIAR_CONTABLE',
+        'AUXILIAR_MANTENIMIENTO',
+      ].sort(),
     );
     for (const rol of ROLES_DEL_SISTEMA) expect(getRoleLabel(rol)).not.toBe('—');
   });
@@ -97,7 +111,8 @@ describe('AgenteFormModal — cuando el back no guarda la invitación', () => {
   const dialogo = () => document.body.querySelector('[role="dialog"]') as HTMLElement;
   /** Por su placeholder: así la prueba también corre contra el modal de antes (sin ids). */
   const PLACEHOLDER: Record<string, string> = {
-    name: 'Juan Perez',
+    // Ronda 30 (a propósito): el ejemplo con tilde («Juan Pérez»).
+    name: 'Juan Pérez',
     email: 'juan@inmobiliaria.com',
   };
   const campo = (sufijo: string) =>
@@ -295,7 +310,7 @@ describe('AgenteFormModal — no pide el teléfono', () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     montarCon(variant, onSubmit);
     act(() => {
-      escribir(dialogo().querySelector<HTMLInputElement>('input[placeholder="Juan Perez"]')!, 'Carlos Asesor');
+      escribir(dialogo().querySelector<HTMLInputElement>('input[placeholder="Juan Pérez"]')!, 'Carlos Asesor');
       escribir(dialogo().querySelector<HTMLInputElement>('input[placeholder="juan@inmobiliaria.com"]')!, 'carlos@inmobiliaria.co');
     });
     await act(async () => {

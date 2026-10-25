@@ -35,6 +35,7 @@ import {
   type CampoDelCodeudor,
 } from '@/lib/contratos/errores-del-codeudor';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export interface CodeudoresSectionProps {
   contractId: string;
@@ -110,7 +111,7 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
           <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
             <Users className="w-4 h-4" />
           </div>
-          <h3 className="font-semibold text-fg">Codeudores</h3>
+          <h3 className="font-medium text-fg">Codeudores</h3>
         </div>
         {puedeEditar && !formularioAbierto && (
           <Button variant="outline" size="sm" hideArrow onClick={() => setFormularioAbierto(true)} className="gap-1.5" data-testid="agregar-codeudor">
@@ -137,7 +138,7 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
                   <StaggerItem as="li" key={c.id} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted dark:bg-ink px-3 py-2" data-testid="codeudor-item">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-fg truncate">{c.nombre}</p>
-                      <p className="text-xs text-fg-muted">
+                      <p className="text-caption text-fg-muted">
                         {c.tipoDeDocumento} {c.documento} · {c.email}
                       </p>
                     </div>
@@ -308,21 +309,23 @@ function FormularioDeCodeudor({
           <ErrorDelCampo id={`${idDelCampoDelCodeudor('nombre')}-error`} mensaje={errores.nombre} />
         </div>
         <div>
-          <select
-            {...aria('tipoDeDocumento')}
-            aria-label="Tipo de documento"
+          {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). */}
+          <Select
             value={datos.tipoDeDocumento}
-            onChange={(e) => {
-              setDatos((d) => ({ ...d, tipoDeDocumento: e.target.value as TipoDeDocumentoDelCodeudor }));
+            onValueChange={(v) => {
+              setDatos((d) => ({ ...d, tipoDeDocumento: v as TipoDeDocumentoDelCodeudor }));
               limpiar('tipoDeDocumento');
             }}
-            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
-            data-testid="codeudor-tipo-documento"
           >
-            {DOCUMENTOS.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+            <SelectTrigger {...aria('tipoDeDocumento')} aria-label="Tipo de documento" className="w-full" data-testid="codeudor-tipo-documento">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DOCUMENTOS.map((t) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <ErrorDelCampo id={`${idDelCampoDelCodeudor('tipoDeDocumento')}-error`} mensaje={errores.tipoDeDocumento} />
         </div>
         <div>

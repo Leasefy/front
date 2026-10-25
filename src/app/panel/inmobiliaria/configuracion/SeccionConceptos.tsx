@@ -16,7 +16,10 @@ import { useMemo, useRef, useState } from 'react';
 import { MagnifyingGlass, Plus, UploadSimple, PencilSimple, Check, X } from '@phosphor-icons/react';
 
 import { Card } from '@/components/ui/card';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { Button } from '@/components/ui/button';
+import { AccionesDeLaSeccion } from '@/components/configuracion/acciones-de-la-seccion';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -46,6 +49,11 @@ import {
 import type { Parte } from '@/lib/contratos/conceptos';
 import type { BaseTributaria } from '@/lib/contratos/escenarios-tributarios';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { TablePagination } from '@/components/ui/pagination';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { EsqueletoDeSeccion } from './piezas';
+import { VacioChico } from '@/components/estado/VacioChico';
 
 export const TIPOS: Record<BaseTributaria, string> = {
   ARRENDAMIENTO: 'Arrendamiento',
@@ -71,6 +79,7 @@ const sinTildes = (t: string) =>
 export function SeccionConceptos() {
   const { conceptos, disponible, cargando, deRespaldo, recargar } = useCatalogoDeConceptos();
   const [busqueda, setBusqueda] = useState('');
+  const [estado, setEstado] = useState<'todos' | 'activos' | 'apagados'>('todos');
   const [editando, setEditando] = useState<{ clave: string; nombre: string } | null>(null);
   const [guardando, setGuardando] = useState<string | null>(null);
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
@@ -80,12 +89,17 @@ export function SeccionConceptos() {
 
   const visibles = useMemo(() => {
     const q = sinTildes(busqueda.trim());
-    if (!q) return conceptos;
-    return conceptos.filter((c) =>
+    const delEstado = conceptos.filter((c) =>
+      estado === 'todos' ? true : estado === 'activos' ? c.activo : !c.activo,
+    );
+    if (!q) return delEstado;
+    return delEstado.filter((c) =>
       sinTildes([c.nombre, c.nombreDeLeasefy ?? '', ...c.nombresDelSistemaAnterior].join(' ')).includes(q),
     );
-  }, [conceptos, busqueda]);
+  }, [conceptos, busqueda, estado]);
   const activos = conceptos.filter((c) => c.activo).length;
+  // Ronda 30 (regla de Nico: listas con paginación): el catálogo pasa de 40 conceptos.
+  const pag = useTablePagination(visibles, { resetKey: `${busqueda}|${estado}` });
   const soloLectura = !disponible;
 
   async function cambiar(c: ConceptoDelCatalogo, cambios: { nombre?: string; activo?: boolean }) {
@@ -142,34 +156,27 @@ export function SeccionConceptos() {
 
   return (
     <div className="space-y-6" data-testid="seccion-conceptos">
-      <div className="space-y-1">
-        <h2 className="text-h4 text-fg">Conceptos</h2>
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          Lo que cobras en tus contratos, con el nombre que tú le das. Arrancas con los de Leasefy:
-          renómbralos, apaga los que no usas, crea los tuyos o tráelos de tu sistema anterior. Los
-          impuestos no van en el nombre: los calcula el contrato según quién le paga a quién.
+      {/* Glow up 22-10: el título y la línea de para qué sirve los pone el marco
+          de Configuración; aquí se repetían. Lo que se consulta, en la ayuda. */}
+      <ParaEntenderMas etiqueta="¿Y los impuestos?" titulo="Conceptos">
+        <p className="text-body text-fg-muted">
+          Arrancas con los conceptos de Leasefy: renómbralos, apaga los que no usas, crea los tuyos o
+          tráelos de tu sistema anterior. Los impuestos no van en el nombre: los calcula el contrato
+          según quién le paga a quién.
         </p>
-      </div>
+      </ParaEntenderMas>
 
       {(soloLectura || deRespaldo) && !cargando && (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-fg" data-testid="conceptos-solo-lectura">
           {deRespaldo
-            ? 'No pudimos traer tu catálogo: estás viendo el de Leasefy. Vuelve a intentar en un momento.'
+            ? 'No se pudo traer tu catálogo: estás viendo el de Leasefy. Vuelve a intentar en un momento.'
             : 'Tu catálogo propio todavía no está activo: por ahora se usa el de Leasefy y no se puede cambiar.'}
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[16rem] flex-1">
-          <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Busca por nombre, también el de tu sistema anterior"
-            className="pl-9"
-            aria-label="Buscar concepto"
-          />
-        </div>
+      {/* Nico (23-10-2026): las dos acciones arriba, a la derecha del título de la sección; el secundario a la izquierda
+          del principal. El buscador vive en la tarjeta de la lista. */}
+      <AccionesDeLaSeccion>
         <input
           ref={archivoRef}
           type="file"
@@ -189,14 +196,42 @@ export function SeccionConceptos() {
           <Plus className="mr-2 h-4 w-4" />
           Nuevo concepto
         </Button>
-      </div>
+      </AccionesDeLaSeccion>
 
       <Card className="overflow-hidden p-0">
-        <div className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
-          {activos} activos de {conceptos.length}
+        {/* Las pestañas con su conteo, dentro de la tarjeta (antes «N activos de M» en una línea). */}
+        <div className="border-b border-border px-4 py-2.5 empty:hidden">
+          <PestanasDeEstado
+            etiqueta="Estado de los conceptos"
+            valor={estado}
+            onCambio={setEstado}
+            data-testid="conceptos-estados"
+            pestanas={[
+              { valor: 'todos', etiqueta: 'Todos', cuantos: conceptos.length, fija: true },
+              { valor: 'activos', etiqueta: 'Activos', cuantos: activos, fija: true },
+              { valor: 'apagados', etiqueta: 'Apagados', cuantos: conceptos.length - activos },
+            ]}
+          />
         </div>
+        <div className="border-b border-border px-4 py-3">
+          <div className="relative w-full sm:w-96">
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
+            <Input
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Busca por nombre, también el de tu sistema anterior"
+              className="pl-9"
+              aria-label="Buscar concepto"
+            />
+          </div>
+        </div>
+        {cargando ? (
+          <div className="p-4">
+            <EsqueletoDeSeccion filas={5} />
+          </div>
+        ) : null}
         <ul className="divide-y divide-border" data-testid="conceptos-lista">
-          {visibles.map((c) => (
+          {(cargando ? [] : pag.pageItems).map((c) => (
             <li key={c.clave} className="flex flex-wrap items-center gap-3 px-4 py-3" data-testid={`concepto-${c.clave}`}>
               <div className="min-w-[14rem] flex-1 space-y-0.5">
                 {editando?.clave === c.clave ? (
@@ -212,7 +247,7 @@ export function SeccionConceptos() {
                       }}
                       aria-label={`Nuevo nombre de ${c.nombre}`}
                     />
-                    <Button size="sm" disabled={guardando === c.clave || editando.nombre.trim().length < 2} onClick={() => void cambiar(c, { nombre: editando.nombre.trim() })} aria-label="Guardar nombre">
+                    <Button size="sm" variant="secondary" disabled={guardando === c.clave || editando.nombre.trim().length < 2} onClick={() => void cambiar(c, { nombre: editando.nombre.trim() })} aria-label="Guardar nombre">
                       <Check className="h-4 w-4" />
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditando(null)} aria-label="Cancelar">
@@ -248,10 +283,41 @@ export function SeccionConceptos() {
               </label>
             </li>
           ))}
-          {visibles.length === 0 && (
-            <li className="px-4 py-6 text-sm text-muted-foreground">Ningún concepto se llama así.</li>
+          {!cargando && visibles.length === 0 && (
+            <li>
+              {/* Ronda 30: el vacío con su salida (antes un renglón gris). */}
+              <SinDatos
+                hayFiltros={busqueda.trim() !== ''}
+                queSon="conceptos"
+                titulo={
+                  estado === 'apagados'
+                    ? 'No hay conceptos apagados'
+                    : estado === 'activos'
+                      ? 'No hay conceptos activos'
+                      : 'Todavía no hay conceptos'
+                }
+                descripcion={
+                  estado === 'apagados'
+                    ? 'Los que apagues salen de las listas al crear cobros; aquí los vuelves a prender.'
+                    : 'Crea uno con «Nuevo concepto» o tráelos de tu sistema anterior.'
+                }
+                onLimpiarFiltros={() => setBusqueda('')}
+              />
+            </li>
           )}
         </ul>
+        {!cargando && visibles.length > 0 ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={pag.total}
+              page={pag.page}
+              pageSize={pag.pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={pag.setPage}
+              onPageSizeChange={pag.setPageSize}
+            />
+          </div>
+        ) : null}
       </Card>
 
       <NuevoConcepto abierto={nuevoAbierto} onCerrar={() => setNuevoAbierto(false)} onCreado={recargar} />
@@ -292,6 +358,15 @@ function PlanEditable({
   const cambiar = (i: number, cambios: Partial<ConceptoPropuesto>) =>
     onCambio({ ...plan, conceptos: plan.conceptos.map((c, j) => (j === i ? { ...c, ...cambios } : c)) });
   const r = plan.resumen;
+  // Ronda 30 (regla de Nico: listas con buscador y paginación): un archivo trae 80 filas.
+  const [busquedaDelPlan, setBusquedaDelPlan] = useState('');
+  const filasDelPlan = useMemo(() => {
+    const q = sinTildes(busquedaDelPlan.trim());
+    return plan.conceptos
+      .map((c, i) => ({ c, i, id: `${c.clave ?? 'nuevo'}-${i}` }))
+      .filter(({ c }) => !q || sinTildes(c.nombre).includes(q) || c.nombresDelSistemaAnterior.some((n) => sinTildes(n).includes(q)));
+  }, [plan.conceptos, busquedaDelPlan]);
+  const pagDelPlan = useTablePagination(filasDelPlan, { resetKey: busquedaDelPlan });
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground" data-testid="conceptos-resumen-del-plan">
@@ -299,18 +374,28 @@ function PlanEditable({
         {r.nuevos} son nuevos. {r.juntadas > 0 ? `${r.juntadas} filas se juntaron con otra porque sólo cambiaban por impuestos. ` : ''}
         {r.apagados > 0 ? `${r.apagados} entran apagados («NO UTILIZAR»). ` : ''}Puedes cambiar el nombre, el tipo y si queda activo antes de importar.
       </p>
-      <div className="max-h-[55vh] overflow-y-auto rounded-md border border-border">
+      <div className="relative w-full sm:w-80">
+        <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
+        <Input
+          value={busquedaDelPlan}
+          onChange={(e) => setBusquedaDelPlan(e.target.value)}
+          placeholder="Buscar en el archivo"
+          className="pl-9"
+          aria-label="Buscar en los conceptos del archivo"
+        />
+      </div>
+      <div className="max-h-[55vh] overflow-auto rounded-md border border-border">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-surface text-left text-caption text-muted-foreground">
             <tr>
               <th className="px-3 py-2">Nombre</th>
               <th className="px-3 py-2">Tipo</th>
-              <th className="px-3 py-2">Quién paga → recibe</th>
+              <th className="px-3 py-2 max-sm:hidden">Quién paga → recibe</th>
               <th className="px-3 py-2">Activo</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {plan.conceptos.map((c, i) => {
+            {pagDelPlan.pageItems.map(({ c, i }) => {
               const deLeasefy = c.accion !== 'NUEVO';
               return (
                 <tr key={`${c.clave ?? 'nuevo'}-${i}`}>
@@ -335,7 +420,7 @@ function PlanEditable({
                       </Select>
                     )}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
+                  <td className="px-3 py-2 whitespace-nowrap max-sm:hidden">
                     {PARTES[c.paga]} → {PARTES[c.recibe]}
                   </td>
                   <td className="px-3 py-2">
@@ -347,6 +432,18 @@ function PlanEditable({
           </tbody>
         </table>
       </div>
+      {filasDelPlan.length === 0 ? (
+        <VacioChico titulo="Ningún concepto del archivo coincide con la búsqueda." ilustracion="lupa" />
+      ) : (
+        <TablePagination
+          total={pagDelPlan.total}
+          page={pagDelPlan.page}
+          pageSize={pagDelPlan.pageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onPageChange={pagDelPlan.setPage}
+          onPageSizeChange={pagDelPlan.setPageSize}
+        />
+      )}
     </div>
   );
 }
@@ -411,6 +508,14 @@ function NuevoConcepto({
             {selector(paga, (v) => setPaga(v as Parte), PARTES, 'Lo paga')}
             {selector(recibe, (v) => setRecibe(v as Parte), PARTES, 'Lo recibe')}
           </div>
+          {/* Ronda 30: el botón apagado dice qué falta. */}
+          {paga === recibe ? (
+            <p className="text-sm text-danger" role="alert" data-testid="concepto-misma-parte">
+              Quien lo paga y quien lo recibe no pueden ser la misma parte.
+            </p>
+          ) : nombre.trim().length > 0 && nombre.trim().length < 2 ? (
+            <p className="text-sm text-fg-muted">El nombre necesita al menos 2 letras.</p>
+          ) : null}
         </div>
         <DialogFooter>
           <Button variant="outline" disabled={creando} onClick={onCerrar}>Volver</Button>

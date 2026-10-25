@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Appear, Collapse } from '@leasefy/cadence';
+import { Appear, Collapse, Ilustracion } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { MotivosDelValidador } from './MotivosDelValidador';
 import {
@@ -109,7 +109,7 @@ export function ArmarContratoDesdePlantilla({ modo, estado, arrendatario }: Prop
       data-testid="armar-contrato-desde-plantilla"
     >
       <div>
-        <h2 className="text-base font-semibold text-fg">
+        <h2 className="text-base font-medium text-fg">
           {conIa ? 'Describe el acuerdo' : 'Contrato desde la plantilla'}
         </h2>
         <p className="text-caption text-fg-muted mt-0.5">
@@ -218,7 +218,7 @@ export function ArmarContratoDesdePlantilla({ modo, estado, arrendatario }: Prop
             />
             <p className="text-caption text-fg-muted">
               Lo acordado que ninguna cláusula del catálogo cubre. Pasa por el mismo
-              control legal que el resto: un depósito en dinero escrito acá tampoco se
+              control legal que el resto: un depósito en dinero escrito aquí tampoco se
               emite.
             </p>
           </div>
@@ -651,9 +651,8 @@ function CatalogoDeClausulas({
         data-testid="plantilla-catalogo-vacio"
         className="rounded-lg bg-surface-muted px-6 py-10 text-center"
       >
-        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-surface-muted text-fg-muted">
-          <FileText className="h-5 w-5" aria-hidden="true" />
-        </div>
+        {/* Nico (23-10-2026): todo vacío con su ilustración 3D. */}
+        <Ilustracion nombre="contrato" tamano={96} className="mx-auto" />
         <p className="text-body-sm text-fg mt-3">Esta plantilla no tiene cláusulas opcionales</p>
         <p className="text-caption text-fg-muted mt-1">
           El contrato sale con el texto de la plantilla, que ya trae lo que la ley exige.

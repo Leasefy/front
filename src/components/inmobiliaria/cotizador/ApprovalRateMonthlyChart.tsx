@@ -91,7 +91,7 @@ export function ApprovalRateMonthlyChart({
         queSon="aprobaciones"
         icono={ChartLineUp}
         titulo="Todavía no hay tasa de aprobación"
-        descripcion="Cuando las aseguradoras respondan consultas de varios meses, la tasa por aseguradora se grafica acá."
+        descripcion="Cuando las aseguradoras respondan consultas de varios meses, la tasa por aseguradora se grafica aquí."
         className="py-10"
       />
     )

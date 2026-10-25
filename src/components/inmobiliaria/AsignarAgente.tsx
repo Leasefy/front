@@ -12,10 +12,11 @@
  * El back sí lo tenía: `PUT /inmobiliaria/consignaciones/:id/assign-agent`.
  */
 
+import { Ilustracion } from '@leasefy/cadence';
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
-import { Briefcase, Check } from '@phosphor-icons/react';
+import { Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -112,12 +113,10 @@ export function AsignarAgente({
               className="rounded-lg border border-border bg-surface-muted px-4 py-6 text-center"
               data-testid="asignar-agente-vacio"
             >
-              <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg-muted">
-                <Briefcase className="h-6 w-6" weight="duotone" aria-hidden="true" />
-              </span>
+              <Ilustracion nombre="equipo" tamano={96} className="mx-auto mb-2" />
               <p className="text-sm font-medium text-fg">No tienes asesores activos</p>
-              <p className="mt-1 text-xs text-fg-muted">
-                Invita a alguien a tu equipo y después vuelve a asignarlo acá.
+              <p className="mt-1 text-caption text-fg-muted">
+                Invita a alguien a tu equipo y después vuelve a asignarlo aquí.
               </p>
               <Button asChild size="sm" className="mt-4" data-testid="asignar-agente-invitar">
                 <Link href="/panel/inmobiliaria/configuracion/equipo?invitar=1">Invitar a alguien</Link>
@@ -143,7 +142,7 @@ export function AsignarAgente({
                       guardando !== null && !esActual && 'opacity-60',
                     )}
                   >
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-soft text-sm font-semibold text-primary">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium text-fg">
                       {nombre.charAt(0).toUpperCase()}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -152,13 +151,13 @@ export function AsignarAgente({
                       </span>
                       <span className="block truncate text-caption text-fg-muted">
                         {rolDelAsesor(agente.rol)}
-                        {agente.leadsActivos > 0 ? ` · ${agente.leadsActivos} ${agente.leadsActivos === 1 ? 'lead abierto' : 'leads abiertos'}` : ''}
+                        {agente.leadsActivos > 0 ? ` · ${agente.leadsActivos} ${agente.leadsActivos === 1 ? 'interesado abierto' : 'interesados abiertos'}` : ''}
                       </span>
                     </span>
                     {esActual ? (
-                      <span className="shrink-0 text-xs font-medium text-primary">Actual</span>
+                      <span className="shrink-0 text-caption font-medium text-fg">Actual</span>
                     ) : guardando === agente.userId ? (
-                      <span className="shrink-0 text-xs text-fg-muted">Asignando…</span>
+                      <span className="shrink-0 text-caption text-fg-muted">Asignando…</span>
                     ) : (
                       <Check className="h-4 w-4 shrink-0 text-fg-subtle" />
                     )}

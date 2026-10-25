@@ -10,6 +10,7 @@
  */
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TrashSimple, Warning } from '@phosphor-icons/react';
 
@@ -23,7 +24,14 @@ import { settingsApi } from '@/lib/api/settings.service';
 import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
-export function SeccionEliminarCuenta({ bloqueo }: { bloqueo?: string | null }) {
+export function SeccionEliminarCuenta({
+  bloqueo,
+  salidaDelBloqueo,
+}: {
+  bloqueo?: string | null;
+  /** A dónde ir a resolver el bloqueo (p. ej. «Ver mis arriendos»). */
+  salidaDelBloqueo?: { href: string; etiqueta: string };
+}) {
   const router = useRouter();
   const { signOut } = useAuth();
   const { locale } = useI18n();
@@ -62,33 +70,43 @@ export function SeccionEliminarCuenta({ bloqueo }: { bloqueo?: string | null }) 
 
   return (
     <>
-      <section className="overflow-hidden rounded-lg border border-danger/30 bg-surface">
-        <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-danger-soft">
-              <Warning className="h-[18px] w-[18px] text-danger" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-fg">{copy.modalTitle}</p>
+      {/* Glow up r26: sin repetir «Eliminar cuenta» (ya es el título de la
+          sección), el aviso suelto y el botón de borde rojo, como «Desactivar»
+          del segundo factor; el rojo lleno queda para la confirmación. */}
+      <section className="rounded-lg border border-border bg-surface px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <Warning className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
+            <div className="min-w-0 space-y-1">
+              <p className="text-sm font-medium text-fg">
+                {locale === 'es' ? 'Qué pasa si la eliminas' : 'What happens if you delete it'}
+              </p>
               <p className="text-sm text-fg-muted">{copy.warningBody}</p>
             </div>
           </div>
           <Button
-            variant="destructive"
+            variant="outline"
             hideArrow
             size="sm"
             disabled={Boolean(bloqueo)}
             onClick={() => setAbierto(true)}
             data-testid="abrir-eliminar-cuenta"
-            className="shrink-0"
+            className="shrink-0 self-start border-danger/30 text-danger hover:bg-danger-soft"
           >
             {copy.deleteButton}
           </Button>
         </div>
         {bloqueo && (
-          <p data-testid="bloqueo-eliminar-cuenta" className="border-t border-border bg-warning-soft px-4 py-3 text-sm text-warning sm:px-5">
-            {bloqueo}
-          </p>
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-border pt-4">
+            <p data-testid="bloqueo-eliminar-cuenta" className="text-sm text-fg">
+              {bloqueo}
+            </p>
+            {salidaDelBloqueo && (
+              <Link href={salidaDelBloqueo.href} className="text-sm font-medium text-fg underline underline-offset-4 hover:text-fg-muted">
+                {salidaDelBloqueo.etiqueta}
+              </Link>
+            )}
+          </div>
         )}
       </section>
 
@@ -126,7 +144,7 @@ export function SeccionEliminarCuenta({ bloqueo }: { bloqueo?: string | null }) 
       >
         <div>
           <label htmlFor="confirmar-eliminar-cuenta" className="mb-2 block text-sm font-medium text-fg">
-            {copy.confirmShortPrefix} <span className="font-bold text-fg">{copy.confirmWord}</span>{' '}
+            {copy.confirmShortPrefix} <span className="font-mono font-medium text-fg">{copy.confirmWord}</span>{' '}
             {copy.confirmShortSuffix}
           </label>
           <Input
@@ -136,6 +154,8 @@ export function SeccionEliminarCuenta({ bloqueo }: { bloqueo?: string | null }) 
             onChange={(e) => setConfirmacion(e.target.value)}
             placeholder={copy.inputPlaceholder}
             disabled={borrando}
+            autoComplete="off"
+            autoCapitalize="characters"
           />
         </div>
       </SettingsModal>

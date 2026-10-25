@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, CheckCircle } from '@phosphor-icons/react'
+import { CheckCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { agenciaDelBorrador } from './agency-step-prefill'
 import { MEMBER_ROLE_OPTIONS } from './members-step-schema'
@@ -110,7 +110,6 @@ export function PasoYaGuardado({ paso, draft, pasoActual, onVolver }: PasoYaGuar
       <div className="space-y-4">{contenido}</div>
       <Button type="button" hideArrow className="w-full" onClick={onVolver} data-testid="volver-al-paso-actual">
         Volver a {etiquetaActual}
-        <ArrowRight className="h-4 w-4" weight="bold" aria-hidden />
       </Button>
     </div>
   )

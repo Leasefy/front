@@ -28,6 +28,7 @@
  * contesta, este bloque no se renderiza y la pantalla del ERP se basta sola.
  */
 
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { toast } from '@/components/ui/toast';
 import {
@@ -132,18 +133,9 @@ function fmtCop(val: number): string {
   }).format(val);
 }
 
-/** Format ISO date string to DD/MM/YYYY */
+/** Ronda 30: la fecha corta de la casa («16 oct 2026»; antes DD/MM/AAAA). */
 function fmtDate(iso: string | null): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('es-CO', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
+  return fechaCorta(iso);
 }
 
 // ── Reject dialog ───────────────────────────────────────────────────────────
@@ -546,10 +538,10 @@ export function ConciliacionDelAgente() {
           <Robot className="h-[18px] w-[18px] text-fg-muted" weight="duotone" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold text-fg">Lo que vio el agente</h2>
+          <h2 className="text-base font-medium text-fg">Lo que vio el agente</h2>
           <p className="mt-0.5 text-caption text-fg-muted">
             {tieneDatos
-              ? `${total} ${total === 1 ? 'movimiento' : 'movimientos'} propios del agente, con su clasificación por caso. Confirmar acá no emite recibo de caja.`
+              ? `${total} ${total === 1 ? 'movimiento' : 'movimientos'} propios del agente, con su clasificación por caso. Confirmar aquí no emite recibo de caja.`
               : 'El agente todavía no tiene movimientos propios. Puedes cargarle un CSV de Bancolombia o Davivienda para que los clasifique.'}
           </p>
         </div>
@@ -588,7 +580,7 @@ export function ConciliacionDelAgente() {
           <section className="overflow-hidden rounded-lg border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border p-4">
               <div>
-                <h3 className="text-sm font-semibold text-fg">{t(k('movimientosTitle'))}</h3>
+                <h3 className="text-sm font-medium text-fg">{t(k('movimientosTitle'))}</h3>
                 <p className="mt-0.5 text-caption text-fg-muted">{t(k('movimientosDesc'))}</p>
               </div>
               <Button
@@ -687,13 +679,13 @@ export function ConciliacionDelAgente() {
         {/*
           El banner «modo sombra» venía del encabezado de esta pantalla, donde
           quedaba arriba de todo y parecía hablar del extracto que emite
-          recibos. Habla del MICRO: acá adentro dice la verdad.
+          recibos. Habla del MICRO: aquí adentro dice la verdad.
         */}
         <div className="flex items-start gap-2.5 rounded-lg border border-border bg-surface-muted p-3">
           <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" weight="duotone" aria-hidden="true" />
           <div>
-            <p className="text-xs font-semibold text-fg-muted">{t(k('m2BannerTitle'))}</p>
-            <p className="mt-0.5 text-xs text-fg-muted">{t(k('m2BannerDesc'))}</p>
+            <p className="text-caption font-medium text-fg-muted">{t(k('m2BannerTitle'))}</p>
+            <p className="mt-0.5 text-caption text-fg-muted">{t(k('m2BannerDesc'))}</p>
           </div>
         </div>
 
@@ -702,11 +694,11 @@ export function ConciliacionDelAgente() {
           Segundo lugar donde se sube un archivo, y a propósito: éste NO emite
           recibos, sólo le da de comer al clasificador del micro (CSV, y sólo
           Bancolombia o Davivienda). El de arriba —el del ERP— es el que mueve
-          plata. Por eso vive acá adentro, plegado, y dice para qué es.
+          plata. Por eso vive aquí adentro, plegado, y dice para qué es.
         */}
         <section className="space-y-3">
           <SectionLabel>Cargarle un extracto al agente</SectionLabel>
-          <p className="max-w-2xl text-xs text-fg-muted">
+          <p className="max-w-2xl text-caption text-fg-muted">
             Sólo CSV de Bancolombia o Davivienda, y sólo para que el agente lo clasifique: esto no
             emite recibos de caja ni toca los cobros. Para conciliar de verdad usa el extracto de
             arriba.
@@ -731,13 +723,13 @@ export function ConciliacionDelAgente() {
             disabled={uploading}
             aria-label={t(k('uploadTitle'))}
             data-testid="conciliacion-agente-cargar"
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface-muted/50 p-6 text-center transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60"
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface-muted/50 p-6 text-center transition-colors hover:border-border-strong hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60"
           >
-            <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-md bg-primary-soft">
+            <div className="mb-1 flex h-10 w-10 items-center justify-center">
               {uploading ? (
                 <Spinner size="md" variant="default" />
               ) : (
-                <UploadSimple className="h-5 w-5 text-primary" weight="duotone" aria-hidden="true" />
+                <UploadSimple className="h-6 w-6 text-fg-muted" aria-hidden="true" />
               )}
             </div>
             <p className="text-body-sm font-medium text-fg">
@@ -756,9 +748,9 @@ export function ConciliacionDelAgente() {
         </section>
 
         {!tieneDatos && (
-          <p className="flex items-start gap-2 text-xs text-fg-muted">
+          <p className="flex items-start gap-2 text-caption text-fg-muted">
             <Bank className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            Cuando el agente tenga movimientos propios, acá aparecen su resumen por caso y la cola
+            Cuando el agente tenga movimientos propios, aquí aparecen su resumen por caso y la cola
             con confirmar, rechazar y revertir.
           </p>
         )}

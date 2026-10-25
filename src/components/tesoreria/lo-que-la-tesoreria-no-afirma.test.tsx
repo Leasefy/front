@@ -400,7 +400,8 @@ describe('🔴 el traslado muestra su desglose ANTES del botón', () => {
     const tabla = contenedor.querySelector('[data-testid="renglones-del-traslado"]');
     expect(tabla).not.toBeNull();
     expect(tabla?.textContent).toContain('Comisión de administración');
-    expect(tabla?.textContent).toContain('NO la recibió');
+    // C6 (revisora r25): el porqué del back se lee sin mayúsculas de énfasis.
+    expect(tabla?.textContent).toContain('la inmobiliaria no la recibió');
     expect(contenedor.querySelector('[data-testid="proponer-traslado"]')).not.toBeNull();
   });
 
@@ -459,5 +460,57 @@ describe('🔴 el traslado muestra su desglose ANTES del botón', () => {
     expect(
       document.body.querySelector('[data-testid="confirmar-rechazo"]')?.className,
     ).toContain('bg-danger');
+  });
+
+  it('r25 (Traslados #1): bajo lo que espera aprobación, UNA línea dice cuánto más queda por proponer en ese mes', async () => {
+    h.propuestaDeTraslado.mockResolvedValue({ ...propuesta, totalCop: 133_905_651 });
+    h.listarTraslados.mockResolvedValue({
+      disponible: true,
+      propuestos: [
+        {
+          id: 't-2', origen: 'MES', loteId: null, periodo: '2026-08', comisionCop: 800_000, ivaComisionCop: 116_300,
+          retencionesComisionCop: 0, interesesCop: 0, gastosDeCobranzaCop: 0, totalCop: 916_300, estado: 'PROPUESTO',
+          fecha: null, comprobanteNumero: null, asientoId: null, motivo: null, propuestoPorUserId: null,
+          aprobadoPorUserId: null, aprobadoAt: null, createdAt: '2026-09-01T00:00:00.000Z',
+        },
+      ],
+      recientes: [],
+    });
+    await pintar(<TrasladoDeComisionPanel />);
+    const linea = contenedor.querySelector('[data-testid="traslado-y-lo-que-queda"]');
+    expect(linea?.textContent).toContain('Además de éste, en agosto de 2026 quedan');
+    expect(linea?.textContent).toContain('133.905.651');
+    expect(linea?.querySelector('a')?.getAttribute('href')).toBe('#propuesta-del-traslado');
+  });
+});
+
+/**
+ * GLOW UP (Nico, 20-10-2026): «qué requiere hacer primero el usuario y segundo
+ * etc.». El recaudo por convenio son tres pasos en orden; el que sigue está
+ * abierto y los que vienen dicen por qué todavía no.
+ */
+describe('GLOW UP · el recaudo por convenio, paso por paso', () => {
+  const estadoDe = (id: string) =>
+    contenedor.querySelector(`[data-testid="pasos-del-recaudo-${id}"]`)?.getAttribute('data-estado');
+
+  it('sin convenio, lo que sigue es configurarlo; subir y conciliar esperan', async () => {
+    h.listarConvenios.mockResolvedValue({ ...CONVENIOS, convenios: [] });
+    await pintar(<RecaudoBancarioPanel />);
+    expect(estadoDe('convenio')).toBe('actual');
+    expect(estadoDe('subir')).toBe('pendiente');
+    expect(estadoDe('conciliar')).toBe('pendiente');
+    expect(contenedor.textContent).toContain('Primero configura y activa el convenio.');
+  });
+
+  it('con el convenio activo, queda hecho a la vista y lo que sigue es subir el archivo', async () => {
+    h.listarConvenios.mockResolvedValue(CONVENIOS);
+    await pintar(<RecaudoBancarioPanel />);
+    expect(estadoDe('convenio')).toBe('hecho');
+    expect(estadoDe('subir')).toBe('actual');
+    expect(estadoDe('conciliar')).toBe('pendiente');
+    // El convenio sigue a la vista, con su «Cambiar el formato».
+    expect(contenedor.querySelector('[data-testid^="editar-convenio-"]')).not.toBeNull();
+    // El archivo se elige en el paso abierto.
+    expect(contenedor.querySelector('[data-testid="archivo-de-recaudo"]')).not.toBeNull();
   });
 });

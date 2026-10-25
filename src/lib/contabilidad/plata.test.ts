@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { plata, plataEnElTexto, sinEmojis, textoDelBack } from './plata';
+import { plata, plataEnElTexto, sinElEquipoEnLaFrase, sinEmojis, sinNotasInternas, textoDelBack } from './plata';
 
 describe('plata', () => {
   it('con espacio después del símbolo y el menos tipográfico adelante', () => {
@@ -43,5 +43,29 @@ describe('sinEmojis', () => {
     expect(textoDelBack('🔴 2 movimientos por $205.830 no tienen tercero')).toBe(
       '2 movimientos por $ 205.830 no tienen tercero',
     );
+  });
+});
+
+describe('🔴 las notas del equipo no llegan a la pantalla (revisora r25, B6 y B8)', () => {
+  it('borra el paréntesis con un código de QA y un nombre del equipo con fecha', () => {
+    expect(sinNotasInternas('Decide si el canon va en el 1003 (CB-K-09, Nico 05-10-2026).')).toBe(
+      'Decide si el canon va en el 1003.',
+    );
+    expect(textoDelBack('Revisa la retención (QA-12) del mes por $8.757.000')).toBe(
+      'Revisa la retención del mes por $ 8.757.000',
+    );
+  });
+
+  it('un paréntesis con un nombre sin fecha se queda: puede ser un inquilino o un proveedor', () => {
+    expect(sinNotasInternas('Falta el RUT del proveedor (Víctor Pérez).')).toBe('Falta el RUT del proveedor (Víctor Pérez).');
+    expect(sinNotasInternas('Según la Ley 51 (de 1983) se corre al lunes.')).toBe('Según la Ley 51 (de 1983) se corre al lunes.');
+  });
+
+  it('la frase que dice quién del equipo lo hace se cambia por la que se le pase', () => {
+    const aviso = 'No hay proveedor de nómina electrónica configurado. La integración la hace Víctor.';
+    const limpio = sinElEquipoEnLaFrase(aviso, 'La conexión con la DIAN la activa Leasefy.');
+    expect(limpio).toBe('No hay proveedor de nómina electrónica configurado. La conexión con la DIAN la activa Leasefy.');
+    expect(limpio).not.toContain('Víctor');
+    expect(sinElEquipoEnLaFrase('Lo prende Nico. Mientras tanto no sale nada.')).toBe('Mientras tanto no sale nada.');
   });
 });

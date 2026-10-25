@@ -50,7 +50,45 @@ vi.mock('@/components/ui/cajon', () => ({
   CajonCuerpo: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
+// El Combobox de cadence se reemplaza por un <select>: lo que se prueba acá son las opciones y la elección,
+// no el popover (igual que en PartesDelContratoManual.test).
+vi.mock('@/components/ui/combobox', () => ({
+  Combobox: ({
+    options,
+    value,
+    onChange,
+    disabled,
+    ...rest
+  }: {
+    options: { value: string; label: string }[]
+    value?: string
+    onChange: (v: string | undefined) => void
+    disabled?: boolean
+  }) =>
+    React.createElement(
+      'select',
+      {
+        'data-testid': (rest as Record<string, string>)['data-testid'],
+        value: value ?? '',
+        disabled,
+        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value || undefined),
+      },
+      [React.createElement('option', { key: '', value: '' }, '—')].concat(
+        options.map((o) => React.createElement('option', { key: o.value, value: o.value }, o.label)),
+      ),
+    ),
+}))
+
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
+  // Revisora r22 (#5): los disponibles del portafolio también se ofrecen, aunque nadie los mire.
+  useConsignaciones: () => ({
+    consignaciones: [
+      { id: 'c-1', propertyId: 'inm-libre', propertyTitle: 'Casa en Sabaneta', propertyAddress: 'Cl 70 Sur', propertyCode: 12, status: 'active', availability: 'available', listingType: 'rent' },
+      { id: 'c-2', propertyId: 'inm-arrendado', propertyTitle: 'Local arrendado', status: 'active', availability: 'rented', listingType: 'rent' },
+    ],
+    isLoading: false,
+    errorCrudo: null,
+  }),
   usePipelineItems: () => ({
     pipelineItems: [
       {
@@ -186,7 +224,10 @@ describe('CalceClient', () => {
     await pintar()
     await abrirComoSeDecide()
     expect(contenedor.textContent).toContain('los de por defecto')
-    expect(contenedor.textContent).toContain('zona: 40')
+    // Revisora r23 (Qué ofrecer #2): cada peso con su nombre y su porcentaje, no la llave cruda («zona: 40»).
+    expect(contenedor.textContent).toContain('Zona 40 %')
+    expect(contenedor.textContent).toContain('Holgura en el presupuesto 10 %')
+    expect(contenedor.textContent).not.toContain('zona: 40')
   })
 
   it('🔴 y NO están puestos sobre la pantalla hasta que alguien los pida', async () => {
@@ -340,5 +381,40 @@ describe('CalceClient', () => {
     await irAlLadoDelInmueble()
     await escribir('[data-testid="input-inmueble"]', 'inm-9')
     expect($('[data-testid="marca-lead-p-7"]')?.textContent).toContain('Sin estudio')
+  })
+})
+
+describe('revisora r22 (Qué ofrecer #3 y #5): los buscadores', () => {
+  it('los interesados que ya avanzaron van primero, y la etiqueta trae el teléfono y la etapa', async () => {
+    const { opcionesDeInteresados } = await import('./CalceClient')
+    const base = { propertyTitle: 'Apto 1', candidatePhone: '300 111 2233' }
+    const opciones = opcionesDeInteresados([
+      { ...base, id: 'a', candidateName: 'Ana', stage: 'lead' },
+      { ...base, id: 'b', candidateName: 'Beto', stage: 'visit_done' },
+      { ...base, id: 'c', candidateName: 'Ceci', stage: 'lost' },
+    ] as never)
+    expect(opciones.map((o) => o.value)).toEqual(['b', 'a', 'c'])
+    expect(opciones[0]!.label).toBe('Beto · 300 111 2233 · Apto 1 · Visita hecha')
+  })
+
+  it('«Se liberó un inmueble» ofrece los disponibles del portafolio primero, y no los arrendados', async () => {
+    const { opcionesDeInmuebles } = await import('./CalceClient')
+    const opciones = opcionesDeInmuebles(
+      [
+        { propertyId: 'x', propertyTitle: 'Casa', propertyCode: 7 },
+        { propertyId: 'y', propertyTitle: null, propertyAddress: null },
+      ],
+      [
+        { id: 'x', titulo: 'Casa' },
+        { id: 'z', titulo: 'Oficina' },
+      ],
+      new Map([['x', 2], ['z', 1]]),
+      { disponible: 'Disponible', interesados: (n) => `${n} interesados`, sinTitulo: 'Inmueble sin título' },
+    )
+    expect(opciones).toEqual([
+      { value: 'x', label: '#7 · Casa · Disponible · 2 interesados' },
+      { value: 'y', label: 'Inmueble sin título · Disponible' },
+      { value: 'z', label: 'Oficina · 1 interesados' },
+    ])
   })
 })

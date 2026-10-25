@@ -98,12 +98,12 @@ export function CostPerPesoKpi({ data, isLoading }: CostPerPesoKpiProps) {
       aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.title')}
       className="relative"
     >
-      <p className="text-3xl font-bold tabular-nums">
+      <p className="text-3xl font-medium tabular-nums">
         {formattedCosto}{' '}
         <span className="text-base font-normal text-fg-muted">por cada</span>{' '}
         {formattedCop}
       </p>
-      <p className="text-xs text-fg-muted mt-1 mb-3">
+      <p className="text-caption text-fg-muted mt-1 mb-3">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.subtitle')}
       </p>
       <ResponsiveContainer width="100%" height={120}>

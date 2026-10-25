@@ -51,7 +51,7 @@ export function CambiarDeCuenta({ cuentas, enPantalla, locale, onElegir }: Cambi
     <div data-testid="cambiar-de-cuenta" className="px-1.5 pb-1">
       <p
         id="cambiar-de-cuenta-titulo"
-        className="px-1.5 pt-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-fg-subtle"
+        className="px-1.5 pt-1 pb-1.5 text-label text-fg-subtle"
       >
         {es ? 'Cambiar de cuenta' : 'Switch account'}
       </p>
@@ -88,20 +88,16 @@ export function CambiarDeCuenta({ cuentas, enPantalla, locale, onElegir }: Cambi
                   aria-hidden="true"
                 />
               )}
-              <span
-                className={cn(
-                  'relative flex h-7 w-7 shrink-0 items-center justify-center rounded-md border',
-                  esLaActiva ? 'border-border bg-surface text-fg' : 'border-border/70 bg-surface text-fg-muted',
-                )}
+              {/* El ícono suelto, sin caja (Cadence 2). */}
+              <Icono
+                className={cn('relative mt-0.5 h-5 w-5 shrink-0', esLaActiva ? 'text-fg' : 'text-fg-muted')}
                 aria-hidden="true"
-              >
-                <Icono className="h-4 w-4" />
-              </span>
+              />
               {/* Hasta dos renglones: el nombre de una inmobiliaria («Prueba RESTO
                   Inmobiliaria S.A.S.») se lee entero, sin agrandar el menú. */}
               <span className="relative min-w-0 flex-1">
-                <span className="block line-clamp-2 break-words text-[13px] font-medium leading-snug text-fg">{o.titulo}</span>
-                <span className="block line-clamp-2 break-words text-[12px] leading-snug text-fg-muted">{o.detalle}</span>
+                <span className="block line-clamp-2 break-words text-caption font-medium leading-snug text-fg">{o.titulo}</span>
+                <span className="block line-clamp-2 break-words text-caption leading-snug text-fg-muted">{o.detalle}</span>
               </span>
               <span className="relative mt-1.5 flex h-4 w-4 shrink-0 items-center justify-center">
                 {abriendoEsta ? (

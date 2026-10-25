@@ -60,7 +60,7 @@ export function CompliancePill({ flag }: CompliancePillProps) {
           </StatusBadge>
         </TooltipTrigger>
         <TooltipContent>
-          <span className="font-mono text-xs">{flag.code}</span>
+          <span className="font-mono text-caption">{flag.code}</span>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

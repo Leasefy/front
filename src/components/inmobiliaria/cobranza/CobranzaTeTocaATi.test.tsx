@@ -193,11 +193,16 @@ describe('CobranzaTeTocaATi — tablero encerrado', () => {
     expect(container.textContent).not.toContain('ALTA')
   })
 
-  it('el pie enlaza a la pantalla de pendientes con el total', () => {
+  // Ronda 30 (K8): la pantalla «Pendientes» se fusionó aquí; el pie ya no lleva
+  // a otra pantalla: pliega la lista con buscador, pestañas por grupo y paginación.
+  it('el pie pliega la lista de los pendientes con el total, y el tablero tiene su ancla', () => {
     conPendientes(CARTERA)
     render()
 
-    expect(container.textContent).toContain('Ver los 7 pendientes')
+    expect(container.textContent).toContain('Ver los 7 en lista')
+    expect(container.querySelector('[data-testid="te-toca-en-lista"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="cobranza-te-toca"]')?.id).toBe('te-toca-a-ti')
+    expect(container.textContent).not.toContain('Ver los 7 pendientes')
   })
 
   it('sin pendientes → estado vacío honesto dentro del recuadro, sin columnas ni pie', () => {

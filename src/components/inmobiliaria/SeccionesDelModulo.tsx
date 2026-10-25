@@ -10,7 +10,7 @@ import {
   CARAS_DE_LA_PLATA,
   caraDeLaRuta,
   caraDelSelector,
-  moduloDeLaRuta,
+  modulosDeLaRuta,
   pestanaActiva,
   pestanasDelModulo,
   type CaraDeLaPlata,
@@ -123,16 +123,23 @@ export function SeccionesDelModulo() {
     return yaCambioElJuego.current && juego !== null ? juego : undefined;
   };
 
-  const modulo = moduloDeLaRuta(pathname);
+  const ctx = { canAccess, isAdmin, agencyRole, agentUnverified: agentAccessStatus === 'sin-verificar' };
+  const laVe = (p: PantallaDelPanel) => pasaGateDeFila(p, ctx) && canSeeBusinessModule(p.scope, { isAdmin, agencyRole });
+  /*
+   * Revisora r27 (C12): el módulo de href más largo, salvo que su fila no sea para esta
+   * persona —«Jurídico» es SÓLO del abogado externo (`soloEsosRoles`)—: entonces el de
+   * arriba, y el administrador ve Cobro jurídico dentro de «Cobrar a inquilinos», con la
+   * pestaña Cartera marcada, como sus hermanas. Sólo cambia qué riel se dibuja: cada
+   * pestaña sigue pasando su gate y cada página su `PageGuard`.
+   */
+  const candidatos = modulosDeLaRuta(pathname);
+  const modulo = candidatos.find((m) => laVe(pestanasDelModulo(m)[0]!)) ?? candidatos[0] ?? null;
   if (!modulo) {
     anotarJuego(null);
     return null;
   }
 
-  const ctx = { canAccess, isAdmin, agencyRole, agentUnverified: agentAccessStatus === 'sin-verificar' };
-  const visibles = pestanasDelModulo(modulo).filter(
-    (p) => pasaGateDeFila(p, ctx) && canSeeBusinessModule(p.scope, { isAdmin, agencyRole }),
-  );
+  const visibles = pestanasDelModulo(modulo).filter(laVe);
   if (visibles.length < 2) {
     anotarJuego(null);
     return null;

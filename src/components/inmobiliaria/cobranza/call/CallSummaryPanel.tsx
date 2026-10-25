@@ -54,7 +54,7 @@ export default function CallSummaryPanel({ summary }: CallSummaryPanelProps) {
       className="rounded-lg border border-border bg-surface p-4 space-y-4"
     >
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-fg">Qué pasó en la llamada</h2>
+        <h2 className="text-sm font-medium text-fg">Qué pasó en la llamada</h2>
         {summary.outcome && (
           <Badge variant={outcomeBadgeVariant(summary.outcome)}>
             {summaryOutcomeLabel(summary.outcome)}
@@ -65,7 +65,7 @@ export default function CallSummaryPanel({ summary }: CallSummaryPanelProps) {
       {/* Lo accionable primero */}
       {promesa && (
         <div className="rounded-lg bg-success-soft border border-success/20 p-3">
-          <p className="flex items-center gap-1.5 text-xs font-medium text-success">
+          <p className="flex items-center gap-1.5 text-caption font-medium text-success">
             <Handshake className="w-4 h-4" aria-hidden="true" />
             Se comprometió a pagar
           </p>
@@ -79,18 +79,18 @@ export default function CallSummaryPanel({ summary }: CallSummaryPanelProps) {
             )}
             {fecha && <span className="text-sm text-fg-muted"> · {fecha}</span>}
           </p>
-          {canal && <p className="mt-0.5 text-xs text-fg-muted">Por {canal}</p>}
+          {canal && <p className="mt-0.5 text-caption text-fg-muted">Por {canal}</p>}
         </div>
       )}
 
       {summary.unresolvedObjection && (
         <div className="rounded-lg bg-warning-soft border border-warning/20 p-3">
-          <p className="flex items-center gap-1.5 text-xs font-medium text-warning">
+          <p className="flex items-center gap-1.5 text-caption font-medium text-warning">
             <Quotes className="w-4 h-4" weight="fill" aria-hidden="true" />
             Objeción que quedó sin resolver
           </p>
           <p className="mt-1 text-sm text-fg">{summary.unresolvedObjection}</p>
-          <p className="mt-1 text-xs text-fg-muted">
+          <p className="mt-1 text-caption text-fg-muted">
             El agente la retoma en el próximo contacto.
           </p>
         </div>
@@ -98,7 +98,7 @@ export default function CallSummaryPanel({ summary }: CallSummaryPanelProps) {
 
       {summary.fraudFlags.length > 0 && (
         <div className="rounded-lg bg-danger-soft border border-danger/20 p-3">
-          <p className="flex items-center gap-1.5 text-xs font-medium text-danger">
+          <p className="flex items-center gap-1.5 text-caption font-medium text-danger">
             <ShieldWarning className="w-4 h-4" weight="fill" aria-hidden="true" />
             Señales de fraude
           </p>
@@ -118,7 +118,7 @@ export default function CallSummaryPanel({ summary }: CallSummaryPanelProps) {
       )}
 
       {/* Lo descriptivo */}
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-caption">
         {summary.sentiment && (
           <div>
             <dt className="text-fg-subtle">Actitud del deudor</dt>
@@ -146,7 +146,7 @@ export default function CallSummaryPanel({ summary }: CallSummaryPanelProps) {
           {summary.keyTopics.map((topic) => (
             <span
               key={topic}
-              className="rounded-full bg-surface-muted px-2 py-0.5 text-xs text-fg-muted"
+              className="rounded-full bg-surface-muted px-2 py-0.5 text-caption text-fg-muted"
             >
               {topic.replace(/-/g, ' ')}
             </span>

@@ -280,7 +280,7 @@ describe('/panel/inmobiliaria/inquilinos — el camino de cargar UNO solo', () =
      * diccionario porque la pantalla, en el test, rinde claves.
      */
     expect(es.inquilinos.subtitulo).not.toContain('nace de su contrato');
-    expect(es.inquilinos.subtitulo).toContain('Carga uno acá');
+    expect(es.inquilinos.subtitulo).toContain('Carga uno aquí');
     expect(en.inquilinos.subtitulo).not.toContain('comes from their lease');
   });
 });
@@ -378,22 +378,23 @@ describe('/panel/inmobiliaria/inquilinos — ?persona= (desde la bandeja de mens
 describe('/panel/inmobiliaria/inquilinos — I1: los tiles no dicen «0» cuando no saben', () => {
   const tiles = () => Array.from(host.querySelectorAll('[data-testid="kpi-valor"]'));
 
-  it('mientras carga, los tres tiles son un hueco, no un número', () => {
+  it('mientras carga, los tiles son un hueco, no un número', () => {
     deudaMock.mockReturnValue(null);
     carga.cargando = true;
     montar();
 
-    expect(tiles()).toHaveLength(3);
+    // Ronda 20: dos tiles (arriendos vigentes y canon); la cifra «Inquilinos» contradecía a la pestaña «Todos».
+    expect(tiles()).toHaveLength(2);
     expect(tiles().every((t) => t.getAttribute('data-estado') === 'cargando')).toBe(true);
     expect(tiles().map((t) => t.textContent).join('')).toBe('');
   });
 
-  it('🔴 si la carga falló, «—» en los tres: nunca «0 · $0» sobre datos que no llegaron', () => {
+  it('🔴 si la carga falló, «—» en todos: nunca «0 · $0» sobre datos que no llegaron', () => {
     deudaMock.mockReturnValue(null);
     carga.error = Object.assign(new Error('502 Bad Gateway'), { status: 502 });
     montar();
 
-    expect(tiles()).toHaveLength(3);
+    expect(tiles()).toHaveLength(2);
     expect(tiles().every((t) => t.getAttribute('data-estado') === 'fallo')).toBe(true);
     expect(tiles().some((t) => /\d/.test(t.textContent ?? ''))).toBe(false);
   });
@@ -404,6 +405,6 @@ describe('/panel/inmobiliaria/inquilinos — I1: los tiles no dicen «0» cuando
     montar();
 
     expect(tiles().every((t) => t.getAttribute('data-estado') === 'ok')).toBe(true);
-    expect(tiles().map((t) => t.textContent)).toEqual(['1', '1', '2000000']);
+    expect(tiles().map((t) => t.textContent)).toEqual(['1', '2000000']);
   });
 });

@@ -65,7 +65,7 @@ export function TopObjectionsTable({ data }: TopObjectionsTableProps) {
   if (!data.populated) {
     return (
       <div className="relative overflow-x-auto">
-        <p className="text-xs font-medium text-fg-muted mb-3">
+        <p className="text-caption font-medium text-fg-muted mb-3">
           {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.title')}
         </p>
         <EmptyState
@@ -84,7 +84,7 @@ export function TopObjectionsTable({ data }: TopObjectionsTableProps) {
     // Sin `overflow-x-auto` acá: el `Table` del DS ya trae su propio contenedor
     // de scroll horizontal, y dos anidados dejan uno inerte.
     <div className="relative">
-      <p className="text-xs font-medium text-fg-muted mb-3">
+      <p className="text-caption font-medium text-fg-muted mb-3">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.title')}
       </p>
       <Table>
@@ -108,7 +108,7 @@ export function TopObjectionsTable({ data }: TopObjectionsTableProps) {
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.rank}>
-              <TableCell className="font-mono text-xs tabular-nums text-fg-subtle">
+              <TableCell className="font-mono text-caption tabular-nums text-fg-subtle">
                 {row.rank}
               </TableCell>
               <TableCell className="max-w-[220px] truncate">{row.literal}</TableCell>

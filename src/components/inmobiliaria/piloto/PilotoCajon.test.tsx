@@ -306,7 +306,7 @@ describe('PilotoCajon — modo alerta', () => {
   })
 })
 
-describe('PilotoCajon — una carta se lee acá mismo', () => {
+describe('PilotoCajon — una carta se lee aquí mismo', () => {
   /**
    * Antes de esto el bloque «Dónde seguir» de una carta tenía TRES entradas
    * para lo mismo: la del sub-cajón, «Leer el PDF antes de aprobar» —muerta,

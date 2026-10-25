@@ -101,10 +101,15 @@ describe('tasas de usura', () => {
     await pintar();
     const aviso = document.body.querySelector('[data-testid="aviso-de-meses-sin-tasa"]');
     expect(aviso).not.toBeNull();
-    expect(aviso!.textContent).toContain('2026-07');
-    expect(aviso!.textContent).toContain('2026-08');
-    expect(aviso!.textContent).toContain('SIN topear');
+    // Ronda 30 (revisora r27): la respuesta es la cifra («2 meses» sin techo); los meses van
+    // nombrados como FILAS de la tabla, cada una con su «Cargar» (y en el aria del aviso).
+    expect(aviso!.textContent).toContain('2 meses');
+    expect(aviso!.textContent).toContain('sin topear');
     expect(aviso!.getAttribute('role')).toBe('alert');
+    expect(aviso!.getAttribute('aria-label')).toContain('julio de 2026');
+    expect(document.body.querySelector('[data-testid="sin-tasa-2026-07"]')?.textContent).toContain('julio de 2026');
+    expect(document.body.querySelector('[data-testid="sin-tasa-2026-08"]')?.textContent).toContain('agosto de 2026');
+    expect(document.body.querySelector('[data-testid="cargar-tasa-2026-08"]')).not.toBeNull();
   });
 
   it('sin `mesesSinTasa` del back, los deduce del rango que pidió', async () => {
@@ -293,5 +298,19 @@ describe('tasas de usura · errores en su campo', () => {
     const [, opciones] = vi.mocked(toast.error).mock.calls.at(-1)! as [string, { description: string }];
     expect(opciones.description).toMatch(/de nuestro lado/);
     expect(opciones.description).toContain('eeee5555');
+  });
+});
+
+describe('Tasa de usura — la tabla vacía no repite el aviso (revisora r25, Usura #1)', () => {
+  // Ronda 30 (revisora r27), cambiado a propósito: sin ninguna tasa, la tabla ya no se pliega en una
+  // línea: cada mes sin tasa es una fila con su «Cargar», y la cifra dice cuántos van sin techo.
+  it('con meses sin tasa y ninguna tasa, la cifra dice cuántos y cada mes es una fila con «Cargar»', async () => {
+    h.usura.mockResolvedValue(respuesta({ tasas: [], mesesSinTasa: ['2026-08', '2026-09'] }));
+    await pintar();
+    expect(document.body.querySelector('[data-testid="aviso-de-meses-sin-tasa"]')?.textContent).toContain('2 meses');
+    expect(document.body.querySelector('[data-testid="sin-tasas-en-el-rango"]')).toBeNull();
+    const filas = Array.from(document.body.querySelectorAll('[data-testid^="sin-tasa-"]'));
+    expect(filas.map((f) => f.getAttribute('data-testid'))).toEqual(['sin-tasa-2026-09', 'sin-tasa-2026-08']);
+    expect(document.body.querySelector('[data-testid="conteo-de-tasas"]')?.textContent).toContain('2 sin tasa');
   });
 });

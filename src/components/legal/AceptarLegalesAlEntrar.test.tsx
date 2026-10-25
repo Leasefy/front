@@ -102,6 +102,19 @@ describe('AceptarLegalesAlEntrar', () => {
     expect(document.querySelector('[data-testid="aceptar-legales-cambios"]')).toBeNull();
   });
 
+  it('🔴 abierta, el foco está en «Acepto» y no en «Salir»: Enter no cierra la sesión (ronda 28, CD de la r27)', async () => {
+    sesion.signOut.mockClear();
+    api.estado.mockResolvedValue(PIDE);
+    await act(async () => root.render(<AceptarLegalesAlEntrar />));
+    await esperar();
+    expect(ventana()).not.toBeNull();
+    const acepto = document.querySelector('[data-testid="aceptar-legales-acepto"]');
+    const salir = document.querySelector('[data-testid="aceptar-legales-salir"]');
+    expect(document.activeElement).toBe(acepto);
+    expect(document.activeElement).not.toBe(salir);
+    expect(sesion.signOut).not.toHaveBeenCalled();
+  });
+
   it('«Salir» cierra la sesión (sin aceptar no se sigue)', async () => {
     api.estado.mockResolvedValue(PIDE);
     await act(async () => root.render(<AceptarLegalesAlEntrar />));

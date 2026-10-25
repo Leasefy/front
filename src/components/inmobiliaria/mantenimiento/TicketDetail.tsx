@@ -24,6 +24,7 @@ import { ImagenesPanel } from './ImagenesPanel'
 import { ProveedorPanel } from './ProveedorPanel'
 import { AprobacionPanel } from './AprobacionPanel'
 import { TicketCTAs } from './TicketCTAs'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const ROOT = 'inmobiliaria.ai.mantenimiento'
 
@@ -61,23 +62,22 @@ export function TicketDetail({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
-            {detail.titulo}
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">{subtitle}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={severityVariant(detail.severidad)}>
-            {t(`${ROOT}.enums.severidad.${detail.severidad}`)}
-          </Badge>
-          <Badge variant="outline" data-testid="ticket-estado">
-            {t(`${ROOT}.enums.estado.${detail.estado}`)}
-          </Badge>
-        </div>
-      </header>
+      {/* Glow up 22-10: el encabezado común; la gravedad y el estado junto al título. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.mantenimientos')}
+        titulo={detail.titulo}
+        descripcion={subtitle}
+        junto={
+          <span className="flex items-center gap-2">
+            <Badge variant={severityVariant(detail.severidad)}>
+              {t(`${ROOT}.enums.severidad.${detail.severidad}`)}
+            </Badge>
+            <Badge variant="outline" data-testid="ticket-estado">
+              {t(`${ROOT}.enums.estado.${detail.estado}`)}
+            </Badge>
+          </span>
+        }
+      />
 
       {/* Body grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

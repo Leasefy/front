@@ -37,6 +37,7 @@
  */
 
 import { hostDeAssets } from './hosts-de-almacenamiento';
+import { HOSTS_S3_DATA } from './buckets-s3.data.mjs';
 
 /** Ruta que recibe los reportes de violación (`src/app/api/csp-reporte`). */
 export const RUTA_DE_REPORTES_CSP = '/api/csp-reporte';
@@ -103,10 +104,7 @@ export const TERCEROS = {
  * visores de PDF, PUT firmado desde el navegador) y `avaluo` (fotos del avalúo).
  * El bucket público no se expone directo: va por CloudFront (`NEXT_PUBLIC_ASSETS_HOST`).
  */
-export const BUCKETS_S3 = [
-  'https://leasefy-prod-files.s3.us-east-2.amazonaws.com',
-  'https://leasefy-prod-avaluo.s3.us-east-2.amazonaws.com',
-] as const;
+export const BUCKETS_S3: readonly string[] = HOSTS_S3_DATA.map((h) => `https://${h}`);
 
 export type ModoDeLaPolitica = 'obligatoria' | 'reporte';
 

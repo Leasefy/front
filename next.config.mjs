@@ -2,6 +2,7 @@ import path from "path";
 // Plain-ESM data file (not the .ts wrapper): next.config.mjs runs under
 // Node with no TypeScript loader (was Next.js 14.2; still .mjs on 15). See
 // src/lib/landing/legacy-redirects.ts for the typed re-export + rationale.
+import { HOSTS_S3_DATA } from "./src/lib/seguridad/buckets-s3.data.mjs";
 import { LEGACY_PRODUCT_REDIRECTS_DATA } from "./src/lib/landing/legacy-redirects.data.mjs";
 import { RUTAS_POR_CICLO_DE_VIDA_DATA } from "./src/lib/nav/rutas-por-ciclo-de-vida.data.mjs";
 import { RUTAS_UNIFICADAS_DEL_PANEL_DATA } from "./src/lib/nav/rutas-unificadas-del-panel.data.mjs";
@@ -80,7 +81,7 @@ function almacenDelAmbiente() {
  *  - S3 regional, bucket EXACTO (no `leasefy-prod-*`: el comodín cruza puntos y
  *    los nombres de bucket son globales, así que `leasefy-prod-a.b` podría ser
  *    de un tercero), para fotos con URL firmada (GET). Mismos buckets que
- *    `BUCKETS_S3` de la CSP.
+ *    `BUCKETS_S3` de la CSP: los dos salen de `src/lib/seguridad/buckets-s3.data.mjs`.
  *
  * ⚠ next/image con URL firmada: el optimizador pide la URL COMPLETA y la cache
  * se indexa por ella (query incluida). Cada firma nueva = entrada nueva, y la
@@ -99,8 +100,7 @@ function almacenNuevo() {
     ...(host && /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(host)
       ? [{ protocol: "https", hostname: host }]
       : []),
-    { protocol: "https", hostname: "leasefy-prod-files.s3.us-east-2.amazonaws.com" },
-    { protocol: "https", hostname: "leasefy-prod-avaluo.s3.us-east-2.amazonaws.com" },
+    ...HOSTS_S3_DATA.map((hostname) => ({ protocol: "https", hostname })),
   ];
 }
 

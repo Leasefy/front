@@ -130,6 +130,7 @@ describe('/api/docs/:documentId — new storage hosts (T-0182)', () => {
   });
 
   it.each([
+    ['a look-alike leasefy-prod bucket', 'https://leasefy-prod-evil.s3.us-east-2.amazonaws.com/a.pdf'],
     ['another bucket', 'https://some-other-bucket.s3.us-east-2.amazonaws.com/a.pdf'],
     ['another region', 'https://leasefy-prod-files.s3.us-east-1.amazonaws.com/a.pdf'],
     ['suffix trick', 'https://leasefy-prod-files.s3.us-east-2.amazonaws.com.evil.com/a.pdf'],

@@ -1,18 +1,20 @@
+import { HOSTS_S3_DATA } from './buckets-s3.data.mjs';
+
 /**
  * Hosts of the new object storage (S3 + CloudFront), T-0182.
  *
  * Contract: private objects are served through presigned GET URLs on the
- * regional virtual-hosted S3 host of a `leasefy-prod-*` bucket; public assets
+ * regional virtual-hosted S3 host of one of two exact buckets; public assets
  * come from CloudFront. Supabase hosts stay allowed during the transition and
  * are handled by each caller. This module only knows the NEW hosts so the
  * allowlist lives in one place (image optimizer, document proxy, CSP).
  */
 
-/** Exact pattern: one `leasefy-prod-<name>` bucket in the project region. No suffix tricks. */
-const S3_PRIVADO = /^leasefy-prod-[a-z0-9][a-z0-9-]*\.s3\.us-east-2\.amazonaws\.com$/;
+/** Exact allowlist (see `buckets-s3.data.mjs`): no `leasefy-prod-*` pattern, bucket names are global. */
+const S3_PRIVADOS: ReadonlySet<string> = new Set(HOSTS_S3_DATA);
 
 export function esHostDeS3Privado(hostname: string): boolean {
-  return S3_PRIVADO.test(hostname);
+  return S3_PRIVADOS.has(hostname);
 }
 
 /**

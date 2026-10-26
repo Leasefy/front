@@ -27,7 +27,7 @@ const TIPOS_QUE_SE_MUESTRAN = new Set([
 /**
  * ¿La URL firmada que devolvió el back apunta a nuestro almacenamiento?
  * Durante la migración (T-0182) valen los dos: Supabase Storage y el nuevo
- * (S3 regional de un bucket `leasefy-prod-*` + el host de CloudFront de
+ * (S3 regional de uno de dos buckets exactos + el host de CloudFront de
  * `NEXT_PUBLIC_ASSETS_HOST`). Lista exacta, sin comodines. Esta ruta la baja desde el servidor: si apuntara a cualquier lado, sería un
  * proxy abierto (SSRF) servido desde nuestro dominio.
  */

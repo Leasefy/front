@@ -180,7 +180,8 @@ export function ConsignacionFilters({
   // Get labels for current selections
   const getAgenteLabel = () => {
     if (filters.agenteId === 'all') return t('inmobiliaria.consignaciones.filters.agentLabel');
-    const agente = agentes.find((a) => a.id === filters.agenteId);
+    // El filtro guarda el `User.id` (lo que trae `consignacion.agenteId`), no el `AgencyMember.id`.
+    const agente = agentes.find((a) => (a.userId ?? a.id) === filters.agenteId);
     return agente?.name || t('inmobiliaria.consignaciones.filters.agentLabel');
   };
 
@@ -356,7 +357,10 @@ export function ConsignacionFilters({
                 <SelectContent className="max-h-60">
                   <SelectItem value="all">{t('inmobiliaria.consignaciones.filters.allAgents')}</SelectItem>
                   {agentes.map((agente) => (
-                    <SelectItem key={agente.id} value={agente.id}>
+                    // 🔴 25-10: el valor es el `User.id` del agente. `consignacion.agenteId` sale de
+                    // `agenteUserId`, así que con el `AgencyMember.id` el filtro no encontraba nada (salvo
+                    // que coincidieran). Sin `userId` (un back viejo), el id de siempre.
+                    <SelectItem key={agente.id} value={agente.userId ?? agente.id}>
                       <span className="flex items-center gap-2">
                         {/* Cadence 2: el Avatar del sistema, nunca iniciales a mano. */}
                         <Avatar name={agente.name} src={agente.avatar || undefined} size="xs" />

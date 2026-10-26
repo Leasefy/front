@@ -36,6 +36,8 @@
  * estar limpio una semana.
  */
 
+import { hostDeAssets } from './hosts-de-almacenamiento';
+
 /** Ruta que recibe los reportes de violación (`src/app/api/csp-reporte`). */
 export const RUTA_DE_REPORTES_CSP = '/api/csp-reporte';
 
@@ -94,6 +96,18 @@ export const TERCEROS = {
   oembedDeTiktok: 'https://www.tiktok.com',
 } as const;
 
+/**
+ * Buckets S3 privados del almacenamiento nuevo (T-0182), por origen EXACTO (CSP
+ * sólo admite comodín en la primera etiqueta, y `*.amazonaws.com` abriría
+ * cualquier bucket del mundo). Se bajan con URLs firmadas: `files` (documentos,
+ * visores de PDF, PUT firmado desde el navegador) y `avaluo` (fotos del avalúo).
+ * El bucket público no se expone directo: va por CloudFront (`NEXT_PUBLIC_ASSETS_HOST`).
+ */
+export const BUCKETS_S3 = [
+  'https://leasefy-prod-files.s3.us-east-2.amazonaws.com',
+  'https://leasefy-prod-avaluo.s3.us-east-2.amazonaws.com',
+] as const;
+
 export type ModoDeLaPolitica = 'obligatoria' | 'reporte';
 
 export interface EntornoDeLaPolitica {
@@ -107,6 +121,8 @@ export interface EntornoDeLaPolitica {
    */
   soloReporte?: boolean;
   NEXT_PUBLIC_SUPABASE_URL?: string;
+  /** Hostname of the CloudFront public-assets distribution (empty = not configured). */
+  NEXT_PUBLIC_ASSETS_HOST?: string;
   NEXT_PUBLIC_BACKEND_URL?: string;
   NEXT_PUBLIC_AGENT_URL?: string;
   NEXT_PUBLIC_AVALUO_API_URL?: string;
@@ -158,6 +174,8 @@ export function backendsPropios(env: EntornoDeLaPolitica): string[] {
 export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPolitica): string {
   const supabase = origenDe(env.NEXT_PUBLIC_SUPABASE_URL);
   const propios = backendsPropios(env);
+  const assets = hostDeAssets(env.NEXT_PUBLIC_ASSETS_HOST);
+  const cloudfront = assets ? `https://${assets}` : null;
 
   const script = sinRepetidos([
     "'self'",
@@ -178,6 +196,8 @@ export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPoliti
     ...propios,
     supabase,
     supabase ? comoWebSocket(supabase) : null,
+    // Browser presigned PUT (T-0182).
+    ...BUCKETS_S3,
     TERCEROS.mapa,
     ...TERCEROS.wompiApi,
     ...TERCEROS.firebase,
@@ -199,6 +219,8 @@ export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPoliti
     'data:',
     'blob:',
     supabase,
+    cloudfront,
+    ...BUCKETS_S3,
     ...propios,
     TERCEROS.mapa,
     TERCEROS.fotosDeGoogle,
@@ -213,6 +235,7 @@ export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPoliti
     'blob:',
     'data:',
     supabase,
+    ...BUCKETS_S3,
     ...propios,
     TERCEROS.wompiCheckout,
     TERCEROS.tally,

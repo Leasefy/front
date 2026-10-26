@@ -97,3 +97,49 @@ describe('/api/docs/:documentId', () => {
     },
   );
 });
+
+describe('/api/docs/:documentId — new storage hosts (T-0182)', () => {
+  const S3 = 'https://leasefy-prod-files.s3.us-east-2.amazonaws.com/application-documents/a.pdf?X-Amz-Signature=x';
+  const CF = 'https://d111.cloudfront.net/application-documents/a.pdf';
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('serves a PDF from a presigned S3 URL of a leasefy-prod bucket', async () => {
+    backYArchivo(S3, 'application/pdf');
+    const res = await pedir(DOC, APP);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-disposition')).toBe('inline');
+  });
+
+  it('serves from the CloudFront host configured in NEXT_PUBLIC_ASSETS_HOST', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ASSETS_HOST', 'd111.cloudfront.net');
+    backYArchivo(CF, 'application/pdf');
+    const res = await pedir(DOC, APP);
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects CloudFront when the env var is unset or names another host', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ASSETS_HOST', '');
+    backYArchivo(CF, 'application/pdf');
+    expect((await pedir(DOC, APP)).status).toBe(502);
+    vi.stubEnv('NEXT_PUBLIC_ASSETS_HOST', 'other.cloudfront.net');
+    backYArchivo(CF, 'application/pdf');
+    expect((await pedir(DOC, APP)).status).toBe(502);
+  });
+
+  it.each([
+    ['another bucket', 'https://some-other-bucket.s3.us-east-2.amazonaws.com/a.pdf'],
+    ['another region', 'https://leasefy-prod-files.s3.us-east-1.amazonaws.com/a.pdf'],
+    ['suffix trick', 'https://leasefy-prod-files.s3.us-east-2.amazonaws.com.evil.com/a.pdf'],
+    ['userinfo trick', 'https://leasefy-prod-files.s3.us-east-2.amazonaws.com@evil.com/a.pdf'],
+    ['plain http S3', 'http://leasefy-prod-files.s3.us-east-2.amazonaws.com/a.pdf'],
+  ])('does not download from %s', async (_caso, url) => {
+    vi.stubEnv('NEXT_PUBLIC_ASSETS_HOST', 'd111.cloudfront.net');
+    const f = backYArchivo(url, 'application/pdf');
+    const res = await pedir(DOC, APP);
+    expect(res.status).toBe(502);
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+});

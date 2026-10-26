@@ -73,6 +73,37 @@ function almacenDelAmbiente() {
   }
 }
 
+/**
+ * Almacenamiento nuevo (T-0182), ADITIVO: Supabase sigue en la lista de abajo.
+ *  - CloudFront de los assets públicos, con el host de `NEXT_PUBLIC_ASSETS_HOST`
+ *    (vacío = no se agrega nada).
+ *  - S3 regional, bucket EXACTO (no `leasefy-prod-*`: el comodín cruza puntos y
+ *    los nombres de bucket son globales, así que `leasefy-prod-a.b` podría ser
+ *    de un tercero), para fotos con URL firmada (GET). Mismos buckets que
+ *    `BUCKETS_S3` de la CSP.
+ *
+ * ⚠ next/image con URL firmada: el optimizador pide la URL COMPLETA y la cache
+ * se indexa por ella (query incluida). Cada firma nueva = entrada nueva, y la
+ * copia optimizada vive en `.next/cache/images` pasado el vencimiento de la
+ * firma y se sirve por `/_next/image` sin autenticación. Fotos de bucket
+ * privado con URL firmada → `<img>`/`unoptimized`; las públicas van por
+ * CloudFront (URL estable, sin query) y sí se optimizan.
+ */
+function almacenNuevo() {
+  const host = (process.env.NEXT_PUBLIC_ASSETS_HOST ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https:\/\//, "")
+    .replace(/\/$/, "");
+  return [
+    ...(host && /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(host)
+      ? [{ protocol: "https", hostname: host }]
+      : []),
+    { protocol: "https", hostname: "leasefy-prod-files.s3.us-east-2.amazonaws.com" },
+    { protocol: "https", hostname: "leasefy-prod-avaluo.s3.us-east-2.amazonaws.com" },
+  ];
+}
+
 const nextConfig = {
   // 🔴 22-10-2026 (Nico, al compartir una propiedad por WhatsApp salía sólo
   // «leasefy.co»): Next 15 manda los metadatos (og:title, og:image) en
@@ -171,6 +202,7 @@ const nextConfig = {
         hostname: "lh3.googleusercontent.com",
       },
       ...almacenDelAmbiente(),
+      ...almacenNuevo(),
     ],
   },
   async headers() {

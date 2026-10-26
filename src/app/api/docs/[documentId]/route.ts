@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { esIdentificadorSeguro } from '@/lib/utils/identificador-seguro';
+import { esHostDeAlmacenamientoNuevo } from '@/lib/seguridad/hosts-de-almacenamiento';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -24,8 +25,10 @@ const TIPOS_QUE_SE_MUESTRAN = new Set([
 ]);
 
 /**
- * ¿La URL firmada que devolvió el back apunta al Storage de Supabase?
- * Esta ruta la baja desde el servidor: si apuntara a cualquier lado, sería un
+ * ¿La URL firmada que devolvió el back apunta a nuestro almacenamiento?
+ * Durante la migración (T-0182) valen los dos: Supabase Storage y el nuevo
+ * (S3 regional de un bucket `leasefy-prod-*` + el host de CloudFront de
+ * `NEXT_PUBLIC_ASSETS_HOST`). Lista exacta, sin comodines. Esta ruta la baja desde el servidor: si apuntara a cualquier lado, sería un
  * proxy abierto (SSRF) servido desde nuestro dominio.
  */
 function esUrlDeAlmacenamiento(cruda: string): boolean {
@@ -36,6 +39,7 @@ function esUrlDeAlmacenamiento(cruda: string): boolean {
     return false;
   }
   if (url.protocol !== 'https:') return false;
+  if (esHostDeAlmacenamientoNuevo(url.hostname, process.env.NEXT_PUBLIC_ASSETS_HOST)) return true;
   const proyecto = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (proyecto) {
     try {
@@ -84,7 +88,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ documentI
     return NextResponse.json({ error: 'Unexpected download URL' }, { status: 502 });
   }
 
-  // Proxy the file — fetch from Supabase and stream back
+  // Proxy the file — fetch from storage and stream back
   const fileRes = await fetch(url);
   if (!fileRes.ok) {
     return NextResponse.json({ error: 'File not found' }, { status: 404 });

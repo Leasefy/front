@@ -87,6 +87,13 @@ activity feed, execution panel).
   pegan al agente.** (Acá decía «activo salvo `!== 'false'`»; ese patrón no existe en el código
   y hacía pensar que el panel servía datos inventados.)
 - ⚠️ `ANTHROPIC_API_KEY`, `INNGEST_*`, las keys de proveedores → viven en el `.env` del agent, NO acá.
+- **Almacenamiento (T-0182, Supabase → S3, aditivo).** `NEXT_PUBLIC_ASSETS_HOST` = hostname de CloudFront de los
+  assets públicos (vacío = no se agrega). Allowlists que lo leen, TODAS con host exacto y sin comodines salvo el
+  bucket `leasefy-prod-<nombre>` (S3 regional `us-east-2`): `src/lib/seguridad/hosts-de-almacenamiento.ts` (fuente
+  única), `/api/docs/[documentId]`, `fotoPermitida`, `politica-de-contenido.ts` (`img-src`/`connect-src`/`frame-src`)
+  y `next.config.mjs` (`images.remotePatterns`, buckets exactos). Los hosts de Supabase siguen valiendo hasta que se
+  retire. ⚠ Una foto con URL FIRMADA no va por `next/image` optimizado: la cache se indexa por la URL con query y la
+  copia sobrevive al vencimiento de la firma (y `/_next/image` es público); usar `<img>`/`unoptimized`.
 
 ## Auth y permisos
 

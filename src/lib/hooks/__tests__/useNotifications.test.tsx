@@ -31,23 +31,26 @@ vi.mock('../use-notifications-realtime', () => ({
 }))
 
 const getLandlordNotifications = vi.fn()
+const getTenantNotifications = vi.fn()
 vi.mock('@/lib/api/notifications.service', () => ({
   notificationsApi: {
     getLandlordNotifications: (...args: unknown[]) => getLandlordNotifications(...args),
-    getTenantNotifications: vi.fn(),
+    getTenantNotifications: (...args: unknown[]) => getTenantNotifications(...args),
     markAsRead: vi.fn().mockResolvedValue(undefined),
     markAllAsRead: vi.fn().mockResolvedValue(undefined),
     deleteNotification: vi.fn().mockResolvedValue(undefined),
   },
 }))
 
-import { useLandlordNotifications } from '../useNotifications'
+import { useLandlordNotifications, useTenantNotifications } from '../useNotifications'
 
 beforeEach(() => {
   capturedOpts = null
   mockUserId = 'user-1'
   getLandlordNotifications.mockReset()
   getLandlordNotifications.mockResolvedValue({ notifications: [], total: 0, unreadCount: 0 })
+  getTenantNotifications.mockReset()
+  getTenantNotifications.mockResolvedValue({ notifications: [], total: 0, unreadCount: 0 })
 })
 
 afterEach(() => {
@@ -149,6 +152,54 @@ describe('useLandlordNotifications — realtime (no polling)', () => {
     act(() => capturedOpts!.onInsert(incoming))
     expect(ref.current?.notifications).toHaveLength(1)
     expect(ref.current?.unreadCount).toBe(1)
+    act(() => root.unmount())
+    container.remove()
+  })
+})
+
+describe('useTenantNotifications — dedupe by id (SSE backfill can replay an event)', () => {
+  it('does not double-insert the same id, nor one already loaded over REST', async () => {
+    getTenantNotifications.mockResolvedValue({
+      notifications: [
+        {
+          id: 'rest-1',
+          type: 'PAYMENT_APPROVED',
+          category: 'payment',
+          title: 'Pago',
+          message: '',
+          read: false,
+          createdAt: '2026-08-09T09:00:00Z',
+        },
+      ],
+      total: 1,
+      unreadCount: 1,
+    })
+    const ref: { current: ReturnType<typeof useTenantNotifications> | null } = { current: null }
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    const Harness = () => {
+      ref.current = useTenantNotifications()
+      return null
+    }
+    await act(async () => {
+      root.render(<Harness />)
+      await Promise.resolve()
+    })
+    const fresh: BackendNotification = {
+      id: 'sse-1',
+      type: 'PAYMENT_APPROVED',
+      category: 'payment',
+      title: 'Pago',
+      message: '',
+      read: false,
+      createdAt: '2026-08-09T10:00:00Z',
+    }
+    act(() => capturedOpts!.onInsert(fresh))
+    act(() => capturedOpts!.onInsert(fresh))
+    act(() => capturedOpts!.onInsert({ ...fresh, id: 'rest-1' }))
+    expect(ref.current?.notifications.map((n) => n.id)).toEqual(['sse-1', 'rest-1'])
+    expect(ref.current?.unreadCount).toBe(2)
     act(() => root.unmount())
     container.remove()
   })

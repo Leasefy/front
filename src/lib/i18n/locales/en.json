@@ -7257,9 +7257,6 @@
             "cta": {
               "label": "Import portfolio"
             }
-          },
-          "liveRegion": {
-            "newTransition": "{{count}} new stage transition(s)"
           }
         },
         "deudores": {

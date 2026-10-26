@@ -799,6 +799,37 @@ la pone en cada contrato con mora desde la fecha de la línea. Contrato congelad
 - **Saldos iniciales opcionales**: el paso «Registros contables» queda listo con cualquier registro contable cargado (apertura
   o libro diario); la guía ya no los llama «Obligatorio».
 
+## Realtime: Supabase o SSE (T-0183)
+
+Sólo dos cosas reciben eventos en vivo: la bandeja de notificaciones y la revocación de sesión única. Las dos pasan
+por UN adaptador, `subscribeRealtime()` (`src/lib/realtime/`), que elige transporte con
+`NEXT_PUBLIC_REALTIME_PROVIDER` (build-time; `lib/realtime/provider.ts`: trim + minúsculas, vacío, ausente o desconocido
+= `supabase`). Contrato congelado en `.orchestration/tasks/T-0183-realtime-to-sse/contract.md`; el back es otra unidad.
+
+- **`supabase`** (default y vía de vuelta): los canales de siempre (`notifications:{userId}:{instancia}` sobre
+  `notification_logs`, `session-revocations:{userId}` sobre `session_revocations`), sin cambios.
+- **`sse`**: UNA conexión por pestaña a `${NEXT_PUBLIC_BACKEND_URL}/realtime/stream`, compartida por los dos hooks
+  (`sse-connection.ts`, con cuenta de suscriptores: la última que se va cierra el `fetch`). Cliente con `fetch` + Bearer
+  (`sse-stream.ts`; `EventSource` no manda cabeceras), parser incremental propio (`sse-parser.ts`: el de `ai-hub-chat`
+  no guarda el `id:`). Eventos: `ready`, `notification.created`, `session.revoked`, `reauth`, `resync`.
+  - Reconexión con backoff exponencial con jitter (1 s → tope 30 s; vuelve a 1 s con cada `ready`). 60 s sin bytes =
+    conexión muerta (el servidor manda `: ping` cada 25 s).
+  - 🔴 El cursor viaja en `?lastEventId=`, NO en la cabecera `Last-Event-ID`: la lista de CORS del gateway no la permite
+    y la reconexión moriría en el preflight (mismo incidente de `use-quote-stream`, QA-IA-A 04-10).
+  - `reauth` = reconectar YA con token fresco (`asegurarSesionVigente`); `resync` = soltar el cursor y refetch
+    (`onReconnect`). Con cursor, el servidor rellena el hueco: la reconexión NO dispara refetch.
+  - 401 `SESSION_SUPERSEDED` al conectar = sesión revocada, definitivo (a menos que el token usado ya no sea el vigente,
+    `esRespuestaDeUnTokenViejo`: entonces es nuestra sesión nueva y se reintenta). Otro 401 se reintenta con backoff.
+- **Los hooks** (`use-notifications-realtime.ts`, `use-session-revocation.ts`) conservan su firma; leen los callbacks por
+  ref y la suscripción depende sólo del usuario (si no, cada render del padre reabriría el stream).
+  `useNotifications` deduplica por id (el relleno puede repetir un evento). Revocación: `revokedSessionId === null` =
+  revocar ESTA sesión (cierre por inactividad, 401 del stream); si no, se compara con la sesión actual
+  (`shouldRevokeThisSession`).
+- Los 4 hooks de tiempo real de cobranza se borraron (tablas fuera de `public`, nunca recibieron nada): esas pantallas
+  siguen con su fetch/refetch de siempre.
+- **Activar `sse` en un entorno** exige que el back (`/realtime/stream`) y el gateway (location sin buffering, timeout
+  largo) ya estén desplegados; es una variable de build, así que cambiarla pide redeploy del front.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

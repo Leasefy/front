@@ -40,9 +40,6 @@ vi.mock('@/components/ui', () => ({
 }));
 vi.mock('@/lib/cartera', () => ({ CARTERA_STAGES: ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'SX'] }));
 vi.mock('@/lib/hooks/cobranza/use-cartera-overview', () => ({ useCarteraOverview: () => estado.valor }));
-vi.mock('@/lib/hooks/cobranza/use-stage-transitions-realtime', () => ({
-  useStageTransitionsRealtime: () => undefined,
-}));
 
 const { nada } = vi.hoisted(() => ({ nada: () => null }));
 vi.mock('@/components/inmobiliaria/cobranza/CobranzaResultadosKpis', () => ({ CobranzaResultadosKpis: nada }));

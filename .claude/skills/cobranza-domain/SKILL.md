@@ -17,7 +17,7 @@ Activar cuando la tarea toque cualquiera de: deudores, siniestros, cartas/artefa
 - **Transcripts PDF**: `TranscriptPdf` (`src/lib/cobranza/transcript-pdf-document.tsx`) recibe texto YA redactado del backend. No hacer PII masking client-side.
 - **Auth contra agent**: todos los hooks llaman `agentAuthHeaders()` de `@/lib/api/agent-auth` (Bearer JWT en memoria). NO usar el cliente del back ni cookies.
 - **Polling**: `useVisibilityPolling(fn, 30_000, Boolean(agencyId))` — nunca usar `setInterval` directamente en hooks nuevos.
-- **Realtime**: suscripciones Supabase Realtime (`cartera_stage_transitions`, `debtor_calls`) NO reemplazan el polling; coexisten. El ARIA live region de transiciones NUNCA debe exponer PII del deudor.
+- **Realtime**: cobranza NO tiene hooks de tiempo real. Los 4 que existían (`use-stage-transitions-realtime`, `use-debtor-stage-transitions-realtime`, `use-debtor-calls-realtime`, `use-payments-funnel-realtime`) apuntaban a tablas que no están en `public` ni publicadas, nunca recibieron un evento y se borraron en T-0183. Las pantallas se actualizan con fetch/polling. Si se reintroduce un feed en vivo, va por el adaptador `subscribeRealtime()` (`src/lib/realtime/`), y su ARIA live region NUNCA debe exponer PII del deudor.
 - **Approval flows**: `useCartaApproval` envía solo `{ confirmation: 'yes' }` al backend; `physicalSendMethod`/`sentToAddress` son estado UI local. `useSiniestroApproval` envía `{ selectedInsurers }` en approve y `{ rejectReason, rejectComment? }` en reject. Respetar ese contrato exacto.
 - **Permiso de acceso**: el layout en `src/app/panel/inmobiliaria/pagos/cobranza/layout.tsx` gate-keepea con `canAccess('cobranza', 'view')`. Páginas de configuración usan módulos adicionales vía `[[agency-permissions]]`.
 - **UI**: leer `docs/DESIGN.md` antes de tocar cualquier componente. Componentes en `src/components/inmobiliaria/cobranza/`.
@@ -40,7 +40,7 @@ Activar cuando la tarea toque cualquiera de: deudores, siniestros, cartas/artefa
 - `/deudores/[id]` → tabs AccionesTab, CompromisosTab, LlamadasTab, MemosTab, TimelineTab
 - `/siniestros/[id]` → `SiniestroApprovalClient`, `useSiniestroApproval`
 - `/cartas/[id]` → `CartaApprovalClient`, `useCartaApproval` (`CartaPhysicalSendMethod`)
-- `/pagos` → `usePaymentsFunnel`, `usePaymentsFunnelRealtime`
+- `/pagos` → `usePaymentsFunnel`
 - `/pagos/planes/[planId]` → `PaymentPlanApprovalClient`, `usePaymentPlanApproval`
 - `/llamadas/[callId]` → `CallDetailClient`, call sub-components en `call/`
 - `/escalaciones/[id]` → `EscalationCard`, `EscalationResolveModal`
@@ -54,7 +54,7 @@ Activar cuando la tarea toque cualquiera de: deudores, siniestros, cartas/artefa
 |---|---|
 | Nuevo hook de datos | Usar `useVisibilityPolling`; inferir tipos de `paths[...]` en `agent.ts` generado |
 | Endpoint no existe en `agent.ts` | Declarar tipo inline en el hook; agregar comentario `// TODO: regenerate after agent publish` |
-| Realtime en tabla nueva | Verificar si la tabla está en la publicación Supabase antes de suscribir |
+| Realtime en cobranza | No hay. Si hace falta, el back emite el evento por `/realtime/stream` y el front lo consume vía `subscribeRealtime()`; no suscribir tablas con Supabase |
 | Approval nuevo | Respetar body mínimo documentado; UI state extra no viaja a la red |
 | Componente de PII | Usar `Mask.tsx` + `PIIRevealModal` — no inventar patrón nuevo |
 | Test de hook | `vi.spyOn(globalThis, 'fetch')` + `createRoot/act`; ver `[[testing-patterns]]` |

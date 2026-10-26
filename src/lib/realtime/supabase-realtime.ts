@@ -64,7 +64,11 @@ export function subscribeSupabase(opts: RealtimeSubscriber): () => void {
         },
         (payload: { new: Record<string, unknown> }) => {
           const id = payload.new.revoked_session_id
-          onSessionRevoked({ revokedSessionId: typeof id === 'string' ? id : null })
+          // `null` means "this session" in the adapter contract (SSE only). A
+          // Supabase row without a string id never matched anything before the
+          // adapter existed: keep ignoring it instead of signing the user out.
+          if (typeof id !== 'string') return
+          onSessionRevoked({ revokedSessionId: id })
         },
       )
       .subscribe()

@@ -139,6 +139,15 @@ describe('subscribeRealtime — supabase implementation (channels unchanged)', (
     expect(onSessionRevoked).toHaveBeenCalledWith({ revokedSessionId: 's9' })
   })
 
+  it('ignores a session_revocations row whose revoked_session_id is not a string (legacy behaviour: no match, no sign-out)', () => {
+    const onSessionRevoked = vi.fn()
+    subscribeRealtime({ userId: 'u1', onSessionRevoked }, 'supabase')
+    channels[0].handler!({ new: { revoked_session_id: null } })
+    channels[0].handler!({ new: {} })
+    channels[0].handler!({ new: { revoked_session_id: 42 } })
+    expect(onSessionRevoked).not.toHaveBeenCalled()
+  })
+
   it('a subscriber that only wants revocations opens no notifications channel (and vice versa)', () => {
     subscribeRealtime({ userId: 'u1', onSessionRevoked: vi.fn() }, 'supabase')
     expect(channelNames.some((n) => n.startsWith('notifications:'))).toBe(false)

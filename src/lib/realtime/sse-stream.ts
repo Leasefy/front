@@ -12,7 +12,9 @@
  *    allow-list does not include `Last-Event-ID`, so a reconnect carrying it
  *    would die in the preflight — the exact failure `use-quote-stream.ts`
  *    documents (QA-IA-A, 04-10-2026).
- *  - 60 s without bytes = dead connection → reconnect with jittered backoff.
+ *  - 60 s without bytes = dead connection → reconnect with full-jitter backoff
+ *    (random in [0, ceiling], ceiling 1 s doubling to 30 s). The attempt counter
+ *    resets only after the stream stayed up 30 s, not on `ready`.
  *  - `reauth`: reconnect at once with a fresh token (the server closes anyway).
  *  - `resync`: the cursor is dropped and the consumer refetches.
  *  - 401 `SESSION_SUPERSEDED` = this session was revoked: stop for good.
@@ -28,6 +30,8 @@ import type { BackendNotification } from '@/lib/api/notifications.types'
 export const SILENCE_TIMEOUT_MS = 60_000
 export const BACKOFF_BASE_MS = 1_000
 export const BACKOFF_MAX_MS = 30_000
+/** The attempt counter only resets after the stream stayed up this long. */
+export const HEALTHY_AFTER_MS = 30_000
 
 export interface SseStreamHandlers {
   /** `fresh` = opened without a cursor, so a gap cannot be ruled out. */
@@ -65,6 +69,7 @@ interface Attempt {
   cursor: string | null
   done: boolean
   timer: ReturnType<typeof setTimeout> | null
+  healthyTimer: ReturnType<typeof setTimeout> | null
 }
 
 export function createSseStream(opts: SseStreamOptions): SseStream {
@@ -97,7 +102,9 @@ export function createSseStream(opts: SseStreamOptions): SseStream {
   function scheduleRetry() {
     attempts += 1
     const ceiling = Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * 2 ** Math.min(attempts - 1, 10))
-    const delay = Math.round(ceiling * (0.5 + 0.5 * random()))
+    // Full jitter over the whole window: after a back deploy the clients
+    // spread over [0, ceiling] instead of stampeding within a ~0.5 s band.
+    const delay = Math.round(ceiling * random())
     retryTimer = setTimeout(() => {
       retryTimer = null
       void attempt()
@@ -109,6 +116,7 @@ export function createSseStream(opts: SseStreamOptions): SseStream {
     if (a.done) return
     a.done = true
     if (a.timer) clearTimeout(a.timer)
+    if (a.healthyTimer) clearTimeout(a.healthyTimer)
     if (current === a) current = null
     markClosed()
     if (!running || next === 'stop') return
@@ -128,7 +136,12 @@ export function createSseStream(opts: SseStreamOptions): SseStream {
     if (frame.id) lastEventId = frame.id
     switch (frame.event) {
       case 'ready': {
-        attempts = 0
+        // Not reset here: a server that opens and drops at once must keep
+        // backing off. Only a stream that stays healthy resets the counter.
+        if (a.healthyTimer) clearTimeout(a.healthyTimer)
+        a.healthyTimer = setTimeout(() => {
+          if (!a.done) attempts = 0
+        }, HEALTHY_AFTER_MS)
         connected = true
         handlers.onOpen(a.cursor === null)
         return
@@ -165,7 +178,7 @@ export function createSseStream(opts: SseStreamOptions): SseStream {
 
   async function attempt(): Promise<void> {
     if (!running) return
-    const a: Attempt = { ac: new AbortController(), cursor: lastEventId, done: false, timer: null }
+    const a: Attempt = { ac: new AbortController(), cursor: lastEventId, done: false, timer: null, healthyTimer: null }
     current = a
     // Armed before the request so a server that never answers is also "dead".
     armWatchdog(a)

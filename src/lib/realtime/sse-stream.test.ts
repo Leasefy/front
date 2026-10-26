@@ -208,7 +208,7 @@ describe('createSseStream — reconnect, cursor and backoff', () => {
     expect(handlers.onOpen).toHaveBeenLastCalledWith(false)
   })
 
-  it('backs off exponentially and resets after ready', async () => {
+  it('backs off exponentially over the whole window (random()=1 → the ceiling)', async () => {
     const { stream, calls } = setup({ random: () => 1 })
     stream.start()
     await tick()
@@ -224,23 +224,82 @@ describe('createSseStream — reconnect, cursor and backoff', () => {
     expect(calls).toHaveLength(2)
     await vi.advanceTimersByTimeAsync(1)
     expect(calls).toHaveLength(3)
-    calls[2].push(READY)
-    await tick()
-    calls[2].end()
-    await tick()
-    // reset: back to the base delay
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(calls).toHaveLength(4)
   })
 
-  it('applies jitter: with random()=0 the delay is half the ceiling', async () => {
-    const { stream, calls } = setup({ random: () => 0 })
+  it('does NOT reset the attempt counter on ready: a server that opens and drops keeps backing off', async () => {
+    const { stream, calls } = setup({ random: () => 1 })
+    stream.start()
+    await tick()
+    calls[0].push(READY)
+    calls[0].end() // drop right after ready → attempt 1 → 1000
+    await tick()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(calls).toHaveLength(2)
+    calls[1].push(READY)
+    calls[1].end() // attempt 2 → 2000, not 1000
+    await tick()
+    await vi.advanceTimersByTimeAsync(1999)
+    expect(calls).toHaveLength(2)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(calls).toHaveLength(3)
+  })
+
+  it('resets the counter once the stream stayed healthy for 30 s', async () => {
+    const { stream, calls } = setup({ random: () => 1 })
     stream.start()
     await tick()
     calls[0].end()
     await tick()
-    await vi.advanceTimersByTimeAsync(500)
+    await vi.advanceTimersByTimeAsync(1000)
+    calls[1].end()
+    await tick()
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(calls).toHaveLength(3)
+    calls[2].push(READY)
+    await vi.advanceTimersByTimeAsync(30_000) // healthy (pings keep it alive)
+    calls[2].push(': ping\n\n')
+    calls[2].end()
+    await tick()
+    // back to the base delay
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(calls).toHaveLength(4)
+  })
+
+  it('does not reset the counter if the stream dies before 30 s of health', async () => {
+    const { stream, calls } = setup({ random: () => 1 })
+    stream.start()
+    await tick()
+    calls[0].end()
+    await tick()
+    await vi.advanceTimersByTimeAsync(1000)
+    calls[1].push(READY)
+    await vi.advanceTimersByTimeAsync(29_999)
+    calls[1].end() // 29.999 s: not healthy yet → attempt 2 → 2000
+    await tick()
+    await vi.advanceTimersByTimeAsync(1999)
     expect(calls).toHaveLength(2)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(calls).toHaveLength(3)
+  })
+
+  it('full jitter: random()=0 retries at once, random()=0.5 waits half the ceiling', async () => {
+    const zero = setup({ random: () => 0 })
+    zero.stream.start()
+    await tick()
+    zero.calls[0].end()
+    await tick()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(zero.calls).toHaveLength(2)
+
+    const half = setup({ random: () => 0.5 })
+    half.stream.start()
+    await tick()
+    half.calls[0].end()
+    await tick()
+    await vi.advanceTimersByTimeAsync(499)
+    expect(half.calls).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(half.calls).toHaveLength(2)
   })
 
   it('caps the backoff at 30 s', async () => {

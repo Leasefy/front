@@ -812,7 +812,9 @@ por UN adaptador, `subscribeRealtime()` (`src/lib/realtime/`), que elige transpo
   (`sse-connection.ts`, con cuenta de suscriptores: la última que se va cierra el `fetch`). Cliente con `fetch` + Bearer
   (`sse-stream.ts`; `EventSource` no manda cabeceras), parser incremental propio (`sse-parser.ts`: el de `ai-hub-chat`
   no guarda el `id:`). Eventos: `ready`, `notification.created`, `session.revoked`, `reauth`, `resync`.
-  - Reconexión con backoff exponencial con jitter (1 s → tope 30 s; vuelve a 1 s con cada `ready`). 60 s sin bytes =
+  - Reconexión con backoff exponencial y jitter COMPLETO (espera al azar en [0, techo]; techo 1 s que se duplica hasta 30 s). El
+    contador de intentos NO se reinicia con `ready`: sólo cuando el stream estuvo sano 30 s (un servidor que abre y corta no
+    recibe un bucle de 1 s). 60 s sin bytes =
     conexión muerta (el servidor manda `: ping` cada 25 s).
   - 🔴 El cursor viaja en `?lastEventId=`, NO en la cabecera `Last-Event-ID`: la lista de CORS del gateway no la permite
     y la reconexión moriría en el preflight (mismo incidente de `use-quote-stream`, QA-IA-A 04-10).
@@ -825,6 +827,11 @@ por UN adaptador, `subscribeRealtime()` (`src/lib/realtime/`), que elige transpo
   `useNotifications` deduplica por id (el relleno puede repetir un evento). Revocación: `revokedSessionId === null` =
   revocar ESTA sesión (cierre por inactividad, 401 del stream); si no, se compara con la sesión actual
   (`shouldRevokeThisSession`).
+- **Cierre propio** (`lib/auth/cierre-propio.ts`): `revocarSesion()` (cierre explícito y por inactividad) marca «estoy
+  cerrando mi sesión»; con SSE el back puede entregar a esta pestaña el `session.revoked` que ese cierre provoca, y
+  `SessionRevocationHandler` lo ignora mientras la marca esté puesta (si no, mostraría «Iniciaste sesión en otro
+  dispositivo» tras el cierre propio). La marca se baja cuando vuelve a haber un usuario con sesión. En el adaptador de
+  Supabase, una fila de `session_revocations` sin `revoked_session_id` de texto se ignora (como antes del adaptador).
 - Los 4 hooks de tiempo real de cobranza se borraron (tablas fuera de `public`, nunca recibieron nada): esas pantallas
   siguen con su fetch/refetch de siempre.
 - **Activar `sse` en un entorno** exige que el back (`/realtime/stream`) y el gateway (location sin buffering, timeout

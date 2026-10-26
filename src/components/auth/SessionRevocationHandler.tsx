@@ -3,9 +3,10 @@
 /**
  * SessionRevocationHandler
  *
- * Mount once in the root layout (inside AuthProvider). Listens on Realtime for
- * a `session_revocations` row targeting THIS device's session and, when it
- * arrives, signs the user out and shows a blocking "signed in elsewhere" notice.
+ * Mount once in the root layout (inside AuthProvider). Listens, through the
+ * realtime adapter (Supabase `session_revocations` or the SSE `session.revoked`
+ * event, per NEXT_PUBLIC_REALTIME_PROVIDER), for a revocation targeting THIS
+ * device's session and, when it arrives, signs the user out and shows a blocking "signed in elsewhere" notice.
  * This is the instant path of single-session enforcement; the 401 backstop in
  * apiClient covers the case where this event never arrived.
  */

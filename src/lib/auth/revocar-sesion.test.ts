@@ -40,3 +40,19 @@ describe('revocarSesion', () => {
     expect(revokeSession).toHaveBeenCalled()
   })
 })
+
+describe('revocarSesion — marca del cierre propio', () => {
+  it('marca el cierre propio ANTES de llamar al back, aunque el back falle', async () => {
+    const { cierrePropioEnCurso, limpiarCierrePropio } = await import('./cierre-propio')
+    limpiarCierrePropio()
+    let marcadoAlLlamar: boolean | null = null
+    revokeSession.mockImplementation(async () => {
+      marcadoAlLlamar = cierrePropioEnCurso()
+      throw new Error('caído')
+    })
+    await revocarSesion('t')
+    expect(marcadoAlLlamar).toBe(true)
+    expect(cierrePropioEnCurso()).toBe(true)
+    limpiarCierrePropio()
+  })
+})

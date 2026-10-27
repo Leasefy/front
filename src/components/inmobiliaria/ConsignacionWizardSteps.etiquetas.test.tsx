@@ -32,7 +32,7 @@ vi.mock('@/components/publicar/PropertyLocationField', () => ({
 }))
 vi.mock('./PropertyPhotoPicker', () => ({ PropertyPhotoPicker: () => React.createElement('div') }))
 
-import { StepActaEntrega, StepCommissionTerms, StepPropertyData } from './ConsignacionWizardSteps'
+import { StepInventario, StepCommissionTerms, StepPropertyData } from './ConsignacionWizardSteps'
 
 let container: HTMLDivElement
 let root: Root
@@ -137,10 +137,10 @@ describe('IN-17: cada campo del asistente se encuentra por su etiqueta', () => {
     expect(porEtiqueta('inmobiliaria.consignaciones.wizard.step3.saleCommissionLabel')).not.toBeNull()
   })
 
-  it('paso «Acta de entrega»: cada ítem y las observaciones; quitar dice qué quita', async () => {
+  it('paso «Inventario»: cada ítem y las observaciones; quitar dice qué quita', async () => {
     await act(async () => {
       root.render(
-        React.createElement(StepActaEntrega, {
+        React.createElement(StepInventario, {
           formData: {
             listingType: 'rent',
             inventoryItems: [{ id: 'item-1', name: 'Nevera', quantity: 1, condition: 'good' }],
@@ -163,33 +163,25 @@ describe('IN-17: cada campo del asistente se encuentra por su etiqueta', () => {
   })
 })
 
-describe('QA con avatares: el paso de inventario avisa lo que pasa sin inventario', () => {
-  async function pintar(formData: Record<string, unknown>) {
+/*
+ * QA con avatares (04-10) avisaba en rojo «sin inventario no se podrá firmar el contrato». Juan y Nico (27-10-2026):
+ * en la captación el inventario es OPCIONAL; el paso lo dice (título y subtítulo) sin asustar, y el botón dice
+ * «Seguir sin inventario».
+ */
+describe('el paso de inventario es opcional y dice cuándo se completa', () => {
+  it('el título dice «opcional» y el subtítulo, que se completa con el contrato y la entrega', async () => {
     await act(async () => {
       root.render(
-        React.createElement(StepActaEntrega, { formData, updateFormData: vi.fn(), propietarios: [], agentes: [] }),
+        React.createElement(StepInventario, {
+          formData: { listingType: 'rent', inventoryItems: [], photos: [], propietarioId: 'p-1' },
+          updateFormData: vi.fn(),
+          propietarios: [],
+          agentes: [],
+        }),
       )
     })
-  }
-  const aviso = () => container.querySelector('[data-testid="aviso-sin-inventario"]')
-
-  it('🔴 sin ítems dice que sin inventario no se podrá firmar el contrato', async () => {
-    await pintar({ listingType: 'rent', inventoryItems: [], photos: [] })
-    expect(aviso()?.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.sinInventarioAviso')
-  })
-
-  it('un renglón sin nombre no cuenta como inventario', async () => {
-    await pintar({ listingType: 'rent', inventoryItems: [{ id: 'i', name: ' ', quantity: 1, condition: 'good' }], photos: [] })
-    expect(aviso()).not.toBeNull()
-  })
-
-  it('con un ítem el aviso se va', async () => {
-    await pintar({ listingType: 'rent', inventoryItems: [{ id: 'i', name: 'Nevera', quantity: 1, condition: 'good' }], photos: [] })
-    expect(aviso()).toBeNull()
-  })
-
-  it('en venta no hay inventario que pedir: no avisa', async () => {
-    await pintar({ listingType: 'sale', inventoryItems: [], photos: [] })
-    expect(aviso()).toBeNull()
+    expect(container.querySelector('h2')?.textContent).toContain('opcional')
+    expect(container.textContent).toContain('cuando vayas a hacer el contrato')
+    expect(container.querySelector('[data-testid="aviso-sin-inventario"]')).toBeNull()
   })
 })

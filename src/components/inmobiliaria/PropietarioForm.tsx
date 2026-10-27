@@ -98,6 +98,12 @@ interface PropietarioFormProps {
    * `?cambiarCuenta=1`.
    */
   onCambiarCuenta?: () => void;
+  /**
+   * 🔴 Captación (Juan y Nico, 27-10-2026: «el 95 % de las inmobiliarias en una captación nueva no tienen el
+   * número de cédula»): el documento deja de ser obligatorio; si se escribe, se revisa igual. Se exige al hacer
+   * el contrato. El back lo acepta desde el mismo día (ficha «por completar»).
+   */
+  documentoOpcional?: boolean;
 }
 
 /**
@@ -244,6 +250,7 @@ export function PropietarioForm({
   accionesAfuera = false,
   idDelFormulario,
   onCambiarCuenta,
+  documentoOpcional = false,
 }: PropietarioFormProps) {
   const { t } = useI18n();
   /** Prefijo de los ids de los controles: único aunque haya dos formularios. */
@@ -471,11 +478,11 @@ export function PropietarioForm({
       newErrors.email = t('inmobiliaria.propietario.form.errEmailInvalid');
     }
 
-    if (!formData.documentType) {
+    if (!formData.documentType && (!documentoOpcional || formData.documentNumber.trim())) {
       newErrors.documentType = 'Elige el tipo de documento';
     }
     if (!formData.documentNumber.trim()) {
-      newErrors.documentNumber = t('inmobiliaria.propietario.form.errDocRequired');
+      if (!documentoOpcional) newErrors.documentNumber = t('inmobiliaria.propietario.form.errDocRequired');
     } else {
       // Document-specific validation
       // QA-PROP-95 (A-38): una CC tiene de 3 a 10 dígitos (documentos-colombia…;
@@ -599,14 +606,14 @@ export function PropietarioForm({
           <InputWrapper
             id={idDe('documentType')}
             label={t('inmobiliaria.propietario.form.documentType')}
-            required
+            required={!documentoOpcional}
             error={touched.documentType ? errors.documentType : undefined}
           >
             <Select
               value={formData.documentType}
               onValueChange={(value) => updateField('documentType', value as DocumentType)}
             >
-              <SelectTrigger {...controlDe('documentType')} aria-required="true">
+              <SelectTrigger {...controlDe('documentType')} aria-required={documentoOpcional ? undefined : 'true'}>
                 <SelectValue placeholder="Elige el tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -623,15 +630,19 @@ export function PropietarioForm({
           <InputWrapper
             id={idDe('documentNumber')}
             label={formData.documentType === 'NIT' ? 'NIT' : t('inmobiliaria.propietario.form.documentNumber')}
-            required
+            required={!documentoOpcional}
             error={touched.documentNumber ? errors.documentNumber : undefined}
-            hint={DOCUMENT_TYPE_VALUES.find((dt) => dt.value === formData.documentType)?.hint}
+            hint={
+              documentoOpcional
+                ? 'Opcional por ahora: se pide al hacer el contrato.'
+                : DOCUMENT_TYPE_VALUES.find((dt) => dt.value === formData.documentType)?.hint
+            }
           >
             <div className="relative">
               <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
                 {...controlDe('documentNumber')}
-                aria-required="true"
+                aria-required={documentoOpcional ? undefined : 'true'}
                 type="text"
                 value={formData.documentNumber}
                 onChange={(e) => updateField('documentNumber', e.target.value)}

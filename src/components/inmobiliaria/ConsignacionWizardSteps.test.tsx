@@ -45,7 +45,7 @@ vi.mock('@/components/publicar/PropertyLocationField', () => ({
 
 // PropertyPhotoPicker has its own test suite (PropertyPhotoPicker.test.tsx)
 // covering validation/preview behavior. Here we only need to verify
-// StepActaEntrega wires `formData.photos` and `onChange` correctly.
+// StepFotos wires `formData.photos` and `onChange` correctly.
 vi.mock('./PropertyPhotoPicker', () => ({
   PropertyPhotoPicker: ({
     photos,
@@ -61,7 +61,7 @@ vi.mock('./PropertyPhotoPicker', () => ({
     }),
 }))
 
-import { StepAssignAgent, StepConfirmation, StepActaEntrega, StepPropertyData, StepCommissionTerms } from './ConsignacionWizardSteps'
+import { StepAssignAgent, StepConfirmation, StepFotos, StepInventario, StepPropertyData, StepCommissionTerms } from './ConsignacionWizardSteps'
 
 const AGENTE: Agente = {
   id: 'member-1',
@@ -267,14 +267,14 @@ describe('<StepConfirmation> — T-0038 SALE listing summary', () => {
   })
 })
 
-describe('<StepActaEntrega> — property photos (T-0017)', () => {
+describe('<StepFotos> — property photos (T-0017)', () => {
   it('renders the photo picker wired to formData.photos and forwards its onChange to updateFormData', async () => {
     const updateFormData = vi.fn()
     const existing = new File(['x'], 'existing.jpg', { type: 'image/jpeg' })
 
     await act(async () => {
       root.render(
-        React.createElement(StepActaEntrega, {
+        React.createElement(StepFotos, {
           formData: { inventoryItems: [], photos: [existing] },
           updateFormData,
           propietarios: PROPIETARIOS,
@@ -297,7 +297,7 @@ describe('<StepActaEntrega> — property photos (T-0017)', () => {
   it('no longer shows the disabled "coming soon" placeholder', async () => {
     await act(async () => {
       root.render(
-        React.createElement(StepActaEntrega, {
+        React.createElement(StepFotos, {
           formData: { inventoryItems: [] },
           updateFormData: vi.fn(),
           propietarios: PROPIETARIOS,
@@ -313,15 +313,15 @@ describe('<StepActaEntrega> — property photos (T-0017)', () => {
 })
 
 /**
- * <StepActaEntrega> — el video del inmueble (marketplace, 09-10-2026): el mismo
+ * <StepFotos> — el video del inmueble (marketplace, 09-10-2026): el mismo
  * campo de «Editar», opcional, con la regla de `lib/marketplace/video.ts`.
  */
-describe('<StepActaEntrega> — el video del inmueble', () => {
+describe('<StepFotos> — el video del inmueble', () => {
   function pintar(formData: Record<string, unknown>, erroresDelServidor?: Record<string, string>) {
     const updateFormData = vi.fn()
     act(() => {
       root.render(
-        React.createElement(StepActaEntrega, {
+        React.createElement(StepFotos, {
           formData: { inventoryItems: [], photos: [], ...formData },
           updateFormData,
           propietarios: PROPIETARIOS,
@@ -364,59 +364,14 @@ describe('<StepActaEntrega> — el video del inmueble', () => {
 })
 
 /**
- * <StepActaEntrega> — photos-only on a sale listing (T-0042, ledger.md §2/§3).
- *
- * Root cause: photos are staged by the UI in this step, but a sale listing
- * used to skip the step entirely (contract-addendum-2.md §A.8), so
- * `formData.photos` never got populated. The fix makes the step reachable
- * for sale AND renders it photos-only: no inventory items, no
- * "Observaciones generales", and a step heading that says neither
- * "Inventario" nor "Acta de Entrega". The rent path renders unchanged.
+ * 27-10-2026 (Juan: «separaría fotos y por allá otro que sea inventario»): las fotos y el inventario son dos pasos.
+ * El inventario es opcional y lo dice; sin propietario, avisa que queda guardado con el inmueble.
  */
-describe('<StepActaEntrega> — photos-only rendering for a sale listing (T-0042)', () => {
-  it('sale: shows the photo section, hides inventory items and general notes, and uses photo-only heading wording', async () => {
+describe('<StepFotos> y <StepInventario> — dos pasos', () => {
+  it('«Fotos»: el selector de fotos y el video, sin nada del inventario', async () => {
     await act(async () => {
       root.render(
-        React.createElement(StepActaEntrega, {
-          formData: { listingType: 'sale', inventoryItems: [], photos: [] },
-          updateFormData: vi.fn(),
-          propietarios: PROPIETARIOS,
-          agentes: [],
-        }),
-      )
-    })
-
-    // Photo section reachable and kept.
-    expect(container.querySelector('[data-testid="property-photo-picker"]')).toBeTruthy()
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.photosTitle')
-
-    // Step heading is photo-only wording — exact match on the h2/subtitle
-    // nodes (not a substring check: "step5.title" is itself a substring of
-    // "step5.titleSale", so a `.not.toContain('...step5.title')` on the
-    // whole textContent would give a false pass here).
-    expect(container.querySelector('h2')?.textContent).toBe(
-      'inmobiliaria.consignaciones.wizard.step5.titleSale',
-    )
-    expect(container.querySelector('h2 + p')?.textContent).toBe(
-      'inmobiliaria.consignaciones.wizard.step5.subtitleSale',
-    )
-    expect(container.querySelector('h2')?.textContent).not.toBe(
-      'inmobiliaria.consignaciones.wizard.step5.title',
-    )
-
-    // No inventory items UI.
-    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.inventoryTitle')
-    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.addItem')
-    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.emptyInventory')
-
-    // No "Observaciones generales".
-    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.generalNotes')
-  })
-
-  it('rent: still shows inventory items, general notes and photos (unchanged)', async () => {
-    await act(async () => {
-      root.render(
-        React.createElement(StepActaEntrega, {
+        React.createElement(StepFotos, {
           formData: { listingType: 'rent', inventoryItems: [], photos: [] },
           updateFormData: vi.fn(),
           propietarios: PROPIETARIOS,
@@ -424,19 +379,43 @@ describe('<StepActaEntrega> — photos-only rendering for a sale listing (T-0042
         }),
       )
     })
-
-    expect(container.querySelector('h2')?.textContent).toBe(
-      'inmobiliaria.consignaciones.wizard.step5.title',
-    )
-    expect(container.querySelector('h2 + p')?.textContent).toBe(
-      'inmobiliaria.consignaciones.wizard.step5.subtitle',
-    )
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.inventoryTitle')
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.addItem')
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.emptyInventory')
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.generalNotes')
     expect(container.querySelector('[data-testid="property-photo-picker"]')).toBeTruthy()
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.photosTitle')
+    expect(container.querySelector('[data-testid="asistente-videoUrl"]')).toBeTruthy()
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.inventoryTitle')
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.generalNotes')
+  })
+
+  it('«Inventario»: dice que es opcional, vacío con su ilustración, y las observaciones generales', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepInventario, {
+          formData: { listingType: 'rent', inventoryItems: [], photos: [], propietarioId: 'prop-1' },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [],
+        }),
+      )
+    })
+    expect(container.querySelector('h2')?.textContent).toContain('opcional')
+    expect(container.querySelector('[data-testid="empty-state"]')).toBeTruthy()
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.addFirstItem')
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.generalNotes')
+    expect(container.querySelector('[data-testid="property-photo-picker"]')).toBeNull()
+    expect(container.querySelector('[data-testid="inventario-sin-propietario"]')).toBeNull()
+  })
+
+  it('«Inventario» sin propietario: avisa que queda guardado con el inmueble', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepInventario, {
+          formData: { listingType: 'rent', inventoryItems: [], photos: [] },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [],
+        }),
+      )
+    })
+    expect(container.querySelector('[data-testid="inventario-sin-propietario"]')).toBeTruthy()
   })
 })
 

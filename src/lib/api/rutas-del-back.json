@@ -1,8 +1,8 @@
 {
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
-  "cuando": "2026-10-22",
-  "cuantas": 1583,
+  "cuando": "2026-10-27",
+  "cuantas": 1586,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -778,6 +778,7 @@
     "GET /pre-scoring/elegibilidad",
     "GET /properties",
     "GET /properties/:id",
+    "GET /properties/:id/apuntes",
     "GET /properties/:id/costo-de-vivir",
     "GET /properties/:propertyId/agents",
     "GET /properties/assigned",
@@ -1586,6 +1587,8 @@
     "PUT /internal/mantenimiento/:id/cancel",
     "PUT /internal/mantenimiento/:id/complete",
     "PUT /internal/mantenimiento/:id/select-quote",
-    "PUT /landlords/me/payment-methods/:id/default"
+    "PUT /landlords/me/payment-methods/:id/default",
+    "PUT /properties/:id/apuntes/condiciones",
+    "PUT /properties/:id/apuntes/observaciones"
   ]
 }

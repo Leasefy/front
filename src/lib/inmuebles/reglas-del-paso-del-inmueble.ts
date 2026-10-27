@@ -35,22 +35,27 @@ export interface DatosDelPasoDelInmueble {
   propertyAddress?: string | null;
   propertyCity?: string | null;
   listingType?: 'rent' | 'sale';
+  /** «Arriendo y venta» (27-10-2026): un arriendo que además se vende pide también el precio de venta. */
+  tambienEnVenta?: boolean;
   monthlyRent?: number | null;
   salePrice?: number | null;
   propertyDescription?: string | null;
 }
 
+const positivo = (n: number | null | undefined) => n != null && n > 0;
+
 /** Lo obligatorio está y la descripción, si la hay, cumple. Los topes numéricos van aparte. */
 export function pasoDelInmuebleCompleto(d: DatosDelPasoDelInmueble): boolean {
   const deVenta = d.listingType === 'sale';
-  const precio = deVenta ? d.salePrice : d.monthlyRent;
+  const precios = deVenta
+    ? positivo(d.salePrice)
+    : positivo(d.monthlyRent) && (d.tambienEnVenta !== true || positivo(d.salePrice));
   return Boolean(
     d.propertyType &&
       d.propertyTitle?.trim() &&
       d.propertyAddress?.trim() &&
       d.propertyCity?.trim() &&
-      precio != null &&
-      precio > 0 &&
+      precios &&
       descripcionValida(d.propertyDescription),
   );
 }

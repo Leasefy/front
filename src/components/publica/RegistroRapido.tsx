@@ -64,7 +64,7 @@ export function RegistroRapido({
         ...(perfil === 'agency'
           ? { agency: { name: inmobiliaria.trim(), phone: celular }, registroRapido: true }
           : perfil === 'agente'
-            ? { agency: { name: nombre.trim(), phone: celular }, registroRapido: true }
+            ? { agency: { name: nombre.trim(), phone: celular }, registroRapido: true, cuentaDeAgente: true }
             : {}),
       });
       await alTerminar();

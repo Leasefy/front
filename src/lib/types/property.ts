@@ -172,6 +172,8 @@ export interface Property {
   agencyId?: string | null;
   /** Logo de esa inmobiliaria, en el bucket público. */
   agencyLogoUrl?: string | null;
+  /** Quien lo administra es un agente inmobiliario independiente, no una empresa (Nico, 27-10-2026). */
+  agencyEsAgente?: boolean;
   /**
    * Offering agency's social links — only populated on the detail response
    * (GET /properties/:id); null on list cards.

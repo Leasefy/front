@@ -339,7 +339,7 @@ export function PropertyCard({
         {agencyName && (
           <AdministradoPor
             className="mt-[7px]"
-            administrador={{ agencyId: agencyId ?? null, nombre: agencyName, logoUrl: agencyLogoUrl ?? null }}
+            administrador={{ agencyId: agencyId ?? null, nombre: agencyName, logoUrl: agencyLogoUrl ?? null, esAgente: property.agencyEsAgente }}
           />
         )}
         {agencyName && debajoDeQuienLoOfrece && <div className="mt-1">{debajoDeQuienLoOfrece}</div>}

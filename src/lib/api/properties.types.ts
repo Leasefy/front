@@ -136,6 +136,8 @@ export interface BackendProperty {
     id?: string;
     name: string;
     logoUrl?: string | null;
+    /** Cuenta de un agente inmobiliario independiente (back 27-10-2026; sin la migración, false). */
+    esAgente?: boolean;
     branding?: {
       primaryColor?: string;
       secondaryColor?: string;

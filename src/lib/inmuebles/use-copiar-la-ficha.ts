@@ -16,6 +16,7 @@
  * qué, con «Publicarlo» a la mano si es que no está publicado.
  */
 
+import { calentarLaVistaPrevia } from './calentar-la-vista-previa';
 import { useCallback } from 'react';
 
 import { toast } from '@/components/ui/toast';
@@ -47,6 +48,8 @@ export function useCopiarLaFicha(publicar?: (propertyIds: string[]) => void) {
         if (marketplace?.disponible && marketplace.inmueble && !marketplace.inmueble.seVe) {
           throw new NoSeVeEnElMarketplace(marketplace.inmueble);
         }
+        // La imagen de la vista previa queda armada antes de que la peguen en WhatsApp.
+        calentarLaVistaPrevia(inmueble);
         return textoDeLaFicha(fichaDelInmueble(inmueble), enlaceDelInmueble(propertyId), idioma);
       });
 

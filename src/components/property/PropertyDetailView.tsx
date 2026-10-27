@@ -4,6 +4,7 @@ import { CuantoCuestaVivirAqui } from '@/components/property/CuantoCuestaVivirAq
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { fichaDelInmueble } from '@/lib/inmuebles/ficha-para-compartir';
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import { calentarLaVistaPrevia } from '@/lib/inmuebles/calentar-la-vista-previa';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Bed, Bathtub, ArrowsOut, CaretRight, ArrowSquareOut, ArrowLeft, Play } from '@phosphor-icons/react';
@@ -166,6 +167,10 @@ export function PropertyDetailView({
 
   // Fetch property from API
   const { property, isLoading: propertyLoading, error: propertyError } = useProperty(propertyId);
+  // La imagen para compartir queda armada desde la primera visita (Nico, 27-10-2026: la ficha salía sin foto en WhatsApp).
+  useEffect(() => {
+    if (property?.id) calentarLaVistaPrevia(property);
+  }, [property?.id, property?.updatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
   // La inmobiliaria que lo ofrece: su sello, «% la recomienda» y su página.
   const inmobiliarias = useTarjetasDeInmobiliarias(useMemo(() => [property?.agencyId], [property?.agencyId]));
   const inmobiliaria = property?.agencyId ? inmobiliarias.get(property.agencyId) : undefined;

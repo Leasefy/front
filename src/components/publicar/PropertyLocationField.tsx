@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef } from 'react';
+
 /**
  * PropertyLocationField — combines AddressAutocomplete + LocationPicker so
  * every property form gets both the address combobox AND a draggable map
@@ -66,10 +68,21 @@ export function PropertyLocationField({
    * Fail-closed: no result (or a failed request) keeps the coordinates,
    * leaves the address exactly as the user last typed it — never wiped.
    */
+  /*
+   * 🔴 27-10-2026 (QA del asistente nuevo): al escribir la CIUDAD el mapa se centra en ella y mueve el pin; esa
+   * vuelta preguntaba la dirección del centro del municipio y PISABA la que la persona ya había escrito («Carrera
+   * 76 # 33-20» pasaba a otra calle, o a vacío si la respuesta no traía calle) y «Siguiente» se apagaba sin que
+   * nadie supiera por qué. Ahora el mapa sólo LLENA la dirección cuando está vacía; lo escrito manda y nunca se
+   * borra. Las coordenadas sí se actualizan siempre.
+   */
+  const direccionActual = useRef(address);
+  direccionActual.current = address;
   const { reverseGeocode } = useReverseGeocode((result, coords) => {
     if (!result) return;
+    const sugerida = (result.road || result.label || '').trim();
+    const yaEscrita = direccionActual.current.trim().length > 0;
     onChange({
-      address: result.road || result.label,
+      ...(sugerida && !yaEscrita ? { address: sugerida } : {}),
       latitude: coords.lat,
       longitude: coords.lng,
       geocodePlaceId: result.placeId,

@@ -56,6 +56,7 @@
     return anclas[anclas.length - 1].m;
   }
   function reloj(min) {
+    if (!horaEl) return; /* Nico 27-10: el reloj salió de la barra */
     min = Math.round(min);
     var h = Math.floor(min / 60), m = min % 60;
     horaEl.textContent = (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
@@ -206,15 +207,20 @@
   function cinta(track, base, centro) {
     if (!track) return;
     var x = 0, vel = 0, dir = 1, cuadro = 0, visible = true, actual = null;
+    /* Nico 27-10 («más wow»): con el cursor encima la cinta se frena suave, para poder elegir un inmueble */
+    var ritmo = 1, metaRitmo = 1;
+    track.parentNode.addEventListener("mouseenter", function () { metaRitmo = 0; });
+    track.parentNode.addEventListener("mouseleave", function () { metaRitmo = 1; });
     var items = Array.prototype.slice.call(track.children);
     new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(track.parentNode);
     gsap.ticker.add(function (t, dt) {
       if (!visible) return;
       var v = lenis ? lenis.velocity : 0;
       vel += (v - vel) * .12;
+      ritmo += (metaRitmo - ritmo) * .08;
       if (Math.abs(vel) > .6) dir = vel > 0 ? 1 : -1;
       var mitad = track.scrollWidth / 2;
-      x -= dir * (base * dt / 16.7 + Math.min(36, Math.abs(vel)) * .5);
+      x -= dir * (base * ritmo * dt / 16.7 + Math.min(36, Math.abs(vel)) * .5);
       if (x <= -mitad) x += mitad; if (x > 0) x -= mitad;
       var sesgo = Math.max(-8, Math.min(8, -vel * .3));
       track.style.transform = "translate3d(" + x + "px,0,0) skewX(" + sesgo + "deg)";

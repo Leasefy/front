@@ -103,7 +103,7 @@ ul,ol{list-style:none}
 .reloj .pista{display:flex;gap:2px}
 .reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
 .reloj .pista i.on{background:var(--voltaje-dot)}
-.hdr-cta{display:flex;align-items:center;gap:10px}
+.hdr-cta{display:flex;align-items:center;gap:10px;margin-left:auto}
 /* ES / EN (Nico 23-10: «toda la landing en español e inglés») */
 .idioma{display:inline-flex;align-items:center;gap:2px;height:34px;padding:3px;border-radius:12px;background:var(--arena);corner-shape:superellipse(1.5);flex:none}
 .idioma button{height:28px;min-width:32px;padding:0 8px;border:0;border-radius:9px;background:transparent;font-family:var(--m);font-size:12px;letter-spacing:.06em;color:var(--ceniza);cursor:pointer;corner-shape:superellipse(1.5)}
@@ -124,7 +124,7 @@ ul,ol{list-style:none}
 /* ronda 30: entre 721 y 1100 px no había menú (la barra se esconde y el botón «Menú» no salía) */
 @media (max-width:1100px){.nav{display:none}.hdr-cta .pub{display:none}.mbtn{display:inline-flex;align-items:center}}
 @media (max-width:720px){
-  .hdr-cta{display:none}.mbtn{display:inline-flex;align-items:center}
+  .hdr-cta{display:none}.mbtn{margin-left:auto}.mbtn{display:inline-flex;align-items:center}
   .reloj{padding:0 10px}.reloj .dia,.reloj .pista{display:none}
   .hdr .wrap{gap:12px}
 }
@@ -362,23 +362,33 @@ section{position:relative;overflow-x:clip}
 /* ── marketplace: vitrina + mosaico ── */
 .mk{background:var(--arena);padding-bottom:clamp(96px,12vw,170px)}
 /* Nico 23-10: el marketplace con más peso en el héroe — una franja pegada a la barra donde pasan los inmuebles */
-.mk-banda{width:100%;flex:none;display:flex;align-items:center;gap:18px;height:64px;padding:0 var(--gutter);background:var(--arena);border-bottom:1px solid var(--filete);position:relative;z-index:4}
-.mkb-rot{display:flex;align-items:center;gap:10px;flex:none;font-family:var(--m);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta);white-space:nowrap}
-.mkb-rot i{width:8px;height:8px;border-radius:2px;background:var(--voltaje-dot)}
-.mkb-rot em{font-family:var(--f);font-style:normal;text-transform:none;letter-spacing:0;font-size:13.5px;color:var(--grafito)}
+/* Nico 27-10: «más wow y un poco más grande», y «Marketplace» arriba con el texto debajo */
+.mk-banda{width:100%;flex:none;display:flex;align-items:center;gap:24px;height:88px;padding:0 var(--gutter);background:var(--arena);border-bottom:1px solid var(--filete);position:relative;z-index:4}
+.mkb-rot{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;flex:none;color:var(--tinta);white-space:nowrap}
+.mkb-tit{display:flex;align-items:center;gap:10px;font-family:var(--m);font-size:12.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+.mkb-vivo{position:relative;width:8px;height:8px;border-radius:2px;background:var(--voltaje-dot)}
+.mkb-vivo::after{content:"";position:absolute;inset:-4px;border-radius:5px;border:1.5px solid var(--voltaje-dot);opacity:0;animation:mkb-late 2.4s cubic-bezier(.2,.7,.2,1) infinite}
+@keyframes mkb-late{0%{transform:scale(.5);opacity:.75}70%,100%{transform:scale(1.7);opacity:0}}
+.mkb-rot em{font-style:normal;font-size:15px;letter-spacing:-.005em;color:var(--grafito);transition:color .2s}
+.mkb-rot:hover em{color:var(--tinta)}
 .mk-banda .vit-pista{align-self:stretch;display:flex;align-items:center}
-.mk-banda .vit-track{gap:10px}
-.mk-banda .vi{gap:10px;padding:5px 14px 5px 5px;border-radius:12px}
-.mk-banda .vi-foto{width:42px;height:42px;border-radius:9px}
-.mk-banda .vi-foto img{width:38px;height:38px}
-.mk-banda .vi-foto img[src*="fotos"]{width:42px;height:42px;border-radius:9px}
-.mk-banda .vi b{font-size:13px}
-.mk-banda .vi span{font-size:12.5px}
+.mk-banda .vit-track{gap:12px}
+.mk-banda .vi{gap:12px;padding:6px 18px 6px 6px;border-radius:14px;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+.mk-banda .vi:hover{transform:translateY(-3px);box-shadow:0 14px 28px -14px rgba(18,17,16,.32),0 0 0 1.5px var(--voltaje-suave)}
+.mk-banda .vi-foto{width:60px;height:60px;border-radius:11px;overflow:hidden}
+.mk-banda .vi-foto img{width:54px;height:54px;transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.mk-banda .vi-foto img[src*="fotos"],.mk-banda .vi-foto img.foto{width:60px;height:60px;border-radius:11px;object-fit:cover}
+.mk-banda .vi:hover .vi-foto img{transform:scale(1.08)}
+.mk-banda .vi b{font-size:15px}
+.mk-banda .vi span{font-size:13.5px}
 .mk-banda .vi small{display:none}
-.mkb-ver{flex:none;font-size:14px;white-space:nowrap}
-@media (max-width:1180px){.mkb-rot em{display:none}}
-@media (max-width:899px){.mkb-ver{display:none}.mk-banda{padding-right:0}}
-@media (max-width:560px){.mk-banda{height:58px;gap:12px}.mkb-rot span{font-size:10.5px}}
+.mkb-ver{flex:none}
+.mkb-ver .ic{width:15px;height:15px;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.mkb-ver:hover .ic{transform:translateX(3px)}
+@media (prefers-reduced-motion:reduce){.mkb-vivo::after{animation:none}.mk-banda .vi,.mk-banda .vi-foto img,.mkb-ver .ic{transition:none}.mk-banda .vi:hover{transform:none}.mk-banda .vi:hover .vi-foto img,.mkb-ver:hover .ic{transform:none}}
+@media (max-width:1180px){.mkb-rot em{font-size:14px}}
+@media (max-width:899px){.mkb-ver{display:none}.mk-banda{padding-right:0;height:80px}.mkb-rot em{display:none}}
+@media (max-width:560px){.mk-banda{height:72px;gap:14px}.mkb-tit{font-size:11px}.mk-banda .vi-foto,.mk-banda .vi-foto img[src*="fotos"],.mk-banda .vi-foto img.foto{width:50px;height:50px}.mk-banda .vi b{font-size:14px}}
 .vit-pista{flex:1;overflow:hidden;min-width:0;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
 .vit-track{display:flex;gap:14px;width:max-content;will-change:transform}
 .vi{display:flex;align-items:center;gap:12px;padding:8px 18px 8px 8px;background:var(--sup);border-radius:16px;box-shadow:var(--sombra-susurro);corner-shape:superellipse(1.5)}
@@ -1035,10 +1045,6 @@ section{position:relative;overflow-x:clip}
       <a href="/en/avaluo">Appraisals</a>
       <a href="/en/contacto">Contact</a>
     </nav>
-    <div class="reloj" aria-label="An agency's day, as you scroll">
-      <span class="dia">THU 22 OCT</span><span class="ap">AUTOPILOT</span><b id="hora">07:02</b>
-      <span class="pista" id="pista" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-    </div>
     <div class="hdr-cta">
       <div class="idioma" role="group" aria-label="Language"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
       <a class="btn btn-s btn-sm pub" href="/publica">List for free</a>
@@ -1071,9 +1077,9 @@ section{position:relative;overflow-x:clip}
   <div class="hero-alto">
     <div class="hero-pega">
       <div class="mk-banda" aria-label="Properties listed on the Leasefy marketplace">
-        <a class="mkb-rot" href="/en/propiedades"><i aria-hidden="true"></i><span>Marketplace</span><em>Rentals from Leasefy agencies</em></a>
+        <a class="mkb-rot" href="/en/propiedades"><span class="mkb-tit"><i class="mkb-vivo" aria-hidden="true"></i><span>Marketplace</span></span><em>Rentals from Leasefy agencies</em></a>
         <div class="vit-pista"><div class="vit-track" id="vitTrack"></div></div>
-        <a class="mkb-ver lnk" href="/en/propiedades">See the properties</a>
+        <a class="mkb-ver btn btn-p btn-sm" href="/en/propiedades"><span>See the properties</span><svg class="ic" aria-hidden="true"><use href="#i-chev"></use></svg></a>
       </div>
       <canvas class="corriente hero-pix" data-corriente="papel" data-raton="" data-marco="" data-semilla="11" data-celda="3" data-fuerza="1.15" data-velocidad="1" aria-hidden="true"></canvas>
       <div class="hero-txt">

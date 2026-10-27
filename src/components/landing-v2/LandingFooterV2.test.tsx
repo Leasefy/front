@@ -21,7 +21,7 @@ vi.mock('next/font/google', () => {
     variable: opts.variable ?? '--font-mock',
     style: { fontFamily: 'mock-font' },
   })
-  return { Inter: fuente, Inter_Tight: fuente, IBM_Plex_Mono: fuente }
+  return { Inter: fuente, Inter_Tight: fuente, IBM_Plex_Mono: fuente, Host_Grotesk: fuente, DM_Mono: fuente }
 })
 
 vi.mock('@/lib/auth/use-auth', () => ({
@@ -47,15 +47,57 @@ afterEach(() => {
   container.remove()
 })
 
+// El pie anterior (el de `/inicio-anterior`); el de las páginas públicas es
+// `PieComoLaHome` desde el 27-10-2026 y tiene su propia prueba.
 function montar(props: { fxExterno?: boolean } = {}, idioma: 'es' | 'en' = 'es') {
   act(() => {
     root.render(
       <IdiomaDeLaPagina idioma={idioma}>
-        <LandingFooterV2 {...props} />
+        <LandingFooterV2 comoLaHome={false} {...props} />
       </IdiomaDeLaPagina>,
     )
   })
 }
+
+describe('🔴 el pie de la landing nueva en las páginas públicas (Nico, 27-10: «lo lleva a uno a la landing vieja»)', () => {
+  function montarElDeHoy(idioma: 'es' | 'en' = 'es') {
+    act(() => {
+      root.render(
+        <IdiomaDeLaPagina idioma={idioma}>
+          <LandingFooterV2 />
+        </IdiomaDeLaPagina>,
+      )
+    })
+  }
+
+  it('sin decir nada, es el pie de la home: claro, con sus columnas y la marca en puntos', () => {
+    montarElDeHoy()
+    const pie = container.querySelector('[data-testid="pie-como-la-home"]')
+    expect(pie).not.toBeNull()
+    expect(pie?.textContent).toContain('Operando con normalidad')
+    expect(pie?.textContent).toContain('Escríbenos')
+    expect(pie?.querySelector('a[href="/es/productos/inquilino"]')?.textContent).toBe('Buró y validación')
+    expect(pie?.querySelector('.pie-home-marca canvas')).not.toBeNull()
+  })
+
+  it('en /en, en inglés y con los enlaces en /en', () => {
+    montarElDeHoy('en')
+    const pie = container.querySelector('[data-testid="pie-como-la-home"]')
+    expect(pie?.textContent).toContain('All systems normal')
+    expect(pie?.querySelector('a[href="/en/productos/crm"]')).not.toBeNull()
+  })
+
+  it('la home anterior (con fx) conserva su pie', () => {
+    act(() => {
+      root.render(
+        <IdiomaDeLaPagina idioma="es">
+          <LandingFooterV2 fxExterno />
+        </IdiomaDeLaPagina>,
+      )
+    })
+    expect(container.querySelector('[data-testid="pie-como-la-home"]')).toBeNull()
+  })
+})
 
 describe('<LandingFooterV2>', () => {
   it('sin fx externo, la marca y las columnas vienen ya reveladas', () => {

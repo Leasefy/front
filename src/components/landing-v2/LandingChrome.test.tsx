@@ -21,6 +21,8 @@ vi.mock('next/font/google', () => ({
   Inter: () => ({ variable: '--font-inter' }),
   Inter_Tight: () => ({ variable: '--font-inter-tight' }),
   IBM_Plex_Mono: () => ({ variable: '--font-ibm-plex-mono' }),
+  Host_Grotesk: () => ({ variable: '--font-host-grotesk' }),
+  DM_Mono: () => ({ variable: '--font-dm-mono' }),
 }))
 
 import { LandingChrome } from './LandingChrome'
@@ -54,6 +56,20 @@ function montar() {
 }
 
 describe('LandingChrome', () => {
+  describe('🔴 la barra de la landing nueva (Nico, 27-10: «lo lleva a uno a la landing vieja»)', () => {
+    it('Contacto, Marketplace y Avalúos llevan la barra de la home, sin la franja negra de arriba', () => {
+      montar()
+      const hdr = container.querySelector('#hdr')
+      expect(hdr?.classList.contains('como-la-home')).toBe(true)
+      expect(hdr?.hasAttribute('data-franja')).toBe(false)
+      expect(container.querySelector('.mk-anuncio')).toBeNull()
+      // Con las fuentes de la home (Host Grotesk y DM Mono).
+      const lv2 = container.querySelector('[data-testid="landing-chrome"]')
+      expect(lv2?.className).toContain('--font-host-grotesk')
+      expect(lv2?.className).toContain('--font-dm-mono')
+    })
+  })
+
   describe('siempre claro', () => {
     it('quita el tema oscuro: la hoja de la landing no tiene variante oscura', () => {
       // Con el tema oscuro puesto, el header salía claro sobre una página

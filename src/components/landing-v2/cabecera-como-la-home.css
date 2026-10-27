@@ -1,0 +1,214 @@
+/* ──────────────────────────────────────────────────────────────────────────────
+   La barra de las páginas públicas en React, IGUAL a la de la landing nueva
+   (`public/landing/index.html`, reglas `.hdr`, `.nav`, `.idioma`, `.btn`).
+
+   Nico, 27-10-2026: «hay muchas secciones que cuando uno le da clic lo lleva a
+   uno a la landing vieja» (Contacto, Marketplace, Avalúos). El marcado es el de
+   `LandingHeaderV2`; acá sólo se le pone la piel de la home: Host Grotesk, el
+   menú sin mayúsculas, el número del marketplace en arena, el ES/EN de la casa
+   y los botones de radio completo. Todo cuelga de `#hdr.como-la-home`, que sólo
+   pone `LandingChrome`: la home anterior (`/inicio-anterior`) sigue igual.
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.lv2 #hdr.como-la-home {
+  --h-bg: #fbfaf8;
+  --h-arena: #f3f1ed;
+  --h-piedra: #e7e3dc;
+  --h-filete: #ece8e1;
+  --h-tinta: #121110;
+  --h-grafito: #5b5751;
+  --h-ceniza: #706b64;
+  --h-voltaje: #1a40ff;
+  --h-f: var(--font-host-grotesk), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --h-m: var(--font-dm-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  top: 0;
+  background: var(--h-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-bottom: 1px solid var(--h-filete);
+  font-family: var(--h-f);
+}
+
+.lv2 #hdr.como-la-home .hrow {
+  /* La altura queda la de antes (64 / 76 px): las páginas React reservan ese
+     espacio arriba, y con 68 quedaba una raya entre la barra y el contenido. */
+  gap: 26px;
+  justify-content: flex-start;
+}
+
+.lv2 #hdr.como-la-home .logo,
+.lv2 #hdr.como-la-home.scrolled .logo {
+  color: var(--h-tinta);
+}
+.lv2 #hdr.como-la-home .logo svg {
+  height: 26px;
+}
+
+/* ── el menú ── */
+.lv2 #hdr.como-la-home nav.main {
+  gap: 24px;
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
+}
+.lv2 #hdr.como-la-home nav.main .nav-pastilla {
+  display: none;
+}
+.lv2 #hdr.como-la-home nav.main a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0;
+  font-family: var(--h-f);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1;
+  color: var(--h-grafito);
+  transition: color 0.2s;
+}
+.lv2 #hdr.como-la-home nav.main a:hover,
+.lv2 #hdr.como-la-home nav.main a[aria-current="page"],
+html.pm-open .lv2 #hdr.como-la-home nav.main a#pmTrigger {
+  color: var(--h-tinta);
+  background: transparent;
+  box-shadow: none;
+}
+.lv2 #hdr.como-la-home nav.main a::after {
+  display: none;
+}
+.lv2 #hdr.como-la-home .mk-cuadro {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--h-voltaje);
+}
+.lv2 #hdr.como-la-home .mk-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  margin-left: -1px;
+  padding: 0 6px;
+  border-radius: 7px;
+  background: var(--h-arena);
+  color: var(--h-tinta);
+  font-family: var(--h-m);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.lv2 #hdr.como-la-home nav.main .pm-ar {
+  display: inline-flex;
+  margin-left: -2px;
+  color: currentColor;
+}
+.lv2 #hdr.como-la-home nav.main .pm-ar svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s;
+}
+html.pm-open .lv2 #hdr.como-la-home nav.main .pm-ar svg {
+  transform: rotate(180deg);
+}
+
+/* ── a la derecha: idioma, publicar, entrar, crear cuenta ── */
+.lv2 #hdr.como-la-home .hcta {
+  margin-left: auto;
+  gap: 10px;
+}
+.lv2 #hdr.como-la-home .idioma,
+.lv2 #hdr.como-la-home:not(.scrolled) .idioma {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--h-arena);
+  color: var(--h-ceniza);
+}
+.lv2 #hdr.como-la-home .idioma button {
+  height: 28px;
+  min-width: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font-family: var(--h-m);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--h-ceniza);
+}
+.lv2 #hdr.como-la-home .idioma button:hover {
+  color: var(--h-tinta);
+}
+.lv2 #hdr.como-la-home .idioma button[aria-pressed="true"],
+.lv2 #hdr.como-la-home:not(.scrolled) .idioma button[aria-pressed="true"] {
+  background: #fff;
+  color: var(--h-tinta);
+  box-shadow: 0 1px 2px rgba(18, 17, 16, 0.06), 0 2px 8px -2px rgba(18, 17, 16, 0.06);
+}
+
+.lv2 #hdr.como-la-home .hcta .lnk,
+.lv2 #hdr.como-la-home .hcta .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 14px;
+  font-family: var(--h-f);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+.lv2 #hdr.como-la-home .hcta .lnk,
+.lv2 #hdr.como-la-home .hcta .btn.outline {
+  background: var(--h-arena);
+  color: var(--h-tinta);
+}
+.lv2 #hdr.como-la-home .hcta .lnk:hover,
+.lv2 #hdr.como-la-home .hcta .btn.outline:hover {
+  background: var(--h-piedra);
+  color: var(--h-tinta);
+}
+.lv2 #hdr.como-la-home .hcta .btn.primary {
+  background: var(--h-voltaje);
+  color: #fff;
+}
+.lv2 #hdr.como-la-home .hcta .btn.primary:hover {
+  background: #1535e6;
+}
+@supports (corner-shape: superellipse(1.5)) {
+  .lv2 #hdr.como-la-home .hcta .lnk,
+  .lv2 #hdr.como-la-home .hcta .btn {
+    border-radius: 999px;
+    corner-shape: superellipse(1.5);
+  }
+}
+
+/* ── el botón «Menú» del celular ── */
+.lv2 #hdr.como-la-home .mbtn {
+  margin-left: auto;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--h-arena);
+  font-family: var(--h-f);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--h-tinta);
+}
+.lv2 #hdr.como-la-home .mbtn .bars {
+  display: none;
+}

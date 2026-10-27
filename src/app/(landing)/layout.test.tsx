@@ -40,6 +40,16 @@ vi.mock('next/font/google', () => ({
     variable: opts.variable ?? '--font-ibm-plex-mono',
     style: { fontFamily: 'mock-ibm-plex-mono' },
   }),
+  Host_Grotesk: (opts: { variable?: string }) => ({
+    className: 'mock-host-grotesk',
+    variable: opts.variable ?? '--font-host-grotesk',
+    style: { fontFamily: 'mock-host-grotesk' },
+  }),
+  DM_Mono: (opts: { variable?: string }) => ({
+    className: 'mock-dm-mono',
+    variable: opts.variable ?? '--font-dm-mono',
+    style: { fontFamily: 'mock-dm-mono' },
+  }),
 }))
 
 // El header v2 decide que enlaces muestra segun quien mira, asi que sin
@@ -170,7 +180,9 @@ describe('<LandingLayout>', () => {
     // <header>/<footer>, así que preguntar por la etiqueta no distinguía
     // nada: es justo lo que dejó al blog con otro logo y otro pie.
     expect(wrapper?.querySelector('header#hdr')).toBeTruthy()
-    expect(wrapper?.querySelector('footer .fgrid2')).toBeTruthy()
+    // 27-10-2026 (Nico: «lo lleva a uno a la landing vieja»): el pie es el de
+    // la landing nueva (`PieComoLaHome`), ya no el `.fgrid2` del port v2.
+    expect(wrapper?.querySelector('footer[data-testid="pie-como-la-home"]')).toBeTruthy()
     expect(wrapper?.querySelector('[data-testid="landing-chrome"]')).toBeTruthy()
   })
 

@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { Inter, Inter_Tight, IBM_Plex_Mono } from "next/font/google";
+import { dmMono, hostGrotesk } from "./fuentes-de-la-home";
 
 import { ForceLightMode } from "@/components/providers/ForceLightMode";
 import { LandingHeaderV2 } from "./LandingHeaderV2";
@@ -84,7 +85,7 @@ export function LandingChrome({ activo, children }: LandingChromeProps) {
        */}
       <div
         data-testid="landing-chrome"
-        className={`lv2 ${interTight.variable} ${ibmPlexMono.variable} ${inter.variable}`}
+        className={`lv2 ${interTight.variable} ${ibmPlexMono.variable} ${inter.variable} ${hostGrotesk.variable} ${dmMono.variable}`}
         style={
           {
             // Mismo puente de tokens que usa el layout de (landing): la hoja
@@ -96,7 +97,7 @@ export function LandingChrome({ activo, children }: LandingChromeProps) {
         }
       >
         <LogoDefs />
-        <LandingHeaderV2 activo={activo} />
+        <LandingHeaderV2 activo={activo} comoLaHome />
       </div>
       {/* 21-10-2026: la entrada animada al marketplace (sin el flash negro). */}
       <EntradaAlMarketplace />

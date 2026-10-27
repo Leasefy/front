@@ -104,7 +104,7 @@ ul,ol{list-style:none}
 .reloj .pista{display:flex;gap:2px}
 .reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
 .reloj .pista i.on{background:var(--voltaje-dot)}
-.hdr-cta{display:flex;align-items:center;gap:10px}
+.hdr-cta{display:flex;align-items:center;gap:10px;margin-left:auto}
 .mbtn{display:none;height:38px;padding:0 14px;border-radius:12px;background:var(--arena);font-size:14px;font-weight:500;corner-shape:superellipse(1.5)}
 .menu{position:fixed;inset:calc(var(--hdr) + env(safe-area-inset-top,0px)) 0 0 0;z-index:59;background:var(--bg);padding:24px max(var(--gutter),env(safe-area-inset-right,0px)) 24px max(var(--gutter),env(safe-area-inset-left,0px));display:none;flex-direction:column;gap:6px;overflow:auto}
 .menu-abierto .menu{display:flex}
@@ -113,7 +113,7 @@ ul,ol{list-style:none}
 .menu .acc{display:flex;flex-direction:column;gap:10px;margin-top:24px}
 @media (max-width:1100px){.nav{display:none}.hdr-cta .pub{display:none}}
 @media (max-width:720px){
-  .hdr-cta{display:none}.mbtn{display:inline-flex;align-items:center}
+  .hdr-cta{display:none}.mbtn{margin-left:auto}.mbtn{display:inline-flex;align-items:center}
   .reloj{padding:0 10px}.reloj .dia,.reloj .pista{display:none}
   .hdr .wrap{gap:12px}
 }
@@ -558,7 +558,7 @@ section{position:relative;overflow-x:clip}
 .reloj .pista{display:flex;gap:2px}
 .reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
 .reloj .pista i.on{background:var(--voltaje-dot)}
-.hdr-cta{display:flex;align-items:center;gap:10px}
+.hdr-cta{display:flex;align-items:center;gap:10px;margin-left:auto}
 .mbtn{display:none;height:38px;padding:0 14px;border-radius:12px;background:var(--arena);font-size:14px;font-weight:500;corner-shape:superellipse(1.5)}
 .menu{position:fixed;inset:var(--hdr) 0 0 0;z-index:59;background:var(--bg);padding:24px var(--gutter);display:none;flex-direction:column;gap:6px;overflow:auto}
 .menu-abierto .menu{display:flex}
@@ -572,7 +572,7 @@ section{position:relative;overflow-x:clip}
 @media (max-width:1100px){.nav{display:none}
 .hdr-cta .pub{display:none}
 .mbtn{display:inline-flex;align-items:center}}
-@media (max-width:720px){.hdr-cta{display:none}
+@media (max-width:720px){.hdr-cta{display:none}.mbtn{margin-left:auto}
 .mbtn{display:inline-flex;align-items:center}
 .reloj{padding:0 10px}
 .reloj .dia,.reloj .pista{display:none}
@@ -687,10 +687,6 @@ section{position:relative;overflow-x:clip}
       <a href="/en/avaluo">Appraisals</a>
       <a href="/en/contacto">Contact</a>
     </nav>
-    <div class="reloj" aria-label="An agency's day, as you scroll">
-      <span class="dia">THU 22 OCT</span><span class="ap">AUTOPILOT</span><b id="hora">07:02</b>
-      <span class="pista" id="pista" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-    </div>
     <div class="hdr-cta">
       <div class="idioma" role="group" aria-label="Language"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
       <a class="btn btn-s btn-sm pub" href="/publica">List for free</a>

@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
+import { ComoTeActivas } from './ComoTeActivas';
 import { moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
 import { demoDeLaInmobiliaria } from '@/lib/venta/demos-del-panel';
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
@@ -138,10 +139,9 @@ export function ActivarTuCuenta() {
           </li>
         ))}
       </ul>
-      <div className="mt-7 flex flex-col gap-2 sm:flex-row">
-        <Button asChild className="h-11 rounded-full px-6" data-testid="activar-mi-cuenta">
-          <Link href={RUTA_PARA_ACTIVAR}>Activar mi cuenta</Link>
-        </Button>
+      {/* Empresa o persona natural (el agente inmobiliario, Nico 27-10-2026), y después el asistente. */}
+      <ComoTeActivas destino={RUTA_PARA_ACTIVAR} />
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <Button asChild variant="secondary" className="h-11 rounded-full px-6">
           <Link href={INICIO_DEL_MODO_COMERCIAL}>Volver a mis inmuebles</Link>
         </Button>

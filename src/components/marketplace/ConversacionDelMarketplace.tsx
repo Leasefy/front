@@ -451,9 +451,15 @@ function RespuestaDeOri({
               <p className="text-[16.5px] leading-[1.6] text-fg" data-testid="lo-que-dijo-ori">
                 {sonCercanos ? (
                   <>
-                    Ninguno cumple todo lo que pides. Estos{' '}
-                    <strong className="font-mono font-medium tabular-nums">{totalMostrado}</strong> son los más
-                    cercanos: en cada uno te digo qué no cumple o qué no dice.
+                    {totalMostrado === 1 ? (
+                      <>Ninguno cumple todo lo que pides. Este es el más cercano: te digo qué no cumple o qué no dice.</>
+                    ) : (
+                      <>
+                        Ninguno cumple todo lo que pides. Estos{' '}
+                        <strong className="font-mono font-medium tabular-nums">{totalMostrado}</strong> son los más
+                        cercanos: en cada uno te digo qué no cumple o qué no dice.
+                      </>
+                    )}
                   </>
                 ) : foto.total === 0 ? (
                   <>No encontré ninguno que cumpla todo. Quita una de las pastillas y vuelvo a buscar.</>

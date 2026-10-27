@@ -811,7 +811,7 @@ export function ConsignacionTable({
                           {onAbrirSinPropietario && (
                             <DropdownListItem className="gap-3" onClick={() => onAbrirSinPropietario(row)} data-testid="ver-ficha-sin-propietario">
                               <Eye className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.consignaciones.table.view')}</span>
+                              <span className="text-sm">Ver ficha</span>
                             </DropdownListItem>
                           )}
                           {puedeCrearMandato && (

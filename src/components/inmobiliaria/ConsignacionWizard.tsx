@@ -295,14 +295,10 @@ export function ConsignacionWizard({
       case 6:
         // Confirmation step - agenteId is never required: an unassigned
         // consignment defaults to the profile that created it.
-        return Boolean(
-          (formData.sinMandato || formData.propietarioId) &&
-          formData.propertyTitle &&
-          formData.propertyAddress &&
-          formData.propertyCity &&
-          formData.propertyZone &&
-          formData.department
-        );
+        // 🔴 Juan y Nico, 27-10-2026 («no está dejando consignar… no hay posibilidad de saber por qué»): aquí se
+        // exigían el barrio y el departamento, que el paso del inmueble deja OPCIONALES; con ellos vacíos el botón
+        // quedaba apagado sin decir nada. Ahora pide lo MISMO que el paso 2 (y el porqué sale en palabras abajo).
+        return Boolean((formData.sinMandato || formData.propietarioId) && pasoDelInmuebleCompleto(formData));
       default:
         return false;
     }
@@ -317,6 +313,10 @@ export function ConsignacionWizard({
     }
     if (currentStep === 2) return tr('Completa el tipo, el título, la dirección, la ciudad y el canon');
     if (currentStep === 5) return tr('Revisa el enlace del video');
+    if (currentStep === 6) {
+      if (!formData.sinMandato && !formData.propietarioId) return tr('Vuelve al paso 1 y elige de quién es el inmueble (o publícalo sin mandato)');
+      if (!pasoDelInmuebleCompleto(formData)) return tr('Vuelve al paso 2: falta el tipo, el título, la dirección, la ciudad o el canon');
+    }
     return null;
   })();
 
@@ -1212,6 +1212,13 @@ export function ConsignacionWizard({
               </Button>
               </>
             ) : (
+              <>
+              {/* 27-10 (Juan): el último paso también dice qué falta, en vez de un botón apagado mudo. */}
+              {!isStepValid && porQueNoSigue ? (
+                <span className="text-caption text-fg-muted max-sm:basis-full max-sm:text-right" data-testid="por-que-no-sigue">
+                  {porQueNoSigue}
+                </span>
+              ) : null}
               <Button
                 type="button"
                 hideArrow
@@ -1230,6 +1237,7 @@ export function ConsignacionWizard({
                   </>
                 )}
               </Button>
+              </>
             )}
           </div>
         </div>

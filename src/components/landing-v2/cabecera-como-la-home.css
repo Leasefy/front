@@ -41,7 +41,11 @@
   color: var(--h-tinta);
 }
 .lv2 #hdr.como-la-home .logo svg {
-  height: 26px;
+  /* Nico 27-10: un poco más grande y con el menú más separado */
+  height: 30px;
+}
+.lv2 #hdr.como-la-home nav.main {
+  margin-left: 22px;
 }
 
 /* ── el menú ── */

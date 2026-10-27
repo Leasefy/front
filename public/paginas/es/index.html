@@ -94,6 +94,8 @@ ul,ol{list-style:none}
 .hdr .wrap{display:flex;align-items:center;height:100%;gap:26px}
 .logo{display:flex;align-items:center;height:40px}
 .logo svg{height:26px;width:auto;fill:var(--tinta)}
+/* Nico 27-10: el logo un poco más grande y el menú más separado de él */
+.hdr .logo svg{height:30px}.hdr .nav{margin-left:22px}
 .nav{display:flex;gap:24px;font-size:15px;color:var(--grafito)}
 .nav a{display:inline-flex;align-items:center;gap:8px;transition:color .2s}
 .nav a:hover{color:var(--tinta)}
@@ -383,6 +385,7 @@ section{position:relative;overflow-x:clip}
 .mk-banda .vi span{font-size:13.5px}
 .mk-banda .vi small{display:none}
 .mkb-ver{flex:none}
+.mk-banda .mkb-ver.btn-s{background:var(--sup)}.mk-banda .mkb-ver.btn-s:hover{background:var(--piedra)}
 .mkb-ver .ic{width:15px;height:15px;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
 .mkb-ver:hover .ic{transform:translateX(3px)}
 @media (prefers-reduced-motion:reduce){.mkb-vivo::after{animation:none}.mk-banda .vi,.mk-banda .vi-foto img,.mkb-ver .ic{transition:none}.mk-banda .vi:hover{transform:none}.mk-banda .vi:hover .vi-foto img,.mkb-ver:hover .ic{transform:none}}
@@ -1079,7 +1082,7 @@ section{position:relative;overflow-x:clip}
       <div class="mk-banda" aria-label="Inmuebles publicados en el marketplace de Leasefy">
         <a class="mkb-rot" href="/es/propiedades"><span class="mkb-tit"><i class="mkb-vivo" aria-hidden="true"></i><span>Marketplace</span></span><em>Arriendos de las inmobiliarias de Leasefy</em></a>
         <div class="vit-pista"><div class="vit-track" id="vitTrack"></div></div>
-        <a class="mkb-ver btn btn-p btn-sm" href="/es/propiedades"><span>Ver los inmuebles</span><svg class="ic" aria-hidden="true"><use href="#i-chev"></use></svg></a>
+        <a class="mkb-ver btn btn-s btn-sm" href="/es/propiedades"><span>Ver los inmuebles</span><svg class="ic" aria-hidden="true"><use href="#i-chev"></use></svg></a>
       </div>
       <canvas class="corriente hero-pix" data-corriente="papel" data-raton="" data-marco="" data-semilla="11" data-celda="3" data-fuerza="1.15" data-velocidad="1" aria-hidden="true"></canvas>
       <div class="hero-txt">

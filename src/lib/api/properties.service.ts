@@ -78,6 +78,14 @@ export const propertiesApi = {
     return bps.map(mapBackendAgencyProperty);
   },
 
+  /**
+   * Los agentes que el propietario le asignó a su inmueble (Nico, 27-10-2026: el agente inmobiliario trabaja el
+   * inmueble del propietario). Lo ve quien puede ver el inmueble.
+   */
+  async getAgents(propertyId: string): Promise<AgenteDelInmueble[]> {
+    return apiClient.get<AgenteDelInmueble[]>(`/properties/${propertyId}/agents`);
+  },
+
   /** Assign an agent to a property by email */
   async assignAgent(propertyId: string, email: string): Promise<void> {
     await apiClient.post(`/properties/${propertyId}/agents`, { email });
@@ -272,4 +280,13 @@ export async function createPublishedWithDraftFallback(
     const property = await propertiesApi.create(data, opts);
     return { property, publishBlocked: true };
   }
+}
+
+/** Un agente asignado a un inmueble (`GET /properties/:id/agents`). */
+export interface AgenteDelInmueble {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
 }

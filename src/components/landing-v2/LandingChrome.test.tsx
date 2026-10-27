@@ -114,10 +114,10 @@ describe('LandingChrome', () => {
       expect(barra.classList.contains('menu-abierto')).toBe(false)
     })
 
-    it('sin sesión: Entrar y Crear cuenta (como la home)', () => {
+    it('sin sesión: Entrar y Publicar gratis, que reemplaza a Crear cuenta (27-10-2026)', () => {
       montar()
       const botones = [...container.querySelectorAll('.hdr-cta a.btn')].map((a) => a.textContent)
-      expect(botones).toEqual(['Publicar gratis', 'Entrar', 'Crear cuenta'])
+      expect(botones).toEqual(['Entrar', 'Publicar gratis'])
     })
   })
 

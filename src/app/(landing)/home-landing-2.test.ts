@@ -164,7 +164,7 @@ describe('la home es la landing 2 (Ronda 30, Nico)', () => {
         ['Contacto', '/contacto'],
         ['Publicar gratis', '/publica'],
         ['Entrar', '/auth'],
-        ['Crear cuenta', '/auth?mode=register'],
+        ['Publicar gratis', '/publica'],
       ]),
     )
     expect(enlaces).toContain('mailto:hola@leasefy.co')

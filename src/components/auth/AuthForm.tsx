@@ -1334,17 +1334,27 @@ export function AuthForm({
 
             <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
               ¿Todavía no tienes cuenta?{' '}
-              <button
-                type="button"
-                onClick={() =>
-                  alCrearCuenta
-                    ? alCrearCuenta(loginForm.getValues('email')?.trim() ?? '')
-                    : handleModeSwitch('register')
-                }
-                className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
-              >
-                Crear cuenta
-              </button>
+              {/* 🔴 Nico y Juan, 27-10-2026: «en vez de crear cuenta vamos a colocar publicar gratis… el login no va
+                  a tener el crear cuenta, va a tener el publicar gratis». Sin contexto (nadie viene a postularse ni
+                  trae un rol), el enlace lleva al publicador del marketplace; quien viene de una postulación o de un
+                  enlace con rol sigue creando su cuenta aquí mismo. */}
+              {!alCrearCuenta && !returnUrl && !rolDelEnlace ? (
+                <Link href="/publica" className="font-medium text-[#1A40FF] hover:underline underline-offset-2" data-testid="ingreso-publicar-gratis">
+                  Publicar gratis
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    alCrearCuenta
+                      ? alCrearCuenta(loginForm.getValues('email')?.trim() ?? '')
+                      : handleModeSwitch('register')
+                  }
+                  className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
+                >
+                  Crear cuenta
+                </button>
+              )}
             </p>
           </div>
         )}

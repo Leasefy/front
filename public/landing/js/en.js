@@ -331,6 +331,7 @@ window.LF_EN = {
 "Crear cuenta": "Sign up",
 "Crear cuenta gratis ¦ Ver cómo funciona": "Create free account ¦ See how it works",
 "Crear cuenta ¦ Entrar ¦ Ir al panel ¦ Publicar gratis": "Sign up ¦ Log in ¦ Go to dashboard ¦ List for free",
+"Publicar gratis ¦ Entrar ¦ Ir al panel ¦ Publicar gratis": "List for free ¦ Log in ¦ Go to dashboard ¦ List for free",
 "Crear cuenta ¦ Entrar ¦ Publicar gratis": "Sign up ¦ Log in ¦ List for free",
 "Crear mi cuenta ¦ Hablemos": "Create my account ¦ Let's talk",
 "Crear mi cuenta ¦ Ir al panel ¦ Ver cómo funciona": "Create my account ¦ Go to dashboard ¦ See how it works",

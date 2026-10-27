@@ -281,7 +281,8 @@ export function BarraDeLaHome({ activo }: { activo?: Activo }) {
           </nav>
           <div className="hdr-cta">
             <SelectorDeIdioma />
-            {hrefPublicar && (
+            {/* 27-10-2026 (Nico y Juan): sin sesión, «Publicar gratis» es EL botón principal (reemplaza «Crear cuenta»). */}
+            {hrefPublicar && conSesion && user && (
               <a className="btn btn-s btn-sm pub" href={hrefPublicar} onClick={alTocarPublicar}>
                 {tx("Publicar gratis", "List for free")}
               </a>
@@ -295,8 +296,8 @@ export function BarraDeLaHome({ activo }: { activo?: Activo }) {
                 <a className="btn btn-s btn-sm" href="/auth" data-esperando={esperando || undefined} aria-hidden={esperando || undefined} tabIndex={esperando ? -1 : undefined}>
                   {tx("Entrar", "Sign in")}
                 </a>
-                <a className="btn btn-p btn-sm" href="/auth?mode=register" data-esperando={esperando || undefined} aria-hidden={esperando || undefined} tabIndex={esperando ? -1 : undefined}>
-                  {tx("Crear cuenta", "Create account")}
+                <a className="btn btn-p btn-sm" href={hrefPublicar ?? '/publica'} onClick={alTocarPublicar} data-esperando={esperando || undefined} aria-hidden={esperando || undefined} tabIndex={esperando ? -1 : undefined} data-testid="barra-publicar-gratis">
+                  {tx("Publicar gratis", "List for free")}
                 </a>
               </>
             )}
@@ -387,15 +388,22 @@ export function BarraDeLaHome({ activo }: { activo?: Activo }) {
             </a>
           ) : (
             <>
-              <a className="btn btn-p" href="/auth?mode=register">
-                {tx("Crear cuenta", "Create account")}
+              <a
+                className="btn btn-p"
+                href={hrefPublicar ?? '/publica'}
+                onClick={(e) => {
+                  cerrarMenu();
+                  alTocarPublicar(e);
+                }}
+              >
+                {tx("Publicar gratis", "List for free")}
               </a>
               <a className="btn btn-s" href="/auth">
                 {tx("Entrar", "Sign in")}
               </a>
             </>
           )}
-          {hrefPublicar && (
+          {hrefPublicar && conSesion && user && (
             <a
               className="btn btn-s"
               href={hrefPublicar}

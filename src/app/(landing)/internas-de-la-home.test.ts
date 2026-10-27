@@ -224,7 +224,7 @@ describe('ningún enlace es un «#» muerto, ni va a producción o a claude.ai, 
         ['Contacto', '/contacto'],
         ['Publicar gratis', '/publica'],
         ['Entrar', '/auth'],
-        ['Crear cuenta', '/auth?mode=register'],
+        ['Publicar gratis', '/publica'],
       ]),
     )
     expect(d.querySelector('.hdr .logo')?.getAttribute('href')).toBe('/')

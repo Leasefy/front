@@ -334,7 +334,7 @@ export function CalceClient() {
       {/* Ronda 22: el encabezado de todas las pantallas. */}
       <EncabezadoDePantalla
         seccion={tr('Comercial y arriendo')}
-        titulo={tr("Qué ofrecer")}
+        titulo={tr("Oportunidades")}
         descripcion={tr("Los inmuebles que le sirven a un interesado, con el mensaje listo para mandar.")}
         // Revisora r23 (Qué ofrecer #1): «Cómo se decide» arriba a la derecha, en la ayuda; antes iba aislado al pie.
         ayuda={

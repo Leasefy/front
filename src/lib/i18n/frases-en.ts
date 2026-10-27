@@ -50,7 +50,9 @@ export const FRASES_EN: Record<string, string> = {
   "Nuevo interesado": "New lead",
   "Todavía no hay interesados en el embudo": "No leads in the pipeline yet",
   "Entran solos cuando alguien pide una visita o se postula a uno de tus inmuebles. El que te llega por teléfono lo puedes cargar a mano.": "They come in on their own when someone requests a viewing or applies to one of your properties. Anyone who reaches you by phone you can add by hand.",
-  // app/panel/inmobiliaria/pipeline/que-ofrecer/CalceClient.tsx
+  // 27-10-2026: «Qué ofrecer» pasó a «Oportunidades».
+  'Oportunidades': 'Opportunities',
+  // app/panel/inmobiliaria/pipeline/oportunidades/CalceClient.tsx
   "Qué ofrecer": "What to offer",
   "A un interesado, los inmuebles que le sirven. A un inmueble que se libera, los interesados a los que les sirve — con el porqué listo para mandar.": "For a lead, the properties that fit them. For a property that frees up, the leads it fits — with the reason ready to send.",
   "Desde dónde quieres buscar": "Where do you want to start",

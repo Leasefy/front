@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { useProperties } from '@/lib/hooks/useProperties';
 import { escribirBusqueda } from '@/lib/marketplace/busqueda';
 import { sugerenciasDelCatalogo } from '@/lib/marketplace/sugerencias';
+import { PedidoALaInmobiliaria } from './PedidoALaInmobiliaria';
 import { ChatDeLaInmobiliaria } from './ChatDeLaInmobiliaria';
 import { ReproductorDelVideo, type VideoParaVer } from '../ReproductorDelVideo';
 import { formatCurrency } from '@/lib/format';
@@ -327,6 +328,8 @@ function Contenido({ pagina }: { pagina: Pagina }) {
               whatsapp={pagina.whatsapp}
             />
           </section>
+          {/* 27-10-2026 (Juan): el pedido le llega a esta inmobiliaria como interesado en Prospección. */}
+          <PedidoALaInmobiliaria id={pagina.id} nombre={pagina.nombre} />
           {ubicados.length > 0 && (
             <section
               className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-lg border border-border bg-surface"

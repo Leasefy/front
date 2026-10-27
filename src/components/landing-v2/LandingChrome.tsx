@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Inter, Inter_Tight, IBM_Plex_Mono } from "next/font/google";
 import { dmMono, hostGrotesk } from "./fuentes-de-la-home";
+import { usePrepararPaginas } from "./preparar-paginas";
 
 import { ForceLightMode } from "@/components/providers/ForceLightMode";
 import { LandingHeaderV2 } from "./LandingHeaderV2";
@@ -60,6 +61,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+
 interface LandingChromeProps {
   /** Que enlace del nav queda marcado como el lugar donde estas. */
   activo?: "producto" | "inmuebles" | "avaluo" | "blog" | "contacto";
@@ -67,6 +69,7 @@ interface LandingChromeProps {
 }
 
 export function LandingChrome({ activo, children }: LandingChromeProps) {
+  usePrepararPaginas();
   return (
     <ForceLightMode>
       {/*

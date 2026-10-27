@@ -117,7 +117,7 @@
           a.href = ORIGEN + "/propiedades/" + encodeURIComponent(i.id);
           if (copia) { a.setAttribute("aria-hidden", "true"); a.tabIndex = -1; }
           var foto = crear("span", "vi-foto");
-          var img = crear("img", "foto");
+          var img = crear("img", i.sinFoto ? "ilus" : "foto"); /* sin foto: la ilustración de su tipo (27-10) */
           img.src = i.foto; img.alt = ""; img.loading = "lazy"; img.width = 42; img.height = 42;
           foto.appendChild(img);
           var tx = crear("span");
@@ -138,7 +138,7 @@
         requestAnimationFrame(function () { pista.classList.remove("vacia"); });
       }
       var fotosDelAviso = document.querySelectorAll(".aviso-fotos img");
-      lista.slice(0, fotosDelAviso.length).forEach(function (i, n) { fotosDelAviso[n].src = i.foto; });
+      lista.filter(function (i) { return !i.sinFoto; }).slice(0, fotosDelAviso.length).forEach(function (i, n) { fotosDelAviso[n].src = i.foto; });
     });
 
     /* 3 ── «Publicar gratis» sin sesión */

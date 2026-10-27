@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Buildings, House } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, Buildings, House, IdentificationBadge } from '@phosphor-icons/react';
 import { CrossFade } from '@leasefy/cadence';
 
 import { AuthForm } from '@/components/auth/AuthForm';
@@ -25,8 +25,22 @@ import { cn } from '@/lib/utils';
  *      elegido con «Cambiar». Con el código de 6 dígitos del correo se confirma
  *      sin salir (cuando la plantilla nueva esté en Supabase).
  * Quien ya tiene cuenta entra directo desde el paso 1.
+ *
+ * El agente inmobiliario (Nico, 27-10-2026: «ya debemos de pensar no solo en propietarios e inmobiliarias, si
+ * no en agentes inmobiliarios»; eligió «su propia cuenta»): tercera opción. Su cuenta es la de la plataforma de
+ * la inmobiliaria (el rol `AGENT` del back), con SU nombre y en modo comercial; publica los inmuebles de sus
+ * clientes, uno o muchos.
  */
-export type PerfilQuePublica = 'landlord' | 'agency';
+export type PerfilQuePublica = 'landlord' | 'agency' | 'agente';
+
+/** El perfil de la cuenta en el back: el agente usa la plataforma de la inmobiliaria. */
+export function rolDeLaCuenta(perfil: PerfilQuePublica): 'landlord' | 'agency' {
+  return perfil === 'landlord' ? 'landlord' : 'agency';
+}
+
+export function esPerfilQuePublica(valor: unknown): valor is PerfilQuePublica {
+  return valor === 'landlord' || valor === 'agency' || valor === 'agente';
+}
 
 const PERFILES: Record<
   PerfilQuePublica,
@@ -46,6 +60,13 @@ const PERFILES: Record<
     registroDetalle: 'Apenas la tengas, publicas tus inmuebles, uno o muchos.',
     Icono: Buildings,
   },
+  agente: {
+    titulo: 'Soy agente inmobiliario',
+    detalle: 'Publico los inmuebles de mis clientes.',
+    chip: 'Agente inmobiliario',
+    registroDetalle: 'Apenas la tengas, publicas los inmuebles de tus clientes, uno o muchos.',
+    Icono: IdentificationBadge,
+  },
 };
 
 type Paso = { que: 'perfil' } | { que: 'cuenta'; perfil: PerfilQuePublica } | { que: 'entrar' };
@@ -55,23 +76,29 @@ export function VentanaParaPublicar({
   alCambiar,
   destinos,
   confirmarConCodigo = false,
+  perfilInicial = null,
 }: {
   abierta: boolean;
   alCambiar: (abierta: boolean) => void;
   /** A dónde sigue cada perfil después de la cuenta; `entrar` = quien ya tenía cuenta. */
-  destinos: { landlord: string; agency: string; entrar?: string };
+  destinos: Record<PerfilQuePublica, string> & { entrar?: string };
   confirmarConCodigo?: boolean;
+  /** Si ya se sabe quién publica (`/publica?perfil=agente`), abre directo en su cuenta. */
+  perfilInicial?: PerfilQuePublica | null;
 }) {
-  const [paso, setPaso] = useState<Paso>({ que: 'perfil' });
+  const inicio = (): Paso => (perfilInicial ? { que: 'cuenta', perfil: perfilInicial } : { que: 'perfil' });
+  const [paso, setPaso] = useState<Paso>(inicio);
   /** El correo que ya escribió: viaja entre «entrar» y «crear cuenta». */
   const [correo, setCorreo] = useState<string | undefined>(undefined);
 
   // Cada vez que se abre, empieza por el principio.
   useEffect(() => {
     if (abierta) {
-      setPaso({ que: 'perfil' });
+      setPaso(inicio());
       setCorreo(undefined);
     }
+    // Sólo al abrir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierta]);
 
   const adelante = paso.que !== 'perfil';
@@ -82,7 +109,7 @@ export function VentanaParaPublicar({
       abierta={abierta}
       alCambiar={alCambiar}
       titulo="Publica gratis en Leasefy"
-      descripcion="Elige si eres propietario o inmobiliaria y crea tu cuenta para publicar tus inmuebles."
+      descripcion="Elige si eres propietario, inmobiliaria o agente inmobiliario y crea tu cuenta para publicar tus inmuebles."
       testId="ventana-para-publicar"
       obra={
         <div className="space-y-8">
@@ -107,7 +134,7 @@ export function VentanaParaPublicar({
             key={`cuenta-${paso.perfil}`}
             variante="ventana"
             defaultMode="register"
-            defaultRole={paso.perfil}
+            defaultRole={rolDeLaCuenta(paso.perfil)}
             returnUrl={destinos[paso.perfil]}
             correoInicial={correo}
             confirmarConCodigo={confirmarConCodigo}
@@ -170,7 +197,7 @@ export function VentanaParaPublicar({
   );
 }
 
-/** Paso 1: dos tarjetas grandes. Tocar una ya avanza (una decisión, un toque). */
+/** Paso 1: una tarjeta grande por perfil. Tocar una ya avanza (una decisión, un toque). */
 function EleccionDeQuienPublica({
   alElegir,
   alEntrar,
@@ -206,7 +233,7 @@ function EleccionDeQuienPublica({
                 'hover:-translate-y-px hover:border-primary',
                 'active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
               )}
-              data-testid={`publica-${perfil === 'agency' ? 'inmobiliaria' : 'propietario'}`}
+              data-testid={`publica-${perfil === 'agency' ? 'inmobiliaria' : perfil === 'agente' ? 'agente' : 'propietario'}`}
             >
               <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary transition-colors duration-fast group-hover:bg-primary group-hover:text-primary-fg">
                 <Icono size={24} aria-hidden="true" />

@@ -22,6 +22,9 @@ export const CLAVE_DE_PERFIL_ELEGIDO = 'intended_role'
 
 export const RUTA_DEL_SELECTOR_DE_PERFIL = '/onboarding/seleccionar-rol'
 
+/** El agente inmobiliario (Nico, 27-10-2026): su cuenta y después su registro corto, en el publicador. */
+export const DESTINO_DEL_AGENTE = '/publica?perfil=agente'
+
 const RUTAS: Record<PerfilDeOnboarding, string> = {
   tenant: '/onboarding/inquilino',
   landlord: '/onboarding/propietario',

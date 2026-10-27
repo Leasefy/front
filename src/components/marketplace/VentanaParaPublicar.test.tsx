@@ -45,7 +45,7 @@ import { VentanaParaPublicar } from './VentanaParaPublicar';
 
 let container: HTMLDivElement;
 let root: Root;
-const DESTINOS = { landlord: '/publicar', agency: '/panel/inmobiliaria/inmuebles/nuevo' };
+const DESTINOS = { landlord: '/publicar', agency: '/panel/inmobiliaria/inmuebles/nuevo', agente: '/publica?perfil=agente' };
 
 beforeEach(() => {
   ultimo.props = null;
@@ -81,6 +81,26 @@ describe('VentanaParaPublicar', () => {
     expect(f.getAttribute('data-destino')).toBe('/panel/inmobiliaria/inmuebles/nuevo');
     expect(container.textContent).toContain('Inmobiliaria');
     expect(ultimo.props?.textos?.registroBoton).toBe('Crear cuenta y publicar');
+  });
+
+  it('agente inmobiliario (Nico, 27-10-2026): tercera opción; su cuenta es la de la inmobiliaria y sigue a su registro', () => {
+    const tarjeta = container.querySelector('[data-testid="publica-agente"]')!;
+    expect(tarjeta.textContent).toContain('Soy agente inmobiliario');
+    expect(tarjeta.textContent).toContain('Publico los inmuebles de mis clientes.');
+    tocar('publica-agente');
+    const f = container.querySelector('[data-testid="formulario"]')!;
+    expect(f.getAttribute('data-modo')).toBe('register');
+    expect(f.getAttribute('data-perfil')).toBe('agency');
+    expect(f.getAttribute('data-destino')).toBe('/publica?perfil=agente');
+    expect(f.textContent).toContain('Agente inmobiliario');
+  });
+
+  it('con el perfil ya dicho (desde /para/agentes) abre directo en su cuenta', () => {
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<VentanaParaPublicar abierta alCambiar={() => {}} destinos={DESTINOS} perfilInicial="agente" />));
+    expect(container.querySelector('[data-testid="quien-publica"]')).toBeNull();
+    expect(container.querySelector('[data-testid="formulario"]')?.getAttribute('data-destino')).toBe('/publica?perfil=agente');
   });
 
   it('propietario: su perfil y su destino; «Cambiar» vuelve a elegir', () => {

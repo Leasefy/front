@@ -17,7 +17,7 @@ import { Check } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
-import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
+import { DESTINO_DEL_AGENTE, rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { Spinner } from '@/components/ui/spinner'
 import { LeasefyLogotype } from '@/components/brand'
 import { SalirDelRegistro, type VolverDelRegistro } from '@/components/onboarding/SalirDelRegistro'
@@ -146,6 +146,10 @@ export function EleccionDePerfil({
   const [dejandoDeLado, setDejandoDeLado] = useState(false)
   const [errorAlDejar, setErrorAlDejar] = useState<string | null>(null)
 
+  // El agente inmobiliario sigue a su registro corto (en el publicador), no al de la inmobiliaria.
+  const rutaDelPerfil = (opcion: OpcionDePerfil) =>
+    opcion.valor === 'agente' ? DESTINO_DEL_AGENTE : rutaDeOnboarding(opcion.bandera)
+
   const irAlPerfil = (opcion: OpcionDePerfil) => {
     void elegirPerfil(opcion.bandera).catch(() => undefined)
     if (opcion.valor === 'inmobiliaria') {
@@ -153,7 +157,7 @@ export function EleccionDePerfil({
       return
     }
     setYendoA(opcion.valor)
-    router.push(rutaDeOnboarding(opcion.bandera))
+    router.push(rutaDelPerfil(opcion))
   }
 
   const elegir = (opcion: OpcionDePerfil) => {
@@ -185,7 +189,7 @@ export function EleccionDePerfil({
       ])
       setRegistroAMedias(null)
       setYendoA(opcion.valor)
-      window.location.assign(rutaDeOnboarding(opcion.bandera))
+      window.location.assign(rutaDelPerfil(opcion))
     } catch (error) {
       // Nada se borró (el back se niega entero): se dice por qué y se queda aquí,
       // con la regla de oro del traductor (02-10-2026): un 409 dice lo que mandó
@@ -284,9 +288,11 @@ export function EleccionDePerfil({
                       ? 'hidden'
                       : abierta
                         ? 'hidden lg:grid lg:grid-cols-1 lg:gap-4'
-                        : visibles.length >= 3
-                          ? 'sm:grid-cols-2 lg:grid-cols-3'
-                          : 'sm:grid-cols-2',
+                        : visibles.length >= 4
+                          ? 'sm:grid-cols-2 xl:grid-cols-4'
+                          : visibles.length === 3
+                            ? 'sm:grid-cols-2 lg:grid-cols-3'
+                            : 'sm:grid-cols-2',
                   )}
                   data-testid="tarjetas-de-perfil"
                 >

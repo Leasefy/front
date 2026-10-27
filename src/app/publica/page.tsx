@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/use-auth';
 import { RegistroRapido } from '@/components/publica/RegistroRapido';
 import { PublicadorRapido } from '@/components/publica/PublicadorRapido';
-import { VentanaParaPublicar, type PerfilQuePublica } from '@/components/marketplace/VentanaParaPublicar';
+import { VentanaParaPublicar, esPerfilQuePublica, type PerfilQuePublica } from '@/components/marketplace/VentanaParaPublicar';
 import { CONFIRMAR_CON_CODIGO, DESTINOS_PARA_PUBLICAR } from '@/components/marketplace/CuentaParaPublicar';
 import type { CaminoParaMuchos } from '@/components/publica/TraerMuchos';
 import { marketplaceApi, paginaDe } from '@/lib/api/marketplace.service';
@@ -61,12 +61,16 @@ function Publica() {
   const operacionInicial = operacionPedida === 'venta' ? 'sale' : operacionPedida === 'arriendo' ? 'rent' : null;
 
   const delParametro = sp.get('perfil');
+  const perfilDelEnlace: PerfilQuePublica | null = esPerfilQuePublica(delParametro) ? delParametro : null;
   const perfilPedido: PerfilQuePublica | null =
-    delParametro === 'agency' || delParametro === 'landlord'
-      ? delParametro
-      : perfilElegido === 'agency' || perfilElegido === 'landlord'
-        ? perfilElegido
-        : null;
+    perfilDelEnlace ?? (perfilElegido === 'agency' || perfilElegido === 'landlord' ? perfilElegido : null);
+  // Viene de «Crear cuenta» con el perfil ya dicho (p. ej. /para/agentes → `?perfil=agente`): la ventana abre sola.
+  const abiertaSola = useRef(false);
+  useEffect(() => {
+    if (isLoading || isAuthenticated || !perfilDelEnlace || abiertaSola.current) return;
+    abiertaSola.current = true;
+    setVentana(true);
+  }, [isLoading, isAuthenticated, perfilDelEnlace]);
 
   let contenido: React.ReactNode;
   if (isLoading) {
@@ -79,7 +83,7 @@ function Publica() {
         <Button className="mt-7 h-12 rounded-full px-7 text-[15px]" onClick={() => setVentana(true)}>
           Empezar
         </Button>
-        <VentanaParaPublicar abierta={ventana} alCambiar={setVentana} destinos={DESTINOS_PARA_PUBLICAR} confirmarConCodigo={CONFIRMAR_CON_CODIGO} />
+        <VentanaParaPublicar abierta={ventana} alCambiar={setVentana} destinos={DESTINOS_PARA_PUBLICAR} confirmarConCodigo={CONFIRMAR_CON_CODIGO} perfilInicial={perfilDelEnlace} />
       </div>
     );
   } else if (!user.onboardingCompleted && !hasActiveAgencyMembership) {

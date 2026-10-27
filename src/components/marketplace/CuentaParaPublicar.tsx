@@ -5,6 +5,7 @@ import { UserPlus } from '@phosphor-icons/react';
 
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useAuth } from '@/lib/auth/use-auth';
+import { DESTINO_DEL_AGENTE } from '@/lib/auth/perfil-de-onboarding';
 import { VentanaParaPublicar } from './VentanaParaPublicar';
 
 /**
@@ -68,6 +69,7 @@ export function useVentanaDeCuenta({
 export const DESTINOS_PARA_PUBLICAR = {
   landlord: '/publica?perfil=landlord',
   agency: '/publica?perfil=agency',
+  agente: DESTINO_DEL_AGENTE,
   entrar: '/publica',
 } as const;
 

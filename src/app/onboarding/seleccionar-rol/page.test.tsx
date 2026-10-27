@@ -419,6 +419,14 @@ describe('la tarjeta es la acción', () => {
     expect(pushMock).toHaveBeenCalledWith('/onboarding/inquilino')
   })
 
+  it('«Agente inmobiliario» (Nico, 27-10-2026): cuenta de la plataforma de la inmobiliaria y su registro corto', async () => {
+    await render()
+    await tocar(tarjeta('agente'))
+
+    expect(elegirPerfilMock).toHaveBeenCalledWith('agency')
+    expect(pushMock).toHaveBeenCalledWith('/publica?perfil=agente')
+  })
+
   it('se elige con el teclado: botón nativo, con foco, y Enter/Espacio lo activan', async () => {
     await render()
     const inquilino = tarjeta('tenant')

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Buildings, House } from '@phosphor-icons/react';
+import { Buildings, House, IdentificationBadge } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { AuthInput } from '@/components/auth/AuthInput';
@@ -19,6 +19,9 @@ import { cn } from '@/lib/utils';
  * «nombre + WhatsApp»). Una sola pantalla. El nombre de la persona sólo se pide
  * si no lo sabemos ya (Google lo trae): el sistema lo necesita para la cuenta.
  * El NIT, la razón social, el equipo y la política se piden al «Activar».
+ *
+ * El agente inmobiliario (Nico, 27-10-2026) usa la plataforma de la inmobiliaria con SU nombre: no se le pide
+ * el de una inmobiliaria; su cuenta queda en modo comercial y publica los inmuebles de sus clientes.
  */
 export function RegistroRapido({
   perfilInicial,
@@ -57,10 +60,12 @@ export function RegistroRapido({
         firstName,
         lastName,
         phone: celular,
-        userType: perfil === 'agency' ? 'INMOBILIARIA' : 'LANDLORD',
+        userType: perfil === 'landlord' ? 'LANDLORD' : 'INMOBILIARIA',
         ...(perfil === 'agency'
           ? { agency: { name: inmobiliaria.trim(), phone: celular }, registroRapido: true }
-          : {}),
+          : perfil === 'agente'
+            ? { agency: { name: nombre.trim(), phone: celular }, registroRapido: true }
+            : {}),
       });
       await alTerminar();
     } catch (err) {
@@ -74,7 +79,7 @@ export function RegistroRapido({
       {/* Glow up 23-10: igual que «¿Lo publicas para arriendo o para venta?» (sin el cuadrito azul, título liviano). */}
       <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-fg-subtle">Último paso antes de publicar</p>
       <h1 className="mt-4 text-[28px] font-[420] leading-[1.1] tracking-[-0.03em] text-fg sm:text-[32px]">
-        {perfil === 'agency' ? 'Tu inmobiliaria' : perfil === 'landlord' ? 'Tus datos' : '¿Quién va a publicar?'}
+        {perfil === 'agency' ? 'Tu inmobiliaria' : perfil === 'agente' ? 'Tu cuenta de agente' : perfil === 'landlord' ? 'Tus datos' : '¿Quién va a publicar?'}
       </h1>
       <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
         {perfil
@@ -87,13 +92,14 @@ export function RegistroRapido({
           {([
             { p: 'landlord' as const, t: 'Soy propietario', d: 'Publico mi inmueble, sin inmobiliaria.', I: House },
             { p: 'agency' as const, t: 'Soy inmobiliaria', d: 'Publico los inmuebles que administro.', I: Buildings },
+            { p: 'agente' as const, t: 'Soy agente inmobiliario', d: 'Publico los inmuebles de mis clientes.', I: IdentificationBadge },
           ]).map(({ p, t, d, I }) => (
             <button
               key={p}
               type="button"
               onClick={() => setPerfil(p)}
               className="group flex w-full items-center gap-4 rounded-lg border border-border bg-surface p-4 text-left transition-[transform,border-color] duration-fast hover:-translate-y-px hover:border-primary/60 active:scale-[0.99]"
-              data-testid={`registro-${p === 'agency' ? 'inmobiliaria' : 'propietario'}`}
+              data-testid={`registro-${p === 'agency' ? 'inmobiliaria' : p === 'agente' ? 'agente' : 'propietario'}`}
             >
               <I size={26} weight="duotone" className="shrink-0 text-fg-muted transition-colors duration-fast group-hover:text-primary" aria-hidden="true" />
               <span>
@@ -155,7 +161,7 @@ export function RegistroRapido({
               onClick={() => setPerfil(null)}
               className={cn('w-full text-center text-[13px] text-fg-subtle hover:text-fg')}
             >
-              Cambiar: {perfil === 'agency' ? 'soy propietario' : 'soy inmobiliaria'}
+              Cambiar quién publica
             </button>
           )}
         </form>

@@ -11,7 +11,7 @@ import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
-import { esDestinoQueRegistraSolo, rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
+import { DESTINO_DEL_AGENTE, esDestinoQueRegistraSolo, esPerfilDeOnboarding, rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
 import { getRoleHomeRoute, inicioDeLaPersona } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
@@ -532,7 +532,17 @@ export function AuthForm({
     return () => clearTimeout(id);
   }, []);
 
-  const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
+  /*
+   * El agente inmobiliario (Nico, 27-10-2026): `/para/agentes` manda `?role=agent`, que antes no era ningún perfil
+   * y al terminar el registro llevaba a una dirección que no existe. Ahora sigue como el de «Publicar gratis»: su
+   * cuenta (la de la plataforma de la inmobiliaria) y después su registro corto de agente.
+   */
+  const rolDelEnlace = searchParams.get('role');
+  const esAgenteDelEnlace = !defaultRole && (rolDelEnlace === 'agent' || rolDelEnlace === 'agente');
+  const returnUrl = sanitizeReturnUrl(
+    returnUrlProp || searchParams.get('returnUrl') || (esAgenteDelEnlace ? DESTINO_DEL_AGENTE : null),
+    '/',
+  );
 
   /*
    * Por qué está acá sin haberlo pedido. `terminarSesion` (session-terminal.ts)
@@ -688,7 +698,8 @@ export function AuthForm({
   // post-signup destination skips the picker and goes straight to that role's
   // onboarding. Without it, signup lands on /onboarding/seleccionar-rol (the
   // single profile picker).
-  const explicitRole = (defaultRole || searchParams.get('role')) as 'tenant' | 'landlord' | 'agency' | null;
+  const explicitRole: 'tenant' | 'landlord' | 'agency' | null =
+    defaultRole ?? (esAgenteDelEnlace ? 'agency' : esPerfilDeOnboarding(rolDelEnlace) ? rolDelEnlace : null);
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
   /** Para el botón «Abrir Gmail» de las pantallas de «Revisa tu correo»; null si el dominio no es conocido. */
   const webmail = webmailDelCorreo(resetEmail);

@@ -1026,7 +1026,7 @@
       "soportes": "Candidate documents",
       "piloto": "Home",
       "chat": "Chat",
-      "secCaptacion": "Acquisition & leasing",
+      "secCaptacion": "Sales & leasing",
       "secOperacionDelContrato": "Operations",
       "secDinero": "Money",
       "caraInquilinos": "Collect from tenants",
@@ -1075,7 +1075,7 @@
       "recibos": "Receipts",
       "deudaDelMes": "Debt this month",
       "girosAPropietarios": "Owner payouts",
-      "secCaptacionCorta": "Acquisition",
+      "secCaptacionCorta": "Sales",
       "diasHabiles": "Business days",
       "incrementos": "Rent increases",
       "serviciosPublicos": "Utilities"
@@ -1749,7 +1749,7 @@
       "sheetTitle": "More options",
       "closeButton": "Close",
       "secciones": {
-        "sec-captacion": "Leasing",
+        "sec-captacion": "Sales",
         "sec-operacion": "Operations",
         "sec-dinero": "Money",
         "sec-directorio": "Directory"
@@ -4209,7 +4209,7 @@
         "inProcess": "In process",
         "maintenance": "Maint.",
         "draft": "Draft",
-        "sinMandato": "No mandate",
+        "sinMandato": "No owner",
         "allTypes": "All",
         "apartment": "Apt",
         "house": "House",
@@ -4281,7 +4281,7 @@
         "descripcionCajon": "Everything that can change on the property and its mandate. Only what you change is saved.",
         "seccionInmueble": "Property",
         "seccionPrecio": "Price",
-        "seccionMandato": "Mandate",
+        "seccionMandato": "Consignment contract",
         "seccionPublicacion": "Publication",
         "seccionFotosYDocumentos": "Photos and documents",
         "description": "Description",
@@ -4468,7 +4468,7 @@
           "property": "Property",
           "commission": "Commission",
           "agent": "Agent",
-          "inventory": "Photos & inventory",
+          "inventory": "Inventory",
           "photos": "Photos",
           "confirm": "Confirm"
         },
@@ -4514,7 +4514,7 @@
           "subtitle": "Pick one or more owners, or create a new one"
         },
         "step2": {
-          "dondeVanLasFotos": "Photos and the property video are uploaded in the «Photos & inventory» step; you can pick several photos at once.",
+          "dondeVanLasFotos": "Photos and the property video go in the next step, «Photos»; you can pick several at once.",
           "title": "Property Data",
           "subtitle": "Enter the basic property information",
           "propertyTypeLabel": "Property type",
@@ -11050,37 +11050,54 @@
       },
       "flujos": {
         "consignacion": {
-          "label": "New listing agreement",
-          "desc": "Add a property to the portfolio with its owner",
+          "label": "New consignment",
+          "desc": "Add a property to the portfolio; the owner, if you already have them",
           "intro": {
-            "titulo": "You're creating a listing agreement",
-            "resumen": "It's the agreement with the owner to manage their property. It goes into your portfolio and you publish it from there.",
+            "titulo": "You're creating a consignment",
+            "resumen": "It adds the property to your portfolio and publishes it on the marketplace. The owner and the inventory are optional: you add them when you make the contract.",
             "pasos": {
               "p1": {
-                "titulo": "The owner",
-                "texto": "You pick them, or create them if they aren't there yet. With several owners, you split the share."
+                "titulo": "The property",
+                "texto": "Type, title, address, city and rent (or sale price). If it's already listed elsewhere, paste the link and we bring it over."
               },
               "p2": {
-                "titulo": "The property",
-                "texto": "Type, title, address, city and rent (or sale price). The rest can wait."
+                "titulo": "The photos",
+                "texto": "Upload them or bring them from the listing's link. The video is optional."
               },
               "p3": {
-                "titulo": "The commission",
-                "texto": "The terms of the mandate with the owner."
+                "titulo": "The owner, if you have them",
+                "texto": "Optional. Name and phone are enough; ID and bank are asked when you make the contract."
               },
               "p4": {
-                "titulo": "Who handles it",
-                "texto": "If you're an administrator, you pick the agent; if you don't, it's you."
+                "titulo": "Commission and who handles it",
+                "texto": "What you agree on when you take the listing, and the agent who shows it; if you don't pick one, it's you."
               },
               "p5": {
-                "titulo": "Inventory and photos",
-                "texto": "Optional: the record with its rooms and the photos. At the end you confirm."
+                "titulo": "Inventory, optional",
+                "texto": "If you have it, write it down. At the end you confirm and decide whether it goes on the marketplace."
               }
             },
             "antes": {
-              "a1": "The owner's details: name and ID.",
-              "a2": "The property's exact address, city and rent.",
-              "a3": "The photos and the inventory, if you already have them."
+              "a1": "The property's exact address, city and rent.",
+              "a2": "The photos, or the link to the listing where it's already published.",
+              "a3": "The owner and the inventory, if you have them: they're optional."
+            }
+          }
+        },
+        "publicar": {
+          "label": "Publish a property",
+          "desc": "Put it on the marketplace: by link, from Excel or one by one",
+          "intro": {
+            "titulo": "You're publishing properties",
+            "resumen": "To show them on the Leasefy marketplace fast: paste the links where they're already listed, upload an Excel file or add them one by one. No owner or contract needed.",
+            "pasos": {
+              "p1": { "titulo": "Paste the links", "texto": "We bring the details and photos from Fincaraíz, Metrocuadrado or your own website." },
+              "p2": { "titulo": "Or upload an Excel file", "texto": "One or a hundred properties at once; we read the columns." },
+              "p3": { "titulo": "Review and publish", "texto": "They appear on the marketplace under your name." }
+            },
+            "antes": {
+              "a1": "The links to your listings, or the Excel file with your properties.",
+              "a2": "Nothing else: the owner and the contract come later."
             }
           }
         },

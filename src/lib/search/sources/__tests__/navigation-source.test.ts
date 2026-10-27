@@ -29,8 +29,8 @@ describe('navigationSource — chips', () => {
 
   it('una acción lleva un solo chip «Acción»', async () => {
     const filas = await buscar('nueva consignación');
-    const accion = filas.find((f) => f.title === 'Nuevo mandato');
-    expect(accion, 'la acción Nuevo mandato tiene que estar en el catálogo').toBeDefined();
+    const accion = filas.find((f) => f.title === 'Nueva consignación');
+    expect(accion, 'la acción Nueva consignación tiene que estar en el catálogo').toBeDefined();
     expect(accion?.type).toBe('accion');
     expect(accion?.badges).toEqual([{ label: 'Acción', color: 'violet' }]);
   });
@@ -61,7 +61,7 @@ describe('navigationSource — chips', () => {
     expect(emitidos?.subtitle).toBe('Cartera');
   });
 
-  it('Agenda se busca bajo «Captación y arriendo», no bajo «Operación»', async () => {
+  it('Agenda se busca bajo «Comercial y arriendo», no bajo «Operación»', async () => {
     // Nico, 2026-09-12: «Agenda interna: la sección de agenda la debemos llevar
     // para la sección de captación y arriendo». El contexto que se pinta a la
     // derecha es el grupo del sidebar, así que el buscador tiene que decir lo
@@ -69,7 +69,7 @@ describe('navigationSource — chips', () => {
     const filas = await buscar('agenda');
     const agenda = filas.find((f) => f.title === 'Agenda');
     expect(agenda, 'la página Agenda tiene que estar en el catálogo').toBeDefined();
-    expect(agenda?.subtitle).toBe('Captación y arriendo');
+    expect(agenda?.subtitle).toBe('Comercial y arriendo');
   });
 
   it('🔴 los agentes se buscan bajo «Agentes IA», como en el menú (Nico, 2026-09-16)', async () => {
@@ -104,7 +104,7 @@ describe('navigationSource — chips', () => {
       sinPortafolio,
       new AbortController().signal,
     );
-    expect(filas.find((f) => f.title === 'Nuevo mandato')).toBeUndefined();
+    expect(filas.find((f) => f.title === 'Nueva consignación')).toBeUndefined();
   });
 
   it('Evaluación de candidatos no sale: está oculta por ahora (Nico, 2026-09-08)', async () => {

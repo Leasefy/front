@@ -890,7 +890,7 @@ function ConsignacionDetailContent() {
             id: 'mandato',
             // 22-10 (revisión): sin el punto ámbar —se leía sólo por color y el
             // Resumen ya dice lo que falta—.
-            etiqueta: 'Mandato y giro',
+            etiqueta: 'Información del propietario',
             contenido: (
               <>
                 {/* 22-10 (revisión): primero lo que falta hacer —papeles y firma—,

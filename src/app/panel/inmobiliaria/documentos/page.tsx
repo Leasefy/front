@@ -1184,7 +1184,7 @@ function DocumentosContent() {
             <p className="text-body-sm text-fg-muted" data-testid="acta-sin-arrendados">
               {errorConsignaciones
                 ? 'No se pudieron traer los inmuebles. Prueba de nuevo en un momento.'
-                : 'Todavía no tienes inmuebles con mandato vigente: un acta se levanta sobre uno de ellos, así que todavía no hay sobre cuál hacerla.'}
+                : 'Todavía no tienes inmuebles con contrato de consignación vigente: un acta se levanta sobre uno de ellos, así que todavía no hay sobre cuál hacerla.'}
             </p>
           ) : (
             <>

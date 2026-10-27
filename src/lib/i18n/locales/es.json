@@ -1026,7 +1026,7 @@
       "soportes": "Soportes de candidatos",
       "piloto": "Inicio",
       "chat": "Chat",
-      "secCaptacion": "Captación y arriendo",
+      "secCaptacion": "Comercial y arriendo",
       "secOperacionDelContrato": "Operación",
       "secDinero": "Dinero",
       "caraInquilinos": "Cobrar a inquilinos",
@@ -1075,7 +1075,7 @@
       "recibos": "Recibos",
       "deudaDelMes": "Deuda del mes",
       "girosAPropietarios": "Giros a propietarios",
-      "secCaptacionCorta": "Captación",
+      "secCaptacionCorta": "Comercial",
       "diasHabiles": "Días hábiles",
       "incrementos": "Incrementos",
       "serviciosPublicos": "Servicios públicos"
@@ -1313,7 +1313,7 @@
           "todas": "Todo",
           "dinero": "Dinero",
           "operacion": "Operación",
-          "captacion": "Captación",
+          "captacion": "Comercial",
           "plataforma": "Plataforma"
         },
         "modo": {
@@ -1784,7 +1784,7 @@
       "sheetTitle": "Más opciones",
       "closeButton": "Cerrar",
       "secciones": {
-        "sec-captacion": "Captación",
+        "sec-captacion": "Comercial",
         "sec-operacion": "Operación",
         "sec-dinero": "Dinero",
         "sec-directorio": "Directorio"
@@ -1869,7 +1869,7 @@
         "title": "Acciones rápidas",
         "newOwner": "Nuevo propietario",
         "newOwnerDesc": "Registrar propietario",
-        "newConsignment": "Nuevo mandato",
+        "newConsignment": "Nueva consignación",
         "newConsignmentDesc": "Agregar inmueble",
         "registerPayment": "Registrar cobro",
         "registerPaymentDesc": "Recibir pago",
@@ -2570,7 +2570,7 @@
         "payments": "Pagos",
         "notes": "Notas",
         "noProperties": "No hay inmuebles consignados",
-        "newConsignment": "Nuevo mandato",
+        "newConsignment": "Nueva consignación",
         "noPayments": "No hay historial de pagos",
         "internalNotes": "Notas internas",
         "noNotes": "Sin notas",
@@ -3790,7 +3790,7 @@
       "title": "Inmuebles",
       "subtitle": "Los inmuebles que administras, con su propietario y su comisión.",
       "search": "Buscar inmueble...",
-      "addProperty": "Nuevo mandato",
+      "addProperty": "Nueva consignación",
       "noProperties": "Todavía no administras ningún inmueble",
       "noPropertiesDesc": "Consigna el primero: sobre esa consignación se arman el cobro, el contrato y la liquidación al propietario.",
       "filters": {
@@ -3909,9 +3909,9 @@
         }
       },
       "new": {
-        "title": "Nuevo mandato",
+        "title": "Nueva consignación",
         "backToOwner": "Volver al propietario",
-        "subtitle": "El inmueble, su propietario y la comisión, en 6 pasos.",
+        "subtitle": "Primero el inmueble y sus fotos; el propietario y el inventario los agregas ahora o cuando hagas el contrato.",
         "step1": "Propietario",
         "step2": "Inmueble",
         "step3": "Condiciones",
@@ -4165,7 +4165,7 @@
         "loadFailed": "No pudimos traer la actividad de este inmueble.",
         "events": {
           "consignacionCreated": "Consignación creada",
-          "consignacionCreatedDesc": "Empezó el mandato con el propietario",
+          "consignacionCreatedDesc": "Empezó el contrato de consignación con el propietario",
           "consignacionEnds": "Vence el contrato de consignación",
           "leaseEnds": "Vence el contrato de arriendo",
           "leaseEndsWithTenant": "Contrato vigente con {{name}}",
@@ -4197,7 +4197,7 @@
       "header": {
         "commission": "comisión",
         "saleCommission": "comisión de venta",
-        "consignacion": "Mandato",
+        "consignacion": "Contrato",
         "verFotos": "Ver {{count}} fotos",
         "agregarFotos": "Agregar fotos",
         "verFoto": "Ver la foto",
@@ -4216,24 +4216,24 @@
         "renewConsignment": "Renovar consignación",
         "terminateConsignment": "Terminar consignación",
         "terminada": {
-          "titulo": "Este mandato terminó el {{fecha}}",
-          "tituloSinFecha": "Este mandato está terminado",
+          "titulo": "Este contrato de consignación terminó el {{fecha}}",
+          "tituloSinFecha": "Este contrato de consignación está terminado",
           "detalle": "El inmueble ya no se administra ni se publica.",
           "conContrato": "Ojo: el inmueble tiene un contrato de arriendo vigente, que sigue su curso por su lado.",
           "editar": "Editar el inmueble",
-          "editarAyuda": "Sólo lo descriptivo del inmueble: el mandato terminó y sus términos ya no se editan.",
-          "viewOnPortal": "La consignación terminó: el inmueble ya no se muestra en el portal desde este mandato.",
+          "editarAyuda": "Sólo lo descriptivo del inmueble: el contrato de consignación terminó y sus términos ya no se editan.",
+          "viewOnPortal": "La consignación terminó: el inmueble ya no se muestra en el portal desde este contrato.",
           "pedirCita": "La consignación terminó: no se agendan visitas.",
-          "nuevaConsignacion": "Nuevo mandato",
+          "nuevaConsignacion": "Nueva consignación",
           "nuevaConsignacionAyuda": "Para volver a administrar este inmueble.",
           "reactivar": "Reactivar consignación",
           "reactivarAyuda": "Vuelve a administrar este inmueble con los mismos términos: propietario, canon y comisión."
         },
         "estadoDelMandato": {
-          "active": "Mandato vigente",
-          "pending": "Mandato pendiente",
-          "expired": "Mandato vencido",
-          "terminated": "Mandato terminado"
+          "active": "Contrato vigente",
+          "pending": "Contrato pendiente",
+          "expired": "Contrato vencido",
+          "terminated": "Contrato terminado"
         }
       },
       "filters": {
@@ -4244,7 +4244,7 @@
         "inProcess": "En proceso",
         "maintenance": "Mantenimiento",
         "draft": "Borrador",
-        "sinMandato": "Sin mandato",
+        "sinMandato": "Sin propietario",
         "allTypes": "Todos",
         "apartment": "Apto",
         "house": "Casa",
@@ -4313,10 +4313,10 @@
           "estratoEntre": "El estrato va de 1 a 6",
           "anioEntre": "El año va de 1900 a 2100"
         },
-        "descripcionCajon": "Todo lo que se puede cambiar del inmueble y de su mandato. Sólo se guarda lo que cambies.",
+        "descripcionCajon": "Todo lo que se puede cambiar del inmueble y de su contrato. Sólo se guarda lo que cambies.",
         "seccionInmueble": "Inmueble",
         "seccionPrecio": "Precio",
-        "seccionMandato": "Mandato",
+        "seccionMandato": "Contrato de consignación",
         "seccionPublicacion": "Publicación",
         "seccionFotosYDocumentos": "Fotos y documentos",
         "description": "Descripción",
@@ -4348,15 +4348,15 @@
         "publicadoHelper": "Apagado, el inmueble queda como borrador: no sale en el portal ni cuenta en la ocupación.",
         "publicacionNoAplica": "El estado de este inmueble ({{estado}}) lo maneja su contrato: no se publica ni se despublica desde aquí.",
         "inmuebleCargando": "Cargando el inmueble…",
-        "inmuebleNoCargo": "No se pudo cargar el inmueble: por ahora sólo se edita el mandato.",
-        "sinInmueble": "Este mandato no tiene un inmueble vinculado: se editan los datos copiados en el mandato.",
+        "inmuebleNoCargo": "No se pudo cargar el inmueble: por ahora sólo se edita el contrato.",
+        "sinInmueble": "Este contrato no tiene un inmueble vinculado: se editan los datos copiados en el contrato.",
         "mandatoTerminado": "Esta consignación terminó: sus términos ya no se editan. Lo del inmueble sí.",
         "fotosYDocumentosHelper": "Se cargan desde sus tarjetas en la ficha; estos botones te llevan.",
         "irAFotos": "Ir a las fotos",
         "irADocumentos": "Ir a los documentos",
         "sinCambios": "No cambiaste nada.",
         "conflictoTitulo": "No se pudo guardar",
-        "guardadoParcial": "El inmueble se guardó, pero el mandato no. Corrige y vuelve a intentar: sólo falta el mandato."
+        "guardadoParcial": "El inmueble se guardó, pero el contrato no. Corrige y vuelve a intentar: sólo falta el contrato."
       },
       "table": {
         "code": "Código",
@@ -4469,7 +4469,7 @@
         "noTenant": "Sin inquilino",
         "propertyAvailable": "Este inmueble está disponible para arriendo",
         "documents": "Documentos",
-        "consignmentContract": "El mandato en PDF",
+        "consignmentContract": "El contrato en PDF",
         "consignmentContractDesc": "PDF - Documento legal",
         "handoverReport": "Acta de entrega",
         "inventoryItemsCount": "{{count}} ítems en el inventario",
@@ -4483,11 +4483,11 @@
         "consignmentContractGenerate": "Generar desde una plantilla",
         "consignmentContractAttach": "Adjuntar el PDF firmado",
         "consignmentContractReplace": "Reemplazar",
-        "consignmentContractUploading": "Subiendo el mandato…",
-        "consignmentContractUploaded": "Listo: se adjuntó el mandato",
-        "consignmentContractUploadError": "No pudimos adjuntar el mandato",
+        "consignmentContractUploading": "Subiendo el contrato…",
+        "consignmentContractUploaded": "Listo: se adjuntó el contrato",
+        "consignmentContractUploadError": "No pudimos adjuntar el contrato",
         "consignmentContractOnlyPdf": "Tiene que ser un PDF de hasta 10 MB.",
-        "consignmentContractPreview": "Vista previa del mandato",
+        "consignmentContractPreview": "Vista previa del contrato",
         "consignmentContractNoPreview": "¿No ves el PDF? Tu navegador puede estar bloqueando el visor.",
         "consignmentContractOpenTab": "Abrir en pestaña nueva",
         "consignmentContractDownload": "Descargar",
@@ -4503,7 +4503,7 @@
           "property": "Inmueble",
           "commission": "Comisión",
           "agent": "Agente",
-          "inventory": "Fotos e inventario",
+          "inventory": "Inventario",
           "photos": "Fotos",
           "confirm": "Confirmar"
         },
@@ -4549,7 +4549,7 @@
           "subtitle": "Elige uno o varios propietarios, o crea uno nuevo"
         },
         "step2": {
-          "dondeVanLasFotos": "Las fotos y el video del inmueble se suben en el paso «Fotos e inventario»; puedes elegir varias fotos a la vez.",
+          "dondeVanLasFotos": "Las fotos y el video del inmueble van en el paso siguiente, «Fotos»; puedes elegir varias a la vez.",
           "title": "Datos del inmueble",
           "subtitle": "Ingresa la información básica del inmueble. Los campos con * son obligatorios.",
           "propertyTypeLabel": "Tipo de inmueble",
@@ -10938,7 +10938,7 @@
       },
       "quickActions": {
         "title": "Acciones rápidas",
-        "nuevaConsignacion": "Nuevo mandato",
+        "nuevaConsignacion": "Nueva consignación",
         "cobranza": "Ir a Cobranza",
         "cotizador": "Ir a Asegurabilidad",
         "reportes": "Ver reportes",
@@ -11085,37 +11085,54 @@
       },
       "flujos": {
         "consignacion": {
-          "label": "Nuevo mandato",
-          "desc": "Suma un inmueble al portafolio con su propietario",
+          "label": "Nueva consignación",
+          "desc": "Suma un inmueble al portafolio; el propietario, si ya lo tienes",
           "intro": {
             "titulo": "Vas a crear una consignación",
-            "resumen": "Es el acuerdo con el propietario para administrar su inmueble. Queda en tu portafolio y desde ahí lo publicas.",
+            "resumen": "Suma el inmueble a tu portafolio y lo publica en el marketplace. El propietario y el inventario son opcionales: los agregas cuando vayas a hacer el contrato.",
             "pasos": {
               "p1": {
-                "titulo": "El propietario",
-                "texto": "Lo eliges, o lo creas si todavía no está. Con varios dueños, repartes la participación."
+                "titulo": "El inmueble",
+                "texto": "Tipo, título, dirección, ciudad y canon (o precio de venta). Si ya está publicado en otro lado, pegas el enlace y lo traemos."
               },
               "p2": {
-                "titulo": "El inmueble",
-                "texto": "Tipo, título, dirección, ciudad y canon (o precio de venta). Lo demás puede esperar."
+                "titulo": "Las fotos",
+                "texto": "Súbelas o tráelas del enlace del aviso. El video es opcional."
               },
               "p3": {
-                "titulo": "La comisión",
-                "texto": "Los términos del mandato con el propietario."
+                "titulo": "El propietario, si ya lo tienes",
+                "texto": "Opcional. Nombre y teléfono bastan; la cédula y el banco se piden al hacer el contrato."
               },
               "p4": {
-                "titulo": "Quién lo atiende",
-                "texto": "Si eres administrador, eliges el asesor; si no eliges, quedas tú."
+                "titulo": "La comisión y quién lo atiende",
+                "texto": "Lo que pactas en la captación y el asesor que lo muestra; si no eliges, quedas tú."
               },
               "p5": {
-                "titulo": "Inventario y fotos",
-                "texto": "Opcional: el acta con sus espacios y las fotos. Al final confirmas."
+                "titulo": "El inventario, opcional",
+                "texto": "Si ya lo tienes, lo anotas. Al final confirmas y decides si sale en el marketplace."
               }
             },
             "antes": {
-              "a1": "Los datos del propietario: nombre y documento.",
-              "a2": "La dirección exacta, la ciudad y el canon del inmueble.",
-              "a3": "Las fotos y el inventario, si ya los tienes."
+              "a1": "La dirección exacta, la ciudad y el canon del inmueble.",
+              "a2": "Las fotos, o el enlace del aviso donde ya está publicado.",
+              "a3": "El propietario y el inventario, si ya los tienes: son opcionales."
+            }
+          }
+        },
+        "publicar": {
+          "label": "Publicar inmueble",
+          "desc": "Súbelo al marketplace: por enlace, desde un Excel o uno por uno",
+          "intro": {
+            "titulo": "Vas a publicar inmuebles",
+            "resumen": "Para mostrarlos rápido en el marketplace de Leasefy: pegas los enlaces de donde ya están publicados, subes un Excel o los cargas uno por uno. Sin propietario ni contrato.",
+            "pasos": {
+              "p1": { "titulo": "Pega los enlaces", "texto": "Traemos los datos y las fotos de Fincaraíz, Metrocuadrado o tu página." },
+              "p2": { "titulo": "O sube un Excel", "texto": "Uno o cien inmuebles a la vez; nosotros leemos las columnas." },
+              "p3": { "titulo": "Revisas y publicas", "texto": "Salen en el marketplace con tu nombre." }
+            },
+            "antes": {
+              "a1": "Los enlaces de tus avisos, o el Excel con tus inmuebles.",
+              "a2": "Nada más: el propietario y el contrato van después."
             }
           }
         },
@@ -11230,7 +11247,7 @@
       },
       "cierre": {
         "titulo": "Listo, ya conoces tu panel",
-        "punto1": "Empiezas por «Nuevo mandato» y sigues el inmueble hasta el contrato.",
+        "punto1": "Empiezas por «Nueva consignación» y sigues el inmueble hasta el contrato.",
         "punto2": "Pagos reúne las dos caras de la plata: lo que entra de los inquilinos y lo que sale hacia los propietarios.",
         "punto3": "El buscador y el chat te llevan a cualquier parte sin recorrer el menú.",
         "volver": "Puedes volver a verlo desde Configuración → Preferencias.",
@@ -11244,7 +11261,7 @@
         },
         "nuevo": {
           "titulo": "Aquí empieza todo lo nuevo",
-          "cuerpo": "«Nuevo mandato» es el acuerdo con el propietario para administrar su inmueble: eliges al propietario, cargas el inmueble y el canon, y defines la comisión.",
+          "cuerpo": "«Nueva consignación» suma un inmueble a tu portafolio: cargas el inmueble, sus fotos y el canon, y, si ya lo tienes, el propietario y la comisión.",
           "dato": "El chevron de al lado abre los otros arranques: avalúo, asegurabilidad y contrato."
         },
         "inmuebles": {
@@ -13284,7 +13301,7 @@
       "descripcionAdelanto": "No tiene nada vencido. Lo que entre hoy es un adelanto: baja las cuotas de su contrato que todavía no vencen, de la más próxima en adelante.",
       "pagaLoVencido": "Paga lo vencido",
       "adelantoDesde": "Vencido hoy: {{vencido}}. Por encima de esa cifra estás adelantando contra {{futuro}} que todavía no vencen.",
-      "sinMandato": "Falta el mandato del inmueble",
+      "sinMandato": "Falta el propietario del inmueble",
       "cuotaYCobroNoCuadran": "Los documentos de ese mes no cuadran",
       "forma": {
         "titulo": "¿Cómo registras el adelanto?",

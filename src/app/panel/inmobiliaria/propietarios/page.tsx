@@ -742,8 +742,8 @@ function PropietariosContent() {
           <Funnel className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" weight="fill" aria-hidden="true" />
           <p className="text-sm text-fg">
             {paginationData.totalItems === 0
-              ? 'Ya no queda ningún propietario con mandato y el documento por completar.'
-              : `${paginationData.totalItems === 1 ? 'Se muestra 1 propietario' : `Se muestran ${paginationData.totalItems} propietarios`} con mandato y el documento por completar: sus facturas por mandato no se emiten hasta completarlo.`}
+              ? 'Ya no queda ningún propietario con inmueble consignado y el documento por completar.'
+              : `${paginationData.totalItems === 1 ? 'Se muestra 1 propietario' : `Se muestran ${paginationData.totalItems} propietarios`} con inmueble consignado y el documento por completar: sus facturas por mandato no se emiten hasta completarlo.`}
           </p>
         </div>
         <Button
@@ -1176,7 +1176,7 @@ function PropietariosContent() {
                 onClick={handleConfirmDelete}
                 isLoading={isDeleting}
                 disabled={isDeleting || borradoBloqueado}
-                title={borradoBloqueado ? 'Primero retira o reasigna los mandatos donde figura como dueño' : undefined}
+                title={borradoBloqueado ? 'Primero retira o reasigna las consignaciones donde figura como dueño' : undefined}
                 data-testid="confirmar-eliminar"
               >
                 {t('inmobiliaria.common.delete')}

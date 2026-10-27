@@ -53,6 +53,11 @@ describe('FLUJOS', () => {
     for (const f of FLUJOS) {
       // Sin href no hay ruta que validar: la resuelven el micro o el selector.
       if (f.externo || f.selector) continue
+      // «Publicar inmueble» (27-10-2026) va al publicador rápido del marketplace, fuera del panel.
+      if (f.key === 'publicar') {
+        expect(f.href).toMatch(/^\/publica(\?|$)/)
+        continue
+      }
       expect(f.href).toMatch(/^\/panel\/inmobiliaria\//)
     }
   })
@@ -127,7 +132,14 @@ describe('FLUJOS', () => {
   it('ninguna ruta necesita un parámetro de consulta', () => {
     // El lanzador solo ofrece lo que se puede empezar EN FRÍO. Una ruta con
     // `?algo=` no se puede abrir desde acá: no hay de dónde sacar el valor.
-    for (const f of FLUJOS) expect(f.href).not.toContain('?')
+    for (const f of FLUJOS) {
+      // La excepción: un valor FIJO que no sale de ningún contexto (quién publica: la inmobiliaria).
+      if (f.key === 'publicar') {
+        expect(f.href).toBe('/publica?perfil=agency')
+        continue
+      }
+      expect(f.href).not.toContain('?')
+    }
   })
 
   it('nadie apunta directo a /contratos/nuevo', () => {

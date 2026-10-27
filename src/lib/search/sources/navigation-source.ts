@@ -78,24 +78,26 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Desempeño IA', context: 'Agentes IA', href: `${P}/reportes/ia`, keywords: 'analytics analitica metricas ia agentes desempeño', permission: { module: 'analytics', action: 'view' } },
 
   // ── Captación y arriendo ──────────────────────────────────────────────────
-  { kind: 'page', title: 'Pipeline', context: 'Captación y arriendo', href: `${P}/pipeline`, keywords: 'prospeccion leads captacion kanban', permission: { module: 'pipeline', action: 'view' } },
+  { kind: 'page', title: 'Pipeline', context: 'Comercial y arriendo', href: `${P}/pipeline`, keywords: 'prospeccion leads captacion kanban', permission: { module: 'pipeline', action: 'view' } },
   // Agenda dejó de ser de Operación (Nico, 2026-09-12: «la sección de agenda la
   // debemos llevar para la sección de captación y arriendo»). El `context` es
   // el grupo del sidebar, así que se mueve con ella: el buscador tiene que
   // decir lo mismo que el menú.
-  { kind: 'page', title: 'Agenda', context: 'Captación y arriendo', href: `${P}/agenda`, keywords: 'calendario citas visitas' },
-  { kind: 'page', title: 'Inmuebles', context: 'Captación y arriendo', href: `${P}/inmuebles`, keywords: 'propiedades apartamentos casas portafolio consignaciones inventario', permission: { module: 'portafolio', action: 'view' } },
+  { kind: 'page', title: 'Agenda', context: 'Comercial y arriendo', href: `${P}/agenda`, keywords: 'calendario citas visitas' },
+  { kind: 'page', title: 'Inmuebles', context: 'Comercial y arriendo', href: `${P}/inmuebles`, keywords: 'propiedades apartamentos casas portafolio consignaciones inventario', permission: { module: 'portafolio', action: 'view' } },
   // No hay "Nueva propiedad": una inmobiliaria nunca administra un inmueble sin
   // propietario, así que entrar uno es siempre una consignación.
-  { kind: 'action', title: 'Nuevo mandato', context: 'Inmuebles', href: `${P}/inmuebles/nuevo`, keywords: 'crear consignar consignación nueva consignación propiedad inmueble publicar', permission: { module: 'portafolio', action: 'create' } },
+  { kind: 'action', title: 'Nueva consignación', context: 'Inmuebles', href: `${P}/inmuebles/nuevo`, keywords: 'crear consignar consignación nueva consignación propiedad inmueble mandato', permission: { module: 'portafolio', action: 'create' } },
+  // 27-10-2026 (Nico y Juan): «Publicar inmueble» es otra cosa que consignar: sólo mostrarlo en el marketplace.
+  { kind: 'action', title: 'Publicar inmueble', context: 'Marketplace', href: '/publica?perfil=agency', keywords: 'publicar marketplace subir inmueble enlace excel fincaraiz metrocuadrado', permission: { module: 'portafolio', action: 'create' } },
   { kind: 'action', title: 'Importar propiedades', context: 'Inmuebles', href: `${P}/inmuebles/importar`, keywords: 'importar excel csv masivo', permission: { module: 'portafolio', action: 'create' } },
-  { kind: 'page', title: 'Postulaciones', context: 'Captación y arriendo', href: `${P}/postulaciones`, keywords: 'candidatos aplicaciones solicitudes recorrido' },
+  { kind: 'page', title: 'Postulaciones', context: 'Comercial y arriendo', href: `${P}/postulaciones`, keywords: 'candidatos aplicaciones solicitudes recorrido' },
   // «Evaluación de candidatos» (`/postulaciones/estudio`) está OCULTA por ahora
   // (Nico, 2026-09-08; ver `arquitectura-del-panel.ts`): ofrecerla acá sería
   // mandar a una puerta que devuelve a Postulaciones.
   // { kind: 'page', title: 'Evaluación de candidatos', context: 'Postulaciones', href: `${P}/postulaciones/estudio`, keywords: 'estudio scoring evaluacion candidato riesgo ia', permission: { module: 'estudio', action: 'view' } },
   { kind: 'page', title: 'Soportes', context: 'Postulaciones', href: `${P}/postulaciones/soportes`, keywords: 'soportes de candidatos documentos revision papeles', permission: { module: 'documentos', action: 'view' } },
-  { kind: 'page', title: 'Contratos', context: 'Captación y arriendo', href: `${P}/contratos`, keywords: 'arriendos leasing', permission: { module: 'contratos', action: 'view' } },
+  { kind: 'page', title: 'Contratos', context: 'Comercial y arriendo', href: `${P}/contratos`, keywords: 'arriendos leasing', permission: { module: 'contratos', action: 'view' } },
   // Al listado, no a /contratos/nuevo: esa pantalla exige `?applicationId=` y
   // desde el buscador no hay de dónde sacarlo.
   { kind: 'action', title: 'Nuevo contrato', context: 'Contratos', href: `${P}/contratos`, keywords: 'crear contrato arriendo', permission: { module: 'contratos', action: 'create' } },

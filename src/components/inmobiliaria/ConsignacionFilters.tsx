@@ -95,7 +95,7 @@ const ROTULO_DEL_CAJON: Record<CajonDelInmueble, string> = {
 
 const FILTROS_COMERCIALES: { id: FiltroComercial; rotulo: string }[] = [
   { id: 'vacante30', rotulo: 'Vacantes hace más de 30 días' },
-  { id: 'mandato', rotulo: 'Mandato por vencer o vencido' },
+  { id: 'mandato', rotulo: 'Contrato por vencer o vencido' },
 ];
 
 const PROPERTY_TYPE_OPTIONS: { value: Consignacion['propertyType'] | 'all'; labelKey: string; icon: React.ElementType }[] = [

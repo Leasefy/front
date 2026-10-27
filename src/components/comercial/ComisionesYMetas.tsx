@@ -663,7 +663,7 @@ export function ComisionesYMetas() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Captación y arriendo"
+        seccion="Comercial y arriendo"
         titulo="Comisiones y metas"
         descripcion={
           isAdmin

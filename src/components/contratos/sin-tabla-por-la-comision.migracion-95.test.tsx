@@ -133,7 +133,7 @@ describe('CO-28 · la ficha del contrato', () => {
       )
     })
     expect(plano($('administracion')?.textContent)).toContain(
-      '10% (la del contrato: el mandato no la traía)',
+      '10% (la del contrato: la consignación no la traía)',
     )
   })
 })

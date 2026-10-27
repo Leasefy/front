@@ -71,8 +71,8 @@ describe('<LoQueFaltaDelInmueble>', () => {
   it('dice lo que falta con datos reales: vencimiento, firma, papeles y mapa', async () => {
     await pintar();
     const t = container.textContent ?? '';
-    expect(t).toContain('Poner la fecha de vencimiento del mandato');
-    expect(t).toContain('Firmar el mandato');
+    expect(t).toContain('Poner la fecha de vencimiento del contrato');
+    expect(t).toContain('Firmar el contrato de consignación');
     expect(t).toContain('Faltan 2 papeles');
     expect(t).toContain('Ubicar el inmueble en el mapa');
   });

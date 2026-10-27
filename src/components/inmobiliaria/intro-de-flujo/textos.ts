@@ -7,10 +7,10 @@
  * dirección A «Héroe».
  *
  * 🔴 Cada paso es el que de verdad tiene el asistente donde aterriza el flujo:
- *   · consignación: `ConsignacionWizard.tsx` (6 pasos: propietario, propiedad,
- *     comisión, agente —sólo administrador—, inventario/fotos opcional,
- *     confirmar; en el paso 2 son obligatorios tipo, título, dirección,
- *     ciudad y canon, IN-16);
+ *   · consignación: `ConsignacionWizard.tsx` (27-10-2026: inmueble, fotos, propietario opcional, comisión,
+ *     agente —sólo administrador—, inventario opcional, confirmar; en el inmueble son obligatorios tipo, título,
+ *     dirección, ciudad y canon, IN-16);
+ *   · publicar: el publicador rápido del marketplace (`/publica`: enlaces, Excel o uno por uno);
  *   · avalúo: el asistente del micro de avalúos (`AVALUO_WIZARD_URL`, otra
  *     pestaña); `avaluo/src/lib/avaluo/intake.schema.ts` (obligatorios
  *     dirección, ciudad, tipo, área, estrato, habitaciones y baños; la
@@ -42,7 +42,11 @@ import {
   ShieldCheck,
   Signature,
   User,
-  UserCircle,
+  Camera,
+  Megaphone,
+  LinkSimple,
+  FileXls,
+  CheckCircle,
 } from '@phosphor-icons/react'
 
 import type { FlujoKey } from '@/lib/inmobiliaria/flujos'
@@ -57,7 +61,8 @@ export interface EstructuraDeLaIntro {
 }
 
 export const INTROS: Record<FlujoKey, EstructuraDeLaIntro> = {
-  consignacion: { icono: Buildings, pasos: [User, HouseLine, Percent, UserCircle, ClipboardText], antes: 3 },
+  consignacion: { icono: Buildings, pasos: [HouseLine, Camera, User, Percent, ClipboardText], antes: 3 },
+  publicar: { icono: Megaphone, pasos: [LinkSimple, FileXls, CheckCircle], antes: 2 },
   avaluo: { icono: Scales, pasos: [FileText, CreditCard, SealCheck, EnvelopeSimple], antes: 3 },
   asegurabilidad: { icono: ShieldCheck, pasos: [IdentificationCard, HouseLine, Lightning, ListChecks], antes: 2 },
   contrato: { icono: FilePlus, pasos: [ListChecks, FileText, CalendarBlank, Signature], antes: 3 },

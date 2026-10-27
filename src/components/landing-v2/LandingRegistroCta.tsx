@@ -58,8 +58,9 @@ export function LandingRegistroCta({ variant }: LandingRegistroCtaProps) {
   }
 
   return (
-    <a className={className} href="/auth?mode=register">
-      {tx('Crear cuenta', 'Create account')}
+    // 27-10-2026 (Nico y Juan): «Publicar gratis» reemplaza «Crear cuenta»; toda cuenta nueva entra por ahí.
+    <a className={className} href="/publica">
+      {tx('Publicar gratis', 'List for free')}
     </a>
   )
 }

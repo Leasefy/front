@@ -68,8 +68,8 @@ describe('/para/inquilinos · identidad nueva', () => {
     // Ronda 30 (a propósito): «Ver inmuebles» (antes «Ver propiedades»).
     expect(todos).toContain('Ver inmuebles → /propiedades');
     expect(todos).toContain('Crear perfil gratis → /auth');
-    expect(todos).toContain('Empezar gratis → /auth?mode=register&role=agency');
-    expect(todos).toContain('Ver precios → /pricing');
+    expect(todos).toContain('Empezar gratis → /publica?perfil=agency');
+    expect(todos).toContain('Ver precios → /#planes');
   });
 
   // Ronda 30 (a propósito): sólo cifras que se pueden sostener y sin testimonios (eran inventados).

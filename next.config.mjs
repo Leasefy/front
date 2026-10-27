@@ -2,6 +2,7 @@ import path from "path";
 // Plain-ESM data file (not the .ts wrapper): next.config.mjs runs under
 // Node with no TypeScript loader (was Next.js 14.2; still .mjs on 15). See
 // src/lib/landing/legacy-redirects.ts for the typed re-export + rationale.
+import { HOSTS_S3_DATA } from "./src/lib/seguridad/buckets-s3.data.mjs";
 import { LEGACY_PRODUCT_REDIRECTS_DATA } from "./src/lib/landing/legacy-redirects.data.mjs";
 import { RUTAS_POR_CICLO_DE_VIDA_DATA } from "./src/lib/nav/rutas-por-ciclo-de-vida.data.mjs";
 import { RUTAS_UNIFICADAS_DEL_PANEL_DATA } from "./src/lib/nav/rutas-unificadas-del-panel.data.mjs";
@@ -71,6 +72,36 @@ function almacenDelAmbiente() {
   } catch {
     return [];
   }
+}
+
+/**
+ * Almacenamiento nuevo (T-0182), ADITIVO: Supabase sigue en la lista de abajo.
+ *  - CloudFront de los assets públicos, con el host de `NEXT_PUBLIC_ASSETS_HOST`
+ *    (vacío = no se agrega nada).
+ *  - S3 regional, bucket EXACTO (no `leasefy-prod-*`: el comodín cruza puntos y
+ *    los nombres de bucket son globales, así que `leasefy-prod-a.b` podría ser
+ *    de un tercero), para fotos con URL firmada (GET). Mismos buckets que
+ *    `BUCKETS_S3` de la CSP: los dos salen de `src/lib/seguridad/buckets-s3.data.mjs`.
+ *
+ * ⚠ next/image con URL firmada: el optimizador pide la URL COMPLETA y la cache
+ * se indexa por ella (query incluida). Cada firma nueva = entrada nueva, y la
+ * copia optimizada vive en `.next/cache/images` pasado el vencimiento de la
+ * firma y se sirve por `/_next/image` sin autenticación. Fotos de bucket
+ * privado con URL firmada → `<img>`/`unoptimized`; las públicas van por
+ * CloudFront (URL estable, sin query) y sí se optimizan.
+ */
+function almacenNuevo() {
+  const host = (process.env.NEXT_PUBLIC_ASSETS_HOST ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https:\/\//, "")
+    .replace(/\/$/, "");
+  return [
+    ...(host && /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(host)
+      ? [{ protocol: "https", hostname: host }]
+      : []),
+    ...HOSTS_S3_DATA.map((hostname) => ({ protocol: "https", hostname })),
+  ];
 }
 
 const nextConfig = {
@@ -171,6 +202,7 @@ const nextConfig = {
         hostname: "lh3.googleusercontent.com",
       },
       ...almacenDelAmbiente(),
+      ...almacenNuevo(),
     ],
   },
   async headers() {

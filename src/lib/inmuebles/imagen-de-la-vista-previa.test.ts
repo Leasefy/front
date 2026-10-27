@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { datosDeLaTarjeta, fotoPermitida, tamanoDelTitulo } from './imagen-de-la-vista-previa';
 
@@ -67,5 +67,23 @@ describe('fotoPermitida: la ruta es pública, sólo baja fotos del almacén', ()
     expect(fotoPermitida('https://supabase.co.evil.com/a.jpg')).toBe(false);
     expect(fotoPermitida('no es una url')).toBe(false);
     expect(fotoPermitida(null)).toBe(false);
+  });
+});
+
+describe('fotoPermitida: new storage hosts (T-0182)', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('accepts the configured CloudFront host and leasefy-prod S3 buckets, only over https', () => {
+    vi.stubEnv('NEXT_PUBLIC_ASSETS_HOST', 'd111.cloudfront.net');
+    expect(fotoPermitida('https://d111.cloudfront.net/property-images/a.jpg')).toBe(true);
+    expect(fotoPermitida('https://leasefy-prod-files.s3.us-east-2.amazonaws.com/x.jpg?X-Amz-Signature=1')).toBe(true);
+    expect(fotoPermitida('http://d111.cloudfront.net/a.jpg')).toBe(false);
+    expect(fotoPermitida('https://e222.cloudfront.net/a.jpg')).toBe(false);
+    expect(fotoPermitida('https://evil-bucket.s3.us-east-2.amazonaws.com/a.jpg')).toBe(false);
+  });
+
+  it('rejects CloudFront when the env var is not set', () => {
+    vi.stubEnv('NEXT_PUBLIC_ASSETS_HOST', '');
+    expect(fotoPermitida('https://d111.cloudfront.net/a.jpg')).toBe(false);
   });
 });

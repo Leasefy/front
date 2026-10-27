@@ -18,43 +18,6 @@ vi.mock('@/lib/auth', () => ({
   }),
 }))
 
-// Supabase mock for the realtime test (Test 6)
-type SubscribeCb = (status: string) => void
-type ChangeHandler = (payload: { new: Record<string, unknown> }) => void
-
-interface StubChannel {
-  on: ReturnType<typeof vi.fn>
-  subscribe: ReturnType<typeof vi.fn>
-  __handlers: ChangeHandler[]
-}
-
-const channels: StubChannel[] = []
-let supabaseStub: {
-  channel: ReturnType<typeof vi.fn>
-  removeChannel: ReturnType<typeof vi.fn>
-} | null = null
-
-function makeChannel(): StubChannel {
-  const ch: StubChannel = {
-    on: vi.fn(),
-    subscribe: vi.fn(),
-    __handlers: [],
-  }
-  ch.on.mockImplementation((_event: string, _opts: unknown, handler: ChangeHandler) => {
-    ch.__handlers.push(handler)
-    return ch
-  })
-  ch.subscribe.mockImplementation((cb: SubscribeCb) => {
-    cb('SUBSCRIBED')
-    return ch
-  })
-  return ch
-}
-
-vi.mock('@/lib/supabase/client', () => ({
-  getSupabase: () => supabaseStub,
-}))
-
 // ---------------------------------------------------------------------------
 // Imports under test (after mocks)
 // ---------------------------------------------------------------------------
@@ -64,21 +27,11 @@ import {
   type UsePaymentPlanApprovalOptions,
   type UsePaymentPlanApprovalResult,
 } from '../use-payment-plan-approval'
-import { usePaymentsFunnelRealtime, type CarteraPaymentEvent } from '../use-payments-funnel-realtime'
 
 const AGENT_URL = 'http://localhost:4000'
 
 beforeEach(() => {
   process.env.NEXT_PUBLIC_AGENT_URL = AGENT_URL
-  channels.length = 0
-  supabaseStub = {
-    channel: vi.fn((_name: string) => {
-      const ch = makeChannel()
-      channels.push(ch)
-      return ch
-    }),
-    removeChannel: vi.fn(),
-  }
 })
 
 afterEach(() => {
@@ -537,51 +490,6 @@ describe('usePaymentPlanApproval', () => {
     })
     expect(r).toEqual({ error: 'PERMISSION_DENIED' })
     expect(calls.some((c) => c.url.endsWith('/accept'))).toBe(false)
-    act(() => root.unmount())
-    container.remove()
-  })
-
-  it('Test 6: realtime payload triggers parent onUpdate callback with mapped row', () => {
-    const onUpdate = vi.fn()
-    const container = document.createElement('div')
-    document.body.appendChild(container)
-    const root = createRoot(container)
-
-    const Harness = () => {
-      usePaymentsFunnelRealtime({ planId: 'PLAN-1', onUpdate })
-      return null
-    }
-    act(() => {
-      root.render(<Harness />)
-    })
-
-    expect(channels.length).toBe(1)
-    const handler = channels[0].__handlers[0]
-    expect(handler).toBeDefined()
-    act(() => {
-      handler({
-        new: {
-          id: 'evt-1',
-          plan_id: 'PLAN-1',
-          status: 'approved',
-          amount: 250_000,
-          provider: 'wompi',
-          updated_at: '2026-05-27T02:00:00Z',
-        },
-      })
-    })
-
-    expect(onUpdate).toHaveBeenCalledTimes(1)
-    const received = onUpdate.mock.calls[0][0] as CarteraPaymentEvent
-    expect(received).toEqual({
-      id: 'evt-1',
-      planId: 'PLAN-1',
-      status: 'approved',
-      amount: 250_000,
-      provider: 'wompi',
-      updatedAt: '2026-05-27T02:00:00Z',
-    })
-
     act(() => root.unmount())
     container.remove()
   })

@@ -60,9 +60,6 @@ vi.mock('@/lib/hooks/cobranza/use-payment-plan-approval', () => ({
     acceptPlan: acceptPlanMock,
   }),
 }))
-vi.mock('@/lib/hooks/cobranza/use-payments-funnel-realtime', () => ({
-  usePaymentsFunnelRealtime: () => {},
-}))
 vi.mock('@/lib/context/PermissionsContext', () => ({
   usePermissionsContext: () => ({ canAccess: () => true }),
   usePermissionsContextSafe: () => ({ canAccess: () => true }),

@@ -25,6 +25,7 @@
  */
 
 import { revokeSession } from '@/lib/api/session.service'
+import { marcarCierrePropio } from '@/lib/auth/cierre-propio'
 import { getSupabase } from '@/lib/supabase/client'
 
 /** Revoca esta sesión en Supabase (mata su refresh token). */
@@ -42,5 +43,7 @@ export async function revocarEnSupabase(token: string): Promise<void> {
 
 /** Revoca en el back y en Supabase, en paralelo, sin tirar nunca. */
 export async function revocarSesion(token: string): Promise<void> {
+  // Antes de salir a la red: el evento de realtime puede llegar antes que la respuesta.
+  marcarCierrePropio()
   await Promise.all([revokeSession(token).catch(() => {}), revocarEnSupabase(token)])
 }

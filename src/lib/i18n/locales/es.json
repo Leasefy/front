@@ -7292,9 +7292,6 @@
             "cta": {
               "label": "Importar cartera"
             }
-          },
-          "liveRegion": {
-            "newTransition": "{{count}} nueva(s) transición(es) de etapa"
           }
         },
         "deudores": {

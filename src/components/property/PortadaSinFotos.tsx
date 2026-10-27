@@ -112,6 +112,21 @@ function Trazo({ dibujo }: { dibujo: Dibujo }) {
   }
 }
 
+/** La ilustración 3D de cada tipo (public/landing/img), la misma de la franja de la home. */
+export function ilustracionDe(tipo: string | null | undefined): string {
+  switch ((tipo ?? '').toUpperCase()) {
+    case 'HOUSE':
+      return '/landing/img/fachada-voltaje.webp';
+    case 'COMMERCIAL':
+    case 'WAREHOUSE':
+      return '/landing/img/local-voltaje.webp';
+    case 'OFFICE':
+      return '/landing/img/torre-voltaje.webp';
+    default:
+      return '/landing/img/edificio-voltaje.webp';
+  }
+}
+
 export function PortadaSinFotos({
   tipo,
   semilla,
@@ -143,29 +158,27 @@ export function PortadaSinFotos({
       <span
         aria-hidden
         className="absolute inset-0 dark:opacity-20"
-        style={{ background: `linear-gradient(160deg, ${arriba} 0%, ${abajo} 100%)` }}
+        style={{ background: 'linear-gradient(180deg, #EEEBE5 0%, #E2DED6 100%)' }}
       />
       <span
         aria-hidden
         className="absolute -right-[12%] -top-[22%] aspect-square w-[46%] rounded-full bg-white/45 blur-2xl dark:bg-white/5"
       />
-      <svg
+      {/* Nico, 27-10-2026: «agregar las ilustraciones 3D que tenemos y no esas fotos tan feas»: la ilustración de su
+          tipo, la misma de la franja de la home. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={ilustracionDe(tipo)}
+        data-ilustracion=""
+        alt=""
         aria-hidden
-        viewBox="0 0 200 124"
+        loading="lazy"
+        decoding="async"
         className={cn(
-          'absolute inset-x-0 mx-auto w-auto max-w-[88%] text-[var(--trazo)] opacity-70 dark:text-fg-subtle dark:opacity-60',
-          espacioAbajo ? 'bottom-[26%] h-[44%]' : 'bottom-0 h-[62%]',
+          'absolute inset-x-0 mx-auto w-auto object-contain drop-shadow-[0_18px_24px_rgba(18,17,16,0.18)]',
+          compacta ? 'top-1/2 h-[70%] -translate-y-1/2' : espacioAbajo ? 'bottom-[28%] h-[46%]' : 'top-1/2 h-[58%] -translate-y-[58%]',
         )}
-        style={{ ['--trazo' as string]: trazo }}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.4}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <Trazo dibujo={dibujo} />
-        <path d="M8 120.5h184" strokeWidth={1.2} opacity={0.6} />
-      </svg>
+      />
       {compacta || sinLeyenda ? (
         <span className="sr-only">Sin fotos</span>
       ) : (

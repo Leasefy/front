@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { guardarReciente, leerRecientes } from './busquedas-recientes';
+import { alCambiarLasRecientes, escribirRecientes, guardarReciente, leerRecientes, sinLaBusqueda } from './busquedas-recientes';
 
 afterEach(() => {
   window.localStorage.clear();
@@ -45,5 +45,48 @@ describe('Tus búsquedas', () => {
     });
     expect(leerRecientes()).toEqual([]);
     expect(() => guardarReciente('q=a', 'A')).not.toThrow();
+  });
+});
+
+describe('Borrar búsquedas (Nico, 27-10-2026)', () => {
+  it('se borra una y quedan las demás, en su orden', () => {
+    guardarReciente('q=a', 'A');
+    guardarReciente('q=b', 'B');
+    guardarReciente('q=c', 'C');
+    escribirRecientes(sinLaBusqueda(leerRecientes(), 'q=b'));
+    expect(leerRecientes().map((r) => r.qs)).toEqual(['q=c', 'q=a']);
+  });
+
+  it('borrar todas deja la lista vacía, y «Deshacer» las devuelve tal cual', () => {
+    guardarReciente('q=a', 'A');
+    guardarReciente('q=b', 'B');
+    const antes = leerRecientes();
+    escribirRecientes([]);
+    expect(leerRecientes()).toEqual([]);
+    escribirRecientes(antes);
+    expect(leerRecientes()).toEqual(antes);
+  });
+
+  it('avisa a quien muestra la lista, con la lista que quedó', () => {
+    guardarReciente('q=a', 'A');
+    guardarReciente('q=b', 'B');
+    const oidas: string[][] = [];
+    const dejar = alCambiarLasRecientes((l) => oidas.push(l.map((r) => r.qs)));
+    escribirRecientes(sinLaBusqueda(leerRecientes(), 'q=a'));
+    dejar();
+    escribirRecientes([]);
+    expect(oidas).toEqual([['q=b']]);
+  });
+
+  it('sin almacenamiento igual avisa: se borra en la página', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('bloqueado');
+    });
+    const oidas: number[] = [];
+    const dejar = alCambiarLasRecientes((l) => oidas.push(l.length));
+    const lista = [{ qs: 'q=a', titulo: 'A', cuando: 1 }];
+    expect(escribirRecientes(lista)).toEqual(lista);
+    dejar();
+    expect(oidas).toEqual([1]);
   });
 });

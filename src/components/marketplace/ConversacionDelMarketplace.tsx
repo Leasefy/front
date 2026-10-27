@@ -29,7 +29,7 @@ import {
 } from '@/lib/marketplace/busqueda';
 import { conNombres } from '@/lib/marketplace/con-nombres';
 import { afinarCon } from '@/lib/marketplace/afinar';
-import { guardarReciente, leerRecientes, type BusquedaReciente } from '@/lib/marketplace/busquedas-recientes';
+import { alCambiarLasRecientes, guardarReciente, leerRecientes, type BusquedaReciente } from '@/lib/marketplace/busquedas-recientes';
 import { IDEAS_PARA_AFINAR } from '@/lib/marketplace/ideas-para-afinar';
 import { useTarjetasDeInmobiliarias } from '@/lib/marketplace/use-inmobiliarias';
 import { videoDelInmueble } from '@/lib/marketplace/video';
@@ -606,6 +606,8 @@ export function ConversacionDelMarketplace() {
   const ultimo = turnos[turnos.length - 1];
   const [recientes, setRecientes] = useState<BusquedaReciente[]>([]);
   useEffect(() => setRecientes(leerRecientes()), []);
+  // Las que se borran desde el lado (o vuelven con «Deshacer»).
+  useEffect(() => alCambiarLasRecientes(setRecientes), []);
 
   // Si la dirección cambia por fuera (una búsqueda del lado, el botón atrás),
   // es otra conversación.

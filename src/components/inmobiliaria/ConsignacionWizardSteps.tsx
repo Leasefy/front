@@ -1,6 +1,7 @@
 'use client';
 
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { useState, useMemo } from 'react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
@@ -26,6 +27,7 @@ import {
   Tree,
   WarningCircle,
   ImageSquare,
+  Megaphone,
 } from '@phosphor-icons/react';
 import type { Icon as IconoDePhosphor } from '@phosphor-icons/react';
 import { llevaHabitaciones, descripcionValida, DESCRIPCION_MINIMA, DESCRIPCION_MAXIMA } from '@/lib/inmuebles/reglas-del-paso-del-inmueble';
@@ -62,6 +64,14 @@ import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDe
 // ============================================================================
 
 export interface WizardFormData extends ConsignacionFormData {
+  /**
+   * 🔴 Publicar SIN mandato (Juan, 27-10-2026: «cuando se crea la propiedad está
+   * pidiendo contrato de mandato, pero eso ahí no es necesario; eso iría cuando
+   * ya se vaya a crear contrato; el 90 % de las inmobiliarias promocionan sin
+   * mandato»). Sin propietario ni comisión: el inmueble queda «sin consignar» y
+   * el mandato se agrega después (Nuevo inmueble → «Ya está en mi portafolio»).
+   */
+  sinMandato?: boolean;
   newPropietarioData?: PropietarioFormData;
   inventoryItems: InventoryItem[];
   inventoryNotes: string;
@@ -250,6 +260,13 @@ export function StepSelectPropietario({
         </p>
       </div>
 
+      <PublicarSinMandato
+        activo={formData.sinMandato === true}
+        onCambiar={(sinMandato) => updateFormData({ sinMandato })}
+      />
+
+      {formData.sinMandato ? null : (
+      <>
       {/* Selección MÚLTIPLE: un inmueble puede tener más de un dueño. Antes
           aquí vivía `PropietarioSelector`, que era de uno solo —tocar otro
           reemplazaba— aunque el resto del circuito (tipos, payload y back) ya
@@ -292,6 +309,57 @@ export function StepSelectPropietario({
       <div data-testid="wizard-owner-error-slot">
         <ErrorDelCampo id="wizard-owner-error" mensaje={ownerServerError?.message} />
       </div>
+      </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * «Publicar sin mandato» (Juan, 27-10-2026: «el 90 % de las inmobiliarias
+ * promocionan sin mandato»). Arriba del paso del propietario: quien sólo va a
+ * promocionar lo publica ya; el propietario y la comisión van cuando se arma el
+ * contrato. Elegido, el selector de propietarios se va y se puede volver.
+ */
+export function PublicarSinMandato({ activo, onCambiar }: { activo: boolean; onCambiar: (sinMandato: boolean) => void }) {
+  if (activo) {
+    return (
+      <div
+        className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary-soft p-4 sm:flex-row sm:items-center"
+        data-testid="sin-mandato-elegido"
+      >
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface text-primary">
+          <Megaphone className="h-5 w-5" weight="duotone" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-fg">Lo publicas sin mandato</p>
+          <p className="text-body-sm text-fg-muted">
+            Sale en tu portafolio y en el marketplace sin propietario ni comisión. El mandato lo agregas cuando vayas a hacer el contrato.
+          </p>
+        </div>
+        <Button type="button" variant="outline" size="sm" hideArrow onClick={() => onCambiar(false)} data-testid="con-mandato">
+          Mejor elijo el propietario
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div
+      className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center"
+      data-testid="ofrecer-sin-mandato"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+        <Megaphone className="h-5 w-5" weight="duotone" aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-fg">¿Sólo lo vas a promocionar?</p>
+        <p className="text-body-sm text-fg-muted">
+          Publícalo sin mandato: el propietario y la comisión los agregas cuando vayas a hacer el contrato.
+        </p>
+      </div>
+      <Button type="button" size="sm" hideArrow onClick={() => onCambiar(true)} data-testid="publicar-sin-mandato">
+        Publicar sin mandato
+      </Button>
     </div>
   );
 }
@@ -1239,6 +1307,15 @@ export function StepConfirmation({
 
       <div className="space-y-4">
         {/* Propietario Section */}
+        {formData.sinMandato ? (
+          <div className="p-4 rounded-lg border border-border bg-surface" data-testid="confirmar-sin-mandato">
+            <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.ownerSection')} step={1} />
+            <p className="font-medium text-fg">Sin mandato por ahora</p>
+            <p className="text-sm text-fg-muted">
+              El propietario y la comisión los agregas cuando vayas a hacer el contrato.
+            </p>
+          </div>
+        ) : (
         <div className="p-4 rounded-lg border border-border bg-surface">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.ownerSection')} step={1} />
           <div className="flex items-center gap-3">
@@ -1269,6 +1346,7 @@ export function StepConfirmation({
             </div>
           </div>
         </div>
+        )}
 
         {/* Property Section */}
         <div className="p-4 rounded-lg border border-border bg-surface">
@@ -1317,7 +1395,7 @@ export function StepConfirmation({
         {/* Terms Section — contract-addendum-2.md §A: a SALE listing now
             carries a REDUCED mandate (propietario + consignedAt + sale
             commission). No canon, no minimumTerm, no adminFee. */}
-        {isSaleListing ? (
+        {formData.sinMandato ? null : isSaleListing ? (
           <div className="p-4 rounded-lg border border-border bg-surface">
             <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
             <div>

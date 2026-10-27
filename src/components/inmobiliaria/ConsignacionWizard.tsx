@@ -248,6 +248,8 @@ export function ConsignacionWizard({
   const isStepValid = useMemo(() => {
     switch (currentStep) {
       case 1:
+        // Sin mandato (Juan, 27-10): sin propietario, se sigue.
+        if (formData.sinMandato) return true;
         // Must have selected or created a propietario
         // El principal, y —con más de un dueño— un reparto que cierre. Sin
         // esto se podría avanzar con los copropietarios llevándose el 110 %.
@@ -294,7 +296,7 @@ export function ConsignacionWizard({
         // Confirmation step - agenteId is never required: an unassigned
         // consignment defaults to the profile that created it.
         return Boolean(
-          formData.propietarioId &&
+          (formData.sinMandato || formData.propietarioId) &&
           formData.propertyTitle &&
           formData.propertyAddress &&
           formData.propertyCity &&
@@ -326,17 +328,21 @@ export function ConsignacionWizard({
   // agent-role skip remains here.
   const isSaleListing = formData.listingType === 'sale';
 
+  // Sin mandato no hay comisión que pactar: el paso 3 se salta.
+  const sinMandato = formData.sinMandato === true;
   const getNextStep = useCallback((step: number) => {
     let next = step + 1;
+    if (sinMandato && next === 3) next = 4;
     if (isAgentRole && next === 4) next = 5;
     return next;
-  }, [isAgentRole]);
+  }, [isAgentRole, sinMandato]);
 
   const getPrevStep = useCallback((step: number) => {
     let prev = step - 1;
     if (isAgentRole && prev === 4) prev = 3;
+    if (sinMandato && prev === 3) prev = 2;
     return prev;
-  }, [isAgentRole]);
+  }, [isAgentRole, sinMandato]);
 
   // ── Step 1 → 2: persist the propietario on "Siguiente" ────────────────────
   const [isPersistingOwner, setIsPersistingOwner] = useState(false);
@@ -419,13 +425,13 @@ export function ConsignacionWizard({
   const goToNextStep = useCallback(async () => {
     if (currentStep >= 6 || !isStepValid || isPersistingOwner) return;
 
-    if (currentStep === 1) {
+    if (currentStep === 1 && !formData.sinMandato) {
       const ok = await persistOwnerIfNeeded();
       if (!ok) return; // stay on step 1, error is surfaced by persistOwnerIfNeeded
     }
 
     setCurrentStep(getNextStep(currentStep));
-  }, [currentStep, isStepValid, isPersistingOwner, persistOwnerIfNeeded, getNextStep]);
+  }, [currentStep, isStepValid, isPersistingOwner, persistOwnerIfNeeded, getNextStep, formData.sinMandato]);
 
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
@@ -721,6 +727,8 @@ export function ConsignacionWizard({
       // dentro de la misma transacción del create() de la propiedad.
       const agenteUserId = selectedAgente?.userId ?? user?.id;
       let consignacionCreada: { id: string } | null = null;
+      // Sin mandato (Juan, 27-10): sólo el inmueble; el mandato va con el contrato.
+      if (formData.sinMandato) hechos.consignacion = true;
       if (!hechos.consignacion) {
         try {
           // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
@@ -831,11 +839,16 @@ export function ConsignacionWizard({
         // inmueble nace DRAFT (`POST /properties`), así que basta con no
         // publicarlo; lo que falta es DECIRLO, para que nadie lo busque en el
         // portal.
-        toast.success(t('inmobiliaria.consignaciones.wizard.toasts.draftSavedTitle'), {
-          description: t('inmobiliaria.consignaciones.wizard.toasts.draftSavedDesc', {
-            title: formData.propertyTitle || '',
-          }),
-        });
+        toast.success(
+          formData.sinMandato
+            ? 'Inmueble guardado como borrador'
+            : t('inmobiliaria.consignaciones.wizard.toasts.draftSavedTitle'),
+          {
+            description: t('inmobiliaria.consignaciones.wizard.toasts.draftSavedDesc', {
+              title: formData.propertyTitle || '',
+            }),
+          },
+        );
         router.push(destinoAlSalir);
         reiniciarCreacion();
         return;
@@ -873,11 +886,17 @@ export function ConsignacionWizard({
         return;
       }
 
-      toast.success(t('inmobiliaria.consignaciones.wizard.toasts.successTitle'), {
-        description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', {
-          title: formData.propertyTitle || '',
-        }),
-      });
+      if (formData.sinMandato) {
+        toast.success('Inmueble publicado', {
+          description: `«${formData.propertyTitle || ''}» ya está en tu portafolio y en el marketplace. El mandato lo agregas cuando vayas a hacer el contrato.`,
+        });
+      } else {
+        toast.success(t('inmobiliaria.consignaciones.wizard.toasts.successTitle'), {
+          description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', {
+            title: formData.propertyTitle || '',
+          }),
+        });
+      }
 
       router.push(destinoAlSalir);
       // Terminó bien: la próxima creación (otro inmueble) lleva clave nueva.

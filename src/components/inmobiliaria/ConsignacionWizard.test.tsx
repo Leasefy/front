@@ -1346,3 +1346,36 @@ describe('<ConsignacionWizard> — el inventario del paso 5 se guarda', () => {
     expect(pushMock).toHaveBeenCalled()
   })
 })
+
+
+describe('🔴 publicar sin mandato (Juan, 27-10: «el 90 % de las inmobiliarias promocionan sin mandato»)', () => {
+  afterEach(() => {
+    stepOneOverridesHolder.overrides = {}
+  })
+
+  it('sin propietario: se salta la comisión, crea y publica el inmueble y NO crea consignación', async () => {
+    stepOneOverridesHolder.overrides = { sinMandato: true, propietarioId: '' }
+    await renderWizard(AGENTE_LIST)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    expect(container.querySelector('[data-testid="step-2"]')).not.toBeNull()
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 4 (sin comisión)
+    expect(container.querySelector('[data-testid="step-3"]')).toBeNull()
+    expect(container.querySelector('[data-testid="step-4"]')).not.toBeNull()
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await enviar()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(consignacionesApiMock.create).not.toHaveBeenCalled()
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+  })
+
+  it('volver desde el agente salta la comisión hacia atrás', async () => {
+    stepOneOverridesHolder.overrides = { sinMandato: true, propietarioId: '' }
+    await renderWizard(AGENTE_LIST)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 4
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.previous')) // 4 -> 2
+    expect(container.querySelector('[data-testid="step-2"]')).not.toBeNull()
+  })
+})

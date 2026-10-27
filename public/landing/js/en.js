@@ -1138,6 +1138,7 @@ window.LF_EN = {
 "inmuebles administrados ¦ Revisando…": "properties under management ¦ Reviewing…",
 "inmuebles por persona": "properties per person",
 "inmuebles publicados": "listed properties",
+"Los inmuebles publicados están en el marketplace": "Listed properties are on the marketplace",
 "inmuebles, mismo equipo": "properties, same team",
 "leasefy.co/para/ ¦ inmobiliarias": "leasefy.co/para/ ¦ inmobiliarias",
 "llegó en octubre, cuota por cuota y contra el extracto.": "came in during October, installment by installment, against the statement.",

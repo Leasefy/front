@@ -30,6 +30,15 @@
     ".mk-n{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;margin-left:7px;padding:0 6px;border-radius:7px;background:var(--arena);font-family:var(--m);font-size:11px;font-weight:500;color:var(--tinta);letter-spacing:.02em;corner-shape:superellipse(1.5)}",
     ".mk-n[hidden]{display:none}",
     ".vit-track.vacia{opacity:0}.vit-track{transition:opacity .6s ease}",
+    /* mientras llegan (o si el servidor tarda): tarjetas de espera, nunca la franja vacía (Nico 27-10) */
+    ".vi-espera{pointer-events:none}.vi-espera .vi-foto{background:var(--arena,#F3F1ED)}",
+    ".vi-espera b,.vi-espera i{display:block;height:11px;border-radius:6px;background:var(--piedra,#E7E3DC)}",
+    ".vi-espera b{width:112px;height:13px;margin-bottom:9px}.vi-espera i{width:150px}",
+    ".vi-espera{animation:lf-espera 1.4s ease-in-out infinite}",
+    "@keyframes lf-espera{50%{opacity:.55}}",
+    "@media (prefers-reduced-motion:reduce){.vi-espera{animation:none}}",
+    ".vit-pista.sin-datos .vit-track{display:none}",
+    ".vit-pista.sin-datos::before{content:attr(data-aviso);margin:auto 0;padding-left:6%;font-size:14px;color:var(--ceniza,#706B64)}",
     ".vi-foto img.foto{width:100%!important;height:100%!important;object-fit:cover;border-radius:inherit}",
     ".lf-pub{position:fixed;inset:0;margin:auto;height:fit-content;width:min(480px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:28px;border:0;border-radius:28px;background:var(--sup,#fff);color:var(--tinta);box-shadow:0 30px 80px -20px rgba(20,22,40,.35),0 0 0 1px var(--filete);corner-shape:superellipse(1.5);overflow:auto}",
     ".lf-pub::backdrop{background:rgba(16,18,32,.42);backdrop-filter:blur(3px)}",
@@ -56,13 +65,21 @@
   document.head.appendChild(estilo);
 
   /* 2 ── lo publicado; en el artefacto (sin el back) llega una muestra declarada como tal */
+  /* Nico 27-10 («algo pasa acá que no cargan los inmuebles»): si el servidor tarda o se cae un momento, el primer
+     pedido fallaba y la franja quedaba vacía para siempre. Ahora reintenta (1,5 · 4 · 9 · 20 s) antes de rendirse. */
+  var ESPERAS = [1500, 4000, 9000, 20000];
+  var pedirLaVitrina = function (intento) {
+    return fetch("/api/vitrina-de-la-home", { credentials: "omit" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (v) {
+        if ((v && v.inmuebles) || intento >= ESPERAS.length) return v;
+        return new Promise(function (listo) { setTimeout(listo, ESPERAS[intento]); }).then(function () { return pedirLaVitrina(intento + 1); });
+      });
+  };
   var pedido = window.LF_VITRINA_DE_MUESTRA
     ? Promise.resolve(window.LF_VITRINA_DE_MUESTRA)
-    : (window.fetch
-      ? fetch("/api/vitrina-de-la-home", { credentials: "omit" })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .catch(function () { return null; })
-      : Promise.resolve(null));
+    : (window.fetch ? pedirLaVitrina(0) : Promise.resolve(null));
 
   function cuandoEsteLista(fn) {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
@@ -95,8 +112,25 @@
     }
 
     /* 2 ── la franja, el número y las fotos del aviso */
+    var pistaDeLaFranja = document.getElementById("vitTrack");
+    if (pistaDeLaFranja && !pistaDeLaFranja.children.length) {
+      for (var e = 0; e < 8; e++) {
+        var espera = crear("span", "vi vi-espera");
+        espera.setAttribute("aria-hidden", "true");
+        var cuerpo = crear("span");
+        cuerpo.appendChild(crear("b")); cuerpo.appendChild(crear("i"));
+        espera.appendChild(crear("span", "vi-foto")); espera.appendChild(cuerpo);
+        pistaDeLaFranja.appendChild(espera);
+      }
+    }
+    var sinInmuebles = function () {
+      if (!pistaDeLaFranja || !pistaDeLaFranja.parentNode) return;
+      pistaDeLaFranja.textContent = "";
+      pistaDeLaFranja.parentNode.setAttribute("data-aviso", LF.t("Los inmuebles publicados están en el marketplace"));
+      pistaDeLaFranja.parentNode.classList.add("sin-datos");
+    };
     pedido.then(function (v) {
-      if (!v) return;
+      if (!v) { sinInmuebles(); return; }
       var total = Number(v.total) || 0;
       if (total > 0) {
         Array.prototype.forEach.call(document.querySelectorAll("[data-mk-total]"), function (b) {
@@ -136,7 +170,7 @@
         /* dos vueltas: la cinta corre la mitad y vuelve a empezar sin salto */
         for (var k = 0; k < 2; k++) lista.forEach(function (i) { pista.appendChild(tarjeta(i, k > 0)); });
         requestAnimationFrame(function () { pista.classList.remove("vacia"); });
-      }
+      } else if (pista) sinInmuebles();
       var fotosDelAviso = document.querySelectorAll(".aviso-fotos img");
       lista.filter(function (i) { return !i.sinFoto; }).slice(0, fotosDelAviso.length).forEach(function (i, n) { fotosDelAviso[n].src = i.foto; });
     });

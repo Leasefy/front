@@ -21,7 +21,7 @@ import {
 import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
 import { ComoTeActivas } from './ComoTeActivas';
 import { moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
-import { demoDeLaInmobiliaria } from '@/lib/venta/demos-del-panel';
+import { demoDeLaInmobiliaria, demoDelAgente } from '@/lib/venta/demos-del-panel';
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
 import {
   INICIO_DEL_MODO_COMERCIAL,
@@ -67,7 +67,7 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
   }
   return (
     <>
-      {abiertaEnModoComercial(pathname) ? children : <ParteCerrada ruta={pathname} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} />}
+      {abiertaEnModoComercial(pathname) ? children : <ParteCerrada ruta={pathname} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} esAgente={agency?.cuentaDeAgente === true} />}
       <BienvenidaComercial agencyId={agency?.id ?? null} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} />
     </>
   );
@@ -78,11 +78,12 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
  * el servicio. Qué hace, la demo y nuestro WhatsApp; «¿Ya eres cliente?» lleva a
  * completar el registro (NIT, razón social, segundo factor).
  */
-function ParteCerrada({ ruta, nombre, empresa }: { ruta: string; nombre: string | null; empresa: string | null }) {
+function ParteCerrada({ ruta, nombre, empresa, esAgente = false }: { ruta: string; nombre: string | null; empresa: string | null; esAgente?: boolean }) {
   const modulo = moduloDeLaRuta(ruta);
   return (
     <ModuloConDemo
-      demo={demoDeLaInmobiliaria(modulo?.key)}
+      // 27-10-2026 (Nico y Juan): la cuenta de un agente ve SU publicidad («administra tus propiedades tú solo»).
+      demo={esAgente ? demoDelAgente(modulo?.key) : demoDeLaInmobiliaria(modulo?.key)}
       quien="inmobiliaria"
       nombre={nombre}
       empresa={empresa}

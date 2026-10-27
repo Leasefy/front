@@ -168,6 +168,8 @@ export interface Agency {
    * back anterior = como siempre.
    */
   modoComercial?: boolean
+  /** 27-10-2026: la «inmobiliaria» es la cuenta de un agente inmobiliario (su demo y sus pasos son otros). */
+  cuentaDeAgente?: boolean;
   /**
    * Llegó por el registro rápido del marketplace (Nico, 20-10-2026:
    * «márcalas»); sigue en `true` después de activarla. Ausente en un back

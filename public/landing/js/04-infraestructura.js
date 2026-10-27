@@ -5,6 +5,9 @@
   var $ = LF.$, $$ = LF.$$, MOV = LF.MOV, root = document.documentElement;
   var DESK = "(min-width: 900px)";
   LF.desk = function () { return window.matchMedia(DESK).matches; };
+  /* La holgura para cambiar de paso con el scroll (Nico 27-10: «la imagen comienza a rebotar»): con el dedo,
+     hasta 56 px (7 % de la pantalla); con mouse o trackpad, 20 px. */
+  LF.holgura = function () { return window.matchMedia("(hover: none) and (pointer: coarse)").matches ? Math.min(56, innerHeight * .07) : 20; };
 
   /* motivos, esferas y orbes (también sin movimiento) */
   $$("[data-motivo]").forEach(LF.motivo);

@@ -15,6 +15,7 @@
 import { NextResponse } from 'next/server'
 
 import { esIdentificadorSeguro } from '@/lib/utils/identificador-seguro'
+import { cabecerasDeLaCuentaQueLlegan } from '@/lib/payments/cabeceras-de-la-cuenta'
 import { computeWompiIntegrity } from '@/lib/payments/wompi-integrity'
 
 export const runtime = 'nodejs'
@@ -81,7 +82,13 @@ export async function POST(req: Request) {
 
   const res = await fetch(`${BACKEND_URL}/portal/pago-en-linea/varios`, {
     method: 'POST',
-    headers: { Authorization: authorization, 'Content-Type': 'application/json' },
+    headers: {
+      Authorization: authorization,
+      'Content-Type': 'application/json',
+      // «Cambiar de cuenta»: el back decide el papel con estas cabeceras; sin ellas una persona
+      // que además es de una inmobiliaria no pasa el guard de inquilino.
+      ...cabecerasDeLaCuentaQueLlegan(req),
+    },
     body: JSON.stringify({ arriendos: leido.partes }),
   })
   if (!res.ok) {

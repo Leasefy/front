@@ -33,6 +33,7 @@ import { Presence } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { cabecerasComoInquilino } from '@/lib/auth/cuenta-activa';
 import { getAccessToken, type ApiError } from '@/lib/api/client';
 import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 import { buildWompiCheckoutUrl, type WompiRentSession } from '@/lib/payments/wompi-rent-session';
@@ -107,7 +108,7 @@ export function PagarCuota({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasComoInquilino(),
         },
         // SÓLO el identificador: nunca un monto (lo resuelve la ruta).
         body: JSON.stringify({ planId, cuotaNumber: cuota.number }),

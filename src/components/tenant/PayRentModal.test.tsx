@@ -10,6 +10,7 @@
  */
 
 import * as React from 'react'
+import { fijarCuentasDeLaSesion } from '@/lib/auth/cuenta-activa'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
@@ -180,6 +181,7 @@ describe('<PayRentModal> — Wompi hosted checkout redirect', () => {
 
   it('POSTs only { leaseId } (never an amount) with the tenant Bearer token, then redirects to the built Wompi URL', async () => {
     getPaymentInfoMock.mockResolvedValue(NONE_INFO)
+    fijarCuentasDeLaSesion('u-1', { rolDeRegistro: 'TENANT', inquilino: true, propietario: false, inmobiliarias: [{ id: 'alfa', nombre: 'Alfa', rol: 'ADMIN', nombreEnLaInmobiliaria: null }] })
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -211,6 +213,8 @@ describe('<PayRentModal> — Wompi hosted checkout redirect', () => {
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ leaseId: 'lease-1' })
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer tenant-jwt')
+    expect((init.headers as Record<string, string>)['x-cuenta']).toBe('inquilino')
+    fijarCuentasDeLaSesion(null, null)
 
     expect(window.location.href).toContain('https://checkout.wompi.co/p/?')
     expect(window.location.href).toContain('signature:integrity=abc123')

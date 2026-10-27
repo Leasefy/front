@@ -59,6 +59,7 @@ import { computeWompiIntegrity } from '@/lib/payments/wompi-integrity'
 import { aCentavosWompi } from '@/lib/plata/plata'
 import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types'
 import { acuerdoEstaCerrado } from '@/lib/types/tenant-case'
+import { cabecerasDeLaCuentaQueLlegan } from '@/lib/payments/cabeceras-de-la-cuenta'
 
 export const runtime = 'nodejs'
 
@@ -216,7 +217,7 @@ export async function POST(req: Request) {
 
   // --- Resolve the authoritative cuota amount server-side from the agent record ---
   const planRes = await fetch(`${BACKEND_URL}/cartera/payment-plans/${planId}`, {
-    headers: { Authorization: authorization, 'Content-Type': 'application/json' },
+    headers: { Authorization: authorization, 'Content-Type': 'application/json', ...cabecerasDeLaCuentaQueLlegan(req) },
   })
 
   if (!planRes.ok) {

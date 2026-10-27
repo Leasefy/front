@@ -22,6 +22,9 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ formatCurrency: (n: number) => `$ ${Math.round(n).toLocaleString('es-CO')}`, locale: 'es', t: (k: string) => k }),
 }));
 vi.mock('@/lib/api/client', () => ({ getAccessToken: () => 'token-de-prueba' }));
+vi.mock('@/lib/auth/cuenta-activa', () => ({
+  cabecerasComoInquilino: () => ({ 'x-cuenta': 'inquilino', 'x-inmobiliaria': 'alfa' }),
+}));
 
 import { PagarTusArriendos } from './PagarTusArriendos';
 import type { ArriendoQueSePuedePagar } from '@/lib/api/pago-en-linea.service';
@@ -106,6 +109,23 @@ describe('PagarTusArriendos', () => {
         { leaseId: oficina.leaseId, cuotas: 1 },
         { leaseId: casa.leaseId, cuotas: 1 },
       ],
+    });
+  });
+
+  it('🔴 el pago lleva la cuenta de inquilino (x-cuenta): quien también es inmobiliaria no recibe 403', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ message: 'para la prueba' }), { status: 409 }));
+    vi.stubGlobal('fetch', fetch);
+    const c = pintar([oficina]);
+    click(casillaDe(c, oficina.leaseId));
+    click(c.querySelector('[data-testid="pagar"]'));
+    await act(async () => {
+      (c.querySelector('[data-testid="ir-a-wompi"]') as HTMLElement).click();
+    });
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.headers).toMatchObject({
+      Authorization: 'Bearer token-de-prueba',
+      'x-cuenta': 'inquilino',
+      'x-inmobiliaria': 'alfa',
     });
   });
 

@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server'
 
 import { esIdentificadorSeguro } from '@/lib/utils/identificador-seguro'
 import { computeWompiIntegrity } from '@/lib/payments/wompi-integrity'
+import { cabecerasDeLaCuentaQueLlegan } from '@/lib/payments/cabeceras-de-la-cuenta'
 
 export const runtime = 'nodejs'
 
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
 
   const res = await fetch(`${BACKEND_URL}/portal/pago-en-linea/arriendos/${leaseId}`, {
     method: 'POST',
-    headers: { Authorization: authorization, 'Content-Type': 'application/json' },
+    headers: { Authorization: authorization, 'Content-Type': 'application/json', ...cabecerasDeLaCuentaQueLlegan(req) },
     body: JSON.stringify({ cuotas }),
   })
   if (!res.ok) {

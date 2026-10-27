@@ -23,6 +23,7 @@ import { CrossFade, MonoLabel } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { leasesApi } from '@/lib/api/leases.service';
+import { cabecerasComoInquilino } from '@/lib/auth/cuenta-activa';
 import { getAccessToken, type ApiError } from '@/lib/api/client';
 import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 import {
@@ -165,7 +166,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasComoInquilino(),
         },
         body: JSON.stringify({ leaseId }), // ONLY leaseId — nunca un amount (anti-tamper)
       });

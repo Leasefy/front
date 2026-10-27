@@ -35,6 +35,7 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ formatCurrency: (n: number) => `$ ${Math.round(n).toLocaleString('es-CO')}`, locale: 'es', t: (k: string) => k }),
 }));
 
+import { fijarCuentasDeLaSesion } from '@/lib/auth/cuenta-activa';
 import { PagarLoVencido, mesEnPalabras, diaEnPalabras } from './PagarLoVencido';
 import { totalDeLasMasViejas, type LoQueSePuedePagar } from '@/lib/api/pago-en-linea.service';
 
@@ -84,6 +85,19 @@ describe('PagarLoVencido', () => {
     render(<PagarLoVencido leaseId="l-1" datos={datos({ ultimoRechazo: { solicitudId: 's', valorCop: 1_000, motivo: null } })} />);
     expect(screen.getByTestId('pago-rechazado').textContent).toContain('puedes intentarlo de nuevo');
     expect((screen.getByTestId('pagar') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('🔴 el pago lleva la cuenta de inquilino (x-cuenta): quien también es inmobiliaria no recibe 403', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ message: 'x' }), { status: 409 }));
+    vi.stubGlobal('fetch', fetchMock);
+    fijarCuentasDeLaSesion('u-1', { rolDeRegistro: 'TENANT', inquilino: true, propietario: false, inmobiliarias: [{ id: 'alfa', nombre: 'Alfa', rol: 'ADMIN', nombreEnLaInmobiliaria: null }] });
+    render(<PagarLoVencido leaseId="l-1" datos={datos()} />);
+    fireEvent.click(screen.getByTestId('pagar'));
+    await act(async () => { screen.getByTestId('ir-a-wompi').click(); });
+    fijarCuentasDeLaSesion(null, null);
+    vi.unstubAllGlobals();
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>)['x-cuenta']).toBe('inquilino');
   });
 
   it('el total y los meses, en palabras y al centavo', () => {

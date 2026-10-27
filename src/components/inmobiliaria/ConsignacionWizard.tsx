@@ -439,6 +439,11 @@ export function ConsignacionWizard({
     }
   }, [currentStep, getPrevStep]);
 
+  const [pasoMasLejano, setPasoMasLejano] = useState(1);
+  useEffect(() => {
+    setPasoMasLejano((m) => Math.max(m, currentStep));
+  }, [currentStep]);
+
   const goToStep = useCallback((step: number) => {
     if (step >= 1 && step <= 6) {
       setCurrentStep(step);
@@ -997,9 +1002,13 @@ export function ConsignacionWizard({
   };
 
   // Calculate completed steps
+  // Juan y Nico, 27-10-2026 («no está dejando mover entre pasos que ya fueron llenados»): se recuerda hasta qué
+  // paso llegó y se puede volver a cualquiera de esos, también hacia adelante. Desde el paso 1 sigue siendo con
+  // «Siguiente» (ahí se guarda el propietario nuevo) y nunca con el paso actual incompleto.
   const getStepStatus = (stepId: number) => {
     if (stepId < currentStep) return 'completed';
     if (stepId === currentStep) return 'current';
+    if (stepId <= pasoMasLejano && currentStep !== 1 && isStepValid) return 'completed';
     return 'upcoming';
   };
 

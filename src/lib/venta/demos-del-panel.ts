@@ -69,7 +69,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     capturas: [cap('ret-tablero', 'Tablero de retención')],
   },
   contratos: {
-    titulo: 'Contratos que se firman solos',
+    // Nico, 27-10-2026: «aquí es "Administra tus contratos de arrendamiento"».
+    titulo: 'Administra tus contratos de arrendamiento',
     promesa: 'Plantillas legales, firma electrónica y renovaciones con el IPC.',
     puntos: ['Firma electrónica con código', 'Renovación con IPC', 'Todo el contrato en un lugar'],
     capturas: [cap('erp-renovaciones', 'Renovaciones de contratos'), TABLERO],

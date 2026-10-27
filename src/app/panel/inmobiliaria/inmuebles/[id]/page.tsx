@@ -15,7 +15,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useContext } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
@@ -31,6 +31,10 @@ import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
+import { AuthContext } from '@/lib/auth/auth-context';
+import { enModoComercial } from '@/lib/nav/modo-comercial';
+import { VideoDelInmueble } from '@/components/inmobiliaria/ficha/VideoDelInmueble';
+import { ObservacionesInternas } from '@/components/inmobiliaria/ficha/ObservacionesInternas';
 import { PublicadoEnElMarketplace } from '@/components/inmobiliaria/marketplace/PublicadoEnElMarketplace';
 import { fichaDelInmueble } from '@/lib/inmuebles/ficha-para-compartir';
 import { VisitasDelInmueble } from '@/components/inmobiliaria/VisitasDelInmueble';
@@ -230,6 +234,9 @@ function ConsignacionDetailContent() {
    * 404 en cada ficha abierta desde el contrato.
    */
   const idDelMandato = fetchedConsignacion?.id ?? (entraPorInmueble ? null : consignacionId);
+  // Leída sin exigir el proveedor (la ficha también se monta en pruebas sin sesión).
+  const sesion = useContext(AuthContext);
+  const modoComercial = enModoComercial(sesion?.agency);
 
   /*
    * 🔴 Abrir la ficha YA estando sin señal.
@@ -746,7 +753,9 @@ function ConsignacionDetailContent() {
                 {!terminada && !contratoVigente ? (
                   <CandidatosQueEsperan propertyId={consignacion.propertyId} consignacionId={consignacion.id} onCuantos={setCandidatosEsperando} />
                 ) : null}
-                {!terminada ? (
+                {/* 🔴 Juan y Nico, 27-10-2026: «para tener este inmueble en regla te faltan N pasos» NO sale en la
+                    captación (modo comercial): sale cuando la cuenta ya pagó y va a contratos. */}
+                {!terminada && !modoComercial ? (
                   <LoQueFaltaDelInmueble
                     consignacion={consignacion}
                     property={property}
@@ -828,6 +837,24 @@ function ConsignacionDetailContent() {
           },
           // 22-10 (revisión): con el mandato terminado no hay nada que arrendar;
           // en venta, la pestaña es «Venderlo».
+          // 🔴 Juan y Nico, 27-10-2026: «una pestaña que sea Multimedia… las fotos, los videos, y el recorrido más
+          // adelante». Antes las fotos estaban dentro de «Arrendarlo» y nadie las encontraba.
+          ...(consignacion.propertyId
+            ? [
+                {
+                  id: 'multimedia',
+                  etiqueta: 'Multimedia',
+                  contenido: (
+                    <div className="space-y-6">
+                      <div id="fotos" className="scroll-mt-20">
+                        <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} compacta={contratoVigente} />
+                      </div>
+                      <VideoDelInmueble propertyId={consignacion.propertyId} videoUrl={property?.videoUrl ?? null} onGuardado={refetchProperty} />
+                    </div>
+                  ),
+                },
+              ]
+            : []),
           ...(terminada ? [] : [{
             id: 'arrendarlo',
             etiqueta: consignacion.listingType === 'sale' ? 'Venderlo' : 'Arrendarlo',
@@ -841,13 +868,8 @@ function ConsignacionDetailContent() {
                     consignacionId={consignacion.id}
                   />
                 </div>
-                {/* Las fotos viven en el Property; sin propertyId (mandato sin
-                    inmueble) no hay galería que mostrar. */}
-                {consignacion.propertyId && (
-                  <div id="fotos" className="scroll-mt-20">
-                    <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} compacta={contratoVigente} />
-                  </div>
-                )}
+                {/* Las fotos y el video se fueron a «Multimedia» (Juan, 27-10-2026: «¿cómo cambio las fotos? ¿cómo
+                    las borro?… perdió la parte intuitiva»). */}
                 {/* 🔴 (10-10-2026, Nico) Publicado en el marketplace, aparte de
                     disponible. Se oculta solo sin la migración. */}
                 {consignacion.propertyId && (
@@ -959,6 +981,10 @@ function ConsignacionDetailContent() {
               </>
             ),
           },
+          // 🔴 Juan, 27-10-2026: «observaciones que sólo va a ver la inmobiliaria».
+          ...(consignacion.propertyId
+            ? [{ id: 'observaciones', etiqueta: 'Observaciones internas', contenido: <ObservacionesInternas propertyId={consignacion.propertyId} /> }]
+            : []),
           {
             id: 'historial',
             etiqueta: 'Historial',

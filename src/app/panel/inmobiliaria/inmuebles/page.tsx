@@ -733,7 +733,7 @@ function PortafolioContent() {
                         ) : (
                           <InmuebleSinMandatoCard
                             inmueble={row}
-                            onClick={() => setMandatoFor(row)}
+                            onClick={() => router.push(`/panel/inmobiliaria/inmuebles/sin-propietario/${row.propertyId}`)}
                             onCompletarMandato={setMandatoFor}
                           />
                         )}
@@ -769,6 +769,7 @@ function PortafolioContent() {
                     onPrepararSinSenal={(c) => void handlePrepararSinSenal(c)}
                     onEliminar={abrirEliminar}
                     onCompletarMandato={setMandatoFor}
+                    onAbrirSinPropietario={(row) => router.push(`/panel/inmobiliaria/inmuebles/sin-propietario/${row.propertyId}`)}
                     comercialPorConsignacion={comercialPorConsignacion}
                     publicadoPorInmueble={publicadoPorInmueble}
                     onCambiarPublicacion={(ids, publicar) => void cambiarPublicacion(ids, publicar)}

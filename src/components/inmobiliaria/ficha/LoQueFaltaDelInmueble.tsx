@@ -130,7 +130,7 @@ export function LoQueFaltaDelInmueble({
       estado: cargandoProperty && !property ? 'cargando' : !property ? 'desconocido' : conFotos ? 'listo' : 'falta',
       accion: (
         <Button size="sm" variant="secondary" hideArrow asChild>
-          <Link href={irA(consignacion.id, 'arrendarlo', 'fotos')}>Agregar fotos</Link>
+          <Link href={irA(consignacion.id, 'multimedia', 'fotos')}>Agregar fotos</Link>
         </Button>
       ),
     });

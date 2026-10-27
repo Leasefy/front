@@ -319,14 +319,14 @@ describe('<ConsignacionDetailPage> — entrar por el id del inmueble', () => {
 });
 
 describe('<ConsignacionDetailPage> — Ver en Portal', () => {
-  it('GLOW UP (Nico, 21-10): Resumen · Arrendarlo · Mandato y giro · Historial', () => {
+  it('Resumen · Multimedia · Arrendarlo · Información del propietario · Observaciones internas · Historial (Juan y Nico, 27-10)', () => {
     useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
     renderPage();
     const pestanas = Array.from(container.querySelectorAll('[data-testid^="pestana-"]')).map((p) => p.getAttribute('data-testid'));
-    expect(pestanas).toEqual(['pestana-resumen', 'pestana-arrendarlo', 'pestana-mandato', 'pestana-historial']);
+    expect(pestanas).toEqual(['pestana-resumen', 'pestana-multimedia', 'pestana-arrendarlo', 'pestana-mandato', 'pestana-observaciones', 'pestana-historial']);
     const panel = (id: string) => container.querySelector(`[data-testid="panel-${id}"]`)!;
     expect(panel('resumen').getAttribute('data-state')).toBe('active');
-    expect(panel('arrendarlo').querySelector('#fotos')).not.toBeNull();
+    expect(panel('multimedia').querySelector('#fotos')).not.toBeNull();
     expect(panel('mandato').querySelector('#propietarios')).not.toBeNull();
     expect(panel('mandato').querySelector('#documentos')).not.toBeNull();
   });

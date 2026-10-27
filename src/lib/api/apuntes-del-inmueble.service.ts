@@ -25,6 +25,9 @@ export interface ApuntesDelInmueble {
 }
 
 export const apuntesDelInmuebleApi = {
+  leer: (propertyId: string) => apiClient.get<ApuntesDelInmueble>(`/properties/${propertyId}/apuntes`),
+  guardarObservaciones: (propertyId: string, texto: string) =>
+    apiClient.put<ApuntesDelInmueble>(`/properties/${propertyId}/apuntes/observaciones`, { texto }),
   guardarCondiciones: (propertyId: string, condiciones: CondicionesDeLaCaptacion) =>
     apiClient.put<ApuntesDelInmueble>(`/properties/${propertyId}/apuntes/condiciones`, condiciones),
 };

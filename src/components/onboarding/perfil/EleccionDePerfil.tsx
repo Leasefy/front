@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { PERFILES, type OpcionDePerfil, type ValorDePerfil } from './perfiles'
+import { SoloPublicarEnElMarketplace } from './SoloPublicarEnElMarketplace'
 import type { RegistroAMedias } from './PanelAntesDeComenzar'
 
 /**
@@ -340,6 +341,17 @@ export function EleccionDePerfil({
                 ) : null}
               </AnimatePresence>
             </div>
+
+            {/* Quien sólo quiere publicar no pasa por el registro largo (Nico, 27-10). */}
+            {!abierta && perfilesListos && yendoA === null ? (
+              <motion.div
+                initial={{ opacity: 0, y: motionDistance.sm }}
+                animate={{ opacity: 1, y: 0, transition: { ...motionTransition.enter, delay: motionStagger.step * 4 } }}
+                className="mx-auto mt-6 w-full max-w-2xl sm:mt-8"
+              >
+                <SoloPublicarEnElMarketplace />
+              </motion.div>
+            ) : null}
           </LayoutGroup>
         </main>
       </div>

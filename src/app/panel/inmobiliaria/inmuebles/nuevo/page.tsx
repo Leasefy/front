@@ -20,6 +20,7 @@ import {
 import { lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { AlPublicadorRapido } from '@/components/inmobiliaria/modo-comercial/AlPublicadorRapido';
 
 const PORTAFOLIO = '/panel/inmobiliaria/inmuebles';
 
@@ -146,7 +147,10 @@ export default function NuevaConsignacionPage() {
       {/* `useSearchParams` obliga a un límite de Suspense: sin él, `next build`
           falla al prerenderizar la ruta. */}
       <Suspense fallback={null}>
-        <NuevaConsignacionContent />
+        {/* La cuenta del marketplace publica sin propietario (Nico, 27-10). */}
+        <AlPublicadorRapido destino="/publica?perfil=agency">
+          <NuevaConsignacionContent />
+        </AlPublicadorRapido>
       </Suspense>
     </PageGuard>
   );

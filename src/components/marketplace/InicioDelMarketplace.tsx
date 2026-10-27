@@ -135,7 +135,7 @@ export function InicioDelMarketplace() {
   }));
 
   return (
-    <div className="min-h-screen bg-background pt-16 lg:pt-[76px]" data-testid="inicio-del-marketplace">
+    <div className="min-h-screen bg-background pt-[68px]" data-testid="inicio-del-marketplace">
       {/* El lado va pegado al borde (como el chat): en pantallas anchas no queda una franja vacía a su izquierda. */}
       <div className="grid grid-cols-1 lg:grid-cols-[272px_minmax(0,1fr)]">
         <LadoDelMarketplace />

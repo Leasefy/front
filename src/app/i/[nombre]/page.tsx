@@ -17,7 +17,7 @@ export default function PaginaDeLaInmobiliariaPage({ params }: { params: Promise
   const { nombre } = use(params);
   return (
     <LandingChrome activo="inmuebles">
-      <main id="main-content" className="min-h-screen bg-background pt-16 lg:pt-[76px]">
+      <main id="main-content" className="min-h-screen bg-background pt-[68px]">
         <I18nProvider>
           <Suspense>
             <PaginaDeLaInmobiliaria nombre={decodeURIComponent(nombre)} />

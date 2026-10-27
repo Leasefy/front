@@ -31,7 +31,7 @@ export function InterruptorDeVista({
     <div
       // Ronda 30 (diseño nuevo): filete fino abajo; el segmento en arena con esquina de 14 px y el elegido en
       // papel con su filete (sin sombra); el ícono del elegido en voltaje.
-      className="sticky top-16 z-30 border-b border-border-faint bg-background lg:top-[76px]"
+      className="sticky top-[68px] z-30 border-b border-border-faint bg-background"
       data-testid="interruptor-de-vista"
       data-tapa-arriba
     >

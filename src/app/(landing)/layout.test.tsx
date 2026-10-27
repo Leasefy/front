@@ -196,7 +196,7 @@ describe('<LandingLayout>', () => {
         </LandingLayout>,
       )
     })
-    const actual = container.querySelector('nav.main [aria-current="page"]')
+    const actual = container.querySelector('.hdr .nav [aria-current="page"]')
     expect(actual?.textContent).toContain('Contacto')
   })
 })

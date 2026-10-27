@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import type { BlogPost } from '@/lib/data/blog-posts'
+import './blog-como-la-home.css'
 
 interface BlogArticleProps {
   post: BlogPost

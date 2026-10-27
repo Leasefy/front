@@ -41,14 +41,14 @@ export function LadoDelMarketplace({
 
   return (
     <aside
-      className="hidden border-r border-border-faint bg-surface lg:block lg:min-h-[calc(100vh-76px)]"
+      className="hidden border-r border-border-faint bg-surface lg:block lg:min-h-[calc(100vh-68px)]"
       aria-label="Tus búsquedas"
       data-testid="lado-del-marketplace"
     >
       {/* Queda a la vista al bajar (QA del marketplace, 10-10-2026: al desplazar,
           la columna se iba con la página y quedaba en blanco). */}
       <div
-        className="px-4 pb-7 pt-5 lg:sticky lg:top-[76px] lg:max-h-[calc(100vh-76px)] lg:overflow-y-auto"
+        className="px-4 pb-7 pt-5 lg:sticky lg:top-[68px] lg:max-h-[calc(100vh-68px)] lg:overflow-y-auto"
         data-lenis-prevent
       >
         <Link

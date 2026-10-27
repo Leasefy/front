@@ -760,11 +760,11 @@ export function ConversacionDelMarketplace() {
   }, [turnos.length]);
 
   return (
-    <div className="min-h-screen bg-background pt-16 lg:pt-[76px]" data-testid="conversacion-del-marketplace">
+    <div className="min-h-screen bg-background pt-[68px]" data-testid="conversacion-del-marketplace">
       <div className="grid grid-cols-1 lg:grid-cols-[272px_minmax(0,1fr)]">
         <LadoDelMarketplace recientes={recientes} activa={escribirBusqueda(ultimo.busqueda)} />
 
-        <main className="flex min-h-[calc(100vh-64px)] min-w-0 flex-col lg:min-h-[calc(100vh-76px)]">
+        <main className="flex min-h-[calc(100vh-68px)] min-w-0 flex-col">
           <InterruptorDeVista
             vista="conversacion"
             hrefConversacion={`/propiedades?${escribirBusqueda(ultimo.busqueda)}`}

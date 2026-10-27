@@ -1,0 +1,566 @@
+/* ──────────────────────────────────────────────────────────────────────────────
+   La barra de la landing nueva (`public/landing/index.html`: `.hdr`, `.nav`, el
+   mega menú `.pm` de «Producto», `.hdr-cta`, `.mbtn` y el menú del celular
+   `.menu`) para las páginas públicas en React: Marketplace, la ficha, la página
+   de la inmobiliaria, Avalúos, Contacto, Blog, Términos, Privacidad, Ayuda y
+   Planes.
+
+   🔴 Nico, 27-10-2026: «cuando uno entra a otro lado que no es el home toma cosas
+   de la landing vieja… solo debe haber una landing y es la nueva, con todo lo que
+   es la landing nueva!!!». Antes se repintaba la barra vieja; ahora es la MISMA
+   de la home, regla por regla. Si cambia allá, cambia aquí.
+
+   Todo cuelga de `.lfh.lfh` (dos veces la clase): no toca nada más de la app y le gana a las hojas de la
+   landing vieja que siguen cargando en algunas páginas (`.landing-scope .btn`, `.lv2 …`).
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.lfh.lfh {
+  --bg: #fbfaf8;
+  --arena: #f3f1ed;
+  --piedra: #e7e3dc;
+  --filete: #ece8e1;
+  --sup: #ffffff;
+  --tinta: #121110;
+  --grafito: #5b5751;
+  --ceniza: #706b64;
+  --voltaje: #1a40ff;
+  --voltaje-txt: #1a40ff;
+  --voltaje-dot: #1a40ff;
+  --sombra-susurro: 0 1px 2px rgba(18, 17, 16, 0.06), 0 2px 8px -2px rgba(18, 17, 16, 0.06);
+  --f: var(--font-host-grotesk), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --m: var(--font-dm-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --gutter: clamp(16px, 4vw, 56px);
+  --max: 1320px;
+  --hdr: 68px;
+  font-family: var(--f);
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--tinta);
+  -webkit-font-smoothing: antialiased;
+}
+.lfh.lfh *,
+.lfh.lfh *::before,
+.lfh.lfh *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+.lfh.lfh a {
+  color: inherit;
+  text-decoration: none;
+}
+.lfh.lfh button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.lfh.lfh ul {
+  list-style: none;
+}
+.lfh.lfh :focus-visible {
+  outline: 2px solid var(--voltaje-txt);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.lfh.lfh .wrap {
+  width: 100%;
+  max-width: calc(var(--max) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  position: relative;
+}
+.lfh.lfh .ic {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+/* ── botones (radio completo + superelipse) ── */
+.lfh.lfh .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 50px;
+  padding: 0 26px;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  transition: transform 0.15s cubic-bezier(0.3, 1.5, 0.5, 1), background-color 0.2s, color 0.2s;
+}
+@supports (corner-shape: superellipse(1.5)) {
+  .lfh.lfh .btn {
+    border-radius: 999px;
+    corner-shape: superellipse(1.5);
+  }
+}
+.lfh.lfh .btn:active {
+  transform: scale(0.97);
+}
+.lfh.lfh .btn-p {
+  background: var(--voltaje);
+  color: #fff;
+}
+.lfh.lfh .btn-p:hover {
+  background: #1535e6;
+}
+.lfh.lfh .btn-s {
+  background: var(--arena);
+  color: var(--tinta);
+}
+.lfh.lfh .btn-s:hover {
+  background: var(--piedra);
+}
+.lfh.lfh .btn-sm {
+  height: 38px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 14px;
+}
+.lfh.lfh .btn[data-esperando] {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lfh.lfh .btn:active {
+    transform: none;
+  }
+}
+.lfh.lfh .lnk {
+  color: var(--voltaje-txt);
+  font-weight: 500;
+}
+.lfh.lfh .lnk:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ── la barra ── */
+.lfh.lfh .hdr {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: var(--hdr);
+  background: var(--bg);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s;
+  view-transition-name: lf-barra;
+}
+.lfh.lfh .hdr.con-filete {
+  border-color: var(--filete);
+}
+.lfh.lfh .hdr .wrap {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 26px;
+}
+.lfh.lfh .logo {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  color: var(--tinta);
+}
+.lfh.lfh .logo svg {
+  height: 30px;
+  width: auto;
+  fill: var(--tinta);
+}
+.lfh.lfh .nav {
+  display: flex;
+  gap: 24px;
+  margin-left: 22px;
+  font-size: 15px;
+  color: var(--grafito);
+}
+.lfh.lfh .nav > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.lfh.lfh .nav > a:hover,
+.lfh.lfh .nav > a[aria-current="page"] {
+  color: var(--tinta);
+}
+.lfh.lfh .nav > a i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--voltaje-dot);
+}
+.lfh.lfh .mk-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  margin-left: 7px;
+  padding: 0 6px;
+  border-radius: 7px;
+  background: var(--arena);
+  font-family: var(--m);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tinta);
+  letter-spacing: 0.02em;
+  corner-shape: superellipse(1.5);
+}
+.lfh.lfh .hdr-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+/* ES / EN */
+.lfh.lfh .idioma {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--arena);
+  corner-shape: superellipse(1.5);
+  flex: none;
+}
+.lfh.lfh .idioma button {
+  height: 28px;
+  min-width: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font-family: var(--m);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ceniza);
+  cursor: pointer;
+  corner-shape: superellipse(1.5);
+}
+.lfh.lfh .idioma button:hover {
+  color: var(--tinta);
+}
+.lfh.lfh .idioma button[aria-pressed="true"] {
+  background: var(--sup);
+  color: var(--tinta);
+  box-shadow: var(--sombra-susurro);
+}
+.lfh.lfh .idioma button:focus-visible {
+  outline: 2px solid var(--voltaje);
+  outline-offset: 1px;
+}
+.lfh.lfh .menu .idioma {
+  align-self: flex-start;
+  margin-top: 14px;
+}
+
+/* ── el menú del celular ── */
+.lfh.lfh .mbtn {
+  display: none;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--arena);
+  font-size: 14px;
+  font-weight: 500;
+  corner-shape: superellipse(1.5);
+}
+.lfh.lfh .menu {
+  position: fixed;
+  inset: var(--hdr) 0 0 0;
+  z-index: 59;
+  background: var(--bg);
+  padding: 24px var(--gutter);
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  overflow: auto;
+}
+.lfh.lfh.menu-abierto .menu {
+  display: flex;
+}
+.lfh.lfh .menu a.it {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--filete);
+  font-size: 26px;
+  font-weight: 360;
+  letter-spacing: -0.02em;
+}
+.lfh.lfh .menu a.it span {
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--ceniza);
+}
+.lfh.lfh .menu .acc {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+@media (min-width: 1101px) and (max-width: 1320px) {
+  .lfh.lfh .hdr .wrap {
+    gap: 20px;
+  }
+  .lfh.lfh .nav {
+    gap: 20px;
+  }
+}
+@media (min-width: 1101px) and (max-width: 1200px) {
+  .lfh.lfh .hdr-cta .pub {
+    display: none;
+  }
+}
+@media (max-width: 1100px) {
+  .lfh.lfh .nav {
+    display: none;
+  }
+  .lfh.lfh .hdr-cta .pub {
+    display: none;
+  }
+  .lfh.lfh .mbtn {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+@media (max-width: 720px) {
+  .lfh.lfh .hdr-cta {
+    display: none;
+  }
+  .lfh.lfh .mbtn {
+    margin-left: auto;
+  }
+  .lfh.lfh .hdr .wrap {
+    gap: 12px;
+  }
+}
+
+/* ── el mega menú de «Producto» ── */
+.lfh.lfh .pm {
+  display: flex;
+  align-items: center;
+}
+.lfh.lfh .pm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  font-size: 15px;
+  color: var(--grafito);
+  transition: color 0.2s;
+}
+.lfh.lfh .pm-btn:hover,
+.lfh.lfh .pm-abierto .pm-btn,
+.lfh.lfh .pm-btn[aria-current="page"] {
+  color: var(--tinta);
+}
+.lfh.lfh .pm-btn .ic {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s;
+}
+.lfh.lfh .pm-abierto .pm-btn .ic {
+  transform: rotate(180deg);
+}
+.lfh.lfh .pm-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--hdr);
+  z-index: 58;
+  background: var(--bg);
+  border-top: 1px solid var(--filete);
+  border-bottom: 1px solid var(--filete);
+  color: var(--tinta);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.22s;
+}
+.lfh.lfh .pm-abierto .pm-panel {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lfh.lfh .pm-panel,
+  .lfh.lfh .pm-abierto .pm-panel {
+    transition: none;
+    transform: none;
+  }
+  .lfh.lfh .pm-btn .ic {
+    transition: none;
+  }
+}
+.lfh.lfh .pm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 18px 40px;
+  padding-top: 28px;
+  padding-bottom: 22px;
+}
+.lfh.lfh .pm-k {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-family: var(--m);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ceniza);
+  line-height: 1.3;
+}
+.lfh.lfh .pm-k i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--voltaje-dot);
+  flex: none;
+}
+.lfh.lfh .pm-sis {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lfh.lfh .nav .pm-big {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 14px;
+  row-gap: 2px;
+  align-items: baseline;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--arena);
+  color: var(--tinta);
+  corner-shape: superellipse(1.5);
+  transition: background-color 0.2s;
+}
+.lfh.lfh .nav .pm-big:hover {
+  background: var(--piedra);
+}
+.lfh.lfh .pm-big .pm-n {
+  grid-row: 1/4;
+  font-family: var(--m);
+  font-size: 13px;
+  color: var(--voltaje-txt);
+}
+.lfh.lfh .pm-big b {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.lfh.lfh .pm-big span:not(.pm-n) {
+  font-size: 14px;
+  color: var(--grafito);
+  line-height: 1.4;
+}
+.lfh.lfh .pm-big em {
+  margin-top: 6px;
+  font-style: normal;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--voltaje-txt);
+}
+.lfh.lfh .pm-lista {
+  display: grid;
+  gap: 2px;
+}
+.lfh.lfh .pm-dos {
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8px;
+}
+.lfh.lfh .nav .pm-it {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: var(--tinta);
+  corner-shape: superellipse(1.5);
+  transition: background-color 0.2s;
+}
+.lfh.lfh .nav .pm-it:hover {
+  background: var(--arena);
+}
+.lfh.lfh .pm-it b {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--tinta);
+}
+.lfh.lfh .pm-it span {
+  font-size: 14px;
+  color: var(--grafito);
+  line-height: 1.35;
+}
+.lfh.lfh .pm-pie {
+  grid-column: 1/-1;
+  display: flex;
+  gap: 24px;
+  padding-top: 14px;
+  border-top: 1px solid var(--filete);
+  font-size: 14px;
+}
+.lfh.lfh .menu .pm-m-btn {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--filete);
+  font-size: 26px;
+  font-weight: 360;
+  letter-spacing: -0.02em;
+  text-align: left;
+}
+.lfh.lfh .menu .pm-m-btn span {
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--ceniza);
+}
+.lfh.lfh .menu .pm-m-btn .ic {
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  align-self: center;
+  transition: transform 0.2s;
+}
+.lfh.lfh .menu .pm-m-btn[aria-expanded="true"] .ic {
+  transform: rotate(180deg);
+}
+.lfh.lfh .pm-m {
+  padding: 6px 0 18px;
+  border-bottom: 1px solid var(--filete);
+}
+.lfh.lfh .pm-m[hidden] {
+  display: none;
+}
+.lfh.lfh .pm-m .pm-k {
+  margin: 16px 0 4px;
+}
+.lfh.lfh .pm-m .pm-it {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+}
+.lfh.lfh .pm-m-pie {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 15px;
+}

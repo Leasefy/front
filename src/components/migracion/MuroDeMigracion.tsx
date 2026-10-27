@@ -697,8 +697,18 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     // Abrir la migración (Configuración, la tarjeta del menú) es darle «Migrar».
     marcarQueEligioMigrar(agencyId);
     setAbiertaAMano(true);
+    // Quien la había quitado del menú y vuelve a abrirla está migrando otra
+    // vez: la tarjeta del menú lo vuelve a acompañar (Nico, 27-10-2026). Si
+    // no se guarda, sólo queda sin tarjeta: no se le dice nada.
+    if (conocido?.recordatorioDescartado === true) {
+      void migracionEstadoApi
+        .recordatorio(false)
+        .then((r) => refrescar(r))
+        .catch(() => refrescar());
+      return;
+    }
     void refrescar();
-  }, [agencyId, refrescar]);
+  }, [agencyId, refrescar, conocido]);
 
   const aMano = !puesto && abiertaAMano && conocido !== null;
   const tapado = puesto || aMano || bienvenida !== null;
@@ -1016,6 +1026,13 @@ export function PanelDeMigracion({
     setEnviando(true);
     setFallo(false);
     setFalloDetalle(null);
+    // «Arranco de cero» (Nico, 27-10-2026: «no le quita eso cuando le da clic
+    // en omitir»): como «no requiero migración», también la quita del menú,
+    // aunque antes le hubiera dado «Migrar». Si no se guarda, molesta, no
+    // encierra: la tarjeta tiene su «Cerrar».
+    if (via === "omitir") {
+      await migracionEstadoApi.recordatorio(true).catch(() => undefined);
+    }
     try {
       const respuesta =
         via === "terminar"

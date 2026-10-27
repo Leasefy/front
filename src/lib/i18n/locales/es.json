@@ -13609,6 +13609,11 @@
       "avance": "{{hechos}} de {{total}} pasos listos · sigue {{paso}}",
       "migrar": "Migrar ahora",
       "cerrar": "Cerrar el recordatorio de migración",
+      "cerrarBoton": "Cerrar",
+      "cerradaTitulo": "Quitamos la migración del menú",
+      "cerradaDetalle": "La encuentras cuando quieras en Configuración → Migración.",
+      "irAMigracion": "Ir a Migración",
+      "noSeCerro": "No pudimos quitar la migración del menú",
       "paso": "Paso {{n}} de {{total}}",
       "sigue": "Sigue con {{paso}}. Retómala donde la dejaste.",
       "continuar": "Continuar migración"

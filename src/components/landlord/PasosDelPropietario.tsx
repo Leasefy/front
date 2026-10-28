@@ -5,7 +5,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { enterTransition, Ilustracion, RadioCard, RadioCardGroup, usePrefersReducedMotion, type NombreIlustracion } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { OnboardingStepList } from '@/components/onboarding/wizard';
+import { alPrimerCampo } from '@/lib/ui/al-primer-campo';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Campo, CampoDeCelular, PieDelPaso, guardarCon, type Errores } from '@/components/inmobiliaria/plan/PasosParaActivar';
@@ -17,6 +19,7 @@ import { COLOMBIAN_BANKS, type BankAccount, type PaymentAccount } from '@/lib/ty
 
 type Paso = 'datos' | 'cuenta' | 'factura';
 const PASOS: readonly Paso[] = ['datos', 'cuenta', 'factura'];
+const DESCRIPCION: Record<Paso, string> = { datos: 'Nombre, cédula y celular', cuenta: 'Donde recibes el arriendo', factura: 'La dirección de tu factura' };
 const TEXTOS: Record<Paso, { corto: string; titulo: string; ayuda: string; ilustracion: NombreIlustracion }> = {
   datos: { corto: 'Tus datos', titulo: '¿Quién eres?', ayuda: 'Van en tus contratos de arriendo. Tal como aparecen en tu cédula.', ilustracion: 'cedula' },
   cuenta: { corto: 'Tu cuenta', titulo: '¿Dónde recibes el arriendo?', ayuda: 'Aquí te llega lo que pagan tus inquilinos. Sólo tú ves el número completo.', ilustracion: 'banco' },
@@ -106,29 +109,30 @@ export function VentanaDelPropietario({
 
   return (
     <Dialog open onOpenChange={(o) => !o && alCerrar()}>
-      <DialogContent size="xl" className="overflow-hidden p-0" data-testid="pasos-del-propietario">
-        <div className="grid md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
-          <div className="relative overflow-hidden bg-primary-soft px-6 py-6 md:py-8">
+      <DialogContent size="xl" className="overflow-hidden p-0" data-testid="pasos-del-propietario" onOpenAutoFocus={alPrimerCampo}>
+        <DialogBody className="p-0 sm:p-0">
+        <div className="grid min-h-full lg:grid-cols-[minmax(0,16.5rem)_minmax(0,1fr)]">
+          <div className="h-full border-b border-border bg-surface-muted px-6 py-6 lg:border-b-0 lg:border-r lg:px-7 lg:py-9">
             <p className="font-mono text-[11px] uppercase tracking-wider text-primary">Tu cuenta de propietario</p>
-            <p className="mt-2 text-[17px] font-medium leading-snug text-fg">Ya tienes Leasefy completo. Termina tu cuenta en tres pasos.</p>
-            <ol className="mt-6 flex gap-2 md:flex-col md:gap-1" aria-label="Pasos">
-              {PASOS.map((p, i) => (
-                <li key={p} className="min-w-0 flex-1 md:flex-none">
-                  <button
-                    type="button"
-                    onClick={() => setPaso(p)}
-                    aria-current={paso === p ? 'step' : undefined}
-                    className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors ${paso === p ? 'bg-surface shadow-sm ring-1 ring-primary/15' : 'hover:bg-surface/60'}`}
-                  >
-                    <Ilustracion nombre={TEXTOS[p].ilustracion} tamano={40} tono="auto" alt="" />
-                    <span className="hidden min-w-0 md:block">
-                      <span className="block text-[11px] text-fg-muted">Paso {i + 1}{hechos.has(p) ? ' · listo' : ''}</span>
-                      <span className="block truncate text-sm text-fg">{TEXTOS[p].corto}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ol>
+            <p className="mt-2 text-body font-medium leading-snug text-fg">Ya tienes Leasefy completo. Termina tu cuenta aquí.</p>
+            <OnboardingStepList
+              className="mt-6"
+              etiqueta="Pasos para terminar tu cuenta"
+              nota="Cada paso queda guardado al seguir"
+              pasos={PASOS.map((p) => {
+                const esEste = paso === p;
+                const hecho = paso === 'listo' || (hechos.has(p) && !esEste);
+                return {
+                  key: p,
+                  label: TEXTOS[p].corto,
+                  descripcion: DESCRIPCION[p],
+                  estado: esEste ? 'actual' : hecho ? 'hecho' : 'pendiente',
+                  onSelect: esEste || paso === 'listo' ? undefined : () => setPaso(p),
+                  etiquetaDelBoton: `Ir a ${TEXTOS[p].corto}`,
+                  testId: `riel-del-propietario-${p}`,
+                };
+              })}
+            />
           </div>
           <div className="min-w-0 p-6 md:p-8">
             <AnimatePresence mode="wait" initial={false}>
@@ -194,6 +198,7 @@ export function VentanaDelPropietario({
             </AnimatePresence>
           </div>
         </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

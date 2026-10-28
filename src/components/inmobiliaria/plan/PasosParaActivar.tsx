@@ -18,7 +18,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { alPrimerCampo } from '@/lib/ui/al-primer-campo';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -264,8 +265,11 @@ export function VentanaDeLosPasos({ perfil, enPrueba = false, datos, medios, mod
         data-testid="pasos-para-activar"
         data-perfil={perfil}
         hideClose={enSeguridad}
+        onOpenAutoFocus={alPrimerCampo}
       >
-        <div className="grid lg:grid-cols-[minmax(0,16.5rem)_minmax(0,1fr)]">
+        {/* Nico, 28-10: el gris de la izquierda va A SANGRE (sin el relleno blanco del cuerpo del diálogo). */}
+        <DialogBody className="p-0 sm:p-0">
+        <div className="grid min-h-full lg:grid-cols-[minmax(0,16.5rem)_minmax(0,1fr)]">
           <RielDeLosPasos
             perfil={perfil}
             enPrueba={enPrueba}
@@ -375,6 +379,7 @@ export function VentanaDeLosPasos({ perfil, enPrueba = false, datos, medios, mod
             </AnimatePresence>
           </div>
         </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );
@@ -442,7 +447,7 @@ function RielDeLosPasos({
     };
   });
   return (
-    <div className="border-b border-border bg-surface-muted/60 px-6 py-6 lg:border-b-0 lg:border-r lg:px-6 lg:py-8">
+    <div className="h-full border-b border-border bg-surface-muted px-6 py-6 lg:border-b-0 lg:border-r lg:px-7 lg:py-9">
       <p className="font-mono text-[11px] uppercase tracking-wider text-primary">{perfil === 'agente' ? 'Tu cuenta de agente' : 'Tu inmobiliaria'}</p>
       <p className="mt-2 text-body font-medium leading-snug text-fg">
         {enPrueba ? 'Actívala y usa todo en tu mes gratis.' : 'Ya tienes Leasefy completo. Actívalo aquí.'}

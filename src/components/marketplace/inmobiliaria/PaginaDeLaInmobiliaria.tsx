@@ -1,5 +1,6 @@
 'use client';
 
+import { ValoracionEnUnMinuto } from '@/components/valoracion/ValoracionEnUnMinuto';
 import { ResenasDelPerfil } from '@/components/resenas/ResenasDelPerfil';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -442,6 +443,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
         </p>
       </section>
 
+      <ValoracionEnUnMinuto agencyId={pagina.id} nombre={pagina.nombre ?? 'La inmobiliaria'} />
       <ResenasDelPerfil agencyId={pagina.id} nombre={pagina.nombre ?? 'esta inmobiliaria'} />
       {pagina.muestraVitrina && <VitrinaDeOtras paginaId={pagina.id} />}
 

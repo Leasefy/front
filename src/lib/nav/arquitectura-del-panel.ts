@@ -446,6 +446,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         pantallas: [
           // «Tu día» (27-10-2026, investigación de agentes): a quién llamar hoy, con la llamada preparada. Primero.
           { labelKey: 'inmobiliaria.nav.tuDia', href: r('/pipeline/tu-dia'), icon: SunHorizon, module: 'pipeline', scope: 'comercial' },
+          // Colecciones (28-10-2026): un enlace con los inmuebles que le propones a un cliente; él marca y comenta.
+          { labelKey: 'inmobiliaria.nav.colecciones', href: r('/pipeline/colecciones'), icon: FolderSimple, module: 'pipeline', scope: 'comercial' },
           // 🔴 B-07 (18-09-2026): «informe por origen (leads y arriendos por
           // portal) para saber qué portal vale la pena pagar». Cuelga del
           // pipeline y NO de Reportes a propósito: la decide el comercial con

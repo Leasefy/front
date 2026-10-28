@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Buildings, House, IdentificationBadge } from '@phosphor-icons/react';
 
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { AuthInput } from '@/components/auth/AuthInput';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { apiClient } from '@/lib/api/client';
+import { motionSpring, usePrefersReducedMotion } from '@leasefy/cadence';
 import { CampoDeCelularDelMundo } from '@/components/ui/campo-de-celular-del-mundo';
 import { celularEnE164, errorDelCelular } from '@/lib/phone/paises-del-mundo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -78,7 +80,10 @@ export function RegistroRapido({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[460px]" data-testid="registro-rapido">
+    // 28-10 (Nico: «esto necesita ser más hermoso… acompáñalo con una imagen»): en pantalla ancha, el formulario a la
+    // izquierda y una foto real del banco a la derecha, con cómo le llegan los interesados por WhatsApp.
+    <div className="mx-auto grid w-full max-w-[1040px] items-center gap-10 lg:grid-cols-[minmax(0,460px)_minmax(0,1fr)] lg:gap-16" data-testid="registro-rapido">
+    <div className="mx-auto w-full max-w-[460px] lg:mx-0">
       {/* Glow up 23-10: igual que «¿Lo publicas para arriendo o para venta?» (sin el cuadrito azul, título liviano). */}
       <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-fg-subtle">Último paso antes de publicar</p>
       <h1 className="mt-4 text-[28px] font-[420] leading-[1.1] tracking-[-0.03em] text-fg sm:text-[32px]">
@@ -178,5 +183,36 @@ export function RegistroRapido({
         </form>
       )}
     </div>
+    <FotoDeTusDatos />
+    </div>
+  );
+}
+
+/** La foto de «Tus datos»: un apartamento real y el mensaje que le llega al dueño por WhatsApp. Sólo en pantalla ancha. */
+function FotoDeTusDatos() {
+  const reducido = usePrefersReducedMotion();
+  return (
+    <figure className="relative hidden aspect-[4/5] max-h-[620px] overflow-hidden rounded-[28px] bg-[#1b2340] lg:block" aria-hidden="true" data-testid="foto-de-tus-datos">
+      <motion.img
+        src="/imagenes/banco/sala-poblado-montanas.webp"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+        initial={reducido ? { opacity: 0 } : { opacity: 0, scale: 1.06 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ opacity: { duration: 0.5 }, scale: { duration: 5, ease: [0.16, 1, 0.3, 1] } }}
+      />
+      <span className="absolute inset-0 bg-gradient-to-t from-[#0d1330]/45 via-transparent to-transparent" />
+      <motion.figcaption
+        className="absolute inset-x-6 bottom-6 rounded-2xl bg-[#f7f6f2] p-4 shadow-[0_24px_48px_-16px_rgba(4,16,48,0.55)]"
+        initial={reducido ? { opacity: 0 } : { opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={reducido ? { duration: 0.2 } : { ...motionSpring.soft, delay: 0.5 }}
+      >
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#5c5a55]">Te escriben por WhatsApp</p>
+        <p className="mt-2 w-fit max-w-[90%] rounded-2xl rounded-tl-md bg-white px-3.5 py-2.5 text-[14px] leading-snug text-[#1b2340] shadow-[0_1px_2px_rgba(20,19,15,0.08)]">
+          Hola, vi tu apartamento en Leasefy. ¿Sigue disponible para visitarlo el sábado?
+        </p>
+      </motion.figcaption>
+    </figure>
   );
 }

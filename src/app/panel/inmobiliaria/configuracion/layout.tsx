@@ -21,6 +21,7 @@ import { usePathname } from 'next/navigation';
 
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { useAuth } from '@/lib/auth/use-auth';
 import { MarcoDeConfiguracion } from '@/components/configuracion/MarcoDeConfiguracion';
 import { esFichaDeMiembro, hrefDeSeccion, menuDeConfiguracion, seccionDeLaRuta } from './secciones';
 
@@ -28,21 +29,23 @@ export default function ConfiguracionLayout({ children }: { children: React.Reac
   const pathname = usePathname() ?? '';
   const { t } = useI18n();
   const { isAdmin, canAccess, isLoading, agencyRole } = usePermissions();
+  const cuentaDeAgente = useAuth().agency?.cuentaDeAgente === true;
 
   const menu = useMemo(
     () =>
-      menuDeConfiguracion({ isAdmin, canAccess, agencyRole }).map(({ grupo, secciones }) => ({
+      menuDeConfiguracion({ isAdmin, canAccess, agencyRole, cuentaDeAgente }).map(({ grupo, secciones }) => ({
         id: grupo.id,
-        label: t(grupo.labelKey),
+        // Al agente inmobiliario le hablamos de «Tu negocio» y de «Tus datos» (Nico, 27-10-2026).
+        label: cuentaDeAgente && grupo.id === 'inmobiliaria' ? 'Tu negocio' : t(grupo.labelKey),
         entradas: secciones.map((s) => ({
           id: s.id,
           href: hrefDeSeccion(s.id),
-          label: t(s.labelKey),
+          label: cuentaDeAgente && s.id === 'perfil' ? 'Tus datos' : t(s.labelKey),
           desc: t(s.descKey),
           icon: s.icon,
         })),
       })),
-    [isAdmin, canAccess, agencyRole, t],
+    [isAdmin, canAccess, agencyRole, cuentaDeAgente, t],
   );
 
   if (esFichaDeMiembro(pathname)) return <>{children}</>;

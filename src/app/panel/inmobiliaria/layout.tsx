@@ -168,6 +168,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
   // El mismo contexto de gates para el sidebar, para resolver a qué pantalla
   // entra cada módulo y para filterAgencyNav.
+  // Un agente inmobiliario trabaja solo (Nico, 27-10-2026: «todo, sin lo de equipo»): sin Nómina en el menú.
+  const cuentaDeAgente = useAuth().agency?.cuentaDeAgente === true;
+  const modulosDeLaCuenta = useMemo(
+    () => (cuentaDeAgente && Array.isArray(modulosPagos) ? modulosPagos.filter((m) => m !== 'nomina') : modulosPagos),
+    [cuentaDeAgente, modulosPagos],
+  );
   const ctxNav = useMemo(() => ({
     canAccess,
     isAdmin,
@@ -175,14 +181,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // 🔴 Los módulos de PAGO (Nómina, hoy). No son un permiso: es si la
     // inmobiliaria los compró. Vacío mientras no llegue la respuesta — el gate
     // falla cerrado, ver `agency-nav-filter.ts`.
-    modulosPagos,
+    modulosPagos: modulosDeLaCuenta,
     // Sin respuesta del agente, sus módulos NO se borran del menú: se llega a
     // la pantalla, que dice «No pudimos verificar tu acceso» y ofrece
     // reintentar. Borrarlos se lee como «esto no existe».
     agentUnverified: agentAccessStatus === 'sin-verificar',
     // H-09 (QA-PAGOS-95 r2): un 500 de los permisos del back no apaga el menú.
     backUnverified: permisosDelBack === 'sin-verificar',
-  }), [canAccess, isAdmin, agencyRole, agentAccessStatus, permisosDelBack, modulosPagos]);
+  }), [canAccess, isAdmin, agencyRole, agentAccessStatus, permisosDelBack, modulosDeLaCuenta]);
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ═══════════════════════════════════════════════════════════════════════

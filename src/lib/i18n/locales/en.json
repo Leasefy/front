@@ -10378,7 +10378,7 @@
         "aprobacionPedida": "We asked the owner for approval",
         "emergenciaRegistrada": "Emergency repair: deducted and notice generated",
         "inquilino": "The tenant",
-        "inquilinoAyuda": "Nothing is deducted from the owner: it goes on the tenant's statement as a one-time charge, on this month's installment or the next unpaid one.",
+        "inquilinoAyuda": "Nothing is deducted from the owner: it goes on the tenant's statement as a one-time charge, on this month's installment or the next unpaid one. We let them know right away by email and WhatsApp, with the link to pay it.",
         "cancelar": "Cancel",
         "confirmar": "Approve quote",
         "aprobando": "Approving…",

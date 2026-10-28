@@ -10413,7 +10413,7 @@
         "aprobacionPedida": "Le pedimos la aprobación al propietario",
         "emergenciaRegistrada": "Reparación de emergencia: se descontó y el aviso quedó generado",
         "inquilino": "Del inquilino",
-        "inquilinoAyuda": "No se le descuenta al propietario: entra a su estado de cuenta como un cargo de una sola vez, en la cuota del mes o en la siguiente sin pagar.",
+        "inquilinoAyuda": "No se le descuenta al propietario: entra a su estado de cuenta como un cargo de una sola vez, en la cuota del mes o en la siguiente sin pagar. Le avisamos de una por correo y WhatsApp, con el enlace para pagarlo.",
         "cancelar": "Cancelar",
         "confirmar": "Aprobar cotización",
         "aprobando": "Aprobando…",

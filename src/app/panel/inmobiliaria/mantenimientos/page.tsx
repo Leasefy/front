@@ -39,6 +39,7 @@ import {
   useConsignaciones,
   mantenimientoApi,
 } from '@/lib/hooks/useInmobiliaria';
+import { ExportarMantenimientos } from '@/components/inmobiliaria/mantenimiento/ExportarMantenimientos';
 import {
   MantenimientoList,
   MantenimientoKanban,
@@ -713,6 +714,8 @@ function MantenimientosContent() {
         seccion="Operación"
         titulo="Mantenimientos"
         descripcion="Las solicitudes de arreglo de tus inmuebles, desde que entran hasta que se cierran."
+        // 28-10 (Juan Camilo y Nico): todo en Excel y la liquidación de proveedores del mes.
+        acciones={<ExportarMantenimientos solicitudes={mantenimientos} />}
         accionPrincipal={
           <div className="flex flex-col items-end gap-1">
             <Button

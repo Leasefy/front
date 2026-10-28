@@ -39,7 +39,7 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import type { AgencyProfile } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
-import { useAlPedirLaActivacion } from '@/lib/conversion/abrir-la-activacion';
+import { marcarActivacionEnCurso, useAlPedirLaActivacion } from '@/lib/conversion/abrir-la-activacion';
 import { activarLaCuenta } from '@/lib/conversion/activar-la-cuenta';
 import {
   PASOS_PARA_ACTIVAR,
@@ -238,6 +238,12 @@ export function VentanaDeLosPasos({ perfil, enPrueba = false, datos, medios, mod
    * como cuarto paso, aquí mismo, y no como un aviso suelto en el panel. Se decide al abrir y no cambia.
    */
   const [conSeguridad] = useState(modoComercial);
+  // Mientras se activa aquí, el muro de la migración espera (no tapa el «quedó activa»).
+  useEffect(() => {
+    if (!conSeguridad) return;
+    marcarActivacionEnCurso(true);
+    return () => marcarActivacionEnCurso(false);
+  }, [conSeguridad]);
   const pasos: PasoDeLaVentana[] = conSeguridad ? [...PASOS_PARA_ACTIVAR, 'seguridad'] : [...PASOS_PARA_ACTIVAR];
   // Empieza en el primero que falta; los hechos se ven con su ✓ y se pueden abrir para cambiarlos.
   const [paso, setPaso] = useState<PasoDeLaVentana | 'listo'>(() => (faltanAlAbrir[0] as PasoDeLaVentana | undefined) ?? (conSeguridad ? 'seguridad' : 'listo'));

@@ -64,6 +64,7 @@
  * nadie vea el panel nítido antes de decidir qué hace con su migración.
  */
 
+import { useActivacionEnCurso } from '@/lib/conversion/abrir-la-activacion';
 import { AuthContext } from "@/lib/auth/auth-context";
 import { ModalDecisionDeMigracion } from "./DecisionDeMigracion";
 import { olvidarRelevo } from "@/components/puesta-en-marcha/relevo";
@@ -238,6 +239,7 @@ function avisarQueNoSeSupo() {
 const SE_EXPLICAN_SOLOS: IdDePasoDeMigracion[] = ["propiedades", "contratos"];
 
 export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
+  const activacionEnCurso = useActivacionEnCurso();
   const [estado, setEstado] = useState<EstadoDeMigracion | null>(null);
   // Lo que el back contestó, bloquee o no: alimenta el recordatorio del
   // sidebar y la migración abierta a mano. `estado` (arriba) es sólo el que
@@ -735,6 +737,12 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   useEffect(() => () => avisarAlLayout?.(false), [avisarAlLayout]);
 
   const inerte = { inert: cubierto };
+
+  // Activando la cuenta del marketplace (pasos con el segundo factor): el muro espera a que termine, y no tapa el
+  // «quedó activa». Al «Ir a mi panel» la página carga de nuevo y la decisión sale como siempre.
+  if (activacionEnCurso) {
+    return <MigracionContext.Provider value={contexto}>{children}</MigracionContext.Provider>;
+  }
 
   return (
     <MigracionContext.Provider value={contexto}>

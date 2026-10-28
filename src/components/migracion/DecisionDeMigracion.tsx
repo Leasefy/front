@@ -2,8 +2,8 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { motionStagger } from '@leasefy/cadence'
-import { ArrowRight, Buildings, Clock, ListNumbers, Stack, Users, type Icon } from '@phosphor-icons/react'
+import { ArrowRight, Clock, Stack } from '@phosphor-icons/react'
+import { Ilustracion, motionStagger, type NombreIlustracion } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { useLenis } from '@/components/providers/SmoothScroll'
@@ -68,19 +68,19 @@ import type { DecisionDeMigracion } from '@/lib/migracion/decision-de-migracion'
 export const FOTO_DE_LA_DECISION = '/images/features/leasefy-brand-13.jpg'
 
 /** Lo que se trae, con los íconos de Configuración → Migración (`SeccionMigracion`). */
-const LO_QUE_TRAEMOS: ReadonlyArray<{ icono: Icon; titulo: string; detalle: string }> = [
+const LO_QUE_TRAEMOS: ReadonlyArray<{ icono: NombreIlustracion; titulo: string; detalle: string }> = [
   {
-    icono: Users,
+    icono: 'equipo',
     titulo: 'Propietarios e inquilinos',
     detalle: 'Tu archivo de terceros, con cuentas bancarias y documentos.',
   },
   {
-    icono: Buildings,
+    icono: 'contrato',
     titulo: 'Inmuebles y contratos',
     detalle: 'Los contratos vigentes con su inmueble, canon y fechas.',
   },
   {
-    icono: ListNumbers,
+    icono: 'calculadora',
     titulo: 'Plan de cuentas y saldos',
     detalle: 'Tus cuentas y sus saldos, para arrancar la contabilidad cuadrada.',
   },
@@ -195,8 +195,8 @@ export function ModalDecisionDeMigracion({
             arranques con todo cargado.
           </p>
 
-          <ul className="mt-6 space-y-4" aria-label="Lo que traemos" data-testid="decision-lo-que-traemos">
-            {LO_QUE_TRAEMOS.map(({ icono: Icono, titulo, detalle }, i) => (
+          <ul className="mt-6 space-y-2.5" aria-label="Lo que traemos" data-testid="decision-lo-que-traemos">
+            {LO_QUE_TRAEMOS.map(({ icono, titulo, detalle }, i) => (
               <motion.li
                 key={titulo}
                 initial={animar ? { opacity: 0, y: 6 } : false}
@@ -207,14 +207,11 @@ export function ModalDecisionDeMigracion({
                   duration: animar ? 0.26 : 0,
                   ease: SUAVE,
                 }}
-                className="flex items-start gap-3.5"
+                className="flex items-center gap-3.5 rounded-2xl border border-border bg-surface px-3 py-2.5"
               >
-                {/* Tinted Icon Tile (DESIGN §4), el del recorrido. */}
-                <span
-                  aria-hidden
-                  className="grid size-10 shrink-0 place-items-center rounded-md bg-primary-soft text-primary"
-                >
-                  <Icono size={20} />
+                {/* Glow up 28-10 (Nico: «esto no recibió un glow up»): el 3D de cada cosa, como en el resto. */}
+                <span aria-hidden className="shrink-0">
+                  <Ilustracion nombre={icono} tamano={44} tono="auto" alt="" />
                 </span>
                 <span className="min-w-0 pt-0.5">
                   <span className="block text-body-sm font-medium text-fg">{titulo}</span>

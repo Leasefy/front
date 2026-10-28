@@ -155,7 +155,8 @@ export function paraCrear(i: InmuebleRapido) {
     area: i.area,
     ...(i.latitud != null && i.longitud != null ? { latitude: i.latitud, longitude: i.longitud } : {}),
     status: 'AVAILABLE',
-    publicadoEnMarketplace: true,
+    // Sin `publicadoEnMarketplace`: publicado es lo que la base pone sola (default true). Mandarlo de más hacía que un
+    // back sin el campo contestara «el formulario mandó un dato que no esperábamos» (Nico, 28-10, en su 3001).
   };
 }
 

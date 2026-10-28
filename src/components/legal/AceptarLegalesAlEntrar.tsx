@@ -108,8 +108,27 @@ export function AceptarLegalesAlEntrar() {
     setEnviando(true);
     setError(null);
     try {
-      setEstado(await aceptacionesLegalesApi.aceptar(VERSION_POLITICA_DE_TRATAMIENTO, VERSION_TERMINOS));
+      // 28-10-2026 (Nico): se acepta lo que la ventana MOSTRÓ (lo que el back dice que rige), no lo que trae escrito
+      // este front. Con un front más nuevo que el back (sale primero en cada despliegue) mandaba otra versión y el back
+      // contestaba «cambiaron mientras tenías la ventana abierta» sin salida: sólo quedaba «Salir».
+      setEstado(
+        await aceptacionesLegalesApi.aceptar(
+          estado?.politica?.version || VERSION_POLITICA_DE_TRATAMIENTO,
+          estado?.terminos?.version || VERSION_TERMINOS,
+        ),
+      );
     } catch (err) {
+      // De verdad cambiaron con la ventana abierta: se trae la versión de hoy y la ventana la muestra; el siguiente
+      // «Acepto» acepta ésa. Antes el error quedaba fijo y la única salida era «Salir».
+      if ((err as { code?: string } | null)?.code === 'VERSION_LEGAL_DESACTUALIZADA') {
+        try {
+          setEstado(await aceptacionesLegalesApi.estado());
+          setError('Hay una versión más nueva: la ves arriba. Léela y vuelve a tocar «Acepto».');
+          return;
+        } catch {
+          /* sigue al mensaje de siempre */
+        }
+      }
       setError(mensajeParaLaPersona(err, { porDefecto: 'No pudimos guardar tu aceptación. Inténtalo otra vez.', accion: 'aceptar la política y los términos' }));
     } finally {
       setEnviando(false);

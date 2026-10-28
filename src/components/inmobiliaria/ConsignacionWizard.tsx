@@ -65,10 +65,24 @@ import {
   StepPropertyData,
   StepCommissionTerms,
   StepAssignAgent,
-  StepActaEntrega,
+  StepFotos,
+  StepInventario,
   StepConfirmation,
   type WizardFormData,
 } from './ConsignacionWizardSteps';
+import {
+  ORDEN_DE_PASOS,
+  PASO,
+  PRIMER_PASO,
+  TOTAL_DE_PASOS,
+  ULTIMO_PASO,
+  claveDelPaso,
+  pasoAnterior,
+  pasoParaRetomar,
+  pasoSeSalta,
+  pasoSiguiente,
+} from '@/lib/inmuebles/pasos-del-asistente';
+import { apuntesDelInmuebleApi, condicionesDelAsistente } from '@/lib/api/apuntes-del-inmueble.service';
 import {
   CAMPOS_CON_LUGAR,
   MAPA_DEL_INMUEBLE,
@@ -104,17 +118,22 @@ const PORTAFOLIO = '/panel/inmobiliaria/inmuebles';
 const REINTENTAR_SOLO_EL_MANDATO =
   'El inmueble ya quedó creado. Corrige lo que se indica y vuelve a confirmar: sólo se crea la consignación, no otro inmueble.';
 
+/**
+ * 🔴 El orden (Juan y Nico, 27-10-2026): primero el inmueble, las fotos aparte, el propietario y el inventario
+ * opcionales. Ver `lib/inmuebles/pasos-del-asistente.ts`.
+ */
 const STEPS = [
-  { id: 1, labelKey: 'inmobiliaria.consignaciones.wizard.steps.owner', icon: User },
-  { id: 2, labelKey: 'inmobiliaria.consignaciones.wizard.steps.property', icon: HouseLine },
-  { id: 3, labelKey: 'inmobiliaria.consignaciones.wizard.steps.commission', icon: Percent },
-  { id: 4, labelKey: 'inmobiliaria.consignaciones.wizard.steps.agent', icon: UserCircle },
-  { id: 5, labelKey: 'inmobiliaria.consignaciones.wizard.steps.inventory', icon: ClipboardText },
-  { id: 6, labelKey: 'inmobiliaria.consignaciones.wizard.steps.confirm', icon: CheckCircle },
+  { id: PASO.inmueble, labelKey: 'inmobiliaria.consignaciones.wizard.steps.property', icon: HouseLine },
+  { id: PASO.fotos, labelKey: 'inmobiliaria.consignaciones.wizard.steps.photos', icon: Camera },
+  { id: PASO.propietario, labelKey: 'inmobiliaria.consignaciones.wizard.steps.owner', icon: User },
+  { id: PASO.comision, labelKey: 'inmobiliaria.consignaciones.wizard.steps.commission', icon: Percent },
+  { id: PASO.agente, labelKey: 'inmobiliaria.consignaciones.wizard.steps.agent', icon: UserCircle },
+  { id: PASO.inventario, labelKey: 'inmobiliaria.consignaciones.wizard.steps.inventory', icon: ClipboardText },
+  { id: PASO.confirmar, labelKey: 'inmobiliaria.consignaciones.wizard.steps.confirm', icon: CheckCircle },
 ];
 
 /**
- * ConsignacionWizard - 6-step wizard for creating new property consignments
+ * ConsignacionWizard — «Nuevo inmueble» en 7 pasos (el agente se salta el suyo; una venta, el inventario).
  * Used at /panel/inmobiliaria/inmuebles/nuevo
  */
 
@@ -132,7 +151,7 @@ export function ConsignacionWizard({
   const { isAdmin } = usePermissions();
   // Agents skip the "Assign agent" step — they get auto-assigned
   const isAgentRole = !isAdmin;
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState<number>(PRIMER_PASO);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -147,7 +166,7 @@ export function ConsignacionWizard({
    * Se reinicia sólo al terminar bien o al empezar de nuevo.
    */
   const [sesionDeCreacion] = useState(() => newPropertyCreationSession());
-  const pasosHechos = useRef({ fotos: false, agente: false, consignacion: false, publicado: false });
+  const pasosHechos = useRef({ fotos: false, agente: false, consignacion: false, condiciones: false, publicado: false });
   /** Corta el doble clic: `isSubmitting` llega un render tarde. */
   const enviandoRef = useRef(false);
   /**
@@ -158,7 +177,7 @@ export function ConsignacionWizard({
   const inmuebleCreado = useRef<{ id: string; publicar: boolean } | null>(null);
   const reiniciarCreacion = useCallback(() => {
     resetPropertyCreationSession(sesionDeCreacion);
-    pasosHechos.current = { fotos: false, agente: false, consignacion: false, publicado: false };
+    pasosHechos.current = { fotos: false, agente: false, consignacion: false, condiciones: false, publicado: false };
     inmuebleCreado.current = null;
   }, [sesionDeCreacion]);
 
@@ -178,6 +197,8 @@ export function ConsignacionWizard({
     // as contractStartDate, but a DIFFERENT field: consignedAt is the new
     // property-level column, contractStartDate stays the mandate's date.
     listingType: 'rent',
+    tambienEnVenta: false,
+    ordenDePasos: ORDEN_DE_PASOS,
     consignedAt: new Date().toISOString().split('T')[0],
     ...(propietarioInicial ? { propietarioId: propietarioInicial } : {}),
   });
@@ -245,28 +266,24 @@ export function ConsignacionWizard({
   });
 
   // Step validation
+  /** El reparto entre dueños cierra (con uno solo, siempre). Sin propietario no hay reparto que revisar. */
+  const repartoValido =
+    !formData.propietarioId ||
+    motivoInvalido(
+      (formData.copropietarios ?? []).map((c) => ({
+        propietarioId: c.propietarioId,
+        participacionBps: c.participacionBps,
+      })),
+      formData.propietarioId ?? null,
+    ) === null;
+
   const isStepValid = useMemo(() => {
-    switch (currentStep) {
-      case 1:
-        // Must have selected or created a propietario
-        // El principal, y —con más de un dueño— un reparto que cierre. Sin
-        // esto se podría avanzar con los copropietarios llevándose el 110 %.
-        return (
-          Boolean(formData.propietarioId) &&
-          motivoInvalido(
-            (formData.copropietarios ?? []).map((c) => ({
-              propietarioId: c.propietarioId,
-              participacionBps: c.participacionBps,
-            })),
-            formData.propietarioId ?? null,
-          ) === null
-        );
-      case 2: {
+    switch (claveDelPaso(currentStep)) {
+      case 'inmueble':
         // 🔴 IN-16 (QA 04-10): sólo tipo, título, dirección, ciudad y canon (o
-        // precio de venta) son obligatorios; habitaciones y baños según el tipo,
-        // barrio, departamento, área y descripción opcionales (la descripción,
-        // si se escribe, entre 20 y 5.000 como en «Editar»). Los topes del back
-        // (`limites-del-inmueble.ts`) valen para lo que SÍ se escribió.
+        // precio de venta; los dos en «arriendo y venta») son obligatorios;
+        // habitaciones y baños según el tipo, barrio, departamento, área y
+        // descripción opcionales. Los topes del back valen para lo escrito.
         return (
           pasoDelInmuebleCompleto(formData) &&
           // Habitaciones y baños escondidos (el tipo no los tiene) no frenan.
@@ -278,65 +295,50 @@ export function ConsignacionWizard({
             ),
           ).length === 0
         );
-      }
-      case 3:
-        // Commission terms always valid with defaults
-        return true;
-      case 4:
-        // Agents skip this step. Admins may leave it unassigned too — an
-        // unassigned consignment falls back to the creating user's own
-        // profile in handleSubmit, so nothing here should block "Siguiente".
-        return true;
-      case 5:
-        // Inventory is optional; el video también, pero si se escribió tiene que servir.
+      case 'fotos':
+        // Las fotos se preguntan al final (W2); el video es opcional, pero si se escribió tiene que servir.
         return !videoInvalido(formData.videoUrl);
-      case 6:
-        // Confirmation step - agenteId is never required: an unassigned
-        // consignment defaults to the profile that created it.
-        return Boolean(
-          formData.propietarioId &&
-          formData.propertyTitle &&
-          formData.propertyAddress &&
-          formData.propertyCity &&
-          formData.propertyZone &&
-          formData.department
-        );
+      case 'propietario':
+        // 🔴 Opcional (Juan, 27-10-2026). Si se eligió, que el reparto entre los dueños cierre.
+        return repartoValido;
+      case 'comision':
+      case 'agente':
+      case 'inventario':
+        // Con los valores por defecto siempre se puede seguir; sin agente, queda quien lo crea.
+        return true;
+      case 'confirmar':
+        // 🔴 Juan y Nico, 27-10-2026 («no hay posibilidad de saber por qué»): lo MISMO que el paso del inmueble,
+        // y el porqué sale en palabras abajo.
+        return pasoDelInmuebleCompleto(formData) && repartoValido;
       default:
         return false;
     }
-  }, [currentStep, formData]);
+  }, [currentStep, formData, repartoValido]);
 
   /** El porqué de «Siguiente» apagado, en palabras (revisora r25). Misma regla que `isStepValid`. */
   const porQueNoSigue = (() => {
-    if (currentStep === 1) {
-      return formData.propietarioId
-        ? tr('Haz que la participación de los dueños sume 100 %')
-        : tr('Elige de quién es el inmueble');
+    const clave = claveDelPaso(currentStep);
+    if (clave === 'propietario') return tr('Haz que la participación de los dueños sume 100 %');
+    if (clave === 'inmueble') {
+      return formData.tambienEnVenta && formData.listingType !== 'sale'
+        ? tr('Completa el tipo, el título, la dirección, la ciudad, el canon y el precio de venta')
+        : tr('Completa el tipo, el título, la dirección, la ciudad y el canon');
     }
-    if (currentStep === 2) return tr('Completa el tipo, el título, la dirección, la ciudad y el canon');
-    if (currentStep === 5) return tr('Revisa el enlace del video');
+    if (clave === 'fotos') return tr('Revisa el enlace del video');
+    if (clave === 'confirmar') {
+      if (!pasoDelInmuebleCompleto(formData)) return tr('Vuelve al paso 1: falta el tipo, el título, la dirección, la ciudad o el precio');
+      if (!repartoValido) return tr('Vuelve al paso del propietario: la participación de los dueños tiene que sumar 100 %');
+    }
     return null;
   })();
 
-  // Navigation helpers — agents skip step 4. Step 5 used to be skipped
-  // entirely for a sale listing (contract-addendum-2.md §A.8 — "5 ·
-  // Inventario / acta de entrega — Skipped, the owner ruled it out");
-  // T-0042 amends that (ledger.md §2/§3): a sale listing now reaches step
-  // 5, which renders photos-only (see StepActaEntrega). Only the
-  // agent-role skip remains here.
+  // Navigation helpers — el asesor se salta «Agente» (queda él); sólo en venta no hay inventario.
   const isSaleListing = formData.listingType === 'sale';
-
-  const getNextStep = useCallback((step: number) => {
-    let next = step + 1;
-    if (isAgentRole && next === 4) next = 5;
-    return next;
-  }, [isAgentRole]);
-
-  const getPrevStep = useCallback((step: number) => {
-    let prev = step - 1;
-    if (isAgentRole && prev === 4) prev = 3;
-    return prev;
-  }, [isAgentRole]);
+  // Sin propietario elegido, el inmueble se crea sin consignación (Juan, 27-10-2026: «propietario opcional»).
+  const sinPropietario = !formData.propietarioId;
+  const quienCrea = useMemo(() => ({ esAsesor: isAgentRole, soloVenta: isSaleListing }), [isAgentRole, isSaleListing]);
+  const getNextStep = useCallback((step: number) => pasoSiguiente(step, quienCrea), [quienCrea]);
+  const getPrevStep = useCallback((step: number) => pasoAnterior(step, quienCrea), [quienCrea]);
 
   // ── Step 1 → 2: persist the propietario on "Siguiente" ────────────────────
   const [isPersistingOwner, setIsPersistingOwner] = useState(false);
@@ -417,27 +419,35 @@ export function ConsignacionWizard({
   ]);
 
   const goToNextStep = useCallback(async () => {
-    if (currentStep >= 6 || !isStepValid || isPersistingOwner) return;
+    if (currentStep >= ULTIMO_PASO || !isStepValid || isPersistingOwner) return;
 
-    if (currentStep === 1) {
+    // Al salir del paso del propietario se guarda el que se creó ahí (si se eligió alguno).
+    if (currentStep === PASO.propietario && formData.propietarioId) {
       const ok = await persistOwnerIfNeeded();
-      if (!ok) return; // stay on step 1, error is surfaced by persistOwnerIfNeeded
+      if (!ok) return; // se queda en el paso; el error lo dice persistOwnerIfNeeded
     }
 
     setCurrentStep(getNextStep(currentStep));
-  }, [currentStep, isStepValid, isPersistingOwner, persistOwnerIfNeeded, getNextStep]);
+  }, [currentStep, isStepValid, isPersistingOwner, persistOwnerIfNeeded, getNextStep, formData.propietarioId]);
 
   const goToPreviousStep = useCallback(() => {
-    if (currentStep > 1) {
+    if (currentStep > PRIMER_PASO) {
       setCurrentStep(getPrevStep(currentStep));
     }
   }, [currentStep, getPrevStep]);
 
-  const goToStep = useCallback((step: number) => {
-    if (step >= 1 && step <= 6) {
-      setCurrentStep(step);
-    }
-  }, []);
+  const [pasoMasLejano, setPasoMasLejano] = useState<number>(PRIMER_PASO);
+  useEffect(() => {
+    setPasoMasLejano((m) => Math.max(m, currentStep));
+  }, [currentStep]);
+
+  const goToStep = useCallback(
+    (step: number) => {
+      if (step < PRIMER_PASO || step > ULTIMO_PASO) return;
+      setCurrentStep(pasoSeSalta(step, quienCrea) ? pasoSiguiente(step, quienCrea) : step);
+    },
+    [quienCrea],
+  );
 
   /**
    * W4 — retomar el borrador. Sólo corre cuando la persona lo pide desde el
@@ -476,16 +486,21 @@ export function ConsignacionWizard({
     });
 
     if (sePerdioElPropietario) {
-      setCurrentStep(1);
+      setCurrentStep(PASO.propietario);
       toast.warning(t('inmobiliaria.consignaciones.wizard.borrador.propietarioPerdidoTitle'), {
         description: t('inmobiliaria.consignaciones.wizard.borrador.propietarioPerdidoDesc'),
       });
       return;
     }
 
-    let paso = Math.min(Math.max(guardado.paso, 1), 6);
-    if (isAgentRole && paso === 4) paso = 5;
-    setCurrentStep(paso);
+    // Un borrador guardado con el orden de pasos de antes retoma desde el primero.
+    setCurrentStep(
+      pasoParaRetomar(
+        { paso: guardado.paso, ordenDePasos: (guardado.datos as Partial<WizardFormData>).ordenDePasos },
+        { esAsesor: isAgentRole, soloVenta: (guardado.datos as Partial<WizardFormData>).listingType === 'sale' },
+      ),
+    );
+    setFormData((prev) => ({ ...prev, ordenDePasos: ORDEN_DE_PASOS }));
   }, [borrador, propietarios, propietarioInicial, isAgentRole, t]);
 
   /**
@@ -591,7 +606,8 @@ export function ConsignacionWizard({
             department:   formData.department,
             listingType:  formData.listingType ?? 'rent',
             monthlyRent:  isSaleListing ? null : (formData.monthlyRent ?? 0),
-            salePrice:    isSaleListing ? (formData.salePrice ?? null) : null,
+            // «Arriendo y venta» (27-10-2026): el arriendo viaja también con su precio de venta.
+            salePrice:    isSaleListing || formData.tambienEnVenta ? (formData.salePrice ?? null) : null,
             consignedAt:  formData.consignedAt,
             // IN-16: barrio, descripción, habitaciones, baños y área sólo si se
             // escribieron (y habitaciones/baños sólo si el tipo los tiene).
@@ -601,6 +617,8 @@ export function ConsignacionWizard({
             ...(formData.videoUrl?.trim() ? { videoUrl: formData.videoUrl.trim() } : {}),
             // Las características sólo si marcaron alguna (21-10-2026).
             ...(formData.amenities?.length ? { amenities: formData.amenities } : {}),
+            // Cuántos parqueaderos, si marcaron «Parqueadero» (28-10-2026).
+            ...(formData.parkingSpaces && formData.amenities?.includes('parking') ? { parkingSpaces: formData.parkingSpaces } : {}),
             // 🔴 Sólo si lo apagaron: encendido es lo de siempre (Nico, 10-10-2026).
             ...(formData.publicarEnElMarketplace === false ? { publicadoEnMarketplace: false } : {}),
           }, { idempotencyKey });
@@ -721,6 +739,9 @@ export function ConsignacionWizard({
       // dentro de la misma transacción del create() de la propiedad.
       const agenteUserId = selectedAgente?.userId ?? user?.id;
       let consignacionCreada: { id: string } | null = null;
+      // Sin propietario (Juan, 27-10-2026: «propietario opcional»): sólo el inmueble; la consignación nace cuando
+      // se registre el propietario, con lo pactado aquí (las condiciones de la captación, más abajo).
+      if (!formData.propietarioId) hechos.consignacion = true;
       if (!hechos.consignacion) {
         try {
           // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
@@ -814,6 +835,23 @@ export function ConsignacionWizard({
        * lo deja también como borrador del inventario de la ficha). Si falla,
        * la consignación ya existe: se dice y se sigue.
        */
+      /*
+       * Las condiciones de la captación (back `apuntes-del-inmueble`, 27-10-2026): sin propietario, la comisión, el
+       * plazo y el inventario se guardan con el inmueble; en «arriendo y venta», además la comisión de venta (la
+       * consignación de arriendo no la lleva). Si falla, el inmueble ya existe: se dice y se sigue.
+       */
+      if (!hechos.condiciones && (!formData.propietarioId || formData.tambienEnVenta)) {
+        hechos.condiciones = true;
+        try {
+          await apuntesDelInmuebleApi.guardarCondiciones(propertyId, condicionesDelAsistente(formData));
+        } catch (error) {
+          console.error('Error saving the captación conditions:', error);
+          toast.warning('No pudimos guardar la comisión con el inmueble', {
+            description: `${mensajeParaLaPersona(error, { accion: 'guardar la comisión' })} La pones cuando registres al propietario.`,
+          });
+        }
+      }
+
       const inventario = isSaleListing ? [] : itemsDelInventarioDelAsistente(formData.inventoryItems);
       if (inventario.length > 0 && consignacionCreada?.id) {
         try {
@@ -831,11 +869,16 @@ export function ConsignacionWizard({
         // inmueble nace DRAFT (`POST /properties`), así que basta con no
         // publicarlo; lo que falta es DECIRLO, para que nadie lo busque en el
         // portal.
-        toast.success(t('inmobiliaria.consignaciones.wizard.toasts.draftSavedTitle'), {
-          description: t('inmobiliaria.consignaciones.wizard.toasts.draftSavedDesc', {
-            title: formData.propertyTitle || '',
-          }),
-        });
+        toast.success(
+          !formData.propietarioId
+            ? 'Inmueble guardado como borrador'
+            : t('inmobiliaria.consignaciones.wizard.toasts.draftSavedTitle'),
+          {
+            description: t('inmobiliaria.consignaciones.wizard.toasts.draftSavedDesc', {
+              title: formData.propertyTitle || '',
+            }),
+          },
+        );
         router.push(destinoAlSalir);
         reiniciarCreacion();
         return;
@@ -873,11 +916,20 @@ export function ConsignacionWizard({
         return;
       }
 
-      toast.success(t('inmobiliaria.consignaciones.wizard.toasts.successTitle'), {
-        description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', {
-          title: formData.propertyTitle || '',
-        }),
-      });
+      if (!formData.propietarioId) {
+        toast.success('Inmueble publicado', {
+          description:
+            formData.publicarEnElMarketplace === false
+              ? `«${formData.propertyTitle || ''}» ya está en tu portafolio. El propietario lo agregas cuando vayas a hacer el contrato.`
+              : `«${formData.propertyTitle || ''}» ya está en tu portafolio y en el marketplace. El propietario lo agregas cuando vayas a hacer el contrato.`,
+        });
+      } else {
+        toast.success(t('inmobiliaria.consignaciones.wizard.toasts.successTitle'), {
+          description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', {
+            title: formData.propertyTitle || '',
+          }),
+        });
+      }
 
       router.push(destinoAlSalir);
       // Terminó bien: la próxima creación (otro inmueble) lleva clave nueva.
@@ -959,18 +1011,20 @@ export function ConsignacionWizard({
       erroresDelServidor,
     };
 
-    switch (currentStep) {
-      case 1:
-        return <StepSelectPropietario {...stepProps} ownerServerError={ownerServerError} />;
-      case 2:
+    switch (claveDelPaso(currentStep)) {
+      case 'inmueble':
         return <StepPropertyData {...stepProps} />;
-      case 3:
+      case 'fotos':
+        return <StepFotos {...stepProps} />;
+      case 'propietario':
+        return <StepSelectPropietario {...stepProps} ownerServerError={ownerServerError} />;
+      case 'comision':
         return <StepCommissionTerms {...stepProps} />;
-      case 4:
+      case 'agente':
         return <StepAssignAgent {...stepProps} />;
-      case 5:
-        return <StepActaEntrega {...stepProps} />;
-      case 6:
+      case 'inventario':
+        return <StepInventario {...stepProps} />;
+      case 'confirmar':
         return <StepConfirmation {...stepProps} onGoToStep={goToStep} />;
       default:
         return null;
@@ -978,24 +1032,19 @@ export function ConsignacionWizard({
   };
 
   // Calculate completed steps
+  // Juan y Nico, 27-10-2026 («no está dejando mover entre pasos que ya fueron llenados»): se recuerda hasta qué
+  // paso llegó y se puede volver a cualquiera de esos, también hacia adelante. Desde el paso 1 sigue siendo con
+  // «Siguiente» (ahí se guarda el propietario nuevo) y nunca con el paso actual incompleto.
   const getStepStatus = (stepId: number) => {
     if (stepId < currentStep) return 'completed';
     if (stepId === currentStep) return 'current';
+    // Desde el paso del propietario se sale con «Siguiente» (ahí se guarda el propietario nuevo).
+    if (stepId <= pasoMasLejano && currentStep !== PASO.propietario && isStepValid) return 'completed';
     return 'upcoming';
   };
 
-  // Visible steps depend on role only (agents skip "Agent"). Step 5 stays
-  // visible for both listing types — T-0042 relabels it "Photos" and swaps
-  // its icon for a sale listing, since it renders photos-only there
-  // (StepActaEntrega).
-  const visibleSteps = STEPS.filter((s) => {
-    if (isAgentRole && s.id === 4) return false;
-    return true;
-  }).map((s) =>
-    s.id === 5 && isSaleListing
-      ? { ...s, labelKey: 'inmobiliaria.consignaciones.wizard.steps.photos', icon: Camera }
-      : s
-  );
+  // Los pasos que se ven: el asesor no ve «Agente»; sólo en venta no hay «Inventario».
+  const visibleSteps = STEPS.filter((s) => !pasoSeSalta(s.id, quienCrea));
   const totalVisible = visibleSteps.length;
   // Position of current step among visible steps (1-based)
   const currentVisibleIndex = visibleSteps.findIndex((s) => s.id === currentStep);
@@ -1020,8 +1069,8 @@ export function ConsignacionWizard({
         {borradorEncontrado && (
           <AvisoDeBorradorDePublicacion
             actualizadoEn={borradorEncontrado.actualizadoEn}
-            paso={Math.min(Math.max(borradorEncontrado.paso, 1), 6)}
-            totalDePasos={6}
+            paso={Math.min(Math.max(borradorEncontrado.paso, PRIMER_PASO), TOTAL_DE_PASOS)}
+            totalDePasos={TOTAL_DE_PASOS}
             fotos={borradorEncontrado.fotos.length}
             fotosNoGuardadas={borradorEncontrado.fotosNoGuardadas}
             onContinuar={continuarBorrador}
@@ -1161,7 +1210,7 @@ export function ConsignacionWizard({
 
           {/* Navigation Buttons */}
           <div className="flex flex-wrap items-center justify-end gap-3">
-            {currentStep > 1 && (
+            {currentStep > PRIMER_PASO && (
               <Button
                 type="button"
                 variant="outline"
@@ -1173,7 +1222,7 @@ export function ConsignacionWizard({
               </Button>
             )}
 
-            {currentStep < 6 ? (
+            {currentStep < ULTIMO_PASO ? (
               <>
               {/* Revisora r25: «Siguiente» apagado dice qué falta, al lado y sólo mientras está apagado. */}
               {!isStepValid && porQueNoSigue ? (
@@ -1187,12 +1236,26 @@ export function ConsignacionWizard({
                 onClick={goToNextStep}
                 disabled={!isStepValid || isPersistingOwner}
                 isLoading={isPersistingOwner}
+                data-testid="asistente-siguiente"
               >
-                {t('inmobiliaria.consignaciones.wizard.next')}
+                {/* Los dos pasos opcionales lo dicen en el botón (Juan, 27-10-2026). */}
+                {currentStep === PASO.propietario && sinPropietario
+                  ? 'Seguir sin propietario'
+                  : currentStep === PASO.inventario &&
+                      !(formData.inventoryItems ?? []).some((i) => i.name.trim())
+                    ? 'Seguir sin inventario'
+                    : t('inmobiliaria.consignaciones.wizard.next')}
                 <CaretRight className="w-4 h-4" />
               </Button>
               </>
             ) : (
+              <>
+              {/* 27-10 (Juan): el último paso también dice qué falta, en vez de un botón apagado mudo. */}
+              {!isStepValid && porQueNoSigue ? (
+                <span className="text-caption text-fg-muted max-sm:basis-full max-sm:text-right" data-testid="por-que-no-sigue">
+                  {porQueNoSigue}
+                </span>
+              ) : null}
               <Button
                 type="button"
                 hideArrow
@@ -1207,10 +1270,16 @@ export function ConsignacionWizard({
                 ) : (
                   <>
                     <Check className="w-4 h-4" weight="bold" />
-                    {t('inmobiliaria.consignaciones.wizard.confirmConsignment')}
+                    {/* Sin propietario no hay consignación que confirmar: se publica (o se guarda) el inmueble. */}
+                    {sinPropietario
+                      ? formData.publicarEnElMarketplace === false
+                        ? 'Guardar inmueble'
+                        : 'Publicar inmueble'
+                      : t('inmobiliaria.consignaciones.wizard.confirmConsignment')}
                   </>
                 )}
               </Button>
+              </>
             )}
           </div>
         </div>
@@ -1226,7 +1295,7 @@ export function ConsignacionWizard({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => goToStep(5)}>
+            <AlertDialogCancel onClick={() => goToStep(PASO.fotos)}>
               {t('inmobiliaria.consignaciones.wizard.sinFotosDialog.addPhotos')}
             </AlertDialogCancel>
             <AlertDialogAction

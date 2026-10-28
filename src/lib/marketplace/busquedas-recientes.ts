@@ -49,3 +49,34 @@ export function guardarReciente(qs: string, titulo: string): BusquedaReciente[] 
   }
   return lista;
 }
+
+/**
+ * Borrar búsquedas (Nico, 27-10-2026: «las personas deberían de tener la posibilidad de poder eliminar sus
+ * búsquedas»). Se escribe la lista que quedó y se avisa a quien la esté mostrando (el lado y la conversación
+ * llevan cada uno su copia). Con el almacenamiento bloqueado, el aviso igual lleva la lista: se borra en la
+ * página aunque no se pueda guardar.
+ */
+const AL_CAMBIAR = 'leasefy:marketplace-busquedas';
+
+export function escribirRecientes(lista: BusquedaReciente[]): BusquedaReciente[] {
+  const limpia = lista.filter(valida).slice(0, MAXIMO);
+  try {
+    window.localStorage.setItem(CLAVE, JSON.stringify(limpia));
+  } catch {
+    // Sin almacenamiento: queda sólo en la página.
+  }
+  window.dispatchEvent(new CustomEvent<BusquedaReciente[]>(AL_CAMBIAR, { detail: limpia }));
+  return limpia;
+}
+
+/** La lista sin esa búsqueda. */
+export function sinLaBusqueda(lista: BusquedaReciente[], qs: string): BusquedaReciente[] {
+  return lista.filter((r) => r.qs !== qs);
+}
+
+/** Para seguir la lista cuando otra parte de la página borra o devuelve búsquedas. Devuelve cómo dejar de oír. */
+export function alCambiarLasRecientes(fn: (lista: BusquedaReciente[]) => void): () => void {
+  const oir = (e: Event) => fn((e as CustomEvent<BusquedaReciente[]>).detail ?? leerRecientes());
+  window.addEventListener(AL_CAMBIAR, oir);
+  return () => window.removeEventListener(AL_CAMBIAR, oir);
+}

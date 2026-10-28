@@ -350,7 +350,7 @@ export default function PropietariosGuidePage() {
                   <Link href="/publicar">Publicar inmueble</Link>
                 </Button>
                 <Button variant="outline" asChild hideArrow>
-                  <Link href="/pricing">Ver planes y precios</Link>
+                  <a href="/#planes">Ver planes y precios</a>
                 </Button>
               </div>
 

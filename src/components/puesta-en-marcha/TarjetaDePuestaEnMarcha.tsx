@@ -106,7 +106,7 @@ export function TarjetaDePuestaEnMarcha({
         // En escritorio, el MISMO alto para los dos pasos: en el relevo la
         // tarjeta no crece ni se corre; lo que no cabe scrollea en la columna
         // del contenido, con la foto quieta. En teléfono scrollea la tarjeta.
-        className="grid max-h-[calc(100dvh-32px)] w-full max-w-[880px] grid-cols-[minmax(0,1fr)] overflow-y-auto overscroll-contain rounded-[24px] border border-border bg-surface shadow-lg outline-none md:h-[min(880px,calc(100dvh-32px))] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:grid-rows-[minmax(0,1fr)] md:overflow-hidden"
+        className="grid max-h-[calc(100dvh-32px)] w-full max-w-[880px] grid-cols-[minmax(0,1fr)] overflow-y-auto overscroll-contain rounded-[24px] border border-border bg-surface shadow-lg outline-none md:h-auto md:max-h-[min(720px,calc(100dvh-48px))] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:grid-rows-[minmax(0,1fr)] md:overflow-hidden"
         style={{ overscrollBehavior: 'contain' }}
         data-lenis-prevent
         data-entrada={entrada}

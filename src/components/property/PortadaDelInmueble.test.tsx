@@ -45,7 +45,9 @@ describe('primeraFoto', () => {
 describe('PortadaDelInmueble', () => {
   it('un inmueble migrado sin fotos dice «Sin fotos» y no pinta una imagen rota', () => {
     const el = render(<PortadaDelInmueble property={{ images: [], thumbnailUrl: '' }} alt="Apartamento en La Playita" />);
-    expect(el.querySelector('img')).toBeNull();
+    // Sin foto rota: sólo la ilustración 3D de su tipo (Nico, 27-10-2026), marcada `data-ilustracion`.
+    expect(el.querySelector('img:not([data-ilustracion])')).toBeNull();
+    expect(el.querySelector('img[data-ilustracion]')?.getAttribute('src')).toMatch(/-voltaje\.webp$/);
     expect(el.querySelector('[data-testid="inmueble-sin-fotos"]')?.textContent).toContain('Sin fotos');
   });
 

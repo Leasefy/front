@@ -376,7 +376,8 @@ describe('ProtectedRoute — invited NEW user (needsOnboarding)', () => {
 
     await renderPanel()
 
-    expect(replaceMock).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+    // Nico 27-10: la inmobiliaria vuelve al registro corto del publicador, nunca al asistente largo.
+    expect(replaceMock).toHaveBeenCalledWith('/publica?perfil=agency')
     expect(replaceMock).not.toHaveBeenCalledWith('/onboarding/seleccionar-rol')
   })
 

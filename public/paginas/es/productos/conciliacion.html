@@ -91,6 +91,8 @@ ul,ol{list-style:none}
 .hdr .wrap{display:flex;align-items:center;height:100%;gap:26px}
 .logo{display:flex;align-items:center;height:40px}
 .logo svg{height:26px;width:auto;fill:var(--tinta)}
+/* Nico 27-10: el logo un poco más grande y el menú más separado de él */
+.hdr .logo svg{height:30px}.hdr .nav{margin-left:22px}
 .nav{display:flex;align-items:center;gap:24px;font-size:15px;color:var(--grafito)}
 .nav>a,.nav-btn{display:inline-flex;align-items:center;gap:8px;transition:color .2s;height:40px}
 .nav>a:hover,.nav-btn:hover,.nav-btn[aria-expanded="true"]{color:var(--tinta)}
@@ -116,7 +118,7 @@ ul,ol{list-style:none}
 .reloj .pista{display:flex;gap:2px}
 .reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
 .reloj .pista i.on{background:var(--voltaje-dot)}
-.hdr-cta{display:flex;align-items:center;gap:10px}
+.hdr-cta{display:flex;align-items:center;gap:10px;margin-left:auto}
 .mbtn{display:none;height:38px;padding:0 14px;border-radius:12px;background:var(--btn-s);font-size:14px;font-weight:500;corner-shape:superellipse(1.5)}
 .menu{position:fixed;inset:calc(var(--hdr) + env(safe-area-inset-top,0px)) 0 0 0;z-index:59;background:var(--bg);padding:16px max(var(--gutter),env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(var(--gutter),env(safe-area-inset-left,0px));display:none;flex-direction:column;overflow:auto}
 .menu-abierto .menu{display:flex}
@@ -128,7 +130,7 @@ ul,ol{list-style:none}
 .menu .acc{display:flex;flex-direction:column;gap:10px;margin-top:24px}
 @media (max-width:1180px){.nav{display:none}.hdr-cta .pub{display:none}}
 @media (max-width:720px){
-  .hdr-cta{display:none}.mbtn{display:inline-flex;align-items:center}
+  .hdr-cta{display:none}.mbtn{margin-left:auto}.mbtn{display:inline-flex;align-items:center}
   .reloj{padding:0 10px}.reloj .dia,.reloj .pista{display:none}
   .hdr .wrap{gap:12px}
 }
@@ -391,6 +393,19 @@ section{position:relative;overflow-x:clip}
   .nota-chip{display:none}
   .nota-pie{display:block}
 }
+
+/* ── Entre secciones de la landing (Nico 27-10: «NO QUIERO INTERACCIONES TOSCAS ENTRE SECCIONES»): la barra
+   queda quieta (la misma en todas las páginas) y el contenido sale hacia arriba y entra subiendo. Las páginas
+   React (landing-v2.css) tienen exactamente lo mismo. Sin soporte del navegador, cambia como siempre. ── */
+@view-transition{navigation:auto}
+.hdr{view-transition-name:lf-barra}
+::view-transition-group(lf-barra){z-index:3;animation-duration:.42s;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
+::view-transition-old(lf-barra),::view-transition-new(lf-barra){animation-duration:.2s}
+::view-transition-old(root){animation:lf-pag-sale .26s cubic-bezier(.4,0,1,1) both}
+::view-transition-new(root){animation:lf-pag-entra .62s cubic-bezier(.16,1,.3,1) .05s both}
+@keyframes lf-pag-sale{to{opacity:0;transform:translateY(-12px) scale(.99);filter:blur(4px)}}
+@keyframes lf-pag-entra{from{opacity:0;transform:translateY(26px) scale(.995);filter:blur(6px)}}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
 </style>
 <style id="barra-de-la-home">
 /* ES / EN (Nico 23-10: «toda la landing en español e inglés») */
@@ -416,7 +431,7 @@ section{position:relative;overflow-x:clip}
 .reloj .pista{display:flex;gap:2px}
 .reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
 .reloj .pista i.on{background:var(--voltaje-dot)}
-.hdr-cta{display:flex;align-items:center;gap:10px}
+.hdr-cta{display:flex;align-items:center;gap:10px;margin-left:auto}
 .mbtn{display:none;height:38px;padding:0 14px;border-radius:12px;background:var(--arena);font-size:14px;font-weight:500;corner-shape:superellipse(1.5)}
 .menu{position:fixed;inset:var(--hdr) 0 0 0;z-index:59;background:var(--bg);padding:24px var(--gutter);display:none;flex-direction:column;gap:6px;overflow:auto}
 .menu-abierto .menu{display:flex}
@@ -430,7 +445,7 @@ section{position:relative;overflow-x:clip}
 @media (max-width:1100px){.nav{display:none}
 .hdr-cta .pub{display:none}
 .mbtn{display:inline-flex;align-items:center}}
-@media (max-width:720px){.hdr-cta{display:none}
+@media (max-width:720px){.hdr-cta{display:none}.mbtn{margin-left:auto}
 .mbtn{display:inline-flex;align-items:center}
 .reloj{padding:0 10px}
 .reloj .dia,.reloj .pista{display:none}
@@ -512,15 +527,11 @@ section{position:relative;overflow-x:clip}
       <a href="/es/avaluo">Avalúos</a>
       <a href="/es/contacto">Contacto</a>
     </nav>
-    <div class="reloj" aria-label="El día de una inmobiliaria, según dónde vas">
-      <span class="dia">JUE 22 OCT</span><span class="ap">PILOTO AUTOMÁTICO</span><b id="hora">07:02</b>
-      <span class="pista" id="pista" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-    </div>
     <div class="hdr-cta">
       <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
-      <a class="btn btn-s btn-sm pub" href="/publica">Publicar gratis</a>
+      <a class="btn btn-s btn-sm pub" href="/publica" data-con-sesion="">Publicar gratis</a>
       <a class="btn btn-s btn-sm" href="/auth" data-sin-sesion="">Entrar</a>
-      <a class="btn btn-p btn-sm" href="/auth?mode=register" data-sin-sesion="">Crear cuenta</a>
+      <a class="btn btn-p btn-sm" href="/publica" data-sin-sesion="">Publicar gratis</a>
       <a class="btn btn-p btn-sm" href="/ir-al-panel" data-con-sesion="">Ir al panel</a>
     </div>
     <button class="mbtn" id="mbtn" aria-expanded="false" aria-controls="menu">Menú</button>
@@ -542,7 +553,7 @@ section{position:relative;overflow-x:clip}
   <a class="it" href="/es/avaluo"><span>04</span>Avalúos</a>
   <a class="it" href="/es/contacto"><span>05</span>Contacto</a>
   <div class="idioma" role="group" aria-label="Idioma"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
-  <div class="acc"><a class="btn btn-p" href="/auth?mode=register" data-sin-sesion="">Crear cuenta</a><a class="btn btn-s" href="/auth" data-sin-sesion="">Entrar</a><a class="btn btn-p" href="/ir-al-panel" data-con-sesion="">Ir al panel</a><a class="btn btn-s" href="/publica">Publicar gratis</a></div>
+  <div class="acc"><a class="btn btn-p" href="/publica" data-sin-sesion="">Publicar gratis</a><a class="btn btn-s" href="/auth" data-sin-sesion="">Entrar</a><a class="btn btn-p" href="/ir-al-panel" data-con-sesion="">Ir al panel</a><a class="btn btn-s" href="/publica">Publicar gratis</a></div>
 </div>
 
 <main id="vista" tabindex="-1" data-armada="conciliacion"><section class="hero" id="arriba"><canvas class="corriente hero-pix" data-corriente="" data-marco="" data-claro=".37" data-semilla="38" data-celda="3" data-fuerza="1.1" aria-hidden="true"></canvas><div class="wrap"><div class="hero-txt"><p class="boleto"><i aria-hidden="true"></i><span>Agentes IA · 04</span><b>Agente</b></p><h1 class="t-xl" data-palabras="">Cuadre contra el banco, sin Excel</h1><p class="lead" data-r="">El cruce entre extracto y contrato deja de ser un Excel de viernes: cada pago encuentra su contrato solo.</p><div class="hero-cta" data-r=""><a class="btn btn-p" href="/es/contacto">Agendar una demo</a><a class="btn btn-s" href="/es#planes">Ver planes</a></div></div><div class="hero-escena"><div class="disp laptop" id="dispHero"><div class="marco"><span class="camara"></span><span class="isla"></span><div class="pantalla"><div class="capa" id="heroCapa"><img class="on" src="/internas/productos/img/p/conc-resumen.webp" alt="Conciliación bancaria: lo que cruzó el agente y lo que dejó para revisar" width="2400" height="1500" fetchpriority="high"></div><span class="pin" id="pin" aria-hidden="true"></span><span class="nota-chip" id="notaChip" aria-hidden="true"></span></div></div><span class="base"></span></div><p class="nota-pie" id="notaPie"></p></div></div></section><section class="sec" id="por-que"><div class="wrap"><div class="shead shead--split"><div><p class="ceja"><i aria-hidden="true"></i>Por qué importa</p><h2 class="t-l" data-palabras="">Lo que cambia en tu operación</h2></div><p class="lead" data-r="">Tres cambios que se sienten desde la primera semana, contados sobre la pantalla real.</p></div><div class="reco"><div class="reco-txt"><article class="hist on" data-i="0"><p class="hist-k"><span class="n">01</span>Cruce</p><h3>Banco y contratos, en la misma línea</h3><p class="cu">El agente lee el extracto y encuentra el contrato de cada pago: por referencia, por monto, por historia. El cuadre deja de ser un deporte de viernes.</p><div class="recorte"><div class="capa" style="transform:translate(-20.000%,0.000%) scale(1.2000)"><img class="on" src="/internas/productos/img/p/conc-movimientos.webp" alt="Movimientos del extracto con el cruce que sugiere el agente" loading="lazy" decoding="async"></div><span class="anillo" style="left:1.60%;top:9.60%;width:96.00%;height:74.40%"></span><span class="etq"><i aria-hidden="true"></i><span>Cada línea del banco con su cuota</span></span></div></article><article class="hist" data-i="1"><p class="hist-k"><span class="n">02</span>Excepciones</p><h3>Lo raro salta solo</h3><p class="cu">Referencias ambiguas, montos parciales, pagos duplicados: el agente los separa con una sugerencia de resolución, en vez de esconderlos en el promedio.</p><div class="recorte"><div class="capa" style="transform:translate(-20.000%,0.000%) scale(1.2000)"><img class="on" src="/internas/productos/img/p/conc-resumen.webp" alt="Conciliación bancaria: lo que cruzó el agente y lo que dejó para revisar" loading="lazy" decoding="async"></div><span class="anillo" style="left:1.60%;top:40.80%;width:96.00%;height:21.60%"></span><span class="etq"><i aria-hidden="true"></i><span>Lo que no cuadra, dicho en palabras</span></span></div></article><article class="hist" data-i="2"><p class="hist-k"><span class="n">03</span>Trazabilidad</p><h3>Cada peso con su historia</h3><p class="cu">De cada movimiento del extracto puedes llegar al contrato, al cobro y al informe del propietario. Auditoría sin arqueología.</p><div class="recorte"><div class="capa" style="transform:translate(0.000%,0.000%) scale(1.0000)"><img class="on" src="/internas/productos/img/p/conc-resumen.webp" alt="Conciliación bancaria: lo que cruzó el agente y lo que dejó para revisar" loading="lazy" decoding="async"></div><span class="anillo" style="left:18.00%;top:63.00%;width:80.00%;height:34.00%"></span><span class="etq"><i aria-hidden="true"></i><span>Quién concilió qué, y cuándo</span></span></div></article></div><div class="reco-fijo" aria-hidden="true"><div class="reco-pega"><div class="disp laptop"><div class="marco"><span class="camara"></span><span class="isla"></span><div class="pantalla"><div class="capa" id="recoCapa"><img class="on" src="/internas/productos/img/p/conc-movimientos.webp" alt=""><img alt=""></div><span class="anillo" id="recoAnillo"></span><span class="etq" id="recoEtq"><i></i><span></span></span></div></div><span class="base"></span></div><ol class="reco-puntos"><li class="on"></li><li></li><li></li></ol></div></div></div></div></section><section class="sec arena" id="capacidades"><div class="wrap"><div class="shead shead--center"><div><p class="ceja"><i aria-hidden="true"></i>Capacidades</p><h2 class="t-l" data-palabras="">Qué hace por ti</h2></div><p class="lead" data-r="">Cada pieza, tal como se ve en el panel.</p></div><div class="caps"><article class="cap cap--a" data-r=""><div class="clip" style="--ox:100%;--oy:0%;--zoom:1.200"><div class="clip-camara"><video muted="" loop="" playsinline="" preload="none" poster="/internas/productos/img/clips/conc-movimientos.webp" aria-label="Cruce automático, en el panel de Leasefy"><source src="/internas/productos/img/clips/conc-movimientos.mp4" type="video/mp4"></video></div></div><div class="cap-tx"><p class="cap-k">Cruce sugerido</p><h3>Cruce automático</h3><p>Extracto contra contratos, todos los días, sin planilla.</p></div></article><article class="cap cap--b" data-r=""><div class="clip" style="--ox:100%;--oy:0%;--zoom:1.200"><div class="clip-camara"><video muted="" loop="" playsinline="" preload="none" poster="/internas/productos/img/clips/conc-resumen.webp" aria-label="Alertas de no identificados, en el panel de Leasefy"><source src="/internas/productos/img/clips/conc-resumen.mp4" type="video/mp4"></video></div></div><div class="cap-tx"><p class="cap-k">Hallazgos</p><h3>Alertas de no identificados</h3><p>Lo que no cuadra se ve hoy, no al cierre.</p></div></article><article class="cap cap--c" data-r=""><div class="clip" style="--ox:100%;--oy:0%;--zoom:1.200"><div class="clip-camara"><video muted="" loop="" playsinline="" preload="none" poster="/internas/productos/img/clips/conc-avance.webp" aria-label="Avance a la vista, en el panel de Leasefy"><source src="/internas/productos/img/clips/conc-avance.mp4" type="video/mp4"></video></div></div><div class="cap-tx"><p class="cap-k">Avance</p><h3>Avance a la vista</h3><p>Cuántos movimientos cruzó el agente, con su tasa y el monto conciliado.</p></div></article><article class="cap cap--d" data-r=""><div class="clip quieta" style="--ox:100%;--oy:0%;--zoom:1.000"><div class="clip-camara"><video muted="" loop="" playsinline="" preload="none" poster="/internas/productos/img/clips/conc-actividad.webp" aria-label="Trazabilidad total, en el panel de Leasefy"><source src="/internas/productos/img/clips/conc-actividad.mp4" type="video/mp4"></video></div></div><div class="cap-tx"><p class="cap-k">Actividad</p><h3>Trazabilidad total</h3><p>Cada peso del banco con su inquilino, su cuota y su inmueble, y quién lo concilió.</p></div></article><aside class="cap cap--i" data-r=""><p class="cap-k">Corre</p><p class="cap-dato">Con cada extracto, todos los días</p><img class="cap-ilus" src="/ilustraciones/pago_confirmado-voltaje.webp" alt="" width="640" height="640" loading="lazy" decoding="async"></aside></div></div></section><section class="sec" id="ficha"><div class="wrap ficha-grid"><div class="ficha-cab"><p class="ceja"><i aria-hidden="true"></i>Ficha</p><h2 class="t-l" data-palabras="">La ficha, sin adornos</h2><p class="lead" data-r="">Los datos duros para decidir rápido — qué es, qué reemplaza y cuándo está operando.</p><div class="obj3d-caja" data-px="-50"><img class="obj3d" src="/internas/productos/img/3d/banco-voltaje.webp" alt="" width="640" height="640" loading="lazy"></div></div><dl class="spec"><div class="spec-f" data-r=""><dt>Agente</dt><dd><b>Conciliación</b> · L-AG-04</dd></div><div class="spec-f" data-r=""><dt>Corre</dt><dd>Con cada extracto, todos los días</dd></div><div class="spec-f" data-r=""><dt>Se alimenta de</dt><dd>Extractos bancarios + ERP de arriendos</dd></div><div class="spec-f" data-r=""><dt>Resuelve</dt><dd>Cruce banco–contrato, referencias ambiguas, parciales</dd></div><div class="spec-f" data-r=""><dt>Escala</dt><dd>Solo pagos sin identificar</dd></div><div class="spec-f" data-r=""><dt>Incluido en</dt><dd>Planes con agentes IA</dd></div></dl></div></section><section class="sec arena" id="puesta"><div class="wrap"><div class="shead shead--right"><div><p class="ceja"><i aria-hidden="true"></i>Puesta en marcha</p><h2 class="t-l" data-palabras="">Así entra a operar</h2></div><p class="lead" data-r="">Sin proyectos eternos: se prende por fases, contigo al volante.</p></div><div class="ruta3"><span class="linea" aria-hidden="true"><i class="lleno"></i></span><ol><li><span class="sq" aria-hidden="true"></span><span class="n">01</span><b>Conectas el extracto</b><p>El banco entra al sistema tal como llega.</p></li><li><span class="sq" aria-hidden="true"></span><span class="n">02</span><b>El agente cruza todo</b><p>Cruce por referencia, monto e historia de pago.</p></li><li><span class="sq" aria-hidden="true"></span><span class="n">03</span><b>Tesorería solo ve excepciones</b><p>Dos casos con sugerencia, no doscientas filas.</p></li></ol></div></div></section><section class="sec noche" id="noche"><div class="rayas-noche" data-motivo="rings" data-tono="on-navy" aria-hidden="true"></div><div class="wrap noche-grid"><div class="noche-tx"><p class="ceja"><i aria-hidden="true"></i>6:10 a.m., llega el extracto</p><h2 class="t-l" data-palabras="">El extracto se cuadra <em>solo</em></h2><p class="lead" data-r="">Cada peso del extracto sabe a qué contrato pertenece — y lo que no cuadra salta de una.</p></div><div class="noche-esc"><div class="disp laptop" id="dispNoche"><div class="marco"><span class="camara"></span><span class="isla"></span><div class="pantalla"><div class="capa"><img class="on" src="/internas/productos/img/p/conc-resumen-oscuro.webp" alt="Conciliación bancaria: lo que cruzó el agente y lo que dejó para revisar, en modo oscuro" loading="lazy" decoding="async"></div></div></div><span class="base"></span></div></div></div></section><section class="contacto" id="demo"><canvas class="corriente fin-pix" data-corriente="" data-forma="horizonte" data-semilla="41" data-celda="4" data-velocidad="1.6" data-fuerza=".72" aria-hidden="true"></canvas><div class="wrap"><p class="ceja"><i aria-hidden="true"></i>Demo</p><h2 class="t-xl" data-palabras="">Pon tu operación en <span class="acento">piloto automático</span> y dedícate a traer clientes.</h2><p class="lead" data-r="">Conciliamos un extracto real contigo en la demo.</p><div class="fin-cta" data-r=""><a class="btn btn-p btn-xl" href="/es/contacto">Agendar una demo</a><a class="btn btn-s btn-xl" href="/es#planes">Ver planes</a></div></div></section></main>
@@ -573,6 +584,7 @@ section{position:relative;overflow-x:clip}
 <script src="/internas/productos/js/04-vistas.js"></script>
 <script src="/internas/productos/js/05-marca-del-pie.js"></script>
 <script src="/internas/productos/js/99-mega-menu.js"></script>
+<script src="/landing/js/preparar-paginas.js"></script>
 
 
 </body></html>

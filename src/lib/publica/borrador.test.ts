@@ -30,7 +30,9 @@ describe('el publicador rápido (19-10-2026)', () => {
 
   it('publicar = disponible y en el marketplace; la venta sin canon, el arriendo sin precio de venta', () => {
     const arriendo = paraCrear(lleno);
-    expect(arriendo).toMatchObject({ status: 'AVAILABLE', publicadoEnMarketplace: true, listingType: 'rent', monthlyRent: 2_800_000, type: 'APARTMENT' });
+    expect(arriendo).toMatchObject({ status: 'AVAILABLE', listingType: 'rent', monthlyRent: 2_800_000, type: 'APARTMENT' });
+    // Publicado es el default de la base: no se manda (un back sin el campo lo rechazaba, 28-10).
+    expect('publicadoEnMarketplace' in arriendo).toBe(false);
     expect('salePrice' in arriendo).toBe(false);
     const venta = paraCrear({ ...lleno, operacion: 'sale', precio: 450_000_000 });
     expect(venta).toMatchObject({ listingType: 'sale', monthlyRent: null, salePrice: 450_000_000 });

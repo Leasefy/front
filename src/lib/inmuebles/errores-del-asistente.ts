@@ -11,6 +11,7 @@
 
 import type { WizardFormData } from '@/components/inmobiliaria/ConsignacionWizardSteps'
 import { erroresDelInmueble, type CampoDelInmueble } from './limites-del-inmueble'
+import { PASO } from './pasos-del-asistente'
 
 export type CampoDelAsistente = keyof WizardFormData
 
@@ -56,26 +57,26 @@ export const MAPA_DEL_MANDATO: Record<string, CampoDelAsistente | null> = {
 
 /** El paso donde se corrige cada campo. */
 export const PASO_DEL_CAMPO: Partial<Record<CampoDelAsistente, number>> = {
-  propertyTitle: 2,
-  propertyDescription: 2,
-  propertyType: 2,
-  propertyCity: 2,
-  propertyZone: 2,
-  propertyAddress: 2,
-  department: 2,
-  listingType: 2,
-  monthlyRent: 2,
-  salePrice: 2,
-  consignedAt: 2,
-  adminFee: 2,
-  bedrooms: 2,
-  bathrooms: 2,
-  area: 2,
-  amenities: 2,
-  commissionPercent: 3,
-  saleCommissionPercent: 3,
-  minimumTerm: 3,
-  videoUrl: 5,
+  propertyTitle: PASO.inmueble,
+  propertyDescription: PASO.inmueble,
+  propertyType: PASO.inmueble,
+  propertyCity: PASO.inmueble,
+  propertyZone: PASO.inmueble,
+  propertyAddress: PASO.inmueble,
+  department: PASO.inmueble,
+  listingType: PASO.inmueble,
+  monthlyRent: PASO.inmueble,
+  salePrice: PASO.inmueble,
+  consignedAt: PASO.inmueble,
+  adminFee: PASO.inmueble,
+  bedrooms: PASO.inmueble,
+  bathrooms: PASO.inmueble,
+  area: PASO.inmueble,
+  amenities: PASO.inmueble,
+  commissionPercent: PASO.comision,
+  saleCommissionPercent: PASO.comision,
+  minimumTerm: PASO.comision,
+  videoUrl: PASO.fotos,
 }
 
 export const CAMPOS_CON_LUGAR = Object.keys(PASO_DEL_CAMPO) as CampoDelAsistente[]

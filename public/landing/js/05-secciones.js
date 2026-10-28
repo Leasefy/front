@@ -57,7 +57,10 @@
     var tf; window.addEventListener("resize", function () { clearTimeout(tf); tf = setTimeout(pintarF, 160); });
     /* en el celular no hay puntero: la foto se revela cuando la tarjeta llega al centro */
     if (!box.classList.contains("ciudad") && window.matchMedia("(hover: none)").matches && "IntersectionObserver" in window) {
-      new IntersectionObserver(function (e) { box.classList.toggle("ver", e[0].isIntersecting); }, { rootMargin: "-35% 0px -35% 0px" }).observe(box);
+      /* se revela al llegar a la franja del centro y se vuelve a cubrir sólo cuando sale de la pantalla: con el
+         vaivén del dedo en el borde de la franja aparecía y desaparecía (Nico 27-10: «la imagen comienza a rebotar») */
+      new IntersectionObserver(function (e) { if (e[0].isIntersecting) box.classList.add("ver"); }, { rootMargin: "-35% 0px -35% 0px" }).observe(box);
+      new IntersectionObserver(function (e) { if (!e[0].isIntersecting) box.classList.remove("ver"); }).observe(box);
     }
   });
 
@@ -271,10 +274,22 @@
       caps.forEach(function (c, j) { c.classList.toggle("on", j === i - 4); });
     }
   }
-  pasos.forEach(function (p, i) {
-    ScrollTrigger.create({ trigger: p, start: function () { return LF.desk() ? "top 55%" : "top 80%"; }, end: function () { return LF.desk() ? "bottom 55%" : "bottom 80%"; },
-      onToggle: function (s) { if (s.isActive) ponPaso(i); } });
+  /* Nico 27-10 («en responsive, cuando llega a los lugares donde hay animación de scroll e imagen, la imagen
+     comienza a rebotar»): con el dedo el scroll va y viene unos píxeles. Parado en el borde entre dos pasos, cada
+     vaivén cambiaba de paso y la imagen volvía a entrar (subía, giraba y crecía) una y otra vez: 10 vaivenes de
+     25 px = 10 cambios. Ahora el paso cambia sólo al pasar el borde con holgura, y para volver al anterior hay que
+     devolverse esa misma holgura: el vaivén chico no cambia nada. */
+  var stPasos = pasos.map(function (p) {
+    return ScrollTrigger.create({ trigger: p, start: function () { return LF.desk() ? "top 55%" : "top 80%"; }, end: function () { return LF.desk() ? "bottom 55%" : "bottom 80%"; } });
   });
+  var elegirPaso = function () {
+    if (!stPasos.length) return;
+    var s = stPasos[0].scroll(), h = LF.holgura(), i = actual;
+    while (i < stPasos.length - 1 && s >= stPasos[i + 1].start + h) i++;
+    while (i > 0 && s <= stPasos[i].start - h) i--;
+    ponPaso(i);
+  };
+  ScrollTrigger.create({ start: 0, end: "max", onUpdate: elegirPaso, onRefresh: elegirPaso });
   ScrollTrigger.create({ trigger: ".escenario", start: "top 80%", once: true, onEnter: function () { introVista(0); } });
   gsap.from("#escCel", { y: 80, rotateX: 16, opacity: 0, duration: 1.2, ease: "expo.out", scrollTrigger: { trigger: ".como-grid", start: "top 80%" } });
 
@@ -380,7 +395,14 @@
       lleno.style.width = Math.max(0, w) + "px";
     };
     window.addEventListener("resize", function () { centros = []; });
-    var stF = ScrollTrigger.create({ trigger: fin, start: "top top+=68", end: "bottom bottom", onUpdate: function (s) { llenar(s.progress); ponE(Math.min(3, Math.floor(s.progress * 3.6))); } });
+    /* el mismo vaivén del dedo (ver «cómo funciona»): cada paso cambia con holgura, no justo en el borde */
+    var elegirE = function (s) {
+      var seg = s.progress * 3.6, largo = (s.end - s.start) / 3.6, h = largo > 0 ? LF.holgura() / largo : 0, i = fAct;
+      while (i < 3 && seg >= i + 1 + h) i++;
+      while (i > 0 && seg <= i - h) i--;
+      ponE(i);
+    };
+    var stF = ScrollTrigger.create({ trigger: fin, start: "top top+=68", end: "bottom bottom", onUpdate: function (s) { llenar(s.progress); elegirE(s); } });
     estR.forEach(function (e, i) { e.addEventListener("click", function () { var y = stF.start + (stF.end - stF.start) * Math.min(.98, (i + .15) / 3.6); if (LF.lenis) LF.lenis.scrollTo(y, { duration: 1 }); else window.scrollTo(0, y); }); });
     ScrollTrigger.create({ trigger: fin, start: "top 70%", once: true, onEnter: function () { var c = $(".fin-b.on .cifra"); LF.contar(c, 0, +c.dataset.v, 1.3, +c.dataset.d); } });
     gsap.from("#finLap", { y: 80, rotateX: 18, opacity: 0, duration: 1.2, ease: "expo.out", scrollTrigger: { trigger: fin, start: "top 75%" } });

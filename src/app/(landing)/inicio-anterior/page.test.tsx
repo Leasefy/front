@@ -23,7 +23,7 @@ vi.mock('next/font/google', () => {
     variable: opts.variable ?? '--font-mock',
     style: { fontFamily: 'mock-font' },
   })
-  return { Inter: fuente, Inter_Tight: fuente, IBM_Plex_Mono: fuente }
+  return { Inter: fuente, Inter_Tight: fuente, IBM_Plex_Mono: fuente, Host_Grotesk: fuente, DM_Mono: fuente }
 })
 
 const initLandingFxMock = vi.fn(() => () => {})

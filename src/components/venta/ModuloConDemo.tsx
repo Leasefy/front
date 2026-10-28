@@ -27,6 +27,7 @@ export function ModuloConDemo({
   empresa,
   queVio,
   yaEsCliente,
+  pagar,
 }: {
   demo: DemoDelModulo;
   quien: QuienCompra;
@@ -38,6 +39,11 @@ export function ModuloConDemo({
   queVio?: string | null;
   /** «¿Ya eres cliente?»: a dónde va quien ya habló con Leasefy. */
   yaEsCliente?: { href: string; texto: string };
+  /**
+   * 27-10-2026 (Nico: «pagar desde el panel»): el llamado principal pasa a ser pagar y abrir todo; WhatsApp queda
+   * al lado. `detalle` es el precio con SUS inmuebles («$99.000 al mes más IVA»).
+   */
+  pagar?: { href: string; texto: string; detalle?: string | null };
 }) {
   const [verDemo, setVerDemo] = useState(false);
   const whatsapp = enlaceDeWhatsApp({ quien, nombre, empresa, queVio });
@@ -72,10 +78,20 @@ export function ModuloConDemo({
             ))}
           </ul>
           <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
-            <Button asChild className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-center text-[15px] sm:w-auto" data-testid="quiero-leasefy">
+            {pagar && (
+              <Button asChild className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-center text-[15px] sm:w-auto" data-testid="pagar-y-abrir">
+                <Link href={pagar.href}>{pagar.texto}</Link>
+              </Button>
+            )}
+            <Button
+              asChild
+              variant={pagar ? 'secondary' : undefined}
+              className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-center text-[15px] sm:w-auto"
+              data-testid="quiero-leasefy"
+            >
               <a href={whatsapp} target="_blank" rel="noreferrer noopener">
                 <WhatsappLogo size={18} weight="fill" className="mr-2" aria-hidden="true" />
-                {llamado}
+                {pagar ? 'Hablar con Leasefy' : llamado}
               </a>
             </Button>
             {/* Ronda 30 (revisora r27): a 1440 la vista previa de al lado ya es «Ver cómo se vería…»; un solo llamado al demo por ancho. */}
@@ -85,7 +101,9 @@ export function ModuloConDemo({
             </Button>
           </div>
           <p className="mt-4 text-[13px] text-fg-subtle">
-            Te respondemos por WhatsApp y te contamos cuánto cuesta para ti.
+            {pagar
+              ? `${pagar.detalle ? `${pagar.detalle}. ` : ''}Se paga con tarjeta, PSE o Nequi y se abre al instante.`
+              : 'Te respondemos por WhatsApp y te contamos cuánto cuesta para ti.'}
             {yaEsCliente && (
               <>
                 {' '}

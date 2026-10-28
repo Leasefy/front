@@ -121,7 +121,8 @@ describe('post-login — retomar donde lo dejó', () => {
 
     await render()
 
-    expect(replaceMock).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+    // Nico 27-10: al registro corto del publicador, nunca al asistente largo.
+    expect(replaceMock).toHaveBeenCalledWith('/publica?perfil=agency')
   })
 
   it('onboarding sin terminar y sin perfil elegido → el selector', async () => {

@@ -23,6 +23,8 @@ import {
 import { cn } from '@/lib/utils';
 import { AgencyTierCard, BenefitCard } from '@/components/pricing/AgencyTierCard';
 import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario';
+import { PlanPorInmueble } from '@/components/pricing/PlanPorInmueble';
+import { tarifasApi, type TarifasDeLeasefy } from '@/lib/api/tarifas.service';
 import { PricingDetailSheet, type PlanDetail } from '@/components/pricing/PricingDetailSheet';
 import { PricingFAQSection, pricingFaqs } from '@/components/pricing/PricingFAQSection';
 
@@ -343,6 +345,19 @@ function cifraDelPlan(valor: number | null): string {
 
 export default function PricingPage() {
   const { planDe } = usePlanesDelPropietario();
+  const [planNuevo, setPlanNuevo] = useState<TarifasDeLeasefy | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    tarifasApi
+      .ver()
+      .then((t) => {
+        if (vivo && t?.vigente) setPlanNuevo(t);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, []);
   const [userTextT, setUserTextT] = useState<UserTextT>('owner-managed');
   const [exampleRent, setExampleRent] = useState(2000000);
   const [selectedAgencyPlan, setSelectedAgencyPlan] = useState<AgencyPlan>(null);
@@ -836,6 +851,11 @@ export default function PricingPage() {
               </p>
             </div>
 
+            {/* El plan por inmueble (27-10-2026) cuando ya se cobra así; si no, los planes de antes. */}
+            {planNuevo ? (
+              <PlanPorInmueble datos={planNuevo} />
+            ) : (
+            <>
             {/* Pricing Tiers Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
               {/* Starter - Gratis */}
@@ -930,6 +950,8 @@ export default function PricingPage() {
 
             {/* Flex Calculator */}
             <FlexCalculator />
+            </>
+            )}
 
             {/* Benefits */}
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">

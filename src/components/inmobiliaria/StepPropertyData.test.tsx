@@ -99,7 +99,25 @@ describe('<StepPropertyData> — rent/sale toggle swaps the price field (contrac
     act(() => {
       ;(saleOption as HTMLElement).click()
     })
-    expect(updateFormData).toHaveBeenCalledWith({ listingType: 'sale' })
+    expect(updateFormData).toHaveBeenCalledWith({ listingType: 'sale', tambienEnVenta: false })
+  })
+
+  // Juan, 27-10-2026: «que deje seleccionar ambos, arriendo y venta».
+  it('«Arriendo y venta» deja el arriendo y marca que también se vende; pide el canon Y el precio de venta', () => {
+    const { updateFormData } = render({})
+    const ambas = Array.from(container.querySelectorAll('button, [role="radio"]')).find((el) =>
+      el.textContent?.includes('Arriendo y venta'),
+    )
+    expect(ambas).toBeTruthy()
+    act(() => {
+      ;(ambas as HTMLElement).click()
+    })
+    expect(updateFormData).toHaveBeenCalledWith({ listingType: 'rent', tambienEnVenta: true })
+
+    render({ listingType: 'rent', tambienEnVenta: true })
+    const placeholders = Array.from(container.querySelectorAll('input')).map((i) => i.getAttribute('placeholder'))
+    expect(placeholders).toContain('inmobiliaria.consignaciones.wizard.step2.salePricePlaceholder')
+    expect(placeholders).toContain('inmobiliaria.consignaciones.wizard.step2.monthlyRentPlaceholder')
   })
 
   it('typing a sale price strips non-digits and calls updateFormData with a number', () => {

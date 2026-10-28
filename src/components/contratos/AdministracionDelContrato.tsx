@@ -440,7 +440,7 @@ export function AdministracionDelContrato({
             deConsignacion != null
               ? `${deConsignacion}%`
               : contract.comisionSinDefinir && delContrato != null
-                ? `${delContrato}% (la del contrato: el mandato no la traía)`
+                ? `${delContrato}% (la del contrato: la consignación no la traía)`
                 : null
           }
           ausente={

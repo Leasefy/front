@@ -18,6 +18,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Spinner } from '@/components/ui/spinner';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { useAuth } from '@/lib/auth/use-auth';
 import { SeccionCompleta } from './contenido';
 import {
   destinoDeParametrosViejos,
@@ -31,9 +32,10 @@ export default function ConfiguracionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAdmin, canAccess, isLoading, agencyRole } = usePermissions();
+  const cuentaDeAgente = useAuth().agency?.cuentaDeAgente === true;
 
   const destinoViejo = destinoDeParametrosViejos(searchParams);
-  const ctx = { isAdmin, canAccess, agencyRole };
+  const ctx = { isAdmin, canAccess, agencyRole, cuentaDeAgente };
   const puedeVerPerfil = puedeVerSeccion(seccionPorId('perfil'), ctx);
   const alternativa = isLoading || puedeVerPerfil ? null : (seccionesVisibles(ctx)[0] ?? null);
 

@@ -454,7 +454,7 @@ export function GaleriaDelMarketplace() {
   );
 
   return (
-    <div className="min-h-screen bg-background pt-16 lg:pt-[76px]" data-testid="galeria-del-marketplace">
+    <div className="min-h-screen bg-background pt-[68px]" data-testid="galeria-del-marketplace">
       <InterruptorDeVista
         vista="galeria"
         hrefConversacion={hayBusqueda(vigente) ? `/propiedades?${escribirBusqueda(vigente)}` : '/propiedades'}

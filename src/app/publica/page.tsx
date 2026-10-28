@@ -1,20 +1,28 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { getSupabase } from '@/lib/supabase/client';
+import { perfilQuePublicaDeLaCuenta, perfilQuePublicaRecordado } from '@/lib/publica/perfil-que-publica';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react';
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
+import { RegaloDelAliado } from '@/components/conversion/EscenaDeMarca';
+import { PasosDePublicar, type MomentoDePublicar } from '@/components/publica/PasosDePublicar';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/use-auth';
 import { RegistroRapido } from '@/components/publica/RegistroRapido';
 import { PublicadorRapido } from '@/components/publica/PublicadorRapido';
-import { VentanaParaPublicar, type PerfilQuePublica } from '@/components/marketplace/VentanaParaPublicar';
+import { VentanaParaPublicar, esPerfilQuePublica, type PerfilQuePublica } from '@/components/marketplace/VentanaParaPublicar';
 import { CONFIRMAR_CON_CODIGO, DESTINOS_PARA_PUBLICAR } from '@/components/marketplace/CuentaParaPublicar';
 import type { CaminoParaMuchos } from '@/components/publica/TraerMuchos';
 import { marketplaceApi, paginaDe } from '@/lib/api/marketplace.service';
+import { conversionApi } from '@/lib/api/conversion.service';
+import { guardarAliadoPendiente } from '@/lib/conversion/acceso';
+import { refiereYGanaApi } from '@/lib/api/refiere-y-gana.service';
+import { guardarReferidoPendiente, referidoPendiente } from '@/lib/refiere-y-gana/refiere-y-gana';
 
 const CAMINOS: CaminoParaMuchos[] = ['enlaces', 'excel', 'carpetas'];
 
@@ -61,16 +69,45 @@ function Publica() {
   const operacionInicial = operacionPedida === 'venta' ? 'sale' : operacionPedida === 'arriendo' ? 'rent' : null;
 
   const delParametro = sp.get('perfil');
+  const perfilDelEnlace: PerfilQuePublica | null = esPerfilQuePublica(delParametro) ? delParametro : null;
+  // QA 27-10-2026: el agente es de rol inmobiliaria; sin el perfil recordado (cuenta o navegador) se le mostraba
+  // «Tu inmobiliaria» al entrar con su clave.
+  const perfilDeLaCuenta = usePerfilQuePublicaDeLaCuenta(user?.id ?? null);
   const perfilPedido: PerfilQuePublica | null =
-    delParametro === 'agency' || delParametro === 'landlord'
-      ? delParametro
-      : perfilElegido === 'agency' || perfilElegido === 'landlord'
-        ? perfilElegido
-        : null;
+    perfilDelEnlace ??
+    perfilDeLaCuenta ??
+    (isAuthenticated ? perfilQuePublicaRecordado() : null) ??
+    (perfilElegido === 'agency' || perfilElegido === 'landlord' ? perfilElegido : null);
+  // Viene de «Crear cuenta» con el perfil ya dicho (p. ej. /para/agentes → `?perfil=agente`): la ventana abre sola.
+  const abiertaSola = useRef(false);
+  // 27-10-2026 (Nico: «¿por qué colocaste esto y no mostraste el modal de una vez?»): sin sesión, la ventana de
+  // «¿Quién va a publicar?» abre SIEMPRE de una; la pantalla de atrás sólo queda si la cierran.
+  useEffect(() => {
+    if (isLoading || isAuthenticated || abiertaSola.current) return;
+    abiertaSola.current = true;
+    setVentana(true);
+  }, [isLoading, isAuthenticated]);
+
+  // 27-10-2026 (Nico): vino por el enlace de un aliado (`/aliados/<codigo>`): el mes gratis queda pendiente y se
+  // activa al entrar al panel (MesGratisPendiente), ya con su inmobiliaria creada.
+  const aliado = useRegaloDelAliado(sp.get('aliado'));
+  // 28-10-2026 (Nico, Refiere y gana): vino por el enlace de un colega (`/r/<codigo>` → `?ref=`) o lo abrió en los
+  // últimos 30 días: el mismo regalo, con el nombre de quien invita. El código se usa al entrar al panel.
+  const colega = useRegaloDelColega(sp.get('ref'));
+  const regalo = aliado ?? colega;
+
+  // Los pasos de arriba (Nico, 28-10: «steps bonitos como los del onboarding viejo»): sólo en el registro corto y al publicar.
+  const [todoPublicado, setTodoPublicado] = useState(false);
+  let momento: MomentoDePublicar | null = null;
 
   let contenido: React.ReactNode;
   if (isLoading) {
-    contenido = <CargaDeMarca tamano="lg" />;
+    // Centrada (Nico, 27-10: «mira esta carga tan rara»: el logo quedaba arriba a la izquierda).
+    contenido = (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <CargaDeMarca tamano="lg" />
+      </div>
+    );
   } else if (!isAuthenticated || !user) {
     contenido = (
       <div className="mx-auto max-w-[460px] text-center" data-testid="publica-sin-cuenta">
@@ -79,13 +116,16 @@ function Publica() {
         <Button className="mt-7 h-12 rounded-full px-7 text-[15px]" onClick={() => setVentana(true)}>
           Empezar
         </Button>
-        <VentanaParaPublicar abierta={ventana} alCambiar={setVentana} destinos={DESTINOS_PARA_PUBLICAR} confirmarConCodigo={CONFIRMAR_CON_CODIGO} />
+        <VentanaParaPublicar abierta={ventana} alCambiar={setVentana} destinos={DESTINOS_PARA_PUBLICAR} confirmarConCodigo={CONFIRMAR_CON_CODIGO} perfilInicial={perfilDelEnlace} />
       </div>
     );
   } else if (!user.onboardingCompleted && !hasActiveAgencyMembership) {
     const nombre = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+    momento = 'datos';
     contenido = (
       <RegistroRapido
+        // El perfil de la cuenta llega después (es una lectura): con él, el registro corto vuelve a empezar en el suyo.
+        key={perfilPedido ?? 'sin-perfil'}
         perfilInicial={perfilPedido}
         nombreConocido={nombre}
         alTerminar={async () => {
@@ -113,9 +153,11 @@ function Publica() {
       </div>
     );
   } else {
+    momento = todoPublicado ? 'listo' : 'inmueble';
     contenido = (
       <PublicadorRapido
         usuario={user.id}
+        alCambiarDeMomento={setTodoPublicado}
         paginaPublica={paginaPublica}
         caminoInicial={caminoInicial}
         operacionInicial={operacionInicial}
@@ -131,9 +173,10 @@ function Publica() {
   return (
     <div className="min-h-screen bg-bg">
       <header className="sticky top-0 z-20 border-b border-border/70 bg-bg/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-[72px] max-w-[1100px] items-center justify-between px-4 sm:px-6">
           <Link href="/" aria-label="Leasefy — inicio" className="inline-flex text-fg">
-            <LeasefyLogotype size={20} title="Leasefy" />
+            {/* Del tamaño de la landing (30 px de alto, `.hdr .logo svg`; Nico 28-10: «lo veo súper pequeño»). */}
+            <LeasefyLogotype size={30} title="Leasefy" />
           </Link>
           <Link href="/propiedades" className="inline-flex items-center gap-1.5 text-[13.5px] text-fg-muted hover:text-fg">
             <ArrowLeft size={14} aria-hidden="true" />
@@ -141,9 +184,73 @@ function Publica() {
           </Link>
         </div>
       </header>
-      <main className="px-4 py-10 sm:px-6 sm:py-14">{contenido}</main>
+      <main className="px-4 py-10 sm:px-6 sm:py-14">
+        {regalo && <RegaloDelAliado aliado={regalo} className="mx-auto mb-8 max-w-[640px]" />}
+        {momento && <PasosDePublicar momento={momento} className="mb-10 sm:mb-12" />}
+        {contenido}
+      </main>
     </div>
   );
+}
+
+/** El perfil con que vino a publicar, de los datos de su cuenta (`perfil_que_publica`). */
+function usePerfilQuePublicaDeLaCuenta(userId: string | null): PerfilQuePublica | null {
+  const [perfil, setPerfil] = useState<PerfilQuePublica | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    let vivo = true;
+    getSupabase()
+      ?.auth.getUser()
+      .then(({ data }) => vivo && setPerfil(perfilQuePublicaDeLaCuenta(data.user?.user_metadata)))
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [userId]);
+  return perfil;
+}
+
+/** El nombre del aliado del enlace, si el código existe y sigue vigente (y deja el código pendiente). */
+function useRegaloDelAliado(codigo: string | null): string | null {
+  const [nombre, setNombre] = useState<string | null>(null);
+  useEffect(() => {
+    if (!codigo) return;
+    let vivo = true;
+    conversionApi
+      .alianza(codigo)
+      .then((a) => {
+        if (!vivo || !a.vigente) return;
+        guardarAliadoPendiente(a.codigo);
+        setNombre(a.nombre);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [codigo]);
+  return nombre;
+}
+
+/** El nombre del colega del enlace (o del código guardado), si sigue vigente; deja el código pendiente. */
+function useRegaloDelColega(codigoDelEnlace: string | null): string | null {
+  const [nombre, setNombre] = useState<string | null>(null);
+  useEffect(() => {
+    const codigo = codigoDelEnlace ?? referidoPendiente();
+    if (!codigo) return;
+    let vivo = true;
+    refiereYGanaApi
+      .codigo(codigo)
+      .then((c) => {
+        if (!vivo || !c.vigente) return;
+        guardarReferidoPendiente(c.codigo);
+        setNombre(c.deQuien);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [codigoDelEnlace]);
+  return nombre;
 }
 
 export default function PublicaPage() {

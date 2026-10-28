@@ -122,6 +122,7 @@ function ProvisionedOnboardingWizard() {
     return (
       <EleccionDePerfil
         abiertaAlInicio
+        formularioDeLaInmobiliariaAlLado
         volverAlAsistente={corrigiendo && sessionId ? volverAlAsistente : undefined}
         panelDeInmobiliaria={(cerrar, _alAbrirRegistro, alSaberSiPuedeCambiar, alSaberDelRegistroAMedias) => (
           <PanelAntesDeComenzar

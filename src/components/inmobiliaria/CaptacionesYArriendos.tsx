@@ -185,7 +185,7 @@ function ResumenPorAsesor({
                 <SinDatos
                   queSon="captaciones ni arriendos del equipo"
                   titulo="Nadie del equipo tiene captaciones ni arriendos en este rango"
-                  descripcion="Cuando un asesor traiga un mandato o cierre un arriendo, aparece aquí con su conteo."
+                  descripcion="Cuando un asesor traiga una consignación o cierre un arriendo, aparece aquí con su conteo."
                   ilustracion="equipo"
                   className="py-10"
                 />
@@ -315,7 +315,7 @@ function TablaDelPeriodo({
                   titulo={pestana === 'captaciones' ? 'Ninguna captación en el rango' : 'Ningún arriendo cerrado en el rango'}
                   descripcion={
                     pestana === 'captaciones'
-                      ? 'Cuando el equipo traiga un mandato en estas fechas, aparece aquí con quién lo trajo.'
+                      ? 'Cuando el equipo traiga una consignación en estas fechas, aparece aquí con quién lo trajo.'
                       : 'Cuando el equipo cierre un arriendo en estas fechas, aparece aquí con quién lo cerró.'
                   }
                   ilustracion={pestana === 'captaciones' ? 'megafono' : 'llaves'}

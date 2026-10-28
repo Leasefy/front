@@ -56,8 +56,8 @@ describe('<LandingRegistroCta>', () => {
     render({ variant: 'header' })
     const anchor = container.querySelector('a')!
     // Nico (23-10): el primario es «Crear cuenta» (antes «Empezar ahora»), como la landing nueva.
-    expect(anchor.textContent).toBe('Crear cuenta')
-    expect(anchor.getAttribute('href')).toBe('/auth?mode=register')
+    expect(anchor.textContent).toBe('Publicar gratis')
+    expect(anchor.getAttribute('href')).toBe('/publica')
     expect(anchor.className).toBe('btn primary sm')
   })
 
@@ -113,7 +113,7 @@ describe('<LandingRegistroCta>', () => {
     render({ variant: 'banner' })
     const anchor = container.querySelector('a')!
     // Nico (23-10): el primario es «Crear cuenta» (antes «Empezar ahora»), como la landing nueva.
-    expect(anchor.textContent).toBe('Crear cuenta')
-    expect(anchor.getAttribute('href')).toBe('/auth?mode=register')
+    expect(anchor.textContent).toBe('Publicar gratis')
+    expect(anchor.getAttribute('href')).toBe('/publica')
   })
 })

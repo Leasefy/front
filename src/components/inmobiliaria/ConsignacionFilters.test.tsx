@@ -185,3 +185,19 @@ describe('la franja de cajones de Inmuebles', () => {
     expect(chip('all')!.className).toBe(chip('disponible')!.className)
   })
 })
+
+describe('el filtro por agente usa el usuario del agente', () => {
+  // 🔴 25-10: `consignacion.agenteId` es el `User.id`; el selector mandaba el `AgencyMember.id` y el filtro
+  // no encontraba nada. Con el filtro puesto en el usuario, el rótulo dice el nombre del agente.
+  it('con el filtro en el userId, el rótulo dice el nombre del agente', () => {
+    montar({
+      filters: { ...FILTROS, agenteId: 'user-ana' },
+      agentes: [{ id: 'miembro-ana', userId: 'user-ana', name: 'Ana Gómez' } as never],
+    })
+    const boton = container.querySelector('[data-testid="filtros-mas"]') as HTMLElement | null
+    act(() => {
+      boton?.click()
+    })
+    expect(document.body.textContent).toContain('Ana Gómez')
+  })
+})

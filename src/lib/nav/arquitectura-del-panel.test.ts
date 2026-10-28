@@ -209,7 +209,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 29 módulos en 5 grupos con nombre (+ Inicio y Chat = 31 filas)', () => {
+  it('el sidebar tiene 30 módulos en 5 grupos con nombre (+ Inicio y Chat = 32 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -246,7 +246,8 @@ describe('arquitectura del panel — sidebar', () => {
     // poder probarlos»).
     // 14-10-2026 (ROLES): 28 con «Jurídico», que sólo ve el abogado externo.
     // 22-10-2026 (Portofino): 29 con «Servicios públicos» en Operación.
-    expect(modulos).toHaveLength(29);
+    // 28-10-2026 (Nico): 30 con «Firmas» en Captación (cualquier documento firmado con nuestro código).
+    expect(modulos).toHaveLength(30);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -314,6 +315,7 @@ describe('arquitectura del panel — sidebar', () => {
       '/pagos/calendario': 'dias-habiles', // la tarjeta dice lo que se corrige, no «calendario» (revisora r27, C12)
       '/pipeline': 'prospeccion', // vocabulario: manual de voz (22-10), sin anglicismos en el menú
       '/postulaciones/matching': 'afinidad', // decisión 26 de Nico (22-10): «Matching» → «Afinidad»; la ruta se conserva
+      '/pipeline/comisiones-compartidas': 'comision-compartida', // la fila nombra UNA; la pantalla lista todas (28-10)
     };
     /*
      * 🔴 R4 mide el nombre con el que se NAVEGA a la ruta, que para la raíz de

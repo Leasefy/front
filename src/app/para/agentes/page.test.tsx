@@ -67,8 +67,8 @@ describe('/para/agentes · identidad nueva', () => {
     const todos = enlaces(contenedor);
     expect(todos).toContain('Crear cuenta gratis → /auth?role=agent');
     expect(todos).toContain('Ver cómo funciona → /pricing');
-    expect(todos).toContain('Empezar gratis → /auth?mode=register&role=agency');
-    expect(todos).toContain('Ver precios → /pricing');
+    expect(todos).toContain('Empezar gratis → /publica?perfil=agency');
+    expect(todos).toContain('Ver precios → /#planes');
   });
 
   // Ronda 30 (a propósito): sólo cifras que se pueden sostener y sin testimonios (eran inventados).

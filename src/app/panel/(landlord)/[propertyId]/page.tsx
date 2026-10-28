@@ -55,6 +55,7 @@ import type { LandlordCandidate, LandlordCandidateStatus } from '@/lib/types/lan
 import type { Candidate } from '@/lib/types/candidate';
 import { RISK_LEVELS } from '@/lib/types/risk-score';
 import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
+import { AgenteDelInmueble } from '@/components/panel/AgenteDelInmueble';
 import { DEFAULT_AVAILABILITY_SCHEDULE, type AvailabilitySchedule } from '@/lib/types/property';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { canPlanAccessFeature } from '@/lib/constants/subscription-plans';
@@ -201,6 +202,8 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
     { id: 'rejected', label: 'Rechazados', count: counts.rejected },
     { id: 'visits', label: 'Visitas', count: propertyVisits.length },
     { id: 'schedule', label: 'Horarios' },
+    // El agente inmobiliario que trabaja este inmueble (Nico, 27-10-2026).
+    { id: 'agente', label: 'Tu agente' },
   ];
 
   // Transform candidates for table
@@ -1060,7 +1063,9 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
 
               {/* Content based on active tab */}
               <TabsContent value={activeTab} className="mt-0">
-            {activeTab === 'schedule' ? (
+            {activeTab === 'agente' ? (
+              <AgenteDelInmueble propertyId={propertyId} />
+            ) : activeTab === 'schedule' ? (
               <AvailabilityScheduleEditor
                 schedule={availabilitySchedule}
                 onSave={handleSaveSchedule}

@@ -30,6 +30,7 @@ import {
   Flask,
   GraduationCap,
   HandCoins,
+  Handshake,
   Heartbeat,
   HouseLine,
   IdentificationCard,
@@ -96,6 +97,7 @@ export const PANTALLAS_DEL_ADMIN: Record<string, DatosDeLaPantalla> = {
   '/admin/registration-profiles': { seccion: 'inmobiliarias', icono: UserCirclePlus, nombre: 'Perfiles de registro', queHay: 'Qué perfiles se pueden registrar' },
   '/admin/plans': { seccion: 'inmobiliarias', icono: Stack, nombre: 'Planes', queHay: 'El catálogo de planes de las inmobiliarias' },
   '/admin/pricing-config': { seccion: 'inmobiliarias', icono: Tag, nombre: 'Precios', queHay: 'El modelo de cobro a las inmobiliarias' },
+  '/admin/aliados': { seccion: 'inmobiliarias', icono: Handshake, nombre: 'Aliados', queHay: 'Los enlaces del mes gratis y cuántos ya pagan' },
   '/admin/modulos-pagos': { seccion: 'inmobiliarias', icono: PuzzlePiece, nombre: 'Módulos', queHay: 'Qué módulo de pago compró cada una' },
   '/admin/agency-targets': { seccion: 'inmobiliarias', icono: Target, nombre: 'Metas', queHay: 'Metas mensuales por inmobiliaria' },
   '/admin/feature-flags': { seccion: 'inmobiliarias', icono: Flag, nombre: 'Banderas', queHay: 'Funciones prendidas por inmobiliaria' },
@@ -121,6 +123,7 @@ export const PANTALLAS_DEL_ADMIN: Record<string, DatosDeLaPantalla> = {
 
   '/admin/payments': { seccion: 'plata', icono: CreditCard, nombre: 'Pagos', queHay: 'El embudo de pagos en línea' },
   '/admin/recaudo-en-linea': { seccion: 'plata', icono: HandCoins, nombre: 'Recaudo en línea', queHay: 'Reporte de Wompi y liquidaciones' },
+  '/admin/gestiones': { seccion: 'plata', icono: HouseLine, nombre: 'Gestiones de Leasefy', queHay: 'Propietarios sin inmobiliaria: el 5 % de Leasefy' },
   '/admin/billing': { seccion: 'plata', icono: ChartLineUp, nombre: 'Ingresos', queHay: 'Lo que Leasefy cobra a cada inmobiliaria' },
   '/admin/costs': { seccion: 'plata', icono: Coins, nombre: 'Costos', queHay: 'Lo que cuesta operar la plataforma' },
   '/admin/exogena': { seccion: 'plata', icono: Receipt, nombre: 'Exógena', queHay: 'Conceptos por año y publicación' },

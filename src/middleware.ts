@@ -52,6 +52,20 @@ export function middleware(request: NextRequest) {
    *     lo deja recordado.
    */
   const { idioma, ruta } = separarIdioma(request.nextUrl.pathname);
+  /*
+   * 🔴 Nico, 27-10-2026: «solo debe haber una landing y es la nueva». `/pricing` (y `/pricing/empresas`) era la
+   * página de precios de la landing vieja, con precios viejos: los planes viven en la home, en `#planes`.
+   */
+  if (ruta === '/pricing' || ruta.startsWith('/pricing/')) {
+    const destino = request.nextUrl.clone();
+    destino.pathname = conIdioma(
+      '/',
+      idioma ?? idiomaParaLaVisita(request.cookies.get(COOKIE_DEL_IDIOMA)?.value, request.headers.get('accept-language')),
+    );
+    destino.search = '';
+    destino.hash = 'planes';
+    return NextResponse.redirect(destino);
+  }
   const publica = esRutaPublica(ruta);
   if (!idioma && publica) {
     const destino = request.nextUrl.clone();

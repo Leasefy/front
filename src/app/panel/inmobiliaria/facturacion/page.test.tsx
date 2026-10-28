@@ -240,6 +240,8 @@ describe('/panel/inmobiliaria/facturacion', () => {
       `${K}tab_electronica`,
       `${K}tab_compras`,
       'Certificados',
+      // 27-10-2026 (Nico): los paquetes de documentos de facturación electrónica.
+      'Documentos',
     ]);
   });
 
@@ -348,9 +350,9 @@ describe('/panel/inmobiliaria/facturacion', () => {
     // La leyenda de estados no filtraba nada.
     expect(texto).not.toContain(`${K}estadosLabel`);
     expect(texto).not.toContain(`${K}estadoAceptada`);
-    // Las cinco pestañas (GLOW UP, 20-10) y ningún botón decorativo.
+    // Las cinco pestañas (GLOW UP, 20-10) + Documentos (27-10) y ningún botón decorativo.
     const botones = qa('button');
-    expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(5);
+    expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(6);
     // En «Ventas», fuera de las pestañas, del selector de mes del DS (un
     // `<button role="combobox">`) y del interruptor facturas | notas (`radio`),
     // sólo quedan los del encabezado, y cada uno hace algo: «Cómo se factura»

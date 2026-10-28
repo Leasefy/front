@@ -21,6 +21,8 @@ vi.mock('next/font/google', () => ({
   Inter: () => ({ variable: '--font-inter' }),
   Inter_Tight: () => ({ variable: '--font-inter-tight' }),
   IBM_Plex_Mono: () => ({ variable: '--font-ibm-plex-mono' }),
+  Host_Grotesk: () => ({ variable: '--font-host-grotesk' }),
+  DM_Mono: () => ({ variable: '--font-dm-mono' }),
 }))
 
 import { LandingChrome } from './LandingChrome'
@@ -54,6 +56,71 @@ function montar() {
 }
 
 describe('LandingChrome', () => {
+  describe('🔴 la barra de la landing nueva (Nico, 27-10: «solo debe haber una landing y es la nueva»)', () => {
+    it('es la MISMA barra de la home: su marcado, sus fuentes y sin la franja negra de arriba', () => {
+      montar()
+      const barra = container.querySelector('[data-testid="barra-de-la-home"]')
+      expect(barra?.classList.contains('lfh')).toBe(true)
+      expect(barra?.className).toContain('--font-host-grotesk')
+      expect(barra?.className).toContain('--font-dm-mono')
+      expect(barra?.querySelector('header.hdr#hdr')).not.toBeNull()
+      expect(barra?.querySelector('.nav .pm .pm-btn')).not.toBeNull()
+      expect(container.querySelector('.mk-anuncio')).toBeNull()
+      // Nada de la barra vieja: ni su mega menú ni su menú del celular.
+      expect(container.querySelector('#pmenu')).toBeNull()
+      expect(container.querySelector('#mmenu')).toBeNull()
+      expect(container.querySelector('.como-la-home')).toBeNull()
+    })
+
+    it('el menú: Marketplace, Producto, Planes, Avalúos y Contacto, cada uno su enlace', () => {
+      montar()
+      const nav = container.querySelector('.hdr .nav')!
+      const enlaces = [...nav.querySelectorAll(':scope > a')].map((a) => a.textContent?.trim())
+      expect(enlaces).toEqual(['Marketplace', 'Planes', 'Avalúos', 'Contacto'])
+      expect(nav.querySelector(':scope > a[aria-current="page"]')?.textContent).toContain('Marketplace')
+    })
+
+    it('«Producto» abre el mega menú de la home (las tarjetas con «Ver producto →») y Escape lo cierra', () => {
+      montar()
+      const boton = container.querySelector<HTMLButtonElement>('.pm-btn')!
+      expect(boton.getAttribute('aria-expanded')).toBe('false')
+      act(() => boton.click())
+      expect(boton.getAttribute('aria-expanded')).toBe('true')
+      expect(container.querySelector('.pm')?.classList.contains('pm-abierto')).toBe(true)
+      const tarjetas = [...container.querySelectorAll('.pm-big')]
+      expect(tarjetas.map((t) => t.querySelector('b')?.textContent)).toEqual(['CRM inmobiliario', 'ERP de arriendos'])
+      expect(tarjetas[0].textContent).toContain('Ver producto →')
+      expect(container.querySelectorAll('.pm-ag .pm-it')).toHaveLength(6)
+      expect(container.querySelectorAll('.pm-pub .pm-it')).toHaveLength(4)
+      act(() => {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      })
+      expect(boton.getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('el menú del celular abre y cierra con su botón, y «Producto» se despliega adentro', () => {
+      montar()
+      const barra = container.querySelector('[data-testid="barra-de-la-home"]')!
+      const mbtn = container.querySelector<HTMLButtonElement>('.mbtn')!
+      expect(mbtn.textContent).toBe('Menú')
+      act(() => mbtn.click())
+      expect(barra.classList.contains('menu-abierto')).toBe(true)
+      expect(mbtn.textContent).toBe('Cerrar')
+      const producto = container.querySelector<HTMLButtonElement>('.pm-m-btn')!
+      expect(container.querySelector('#pmM')?.hasAttribute('hidden')).toBe(true)
+      act(() => producto.click())
+      expect(container.querySelector('#pmM')?.hasAttribute('hidden')).toBe(false)
+      act(() => mbtn.click())
+      expect(barra.classList.contains('menu-abierto')).toBe(false)
+    })
+
+    it('sin sesión: Entrar y Publicar gratis, que reemplaza a Crear cuenta (27-10-2026)', () => {
+      montar()
+      const botones = [...container.querySelectorAll('.hdr-cta a.btn')].map((a) => a.textContent)
+      expect(botones).toEqual(['Entrar', 'Publicar gratis'])
+    })
+  })
+
   describe('siempre claro', () => {
     it('quita el tema oscuro: la hoja de la landing no tiene variante oscura', () => {
       // Con el tema oscuro puesto, el header salía claro sobre una página
@@ -78,7 +145,7 @@ describe('LandingChrome', () => {
   })
 
   describe('el alcance del scope', () => {
-    it('`.lv2` envuelve el header, NUNCA el contenido', () => {
+    it('el envoltorio de la barra NUNCA envuelve el contenido', () => {
       /*
        * `landing-v2.css` abre con `.lv2 *{margin:0;padding:0}` — misma
        * especificidad que las utilidades de Tailwind y carga después. Con el

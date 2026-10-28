@@ -53,6 +53,13 @@ function NotificacionesDelPropietario() {
       descripcion: es ? 'Cuando un candidato o tu inquilino te escribe' : 'When an applicant or your tenant writes to you',
     },
     {
+      id: 'plan',
+      claves: ['emailPlanDeLeasefy'],
+      icono: Tag,
+      titulo: es ? 'Tu plan de Leasefy' : 'Your Leasefy plan',
+      descripcion: es ? 'Cuando tu mes gratis se está acabando' : 'When your free month is ending',
+    },
+    {
       id: 'marketing',
       claves: ['emailMarketing'],
       icono: Tag,

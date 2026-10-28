@@ -11,6 +11,7 @@
  * El estado vacío NO va acá: eso es <EmptyState>.
  */
 
+import { Ilustracion, type NombreIlustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -69,6 +70,16 @@ const ICONO: Record<TipoDeFallo, Icon> = {
   // Un 4xx de una acción (`clasificarFallo` con `accion`): algo por corregir,
   // no una alarma.
   rechazado: WarningCircle,
+}
+
+/** El 3D de cada fallo: sin conexión, el reloj de esperar, el escudo del segundo factor o el aviso. */
+export function ilustracionDelFallo(tipo: string, esperando = false): NombreIlustracion {
+  if (esperando || tipo === 'red' || tipo === 'leasefyNoResponde' || tipo === 'servicioNoDisponible') return 'sin_conexion';
+  if (tipo === 'limitado' || tipo === 'tardo' || tipo === 'baseAtrasada') return 'reloj_mora';
+  if (tipo === 'sinSegundoFactor' || tipo === 'segundoFactorPendiente') return 'escudo';
+  if (tipo === 'sinCreditos' || tipo === 'sinPermiso' || tipo === 'prohibido') return 'cerradura';
+  if (tipo === 'noEncontrado') return 'lupa';
+  return 'aviso_importante';
 }
 
 export interface FalloDeCargaProps {
@@ -249,8 +260,9 @@ export function FalloDeCarga({
       data-conexion={esperandoConexion ? 'esperando' : undefined}
       data-enmarcado={enmarcado ? 'si' : 'no'}
     >
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
-        <Icono weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
+      {/* Nico, 27-10-2026: las pantallas del sistema con los 3D de Leasefy; el ícono queda para lectores y pruebas. */}
+      <div className="mx-auto flex justify-center" data-icono={Icono.displayName ?? undefined}>
+        <Ilustracion nombre={ilustracionDelFallo(fallo.tipo, esperandoConexion)} tamano={96} tono="auto" alt="" />
       </div>
 
       <div className="mt-4 space-y-1.5">

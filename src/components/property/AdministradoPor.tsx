@@ -19,6 +19,8 @@ export interface Administrador {
   agencyId: string | null;
   nombre: string;
   logoUrl: string | null;
+  /** Un agente inmobiliario independiente (Nico, 27-10-2026): «Publicado por Juliana · Agente inmobiliario». */
+  esAgente?: boolean;
 }
 
 /** ¿Lo administra la inmobiliaria de Leasefy? Sin la variable, nadie lo es. */
@@ -93,7 +95,15 @@ export function AdministradoPor({
       <LogoDelAdministrador administrador={administrador} tamano={tamano} />
       {/* Hasta dos líneas antes que cortar el nombre (Juan, 21-10-2026). */}
       <p className="min-w-0 line-clamp-2 break-words text-[12px] leading-snug text-muted-foreground">
-        Administrado por <span className="font-medium text-foreground">{nombre}</span>
+        {administrador.esAgente ? (
+          <>
+            Publicado por <span className="font-medium text-foreground">{nombre}</span> · Agente inmobiliario
+          </>
+        ) : (
+          <>
+            Administrado por <span className="font-medium text-foreground">{nombre}</span>
+          </>
+        )}
       </p>
     </div>
   );

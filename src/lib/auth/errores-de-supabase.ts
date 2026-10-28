@@ -176,6 +176,8 @@ export function mensajeDeSupabase(error: unknown, { frases, porDefecto, accion }
   if (codigo) {
     const propia = frases?.[codigo]
     if (propia) return propia
+    // Nico (27-10-2026: «si sale esto, ¿cuánto tendría que esperar el usuario?»): el tiempo, dicho.
+    if (codigo === 'over_email_send_rate_limit') return fraseDelLimiteDeCorreos(error)
     if (codigo === 'weak_password') return fraseDeContrasenaDebil(leerErrorDeSupabase(error).motivos)
     if (Object.prototype.hasOwnProperty.call(FRASES_DE_SUPABASE, codigo)) return FRASES_DE_SUPABASE[codigo]
   }
@@ -190,4 +192,25 @@ export function mensajeDeSupabase(error: unknown, { frases, porDefecto, accion }
   if (status === 401 || nombre === 'AuthSessionMissingError') return SESION_CERRADA
 
   return porDefecto ?? 'No pudimos completar esto. Prueba de nuevo en un momento.'
+}
+
+/**
+ * Cuánto hay que esperar para otro correo (27-10-2026). Supabase tiene dos límites con el mismo código:
+ *   · el de la dirección («you can only request this after 42 seconds»): se dice ese número;
+ *   · el del proyecto, por hora (todos los correos de Leasefy): se dice «en una hora» y se ofrece Google.
+ */
+export function segundosDeEsperaDelCorreo(error: unknown): number | null {
+  const texto = String((comoObjeto(error)?.message as string | undefined) ?? (error instanceof Error ? error.message : ''))
+  const m = /after (\d+) seconds?/i.exec(texto)
+  return m ? Number(m[1]) : null
+}
+
+function fraseDelLimiteDeCorreos(error: unknown): string {
+  const segundos = segundosDeEsperaDelCorreo(error)
+  if (segundos !== null) {
+    return segundos <= 1
+      ? 'Ya puedes pedir el correo otra vez. Revisa también spam.'
+      : `Ya te mandamos un correo. Puedes pedir otro en ${segundos} segundos; mientras, revisa también spam.`
+  }
+  return 'En este momento estamos enviando muchos correos. Intenta de nuevo en una hora, o entra con Google y sigue de una.'
 }

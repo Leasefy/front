@@ -36,6 +36,18 @@ const SIN_CABECERA_JUSTIFICADO: Record<string, string> = {
     'Entrar o crear la cuenta: dos columnas a sangre (la obra de marca a la izquierda, el ' +
     'formulario con su banda y su propio título a la derecha). Una cabecera con filete partiría ' +
     'la obra; el título y la descripción quedan para el lector de pantalla y la ✕ la pone el contenido.',
+  // Nico, 28-10-2026: los momentos de la conversión con la escena de marca (aurora + 3D) A SANGRE arriba. Una cabecera
+  // con filete encima partiría la escena; el título y la descripción van debajo, con su DialogTitle.
+  'components/inmobiliaria/plan/ModalDelPlan.tsx':
+    'El modal del plan: la escena de marca a sangre arriba (el 3D del momento, la cuenta de días); el título va debajo.',
+  'components/inmobiliaria/plan/MesGratisPendiente.tsx':
+    'El regalo del aliado: la escena con el sello «aliado × Leasefy» a sangre arriba; el título va debajo.',
+  'components/inmobiliaria/modo-comercial/CandadoDelModoComercial.tsx':
+    'La bienvenida a Leasefy: la escena de marca con la chispa a sangre arriba; el título va debajo.',
+  'components/inmobiliaria/plan/PasosParaActivar.tsx':
+    'Los pasos para activar: dos columnas a sangre (la lista de pasos a la izquierda, el paso con su título a la derecha).',
+  'components/landlord/PasosDelPropietario.tsx':
+    'Los pasos del propietario al pagar: dos columnas a sangre (la lista de pasos y el paso con su título).',
 }
 
 function archivosTsx(dir: string, encontrados: string[] = []): string[] {

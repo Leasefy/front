@@ -12,11 +12,16 @@ import { ARQUITECTURA_DEL_PANEL } from './arquitectura-del-panel'
  * que se quedó apuntando a la ruta anterior.
  */
 describe('los nombres que no decían nada', () => {
-  it('las dos URLs viejas siguen llevando a alguna parte', () => {
+  it('las URLs viejas siguen llevando a alguna parte', () => {
     expect(LOS_NOMBRES_QUE_NO_DECIAN_NADA).toEqual([
       {
         source: '/panel/inmobiliaria/pipeline/calce',
-        destination: '/panel/inmobiliaria/pipeline/que-ofrecer',
+        destination: '/panel/inmobiliaria/pipeline/oportunidades',
+        permanent: false,
+      },
+      {
+        source: '/panel/inmobiliaria/pipeline/que-ofrecer',
+        destination: '/panel/inmobiliaria/pipeline/oportunidades',
         permanent: false,
       },
       {
@@ -53,7 +58,8 @@ describe('los nombres que no decían nada', () => {
 
   it('el menú apunta a los nombres nuevos, no a los viejos', () => {
     const hrefs = JSON.stringify(ARQUITECTURA_DEL_PANEL)
-    expect(hrefs).toContain('/pipeline/que-ofrecer')
+    expect(hrefs).toContain('/pipeline/oportunidades')
+    expect(hrefs).not.toContain('/pipeline/que-ofrecer')
     expect(hrefs).toContain('/pipeline/preparar-visitas')
     expect(hrefs).not.toContain('/pipeline/calce')
     expect(hrefs).not.toContain('/pipeline/visitas')

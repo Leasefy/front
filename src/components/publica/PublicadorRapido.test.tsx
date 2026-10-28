@@ -140,7 +140,13 @@ async function montar(paginaPublica: string | null = null, operacionInicial: 're
   await esperar();
 }
 
+/** «¿Tienes muchos?» va plegado debajo de la tarjeta (28-10); llegar por un camino lo deja abierto arriba. */
+async function abrirTraer() {
+  if (por('abrir-traer-muchos')) await tocar(por('abrir-traer-muchos'));
+}
+
 async function subirExcel() {
+  await abrirTraer();
   await tocar(por('camino-excel'));
   await elegirArchivos(por('excel-entrada') as HTMLInputElement, [new File(['x'], 'inmuebles.xlsx')]);
   await esperar();
@@ -193,6 +199,37 @@ describe('el publicador con muchos inmuebles (20-10-2026)', () => {
     expect(por('fila-inmueble-2')?.textContent).toContain('Apartamento en arriendo en Poblado');
   });
 
+  it('con muchos (Nico, 28-10: «que se vea bien si carga uno o si carga 1.000»): páginas de 25 y el buscador', async () => {
+    cargarHoja(
+      Array.from({ length: 30 }, (_, k): [string, string, string, string, string, number, number] => [
+        `INM-${k + 1}`,
+        `Cra ${70 + k} # 44-10`,
+        'Medellín',
+        k === 29 ? 'Belén' : 'Laureles',
+        'Apartamento',
+        2_000_000 + k * 1000,
+        2,
+      ]),
+    );
+    await montar();
+    await subirExcel();
+    expect(por('titulo-publicador')?.textContent).toBe('Tus 30 inmuebles');
+    // La primera página: 25, con las páginas abajo.
+    expect(todos('fila-inmueble-')).toHaveLength(25);
+    expect(por('paginas-de-la-lista')).not.toBeNull();
+    // Buscar por barrio deja sólo el de Belén, sin páginas.
+    const buscar = por('buscar-en-la-lista') as HTMLInputElement;
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      set?.call(buscar, 'belen');
+      buscar.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(todos('fila-inmueble-')).toHaveLength(1);
+    expect(por('paginas-de-la-lista')).toBeNull();
+    // «Agregar otro» está arriba, en la barra de la lista (no al final de 500 filas).
+    expect(por('lista-de-muchos')?.contains(por('agregar-otro-inmueble'))).toBe(true);
+  });
+
   it('las carpetas se acomodan con su fila por el código o la dirección; las demás son inmuebles nuevos', async () => {
     cargarHoja([
       ['INM-1', 'Cra 76 # 34-21 apto 301', 'Medellín', 'Laureles', 'Apartamento', 2_800_000, 3],
@@ -202,6 +239,7 @@ describe('el publicador con muchos inmuebles (20-10-2026)', () => {
     ]);
     await montar();
     await subirExcel();
+    await abrirTraer();
     await tocar(por('camino-carpetas'));
     await elegirArchivos(por('carpetas-entrada') as HTMLInputElement, [
       foto('Fotos/INM-1/2.jpg'),
@@ -228,6 +266,7 @@ describe('el publicador con muchos inmuebles (20-10-2026)', () => {
     ]);
     await montar('https://leasefy.co/i/agencia-1');
     await subirExcel();
+    await abrirTraer();
     await tocar(por('camino-carpetas'));
     await elegirArchivos(por('carpetas-entrada') as HTMLInputElement, [
       foto('F/A/2.jpg'),
@@ -269,6 +308,7 @@ describe('el publicador con muchos inmuebles (20-10-2026)', () => {
     ]);
     await montar();
     await subirExcel();
+    await abrirTraer();
     await tocar(por('camino-carpetas'));
     await elegirArchivos(por('carpetas-entrada') as HTMLInputElement, [foto('F/A/1.jpg'), foto('F/A/2.jpg'), foto('F/B/1.jpg')]);
     await esperar(10);
@@ -294,6 +334,7 @@ describe('el publicador con muchos inmuebles (20-10-2026)', () => {
     ]);
     await montar();
     await subirExcel();
+    await abrirTraer();
     await tocar(por('camino-carpetas'));
     await elegirArchivos(por('carpetas-entrada') as HTMLInputElement, [foto('F/A/1.jpg'), foto('F/B/1.jpg'), foto('F/C/1.jpg'), foto('F/D/1.jpg')]);
     await esperar(10);
@@ -329,6 +370,7 @@ describe('el publicador con muchos inmuebles (20-10-2026)', () => {
     });
     await montar();
     await subirExcel();
+    await abrirTraer();
     await tocar(por('camino-carpetas'));
     await elegirArchivos(por('carpetas-entrada') as HTMLInputElement, [
       foto('F/A/a1.jpg'),
@@ -355,38 +397,79 @@ describe('el publicador con muchos inmuebles (20-10-2026)', () => {
 });
 
 describe('«¿Lo publicas para arriendo o para venta?» (Nico, 21-10-2026)', () => {
-  const pastilla = (texto: 'Arriendo' | 'Venta') =>
-    [...caja.querySelectorAll('[data-testid="publicador-rapido"] button[aria-pressed]')].find((b) => b.textContent === texto);
+  const operacion = (op: 'rent' | 'sale' | 'ambos', n = 1) => por(`operacion-${op}-${n}`);
 
-  it('sin respuesta y sin borrador, lo primero es la pregunta; «Para venta» abre la tarjeta en venta', async () => {
+  it('28-10 (Nico): sin pantalla aparte para «¿arriendo o venta?»: la tarjeta arranca en arriendo y se cambia ahí', async () => {
     await montar(null, null);
-    expect(por('para-que-publica')).not.toBeNull();
-    expect(por('publicador-rapido')).toBeNull();
-    expect(caja.textContent).toContain('¿Lo publicas para arriendo o para venta?');
-
-    await tocar(por('publicar-para-venta'));
     expect(por('para-que-publica')).toBeNull();
     expect(por('publicador-rapido')).not.toBeNull();
-    expect(pastilla('Venta')?.getAttribute('aria-pressed')).toBe('true');
-    expect(pastilla('Arriendo')?.getAttribute('aria-pressed')).toBe('false');
+    expect(operacion('rent')?.getAttribute('aria-checked')).toBe('true');
+    expect(caja.textContent).toContain('Canon mensual');
+    await tocar(operacion('sale'));
+    expect(operacion('sale')?.getAttribute('aria-checked')).toBe('true');
     expect(caja.textContent).toContain('Precio de venta');
   });
 
-  it('«Para arriendo» abre la tarjeta en arriendo, con el canon', async () => {
-    await montar(null, null);
-    await tocar(por('publicar-para-arriendo'));
-    expect(pastilla('Arriendo')?.getAttribute('aria-pressed')).toBe('true');
-    expect(caja.textContent).toContain('Canon mensual');
+  it('el enlace con ?operacion=venta abre la tarjeta en venta', async () => {
+    await montar(null, 'sale');
+    expect(operacion('sale')?.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('el inmueble que se agrega después hereda la respuesta, y cada uno se puede cambiar', async () => {
-    await montar(null, null);
-    await tocar(por('publicar-para-venta'));
-    await tocar(por('agregar-otro-inmueble'));
-    const ventas = [...caja.querySelectorAll('button[aria-pressed="true"]')].filter((b) => b.textContent === 'Venta');
-    expect(ventas.length).toBeGreaterThanOrEqual(1);
-    await tocar(pastilla('Arriendo') ?? null);
+  it('«Arriendo y venta»: pide el canon y el precio de venta, y publica DOS (una en arriendo, otra en venta) con las mismas fotos', async () => {
+    await montar();
+    await tocar(operacion('ambos'));
     expect(caja.textContent).toContain('Canon mensual');
+    expect(por('precio-venta-1')).not.toBeNull();
+    await act(async () => {
+      const set = (el: HTMLInputElement, v: string) => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, v);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+      set(por('precio-1') as HTMLInputElement, '2500000');
+      set(por('precio-venta-1') as HTMLInputElement, '450000000');
+      set(por('ciudad-1') as HTMLInputElement, 'Medellín');
+    });
+    const direccion = caja.querySelector('[data-testid="tarjeta-inmueble-1"] input:not([type="file"])') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(direccion, 'Cra 76 # 34-21');
+      direccion.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const tipo = [...caja.querySelectorAll('button')].find((b) => b.textContent === 'Apartamento') ?? null;
+    await tocar(tipo);
+    await elegirArchivos(por('entrada-fotos-1') as HTMLInputElement, [foto('a.jpg'), foto('b.jpg')]);
+    await esperar(12);
+    await tocar(por('publicar-todos'));
+    await esperar(20);
+    const creados = api.create.mock.calls.map((c) => c[0] as { listingType: string; monthlyRent: number | null; salePrice?: number });
+    expect(creados.map((c) => c.listingType).sort()).toEqual(['rent', 'sale']);
+    expect(creados.find((c) => c.listingType === 'rent')?.monthlyRent).toBe(2_500_000);
+    expect(creados.find((c) => c.listingType === 'sale')?.salePrice).toBe(450_000_000);
+    const llaves = api.create.mock.calls.map((c) => (c[1] as { idempotencyKey: string }).idempotencyKey);
+    expect(llaves[1]).toBe(`${llaves[0]}-venta`);
+    // Cada foto, a las dos publicaciones.
+    const porInmueble = api.uploadImage.mock.calls.reduce<Record<string, number>>((m, c) => ({ ...m, [c[0] as string]: (m[c[0] as string] ?? 0) + 1 }), {});
+    expect(Object.values(porInmueble)).toEqual([2, 2]);
+  });
+
+  it('publicar sin tener todo dice QUÉ falta, con un botón para ir a completarlo (Nico, 28-10)', async () => {
+    await montar();
+    await tocar(por('publicar-todos'));
+    expect(por('lo-que-falta-para-publicar')?.textContent).toMatch(/a tu inmueble le falta algo/);
+    expect(por('lo-que-falta-para-publicar')?.textContent).toMatch(/Falta al menos una foto, el tipo, la dirección, la ciudad y el precio/);
+    expect(por('ir-a-lo-que-falta-1')).not.toBeNull();
+    expect(por('tarjeta-le-falta')).not.toBeNull();
+    expect(api.create).not.toHaveBeenCalled();
+  });
+
+  it('el único inmueble, ya llenado, se puede quitar (queda una tarjeta en blanco) — Nico, 28-10', async () => {
+    await montar();
+    expect(caja.querySelector('[aria-label="Quitar el inmueble 1"]')).toBeNull();
+    await act(async () => {
+      const el = caja.querySelector('[data-testid="tarjeta-inmueble-1"] input:not([type="file"])') as HTMLInputElement;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, 'Cra 76 # 34-21');
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(caja.querySelector('[aria-label="Quitar el inmueble 1"]')).not.toBeNull();
   });
 
   it('con «venta», la fila del Excel que no dice si es arriendo o venta entra en venta con su precio', async () => {
@@ -395,8 +478,7 @@ describe('«¿Lo publicas para arriendo o para venta?» (Nico, 21-10-2026)', () 
       { _rowIndex: 1, Dirección: 'Cra 76 # 34-21', Ciudad: 'Medellín', Tipo: 'Casa', Precio: 480_000_000 },
       { _rowIndex: 2, Dirección: 'Calle 10 # 43-21', Ciudad: 'Medellín', Tipo: 'Apartamento', Precio: 350_000_000 },
     ];
-    await montar(null, null);
-    await tocar(por('publicar-para-venta'));
+    await montar(null, 'sale');
     await subirExcel();
     // Las tarjetas quedan en el borrador del navegador tal como se van a publicar.
     const { inmuebles } = JSON.parse(window.localStorage.getItem('leasefy.publica.borrador.v1:u1') ?? '{}') as {
@@ -418,7 +500,6 @@ describe('«¿Lo publicas para arriendo o para venta?» (Nico, 21-10-2026)', () 
     act(() => raiz.unmount());
     raiz = createRoot(caja);
     await montar(null, null);
-    expect(por('para-que-publica')).toBeNull();
     expect(por('titulo-publicador')?.textContent).toBe('Tus 2 inmuebles');
   });
 });

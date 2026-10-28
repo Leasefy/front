@@ -261,7 +261,7 @@ export default function FichaDelInmueblePage({ params }: { params: Promise<{ con
               <h2 className="text-subtitle text-fg">Documentos firmados</h2>
               {ficha.documentos.mandato || ficha.documentos.contrato ? (
                 <div className="flex flex-wrap gap-2">
-                  {ficha.documentos.mandato && <BotonDelDocumento contractId={contractId} cual="mandato" etiqueta="Mi mandato firmado" />}
+                  {ficha.documentos.mandato && <BotonDelDocumento contractId={contractId} cual="mandato" etiqueta="Mi contrato de consignación firmado" />}
                   {ficha.documentos.contrato && <BotonDelDocumento contractId={contractId} cual="contrato" etiqueta="El contrato de arrendamiento" />}
                 </div>
               ) : (

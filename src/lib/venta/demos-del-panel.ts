@@ -69,7 +69,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     capturas: [cap('ret-tablero', 'Tablero de retención')],
   },
   contratos: {
-    titulo: 'Contratos que se firman solos',
+    // Nico, 27-10-2026: «aquí es "Administra tus contratos de arrendamiento"».
+    titulo: 'Administra tus contratos de arrendamiento',
     promesa: 'Plantillas legales, firma electrónica y renovaciones con el IPC.',
     puntos: ['Firma electrónica con código', 'Renovación con IPC', 'Todo el contrato en un lugar'],
     capturas: [cap('erp-renovaciones', 'Renovaciones de contratos'), TABLERO],
@@ -164,7 +165,8 @@ const DEL_PROPIETARIO: Record<string, DemoDelModulo> = {
 };
 
 const GENERAL_DEL_PROPIETARIO: DemoDelModulo = {
-  titulo: 'Tu inmueble administrado, por menos',
+  // Nico, 27-10-2026: la publicidad del propietario es «quiero que Leasefy maneje mi inmueble».
+  titulo: 'Quiero que Leasefy maneje mi inmueble',
   promesa: 'Lo arrendamos bien, cobramos el arriendo y te tenemos todo en regla, por menos de lo que cobra el mercado.',
   puntos: ['Estudio del inquilino', 'Cobro del arriendo cada mes', 'Contrato y renovaciones en regla'],
   capturas: [cap('inq-detalle', 'Detalle del estudio de un inquilino'), cap('cob-whatsapp', 'Cobranza por WhatsApp'), cap('erp-renovaciones', 'Renovaciones de contratos')],
@@ -172,4 +174,47 @@ const GENERAL_DEL_PROPIETARIO: DemoDelModulo = {
 
 export function demoDelPropietario(clave: string | null | undefined): DemoDelModulo {
   return (clave && DEL_PROPIETARIO[clave]) || GENERAL_DEL_PROPIETARIO;
+}
+
+/**
+ * EL AGENTE INMOBILIARIO (Juan, 27-10-2026): «un agente administrando sus propiedades, quitándole el limitante de
+ * que no sabe cómo… lo va a hacer usted solo, de forma fácil». La publicidad de la demo para la cuenta de un agente.
+ */
+const DEL_AGENTE: Record<string, DemoDelModulo> = {
+  contratos: {
+    titulo: 'Administra tus propiedades tú solo',
+    promesa: 'El contrato, el cobro y el giro al propietario, sin saber de administración: la plataforma te lleva paso a paso.',
+    puntos: ['Contrato en línea con firma', 'El cobro del arriendo cada mes', 'El giro al propietario en un clic'],
+    capturas: [cap('erp-renovaciones', 'Contratos y renovaciones')],
+  },
+  cobranza: {
+    titulo: 'El arriendo se cobra solo',
+    promesa: 'Recordatorios, enlace de pago y seguimiento de la mora sin que tengas que llamar a nadie.',
+    puntos: ['Recordatorios por WhatsApp', 'Enlace de pago', 'Tú sólo ves quién pagó'],
+    capturas: [cap('cob-whatsapp', 'Cobranza por WhatsApp')],
+  },
+  estudio: {
+    titulo: 'Sabes a quién le arriendas',
+    promesa: 'El estudio del inquilino con las aseguradoras, para que tu propietario arriende tranquilo.',
+    puntos: ['Estudio en minutos', 'Varias aseguradoras a la vez', 'Te dice hasta cuánto lo respaldan'],
+    capturas: [cap('inq-detalle', 'Detalle del estudio de un inquilino')],
+  },
+  pagos: {
+    titulo: 'Tus propietarios reciben su plata a tiempo',
+    promesa: 'Lo que entra se aplica solo y cada propietario recibe su giro con su liquidación.',
+    puntos: ['Recaudo por referencia', 'Giro con su liquidación', 'Extracto para cada propietario'],
+    capturas: [cap('erp-dispersiones', 'Giros a propietarios')],
+  },
+};
+
+const GENERAL_DEL_AGENTE: DemoDelModulo = {
+  titulo: 'Administra tus propiedades tú solo, de forma fácil',
+  promesa: 'Lo que hace una inmobiliaria —contratos, cobro del arriendo, giros y estudio del inquilino— hecho para un agente que trabaja solo.',
+  puntos: ['Contratos y firma en línea', 'El arriendo se cobra solo', 'Giros a tus propietarios en un clic'],
+  capturas: [TABLERO, cap('cob-whatsapp', 'Cobranza por WhatsApp'), cap('erp-dispersiones', 'Giros a propietarios')],
+};
+
+export function demoDelAgente(claveDelModulo: string | null | undefined): DemoDelModulo {
+  if (!claveDelModulo) return GENERAL_DEL_AGENTE;
+  return DEL_AGENTE[claveDelModulo] ?? DEL_AGENTE[ALIAS[claveDelModulo] ?? ''] ?? GENERAL_DEL_AGENTE;
 }

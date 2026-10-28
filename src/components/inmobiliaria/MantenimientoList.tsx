@@ -24,6 +24,7 @@ import {
   MagnifyingGlass,
   Funnel,
   DotsThree,
+  Trash,
   CalendarBlank,
   User,
   MapPin,
@@ -82,6 +83,8 @@ interface MantenimientoListProps {
   onApproveQuote?: (solicitud: SolicitudMantenimiento, quoteId: string) => void;
   onComplete?: (solicitud: SolicitudMantenimiento) => void;
   onCancel?: (solicitud: SolicitudMantenimiento) => void;
+  /** 28-10-2026 (Nico: «los admin sí podrían eliminarlos»): sólo llega con `operaciones:delete`. Confirma el padre. */
+  onEliminar?: (solicitud: SolicitudMantenimiento) => void;
   /**
    * Crear la primera solicitud desde el vacío. En modo `minimal` los filtros
    * no se ven, así que el vacío era un cartel sin salida.
@@ -333,6 +336,7 @@ interface MantenimientoCardProps {
   onApproveQuote?: (quoteId: string) => void;
   onComplete?: () => void;
   onCancel?: () => void;
+  onEliminar?: () => void;
   t: (key: string, params?: Record<string, string | number>) => string;
   fmtDate: (d: string) => string;
 }
@@ -344,6 +348,7 @@ function MantenimientoCard({
   onApproveQuote,
   onComplete,
   onCancel,
+  onEliminar,
   t,
   fmtDate,
 }: MantenimientoCardProps) {
@@ -426,6 +431,13 @@ function MantenimientoCard({
               <DropdownListItem className="gap-3 text-danger" onClick={() => onCancel()}>
                 <X className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.mantenimiento.cancelRequest')}</span>
+              </DropdownListItem>
+            )}
+
+            {onEliminar && (
+              <DropdownListItem className="gap-3 text-danger" onClick={() => onEliminar()} data-testid="eliminar-arreglo">
+                <Trash className="w-4 h-4" />
+                <span className="text-sm">Eliminar</span>
               </DropdownListItem>
             )}
           </DropdownListContent>
@@ -538,6 +550,7 @@ export function MantenimientoList({
   onApproveQuote,
   onComplete,
   onCancel,
+  onEliminar,
   onCrear,
   minimal = false,
   marcadas,
@@ -732,6 +745,7 @@ export function MantenimientoList({
                 onApproveQuote={onApproveQuote ? (quoteId) => onApproveQuote(solicitud, quoteId) : undefined}
                 onComplete={onComplete ? () => onComplete(solicitud) : undefined}
                 onCancel={onCancel ? () => setSolicitudACancelar(solicitud) : undefined}
+                onEliminar={onEliminar ? () => onEliminar(solicitud) : undefined}
                 t={t}
                 fmtDate={fmtDate}
               />

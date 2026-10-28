@@ -114,6 +114,12 @@ export function PipelineCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <p className="truncate text-sm font-medium text-fg">{item.candidateName}</p>
+              {/* 27-10-2026 (Juan): el pedido que dejó en tu perfil del marketplace, todavía sin inmueble. */}
+              {item.notes?.startsWith('[pedido-del-marketplace]') ? (
+                <span className="shrink-0 rounded-[6px] bg-primary-soft px-1.5 py-px text-[10px] font-medium text-primary" data-testid="marca-pedido-del-marketplace">
+                  Pedido
+                </span>
+              ) : null}
               {riskColors && item.riskLevel && (
                 <span
                   className={cn('shrink-0 rounded-[6px] px-1.5 py-px font-mono text-[10px] font-medium', riskColors.bg, riskColors.text)}

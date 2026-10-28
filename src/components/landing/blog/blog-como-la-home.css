@@ -1,0 +1,369 @@
+/* ──────────────────────────────────────────────────────────────────────────────
+   El blog con la landing nueva (`public/landing/index.html`).
+   🔴 Nico, 27-10-2026: «solo debe haber una landing y es la nueva, con todo lo
+   que es la landing nueva!!!». El blog seguía con la letra y los colores de la
+   vieja (Inter Tight en 600, la mono vieja, el papel #f8f7f5). Aquí toma los de
+   la home: Host Grotesk liviana en los títulos (como `.t-l` / `.t-m`), DM Mono en
+   las cejas (`.ceja`), sus colores, sus tarjetas (`.card-i`), el selector de dos
+   capas (como ES/EN) y el ancho de `.wrap`, que alinea el contenido con el logo.
+   Sólo `.landing-bp` (listado) y `.landing-ba` (artículo): `/inicio-anterior`
+   sigue como estaba. Las fuentes las pone el layout del grupo.
+   ────────────────────────────────────────────────────────────────────────────── */
+
+html .landing-scope .landing-bp,
+html .landing-scope .landing-ba {
+  --b-bg: #fbfaf8;
+  --b-arena: #f3f1ed;
+  --b-piedra: #e7e3dc;
+  --b-filete: #ece8e1;
+  --b-sup: #ffffff;
+  --b-tinta: #121110;
+  --b-grafito: #5b5751;
+  --b-ceniza: #706b64;
+  --b-voltaje: #1a40ff;
+  --b-f: var(--font-host-grotesk), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --b-m: var(--font-dm-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --b-gutter: clamp(16px, 4vw, 56px);
+  --b-susurro: 0 1px 2px rgba(18, 17, 16, 0.06), 0 2px 8px -2px rgba(18, 17, 16, 0.06);
+  --b-flotante: 0 50px 90px -40px rgba(18, 17, 16, 0.35), 0 22px 40px -22px rgba(18, 17, 16, 0.18);
+  --b-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: var(--b-bg);
+  color: var(--b-tinta);
+  font-family: var(--b-f);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* el mismo ancho que `.wrap` de la home: arranca en la misma x que el logo */
+html .landing-scope .landing-bp__wrap,
+html .landing-scope .landing-ba__wrap {
+  max-width: calc(1320px + 2 * var(--b-gutter));
+  padding: 0 var(--b-gutter);
+}
+
+/* ── listado ── */
+html .landing-scope .landing-bp {
+  padding: calc(68px + clamp(56px, 8vw, 112px)) 0 clamp(96px, 12vw, 170px);
+}
+html .landing-scope .landing-bp__head {
+  gap: 28px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--b-filete);
+}
+
+/* la ceja (`.ceja` de la home) */
+html .landing-scope .landing-bp__kicker {
+  gap: 10px;
+  font-family: var(--b-m);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  color: var(--b-ceniza);
+}
+html .landing-scope .landing-bp__kicker::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--b-voltaje);
+}
+html .landing-scope .landing-bp__count {
+  color: var(--b-ceniza);
+  opacity: 0.75;
+}
+
+/* el título (`.t-l` de la home) */
+html .landing-scope .landing-bp__head h1 {
+  margin-top: 22px;
+  max-width: 16ch;
+  font-family: var(--b-f);
+  font-weight: 360;
+  font-size: clamp(36px, 4.9vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-bp__lede {
+  margin-top: 22px;
+  max-width: 620px;
+  font-size: clamp(17px, 1.3vw, 19.5px);
+  line-height: 1.55;
+  color: var(--b-grafito);
+}
+
+/* las categorías: el selector de dos capas de la home (como ES / EN) */
+html .landing-scope .landing-bp__tabs {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 16px;
+  background: var(--b-arena);
+  corner-shape: superellipse(1.5);
+  justify-self: start;
+}
+html .landing-scope .landing-bp__tabs::-webkit-scrollbar {
+  display: none;
+}
+/* en el celular van en una sola fila que se desliza (no en dos renglones) */
+html .landing-scope .landing-bp__tab {
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  font-family: var(--b-f);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  color: var(--b-grafito);
+  corner-shape: superellipse(1.5);
+  transition: color 0.2s;
+}
+html .landing-scope .landing-bp__tab:hover {
+  color: var(--b-tinta);
+  border-color: transparent;
+}
+html .landing-scope .landing-bp__tab--on,
+html .landing-scope .landing-bp__tab--on:hover {
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-bp__tab-marca {
+  inset: 0;
+  border-radius: 12px;
+  background: var(--b-sup);
+  box-shadow: var(--b-susurro);
+  corner-shape: superellipse(1.5);
+}
+html .landing-scope .landing-bp__tab:focus-visible {
+  outline: 2px solid var(--b-voltaje);
+  outline-offset: 1px;
+}
+
+/* las tarjetas (`.card-i` de la home): blancas, filete y sombra susurro, suben al pasar */
+html .landing-scope .landing-bp__feat,
+html .landing-scope .landing-bp__card {
+  background: var(--b-sup);
+  border: 0;
+  border-radius: 22px;
+  box-shadow: var(--b-susurro), 0 0 0 1px var(--b-filete);
+  corner-shape: superellipse(1.5);
+  transition: transform 0.35s var(--b-ease), box-shadow 0.35s var(--b-ease);
+}
+html .landing-scope .landing-bp__feat {
+  margin-top: 44px;
+}
+html .landing-scope .landing-bp__feat:hover,
+html .landing-scope .landing-bp__card:hover {
+  transform: translateY(-6px);
+  border-color: transparent;
+  box-shadow: var(--b-flotante), 0 0 0 1px var(--b-filete);
+}
+html .landing-scope .landing-bp__grid {
+  gap: 24px;
+  margin-top: 24px;
+}
+html .landing-scope .landing-bp__media {
+  background: linear-gradient(180deg, #eeebe5, #e2ded6);
+}
+html .landing-scope .landing-bp__img {
+  transition: transform 0.9s var(--b-ease);
+}
+
+/* la etiqueta sobre la foto (la de `.card-i .fo span`) */
+html .landing-scope .landing-bp__cat,
+html .landing-scope .landing-ba__cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--b-sup);
+  font-family: var(--b-m);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-bp__cat {
+  left: 12px;
+  top: 12px;
+}
+html .landing-scope .landing-bp__cat::before,
+html .landing-scope .landing-ba__cat::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--b-voltaje);
+}
+
+html .landing-scope .landing-bp__meta,
+html .landing-scope .landing-ba__meta {
+  gap: 8px;
+  font-family: var(--b-m);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--b-ceniza);
+}
+html .landing-scope .landing-bp__feat h2 {
+  margin-top: 16px;
+  font-family: var(--b-f);
+  font-weight: 420;
+  font-size: clamp(26px, 2.6vw, 36px);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-bp__card h3 {
+  margin-top: 12px;
+  font-family: var(--b-f);
+  font-weight: 450;
+  font-size: 20px;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-bp__excerpt {
+  color: var(--b-grafito);
+  line-height: 1.55;
+}
+html .landing-scope .landing-bp__feat .landing-bp__excerpt {
+  font-size: 17px;
+}
+
+/* «Leer artículo →» como el enlace de la home (`.lnk`) */
+html .landing-scope .landing-bp__more {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--b-voltaje);
+}
+html .landing-scope .landing-bp__more i {
+  color: inherit;
+  transition: transform 0.25s var(--b-ease);
+}
+html .landing-scope .landing-bp__feat:hover .landing-bp__more,
+html .landing-scope .landing-bp__card:hover .landing-bp__more {
+  color: var(--b-voltaje);
+}
+html .landing-scope .landing-bp__feat:hover .landing-bp__more i,
+html .landing-scope .landing-bp__card:hover .landing-bp__more i {
+  transform: translateX(3px);
+}
+html .landing-scope .landing-bp__feat:focus-visible,
+html .landing-scope .landing-bp__card:focus-visible {
+  outline: 2px solid var(--b-voltaje);
+}
+
+html .landing-scope .landing-bp__empty {
+  border: 0;
+  background: var(--b-arena);
+  color: var(--b-grafito);
+  corner-shape: superellipse(1.5);
+}
+
+/* ── artículo ── */
+html .landing-scope .landing-ba {
+  padding-top: calc(68px + clamp(40px, 6vw, 88px));
+}
+html .landing-scope .landing-ba__back {
+  font-family: var(--b-f);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--b-grafito);
+  text-transform: none;
+  letter-spacing: 0;
+}
+html .landing-scope .landing-ba__back:hover {
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-ba__head h1 {
+  margin-top: 22px;
+  max-width: 22ch;
+  font-family: var(--b-f);
+  font-weight: 360;
+  font-size: clamp(34px, 4.4vw, 64px);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-ba__lede {
+  font-size: clamp(17px, 1.3vw, 19.5px);
+  line-height: 1.55;
+  color: var(--b-grafito);
+}
+html .landing-scope .landing-ba__author {
+  font-size: 15px;
+  color: var(--b-grafito);
+}
+html .landing-scope .landing-ba__author b {
+  font-weight: 500;
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-ba__hero {
+  border-radius: 22px;
+  background: linear-gradient(180deg, #eeebe5, #e2ded6);
+  corner-shape: superellipse(1.5);
+}
+html .landing-scope .landing-ba__body h2 {
+  margin: 48px 0 14px;
+  font-family: var(--b-f);
+  font-weight: 420;
+  font-size: clamp(24px, 2.3vw, 32px);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-ba__body p,
+html .landing-scope .landing-ba__body ol {
+  font-size: 18px;
+  line-height: 1.7;
+  color: #3e3b37;
+}
+html .landing-scope .landing-ba__body strong,
+html .landing-scope .landing-ba__label {
+  font-weight: 500;
+  color: var(--b-tinta);
+}
+html .landing-scope .landing-ba__related {
+  border-top: 1px solid var(--b-filete);
+  padding: clamp(64px, 8vw, 112px) 0 clamp(96px, 12vw, 170px);
+}
+html .landing-scope .landing-ba__related h2 {
+  font-family: var(--b-f);
+  font-weight: 360;
+  font-size: clamp(28px, 3.2vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+html .landing-scope .landing-ba__related-head {
+  margin-bottom: 16px;
+}
+html .landing-scope .landing-ba__related-head a {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--b-voltaje);
+}
+html .landing-scope .landing-ba__related-head a:hover {
+  color: var(--b-voltaje);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html .landing-scope .landing-bp__feat,
+  html .landing-scope .landing-bp__card,
+  html .landing-scope .landing-bp__img {
+    transition: none;
+  }
+  html .landing-scope .landing-bp__feat:hover,
+  html .landing-scope .landing-bp__card:hover,
+  html .landing-scope .landing-bp__feat:hover .landing-bp__img,
+  html .landing-scope .landing-bp__card:hover .landing-bp__img {
+    transform: none;
+  }
+}

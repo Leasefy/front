@@ -8,20 +8,21 @@ Next.js 15 App Router (React 19). Corre en :3001 (el :3000 es del back).
 
 ## ⚠️ Trabajo de UI — Leé esto PRIMERO
 
-**Antes de construir, modificar o revisar CUALQUIER UI, DEBÉS leer [`docs/DESIGN.md`](./docs/DESIGN.md)** —en especial
-§23 (pantallas por tarea), §24 (Cadence 2: la identidad, íconos propios, ilustraciones 3D, piezas) y §25 (medir la UX con
-Nielsen antes y después)— **y cargar las skills `leasefy-diseno` y `pantalla-por-tarea`.**
+**Antes de construir, modificar o revisar CUALQUIER cosa que se vea (también una funcionalidad o un módulo NUEVO),
+DEBÉS leer [`docs/DESIGN.md`](./docs/DESIGN.md)** —el sistema de diseño de Leasefy, Cadence 2 «papel, tinta y voltaje»
+(28-10-2026)—: siempre §1 (la idea), §3 (color), §4 (letra), §11 (piezas), §12 (patrones de pantalla) y §14 (voz), más
+la sección de la superficie en §13 y la vara del 9,5 en §17. **Si tu sesión tiene la skill `diseno-leasefy`, cárgala**:
+trae el mismo DESIGN.md, el proceso, el revisor y el auditor de estilo.
 
-Es la fuente de verdad para:
-- Principios de diseño + anti-patrones (sin glass morphism, sin gradientes en bubbles,
-  botones primarios en mayúsculas, etc.)
-- Patrones canónicos de componentes (drawers, buttons, inputs, cards, banners) con refs file:line
-- Tokens (colores, radius, sombras, motion, tipografía)
-- Integración Lenis smooth scroll (`data-lenis-prevent` + `useLenis().stop()` obligatorio en modales)
-- Reglas de accesibilidad
+- El detalle de cada pieza (cajón, modal, movimiento, toaster, estados, filtros, plata, primitivas) está en
+  [`docs/DESIGN-PIEZAS.md`](./docs/DESIGN-PIEZAS.md): es el DESIGN.md anterior con su numeración. Los comentarios del
+  código que citan «DESIGN.md §17», «§8b», «§Drawers»… apuntan ahí. Sus §1–3 y §10 son Cadence 1 y no aplican.
+- Lenis: `data-lenis-prevent` + `useLenis().stop()` obligatorio en modales (DESIGN-PIEZAS §8).
+- Color: [`docs/DESIGN.md`](./docs/DESIGN.md) §3 gana sobre [`docs/COLOR_SYSTEM.md`](./docs/COLOR_SYSTEM.md) (escrito
+  para Cadence 1).
 
-No inventes patrones cuando ya existe uno canónico. Si falta algo en DESIGN.md, PREGUNTÁ o extendelo.
-Color específico: [`docs/COLOR_SYSTEM.md`](./docs/COLOR_SYSTEM.md).
+No inventes patrones cuando ya existe uno canónico. Si falta algo en DESIGN.md, PREGUNTÁ o extendelo (y la copia de la
+skill `diseno-leasefy`, que es el mismo texto).
 
 ## Qué es
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { abiertaEnModoComercial, enModoComercial } from './modo-comercial';
+import { abiertaEnModoComercial, enModoComercial, pideActivar } from './modo-comercial';
 
 /** Juan, 19-10-2026: «que solo vea lo comercial». */
 describe('el modo comercial del panel', () => {
@@ -43,3 +43,20 @@ describe('el modo comercial del panel', () => {
     expect(enModoComercial(null)).toBe(false);
   });
 });
+
+describe('mes gratis o pagando sin activar (Nico, 27-10-2026: el aliado ve todo)', () => {
+  it('«Tu plan» y el pago siempre abiertos, o no hay cómo pagar', () => {
+    expect(abiertaEnModoComercial('/panel/inmobiliaria/upgrade')).toBe(true)
+    expect(abiertaEnModoComercial('/panel/inmobiliaria/upgrade?seccion=preguntas')).toBe(true)
+    expect(pideActivar('/panel/inmobiliaria/upgrade')).toBe(false)
+  })
+
+  it('sólo los agentes, el chat y la plata piden activar; lo demás se usa de una', () => {
+    for (const ruta of ['/panel/inmobiliaria/contratos', '/panel/inmobiliaria/propietarios', '/panel/inmobiliaria/mantenimientos', '/panel/inmobiliaria/reportes', '/panel/inmobiliaria/inmuebles']) {
+      expect(pideActivar(ruta)).toBe(false)
+    }
+    for (const ruta of ['/panel/inmobiliaria', '/panel/inmobiliaria/pagos/recaudo', '/panel/inmobiliaria/pagos/cobranza', '/panel/inmobiliaria/facturacion', '/panel/inmobiliaria/contabilidad', '/panel/inmobiliaria/conciliacion', '/panel/inmobiliaria/inmuebles/avaluos', '/panel/inmobiliaria/postulaciones/matching', '/panel/inmobiliaria/reportes/ia']) {
+      expect(pideActivar(ruta)).toBe(true)
+    }
+  })
+})

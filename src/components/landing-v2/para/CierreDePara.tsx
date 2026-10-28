@@ -42,10 +42,10 @@ export function CierreDePara({ semilla = 11 }: { semilla?: number }) {
         <Appear inView distance="md" duration="slow" delay={0.22}
           className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"
         >
-          <BotonDePara href="/auth?mode=register&role=agency" grande className="w-full sm:w-auto">
+          <BotonDePara href="/publica?perfil=agency" grande className="w-full sm:w-auto">
             Empezar gratis
           </BotonDePara>
-          <BotonDePara href="/pricing" variante="arena" grande className="w-full sm:w-auto">
+          <BotonDePara href="/#planes" variante="arena" grande className="w-full sm:w-auto">
             Ver precios
           </BotonDePara>
         </Appear>

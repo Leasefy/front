@@ -434,11 +434,10 @@ export default function AprobacionPage() {
                     {desdeLaFicha ? 'Validemos que te lo podamos arrendar' : 'Conoce hasta cuánto te arrendamos'}
                   </h1>
                   <p className="max-w-prose text-sm text-fg-muted">
-                    {/* Decía «Es gratis y sin compromiso» y se cobra. No se
-                        inventa el monto: el precio lo manda el backend y hoy no
-                        lo manda (ver lib/api/estudio-pago.service.ts). */}
+                    {/* 🔴 Nico, 27-10-2026: «es gratis por ahora» (el back no cobra: ver
+                        estudioDelInquilinoGratis en back/src/pre-scoring). */}
                     Consultamos varias aseguradoras a la vez y te decimos hasta cuánto te
-                    respaldan. Se paga una sola vez y te sirve para todos los inmuebles
+                    respaldan. Por ahora es gratis, y te sirve para todos los inmuebles
                     que te interesen.
                   </p>
                 </div>
@@ -666,7 +665,7 @@ export default function AprobacionPage() {
                     isLoading={submitting}
                     disabled={submitting || !fields.consent}
                   >
-                    {submitting ? 'Preparando tu pago…' : 'Consultar mi aprobación'}
+                    {submitting ? 'Consultando…' : 'Consultar mi aprobación'}
                   </Button>
                 </div>
               </form>

@@ -41,6 +41,7 @@ const {
   stepTwoOverridesHolder,
   stepOneOverridesHolder,
   ubicarDireccionMock,
+  apuntesApiMock,
 } = vi.hoisted(() => ({
     authState: {
       user: { id: 'user-1', email: 'user1@test.com', name: 'Test User' } as
@@ -76,6 +77,7 @@ const {
     // Lo mismo para el paso 1: un dueño nuevo (sin guardar) en vez de uno de la lista.
     stepOneOverridesHolder: { overrides: {} as Record<string, unknown> },
     ubicarDireccionMock: vi.fn(),
+    apuntesApiMock: { guardarCondiciones: vi.fn() },
   }))
 
 /*
@@ -120,6 +122,11 @@ vi.mock('@/lib/api/properties.service', () => ({
 
 vi.mock('@/lib/api/property-photos', () => ({
   uploadPropertyPhotos: uploadPropertyPhotosMock,
+}))
+
+vi.mock('@/lib/api/apuntes-del-inmueble.service', async (original) => ({
+  ...(await original<typeof import('@/lib/api/apuntes-del-inmueble.service')>()),
+  apuntesDelInmuebleApi: apuntesApiMock,
 }))
 
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
@@ -193,7 +200,7 @@ vi.mock('./ConsignacionWizardSteps', () => ({
     }, [])
     return React.createElement(
       'div',
-      { 'data-testid': 'step-1' },
+      { 'data-testid': 'paso-propietario' },
       ownerServerError
         ? React.createElement('p', { 'data-testid': 'error-del-dueno', 'data-campo': ownerServerError.field }, ownerServerError.message)
         : null,
@@ -235,7 +242,7 @@ vi.mock('./ConsignacionWizardSteps', () => ({
     // Los controles con el id del asistente (para el foco) y sus errores.
     return React.createElement(
       'div',
-      { 'data-testid': 'step-2' },
+      { 'data-testid': 'paso-inmueble' },
       React.createElement('input', {
         id: 'asistente-monthlyRent',
         'data-testid': 'canon',
@@ -249,25 +256,32 @@ vi.mock('./ConsignacionWizardSteps', () => ({
   StepCommissionTerms: ({ erroresDelServidor }: { erroresDelServidor?: Record<string, string> }) =>
     React.createElement(
       'div',
-      { 'data-testid': 'step-3' },
+      { 'data-testid': 'paso-comision' },
       React.createElement('input', { id: 'asistente-commissionPercent', 'data-testid': 'comision' }),
       React.createElement('p', { 'data-testid': 'error-commissionPercent' }, erroresDelServidor?.commissionPercent ?? ''),
     ),
   StepAssignAgent: ({ formData }: { formData: { agenteId?: string } }) =>
-    React.createElement('div', { 'data-testid': 'step-4' }, formData.agenteId ?? 'no-agent'),
-  StepActaEntrega: ({ updateFormData }: { updateFormData: (d: Record<string, unknown>) => void }) => {
+    React.createElement('div', { 'data-testid': 'paso-agente' }, formData.agenteId ?? 'no-agent'),
+  // 27-10-2026: las fotos y el inventario son dos pasos (Juan: «separaría fotos y por allá otro que sea inventario»).
+  StepFotos: ({ updateFormData }: { updateFormData: (d: Record<string, unknown>) => void }) => {
     React.useEffect(() => {
       if (stepFivePhotosHolder.photos.length > 0) {
         updateFormData({ photos: stepFivePhotosHolder.photos })
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return React.createElement('div', { 'data-testid': 'paso-fotos' })
+  },
+  StepInventario: ({ updateFormData }: { updateFormData: (d: Record<string, unknown>) => void }) => {
+    React.useEffect(() => {
       if (stepFivePhotosHolder.inventoryItems.length > 0) {
         updateFormData({ inventoryItems: stepFivePhotosHolder.inventoryItems })
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-    return React.createElement('div', { 'data-testid': 'step-5' })
+    return React.createElement('div', { 'data-testid': 'paso-inventario' })
   },
-  StepConfirmation: () => React.createElement('div', { 'data-testid': 'step-6' }),
+  StepConfirmation: () => React.createElement('div', { 'data-testid': 'paso-confirmar' }),
 }))
 
 import { ConsignacionWizard } from './ConsignacionWizard'
@@ -318,6 +332,7 @@ beforeEach(() => {
   consignacionesApiMock.actualizarInventario.mockReset().mockResolvedValue({ id: 'consignacion-1' })
   stepTwoOverridesHolder.overrides = {}
   stepOneOverridesHolder.overrides = {}
+  apuntesApiMock.guardarCondiciones.mockReset().mockResolvedValue({ disponible: true, condiciones: null, observacionesInternas: null })
   ubicarDireccionMock
     .mockReset()
     .mockResolvedValue({ lat: 4.6097, lng: -74.0817, precision: 'direccion' })
@@ -356,6 +371,31 @@ async function clickButton(button: HTMLButtonElement) {
 
 const CONFIRMAR_CONSIGNACION = 'inmobiliaria.consignaciones.wizard.confirmConsignment'
 
+/** «Siguiente» (en los pasos opcionales dice «Seguir sin propietario» / «Seguir sin inventario»). */
+function botonSiguiente(): HTMLButtonElement {
+  const b = document.body.querySelector<HTMLButtonElement>('[data-testid="asistente-siguiente"]')
+  if (!b) throw new Error('No hay botón «Siguiente»')
+  return b
+}
+
+const paso = (clave: string) => container.querySelector(`[data-testid="paso-${clave}"]`)
+
+/** Avanza con «Siguiente» hasta ese paso. */
+async function hastaElPaso(clave: string) {
+  for (let i = 0; i < 10 && !paso(clave); i++) {
+    await clickButton(botonSiguiente())
+  }
+  if (!paso(clave)) throw new Error(`No se llegó al paso ${clave}`)
+}
+
+/** Avanza con «Siguiente» hasta el paso de confirmar (27-10-2026: 7 pasos, el inmueble primero). */
+async function hastaConfirmar() {
+  for (let i = 0; i < 10 && !paso('confirmar'); i++) {
+    await clickButton(botonSiguiente())
+  }
+  if (!paso('confirmar')) throw new Error('No se llegó a confirmar')
+}
+
 function hayBoton(text: string): boolean {
   return Array.from(document.body.querySelectorAll('button')).some((b) => b.textContent?.includes(text))
 }
@@ -376,28 +416,25 @@ describe('<ConsignacionWizard> — agent assignment is optional', () => {
   it('does not block "Siguiente" at step 4 for an admin who picked no agent, even with zero agentes loaded', async () => {
     await renderWizard([]) // agency with no agentes loaded — req. 4
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // step 1 -> 2
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // step 2 -> 3
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // step 3 -> 4
+    await clickButton(botonSiguiente()) // inmueble -> fotos
+    await clickButton(botonSiguiente()) // fotos -> propietario
+    await clickButton(botonSiguiente()) // propietario -> comisión
+    await clickButton(botonSiguiente()) // comisión -> agente
 
-    expect(container.querySelector('[data-testid="step-4"]')).toBeTruthy()
-    expect(container.querySelector('[data-testid="step-4"]')?.textContent).toBe('no-agent')
+    expect(paso('agente')).toBeTruthy()
+    expect(paso('agente')?.textContent).toBe('no-agent')
 
-    const nextBtn = findButtonByText('inmobiliaria.consignaciones.wizard.next')
+    const nextBtn = botonSiguiente()
     expect(nextBtn.disabled).toBe(false)
 
-    await clickButton(nextBtn) // step 4 -> 5, proves it's not blocked
-    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+    await clickButton(nextBtn) // agente -> inventario, proves it's not blocked
+    expect(paso('inventario')).toBeTruthy()
   })
 
   it('defaults agenteUserId to the creating admin and skips assignAgent when no agent is picked', async () => {
     await renderWizard(AGENTE_LIST)
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (no agent picked)
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await hastaConfirmar() // sin elegir agente
 
     await enviar()
 
@@ -415,14 +452,15 @@ describe('<ConsignacionWizard> — agent assignment is optional', () => {
 
     await renderWizard(AGENTE_LIST)
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 5 (step 4 skipped)
+    await clickButton(botonSiguiente()) // inmueble -> fotos
+    await clickButton(botonSiguiente()) // fotos -> propietario
+    await clickButton(botonSiguiente()) // propietario -> comisión
+    await clickButton(botonSiguiente()) // comisión -> inventario («Agente» se salta)
 
-    expect(container.querySelector('[data-testid="step-4"]')).toBeFalsy()
-    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+    expect(paso('agente')).toBeFalsy()
+    expect(paso('inventario')).toBeTruthy()
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await clickButton(botonSiguiente()) // inventario -> confirmar
 
     await enviar()
 
@@ -467,9 +505,7 @@ describe('<ConsignacionWizard> — agent assignment is optional', () => {
 describe('<ConsignacionWizard> — crear el inmueble resuelve su ubicación', () => {
   async function crear() {
     await renderWizard(AGENTE_LIST)
-    for (let i = 0; i < 5; i++) {
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
-    }
+    await hastaConfirmar()
     await enviar()
   }
 
@@ -533,11 +569,7 @@ describe('<ConsignacionWizard> — crear el inmueble resuelve su ubicación', ()
 describe('<ConsignacionWizard> — publishes the property after the mandate (T-0018)', () => {
   async function driveToStep6ThenSubmit() {
     await renderWizard(AGENTE_LIST)
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await hastaConfirmar()
     await enviar()
   }
 
@@ -587,7 +619,7 @@ describe('<ConsignacionWizard> — publishes the property after the mandate (T-0
  * directly) per the owner's ruling on W3-a. No canon, no minimumTerm, no
  * adminFee, no acta de entrega. Step 5 used to be skipped entirely for a
  * sale listing; T-0042 (ledger.md §2/§3) amends that — it now renders
- * photos-only (see `StepActaEntrega` in ConsignacionWizardSteps.tsx) and is
+ * photos-only (see `StepFotos` in ConsignacionWizardSteps.tsx) and is
  * reached like any other step (see `getNextStep` in ConsignacionWizard.tsx).
  */
 describe('<ConsignacionWizard> — SALE listing carries a reduced mandate (contract-addendum-2.md §A)', () => {
@@ -598,11 +630,7 @@ describe('<ConsignacionWizard> — SALE listing carries a reduced mandate (contr
       monthlyRent: null,
     }
     await renderWizard(AGENTE_LIST)
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (photos-only, T-0042)
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await hastaConfirmar()
     await enviar()
   }
 
@@ -672,11 +700,7 @@ describe('<ConsignacionWizard> — property photos (T-0017)', () => {
   // agent — same setup as the "agent assignment is optional" tests above.
   async function submitAsAdmin() {
     await renderWizard(AGENTE_LIST)
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await hastaConfirmar()
     await enviar()
   }
 
@@ -761,94 +785,73 @@ describe('<ConsignacionWizard> — step 5 reachable on the sale path (T-0042)', 
     )
   }
 
-  it('rent + agent role: 5 visible steps labeled "inventory", step 4 skipped, step 5 reachable', async () => {
+  const P = 'inmobiliaria.consignaciones.wizard.steps.'
+
+  it('rent + asesor: el inmueble primero, «Agente» no se ve y se salta', async () => {
     permissionsState.isAdmin = false
     authState.user = { id: 'agent-user-1', email: 'agente1@test.com', name: 'Agente Uno' }
     await renderWizard(AGENTE_LIST)
 
     expect(visibleStepLabels()).toEqual([
-      'inmobiliaria.consignaciones.wizard.steps.owner',
-      'inmobiliaria.consignaciones.wizard.steps.property',
-      'inmobiliaria.consignaciones.wizard.steps.commission',
-      'inmobiliaria.consignaciones.wizard.steps.inventory',
-      'inmobiliaria.consignaciones.wizard.steps.confirm',
+      `${P}property`, `${P}photos`, `${P}owner`, `${P}commission`, `${P}inventory`, `${P}confirm`,
     ])
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 5 (step 4 skipped)
-
-    expect(container.querySelector('[data-testid="step-4"]')).toBeFalsy()
-    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+    await clickButton(botonSiguiente()) // inmueble -> fotos
+    await clickButton(botonSiguiente()) // fotos -> propietario
+    await clickButton(botonSiguiente()) // propietario -> comisión
+    await clickButton(botonSiguiente()) // comisión -> inventario
+    expect(paso('agente')).toBeFalsy()
+    expect(paso('inventario')).toBeTruthy()
   })
 
-  it('rent + no agent role (admin): 6 visible steps labeled "inventory", sequential 1..6', async () => {
-    await renderWizard(AGENTE_LIST) // beforeEach sets permissionsState.isAdmin = true
+  it('rent + administrador: los 7 pasos en orden', async () => {
+    await renderWizard(AGENTE_LIST)
 
     expect(visibleStepLabels()).toEqual([
-      'inmobiliaria.consignaciones.wizard.steps.owner',
-      'inmobiliaria.consignaciones.wizard.steps.property',
-      'inmobiliaria.consignaciones.wizard.steps.commission',
-      'inmobiliaria.consignaciones.wizard.steps.agent',
-      'inmobiliaria.consignaciones.wizard.steps.inventory',
-      'inmobiliaria.consignaciones.wizard.steps.confirm',
+      `${P}property`, `${P}photos`, `${P}owner`, `${P}commission`, `${P}agent`, `${P}inventory`, `${P}confirm`,
     ])
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
-    expect(container.querySelector('[data-testid="step-4"]')).toBeTruthy()
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
-    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+    for (const clave of ['inmueble', 'fotos', 'propietario', 'comision', 'agente', 'inventario']) {
+      expect(paso(clave)).toBeTruthy()
+      await clickButton(botonSiguiente())
+    }
+    expect(paso('confirmar')).toBeTruthy()
   })
 
-  it('sale + agent role: 5 visible steps labeled "photos", step 4 skipped, step 5 reachable', async () => {
+  it('sólo venta + asesor: sin «Agente» ni «Inventario»', async () => {
     stepTwoOverridesHolder.overrides = { listingType: 'sale', salePrice: 400_000_000, monthlyRent: null }
     permissionsState.isAdmin = false
     authState.user = { id: 'agent-user-1', email: 'agente1@test.com', name: 'Agente Uno' }
     await renderWizard(AGENTE_LIST)
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2 (step 2 mounts, sets listingType: sale)
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(botonSiguiente()) // inmueble (pone venta) -> fotos
 
-    expect(visibleStepLabels()).toEqual([
-      'inmobiliaria.consignaciones.wizard.steps.owner',
-      'inmobiliaria.consignaciones.wizard.steps.property',
-      'inmobiliaria.consignaciones.wizard.steps.commission',
-      'inmobiliaria.consignaciones.wizard.steps.photos',
-      'inmobiliaria.consignaciones.wizard.steps.confirm',
-    ])
+    expect(visibleStepLabels()).toEqual([`${P}property`, `${P}photos`, `${P}owner`, `${P}commission`, `${P}confirm`])
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 5 (step 4 skipped)
-    expect(container.querySelector('[data-testid="step-4"]')).toBeFalsy()
-    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
-
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
-    expect(container.querySelector('[data-testid="step-6"]')).toBeTruthy()
+    await clickButton(botonSiguiente()) // fotos -> propietario
+    await clickButton(botonSiguiente()) // propietario -> comisión
+    await clickButton(botonSiguiente()) // comisión -> confirmar
+    expect(paso('agente')).toBeFalsy()
+    expect(paso('inventario')).toBeFalsy()
+    expect(paso('confirmar')).toBeTruthy()
   })
 
-  it('sale + no agent role (admin): 6 visible steps labeled "photos", sequential 1..6, step 5 reachable', async () => {
+  it('sólo venta + administrador: «Agente» sí, «Inventario» no', async () => {
     stepTwoOverridesHolder.overrides = { listingType: 'sale', salePrice: 400_000_000, monthlyRent: null }
     await renderWizard(AGENTE_LIST)
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2 (step 2 mounts, sets listingType: sale)
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(botonSiguiente()) // inmueble -> fotos
 
     expect(visibleStepLabels()).toEqual([
-      'inmobiliaria.consignaciones.wizard.steps.owner',
-      'inmobiliaria.consignaciones.wizard.steps.property',
-      'inmobiliaria.consignaciones.wizard.steps.commission',
-      'inmobiliaria.consignaciones.wizard.steps.agent',
-      'inmobiliaria.consignaciones.wizard.steps.photos',
-      'inmobiliaria.consignaciones.wizard.steps.confirm',
+      `${P}property`, `${P}photos`, `${P}owner`, `${P}commission`, `${P}agent`, `${P}confirm`,
     ])
 
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
-    expect(container.querySelector('[data-testid="step-4"]')).toBeTruthy()
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
-    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
-    expect(container.querySelector('[data-testid="step-6"]')).toBeTruthy()
+    await clickButton(botonSiguiente()) // fotos -> propietario
+    await clickButton(botonSiguiente()) // propietario -> comisión
+    await clickButton(botonSiguiente()) // comisión -> agente
+    expect(paso('agente')).toBeTruthy()
+    await clickButton(botonSiguiente()) // agente -> confirmar
+    expect(paso('confirmar')).toBeTruthy()
   })
 
   it('uploads a sale listing\'s staged photos: uploadPropertyPhotos called with the new property id and the staged files', async () => {
@@ -858,11 +861,7 @@ describe('<ConsignacionWizard> — step 5 reachable on the sale path (T-0042)', 
     uploadPropertyPhotosMock.mockResolvedValue({ uploaded: 1, failed: [] })
 
     await renderWizard(AGENTE_LIST)
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (photos-only step, now reachable)
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await hastaConfirmar()
     await enviar()
 
     expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
@@ -888,9 +887,7 @@ describe('<ConsignacionWizard> — desde la ficha del propietario (propietarioIn
 
   it('al terminar vuelve a la ficha del propietario, no al portafolio', async () => {
     await renderDesdeLaFicha()
-    for (let paso = 1; paso < 6; paso++) {
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
-    }
+    await hastaConfirmar()
     await enviar()
     expect(pushMock).toHaveBeenCalledWith(FICHA)
     expect(pushMock).not.toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
@@ -901,9 +898,7 @@ describe('<ConsignacionWizard> — desde la ficha del propietario (propietarioIn
     // genérico; ahora se queda y reintentar sólo crea la consignación.
     consignacionesApiMock.create.mockRejectedValueOnce(new Error('boom'))
     await renderDesdeLaFicha()
-    for (let paso = 1; paso < 6; paso++) {
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
-    }
+    await hastaConfirmar()
     await enviar()
     expect(pushMock).not.toHaveBeenCalled()
 
@@ -915,9 +910,7 @@ describe('<ConsignacionWizard> — desde la ficha del propietario (propietarioIn
 
   it('sin volverA sigue yendo al portafolio', async () => {
     await renderWizard(AGENTE_LIST)
-    for (let paso = 1; paso < 6; paso++) {
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
-    }
+    await hastaConfirmar()
     await enviar()
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
   })
@@ -929,7 +922,7 @@ describe('<ConsignacionWizard> — fallos a la mitad y publicar sin fotos (W1, W
   async function llegarAlFinal() {
     await renderWizard(AGENTE_LIST)
     for (let i = 0; i < 8 && !hayBoton(CONFIRMAR_CONSIGNACION); i++) {
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+      await clickButton(botonSiguiente())
     }
   }
 
@@ -1014,7 +1007,7 @@ describe('<ConsignacionWizard> — crear es idempotente y no se repite (T-0141)'
   async function llegarAlFinal() {
     await renderWizard(AGENTE_LIST)
     for (let i = 0; i < 8 && !hayBoton(CONFIRMAR_CONSIGNACION); i++) {
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+      await clickButton(botonSiguiente())
     }
   }
 
@@ -1133,7 +1126,7 @@ describe('<ConsignacionWizard> — los errores del back, en su lugar', () => {
   async function llegarAlFinal() {
     await renderWizard(AGENTE_LIST)
     for (let i = 0; i < 8 && !hayBoton(CONFIRMAR_CONSIGNACION); i++) {
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+      await clickButton(botonSiguiente())
     }
   }
 
@@ -1145,7 +1138,7 @@ describe('<ConsignacionWizard> — los errores del back, en su lugar', () => {
     await llegarAlFinal()
     await enviar()
 
-    expect(porTestId('step-2')).not.toBeNull()
+    expect(porTestId('paso-inmueble')).not.toBeNull()
     expect(porTestId('error-monthlyRent')?.textContent).toBe(CANON_MAXIMO)
     expect(document.activeElement).toBe(porTestId('canon'))
     expect(toast.error).not.toHaveBeenCalled()
@@ -1222,7 +1215,7 @@ describe('<ConsignacionWizard> — los errores del back, en su lugar', () => {
     await llegarAlFinal()
     await enviar()
 
-    expect(porTestId('step-3')).not.toBeNull()
+    expect(porTestId('paso-comision')).not.toBeNull()
     expect(porTestId('error-commissionPercent')?.textContent).toBe('La comisión no puede pasar de 100.')
     expect(document.activeElement).toBe(porTestId('comision'))
     const [titulo, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
@@ -1231,7 +1224,7 @@ describe('<ConsignacionWizard> — los errores del back, en su lugar', () => {
     expect(pushMock).not.toHaveBeenCalled()
 
     for (let i = 0; i < 8 && !hayBoton(CONFIRMAR_CONSIGNACION); i++) {
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+      await clickButton(botonSiguiente())
     }
     // Sin volver a preguntar por las fotos: el inmueble ya existe.
     await clickButton(findButtonByText(CONFIRMAR_CONSIGNACION))
@@ -1284,9 +1277,10 @@ describe('<ConsignacionWizard> — los errores del back, en su lugar', () => {
         errorDeCampos([{ campo: 'email', mensaje: 'Revisa el correo: debe tener la forma nombre@dominio.com.' }]),
       )
       await renderWizard(AGENTE_LIST)
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+      await hastaElPaso('propietario')
+      await clickButton(botonSiguiente())
 
-      expect(porTestId('step-1')).not.toBeNull()
+      expect(porTestId('paso-propietario')).not.toBeNull()
       const error = porTestId('error-del-dueno')
       expect(error?.dataset.campo).toBe('email')
       expect(error?.textContent).toBe('Revisa el correo: debe tener la forma nombre@dominio.com.')
@@ -1296,9 +1290,10 @@ describe('<ConsignacionWizard> — los errores del back, en su lugar', () => {
     it('sin respuesta: habla de la conexión y no avanza', async () => {
       propietariosApiMock.create.mockRejectedValueOnce(new TypeError('Failed to fetch'))
       await renderWizard(AGENTE_LIST)
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+      await hastaElPaso('propietario')
+      await clickButton(botonSiguiente())
 
-      expect(porTestId('step-1')).not.toBeNull()
+      expect(porTestId('paso-propietario')).not.toBeNull()
       const [, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
       expect(opciones.description).toMatch(/conexión/)
     })
@@ -1313,9 +1308,7 @@ describe('<ConsignacionWizard> — los errores del back, en su lugar', () => {
 describe('<ConsignacionWizard> — el inventario del paso 5 se guarda', () => {
   async function hastaElFinal() {
     await renderWizard(AGENTE_LIST)
-    for (let i = 0; i < 5; i++) {
-      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
-    }
+    await hastaConfirmar()
     await enviar()
   }
 
@@ -1344,5 +1337,88 @@ describe('<ConsignacionWizard> — el inventario del paso 5 se guarda', () => {
       expect.objectContaining({ description: 'inmobiliaria.consignaciones.wizard.toasts.inventoryErrorDesc' }),
     )
     expect(pushMock).toHaveBeenCalled()
+  })
+})
+
+
+describe('🔴 propietario opcional (Juan y Nico, 27-10-2026: «propietario opcional… la comisión sí la dejamos»)', () => {
+  afterEach(() => {
+    stepOneOverridesHolder.overrides = {}
+  })
+
+  async function publicarSinPropietario() {
+    await clickButton(findButtonByText('Publicar inmueble'))
+    if (hayBoton('inmobiliaria.consignaciones.wizard.sinFotosDialog.publishAnyway')) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.sinFotosDialog.publishAnyway'))
+    }
+  }
+
+  it('sin propietario: «Seguir sin propietario», la comisión SÍ se pide y queda con el inmueble; no hay consignación', async () => {
+    stepOneOverridesHolder.overrides = { propietarioId: '' }
+    await renderWizard(AGENTE_LIST)
+    await hastaElPaso('propietario')
+    expect(botonSiguiente().textContent).toContain('Seguir sin propietario')
+    expect(botonSiguiente().disabled).toBe(false)
+    await clickButton(botonSiguiente())
+    expect(paso('comision')).not.toBeNull()
+    await hastaConfirmar()
+    await publicarSinPropietario()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(consignacionesApiMock.create).not.toHaveBeenCalled()
+    expect(apuntesApiMock.guardarCondiciones).toHaveBeenCalledWith(
+      'property-1',
+      expect.objectContaining({ comisionPorcentaje: 10, plazoMinimoMeses: 12 }),
+    )
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+  })
+
+  it('el inventario sin propietario va con las condiciones del inmueble', async () => {
+    stepOneOverridesHolder.overrides = { propietarioId: '' }
+    stepFivePhotosHolder.inventoryItems = [{ id: 'item-1', name: 'Nevera', quantity: 1, condition: 'good' }]
+    await renderWizard(AGENTE_LIST)
+    await hastaConfirmar()
+    await publicarSinPropietario()
+
+    expect(consignacionesApiMock.actualizarInventario).not.toHaveBeenCalled()
+    expect(apuntesApiMock.guardarCondiciones).toHaveBeenCalledWith(
+      'property-1',
+      expect.objectContaining({ inventario: [{ nombre: 'Nevera', cantidad: 1, estado: 'good' }] }),
+    )
+  })
+
+  it('si las condiciones no se guardan, lo dice y el inmueble se publica igual', async () => {
+    stepOneOverridesHolder.overrides = { propietarioId: '' }
+    apuntesApiMock.guardarCondiciones.mockRejectedValueOnce(new ApiError(503, 'Falta una migración', 'FALTA_UNA_MIGRACION'))
+    await renderWizard(AGENTE_LIST)
+    await hastaConfirmar()
+    await publicarSinPropietario()
+
+    expect(toast.warning).toHaveBeenCalledWith('No pudimos guardar la comisión con el inmueble', expect.anything())
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+  })
+
+  it('«Arriendo y venta»: el inmueble viaja con canon Y precio de venta; la comisión de venta queda con el inmueble', async () => {
+    stepTwoOverridesHolder.overrides = { listingType: 'rent', tambienEnVenta: true, salePrice: 500_000_000 }
+    await renderWizard(AGENTE_LIST)
+    await hastaConfirmar()
+    await enviar()
+
+    const cuerpo = propertiesApiMock.create.mock.calls[0][0]
+    expect(cuerpo).toMatchObject({ listingType: 'rent', monthlyRent: 1000000, salePrice: 500_000_000 })
+    // La consignación es de arriendo (con propietario); la de venta no se le manda (el back la rechaza en un arriendo).
+    const mandato = consignacionesApiMock.create.mock.calls[0][0]
+    expect(mandato).not.toHaveProperty('saleCommissionPercent')
+    expect(apuntesApiMock.guardarCondiciones).toHaveBeenCalledWith(
+      'property-1',
+      expect.objectContaining({ comisionDeVentaPorcentaje: 3 }),
+    )
+  })
+
+  it('«Arriendo y venta» sin precio de venta no deja seguir y dice qué falta', async () => {
+    stepTwoOverridesHolder.overrides = { listingType: 'rent', tambienEnVenta: true, salePrice: undefined }
+    await renderWizard(AGENTE_LIST)
+    expect(botonSiguiente().disabled).toBe(true)
+    expect(container.querySelector('[data-testid="por-que-no-sigue"]')?.textContent).toContain('precio de venta')
   })
 })

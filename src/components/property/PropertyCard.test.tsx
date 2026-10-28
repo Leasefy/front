@@ -75,7 +75,8 @@ function montar(overrides: Partial<Property> = {}) {
 }
 
 function srcs(): string[] {
-  return Array.from(container.querySelectorAll('img')).map((img) => img.getAttribute('src') ?? '')
+  // La ilustración 3D del inmueble sin fotos (27-10-2026) no es una foto: no cuenta.
+  return Array.from(container.querySelectorAll('img:not([data-ilustracion])')).map((img) => img.getAttribute('src') ?? '')
 }
 
 beforeEach(() => {

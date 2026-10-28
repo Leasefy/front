@@ -217,7 +217,11 @@ describe('Los tres pasos para activar la cuenta al pagar', () => {
     await act(async () => {
       porId('doble-segundo-factor')!.click()
     })
-    for (let i = 0; i < 6; i++) await act(async () => {})
+    // El «Listo» del segundo factor sigue con un reloj (aquí de 0 ms): se le da su vuelta.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+    for (let i = 0; i < 4; i++) await act(async () => {})
     expect(setMfaVerified).toHaveBeenCalled()
     expect(alGuardar).toHaveBeenCalledTimes(1)
     expect(porId('pasos-para-activar-listos')).not.toBeNull()

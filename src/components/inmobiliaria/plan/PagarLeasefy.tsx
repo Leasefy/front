@@ -3,19 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import {
-  ArrowsLeftRight,
-  Buildings,
-  CalendarCheck,
-  ChatsCircle,
-  CheckCircle,
-  Gift,
-  LockSimpleOpen,
-  PhoneCall,
-  Receipt,
-  Signature,
-} from '@phosphor-icons/react';
-import { enterTransition, Stagger, StaggerItem, usePrefersReducedMotion } from '@leasefy/cadence';
+import { Buildings, CheckCircle, LockSimpleOpen } from '@phosphor-icons/react';
+import { enterTransition, Ilustracion, motionSpring, usePrefersReducedMotion, type NombreIlustracion } from '@leasefy/cadence';
+
+import { BeneficiosEn3D, ChipDelAliado, type BeneficioEn3D } from '@/components/conversion/EscenaDeMarca';
+import { cn } from '@/lib/utils';
 
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
@@ -27,20 +19,20 @@ import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { conversionApi } from '@/lib/api/conversion.service';
-import { precioDelMes, type AccesoConCotizacion } from '@/lib/conversion/acceso';
+import { DIAS_PARA_INSISTIR, precioDelMes, type AccesoConCotizacion } from '@/lib/conversion/acceso';
 import { shouldResumeReactivation } from '@/app/panel/inmobiliaria/upgrade/resume-reactivation';
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
 import { RecargasDePreguntas } from './RecargasDePreguntas';
 
 /** Lo que se abre al pagar: lo que la cuenta gratis ve en demo. */
-const LO_QUE_SE_ABRE = [
-  { icono: Signature, texto: 'Contratos con firma electrónica e inventario' },
-  { icono: ArrowsLeftRight, texto: 'Recaudo en línea, cartera y giros a propietarios' },
-  { icono: PhoneCall, texto: 'Mori cobra por llamada y WhatsApp a quien se atrasa' },
-  { icono: Receipt, texto: 'Facturación electrónica y contabilidad' },
-  { icono: ChatsCircle, texto: 'El chat de tu inmobiliaria y el piloto automático' },
-  { icono: CalendarCheck, texto: 'Renovaciones, incrementos y mantenimientos' },
-] as const;
+const LO_QUE_SE_ABRE: readonly BeneficioEn3D[] = [
+  { ilustracion: 'firma', texto: 'Contratos con firma electrónica e inventario' },
+  { ilustracion: 'banco', texto: 'Recaudo en línea, cartera y giros a propietarios' },
+  { ilustracion: 'sobre_cobro', texto: 'Mori cobra por llamada y WhatsApp a quien se atrasa' },
+  { ilustracion: 'factura', texto: 'Facturación electrónica y contabilidad' },
+  { ilustracion: 'mensajes', texto: 'El chat de tu inmobiliaria y el piloto automático' },
+  { ilustracion: 'calendario_pago', texto: 'Renovaciones, incrementos y mantenimientos' },
+];
 
 /** Lo que la cuenta gratis ya tiene y no pierde nunca. */
 const LO_GRATIS = ['Tus inmuebles en el marketplace', 'Interesados, visitas y postulaciones', 'Tu página de inmobiliaria'] as const;
@@ -124,14 +116,27 @@ export function PagarLeasefy() {
           className="relative overflow-hidden rounded-lg border border-primary/25 bg-surface p-6 sm:p-8"
           data-testid="leasefy-completo"
         >
-          <span aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary-soft" />
+          {/* Nico, 28-10: «ese círculo dentro de esa card está horrible». En su lugar, la insignia del plan en 3D. */}
+          <motion.span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-5 top-5 hidden drop-shadow-[0_14px_20px_rgba(26,64,255,0.18)] sm:block"
+            initial={reducido ? { opacity: 0 } : { opacity: 0, scale: 0.6, rotate: -10 }}
+            animate={reducido ? { opacity: 1 } : { opacity: 1, scale: 1, rotate: 0, y: [0, -6, 0] }}
+            transition={
+              reducido
+                ? { duration: 0.2 }
+                : { opacity: { duration: 0.4 }, scale: motionSpring.bouncy, rotate: motionSpring.bouncy, y: { duration: 4.6, repeat: Infinity, ease: 'easeInOut', delay: 0.8 } }
+            }
+          >
+            <Ilustracion nombre="plan_insignia" tamano={112} tono="auto" alt="" />
+          </motion.span>
           <div className="relative">
             <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.08em] text-primary">
               <LockSimpleOpen size={14} weight="bold" aria-hidden="true" />
               Leasefy completo
             </p>
             {cotizacion ? (
-              <div className="mt-4">
+              <div className="mt-4 sm:pr-32">
                 <p className="flex flex-wrap items-baseline gap-x-2">
                   <span className="text-[44px] font-[420] leading-none tracking-[-0.03em] text-fg tabular-nums" data-testid="precio-del-mes">
                     {precioDelMes(cotizacion.monto)}
@@ -139,22 +144,17 @@ export function PagarLeasefy() {
                   <span className="text-[15px] text-fg-muted">al mes más IVA</span>
                 </p>
                 <p className="mt-2 text-sm text-fg-muted">
-                  {cotizacion.porInmueble
-                    ? `Con tus ${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles gestionados y ${cotizacion.usuarios} usuarios: $2.100 por inmueble, mínimo $99.000.`
-                    : `Plan ${cotizacion.nombre}.`}
+                  {!cotizacion.porInmueble
+                    ? `Plan ${cotizacion.nombre}.`
+                    : cotizacion.inmuebles > 0
+                      ? `Con ${cotizacion.inmuebles === 1 ? 'tu inmueble gestionado' : `tus ${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles gestionados`} y ${cotizacion.usuarios} usuarios: $2.100 por inmueble, mínimo $99.000.`
+                      : 'El mínimo, con dos usuarios incluidos. Cada inmueble que gestiones suma $2.100 al mes.'}
                 </p>
               </div>
             ) : (
               <p className="mt-4 text-sm text-fg-muted">Escríbenos y te decimos cuánto te sale con tus inmuebles.</p>
             )}
-            <Stagger className="mt-6 grid gap-2.5 sm:grid-cols-2">
-              {LO_QUE_SE_ABRE.map(({ icono: Icono, texto }) => (
-                <StaggerItem key={texto} className="flex items-start gap-2.5 text-sm text-fg">
-                  <Icono size={18} className="mt-0.5 shrink-0 text-primary" weight="duotone" aria-hidden="true" />
-                  {texto}
-                </StaggerItem>
-              ))}
-            </Stagger>
+            <BeneficiosEn3D items={LO_QUE_SE_ABRE} className="mt-6" />
             <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
               {yaTieneTodo ? (
                 <p className="inline-flex items-center gap-2 text-sm font-medium text-success" data-testid="ya-tienes-todo">
@@ -239,20 +239,35 @@ function EstadoDelPlan({ estado, prueba }: Pick<AccesoConCotizacion, 'estado' | 
   }
   const total = prueba ? Math.max(1, (new Date(prueba.termina).getTime() - new Date(prueba.empieza).getTime()) / 86_400_000) : 0;
   const usado = estado === 'prueba' && prueba ? Math.min(100, Math.max(0, ((total - prueba.diasQueQuedan) / total) * 100)) : null;
+  // Los mismos tonos de la barra del plan: el mes gratis en naranja, rojo desde 10 días antes y al terminar.
+  const urgente = (estado === 'prueba' && prueba && prueba.diasQueQuedan <= DIAS_PARA_INSISTIR) || (estado === 'gratis' && prueba?.vencida);
+  const tono: 'regalo' | 'urgente' | 'neutro' = urgente ? 'urgente' : estado === 'prueba' ? 'regalo' : 'neutro';
+  const ilustracion: NombreIlustracion =
+    tono === 'urgente' ? 'reloj_mora' : tono === 'regalo' ? 'novedad_regalo' : estado === 'gratis' ? 'casa' : 'pago_confirmado';
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 sm:flex-row sm:items-center" data-testid="estado-del-plan">
-      <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
-        <Gift size={22} weight="duotone" aria-hidden="true" />
+    <section
+      className={cn(
+        'flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center',
+        tono === 'regalo' && 'border-warning/30 bg-warning-soft',
+        tono === 'urgente' && 'border-danger/30 bg-danger-soft',
+        tono === 'neutro' && 'border-border bg-surface',
+      )}
+      data-testid="estado-del-plan"
+      data-tono={tono}
+    >
+      <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-surface/70">
+        <Ilustracion nombre={ilustracion} tamano={52} tono="auto" alt="" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[16px] font-medium text-fg">{titulo}</p>
+        <p className={cn('text-[16px] font-medium', tono === 'regalo' ? 'text-warning-ink' : tono === 'urgente' ? 'text-danger-ink' : 'text-fg')}>{titulo}</p>
         <p className="mt-0.5 text-sm text-fg-muted">{texto}</p>
         {usado !== null && (
-          <div className="mt-3 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-surface-muted" aria-hidden="true">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${usado}%` }} />
+          <div className="mt-3 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-surface/80" aria-hidden="true">
+            <div className={cn('h-full rounded-full', tono === 'urgente' ? 'bg-danger' : 'bg-warning')} style={{ width: `${100 - usado}%` }} />
           </div>
         )}
       </div>
+      {prueba?.aliado ? <ChipDelAliado aliado={prueba.aliado} /> : null}
     </section>
   );
 }

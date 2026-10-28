@@ -380,6 +380,8 @@ interface Elegible {
   id: string;
   titulo: string;
   donde: string;
+  /** Publicado y libre; lo demás va al final y marcado. */
+  disponible: boolean;
 }
 
 function ProponerComision({ abierta, alCerrar, alProponer }: { abierta: boolean; alCerrar: () => void; alProponer: () => Promise<void> }) {
@@ -402,14 +404,14 @@ function ProponerComision({ abierta, alCerrar, alProponer }: { abierta: boolean;
     for (const c of consignaciones) {
       if (!c.propertyId || vistos.has(c.propertyId)) continue;
       vistos.add(c.propertyId);
-      out.push({ id: c.propertyId, titulo: c.propertyTitle, donde: [c.propertyAddress !== c.propertyTitle ? c.propertyAddress : null, c.propertyCity].filter(Boolean).join(', ') });
+      out.push({ id: c.propertyId, titulo: c.propertyTitle, donde: [c.propertyAddress !== c.propertyTitle ? c.propertyAddress : null, c.propertyCity].filter(Boolean).join(', '), disponible: !c.arrendado && (c.propertyStatus == null || c.propertyStatus === 'AVAILABLE') });
     }
     for (const i of sinMandato) {
       if (vistos.has(i.propertyId)) continue;
       vistos.add(i.propertyId);
-      out.push({ id: i.propertyId, titulo: i.propertyTitle, donde: [i.propertyZone !== i.propertyTitle ? i.propertyZone : null, i.propertyCity].filter(Boolean).join(', ') });
+      out.push({ id: i.propertyId, titulo: i.propertyTitle, donde: [i.propertyZone !== i.propertyTitle ? i.propertyZone : null, i.propertyCity].filter(Boolean).join(', '), disponible: i.status === 'available' });
     }
-    return out;
+    return out.sort((a, b) => Number(b.disponible) - Number(a.disponible));
   }, [consignaciones, sinMandato]);
   const inmueblesVisibles = useMemo(() => {
     const q = sinTildes(buscarInmueble.trim());
@@ -488,7 +490,10 @@ function ProponerComision({ abierta, alCerrar, alProponer }: { abierta: boolean;
                       <li key={i.id}>
                         <button type="button" onClick={() => setInmueble(i)} className="w-full rounded-xl border border-border px-3 py-2.5 text-left hover:bg-surface-muted" data-testid={`elegir-inmueble-${i.id}`}>
                           <span className="block truncate text-body-sm font-medium text-fg">{i.titulo}</span>
-                          <span className="block truncate text-caption text-fg-subtle">{i.donde || 'Sin dirección'}</span>
+                          <span className="block truncate text-caption text-fg-subtle">
+                            {!i.disponible ? <span className="font-medium text-warning-ink">No disponible · </span> : null}
+                            {i.donde || 'Sin dirección'}
+                          </span>
                         </button>
                       </li>
                     ))}

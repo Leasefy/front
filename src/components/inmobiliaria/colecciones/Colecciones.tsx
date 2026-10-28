@@ -32,6 +32,8 @@ interface Elegible {
   canon: number | null;
   /** Otra inmobiliaria te lo compartió (comisión compartida aceptada): también lo muestras. */
   compartidoPor?: string;
+  /** Publicado y libre: lo que el cliente puede arrendar. Lo demás le sale «Ya no está disponible». */
+  disponible: boolean;
 }
 
 export function Colecciones() {
@@ -147,7 +149,7 @@ function NuevaColeccion({ abierta, inicial = [], alCerrar, alCrear }: { abierta:
         setCompartidos(
           r.comisiones
             .filter((c) => c.lado === 'trae' && c.estado === 'aceptada')
-            .map((c) => ({ id: c.inmueble.id, titulo: c.inmueble.titulo, donde: [c.inmueble.barrio, c.inmueble.ciudad].filter(Boolean).join(', '), canon: c.inmueble.canon, compartidoPor: c.otra.nombre })),
+            .map((c) => ({ id: c.inmueble.id, titulo: c.inmueble.titulo, donde: [c.inmueble.barrio, c.inmueble.ciudad].filter(Boolean).join(', '), canon: c.inmueble.canon, compartidoPor: c.otra.nombre, disponible: c.inmueble.disponible })),
         );
       })
       .catch(() => vivo && setCompartidos([]));
@@ -165,20 +167,20 @@ function NuevaColeccion({ abierta, inicial = [], alCerrar, alCrear }: { abierta:
     for (const c of consignaciones) {
       if (!c.propertyId || vistos.has(c.propertyId)) continue;
       vistos.add(c.propertyId);
-      lista.push({ id: c.propertyId, titulo: c.propertyTitle, donde: [c.propertyAddress !== c.propertyTitle ? c.propertyAddress : null, c.propertyCity].filter(Boolean).join(', '), canon: c.monthlyRent ?? null });
+      lista.push({ id: c.propertyId, titulo: c.propertyTitle, donde: [c.propertyAddress !== c.propertyTitle ? c.propertyAddress : null, c.propertyCity].filter(Boolean).join(', '), canon: c.monthlyRent ?? null, disponible: !c.arrendado && (c.propertyStatus == null || c.propertyStatus === 'AVAILABLE') });
     }
     for (const i of sinMandato) {
       if (vistos.has(i.propertyId)) continue;
       vistos.add(i.propertyId);
-      lista.push({ id: i.propertyId, titulo: i.propertyTitle, donde: [i.propertyZone, i.propertyCity].filter(Boolean).join(', '), canon: i.monthlyRent });
+      lista.push({ id: i.propertyId, titulo: i.propertyTitle, donde: [i.propertyZone, i.propertyCity].filter(Boolean).join(', '), canon: i.monthlyRent, disponible: i.status === 'available' });
     }
     for (const c of compartidos) {
       if (vistos.has(c.id)) continue;
       vistos.add(c.id);
       lista.push(c);
     }
-    // Lo que llegó elegido (desde la comisión compartida) va arriba.
-    return lista.sort((a, b) => Number(inicial.includes(b.id)) - Number(inicial.includes(a.id)));
+    // Lo que llegó elegido (desde la comisión compartida) va arriba; después lo disponible.
+    return lista.sort((a, b) => Number(inicial.includes(b.id)) - Number(inicial.includes(a.id)) || Number(b.disponible) - Number(a.disponible));
   }, [consignaciones, sinMandato, compartidos, inicial]);
   const visibles = useMemo(() => {
     const q = sinTildes(buscar.trim());
@@ -268,6 +270,7 @@ function NuevaColeccion({ abierta, inicial = [], alCerrar, alCrear }: { abierta:
                           <span className="block truncate text-body-sm font-medium text-fg">{i.titulo}</span>
                           <span className="block truncate text-caption text-fg-subtle">
                             {i.compartidoPor ? <span className="font-medium text-primary">Compartido por {i.compartidoPor} · </span> : null}
+                            {!i.disponible ? <span className="font-medium text-warning-ink">No disponible · </span> : null}
                             {i.donde}
                           </span>
                         </span>

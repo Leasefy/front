@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Buildings, House, IdentificationBadge } from '@phosphor-icons/react';
+import { Ilustracion, type NombreIlustracion } from '@leasefy/cadence';
 import { CrossFade } from '@leasefy/cadence';
 
 import { AuthForm } from '@/components/auth/AuthForm';
@@ -41,6 +42,10 @@ export function rolDeLaCuenta(perfil: PerfilQuePublica): 'landlord' | 'agency' {
 export function esPerfilQuePublica(valor: unknown): valor is PerfilQuePublica {
   return valor === 'landlord' || valor === 'agency' || valor === 'agente';
 }
+
+/** El 3D de cada perfil (de la familia de Cadence): las llaves del propietario, el edificio de la inmobiliaria y la
+ *  cédula del agente inmobiliario. */
+const ILUSTRACION_DEL_PERFIL: Record<string, NombreIlustracion> = { landlord: 'llaves', agency: 'edificio', agente: 'cedula' };
 
 const PERFILES: Record<
   PerfilQuePublica,
@@ -235,8 +240,9 @@ function EleccionDeQuienPublica({
               )}
               data-testid={`publica-${perfil === 'agency' ? 'inmobiliaria' : perfil === 'agente' ? 'agente' : 'propietario'}`}
             >
-              <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary transition-colors duration-fast group-hover:bg-primary group-hover:text-primary-fg">
-                <Icono size={24} aria-hidden="true" />
+              {/* Nico (27-10-2026): un 3D de la familia por perfil en vez del ícono de línea. */}
+              <span className="inline-flex size-14 shrink-0 items-center justify-center transition-transform duration-fast group-hover:-translate-y-0.5" data-testid="ilustracion-del-perfil">
+                <Ilustracion nombre={ILUSTRACION_DEL_PERFIL[perfil]} tamano={56} tono="auto" alt="" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[16px] font-medium text-fg">{titulo}</span>

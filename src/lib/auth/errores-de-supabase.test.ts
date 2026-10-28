@@ -83,7 +83,7 @@ describe('mensajeDeSupabase', () => {
 
   it('el límite de correos y el de intentos, en español', () => {
     expect(mensajeDeSupabase(new AuthApiError('Email rate limit exceeded', 429, 'over_email_send_rate_limit'))).toMatch(
-      /Espera unos minutos/,
+      /Intenta de nuevo en una hora/,
     )
     expect(mensajeDeSupabase({ status: 429 })).toMatch(/Espera un minuto/)
   })
@@ -95,5 +95,16 @@ describe('mensajeDeSupabase', () => {
   it('codigoDeSupabase', () => {
     expect(codigoDeSupabase(new AuthApiError('Email not confirmed', 400, 'email_not_confirmed'))).toBe('email_not_confirmed')
     expect(codigoDeSupabase(new Error('x'))).toBeUndefined()
+  })
+})
+
+describe('El límite de correos dice cuánto esperar (Nico, 27-10-2026)', () => {
+  it('con los segundos de Supabase, ese número; con el límite del proyecto, una hora y Google', () => {
+    expect(mensajeDeSupabase(new AuthApiError('For security purposes, you can only request this after 42 seconds.', 429, 'over_email_send_rate_limit'))).toBe(
+      'Ya te mandamos un correo. Puedes pedir otro en 42 segundos; mientras, revisa también spam.',
+    )
+    expect(mensajeDeSupabase(new AuthApiError('Email rate limit exceeded', 429, 'over_email_send_rate_limit'))).toBe(
+      'En este momento estamos enviando muchos correos. Intenta de nuevo en una hora, o entra con Google y sigue de una.',
+    )
   })
 })

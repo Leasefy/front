@@ -18,7 +18,11 @@ vi.mock('@/components/auth/ventana/VentanaDeCuenta', () => ({
   TextoDeLaObra: () => null,
 }));
 vi.mock('@/components/auth/ventana/InmuebleQueSePublica', () => ({ InmuebleQueSePublica: () => null }));
-vi.mock('@leasefy/cadence', () => ({ CrossFade: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
+vi.mock('@leasefy/cadence', () => ({
+  CrossFade: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  // 27-10-2026: el 3D de cada perfil.
+  Ilustracion: ({ nombre }: { nombre: string }) => <span data-ilustracion={nombre} />,
+}));
 
 type PropsDelFormulario = {
   defaultMode?: string;

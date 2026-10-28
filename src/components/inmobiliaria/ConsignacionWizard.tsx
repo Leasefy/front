@@ -617,6 +617,8 @@ export function ConsignacionWizard({
             ...(formData.videoUrl?.trim() ? { videoUrl: formData.videoUrl.trim() } : {}),
             // Las características sólo si marcaron alguna (21-10-2026).
             ...(formData.amenities?.length ? { amenities: formData.amenities } : {}),
+            // Cuántos parqueaderos, si marcaron «Parqueadero» (28-10-2026).
+            ...(formData.parkingSpaces && formData.amenities?.includes('parking') ? { parkingSpaces: formData.parkingSpaces } : {}),
             // 🔴 Sólo si lo apagaron: encendido es lo de siempre (Nico, 10-10-2026).
             ...(formData.publicarEnElMarketplace === false ? { publicadoEnMarketplace: false } : {}),
           }, { idempotencyKey });

@@ -993,6 +993,11 @@ export function ConsignacionEditForm({
                     value={valores.amenities}
                     onChange={(v) => poner('amenities', v)}
                     testId="editar-amenidades"
+                    // 28-10-2026 (Nico): «falta si tiene parqueadero (cuántos)»: el mismo dato del campo de arriba.
+                    parqueaderos={{
+                      valor: valores.parkingSpaces ? Number(valores.parkingSpaces) : undefined,
+                      alCambiar: (n) => poner('parkingSpaces', n == null ? '' : String(n)),
+                    }}
                   />
                 </InputWrapper>
               </>

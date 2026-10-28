@@ -136,6 +136,8 @@ export interface WizardFormData extends ConsignacionFormData {
   videoUrl?: string;
   /** Las características (ids de `lib/inmuebles/caracteristicas.ts`), 21-10-2026. Opcionales. */
   amenities?: string[];
+  /** Cuántos parqueaderos (28-10-2026): se pregunta al marcar «Parqueadero» en las características. */
+  parkingSpaces?: number;
   /**
    * 🔴 «Publicar en el marketplace» (Nico, 10-10-2026): ENCENDIDO por defecto
    * (ausente = sí). Apagado, el inmueble queda en el portafolio y no sale en
@@ -731,6 +733,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           <SelectorDeCaracteristicas
             value={formData.amenities ?? []}
             onChange={(amenities) => updateFormData({ amenities })}
+            parqueaderos={{ valor: formData.parkingSpaces, alCambiar: (parkingSpaces) => updateFormData({ parkingSpaces }) }}
             tituloId={`${idDelCampoDelAsistente('amenities')}-titulo`}
             ariaDelError={
               erroresDelServidor?.amenities

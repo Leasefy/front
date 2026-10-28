@@ -199,7 +199,7 @@ export function RegistroRapido({
 function FotoDeTusDatos() {
   const reducido = usePrefersReducedMotion();
   return (
-    <figure className="relative hidden aspect-[4/5] max-h-[620px] overflow-hidden rounded-[28px] bg-[#1b2340] lg:block" aria-hidden="true" data-testid="foto-de-tus-datos">
+    <figure className="relative hidden aspect-[4/5] max-h-[620px] overflow-hidden rounded-[28px] bg-ink lg:block" aria-hidden="true" data-testid="foto-de-tus-datos">
       <motion.img
         src="/imagenes/banco/sala-poblado-montanas.webp"
         alt=""
@@ -208,15 +208,15 @@ function FotoDeTusDatos() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ opacity: { duration: 0.5 }, scale: { duration: 5, ease: [0.16, 1, 0.3, 1] } }}
       />
-      <span className="absolute inset-0 bg-gradient-to-t from-[#0d1330]/45 via-transparent to-transparent" />
+      <span className="absolute inset-0 bg-gradient-to-t from-ink/45 via-transparent to-transparent" />
       <motion.figcaption
-        className="absolute inset-x-6 bottom-6 rounded-2xl bg-[#f7f6f2] p-4 shadow-[0_24px_48px_-16px_rgba(4,16,48,0.55)]"
+        className="absolute inset-x-6 bottom-6 rounded-2xl bg-surface p-4 shadow-flotante"
         initial={reducido ? { opacity: 0 } : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={reducido ? { duration: 0.2 } : { ...motionSpring.soft, delay: 0.5 }}
       >
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#5c5a55]">Te escriben por WhatsApp</p>
-        <p className="mt-2 w-fit max-w-[90%] rounded-2xl rounded-tl-md bg-white px-3.5 py-2.5 text-[14px] leading-snug text-[#1b2340] shadow-[0_1px_2px_rgba(20,19,15,0.08)]">
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Te escriben por WhatsApp</p>
+        <p className="mt-2 w-fit max-w-[90%] rounded-2xl rounded-tl-md bg-surface-muted px-3.5 py-2.5 text-[14px] leading-snug text-fg">
           Hola, vi tu apartamento en Leasefy. ¿Sigue disponible para visitarlo el sábado?
         </p>
       </motion.figcaption>

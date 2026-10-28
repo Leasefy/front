@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { ArrowsLeftRight, CheckCircle, Gift, HourglassMedium, PhoneCall, Receipt, Signature } from '@phosphor-icons/react';
-import { enterTransition, Stagger, StaggerItem, usePrefersReducedMotion } from '@leasefy/cadence';
+import { CheckCircle } from '@phosphor-icons/react';
+import type { NombreIlustracion } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { BeneficiosEn3D, ChipDelAliado, EscenaDeMarca } from '@/components/conversion/EscenaDeMarca';
 import { useAuth } from '@/lib/auth/use-auth';
 import { conversionApi } from '@/lib/api/conversion.service';
 import { precioDelMes, type AccesoDeLaCuenta, type CotizacionDelPlan } from '@/lib/conversion/acceso';
@@ -69,12 +69,33 @@ function bienvenidaVista(agencyId: string): boolean {
   }
 }
 
-const LO_QUE_TIENES = [
-  { icono: ArrowsLeftRight, texto: 'Recaudo en línea, cartera y giros a propietarios' },
-  { icono: Signature, texto: 'Contratos con firma electrónica' },
-  { icono: PhoneCall, texto: 'Mori cobra por ti a quien se atrasa' },
-  { icono: Receipt, texto: 'Facturación electrónica y contabilidad' },
-] as const;
+/** La frase del precio: con los inmuebles de la cuenta, o el mínimo si todavía no hay (nunca «tus 0 inmuebles»). */
+export function fraseDelPrecio(cotizacion: CotizacionDelPlan | null): string {
+  if (cotizacion && cotizacion.inmuebles > 0) {
+    const cuantos = cotizacion.inmuebles === 1 ? 'tu inmueble' : `tus ${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles`;
+    return `Con ${cuantos}: ${precioDelMes(cotizacion.monto)} al mes más IVA.`;
+  }
+  return 'Desde $99.000 al mes más IVA, según tus inmuebles. Dos usuarios incluidos.';
+}
+
+/** La escena de cada momento: el 3D del centro y sus acompañantes. */
+const ESCENAS: Record<MomentoDelModal['tipo'], { principal: NombreIlustracion; acompanantes: readonly NombreIlustracion[] }> = {
+  gratis: { principal: 'novedad_cohete', acompanantes: ['contrato', 'banco', 'factura', 'sobre_cobro'] },
+  faltan: { principal: 'reloj_mora', acompanantes: ['novedad_regalo', 'calendario_pago', 'contrato', 'banco'] },
+  termino: { principal: 'llaves', acompanantes: ['carpeta', 'contrato', 'banco', 'factura'] },
+};
+
+/** La cuenta de días en el centro de la escena: el número grande en su ficha. */
+function CuentaDeDias({ dias }: { dias: number }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-[28px] bg-white px-7 py-5 shadow-[0_18px_40px_rgba(4,16,48,0.35)] ring-1 ring-black/5">
+      <span className="text-[56px] font-[420] leading-none tracking-[-0.04em] text-primary tabular-nums" data-testid="modal-del-plan-dias">
+        {dias}
+      </span>
+      <span className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">{dias === 1 ? 'día' : 'días'}</span>
+    </div>
+  );
+}
 
 /**
  * El modal del plan (Nico, 27-10-2026: «luego del mes ya le aparecería un modal muy hermoso para invitarlos a que
@@ -84,7 +105,6 @@ const LO_QUE_TIENES = [
 export function ModalDelPlan() {
   const { agency, agencyRole, user } = useAuth();
   const ruta = usePathname() ?? '';
-  const reducido = usePrefersReducedMotion();
   const [momento, setMomento] = useState<MomentoDelModal | null>(null);
   const [cotizacion, setCotizacion] = useState<CotizacionDelPlan | null>(null);
   const acceso = agency?.acceso ?? null;
@@ -130,66 +150,36 @@ export function ModalDelPlan() {
       : momento.tipo === 'faltan'
         ? `${nombre}${aliado ? `${aliado} te regaló` : 'tienes'} Leasefy completo. Deja tu plan activo antes de que termine y tu operación sigue sin pausa.`
         : `${nombre}publicar y atender interesados ya es tuyo, gratis. Con Leasefy completo, el cobro, los contratos y los giros se hacen solos.`;
-  const Icono = momento.tipo === 'gratis' ? Gift : HourglassMedium;
+  const escena = ESCENAS[momento.tipo];
   const cerrar = () => setMomento(null);
 
   return (
     <Dialog open onOpenChange={(o) => !o && cerrar()}>
       <DialogContent size="lg" className="overflow-hidden p-0" data-testid={`modal-del-plan-${momento.tipo}`}>
-        <div className="grid md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
-          <div className="relative flex items-center justify-center overflow-hidden rounded-2xl bg-primary-soft px-6 py-12">
-            {[18, 13, 8].map((rem, i) => (
-              <motion.span
-                key={rem}
-                aria-hidden="true"
-                className="absolute rounded-full border border-primary/15"
-                style={{ width: `${rem}rem`, height: `${rem}rem` }}
-                initial={{ opacity: 0, scale: reducido ? 1 : 0.6 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ ...enterTransition(reducido), delay: reducido ? 0 : 0.08 * (3 - i) }}
-              />
-            ))}
-            <motion.div
-              initial={reducido ? { opacity: 0 } : { opacity: 0, scale: 0.8, rotate: -6 }}
-              animate={reducido ? { opacity: 1 } : { opacity: 1, scale: 1, rotate: 0, y: [0, -6, 0] }}
-              transition={
-                reducido ? enterTransition(true) : { ...enterTransition(false), y: { duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: 0.6 } }
-              }
-              className="relative flex h-24 w-24 flex-col items-center justify-center rounded-3xl bg-surface shadow-lg ring-1 ring-primary/10"
-            >
-              {momento.tipo === 'faltan' && momento.dias !== undefined ? (
-                <>
-                  <span className="text-[34px] font-[420] leading-none tracking-[-0.03em] text-primary tabular-nums">{momento.dias}</span>
-                  <span className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-fg-muted">{momento.dias === 1 ? 'día' : 'días'}</span>
-                </>
-              ) : (
-                <Icono className="h-12 w-12 text-primary" weight="duotone" aria-hidden="true" />
-              )}
-            </motion.div>
-          </div>
-          <div className="space-y-5 p-6 md:p-8">
-            <DialogHeader className="space-y-2 border-0 p-0 text-left">
+        <DialogBody className="p-0 sm:p-0">
+          <EscenaDeMarca
+            principal={escena.principal}
+            acompanantes={escena.acompanantes}
+            marca={
+              aliado && momento.tipo !== 'gratis' ? <ChipDelAliado aliado={aliado} /> : undefined
+            }
+          >
+            {momento.tipo === 'faltan' && momento.dias !== undefined ? <CuentaDeDias dias={momento.dias} /> : undefined}
+          </EscenaDeMarca>
+          <div className="space-y-5 p-6 sm:p-8">
+            <div className="space-y-2">
               <p className="font-mono text-[11px] uppercase tracking-wider text-primary">
                 {momento.tipo === 'gratis' ? 'Leasefy completo' : aliado ? `Tu mes gratis con ${aliado}` : 'Tu mes gratis'}
               </p>
-              <DialogTitle className="text-h3 text-fg">{titulo}</DialogTitle>
+              <DialogTitle className="text-h2 text-fg">{titulo}</DialogTitle>
               <DialogDescription className="text-body text-fg-muted">{subtitulo}</DialogDescription>
-            </DialogHeader>
-            <Stagger className="space-y-2.5">
-              {LO_QUE_TIENES.map(({ icono: I, texto }) => (
-                <StaggerItem key={texto} className="flex items-start gap-2.5">
-                  <I className="mt-0.5 h-5 w-5 shrink-0 text-primary" weight="duotone" aria-hidden="true" />
-                  <span className="text-sm text-fg">{texto}</span>
-                </StaggerItem>
-              ))}
-            </Stagger>
-            <p className="flex items-center gap-2 text-sm text-fg" data-testid="modal-del-plan-precio">
+            </div>
+            <BeneficiosEn3D />
+            <p className="flex items-center gap-2.5 rounded-xl bg-success-soft px-3 py-2.5 text-body-sm text-fg" data-testid="modal-del-plan-precio">
               <CheckCircle className="h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
-              {cotizacion
-                ? `Con tus ${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles: ${precioDelMes(cotizacion.monto)} al mes más IVA.`
-                : 'Desde $99.000 al mes más IVA, según tus inmuebles.'}
+              {fraseDelPrecio(cotizacion)}
             </p>
-            <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button variant="ghost" hideArrow onClick={cerrar} data-testid="modal-del-plan-ahora-no">
                 {momento.tipo === 'termino' ? 'Seguir con lo gratis' : 'Más tarde'}
               </Button>
@@ -200,7 +190,7 @@ export function ModalDelPlan() {
               </Button>
             </div>
           </div>
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

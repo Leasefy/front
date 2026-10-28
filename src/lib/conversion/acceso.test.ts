@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { conCandadoDelPlan, faltaActivarParaVerTodo, precioDelMes, type AccesoDeLaCuenta } from './acceso';
 import { mensajeDeLaBarra } from '@/components/inmobiliaria/plan/BarraDelMesGratis';
-import { momentoDelModal } from '@/components/inmobiliaria/plan/ModalDelPlan';
+import { fraseDelPrecio, momentoDelModal } from '@/components/inmobiliaria/plan/ModalDelPlan';
 
 const prueba = (dias: number, vencida = false) => ({
   aliado: 'Fenalco',
@@ -62,5 +62,13 @@ describe('Qué ve cada cuenta en el panel (Nico, 27-10-2026)', () => {
   it('el precio del mes con espacio duro y sin centavos', () => {
     expect(precioDelMes(99_000)).toBe('$ 99.000');
     expect(precioDelMes(630_000)).toBe('$ 630.000');
+  });
+
+  it('el precio del modal: con los inmuebles de la cuenta, y sin inmuebles el mínimo (nunca «tus 0 inmuebles»)', () => {
+    const cot = (inmuebles: number, monto: number) => ({ tier: 'POR_INMUEBLE', nombre: 'Leasefy', monto, porInmueble: true, inmuebles, usuarios: 2 });
+    expect(fraseDelPrecio(cot(0, 99000))).toBe('Desde $99.000 al mes más IVA, según tus inmuebles. Dos usuarios incluidos.');
+    expect(fraseDelPrecio(null)).toContain('Desde $99.000');
+    expect(fraseDelPrecio(cot(1, 99000))).toMatch(/^Con tu inmueble: /);
+    expect(fraseDelPrecio(cot(120, 252000))).toMatch(/^Con tus 120 inmuebles: .*252\.000 al mes más IVA\.$/);
   });
 });

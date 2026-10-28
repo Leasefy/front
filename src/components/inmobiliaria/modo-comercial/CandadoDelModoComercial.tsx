@@ -4,20 +4,14 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Megaphone, CheckCircle } from '@phosphor-icons/react';
+import { CheckCircle } from '@phosphor-icons/react';
 import { Ilustracion, motionDuration, motionEase } from '@leasefy/cadence';
 
 import { useAuth } from '@/lib/auth/use-auth';
 import { Button } from '@/components/ui/button';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { BeneficiosEn3D, EscenaDeMarca, type BeneficioEn3D } from '@/components/conversion/EscenaDeMarca';
 import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
 import { abrirLaActivacion } from '@/lib/conversion/abrir-la-activacion';
 import { moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
@@ -180,6 +174,14 @@ export function ActivarTuCuenta({ acceso = null }: { acceso?: AccesoDeLaCuenta |
   );
 }
 
+/** Lo que la cuenta del marketplace ya tiene gratis, cada cosa con su 3D. */
+const LO_QUE_YA_ES_TUYO: readonly BeneficioEn3D[] = [
+  { ilustracion: 'casa', texto: 'Tus inmuebles en el marketplace' },
+  { ilustracion: 'mensajes', texto: 'Los interesados que te escriben' },
+  { ilustracion: 'portapapeles', texto: 'Postulaciones de inquilinos' },
+  { ilustracion: 'visita', texto: 'Tu agenda de visitas' },
+];
+
 const CLAVE_BIENVENIDA = (agencyId: string) => `leasefy-bienvenida-comercial:${agencyId}`;
 
 /** Una sola vez por inmobiliaria: qué tiene abierto y qué se abre al activar. */
@@ -207,25 +209,38 @@ function BienvenidaComercial({ agencyId, nombre, empresa }: { agencyId: string |
 
   return (
     <Dialog open={abierta} onOpenChange={(o) => (o ? setAbierta(true) : cerrar())}>
-      <DialogContent size="md" icon={<Megaphone weight="bold" />} data-testid="bienvenida-comercial">
-        <DialogHeader>
-          <DialogTitle>{nombre ? `${nombre}, bienvenido a Leasefy` : 'Bienvenido a Leasefy'}</DialogTitle>
-          <DialogDescription>
-            Tus inmuebles, los interesados que te escriben, las postulaciones y tu agenda de visitas son tuyos, gratis.
-            Lo demás lo ves en demo: no somos sólo un marketplace, podemos manejar tu inmobiliaria en piloto automático
-            con cobranza, contratos, pagos a propietarios y contabilidad.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="secondary" onClick={cerrar} className="rounded-full" data-testid="bienvenida-seguir">
-            Seguir con mis inmuebles
-          </Button>
-          <Button asChild className="rounded-full" onClick={cerrar}>
-            <a href={enlaceDeWhatsApp({ quien: 'inmobiliaria', nombre, empresa })} target="_blank" rel="noreferrer noopener">
-              Hablar con Leasefy
-            </a>
-          </Button>
-        </DialogFooter>
+      <DialogContent size="lg" className="overflow-hidden p-0" data-testid="bienvenida-comercial">
+        <DialogBody className="p-0 sm:p-0">
+          {/* Nico, 28-10: «está ingresando a nuestra plataforma, celebrémosle eso». La escena de marca con la chispa. */}
+          <EscenaDeMarca principal="bienvenida" acompanantes={['casa', 'megafono', 'mensajes', 'llaves']} celebrar={abierta} />
+          <div className="space-y-5 p-6 sm:p-8">
+            <div className="space-y-2">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-primary">{empresa ? `${empresa} ya está en Leasefy` : 'Ya estás en Leasefy'}</p>
+              <DialogTitle className="text-h2 text-fg">{nombre ? `¡Bienvenido, ${nombre}!` : '¡Bienvenido a Leasefy!'}</DialogTitle>
+              <DialogDescription className="text-body text-fg-muted">
+                Tus inmuebles ya salen en el marketplace. Lo de abajo es tuyo, gratis y para siempre. Lo demás lo ves en demo para
+                que conozcas cómo Leasefy maneja tu inmobiliaria en piloto automático.
+              </DialogDescription>
+            </div>
+            <BeneficiosEn3D items={LO_QUE_YA_ES_TUYO} />
+            <p className="flex items-center gap-2 text-body-sm text-fg-muted">
+              <span className="inline-flex h-6 items-center rounded-full bg-surface-muted px-2.5 font-mono text-[10px] uppercase tracking-wider text-fg-muted">
+                Demo
+              </span>
+              Contratos, cobranza, pagos a propietarios y contabilidad: míralos y ábrelos cuando quieras.
+            </p>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button asChild variant="ghost" hideArrow onClick={cerrar}>
+                <a href={enlaceDeWhatsApp({ quien: 'inmobiliaria', nombre, empresa })} target="_blank" rel="noreferrer noopener">
+                  Hablar con Leasefy
+                </a>
+              </Button>
+              <Button onClick={cerrar} data-testid="bienvenida-seguir">
+                Empezar
+              </Button>
+            </div>
+          </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

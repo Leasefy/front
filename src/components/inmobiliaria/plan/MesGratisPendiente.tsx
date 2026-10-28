@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, Gift } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { BeneficiosEn3D, EscenaDeMarca, SelloDelAliado } from '@/components/conversion/EscenaDeMarca';
 import { useAuth } from '@/lib/auth/use-auth';
 import { conversionApi } from '@/lib/api/conversion.service';
 import { ApiError } from '@/lib/api/client';
@@ -15,13 +15,6 @@ import { aliadoPendiente, olvidarAliadoPendiente, type AccesoDeLaCuenta } from '
 
 /** Los rechazos que no se arreglan reintentando: se dicen una vez y se olvida el enlace. */
 const RECHAZOS_DEFINITIVOS = new Set(['YA_TUVO_PRUEBA', 'YA_TIENES_TODO', 'ALIANZA_NO_EXISTE', 'ALIANZA_VENCIDA', 'ALIANZA_SIN_CUPOS', 'SOLO_EL_ADMINISTRADOR']);
-
-const LO_QUE_INCLUYE = [
-  'Contratos con firma electrónica',
-  'Recaudo en línea y giros a propietarios',
-  'Mori cobra por ti a quien se atrasa',
-  'Facturación electrónica y contabilidad',
-] as const;
 
 /**
  * El enlace del aliado que quedó pendiente (Nico, 27-10-2026): quien abrió `leasefy.co/aliados/<codigo>` sin sesión
@@ -58,29 +51,38 @@ export function MesGratisPendiente({ inicio = '/panel/inmobiliaria/inmuebles' }:
   if (!activado) return null;
   const aliado = activado.prueba?.aliado ?? null;
   const dias = activado.prueba?.diasQueQuedan ?? 30;
+  const cerrar = () => setActivado(null);
   return (
-    <Dialog open onOpenChange={(o) => !o && setActivado(null)}>
-      <DialogContent size="md" icon={<Gift weight="duotone" />} data-testid="mes-gratis-activado">
-        <DialogHeader>
-          <DialogTitle>{aliado ? `${aliado} te regaló un mes de Leasefy` : 'Tu mes gratis empezó'}</DialogTitle>
-          <DialogDescription>
-            Tienes Leasefy completo por {dias} días{user?.firstName ? `, ${user.firstName}` : ''}. Publica tus inmuebles, monta tus contratos y
-            deja que el cobro se haga solo.
-          </DialogDescription>
-        </DialogHeader>
-        <ul className="space-y-2">
-          {LO_QUE_INCLUYE.map((x) => (
-            <li key={x} className="flex items-center gap-2 text-sm text-fg">
-              <CheckCircle size={16} weight="fill" className="shrink-0 text-primary" aria-hidden="true" />
-              {x}
-            </li>
-          ))}
-        </ul>
-        <DialogFooter>
-          <Button asChild className="rounded-full" onClick={() => setActivado(null)}>
-            <Link href={inicio}>Empezar</Link>
-          </Button>
-        </DialogFooter>
+    <Dialog open onOpenChange={(o) => !o && cerrar()}>
+      <DialogContent size="lg" className="overflow-hidden p-0" data-testid="mes-gratis-activado">
+        <DialogBody className="p-0 sm:p-0">
+          {/* Nico, 28-10: «sumar el logo de ellos… que se vea súper top». El sello de los dos, con la chispa al abrir. */}
+          <EscenaDeMarca principal="novedad_regalo" acompanantes={['novedad_regalo', 'contrato', 'llaves', 'banco']} celebrar>
+            {aliado ? <SelloDelAliado aliado={aliado} /> : undefined}
+          </EscenaDeMarca>
+          <div className="space-y-5 p-6 sm:p-8">
+            <div className="space-y-2">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-primary">
+                {aliado ? `Un regalo de ${aliado}` : 'Tu mes gratis'} · {dias} días
+              </p>
+              <DialogTitle className="text-h2 text-fg">
+                {aliado ? `${aliado} te regaló un mes de Leasefy completo` : 'Tu mes gratis de Leasefy empezó'}
+              </DialogTitle>
+              <DialogDescription className="text-body text-fg-muted">
+                {user?.firstName ? `${user.firstName}, tienes` : 'Tienes'} todo Leasefy por {dias} días. Publica tus inmuebles, monta tus
+                contratos y deja que el cobro se haga solo.
+              </DialogDescription>
+            </div>
+            <BeneficiosEn3D />
+            <div className="flex justify-end">
+              <Button asChild onClick={cerrar}>
+                <Link href={inicio} data-testid="mes-gratis-empezar">
+                  Empezar
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

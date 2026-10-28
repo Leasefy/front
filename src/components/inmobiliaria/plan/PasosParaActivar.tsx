@@ -551,6 +551,10 @@ function TodoListo({
       <Button className="mt-7" onClick={irAlPanel} data-testid="pasos-para-activar-ir-al-panel">
         Ir a mi panel
       </Button>
+      {/* Lo que sigue después de activar (Nico, 28-10-2026): la guía para facturar electrónicamente con Feel. */}
+      <Button asChild variant="ghost" size="sm" hideArrow className="mt-2" data-testid="pasos-para-activar-facturacion">
+        <a href="/panel/inmobiliaria/facturacion/activar">Siguiente: activa tu facturación electrónica</a>
+      </Button>
     </div>
   );
 }

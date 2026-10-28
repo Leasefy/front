@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check } from '@phosphor-icons/react';
+import confetti from 'canvas-confetti';
 import {
   enterTransition,
   Ilustracion,
+  motionSpring,
   PhoneInput,
   RadioCard,
   RadioCardGroup,
@@ -23,6 +24,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ActivarSegundoFactorPasoAPaso } from '@/components/auth/ActivarSegundoFactorPasoAPaso';
+import { OnboardingStepList, type PasoDeLaLista } from '@/components/onboarding/wizard';
+import { PAUSA_DEL_LISTO_MS } from '@/lib/auth/use-salida-del-segundo-factor';
 import { useAuth } from '@/lib/auth/use-auth';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import { mediosDePagoApi } from '@/lib/api/medios-de-pago.service';
@@ -159,21 +163,58 @@ export function PasosParaActivar() {
     // `abierto` sólo para no reabrir; lo demás decide cuándo.
   }, [sola, agency?.id, faltan, abierto]);
 
-  if (!perfil || !datos || !medios || !faltan || !abierto) return null;
+  /*
+   * 🔴 La ventana se queda con lo que había AL ABRIR. Al activar, la cuenta sale del modo comercial, deja de estar
+   * «pagado» y el back empieza a exigir el segundo factor: `perfil`, `datos` y `faltan` cambian o se caen (un 403) y
+   * la ventana se desmontaba a mitad, sin el «quedó activa» (QA 28-10, paso 14).
+   */
+  const [abiertaCon, setAbiertaCon] = useState<{
+    perfil: PerfilQueSeActiva;
+    enPrueba: boolean;
+    datos: AgencyProfile;
+    medios: MedioDePago[];
+    modoComercial: boolean;
+    faltan: PasoParaActivar[];
+  } | null>(null);
+  if (abierto && !abiertaCon && perfil && datos && medios && faltan) {
+    setAbiertaCon({ perfil, enPrueba: hechos.estado === 'prueba', datos, medios, modoComercial, faltan });
+  }
+  if (!abierto && abiertaCon) setAbiertaCon(null);
+
+  if (!abierto || !abiertaCon) return null;
   return (
     <VentanaDeLosPasos
-      perfil={perfil}
-      enPrueba={hechos.estado === 'prueba'}
-      datos={datos}
-      medios={medios}
-      modoComercial={modoComercial}
-      faltanAlAbrir={faltan}
+      perfil={abiertaCon.perfil}
+      enPrueba={abiertaCon.enPrueba}
+      datos={abiertaCon.datos}
+      medios={abiertaCon.medios}
+      modoComercial={abiertaCon.modoComercial}
+      faltanAlAbrir={abiertaCon.faltan}
       alGuardar={async () => {
         await Promise.all([refetch(), leerMedios(), refreshAgency({ despuesDeUnCambio: true })]);
       }}
       alCerrar={() => setAbierto(false)}
     />
   );
+}
+
+/** Los pasos de la ventana: los tres de siempre y, si en esta ventana se activa la cuenta, el segundo factor. */
+type PasoDeLaVentana = PasoParaActivar | 'seguridad';
+
+/** «Protege tu cuenta»: lo que el back exige apenas la cuenta queda activa (mueve plata). */
+const TEXTOS_DE_LA_SEGURIDAD = {
+  corto: 'Tu seguridad',
+  descripcion: 'Un código al entrar',
+  titulo: 'Protege tu cuenta',
+  ayuda: 'Tu cuenta ya mueve plata. Cada vez que entres te pediremos un código de 6 dígitos de tu celular. Es lo último.',
+  ilustracion: 'escudo' as NombreIlustracion,
+};
+
+/** Una línea de qué se pide en cada paso, para la lista de la izquierda. */
+function descripcionDelPaso(paso: PasoParaActivar, perfil: PerfilQueSeActiva): string {
+  if (paso === 'datos') return perfil === 'agente' ? 'Nombre, cédula y celular' : 'Razón social y representante';
+  if (paso === 'cuenta') return 'Donde recibes la plata';
+  return 'NIT, dirección e IVA';
 }
 
 interface VentanaProps {
@@ -189,28 +230,50 @@ interface VentanaProps {
 
 export function VentanaDeLosPasos({ perfil, enPrueba = false, datos, medios, modoComercial, faltanAlAbrir, alGuardar, alCerrar }: VentanaProps) {
   const reducido = usePrefersReducedMotion();
-  const { user } = useAuth();
+  const { user, setMfaVerified } = useAuth();
+  /*
+   * Si la cuenta se activa en ESTA ventana (venía en modo comercial), el back pide el segundo factor enseguida: va
+   * como cuarto paso, aquí mismo, y no como un aviso suelto en el panel. Se decide al abrir y no cambia.
+   */
+  const [conSeguridad] = useState(modoComercial);
+  const pasos: PasoDeLaVentana[] = conSeguridad ? [...PASOS_PARA_ACTIVAR, 'seguridad'] : [...PASOS_PARA_ACTIVAR];
   // Empieza en el primero que falta; los hechos se ven con su ✓ y se pueden abrir para cambiarlos.
-  const [paso, setPaso] = useState<PasoParaActivar | 'listo'>(faltanAlAbrir[0] ?? 'listo');
-  const [hechos, setHechos] = useState<Set<PasoParaActivar>>(() => new Set(PASOS_PARA_ACTIVAR.filter((p) => !faltanAlAbrir.includes(p))));
+  const [paso, setPaso] = useState<PasoDeLaVentana | 'listo'>(() => (faltanAlAbrir[0] as PasoDeLaVentana | undefined) ?? (conSeguridad ? 'seguridad' : 'listo'));
+  const [hechos, setHechos] = useState<Set<PasoDeLaVentana>>(() => new Set(PASOS_PARA_ACTIVAR.filter((p) => !faltanAlAbrir.includes(p))));
   // Lo que se guardó en los pasos de antes, para no pedirlo dos veces (el NIT sale de la cédula, el titular del nombre).
   const [vivo, setVivo] = useState<AgencyProfile>(datos);
+  // Ya activa: a los pasos de datos no se vuelve (el paso 4 no tiene atrás).
+  const [activada, setActivada] = useState(false);
 
   const nombreDeLaCuenta = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-  const terminar = (p: PasoParaActivar, cambios: Partial<AgencyProfile> = {}) => {
+  const terminar = (p: PasoDeLaVentana, cambios: Partial<AgencyProfile> = {}) => {
     setVivo((v) => ({ ...v, ...cambios }));
     const nuevos = new Set(hechos).add(p);
     setHechos(nuevos);
-    setPaso(PASOS_PARA_ACTIVAR.find((x) => !nuevos.has(x)) ?? 'listo');
+    setPaso(pasos.find((x) => !nuevos.has(x)) ?? 'listo');
   };
-  const numero = paso === 'listo' ? 3 : PASOS_PARA_ACTIVAR.indexOf(paso) + 1;
-  const textos = paso === 'listo' ? null : textosDelPaso(paso, perfil);
+  const numero = paso === 'listo' ? pasos.length : pasos.indexOf(paso) + 1;
+  const textos = paso === 'listo' ? null : paso === 'seguridad' ? TEXTOS_DE_LA_SEGURIDAD : textosDelPaso(paso, perfil);
+  const enSeguridad = paso === 'seguridad';
 
   return (
-    <Dialog open onOpenChange={(o) => !o && alCerrar()}>
-      <DialogContent size="xl" className="overflow-hidden p-0" data-testid="pasos-para-activar" data-perfil={perfil}>
-        <div className="grid md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
-          <RielDeLosPasos perfil={perfil} enPrueba={enPrueba} actual={paso} hechos={hechos} alElegir={setPaso} reducido={reducido} />
+    <Dialog open onOpenChange={(o) => !o && !enSeguridad && alCerrar()}>
+      <DialogContent
+        size="xl"
+        className="overflow-hidden p-0"
+        data-testid="pasos-para-activar"
+        data-perfil={perfil}
+        hideClose={enSeguridad}
+      >
+        <div className="grid lg:grid-cols-[minmax(0,16.5rem)_minmax(0,1fr)]">
+          <RielDeLosPasos
+            perfil={perfil}
+            enPrueba={enPrueba}
+            pasos={pasos}
+            actual={paso}
+            hechos={hechos}
+            alElegir={activada ? undefined : (p) => setPaso(p)}
+          />
           <div className="min-w-0 p-6 md:p-8">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
@@ -221,13 +284,13 @@ export function VentanaDeLosPasos({ perfil, enPrueba = false, datos, medios, mod
                 transition={enterTransition(reducido)}
               >
                 {paso === 'listo' || !textos ? (
-                  <TodoListo perfil={perfil} alCerrar={alCerrar} reducido={reducido} />
+                  <TodoListo perfil={perfil} recienActivada={activada} alCerrar={alCerrar} reducido={reducido} />
                 ) : (
                   <>
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <p className="font-mono text-[11px] uppercase tracking-wider text-primary" data-testid="paso-para-activar-numero">
-                          Paso {numero} de 3 · {textos.corto}
+                          Paso {numero} de {pasos.length} · {textos.corto}
                         </p>
                         <DialogTitle className="mt-2 text-h3 text-fg">{textos.titulo}</DialogTitle>
                         <DialogDescription className="mt-1.5 text-body text-fg-muted">{textos.ayuda}</DialogDescription>
@@ -240,7 +303,7 @@ export function VentanaDeLosPasos({ perfil, enPrueba = false, datos, medios, mod
                         animate={{ opacity: 1, scale: 1, rotate: 0 }}
                         transition={enterTransition(reducido)}
                       >
-                        <Ilustracion nombre={textos.ilustracion} tamano={72} tono="auto" alt="" />
+                        <Ilustracion nombre={textos.ilustracion} tamano={80} tono="auto" alt="" />
                       </motion.span>
                     </div>
                     <div className="mt-6">
@@ -279,9 +342,30 @@ export function VentanaDeLosPasos({ perfil, enPrueba = false, datos, medios, mod
                           nombreDeLaCuenta={nombreDeLaCuenta}
                           alCerrar={alCerrar}
                           alTerminar={async () => {
+                            if (conSeguridad) {
+                              // Recién activa: el back ya pide el segundo factor y volver a leer sería un 403.
+                              // Se lee al terminar el paso 4.
+                              setActivada(true);
+                              terminar('factura');
+                              return;
+                            }
                             await alGuardar();
                             terminar('factura');
                           }}
+                        />
+                      )}
+                      {paso === 'seguridad' && (
+                        <PasoSeguridad
+                          alListo={async () => {
+                            setMfaVerified();
+                            try {
+                              await alGuardar();
+                            } catch {
+                              /* lo que no se pudo leer ahora se lee al entrar al panel */
+                            }
+                            terminar('seguridad');
+                          }}
+                          alYaTenerFactor={() => terminar('seguridad')}
                         />
                       )}
                     </div>
@@ -296,91 +380,143 @@ export function VentanaDeLosPasos({ perfil, enPrueba = false, datos, medios, mod
   );
 }
 
-function RielDeLosPasos({
-  perfil,
-  enPrueba,
-  actual,
-  hechos,
-  alElegir,
-  reducido,
-}: {
-  perfil: PerfilQueSeActiva;
-  enPrueba: boolean;
-  actual: PasoParaActivar | 'listo';
-  hechos: Set<PasoParaActivar>;
-  alElegir: (p: PasoParaActivar) => void;
-  reducido: boolean;
-}) {
+/**
+ * Paso 4: la app de autenticación, con el MISMO paso a paso del panel (QR, clave, primer código y el mock fuera de
+ * producción). Sin su encabezado: el de la ventana ya dice qué es y por qué. Su «Listo» se deja leer y sigue solo.
+ */
+function PasoSeguridad({ alListo, alYaTenerFactor }: { alListo: () => Promise<void>; alYaTenerFactor: () => void }) {
+  const yaSiguio = useRef(false);
+  const seguir = useCallback(
+    (hacer: () => void | Promise<void>) => {
+      if (yaSiguio.current) return;
+      yaSiguio.current = true;
+      void hacer();
+    },
+    [],
+  );
   return (
-    <div className="relative overflow-hidden bg-primary-soft px-6 py-6 md:py-8">
-      <span aria-hidden="true" className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full border border-primary/15" />
-      <span aria-hidden="true" className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full border border-primary/15" />
-      <p className="relative font-mono text-[11px] uppercase tracking-wider text-primary">{perfil === 'agente' ? 'Tu cuenta de agente' : 'Tu inmobiliaria'}</p>
-      <p className="relative mt-2 text-[17px] font-medium leading-snug text-fg">
-        {enPrueba ? 'Activa tu cuenta en tres pasos y usa todo en tu mes gratis.' : 'Ya tienes Leasefy completo. Actívalo en tres pasos.'}
-      </p>
-      <ol className="relative mt-6 flex gap-2 md:flex-col md:gap-1" aria-label="Pasos">
-        {PASOS_PARA_ACTIVAR.map((p, i) => {
-          const { corto, ilustracion } = textosDelPaso(p, perfil);
-          const hecho = hechos.has(p);
-          const esEste = actual === p;
-          return (
-            <li key={p} className="min-w-0 flex-1 md:flex-none">
-              <button
-                type="button"
-                onClick={() => alElegir(p)}
-                aria-current={esEste ? 'step' : undefined}
-                data-testid={`riel-${p}`}
-                className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors ${
-                  esEste ? 'bg-surface shadow-sm ring-1 ring-primary/15' : 'hover:bg-surface/60'
-                }`}
-              >
-                <span className="relative inline-flex size-10 shrink-0 items-center justify-center">
-                  <Ilustracion nombre={ilustracion} tamano={40} tono="auto" alt="" />
-                  <AnimatePresence initial={false}>
-                    {hecho && (
-                      <motion.span
-                        key="hecho"
-                        className="absolute -bottom-0.5 -right-0.5 inline-flex size-[18px] items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-primary-soft"
-                        initial={reducido ? { opacity: 0 } : { scale: 0.4, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={enterTransition(reducido)}
-                      >
-                        <Check size={11} weight="bold" aria-hidden="true" />
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </span>
-                <span className="hidden min-w-0 md:block">
-                  <span className="block text-[11px] text-fg-muted">Paso {i + 1}</span>
-                  <span className={`block truncate text-sm ${esEste ? 'font-medium text-fg' : 'text-fg'}`}>{corto}</span>
-                </span>
-                <span className="sr-only">{hecho ? 'hecho' : 'por hacer'}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+    <div data-testid="paso-seguridad">
+      <ActivarSegundoFactorPasoAPaso
+        sinEncabezado
+        onYaTeniaFactor={() => seguir(alYaTenerFactor)}
+        onActivado={() => {
+          window.setTimeout(() => seguir(alListo), PAUSA_DEL_LISTO_MS);
+        }}
+      />
     </div>
   );
 }
 
-function TodoListo({ perfil, alCerrar, reducido }: { perfil: PerfilQueSeActiva; alCerrar: () => void; reducido: boolean }) {
+/**
+ * La lista de los pasos, como la del asistente de siempre (`OnboardingStepList`): número o ✓, la línea de tiempo y
+ * la marca azul que se desliza al avanzar. En teléfono, la fila de círculos.
+ */
+function RielDeLosPasos({
+  perfil,
+  enPrueba,
+  pasos,
+  actual,
+  hechos,
+  alElegir,
+}: {
+  perfil: PerfilQueSeActiva;
+  enPrueba: boolean;
+  pasos: PasoDeLaVentana[];
+  actual: PasoDeLaVentana | 'listo';
+  hechos: Set<PasoDeLaVentana>;
+  alElegir?: (p: PasoParaActivar) => void;
+}) {
+  const lista: PasoDeLaLista[] = pasos.map((p) => {
+    const esEste = actual === p;
+    const hecho = actual === 'listo' || (hechos.has(p) && !esEste);
+    const navegable = Boolean(alElegir) && p !== 'seguridad' && !esEste;
+    return {
+      key: p,
+      label: p === 'seguridad' ? TEXTOS_DE_LA_SEGURIDAD.corto : textosDelPaso(p, perfil).corto,
+      descripcion: p === 'seguridad' ? TEXTOS_DE_LA_SEGURIDAD.descripcion : descripcionDelPaso(p, perfil),
+      estado: esEste ? 'actual' : hecho ? 'hecho' : 'pendiente',
+      onSelect: navegable ? () => alElegir?.(p as PasoParaActivar) : undefined,
+      etiquetaDelBoton: `Ir a ${p === 'seguridad' ? TEXTOS_DE_LA_SEGURIDAD.corto : textosDelPaso(p, perfil).corto}`,
+      testId: `riel-${p}`,
+      testIdDelBoton: `riel-ir-${p}`,
+    };
+  });
+  return (
+    <div className="border-b border-border bg-surface-muted/60 px-6 py-6 lg:border-b-0 lg:border-r lg:px-6 lg:py-8">
+      <p className="font-mono text-[11px] uppercase tracking-wider text-primary">{perfil === 'agente' ? 'Tu cuenta de agente' : 'Tu inmobiliaria'}</p>
+      <p className="mt-2 text-body font-medium leading-snug text-fg">
+        {enPrueba ? 'Actívala y usa todo en tu mes gratis.' : 'Ya tienes Leasefy completo. Actívalo aquí.'}
+      </p>
+      <OnboardingStepList
+        className="mt-6"
+        pasos={lista}
+        etiqueta="Pasos para activar tu cuenta"
+        nota="Cada paso queda guardado al seguir"
+      />
+    </div>
+  );
+}
+
+/** Colores de la chispa sobre la ventana clara: el azul de la marca, el cielo y el ámbar. */
+const COLORES_DE_LA_CELEBRACION = ['#2a3cff', '#5b6bff', '#a9d4f5', '#f4c46a', '#ffffff'];
+
+function TodoListo({
+  perfil,
+  recienActivada,
+  alCerrar,
+  reducido,
+}: {
+  perfil: PerfilQueSeActiva;
+  recienActivada: boolean;
+  alCerrar: () => void;
+  reducido: boolean;
+}) {
+  const figura = useRef<HTMLSpanElement>(null);
+  // La chispa sale de la ilustración, una vez, cuando la cuenta queda activa aquí mismo.
+  useEffect(() => {
+    if (!recienActivada || reducido) return;
+    const reloj = window.setTimeout(() => {
+      const caja = figura.current?.getBoundingClientRect();
+      const origen =
+        caja && window.innerWidth > 0
+          ? { x: (caja.left + caja.width / 2) / window.innerWidth, y: (caja.top + caja.height / 2) / window.innerHeight }
+          : { x: 0.5, y: 0.4 };
+      const comun = { origin: origen, colors: COLORES_DE_LA_CELEBRACION, zIndex: 120, disableForReducedMotion: true };
+      void confetti({ ...comun, particleCount: 90, spread: 100, startVelocity: 38, gravity: 0.9, scalar: 0.9, ticks: 200 });
+      void confetti({ ...comun, particleCount: 40, spread: 360, startVelocity: 18, gravity: 0.6, scalar: 0.6, shapes: ['circle'], ticks: 150 });
+    }, 280);
+    return () => {
+      window.clearTimeout(reloj);
+      confetti.reset();
+    };
+  }, [recienActivada, reducido]);
+
+  const irAlPanel = () => {
+    if (recienActivada) {
+      // La cuenta cambió entera (activa, con segundo factor): el panel arranca de cero, sin los 403 de antes.
+      window.location.assign('/panel/inmobiliaria');
+      return;
+    }
+    alCerrar();
+  };
+
   return (
     <div className="flex flex-col items-center py-6 text-center" data-testid="pasos-para-activar-listos">
       <motion.span
+        ref={figura}
         initial={reducido ? { opacity: 0 } : { opacity: 0, scale: 0.6, rotate: -8 }}
         animate={{ opacity: 1, scale: 1, rotate: 0 }}
-        transition={enterTransition(reducido)}
+        transition={reducido ? enterTransition(reducido) : motionSpring.bouncy}
       >
-        <Ilustracion nombre="pago_confirmado" tamano={112} tono="auto" alt="" />
+        <Ilustracion nombre="pago_confirmado" tamano={128} tono="auto" alt="" />
       </motion.span>
-      <DialogTitle className="mt-4 text-h3 text-fg">{perfil === 'agente' ? 'Tu cuenta quedó activa' : 'Tu inmobiliaria quedó activa'}</DialogTitle>
+      <p className="mt-5 font-mono text-[11px] uppercase tracking-wider text-primary">Todo listo</p>
+      <DialogTitle className="mt-2 text-h2 text-fg">{perfil === 'agente' ? 'Tu cuenta quedó activa' : 'Tu inmobiliaria quedó activa'}</DialogTitle>
       <DialogDescription className="mt-2 max-w-sm text-body text-fg-muted">
         Ya puedes cobrar arriendos, firmar contratos y recibir tu plata. Si algo cambia, lo editas en Configuración →{' '}
         {perfil === 'agente' ? 'Tus datos' : 'Tu inmobiliaria'}.
       </DialogDescription>
-      <Button className="mt-6" onClick={alCerrar} data-testid="pasos-para-activar-ir-al-panel">
+      <Button className="mt-7" onClick={irAlPanel} data-testid="pasos-para-activar-ir-al-panel">
         Ir a mi panel
       </Button>
     </div>

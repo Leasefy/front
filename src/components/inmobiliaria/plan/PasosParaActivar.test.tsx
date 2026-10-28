@@ -13,8 +13,20 @@ let guardadas: unknown[] = []
 let fallarConCampos: null | { campo: string; mensaje: string } = null
 const crear = vi.fn()
 const activar = vi.fn()
+const setMfaVerified = vi.fn()
 vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => ({ user: { firstName: 'Laura', lastName: 'Gómez', email: 'laura@correo.co' } }),
+  useAuth: () => ({ user: { firstName: 'Laura', lastName: 'Gómez', email: 'laura@correo.co' }, setMfaVerified }),
+}))
+// El «Listo» del segundo factor sigue sin esperar en la prueba.
+vi.mock('@/lib/auth/use-salida-del-segundo-factor', () => ({ PAUSA_DEL_LISTO_MS: 0 }))
+vi.mock('canvas-confetti', () => ({ default: Object.assign(() => Promise.resolve(), { reset: () => {} }) }))
+// El paso a paso real habla con Supabase; aquí basta con su salida.
+vi.mock('@/components/auth/ActivarSegundoFactorPasoAPaso', () => ({
+  ActivarSegundoFactorPasoAPaso: ({ onActivado }: { onActivado: (id: string) => void }) => (
+    <button type="button" data-testid="doble-segundo-factor" onClick={() => onActivado('f1')}>
+      Activar
+    </button>
+  ),
 }))
 vi.mock('@/lib/api/inmobiliaria.service', async (original) => {
   const real = await original<typeof import('@/lib/api/inmobiliaria.service')>()
@@ -111,12 +123,14 @@ describe('Los tres pasos para activar la cuenta al pagar', () => {
     fallarConCampos = null
     crear.mockReset()
     activar.mockReset()
+    setMfaVerified.mockReset()
   })
   afterEach(desmontar)
 
   it('agente, paso 1: guarda su nombre (también como razón social), cédula y celular, y pasa a la cuenta', async () => {
     await montar(ventana({}))
-    expect(porId('paso-para-activar-numero')?.textContent).toContain('Paso 1 de 3')
+    // En modo comercial la cuenta se activa aquí: el segundo factor es el paso 4.
+    expect(porId('paso-para-activar-numero')?.textContent).toContain('Paso 1 de 4')
     // El nombre sale de la cuenta: no se lo pedimos dos veces.
     expect(campo('activar-nombre').value).toBe('Laura Gómez')
     expect(campo('activar-razon-social')).toBeNull()
@@ -126,7 +140,7 @@ describe('Los tres pasos para activar la cuenta al pagar', () => {
     expect(guardadas).toEqual([
       { razonSocial: 'Laura Gómez', legalRepresentative: 'Laura Gómez', legalDocumentNumber: '1020304050', phone: '3001234567', whatsapp: '3001234567' },
     ])
-    expect(porId('paso-para-activar-numero')?.textContent).toContain('Paso 2 de 3')
+    expect(porId('paso-para-activar-numero')?.textContent).toContain('Paso 2 de 4')
   })
 
   it('inmobiliaria, paso 1: pide la razón social y el representante legal', async () => {
@@ -184,7 +198,35 @@ describe('Los tres pasos para activar la cuenta al pagar', () => {
     expect(activar).toHaveBeenCalledWith(
       expect.objectContaining({ nit: '900123456-8', razonSocial: 'Laura Gómez', celular: '3001234567', departamento: 'Antioquia', ciudad: 'Medellín' }),
     )
+    // Recién activa: el back ya pide el segundo factor, así que sigue el paso 4 aquí mismo (no un aviso suelto).
+    expect(porId('paso-seguridad')).not.toBeNull()
+    expect(porId('paso-para-activar-numero')?.textContent).toContain('Paso 4 de 4')
+    expect(porId('pasos-para-activar-listos')).toBeNull()
+  })
+
+  it('🔴 paso 4: no vuelve a leer nada hasta tener el segundo factor; con él, «quedó activa»', async () => {
+    const alGuardar = vi.fn(async () => {})
+    await montar(ventana({ datos: { ...conDatos, address: 'x', responsableIva: false } as AgencyProfile, faltanAlAbrir: ['factura'], alGuardar }))
+    await act(async () => {
+      porId('activar-acepta')!.click()
+    })
+    await enviar('paso-factura')
+    expect(activar).toHaveBeenCalled()
+    // Leer con la sesión sin el segundo factor era el 403 que desmontaba la ventana.
+    expect(alGuardar).not.toHaveBeenCalled()
+    await act(async () => {
+      porId('doble-segundo-factor')!.click()
+    })
+    for (let i = 0; i < 6; i++) await act(async () => {})
+    expect(setMfaVerified).toHaveBeenCalled()
+    expect(alGuardar).toHaveBeenCalledTimes(1)
     expect(porId('pasos-para-activar-listos')).not.toBeNull()
+  })
+
+  it('con la cuenta ya activa no hay paso 4: son tres', async () => {
+    await montar(ventana({ modoComercial: false }))
+    expect(porId('paso-para-activar-numero')?.textContent).toContain('Paso 1 de 3')
+    expect(porId('riel-seguridad')).toBeNull()
   })
 
   it('paso 3 con la cuenta ya activa: guarda el NIT con lo demás y no activa otra vez', async () => {

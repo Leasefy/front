@@ -29,6 +29,7 @@ import { pasosDelPerfilDelPropietario } from '@/lib/perfil/pasos-del-perfil-del-
 import { useUnreadMessages } from '@/lib/hooks/useMessages';
 import { SeccionesDelPortal } from '@/components/portales/SeccionesDelPortal';
 import { BarraDelMesGratis } from '@/components/inmobiliaria/plan/BarraDelMesGratis';
+import { PasosDelPropietario } from '@/components/landlord/PasosDelPropietario';
 import { MesGratisPendiente } from '@/components/inmobiliaria/plan/MesGratisPendiente';
 import { conversionApi } from '@/lib/api/conversion.service';
 import type { AccesoDeLaCuenta } from '@/lib/conversion/acceso';
@@ -230,6 +231,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
         <main id="main-content" tabIndex={-1}>
           {!deInmobiliaria && <BarraDelMesGratis acceso={accesoDelPropietario} pago="/panel/upgrade" soloElMesGratis />}
+          {/* 27-10-2026 (Nico): el propietario que pagó termina su cuenta en tres pasos (datos, cuenta, factura). */}
+          {!deInmobiliaria && <PasosDelPropietario acceso={accesoDelPropietario} />}
           {!deInmobiliaria && <MesGratisPendiente inicio="/panel/propiedades" />}
           <SeccionesDelPortal
             seccion={deInmobiliaria ? seccionDelPropietario(pathname ?? '') : rielDelIndependiente(seccionDelIndependiente(pathname ?? ''), pathname ?? '', propietarioGratis)}

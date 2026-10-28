@@ -389,7 +389,7 @@ function TodoListo({ perfil, alCerrar, reducido }: { perfil: PerfilQueSeActiva; 
 
 // ── Las piezas de cada paso ───────────────────────────────────────────────────────────────────────────────────
 
-function Campo({ id, etiqueta, error, children, pista }: { id: string; etiqueta: string; error?: string | null; pista?: string; children: ReactNode }) {
+export function Campo({ id, etiqueta, error, children, pista }: { id: string; etiqueta: string; error?: string | null; pista?: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id} required>
@@ -401,7 +401,7 @@ function Campo({ id, etiqueta, error, children, pista }: { id: string; etiqueta:
   );
 }
 
-function PieDelPaso({ guardando, alCerrar, texto = 'Guardar y seguir', aviso }: { guardando: boolean; alCerrar: () => void; texto?: string; aviso?: string | null }) {
+export function PieDelPaso({ guardando, alCerrar, texto = 'Guardar y seguir', aviso }: { guardando: boolean; alCerrar: () => void; texto?: string; aviso?: string | null }) {
   return (
     <div className="mt-8 space-y-3">
       {aviso && (
@@ -421,10 +421,10 @@ function PieDelPaso({ guardando, alCerrar, texto = 'Guardar y seguir', aviso }: 
   );
 }
 
-type Errores<C extends string> = Partial<Record<C, string | null>>;
+export type Errores<C extends string> = Partial<Record<C, string | null>>;
 
 /** Guarda y reparte el 400 en sus campos; lo que no tiene campo queda en el aviso del pie. */
-async function guardarCon<C extends string>(
+export async function guardarCon<C extends string>(
   accion: string,
   hacer: () => Promise<unknown>,
   campos: readonly C[],
@@ -452,7 +452,7 @@ async function guardarCon<C extends string>(
   }
 }
 
-function CampoDeCelular({ id, valor, alCambiar, error }: { id: string; valor: string; alCambiar: (v: string) => void; error?: string | null }) {
+export function CampoDeCelular({ id, valor, alCambiar, error }: { id: string; valor: string; alCambiar: (v: string) => void; error?: string | null }) {
   return (
     <Campo id={id} etiqueta="Celular" error={error} pista="Tus clientes te escriben aquí por WhatsApp.">
       <PhoneInput

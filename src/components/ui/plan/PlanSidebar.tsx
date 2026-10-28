@@ -126,7 +126,8 @@ function useEsMac(): boolean {
 function AtajoDelBuscador() {
   const mac = useEsMac();
   return (
-    <span className="pointer-events-none absolute right-5 top-[calc(50%-2px)] -translate-y-1/2" aria-hidden="true">
+    // Nico, 28-10-2026: centrado en la caja del buscador (se veía caído).
+    <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center leading-none" aria-hidden="true">
       <Kbd size="sm">{mac ? '⌘K' : 'Ctrl K'}</Kbd>
     </span>
   );
@@ -1078,7 +1079,7 @@ export function SidebarContent({
       {!isCollapsed && (onSearchClick || aboveNav) && (
         <div className="relative px-3 pb-1" data-tour-target="buscador">
           {onSearchClick ? (
-            <>
+            <div className="relative">
               <SidebarSearch
                 readOnly
                 placeholder={tr(searchPlaceholder ?? 'Buscar')}
@@ -1090,7 +1091,7 @@ export function SidebarContent({
               />
               {/* Revisora r23 (barra C4): el atajo también con la barra abierta, no sólo en el riel plegado. */}
               <AtajoDelBuscador />
-            </>
+            </div>
           ) : (
             aboveNav
           )}

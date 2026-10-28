@@ -18285,6 +18285,9 @@
           "sePuedeActivar": {
             "type": "boolean"
           },
+          "sePuedeContratar": {
+            "type": "boolean"
+          },
           "guardable": {
             "type": [
               "boolean",
@@ -18400,6 +18403,7 @@
           "prueba",
           "sinVencimiento",
           "sePuedeActivar",
+          "sePuedeContratar",
           "guardable",
           "frase",
           "puedeCambiarlo",
@@ -58018,6 +58022,290 @@
           },
           "503": {
             "description": "Falta la migración de la tabla (FALTA_UNA_MIGRACION) o sin base",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/contratar": {
+      "post": {
+        "operationId": "postPilotoContratar",
+        "summary": "Piloto automático — contratarlo: $900 por inmueble al mes, sin vencimiento. Sólo un administrador.",
+        "description": "Exige el segundo factor verificado hace poco (403 `SEGUNDO_FACTOR_RECIENTE`). Con el cobro por inmueble del back apagado responde 409 `SE_CONTRATA_CON_LEASEFY`; apagado por Leasefy, 409 `APAGADO_POR_LEASEFY`.",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contratado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoActivoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sólo un administrador / falta el segundo factor de ahora",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Se contrata con Leasefy (cobro por inmueble apagado) o Leasefy lo tiene apagado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "No se pudo guardar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Falta la migración de la tabla o sin base",
             "content": {
               "application/json": {
                 "schema": {

@@ -5508,6 +5508,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/piloto/contratar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Piloto automático — contratarlo: $900 por inmueble al mes, sin vencimiento. Sólo un administrador.
+         * @description Exige el segundo factor verificado hace poco (403 `SEGUNDO_FACTOR_RECIENTE`). Con el cobro por inmueble del back apagado responde 409 `SE_CONTRATA_CON_LEASEFY`; apagado por Leasefy, 409 `APAGADO_POR_LEASEFY`.
+         */
+        post: operations["postPilotoContratar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/piloto/tipos-que-van-solos": {
         parameters: {
             query?: never;
@@ -13785,6 +13805,7 @@ export interface components {
             } | null;
             sinVencimiento: boolean;
             sePuedeActivar: boolean;
+            sePuedeContratar: boolean;
             guardable: boolean | null;
             frase: string;
             puedeCambiarlo: boolean;
@@ -28607,6 +28628,113 @@ export interface operations {
                 };
             };
             /** @description Falta la migración de la tabla (FALTA_UNA_MIGRACION) o sin base */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+        };
+    };
+    postPilotoContratar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contratado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoActivoResponse"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Sólo un administrador / falta el segundo factor de ahora */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Se contrata con Leasefy (cobro por inmueble apagado) o Leasefy lo tiene apagado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description No se pudo guardar */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Falta la migración de la tabla o sin base */
             503: {
                 headers: {
                     [name: string]: unknown;

@@ -1,7 +1,7 @@
 import { apiClient } from './client';
 import { enviarFormulario } from './consignacion-firma.service';
 
-/** Activa tu facturación electrónica con Feel (Nico, 28-10-2026). Back: `/inmobiliaria/facturacion/habilitacion`. */
+/** Activa tu facturación electrónica con Feel (Nico, 28-10-2026). Back: `/inmobiliaria/habilitacion-de-facturacion`. */
 export type ClaveDelPaso = 'antes' | 'rut' | 'alta' | 'registro' | 'proveedor' | 'pruebas' | 'numeracion' | 'resolucion' | 'asociar';
 export type EstadoDelPaso = 'hecho' | 'te-toca' | 'esperando' | 'despues' | 'no-aplica';
 
@@ -24,7 +24,7 @@ export interface VistaDeLaHabilitacion {
   tarjeta: { mostrar: boolean };
 }
 
-const BASE = '/inmobiliaria/facturacion/habilitacion';
+const BASE = '/inmobiliaria/habilitacion-de-facturacion';
 
 export const habilitacionApi = {
   vista: () => apiClient.get<VistaDeLaHabilitacion>(BASE),

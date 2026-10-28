@@ -17,7 +17,6 @@ import { Alert, Ilustracion, Pagination, SearchInput, SegmentedControl, StatusBa
 import { Button } from '@/components/ui/button';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
@@ -112,37 +111,50 @@ export function ComisionCompartida() {
 
       {datos?.disponible && todas.length > 0 ? (
         <section className="space-y-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <SegmentedControl<Lado>
-              aria-label="Qué comisiones ver"
-              value={ladoActual}
-              onChange={setLado}
-              options={[
-                { value: 'trae', label: pendientes > 0 ? `Te propusieron · ${pendientes} por responder` : `Te propusieron · ${cuantasRecibidas}` },
-                { value: 'capta', label: `Propusiste · ${cuantasEnviadas}` },
-              ]}
-            />
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <SearchInput
-                value={buscar}
-                onChange={(e) => setBuscar(e.target.value)}
-                onClear={() => setBuscar('')}
-                placeholder="Buscar inmueble o inmobiliaria"
-                aria-label="Buscar comisiones"
-                className="sm:w-72"
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="w-full md:w-auto">
+              <SegmentedControl<Lado>
+                aria-label="Qué comisiones ver"
+                value={ladoActual}
+                onChange={setLado}
+                fullWidth
+                options={[
+                  { value: 'trae', ariaLabel: `Te propusieron, ${pendientes} por responder`, label: <ConNumero texto="Te propusieron" numero={pendientes || cuantasRecibidas} aviso={pendientes > 0} /> },
+                  { value: 'capta', ariaLabel: 'Propusiste', label: <ConNumero texto="Propusiste" numero={cuantasEnviadas} /> },
+                ]}
               />
-              <Select value={filtro} onValueChange={(v) => setFiltro(v as FiltroDeEstado)}>
-                <SelectTrigger className="sm:w-48" aria-label="Filtrar por estado">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="por-responder">{ladoActual === 'trae' ? 'Por responder' : 'Esperando respuesta'}</SelectItem>
-                  <SelectItem value="aceptadas">Aceptadas</SelectItem>
-                  <SelectItem value="cerradas">No aceptadas o retiradas</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
+            <SearchInput
+              value={buscar}
+              onChange={(e) => setBuscar(e.target.value)}
+              onClear={() => setBuscar('')}
+              placeholder="Buscar inmueble o inmobiliaria"
+              aria-label="Buscar comisiones"
+              className="md:w-72"
+            />
+          </div>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por estado">
+            {(
+              [
+                ['todas', 'Todas'],
+                ['por-responder', ladoActual === 'trae' ? 'Por responder' : 'Esperando respuesta'],
+                ['aceptadas', 'Aceptadas'],
+                ['cerradas', 'No aceptadas o retiradas'],
+              ] as const
+            ).map(([valor, texto]) => (
+              <button
+                key={valor}
+                type="button"
+                onClick={() => setFiltro(valor)}
+                aria-pressed={filtro === valor}
+                className={cn(
+                  'rounded-full border px-3 py-1 text-caption transition-colors duration-base',
+                  filtro === valor ? 'border-primary bg-primary-soft font-medium text-primary' : 'border-border text-fg-muted hover:bg-surface-muted',
+                )}
+              >
+                {texto}
+              </button>
+            ))}
           </div>
 
           {visibles.length === 0 ? (
@@ -166,6 +178,17 @@ export function ComisionCompartida() {
       }} />
       <ConstanciaDeLaComision comision={comisionAbierta} alCerrar={() => setAbierta(null)} alCambiar={leer} />
     </div>
+  );
+}
+
+function ConNumero({ texto, numero, aviso = false }: { texto: string; numero: number; aviso?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      {texto}
+      {numero > 0 ? (
+        <span className={cn('rounded-full px-1.5 font-mono text-[11px] leading-[18px]', aviso ? 'bg-warning-soft text-warning-ink' : 'bg-surface-muted text-fg-muted')}>{numero}</span>
+      ) : null}
+    </span>
   );
 }
 
@@ -275,7 +298,7 @@ function TarjetaDeLaComision({ comision: c, alAbrir, alAceptar }: { comision: Co
   const precio = precioDelInmueble(c.inmueble);
   const responder = c.acciones.includes('aceptar');
   return (
-    <li className={cn('flex flex-col rounded-2xl border bg-surface transition-shadow duration-base hover:shadow-md', responder ? 'border-warning/40' : 'border-border')} data-testid={`comision-${c.id}`}>
+    <li className={cn('flex min-w-0 flex-col rounded-2xl border bg-surface transition-shadow duration-base hover:shadow-md', responder ? 'border-warning/40' : 'border-border')} data-testid={`comision-${c.id}`}>
       <button type="button" onClick={alAbrir} className="flex-1 rounded-t-2xl p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
         <div className="flex gap-3">
           <Miniatura foto={c.inmueble.foto} titulo={c.inmueble.titulo} />
@@ -285,22 +308,24 @@ function TarjetaDeLaComision({ comision: c, alAbrir, alAceptar }: { comision: Co
             {precio ? <p className="mt-0.5 font-mono text-caption text-fg-muted">{precio}</p> : null}
           </div>
         </div>
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <span className="flex min-w-0 items-center gap-2">
-            <LogoDeLaOtra nombre={c.otra.nombre} logo={c.otra.logo} />
-            <span className="truncate text-body-sm text-fg-muted">
-              {c.lado === 'trae' ? 'Te la propone ' : 'Con '}
-              <span className="font-medium text-fg">{c.otra.nombre}</span>
-            </span>
+        <div className="mt-3 flex min-w-0 items-center gap-2">
+          <LogoDeLaOtra nombre={c.otra.nombre} logo={c.otra.logo} />
+          <span className="min-w-0 truncate text-body-sm text-fg-muted">
+            {c.lado === 'trae' ? 'Te la propone ' : 'Con '}
+            <span className="font-medium text-fg">{c.otra.nombre}</span>
           </span>
-          <StatusBadge tone={estado.tono}>{estado.texto}</StatusBadge>
         </div>
         <div className="mt-3">
           <BarraDelReparto tuParte={c.tuParte} otra={c.otra.nombre} />
         </div>
       </button>
       <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-2.5">
-        <span className="text-caption text-fg-subtle">{c.lado === 'trae' ? 'Llegó' : 'Propuesta'} el {fechaCorta(c.creadaEn)}</span>
+        <span className="flex min-w-0 flex-col items-start gap-0.5">
+          <StatusBadge tone={estado.tono} className="whitespace-nowrap">
+            {estado.texto}
+          </StatusBadge>
+          <span className="truncate text-caption text-fg-subtle">{fechaCorta(c.creadaEn)}</span>
+        </span>
         {responder ? (
           <span className="flex gap-1.5">
             <Button size="sm" variant="ghost" hideArrow onClick={alAbrir}>
@@ -341,7 +366,12 @@ function ElReparto({ valor, alCambiar, otra }: { valor: number; alCambiar: (v: n
         ))}
       </div>
       <Slider value={[valor]} min={1} max={99} step={1} onValueChange={(v) => alCambiar(v[0] ?? valor)} aria-label="Tu parte de la comisión" />
-      <BarraDelReparto tuParte={valor} otra={otra} grande />
+      <div className="flex items-baseline justify-between gap-3 text-body-sm">
+        <span className="font-medium text-fg">Tú {valor} %</span>
+        <span className="min-w-0 truncate text-right text-fg-muted">
+          {otra} {100 - valor} %
+        </span>
+      </div>
     </div>
   );
 }
@@ -372,12 +402,12 @@ function ProponerComision({ abierta, alCerrar, alProponer }: { abierta: boolean;
     for (const c of consignaciones) {
       if (!c.propertyId || vistos.has(c.propertyId)) continue;
       vistos.add(c.propertyId);
-      out.push({ id: c.propertyId, titulo: c.propertyTitle, donde: [c.propertyAddress, c.propertyCity].filter(Boolean).join(', ') });
+      out.push({ id: c.propertyId, titulo: c.propertyTitle, donde: [c.propertyAddress !== c.propertyTitle ? c.propertyAddress : null, c.propertyCity].filter(Boolean).join(', ') });
     }
     for (const i of sinMandato) {
       if (vistos.has(i.propertyId)) continue;
       vistos.add(i.propertyId);
-      out.push({ id: i.propertyId, titulo: i.propertyTitle, donde: [i.propertyZone, i.propertyCity].filter(Boolean).join(', ') });
+      out.push({ id: i.propertyId, titulo: i.propertyTitle, donde: [i.propertyZone !== i.propertyTitle ? i.propertyZone : null, i.propertyCity].filter(Boolean).join(', ') });
     }
     return out;
   }, [consignaciones, sinMandato]);

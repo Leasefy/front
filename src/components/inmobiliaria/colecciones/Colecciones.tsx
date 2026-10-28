@@ -165,7 +165,7 @@ function NuevaColeccion({ abierta, inicial = [], alCerrar, alCrear }: { abierta:
     for (const c of consignaciones) {
       if (!c.propertyId || vistos.has(c.propertyId)) continue;
       vistos.add(c.propertyId);
-      lista.push({ id: c.propertyId, titulo: c.propertyTitle, donde: [c.propertyAddress, c.propertyCity].filter(Boolean).join(', '), canon: c.monthlyRent ?? null });
+      lista.push({ id: c.propertyId, titulo: c.propertyTitle, donde: [c.propertyAddress !== c.propertyTitle ? c.propertyAddress : null, c.propertyCity].filter(Boolean).join(', '), canon: c.monthlyRent ?? null });
     }
     for (const i of sinMandato) {
       if (vistos.has(i.propertyId)) continue;

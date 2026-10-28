@@ -485,9 +485,15 @@ export interface ContextoDePermisos {
   canAccess: (module: string, action: string) => boolean;
   /** El rol en la agencia; sin él, una sección por rol no se muestra. */
   agencyRole?: string | null;
+  /** La cuenta es de un agente inmobiliario (trabaja solo): sin las secciones de equipo (Nico, 27-10-2026). */
+  cuentaDeAgente?: boolean;
 }
 
+/** Lo que es de un equipo: un agente que trabaja solo no lo ve (Nico, 27-10-2026: «todo, sin lo de equipo»). */
+export const SECCIONES_DE_EQUIPOS: readonly SeccionId[] = ['equipo', 'permisos'];
+
 export function puedeVerSeccion(seccion: SeccionDeConfiguracion, ctx: ContextoDePermisos): boolean {
+  if (ctx.cuentaDeAgente && SECCIONES_DE_EQUIPOS.includes(seccion.id)) return false;
   if (seccion.gate.tipo === 'todos') {
     return !(seccion.gate.menos && ctx.agencyRole && seccion.gate.menos.includes(ctx.agencyRole));
   }

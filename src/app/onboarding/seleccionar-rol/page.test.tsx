@@ -118,6 +118,18 @@ vi.mock('framer-motion', async () => {
  * Las dos fuentes del veredicto del registro (`registro-de-la-inmobiliaria.ts`):
  * el punto de retorno del back y el paso del micro.
  */
+// 🔴 Nico, 27-10-2026: en «Selecciona tu perfil», «Inmobiliaria» va al registro corto del publicador. El formulario
+// largo al lado sólo lo abre el asistente (`/onboarding/inmobiliaria`, `formularioDeLaInmobiliariaAlLado`): el bloque
+// «Antes de comenzar al lado» lo prueba como lo ve el asistente.
+const formularioAlLado = vi.hoisted(() => ({ prendido: false }))
+vi.mock('@/components/onboarding/perfil/EleccionDePerfil', async (original) => {
+  const real = await original<typeof import('@/components/onboarding/perfil/EleccionDePerfil')>()
+  return {
+    ...real,
+    EleccionDePerfil: (props: Parameters<typeof real.EleccionDePerfil>[0]) =>
+      real.EleccionDePerfil({ ...props, formularioDeLaInmobiliariaAlLado: formularioAlLado.prendido || props.formularioDeLaInmobiliariaAlLado }),
+  }
+})
 const { getOnboardingResumePoint, resumeOnboarding, desistirDelRegistroDeInmobiliaria } = vi.hoisted(() => ({
   getOnboardingResumePoint: vi.fn(),
   resumeOnboarding: vi.fn(),
@@ -419,6 +431,14 @@ describe('la tarjeta es la acción', () => {
     expect(pushMock).toHaveBeenCalledWith('/onboarding/inquilino')
   })
 
+  it('«Agente inmobiliario» (Nico, 27-10-2026): cuenta de la plataforma de la inmobiliaria y su registro corto', async () => {
+    await render()
+    await tocar(tarjeta('agente'))
+
+    expect(elegirPerfilMock).toHaveBeenCalledWith('agency')
+    expect(pushMock).toHaveBeenCalledWith('/publica?perfil=agente')
+  })
+
   it('se elige con el teclado: botón nativo, con foco, y Enter/Espacio lo activan', async () => {
     await render()
     const inquilino = tarjeta('tenant')
@@ -462,12 +482,12 @@ describe('la tarjeta es la acción', () => {
     expect(pushMock).toHaveBeenCalledWith('/onboarding/inquilino')
   })
 
-  it('«Propietario», si el admin lo deja prendido, va a su onboarding', async () => {
+  it('«Propietario», si el admin lo deja prendido, va al registro corto del publicador (Nico 27-10)', async () => {
     await render()
     await tocar(tarjeta('landlord'))
 
     expect(elegirPerfilMock).toHaveBeenCalledWith('landlord')
-    expect(pushMock).toHaveBeenCalledWith('/onboarding/propietario')
+    expect(pushMock).toHaveBeenCalledWith('/publica?perfil=landlord')
   })
 })
 
@@ -475,7 +495,27 @@ describe('la tarjeta es la acción', () => {
  * «Soy una inmobiliaria» no se va de la página: las tarjetas se corren a la
  * izquierda deshabilitadas y a la derecha se abre «Antes de comenzar».
  */
-describe('«Inmobiliaria» abre «Antes de comenzar» al lado', () => {
+describe('«Inmobiliaria» en «Selecciona tu perfil» va al registro corto (Nico, 27-10-2026)', () => {
+  it('no abre el formulario largo: lleva al publicador con el perfil de inmobiliaria', async () => {
+    formularioAlLado.prendido = false
+    await render()
+    await act(async () => {
+      ;(container.querySelector('[data-testid="perfil-inmobiliaria"]') as HTMLButtonElement).dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(container.querySelector('[data-testid="panel-antes-de-comenzar"]')).toBeNull()
+    expect(elegirPerfilMock).toHaveBeenCalledWith('agency')
+    expect(pushMock).toHaveBeenCalledWith('/publica?perfil=agency')
+  })
+})
+
+describe('«Inmobiliaria» abre «Antes de comenzar» al lado (en el asistente, para quien lo retoma)', () => {
+  beforeEach(() => {
+    formularioAlLado.prendido = true
+  })
+  afterEach(() => {
+    formularioAlLado.prendido = false
+  })
+
   const tarjeta = (valor: string) =>
     container.querySelector(`[data-testid="perfil-${valor}"]`) as HTMLButtonElement
   const panel = () => container.querySelector('[data-testid="panel-antes-de-comenzar"]')
@@ -627,6 +667,13 @@ describe('«Inmobiliaria» abre «Antes de comenzar» al lado', () => {
  * fue nuestro y con la referencia), y la persona se queda donde estaba.
  */
 describe('dejar de lado la inmobiliaria a medias, cuando no se puede', () => {
+  // La inmobiliaria a medias se ve en el asistente (el formulario largo al lado).
+  beforeEach(() => {
+    formularioAlLado.prendido = true
+  })
+  afterEach(() => {
+    formularioAlLado.prendido = false
+  })
   const tarjeta = (valor: string) =>
     container.querySelector(`[data-testid="perfil-${valor}"]`) as HTMLButtonElement
   const tocar = async (el: HTMLElement) => {

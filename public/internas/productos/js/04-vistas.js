@@ -150,7 +150,7 @@
     var t;
     if (PROD[v]) t = PROD[v].hora;
     else { var d = new Date(); t = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); }
-    $("#hora").textContent = t;
+    var horaEl = $("#hora"); if (horaEl) horaEl.textContent = t; /* Nico 27-10: el reloj salió de la barra */
   }
 
   /* ── gestos de los botones con Motion: suben 2 px al pasar y se hunden al presionar, con resorte ──

@@ -22,14 +22,13 @@ import {
   ArrowRight,
   House,
   MagnifyingGlass,
-  MapPin,
   Question,
   SquaresFour,
   type Icon,
 } from '@phosphor-icons/react'
 
-import { AuroraDeMarca } from '@/components/brand/AuroraDeMarca'
-import { LeasefyLogotype, LeasefySymbol } from '@/components/brand/LeasefySymbol'
+import { Ilustracion, usePrefersReducedMotion } from '@leasefy/cadence'
+import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { AuthContext } from '@/lib/auth/auth-context'
 
 interface Destino {
@@ -52,27 +51,32 @@ function destinos(conSesion: boolean): Destino[] {
   ]
 }
 
-/** La placa: así se ve una dirección en Colombia. Ésta no lleva a ningún lado. */
-function PlacaDeDireccion() {
+/**
+ * La lámina con los 3D de Leasefy (Nico, 27-10-2026: «a estos no les veo el glow up, usa para estas cosas los 3D»):
+ * el mapa al centro, el pin que no encuentra la dirección y la lupa que la busca, flotando suave. Debajo, la placa
+ * «Calle 404 # 4-04» como pie.
+ */
+function LaminaDelMapa() {
+  const reducido = usePrefersReducedMotion()
+  const flotar = (retraso: number, alto = 8) =>
+    reducido ? {} : { y: [0, -alto, 0], transition: { duration: 4, repeat: Infinity, ease: 'easeInOut' as const, delay: retraso } }
   return (
-    <div className="relative">
-      <div className="relative -rotate-2 rounded-xl bg-white px-7 pb-5 pt-4 text-ink shadow-[0_24px_60px_-20px_rgba(4,30,77,0.65)] ring-1 ring-black/5">
-        <div className="pointer-events-none absolute inset-1.5 rounded-lg border-2 border-ink/80" />
-        <div className="relative flex items-center justify-between gap-6">
-          <span className="font-mono text-label uppercase tracking-mono-label text-ink/60">Dirección</span>
-          <LeasefySymbol size={12} className="text-primary" />
-        </div>
-        <p className="relative mt-1 font-heading text-[44px] font-semibold leading-none tracking-[-0.04em] sm:text-[52px]">
-          Calle 404
-        </p>
-        <p className="relative mt-2 font-mono text-[22px] font-medium tracking-tight text-ink/80"># 4 – 04</p>
-      </div>
-      <span className="absolute -right-4 -top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white text-primary shadow-lg ring-1 ring-black/5">
-        <MapPin weight="fill" className="h-5 w-5" />
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger font-mono text-[10px] font-bold text-white">
-          ?
-        </span>
-      </span>
+    <div className="relative flex flex-col items-center">
+      {[22, 16, 10].map((rem) => (
+        <span key={rem} aria-hidden="true" className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/15" style={{ width: `${rem}rem`, height: `${rem}rem` }} />
+      ))}
+      <motion.div className="relative" animate={flotar(0, 6)}>
+        <Ilustracion nombre="mapa" tamano={220} tono="auto" alt="" />
+      </motion.div>
+      <motion.div className="absolute -right-6 -top-4 sm:-right-10" animate={flotar(0.6)}>
+        <Ilustracion nombre="pin" tamano={96} tono="auto" alt="" />
+      </motion.div>
+      <motion.div className="absolute -bottom-2 -left-8 sm:-left-12" animate={flotar(1.2)}>
+        <Ilustracion nombre="lupa" tamano={88} tono="auto" alt="" />
+      </motion.div>
+      <p className="relative mt-6 rounded-full bg-surface px-4 py-1.5 font-mono text-[13px] tracking-tight text-fg-muted ring-1 ring-border">
+        Calle 404 # 4 – 04
+      </p>
     </div>
   )
 }
@@ -100,12 +104,11 @@ export function PaginaNoEncontrada() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex aspect-[5/4] items-center justify-center overflow-hidden rounded-2xl ring-1 ring-black/5 sm:aspect-[4/3] lg:aspect-[5/6]"
+          className="relative flex aspect-[5/4] items-center justify-center overflow-hidden rounded-2xl bg-primary-soft ring-1 ring-primary/10 sm:aspect-[4/3] lg:aspect-[5/6]"
           data-testid="no-encontrada-lamina"
         >
-          <AuroraDeMarca className="absolute inset-0" />
           <div className="relative">
-            <PlacaDeDireccion />
+            <LaminaDelMapa />
           </div>
         </motion.div>
 

@@ -64,9 +64,9 @@ afterEach(() => {
 function abrirLaExplicacion() {
   act(() => root.render(<BotonNuevo />))
   const principal = Array.from(host.querySelectorAll('button')).find((b) =>
-    /Nuevo mandato/.test(b.textContent ?? ''),
+    /Nueva consignación/.test(b.textContent ?? ''),
   )
-  expect(principal, 'el segmento principal «Nuevo mandato»').toBeDefined()
+  expect(principal, 'el segmento principal «Nueva consignación»').toBeDefined()
   act(() => principal!.click())
   const modal = document.querySelector<HTMLElement>('[role="dialog"][data-testid="intro-heroe"]')
   expect(modal, 'la explicación de la primera vez (A «Héroe») se abre').not.toBeNull()

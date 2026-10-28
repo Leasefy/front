@@ -31,6 +31,7 @@ import {
   Users,
   UsersThree,
   Wrench,
+  Signature,
 } from '@phosphor-icons/react';
 
 import { esLaPestana, type PestanaDelPortal } from './portal-del-inquilino';
@@ -118,6 +119,8 @@ export const CONTRATOS_Y_PLATA: SeccionDelPropietario = {
     { href: '/panel/leases', es: 'Arriendos', en: 'Leases', icon: House, tambienEn: ['/panel/portafolio'] },
     { href: '/panel/estado-de-cuenta', es: 'Estado de cuenta', en: 'Account statement', icon: Receipt },
     { href: '/panel/informes', es: 'Informes', en: 'Reports', icon: ChartBar, tambienEn: ['/panel/certificados'] },
+    // Firmas (Nico, 28-10-2026): cualquier documento firmado con nuestro código, también para el propietario solo.
+    { href: '/panel/firmas', es: 'Firmas', en: 'Signatures', icon: Signature },
   ],
 };
 

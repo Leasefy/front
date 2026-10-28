@@ -7,6 +7,11 @@ import { FRASES_EN_DEL_GLOW_UP } from './frases-en-del-glow-up'
 
 export const FRASES_EN: Record<string, string> = {
   ...FRASES_EN_DEL_GLOW_UP,
+  // 27-10-2026 (Nico): la sección comercial se llama «Arrendamientos».
+  "Arrendamientos": "Leasing",
+  // Oportunidades automáticas (27-10-2026)
+  "Para cada interesado": "For each lead",
+  "Sus mejores inmuebles, ya cruzados. Toca uno para ver el mensaje listo.": "Their best matches, already worked out. Tap one to see the ready message.",
   // app/panel/inmobiliaria/pagos/cobranza/inbox/page.tsx
   "Inbox de conversaciones": "Conversation inbox",
   "Las respuestas de tus inquilinos, agrupadas por intención. Cada conversación muestra el último mensaje y la acción sugerida. Los mensajes sin entender y los que requieren humano nunca se responden solos: los atiendes tú.": "Your tenants' replies, grouped by intent. Each conversation shows the last message and the suggested action. Messages the agent didn't understand and those that need a person are never answered automatically: you handle them.",
@@ -50,7 +55,9 @@ export const FRASES_EN: Record<string, string> = {
   "Nuevo interesado": "New lead",
   "Todavía no hay interesados en el embudo": "No leads in the pipeline yet",
   "Entran solos cuando alguien pide una visita o se postula a uno de tus inmuebles. El que te llega por teléfono lo puedes cargar a mano.": "They come in on their own when someone requests a viewing or applies to one of your properties. Anyone who reaches you by phone you can add by hand.",
-  // app/panel/inmobiliaria/pipeline/que-ofrecer/CalceClient.tsx
+  // 27-10-2026: «Qué ofrecer» pasó a «Oportunidades».
+  'Oportunidades': 'Opportunities',
+  // app/panel/inmobiliaria/pipeline/oportunidades/CalceClient.tsx
   "Qué ofrecer": "What to offer",
   "A un interesado, los inmuebles que le sirven. A un inmueble que se libera, los interesados a los que les sirve — con el porqué listo para mandar.": "For a lead, the properties that fit them. For a property that frees up, the leads it fits — with the reason ready to send.",
   "Desde dónde quieres buscar": "Where do you want to start",

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react'
 import { Presence } from '@leasefy/cadence'
 import { buildContactMailto, isContactFormValid, CONTACT_EMAIL } from '@/lib/landing/contact-mailto'
+import './contacto-como-la-home.css'
 
 const INTEREST_CHIPS = ['CRM', 'ERP', 'Agentes IA', 'Todo el sistema'] as const
 

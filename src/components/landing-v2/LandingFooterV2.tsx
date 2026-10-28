@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { Inter, Inter_Tight, IBM_Plex_Mono } from "next/font/google";
 import { LandingRegistroCta } from "./LandingRegistroCta";
 import { MarcaDelPie } from "./MarcaDelPie";
+import { PieComoLaHome } from "./PieComoLaHome";
 import { useEnlace, useTx } from "@/lib/idioma/use-idioma";
 
 type CSSVars = React.CSSProperties & Record<string, string | number>;
@@ -38,6 +39,12 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], 
 interface LandingFooterV2Props {
   /** La landing corre `initLandingFx`, que revela el wordmark al hacer scroll. */
   fxExterno?: boolean;
+  /**
+   * 🔴 Nico 27-10-2026 («lo lleva a uno a la landing vieja»): las páginas
+   * públicas cierran con el pie de la landing nueva (`PieComoLaHome`). Sólo la
+   * home anterior (`/inicio-anterior`, con `fxExterno`) conserva este pie.
+   */
+  comoLaHome?: boolean;
 }
 
 /**
@@ -52,7 +59,12 @@ interface LandingFooterV2Props {
  * `.in` viene puesta y se ve quieto.
  */
 
-export function LandingFooterV2({ fxExterno = false }: LandingFooterV2Props) {
+export function LandingFooterV2({ fxExterno = false, comoLaHome = !fxExterno }: LandingFooterV2Props) {
+  if (comoLaHome) return <PieComoLaHome />;
+  return <PieAnterior fxExterno={fxExterno} />;
+}
+
+function PieAnterior({ fxExterno }: { fxExterno: boolean }) {
   // Los bloques `[data-reveal]` arrancan en `opacity:0` y los revela el
   // observador de `initLandingFx`. Fuera del home ese script no corre, así que
   // la marca y las dos columnas de enlaces quedaban INVISIBLES: el pie se veía

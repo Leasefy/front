@@ -39,6 +39,9 @@ export const NAV_ITEMS = [
   // ACT-09 (Nico, 05-10-2026): el Piloto automático de cada inmobiliaria lo deja Leasefy en prueba, contratado o apagado.
   { href: '/admin/piloto', label: 'Piloto automático', hint: 'prueba · contratado · apagado', code: '37' },
   { href: '/admin/plans', label: 'Planes', hint: 'catálogo agency', code: '30' },
+  // Nico, 27-10-2026: los aliados regalan un mes (Fianly, La Lonja, Fenalco) y Leasefy gestiona propietarios sin inmobiliaria.
+  { href: '/admin/aliados', label: 'Aliados', hint: 'mes gratis · conversión', code: '39' },
+  { href: '/admin/gestiones', label: 'Gestiones de Leasefy', hint: 'propietarios sin inmobiliaria · 5 %', code: '40' },
   { href: '/admin/agency-targets', label: 'Targets', hint: 'metas mensuales', code: '27' },
   { href: '/admin/avaluos', label: 'Avalúos', hint: 'firma certificados', code: '28' },
   { href: '/admin/registration-profiles', label: 'Perfiles', hint: 'signup on/off', code: '29' },

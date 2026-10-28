@@ -27,15 +27,34 @@ export type CampoDelPropietario = 'displayName' | 'phone'
 
 export type ErroresDelPropietario = Partial<Record<CampoDelPropietario, string>>
 
+/** Partículas que van pegadas al apellido que sigue: «de la Torre», «del Valle», «Pérez de Mesa». */
+const PARTICULAS = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'san', 'van', 'von', 'da', 'di'])
+
 /**
- * El nombre completo partido como lo manda el paso: la primera palabra es el
- * nombre y el resto el apellido (sin apellido, el back recibe el nombre dos
- * veces, porque no acepta un apellido vacío).
+ * El nombre completo partido en nombres y apellidos, como en Colombia (Nico, 28-10-2026: «¿el nombre completo no daña
+ * alguna base que pida nombre y apellidos por aparte?»). Las partículas («de», «del», «la»…) se pegan a la palabra que
+ * sigue. Con 4 o más palabras, la mitad son nombres («Juan Camilo | López Acevedo»); con 3, el primero es el nombre y
+ * los otros dos los apellidos («Nicolás | García Gómez», lo más común); con 2, uno y uno. Sin apellido, el back recibe
+ * el nombre dos veces, porque no acepta un apellido vacío. En documentos se usa siempre el nombre completo junto.
  */
 export function partirElNombre(displayName: string): { firstName: string; lastName: string } {
-  const partes = displayName.trim().split(/\s+/).filter(Boolean)
-  const firstName = partes[0] ?? ''
-  return { firstName, lastName: partes.slice(1).join(' ') || firstName }
+  const palabras = displayName.trim().split(/\s+/).filter(Boolean)
+  // Junta cada partícula con lo que sigue: «Pérez de la Torre» → «Pérez», «de la Torre».
+  const bloques: string[] = []
+  let pegadas: string[] = []
+  for (const p of palabras) {
+    pegadas.push(p)
+    if (PARTICULAS.has(p.toLowerCase())) continue
+    bloques.push(pegadas.join(' '))
+    pegadas = []
+  }
+  if (pegadas.length) bloques.push(pegadas.join(' '))
+  if (bloques.length <= 1) {
+    const unico = bloques[0] ?? ''
+    return { firstName: unico, lastName: unico }
+  }
+  const nombres = bloques.length >= 4 ? Math.floor(bloques.length / 2) : 1
+  return { firstName: bloques.slice(0, nombres).join(' '), lastName: bloques.slice(nombres).join(' ') }
 }
 
 /**

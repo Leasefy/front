@@ -49,6 +49,7 @@ const GUARDADO = {
   emailPayments: false,
   emailMessages: true,
   emailMarketing: true,
+  emailPlanDeLeasefy: true,
   pushAll: false,
   pushUrgent: true,
 }
@@ -107,7 +108,7 @@ describe('SeccionNotificaciones — nunca los valores de fábrica como si fueran
 
     expect(h.getNotificationSettings).toHaveBeenCalledTimes(2)
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
-    expect(perillas()).toHaveLength(6)
+    expect(perillas()).toHaveLength(7)
   })
 
   it('con la lectura bien, cada perilla muestra lo guardado, no lo de fábrica', async () => {
@@ -131,6 +132,7 @@ describe('SeccionNotificaciones — nunca los valores de fábrica como si fueran
       'Contratos por correo',
       'Visitas por correo',
       'Mensajes por correo',
+      'Tu plan de Leasefy por correo',
       'Novedades de Leasefy por correo',
     ])
     expect(container.textContent).not.toMatch(/push/i)

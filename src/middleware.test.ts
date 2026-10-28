@@ -88,3 +88,27 @@ describe('middleware — el idioma de la parte pública (Nico, 16-10-2026)', () 
     expect(r.headers.get('x-middleware-request-x-idioma')).toBeNull()
   })
 })
+
+describe('middleware — una sola landing (Nico, 27-10-2026: «solo debe haber una landing y es la nueva»)', () => {
+  it('/pricing, la página de precios de la landing vieja, lleva a los planes de la home en su idioma', () => {
+    for (const [desde, hasta] of [
+      ['https://leasefy.co/es/pricing', 'https://leasefy.co/es#planes'],
+      ['https://leasefy.co/en/pricing', 'https://leasefy.co/en#planes'],
+      ['https://leasefy.co/es/pricing/empresas?x=1', 'https://leasefy.co/es#planes'],
+    ]) {
+      const r = middleware(new NextRequest(desde))
+      expect(r.status, desde).toBe(307)
+      expect(r.headers.get('location'), desde).toBe(hasta)
+    }
+  })
+
+  it('sin prefijo, al idioma de la persona y a los planes de una vez (un solo salto)', () => {
+    const r = middleware(new NextRequest('https://leasefy.co/pricing', { headers: { 'accept-language': 'en-US,en;q=0.9' } }))
+    expect(r.headers.get('location')).toBe('https://leasefy.co/en#planes')
+  })
+
+  it('las demás páginas públicas siguen igual', () => {
+    const r = middleware(new NextRequest('https://leasefy.co/es/pricingx'))
+    expect(r.headers.get('location')).toBeNull()
+  })
+})

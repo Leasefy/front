@@ -45,7 +45,12 @@ describe('la franja del marketplace de la landing', () => {
         inmueble({ id: 'bien' }),
       ],
     });
-    expect(v.inmuebles.map((i) => i.id)).toEqual(['bien']);
+    // 27-10 (Nico: «sigo sin ver ahí dentro inmuebles»): el publicado sin foto ya no se esconde; va DESPUÉS de
+    // los que tienen foto, con la ilustración de su tipo.
+    expect(v.inmuebles.map((i) => i.id)).toEqual(['bien', 'sin-foto']);
+    const sinFoto = v.inmuebles[1]!;
+    expect(sinFoto.sinFoto).toBe(true);
+    expect(sinFoto.foto).toMatch(/^\/landing\/img\/.+-voltaje\.webp$/);
     expect(v.total).toBe(5);
   });
 

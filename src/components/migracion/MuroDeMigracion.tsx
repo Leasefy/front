@@ -64,6 +64,7 @@
  * nadie vea el panel nítido antes de decidir qué hace con su migración.
  */
 
+import { useActivacionEnCurso } from '@/lib/conversion/abrir-la-activacion';
 import { AuthContext } from "@/lib/auth/auth-context";
 import { ModalDecisionDeMigracion } from "./DecisionDeMigracion";
 import { olvidarRelevo } from "@/components/puesta-en-marcha/relevo";
@@ -238,6 +239,7 @@ function avisarQueNoSeSupo() {
 const SE_EXPLICAN_SOLOS: IdDePasoDeMigracion[] = ["propiedades", "contratos"];
 
 export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
+  const activacionEnCurso = useActivacionEnCurso();
   const [estado, setEstado] = useState<EstadoDeMigracion | null>(null);
   // Lo que el back contestó, bloquee o no: alimenta el recordatorio del
   // sidebar y la migración abierta a mano. `estado` (arriba) es sólo el que
@@ -697,8 +699,18 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     // Abrir la migración (Configuración, la tarjeta del menú) es darle «Migrar».
     marcarQueEligioMigrar(agencyId);
     setAbiertaAMano(true);
+    // Quien la había quitado del menú y vuelve a abrirla está migrando otra
+    // vez: la tarjeta del menú lo vuelve a acompañar (Nico, 27-10-2026). Si
+    // no se guarda, sólo queda sin tarjeta: no se le dice nada.
+    if (conocido?.recordatorioDescartado === true) {
+      void migracionEstadoApi
+        .recordatorio(false)
+        .then((r) => refrescar(r))
+        .catch(() => refrescar());
+      return;
+    }
     void refrescar();
-  }, [agencyId, refrescar]);
+  }, [agencyId, refrescar, conocido]);
 
   const aMano = !puesto && abiertaAMano && conocido !== null;
   const tapado = puesto || aMano || bienvenida !== null;
@@ -725,6 +737,12 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   useEffect(() => () => avisarAlLayout?.(false), [avisarAlLayout]);
 
   const inerte = { inert: cubierto };
+
+  // Activando la cuenta del marketplace (pasos con el segundo factor): el muro espera a que termine, y no tapa el
+  // «quedó activa». Al «Ir a mi panel» la página carga de nuevo y la decisión sale como siempre.
+  if (activacionEnCurso) {
+    return <MigracionContext.Provider value={contexto}>{children}</MigracionContext.Provider>;
+  }
 
   return (
     <MigracionContext.Provider value={contexto}>
@@ -1016,6 +1034,13 @@ export function PanelDeMigracion({
     setEnviando(true);
     setFallo(false);
     setFalloDetalle(null);
+    // «Arranco de cero» (Nico, 27-10-2026: «no le quita eso cuando le da clic
+    // en omitir»): como «no requiero migración», también la quita del menú,
+    // aunque antes le hubiera dado «Migrar». Si no se guarda, molesta, no
+    // encierra: la tarjeta tiene su «Cerrar».
+    if (via === "omitir") {
+      await migracionEstadoApi.recordatorio(true).catch(() => undefined);
+    }
     try {
       const respuesta =
         via === "terminar"

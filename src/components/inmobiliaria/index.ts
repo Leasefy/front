@@ -23,7 +23,8 @@ export {
   StepPropertyData,
   StepCommissionTerms,
   StepAssignAgent,
-  StepActaEntrega,
+  StepFotos,
+  StepInventario,
   StepConfirmation,
 } from './ConsignacionWizardSteps';
 export type { WizardFormData, StepProps } from './ConsignacionWizardSteps';

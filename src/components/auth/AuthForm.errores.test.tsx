@@ -234,7 +234,7 @@ describe('AuthForm — crear la cuenta', () => {
 
   it('el límite de correos de Supabase, por su código', async () => {
     await registrar(errorDeSupabase('AuthApiError', 'Email rate limit exceeded', 429, 'over_email_send_rate_limit'))
-    expect(texto()).toMatch(/Espera unos minutos/)
+    expect(texto()).toMatch(/Intenta de nuevo en una hora|Puedes pedir otro en/)
   })
 })
 

@@ -73,7 +73,7 @@ export function LoQueFaltaDelInmueble({
   const pendiente = lasFirmas.find((f) => f.estado === 'PENDIENTE');
   requisitos.push({
     id: 'firma',
-    titulo: 'Firmar el mandato',
+    titulo: 'Firmar el contrato de consignación',
     detalle: firmado ? undefined : pendiente ? `Se le mandó el enlace a ${pendiente.firmanteNombre}; falta que firme.` : esVenta ? 'Lo firma el propietario: es lo que te autoriza a venderlo.' : 'Lo firma el propietario: es lo que te autoriza a administrar y arrendar.',
     estado: firmas.cargando && !firmas.datos ? 'cargando' : firmas.noHabilitado || firmas.errorCrudo || firmas.datos?.disponible === false ? 'desconocido' : firmado ? 'listo' : 'falta',
     accion: (
@@ -130,7 +130,7 @@ export function LoQueFaltaDelInmueble({
       estado: cargandoProperty && !property ? 'cargando' : !property ? 'desconocido' : conFotos ? 'listo' : 'falta',
       accion: (
         <Button size="sm" variant="secondary" hideArrow asChild>
-          <Link href={irA(consignacion.id, 'arrendarlo', 'fotos')}>Agregar fotos</Link>
+          <Link href={irA(consignacion.id, 'multimedia', 'fotos')}>Agregar fotos</Link>
         </Button>
       ),
     });
@@ -158,7 +158,7 @@ export function LoQueFaltaDelInmueble({
   // no algo que impida arrendar; no cuenta en «te faltan N» ni lleva «Sigue».
   requisitos.push({
     id: 'vencimiento',
-    titulo: 'Poner la fecha de vencimiento del mandato',
+    titulo: 'Poner la fecha de vencimiento del contrato',
     detalle: consignacion.contractEndDate ? undefined : 'Con la fecha, Leasefy avisa al asesor y al gerente 30 días antes.',
     estado: consignacion.contractEndDate ? 'listo' : 'opcional',
     accion: puedeEditar ? (

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { MotionIndicator } from '@leasefy/cadence'
 import { Reveal } from '@/components/landing/motion/Reveal'
 import { blogPosts, blogCategories } from '@/lib/data/blog-posts'
+import './blog-como-la-home.css'
 
 /**
  * Listado del blog.

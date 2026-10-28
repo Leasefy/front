@@ -165,7 +165,7 @@ export function ReclamosClient() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Captación y arriendo"
+        seccion="Arrendamientos"
         titulo="Reclamos de candidatos"
         descripcion="Lo que escribe quien no pasó el estudio —pidiendo detalle o avisando que un dato está mal— y su respuesta."
       />

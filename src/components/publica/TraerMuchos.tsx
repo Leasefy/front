@@ -2,8 +2,8 @@
 
 import { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle, FileXls, FolderSimple, LinkSimple, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
-import { motionDuration, motionEase } from '@leasefy/cadence';
+import { Check, CheckCircle, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
+import { Ilustracion, motionDuration, motionEase, type NombreIlustracion } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { separarEnlaces, type EnlaceFallido } from '@/lib/inmuebles/enlaces.service';
@@ -53,37 +53,48 @@ export function TraerMuchos({
   const [camino, setCamino] = useState<CaminoParaMuchos | null>(inicial);
 
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 sm:p-5" data-testid="traer-muchos">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[15px] font-medium text-fg">¿Son muchos? Tráelos de una</p>
-          <p className="text-[13px] text-fg-subtle">Desde tus avisos, tu Excel o tus carpetas de fotos.</p>
-        </div>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Cómo traerlos">
-          {(
-            [
-              { c: 'enlaces' as const, t: 'Pegar enlaces', I: LinkSimple },
-              { c: 'excel' as const, t: 'Subir Excel', I: FileXls },
-              { c: 'carpetas' as const, t: 'Carpetas de fotos', I: FolderSimple },
-            ]
-          ).map(({ c, t, I }) => (
+    <section className="rounded-2xl border border-border bg-surface p-4 sm:p-6" data-testid="traer-muchos">
+      {/* Nico, 28-10: «eso está todo desordenado». El título arriba y las tres maneras en tres opciones parejas. */}
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[16px] font-medium text-fg">¿Son muchos? Tráelos de una</p>
+        <p className="hidden text-caption text-fg-subtle sm:block">Hasta 500 por vez</p>
+      </div>
+      <p className="mt-0.5 text-body-sm text-fg-subtle">Elige de dónde vienen y los armamos por ti. Después los revisas uno por uno o todos juntos.</p>
+      <div className="mt-4 grid gap-2.5 sm:grid-cols-3" role="tablist" aria-label="Cómo traerlos">
+        {CAMINOS.map(({ c, titulo, detalle, ilustracion }) => {
+          const elegido = camino === c;
+          return (
             <button
               key={c}
               type="button"
               role="tab"
-              aria-selected={camino === c}
+              aria-selected={elegido}
               onClick={() => setCamino((a) => (a === c ? null : c))}
               className={cn(
-                'inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-[13.5px] font-medium transition-[background-color,border-color,color] duration-fast active:scale-[0.97]',
-                camino === c ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-fg-muted hover:border-border-strong hover:text-fg',
+                'group relative flex items-center gap-3 rounded-xl border p-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-fast active:scale-[0.99] sm:flex-col sm:items-start sm:gap-2.5 sm:p-4',
+                elegido
+                  ? 'border-primary bg-primary-soft/60 shadow-[0_0_0_3px_rgba(26,64,255,0.12)]'
+                  : 'border-border bg-surface hover:border-border-strong hover:shadow-sm',
               )}
               data-testid={`camino-${c}`}
             >
-              <I size={16} aria-hidden="true" />
-              {t}
+              <Ilustracion nombre={ilustracion} tamano={44} tono="auto" alt="" />
+              <span className="min-w-0">
+                <span className={cn('block text-body-sm font-medium', elegido ? 'text-primary' : 'text-fg')}>{titulo}</span>
+                <span className="mt-0.5 block text-caption leading-snug text-fg-subtle">{detalle}</span>
+              </span>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'absolute right-3 top-3 flex size-5 items-center justify-center rounded-full transition-[opacity,transform] duration-fast',
+                  elegido ? 'scale-100 bg-primary text-primary-fg opacity-100' : 'scale-75 opacity-0',
+                )}
+              >
+                <Check size={12} weight="bold" />
+              </span>
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
       <AnimatePresence initial={false} mode="wait">
@@ -96,7 +107,7 @@ export function TraerMuchos({
             transition={{ duration: motionDuration.base, ease: motionEase.standard }}
             className="overflow-hidden"
           >
-            <div className="mt-4 border-t border-border pt-4">
+            <div className="mt-4 rounded-xl bg-surface-muted/60 p-4">
               {camino === 'enlaces' && <PegarEnlaces alTraer={alTraerEnlaces} />}
               {camino === 'excel' && <SubirExcel alLeer={alLeerExcel} alSeguirConCarpetas={() => setCamino('carpetas')} />}
               {camino === 'carpetas' && <SoltarCarpetas alSoltar={alSoltarCarpetas} />}
@@ -107,6 +118,13 @@ export function TraerMuchos({
     </section>
   );
 }
+
+/** Las tres maneras de traerlos, cada una con su 3D. */
+const CAMINOS: readonly { c: CaminoParaMuchos; titulo: string; detalle: string; ilustracion: NombreIlustracion }[] = [
+  { c: 'enlaces', titulo: 'Pegar tus avisos', detalle: 'Enlaces de Finca Raíz, Metrocuadrado o tu página.', ilustracion: 'megafono' },
+  { c: 'excel', titulo: 'Subir un Excel', detalle: 'Tu lista de inmuebles, con las columnas que tengas.', ilustracion: 'inventario' },
+  { c: 'carpetas', titulo: 'Carpetas de fotos', detalle: 'Una carpeta por inmueble y armamos cada uno.', ilustracion: 'camara' },
+];
 
 function Aviso({ tono, children }: { tono: 'bien' | 'ojo'; children: React.ReactNode }) {
   return (
@@ -328,7 +346,9 @@ function SoltarCarpetas({ alSoltar }: { alSoltar: (archivos: ArchivoConRuta[]) =
         data-testid="carpetas-zona"
       >
         {/* Ronda 30: la carpeta suelta, sin el círculo azul. */}
-        <FolderSimple size={32} weight="duotone" aria-hidden="true" className="mx-auto text-fg-subtle" />
+        <span className="mx-auto block w-fit" aria-hidden="true">
+          <Ilustracion nombre="carpeta" tamano={64} tono="auto" alt="" />
+        </span>
         <p className="mt-3 text-[14.5px] font-medium text-fg">Arrastra aquí tus carpetas: una por inmueble</p>
         <p className="mx-auto mt-1 max-w-[460px] text-[13px] text-fg-subtle">
           O la carpeta que las tiene todas. Cada carpeta se vuelve un inmueble con sus fotos; la primera por nombre es la portada.

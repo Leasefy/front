@@ -108,6 +108,8 @@ interface ConsignacionTableProps {
    * tiene). Ver contract.md T-0030 §3.4.
    */
   onCompletarMandato?: (inmueble: InmuebleSinConsignacion) => void;
+  /** Abrir la ficha de un inmueble SIN propietario (27-10-2026: verlo, editarlo, sus fotos y notas). */
+  onAbrirSinPropietario?: (inmueble: InmuebleSinConsignacion) => void;
   /** COMERCIAL (04-10-2026): días de vacancia y mandato que se vence, por consignación. */
   comercialPorConsignacion?: Record<string, VacanciaYMandato>;
   /**
@@ -202,6 +204,7 @@ export function ConsignacionTable({
   onEliminar,
   onPrepararSinSenal,
   onCompletarMandato,
+  onAbrirSinPropietario,
   comercialPorConsignacion,
   publicadoPorInmueble,
   onCambiarPublicacion,
@@ -501,7 +504,7 @@ export function ConsignacionTable({
             return (
               <TableRowAnimada
                 key={rowKey}
-                onClick={() => (row.kind === 'consignacion' ? onView(row) : handleCompletarMandato())}
+                onClick={() => (row.kind === 'consignacion' ? onView(row) : onAbrirSinPropietario ? onAbrirSinPropietario(row) : handleCompletarMandato())}
                 className="border-b last:border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 {sePuedeElegir && (
@@ -805,6 +808,12 @@ export function ConsignacionTable({
                         // es completar el mandato (y, con la marca, publicarlo
                         // o quitarlo del marketplace: es del inmueble).
                         <>
+                          {onAbrirSinPropietario && (
+                            <DropdownListItem className="gap-3" onClick={() => onAbrirSinPropietario(row)} data-testid="ver-ficha-sin-propietario">
+                              <Eye className="w-4 h-4" />
+                              <span className="text-sm">Ver ficha</span>
+                            </DropdownListItem>
+                          )}
                           {puedeCrearMandato && (
                             <DropdownListItem
                               className="gap-3"

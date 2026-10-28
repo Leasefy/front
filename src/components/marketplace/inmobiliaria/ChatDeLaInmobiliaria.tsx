@@ -392,9 +392,15 @@ function RespuestaDelBuscador({ turno: t, nombre }: { turno: Turno; nombre: stri
       <p className="text-[15px] leading-relaxed text-fg">
         {sonCercanos ? (
           <>
-            Ninguno cumple todo lo que pides. Estos{' '}
-            <strong className="font-mono font-semibold tabular-nums">{total}</strong> son los más cercanos de {nombre}: en
-            cada uno te digo qué no cumple.
+            {total === 1 ? (
+              <>Ninguno cumple todo lo que pides. Este es el más cercano de {nombre}: te digo qué no cumple.</>
+            ) : (
+              <>
+                Ninguno cumple todo lo que pides. Estos{' '}
+                <strong className="font-mono font-semibold tabular-nums">{total}</strong> son los más cercanos de {nombre}: en
+                cada uno te digo qué no cumple.
+              </>
+            )}
           </>
         ) : r.total === 0 ? (
           <>

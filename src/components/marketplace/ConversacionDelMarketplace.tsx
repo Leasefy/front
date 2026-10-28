@@ -29,7 +29,7 @@ import {
 } from '@/lib/marketplace/busqueda';
 import { conNombres } from '@/lib/marketplace/con-nombres';
 import { afinarCon } from '@/lib/marketplace/afinar';
-import { guardarReciente, leerRecientes, type BusquedaReciente } from '@/lib/marketplace/busquedas-recientes';
+import { alCambiarLasRecientes, guardarReciente, leerRecientes, type BusquedaReciente } from '@/lib/marketplace/busquedas-recientes';
 import { IDEAS_PARA_AFINAR } from '@/lib/marketplace/ideas-para-afinar';
 import { useTarjetasDeInmobiliarias } from '@/lib/marketplace/use-inmobiliarias';
 import { videoDelInmueble } from '@/lib/marketplace/video';
@@ -451,9 +451,15 @@ function RespuestaDeOri({
               <p className="text-[16.5px] leading-[1.6] text-fg" data-testid="lo-que-dijo-ori">
                 {sonCercanos ? (
                   <>
-                    Ninguno cumple todo lo que pides. Estos{' '}
-                    <strong className="font-mono font-medium tabular-nums">{totalMostrado}</strong> son los más
-                    cercanos: en cada uno te digo qué no cumple o qué no dice.
+                    {totalMostrado === 1 ? (
+                      <>Ninguno cumple todo lo que pides. Este es el más cercano: te digo qué no cumple o qué no dice.</>
+                    ) : (
+                      <>
+                        Ninguno cumple todo lo que pides. Estos{' '}
+                        <strong className="font-mono font-medium tabular-nums">{totalMostrado}</strong> son los más
+                        cercanos: en cada uno te digo qué no cumple o qué no dice.
+                      </>
+                    )}
                   </>
                 ) : foto.total === 0 ? (
                   <>No encontré ninguno que cumpla todo. Quita una de las pastillas y vuelvo a buscar.</>
@@ -600,6 +606,8 @@ export function ConversacionDelMarketplace() {
   const ultimo = turnos[turnos.length - 1];
   const [recientes, setRecientes] = useState<BusquedaReciente[]>([]);
   useEffect(() => setRecientes(leerRecientes()), []);
+  // Las que se borran desde el lado (o vuelven con «Deshacer»).
+  useEffect(() => alCambiarLasRecientes(setRecientes), []);
 
   // Si la dirección cambia por fuera (una búsqueda del lado, el botón atrás),
   // es otra conversación.
@@ -754,11 +762,11 @@ export function ConversacionDelMarketplace() {
   }, [turnos.length]);
 
   return (
-    <div className="min-h-screen bg-background pt-16 lg:pt-[76px]" data-testid="conversacion-del-marketplace">
+    <div className="min-h-screen bg-background pt-[68px]" data-testid="conversacion-del-marketplace">
       <div className="grid grid-cols-1 lg:grid-cols-[272px_minmax(0,1fr)]">
         <LadoDelMarketplace recientes={recientes} activa={escribirBusqueda(ultimo.busqueda)} />
 
-        <main className="flex min-h-[calc(100vh-64px)] min-w-0 flex-col lg:min-h-[calc(100vh-76px)]">
+        <main className="flex min-h-[calc(100vh-68px)] min-w-0 flex-col">
           <InterruptorDeVista
             vista="conversacion"
             hrefConversacion={`/propiedades?${escribirBusqueda(ultimo.busqueda)}`}

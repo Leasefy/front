@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { useAuth } from '@/lib/auth';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
 import { demoDelPropietario } from '@/lib/venta/demos-del-panel';
@@ -28,6 +28,12 @@ import {
 import { pasosDelPerfilDelPropietario } from '@/lib/perfil/pasos-del-perfil-del-propietario';
 import { useUnreadMessages } from '@/lib/hooks/useMessages';
 import { SeccionesDelPortal } from '@/components/portales/SeccionesDelPortal';
+import { BarraDelMesGratis } from '@/components/inmobiliaria/plan/BarraDelMesGratis';
+import { PasosDelPropietario } from '@/components/landlord/PasosDelPropietario';
+import { MesGratisPendiente } from '@/components/inmobiliaria/plan/MesGratisPendiente';
+import { SiguePublicando } from '@/components/publica/SiguePublicando';
+import { conversionApi } from '@/lib/api/conversion.service';
+import type { AccesoDeLaCuenta } from '@/lib/conversion/acceso';
 import {
   CONTRATOS_Y_PLATA,
   MIS_INMUEBLES,
@@ -123,7 +129,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const showUpgrade = !deInmobiliaria && subscription?.planId === 'starter';
   // El propietario independiente en el plan gratis (Nico, 20-10-2026): sus
   // inmuebles, candidatos y visitas abiertos; lo demás en demo con WhatsApp.
-  const propietarioGratis = showUpgrade && !administrados.cargando;
+  // 27-10-2026 (Nico): el mes gratis de un aliado le abre todo al propietario independiente mientras dure.
+  const accesoDelPropietario = useAccesoDelPropietario(!deInmobiliaria && user?.role === 'landlord');
+  const propietarioGratis = showUpgrade && !administrados.cargando && accesoDelPropietario?.estado !== 'prueba';
   const pathname = usePathname();
   const router = useRouter();
   const { unreadCount } = useUnreadMessages();
@@ -223,6 +231,12 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             de «tu inmobiliaria» al independiente). Sólo se lee; no cambia qué se monta. */}
         <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
         <main id="main-content" tabIndex={-1}>
+          {!deInmobiliaria && <BarraDelMesGratis acceso={accesoDelPropietario} pago="/panel/upgrade" soloElMesGratis />}
+          {/* 27-10-2026 (Nico): el propietario que pagó termina su cuenta en tres pasos (datos, cuenta, factura). */}
+          {!deInmobiliaria && <PasosDelPropietario acceso={accesoDelPropietario} />}
+          {!deInmobiliaria && <MesGratisPendiente inicio="/panel/propiedades" />}
+          {/* 28-10 (Nico): quien se devolvió de /publica sin publicar, retoma donde iba. */}
+          {!deInmobiliaria && <SiguePublicando />}
           <SeccionesDelPortal
             seccion={deInmobiliaria ? seccionDelPropietario(pathname ?? '') : rielDelIndependiente(seccionDelIndependiente(pathname ?? ''), pathname ?? '', propietarioGratis)}
           />
@@ -285,4 +299,21 @@ function rielDelIndependiente<S extends { pestanas: readonly { href: string; tam
     ...seccion,
     pestanas: seccion.pestanas.filter((p) => abiertaParaElPropietarioGratis(p.href) || esLaPestana(p, pathname)),
   };
+}
+
+/** Lo que ve el propietario independiente (su mes gratis, si lo tiene). `null` mientras no se sabe o sin el back. */
+function useAccesoDelPropietario(activo: boolean): AccesoDeLaCuenta | null {
+  const [acceso, setAcceso] = useState<AccesoDeLaCuenta | null>(null);
+  useEffect(() => {
+    if (!activo) return;
+    let vivo = true;
+    conversionApi
+      .accesoDeLaCuenta()
+      .then((a) => vivo && setAcceso(a))
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [activo]);
+  return acceso;
 }

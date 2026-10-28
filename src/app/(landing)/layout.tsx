@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { separarIdioma } from '@/lib/idioma/idioma'
 import { Inter, Inter_Tight, IBM_Plex_Mono } from 'next/font/google'
 import { LandingChrome } from '@/components/landing-v2/LandingChrome'
+import { dmMono, hostGrotesk } from '@/components/landing-v2/fuentes-de-la-home'
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2'
 import { EntradaAlMarketplace } from '@/components/landing-v2/marketplace/EntradaAlMarketplace'
 import './landing.css'
@@ -74,7 +75,7 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
   return (
     <div
       data-testid="landing-scope"
-      className={`landing-scope ${interTight.variable} ${ibmPlexMono.variable} ${inter.variable}`}
+      className={`landing-scope ${interTight.variable} ${ibmPlexMono.variable} ${inter.variable} ${hostGrotesk.variable} ${dmMono.variable}`}
       style={
         {
           // Bridge to the ported landing CSS custom properties

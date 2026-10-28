@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@leasefy/cadence';
 import { ImportWizard } from '@/components/inmobiliaria/import/ImportWizard';
 import { FotosEnUnZip } from '@/components/inmobiliaria/import/FotosEnUnZip';
+import { AlPublicadorRapido } from '@/components/inmobiliaria/modo-comercial/AlPublicadorRapido';
 
 function ImportarContent() {
   const { t } = useI18n();
@@ -71,7 +72,10 @@ function ImportarContent() {
 export default function ImportarPage() {
   return (
     <PageGuard module="portafolio">
-      <ImportarContent />
+      {/* La cuenta del marketplace trae muchos sin propietario: Excel, enlaces o carpetas (Nico, 27-10). */}
+      <AlPublicadorRapido destino="/publica?perfil=agency&traer=excel">
+        <ImportarContent />
+      </AlPublicadorRapido>
     </PageGuard>
   );
 }

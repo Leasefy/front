@@ -1779,6 +1779,13 @@ export interface RespuestaDeLaFotoDelMantenimiento {
 }
 
 export const mantenimientoApi = {
+  /**
+   * Elimina un arreglo (28-10-2026, sólo `operaciones:delete`: el administrador). Con una cotización aprobada o un
+   * cobro vivo el back responde 409 `MANTENIMIENTO_CON_PLATA`: hay que cancelarlo primero.
+   */
+  async eliminar(id: string): Promise<void> {
+    await apiClient.delete(`${BASE}/mantenimiento/${encodeURIComponent(id)}`);
+  },
   async getAll(params?: { status?: string; consignacionId?: string }): Promise<SolicitudMantenimiento[]> {
     const query = new URLSearchParams();
     if (params?.status) query.set('status', estadoParaElBack(params.status));

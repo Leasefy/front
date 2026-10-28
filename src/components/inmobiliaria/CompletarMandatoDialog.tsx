@@ -16,6 +16,7 @@ import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
 import { ApiError } from '@/lib/api/client';
+import { apuntesDelInmuebleApi } from '@/lib/api/apuntes-del-inmueble.service';
 import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -242,10 +243,12 @@ export async function completeMandatoAndPublish(
     // for this exact payload shape (propertyZone/propertyType optional
     // here, required on ConsignacionFormData — toConsignacionPayload just
     // spreads whatever keys are present).
-    await consignacionesApi.create(
+    const creada = await consignacionesApi.create(
       payload as unknown as Parameters<typeof consignacionesApi.create>[0],
     );
     status = 'created';
+    // El inventario que se anotó en la captación sin propietario (27-10-2026) pasa a la consignación nueva.
+    await inventarioDeLaCaptacion(inmueble.propertyId, (creada as { id?: string } | undefined)?.id);
   } catch (error) {
     // contract.md T-0030 §3.3 — a duplicate mandate is success-equivalent:
     // the mandate exists, which is what the user wanted, so it still
@@ -280,6 +283,25 @@ export async function completeMandatoAndPublish(
       published: false,
       publishErrorMessage: extractErrorMessage(error, 'No pudimos publicarlo.', 'publicarlo'),
     };
+  }
+}
+
+/**
+ * El inventario de la captación sin propietario (`apuntes-del-inmueble`) va a la consignación recién creada. Nunca
+ * frena: si no hay, si falla o si falta la migración, la consignación ya quedó y el inventario se carga a mano.
+ */
+async function inventarioDeLaCaptacion(propertyId: string, consignacionId: string | undefined): Promise<void> {
+  if (!consignacionId) return;
+  try {
+    const apuntes = await apuntesDelInmuebleApi.leer(propertyId);
+    const items = apuntes?.condiciones?.inventario ?? [];
+    if (items.length === 0) return;
+    await consignacionesApi.actualizarInventario(
+      consignacionId,
+      items.map((i, n) => ({ id: `captacion-${n + 1}`, name: i.nombre, quantity: i.cantidad, condition: i.estado, ...(i.notas ? { notes: i.notas } : {}) })),
+    );
+  } catch {
+    // La consignación ya existe; el inventario se puede cargar desde la ficha.
   }
 }
 
@@ -395,6 +417,22 @@ function CuerpoDelMandato({
     setErrorEnCampo({});
     setCambiandoDueno(false);
     setCopropietarios([]);
+    // Lo pactado en la captación sin propietario (Juan, 27-10-2026: «la comisión se negocia en la captación»):
+    // si quedó guardado con el inmueble, arranca con eso. Sin la migración o si falla, los valores de siempre.
+    let vivo = true;
+    apuntesDelInmuebleApi
+      .leer(inmueble.propertyId)
+      .then((a) => {
+        if (!vivo || !a?.condiciones) return;
+        const c = a.condiciones;
+        if (typeof c.comisionPorcentaje === 'number') setCommissionPercent(c.comisionPorcentaje);
+        if (typeof c.comisionDeVentaPorcentaje === 'number') setSaleCommissionPercent(c.comisionDeVentaPorcentaje);
+        if (c.fechaDelContrato) setContractDate(c.fechaDelContrato);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
   }, [inmueble, propietarioInicial]);
 
   // contract-addendum-2.md §A.1/§A.2 — a SALE listing (`monthlyRent === null`)

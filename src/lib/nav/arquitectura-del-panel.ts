@@ -48,6 +48,9 @@ import {
   EnvelopeSimple,
   BookOpenText,
   FolderSimple,
+  Handshake,
+  SunHorizon,
+  Star,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { ROLES_QUE_CONCILIAN, ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
@@ -443,6 +446,14 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       {
         key: 'pipeline', labelKey: 'inmobiliaria.nav.pipelineCorto', href: r('/pipeline'), icon: Kanban, module: 'pipeline', scope: 'comercial',
         pantallas: [
+          // «Tu día» (27-10-2026, investigación de agentes): a quién llamar hoy, con la llamada preparada. Primero.
+          { labelKey: 'inmobiliaria.nav.tuDia', href: r('/pipeline/tu-dia'), icon: SunHorizon, module: 'pipeline', scope: 'comercial' },
+          // Colecciones (28-10-2026): un enlace con los inmuebles que le propones a un cliente; él marca y comenta.
+          { labelKey: 'inmobiliaria.nav.colecciones', href: r('/pipeline/colecciones'), icon: FolderSimple, module: 'pipeline', scope: 'comercial' },
+          // Reseñas (28-10-2026): sólo de clientes de Leasefy; se responden, no se borran.
+          { labelKey: 'inmobiliaria.nav.resenas', href: r('/pipeline/resenas'), icon: Star, module: 'pipeline', scope: 'comercial' },
+          // Comisión compartida (28-10-2026): el que capta propone el reparto y el otro lo acepta; Leasefy no cobra.
+          { labelKey: 'inmobiliaria.nav.comisionCompartida', href: r('/pipeline/comisiones-compartidas'), icon: Handshake, module: 'pipeline', scope: 'comercial' },
           // 🔴 B-07 (18-09-2026): «informe por origen (leads y arriendos por
           // portal) para saber qué portal vale la pena pagar». Cuelga del
           // pipeline y NO de Reportes a propósito: la decide el comercial con
@@ -451,7 +462,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // G-02 (18-09-2026): qué se le manda a cada lead y a quién le calza
           // un inmueble que se libera. Cuelga del pipeline porque la entrada es
           // un LEAD, no un inquilino con preferencias guardadas.
-          { labelKey: 'inmobiliaria.nav.calceDeLeads', href: r('/pipeline/que-ofrecer'), icon: GitMerge, module: 'pipeline', scope: 'comercial' },
+          { labelKey: 'inmobiliaria.nav.calceDeLeads', href: r('/pipeline/oportunidades'), icon: GitMerge, module: 'pipeline', scope: 'comercial' },
           // E-03 y D-02: las visitas con lo que les falta (asesor y aviso al
           // inquilino). Va acá y no en Agenda porque lo que se hace en esta
           // pantalla es trabajo COMERCIAL sobre prospectos; la agenda sigue
@@ -536,6 +547,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           { labelKey: 'inmobiliaria.nav.soportesCorto', href: r('/postulaciones/soportes'), icon: ListChecks, module: 'documentos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', ia: true },
         ],
       },
+      // Firmas (Nico, 28-10-2026): cualquier documento firmado con nuestro código, en el CRM. Todas las cuentas,
+      // también las gratis (por eso `comercial`: abierta sin activar). Enviar pide `documentos:create`.
+      { key: 'firmas', labelKey: 'inmobiliaria.nav.firmas', href: r('/firmas'), icon: Signature, module: 'documentos', scope: 'comercial' },
     ],
   },
 

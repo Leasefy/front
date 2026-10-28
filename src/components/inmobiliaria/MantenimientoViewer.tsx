@@ -113,6 +113,12 @@ export interface MantenimientoViewerProps {
    * propietario» y «La retoma la inmobiliaria»; se llama después del cambio.
    */
   onQuienLaHaceCambio?: () => void | Promise<void>;
+  /**
+   * Nico 28-10-2026: «los admin sí podrían eliminarlos». Sólo llega con
+   * operaciones:delete; la página confirma y el back no deja si hay plata viva.
+   * Está en todos los estados (también cerrada o cancelada).
+   */
+  onEliminar?: (solicitud: SolicitudMantenimiento) => void;
 }
 
 interface TimelineEvent {
@@ -484,6 +490,7 @@ export function MantenimientoViewer({
   onCompletada,
   onCalificado,
   onQuienLaHaceCambio,
+  onEliminar,
 }: MantenimientoViewerProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const [showNoteDialog, setShowNoteDialog] = useState(false);
@@ -516,9 +523,24 @@ export function MantenimientoViewer({
    * Cada entrada sólo aparece si hay quien la atienda Y si el estado la admite:
    * un menú que ofrece cotizar una solicitud ya completada es la misma promesa
    * rota que el botón que contestaba «función en desarrollo». Una solicitud
-   * cerrada o cancelada deja el menú vacío y entonces no se dibuja.
+   * cerrada o cancelada deja el menú vacío y entonces no se dibuja (salvo
+   * «Eliminar», que el administrador tiene en todos los estados).
    */
   const accionesDelMenu = useMemo(() => {
+    if (!solicitud) return [];
+    type Accion = {
+      id: string;
+      etiqueta: string;
+      icono: React.ElementType;
+      tono?: string;
+      alElegir: () => void;
+    };
+    const eliminar: Accion[] = onEliminar
+      ? [{ id: 'eliminar', etiqueta: 'Eliminar', icono: Trash, tono: 'text-danger', alElegir: () => onEliminar(solicitud) }]
+      : [];
+    return [...lasDelEstado(), ...eliminar];
+
+    function lasDelEstado(): Accion[] {
     if (!solicitud) return [];
     const acciones: {
       id: string;
@@ -605,7 +627,8 @@ export function MantenimientoViewer({
     }
 
     return acciones;
-  }, [solicitud, onRequestQuote, onStatusChange, onApproveQuote, onCalificado, t]);
+    }
+  }, [solicitud, onRequestQuote, onStatusChange, onApproveQuote, onCalificado, onEliminar, t]);
 
   const handleAddNote = () => {
     if (solicitud && onAddNote && noteText.trim()) {
@@ -918,13 +941,19 @@ export function MantenimientoViewer({
         {solicitud.status !== 'completed' && solicitud.status !== 'cancelled' && (
           <CajonPie
             izquierda={
-              <IconButton
-                variant="outline"
-                onClick={() => setShowCancelDialog(true)}
-                aria-label={t('inmobiliaria.mantenimiento.cancelRequest')}
-                icon={<Trash className="w-4 h-4" />}
-                className="border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
-              />
+              // Cancelar va con la ✕ de cancelar: la caneca es «Eliminar» (28-10), que borra de verdad.
+              // Sin quien cambie el estado no se ofrece: el diálogo no tendría qué hacer.
+              onStatusChange ? (
+                <IconButton
+                  variant="outline"
+                  onClick={() => setShowCancelDialog(true)}
+                  aria-label={t('inmobiliaria.mantenimiento.cancelRequest')}
+                  title={t('inmobiliaria.mantenimiento.cancelRequest')}
+                  icon={<XCircle className="w-4 h-4" />}
+                  className="border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
+                  data-testid="cancelar-desde-el-pie"
+                />
+              ) : undefined
             }
           >
             {/* «Agregar nota» sólo aparece si alguien puede guardarla. El

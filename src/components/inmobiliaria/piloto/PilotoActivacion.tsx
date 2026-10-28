@@ -119,9 +119,10 @@ function QueVaAPasar({ d }: { d: PilotoActivoResponse }) {
 }
 
 export function PilotoActivacion() {
-  const { data, isLoading, error, notAvailable, cambiando, cambiar, refetch } = usePilotoActivo()
+  const { data, isLoading, error, notAvailable, cambiando, cambiar, contratar, refetch } = usePilotoActivo()
   const flota = usePilotoFlotaCompartida()
   const [confirmando, setConfirmando] = useState(false)
+  const [contratando, setContratando] = useState(false)
   const [apagando, setApagando] = useState(false)
 
   // Un micro viejo (404) o sin dato: no se pinta nada inventado.
@@ -163,9 +164,30 @@ export function PilotoActivacion() {
     )
   }
 
+  const contratarlo = async () => {
+    const r = await contratar()
+    if (r.ok) {
+      void flota.refetch()
+      toast.success('Contrataste el Piloto automático: ya no vence.')
+      return { ok: true }
+    }
+    if (!pideSegundoFactor(r.fallo)) {
+      toast.error(
+        mensajeParaLaPersona(r.fallo, {
+          porDefecto: 'No se pudo contratar el Piloto automático.',
+          accion: 'contratar el Piloto automático',
+        }),
+      )
+    }
+    return { ok: false, fallo: r.fallo }
+  }
+
   const sePuedePrender =
     puede && data.sePuedeActivar && (data.motivo === 'sin_activar' || data.motivo === 'apagado_por_la_inmobiliaria')
   const sePuedeApagar = puede && data.motivo === 'activo'
+  // Contratarlo desde el panel (Nico, 27-10-2026: $900 más por inmueble): en la prueba o cuando terminó.
+  const sePuedeContratar = puede && data.sePuedeContratar === true && (data.motivo === 'activo' || data.motivo === 'prueba_terminada')
+  const accionContratar = { label: 'Contratar el Piloto', onClick: () => setContratando(true), cargando: cambiando }
   const requisitos = data.requisitos ?? []
 
   return (
@@ -175,7 +197,8 @@ export function PilotoActivacion() {
         titulo={titulo}
         icon={data.activo ? <Rocket weight="duotone" /> : <Power weight="duotone" />}
         data-testid="piloto-activacion-estado"
-        {...(sePuedePrender
+        {...(sePuedeContratar ? { accion: accionContratar } : {})}
+        {...(sePuedePrender && !sePuedeContratar
           ? {
               accion: {
                 // ACT-09: contratado con Leasefy no tiene prueba que ofrecer.
@@ -243,6 +266,32 @@ export function PilotoActivacion() {
         onConfirmar={prender}
         onCerrar={() => {
           setConfirmando(false)
+          void refetch()
+        }}
+      />
+
+      <ConfirmarAutomatico
+        abierto={contratando}
+        quien="el Piloto"
+        pilotoActivo
+        titulo="¿Contratar el Piloto automático?"
+        descripcion="Deja de vencer: sigue trabajando a tu nombre en tu inmobiliaria."
+        explicacion={
+          <div className="space-y-3" data-testid="piloto-contratar-que-va-a-pasar">
+            <p>
+              Cuesta <span className="font-medium">{formatCurrency(900)} más por inmueble al mes</span>, más IVA, y se suma a tu cobro
+              de Leasefy desde el próximo mes.
+              {data.prueba && !data.prueba.terminada ? ` Lo que queda de tu prueba (hasta el ${fecha(data.prueba.hasta)}) no se cobra.` : ''}
+            </p>
+            <p className="text-fg-muted">Lo apagas cuando quieras desde esta misma página y lo que elegiste en cada agente queda guardado.</p>
+            <p className="text-fg-muted">Para que quede a tu nombre, te pedimos el código de tu aplicación de autenticación.</p>
+          </div>
+        }
+        textoSi="Sí, contratarlo"
+        textoVerificar="Verificar y contratar"
+        onConfirmar={contratarlo}
+        onCerrar={() => {
+          setContratando(false)
           void refetch()
         }}
       />

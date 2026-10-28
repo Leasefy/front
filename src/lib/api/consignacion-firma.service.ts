@@ -29,7 +29,8 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:300
 
 // ── Multipart (con sesión) ───────────────────────────────────────────────
 
-async function enviarFormulario<T>(ruta: string, formulario: FormData, porDefecto: string): Promise<T> {
+/** Exportada para Firmas (28-10-2026), que sube su PDF igual. */
+export async function enviarFormulario<T>(ruta: string, formulario: FormData, porDefecto: string): Promise<T> {
   const token = getAccessToken();
   let respuesta: Response;
   try {
@@ -60,7 +61,7 @@ async function enviarFormulario<T>(ruta: string, formulario: FormData, porDefect
 
 // ── Sin sesión (página pública) ──────────────────────────────────────────
 
-async function sinSesion<T>(method: 'GET' | 'POST', ruta: string, body?: unknown): Promise<T> {
+export async function sinSesion<T>(method: 'GET' | 'POST', ruta: string, body?: unknown): Promise<T> {
   let respuesta: Response;
   try {
     respuesta = await fetch(`${BACKEND_URL}${ruta}`, {

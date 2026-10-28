@@ -298,7 +298,7 @@ function PostulacionesContenido() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Ronda 22: el encabezado de todas las pantallas. */}
       <EncabezadoDePantalla
-        seccion={tr('Captación y arriendo')}
+        seccion={tr('Arrendamientos')}
         titulo={tr("Postulaciones")}
         descripcion={tr("Revisa a quienes se postularon y decide a quién le arriendas.")}
         // Revisora r23 (Postulaciones #2): el recorrido completo, en la ayuda del encabezado (antes al pie, tras una raya).

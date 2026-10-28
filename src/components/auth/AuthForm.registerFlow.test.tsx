@@ -150,11 +150,11 @@ describe('AuthForm register — single-picker routing', () => {
     expect(pushMock).toHaveBeenCalledWith('/onboarding/seleccionar-rol')
   })
 
-  it('(c) with defaultRole=agency, routes straight to /onboarding/inmobiliaria', async () => {
+  it('(c) with defaultRole=agency, routes straight to the short sign-up of the publisher (Nico 27-10: never the long wizard)', async () => {
     signUpWithEmailMock.mockResolvedValue({ requiresConfirmation: true })
     await submitRegister({ defaultRole: 'agency' })
     expect(lastEmailRedirectTo()).toContain(
-      `returnUrl=${encodeURIComponent('/onboarding/inmobiliaria')}`,
+      `returnUrl=${encodeURIComponent('/publica?perfil=agency')}`,
     )
   })
 
@@ -165,14 +165,14 @@ describe('AuthForm register — single-picker routing', () => {
     signUpWithEmailMock.mockResolvedValue({ requiresConfirmation: true })
     await submitRegister({ defaultRole: 'agency' })
     expect(lastEmailRedirectTo()).toBe(
-      `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent('/onboarding/inmobiliaria')}&tipo=registro`,
+      `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent('/publica?perfil=agency')}&tipo=registro`,
     )
   })
 
-  it('(c2) auto-confirmed with defaultRole=landlord pushes to /onboarding/propietario', async () => {
+  it('(c2) auto-confirmed with defaultRole=landlord pushes to the publisher', async () => {
     signUpWithEmailMock.mockResolvedValue({ requiresConfirmation: false })
     await submitRegister({ defaultRole: 'landlord' })
-    expect(pushMock).toHaveBeenCalledWith('/onboarding/propietario')
+    expect(pushMock).toHaveBeenCalledWith('/publica?perfil=landlord')
   })
 
   it('(d) a returnUrl keeps precedence over the onboarding fallback', async () => {

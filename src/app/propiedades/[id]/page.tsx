@@ -33,7 +33,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
     <LandingChrome activo="inmuebles">
       {/* El header es `position:fixed` y mide 64px (76 desde lg): sin este
           hueco la ficha arranca por debajo de él. */}
-      <main id="main-content" className="pt-16 lg:pt-[76px]">
+      <main id="main-content" className="pt-[68px]">
         <PropertyDetailView
           propertyId={resolvedParams.id}
           basePath="/propiedades"

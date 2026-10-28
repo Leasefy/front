@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { CaretDown, CheckCircle, ImageSquare, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
 
-import { fraseDeLoQueFalta, loQueFalta, tituloDe, type InmuebleRapido } from '@/lib/publica/borrador';
+import { fraseDeLoQueFalta, loQueFalta, tituloDe, precioEnFrase, type InmuebleRapido } from '@/lib/publica/borrador';
 import type { FotoGuardada } from '@/lib/publica/fotos-guardadas';
 import { cn } from '@/lib/utils';
 
@@ -101,10 +101,7 @@ export function FilaDeInmueble({
         </span>
         <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
           {i.precio ? (
-            <span className="font-mono tabular-nums text-fg-muted">
-              $ {i.precio.toLocaleString('es-CO')}
-              {i.operacion === 'rent' ? ' / mes' : ''}
-            </span>
+            <span className="font-mono tabular-nums text-fg-muted">{precioEnFrase(i)}</span>
           ) : null}
           {i.direccion && <span className="truncate text-fg-subtle">{i.direccion}</span>}
           <EtiquetaDeOrigen i={i} sinEnlace />

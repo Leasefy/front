@@ -79,7 +79,7 @@ const ID_DE_LA_POLIZA: Record<CampoDeLaPoliza, string> = {
 const PESOS = plataEnPantalla(localeDeLasCifras, { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 const MODALIDADES: { valor: ModalidadDeAdministracion | ''; nombre: string; ayuda: string }[] = [
-  { valor: '', nombre: 'Como hoy', ayuda: 'La administración del mandato, si tiene, se le cobra al inquilino aparte del canon.' },
+  { valor: '', nombre: 'Como hoy', ayuda: 'La administración del inmueble, si tiene, se le cobra al inquilino aparte del canon.' },
   { valor: 'INCLUIDA_EN_CANON', nombre: 'Incluida en el canon', ayuda: 'El inquilino paga sólo el canon.' },
   {
     valor: 'LA_PAGA_EL_PROPIETARIO',

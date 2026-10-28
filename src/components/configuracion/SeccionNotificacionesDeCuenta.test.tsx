@@ -49,7 +49,7 @@ beforeEach(() => {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  estado.settings = { emailApplications: false, emailVisits: true, emailContracts: false, emailMessages: false, emailMarketing: false }
+  estado.settings = { emailApplications: false, emailVisits: true, emailContracts: false, emailMessages: false, emailMarketing: false, emailPlanDeLeasefy: true }
   estado.errorCrudo = null
   updateSettings.mockResolvedValue(undefined)
 })

@@ -109,7 +109,7 @@ describe('Propietarios · ?falta=tipo-de-documento (AVISO-TIPO-DOC)', () => {
       root.render(<PropietariosPage />)
     })
     expect(nombres().sort()).toEqual(['AVISO-TIPO-DOC Sin documento', 'Inversiones Laboratorio S.A.S.', 'QA-FACT E2 Propietario'])
-    expect(barra()?.textContent).toContain('Se muestran 3 propietarios con mandato y el documento por completar')
+    expect(barra()?.textContent).toContain('Se muestran 3 propietarios con inmueble consignado y el documento por completar')
   })
 
   it('🔴 «Quitar filtro» vuelve a la lista entera y saca el parámetro de la barra', async () => {

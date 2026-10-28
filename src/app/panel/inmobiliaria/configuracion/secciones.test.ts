@@ -239,3 +239,15 @@ describe('QA 04-10 (CF-11): Notificaciones es de cada persona', () => {
     expect(puedeVerSeccion(notificaciones, { ...ctx(), agencyRole: 'AGENTE' })).toBe(true);
   });
 });
+
+describe('la cuenta de un agente inmobiliario (Nico, 27-10-2026: «todo, sin lo de equipo»)', () => {
+  it('no ve Equipo ni Permisos; lo demás, igual que el administrador', () => {
+    const ctx = { isAdmin: true, canAccess: () => true, agencyRole: 'ADMIN' }
+    const deLaInmobiliaria = seccionesVisibles(ctx).map((s) => s.id)
+    const delAgente = seccionesVisibles({ ...ctx, cuentaDeAgente: true }).map((s) => s.id)
+    expect(deLaInmobiliaria).toEqual(expect.arrayContaining(['equipo', 'permisos']))
+    expect(delAgente).not.toContain('equipo')
+    expect(delAgente).not.toContain('permisos')
+    expect(delAgente).toEqual(deLaInmobiliaria.filter((id) => id !== 'equipo' && id !== 'permisos'))
+  })
+})

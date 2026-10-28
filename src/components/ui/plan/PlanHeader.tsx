@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Minus, X, House, Clock, Heart, Compass, Receipt, Lifebuoy, Handshake } from '@phosphor-icons/react';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Minus, X, House, Clock, Heart, Compass, Receipt, Lifebuoy, Handshake, Gift } from '@phosphor-icons/react';
 import { SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { botonDelEncabezadoActivo } from '@/lib/nav/boton-del-encabezado';
@@ -1330,6 +1330,20 @@ export function PlanHeader({
                   >
                     <Crown className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
                     {locale === 'es' ? 'Mi Plan' : 'My Plan'}
+                  </Link>
+                </DropdownListItem>
+              )}
+              {/* 28-10-2026 (Nico): «Refiere y gana» vive en el menú de la cuenta y en «Tu plan». Para la inmobiliaria,
+                  el agente y el propietario que arrienda solo; no para el propietario de una inmobiliaria (no paga Leasefy). */}
+              {(menuDeLaInmobiliaria || (isLandlord && !sinPlanPropio)) && (
+                <DropdownListItem asChild>
+                  <Link
+                    href={menuDeLaInmobiliaria ? '/panel/inmobiliaria/refiere-y-gana' : '/panel/refiere-y-gana'}
+                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
+                    data-testid="menu-refiere-y-gana"
+                  >
+                    <Gift className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
+                    {locale === 'es' ? 'Refiere y gana' : 'Refer and earn'}
                   </Link>
                 </DropdownListItem>
               )}

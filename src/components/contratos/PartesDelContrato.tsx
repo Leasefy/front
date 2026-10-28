@@ -711,10 +711,10 @@ function Propietarios({
                 className="underline underline-offset-2 hover:text-foreground"
                 data-testid="corregir-en-el-inmueble"
               >
-                corrígelos en el mandato del inmueble
+                corrígelos en la ficha del inmueble
               </Link>
             ) : (
-              'corrígelos en el mandato del inmueble'
+              'corrígelos en la ficha del inmueble'
             )}
             .
           </span>
@@ -822,8 +822,8 @@ function EditarPropietarios({
     } catch (e) {
       toast.error(
         mensajeParaLaPersona(e, {
-          porDefecto: 'No se pudo abrir el mandato del inmueble.',
-          accion: 'abrir el mandato del inmueble',
+          porDefecto: 'No se pudo abrir la ficha del inmueble.',
+          accion: 'abrir la ficha del inmueble',
         }),
       )
     } finally {

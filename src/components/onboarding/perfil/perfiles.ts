@@ -1,6 +1,6 @@
 import type { PerfilDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 
-export type ValorDePerfil = 'tenant' | 'landlord' | 'inmobiliaria'
+export type ValorDePerfil = 'tenant' | 'landlord' | 'inmobiliaria' | 'agente'
 
 export interface OpcionDePerfil {
   valor: ValorDePerfil
@@ -51,6 +51,16 @@ export const PERFILES: OpcionDePerfil[] = [
     // El neón azul queda a media altura del muro; centrado apenas arriba
     // sobrevive al cuadrado de la columna compacta y a la miniatura de 44 px.
     encuadre: '50% 45%',
+  },
+  {
+    // Nico, 27-10-2026: «ya debemos de pensar no solo en propietarios e inmobiliarias, si no en agentes
+    // inmobiliarios». Usa la plataforma de la inmobiliaria con su nombre (registro corto, en el publicador).
+    valor: 'agente',
+    bandera: 'agency',
+    titulo: 'Agente inmobiliario',
+    descripcion: 'Publica los inmuebles de tus clientes y lleva a tus interesados hasta el contrato.',
+    imagen: '/internas/para/img/fotos/agente-en-el-escritorio.webp',
+    encuadre: '50% 40%',
   },
 ]
 

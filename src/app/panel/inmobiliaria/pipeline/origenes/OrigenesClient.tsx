@@ -135,7 +135,7 @@ export function OrigenesClient() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Captación y arriendo"
+        seccion="Arrendamientos"
         titulo="Origen de los interesados"
         descripcion="Cuántos interesados trajo cada portal y cuántos terminaron en arriendo: con eso se decide qué cuenta seguir pagando."
         ayuda={

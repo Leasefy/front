@@ -28,23 +28,24 @@ describe('perfil de onboarding', () => {
 
   it('manda al onboarding del perfil elegido, o al selector si no eligió', () => {
     expect(rutaDeOnboarding('tenant')).toBe('/onboarding/inquilino')
-    expect(rutaDeOnboarding('landlord')).toBe('/onboarding/propietario')
-    expect(rutaDeOnboarding('agency')).toBe('/onboarding/inmobiliaria')
+    // 🔴 Nico, 27-10: quien viene a publicar vuelve al registro corto del publicador, nunca al asistente largo.
+    expect(rutaDeOnboarding('landlord')).toBe('/publica?perfil=landlord')
+    expect(rutaDeOnboarding('agency')).toBe('/publica?perfil=agency')
     expect(rutaDeOnboarding(null)).toBe(RUTA_DEL_SELECTOR_DE_PERFIL)
     expect(rutaDeOnboarding(undefined)).toBe('/onboarding/seleccionar-rol')
   })
 
-  it('lleva el destino al onboarding del inquilino y del propietario, que saben volver (Juan, 15-10)', () => {
+  it('lleva el destino al onboarding del inquilino, que sabe volver (Juan, 15-10); el propietario va al publicador', () => {
     expect(rutaDeOnboardingConRegreso('tenant', '/aprobacion?canon=2000000')).toBe(
       '/onboarding/inquilino?returnUrl=%2Faprobacion%3Fcanon%3D2000000',
     )
-    expect(rutaDeOnboardingConRegreso('landlord', '/publicar')).toBe('/onboarding/propietario?returnUrl=%2Fpublicar')
+    expect(rutaDeOnboardingConRegreso('landlord', '/publicar')).toBe('/publica?perfil=landlord')
   })
 
   it('sin destino, con el inicio, en el selector o en la inmobiliaria, la ruta de siempre', () => {
     expect(rutaDeOnboardingConRegreso('tenant', null)).toBe('/onboarding/inquilino')
     expect(rutaDeOnboardingConRegreso('tenant', '/')).toBe('/onboarding/inquilino')
     expect(rutaDeOnboardingConRegreso(null, '/aprobacion')).toBe(RUTA_DEL_SELECTOR_DE_PERFIL)
-    expect(rutaDeOnboardingConRegreso('agency', '/aprobacion')).toBe('/onboarding/inmobiliaria')
+    expect(rutaDeOnboardingConRegreso('agency', '/aprobacion')).toBe('/publica?perfil=agency')
   })
 })

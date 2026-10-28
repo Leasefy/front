@@ -1,1624 +1,650 @@
-# Leasefy Design System — Cadence
+# DESIGN.md — Leasefy
 
-> **Read this BEFORE building or modifying any UI.** This is the source of truth for visual style,
-> component patterns, and anti-patterns in `Leasefy/front`.
+> El sistema de diseño de Leasefy: cómo se ve, cómo se arma y cómo habla TODO lo que hacemos (panel de la
+> inmobiliaria, portales, marketplace, landing, admin, chat de Ori, app nativa, correos y PDF).
+> Identidad vigente: **Cadence 2 · «Papel, tinta y voltaje»** (Nico, 20 → 21-10-2026).
+> Revisado contra el código el **28-10-2026** (front `marketplace-facil`, Cadence `identidad-leasefy`, `app-expo`
+> `master`, landing estática).
 >
-> This app now uses the **Cadence design system**, consumed via the shared **`@leasefy/cadence`**
-> Tailwind preset and the CSS variables in `src/app/globals.css` (already migrated to Cadence). The
-> canonical reference is
-> [`cadence/reference/Cadence Design System.dc.html`](../../cadence/reference/Cadence%20Design%20System.dc.html).
+> Lo carga la skill `diseno-leasefy`. Orden de autoridad cuando algo choca:
+> 1. Lo que Nico eligió viéndolo (se hace tal cual).
+> 2. Los tokens y piezas de Cadence (`cadence/src/styles/tokens.css`, `src/components/ui/*`).
+> 3. Este documento. Si contradice el código de Cadence, se corrige este documento.
 >
-> Color details live in [`COLOR_SYSTEM.md`](./COLOR_SYSTEM.md) — this file references it instead of duplicating.
-
----
-
-## 1. Design Principles
-
-Cadence is **editorial, warm, and refined**. Beauty comes from typography, generous whitespace, and a
-single confident accent — **cobalt `#1A40FF`** on a warm-neutral foundation. Display and body text are
-**Schibsted Grotesk**; every number, label, eyebrow, code, and ID is **JetBrains Mono**.
-
-### Always
-- ✅ **Warm neutral + one cobalt accent** — warm off-white surfaces, warm ink, a single accent per moment
-- ✅ **Generous whitespace** — editorial rhythm on a 4-pt scale; density is the enemy
-- ✅ **Soft, distinct radii** — scale `8 / 14 / 22 / 32 / 999`; **cards ≈ 22 (`rounded-lg`)**, **buttons are full pills (`rounded-full`, radius 999)**
-- ✅ **Whisper-soft elevation** — `flat` / `shadow-sm` / `shadow-md` for floating feel; reserve `shadow-lg` for overlays
-- ✅ **Schibsted Grotesk for text, JetBrains Mono for all numerals/labels** — tabular numbers by default
-- ✅ **Phosphor icons only** (`@phosphor-icons/react`), `Regular` default / `Fill` for active
-- ✅ **WCAG AA** — verified contrasts; ratio ≥ 4.5:1 for normal text
-- ✅ **Warm-dark parity** — every role token has a warm `dark:` counterpart (see `COLOR_SYSTEM.md`)
-- ✅ **Brand gradients on hero/brand surfaces** — Aurora / Spectrum / Dusk / Daylight, always with grain overlay
-
-### Never
-- ❌ **No glass morphism on content** (only the floating public navbar may use it — §10.1)
-- ❌ **No second accent** — cobalt is the only brand hue; supporting hues are for charts only
-- ❌ **No uppercase button labels** — button text is **sentence case** (eyebrows/labels stay mono uppercase)
-- ❌ **No raw framework palette colors** that bypass the Cadence preset (`bg-blue-500` instead of `bg-primary`)
-- ❌ **No hardcoded hex** outside `globals.css` — always go through CSS vars / Cadence tokens
-- ❌ **No `font-sans` on numerals** — numbers use `font-mono` (JetBrains Mono), tabular
-- ❌ **No neon glow / heavy drop shadows** beyond `shadow-lg`; keep elevation whisper-soft
-- ❌ **No gradients on cards, buttons, or data UI** — gradients are for hero/brand surfaces only
-
-> **Reversed from the old Manus/Leasefy-UI rules:** gradients are now **encouraged** on hero/brand
-> surfaces, and primary buttons are now **pill-shaped + sentence case** (no longer uppercase).
-
----
-
-## 2. Tokens — Quick Reference
-
-> Full color rules: [`COLOR_SYSTEM.md`](./COLOR_SYSTEM.md). Source of truth: `@leasefy/cadence` preset
-> + `src/app/globals.css`.
-
-### Color Roles (Semantic — Prefer These)
-
-> ⚠️ **Esta tabla se corrigió el 2026-08-09 contra el preset real.** La versión
-> anterior listaba seis tokens que **no existen** (`surface-raised`, `surface-sunken`,
-> `surface-brand`, `on-primary`, `fg-secondary`, `border-subtle`). Tailwind no falla
-> con una clase que no conoce: **no emite regla y el elemento queda transparente**.
-> Así es como `bg-surface-brand` dejó 29 pantallas con el avatar sin fondo.
+> Este mismo archivo vive en dos lugares con el mismo texto: la skill `diseno-leasefy` (`DESIGN.md`) y el front
+> (`docs/DESIGN.md`). Si cambias uno, copia el otro en el mismo cambio.
 >
-> Para verificar uno: `node -e "console.log(Object.keys(require('./node_modules/@leasefy/cadence/tailwind-preset.cjs').theme.extend.colors))"`
-> — o medilo en el navegador con `getComputedStyle`, que es lo único que no miente.
+> **El detalle de cada pieza** (cajón, modal, movimiento, toaster, estados, insignias, filtros, plata, primitivas,
+> sello, datos de muestra) está en el front, `docs/DESIGN-PIEZAS.md`: es el DESIGN.md anterior con su numeración. Sus
+> §1, §2 (valores), §3 y §10 describen Cadence 1 (Schibsted Grotesk, JetBrains Mono, degradados Aurora) y no aplican;
+> si algo de ese archivo choca con éste, gana éste. **Los comentarios del código que citan «DESIGN.md §4», «§8b»,
+> «§17», «§Drawers», «§Toaster»… usan esa numeración anterior: búscalos en `docs/DESIGN-PIEZAS.md`.**
 
-| Token | Use For |
-|---|---|
-| `bg-surface` / `text-fg` | Elevated surface (white) + body text (`#14130F`) |
-| `bg-bg` | Page background del panel (`#FBFAF9`) |
-| `bg-surface-muted` | Wells, insets, subtle sections (`#F4F2EF`) |
-| `bg-surface-hover` / `bg-surface-pressed` / `bg-surface-selected` | Estados de fila/celda |
-| `bg-primary` / `text-primary-fg` | CTAs, focus rings, selected states (cobalt `#1A40FF`) |
-| `bg-primary-soft` | Cobalt-tinted highlight (`#EDF1FF`) — selected, hover-emphasis |
-| `text-fg-muted` / `text-fg-subtle` | Secondary (`#6E6A63`) / faintest (`#726E68`) text |
-| `border-border` / `border-border-faint` / `border-border-strong` | Default (`#E5E2DC`) / hairline (`#ECEAE6`) / énfasis |
-| `text-danger` / `bg-danger-soft` | Destructive / error states |
+## Índice
 
-> ⚠️ **Esta tabla se corrigió el 2026-08-07 contra el CSS realmente generado.** Los nombres que
-> listaba antes —`bg-surface-raised`, `bg-surface-sunken`, `bg-surface-brand`, `text-fg-secondary`,
-> `border-border-subtle`, `text-error`, `bg-error-bg`— **no existen en este repo**. Los valores hex sí
-> eran correctos: lo que estaba una generación atrás eran los nombres.
->
-> Una clase de Tailwind inexistente no falla: simplemente no genera nada. `tsc`, `lint` y `next build`
-> pasan en verde y el elemento hereda lo que haya. En el fondo por defecto muchas veces *se ve bien*,
-> y por eso esto sobrevivió tanto.
->
-> **La trampa peor:** `text-fg-muted` existe en los dos vocabularios con valores distintos. Acá es el
-> gris **más fuerte** (`#6E6A63`); el más tenue es `text-fg-subtle` (`#726E68`). Quien venga del doc
-> viejo va a elegir el contrario del que quiere.
->
-> **Para verificar si un token existe, preguntale al preset** — no lo cuentes con grep (el uso alto
-> no prueba que exista; el uso cero no prueba que no) ni lo midas en el navegador (Tailwind sólo
-> emite las clases que encuentra en el código, así que una clase válida pero sin usar se ve idéntica
-> a una inexistente):
->
-> ```bash
-> node -e "const p=require('@leasefy/cadence/tailwind-preset');
->   const c=(p.default||p).theme.extend.colors;
->   const f=[];(function w(o,k){for(const[a,b]of Object.entries(o)){const n=k?k+'-'+a:a;
->     b&&typeof b==='object'?w(b,n):f.push(n.replace(/-DEFAULT\$/,''))}})(c,'');
->   console.log(f.includes(process.argv[1])?'existe':'NO existe')" surface-raised
-> ```
->
-> Y ojo con lo que define `tailwind.config.ts` encima del preset: ahí `error` es una escala numérica
-> (`error-50/100/500/700`), no un par `bg`/`fg` — otra razón por la que `bg-error-bg` nunca funcionó.
-
-### Feedback (los cuatro tonos)
-| Tinte | Texto |
-|---|---|
-| `bg-success-soft` (`#E8F4EA`) | `text-success` (`#307E57`) |
-| `bg-warning-soft` (`#FBF1DD`) | `text-warning` (`#BF752B`) |
-| `bg-danger-soft` (`#FBE9E6`) | `text-danger` (`#C0392B`) |
-| `bg-info-soft` (`#E6F0FA`) | `text-info` (`#3C83F6`) |
-
-El sufijo es **`-soft`**, no `-bg`, y el texto va **sin sufijo**, no `-fg`.
-
-⚠️ **Tailwind no puede aplicar opacidad a estos tokens.** Resuelven a un `var()` con color literal (no
-formato de canales), así que `bg-danger-soft/70` **no se genera** y el hover queda muerto. Usá
-`hover:opacity-*`.
-
-### Scales (When Roles Don't Fit)
-Primary cobalt (`primary-50…700`), warm Neutral (`neutral-50…950`), and feedback (`success` / `warning`
-/ `danger` / `info`, each with a `-soft` tint). Supporting hues (cyan, green, amber, coral, violet,
-peach) are for charts/categorical data only. All resolve through CSS variables with warm-dark
-counterparts.
-
-### Radius
-```
-sm: 8px    md: 14px   lg: 22px   xl: 32px   pill/full: 999px
-```
-⚠️ Cadence **remapea toda la escala** de Tailwind: acá `rounded-lg` son 22px, no los 8px de siempre, y
-`rounded` son 4px. Markup copiado de otro proyecto Tailwind sale con las esquinas infladas. Para un
-pozo o una caja chica, `rounded-sm` (8px) es el equivalente al `rounded-lg` de un repo normal.
-- **Buttons / inputs (action)**: `rounded-full` (pill, radius 999)
-- **Cards**: `rounded-lg` (≈ 22px)
-- **Pills / chips / badges**: `rounded-full`
-- **Text inputs / small controls**: `rounded-md` (14px)
-- **Hero / large feature panels**: `rounded-xl` (32px)
-
-### Elevation (whisper-soft)
-```
-flat   1px border, no shadow                         → resting cards, inputs
-sm     0 1px 2px rgba(20,19,15,.06)                  → raised cards, chips
-md     0 4px 16px rgba(20,19,15,.08)                 → hover, dropdowns, popovers
-lg     0 12px 36px rgba(20,19,15,.12)                → modals, drawers, overlays
-```
-No `shadow-xl`/neon. Brand gradients carry their own grain overlay, not a glow.
-
-### Spacing (4-pt scale)
-```
-xs 4    sm 8    md 12   lg 16   xl 24   2xl 32   3xl 48   4xl 64   5xl 96
-```
-Prefer these steps for gap/padding/margins. Section vertical rhythm is generous — `2xl`→`4xl` between
-major blocks. Let elements breathe.
-
-### Z-Index Scale
-```
-dropdown: 10    sticky: 20    fixed: 30    modal-backdrop: 40
-modal: 50       popover: 60   tooltip: 70  toast: 80   max: 100
-```
-**Drawers, modals → `z-50`.** Toaster sits above everything.
-
-### Motion
-Resumen — el sistema completo (tokens, primitivas, cuándo usar cuál) está en **§8b Movimiento**.
-- **Durations**: `duration-instant` 100ms · `duration-fast` 150ms (presión, salidas) · `duration-base` 200ms (por defecto) · `duration-slow` 300ms (paneles, página, colapsables) · `duration-reveal` 500ms (revelados, cifras)
-- **Easing**: `ease-enter` (lo que entra, desacelera) · `ease-exit` (lo que sale, acelera) · `ease-emphasis` `cubic-bezier(0.32,0.72,0,1)` (paneles) · `ease-spring` (rebote leve: presión, toggles)
-- **Press feedback**: controles interactivos `active:scale-[0.97]` con `ease-spring` (el `Button` ya lo trae)
-- **Hover lift**: `-translate-y-0.5` + upgrade to `shadow-md` (`motionClasses.hoverLift`)
+1. La idea
+2. Mapa de la plataforma
+3. Color
+4. Letra
+5. Forma: la esquina
+6. Profundidad: sombras, líneas y capas
+7. Espacio, retícula y anchos
+8. Íconos
+9. Ilustración, orbes e imágenes
+10. Movimiento
+11. Las piezas, y cuándo va cada una
+12. Patrones de pantalla
+13. Por superficie
+14. Voz y tono
+15. Responsive y accesibilidad
+16. Lo que nunca
+17. La vara: cómo se mide
+18. Estado actual y deuda (medido el 28-10-2026)
+19. Dónde vive cada cosa
+20. Cómo pedirle diseño a otro agente o a otra IA
 
 ---
 
-## 3. Typography
+## 1. La idea
 
-**2-font system** loaded via `next/font` in `src/app/layout.tsx`:
+Leasefy es el software con el que una inmobiliaria de Colombia administra sus arriendos —contratos, cobro, giros a
+propietarios, contabilidad, captación— con agentes de IA que hacen parte del trabajo, más el marketplace donde
+inquilinos y propietarios encuentran inmuebles. Lo usa gente que maneja plata ajena todos los días: necesita leer
+rápido, no equivocarse y sentir que el sistema sabe de inmobiliarias.
 
-| Font | Tailwind class | Use for |
-|---|---|---|
-| **Schibsted Grotesk** | `font-sans` (default) | All display + headings (h1–h6) + body, paragraphs, UI labels |
-| **JetBrains Mono** | `font-mono` | **All numerals**, labels, eyebrows, code, IDs, technical data — tabular by default |
+**Cómo se siente:** papel cálido, tinta y una sola chispa de azul eléctrico. Editorial y sereno, con el rigor de una
+herramienta financiera. Nico (20-10-2026): «quiero nuestra propia marca, que no se sienta que es IA». La identidad
+mezcla los botones de Mollie, lo moderno de OCI, el grano y la limpieza de ElevenLabs, la disposición de Clay y el
+rigor de Baselayer, sin perder el azul. La vara de calidad es Stripe, Linear, Mercury y Ramp.
 
-### Type Roles
-| Role | Size / Line | Tracking | Weight | Font |
-|---|---|---|---|---|
-| `.text-display` | 64 / 68 | −3.5% | 600 | Schibsted |
-| `.text-h1` | 32 / 38 | −2.5% | 600 | Schibsted |
-| `.text-h2` | 22 / 28 | −1.5% | 600 | Schibsted |
-| `.text-subtitle` | 18 / 26 | −1% | 500 | Schibsted |
-| `.text-overline` | 12 (uppercase) | tracking-widest | 400 | **Mono** |
-| `.text-body-lg` | 18 / 27 | — | 400 | Schibsted |
-| `.text-body` | 16 / 25 | — | 400 | Schibsted |
-| `.text-body-sm` | 14 / 21 | — | 400 | Schibsted |
-| `.text-caption` | 13 / 19 | — | 400 | Schibsted |
-| `.text-label` | 11 (uppercase) | tracking-wide | 400 | **Mono** |
-| `.text-numeric` / `.stat-number` | tabular | — | 500 | **Mono** |
+**Cinco principios**, en este orden cuando chocan:
 
-> Corregido el 2026-08-07 contra `globals.css`: la fila del eyebrow decía `.text-eyebrow` y la del
-> título `.text-title`, y **ninguna de las dos clase existe** (cero usos en el código). El overline es
-> `.text-overline`; para el título usá `.text-h2`. `.text-label` son 11px, no 14.
+1. **La tarea primero.** Cada pantalla se arma por el trabajo que la persona vino a hacer y en el orden en que lo
+   hace (§12.1). Cambiar colores o íconos sobre el mismo flujo NO cuenta como diseño (Nico, 21-10: «no solo colocarle
+   la UI nueva»).
+2. **Una sola chispa.** El voltaje `#1A40FF` marca lo que se hace: una acción principal por pantalla. Todo lo demás es
+   papel, tinta y grises.
+3. **La cifra manda.** Cifras en DM Mono, enteras, alineadas y con su definición a mano. Nunca un dato inventado.
+4. **Calma.** Títulos livianos, aire, sombras que casi no se ven, estados con punto y palabra. Nada grita.
+5. **Hecho por nosotros.** Íconos propios, ilustraciones 3D propias, fotos del producto real. Ni brillos, ni
+   estrellitas, ni degradados morados, ni «✨ IA».
 
-### Rules
-- Headings (h1–h6) use Schibsted Grotesk (`font-sans`) with the role's negative tracking — don't add a separate heading font.
-- **Numbers → always `font-mono` / `.text-numeric` / `.stat-number`** (JetBrains Mono, `tabular-nums`).
-- **Eyebrows, labels, overlines → mono UPPERCASE** with +10% tracking.
-- **Button labels → sentence case** in Schibsted Grotesk medium (NOT mono, NOT uppercase). This reverses the old Manus rule.
-- Body line-height follows the role table (≈ 1.5–1.55); display/headings are tight via negative tracking.
+Y dos exigencias de Nico que aplican a todo: **impacto visual real** («wow») en cada pantalla, decidido y construido
+sin rondas de propuestas (21-10), y **responsive perfecto** en celular, tableta y escritorio, claro y oscuro (21-10).
 
 ---
 
-## 4. Component Patterns
+## 2. Mapa de la plataforma
 
-### Buttons (`src/components/ui/button.tsx`)
-
-**Anatomy**: `rounded-full` (pill), `font-sans` (Schibsted Grotesk) **medium**, **sentence case**, `active:scale-[0.97]` con resorte leve (CSS, viene del DS; el spinner de `isLoading` entra con pop).
-
-```tsx
-<Button>Iniciar sesión</Button>                          // default = bg-primary, white text
-<Button variant="secondary">Volver</Button>              // surface + hairline border
-<Button variant="outline">Cancelar</Button>
-<Button variant="ghost">Cerrar</Button>
-<Button variant="destructive">Eliminar</Button>          // text-danger / error fill
-<Button variant="link">Ver más</Button>
-<Button size="sm" />
-<Button size="lg" /* hero CTAs */ />
-<Button size="icon" />
-<Button isLoading>...</Button>                            // shows Phosphor spinner
-```
-
-- **Primary**: cobalt `#1A40FF` background, white text; **hover `#1533D6`** (`primary-600`); pill radius.
-- **Secondary**: `bg-surface` (white/surface) with a hairline `border-border`, pill radius.
-- Button labels are **sentence case** — this **reverses** the old "always uppercase + tracking-wide" rule.
-- Eyebrows / overlines / section labels remain **mono uppercase** — but those are not buttons.
-- For inline ad-hoc buttons, copy the primitive's pattern; don't reinvent.
-
-### Inputs (`src/components/ui/input.tsx`)
-
-```tsx
-<Input placeholder="tu@email.com" />
-// h-11, rounded-md (14px), border border-border, px-4, focus: ring-2 ring-[#1A40FF]
-```
-
-- Comfortable height (h-11); pair with `size="lg"` buttons for visual rhythm.
-- **Hairline border** (`border-border`, 1px) — Cadence is restrained, not heavy-bordered.
-- Focus state: cobalt ring (border.focus `#1A40FF`) — quiet but unmistakable.
-
-### Cards (`globals.css` card utilities)
-
-| Class | When |
-|---|---|
-| `.card` | Resting card — `bg-surface`, `border-border`, `rounded-lg`, `shadow-sm` |
-| `.card-interactive` | Adds hover: lift + `shadow-md` |
-| `.card-brand` | Cobalt-tinted (`bg-primary-soft`) feature card |
-| `.card-active` | Selected state with cobalt ring |
-
-Inline pattern (most common):
-```tsx
-<section className="rounded-lg border border-border bg-surface p-6 space-y-4 shadow-sm">
-  ...
-</section>
-```
-
-### Tinted Icon Tiles
-A restrained accent moment — **cobalt by default**, supporting hues only for true categories.
-```tsx
-<div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center">
-  <Robot className="w-5 h-5 text-primary" />
-</div>
-```
-Default to `bg-primary-soft` + `text-primary` (cobalt). For categorical/chart contexts only, the
-supporting hues (cyan, green, amber, coral, violet, peach) may tile — but never as a rainbow of UI chrome.
-
-### Drawers / Side Panels — el cajón flotante (02-10-2026)
-
-> Nico: «que los drawers todos sean así, que se vean así de hermosos, que se separen de las
-> esquinas». Todo cajón del producto es el `Sheet` **flotante** de Cadence, a través del
-> adaptador `src/components/ui/sheet.tsx`. **Nadie arma un cajón a mano** (`createPortal` +
-> `fixed inset-y-0 right-0`): ese patrón quedó retirado.
-
-**Forma** (la pone la primitiva, no el call site):
-
-| Qué | Valor |
-|---|---|
-| Margen a la ventana | 12 px arriba, abajo y al costado (16 px desde `lg`) |
-| Esquinas | las CUATRO en 24 px (`rounded-[24px]`) |
-| Sombra | amplia y suave `0 24px 80px -12px rgba(20,19,15,.28)`; en oscuro la separa un borde blanco al 10 % (`ink-border`), nunca el gris café de `border` |
-| Velo | ink al 18 % + `backdrop-blur-[6px]`; en oscuro negro al 55 % |
-| Animación | con los tokens de §8b: entra en `duration-slow` (300 ms) con `ease-emphasis`, deslizándose `--motion-distance-lg` (24 px) desde su lado con escala `--motion-pop-scale` (0,96) y opacidad; sale igual en `duration-fast` (150 ms) con `ease-exit`. En el celular la hoja sube desde el borde de abajo (100 %). Con `prefers-reduced-motion` sólo el fundido, con las duraciones reducidas de `--motion-*` |
-| ✕ | la de todo el producto: círculo con borde fino de 36 px (`ASPA_DE_CIERRE` = `dialogCloseClassName` de Cadence), centrada en la línea del título y con su borde derecho EN el padding del cajón, a 24 px (`right-6` en el adaptador; Cadence la deja en `right-4`). `SheetHeader` le reserva 72 px (24 + 36 + 12 de aire): un título largo no se mete debajo. Los modales no cambian. `closeLabel` cambia su nombre accesible cuando hay dos cajones a la vista («Cerrar el documento») |
-| Capa | `z-[300]` (§17) |
-| Celular (< 640 px) | el cajón derecho **sube como hoja desde abajo**: radios arriba, asa, hasta el 92 % del alto, pie al alcance del pulgar. Los izquierdos (navegación) siguen laterales y flotantes. `mobile="sheet" \| "side"` lo cambia |
-| Tamaños (`size`) | `sm` 400 · `md` 560 (default) · `lg` 680 · `xl` 880 · `full` |
-
-**Anatomía**:
-
-```
-┌───────────────────────────────────────┐
-│ [ícono] Título                     (✕) │  SheetHeader — título, subtítulo apagado, acciones
-│         Subtítulo                      │                junto a la ✕; filete abajo
-├───────────────────────────────────────┤
-│ ‹ Anterior   1 de 9 del tablero  Sig. › │  SheetNav — opcional, entre registros
-├───────────────────────────────────────┤
-│  cuerpo (lo ÚNICO que scrollea)        │  SheetBody — data-lenis-prevent + overscroll contain
-│  ┌ SheetSection ────────────────────┐  │  tarjetas: borde suave, fondo apenas distinto,
-│  │ subtarjetas en bg-surface        │  │  subtarjetas blancas adentro
-│  └──────────────────────────────────┘  │
-├───────────────────────────────────────┤
-│ [✕ Rechazar]          [Mover] [Avanzar]│  SheetFooter — fijo, filete arriba;
-└───────────────────────────────────────┘  `start` a la izquierda, acciones a la derecha
-```
-
-```tsx
-import {
-  Sheet, SheetContent, SheetHeader, SheetNav, SheetBody, SheetSection, SheetFooter,
-} from '@/components/ui/sheet';
-
-<Sheet open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-  <SheetContent size="lg" aria-describedby={undefined}>
-    <SheetHeader
-      leading={<Avatar … />}            /* opcional */
-      title="Candidatura"
-      description="Apartamento 402 · Laureles"
-      actions={<Badge>En estudio</Badge>} /* opcional, junto a la ✕ */
-    />
-    <SheetNav position={1} total={9} context="del tablero" onPrevious={…} onNext={…} />
-    <SheetBody className="space-y-5">
-      <SheetSection title="Progreso de la postulación">…</SheetSection>
-    </SheetBody>
-    <SheetFooter
-      note="Una línea de ayuda encima de los botones (opcional)"
-      start={<Button variant="secondary"><X /> Rechazar</Button>}
-    >
-      <Button variant="secondary">Mover</Button>
-      <Button>Avanzar a visita</Button>
-    </SheetFooter>
-  </SheetContent>
-</Sheet>
-```
-
-Un **formulario** va con el `<form>` adentro y `className="contents"` (o con `id` y el botón
-del pie con `form="…"`), para que `SheetBody` y `SheetFooter` sigan siendo hijos de la columna
-y el botón del pie pueda ser `submit`.
-
-**Reglas que no se negocian:**
-
-| Regla | Por qué |
-|---|---|
-| No pongas `p-0`, `flex flex-col`, `w-full sm:max-w-*` ni `overflow-y-auto` en `SheetContent` | Ya los trae. El ancho es `size`. Un `p-0` además apaga el reparto (ver abajo) |
-| La ✕ la pone `SheetContent` (`ASPA_DE_CIERRE`, la misma de los modales) | Nadie dibuja la suya. `hideCloseButton` la apaga, sólo para un cajón que no se debe abandonar |
-| Sin `useLenis().stop()`, sin `keydown` de Esc, sin `createPortal` | Radix pone el portal, el foco, Esc y el bloqueo del scroll; `SmoothScroll` frena Lenis mientras haya un `[role=dialog][data-state=open]` |
-| El cuerpo es `SheetBody` | Es lo que lleva `data-lenis-prevent` + `overscroll-behavior: contain`; sin eso la rueda mueve la página de atrás |
-| Para animar la salida, el contenido sigue montado | `open` manda; si el dato se va al cerrar, `useUltimoPresente`. Un cajón que el padre monta y desmonta guarda su `abierto` y avisa en `onCloseAutoFocus` (ver `AIActivityDetailPanel`) |
-
-**Contenido alineado al padding** (03-10-2026). Nico, sobre «Invitaciones al portal»: «mira este
-drawer por dentro, cómo está de feo, y no respeta pegando bien el contenido a los paddings». El
-cajón tiene UN padding lateral, 24 px, el mismo en `SheetHeader`, `SheetBody` y `SheetFooter`:
-
-1. **El texto del contenido arranca EXACTAMENTE donde arranca el título** del cajón y termina en su
-   padding derecho. Nada de rellenos laterales extra que corran el contenido: ni `px-*`/`p-*` en
-   `SheetBody`/`CajonCuerpo`/`SheetFooter`, ni envoltorios con `px-*` alrededor de todo el cuerpo.
-   Un cuerpo `p-0` (algo va a sangre: una foto, una lista) devuelve el padding en cada fila con
-   `RELLENO_DEL_CAJON` (`px-6`), nunca con un `px-5` o `p-5` a ojo.
-2. **Una tabla o una lista con cabecera va A SANGRE**: `<SheetTable>` (de `ui/sheet`) alrededor del
-   `<Table>`. La banda de la cabecera, el filete y el hover de las filas tocan los bordes del cajón,
-   y la primera y la última celda llevan exactamente el padding del cajón (las del medio conservan el
-   suyo). Nunca un `rounded border` alrededor de la tabla: esa «caja metida» se lee como otra tarjeta
-   y corre el primer texto 16 px. Referencia: `DetalleDeAsiento`.
-3. **Las tarjetas internas** (`SheetSection`, o una caja con borde) sí tienen su propio relleno
-   (`p-4 sm:p-5`), pero su BORDE exterior queda en el padding del cajón, nunca con otro sangrado. Un
-   «papel» (la vista previa de una plantilla) también lleva ese relleno: el texto no toca el borde.
-4. **El pie siempre se ve entero**, con sus acciones terminando en el padding derecho (los hijos de
-   `SheetFooter`/`CajonPie`); a la izquierda sólo va `start`/`izquierda` (rechazar, volver). Una
-   acción sola debajo de un texto del pie también se alinea a la derecha.
-
-Una fila de la **cabecera debajo del título** (buscador, pestañas) llega hasta el padding derecho con
-`FILA_ANCHA_DE_LA_CABECERA` (`-mr-12`): `SheetHeader` reserva el hueco de la ✕ (72 px) en toda su altura,
-pero la ✕ sólo ocupa la línea del título (sólo en una cabecera sin `actions`; ver `NuevoMensajeDrawer`).
-Un **menú o lista de selección** con resaltado redondeado (`MobileNavSheet`, `ElegirInmuebleDrawer`) puede
-meter el resaltado 12 px (`px-3` en el cuerpo) siempre que el contenido de cada fila quede en la línea
-del título (12 + 12).
-
-Lo cuida `src/components/ui/cajones-alineados.test.ts` (estático: tablas sin `SheetTable`, padding de las
-bandas, excepciones con su motivo). La medición en el navegador de todos los cajones y sus capturas
-quedaron en `memory/archivos/pruebas/cajones/medicion.md`.
-
-**El reparto.** Como `DialogContent`, el `SheetContent` del adaptador **reparte** a sus hijos
-directos leyendo `bandaDeModal`: cabecera y navegación arriba, pie abajo y todo lo demás a un
-`SheetBody` automático. Así un cajón escrito «a la antigua» no queda pegado a los bordes. Se
-apaga solo cuando el call site ya arma su layout: si trae un `SheetBody`/`CajonCuerpo` en su
-JSX, si pasa `layout="manual"` (obligatorio cuando las bandas viven en un subcomponente, p. ej.
-`CuerpoDelCandidato`) o, por compatibilidad con cajones viejos, si pasa `p-0` en `className`.
-
-**`Cajon`** (`src/components/ui/cajon.tsx`) es la capa en español sobre lo mismo:
-`Cajon` (`tamano`, o el `ancho` viejo traducido) · `CajonCabecera` = `SheetHeader` ·
-`CajonCuerpo` = `SheetBody` · `CajonPie` (`izquierda`, `ayuda`) = `SheetFooter`.
-
-**Sub-cajón** (un panel junto a otro): un segundo `Sheet` DENTRO del primero, con
-`overlayClassName="bg-transparent"` (el adaptador también le quita el desenfoque) y un
-`right-[calc(margen + ancho del principal …)]` que lo deja a su izquierda SÓLO desde el
-ancho en que caben los dos; debajo se para encima del principal. Dos formas:
-- **separado** (dos tarjetas con 12 px de aire): el panel secundario de `PlanDetailSheet`,
-  desde `xl`;
-- **pegado** (una sola pieza con la costura a ras): `PilotoDocumento` junto a `PilotoCajon`,
-  desde `lg` — el principal pierde el radio izquierdo (`lg:!rounded-l-none`) y el secundario
-  el derecho y su borde (`lg:!rounded-r-none lg:border-r-0`). Su ✕ lleva
-  `closeLabel="Cerrar el documento"`.
-
-Referencias: `CandidateDrawer.tsx` (cabecera con avatar + pie con decidir),
-`PipelineDetail.tsx` (pie «perder» a la izquierda / «avanzar» a la derecha),
-`PlanDetailSheet.tsx` (sub-cajón), `InquilinoDrawer.tsx` (encabezado de persona con chips de
-contacto). En Cadence: historia `Overlays/Sheet › Referencia · Candidatura`.
-
-**«¿Cómo funciona?» — la explicación va en un cajón, no en la pantalla** (05-10-2026). Nico, mirando
-Avalúos: «eso no debe de estar ahí siempre […] llévalas al botón que al dar clic abre drawer y explica
-mejor cada cosa y más bonito». Toda explicación de cómo funciona algo (pasos, «qué es esta bandeja»,
-«por qué hay dos marcas») vive detrás de `ParaEntenderMas` (`ui/para-entender-mas.tsx`):
-
-- el botón va en el **encabezado**, con `variante="secundario"`, donde iría el botón de acción;
-- abre el `Cajon` (`md` 560 px; `ancho="ancho"` → `xl` 880 px); en el celular sube como hoja;
-- el contenido no se monta hasta abrir, y al cerrar (Esc, clic afuera, ✕) el foco vuelve al botón;
-- los pasos van con `PasosExplicados` (`ui/pasos-explicados.tsx`): número + ícono en un riel vertical,
-  **quién lo hace** (`quien`: tú · el agente · Leasefy · tu cliente · el candidato), una explicación
-  concreta y «Lo que haces tú» resaltado (`tuParte`) sólo donde hay algo que hacer; entran escalonados
-  (`Stagger`). Lo que digan tiene que ser verdad en el código.
-- 🔴 Lo que la pantalla TIENE que decir se queda a la vista: un aviso de que algo falló o está
-  desconectado, un requisito que falta, el motivo de un botón apagado, una advertencia de lo que la
-  herramienta NO hace («hoy el aviso lo subes tú», «armar el lote no gira plata»).
-
-### Sidebar / Layout
-The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the canonical layout. Use as-is.
-- **La barra lateral es una hoja de arena** (decisión 18 de Nico, 22-10-2026; reemplaza lo de abajo para la barra): el
-  `aside` y el cajón del celular van en `bg-surface-muted` con `border-r border-border`; la página y el encabezado siguen en
-  papel. Dentro de la barra la fila activa es una TARJETA BLANCA con filete (`--menu-activa` se pisa a `var(--surface)` sólo
-  dentro de la barra, decisión 19) y el texto y el ícono en voltaje: el azul de la activa vive en la letra. Filas de 32 px en
-  tinta de 14 px con el ícono en ceniza; rótulos de sección en DM Mono 10,5 de 12 letras como mucho («CAPTACIÓN», decisión 20);
-  sin guía vertical: logo, buscador, «＋», rótulos e íconos caen en el mismo borde; el azul sólo en la activa («Nueva
-  consignación» secondary, «IA» y contadores en gris mono). Plan completo: memory/archivos/glow-up-qa-21-10/plan-sidebar-22-10.md.
-- **Unified shell background (página y encabezado):** sidebar, page body, and header all share the cadence page bg
-  `--bg` (`#FBFAF9` light / `#141310` dark). Separation comes from hairline borders (`border-r` /
-  `border-b`), not a bg-color step. Cards/KPIs sit on `bg-surface` for elevation against
-  the shell. Body is driven by `--plan-page-bg` (kept = `--bg` in both modes: `#FBFAF9` / `#141310`);
-  header uses `bg-bg` (no `dark:` override, so it follows `--bg`).
-- Sidebar: `lg:fixed lg:inset-y-0`, 240px wide, collapsible to 64px via `SidebarContext`
-- Header: `sticky top-0 z-30 bg-bg border-b border-border`
-- Main content offset: `lg:pl-[240px]` (or `lg:pl-16` when collapsed)
-- **Botón de plegar** (`BotonDeLaBarra`, 02-10-2026): cuadrado de 36 px, `rounded-[12px]`,
-  `bg-surface` + `border-border`, ícono `SidebarSimple` de Phosphor (el mismo en los dos estados).
-  Abierta, a la derecha del logo; plegada, debajo del símbolo. Tooltip neutro (`bg-fg text-bg`)
-  «Ocultar barra» / «Mostrar barra» seguido de la tecla en el `Kbd` de Cadence (`size="sm"`, el
-  mismo del ⌘K): «⌘B» en macOS, «Ctrl B» en el resto; el botón lleva `aria-keyshortcuts`. En el
-  cajón del celular no aparece. Se hunde al apretarlo (`whileTap` 0,94, framer).
-- **Atajo ⌘B / Ctrl+B** (02-10-2026): pliega y despliega la barra de escritorio (⌘ en macOS, Ctrl en
-  el resto; nunca con Mayúscula ni Alt: ⌘⇧B es la barra de favoritos del navegador). No actúa con
-  el foco en un `input`, `textarea`, `select` o `contenteditable`; con un modal abierto (diálogo de
-  Radix con `data-state="open"` o cualquiera con `aria-modal="true"`); bajo `lg`, donde está el
-  cajón; si otro ya atendió la tecla (`defaultPrevented`), ni al dejarla apretada. El movimiento es
-  el mismo de plegar con el botón. Si el foco estaba en la barra y quien plegó iba con el teclado,
-  pasa al botón de plegar (la cabecera se monta de nuevo y el foco caía al `<body>`). Reglas en
-  `src/lib/nav/atajo-de-la-barra.ts`. Ningún otro atajo usa B (⌘K es el buscador).
-- **Cajón del celular — el foco**: al abrir cae en el logo (`onOpenAutoFocus`). Radix enfoca el
-  primer control que no sea enlace, que era el campo «Buscar», y el `SidebarSearch` de Cadence
-  pinta el anillo con `focus:`: salía azul apenas se abría. El logo y no la ✕ porque es lo primero
-  en el orden de lectura y del Tab (la ✕ va última en el DOM); su anillo es `focus-visible`, se ve
-  sólo yendo con el teclado. Queda atrapado y al cerrar vuelve al botón que lo abrió
-  (`openPlanMobileSidebar(evento)`; sin `SheetTrigger` Radix no sabe cuál es), salvo que otro ya
-  tenga el foco (el ⌘K que abre «Buscar»). El diálogo se llama «Menú de navegación».
-- **Al plegar/desplegar**: la cabecera y la navegación nuevas entran con un fundido de 200 ms
-  (sólo `opacity`) mientras la barra cambia de ancho; lo que ya estaba al cargar la página NO se
-  anima ni sale con `opacity: 0` en el HTML del servidor (`useDespuesDelPrimerPintado`). El ancho
-  sigue con `transition-all` de CSS (cambia el layout del panel; no es `transform`).
-- **Elemento activo del menú** (03-10-2026, Nico: «en light debería de verse con el azul como
-  estaba, quiero que cuando esté seleccionada se vea algo hermoso»): la píldora AZUL del menú,
-  `bg-[color:var(--menu-activa)]` + `text-[color:var(--menu-activa-tinta)]` (tokens en
-  `globals.css`): en claro, el azul de la marca tal como estaba (`#edf1ff` + `#1A40FF`, 5,8:1); en
-  oscuro, un azul APAGADO y translúcido (`rgba(110,135,255,.2)` ≈ `#1e233b` sobre el negro) con la
-  tinta `#b9c6ff` (9,3:1). Etiqueta `font-medium`, ícono relleno en la misma tinta, `rounded-[12px]`,
-  sin borde, sin sombra, sin halo y SIN tramo sobre la guía de la sección (la raya que brillaba —
-  23-09— y la gris —02-10— fueron justo lo que no gustó). La píldora se desliza entre filas del
-  mismo bloque con `layoutId` (framer-motion, `MotionConfig reducedMotion="user"`); en el riel
-  plegado, por todo el riel (`ResalteDelRiel`). La cabecera de una sección plegada con la página
-  actual adentro va en la tinta de la activa; la «IA» de la fila activa, en `bg-surface`. Al pasar:
-  `hover:bg-surface-hover` (neutro, más tenue que la activa; también la cabecera de sección); sobre
-  la activa no se suma. La barra de abajo del celular y su «Más» usan los mismos tokens. Nunca
-  `bg-primary-soft` para la activa del menú (en oscuro es el índigo saturado `#0d1331`). Resorte de
-  250 ms sin rebote (`motionSpring.snappy`), a opacidad plena; sólo cuando la activa salta a OTRO
-  bloque (sin resaltado previo desde donde deslizarse) entra con un fundido. Ver
-  `ResalteDeLaFilaActiva` en `PlanSidebar.tsx`.
-- **El logo de la barra** (03-10-2026, Nico: «pon el logo de la sidebar en todas las plataformas
-  negro así como el de la landing»): `text-fg` (tinta del tema: `#14130f` en claro, blanco hueso
-  en oscuro), abierta y plegada, en el cajón del celular, en los tres paneles y en la vista beta.
-  El /admin lleva su «nest» en negro (`Wordmark variant="ink"`). Del 22-09 al 03-10 fue `text-primary`.
-- **Secciones al entrar**: una sola abierta, «Operación» (`#sec-operacion`; en un panel sin ella,
-  la primera), más la de la página actual. Lo que se abre o cierra vale mientras se navega y NO se
-  guarda (`secciones-del-menu.ts`).
-
-### Command palette (⌘K, `src/components/inmobiliaria/CommandPalette.tsx`)
-Guía: el menú flotante y el modal del sistema de diseño de referencia (`SaleADS-projects/chat`,
-`chat-v2/live/Menu.tsx` / `Modal.tsx`) hablado con tokens de Leasefy.
-- Caja de 680 px a 12 vh del borde, `rounded-[20px]`, con la sombra de los modales de Cadence,
-  centrada con `mx-auto` (NO con `-translate-x-1/2`: la animación usa `transform`); en `<md`,
-  pantalla completa con la ✕ del producto (`AspaDeCierre`, sólo ahí).
-- Velo §41: tinta al 32 % + `backdrop-blur-[6px]` (en oscuro, negro al 62 %). Un clic en él cierra.
-- **Movimiento con framer-motion** (no con las clases `animate-dialog-*` de Cadence): el
-  `DialogContent` de Radix queda como MARCO invisible a pantalla completa (`hideClose`, velo de
-  Radix transparente, `!animate-none`) y adentro `AnimatePresence` anima el velo y la caja. El
-  diálogo sigue abierto (`montada`) hasta que termina la salida; lo escrito se borra recién ahí.
-  Caja: entra en 220 ms (sube 8 px, 0,98 → 1), sale en 150 ms; velo: entra en 200 ms, sale en 150.
-  Filas, grupos, novedades, vacío y cargando: 180 ms, 4 px de subida, escalera de 20 ms (tope en la
-  fila 8); la fila que ya estaba no se vuelve a animar al seguir escribiendo. Lupa ↔ cargando, la ✕
-  de limpiar y el ↵: fundidos de 150 ms. Resaltado de la activa: resorte de 200 ms sin rebote.
-  Curva: ease-out `[0.22, 1, 0.36, 1]`. Valores PROVISIONALES (`MOVIMIENTO` en el archivo) hasta que
-  exista el sistema de movimiento de Cadence.
-- Fila: ícono en su cuadrito (32 px, `rounded-[10px]`, `bg-surface-muted`), título + línea de apoyo;
-  la activa lleva el mismo tinte neutro deslizante que el menú y un `kbd` ↵. Lo escrito se resalta
-  (`tramos-de-coincidencia.ts`, sin tildes ni mayúsculas). Foco en el campo + `aria-activedescendant`.
-- Novedades del audit log: `novedades-del-buscador.ts` las dice en español y junta las repetidas
-  («3 veces»).
-
-### Banners (state-colored info blocks)
-```tsx
-{requiresManualReview && (
-  <div className="rounded-md bg-danger-soft border border-border p-3 flex items-start gap-2">
-    <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-    <div>
-      <p className="text-sm font-medium text-danger">Título</p>
-      <p className="text-body-sm text-fg-muted mt-0.5">Detalle</p>
-    </div>
-  </div>
-)}
-```
-Color follows severity via feedback tokens: `success` (positive), `info` (info), `warning` (caution),
-`error` (error). Use the `*-bg` tint as background and `*-fg` as text/icon.
-
-### Score / Progress Bars
-```tsx
-<div className="h-1.5 bg-surface-muted rounded-full overflow-hidden">
-  <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${value}%` }} />
-</div>
-```
-Color thresholds: ≥75 `bg-success`, ≥50 `bg-warning`, <50 `bg-danger`.
-
-### Toaster (Sonner)
-**Hay UN solo `<Toaster>` en toda la app y vive en el layout raíz**
-(`src/app/layout.tsx`), dentro de `ThemeProvider` y **fuera de `AuthProvider` y de todo
-guard** — `position="top-right"`, `borderRadius: 22px` (`rounded-lg`),
-`boxShadow: 0 4px 16px rgba(20,19,15,.08)` (`shadow-md`). Don't override per-toast.
-
-**`toast` se importa SIEMPRE de `@/components/ui/toast`, nunca de `'sonner'`.** Es el
-mismo objeto por los dos caminos, así que la diferencia no se ve corriendo la app —
-se ve en los tests. `vi.mock('sonner', …)` sólo intercepta a los importadores que Vite
-procesa: el código de la app sí, `node_modules` no. Un componente que importa `sonner`
-directo queda del lado equivocado del seam el día que el envoltorio cambie, y el
-envoltorio mismo tomaba `toast` de `@leasefy/cadence` (que lo re-exporta de sonner):
-por ese camino los ~46 tests que espían el toast no veían la llamada. Hoy el envoltorio
-lo toma de `sonner` directo y el seam es uno solo. Barrido el 2026-09-05 en
-`src/app/panel/inmobiliaria/**` y `src/components/**` (105 archivos).
-
-⚠️ **No montes un `<Toaster>` en un layout de sección.** Dos reglas, las dos medidas:
-- Sonner pinta cada toast en **todos** los `<Toaster>` montados ⇒ un segundo Toaster
-  **duplica** cada toast en pantalla.
-- Un Toaster dentro de `<ProtectedRoute>` / `<AgencySubscriptionGuard>` sólo existe
-  después de que el guard deja pasar: todo `toast()` emitido antes se pierde en silencio.
-
-Antes vivía en 4 layouts de sección (panel/inmobiliaria, panel/(landlord), inquilino,
-onboarding), así que `toast()` desde el resto del árbol — `/auth/mfa-verify`, `/avaluo`,
-`/propiedades`, la landing y el propio `auth-context` — no pintaba nada.
-
----
-
-## 5. Iconography
-
-- **Library**: `@phosphor-icons/react`, named imports only
-  ```ts
-  import { X, Robot, Sparkle, ArrowClockwise, MagnifyingGlass } from '@phosphor-icons/react';
-  ```
-- **SVG spec**: `viewBox="0 0 256 256"`, fill `currentColor` — Phosphor's native grid
-- **Weight**: `Regular` default; **`Fill` for active/selected** states. Use `Bold` sparingly for emphasis
-- **Sizes**: `16` (inline with text), `20` (standalone), `24` (feature/header). Map to `w-4 h-4` / `w-5 h-5` / `w-6 h-6`
-- **Color**: inherit (`currentColor`) — never hardcode fill
-- **Pair with text** when meaning isn't obvious; use `aria-hidden="true"` when decorative beside a label
-- **`flex-shrink-0`** when next to truncating text
-
----
-
-## 6. Internationalization & RTL
-
-- All strings via `useI18n()` + `t('namespace.key')` (`src/lib/i18n`)
-- Default locale `es-CO`; date formatting via `toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })`
-- Money via `formatCurrency()` from `@/lib/format` — formats COP correctly with thousand separators
-
----
-
-## 7. Accessibility
-
-- **Focus**: global `*:focus-visible { outline: 2px solid #1A40FF; outline-offset: 2px }` (cobalt, border.focus) — don't override per-component
-- **Skip link**: `.skip-link` utility
-- **Modals**: usá `Dialog` / `AlertDialog` (Radix): foco atrapado, Esc, `aria-labelledby`/`describedby` desde `DialogTitle`/`DialogDescription` y foco devuelto al disparador. Sin descripción visible, `aria-describedby={undefined}` en el Content.
-- **Backdrop**: `aria-hidden="true"`
-- **Icon-only buttons**: must have `aria-label` or `title`
-- **Color**: never communicate state with color alone — pair with icon + text
-- **Gradients**: verify text contrast ≥ 4.5:1 against the lightest stop of any brand gradient
-
----
-
-## 8. Lenis Smooth Scroll
-
-The site uses **Lenis** smooth scroll, configured in `src/components/providers/SmoothScroll.tsx`. Two rules:
-
-1. **For any modal / drawer / overlay**: call `lenis.stop()` on open, `lenis.start()` on close + cleanup
-2. **For any scrollable nested container** inside the modal/drawer: add `data-lenis-prevent` + `overscrollBehavior: 'contain'`
-
-Failure mode: wheel events get hijacked, drawer body appears frozen. En los cajones ya no se
-hace a mano: `SheetBody` trae `data-lenis-prevent` + `overscroll-behavior: contain`, y
-`SmoothScroll` frena Lenis mientras haya un diálogo o cajón abierto (§4 Drawers).
-
----
-
-## 8b. Movimiento — cada interacción con su animación
-
-Nico (02-10-2026): «que cada interacción tenga su animación top: cosas suaves, entradas,
-salidas, cambios». El sistema vive en **`@leasefy/cadence`** (`cadence/src/motion/`): tokens,
-primitivas sobre **framer-motion** (peer de Cadence: UNA sola copia, la del front) y recetas de
-clases para lo que se anima en CSS. Las historias de Storybook «Foundations/Motion» y la
-«Animación» de cada componente muestran todo funcionando.
-
-### Las reglas (lo que hace que todo se sienta de la misma familia)
-
-| Regla | Por qué |
-|---|---|
-| Lo que **entra** desacelera (`enter`, 200ms); lo que **sale** acelera y dura menos (`exit`, 150ms) | Nadie espera a que algo termine de irse |
-| Sólo se anima **`transform` y `opacity`** | Lo demás (width, height, top, margin) recalcula el layout en cada cuadro. Única excepción: la altura de un colapsable (`Collapse`, acordeón) |
-| **Distancias chicas**: 4 · 8 · 16 · 24 px | Algo que viaja 40px parece un error; 8px parece que llegó |
-| **Movimiento reducido** (`prefers-reduced-motion`): sin desplazamientos, quedan fundidos cortos | Accesibilidad. Las primitivas lo hacen solas; `MotionProvider` (layout raíz) lo aplica a todo framer. En CSS, `globals.css` pone los `--motion-*` reducidos (distancia 0, escala 1, 150 ms) y su regla global deja quieto todo lo demás, salvo las animaciones del sistema (modales, cajones, flotantes, `animate-in` sin desplazamiento) y las transiciones de sólo opacidad, que quedan como fundidos. Una animación nueva del preset que se quiera salvar se agrega a esa lista: `movimiento-reducido.test.ts` comprueba que no se mueva |
-| Nada arranca invisible en HTML del servidor arriba del pliegue | Un `initial={{ opacity: 0 }}` sin hidratar es una página en blanco (y castiga el LCP) |
-| Los estados que ya vienen al cargar **no se animan**; se anima el CAMBIO | Una tabla con 40 casillas marcadas no «late» entera al abrir |
-
-### Tokens
-
-| Token | JS (`@leasefy/cadence`) | Tailwind | CSS |
+| Superficie | Para quién | Dónde vive | Ver |
 |---|---|---|---|
-| Duraciones | `motionDuration.instant/fast/base/slow/reveal` (s) | `duration-instant` 100 · `duration-fast` 150 · `duration-base` 200 · `duration-slow` 300 · `duration-reveal` 500 | `--motion-duration-*` |
-| Bucles decorativos | `motionDuration.ambient` (2,4 s): el período de un halo que respira, un orbe que late, un brillo que barre (`repeat: Infinity`). Nunca para entradas ni salidas; pausado fuera de pantalla y quieto con movimiento reducido | `duration-ambient` (transición) · en CSS `[animation-duration:var(--motion-duration-ambient)]` | `--motion-duration-ambient` |
-| Curvas | `motionEase.enter/exit/emphasis/standard/spring` | `ease-enter` · `ease-exit` · `ease-emphasis` · `ease-standard` · `ease-spring` | `--motion-ease-*` |
-| Resortes | `motionSpring.soft` (sin rebote, superficies) · `.snappy` (indicadores, layout) · `.bouncy` (rebote leve, algo que «llega») | — | — |
-| Distancias | `motionDistance.xs` 4 · `sm` 8 · `md` 16 · `lg` 24 | — | `--motion-distance-*` |
-| Escalas | `motionScale.pop` 0.96 (flotantes) · `.press` 0.97 | `active:scale-[0.97]` | `--motion-pop-scale` |
-| Escalonado | `motionStagger.step` 40ms, techo `max` 320ms | — | — |
+| Panel de la inmobiliaria `/panel/inmobiliaria/*` | dueño, asesor, contador | front `src/app/panel/inmobiliaria`, `src/components/*`; menú en `src/lib/nav/arquitectura-del-panel.ts` | §13.1 |
+| Portales: inquilino (`/inquilino`), propietario (`/panel/(landlord)`), independiente | inquilinos, propietarios | front | §13.2 |
+| Marketplace y públicas en React: `/propiedades`, ficha `/propiedades/<id>`, `/i/<id>`, avalúo, blog, contacto | quien busca o publica | front | §13.3 |
+| Landing estática: `/es`, `/en`, `/productos/*`, `/para/*` | inmobiliarias que nos evalúan | front `public/landing/index.html`, `public/internas/`, armadas en `public/paginas/` | §13.4 |
+| Admin de Leasefy `/admin/*` | equipo de Leasefy | front `src/app/admin`, `src/components/admin` | §13.5 |
+| Chat de Ori y los agentes | todos los roles del panel | front `src/components/beta/**`; Cadence `chat-*` | §13.6 |
+| App nativa iOS / Android (Expo) | todos los perfiles | repo `app-expo` (`src/tema`, `src/components/ui`) | §13.7 |
+| Correos, PDF, Excel | inquilinos, propietarios, contadores | plantillas del back y del micro; front `src/lib/**/documento-*.ts` | §13.9 |
+| Imágenes de marca (manual, campañas, redes) | mercado | manual de marca (artefacto KmyeY1Fq…) | §13.10 |
 
-Las clases de Tailwind leen las variables con el mismo valor de respaldo, así que funcionan aunque
-la app no las defina. Animaciones CSS del preset: `animate-pop-in` / `animate-pop-out`
-(flotantes), `animate-tip-in` (tooltip), `animate-rise-in` (avisos), `animate-collapse-open` /
-`animate-collapse-close` (acordeón y colapsable), `animate-spinner-in`.
-
-### Primitivas — cuál usar
-
-| Quiero… | Usa | Ejemplo |
-|---|---|---|
-| Que algo **aparezca** (una tarjeta, una sección) | `Appear` | `<Appear>…</Appear>` · `<Appear direction="left" delay={0.1}>` · `<Appear inView>` (al hacer scroll) |
-| **Mostrar y ocultar** con salida (lo que `{x && …}` no puede) | `Presence` | `<Presence show={hayError}><Banner …/></Presence>` |
-| Una **lista** que entra escalonada; **filas que se agregan o quitan** | `Stagger` + `StaggerItem` | `<Stagger as="ul">{filas.map(f => <StaggerItem key={f.id} as="li">…)}</Stagger>` |
-| **Cambiar un contenido por otro**: cargando → contenido, vacío → lleno, **pasos** de un asistente | `CrossFade` | `<CrossFade swapKey={cargando ? 'cargando' : 'listo'}>…` · `<CrossFade swapKey={paso} direction={adelante ? 'forward' : 'backward'}>` |
-| Una sección que **se abre y se cierra** (altura automática) | `Collapse` | `<Collapse open={abierto} className="pt-3">…</Collapse>` |
-| Una **cifra que cambia** (saldo, total, KPI) | `AnimatedNumber` | `<AnimatedNumber value={saldo} format={formatCurrency} className="font-mono" />` |
-| La marca de **«estás acá» que se desliza** (pestañas propias, filtros, navegación) | `MotionIndicator` | dentro del ítem activo: `<MotionIndicator layoutId={\`${id}-filtro\`} className="inset-0 -z-10 rounded-full bg-surface" />` (ítem con `relative isolate`) |
-| **Presión y hover** físicos en una tarjeta o loseta armada a mano | `Pressable` (o `motionClasses.press` / `hoverLift` en CSS) | `<Pressable as="button" onClick={abrir}>…</Pressable>` |
-| La **entrada de una página** | `PageTransition` | ya está en los `template.tsx` (ver abajo) |
-
-Todas aceptan `as` (`div`, `li`, `ul`, `section`, `tr`…), respetan el movimiento reducido solas y
-no cambian el marcado entre servidor y cliente. Para un flotante de Radix hecho a mano:
-`motionClasses.floating` (popover/menú) y `motionClasses.tooltip`.
-
-### Los componentes base ya traen su movimiento
-
-Quien usa estos componentes (o sus adaptadores de `src/components/ui/`) lo hereda sin hacer nada:
-`Button` (presión con resorte; el spinner entra con pop) · `Tabs` (la barra o la píldora del
-activo **se desliza**, `layoutId`; el panel entra con fundido) · `SegmentedControl` (la píldora se
-desliza y se ajusta al ancho) · `Accordion` y `Collapsible` (altura + fundido, chevron con la misma
-curva) · `Popover`, `DropdownMenu` (y submenú), `Select`, `Combobox`, `HoverCard` y `Tooltip`
-(**entran desde su ancla y salen acelerando**; antes cerraban de golpe) · `Toast` (sonner con la
-curva de entrada del sistema) · `Switch` (thumb con resorte que se estira al presionar) ·
-`Checkbox` (el visto **se dibuja** al marcar y se borra al desmarcar) · `Radio` (el punto crece) ·
-`Badge` (cruza el color al cambiar de estado) · `Chip` (presión) · `Card interactive` (hover sutil:
-sube 1px) · `Banner`, `Alert`, `Callout` (entran subiendo 8px) · `FormError` (el error bajo el
-campo **baja 4px con un fundido** y sale acelerando; con `hint`, la ayuda gris y el error se cruzan
-sin verse juntos — Cadence v1.1.1; `ErrorDelCampo` de `components/estado/` es su adaptador en
-español) · `Skeleton` (deja de brillar con movimiento reducido). `Dialog`, `AlertDialog`, `Sheet`
-y `Drawer` tienen su propia coreografía (§17) con los mismos tokens.
-
-**La base del panel (03-10-2026)** — también se hereda sin hacer nada:
-
-- `EstadoDeDatos`: cuando el estado CAMBIA después de montarse (cargando → contenido, → falló,
-  → vacío), lo nuevo entra con fundido y 4 px (`motionDistance.xs`). Lo que ya estaba al montarse
-  no se anima (la página ya entra con su `template.tsx`). Casi no agrega nodos: un hijo que es
-  etiqueta se pinta como `motion.<etiqueta>` con sus mismas props; un componente que es TODO el
-  contenido va en una `motion.div` (`empty:hidden` si no pinta nada); un componente entre varios
-  hijos queda quieto (una caja le cambiaría el padre). **Una pantalla que
-  usa `EstadoDeDatos` NO lo envuelve en otro `CrossFade`.** (`components/estado/entrada-del-estado.tsx`)
-- `KpiCard` (Cadence, 03-10-2026): `value` acepta un NÚMERO (con `format`) además del texto de siempre o un nodo; el número cuenta con `AnimatedNumber` al cambiar, y desde 0 si llega después de montarse la tarjeta sin cifra. Un texto se pinta igual que antes.
-- `KpiValor`: la cifra que llega después de cargar entra con fundido y, si es un número, cuenta
-  desde 0 (`AnimatedNumber`, `reveal`); si después cambia, cuenta desde la anterior.
-- `BarraDePestanas` y `RielDePestanas`: la marca de la activa (card o subrayado) es un
-  `MotionIndicator` que **se desliza** a la nueva.
-- `BarraDeAccionesMasivas`: sube 8 px al aparecer con algo marcado y el «N marcadas» cuenta. Para
-  que también SALGA animada, la pantalla la monta dentro de un `Presence` (o `AnimatePresence`).
-- `EmptyState` (`ui/empty-state`, y `data-display/EmptyState` que delega) y `SinDatos`: entran
-  con `Appear` (8 px), salvo dentro de un `EstadoDeDatos` que ya los anima.
-- Tablas cuyas filas entran y salen (marcar, aprobar, borrar, filtrar): `TableBodyAnimado` +
-  `TableRowAnimada` de `ui/table` (escalonado con techo de 320 ms, salida «sync», sin `layout`),
-  con `key` = el id del dato.
-
-### Páginas
-
-- `MotionProvider` (Cadence) envuelve toda la app en `src/app/layout.tsx`: `reducedMotion="user"`.
-  No toca el scroll; Lenis sigue igual y `inView` funciona con él.
-- `template.tsx` con `PageTransition` en: la raíz (cambio de sección de primer nivel),
-  `panel/inmobiliaria`, `panel/(landlord)` e `inquilino`. Los de los paneles van **dentro** del layout:
-  al cambiar de módulo entra sólo el contenido (fundido + 8px, 300ms); sidebar, header, muro de
-  migración y guards de sesión quedan montados y no parpadean.
-- La **primera pantalla** de la sesión no se anima: llega visible desde el HTML del servidor.
-- **Nunca dos a la vez:** al llegar al panel desde fuera se montan juntos el template raíz y el del
-  panel; anima sólo el de afuera. Y la página **no anima su propia entrada** (`initial={{ opacity: 0, y: 20 }}`
-  en el contenedor de la página): se suma a la del template. Lo que se anima adentro son los cambios.
-- Navegar dentro de un módulo (lista → ficha) no remonta el template: ese movimiento lo pone cada
-  pantalla con las primitivas.
-- ⚠️ Durante los 300ms de la entrada el contenedor tiene `transform`: un `position: fixed` de
-  adentro se ubica relativo a él. Lo flotante de una página va en portal o `sticky` (§19).
-
-### Errores que no hay que repetir
-
-| ❌ | ✅ |
-|---|---|
-| `transition-all` en un contenedor grande | Nombrar las propiedades: `transition-[transform,opacity]` |
-| Animar `width`/`height`/`top` (barras de progreso, indicadores) | `transform` (`scaleX`, `translateX`) o `MotionIndicator` |
-| `key={index}` en una lista animada | `key={dato.id}`: con el índice, borrar la fila 2 anima la salida de la última |
-| `layout` en una lista de 300 filas o virtualizada | `<Stagger layout={false}>`: cada cambio mediría todas las filas |
-| `AnimatePresence mode="wait"` con salidas largas | Salidas en `fast`; `CrossFade` ya lo hace |
-| Curvas y duraciones inventadas (`duration: 0.6, ease: 'easeInOut'`) | Los tokens. Si falta uno, se agrega al sistema |
-| `{abierto && <Panel/>}` y quejarse de que «cierra de golpe» | `Presence` (o `open={…}` en los primitivos de Radix) |
-
-### En las pruebas
-
-`vitest.setup.ts` pone `MotionGlobalConfig.skipAnimations = true`: toda animación de framer salta a
-su valor final, así que ya no hace falta mockear `framer-motion` para que un `AnimatePresence`
-monte el contenido nuevo.
-
-- `AnimatedNumber` (Cadence, 03-10-2026): con las animaciones apagadas (`skipAnimations` o movimiento
-  reducido) escribe la cifra final DE UNA, antes de pintar. No hace falta esperar un cuadro para leerla.
-- Lo que SALE (un `Presence`, una fila de `Stagger`, un `Collapse`) se desmonta después de su salida,
-  también con `skipAnimations`: para ver que ya no está, espera un momento
-  (`await act(async () => { await new Promise((r) => setTimeout(r, 50)) })`). Para ver que SALE animado
-  (sigue montado mientras se va), apaga el atajo en esa prueba: `MotionGlobalConfig.skipAnimations = false`.
-- Un `CrossFade` en modo `wait` monta lo nuevo DESPUÉS de la salida (150 ms): si la pantalla enfoca un
-  campo del contenido nuevo apenas cambia (un asistente que vuelve al paso con error), usa
-  `mode="popLayout"`, que lo monta ya.
-- `Stagger`/`StaggerItem` (y `TableBodyAnimado`/`TableRowAnimada`) en el modo estricto de React (`next dev`):
-  cada ítem se anima SOLO, con su retraso por turno; no hay orquestación del contenedor que el doble montaje
-  pueda perder (03-10-2026: así se veían vacías las tablas de Contratos y Propietarios). Dentro de algo que no
-  anima su primer contenido (`CrossFade`, `Collapse` abierto) la lista de ese primer pintado se ve quieta.
-  Lo fija `components/ui/table.movimiento.test.tsx`, con animaciones reales y `<StrictMode>`.
-
-### El pensamiento en vivo del chat (02-10-2026)
-
-`src/components/beta/PensamientoDelTurno.tsx`, con los pasos que manda el micro (evento SSE
-`pensamiento`, `src/lib/chat/pensamiento.ts`). Es la receta para «algo que trabaja y se ve
-trabajar» sin cajas:
-
-- **Cada paso entra con su altura** (`<Collapse open initial>`) y un fundido que sube
-  `motionDistance.xs`: la lista crece suave y nada salta.
-- **El paso que corre lleva un brillo** (`.chat-brillo` en `globals.css`): dos capas del mismo
-  texto; la clara se ve por una ventana que viaja a la derecha mientras su texto viaja a la
-  izquierda con la misma curva — sólo `transform`, las letras quietas, se mueve la luz. Con
-  movimiento reducido la capa no existe.
-- **Al terminar, se asienta**: un visto chico en `fg-subtle`, el texto pasa a `fg-muted` y el
-  resultado entra a la derecha en `fg`, con su cifra contando (`AnimatedNumber`, `from={0}`).
-- **El especialista con su orbe** (`OrbeDeAgente` con `estado`) y su nombre de `equipo.ts`.
-- **El tiempo, discreto**: `font-mono` 11,5 px en `fg-subtle`, a la derecha de la cabecera.
-- **Al llegar la respuesta se pliega** (`Collapse`) en «Cómo lo pensó · 7 pasos · 9,0 s».
-- **Lector de pantalla**: la lista va `aria-hidden`; una sola línea `aria-live="polite"` dice
-  el paso que corre o el resultado del último. Nunca cada brillo ni cada cifra que cuenta.
+La rama de trabajo cambia según el encargo: antes de tocar, mira cuál es (en la máquina de Nico los front son worktrees
+`~/rent/wt-front-*`). Cadence es el repo hermano `cadence` (Cadence 2 en la máquina de Nico: `~/rent/wt-cadence-identidad`).
 
 ---
 
-## 9. Anti-Patterns Cheat Sheet
+## 3. Color
 
-| ❌ Don't | ✅ Do |
-|---|---|
-| `bg-blue-600` / `bg-indigo-600` raw | `bg-primary` (cobalt `#1A40FF`) |
-| `#5B5FEF` / "electric blue" hardcoded | `text-primary` / `var(--primary)` (`#1A40FF`) |
-| Second brand accent | One cobalt accent; supporting hues for charts only |
-| Glass morphism on cards | Solid `bg-surface` + whisper `shadow-sm` |
-| **Uppercase button labels** | **Sentence case** in Schibsted Grotesk medium |
-| `rounded-xl` buttons | `rounded-full` pills (radius 999) |
-| `font-sans` on stat numbers | `font-mono` / `.text-numeric` / `.stat-number` (JetBrains Mono) |
-| Heavy `shadow-xl` / neon glow | Whisper elevation (`flat`/`sm`/`md`, max `lg`) |
-| Gradients on cards/buttons | Gradients on hero/brand surfaces only (with grain) |
-| Mounting modal inline without portal | `createPortal(content, document.body)` |
-| Drawer without `data-lenis-prevent` | Always add it to the scrollable body |
-| Inline z-index numbers | Use `z-30 z-40 z-50` per semantic scale |
-| Mixed icon libraries | Phosphor only (`viewBox 0 0 256 256`) |
-| Color alone for state | Color + icon + text |
+### 3.1 Los roles (tema claro)
 
-> **Reversed from the old system:** uppercase buttons and "no gradients" are no longer rules — buttons
-> are sentence-case pills, and brand gradients are encouraged on hero surfaces.
-
----
-
-## 10. Brand & Landing Patterns
-
-### 10.1 Floating Navbar (Public Site)
-The landing/marketing nav is a **floating pill** that sticks to the top:
-```tsx
-<nav className="fixed top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-6 px-6 py-3
-                rounded-full bg-surface/95 backdrop-blur-md shadow-md border border-border-faint">
-  <Logo />
-  <button className="px-5 py-2 rounded-full bg-surface-muted text-fg font-sans text-sm">
-    Publicar inmueble
-  </button>
-  {/* nav links: font-sans, sentence case, text-sm; eyebrow/utility labels may be mono uppercase */}
-</nav>
-```
-- Nav links: **Schibsted Grotesk (`font-sans`), sentence case** — not uppercase.
-- The "Publicar inmueble" CTA is a soft pill on a sunken surface (cobalt primary lives elsewhere).
-- This is the ONLY place glass/backdrop-blur on chrome is allowed.
-
-### 10.2 Highlighted Word Treatment (Headlines)
-A signature move: a key word inside a large heading wrapped in a cobalt rounded pill.
-```tsx
-<h1 className="text-display">
-  Arrienda diferente. Arrienda{' '}
-  <span className="inline-block px-4 py-1 rounded-lg bg-primary text-primary-fg">
-    simple
-  </span>
-</h1>
-```
-- The wrapped word stays in **Schibsted Grotesk, sentence case** (display type — not mono, not uppercase).
-- White-on-cobalt (or white-on-warm-ink for a darker mood).
-- Always the LAST/punchline word; one word per heading. Padding `px-4 py-1`, radius `rounded-lg`.
-
-### 10.3 Italic Display Heading (Legal / Long-Form)
-```tsx
-<h1 className="text-display italic font-light">Términos y condiciones</h1>
-```
-Reserved for terms, privacy, legal long-form. Pair with `<SectionLabel>Legal</SectionLabel>` above.
-
-### 10.4 Step Cards (Landing — "Cómo funciona")
-```tsx
-<section className="rounded-lg border border-border bg-surface p-8 space-y-6 shadow-sm">
-  <div className="flex items-start justify-between">
-    <span className="text-7xl font-mono font-light text-primary-100 leading-none tabular-nums">01</span>
-    <div className="w-12 h-12 rounded-md bg-primary-soft flex items-center justify-center">
-      <Buildings className="w-6 h-6 text-primary" />
-    </div>
-  </div>
-  <h3 className="text-h2">Sube tu portafolio</h3>
-  <p className="text-overline text-primary">En minutos, no semanas</p>
-  <p className="text-body-sm text-fg-muted">Body description...</p>
-</section>
-```
-Key moves: oversized **mono** light-cobalt step number (tabular), icon in a `surface-brand` tile,
-**Schibsted sentence-case title**, mono-uppercase cobalt eyebrow, normal body.
-
-### 10.5 Social Proof Bar (Avatar Stack + Rating)
-```tsx
-<div className="inline-flex items-center gap-4 px-5 py-2.5 rounded-full bg-surface-inverse/80 backdrop-blur-sm">
-  <div className="flex -space-x-2">
-    {avatars.map(a => <Avatar key={a.id} size="sm" ring="default" src={a.src} />)}
-  </div>
-  <div className="flex items-center gap-2 text-white">
-    <Stars value={4.9} />
-    <span className="font-mono tabular-nums">4.9 <span className="opacity-70">(850+ reseñas)</span></span>
-  </div>
-</div>
-```
-On a warm-ink (`surface-inverse`) pill, white text, **mono** numerals.
-
-### 10.6 Brand Gradient Hero / Footer
-Heroes and the footer may use a **brand gradient** (Aurora / Spectrum / Dusk / Daylight) with a grain
-overlay — this **reverses** the old "footer is flat indigo / no gradients" rule:
-```tsx
-<footer className="gradient-aurora gradient-grain text-white rounded-xl p-12">
-  {/* headings + links: font-sans, sentence case, text-white */}
-  {/* body links: text-white/80 hover:text-white */}
-  {/* subscribe input: rounded-full bg-white/10 text-white placeholder:text-white/60 */}
-  {/* divider: border-white/20 */}
-</footer>
-```
-- One gradient per surface; never on cards/buttons/data UI.
-- For a flat alternative, a full-bleed `bg-primary` (cobalt) footer is also acceptable.
-- Verify white-text contrast against the lightest gradient stop.
-
-### 10.7 Dark Spotlight Card (Landing Mockups)
-For showing UI screenshots/mockups in a "spotlight" frame:
-```tsx
-<div className="rounded-xl bg-surface-inverse p-8 space-y-6 shadow-lg">
-  <p className="text-overline text-white/80">Inquilinos que pagan</p>
-  <p className="text-body-sm text-white/60">Scoring AI que predice...</p>
-  {/* Circular progress, score bars, avatar — all on warm-dark */}
-</div>
-```
-Use the warm-dark surface (`surface.inverse` `#14130F` / raised `#1C1A16`, border `#312E27`); cobalt
-accent unchanged.
-
----
-
-## 11. State Templates (Empty / Loading / Error)
-
-### Empty State (component: `src/components/ui/empty-state.tsx`)
-```tsx
-<EmptyState
-  icon={MagnifyingGlass}
-  title="No encontramos propiedades"
-  description="Intenta ajustar los filtros para ver más opciones."
-  action={{ label: 'Limpiar filtros', href: '/propiedades' }}
-/>
-```
-- Container: `rounded-lg bg-surface-muted`, vertical padding `py-14 px-6 text-center`
-- Icon: in a **grey circle** (`rounded-full bg-surface-muted text-fg-muted`), centered above the title. Never a gradient tile and never a square (Nico, 2026-09-03: «todo en grises y siempre encerrado en círculos»)
-- Title `text-fg` (h2/title), description `text-fg-muted`
-- Optional CTA = primary pill button (sentence case)
-
-> **Hay UN solo estado vacío.** `@/components/data-display/EmptyState` existía como un
-> segundo componente con la misma cara nominal y distinta ejecución (ícono en un
-> `rounded-2xl` —loseta, no círculo— y CTAs con `<a>`/`<button>` crudos, fuera del pill,
-> del foco cobalto y del `active:scale`). Desde el 2026-09-05 es un **adaptador** sobre
-> éste: conserva su API vieja (`primaryCta` / `secondaryCta`) para no tocar sus ~47 call
-> sites, pero no dibuja nada propio. Para código nuevo importá siempre
-> `@/components/ui/empty-state`.
-
-### Error State (component: `src/components/ui/error-state.tsx`)
-Centered card with an **error-tinted** icon circle:
-```tsx
-<div className="max-w-md mx-auto rounded-lg bg-surface border border-border p-8 text-center space-y-4 shadow-sm">
-  <div className="w-14 h-14 mx-auto rounded-full bg-danger-soft flex items-center justify-center">
-    <WarningCircle className="w-7 h-7 text-danger" />
-  </div>
-  <h2 className="text-h2">Invitación inválida</h2>
-  <p className="text-body-sm text-fg-muted">Token de invitación inválido o faltante.</p>
-</div>
-```
-
-### Loading State — Route Level
-```tsx
-<div className="flex flex-col items-center justify-center min-h-screen gap-3">
-  <Spinner size="md" variant="muted" />
-  <p className="text-body-sm text-fg-muted">Verificando acceso...</p>
-</div>
-```
-
-### Loading State — Inline
-```tsx
-<Spinner className="w-5 h-5 animate-spin text-fg-muted" />
-```
-Skeleton class: `animate-pulse rounded-md bg-surface-muted` (use the `<Skeleton />` primitive at
-`src/components/ui/skeleton.tsx`).
-
-**Esqueleto → contenido** (§8b): nunca un corte seco. `CrossFade` saca el esqueleto en 150ms y
-hace entrar el contenido; si el contenido es una lista, sus filas llegan con `Stagger`:
-```tsx
-<CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
-  {isLoading ? <SkeletonTableRows rows={6} /> : <TablaDeContratos filas={filas} />}
-</CrossFade>
-```
-Lo mismo para vacío → lleno y error → reintento.
-
-### 404 (Next.js default — KEEP IT DARK)
-The 404 page is warm-ink (`surface.inverse`) with **JetBrains Mono** "404 | This page could not be
-found." — leave it as-is; it's intentional brand minimalism.
-
----
-
-## 12. Badge System (component: `src/components/ui/badge.tsx`)
-
-```tsx
-<Badge variant="default">Disponible</Badge>      // bg-primary-soft, text-primary
-<Badge variant="secondary">Borrador</Badge>      // bg-surface-muted, text-fg-muted
-<Badge variant="destructive">Rechazado</Badge>   // bg-danger-soft, text-danger
-<Badge variant="outline">Otro</Badge>            // hairline border
-<Badge variant="success">Aprobado</Badge>        // bg-success-soft, text-success
-<Badge variant="warning">En revisión</Badge>     // bg-warning-soft, text-warning
-<Badge variant="risk-a">A</Badge>                // success
-<Badge variant="risk-b">B</Badge>                // info
-<Badge variant="risk-c">C</Badge>                // warning
-<Badge variant="risk-d">D</Badge>                // error
-```
-All badges: `rounded-full px-3 py-1`, label in **`font-mono` (JetBrains Mono)** medium — labels/IDs are
-mono. Risk badges use the feedback tokens (A→success, B→info, C→warning, D→error) for legibility.
-
-### PlanStatusBadge (CRM-specific, `PlanStatusBadge.tsx`)
-Flat, no borders, `*-bg` tint + `*-fg` text:
-- `new` → `bg-primary-soft` / `text-primary`
-- `in_progress` → `bg-warning-soft` / `text-warning`
-- `accepted` → `bg-success-soft` / `text-success`
-- `rejected` → `bg-danger-soft` / `text-danger`
-- `important` → `bg-danger-soft` / `text-danger`
-- `pending` → `bg-surface-muted` / `text-fg-muted`
-- `completed` → `bg-success-soft` / `text-success`
-
-Use **PlanStatusBadge** in CRM/list contexts; use **Badge** with `variant="risk-*"` for tenant scoring.
-
----
-
-## 13. Section Label (component: `src/components/ui/section-label.tsx`)
-
-```tsx
-<SectionLabel dotVariant="default">Legal</SectionLabel>
-<SectionLabel dotVariant="warning">Pendiente</SectionLabel>
-<SectionLabel dotVariant="info">Información</SectionLabel>
-<SectionLabel dotVariant="success">Aprobado</SectionLabel>
-```
-Renders: a small colored dot + the **eyebrow** style (12px **mono UPPERCASE**, +10% tracking, `text-fg-muted`).
-The component uppercases the label — author it in sentence case. Always sits above the section heading.
-
----
-
-## 14. Avatar (component: `src/components/ui/avatar.tsx`)
-
-Sizes: `xs` (24) / `sm` (32) / `default` (40) / `md` (48) / `lg` (56) / `xl` (64) / `2xl` (80).
-Ring variants: `none` / `default` (subtle ring) / `primary` (cobalt) / `success` / `warning`.
-
-Initials fallback uses uppercase text per scale, in **JetBrains Mono**. **Always specify size** — don't
-rely on default for new contexts.
-
-Avatar stacks (overlapping):
-```tsx
-<div className="flex -space-x-2">
-  {users.map(u => <Avatar key={u.id} size="sm" ring="default" src={u.avatar} fallback={u.initials} />)}
-</div>
-```
-
----
-
-## 15. Search & Filter Patterns
-
-### AI Search Input (signature pattern)
-```tsx
-<div className="bg-surface rounded-lg shadow-sm border border-border p-2 flex items-center gap-3">
-  <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-    <Sparkle className="w-5 h-5 text-primary" weight="fill" />
-  </div>
-  <input
-    type="text"
-    placeholder="Describe el inmueble que buscas..."
-    className="flex-1 bg-transparent border-0 outline-none text-base placeholder:text-fg-muted"
-  />
-  <button className="w-10 h-10 rounded-full bg-surface-muted hover:bg-primary-soft flex items-center justify-center">
-    <ArrowUp className="w-5 h-5 text-fg" />
-  </button>
-</div>
-```
-- Hint text below: `text-caption text-fg-muted` ("Pulsa Enter para buscar")
-- `Sparkle` in `weight="fill"` is the AI signature — don't use it for non-AI inputs.
-
-### Filter Pills
-```tsx
-<button className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-border bg-surface hover:bg-surface-muted text-sm">
-  Ciudad
-  <CaretDown className="w-3.5 h-3.5 text-fg-muted" />
-</button>
-```
-All filters are pills with chevron-down. Active state: `border-border-strong bg-surface-muted`.
-
-### Inline Sort Dropdown
-```tsx
-<button className="inline-flex items-center gap-1.5 text-sm text-fg hover:text-primary">
-  Recomendado <CaretDown className="w-3.5 h-3.5" />
-</button>
-```
-
-### Switch tab — `SegmentedControl` (`@leasefy/cadence`)
-
-El control de dos a cuatro opciones que cambia **qué se mira dentro de un
-mismo bloque**: «Vista Kanban | Vista Lista» en Mantenimientos, «Ingresos |
-Egresos | Facturas» en la tarjeta de comprobantes migrados.
-
-```tsx
-import { SegmentedControl } from '@leasefy/cadence';
-
-<SegmentedControl<Clase>
-  aria-label="Ingresos, egresos y facturas"
-  value={clase}
-  onChange={setClase}
-  options={[{ value: 'ingreso', label: <span>Ingresos</span>, ariaLabel: 'Ingresos: 18' }]}
-/>
-```
-
-- **Segmentado vs. `Tabs`**: `Tabs` (subrayadas) son navegación de sección —
-  cambian el contenido de la página. El segmentado es un **filtro** de un
-  bloque que ya está: la tabla de abajo sigue siendo la misma tabla.
-- Los segmentos son `<button role="radio">` dentro de un `role="radiogroup"`;
-  el activo es la píldora blanca con `shadow-sm`. **No re-pintes el estado
-  activo** desde el call site.
-- **En oscuro** (Cadence v1.1.1, 02-10): el riel es un velo neutro de blanco al
-  5 % (el de la bandeja del chat) y la píldora blanco al 7 % encima, con un
-  filete interior de blanco al 8 %. Antes la píldora era el mismo #0a0a0a del
-  fondo y no se veía. Igual en las `Tabs` `segmented` y `text`. En claro no
-  cambió nada.
-- `label` acepta un nodo (icono + texto, o texto + píldora de conteo). El DS no
-  pasa props sueltas a cada segmento: un `data-testid` va **dentro** del
-  `label`, y para clickearlo en un test se sube al botón con `.closest('button')`.
-- `ariaLabel` es obligatorio cuando `label` no es un string.
-- `fullWidth` sólo para el switch de login/crear cuenta (thumb deslizante).
-
----
-
-## 16. Money & Numeric Formatting
-
-- All COP: use `formatCurrency()` from `@/lib/format` — outputs `$2.500.000` (Colombian dot-as-thousands)
-- Numerals are **JetBrains Mono, tabular** — pair with a unit suffix in `text-fg-muted text-sm`:
-  ```tsx
-  <p className="text-fg"><span className="font-mono tabular-nums">$2.500.000</span>
-     <span className="text-sm text-fg-muted">/mes</span></p>
-  ```
-- Score values: `<span className="font-mono tabular-nums text-fg">{score}</span><span className="text-sm text-fg-muted">/100</span>`
-- Dates: `toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })` → "11 de abril de 2026"
-
----
-
-## 17. Modal vs Drawer — Two Different Layers
-
-Two overlay patterns plus the floating-content layer that must sit above them:
-
-| Pattern | Component | z-index | When |
-|---|---|---|---|
-| **Drawer / Sheet (side panel)** | `<Sheet>` / `<Drawer>` primitives (`sheet.tsx`, `drawer.tsx`) | `z-[300]` | Detail views, settings, long sectioned content |
-| **Dialog (centered modal)** | `<Dialog>` / `<AlertDialog>` (`dialog.tsx`, Radix-based) + `confirmar()` / `avisar()` | `z-[300]` | Confirmations, short forms, status messages (info / éxito / error / advertencia) |
-| **Floating-in-modal** | `Select` / `DropdownMenu` / `Popover` / `Tooltip` / `HoverCard` content | `z-[400]` | Any Radix popover opened *inside* a modal/drawer |
-
-⚠️ **Overlay stack: modal/drawer `z-[300]` < floating content `z-[400]` < toasts (sonner, ~1e9).**
-Floating primitives MUST outrank the modal that contains them — otherwise their content
-renders **behind** the `z-[300]` overlay and is invisible/clipped. That's why
-`select.tsx`, `dropdown-menu.tsx`, `popover.tsx`, `tooltip.tsx`, and `hover-card.tsx`
-override the design-system default `z-50` to `z-[400]`. Add new floating primitives to
-that list, don't invent a new number.
-
-Dialog and Sheet share `z-[300]`; a confirmation Dialog spawned *from* a Sheet lands on
-top by DOM order (it mounts later). Desde el 02-10-2026 no queda ningún cajón armado a mano
-(`PlanDetailSheet` incluido): todos son el `<Sheet>` flotante (§4 Drawers).
-
-### Dialog Pattern — el modal canónico (02-10-2026)
-
-> Nico: «quiero algo hermoso, que cada modal se sienta bello, sea informativo,
-> de éxito, de error». Desde ese día **todo modal del producto sale de la misma
-> primitiva** (`Dialog` / `AlertDialog` de Cadence, a través de
-> `src/components/ui/dialog.tsx` y `alert-dialog.tsx`) y **nadie arma una
-> cáscara a mano** (`fixed inset-0` + caja centrada). Las historias de Storybook
-> de Cadence (`Overlays/Dialog`, `Overlays/AlertDialog`,
-> `Overlays/MessageDialog`, `Overlays/Imperativo`) son la referencia visual.
-
-```
-┌────────────────────────────────────────────┐
-│  (◎)                                  (✕)  │  medallón opcional (variant / icon)
-│  Título grande 20/28                       │  + subtítulo 14px apagado
-│  Subtítulo                                 │
-├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤  filete SÓLO cuando el cuerpo scrollea
-│  cuerpo — lo único que scrollea            │  data-lenis-prevent + overscroll contain
-│  ┌──────────────────────────────────────┐  │
-│  │ bloque con borde fino (DialogSection)│  │
-│  └──────────────────────────────────────┘  │
-├────────────────────────────────────────────┤
-│  pie, fondo suave         Cancelar  [Sí]   │  pie fijo, acciones a la derecha
-└────────────────────────────────────────────┘
-```
-
-- **Panel:** esquinas de **24px**, borde fino, sombra profunda y suave, centrado
-  con `inset-0 m-auto` (no con translate). Entra con escala + opacidad en
-  `duration-slow` (300 ms) + `ease-enter`, subiendo `--motion-distance-sm`; sale
-  en `duration-fast` (150 ms) + `ease-exit` (§8b). La hoja del celular entra con
-  `ease-emphasis`. Con `prefers-reduced-motion` los tokens valen 0 y 1 y queda
-  un fundido corto, sin ninguna clase `motion-reduce:` en el panel (salvo la
-  hoja, que viaja el 100% de su alto y pasa a fundido).
-- **Velo:** tinta translúcida + **desenfoque** del fondo (negro 60% en oscuro).
-- **✕:** un círculo con borde fino arriba a la derecha. La pone el Content
-  (nunca la cabecera) y no scrollea nunca.
-- **Pie:** fondo `surface-hover` (blanco/negro translúcido: neutro en los dos
-  temas), filete arriba, acciones a la derecha. Salida = botón blanco con borde
-  (`variant="outline"` o `secondary`: el pie pinta de superficie el `outline`),
-  acción = cobalto, destructiva = rojo sobrio (también en oscuro: el pie fuerza
-  `#c0392b` en vez del salmón, que con texto blanco no llega a 4.5:1).
-- **Celular (<640px):** sube como **hoja desde abajo**, a todo el ancho, con las
-  esquinas de arriba redondeadas, los botones a todo el ancho (el principal
-  arriba) y la zona segura del iPhone respetada. `mobile="center"` lo deja como
-  tarjeta centrada.
-- **Oscuro:** Onyx `#0a0a0a`. Nada de `surface-muted` adentro del modal (es un
-  gris cálido, amarillento sobre el negro).
-
-#### Tamaños — `size` en el Content
-
-| `size` | Ancho | Para |
-|---|---|---|
-| `sm` | 420 | Confirmaciones, mensajes de estado (default de `AlertDialog`) |
-| `md` | 520 | Formularios cortos (default de `Dialog`) |
-| `lg` | 680 | Formularios con secciones |
-| `xl` | 880 | Tablas, comparaciones, extractos |
-
-Un `className="max-w-…"` en el Content sigue ganando (tailwind-merge), pero
-preferí `size`.
-
-#### Las variantes — `variant` en el Content
-
-| Tipo | Componente | `variant` | Medallón | Botón principal |
+| Nombre | Hex | Para qué | Web (Tailwind) | App (`COLORES.claro`) |
 |---|---|---|---|---|
-| Contenido / formulario | `Dialog` | — | ninguno (o `icon`) | cobalto |
-| Confirmación | `AlertDialog` / `confirmar()` | `confirm` | cobalto, «?» (o el ícono de la acción) | cobalto |
-| **Destructiva** | `AlertDialog` / `confirmar({ destructivo })` | `destructive` | rojo, papelera (o `Prohibit`…) | **rojo sobrio, solo** |
-| Advertencia | `AlertDialog` / `avisar` | `warning` | ámbar, «!» | cobalto |
-| Informativa | `Dialog` / `avisar({ tipo: "info" })` | `info` | azul, «i» | «Entendido» blanco |
-| Éxito | `Dialog` / `avisar({ tipo: "exito" })` | `success` | verde, **el ✓ se dibuja** | «Listo» blanco |
-| Error | `Dialog` / `avisar({ tipo: "error" })` | `error` | rojo, «×» | «Reintentar» si aplica |
+| Papel | `#FBFAF8` | el fondo de todo | `bg-bg` | `fondo` |
+| Superficie | `#FFFFFF` | tarjetas, tablas, cajones, modales | `bg-surface` | `superficie` |
+| Arena | `#F3F1ED` | botón secundario, pista de pestañas, bloques callados | `bg-surface-muted` | `superficieHundida` |
+| Piedra | `#E7E3DC` | la línea fina | `border-border` | `borde` |
+| Piedra suave | `#EFECE7` | divisiones dentro de una tarjeta | `border-border-faint` | `bordeSuave` |
+| Piedra fuerte | `#D3CDC3` | hover de un campo | `border-border-strong` | `bordeFuerte` |
+| Tinta | `#121110` | el texto (18,4 : 1 sobre papel) | `text-fg` | `texto` |
+| Grafito | `#5B5751` | texto secundario (7,2 : 1) | `text-fg-muted` | `textoSuave` |
+| Ceniza | `#706B64` | texto tenue, cabeceras de tabla (5,1 : 1) | `text-fg-subtle` | `textoTenue` |
+| **Voltaje** | `#1A40FF` | LA chispa: acción principal, foco, enlace, paso actual, menú activo (6,5 : 1) | `bg-primary`, `text-primary`, `ring-ring` | `primario` |
+| Voltaje suave | `#EEF1FF` | lo elegido, la fila activa, la insignia «en curso» | `bg-primary-soft` | `primarioSuave` |
+| Medianoche | `#0A0F2C` → `#16205C` | superficie de marca: Ori, plan, onboarding, la entrada, velo de modales | `bg-ink`, `text-ink-fg` | `tinta`, `tinta2` |
+| Éxito | `#2B7549` · suave `#E8F2EB` | al día, pagado, verificado | `text-success`, `bg-success-soft` | `exito` |
+| Aviso | `#8C600E` (texto) · suave `#FAF0DA` | por vencer, revisar | `text-warning`, `bg-warning-soft` | `aviso` |
+| Peligro | `#B8372A` · suave `#FBEAE6` | mora, error, irreversible | `text-danger`, `bg-danger-soft` | `peligro` |
+| Info | `#2A6FB0` · suave `#E6F0FA` | información neutra | `text-info`, `bg-info-soft` | `info` |
+| Chispas | lila `#9D8CFF` · ámbar `#FF7A3D` · cielo `#7DC4FF` · rosa `#FFB3C8` · menta `#8FE3BF` | SÓLO ilustración y orbes | `chispa-*` | `chispa*` |
 
-El medallón es un círculo de 48px con el **tinte suave** del estado (nunca
-saturado) y un halo del mismo tinte; entra con escala + opacidad (desde
-`--motion-pop-scale`: con movimiento reducido, sólo el fundido).
+El ámbar de la identidad para puntos e ilustración es `#D9911C` (lo usa la landing); el texto de aviso es `#8C600E`
+porque necesita contraste.
 
-```tsx
-// Formulario / contenido
-<Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent size="md">
-    <DialogHeader>
-      <DialogTitle>Nuevo propietario</DialogTitle>
-      <DialogDescription>Con el documento basta; el resto se completa después.</DialogDescription>
-    </DialogHeader>
-    {/* hijos sueltos: van al cuerpo con scroll (grid gap-4) */}
-    <DialogSection title="Datos">…</DialogSection>
-    <DialogFooter>
-      <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-      <Button isLoading={guardando}>Crear propietario</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+Degradados: el único **de color** es el de la medianoche,
+`linear-gradient(150deg, var(--ink) 58%, var(--ink-2) 135%)`. Fuera de ese, sólo degradados **funcionales y
+neutros**: el velo que hace legible un texto sobre una foto o un video, el desvanecido de un borde (`mask-image`), el
+material de un marco en una maqueta (el portátil de la landing) y los patrones de puntos o rayas de corte duro. Nunca
+un degradado decorativo de color (ni de voltaje a lila, ni «aurora»).
 
-// Destructiva: el título nombra QUÉ, la descripción dice EXACTAMENTE qué se pierde
-<AlertDialog open={open} onOpenChange={setOpen}>
-  <AlertDialogContent variant="destructive">
-    <AlertDialogHeader>
-      <AlertDialogTitle>¿Anular el recibo RC-1042?</AlertDialogTitle>
-      <AlertDialogDescription>
-        La cuota de octubre vuelve a quedar pendiente por $ 2.450.000. El recibo queda
-        marcado como anulado; no se borra.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-      <AlertDialogAction loading={anulando} onClick={(e) => { e.preventDefault(); anular() }}>
-        Anular recibo
-      </AlertDialogAction>          {/* sale rojo solo: lo decide la variante */}
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+### 3.2 Tema oscuro
 
-// Un estado que cambia adentro del mismo modal: la variante sigue al estado
-<DialogContent variant={resultado ? "success" : undefined}>…</DialogContent>
-```
+Un solo negro **Onyx `#0A0A0A`** en todos los fondos (Nico, 01-09) y los grises **neutros** del chat (Nico, 02-10):
+arena `#1A1A1A`, piedra `#262626`, texto `#FBFAF9`, grafito `#A6A6A6`, ceniza `#8A8A8A`, voltaje `#2E52FF`. La
+medianoche en oscuro es el mismo negro; el azul de noche queda en el degradado (`ink-2 #141A3D`). Toda pantalla se
+revisa también en oscuro. Guardián: `src/components/ui/grises-en-oscuro.guardian.test.ts`.
 
-#### Preguntar o avisar desde un manejador — `confirmar()` / `avisar()`
+### 3.3 Reglas
 
-`src/components/ui/confirmar.tsx`. Devuelven una promesa; **reemplazan a
-`window.confirm` / `alert`** (prohibidos: `sin-dialogos-del-navegador.test.ts`,
-que también mira `globalThis.` y `self.`). No hay que montar nada: el primer
-pedido monta un único anfitrión en `document.body` con el z del panel.
-
-```ts
-const ok = await confirmar({
-  destructivo: true,
-  titulo: '¿Eliminar a Laura Gómez del equipo?',
-  descripcion: 'Pierde el acceso al panel ya mismo. Sus gestiones y notas se conservan.',
-  accion: 'Eliminar del equipo',
-})
-if (!ok) return
-
-// Con el trabajo adentro: el botón carga; si falla, el modal sigue abierto.
-await confirmar({ titulo: '¿Enviar los 42 recordatorios?', accion: 'Enviar', alConfirmar: enviar })
-
-await avisar({ tipo: 'error', titulo: 'No pudimos enviar el lote a Wompi',
-  descripcion: 'Wompi no respondió. Lo enviado quedó guardado; reintenta en unos minutos.',
-  referencia: 'WOMPI_NO_RESPONDIO · 7f3a-29c1', accion: 'Reintentar', alAccionar: reintentar })
-```
-
-Una confirmación lleva siempre `descripcion` (qué pasa si se acepta) o, por lo
-menos, `detalle`: sin descripción, el detalle es lo que lee el lector de
-pantalla; sin ninguno de los dos, Radix avisa en la consola de desarrollo.
-
-Un error en un modal dice **qué pasó** (título) y **qué hacer** (descripción),
-con la **referencia** opcional para soporte (se copia con un clic) — las mismas
-piezas que `FalloDeCarga` (`titulo`, `descripcion`, `sePuedeReintentar`).
-
-#### Reglas que NO se negocian
-
-| Regla | Por qué |
-|---|---|
-| **Siempre `<DialogHeader>`** | Da el título 20/28, el subtítulo, el medallón y el lugar de la ✕. Sin él el modal se ve de otra familia. |
-| **No toques el tamaño del título** | Lo fija Cadence (20/28). El color tampoco: el estado lo dice el medallón, no un título rojo o ámbar. |
-| **Nada de cabeceras con ícono hechas a mano** | Un `WarningCircle` en un recuadro `bg-danger-soft` al lado del título es lo que hace `variant` / `icon`, mejor y igual en todos lados. |
-| **El pie es `<DialogFooter>`** | Un `div` a mano no queda fijo, no tiene el fondo suave ni apila bien en el celular. |
-| **No le pongas `p-0`, `overflow-y-auto`, `max-h-*` ni `flex flex-col` al Content** | Ya los tiene, y pelean: con `overflow-y-auto` scrollea el panel entero y la cabecera se va. |
-| **Destructiva = `variant="destructive"`** | Medallón rojo + botón rojo sobrio + el texto dice exactamente qué se pierde (y qué no). |
-| **Cargando ≠ deshabilitado** | `loading` / `isLoading` en el botón principal: spinner y bloqueado, pero conserva su color. Cancelar se deshabilita mientras tanto. |
-
-`DialogContent` **reparte** a sus hijos directos: `DialogHeader` arriba,
-`DialogFooter` abajo y lo demás a un cuerpo con scroll (`grid gap-4`). Si
-escribís `<DialogBody>` a mano, se respeta tal cual (para darle otro layout).
-
-### La ✕: una sola, y la pone la primitiva
-
-**Ningún call site dibuja una ✕.** Hay UN aspa en todo el producto —un
-**círculo con borde fino**, `size-9 rounded-full border border-border
-bg-surface`— y vive en `AspaDeCierre` (`src/components/ui/dialog.tsx`, dibujo en
-`aspa-de-cierre.ts`, el mismo que `DialogCloseButton` de Cadence). Diálogos y
-cajones la heredan.
-
-| Dónde | Quién la pone |
-|---|---|
-| `DialogContent` (con o sin cabecera) | El Content, como `closeButton` de Cadence: arriba a la derecha, fuera del cuerpo que scrollea; la cabecera le reserva lugar |
-| `SheetContent` | El Content, en `right-6 top-[18px] sm:top-3.5` y `z-20` (`sheetCloseClassName` de Cadence, con `right-6` encima: centrada en la línea del título y con el borde en el padding), después de los hijos; `SheetHeader` le reserva el hueco. `closeLabel` le cambia el nombre («Cerrar el documento») |
-| `AlertDialog` / `confirmar()` | Nadie: se sale por `Cancelar` o por la acción (y Esc), a propósito |
-
-Para apagarla entera: `hideClose` en `DialogContent` (`hideCloseButton` en
-`SheetContent`). Sólo para un modal que no se debe abandonar a medias. El
-`hideClose` de `DialogHeader` quedó por compatibilidad y no hace nada.
-
-⚠️ **Un envoltorio de `DialogHeader`/`DialogFooter` tiene que declarar
-`bandaDeModal`.** `DialogContent` reparte a sus hijos leyendo esa marca; antes
-comparaba identidad de componente y `ResponsiveDialogHeader` no calificaba: la
-cabecera se iba al cuerpo con scroll. Así vivió «Agendar una cita» con dos aspas.
-`ResponsiveDialog` hoy es el mismo `Dialog` (que ya es hoja de abajo en el
-celular).
-
-Una cáscara escrita a mano que todavía exista (`createPortal`) usa
-**`rounded-[24px]`**, el mismo radio que la primitiva — pero lo correcto es
-pasarla a `Dialog`. `src/components/ui/modales-alineados.test.ts` y
-`una-sola-aspa.test.tsx` verifican todo esto.
+- **Una acción en voltaje por pantalla** (o por bloque que vive aparte, como un cajón). La que más se hace ahí.
+- **Medianoche: un momento de marca por pantalla, como mucho** (`CampoDeMedianoche`).
+- **Estado = punto + palabra.** El fondo suave sólo en insignias y avisos; nunca rellenos saturados.
+- **El color dice gravedad, no decora.** Verde, ámbar y rojo sólo donde hay un juicio (al día / por vencer / en mora).
+- **Gráficas:** la rampa del voltaje (`--blue-500 … --blue-200`) más ceniza y piedra fuerte; los colores de estado sólo
+  cuando la serie ES un estado. Así lo hacen `donut-chart` y `bar-chart` de Cadence.
+- **Siempre por token.** Nada de hex en clases (`bg-[#1a40ff]`), nada de la paleta cruda de Tailwind (`bg-blue-500`,
+  `text-violet-600`, `bg-emerald-50`), nada de `var(--primary)` suelto en una sombra o un `style` (en el front son
+  canales HSL: usar `ring-*`, `bg-primary`, `border-border`). En la app nativa, `useTema()` y `COLORES`; en la landing,
+  las variables CSS de `public/landing/index.html` (`--voltaje`, `--tinta`, `--arena`…).
 
 ---
 
-## 18. UI Primitives Inventory
+## 4. Letra
 
-Available at `src/components/ui/` — **check first before creating new components**:
+Dos familias, cargadas con `next/font` en `src/app/layout.tsx` (web), `@expo-google-fonts` en la app y por CSS en la
+landing:
 
-| Primitive | Purpose |
-|---|---|
-| `accordion` | Collapsible sections (Radix) |
-| `alert` / `alert-dialog` | Banners / confirm dialogs |
-| `animated-counter` | Counts up on view (mono tabular). Sin consumidores: para cifras nuevas usa `AnimatedNumber` (§8b) |
-| `avatar` | User avatars with size/ring variants |
-| `back-button` | Standard back button |
-| `badge` | Status pills (incl. risk-a/b/c/d) |
-| `breadcrumb` | Navigation breadcrumbs |
-| `button` | Primary primitive — pill, sentence case (variants + sizes) |
-| `card` | Card containers (`rounded-lg`, hairline border) |
-| `checkbox` | Checkbox input |
-| `collapsible` | Expand/collapse |
-| `dialog` | Centered modal (z-[300]) — variantes `confirm`/`destructive`/`info`/`success`/`warning`/`error`, `DialogSection`, `DialogBody` |
-| `confirmar` | `confirmar()` / `avisar()`: modales imperativos (reemplazan `window.confirm`/`alert`) |
-| `divider` / `separator` | Horizontal/vertical rules |
-| `dropdown-menu` | Menu popover |
-| `empty-state` | Empty list/page state |
-| `error-state` | Error display card |
-| `hover-card` | Hover-reveal info |
-| `input` | Text input (h-11, hairline border, cobalt focus) |
-| `kbd` | Keyboard shortcut display (mono) |
-| `label` | Form label |
-| `LockedFeatureOverlay` | Plan-gating overlay |
-| `not-found` | 404 component |
-| `pagination` | Page navigation |
-| `popover` | Floating popover |
-| `progress` | Linear progress bar |
-| `scroll-area` | Custom scrollbar |
-| `section-label` | Dot + mono uppercase eyebrow |
-| `select` | Select dropdown |
-| `sheet` | El cajón flotante: `Sheet` + `SheetHeader`/`SheetNav`/`SheetBody`/`SheetSection`/`SheetFooter` (§4 Drawers) |
-| `cajon` | La misma anatomía en español: `Cajon`/`CajonCabecera`/`CajonCuerpo`/`CajonPie` |
-| `drawer` | Hoja desde abajo con arrastre (vaul), mismo dibujo. Para un cajón lateral, `sheet` |
-| `skeleton` | Loading skeleton |
-| `slider` | Range input |
-| `spinner` | Loading spinner (sizes + variants) |
-| `switch` | Toggle switch |
-| `table` | Data table (mono numerals, tabular) |
-| `tabs` | Tab navigation |
-| `textarea` | Multi-line input |
-| `toast` | Sonner-based toast |
-| `toggle-group` | Toggle button group |
-| `tooltip` | Hover tooltip |
-| `visually-hidden` | Screen-reader-only |
+- **Host Grotesk** — para leer: títulos y texto. Títulos LIVIANOS.
+- **DM Mono** — cifras (tabulares, también en tablas), rótulos y textos cortos en MAYÚSCULA.
 
-And `src/components/ui/plan/` (CRM-specific): `PlanActivityTimeline`, `PlanDetailSheet`, `PlanHeader`,
-`PlanProgressBar`, `PlanSidebar`, `PlanStatsCard`, `PlanStatusBadge`, `PlanTable`, `PlanTabs`,
-`SubscriptionBadge`.
+### 4.1 La escala (Cadence 2)
+
+| Clase | Tamaño / interlínea | Peso | Familia | Uso |
+|---|---|---|---|---|
+| `text-display` | clamp(40–64) / 1,02 | 400 | Host | héroes de la landing y momentos de marca |
+| `text-h1` | 32 / 1,1 | 420 | Host | título de página pública, entrada, onboarding |
+| `text-h2` | 22 / 1,25 | 500 | Host | **título de pantalla del panel, portales y admin** (`<h1 className="text-h2">`) |
+| `text-h3` | 18 / 1,35 | 500 | Host | título de bloque o de tarjeta; título de modal (20/500) |
+| `text-subtitle` / `text-body-lg` | 18 / 1,45 | 400 | Host | entradillas |
+| `text-body` | 16 / 1,55 | 400 | Host | texto |
+| `text-body-sm` | 14 / 1,5 | 400 | Host | texto de tablas, formularios y UI densa |
+| `text-caption` | 13 / 1,46 | 400 | Host | ayudas, datos secundarios. **El mínimo para contenido** |
+| `text-label` | 11 / 1,35, +0,06 em | 400 | **Mono MAYÚSCULA** | sobretítulos, cabeceras de tabla, estados |
+| `text-stat` | 30 / 1,1 | 400 | **Mono** | la cifra de un KPI |
+
+### 4.2 Reglas
+
+- **Jerarquía con tamaño y aire, nunca con negrilla.** Pesos 400, 420 y 500. `font-bold` no se usa; `font-semibold`
+  no se agrega en código nuevo (quedan 471 usos viejos, §18).
+- **Título de pantalla del panel = `h1` con `text-h2`.** No el `PageHeader` de Cadence (su título es el gigante). La
+  descripción va debajo en UNA línea, `text-sm text-fg-muted max-w-2xl`.
+- **Cifras siempre en `font-mono`** (tabulares). Plata con `formatCurrency` → «$ 1.234.567» con espacio duro (U+00A0)
+  después de `$`.
+- **MAYÚSCULAS sólo en DM Mono y sólo en rótulos cortos** (`text-label`). Nunca `uppercase` en Host Grotesk, en
+  botones ni en frases. Nunca la clase `capitalize` (en español sube cada palabra): `conMayusculaInicial`.
+- **Botones en minúscula de frase**, Host Grotesk medio.
+- **12 px no crece**: `text-xs` tiene un guardián que no deja sumar usos (`components/doce-pixeles.guardian.test.ts`).
+- **App nativa:** nunca `fontWeight`; la letra sale de `LETRA` (`src/tema/tokens.ts`: `normal`, `media`, `mono`…).
+- **Landing:** `var(--f)` (Host Grotesk) y `var(--m)` (DM Mono).
 
 ---
 
-## 19. Documento largo consultable (informe de avalúo) — «Panel»
+## 5. Forma: la esquina
 
-Patrón introducido por `/avaluo/reporte/[slug]`. Aplica a cualquier entregable que hoy
-sea un PDF y pase a leerse en la web: un informe, un acta, un certificado. La dirección
-visual elegida es **panel de producto**: chrome de app, un héroe ink con la cifra, y el
-resto en tarjetas de un bento sin huecos.
-
-**Estructura.** `main#main-content` → banda(s) de estado → `ReportTopbar` (sticky:
-marca · `StatusBadge` de vigencia · chip del sello (ancla) · «Descargar el PDF» ·
-Exportar · tema) → `grid lg:grid-cols-[16.5rem_minmax(0,1fr)]` con `ReportRail` (índice
-sticky con scrollspy y progreso) y un `<article>` con `ReportHero` + `ReportChapter`s.
-Capítulos en `<h2>` con pill numerada; secciones en `<section id={ancla}>` con `<h3>` y
-`scroll-mt-28`. El **layout es declarativo**: `landing-layout.ts` describe cada capítulo
-como `rows` de 12 columnas (celdas `hero | section(+filler) | group | stack`) y un test
-exige que cada fila sume 12 y que las 39 secciones aparezcan exactamente una vez.
-
-| Regla | Por qué |
-|---|---|
-| El índice lista **capítulos**, no secciones | 39 entradas es la tabla de contenidos del PDF con scrollspy encima |
-| `sticky`, nunca `fixed` | `template.tsx` monta `PageTransition`, cuyo `transform` vuelve *containing block* a cualquier `fixed` descendiente (§17 / §8) |
-| Tarjetas hermanas de una fila = **misma altura** | `grid-cols-12 items-stretch` + `h-full flex flex-col`; el hueco se rellena con un dato real (`filler`: anillo de vigencia, gauge de sector, medidor de exposición, dona terreno/construcción, gauge de divergencia) o la fila pasa a «una grande + columna de dos». Nunca dos alturas distintas lado a lado |
-| Plegado ≠ ausente: `<details>` sin `hidden` | Ctrl-F lo encuentra, el export lo lleva y la hoja de impresión lo abre |
-| Un bloque con consecuencia legal **no puede** ir dentro de `<details>` | Se marca en el modelo (`emphasis: 'disclaimer'`) y `ReportCard` lo cierra por id: aunque cambie el layout, «Alcance y limitaciones» es tarjeta de aviso siempre visible |
-| Un hueco de datos se pinta, no se esconde | La tarjeta dice **qué** falta (chips de `gaps`); «datos no disponibles» a secas no informa |
-| Superficies ink **planas** en el héroe y en UNA tarjeta de insight por página | Sin gradiente, sin bloom, sin `BrandMotif`, sin grano: §10.6 se cumple sin excepción. La jerarquía la hace el color del texto (`ink-fg`/`-muted`/`-subtle`), la banda es un instrumento de una sola tinta (`indigo-300`) y el marcador va en blanco. Decisión de producto (2026-08-18, «más minimalista») tras descartar el fondo fotográfico y luego el construido |
-| Motion bajo `useReducedMotion` siempre | Reveal por scroll con stagger por fila, count-up de la cifra, banda que crece, indicador del índice con `layoutId`; con reduced-motion todo aparece al instante y el marcado SSR/cliente es idéntico (un `opacity:0` de servidor sin transición deja la página en blanco) |
-| Tabla ancha → `data-lenis-prevent` + `overscrollBehavior: 'contain'` | Sin eso Lenis secuestra la rueda del mouse (§8) |
-| Numerales siempre `font-mono tabular-nums whitespace-nowrap` | Un «$» huérfano en una línea es el error más visible de una fila estrecha; se parte el label, nunca el número |
-| Cada campo PII lleva `data-pii-field` | `globals.css` ya lo esconde en `@media print` |
-| Hoja de impresión propia | Cadence no trae ninguna utilidad `print:`. Molde: `src/app/avaluo/reporte/report-print.css` (apaga chrome, motion y capas decorativas; abre los `<details>`) |
-
-Referencia: `src/components/avaluo/reporte/` (`ReporteAvaluoShell`, `ReportTopbar`,
-`ReportRail`, `ReportHero`, `ReportChapter`, `ReportCard`, `ReportBlockView` + `blocks/`,
-`charts/` (`ValueBandChart`, `Fillers`, `AnimatedAmount`), `motion/`).
-
-**Vocabulario de bloques.** El contenido no se escribe a mano por sección: llega tipado
-como una unión de once arquetipos (`prose`, `keyValues`, `bulletList`, `table`, `headline`,
-`verdict`, `statChain`, `placeholder`, `media`, `figure`, `seal`) y `ReportBlockView`
-despacha. Una sección nueva cuesta **cero** componentes; un arquetipo nuevo cuesta uno y
-TypeScript lo cobra en el `switch`.
-
-## 20. Sello de verificación
-
-El bloque que dice «este documento es el que se firmó». Va **al final** del documento —es
-el cierre de un argumento— con un ancla desde el encabezado.
-
-- Tarjeta del bento con banner de veredicto (feedback tokens + icono + texto: el estado nunca depende sólo del color) y el QR en marco ink; el héroe y la insight son las otras superficies ink de la página.
-- Contenido mínimo: emisor · fecha de firma · vigencia · método · huella corta en
-  `font-mono tabular-nums` · **enlace al verificador público**.
-- El enlace externo es obligatorio y visible: *un sello que sólo se puede ver dentro de la
-  página que estás validando no prueba nada*.
-- Si el enlace no puede navegar (datos de muestra, slug inexistente) se pinta la
-  referencia en mono y se dice por qué está inactivo. Nunca un enlace roto.
-- El chip del encabezado que lleva al sello es *chrome*: la sección se renderiza **una
-  sola vez**.
-
-Referencia: `SealBlockView` en `src/components/avaluo/reporte/blocks/SealBlock.tsx` (+ `QrMatrix`, `CopyHashButton`, `lib/avaluo/reporte/seal-presentation.ts`). Con un documento servido el sello muestra el veredicto REAL del verificador público (`render.seal`: verificado / alterado / no disponible), la cadena de vigencia y el QR dibujado con `<rect>` desde la matriz que manda el servicio; la muestra sigue declarándose sin verificación real.
-
-## 21. Marca de datos de muestra
-
-Cuando una pantalla se pinta con un juego de datos ficticio, tres capas —cada una sola
-falla:
-
-1. **Banda superior persistente**, ancho completo, `role="status"`, `bg-warning-soft`,
-   **fuera** del `<article>` y no descartable.
-2. **La marca dentro del contenido** que da autoridad (acá, la tarjeta del sello dice que
-   no hay verificación real).
-3. **Marca en los propios datos**: nomenclatura imposible (`# 00-00`), nombres con
-   `(demo)`. Quien se salte la banda igual choca con datos obviamente ficticios.
-
-Más `data-sample="true"` en el `<article>` y `robots: { index: false, follow: false }`.
-El DS tiene además `SampleDataWatermark` para cuando haga falta la marca de agua diagonal.
-
-## 21b. El orbe de los agentes (Cadence v1.2.1, 02-10-2026)
-
-Cada agente se pinta con **`<OrbeDeAgente agente="cobranza" estado="pensando" tamano={28} />`**
-(`src/components/agentes/OrbeDeAgente.tsx`): paleta, semilla y variante salen del registro
-(`src/lib/agentes/equipo.ts`). Nunca un `AgentOrb` suelto con una paleta a mano.
-
-- **Qué es**: un fluido de color que EMITE luz (núcleo, filo de luz, halo que respira), pintado
-  por un shader. **Un solo contexto WebGL para toda la página**, sin importar cuántos orbes
-  (el motor de Cadence pinta cada orbe en un atlas y lo copia a su `<canvas>`). Sin WebGL, cae
-  solo al orbe SVG.
-- **Estados** (`EstadoDelOrbe`): `quieto` respira · `pensando` gira y brilla · `trabajando` /
-  `hablando` late con una onda · `listo` se asienta · `fallo` sin color y tenue · `apagado` sin
-  color, menos tenue. Cambiar de estado se funde; no hay que animar nada por fuera.
-- **Look**: `nebula` (Nebulosa, **el de por defecto desde v1.2.1**: Nico, 02-10), `silk` (Seda),
-  `mist` (Bruma). El de por defecto es `AGENT_ORB_DEFAULT_LOOK` en Cadence; una zona se cambia
-  con `<AgentOrbLookProvider look="…">`. Vista previa: `/agentes-preview` (sólo en desarrollo).
-  Nebulosa se adapta al lado: de 16 a ~32 px (lista de «El equipo», chips, la cabecera del
-  chat) baja el detalle —sin polvo, velos ni motas— y sube núcleo y halo; desde 44 px es
-  completa (nubes de color suaves, hondura, pocas motas; sin filamentos «de plasma»). No hay
-  que pasarle nada: el motor le da el tamaño al shader.
-- **Tamaño**: la caja mide `tamano`; el halo sale de ella sin mover el layout (deja ~½ lado de
-  aire si el padre recorta con `overflow`).
-- **`quieto`** (still) = un cuadro fijo: para chips de 16–18 px y listas de decenas. Una lista
-  como «El equipo» (≈20) puede ir viva. `prefers-reduced-motion` ya deja todo en cuadro fijo.
-- En pruebas (happy-dom no tiene WebGL) se pinta el SVG con `data-renderer="svg"`; no hay que
-  mockear nada.
-- **Presentación de un agente** (la primera vez en su espacio, y la del Piloto con Ori): el héroe
-  de la tarjeta §Novedades es el **orbe grande** del agente, no la aurora. Se arma con
-  **`<PresentacionConOrbe agente="cobranza" title description ctaLabel onCta />`**
-  (`src/components/agentes/PresentacionConOrbe.tsx`, sobre `FeatureAnnouncement` sin tocarlo):
-  orbe de 120 px centrado sobre el fondo de la tarjeta, que entra (fundido + escala, `reveal` /
-  `enter`) y despierta quieto → trabajando → listo mientras el texto sube escalonado (`sm`,
-  `motionStagger.step`). Movimiento reducido: sólo fundidos y el orbe `listo` de una. Lo usan
-  `AgentIntroModal` (vista: `PresentacionDelAgente`) y `PilotoNovedad`.
+- **La esquina suavizada** (la de Mollie): `corner-shape: superellipse(1.5)` en toda esquina redondeada. La pone sola
+  la regla global de `globals.css` para cualquier `rounded-*` que no sea `rounded-full`. Sin soporte del navegador
+  cae al radio de siempre.
+- **Escala** (remapeada por Cadence): `rounded-sm` 8 · `rounded-md` 14 · `rounded-lg` 22 · `rounded-xl` 32 ·
+  `rounded-full`. 🔴 Trampa: `rounded-xl` NO son 12 px, son 32; `rounded-lg` son 22. Para una caja chica, `rounded-sm`.
+- **Por pieza:** botones con radio completo + superelipse (lo trae `Button`; nunca pastilla dura ni rectángulo duro) ·
+  campos 14 · tarjetas 20–22 · modales y cajón 24 · pastillas 7 · avatar de persona en superelipse · círculos
+  (avatar de agente, orbes, puntos de estado) `rounded-full`.
 
 ---
 
-## 23. Pantallas por tarea — el GLOW UP (Nico, 20-10-2026)
+## 6. Profundidad: sombras, líneas y capas
 
-> Nico: «cada caso de uso tiene que optimizar el flujo desde lo que haría un usuario al inicio para
-> que entienda todo lo que debe de hacer desde el inicio hasta que ya tiene información y lo que
-> puede seguir haciendo […] minimizando carga cognitiva […] usa patrones de diseño para esconder
-> información irrelevante en la misma pantalla […] utiliza bien la información superior con las
-> acciones principales o secundarias».
+- **Dos sombras y nada más:** `shadow-susurro` (una pieza que sube apenas: filo de 1 px + sombra casi invisible) y
+  `shadow-flotante` (menús, cajones, diálogos). Nada de `shadow-xl`, brillos ni resplandores.
+- **Líneas finas:** `border-border` alrededor; `border-border-faint` para dividir por dentro.
+- **Una sola capa de tarjeta.** Nunca tarjeta con borde dentro de tarjeta con borde: adentro se separa con aire o con
+  una línea fina y rótulos en mono (así está hecha `TarjetaDeLaFicha`).
+- **Velos:** medianoche al 38 % detrás de un modal, al 24 % detrás de un cajón (la lista se sigue viendo).
+- **Sin vidrio sobre contenido** (glassmorphism). El botón `glass` existe sólo sobre medianoche.
+- **Capas (z-index):** dropdown 10 · sticky 20 · fixed 30 · velo 40 · modal 50 · popover 60 · tooltip 70 · toast 80.
 
-Cada pantalla del panel se lee de arriba abajo en el orden en que se trabaja. Las piezas viven en
-`src/components/pantalla/`:
+---
 
-| Capa | Qué dice | Pieza |
+## 7. Espacio, retícula y anchos
+
+- **Escala de 4:** 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64. Entre bloques, más aire que dentro del bloque (proximidad).
+- **Contenedor de pantalla** (panel, portales, admin): `space-y-6 p-6 lg:p-8`, **a todo el ancho**. Nunca
+  `max-w-3xl mx-auto` ni columnas centradas (Nico, 12-10). Excepción: el estado de cuenta, documento imprimible de
+  1.200 px.
+- **Anchos que se prueban:** 390 · 768 · 1024 · 1440 (y oscuro). Nada se corre de lado a 390 (`scrollWidth` = ancho).
+- **Bajo 768 px** las tablas pasan a tarjetas (`useIsMobile`) o se deslizan DENTRO de su caja; los rieles de
+  pestañas y atajos se deslizan; los botones principales van a lo ancho.
+- **Columnas parejas** en las páginas públicas: mide la altura de ambas columnas antes de entregar (Nico, 16-10).
+- **Landing:** `--max: 1320px`, `--gutter: clamp(16px, 4vw, 56px)`. **App:** 16 a los lados (`ESPACIO.l`), sin
+  franjas vacías arriba ni abajo.
+
+---
+
+## 8. Íconos
+
+Una familia propia (Cadence `src/icons`): cuadrícula de 24, **trazo 1,5**, puntas y uniones redondas, esquinas
+suavizadas y un **corte** donde un trazo pasa sobre otro. Pesos: thin · light · regular (1,5) · bold · **fill**
+(silueta llena, detalles calados) · duotone.
+
+- **Web:** se importa como siempre de `@phosphor-icons/react`; `next.config.mjs` (`aliasDeIconos`) y `vitest.config.ts`
+  apuntan ese paquete al puente `@leasefy/cadence/phosphor`, que dibuja con nuestra familia los 307 nombres que usa la
+  plataforma. También `<Icono nombre="casa" size={16} />`. Regular por defecto; fill para lo activo.
+- **Nunca Lucide** (queda 1 import viejo). Nunca SF Symbols ni Material en la app.
+- **La IA es la orbe**, no una estrellita: `Sparkle` y `MagicWand` se dibujan como esfera con su brillo (`chispa`).
+- **Sin íconos dentro de círculos o cuadros de color.** Si un vacío chico necesita base, `EsferaDeGrano`.
+- **Un ícono que falta se dibuja**, no se toma de otra librería: Cadence `scripts/iconos/familia.py` (+ `MAPA_PHOSPHOR`)
+  → `npm run iconos` → revisar `scripts/iconos/hoja.html` (regular y fill) → `tsup`. En la app: PNG de plantilla con
+  `app-expo/scripts/iconos/traer-de-cadence.py`.
+
+---
+
+## 9. Ilustración, orbes e imágenes
+
+### 9.1 Ilustraciones 3D
+
+Objetos renderizados en Blender con trazado de rayos, aprobados por Nico (21–22-10), en dos tonos: **voltaje** y
+**grafito** (`auto` elige). Van sin pedestal, transparentes, con su sombra:
+`<Ilustracion nombre="contrato" tono="voltaje" tamano={160} />` (Cadence; archivos `public/ilustraciones/<nombre>-<tono>.webp`).
+
+Los 64 nombres (`NOMBRES_ILUSTRACIONES`):
+- **Plata:** casa, alcancia, billetera, escudo, monedas
+- **Inmuebles:** edificio, fachada, local, torre, bodega, lote, campestre, parqueadero, plano, obra
+- **Captación y marketplace:** arriendo, lupa, pin, mapa, camara, recorrido, visita, favorito, megafono, canon
+- **Contratos:** contrato, firma, sello, llaves, carpeta
+- **Estudio y cobro:** portapapeles, cedula, lupa_estudio, calendario_pago, factura, datafono, banco, celular_pago, reloj_mora, campana
+- **Cartera e incrementos:** sobre_cobro, grafica, calculadora, ipc, herramientas
+- **Mantenimiento y entrega:** llave_destornillador, grifo, bombillo, inventario, rodillo, buzon, cerradura, mudanza
+- **Novedades y plan:** novedad_regalo, novedad_cohete, aviso_importante, aviso_cartelera, plan_peldanos, plan_insignia
+- **Estados:** pago_confirmado, sin_conexion, bienvenida, mensajes, equipo, correo_enviado
+
+Reglas: **todo estado vacío lleva su ilustración 3D** (Nico, 23-10, «sí o sí»), con las piezas que ya la ponen (§11);
+una ilustración por pantalla; para éxitos, vacíos grandes y bienvenidas. Una ilustración nueva se hace con el motor de
+Blender (`archivos/identidad-v3/blender/escena.py` en la memoria del proyecto) y Nico la ve antes de usarla.
+
+### 9.2 Orbes y piezas de marca
+
+- **`AgentOrb`** — la orbe viva **Nebulosa**, elegida por Nico el 02-10 TAL CUAL (Cadence v1.2.2). Sola: sin aura, sin
+  puntos ni cruces alrededor. Cada agente tiene su paleta. Estados: quieta, `working` (trabajando/hablando).
+- **`EsferaDeGrano`** (quieta, con grano), **`FotoEnEstrias`** (fotos en estrías), **`BrandMotif`** (el monograma en
+  estrías), **`CampoDeMedianoche`** (el momento de marca).
+- El grano (`--grano`) va sólo en esferas y campos de marca.
+
+### 9.3 Imágenes del producto y de marca
+
+- **Lo que muestra el producto es una captura REAL del panel** con la inmobiliaria de demostración «Tu Inmobiliaria»
+  (datos inventados pero creíbles y coherentes; nunca datos de clientes ni restos de QA). Mejor el panel completo en
+  uso, en clip, que un recorte quieto. Cada imagen prueba lo que dice su texto. Marcos grises. Si la pantalla cambia,
+  se vuelve a tomar; nunca se dibuja a mano (Nico, 12-10).
+- **Logo:** proporción 2,08 : 1, nunca deformado. En arquitectura u objetos (fachada, placa, bordado) va como OBJETO REAL
+  hecho por el generador, nunca pegado plano; lo plano sólo en pantallas, hojas, paredes pintadas y lonas. Revisar manos
+  y letras de cada imagen generada. Nada repetido (Nico, 28-10). Manual: https://claude.ai/artifact/KmyeY1Fqv5qVwAfQmxBX3R
+
+---
+
+## 10. Movimiento
+
+Nico (02-10): «que cada interacción tenga su animación top, cosas suaves: entradas, salidas, cambios». Una pantalla
+correcta pero quieta se siente sin terminar.
+
+- **Tokens** (`cadence/src/motion/tokens.ts` = `tokens.css`): `instant` 100 ms (hover, foco) · `fast` 150 ms (presión,
+  salidas) · `base` 200 ms (entradas, menús, pestañas) · `slow` 300 ms (paneles, secciones, colapsables) · `reveal`
+  500 ms (cifras grandes). Curvas: `ease-enter` (lo que entra desacelera), `ease-exit` (lo que sale acelera y dura
+  menos), `ease-emphasis` (paneles), `ease-spring` (presión, interruptores). Distancias 4 · 8 · 16 · 24.
+- **Primitivas de Cadence:** `Appear`, `Presence`, `Stagger`/`StaggerItem`, `CrossFade`, `Collapse`,
+  `MotionIndicator` (el indicador de la pestaña activa), `AnimatedNumber` (cifras que cambian), `Pressable`,
+  `PageTransition`, `MotionProvider`. Los componentes base (`Button`, `Table`, `Dialog`, cajón) ya traen el suyo.
+- **Reglas:** sólo `transform` y `opacity` (salvo la altura de un colapsable); presionar encoge 3 % con resorte;
+  modales entran en 200 ms, cajones en 240 ms; listas que entran de a uno (stagger corto); cargando → contenido con
+  fundido; una cosa se mueve a la vez. Con `prefers-reduced-motion` sólo quedan fundidos (`MotionConfig
+  reducedMotion="user"`). Nunca animar `transform: scale` en un diálogo centrado con `translate` (usa la propiedad
+  `scale`; ver el comentario de `scale-in` en `tailwind.config.ts`).
+
+---
+
+## 11. Las piezas, y cuándo va cada una
+
+Antes de escribir una pieza, búscala: front `src/components/ui/*` (adaptadores sobre Cadence),
+`src/components/pantalla/*`, `src/components/estado/*`, o `@leasefy/cadence` (329 archivos en `src/components/ui`).
+**Si falta, se agrega a Cadence o a `components/pantalla`; nunca un estilo armado a mano dentro de una pantalla.**
+
+| Necesidad | Pieza | Reglas |
 |---|---|---|
-| 1 · Encabezado | Dónde estoy, qué es (una línea) y qué se hace aquí | `EncabezadoDePantalla` — a la derecha, de lo más callado a lo más fuerte: la ayuda (`ParaEntenderMas`), las secundarias (`outline`) y la principal (cobalto). Todos los botones `size="sm"`. |
-| 2 · Lo que falta para empezar | Lo que se deja listo UNA vez, en orden y con su botón | `ListaParaEmpezar` — «Para facturar te faltan 2 pasos», el primero que falta lleva «Sigue», lo opcional lleva su rótulo y no cuenta, lo que no se pudo revisar (`desconocido`) nunca deja decir «Todo listo». Con todo listo se pliega en una línea. |
-| 2b · Una tarea en pasos | Configurar → subir → revisar → aprobar | `PasosDeLaTarea` — riel numerado: el paso actual abierto, los hechos con su resumen y «Cambiar», los que vienen con la razón por la que todavía no. |
-| 3 · Lo que toca hoy | El estado en UNA frase con sus cifras | Una `<p>` (el molde de §Pagos: «el resumen es una frase, no fichas»). Las cifras no prometen lo que un botón apagado no hace. |
-| 4 · El trabajo | La tabla, con pestañas, filtros y búsqueda dentro de la tarjeta | Lo de siempre: tabla paginada + cajón por fila. |
-| 5 · Lo demás | Lo que se toca una vez al año o se consulta poco | Su propia vista con «Volver», `MasDetalles` («Ver detalles»), un cajón, o una pestaña al final. Nunca un listado infinito al fondo. |
-
-Reglas que salen de ahí:
-
-- **Un aviso, una vez.** Si la lista de arriba dice que falta algo, no se repite en la pestaña ni en la
-  tabla; al lado de un botón apagado queda la razón en corto, con su salida.
-- **Pocas pestañas, por trabajo.** Ocho pestañas del mismo peso se leen como ocho cosas por hacer:
-  agrupar por lo que se viene a hacer (Facturación pasó de 8 a 5) y meter las variantes en un
-  `SegmentedControl` dentro de la pestaña.
-- **Lo de configurar una vez es un botón que abre su cajón ahí mismo**, no una pestaña adonde hay que ir.
-- **Los textos nuevos pasan por `tr()`** (`useTr`) y su inglés va en `lib/i18n/frases-en-del-glow-up.ts`.
-- **Cada pantalla se mide antes y después** con los 10 principios de Nielsen (la página de revisión
-  del glow up los lleva por módulo).
-
-Ejemplo hecho: Facturación (`app/panel/inmobiliaria/facturacion/page.tsx`,
-`components/facturacion/LoQueNecesitasParaFacturar.tsx`).
+| Encabezado de pantalla | `EncabezadoDePantalla` (front `components/pantalla`) | sección en mono · título `text-h2` · UNA línea de para qué sirve │ a la derecha, de lo más callado a lo más fuerte: ayuda (`ParaEntenderMas`), secundarias (`outline`), principal (voltaje). Todos `size="sm"`. En el celular las acciones bajan y la principal va a lo ancho |
+| Botón | `Button` (front `components/ui/button.tsx` → Cadence) | `default` = voltaje, UNO · `secondary`/`outline` (arena) · `ink` para decidir (aprobar, girar) · `ghost` para cancelar · `link` · `destructive` · `white`/`glass` sólo sobre medianoche. Tamaños `sm` (tablas, barras, encabezado) · `default` · `lg` (entrada, formularios de una columna). `isLoading` conserva el ancho; `count` nunca muestra 0; sin flechas decorativas; el texto dice lo que pasa |
+| Lo que falta para empezar | `ListaParaEmpezar` | «Para facturar te faltan 2 pasos», el primero con «Sigue»; lo opcional no cuenta; con todo listo se pliega en una línea |
+| Tarea en pasos | `PasosDeLaTarea` | el paso actual abierto, lo hecho resumido con «Cambiar», lo que viene con su porqué |
+| Lo de consulta | `MasDetalles` («Ver detalles») | explicaciones, opciones avanzadas, desgloses: plegados en la misma pantalla |
+| Página larga (> 3 pantallas) | `IndiceDeLaPagina` | «En esta sección», pegado arriba; cada bloque con `id` + `data-indice` |
+| La cifra que decide | `CifraHeroe` (front `components/pantalla`) | rótulo mono · cifra grande · contexto que la vuelve un hecho · barra en tramos · leyenda |
+| Varias cifras | `FranjaDeCifras` + `Cifra` (Cadence) | juntas en UNA tarjeta con líneas finas, no tarjetas sueltas con ícono. Máx. 4. `Cifra onClick activa` filtra la lista (va DENTRO de la tarjeta de la tabla). `tono` sólo si pide atención |
+| Una sola cifra | `KpiCard` / `Stat` | etiqueta mono, cifra mono 30 |
+| Pestañas de estado de una tabla | `PestanasDeEstado` (front) | con conteo, DENTRO de la tarjeta; reemplaza franjas de ceros |
+| Pestañas | `Tabs` (pocas, por trabajo) · `SegmentedControl` (variantes dentro de una pestaña) | pista de arena; la elegida sube con `shadow-susurro` |
+| Ficha (inmueble, contrato, propietario, inquilino) | `TarjetaDeLaFicha`, `PestanasDeLaFicha` | sin borde duro, título liviano con ícono suelto; adentro, líneas finas |
+| Tabla | `Table` + `TableToolbar` + `TableFooter` (Cadence; front `components/ui/table.tsx`), `TablePagination`; admin: `DataTable` | ver §12.3 |
+| Acciones masivas | `BarraDeAccionesMasivas` (front `components/ui/acciones-masivas.tsx`) | una línea + «Ver más»; bajo `lg`, encima de la barra del celular |
+| Cajón | `Cajon` (front `components/ui/cajon.tsx`) / `Sheet` | sale por la derecha, flota a 12 px con esquina 24; cabecera (qué es + estado + cifra), pestañas sólo si hay más de un tema, cuerpo que se desplaza solo, pie fijo con la acción. En el celular, hoja desde abajo |
+| Modal | `Dialog` / `AlertDialog`, `Confirmar` (front `components/ui/confirmar.tsx`), `ConfirmarEscribiendo` (Cadence) | sólo para decidir. Título = la pregunta; el porqué en una línea con la cifra; botones que dicen lo que hacen, la principal a la derecha; UNA sola ✕ (la pone la primitiva) |
+| Aviso (toast) | front `components/ui/toast.tsx` (sonner) | tarjeta clara con punto de estado, título + una línea, «Deshacer» si se puede; 6 s |
+| Vacío | `EmptyState` (ui) · `SinDatos` (con filtros) · `VacioDeSeccion` (Configuración) · `VacioChico` (tarjeta, 64 px) | SIEMPRE con ilustración 3D; si la pantalla no elige, `ilustracionDelVacio()` (`lib/vacios`) la deduce. Qué va a aparecer, quién lo trae y UNA acción |
+| Fallo al leer | `FalloDeCarga` / `EstadoDeDatos` (front `components/estado`) | qué pasó, reintentar y salida |
+| Error de un campo | `ErrorDelCampo` (front `components/estado`) + `aplicarErroresDelServidor` | bajo el campo, en palabras, cómo arreglarlo |
+| Texto del error | `mensajeParaLaPersona` (`lib/errores/traductor-de-errores.ts`) | un solo traductor; «conexión» sólo si no hubo respuesta |
+| Estado de un registro | `StatusBadge` (punto + palabra en mono) · `Badge` suave | el estado se lee por la palabra, no por un bloque de color |
+| Persona, agente, inmueble | `Avatar` (`persona` superelipse con su tono · `agente` círculo con orbe · `inmueble` foto · `invitada` punteada · `marca` medianoche), `AvatarStack` | nunca iniciales hechas a mano |
+| Plata | `MoneyInput`, `CampoDePlata`, `formatCurrency` | cifras en mono; centavos sólo con la llave del back |
+| Fechas | `CampoDeFecha` (DatePicker de Cadence), `fechaLegible`, `fechaEnFrase` | nunca `<input type="date">` (guardián `fechas-con-cadence`) |
+| Otros campos | `Input`, `Select`, `Combobox`, `PhoneField`, `PercentInput`, `CasillasDeCodigo`, `SelectorDeArchivo` | etiqueta arriba, ayuda debajo; `aria-invalid` pinta el borde |
+| Volver | `BackButton` | arriba en toda sub-pantalla, también en carga, vacío y fallo |
+| Acciones de una sección de Configuración | `AccionesDeLaSeccion` | en la línea del título, a la derecha: secundarias y al final la principal |
+| Fotos | `VisorDeFotos` | |
 
 ---
 
-## 24. Cadence 2 — la identidad y cómo se construye el front (Nico, 20 → 21-10-2026)
+## 12. Patrones de pantalla
 
-> «Quiero nuestra propia marca, que no se sienta que es IA… la UX debe ser perfecta, los flujos de trabajo al 100 %
-> optimizados para la tarea, y la UI hermosa.» Identidad completa: `@leasefy/cadence` → `docs/IDENTIDAD.md`;
-> página viva https://claude.ai/artifact/E1o95TDQhSza4djDLQk5jn. Skills: `cadence-identidad` (Cadence) y
-> `leasefy-diseno` + `pantalla-por-tarea` (front).
+### 12.1 Por tarea: las cinco capas (el glow up, Nico 20-10)
 
-**Fundamentos.** Papel `#FBFAF8` · arena `#F3F1ED` · piedra `#E7E3DC` · tinta `#121110` · grafito `#5B5751` · ceniza `#706B64` ·
-**voltaje `#1A40FF` = la única chispa** · medianoche `#0A0F2C`. Host Grotesk (títulos livianos) + DM Mono (cifras, etiquetas,
-MAYÚSCULAS cortas). Esquina superelipse 1.5 en todo lo redondeado.
+Antes de dibujar, escribe el trabajo en una línea («Cobrarle a quien debe este mes») y los pasos que la persona hace
+hoy y los que debería hacer. Después arma de arriba abajo, en el orden en que se trabaja:
 
-**Íconos.** La familia propia de Leasefy (trazo 1,5, esquinas suavizadas, corte en los cruces). Se sigue importando de
-`@phosphor-icons/react` (o `<Icono nombre>` de Cadence): `next.config.mjs` (`aliasDeIconos`) y `vitest.config.ts` apuntan ese
-paquete al puente `@leasefy/cadence/phosphor`, que dibuja con nuestra familia los 307 nombres que usa la plataforma. Un
-nombre nuevo de Phosphor que no esté en el mapa sale con el dibujo de Phosphor: agrégalo a la familia (Cadence,
-`scripts/iconos/familia.py`). Nunca Lucide.
+1. **Encabezado** — dónde estoy, qué es (una línea) y la acción principal (`EncabezadoDePantalla`).
+2. **Lo que falta para empezar** — sólo si la tarea tiene requisitos (`ListaParaEmpezar`).
+3. **La tarea en pasos** — cuando hay un orden (`PasosDeLaTarea`); o **lo que toca hoy** en UNA frase con sus cifras,
+   o la `CifraHeroe` si una cifra decide la pantalla.
+4. **El trabajo de todos los días** — la tabla o el formulario; el detalle en un cajón, no en otra pantalla.
+5. **Lo demás** — lo que se toca una vez al año o se consulta poco: `MasDetalles`, un cajón, una pestaña al final o su
+   propia vista con «Volver». Nunca un listado infinito al fondo.
 
-**Ilustraciones 3D.** `<Ilustracion nombre="casa|alcancia|billetera|escudo|monedas" tono="voltaje|grafito|auto" />`
-(archivos en `public/ilustraciones/`). Para vacíos grandes, éxitos y momentos de bienvenida. Uno por pantalla.
+Reglas que salen de ahí: **un aviso, una vez** (si arriba dice que falta algo, no se repite en la tabla) · **pocas
+pestañas, por trabajo** (Facturación pasó de 8 a 5; las variantes, en un `SegmentedControl`) · **lo que se configura
+una vez es un botón que abre su cajón ahí mismo**, no una pestaña adonde ir · **cuenta los clics y campos del camino
+más común y quita los que sobran** (la complejidad la absorbe el sistema).
 
-**Las piezas y cuándo.**
-- **Botón**: una acción azul por pantalla (la que más se hace ahí); secundarias en arena; «decidir» (aprobar, girar) en
-  `ink`; cancelar en `ghost`; lo irreversible en `destructive`. `loading` conserva el ancho; `count` nunca muestra 0.
-  sm en tablas y barras, md en todo lo demás, lg sólo en la entrada y formularios de una columna.
-- **Tabla**: la barra (buscar · vista · filtros · densidad · acción de la tabla) va DENTRO de la tarjeta
-  (`<Table toolbar footer>`); cifras en mono a la derecha; la fila abre el cajón; paginación en el pie.
-- **Cifras**: varias cifras de una pantalla van JUNTAS en una `FranjaDeCifras` (una tarjeta con líneas finas entre ellas),
-  nunca en una fila de `KpiCard` sueltos con su ícono; un `KpiCard` dentro de la franja se vuelve celda solo. La cifra que
-  filtra la lista es `<Cifra onClick activa>` (botón con `aria-pressed`) y, si filtra una tabla, la franja va DENTRO de la
-  tarjeta de la tabla, arriba de la búsqueda — y entonces no lleva además un selector con los mismos estados. Punto de
-  estado (`tono`) sólo cuando la cifra pide atención. `fila="xl"` cuando son montos largos que con el menú abierto no caben.
-- **Página larga** (más de tres pantallas de alto, como Configuración · Perfil): `IndiceDeLaPagina`
-  (components/pantalla) pegado arriba con «En esta sección»; cada bloque lleva `id` + `data-indice="Nombre"`.
-  Si la página pasa de ~10 bloques, la pregunta es si deberían ser secciones aparte.
-- **Cajón**: ver o editar una cosa sin perder la lista. **Modal**: decidir algo que no puede esperar o no se deshace.
-  **Página**: una tarea de más de 3 pasos o algo que se comparte con un enlace.
-- **Modal**: título = la pregunta; el porqué en una línea con la cifra o el nombre que importa; botones que dicen lo que
-  hacen; lo irreversible se confirma escribiendo (`ConfirmarEscribiendo`); lo que se deshace no lleva modal sino aviso
-  con «Deshacer».
-- **Aviso (toast)**: tarjeta clara con punto de estado, título + una línea, acción opcional.
-- **Avatar**: personas en superelipse con su tono (`kind="persona"`, el tono sale del nombre); agentes en círculo con su
-  orbe (`kind="agente"`); inmuebles con su foto. Nunca iniciales hechas a mano en una pantalla.
-- **Vacío**: ilustración (grande) o esfera con ícono (chico) + qué falta + el siguiente paso como botón.
-- **Formularios**: etiqueta arriba; la ayuda dice qué va; el error dice CÓMO arreglarlo con un ejemplo; un campo apagado
-  dice por qué; lo verificado lleva su chulo verde y de dónde salió.
+### 12.2 ¿Cajón, modal o página?
 
-## 25. Medir la UX — antes y después de cada pantalla
+- **Cajón:** ver o editar una cosa sin perder la lista.
+- **Modal:** decidir algo que no puede esperar o que no se deshace.
+- **Página:** una tarea de más de tres pasos, o algo que se comparte con un enlace.
+- **Lo que se deshace no lleva modal:** se hace y sale un aviso con «Deshacer».
+- **El foco** entra al primer campo (o al botón seguro), no se escapa del modal y vuelve al botón que lo abrió.
 
-Cada pantalla que se toca se puntúa ANTES y DESPUÉS (0–10 por principio) y el puntaje queda en la página de revisión.
+### 12.3 Tablas y listas
 
-**Los 10 de Nielsen**, en preguntas concretas para Leasefy:
-1. *Visibilidad del estado*: ¿se sabe qué está pasando (cargando, guardado, enviado, en cola) sin adivinar?
-2. *Mundo real*: ¿dice «canon», «propietario», «liquidación», «día de pago» — no «entity», «payload», «sync»?
-3. *Control y libertad*: ¿hay «Deshacer», «Volver», «Cancelar» a la mano, y Esc cierra?
-4. *Consistencia*: ¿las mismas piezas de Cadence, el mismo lugar para la acción principal, los mismos nombres?
-5. *Prevenir errores*: ¿se valida antes, se bloquea lo imposible y se explica por qué está apagado?
-6. *Reconocer antes que recordar*: ¿lo que hace falta está a la vista (no hay que ir a otra pantalla a mirar un dato)?
-7. *Flexibilidad*: ¿atajos, filtros guardados, acciones masivas para quien hace esto 50 veces al día?
-8. *Minimalismo*: ¿cada bloque se gana su lugar?; lo de consulta, plegado en «Más detalles».
-9. *Errores que ayudan*: ¿el error dice qué pasó, por qué y cómo arreglarlo, en palabras de la inmobiliaria?
-10. *Ayuda*: ¿hay una línea que explica para qué es la pantalla y un «¿Cómo funciona?» donde la tarea es nueva?
+- **La barra va DENTRO de la tarjeta de la tabla** (`toolbar`): buscador a la izquierda (ancho flexible), los 1–3
+  filtros que más se usan como selects compactos en la MISMA línea, el resto en «Filtros (n)» (popover), exportar y
+  acciones a la derecha. Todos los controles del mismo alto (h-9). Nunca selects con etiqueta flotando en una grilla
+  ni filtros en dos renglones desalineados.
+- **Un filtro activo se ve** (chip «Estado: en mora ✕») y «Limpiar» aparece sólo con filtros. Filtros, pestaña,
+  orden y página quedan en la URL.
+- **Pestañas de estado con conteo** dentro de la tarjeta; la pestaña que nunca tendrá nada se oculta.
+- **Paginación, filtros y buscador NUNCA se quitan** en un rediseño, y se agregan a la tabla que crece (Nico, 23-10).
+  También en la versión de tarjetas del celular.
+- **Columnas:** la primera identifica (nombre + dato secundario debajo en grafito); números a la derecha en mono con
+  los mismos decimales; textos a la izquierda; una columna que dice lo mismo en todas las filas se quita o se vuelve
+  filtro; un cero en una tabla de conteos es «—» atenuado.
+- **La fila abre el cajón** con el detalle completo.
+- **Bajo 768 px:** tarjetas con 2–3 datos esenciales, buscador a lo ancho + botón «Filtros» (hoja inferior).
+- **Exportar** donde hay listas, salvo datos personales de deudores (Deudores, Cartera por etapa).
 
-**Leyes que se revisan siempre**: Hick (menos opciones a la vez: una principal, pocas secundarias, el resto en «Más»),
-Fitts (lo frecuente grande y cerca; lo destructivo lejos de lo frecuente), Jakob (como lo hacen las herramientas que ya
-usan: tablas, cajones, filtros), Miller (agrupar de a 5–7), Tesler (la complejidad la absorbe el sistema, no el usuario),
-proximidad y región común (lo que va junto, junto: la barra de la tabla dentro de la tabla), Doherty (respuesta < 400 ms o
-un esqueleto con la forma de lo que llega), Von Restorff (sólo UNA cosa destaca: la acción principal).
+### 12.4 Cifras
 
-**El flujo completo** (Nico: «desde que ingresa hasta que sigue gestionando»): para cada pantalla escribir el trabajo en
-una línea («Registrar los pagos que llegaron hoy») y recorrerlo: 1) al entrar, ¿se entiende en 5 segundos para qué es y qué
-toca primero? 2) ¿la acción principal está arriba a la derecha y es la única azul? 3) ¿cada paso dice qué falta y por
-qué? 4) al terminar, ¿se confirma el resultado (aviso, resumen) y se ofrece lo siguiente? 5) ¿al volver mañana, la pantalla
-muestra lo pendiente primero? Si algún punto falla, la pantalla no está lista.
+- Máximo 4 juntas, en `FranjaDeCifras`. Cada una responde una pregunta que cambia una decisión.
+- Una cifra que casi siempre es 0 no es una cifra: es un aviso que aparece cuando no es 0.
+- Todo en cero → UNA línea («Todo al día: nadie en mora»), no una franja de ceros.
+- Sin sub-datos de relleno. Un sub-dato sólo si cambia la lectura (una tendencia real, una fecha que vence).
+- El mismo número no se dice dos veces en la misma vista (cifra, pestaña y título).
+- Una cifra sin definición no se publica; la definición puede ir plegada («Qué mide cada cifra»).
 
-### 25.1 La vara del 9,5 (Nico, 21-10-2026: «mínimo 9,5 en cada pantalla… y todos los casos de uso de cada sección»)
+### 12.5 Etapas, embudos y distribuciones
 
-El puntaje NO es a ojo: cada principio se mide con su lista de chequeo y cada punto lleva evidencia (captura a 390 y
-1440, una prueba o la línea de código). Puntaje del principio = 10 × cumplidos / aplicables; el de la pantalla, el
-promedio. **9,5 = a lo sumo un punto fallado en toda la pantalla, y ningún bloqueante.**
+No una tarjeta de color por etapa. UNA barra horizontal apilada (cada tramo = cuántos hay; color sólo por gravedad,
+de neutro a rojo) + una lista compacta debajo (etapa · cantidad · monto · días), alineada en columnas; las etapas en
+cero atenuadas o plegadas («+ 4 etapas sin casos»). Tocar una etapa filtra la tabla.
 
-**Bloqueantes** (con uno solo, la pantalla no pasa de 7): un botón que no hace nada · un estado sin salida (carga, vacío o
-fallo sin «Volver») · algo que se corre de lado a 390 · un código, id, slug o inglés a la vista · un dato inventado.
+### 12.6 Formularios
 
-| # | Principio | La pantalla cumple si… |
-|---|-----------|------------------------|
-| 1a | Estado | mientras carga hay un esqueleto con la forma de lo que llega (nunca la tabla vacía, ceros ni «0 de 0») |
-| 1b | Estado | toda acción que tarda dice que está en curso y no se puede disparar dos veces |
+- Una columna en el celular; dos sólo para pares naturales (día/mes, ciudad/departamento).
+- Etiqueta arriba; la ayuda dice qué va; el error dice CÓMO arreglarlo con un ejemplo, bajo el campo. Un requerido
+  vacío no abre en rojo: su error sale al dejarlo.
+- Se valida en el campo antes de enviar, con los MISMOS topes y frases que el DTO del back.
+- Un campo apagado dice por qué; lo verificado lleva su chulo verde y de dónde salió.
+- El botón dice el resultado («Guardar el contrato», no «Enviar»). Un formulario a medias no se pierde sin avisar.
+
+### 12.7 Carga, vacío y error
+
+- **Carga:** esqueleto con la forma de lo que llega (nunca la tabla vacía, ceros ni «0 de 0»); respuesta en < 400 ms o
+  esqueleto.
+- **Vacío:** ilustración 3D + por qué está vacío + quién lo trae + UNA acción (§11).
+- **Error:** `FalloDeCarga` con qué pasó, reintentar y salida; ningún estado sin salida.
+
+### 12.8 Acciones y confirmaciones
+
+- Una sola acción azul por pantalla, arriba a la derecha en el encabezado; lo frecuente grande y cerca, lo destructivo
+  lejos de lo frecuente.
+- En Configuración, las acciones van en la línea del título de la sección, a la derecha (`AccionesDeLaSeccion`).
+- **Tarjeta de acción** (pagar, aprobar, firmar): el monto y el botón juntos, el botón a lo ancho en el celular, el
+  detalle plegable.
+- Un botón apagado dice qué falta; lo que no se puede (permiso, estado) no se ofrece.
+- Toda acción que tarda dice que está en curso y no se puede disparar dos veces.
+- Al terminar, un aviso dice QUÉ pasó (con la cifra) y ofrece lo siguiente.
+- Nunca diálogos del navegador (`window.alert/confirm`; guardián `sin-dialogos-del-navegador`). Lo irreversible:
+  `ConfirmarEscribiendo palabra="BORRAR"`.
+
+### 12.9 El control del caso de uso se ve de una
+
+Cuando una opción abre un caso de uso («En los meses que elijo»), el control para hacerlo (el calendario de meses)
+aparece ENSEGUIDA y con la forma que la persona espera, nunca detrás de «elige primero…». Si depende de otro dato,
+arranca con un valor razonable y se vuelve a leer sin perder lo marcado (Nico, 22-10). Recorre cada caso desde el
+estado vacío y pregúntate: «¿dónde está el control para hacer lo que esta opción promete?».
+
+### 12.10 Datos para copiar
+
+Lo que se copia (referencia, número de cuenta) grande, en mono, con su «Copiar» al lado de CADA dato. Lo que no se
+copia, en grafito y pequeño.
+
+---
+
+## 13. Por superficie
+
+### 13.1 Panel de la inmobiliaria
+
+Todo lo de §11–12. Contenedor `space-y-6 p-6 lg:p-8`; `EncabezadoDePantalla`; tabla con barra adentro; cajón por fila;
+`tr()` para todo texto nuevo, con su inglés en `lib/i18n/frases-en-del-glow-up.ts`. Los agentes de IA tienen su sección
+del menú («Agentes IA») pero viven DENTRO del chat (§13.6). Ejemplos hechos: Facturación
+(`app/panel/inmobiliaria/facturacion/page.tsx`), Recaudo bancario, Cartera.
+
+### 13.2 Portales (inquilino, propietario, independiente)
+
+Se ven como el panel, no como otro producto (Nico, 12-10): mismo contenedor a todo el ancho, mismo título `h1
+text-h2` con la acción a la derecha, listas que crecen en tabla con `TablePagination` paginada en el back (tope 50),
+tarjetas bajo 768 y cada fila abre un `Cajon` con fotos en `VisorDeFotos`. Ejemplo: `components/landlord/portal/
+HistorialDeReparaciones.tsx`.
+
+### 13.3 Marketplace y páginas públicas en React
+
+- **Lo que invita a actuar nunca se esconde por falta de datos.** Sin catálogo se retiran fotos y cifras; el texto y
+  los botones quedan («Tu inmueble aquí» fija).
+- **Columnas parejas**, sin huecos. **«Ver más» abre un cajón**, no empuja la página.
+- **Vivo, sin inventar:** movimiento y fotos propias sí; nombres, precios o «X está publicando» inventados, nunca. Una
+  cifra real del back sí.
+- La ficha del inmueble sigue el plano de Redfin/Zillow; la inmobiliaria se ve sin buscarla. El perfil de la
+  inmobiliaria (`/i/<id>`) reemplaza su página web.
+- SEO, metadatos, inglés y datos estructurados: skill `seo-experto` (también aquí, siempre).
+
+### 13.4 Landing estática
+
+- `/es` y `/en` = `public/landing/index.html` (HTML sin React); internas en `public/internas/{productos,para}`. Las
+  páginas que se sirven están ARMADAS en `public/paginas/<idioma>/` por `scripts/landing/armar-paginas.mjs`: **se editan
+  las fuentes y se vuelve a correr el script** (la prueba `paginas-armadas.test.ts` falla si quedaron viejas).
+- Tokens: las variables CSS de la landing (`--bg`, `--arena`, `--piedra`, `--tinta`, `--grafito`, `--ceniza`,
+  `--voltaje`, `--medianoche`, `--f`, `--m`, `--sombra-susurro`…), las mismas de Cadence 2.
+- Imágenes = el producto real (§9.3). Sin auras, glow, texturas borrosas ni vidrio. Nada que «se sienta como IA».
+- Contacto `hola@leasefy.co` (nunca .com). Sin WhatsApp público hasta que Nico dé el número. Nada inventado (cifras,
+  reseñas, premios, redes).
+
+### 13.5 Admin de Leasefy
+
+Cadence como el panel (desde el 19-10; ya no `card`/`btn`/`pill` de `admin.css`). **Toda lista en `DataTable`**
+(`src/components/admin/screen/DataTable.tsx`): buscador, pestañas con conteo, filtros en la URL, orden, Excel, filas
+por página, «N de M» y tarjetas bajo 768. El detalle en un cajón (`CajonDelDetalle`).
+
+### 13.6 El chat de Ori y los agentes
+
+- **Todo pasa dentro del chat:** un botón, tarjeta o enlace del chat es un mensaje de la persona en el hilo y el chat
+  responde o ejecuta ahí. Nunca `Link`, `router.push` ni `href` interno en `components/beta/**`.
+- **Ningún agente trae su propio chat** ni pestaña de preguntas: entra al chat de Ori como especialista (su orbe en
+  `src/lib/agentes/equipo.ts`).
+- Cada bloque (tabla, métrica, aviso, entidad) va en UNA caja de Cadence del chat con cabecera, contenido y pie; «Ver
+  más» en el pie dice cuántas faltan; sin scroll anidado; los datos de una entidad viven dentro de su tarjeta y no se
+  repiten en cada respuesta.
+- La respuesta crece bajo la pregunta; el chat no salta al final; «Ver el resto ↓» mientras quede contenido abajo.
+- Nombres: **Ori** orquesta; **Mori** es la cobranza en la plataforma (se presenta como «Laura» sólo ante el
+  inquilino); Fixi, Niti, Cuenti… El chat y el piloto automático son cosas distintas.
+
+### 13.7 App nativa (Expo, repo `app-expo`)
+
+- **El front del glow up (Cadence 2) en TODA pantalla, pero como app:** barra de pestañas, pilas nativas, hojas del
+  sistema. Nunca una copia responsive de la web (Nico, 26-10).
+- **Nada de la landing:** la app arranca en entrar / crear cuenta, y ese comienzo va nativo (Nico, 25-10).
+- **Tokens:** `src/tema/tokens.ts` (`COLORES`, `LETRA`, `ESPACIO`) y `useTema()`. Nunca `fontWeight`.
+- **Piezas comunes** (`src/components/ui/*`): `Tarjeta`, `Boton`, `Campo`, `Pastilla`, `AvisoEnLinea`, `FilaDeCifras`,
+  `VacioDeSeccion` (con ilustración), `CampoDeMedianoche`, `RejillaDeModulos`, `Interruptor`, `Actualizar`,
+  `EntradaDeTexto`, `ModalDeLaApp`, `TituloDeLaRaiz`; `OrbeDeOri` en `components/chat`. Nunca `Switch`,
+  `RefreshControl`, `TextInput` ni `Modal` crudos.
+- **Nunca `Alert.alert`** (ni ActionSheet ni diálogos del sistema): `avisar(titulo, mensaje, botones)` de
+  `@/lib/dialogo`; toda hoja que iOS presente encima lleva `<AnclaDeDialogos />`; tres opciones o más, como lista.
+- **Íconos** de la familia de Leasefy también en la barra nativa (PNG de plantilla, `renderingMode="template"`).
+- **Navegación de app:** la barra de pestañas sólo en la raíz de cada pestaña (`src/lib/navegacion/
+  raiz-de-la-pestana.ts`); en las internas, volver arriba. Las listas de secciones van en `RejillaDeModulos` (2 por
+  fila, ícono grande u orbe). Ninguna navegación se apila dos veces (`empujarUnaVez`).
+- **Ori siempre a la vista y a un toque** (accesorio de la barra; no en pantallas con su propio campo de escribir).
+- La selección en voltaje suave, nunca en tinta. Sin franjas vacías arriba ni abajo.
+- Se prueba en iPhone chico, iPad, iPhone plegable (riel a la derecha) y Android, escribiendo en cada formulario.
+
+### 13.8 Navegación en el celular (web del panel)
+
+Como app nativa: barra de abajo **Inicio · Agentes · Operación · Dinero · Menú**; cada sección abre una hoja con sus
+páginas; «Menú», a la derecha, abre el menú completo. Sin ☰ arriba que haga lo mismo. La barra se arma por secciones
+(`agruparPorSeccion` en `MobileNavBar.tsx`).
+
+### 13.9 Correos, PDF y Excel
+
+Misma voz (§14) y mismos formatos de plata y fecha. En PDF con jsPDF (Helvetica) el «−» tipográfico sale como basura:
+pasar el texto por `textoParaElPdf` y la plata por `pesosEnPdf` (espacio normal). Documentos con centavos sólo con la
+llave del área (`formatCurrencyEnDocumento`).
+
+### 13.10 Imágenes de marca
+
+Ver §9.3 y el manual de marca. Cada imagen es una aplicación distinta (escenario, luz, ángulo); es un manual, no un
+pitch deck; poco texto.
+
+---
+
+## 14. Voz y tono
+
+Escribimos como una persona que sabe de inmobiliarias y respeta el tiempo del otro. La misma voz en todo lado; el tono
+cambia con el momento. Fuente completa: front `docs/VOZ-Y-TONO.md`.
+
+**Cuatro principios:** **claro** (qué pasa y qué hacer, una idea por frase, la acción primero) · **cercano** (de tú, en
+español de Colombia, sin jerga ni anglicismos) · **preciso** (con la cifra, el nombre y la fecha exactos; nada de
+«algunos» o «pronto») · **sereno** (lo grave se dice claro, no a gritos; sin culpas).
+
+| Dónde | Sí | No |
+|---|---|---|
+| Botón | «Registrar el pago» · «Eliminar 3 borradores» · «Proponer el traslado de $ 1.007.135» | «Aceptar», «Enviar», «Continuar» a secas |
+| Título de modal | «¿Aprobar la liquidación de octubre?» | «Confirmación» |
+| Error de un campo | «Le falta un número: el NIT tiene 9, más el de verificación.» | «Campo inválido» |
+| Error nuestro (5xx) | «Algo falló de nuestro lado. Referencia LSF-7Q2K.» | «Error 500. Revisa tu conexión.» |
+| Sin respuesta | «No hay conexión con Leasefy. Lo que llevabas quedó guardado.» | «¡Ups! Algo salió mal» |
+| Vacío | «Cuando un inquilino reporte un daño, Fixi lo abre aquí con fotos.» | «No hay datos» |
+| Éxito | «Listo: salieron las 214 cartas.» | «¡Operación exitosa!» |
+| Irreversible | «Se borran con sus documentos y no se pueden recuperar.» | «¿Estás seguro?» |
+| Cobranza | «Tu canon de octubre sigue pendiente. ¿Te sirve pagarlo hoy o prefieres un acuerdo?» | «Evite acciones legales.» |
+| Descripción de pantalla | Una línea: para qué sirve. | Dos párrafos con la ley |
+
+**Palabras:** inmueble (no propiedad/unidad) · canon (no renta) · inquilino y propietario (arrendatario/arrendador sólo
+en el contrato) · recaudo, giro, liquidación (no payout ni «dispersión» en frases) · mora, al día, paz y salvo · mandato
+(con el propietario) y contrato (con el inquilino) · «vence en 9 días» (no SLA) · tablero, lista, tarjetas (no Kanban,
+cards) · calificación (no score) · pasar a jurídico (no escalar, triage) · «Documento» si no se sabe el tipo (nunca
+«parece un celular»). Un concepto, un solo nombre en el menú, el título y la tabla.
+
+**Formatos:** plata `$ 2.450.000` (espacio duro, DM Mono) · negativos `− $ 770.000` · cero en tabla `—` · fecha en frase
+«20 de octubre de 2026» · fecha en tabla «20 oct 2026» · distancia «en 4 meses», «vence hoy» · hora «4:00 p. m.» ·
+porcentaje «72,4 %» · miles «1.893 contratos» · sólo la inicial en mayúscula · comillas «», raya —, N.º · sin punto en
+botones ni títulos · todo en COP, nunca dólares · nunca un id interno, UUID o slug a la vista.
+
+**Los agentes:** Ori habla en primera persona y dice qué revisó; lo que decide la persona se deja a la persona (el
+agente propone, no da por hecho); nunca «✨ IA».
+
+**Plantillas:** Vacío — «Todavía no hay {cosas}.» / «Cuando {quién} {haga qué}, aparece aquí.» / {Acción} · Éxito —
+«Listo: {qué pasó, con la cifra}.» · Confirmar — «¿{Acción} {qué}?» / {qué pasa y si se puede reversar} / «{Acción}
+{qué}» · Destructivo — «¿Eliminar {N cosas}?» / {qué se pierde}. No se puede deshacer. · Error nuestro — «No pudimos
+{acción}.» / Algo falló de nuestro lado. Referencia {código}. / «Reintentar» · Pendiente — «Para {tarea} te faltan {N}
+pasos» / {el que sigue, con su porqué}.
+
+---
+
+## 15. Responsive y accesibilidad
+
+- 390 · 768 · 1024 · 1440, claro y oscuro, sin barra de lado, sin textos cortados, cifras que caben enteras
+  (`fila="xl"` en `FranjaDeCifras` cuando son montos largos).
+- Contraste AA medido (los grises de §3 ya pasan sobre papel y arena). Toque mínimo 44 px en controles sueltos
+  (guardián `tap-targets`).
+- Foco visible (anillo de voltaje), teclado completo, Esc cierra cajón y modal, el foco vuelve al botón que abrió.
+- `aria-invalid` pinta el borde del campo; estados por palabra, no sólo por color.
+- `prefers-reduced-motion` respetado (§10). Paneles nuevos pasan `panel-a11y` (Playwright + axe).
+- Textos con `tr()`; la parte pública en ES y EN.
+
+---
+
+## 16. Lo que nunca
+
+- Brillos, auras, resplandores, estrellitas, cruces decorativas, «✨ IA», degradados decorativos de color (§3.1).
+- Emojis como marcadores o adorno en la interfaz.
+- Íconos dentro de círculos o cuadros de colores; íconos de Lucide, SF Symbols o Material.
+- Tarjeta con borde dentro de tarjeta con borde; cajas grises dentro de tarjetas.
+- Colores de chispa en botones, textos, bordes o estados; paleta cruda de Tailwind; hex sueltos en clases.
+- Más de una acción azul por pantalla; más de un campo de medianoche.
+- Botones en pastilla dura o rectángulo duro; flechas decorativas en botones; botones en MAYÚSCULA.
+- `font-bold`; negrilla para hacer jerarquía; MAYÚSCULAS en Host Grotesk; la clase `capitalize`.
+- Un 0 en un contador; una franja de cifras en cero; el mismo número dicho dos veces.
+- Selects sueltos flotando fuera de la tabla; quitar paginación, filtros o buscador.
+- Diálogos del navegador; `Alert.alert` en la app; `<input type="date">`.
+- Texto en inglés, ids internos o códigos a la vista; datos inventados; «¡Ups!».
+- Un vacío sin ilustración; un estado sin salida; un botón que no hace nada.
+- Contenedores centrados angostos en el panel o los portales.
+- Imágenes del producto dibujadas a mano; el logo deformado o pegado plano sobre un objeto.
+- Cambiar reglas de negocio o lo que hace el back en un rediseño: el diseño es front («NO ME CREES BUGS»).
+- Rondas de propuestas visuales para elegir (Nico, 21-10): se decide con esta identidad, se construye y se muestra.
+
+---
+
+## 17. La vara: cómo se mide
+
+**Mínimo 9,5 de 10 en cada pantalla y en cada caso de uso de cada sección** (Nico, 21-10). El puntaje no es a ojo:
+cada punto lleva evidencia (captura a 390 y 1440, una prueba o la línea de código). Puntaje del principio = 10 ×
+cumplidos / aplicables; el de la pantalla, el promedio. **9,5 = a lo sumo un punto fallado y ningún bloqueante.**
+
+**Bloqueantes** (con uno solo la pantalla no pasa de 7): un botón que no hace nada · un estado sin salida · algo que
+se corre de lado a 390 · un código, id, slug o inglés a la vista · un dato inventado.
+
+| # | Principio de Nielsen | La pantalla cumple si… |
+|---|---|---|
+| 1a | Estado | mientras carga hay un esqueleto con la forma de lo que llega |
+| 1b | Estado | toda acción que tarda dice que está en curso y no se dispara dos veces |
 | 1c | Estado | al terminar, un aviso dice QUÉ pasó (con «Deshacer» si se puede) y ofrece lo siguiente |
 | 1d | Estado | el estado de cada registro se lee en palabras, no sólo por color |
-| 2a | Mundo real | palabras de la inmobiliaria; plata en COP, cifras en mono, fechas legibles en español |
+| 2a | Mundo real | palabras de la inmobiliaria; plata en COP, cifras en mono, fechas en español |
 | 3a | Control | toda sub-pantalla tiene la vuelta arriba (`BackButton`), también en carga, vacío y fallo |
 | 3b | Control | cajón y modal cierran con Esc y ✕; un formulario a medias no se pierde sin avisar |
 | 3c | Control | lo destructivo pide confirmar o se puede deshacer |
@@ -1626,34 +652,99 @@ fallo sin «Volver») · algo que se corre de lado a 390 · un código, id, slug
 | 4b | Consistencia | tabla con su barra adentro, filtros a la vista y tarjetas bajo 768 px |
 | 4c | Consistencia | piezas de Cadence (Avatar, EmptyState, FalloDeCarga, Badge…), nada armado a mano |
 | 5a | Prevenir | se valida en el campo antes de enviar, con los topes del back |
-| 5b | Prevenir | un botón apagado dice qué falta; lo que no se puede (permiso, estado) no se ofrece |
+| 5b | Prevenir | un botón apagado dice qué falta; lo que no se puede no se ofrece |
 | 6a | Reconocer | lo pendiente primero: orden, pestaña o filtro por defecto |
-| 6b | Reconocer | el dato para decidir está en la misma pantalla; filtros y pestaña quedan en la URL |
+| 6b | Reconocer | el dato para decidir está en la misma pantalla; filtros y pestaña en la URL |
 | 7a | Flexibilidad | acciones masivas donde se hace lo mismo a muchos; buscar y exportar donde hay listas |
-| 8a | Minimalismo | cada bloque se gana su lugar; lo de consulta, plegado o en su pestaña; nada se dice dos veces |
+| 8a | Minimalismo | cada bloque se gana su lugar; lo de consulta, plegado; nada se dice dos veces |
 | 8b | Minimalismo | a 390 lo importante cabe en la primera pantalla |
 | 9a | Errores | un fallo de lectura usa `FalloDeCarga` (qué pasó, reintentar, salida) |
 | 9b | Errores | un error de acción va bajo su campo, en palabras, con qué hacer |
 | 9c | Errores | un vacío dice por qué está vacío y qué hacer, con la acción |
 | 10a | Ayuda | una línea dice para qué es la pantalla; «¿Cómo funciona?» donde la tarea es nueva |
 
-**Casos de uso**: cada sección lista sus trabajos (p. ej. Contratos: crear, buscar, renovar, terminar, cambiar de
-inquilino, incremento, firmar, invitar al portal, documentos) y cada uno se recorre con los 5 puntos del flujo de arriba,
-en 390 y 1440. Un caso de uso pasa si los 5 puntos pasan. El resultado (antes/después, puntaje por principio y por caso
-de uso) va a la página de revisión del glow up.
+**El flujo completo, en cinco puntos** (cada caso de uso, a 390 y 1440): 1) al entrar, ¿se entiende en 5 segundos para
+qué es y qué toca primero? 2) ¿la acción principal está arriba a la derecha y es la única azul? 3) ¿cada paso dice qué
+falta y por qué? 4) al terminar, ¿se confirma el resultado y se ofrece lo siguiente? 5) al volver mañana, ¿lo pendiente
+está primero?
 
-## 22. When in Doubt
+**Leyes que se revisan siempre:** Hick (una principal, pocas secundarias, el resto en «Más») · Fitts · Jakob (como las
+herramientas que ya usan) · Miller (grupos de 5–7) · Tesler · proximidad y región común · Doherty (< 400 ms o
+esqueleto) · Von Restorff (sólo UNA cosa destaca).
 
-1. Find a similar component already in the codebase — copy its pattern.
-2. Canonical references for common needs:
-   - **Cadence foundation**: [`cadence/reference/Cadence Design System.dc.html`](../../cadence/reference/Cadence%20Design%20System.dc.html) + the `@leasefy/cadence` preset
-   - **Color**: [`COLOR_SYSTEM.md`](./COLOR_SYSTEM.md)
-   - **Drawer**: §4 Drawers + `src/components/inmobiliaria/CandidateDrawer.tsx`, `src/components/inmobiliaria/PipelineDetail.tsx`
-   - **Form**: `src/components/auth/AuthForm.tsx`
-   - **Layout**: `src/app/panel/inmobiliaria/layout.tsx` + `src/components/ui/plan/PlanSidebar.tsx` + `PlanHeader.tsx`
-   - **Button**: `src/components/ui/button.tsx`
-3. If still unsure, ask before inventing — extend this doc, don't drift.
+La revisión dura y su formato están en `referencias/revision.md` de la skill `diseno-leasefy`.
 
 ---
 
-*Migrated to the Cadence design system (`@leasefy/cadence`). Update this doc when patterns change — don't let it drift.*
+## 18. Estado actual y deuda (medido el 28-10-2026)
+
+Medido con el auditor de la skill `diseno-leasefy` (`scripts/auditar-diseno.mjs --resumen`; sin pruebas ni historias,
+comentarios descontados).
+
+**Front `marketplace-facil`, `src/` (5.632 archivos): 638 errores y 1.051 avisos.**
+
+| Regla | Nivel | Usos | Archivos | Dónde se concentra |
+|---|---|---|---|---|
+| `font-semibold` | aviso | 417 | 204 | panel, piloto, extracto bancario, planes |
+| Hex en clases (`bg-[#…]`) | ERROR | 339 | 43 | `app/para/*` (inmobiliarias, agentes, propietarios, inquilinos), `landing-v2/para/piezas.tsx`, `app/brand` |
+| `text-xs` (12 px) | aviso | 234 | 103 | congelado por el guardián `doce-pixeles` |
+| Peso 600+ en CSS | ERROR | 171 | 3 | `app/(landing)/landing.css` y `landing-v2.css` (la landing React anterior) |
+| `uppercase` sin mono | aviso | 167 | 83 | |
+| Degradado neutro (revisar si es funcional) | aviso | 129 | 43 | |
+| `font-bold` | ERROR | 52 | 28 | |
+| Palabras que no se dicen (score, SLA, renta…) | aviso | 37 | 25 | |
+| `capitalize` | ERROR | 26 | 18 | |
+| Emojis en la interfaz | ERROR | 24 | 9 | |
+| `shadow-lg/xl/2xl` | aviso | 24 | 22 | |
+| Contenedor angosto en panel o portal | aviso | 20 | 13 | |
+| Degradado de color | ERROR | 13 | 9 | `home/CTASection`, `contract/InsuranceSelector`, `intro-de-flujo/IntroHeroe` |
+| Calendario del navegador (`type="date"`) | ERROR | 11 | 7 | `app/admin/(panel)/{gestiones,aliados,recaudo-en-linea}` |
+| `lucide-react` | ERROR | 1 | 1 | |
+
+**App nativa `app-expo/src` (1.974 archivos): 4 errores y 15 avisos** (7 `TextInput` crudos en las pantallas de
+entrada, 2 emojis, 1 `fontWeight`, 1 hex). **Landing estática: 0 errores** (los degradados que quedan son el portátil,
+velos y desvanecidos).
+
+Bien: los grises crudos de Tailwind están en cero; las pantallas del glow up (`EncabezadoDePantalla`, `Button`…)
+salen limpias; la app (`src/tema/tokens.ts`) y la landing usan los mismos tokens de Cadence 2; la letra (Host Grotesk +
+DM Mono) es la misma en web, app y landing. La deuda está en pantallas viejas que no pasaron por el glow up.
+
+**Cómo se paga la deuda:** el archivo que tocas sale limpio (lo que reporte el auditor en ese archivo, se arregla en
+el mismo cambio, sin tocar el flujo ni las reglas de negocio). Barridos masivos, sólo si Nico los
+pide.
+
+---
+
+## 19. Dónde vive cada cosa
+
+| Qué | Dónde |
+|---|---|
+| Tokens (fuente de verdad) | Cadence `src/styles/tokens.css`, `tailwind.preset.ts` (escala de letra, radios, movimiento) |
+| Identidad resumida | Cadence `docs/IDENTIDAD.md` · página viva https://claude.ai/artifact/E1o95TDQhSza4djDLQk5jn · 3D https://claude.ai/artifact/EeXwemUcVQurCt1sXJ7zkr |
+| Piezas | Cadence `src/components/ui/*` (329 archivos), `src/icons`, `src/motion` |
+| Front | `src/app/globals.css` (variables y la regla de la superelipse), `tailwind.config.ts`, `src/components/{ui,pantalla,estado}`, `docs/VOZ-Y-TONO.md` |
+| Guardianes de diseño (pruebas) | front `src/components/ui/*.guardian.test.ts`, `pantallas-en-tokens.test.ts`, `sin-dialogos-del-navegador.test.ts`, `una-sola-aspa.test.tsx`, `components/doce-pixeles.guardian.test.ts` |
+| App nativa | `app-expo/src/tema/tokens.ts`, `src/components/ui/*`, `src/lib/dialogo.ts` |
+| Landing | `public/landing/index.html` (variables CSS), `public/internas/`, `scripts/landing/armar-paginas.mjs` |
+| Detalle de cada pieza (numeración anterior, la que citan los comentarios del código) | front `docs/DESIGN-PIEZAS.md` |
+| Este archivo | skill `diseno-leasefy/DESIGN.md` y front `docs/DESIGN.md`: el mismo texto, se cambian juntos |
+| Manual de marca | https://claude.ai/artifact/KmyeY1Fqv5qVwAfQmxBX3R |
+| Antes de cada commit (máquina de Nico) | `~/.claude/projects/-Users-nicolasgarcia-rent/memory/archivos/autonomo/revisar-perdidas.sh <repo> <archivos>` |
+
+---
+
+## 20. Cómo pedirle diseño a otro agente o a otra IA
+
+Copia este bloque en el encargo (agente, Codex, generador de imágenes) y agrégale el trabajo concreto:
+
+> Diseña en la identidad de Leasefy, Cadence 2 «papel, tinta y voltaje»: fondo papel #FBFAF8, superficies blancas,
+> arena #F3F1ED para lo secundario, líneas piedra #E7E3DC, texto tinta #121110 / grafito #5B5751 / ceniza #706B64. UNA
+> sola chispa de color: voltaje #1A40FF, sólo para la acción principal, el foco y lo activo. Medianoche #0A0F2C para un
+> único momento de marca. Letra Host Grotesk con títulos livianos (400–500, sin negrilla) y DM Mono para cifras y rótulos
+> cortos en mayúscula. Esquinas suavizadas (superelipse), sombras casi invisibles, sin tarjetas dentro de tarjetas.
+> Íconos de trazo fino 1,5 redondeados, sin cajitas de color. Ilustraciones 3D mate en azul eléctrico o grafito. Nada de
+> degradados morados, brillos, estrellitas, emojis ni «IA». Textos en español de Colombia, de tú, con la cifra exacta;
+> los botones dicen lo que hacen. Una pantalla se arma por la tarea: encabezado con UNA acción azul, lo que falta, los
+> pasos, la tabla con su barra adentro, lo de consulta plegado. Con su animación suave y su versión de celular.
+
+Si el trabajo es código, el agente carga la skill `diseno-leasefy` y lee este archivo; no le basta el bloque.

@@ -13,6 +13,7 @@ let guardadas: unknown[] = []
 let fallarConCampos: null | { campo: string; mensaje: string } = null
 const crear = vi.fn()
 const activar = vi.fn()
+let activarFalla: unknown = null
 const setMfaVerified = vi.fn()
 vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => ({ user: { firstName: 'Laura', lastName: 'Gómez', email: 'laura@correo.co' }, setMfaVerified }),
@@ -52,7 +53,7 @@ vi.mock('@/lib/api/medios-de-pago.service', async (original) => {
 vi.mock('@/lib/conversion/activar-la-cuenta', () => ({
   activarLaCuenta: (d: unknown) => {
     activar(d)
-    return Promise.resolve()
+    return activarFalla ? Promise.reject(activarFalla) : Promise.resolve()
   },
 }))
 
@@ -124,6 +125,7 @@ describe('Los tres pasos para activar la cuenta al pagar', () => {
     crear.mockReset()
     activar.mockReset()
     setMfaVerified.mockReset()
+    activarFalla = null
   })
   afterEach(desmontar)
 
@@ -251,5 +253,17 @@ describe('Los tres pasos para activar la cuenta al pagar', () => {
     expect(document.getElementById('activar-nit-error')?.textContent).toContain('Otra cuenta ya tiene ese NIT.')
     expect(porId('pasos-para-activar-aviso')).toBeNull()
     expect(porId('pasos-para-activar-listos')).toBeNull()
+  })
+
+  it('🔴 el NIT que ya tiene otra cuenta: se dice bajo el NIT, no «Ya existe un registro con esos datos» suelto', async () => {
+    activarFalla = new ApiError(409, 'Ya existe un registro con esos datos.', 'YA_EXISTE', {})
+    await montar(ventana({ datos: { ...conDatos, address: 'x', responsableIva: false } as AgencyProfile, faltanAlAbrir: ['factura'] }))
+    await act(async () => {
+      porId('activar-acepta')!.click()
+    })
+    await enviar('paso-factura')
+    expect(document.getElementById('activar-nit-error')?.textContent).toContain('Otra cuenta de Leasefy ya tiene este NIT')
+    expect(porId('pasos-para-activar-aviso')).toBeNull()
+    expect(porId('paso-seguridad')).toBeNull()
   })
 })

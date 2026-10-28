@@ -33,7 +33,8 @@ import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import { mediosDePagoApi } from '@/lib/api/medios-de-pago.service';
 import type { MedioDePago, TipoDeCuenta } from '@/lib/api/medios-de-pago.types';
 import { DEPARTAMENTO_NOMBRES, municipiosDe } from '@/lib/constants/colombia-geo';
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ApiError } from '@/lib/api/client';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import type { AgencyProfile } from '@/lib/types/inmobiliaria';
@@ -787,6 +788,24 @@ function PasoCuenta({
   );
 }
 
+/** Lo que se dice bajo el NIT cuando otra cuenta ya lo tiene (QA 28-10: salía «Ya existe un registro con esos datos»). */
+export const NIT_YA_REGISTRADO = 'Otra cuenta de Leasefy ya tiene este NIT. Revísalo; si es tu empresa, escríbenos y te unimos a ella.';
+
+/**
+ * Activar, y si el back dice que el registro ya existe sin decir el campo, es el NIT: es lo único único que la persona
+ * escribe al activar. Se devuelve como error del campo NIT para que salga bajo él.
+ */
+async function activarSinNitRepetido(d: Parameters<typeof activarLaCuenta>[0]) {
+  try {
+    await activarLaCuenta(d);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 409 && err.code === 'YA_EXISTE' && !camposDelError(err).length) {
+      throw new ApiError(409, NIT_YA_REGISTRADO, 'YA_EXISTE', { campos: [{ campo: 'nit', regla: 'unico', mensaje: NIT_YA_REGISTRADO }] });
+    }
+    throw err;
+  }
+}
+
 function PasoFactura({
   perfil,
   datos,
@@ -855,7 +874,7 @@ function PasoFactura({
           ...(modoComercial || nitFijo ? {} : { nit: nit.trim() }),
         });
         if (modoComercial) {
-          await activarLaCuenta({
+          await activarSinNitRepetido({
             nombre: nombre || nombreDeLaCuenta.split(' ')[0] || 'Administrador',
             apellido: apellido || nombreDeLaCuenta.split(' ').slice(1).join(' ') || '-',
             razonSocial: (datos.razonSocial || datos.legalRepresentative || datos.name || nombreDeLaCuenta).trim(),

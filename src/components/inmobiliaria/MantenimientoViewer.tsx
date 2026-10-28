@@ -941,13 +941,19 @@ export function MantenimientoViewer({
         {solicitud.status !== 'completed' && solicitud.status !== 'cancelled' && (
           <CajonPie
             izquierda={
-              <IconButton
-                variant="outline"
-                onClick={() => setShowCancelDialog(true)}
-                aria-label={t('inmobiliaria.mantenimiento.cancelRequest')}
-                icon={<Trash className="w-4 h-4" />}
-                className="border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
-              />
+              // Cancelar va con la ✕ de cancelar: la caneca es «Eliminar» (28-10), que borra de verdad.
+              // Sin quien cambie el estado no se ofrece: el diálogo no tendría qué hacer.
+              onStatusChange ? (
+                <IconButton
+                  variant="outline"
+                  onClick={() => setShowCancelDialog(true)}
+                  aria-label={t('inmobiliaria.mantenimiento.cancelRequest')}
+                  title={t('inmobiliaria.mantenimiento.cancelRequest')}
+                  icon={<XCircle className="w-4 h-4" />}
+                  className="border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
+                  data-testid="cancelar-desde-el-pie"
+                />
+              ) : undefined
             }
           >
             {/* «Agregar nota» sólo aparece si alguien puede guardarla. El

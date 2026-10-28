@@ -276,7 +276,7 @@ function TusColegas({ colegas, puedeReferir }: { colegas: ColegaReferido[]; pued
   return (
     <section className="space-y-4" data-testid="tus-colegas">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h2 className="text-h3 text-fg">
+        <h2 className="flex items-baseline gap-2 whitespace-nowrap text-h3 text-fg">
           Tus colegas {colegas.length > 0 ? <span className="font-mono text-body-sm text-fg-muted">· {colegas.length}</span> : null}
         </h2>
         {colegas.length > 0 ? (

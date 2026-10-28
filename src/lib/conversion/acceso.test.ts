@@ -36,6 +36,16 @@ describe('Qué ve cada cuenta en el panel (Nico, 27-10-2026)', () => {
     expect(mensajeDeLaBarra(null)).toBeNull();
   });
 
+  it('la barra: naranja con el regalo, roja desde 10 días antes y al terminar; la pastilla de días y la línea del mes', () => {
+    const regalo = mensajeDeLaBarra(acceso({ estado: 'prueba', prueba: prueba(20) }));
+    expect(regalo).toMatchObject({ tono: 'regalo', titulo: 'Fenalco te regaló un mes de Leasefy completo', ilustracion: 'novedad_regalo', dias: 20 });
+    // El mes de prueba dura 30 días: quedan 20 → dos tercios de la línea.
+    expect(regalo?.queda).toBeCloseTo(20 / 30, 3);
+    expect(mensajeDeLaBarra(acceso({ estado: 'prueba', prueba: prueba(3) }))).toMatchObject({ tono: 'urgente', ilustracion: 'reloj_mora', dias: 3 });
+    expect(mensajeDeLaBarra(acceso({ estado: 'gratis', veTodo: false, prueba: prueba(0, true) }))).toMatchObject({ titulo: 'Tu mes gratis terminó', queda: 0 });
+    expect(mensajeDeLaBarra(acceso({ estado: 'gratis', veTodo: false }))).toMatchObject({ ilustracion: 'plan_insignia', dias: null, queda: null });
+  });
+
   it('el modal: una vez por hito del mes gratis (10, 7, 3, 1), una vez al día al terminar, una vez por semana en lo gratis', () => {
     const hoy = new Date('2026-10-28T15:00:00Z');
     expect(momentoDelModal(acceso({ estado: 'prueba', prueba: prueba(20) }), hoy)).toBeNull();

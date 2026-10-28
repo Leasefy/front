@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 
 import { useAuth } from '@/lib/auth/use-auth';
 import { PANTALLA_DE_LAS_RECARGAS, verBolsaDePreguntas, type BolsaDePreguntas } from '@/lib/api/recargas-de-preguntas.service';
@@ -15,7 +14,15 @@ const numero = (n: number) => n.toLocaleString('es-CO');
  * Recargar lo hace el administrador; los demás ven a quién pedírselo.
  */
 export function PreguntasDelMes({ ocupado = false }: { ocupado?: boolean }) {
-  const { agency, agencyRole } = useAuth();
+  // Sin sesión (el compositor suelto, sus pruebas) no hay bolsa que mostrar: no revienta por el proveedor.
+  let sesion: ReturnType<typeof useAuth> | null = null;
+  try {
+    sesion = useAuth();
+  } catch {
+    sesion = null;
+  }
+  const agency = sesion?.agency ?? null;
+  const agencyRole = sesion?.agencyRole ?? null;
   const [bolsa, setBolsa] = useState<BolsaDePreguntas | null>(null);
   const agencyId = agency?.id ?? null;
 
@@ -43,9 +50,10 @@ export function PreguntasDelMes({ ocupado = false }: { ocupado?: boolean }) {
         esAdmin ? (
           <>
             {' · '}
-            <Link href={PANTALLA_DE_LAS_RECARGAS} className="font-medium text-primary hover:underline" data-testid="recargar-preguntas">
+            {/* En otra pestaña: el chat no tiene salidas (comprar no le quita la conversación a nadie). */}
+            <a href={PANTALLA_DE_LAS_RECARGAS} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline" data-testid="recargar-preguntas">
               Recargar
-            </Link>
+            </a>
           </>
         ) : (
           ' · pídele a tu administrador que recargue'

@@ -50,7 +50,7 @@ export default function ColeccionDelCliente({ params }: { params: Promise<{ toke
         <h1 className="mt-5 text-h3 text-fg">Esta colección ya no está disponible</h1>
         <p className="mt-2 max-w-sm text-body text-fg-muted">Pídele a tu agente que te mande el enlace de nuevo, o mira los arriendos del marketplace.</p>
         <Button asChild className="mt-6">
-          <a href="/es/propiedades">Ver el marketplace</a>
+          <a href="/propiedades">Ver el marketplace</a>
         </Button>
       </div>
     );

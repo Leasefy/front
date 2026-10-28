@@ -625,6 +625,7 @@ export function CampoDeCelular({ id, valor, alCambiar, error }: { id: string; va
     <Campo id={id} etiqueta="Celular" error={error} pista="Tus clientes te escriben aquí por WhatsApp.">
       <PhoneInput
         id={id}
+        aria-required
         countryCode="CO"
         autoComplete="tel"
         inputMode="numeric"

@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { Buildings, House, IdentificationBadge } from '@phosphor-icons/react';
-import { PhoneInput } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { AuthInput } from '@/components/auth/AuthInput';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { apiClient } from '@/lib/api/client';
-import { errorTelefono, normalizarTelefono } from '@/lib/phone/countries';
+import { CampoDeCelularDelMundo } from '@/components/ui/campo-de-celular-del-mundo';
+import { celularEnE164, errorDelCelular } from '@/lib/phone/paises-del-mundo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { partirElNombre } from '@/app/onboarding/propietario/datos-del-propietario';
 import type { PerfilQuePublica } from '@/components/marketplace/VentanaParaPublicar';
@@ -38,6 +38,8 @@ export function RegistroRapido({
   const [inmobiliaria, setInmobiliaria] = useState('');
   const [nombre, setNombre] = useState(nombreConocido);
   const [whatsapp, setWhatsapp] = useState('');
+  /** 28-10: el país del WhatsApp (todos los del mundo); Colombia de entrada. */
+  const [pais, setPais] = useState('CO');
   const [errores, setErrores] = useState<Partial<Record<'inmobiliaria' | 'nombre' | 'whatsapp' | 'general', string>>>({});
   const [enviando, setEnviando] = useState(false);
   const pideNombre = !nombreConocido.trim();
@@ -49,13 +51,13 @@ export function RegistroRapido({
     if (perfil === 'agency' && !inmobiliaria.trim()) nuevos.inmobiliaria = 'Escribe el nombre de tu inmobiliaria.';
     if (!nombre.trim()) nuevos.nombre = 'Escribe tu nombre.';
     if (!whatsapp.replace(/\D/g, '')) nuevos.whatsapp = 'Escribe tu WhatsApp: ahí te llegan los interesados.';
-    else if (errorTelefono(whatsapp)) nuevos.whatsapp = errorTelefono(whatsapp) ?? undefined;
+    else if (errorDelCelular(whatsapp, pais)) nuevos.whatsapp = errorDelCelular(whatsapp, pais) ?? undefined;
     setErrores(nuevos);
     if (Object.keys(nuevos).length > 0) return;
 
     setEnviando(true);
     const { firstName, lastName } = partirElNombre(nombre);
-    const celular = normalizarTelefono(whatsapp) ?? undefined;
+    const celular = celularEnE164(whatsapp, pais) ?? undefined;
     try {
       await apiClient.post('/users/me/onboarding', {
         firstName,
@@ -145,12 +147,12 @@ export function RegistroRapido({
             <label htmlFor="registro-whatsapp" className="block text-[13px] font-medium text-fg-muted">
               WhatsApp
             </label>
-            <PhoneInput
+            <CampoDeCelularDelMundo
               id="registro-whatsapp"
-              countryCode="CO"
+              pais={pais}
+              alCambiarPais={setPais}
               autoComplete="tel"
               inputMode="numeric"
-              placeholder="300 123 4567"
               value={whatsapp}
               onChange={(v) => setWhatsapp(v.replace(/\D/g, ''))}
               invalid={Boolean(errores.whatsapp)}
@@ -161,7 +163,7 @@ export function RegistroRapido({
           </div>
           <p className="-mt-1 text-[12.5px] text-fg-subtle">Ahí te escriben los interesados en tus inmuebles.</p>
           <ErrorDelCampo id="registro-rapido-error" mensaje={errores.general ?? null} />
-          <Button type="submit" isLoading={enviando} className="h-12 w-full rounded-full text-[14px]" data-testid="registro-rapido-seguir">
+          <Button type="submit" isLoading={enviando} className="h-12 w-full rounded-full text-[16px] font-medium" data-testid="registro-rapido-seguir">
             Seguir a publicar
           </Button>
           {perfilInicial === null && (

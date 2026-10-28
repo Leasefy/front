@@ -79,6 +79,7 @@ import {
 import { ResolucionDeFacturacion } from '@/components/facturacion/ResolucionDeFacturacion';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
 import { toast } from '@/components/ui/toast';
+import { PaquetesDeDocumentos } from '@/components/facturacion/PaquetesDeDocumentos';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /**
@@ -86,10 +87,10 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
  * (los enlaces con `?tab=` siguen llegando); lo que cambió es cómo se agrupan
  * en las pestañas (`grupoDe`).
  */
-type PestanaDeFacturacion = FacturacionTab | 'nueva' | 'resolucion' | 'soporte' | 'mandato';
+type PestanaDeFacturacion = FacturacionTab | 'nueva' | 'resolucion' | 'soporte' | 'mandato' | 'documentos';
 
 /** Las cinco pestañas de la tarjeta. */
-type Grupo = 'nueva' | 'ventas' | 'electronica' | 'compras' | 'mandato';
+type Grupo = 'nueva' | 'ventas' | 'electronica' | 'compras' | 'mandato' | 'documentos';
 
 const VALORES: readonly PestanaDeFacturacion[] = [
   'nueva',
@@ -100,6 +101,8 @@ const VALORES: readonly PestanaDeFacturacion[] = [
   'soporte',
   'mandato',
   'resolucion',
+  // 27-10-2026 (Nico): los paquetes de documentos de facturación electrónica.
+  'documentos',
 ];
 
 const esTab = (v: string): v is PestanaDeFacturacion =>
@@ -287,6 +290,9 @@ function FacturacionContent() {
                 <TabsTrigger value="mandato" className="whitespace-nowrap">
                   {tr('Certificados')}
                 </TabsTrigger>
+                <TabsTrigger value="documentos" className="whitespace-nowrap" data-testid="facturacion-tab-documentos">
+                  {tr('Documentos')}
+                </TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -377,6 +383,13 @@ function FacturacionContent() {
           <TabsContent value="mandato" className="mt-0">
             <div className="p-4">
               <CertificacionDelMandatario />
+            </div>
+          </TabsContent>
+
+          {/* Los paquetes de documentos (Nico, 27-10-2026): la bolsa, comprar y las compras. */}
+          <TabsContent value="documentos" className="mt-0">
+            <div className="p-4">
+              <PaquetesDeDocumentos />
             </div>
           </TabsContent>
         </section>

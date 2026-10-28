@@ -1026,7 +1026,7 @@
       "soportes": "Soportes de candidatos",
       "piloto": "Inicio",
       "chat": "Chat",
-      "secCaptacion": "Comercial y arriendo",
+      "secCaptacion": "Arrendamientos",
       "secOperacionDelContrato": "Operación",
       "secDinero": "Dinero",
       "caraInquilinos": "Cobrar a inquilinos",
@@ -1075,7 +1075,7 @@
       "recibos": "Recibos",
       "deudaDelMes": "Deuda del mes",
       "girosAPropietarios": "Giros a propietarios",
-      "secCaptacionCorta": "Comercial",
+      "secCaptacionCorta": "Arrendamientos",
       "diasHabiles": "Días hábiles",
       "incrementos": "Incrementos",
       "serviciosPublicos": "Servicios públicos"

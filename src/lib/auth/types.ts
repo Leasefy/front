@@ -1,3 +1,4 @@
+import type { AccesoDeLaCuenta } from '@/lib/conversion/acceso'
 /**
  * Auth Types - Type definitions for authentication system
  *
@@ -176,6 +177,11 @@ export interface Agency {
    * anterior = no se sabe (se trata como `false`).
    */
   vinoDelMarketplace?: boolean
+  /**
+   * 27-10-2026 (Nico): qué ve la cuenta — pagado, prueba (el mes gratis de un aliado), gratis o cliente
+   * (`lib/conversion/acceso.ts`). Ausente en un back anterior = manda `modoComercial`, como antes.
+   */
+  acceso?: AccesoDeLaCuenta | null
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'

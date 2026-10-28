@@ -29,6 +29,7 @@ import {
   abiertaEnModoComercial,
   enModoComercial,
 } from '@/lib/nav/modo-comercial';
+import { conCandadoDelPlan, faltaActivarParaVerTodo, type AccesoDeLaCuenta } from '@/lib/conversion/acceso';
 
 /** Lo que se abre al activar: lo que la persona todavía no ve. */
 const LO_QUE_SE_ABRE = [
@@ -51,13 +52,17 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const comercial = enModoComercial(agency);
-  const esElInicio = comercial && pathname.replace(/\/+$/, '') === '/panel/inmobiliaria';
+  // 27-10-2026 (Nico): en lo gratis lleva candado también la ya activada a la que se le acabó el mes gratis; en el
+  // mes gratis (o pagando) sin activar, lo que usa a los agentes pide activar.
+  const conCandado = conCandadoDelPlan(agency);
+  const faltaActivar = faltaActivarParaVerTodo(agency);
+  const esElInicio = (conCandado || faltaActivar) && pathname.replace(/\/+$/, '') === '/panel/inmobiliaria';
 
   useEffect(() => {
     if (esElInicio) router.replace(INICIO_DEL_MODO_COMERCIAL);
   }, [esElInicio, router]);
 
-  if (!comercial) return <>{children}</>;
+  if (!conCandado && !faltaActivar) return <>{children}</>;
   if (esElInicio) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -65,10 +70,17 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
       </div>
     );
   }
+  const abierta = abiertaEnModoComercial(pathname);
   return (
     <>
-      {abiertaEnModoComercial(pathname) ? children : <ParteCerrada ruta={pathname} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} esAgente={agency?.cuentaDeAgente === true} />}
-      <BienvenidaComercial agencyId={agency?.id ?? null} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} />
+      {abierta ? (
+        children
+      ) : faltaActivar ? (
+        <ActivarTuCuenta acceso={agency?.acceso ?? null} />
+      ) : (
+        <ParteCerrada ruta={pathname} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} esAgente={agency?.cuentaDeAgente === true} />
+      )}
+      {comercial && <BienvenidaComercial agencyId={agency?.id ?? null} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} />}
     </>
   );
 }
@@ -89,6 +101,8 @@ function ParteCerrada({ ruta, nombre, empresa, esAgente = false }: { ruta: strin
       empresa={empresa}
       queVio={modulo ? NOMBRES[modulo.key] ?? null : null}
       yaEsCliente={{ href: RUTA_PARA_ACTIVAR, texto: '¿Ya eres cliente? Activa tu cuenta' }}
+      // 27-10-2026 (Nico: «pagar desde el panel»): el llamado principal es abrir todo pagando; WhatsApp al lado.
+      pagar={{ href: '/panel/inmobiliaria/upgrade', texto: 'Abrir todo Leasefy', detalle: 'Desde $99.000 al mes más IVA' }}
     />
   );
 }
@@ -115,7 +129,18 @@ const NOMBRES: Record<string, string> = {
 };
 
 /** Lo que ve quien entra a una parte cerrada (antes del 20-10: activar gratis). */
-export function ActivarTuCuenta() {
+export function ActivarTuCuenta({ acceso = null }: { acceso?: AccesoDeLaCuenta | null } = {}) {
+  const enPrueba = acceso?.estado === 'prueba' && acceso.prueba;
+  const titulo = enPrueba
+    ? `${acceso.prueba?.aliado ? `${acceso.prueba.aliado} te regaló` : 'Tienes'} un mes de Leasefy completo`
+    : acceso?.estado === 'pagado'
+      ? 'Ya pagaste: falta activar tu cuenta'
+      : 'Esto se abre al activar tu cuenta';
+  const texto = enPrueba
+    ? 'Para usar esto, confirma los datos de tu empresa (NIT y razón social) y protege la cuenta con un segundo factor. Son 2 minutos y se abre todo mientras dure tu mes gratis.'
+    : acceso?.estado === 'pagado'
+      ? 'Confirma los datos de tu empresa (NIT y razón social) y protege la cuenta con un segundo factor: son 2 minutos y se abre todo.'
+      : 'Tu cuenta hoy es comercial: publicas, te llegan los interesados y agendas visitas. Al activarla te pedimos el NIT y la razón social, proteges la cuenta con un segundo factor y se abre todo. Por ahora es gratis.';
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
@@ -127,11 +152,8 @@ export function ActivarTuCuenta() {
       <span className="inline-flex size-11 items-center justify-center rounded-full bg-primary-soft text-primary">
         <LockSimple size={22} weight="bold" aria-hidden="true" />
       </span>
-      <h1 className="mt-5 text-[24px] font-medium leading-tight tracking-[-0.02em] text-fg">Esto se abre al activar tu cuenta</h1>
-      <p className="mt-2 text-[15px] text-fg-muted">
-        Tu cuenta hoy es comercial: publicas, te llegan los interesados y agendas visitas. Al activarla te pedimos el NIT
-        y la razón social, proteges la cuenta con un segundo factor y se abre todo. Por ahora es gratis.
-      </p>
+      <h1 className="mt-5 text-[24px] font-medium leading-tight tracking-[-0.02em] text-fg">{titulo}</h1>
+      <p className="mt-2 text-[15px] text-fg-muted">{texto}</p>
       <ul className="mt-5 space-y-2">
         {LO_QUE_SE_ABRE.map((x) => (
           <li key={x} className="flex items-center gap-2 text-[14px] text-fg">

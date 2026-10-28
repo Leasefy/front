@@ -1026,7 +1026,7 @@
       "soportes": "Candidate documents",
       "piloto": "Home",
       "chat": "Chat",
-      "secCaptacion": "Sales & leasing",
+      "secCaptacion": "Leasing",
       "secOperacionDelContrato": "Operations",
       "secDinero": "Money",
       "caraInquilinos": "Collect from tenants",
@@ -1075,7 +1075,7 @@
       "recibos": "Receipts",
       "deudaDelMes": "Debt this month",
       "girosAPropietarios": "Owner payouts",
-      "secCaptacionCorta": "Sales",
+      "secCaptacionCorta": "Leasing",
       "diasHabiles": "Business days",
       "incrementos": "Rent increases",
       "serviciosPublicos": "Utilities"

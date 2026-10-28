@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   emailPayments: true,
   emailMessages: true,
   emailMarketing: false,
+  emailPlanDeLeasefy: true,
   pushAll: true,
   pushUrgent: true,
 }
@@ -42,7 +43,7 @@ export function useNotificationSettings() {
     try {
       const data = await settingsApi.getNotificationSettings()
       if (!montado.current) return
-      setSettings(data)
+      setSettings({ ...DEFAULT_SETTINGS, ...data })
       setError(null)
       setErrorCrudo(null)
     } catch (err) {

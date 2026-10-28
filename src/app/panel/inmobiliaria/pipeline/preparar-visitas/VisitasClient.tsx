@@ -292,7 +292,7 @@ export function VisitasClient() {
         calendario no es el sitio donde se persigue lo que falta.
       */}
       <EncabezadoDePantalla
-        seccion="Comercial y arriendo"
+        seccion="Arrendamientos"
         titulo={tr('Preparar visitas')}
         descripcion={tr('Lo que le falta a cada visita para poder hacerse. El calendario completo está en Agenda.')}
         acciones={

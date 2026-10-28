@@ -38,6 +38,10 @@ import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendie
 import { MuroDeMigracion } from '@/components/migracion/MuroDeMigracion';
 import { CandadoDelModoComercial } from '@/components/inmobiliaria/modo-comercial/CandadoDelModoComercial';
 import { abiertaEnModoComercial, enModoComercial } from '@/lib/nav/modo-comercial';
+import { conCandadoDelPlan, faltaActivarParaVerTodo } from '@/lib/conversion/acceso';
+import { BarraDelMesGratis } from '@/components/inmobiliaria/plan/BarraDelMesGratis';
+import { ModalDelPlan } from '@/components/inmobiliaria/plan/ModalDelPlan';
+import { MesGratisPendiente } from '@/components/inmobiliaria/plan/MesGratisPendiente';
 import { AvisoModoSimulado } from '@/components/estado/AvisoModoSimulado';
 import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
 import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
@@ -105,7 +109,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // a la portada sin decirle nada. Un CTA que rebota es peor que no tenerlo.
   // En modo comercial no: ahí se vende el servicio por WhatsApp (ModuloConDemo).
   const agenciaEnComercial = enModoComercial(useAuth().agency);
-  const showUpgradeCta = !subIndeterminate && !isPaidPlan && isAdmin && !agenciaEnComercial;
+  // 27-10-2026 (Nico): con el acceso nuevo, el CTA va a quien está en lo gratis o en su mes gratis (a pagar desde el
+  // panel); sin él (back anterior), la regla de antes.
+  const accesoDelPlan = useAuth().agency?.acceso ?? null;
+  const showUpgradeCta = isAdmin && (accesoDelPlan ? accesoDelPlan.estado === 'gratis' || accesoDelPlan.estado === 'prueba' : !subIndeterminate && !isPaidPlan && !agenciaEnComercial);
 
   // Real agency identity for the sidebar brand row. PRIMARY source is the auth
   // membership probe (`useAuth().agency`), which is available to EVERY active
@@ -117,6 +124,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // never flashes empty. `logoUrl` empty → PlanSidebar shows the LeasefyMark.
   const { agency } = useAuth();
   const modoComercial = enModoComercial(agency);
+  // 27-10-2026: lo que no es comercial lleva candado en lo gratis (también ya activada, si se le acabó el mes gratis);
+  // en su mes gratis o pagando sin activar, pide activar.
+  const conCandado = conCandadoDelPlan(agency);
+  const faltaActivar = faltaActivarParaVerTodo(agency);
   // En modo comercial no hay migración que hacer: el muro no se pone.
   const Muro = modoComercial ? SinMuro : MuroDeMigracion;
   // 🔴 ARREGLOS-4 (03-10-2026): sólo quien PUEDE leerla la pide. El back la
@@ -270,11 +281,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // lo comercial abierto; lo demás con «Activar», que al entrar dice para qué
     // sirve activar (CandadoDelModoComercial). Sin el chat de los agentes: no
     // conocen a esta inmobiliaria hasta que se activa.
-    if (!modoComercial) return filas;
+    if (!conCandado && !faltaActivar) return filas;
     return filas
       .filter((f) => f.kind === 'section' || f.href !== '/panel/inmobiliaria')
-      .map((f) => (f.kind === 'section' || abiertaEnModoComercial(f.href) ? f : { ...f, tag: 'Demo' }));
-  }, [ALL_NAV_ITEMS, ctxNav, modoComercial]);
+      .map((f) => (f.kind === 'section' || abiertaEnModoComercial(f.href) ? f : { ...f, tag: conCandado ? 'Demo' : 'Activar' }));
+  }, [ALL_NAV_ITEMS, ctxNav, conCandado, faltaActivar]);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -334,6 +345,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           // tocaba «Upgrade» aterrizaba en el formulario de NIT y dirección.
           // `/upgrade` es la pantalla de planes con el cobro real (Wompi).
           upgradeHref="/panel/inmobiliaria/upgrade"
+          // 27-10-2026: en lo gratis o en el mes gratis, el llamado dice qué hace (en español).
+          upgradeLabel={accesoDelPlan?.estado === 'prueba' ? 'Tu mes gratis' : accesoDelPlan?.estado === 'gratis' ? 'Abrir todo Leasefy' : undefined}
+          upgradeEnTinta={accesoDelPlan?.estado === 'gratis' || accesoDelPlan?.estado === 'prueba'}
         />
 
         {/* Main content area */}
@@ -394,6 +408,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           >
             {/* Un solo hijo: el candado lo pone junto a su bienvenida, y tres
                 sueltos quedaban como una lista sin llaves (aviso de React). */}
+            <BarraDelMesGratis />
             <CandadoDelModoComercial>
               <>
                 <SeccionesDelModulo />
@@ -403,7 +418,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             </CandadoDelModoComercial>
             {/* Nico, 10-10-2026: el plan gratuito recibe una invitación por
                 función (solo invita, nunca cierra nada); sólo el administrador. */}
-            <InvitacionAMejorarElPlan activa={!modoComercial && !subIndeterminate && !isPaidPlan && agencyRole === 'ADMIN'} />
+            <InvitacionAMejorarElPlan activa={!modoComercial && (!agency?.acceso || agency.acceso.estado === 'cliente') && !subIndeterminate && !isPaidPlan && agencyRole === 'ADMIN'} />
+            {/* 27-10-2026 (Nico): el mes gratis de los aliados y lo gratis del marketplace. El enlace del aliado que
+                quedó pendiente al registrarse, el modal para pagar (fin del mes gratis, días que quedan, lo gratis). */}
+            <MesGratisPendiente />
+            <ModalDelPlan />
           </main>
         </div>
 

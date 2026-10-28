@@ -19,6 +19,8 @@ export interface NotificationSettings {
   emailPayments: boolean
   emailMessages: boolean
   emailMarketing: boolean
+  /** 27-10-2026: «Tu plan de Leasefy» (el mes gratis que se acaba, invitaciones a pagar). Prendida de fábrica. */
+  emailPlanDeLeasefy: boolean
   pushAll: boolean
   pushUrgent: boolean
 }

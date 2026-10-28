@@ -61,7 +61,7 @@ describe('navigationSource — chips', () => {
     expect(emitidos?.subtitle).toBe('Cartera');
   });
 
-  it('Agenda se busca bajo «Comercial y arriendo», no bajo «Operación»', async () => {
+  it('Agenda se busca bajo «Arrendamientos», no bajo «Operación»', async () => {
     // Nico, 2026-09-12: «Agenda interna: la sección de agenda la debemos llevar
     // para la sección de captación y arriendo». El contexto que se pinta a la
     // derecha es el grupo del sidebar, así que el buscador tiene que decir lo
@@ -69,7 +69,7 @@ describe('navigationSource — chips', () => {
     const filas = await buscar('agenda');
     const agenda = filas.find((f) => f.title === 'Agenda');
     expect(agenda, 'la página Agenda tiene que estar en el catálogo').toBeDefined();
-    expect(agenda?.subtitle).toBe('Comercial y arriendo');
+    expect(agenda?.subtitle).toBe('Arrendamientos');
   });
 
   it('🔴 los agentes se buscan bajo «Agentes IA», como en el menú (Nico, 2026-09-16)', async () => {

@@ -39,13 +39,11 @@ describe('las tarjetas del pie del sidebar', () => {
     expect(fuente).not.toContain('upgradeHref="/panel/inmobiliaria/configuracion"')
   })
 
-  it('🔴 «Upgrade» sólo al ADMIN; su destino ya no vende (cerrada el 05-10: «Habla con Leasefy»)', () => {
-    // Decisión 3 del 05-10-2026: el plan lo cambia sólo Leasefy desde /admin; la
-    // página dejó de cobrar y ya no necesita `adminOnly`. Lo que se cuida: que no
-    // vuelva a cobrar y que el CTA siga siendo sólo del administrador.
+  it('🔴 «Upgrade» sólo al ADMIN; su destino vuelve a cobrar (27-10: «pagar desde el panel»)', () => {
+    // Del 05-10 al 27-10 la página decía «Habla con Leasefy». Nico (27-10-2026) reabrió el pago desde el panel:
+    // la página es «Tu plan de Leasefy» con el pago de Wompi. El CTA del menú sigue siendo sólo del administrador.
     const pagina = readFileSync(UPGRADE, 'utf8')
-    expect(pagina).toContain('HablaConLeasefy')
-    expect(pagina).not.toMatch(/useAgencyCheckout|chargePaymentLink/)
+    expect(pagina).toContain('PagarLeasefy')
     const valor = prop('showUpgrade')
     expect(valor).toBeTruthy()
     // La condición del CTA nombra `isAdmin`: sin eso, el rol que no puede

@@ -71,7 +71,7 @@ function FichaSinPropietario({ propertyId }: { propertyId: string }) {
       <div className="space-y-3">
         <BackButton href="/panel/inmobiliaria/inmuebles" label="Volver a Inmuebles" />
         <EncabezadoDePantalla
-          seccion="Comercial"
+          seccion="Arrendamientos"
           titulo={inmueble.title || 'Inmueble'}
           descripcion={[inmueble.address, barrioYCiudad(inmueble.neighborhood, inmueble.city)].filter(Boolean).join(' · ')}
           acciones={

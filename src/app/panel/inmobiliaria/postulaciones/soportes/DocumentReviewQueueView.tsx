@@ -158,7 +158,7 @@ export function DocumentReviewQueueView({
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Comercial"
+        seccion="Arrendamientos"
         titulo="Soportes de candidatos"
         descripcion="Los papeles que el candidato adjunta al postularse: ábrelos y decide si la postulación sigue."
         ayuda={

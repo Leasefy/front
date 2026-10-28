@@ -677,7 +677,7 @@ export function RequisitosClient() {
         la lea, la pantalla dice cómo se usa hoy.
       */}
       <EncabezadoDePantalla
-        seccion="Comercial"
+        seccion="Arrendamientos"
         titulo="Requisitos por tipo de inquilino"
         descripcion="Los papeles que le pides a cada perfil: es la política de riesgo de esta inmobiliaria."
         accionPrincipal={

@@ -20,7 +20,7 @@ function EstudioAnalitica() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
-        seccion="Comercial y arriendo"
+        seccion="Arrendamientos"
         titulo={t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}
         descripcion={t('inmobiliaria.ai.workspace.pages.estudio.analiticaDesc')}
       />

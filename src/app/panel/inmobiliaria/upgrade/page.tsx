@@ -1,21 +1,15 @@
 'use client';
 
-import { HablaConLeasefy } from '@/components/inmobiliaria/plan/HablaConLeasefy';
+import { PagarLeasefy } from '@/components/inmobiliaria/plan/PagarLeasefy';
 
 /**
- * /panel/inmobiliaria/upgrade — 🔴 CERRADA (FALTANTES, 05-10-2026; decisión 3 del 05-10).
+ * /panel/inmobiliaria/upgrade — «Tu plan de Leasefy» (Nico, 27-10-2026: «pagar desde el panel»).
  *
- * Aquí se escogía plan y se pagaba con Wompi desde el panel. El plan de la
- * inmobiliaria lo cambia sólo Leasefy desde /admin («no tocar el modelo de
- * negocio», «el cobro del SaaS sólo lo cambia Leasefy»): la página dice «Habla
- * con Leasefy» y el back responde 403 `PLAN_LO_CAMBIA_LEASEFY` a escoger plan,
- * pagar o cancelar un cambio agendado. La ruta se queda porque la usan los 402
- * `PLAN_REQUERIDO` y los enlaces «Ver planes» del panel.
- *
- * Sin la guarda de «sólo el administrador»: un 402 trae aquí a cualquier miembro y una
- * pantalla negada no deja hacer nada. Los ayudantes de la página vieja
- * (`plan-change-confirm.ts`, `resume-reactivation.ts`) quedan con sus pruebas.
+ * Del 05-10 al 27-10 decía «Habla con Leasefy» y el back no dejaba pagar. Ahora muestra lo que tiene la cuenta,
+ * cuánto le sale con sus inmuebles y paga con Wompi (tarjeta, PSE o Nequi). A esta ruta llegan el 402
+ * `PLAN_REQUERIDO`, el «Upgrade» del menú, los candados, el modal del fin del mes gratis y los correos.
+ * Sin la guarda de «sólo el administrador»: cualquiera ve el plan; pagar lo hace quien tiene `subscription:edit`.
  */
 export default function AgencyUpgradePage() {
-  return <HablaConLeasefy />;
+  return <PagarLeasefy />;
 }

@@ -15,6 +15,8 @@ import { VentanaParaPublicar, esPerfilQuePublica, type PerfilQuePublica } from '
 import { CONFIRMAR_CON_CODIGO, DESTINOS_PARA_PUBLICAR } from '@/components/marketplace/CuentaParaPublicar';
 import type { CaminoParaMuchos } from '@/components/publica/TraerMuchos';
 import { marketplaceApi, paginaDe } from '@/lib/api/marketplace.service';
+import { conversionApi } from '@/lib/api/conversion.service';
+import { guardarAliadoPendiente } from '@/lib/conversion/acceso';
 
 const CAMINOS: CaminoParaMuchos[] = ['enlaces', 'excel', 'carpetas'];
 
@@ -71,6 +73,10 @@ function Publica() {
     abiertaSola.current = true;
     setVentana(true);
   }, [isLoading, isAuthenticated, perfilDelEnlace]);
+
+  // 27-10-2026 (Nico): vino por el enlace de un aliado (`/aliados/<codigo>`): el mes gratis queda pendiente y se
+  // activa al entrar al panel (MesGratisPendiente), ya con su inmobiliaria creada.
+  const aliado = useRegaloDelAliado(sp.get('aliado'));
 
   let contenido: React.ReactNode;
   if (isLoading) {
@@ -145,9 +151,35 @@ function Publica() {
           </Link>
         </div>
       </header>
+      {aliado && (
+        <div className="border-b border-primary/20 bg-primary-soft px-4 py-2.5 text-center text-[13.5px] text-fg" data-testid="regalo-del-aliado">
+          <strong className="font-medium">{aliado}</strong> te regala un mes de Leasefy completo: empieza al crear tu cuenta.
+        </div>
+      )}
       <main className="px-4 py-10 sm:px-6 sm:py-14">{contenido}</main>
     </div>
   );
+}
+
+/** El nombre del aliado del enlace, si el código existe y sigue vigente (y deja el código pendiente). */
+function useRegaloDelAliado(codigo: string | null): string | null {
+  const [nombre, setNombre] = useState<string | null>(null);
+  useEffect(() => {
+    if (!codigo) return;
+    let vivo = true;
+    conversionApi
+      .alianza(codigo)
+      .then((a) => {
+        if (!vivo || !a.vigente) return;
+        guardarAliadoPendiente(a.codigo);
+        setNombre(a.nombre);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [codigo]);
+  return nombre;
 }
 
 export default function PublicaPage() {

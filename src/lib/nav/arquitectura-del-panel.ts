@@ -48,6 +48,7 @@ import {
   EnvelopeSimple,
   BookOpenText,
   FolderSimple,
+  SunHorizon,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { ROLES_QUE_CONCILIAN, ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
@@ -443,6 +444,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       {
         key: 'pipeline', labelKey: 'inmobiliaria.nav.pipelineCorto', href: r('/pipeline'), icon: Kanban, module: 'pipeline', scope: 'comercial',
         pantallas: [
+          // «Tu día» (27-10-2026, investigación de agentes): a quién llamar hoy, con la llamada preparada. Primero.
+          { labelKey: 'inmobiliaria.nav.tuDia', href: r('/pipeline/tu-dia'), icon: SunHorizon, module: 'pipeline', scope: 'comercial' },
           // 🔴 B-07 (18-09-2026): «informe por origen (leads y arriendos por
           // portal) para saber qué portal vale la pena pagar». Cuelga del
           // pipeline y NO de Reportes a propósito: la decide el comercial con

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Gift } from '@phosphor-icons/react';
-import { enterTransition, Ilustracion, Stagger, StaggerItem, usePrefersReducedMotion, type NombreIlustracion } from '@leasefy/cadence';
+import { enterTransition, Ilustracion, Stagger, StaggerItem, usePrefersReducedMotion } from '@leasefy/cadence';
 
 import { AuroraDeMarca } from '@/components/brand/AuroraDeMarca';
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
@@ -16,15 +16,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useAuth } from '@/lib/auth/use-auth';
 import { conversionApi, type AlianzaPublica } from '@/lib/api/conversion.service';
 import { guardarAliadoPendiente } from '@/lib/conversion/acceso';
+import { LO_QUE_TRAE_EL_MES } from '@/components/conversion/lo-que-trae-el-mes';
 
-const LO_QUE_INCLUYE: readonly { ilustracion: NombreIlustracion; titulo: string; texto: string }[] = [
-  { ilustracion: 'casa', titulo: 'Publica gratis, siempre', texto: 'Tus inmuebles en el marketplace de Leasefy y tu página de inmobiliaria.' },
-  { ilustracion: 'firma', titulo: 'Contratos en línea', texto: 'Desde la plantilla legal, con firma electrónica e inventario.' },
-  { ilustracion: 'banco', titulo: 'El arriendo entra y sale solo', texto: 'Links de pago, conciliación con el banco y giros a los propietarios.' },
-  { ilustracion: 'sobre_cobro', titulo: 'Mori cobra por ti', texto: 'Llama y escribe por WhatsApp a quien se atrasa, con el tono de tu inmobiliaria.' },
-  { ilustracion: 'factura', titulo: 'Facturación y contabilidad', texto: 'Facturas ante la DIAN y asientos automáticos, sin digitar.' },
-  { ilustracion: 'novedad_cohete', titulo: 'Agentes de IA', texto: 'Avalúos, estudios de inquilinos y cobranza que trabajan mientras duermes.' },
-]
+/** Lo que trae el mes gratis (compartido con el enlace de un colega, `/r/<codigo>`). */
+const LO_QUE_INCLUYE = LO_QUE_TRAE_EL_MES;
 
 /** Cómo funciona el mes gratis, en tres pasos. */
 const COMO_FUNCIONA = [

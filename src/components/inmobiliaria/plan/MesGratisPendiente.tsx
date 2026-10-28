@@ -12,9 +12,26 @@ import { conversionApi } from '@/lib/api/conversion.service';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { aliadoPendiente, olvidarAliadoPendiente, type AccesoDeLaCuenta } from '@/lib/conversion/acceso';
+import { refiereYGanaApi } from '@/lib/api/refiere-y-gana.service';
+import { olvidarReferidoPendiente, referidoPendiente } from '@/lib/refiere-y-gana/refiere-y-gana';
 
 /** Los rechazos que no se arreglan reintentando: se dicen una vez y se olvida el enlace. */
 const RECHAZOS_DEFINITIVOS = new Set(['YA_TUVO_PRUEBA', 'YA_TIENES_TODO', 'ALIANZA_NO_EXISTE', 'ALIANZA_VENCIDA', 'ALIANZA_SIN_CUPOS', 'SOLO_EL_ADMINISTRADOR']);
+
+/** Los del código de un colega (Refiere y gana): se dicen una vez y se olvida el código. */
+const RECHAZOS_DEL_CODIGO = new Set([
+  'CODIGO_NO_EXISTE',
+  'CODIGO_NO_VIGENTE',
+  'ES_TU_CUENTA',
+  'SOLO_EL_ADMINISTRADOR',
+  'CUENTA_QUE_YA_EXISTIA',
+  'YA_ES_CLIENTE',
+  'YA_ESTA_EN_TU_BASE',
+  'NO_ES_UN_COLEGA',
+  'YA_ENTRO_CON_UN_CODIGO',
+]);
+
+const codigoDelError = (error: unknown) => (error instanceof ApiError ? (error.code ?? null) : null);
 
 /**
  * El enlace del aliado que quedó pendiente (Nico, 27-10-2026): quien abrió `leasefy.co/aliados/<codigo>` sin sesión
@@ -29,23 +46,49 @@ export function MesGratisPendiente({ inicio = '/panel/inmobiliaria/inmuebles' }:
   useEffect(() => {
     if (!user || intentado.current) return;
     const codigo = aliadoPendiente();
-    if (!codigo) return;
+    // 28-10-2026 (Nico, Refiere y gana): el código del colega (enlace `/r/<codigo>` o escrito al crear la cuenta).
+    const delColega = referidoPendiente();
+    if (!codigo && !delColega) return;
     intentado.current = true;
-    conversionApi
-      .usarAlianza(codigo)
-      .then((acceso) => {
-        olvidarAliadoPendiente();
-        setActivado(acceso);
-        void refreshAgency({ despuesDeUnCambio: true });
-      })
-      .catch((error: unknown) => {
-        const code = error instanceof ApiError ? (error.code ?? null) : null;
-        if (code && RECHAZOS_DEFINITIVOS.has(code)) {
+    void (async () => {
+      let celebrar: AccesoDeLaCuenta | null = null;
+      if (codigo) {
+        try {
+          celebrar = await conversionApi.usarAlianza(codigo);
           olvidarAliadoPendiente();
-          if (code !== 'YA_TIENES_TODO') toast.info(mensajeParaLaPersona(error, { accion: 'activar tu mes gratis' }));
+        } catch (error: unknown) {
+          const code = codigoDelError(error);
+          if (code && RECHAZOS_DEFINITIVOS.has(code)) {
+            olvidarAliadoPendiente();
+            if (code !== 'YA_TIENES_TODO') toast.info(mensajeParaLaPersona(error, { accion: 'activar tu mes gratis' }));
+          }
+          // Otro fallo (sin la migración, red): se reintenta la próxima vez que entre.
         }
-        // Otro fallo (sin la migración, red): se reintenta la próxima vez que entre.
-      });
+      }
+      if (delColega) {
+        try {
+          const r = await refiereYGanaApi.usar(delColega);
+          olvidarReferidoPendiente();
+          if (r.mesGratis && !celebrar) celebrar = r.acceso;
+          else if (!r.mesGratis) {
+            toast.success(`Entraste con el código de ${r.deQuien}`, {
+              description: 'Cuando pagues tu primer mes, le regalas un mes de Leasefy a quien te invitó.',
+            });
+          }
+        } catch (error: unknown) {
+          const code = codigoDelError(error);
+          if (code && RECHAZOS_DEL_CODIGO.has(code)) {
+            olvidarReferidoPendiente();
+            if (code !== 'YA_ENTRO_CON_UN_CODIGO') toast.info(mensajeParaLaPersona(error, { accion: 'usar el código de tu colega' }));
+          }
+          // Sin la migración o sin red: se reintenta la próxima vez.
+        }
+      }
+      if (celebrar) {
+        setActivado(celebrar);
+        void refreshAgency({ despuesDeUnCambio: true });
+      }
+    })();
   }, [user, refreshAgency]);
 
   if (!activado) return null;

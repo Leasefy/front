@@ -21,6 +21,8 @@ import type { CaminoParaMuchos } from '@/components/publica/TraerMuchos';
 import { marketplaceApi, paginaDe } from '@/lib/api/marketplace.service';
 import { conversionApi } from '@/lib/api/conversion.service';
 import { guardarAliadoPendiente } from '@/lib/conversion/acceso';
+import { refiereYGanaApi } from '@/lib/api/refiere-y-gana.service';
+import { guardarReferidoPendiente, referidoPendiente } from '@/lib/refiere-y-gana/refiere-y-gana';
 
 const CAMINOS: CaminoParaMuchos[] = ['enlaces', 'excel', 'carpetas'];
 
@@ -89,6 +91,10 @@ function Publica() {
   // 27-10-2026 (Nico): vino por el enlace de un aliado (`/aliados/<codigo>`): el mes gratis queda pendiente y se
   // activa al entrar al panel (MesGratisPendiente), ya con su inmobiliaria creada.
   const aliado = useRegaloDelAliado(sp.get('aliado'));
+  // 28-10-2026 (Nico, Refiere y gana): vino por el enlace de un colega (`/r/<codigo>` → `?ref=`) o lo abrió en los
+  // últimos 30 días: el mismo regalo, con el nombre de quien invita. El código se usa al entrar al panel.
+  const colega = useRegaloDelColega(sp.get('ref'));
+  const regalo = aliado ?? colega;
 
   // Los pasos de arriba (Nico, 28-10: «steps bonitos como los del onboarding viejo»): sólo en el registro corto y al publicar.
   const [todoPublicado, setTodoPublicado] = useState(false);
@@ -178,7 +184,7 @@ function Publica() {
         </div>
       </header>
       <main className="px-4 py-10 sm:px-6 sm:py-14">
-        {aliado && <RegaloDelAliado aliado={aliado} className="mx-auto mb-8 max-w-[640px]" />}
+        {regalo && <RegaloDelAliado aliado={regalo} className="mx-auto mb-8 max-w-[640px]" />}
         {momento && <PasosDePublicar momento={momento} className="mb-10 sm:mb-12" />}
         {contenido}
       </main>
@@ -221,6 +227,28 @@ function useRegaloDelAliado(codigo: string | null): string | null {
       vivo = false;
     };
   }, [codigo]);
+  return nombre;
+}
+
+/** El nombre del colega del enlace (o del código guardado), si sigue vigente; deja el código pendiente. */
+function useRegaloDelColega(codigoDelEnlace: string | null): string | null {
+  const [nombre, setNombre] = useState<string | null>(null);
+  useEffect(() => {
+    const codigo = codigoDelEnlace ?? referidoPendiente();
+    if (!codigo) return;
+    let vivo = true;
+    refiereYGanaApi
+      .codigo(codigo)
+      .then((c) => {
+        if (!vivo || !c.vigente) return;
+        guardarReferidoPendiente(c.codigo);
+        setNombre(c.deQuien);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [codigoDelEnlace]);
   return nombre;
 }
 

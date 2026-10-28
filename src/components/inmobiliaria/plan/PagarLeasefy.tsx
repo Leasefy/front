@@ -22,6 +22,7 @@ import { conversionApi } from '@/lib/api/conversion.service';
 import { DIAS_PARA_INSISTIR, precioDelMes, type AccesoConCotizacion } from '@/lib/conversion/acceso';
 import { shouldResumeReactivation } from '@/app/panel/inmobiliaria/upgrade/resume-reactivation';
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
+import { TarjetaDeRefiereYGana } from '@/components/refiere-y-gana/RefiereYGana';
 import { RecargasDePreguntas } from './RecargasDePreguntas';
 
 /** Lo que se abre al pagar: lo que la cuenta gratis ve en demo. */
@@ -201,6 +202,9 @@ export function PagarLeasefy() {
           </ul>
         </section>
       </div>
+
+      {/* 28-10-2026 (Nico): Refiere y gana también en «Tu plan». */}
+      <TarjetaDeRefiereYGana ruta="/panel/inmobiliaria/refiere-y-gana" />
 
       <RecargasDePreguntas />
 

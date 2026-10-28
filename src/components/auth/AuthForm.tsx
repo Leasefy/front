@@ -28,6 +28,7 @@ import { useHidratado } from '@/lib/hooks/use-hidratado';
 import { correoTieneCuentaApi } from '@/lib/api/correo-tiene-cuenta.service';
 import { codigoDeSupabase, leerErrorDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { CodigoDelColega } from '@/components/refiere-y-gana/CodigoDelColega';
 import {
   SpinnerGap,
   ArrowLeft,
@@ -80,6 +81,8 @@ interface AuthFormProps {
    * (`back/supabase/templates/confirmar-registro.html`), que trae el código.
    */
   confirmarConCodigo?: boolean;
+  /** «¿Te invitó un colega?» en el registro (Refiere y gana, 28-10-2026): la ventana de publicar lo muestra. */
+  conCodigoDeColega?: boolean;
   /**
    * «Crear cuenta» desde el inicio de sesión lo resuelve quien abrió la ventana
    * (p. ej. publicar vuelve a «¿Quién publica?»), con el correo ya escrito.
@@ -446,6 +449,7 @@ export function AuthForm({
   textos,
   encimaDelRegistro,
   confirmarConCodigo: conCodigo = false,
+  conCodigoDeColega = false,
   alCrearCuenta,
 }: AuthFormProps) {
   /** En la ventana se pide UNA contraseña: el ojo deja verla y el medidor dice si sirve. */
@@ -1433,6 +1437,7 @@ export function AuthForm({
                     error={registerForm.formState.errors.confirmPassword?.message}
                   />
                 )}
+                {conCodigoDeColega ? <CodigoDelColega /> : null}
                 <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
                 <ErrorBanner mensaje={error} />
                 {error && correoYaRegistrado && (

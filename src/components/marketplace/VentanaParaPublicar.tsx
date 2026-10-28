@@ -143,6 +143,7 @@ export function VentanaParaPublicar({
             key={`cuenta-${paso.perfil}`}
             variante="ventana"
             defaultMode="register"
+            conCodigoDeColega
             defaultRole={rolDeLaCuenta(paso.perfil)}
             returnUrl={destinos[paso.perfil]}
             correoInicial={correo}

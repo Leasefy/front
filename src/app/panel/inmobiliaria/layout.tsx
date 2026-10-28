@@ -43,6 +43,7 @@ import { BarraDelMesGratis } from '@/components/inmobiliaria/plan/BarraDelMesGra
 import { ModalDelPlan } from '@/components/inmobiliaria/plan/ModalDelPlan';
 import { PasosParaActivar } from '@/components/inmobiliaria/plan/PasosParaActivar';
 import { MesGratisPendiente } from '@/components/inmobiliaria/plan/MesGratisPendiente';
+import { SiguePublicando } from '@/components/publica/SiguePublicando';
 import { AvisoModoSimulado } from '@/components/estado/AvisoModoSimulado';
 import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
 import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
@@ -421,6 +422,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             {/* Un solo hijo: el candado lo pone junto a su bienvenida, y tres
                 sueltos quedaban como una lista sin llaves (aviso de React). */}
             <BarraDelMesGratis />
+            {/* 28-10 (Nico): quien se devolvió de /publica sin publicar, retoma donde iba. */}
+            <SiguePublicando />
             <CandadoDelModoComercial>
               {/* Con llaves: React 19 en dev avisaba «lista sin key» por estos tres (27-10-2026). */}
               <div className="contents" key="pantalla">

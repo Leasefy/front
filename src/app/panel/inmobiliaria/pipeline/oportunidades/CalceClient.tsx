@@ -378,6 +378,15 @@ export function CalceClient() {
         }
       />
 
+      {/* Juan (27-10-2026, punto 10): los cruces salen solos; tocar un interesado abre su mensaje abajo. */}
+      <CrucesAutomaticos
+        en={en}
+        alElegir={(id) => {
+          setDireccion('interesado')
+          setLeadId(id)
+        }}
+      />
+
       {/* Las dos direcciones son la MISMA pregunta mirada desde los dos lados. */}
       <SegmentedControl<Direccion>
         aria-label={tr("Desde dónde quieres buscar")}
@@ -681,4 +690,47 @@ export function CalceClient() {
 
     </div>
   )
+}
+
+/** Oportunidades automáticas: cada interesado vivo con sus mejores inmuebles, sin tener que elegirlo. */
+function CrucesAutomaticos({ en, alElegir }: { en: boolean; alElegir: (pipelineItemId: string) => void }) {
+  const tr = useTr()
+  const todos = useCrm(() => matchingApi.paraTodos(), [], [])
+  const interesados = todos.datos?.interesados ?? []
+  if (todos.cargando) return <div className="h-40 animate-pulse rounded-lg bg-surface-muted" aria-busy="true" />
+  if (interesados.length === 0) return null
+  return (
+    <section className="space-y-3" data-testid="cruces-automaticos">
+      <div>
+        <h2 className="text-[16px] font-medium text-fg">{tr('Para cada interesado')}</h2>
+        <p className="text-sm text-fg-muted">{tr('Sus mejores inmuebles, ya cruzados. Toca uno para ver el mensaje listo.')}</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {interesados.map(({ lead, opciones }) => (
+          <button
+            key={lead.pipelineItemId}
+            type="button"
+            onClick={() => alElegir(lead.pipelineItemId)}
+            className="rounded-lg border border-border bg-surface p-4 text-left transition-colors duration-fast hover:border-primary/40"
+            data-testid="cruce-automatico"
+          >
+            <p className="truncate text-[15px] font-medium text-fg">{lead.nombre || tr('Sin nombre')}</p>
+            <ul className="mt-2 space-y-1.5">
+              {opciones.map((o) => (
+                <li key={o.propertyId} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate text-fg">{o.inmueble?.title ?? tr('Inmueble')}</span>
+                  <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-caption font-medium text-fg tabular-nums">{o.puntaje}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 line-clamp-1 text-caption text-fg-muted">{((en && o0(opciones)?.porQueEn) || o0(opciones)?.porQue || []).join(' · ')}</p>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function o0<T>(xs: readonly T[]): T | undefined {
+  return xs[0]
 }

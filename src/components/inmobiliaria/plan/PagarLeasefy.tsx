@@ -77,7 +77,8 @@ export function PagarLeasefy() {
   const checkout = useAgencyCheckout(() => {
     void refreshAgency();
     void refetch();
-    router.push('/panel/inmobiliaria');
+    // El agente vuelve con sus tres pasos abiertos (datos, cuenta, factura): `PasosDelAgente` lee `bienvenida`.
+    router.push(agency?.cuentaDeAgente ? '/panel/inmobiliaria?bienvenida=agente' : '/panel/inmobiliaria');
   });
 
   if (error) return <FalloDeCarga error={error} queEs="tu plan" onReintentar={cargar} />;

@@ -41,6 +41,7 @@ import { abiertaEnModoComercial, enModoComercial } from '@/lib/nav/modo-comercia
 import { conCandadoDelPlan, faltaActivarParaVerTodo } from '@/lib/conversion/acceso';
 import { BarraDelMesGratis } from '@/components/inmobiliaria/plan/BarraDelMesGratis';
 import { ModalDelPlan } from '@/components/inmobiliaria/plan/ModalDelPlan';
+import { PasosDelAgente } from '@/components/inmobiliaria/plan/PasosDelAgente';
 import { MesGratisPendiente } from '@/components/inmobiliaria/plan/MesGratisPendiente';
 import { AvisoModoSimulado } from '@/components/estado/AvisoModoSimulado';
 import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
@@ -430,6 +431,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
                 quedó pendiente al registrarse, el modal para pagar (fin del mes gratis, días que quedan, lo gratis). */}
             <MesGratisPendiente />
             <ModalDelPlan />
+            {/* 27-10-2026 (Nico): el agente que ya pagó termina su cuenta en tres pasos (datos, cuenta, factura). */}
+            <PasosDelAgente />
           </main>
         </div>
 

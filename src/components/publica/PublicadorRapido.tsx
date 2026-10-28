@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, SpinnerGap } from '@phosphor-icons/react';
-import { motionDuration, motionEase } from '@leasefy/cadence';
+import { Pagination, SearchInput, motionDuration, motionEase } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { autoMapColumns } from '@/components/inmobiliaria/import/lib/columnMapping';
@@ -73,6 +73,13 @@ type Estado = EstadoDeLaTarjeta;
 
 /** Con más de esto, la lista se pliega a una línea por inmueble. */
 const POCOS = 3;
+/** Cuántos se ven por página cuando son muchos. */
+const POR_PAGINA = 25;
+
+/** Para buscar sin que importen tildes ni mayúsculas. */
+function sinTildes(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
 
 type Filtro = 'todos' | 'faltan' | 'listos' | 'error' | 'publicados';
 
@@ -138,6 +145,9 @@ export function PublicadorRapido({
   const [intento, setIntento] = useState(false);
   const [abierta, setAbierta] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<Filtro>('todos');
+  // Con muchos (Nico, 28-10: «que se vea bien si carga uno o si carga 1.000»): buscador y páginas de 25, como las tablas.
+  const [busqueda, setBusqueda] = useState('');
+  const [pagina, setPagina] = useState(1);
   const [recortados, setRecortados] = useState(0);
 
   // Lo último, para lo que corre por fuera del render (fotos que llegan, publicar).
@@ -535,6 +545,14 @@ export function PublicadorRapido({
     return filtro === 'listos' ? completo : !completo;
   });
 
+  const buscados = useMemo(() => {
+    const q = sinTildes(busqueda);
+    if (!modoLista || !q) return visibles;
+    return visibles.filter((i) => i.clave === abierta || sinTildes(`${i.direccion} ${i.barrio} ${i.ciudad} ${i.codigo ?? ''}`).includes(q));
+  }, [visibles, busqueda, modoLista, abierta]);
+  const paginaReal = Math.min(pagina, Math.max(1, Math.ceil(buscados.length / POR_PAGINA)));
+  const enPantalla = modoLista ? buscados.slice((paginaReal - 1) * POR_PAGINA, paginaReal * POR_PAGINA) : buscados;
+
   // Publicado ya está; lo que falta es el punto en el mapa de algunos: también se avisa.
   useAvisoAlSalir(publicando || hayLlegando || (cargado && porUbicar > 0 && publicados.length > 0));
 
@@ -700,9 +718,33 @@ export function PublicadorRapido({
         <TraerMuchos inicial={caminoInicial} alTraerEnlaces={traerEnlaces} alLeerExcel={leerExcel} alSoltarCarpetas={soltarCarpetas} />
       </div>
 
-      {modoLista && (
-        <>
-          <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Filtrar">
+      {modoLista ? (
+        <section className="mt-6 overflow-hidden rounded-2xl border border-border bg-surface" data-testid="lista-de-muchos">
+          {/* La barra va unida a la lista: buscar, agregar y los filtros con su conteo. */}
+          <div className="flex flex-col gap-2.5 border-b border-border p-3 sm:flex-row sm:items-center">
+            <SearchInput
+              value={busqueda}
+              onChange={(e) => {
+                setBusqueda(e.target.value);
+                setPagina(1);
+              }}
+              onClear={() => {
+                setBusqueda('');
+                setPagina(1);
+              }}
+              placeholder="Buscar por dirección, barrio o código"
+              aria-label="Buscar en tus inmuebles"
+              className="min-w-0 flex-1"
+              data-testid="buscar-en-la-lista"
+            />
+            {inmuebles.length < MAX_INMUEBLES && (
+              <Button type="button" variant="secondary" onClick={agregar} className="shrink-0" data-testid="agregar-otro-inmueble">
+                <Plus size={16} weight="bold" aria-hidden="true" className="mr-1.5" />
+                Agregar otro
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 px-3 pt-3" role="tablist" aria-label="Filtrar">
             {(
               [
                 ['todos', 'Todos'],
@@ -720,7 +762,10 @@ export function PublicadorRapido({
                   type="button"
                   role="tab"
                   aria-selected={filtro === f}
-                  onClick={() => setFiltro(f)}
+                  onClick={() => {
+                    setFiltro(f);
+                    setPagina(1);
+                  }}
                   className={cn(
                     'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors duration-fast',
                     filtro === f ? 'border-fg bg-fg text-bg' : 'border-border bg-surface text-fg-muted hover:text-fg',
@@ -733,35 +778,45 @@ export function PublicadorRapido({
                 </button>
               ))}
           </div>
-          <CompletarEnBloque
-            pendientes={porPublicar.filter((i) => !i.idCreado)}
-            alPonerTipo={(claves, tipo) => setInmuebles((l) => l.map((i) => (claves.has(i.clave) ? { ...i, tipo } : i)))}
-            alPonerCiudad={(claves, ciudad) => setInmuebles((l) => l.map((i) => (claves.has(i.clave) ? { ...i, ciudad } : i)))}
-          />
-        </>
-      )}
-
-      {modoLista ? (
-        <div className="mt-4 space-y-2.5" data-testid="lista-de-inmuebles">
-          {visibles.map((i) =>
-            abierta === i.clave ? (
-              <div key={i.clave}>{tarjeta(i)}</div>
-            ) : (
-              <FilaDeInmueble
-                key={i.clave}
-                numero={numeroDe.get(i.clave) ?? 0}
-                inmueble={i}
-                fotos={fotos[i.clave] ?? []}
-                llegando={llegando[i.clave]}
-                estado={estados[i.clave] ?? { que: 'borrador' }}
-                repetidaCon={repetidas.get(i.clave)}
-                mostrarFaltantes={intento}
-                alAbrir={() => setAbierta(i.clave)}
+          <div className="px-3">
+            <CompletarEnBloque
+              pendientes={porPublicar.filter((i) => !i.idCreado)}
+              alPonerTipo={(claves, tipo) => setInmuebles((l) => l.map((i) => (claves.has(i.clave) ? { ...i, tipo } : i)))}
+              alPonerCiudad={(claves, ciudad) => setInmuebles((l) => l.map((i) => (claves.has(i.clave) ? { ...i, ciudad } : i)))}
+            />
+          </div>
+          <div className="space-y-2 p-3" data-testid="lista-de-inmuebles">
+            {enPantalla.map((i) =>
+              abierta === i.clave ? (
+                <div key={i.clave}>{tarjeta(i)}</div>
+              ) : (
+                <FilaDeInmueble
+                  key={i.clave}
+                  numero={numeroDe.get(i.clave) ?? 0}
+                  inmueble={i}
+                  fotos={fotos[i.clave] ?? []}
+                  llegando={llegando[i.clave]}
+                  estado={estados[i.clave] ?? { que: 'borrador' }}
+                  repetidaCon={repetidas.get(i.clave)}
+                  mostrarFaltantes={intento}
+                  alAbrir={() => setAbierta(i.clave)}
+                />
+              ),
+            )}
+            {enPantalla.length === 0 && (
+              <VacioChico
+                className="justify-center py-8"
+                titulo={busqueda ? 'Ninguno coincide con lo que buscas.' : 'No hay inmuebles en este filtro.'}
+                ilustracion="lupa"
               />
-            ),
+            )}
+          </div>
+          {buscados.length > POR_PAGINA && (
+            <div className="border-t border-border px-3 py-2.5">
+              <Pagination total={buscados.length} page={paginaReal} pageSize={POR_PAGINA} onPageChange={setPagina} data-testid="paginas-de-la-lista" />
+            </div>
           )}
-          {visibles.length === 0 && <VacioChico className="justify-center py-8" titulo="No hay inmuebles en este filtro." ilustracion="lupa" />}
-        </div>
+        </section>
       ) : (
         <div className="mt-8 space-y-5">
           <AnimatePresence initial={false}>
@@ -781,7 +836,7 @@ export function PublicadorRapido({
         </div>
       )}
 
-      {inmuebles.length < MAX_INMUEBLES && (
+      {!modoLista && inmuebles.length < MAX_INMUEBLES && (
         <button
           type="button"
           onClick={agregar}

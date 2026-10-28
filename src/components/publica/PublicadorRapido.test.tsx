@@ -193,6 +193,37 @@ describe('el publicador con muchos inmuebles (20-10-2026)', () => {
     expect(por('fila-inmueble-2')?.textContent).toContain('Apartamento en arriendo en Poblado');
   });
 
+  it('con muchos (Nico, 28-10: «que se vea bien si carga uno o si carga 1.000»): páginas de 25 y el buscador', async () => {
+    cargarHoja(
+      Array.from({ length: 30 }, (_, k): [string, string, string, string, string, number, number] => [
+        `INM-${k + 1}`,
+        `Cra ${70 + k} # 44-10`,
+        'Medellín',
+        k === 29 ? 'Belén' : 'Laureles',
+        'Apartamento',
+        2_000_000 + k * 1000,
+        2,
+      ]),
+    );
+    await montar();
+    await subirExcel();
+    expect(por('titulo-publicador')?.textContent).toBe('Tus 30 inmuebles');
+    // La primera página: 25, con las páginas abajo.
+    expect(todos('fila-inmueble-')).toHaveLength(25);
+    expect(por('paginas-de-la-lista')).not.toBeNull();
+    // Buscar por barrio deja sólo el de Belén, sin páginas.
+    const buscar = por('buscar-en-la-lista') as HTMLInputElement;
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      set?.call(buscar, 'belen');
+      buscar.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(todos('fila-inmueble-')).toHaveLength(1);
+    expect(por('paginas-de-la-lista')).toBeNull();
+    // «Agregar otro» está arriba, en la barra de la lista (no al final de 500 filas).
+    expect(por('lista-de-muchos')?.contains(por('agregar-otro-inmueble'))).toBe(true);
+  });
+
   it('las carpetas se acomodan con su fila por el código o la dirección; las demás son inmuebles nuevos', async () => {
     cargarHoja([
       ['INM-1', 'Cra 76 # 34-21 apto 301', 'Medellín', 'Laureles', 'Apartamento', 2_800_000, 3],

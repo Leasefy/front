@@ -2914,3 +2914,9 @@ button[role='radio'][data-state='checked'].group {
     color: hsl(var(--muted-foreground));
   }
 }
+
+/* La tarjeta de la entrada (/auth) llega subiendo (Nico 28-10-2026, «déjamelo wow»): CSS para que no espere a hidratar. */
+@keyframes tarjeta-de-entrada {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}

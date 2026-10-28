@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { X } from '@phosphor-icons/react';
 
@@ -11,7 +11,7 @@ import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
 import { TestimoniosFlotantes } from '@/components/auth/TestimoniosFlotantes';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
-import { BordeDeCorriente } from '@/components/auth/BordeDeCorriente';
+import { BordeDeCorriente, type ManejoDeLaCorriente } from '@/components/auth/BordeDeCorriente';
 
 function AuthFormFallback() {
   return (
@@ -45,6 +45,8 @@ function AuthFormFallback() {
  * pantalla, a todo el ancho, como siempre.
  */
 export default function AuthPage() {
+  /** La corriente del borde responde a la tarjeta: cada tecla, una chispa; al enviar, se enciende (Nico 28-10). */
+  const corriente = useRef<ManejoDeLaCorriente>(null);
   return (
     <ForceLightMode>
       <div className="relative min-h-screen bg-background" data-lenis-prevent>
@@ -82,10 +84,14 @@ export default function AuthPage() {
 
         {/* ── La tarjeta del formulario ──────────────────────────────────── */}
         <div className="relative z-10 flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">
+          {/* Entra subiendo 24 px en 500 ms (`reveal`, curva `enter`) con CSS y no con `Appear`: `Appear` arranca
+              invisible hasta hidratar y la entrada quedaba en blanco mientras tanto. */}
           <div
-            className="relative flex w-full flex-col px-6 py-6 sm:px-10 sm:py-8 lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-[28px] lg:bg-surface lg:p-10 lg:shadow-[0_32px_80px_-28px_rgba(12,18,48,0.45)] lg:ring-1 lg:ring-black/5"
+            className="relative flex w-full flex-col px-6 py-6 sm:px-10 sm:py-8 motion-safe:animate-[tarjeta-de-entrada_500ms_cubic-bezier(0.22,1,0.36,1)_120ms_both] lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-[28px] lg:bg-surface lg:p-10 lg:shadow-flotante"
             data-lenis-prevent
             data-testid="auth-tarjeta"
+            onInput={() => corriente.current?.pulso()}
+            onSubmitCapture={() => corriente.current?.oleada()}
           >
             {/*
              * Una ✕ de cerrar, no un «← Inicio».
@@ -130,10 +136,11 @@ export default function AuthPage() {
               </Suspense>
             </div>
 
-            {/* La corriente de voltaje de la landing, quieta, en el borde de abajo (glow up, Nico 24-10): la firma de
-                la marca dentro de la tarjeta —nada encima del video—; en el celular, al pie de la pantalla. */}
+            {/* La corriente de voltaje de la landing en el borde de abajo (glow up, Nico 24-10): la firma de la marca
+                dentro de la tarjeta —nada encima del video—; en el celular, al pie de la pantalla. Desde el 28-10 está
+                viva: fluye, cada tecla manda una chispa y al entrar se enciende entera. */}
             <div className="-mx-6 -mb-6 mt-6 sm:-mx-10 sm:-mb-8 lg:-mx-10 lg:-mb-10 lg:mt-8">
-              <BordeDeCorriente className="h-14" />
+              <BordeDeCorriente ref={corriente} className="h-16" />
             </div>
           </div>
         </div>

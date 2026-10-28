@@ -38,8 +38,15 @@ export function PasosDePublicar({ momento, className }: { momento: MomentoDePubl
   const pasoActual = PASOS[actual];
 
   return (
-    <nav aria-label="Pasos para publicar" className={cn('mx-auto w-full max-w-[720px]', className)} data-testid="pasos-de-publicar" data-momento={momento}>
-      <ol className="flex items-center">
+    // Alineados a la izquierda del contenido de abajo (Nico 28-10: «los steps deberían estar alineados a la izquierda»):
+    // el riel mide lo que mide el contenido de ese momento (1040 el registro, 760 el publicador) y los pasos arrancan en su borde.
+    <nav
+      aria-label="Pasos para publicar"
+      className={cn('mx-auto w-full', momento === 'datos' ? 'max-w-[1040px]' : 'max-w-[760px]', className)}
+      data-testid="pasos-de-publicar"
+      data-momento={momento}
+    >
+      <ol className="flex max-w-[720px] items-center">
         {PASOS.map((paso, i) => {
           const hecho = i < actual;
           const esEste = i === actual;

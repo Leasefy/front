@@ -4,7 +4,6 @@ import { useCallback, useState, type ComponentType, type MouseEvent } from 'reac
 import { UserPlus } from '@phosphor-icons/react';
 
 import { AuthModal } from '@/components/auth/AuthModal';
-import { useAuth } from '@/lib/auth/use-auth';
 import { DESTINO_DEL_AGENTE } from '@/lib/auth/perfil-de-onboarding';
 import { VentanaParaPublicar } from './VentanaParaPublicar';
 
@@ -83,15 +82,16 @@ export const DESTINOS_PARA_PUBLICAR = {
 export const CONFIRMAR_CON_CODIGO = process.env.NEXT_PUBLIC_CONFIRMAR_CON_CODIGO === 'true';
 
 /**
- * «Publicar inmueble» sin sesión. Sólo una sesión CONFIRMADA navega. Mientras
- * se confirma (en la página pública puede tardar) también se abre la ventana:
- * si la sesión llega, `AuthForm` sigue sola a su destino.
+ * «Publicar gratis» / «Publicar inmueble»: SIEMPRE abre la ventana ahí mismo, también con sesión (Nico, 28-10-2026:
+ * «si le doy a publicar gratis debo de abrirle el modal, esto por si quiero crear otra cuenta… me puedo quedar ahí
+ * encerrado hasta que termine lo donde me quedé»). Con sesión, después de elegir quién publica, `AuthForm` pregunta
+ * «¿sigues con esta cuenta o usas otra?» (`SesionYaAbierta`) y nunca sigue solo. Retomar lo que dejó a medias es
+ * «Ir al panel».
  *
  * La ventana es la de publicar (Nico y Juan, 19-10-2026): primero «¿Quién va a
- * publicar?» —propietario o inmobiliaria— y después la cuenta.
+ * publicar?» —propietario, inmobiliaria o agente— y después la cuenta.
  */
 export function useCuentaParaPublicar(_destino?: string) {
-  const { isAuthenticated } = useAuth();
   const [abierta, setAbierta] = useState(false);
   const abrir = useCallback(() => setAbierta(true), []);
   const ventana = (
@@ -105,11 +105,10 @@ export function useCuentaParaPublicar(_destino?: string) {
 
   const alTocar = useCallback(
     (e: MouseEvent) => {
-      if (isAuthenticated) return;
       e.preventDefault();
       abrir();
     },
-    [abrir, isAuthenticated],
+    [abrir],
   );
 
   return { alTocar, ventana };

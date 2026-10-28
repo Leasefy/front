@@ -173,9 +173,10 @@ function Publica() {
   return (
     <div className="min-h-screen bg-bg">
       <header className="sticky top-0 z-20 border-b border-border/70 bg-bg/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-[72px] max-w-[1100px] items-center justify-between px-4 sm:px-6">
           <Link href="/" aria-label="Leasefy — inicio" className="inline-flex text-fg">
-            <LeasefyLogotype size={20} title="Leasefy" />
+            {/* Del tamaño de la landing (30 px de alto, `.hdr .logo svg`; Nico 28-10: «lo veo súper pequeño»). */}
+            <LeasefyLogotype size={30} title="Leasefy" />
           </Link>
           <Link href="/propiedades" className="inline-flex items-center gap-1.5 text-[13.5px] text-fg-muted hover:text-fg">
             <ArrowLeft size={14} aria-hidden="true" />

@@ -100,6 +100,19 @@ export interface TextosDeLaCuenta {
   loginBoton?: string;
 }
 
+/**
+ * El saludo de la entrada según la hora de Colombia (Nico 28-10-2026: «déjamelo wow»): «Buenas tardes.» y, debajo,
+ * en gris, «Qué bueno verte.». Se calcula con la zona de Bogotá en el servidor y en el navegador: sale igual en los dos.
+ */
+export function saludoDeLaHora(fecha: Date = new Date()): string {
+  const hora = Number(
+    new Intl.DateTimeFormat('es-CO', { hour: 'numeric', hourCycle: 'h23', timeZone: 'America/Bogota' }).format(fecha),
+  );
+  if (hora >= 5 && hora < 12) return 'Buenos días.';
+  if (hora >= 12 && hora < 19) return 'Buenas tardes.';
+  return 'Buenas noches.';
+}
+
 /** Cuántos dígitos trae el código del correo (el `OTP length` de Supabase, 6 por defecto). */
 const DIGITOS_DEL_CODIGO = 6;
 
@@ -479,6 +492,8 @@ export function AuthForm({
   }, []);
 
   const [mode, setMode] = React.useState<AuthMode>('login');
+  /** La pantalla de entrar (no la ventana de /publica) saluda según la hora, en dos tonos. */
+  const saludoGrande = variante === 'pagina' && mode === 'login' && !textos?.loginTitulo;
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('credentials');
   const [isLoading, setIsLoading] = React.useState(false);
   // Qué botón carga: el de Google sólo dice «Conectando…» si se tocó él; mientras
@@ -1231,17 +1246,26 @@ export function AuthForm({
           className={cn(
             // Títulos livianos, como los de la landing (glow up del acceso, Nico 24-10): peso 420, nunca negrilla.
             'font-heading font-[420] leading-[1.1] tracking-[-0.03em] text-fg',
-            variante === 'ventana' ? 'text-[26px] sm:text-[28px]' : 'text-[30px]',
+            variante === 'ventana' ? 'text-[26px] sm:text-[28px]' : saludoGrande ? 'text-[36px] font-[400] leading-[1.06] tracking-[-0.035em]' : 'text-[30px]',
           )}
+          data-testid="auth-titulo"
         >
-          {mode === 'login' && (textos?.loginTitulo ?? 'Bienvenido de vuelta')}
+          {saludoGrande ? (
+            <>
+              <span className="block" suppressHydrationWarning>
+                {saludoDeLaHora()}
+              </span>
+              <span className="block text-fg-subtle">Qué bueno verte.</span>
+            </>
+          ) : null}
+          {mode === 'login' && !saludoGrande && (textos?.loginTitulo ?? 'Bienvenido de vuelta')}
           {mode === 'register' && registerStep === 'credentials' && (textos?.registroTitulo ?? 'Crea tu cuenta')}
           {mode === 'register' && registerStep === 'confirm-email' && 'Revisa tu correo'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
-        <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
-          {mode === 'login' && (textos?.loginDetalle ?? 'Ingresa a tu cuenta para continuar.')}
+        <p className={cn('mt-2 text-[14px] leading-relaxed text-fg-subtle', saludoGrande && 'hidden')}>
+          {mode === 'login' && !saludoGrande && (textos?.loginDetalle ?? 'Ingresa a tu cuenta para continuar.')}
           {mode === 'register' && registerStep === 'credentials' && (textos?.registroDetalle ?? 'Ingresa tus datos para continuar.')}
           {mode === 'register' && registerStep === 'confirm-email' && (
             // Sin punto al final: pegado al correo se leía como parte de él (Nico, 01-10).

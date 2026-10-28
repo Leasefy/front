@@ -238,7 +238,7 @@
  * «Publicar gratis» abre la ventana AHÍ MISMO (Nico, 28-10-2026: «el modal debe aparecer ahí mismo, no lo tiene porque
  * llevar a la otra pantalla hasta que seleccione qué es y cree la cuenta»). La home y las internas son HTML sin React:
  * la ventana de React vive en /publica/ventana y se abre encima en un iframe transparente. Al crear la cuenta, esa
- * página avisa (`leasefy:ir`) y ésta sigue a /publica. Con sesión, el enlace navega como siempre. Reglas y mensajes:
+ * página avisa (`leasefy:ir`) y ésta sigue a /publica. Con sesión también se abre (28-10). Reglas y mensajes:
  * src/lib/publica/ventana-encima.ts.
  */
 (function () {
@@ -294,7 +294,9 @@
   document.addEventListener("click", function (e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
-    if (!a || raiz.hasAttribute("data-sesion")) return;
+    /* Con sesión también (Nico 28-10: «si le doy a publicar gratis debo de abrirle el modal, por si quiero crear otra
+       cuenta»): la ventana pregunta si sigue con esa cuenta o usa otra; retomar lo que dejó es «Ir al panel». */
+    if (!a) return;
     var url;
     try { url = new URL(a.getAttribute("href"), location.href); } catch (_) { return; }
     if (url.origin !== location.origin || url.pathname !== "/publica" || url.search) return;

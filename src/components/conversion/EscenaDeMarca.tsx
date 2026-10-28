@@ -15,7 +15,7 @@
  * Con movimiento reducido todo queda quieto y sin chispa.
  */
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Ilustracion, Stagger, StaggerItem, motionSpring, usePrefersReducedMotion, type NombreIlustracion } from '@leasefy/cadence';
@@ -54,23 +54,7 @@ export function EscenaDeMarca({ principal, acompanantes = [], children, celebrar
   const reducido = usePrefersReducedMotion();
   const centro = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!celebrar || reducido) return;
-    const reloj = window.setTimeout(() => {
-      const caja = centro.current?.getBoundingClientRect();
-      const origen =
-        caja && window.innerWidth > 0 && window.innerHeight > 0
-          ? { x: (caja.left + caja.width / 2) / window.innerWidth, y: (caja.top + caja.height / 2) / window.innerHeight }
-          : { x: 0.5, y: 0.3 };
-      const comun = { origin: origen, colors: COLORES_DE_LA_CHISPA, zIndex: 400, disableForReducedMotion: true };
-      void confetti({ ...comun, particleCount: 110, spread: 120, startVelocity: 40, gravity: 0.85, scalar: 0.9, ticks: 220 });
-      void confetti({ ...comun, particleCount: 50, spread: 360, startVelocity: 20, gravity: 0.5, scalar: 0.6, shapes: ['circle'], ticks: 160 });
-    }, 450);
-    return () => {
-      window.clearTimeout(reloj);
-      confetti.reset();
-    };
-  }, [celebrar, reducido]);
+  useChispa(celebrar, centro);
 
   return (
     <div className={cn('relative isolate h-56 overflow-hidden sm:h-64', className)} data-testid="escena-de-marca">
@@ -130,6 +114,67 @@ export function EscenaDeMarca({ principal, acompanantes = [], children, celebrar
       {marca ? <div className="absolute bottom-3 left-3">{marca}</div> : null}
     </div>
   );
+}
+
+/** Un 3D que flota suelto (llega con su resorte y después se mece). Para escenas a la medida, como la del aliado. */
+export function TresDeQueFlota({
+  nombre,
+  tamano = 64,
+  giro = 0,
+  segundos = 5,
+  retraso = 0,
+  className,
+}: {
+  nombre: NombreIlustracion;
+  tamano?: number;
+  giro?: number;
+  segundos?: number;
+  retraso?: number;
+  className?: string;
+}) {
+  const reducido = usePrefersReducedMotion();
+  return (
+    <motion.span
+      aria-hidden="true"
+      className={cn('absolute drop-shadow-[0_14px_22px_rgba(4,16,48,0.4)]', className)}
+      initial={reducido ? { opacity: 0 } : { opacity: 0, scale: 0.4, rotate: giro * 2 }}
+      animate={reducido ? { opacity: 1 } : { opacity: 1, scale: 1, rotate: giro, y: [0, -9, 0] }}
+      transition={
+        reducido
+          ? { duration: 0.2 }
+          : {
+              opacity: { duration: 0.4, delay: retraso },
+              scale: { ...motionSpring.bouncy, delay: retraso },
+              rotate: { ...motionSpring.bouncy, delay: retraso },
+              y: { duration: segundos, repeat: Infinity, ease: 'easeInOut', delay: retraso + 0.8 },
+            }
+      }
+    >
+      <Ilustracion nombre={nombre} tamano={tamano} tono="auto" alt="" />
+    </motion.span>
+  );
+}
+
+/** Suelta la chispa una vez desde el centro de `ref` (o de la pantalla). Sin movimiento, nada. */
+export function useChispa(activa: boolean, ref?: RefObject<HTMLElement | null>, retraso = 450) {
+  const reducido = usePrefersReducedMotion();
+  useEffect(() => {
+    if (!activa || reducido) return;
+    const reloj = window.setTimeout(() => {
+      const caja = ref?.current?.getBoundingClientRect();
+      const origen =
+        caja && window.innerWidth > 0 && window.innerHeight > 0
+          ? { x: (caja.left + caja.width / 2) / window.innerWidth, y: (caja.top + caja.height / 2) / window.innerHeight }
+          : { x: 0.5, y: 0.3 };
+      const comun = { origin: origen, colors: COLORES_DE_LA_CHISPA, zIndex: 400, disableForReducedMotion: true };
+      void confetti({ ...comun, particleCount: 110, spread: 120, startVelocity: 40, gravity: 0.85, scalar: 0.9, ticks: 220 });
+      void confetti({ ...comun, particleCount: 50, spread: 360, startVelocity: 20, gravity: 0.5, scalar: 0.6, shapes: ['circle'], ticks: 160 });
+    }, retraso);
+    return () => {
+      window.clearTimeout(reloj);
+      confetti.reset();
+    };
+  }, [activa, reducido, ref, retraso]);
 }
 
 /** «Fianly × Leasefy»: los dos logos, cada uno en su ficha blanca. Sin logo conocido, el nombre escrito. */
@@ -201,5 +246,31 @@ export function BeneficiosEn3D({ items = BENEFICIOS_DE_LEASEFY_COMPLETO, classNa
         </StaggerItem>
       ))}
     </Stagger>
+  );
+}
+
+/**
+ * La tarjeta del regalo del aliado arriba del registro y del publicador (`/publica?aliado=`). Nico, 28-10: «ese message
+ * de arriba en azulito, qué cosa tan fea, para todos, haz algo mejor». Una tarjeta chica con la misma aurora del modal,
+ * el logo del aliado y el 3D del regalo.
+ */
+export function RegaloDelAliado({ aliado, className }: { aliado: string; className?: string }) {
+  return (
+    <div
+      className={cn('relative isolate overflow-hidden rounded-2xl px-4 py-3.5 text-white shadow-[0_14px_40px_rgba(4,16,48,0.22)] sm:px-5', className)}
+      data-testid="regalo-del-aliado"
+    >
+      <AuroraDeMarca className="absolute inset-0 -z-10" />
+      <div className="flex items-center gap-3 sm:gap-4">
+        <ChipDelAliado aliado={aliado} texto={aliado} />
+        <p className="min-w-0 flex-1 text-body-sm leading-snug">
+          <span className="font-medium">Te regala un mes de Leasefy completo.</span>{' '}
+          <span className="text-white/75">Empieza al crear tu cuenta, sin tarjeta.</span>
+        </p>
+        <span aria-hidden="true" className="hidden shrink-0 drop-shadow-[0_8px_14px_rgba(4,16,48,0.4)] sm:block">
+          <Ilustracion nombre="novedad_regalo" tamano={48} tono="auto" alt="" />
+        </span>
+      </div>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react';
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
+import { RegaloDelAliado } from '@/components/conversion/EscenaDeMarca';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -168,12 +169,10 @@ function Publica() {
           </Link>
         </div>
       </header>
-      {aliado && (
-        <div className="border-b border-primary/20 bg-primary-soft px-4 py-2.5 text-center text-[13.5px] text-fg" data-testid="regalo-del-aliado">
-          <strong className="font-medium">{aliado}</strong> te regala un mes de Leasefy completo: empieza al crear tu cuenta.
-        </div>
-      )}
-      <main className="px-4 py-10 sm:px-6 sm:py-14">{contenido}</main>
+      <main className="px-4 py-10 sm:px-6 sm:py-14">
+        {aliado && <RegaloDelAliado aliado={aliado} className="mx-auto mb-8 max-w-[640px]" />}
+        {contenido}
+      </main>
     </div>
   );
 }

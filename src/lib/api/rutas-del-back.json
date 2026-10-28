@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-28",
-  "cuantas": 1627,
+  "cuantas": 1628,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -36,6 +36,7 @@
     "DELETE /inmobiliaria/finanzas/usura/:id",
     "DELETE /inmobiliaria/inmuebles/importar/filas/:id",
     "DELETE /inmobiliaria/inmuebles/importar/lotes/:lote",
+    "DELETE /inmobiliaria/mantenimiento/:id",
     "DELETE /inmobiliaria/mantenimiento/:id/fotos",
     "DELETE /inmobiliaria/mantenimiento/proveedores/:id",
     "DELETE /inmobiliaria/medios-de-pago/:id",

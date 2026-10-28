@@ -6,6 +6,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { toast } from '@/components/ui/toast';
+import { confirmar } from '@/components/ui/confirmar';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   repartirErroresDelServidor,
@@ -145,6 +146,8 @@ function MantenimientosContent() {
    */
   const { canAccess, agencyRole } = usePermissions();
   const puedeEditar = canAccess('operaciones', 'edit');
+  // 28-10-2026 (Nico: «los admin sí podrían eliminarlos»): `operaciones:delete` (por defecto, sólo el administrador).
+  const puedeEliminar = canAccess('operaciones', 'delete');
   // Roles auxiliares (20-10-2026): coordinan la reparación, pero el costo lo aprueba el administrador o el coordinador.
   const noApruebaCostos = elAuxiliarNoApruebaCostos(agencyRole);
   /*
@@ -247,6 +250,27 @@ function MantenimientosContent() {
       actual ? frescos.find((m) => m.id === actual.id) ?? actual : actual,
     );
   }, [refetchMantenimientos]);
+
+  /** Eliminar UN arreglo desde los tres puntos (pregunta antes; con plata viva el back lo frena y se dice por qué). */
+  const eliminarArreglo = useCallback(
+    async (s: SolicitudMantenimiento) => {
+      const ok = await confirmar({
+        tipo: 'destructivo',
+        titulo: '¿Eliminamos este arreglo?',
+        descripcion: `«${s.title}» sale de Leasefy con sus cotizaciones y sus fotos, y no se puede deshacer.`,
+        accion: 'Eliminar',
+      });
+      if (!ok) return;
+      try {
+        await mantenimientoApi.eliminar(s.id);
+        toast.success('Arreglo eliminado', { description: s.title });
+        await recargarMantenimientos();
+      } catch (e) {
+        toast.error(mensajeParaLaPersona(e, { accion: 'eliminar el arreglo' }));
+      }
+    },
+    [recargarMantenimientos],
+  );
 
   // Handlers - Mantenimiento
   const handleViewMantenimiento = useCallback((solicitud: SolicitudMantenimiento) => {
@@ -843,6 +867,7 @@ function MantenimientosContent() {
                   onAddQuote={puedeEditar ? (s) => handleRequestQuote(s.id) : undefined}
                   onComplete={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'completed') : undefined}
                   onCancel={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'cancelled') : undefined}
+                  onEliminar={puedeEliminar ? (s) => void eliminarArreglo(s) : undefined}
                   onCrear={puedeCrear ? handleNewMantenimiento : undefined}
                   minimal
                   marcadas={puedeEditar ? marcadas : undefined}
@@ -854,6 +879,7 @@ function MantenimientosContent() {
                       marcados={arreglosMarcados}
                       onQuitar={quitarLaSeleccion}
                       onCambiaron={() => void refetchMantenimientos()}
+                      puedeEliminar={puedeEliminar}
                     />
                   </div>
                 )}

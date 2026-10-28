@@ -13,7 +13,7 @@
  */
 
 import { useState } from 'react';
-import { ArrowRight, Prohibit } from '@phosphor-icons/react';
+import { ArrowRight, Prohibit, Trash } from '@phosphor-icons/react';
 
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { Button } from '@/components/ui/button';
@@ -44,9 +44,12 @@ export function MantenimientosMarcados({
   marcados,
   onQuitar,
   onCambiaron,
+  puedeEliminar = false,
 }: {
   marcados: readonly SolicitudMantenimiento[];
   onQuitar: () => void;
+  /** 28-10-2026 (Nico: «los admin sí podrían eliminarlos»): con `operaciones:delete`. */
+  puedeEliminar?: boolean;
   /** Para volver a leer la lista. */
   onCambiaron: () => void;
 }) {
@@ -89,6 +92,36 @@ export function MantenimientosMarcados({
     }
   };
 
+  /** Eliminar en bloque: los que tienen plata viva los frena el back (409) y se dicen en el aviso del bloque. */
+  const eliminar = async () => {
+    if (marcados.length === 0) return;
+    const ok = await confirmar({
+      tipo: 'destructivo',
+      titulo: `¿Eliminamos ${plural(marcados.length, 'arreglo', 'arreglos')}?`,
+      descripcion:
+        'Salen de Leasefy con sus cotizaciones y sus fotos, y no se puede deshacer. Los que tienen una cotización aprobada o un cobro hay que cancelarlos primero.',
+      accion: `Eliminar ${plural(marcados.length, 'arreglo', 'arreglos')}`,
+    });
+    if (!ok) return;
+    setOcupado(true);
+    try {
+      const r = await hacerEnBloque({
+        titulo: `Eliminar ${plural(marcados.length, 'arreglo', 'arreglos')}`,
+        tipo: 'APROBACION_MASIVA',
+        filas: marcados.map((s) => ({ id: s.id, nombre: `${s.title} · ${s.propertyTitle}` })),
+        tarea: (f) => mantenimientoApi.eliminar(f.id),
+        accion: 'eliminar el arreglo',
+        recursos: ['mantenimientos'],
+        recurso: 'MANTENIMIENTO',
+      });
+      avisarDelBloque(r, { todas: 'Eliminamos los arreglos', ninguna: 'No se eliminó ningún arreglo' });
+      onCambiaron();
+      onQuitar();
+    } finally {
+      setOcupado(false);
+    }
+  };
+
   const nada = marcados.length === 0;
   return (
     <BarraDeAccionesMasivas
@@ -104,6 +137,12 @@ export function MantenimientosMarcados({
         <Prohibit className="h-4 w-4" />
         Cancelar
       </Button>
+      {puedeEliminar ? (
+        <Button variant="ghost" size="sm" hideArrow disabled={ocupado || nada} onClick={() => void eliminar()} className="text-danger" data-testid="eliminar-marcados">
+          <Trash className="h-4 w-4" />
+          Eliminar
+        </Button>
+      ) : null}
       <DropdownList>
         <DropdownListTrigger asChild>
           <Button size="sm" hideArrow disabled={ocupado || nada} data-testid="mover-marcados">

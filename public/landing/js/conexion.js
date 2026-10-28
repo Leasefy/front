@@ -246,15 +246,20 @@
   var raiz = document.documentElement;
   function cerrar() {
     if (!abierta) return;
-    abierta.parentNode && abierta.parentNode.removeChild(abierta);
+    var capa = abierta;
     abierta = null;
+    capa.style.opacity = "0";
+    setTimeout(function () { capa.parentNode && capa.parentNode.removeChild(capa); }, 180);
     raiz.style.overflow = "";
   }
   function abrir() {
     if (abierta) return;
     var capa = document.createElement("div");
     capa.setAttribute("data-ventana-para-publicar", "");
-    capa.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:rgba(10,12,20,.4);transition:background .2s ease";
+    /* El velo de TODOS los modales (Cadence `dialogOverlayClassName`: medianoche al 38 % + desenfoque de 4 px; Nico
+       28-10: «es simplemente una superposición… usa el que usamos para todos los modales»). Lo pinta esta capa porque
+       el desenfoque de adentro del marco no ve la página; la ventana del marco va sin velo propio. */
+    capa.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:rgba(10,15,44,.38);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;transition:opacity .2s ease";
     var estilo = document.createElement("style");
     estilo.textContent = "@keyframes lfVentanaGira{to{transform:rotate(360deg)}}";
     var carga = document.createElement("div");
@@ -269,6 +274,7 @@
     capa.appendChild(carga);
     capa.appendChild(marco);
     document.body.appendChild(capa);
+    requestAnimationFrame(function () { capa.style.opacity = "1"; });
     raiz.style.overflow = "hidden";
     abierta = capa;
   }
@@ -279,7 +285,6 @@
       if (m) m.style.opacity = "1";
       var c = abierta.querySelector("[data-carga]");
       if (c) c.parentNode.removeChild(c);
-      abierta.style.background = "transparent";
     } else if (e.data.tipo === "leasefy:ventana-cerrada") {
       cerrar();
     } else if (e.data.tipo === "leasefy:ir" && typeof e.data.a === "string" && e.data.a.charAt(0) === "/" && e.data.a.charAt(1) !== "/") {

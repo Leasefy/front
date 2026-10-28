@@ -20,14 +20,22 @@ const DESTINOS = {
  */
 export default function VentanaEncima() {
   const [abierta, setAbierta] = useState(true);
-  const enUnMarco = typeof window !== 'undefined' && window.parent !== window;
+  const [enUnMarco, setEnUnMarco] = useState(false);
 
   useEffect(() => {
     const html = document.documentElement;
     html.style.background = 'transparent';
-    html.style.colorScheme = 'normal';
     document.body.style.background = 'transparent';
-    if (window.parent !== window) window.parent.postMessage({ tipo: MENSAJE_LISTA }, window.location.origin);
+    // El marco sólo es transparente si su página y el <iframe> tienen el mismo esquema de color. next-themes le pone
+    // `color-scheme: dark` en línea al <html> con el sistema en oscuro, y entonces el navegador pinta el marco opaco
+    // (la pantalla negra que vio Nico el 28-10). Con !important gana a ese estilo en línea.
+    const estilo = document.createElement('style');
+    estilo.textContent = 'html{color-scheme:normal!important;background:transparent!important}body{background:transparent!important}';
+    document.head.appendChild(estilo);
+    const marco = window.parent !== window;
+    setEnUnMarco(marco);
+    if (marco) window.parent.postMessage({ tipo: MENSAJE_LISTA }, window.location.origin);
+    return () => estilo.remove();
   }, []);
 
   return (
@@ -41,6 +49,7 @@ export default function VentanaEncima() {
       }}
       destinos={DESTINOS}
       confirmarConCodigo={CONFIRMAR_CON_CODIGO}
+      sinVelo={enUnMarco}
     />
   );
 }

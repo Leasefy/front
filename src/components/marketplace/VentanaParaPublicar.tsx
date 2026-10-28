@@ -83,6 +83,7 @@ export function VentanaParaPublicar({
   destinos,
   confirmarConCodigo = false,
   perfilInicial = null,
+  sinVelo = false,
 }: {
   abierta: boolean;
   alCambiar: (abierta: boolean) => void;
@@ -91,6 +92,8 @@ export function VentanaParaPublicar({
   confirmarConCodigo?: boolean;
   /** Si ya se sabe quién publica (`/publica?perfil=agente`), abre directo en su cuenta. */
   perfilInicial?: PerfilQuePublica | null;
+  /** Abierta en el marco encima de la landing: el velo lo pinta la página de atrás. */
+  sinVelo?: boolean;
 }) {
   const inicio = (): Paso => (perfilInicial ? { que: 'cuenta', perfil: perfilInicial } : { que: 'perfil' });
   const [paso, setPaso] = useState<Paso>(inicio);
@@ -117,6 +120,7 @@ export function VentanaParaPublicar({
       titulo="Publica gratis en Leasefy"
       descripcion="Elige si eres propietario, inmobiliaria o agente inmobiliario y crea tu cuenta para publicar tus inmuebles."
       testId="ventana-para-publicar"
+      sinVelo={sinVelo}
       obra={
         <div className="space-y-8">
           <InmuebleQueSePublica />

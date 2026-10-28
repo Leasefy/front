@@ -38,6 +38,7 @@ export function VentanaDeCuenta({
   obra,
   children,
   testId = 'ventana-de-cuenta',
+  sinVelo = false,
 }: {
   abierta: boolean;
   alCambiar: (abierta: boolean) => void;
@@ -49,10 +50,15 @@ export function VentanaDeCuenta({
   /** El lado derecho: el formulario. */
   children: ReactNode;
   testId?: string;
+  /**
+   * Cuando la ventana va dentro del marco que se abre encima de la landing, el velo lo pinta la página de atrás
+   * (`public/landing/js/conexion.js`, el mismo de Cadence): adentro del marco el desenfoque no ve la página.
+   */
+  sinVelo?: boolean;
 }) {
   return (
     <Dialog open={abierta} onOpenChange={alCambiar}>
-      <DialogContent size="xl" data-testid={testId}>
+      <DialogContent size="xl" data-testid={testId} overlayClassName={sinVelo ? 'bg-transparent backdrop-blur-none dark:bg-transparent' : undefined}>
         <DialogBody className="flex flex-col p-0 sm:px-0 md:grid md:h-[min(640px,calc(100dvh-48px))] md:grid-cols-[minmax(0,340px)_minmax(0,1fr)] md:overflow-hidden lg:grid-cols-[380px_minmax(0,1fr)]">
           <DialogTitle className="sr-only">{titulo}</DialogTitle>
           <DialogDescription className="sr-only">{descripcion}</DialogDescription>

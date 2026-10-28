@@ -1313,7 +1313,7 @@
           "todas": "Todo",
           "dinero": "Dinero",
           "operacion": "Operación",
-          "captacion": "Comercial",
+          "captacion": "Arrendamientos",
           "plataforma": "Plataforma"
         },
         "modo": {
@@ -1784,7 +1784,7 @@
       "sheetTitle": "Más opciones",
       "closeButton": "Cerrar",
       "secciones": {
-        "sec-captacion": "Comercial",
+        "sec-captacion": "Arriendos",
         "sec-operacion": "Operación",
         "sec-dinero": "Dinero",
         "sec-directorio": "Directorio"

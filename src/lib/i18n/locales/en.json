@@ -1749,7 +1749,7 @@
       "sheetTitle": "More options",
       "closeButton": "Close",
       "secciones": {
-        "sec-captacion": "Sales",
+        "sec-captacion": "Leasing",
         "sec-operacion": "Operations",
         "sec-dinero": "Money",
         "sec-directorio": "Directory"

@@ -58,6 +58,7 @@ export function entradasDelSitemap({
   ];
   const publicas: Entrada[] = [
     soloEspanol(sitio, '/propiedades', 0.9, 'daily', ahora),
+    soloEspanol(sitio, '/inmobiliarias', 0.7, 'daily', ahora),
     soloEspanol(sitio, '/contacto', 0.6, 'yearly', ahora),
     soloEspanol(sitio, '/ayuda', 0.5, 'monthly', ahora),
     soloEspanol(sitio, '/blog', 0.6, 'weekly', ahora),

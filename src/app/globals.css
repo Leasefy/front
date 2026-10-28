@@ -2225,6 +2225,16 @@ button[role='radio'][data-state='checked'].group {
    verse con teclado, ≥ 3:1 contra el marco) y el arco de color que lo recorre. */
 .llegada-aro {
   background: rgb(var(--llegada-cobalto) / 0.7);
+  /* Nico (27-10-2026): «en las esquinas no queda el stroke de colores». El filo de 1,5 px vivía DEBAJO de la caja
+     y el borde gris de la caja se lo comía al curvarse. Ahora es un anillo de verdad (máscara: el centro vacío),
+     ENCIMA del borde, de 2 px y con el mismo grosor en las curvas (radio de afuera = el de la caja + 1). */
+  z-index: 2;
+  inset: -1px;
+  padding: 2px;
+  border-radius: 31px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
 .llegada-halo {
   inset: -5px;
@@ -2233,7 +2243,7 @@ button[role='radio'][data-state='checked'].group {
 }
 /* La caja de la conversación (más baja, radio 26). */
 .llegada-caja[data-compacta='true'] .llegada-aro {
-  border-radius: 27.5px;
+  border-radius: 27px;
 }
 .llegada-caja[data-compacta='true'] .llegada-halo {
   border-radius: 31px;

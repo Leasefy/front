@@ -87,7 +87,8 @@ export function InicioDelMarketplace() {
   const recientes = properties.slice(0, 6);
   const conVideo = useMemo(() => properties.filter((p) => videoDelInmueble(p)).slice(0, 10), [properties]);
   // «Inmobiliarias en Leasefy» (Nico, 09-10: el perfil reemplaza su página web).
-  const inmobiliarias = useInmobiliariasDelMarketplace(8) ?? [];
+  // Nico (27-10-2026: «si hay miles, ¿qué pasa?»): aquí sólo las 4 con más publicado; las demás, en /inmobiliarias.
+  const inmobiliarias = useInmobiliariasDelMarketplace(4) ?? [];
   const cuantasPublican = useMemo(() => new Set(properties.map((p) => p.agencyId).filter(Boolean)).size, [properties]);
   const deLosVideos = useTarjetasDeInmobiliarias(useMemo(() => conVideo.map((p) => p.agencyId), [conVideo]));
   // El reproductor propio (Nico, 09-10): los videos de la tira, para pasar de uno al otro.
@@ -294,12 +295,19 @@ export function InicioDelMarketplace() {
             {inmobiliarias.length > 0 && (
               <section className="mt-16 px-[clamp(16px,2.6vw,32px)]" aria-labelledby="inmobiliarias-en-leasefy">
                 <Revela>
-                  <h2 id="inmobiliarias-en-leasefy" className={TITULO_DE_SECCION}>
-                    Inmobiliarias en Leasefy
-                  </h2>
-                  <p className="mt-1 text-[14.5px] text-fg-muted">
-                    Síguelas para ver lo que publican, o pregúntale directamente a cada una.
-                  </p>
+                  <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-2.5">
+                    <div>
+                      <h2 id="inmobiliarias-en-leasefy" className={TITULO_DE_SECCION}>
+                        Inmobiliarias en Leasefy
+                      </h2>
+                      <p className="mt-1 text-[14.5px] text-fg-muted">
+                        Síguelas para ver lo que publican, o pregúntale directamente a cada una.
+                      </p>
+                    </div>
+                    <Link href="/inmobiliarias" className="text-[14px] font-medium text-primary hover:underline" data-testid="ver-todas-las-inmobiliarias">
+                      Ver todas
+                    </Link>
+                  </div>
                 </Revela>
                 {/* Una sola ocupa todo el ancho; varias, de a dos en pantallas anchas (`auto-fit`). */}
                 <Stagger inView className="mt-[22px] grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(520px,100%),1fr))]">

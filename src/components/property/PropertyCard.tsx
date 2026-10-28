@@ -1,5 +1,6 @@
 'use client';
 
+import { ventanaDePuntos } from '@/lib/marketplace/ventana-de-puntos'
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { useState, useCallback, type ReactNode } from 'react';
 import Image from 'next/image';
@@ -252,15 +253,17 @@ export function PropertyCard({
               isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1.5 pointer-events-none'
             )}
           >
-            {allImages.map((_, i) => (
+            {/* Nico (27-10-2026): con muchas fotos, a lo sumo cinco puntos que se corren con la foto. */}
+            {ventanaDePuntos(allImages.length, activeImage).map(({ indice: i, chico }) => (
               <button
                 key={i}
                 onClick={(e) => handleDotClick(e, i)}
                 className={cn(
-                  'h-[7px] w-[7px] rounded-[2px] transition-colors duration-slow ease-enter',
+                  'rounded-[2px] transition-[background-color,width,height] duration-slow ease-enter',
+                  chico ? 'h-[5px] w-[5px]' : 'h-[7px] w-[7px]',
                   i === activeImage ? 'bg-white' : 'bg-white/55 hover:bg-white/80'
                 )}
-                aria-label={`Ver imagen ${i + 1}`}
+                aria-label={`Ver imagen ${i + 1} de ${allImages.length}`}
               />
             ))}
           </div>

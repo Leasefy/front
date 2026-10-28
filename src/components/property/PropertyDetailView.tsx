@@ -303,16 +303,13 @@ export function PropertyDetailView({
                  un espacio acotado y con marca, no una imagen rota en un hero
                  de 65vh en blanco (Nico, 2026-09-02). */
               <div
-                className="relative flex h-[240px] md:h-[320px] flex-col items-center justify-start overflow-hidden rounded-lg pt-8 text-center md:pt-10"
+                className="relative flex h-[240px] md:h-[320px] flex-col items-center justify-center overflow-hidden rounded-lg text-center"
                 data-testid="hero-sin-fotos"
                 role="img"
-                aria-label={`Sin fotos de ${property.title}`}
+                aria-label={`Todavía no hay fotos de ${property.title}`}
               >
+                {/* Nico (27-10-2026): sólo el 3D; los textos se montaban encima de la ilustración. */}
                 <PortadaSinFotos tipo={property.type} semilla={property.id} sinLeyenda />
-                <p className="relative text-[15px] font-medium text-foreground">Todavía no hay fotos de este inmueble</p>
-                <p className="relative mt-1 text-[13px] text-muted-foreground">
-                  Pídelas por el chat o agenda una visita para conocerlo.
-                </p>
               </div>
             ) : (
               <MosaicoDeFotos

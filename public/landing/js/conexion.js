@@ -233,3 +233,67 @@
     void conSesion;
   });
 })();
+
+/*
+ * «Publicar gratis» abre la ventana AHÍ MISMO (Nico, 28-10-2026: «el modal debe aparecer ahí mismo, no lo tiene porque
+ * llevar a la otra pantalla hasta que seleccione qué es y cree la cuenta»). La home y las internas son HTML sin React:
+ * la ventana de React vive en /publica/ventana y se abre encima en un iframe transparente. Al crear la cuenta, esa
+ * página avisa (`leasefy:ir`) y ésta sigue a /publica. Con sesión, el enlace navega como siempre. Reglas y mensajes:
+ * src/lib/publica/ventana-encima.ts.
+ */
+(function () {
+  var abierta = null;
+  var raiz = document.documentElement;
+  function cerrar() {
+    if (!abierta) return;
+    abierta.parentNode && abierta.parentNode.removeChild(abierta);
+    abierta = null;
+    raiz.style.overflow = "";
+  }
+  function abrir() {
+    if (abierta) return;
+    var capa = document.createElement("div");
+    capa.setAttribute("data-ventana-para-publicar", "");
+    capa.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:rgba(10,12,20,.4);transition:background .2s ease";
+    var estilo = document.createElement("style");
+    estilo.textContent = "@keyframes lfVentanaGira{to{transform:rotate(360deg)}}";
+    var carga = document.createElement("div");
+    carga.setAttribute("data-carga", "");
+    carga.style.cssText = "position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:lfVentanaGira .8s linear infinite";
+    var marco = document.createElement("iframe");
+    marco.src = "/publica/ventana";
+    marco.title = "Publica gratis en Leasefy";
+    marco.setAttribute("allowtransparency", "true");
+    marco.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;color-scheme:normal;opacity:0;transition:opacity .18s ease";
+    capa.appendChild(estilo);
+    capa.appendChild(carga);
+    capa.appendChild(marco);
+    document.body.appendChild(capa);
+    raiz.style.overflow = "hidden";
+    abierta = capa;
+  }
+  window.addEventListener("message", function (e) {
+    if (e.origin !== location.origin || !e.data || !abierta) return;
+    if (e.data.tipo === "leasefy:ventana-lista") {
+      var m = abierta.querySelector("iframe");
+      if (m) m.style.opacity = "1";
+      var c = abierta.querySelector("[data-carga]");
+      if (c) c.parentNode.removeChild(c);
+      abierta.style.background = "transparent";
+    } else if (e.data.tipo === "leasefy:ventana-cerrada") {
+      cerrar();
+    } else if (e.data.tipo === "leasefy:ir" && typeof e.data.a === "string" && e.data.a.charAt(0) === "/" && e.data.a.charAt(1) !== "/") {
+      location.assign(e.data.a);
+    }
+  });
+  document.addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+    if (!a || raiz.hasAttribute("data-sesion")) return;
+    var url;
+    try { url = new URL(a.getAttribute("href"), location.href); } catch (_) { return; }
+    if (url.origin !== location.origin || url.pathname !== "/publica" || url.search) return;
+    e.preventDefault();
+    abrir();
+  }, true);
+})();

@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { ChatTemplatesMenu } from './ChatTemplates';
 import { CajaDeLlegada } from './llegada/CajaDeLlegada';
 import { AvisoDePreguntas } from './AvisoDePreguntas';
+import { PreguntasDelMes } from './PreguntasDelMes';
 
 interface ChatInputProps {
   onSend: (text: string) => void;
@@ -63,6 +64,8 @@ export function ChatInput({ onSend, disabled = false, className, topSlot }: Chat
             />
           }
         />
+        {/* La bolsa del mes (Nico, 27-10-2026): sólo con el freno prendido. */}
+        <PreguntasDelMes ocupado={disabled} />
         {/* La cláusula se aprobó (Nico, 04-10-2026): política v4.0 §16. */}
         <AvisoDePreguntas />
       </div>

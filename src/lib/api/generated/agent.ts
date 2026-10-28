@@ -4940,6 +4940,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/bolsa-de-preguntas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chat del panel — las preguntas del mes: usadas, incluidas, recargas y si el chat frena */
+        get: operations["getAiHubBolsaDePreguntas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/chat/conversacion/borrar": {
         parameters: {
             query?: never;
@@ -12935,6 +12952,19 @@ export interface components {
                 id: string;
             };
             propuestaId?: string;
+        };
+        AiHubBolsaDePreguntas: {
+            prendida: boolean;
+            usadas: number;
+            incluidas: number;
+            recargas: number;
+            disponibles: number;
+            porcentaje: number;
+            agotada: boolean;
+            aviso: 80 | 100 | null;
+        };
+        AiHubBolsaDePreguntasError: {
+            error: string;
         };
         AiHubChatBorrarConversacionResponse: {
             turnos: number;
@@ -26080,6 +26110,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiHubChatSenalError"];
+                };
+            };
+        };
+    };
+    getAiHubBolsaDePreguntas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La bolsa del mes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubBolsaDePreguntas"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubBolsaDePreguntasError"];
+                };
+            };
+            /** @description agencyId distinto al del token / no es miembro */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubBolsaDePreguntasError"];
                 };
             };
         };

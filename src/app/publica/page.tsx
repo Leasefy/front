@@ -68,11 +68,13 @@ function Publica() {
     perfilDelEnlace ?? (perfilElegido === 'agency' || perfilElegido === 'landlord' ? perfilElegido : null);
   // Viene de «Crear cuenta» con el perfil ya dicho (p. ej. /para/agentes → `?perfil=agente`): la ventana abre sola.
   const abiertaSola = useRef(false);
+  // 27-10-2026 (Nico: «¿por qué colocaste esto y no mostraste el modal de una vez?»): sin sesión, la ventana de
+  // «¿Quién va a publicar?» abre SIEMPRE de una; la pantalla de atrás sólo queda si la cierran.
   useEffect(() => {
-    if (isLoading || isAuthenticated || !perfilDelEnlace || abiertaSola.current) return;
+    if (isLoading || isAuthenticated || abiertaSola.current) return;
     abiertaSola.current = true;
     setVentana(true);
-  }, [isLoading, isAuthenticated, perfilDelEnlace]);
+  }, [isLoading, isAuthenticated]);
 
   // 27-10-2026 (Nico): vino por el enlace de un aliado (`/aliados/<codigo>`): el mes gratis queda pendiente y se
   // activa al entrar al panel (MesGratisPendiente), ya con su inmobiliaria creada.
@@ -80,7 +82,12 @@ function Publica() {
 
   let contenido: React.ReactNode;
   if (isLoading) {
-    contenido = <CargaDeMarca tamano="lg" />;
+    // Centrada (Nico, 27-10: «mira esta carga tan rara»: el logo quedaba arriba a la izquierda).
+    contenido = (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <CargaDeMarca tamano="lg" />
+      </div>
+    );
   } else if (!isAuthenticated || !user) {
     contenido = (
       <div className="mx-auto max-w-[460px] text-center" data-testid="publica-sin-cuenta">

@@ -227,19 +227,9 @@
       document.body.appendChild(d);
       return d;
     }
-    if (!conSesion) {
-      enlacesQue(function (h) { return h === ORIGEN + "/publica" || h === ORIGEN + "/es/publica" || h === ORIGEN + "/en/publica"; }).forEach(function (a) {
-        a.addEventListener("click", function (e) {
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; /* abrir en otra pestaña sigue igual */
-          if (!window.HTMLDialogElement) return; /* navegador viejo: va a /publica, que también abre la cuenta */
-          e.preventDefault();
-          /* desde el menú del celular: se cierra con su propio botón (deja su texto en «Menú») */
-          if (raiz.classList.contains("menu-abierto")) { var mb = document.getElementById("mbtn"); if (mb) mb.click(); else raiz.classList.remove("menu-abierto"); }
-          ventana = ventana || armarVentana();
-          var l = lenis(); if (l) l.stop();
-          ventana.showModal();
-        });
-      });
-    }
+    /* 27-10-2026 (Nico: «¿por qué cambia si le doy desde el home o desde el marketplace?»): ya no se abre una
+       ventana propia de dos opciones. «Publicar gratis» va a /publica, que abre DE UNA la misma ventana del
+       marketplace (propietario, inmobiliaria y agente inmobiliario). `armarVentana` queda sin uso. */
+    void conSesion;
   });
 })();

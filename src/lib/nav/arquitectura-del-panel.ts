@@ -547,6 +547,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           { labelKey: 'inmobiliaria.nav.soportesCorto', href: r('/postulaciones/soportes'), icon: ListChecks, module: 'documentos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', ia: true },
         ],
       },
+      // Firmas (Nico, 28-10-2026): cualquier documento firmado con nuestro código, en el CRM. Todas las cuentas,
+      // también las gratis (por eso `comercial`: abierta sin activar). Enviar pide `documentos:create`.
+      { key: 'firmas', labelKey: 'inmobiliaria.nav.firmas', href: r('/firmas'), icon: Signature, module: 'documentos', scope: 'comercial' },
     ],
   },
 

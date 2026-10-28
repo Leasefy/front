@@ -32,6 +32,8 @@ const ABIERTAS: readonly string[] = [
   '/panel/inmobiliaria/agenda',
   '/panel/inmobiliaria/mensajes',
   '/panel/inmobiliaria/configuracion/tu-pagina',
+  // Firmas (28-10-2026): todas las cuentas, también las gratis.
+  '/panel/inmobiliaria/firmas',
 ];
 
 /** Dentro de lo abierto, lo que hacen los agentes de IA. */

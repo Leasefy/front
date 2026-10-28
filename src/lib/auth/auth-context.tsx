@@ -6,6 +6,7 @@ import { toFrontendRole } from './types'
 import { fetchAgencyProfile, agencyResultFromBootstrap, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
+import { registrarPorElBack, reenviarPorElBack } from '@/lib/auth/registro-por-el-back'
 import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher, clearInFlightGets, setMfaPendingFlag } from '@/lib/api/client'
 import { getBootstrap } from '@/lib/api/bootstrap.service'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
@@ -1693,6 +1694,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string, intendedRole?: UserRole, perfil?: Record<string, string>) => {
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not initialized')
+    // Primero por el back (27-10-2026): el correo sale por Resend y no por el de Supabase, que topa por hora.
+    const porElBack = await registrarPorElBack({
+      email,
+      password,
+      ...(redirectTo ? { regreso: redirectTo } : {}),
+      datos: { ...(intendedRole ? { intended_role: intendedRole } : {}), ...(perfil ?? {}) },
+    })
+    if (porElBack === 'hecho') return { requiresConfirmation: true }
+    // Back anterior, sin la ruta: como siempre.
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -1739,6 +1749,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const resendSignUpEmail = useCallback(async (email: string, redirectTo?: string) => {
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not initialized')
+    if ((await reenviarPorElBack(email, redirectTo)) === 'hecho') return
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,

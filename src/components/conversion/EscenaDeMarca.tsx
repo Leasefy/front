@@ -6,11 +6,11 @@
  * «el modal de bienvenido… está ingresando a nuestra plataforma, celebrémosle eso».
  *
  * Una pieza para los tres (el plan, el regalo del aliado y la bienvenida) y para la invitación del aliado:
- *   · `EscenaDeMarca`: la aurora de la marca (el degradado con grano de los correos) con los 3D de Cadence flotando.
- *     Uno principal al centro y hasta cuatro acompañantes en las esquinas, cada uno con su vaivén. Lo que va al centro
- *     (la cuenta de días, el sello del aliado) entra por `children` y reemplaza al principal. `celebrar` suelta la
- *     chispa una vez, desde el centro.
- *   · `SelloDelAliado`: «Fianly × Leasefy», los dos logos en sus fichas blancas.
+ *   · `EscenaDeMarca` (rehecha el 28-10, Nico: «esas pantallas con 3D donde muestras Fenalco… horrible; más como
+ *     nosotros»): una foto real del banco de imágenes de Leasefy con un velo suave y, al centro, una placa blanca con lo
+ *     que va (la cuenta de días, el sello del aliado o un 3D). `acompanantes` ya no se dibujan. `celebrar` suelta el
+ *     confeti de la marca (techitos del símbolo y cuadritos) una vez.
+ *   · `SelloDelAliado`: «Fianly | leasefy», un solo sello de co-marca.
  *   · `BeneficiosEn3D`: lo que trae Leasefy completo, cada cosa con su 3D.
  * Con movimiento reducido todo queda quieto y sin chispa.
  */
@@ -18,23 +18,16 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { CheckCircle } from '@phosphor-icons/react';
 import { Ilustracion, Stagger, StaggerItem, motionSpring, usePrefersReducedMotion, type NombreIlustracion } from '@leasefy/cadence';
 
-import { AuroraDeMarca } from '@/components/brand/AuroraDeMarca';
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
+import { LEASEFY_SYMBOL_PATH } from '@/components/brand/leasefy-logo-paths';
 import { logoDelAliado } from '@/lib/conversion/logo-del-aliado';
 import { cn } from '@/lib/utils';
 
-/** Dónde flota cada acompañante (en el orden en que llegan) y su vaivén. */
-const LUGARES = [
-  { clase: 'left-[7%] top-[16%]', giro: -10, segundos: 4.6 },
-  { clase: 'right-[8%] top-[12%]', giro: 8, segundos: 5.2 },
-  { clase: 'left-[14%] bottom-[10%]', giro: 6, segundos: 5.6 },
-  { clase: 'right-[13%] bottom-[8%]', giro: -7, segundos: 4.9 },
-] as const;
-
-/** La chispa sobre la aurora: blanco, crema, cielo y el lila de la marca. */
-const COLORES_DE_LA_CHISPA = ['#ffffff', '#ffffff', '#f4d9a6', '#a9d4f5', '#c9d1ff', '#ff7a3d'];
+/** El confeti de la marca: voltaje, noche, arena y blanco (Nico, 28-10: «el confeti que sea algo mejor»). */
+const COLORES_DE_LA_CHISPA = ['#1a40ff', '#1a40ff', '#1b2340', '#e8e1d3', '#ffffff', '#7b93ff'];
 
 export interface EscenaDeMarcaProps {
   /** El 3D del centro (si no hay `children`). */
@@ -47,67 +40,51 @@ export interface EscenaDeMarcaProps {
   celebrar?: boolean;
   /** Algo chico abajo a la izquierda (el «Regalo de Fianly»). */
   marca?: ReactNode;
+  /** La foto de fondo (del banco de imágenes de Leasefy). Sin ella, la sala de Laureles al atardecer. */
+  foto?: string;
   className?: string;
 }
 
-export function EscenaDeMarca({ principal, acompanantes = [], children, celebrar = false, marca, className }: EscenaDeMarcaProps) {
+/** Fotos del banco de imágenes de Leasefy (interiores colombianos reales) para las escenas. */
+export const FOTOS_DE_LA_ESCENA = [
+  '/imagenes/banco/sala-laureles-atardecer.webp',
+  '/imagenes/banco/sala-poblado-montanas.webp',
+  '/imagenes/banco/sala-colonial-patio.webp',
+  '/imagenes/banco/sala-nordica-luz.webp',
+] as const;
+
+export function EscenaDeMarca({ principal, children, celebrar = false, marca, foto, className }: EscenaDeMarcaProps) {
   const reducido = usePrefersReducedMotion();
   const centro = useRef<HTMLDivElement>(null);
+  const imagen = foto ?? FOTOS_DE_LA_ESCENA[0];
 
   useChispa(celebrar, centro);
 
   return (
-    <div className={cn('relative isolate h-56 overflow-hidden sm:h-64', className)} data-testid="escena-de-marca">
-      <AuroraDeMarca animada={!reducido} velo={false} className="absolute inset-0 -z-10" />
-      {/* Un piso de luz bajo lo del centro: que se sienta parado, no pegado. */}
-      <span
+    <div className={cn('relative isolate h-56 overflow-hidden bg-[#1b2340] sm:h-64', className)} data-testid="escena-de-marca">
+      {/* La foto entra con un acercamiento lento (Ken Burns), sin aurora ni 3D flotando (Nico, 28-10: «más como nosotros»). */}
+      <motion.img
+        src={imagen}
+        alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[14%] left-1/2 -z-10 h-8 w-48 -translate-x-1/2 rounded-[50%] bg-black/25 blur-xl"
+        className="absolute inset-0 -z-10 h-full w-full object-cover"
+        initial={reducido ? { opacity: 0 } : { opacity: 0, scale: 1.08 }}
+        animate={reducido ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+        transition={{ opacity: { duration: 0.5 }, scale: { duration: 6, ease: [0.16, 1, 0.3, 1] } }}
       />
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-[#0d1330]/55 via-[#0d1330]/10 to-transparent" />
 
-      {acompanantes.slice(0, LUGARES.length).map((nombre, i) => {
-        const lugar = LUGARES[i];
-        return (
-          <motion.span
-            key={`${nombre}-${i}`}
-            aria-hidden="true"
-            className={cn('absolute hidden drop-shadow-[0_12px_18px_rgba(4,16,48,0.35)] sm:block', lugar.clase)}
-            initial={reducido ? { opacity: 0 } : { opacity: 0, scale: 0.4, rotate: lugar.giro * 2 }}
-            animate={
-              reducido ? { opacity: 1 } : { opacity: 1, scale: 1, rotate: lugar.giro, y: [0, -7, 0] }
-            }
-            transition={
-              reducido
-                ? { duration: 0.2 }
-                : {
-                    opacity: { duration: 0.4, delay: 0.25 + i * 0.09 },
-                    scale: { ...motionSpring.bouncy, delay: 0.25 + i * 0.09 },
-                    rotate: { ...motionSpring.bouncy, delay: 0.25 + i * 0.09 },
-                    y: { duration: lugar.segundos, repeat: Infinity, ease: 'easeInOut', delay: 1 + i * 0.3 },
-                  }
-            }
-          >
-            <Ilustracion nombre={nombre} tamano={i < 2 ? 64 : 56} tono="auto" alt="" />
-          </motion.span>
-        );
-      })}
-
-      <div ref={centro} className="absolute inset-0 flex items-center justify-center">
+      <div ref={centro} className="absolute inset-0 flex items-center justify-center px-6">
         <motion.div
-          initial={reducido ? { opacity: 0 } : { opacity: 0, scale: 0.7, y: 12 }}
-          animate={reducido ? { opacity: 1 } : { opacity: 1, scale: 1, y: [0, -6, 0] }}
-          transition={
-            reducido
-              ? { duration: 0.2 }
-              : {
-                  opacity: { duration: 0.35 },
-                  scale: motionSpring.bouncy,
-                  y: { duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 0.9 },
-                }
-          }
-          className="drop-shadow-[0_18px_28px_rgba(4,16,48,0.45)]"
+          initial={reducido ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={reducido ? { duration: 0.2 } : { ...motionSpring.soft, delay: 0.15 }}
         >
-          {children ?? (principal ? <Ilustracion nombre={principal} tamano={136} tono="auto" alt="" /> : null)}
+          {children ?? (principal ? (
+            <span className="flex size-32 items-center justify-center rounded-[28px] bg-[#f7f6f2] shadow-[0_24px_48px_-16px_rgba(4,16,48,0.55)]">
+              <Ilustracion nombre={principal} tamano={104} tono="auto" alt="" />
+            </span>
+          ) : null)}
         </motion.div>
       </div>
 
@@ -155,20 +132,41 @@ export function TresDeQueFlota({
   );
 }
 
-/** Suelta la chispa una vez desde el centro de `ref` (o de la pantalla). Sin movimiento, nada. */
+/**
+ * El confeti de Leasefy: techitos del símbolo y cuadritos en la paleta de la marca, lanzados desde los dos costados de
+ * `ref` (o de la pantalla) y cayendo despacio, como serpentina. Una vez. Sin movimiento, nada.
+ */
 export function useChispa(activa: boolean, ref?: RefObject<HTMLElement | null>, retraso = 450) {
   const reducido = usePrefersReducedMotion();
   useEffect(() => {
     if (!activa || reducido) return;
     const reloj = window.setTimeout(() => {
       const caja = ref?.current?.getBoundingClientRect();
-      const origen =
-        caja && window.innerWidth > 0 && window.innerHeight > 0
-          ? { x: (caja.left + caja.width / 2) / window.innerWidth, y: (caja.top + caja.height / 2) / window.innerHeight }
-          : { x: 0.5, y: 0.3 };
-      const comun = { origin: origen, colors: COLORES_DE_LA_CHISPA, zIndex: 400, disableForReducedMotion: true };
-      void confetti({ ...comun, particleCount: 110, spread: 120, startVelocity: 40, gravity: 0.85, scalar: 0.9, ticks: 220 });
-      void confetti({ ...comun, particleCount: 50, spread: 360, startVelocity: 20, gravity: 0.5, scalar: 0.6, shapes: ['circle'], ticks: 160 });
+      const W = window.innerWidth || 1;
+      const H = window.innerHeight || 1;
+      const y = caja ? (caja.top + caja.height * 0.6) / H : 0.45;
+      const izq = caja ? Math.max(0.02, caja.left / W) : 0.15;
+      const der = caja ? Math.min(0.98, caja.right / W) : 0.85;
+      let techo: confetti.Shape | 'square' = 'square';
+      try {
+        techo = confetti.shapeFromPath({ path: LEASEFY_SYMBOL_PATH });
+      } catch {
+        techo = 'square';
+      }
+      const comun = {
+        colors: COLORES_DE_LA_CHISPA,
+        zIndex: 400,
+        disableForReducedMotion: true,
+        ticks: 320,
+        gravity: 0.55,
+        decay: 0.93,
+        drift: 0,
+        flat: false,
+      };
+      void confetti({ ...comun, origin: { x: izq, y }, angle: 60, spread: 55, startVelocity: 42, particleCount: 26, shapes: [techo], scalar: 1.5 });
+      void confetti({ ...comun, origin: { x: der, y }, angle: 120, spread: 55, startVelocity: 42, particleCount: 26, shapes: [techo], scalar: 1.5 });
+      void confetti({ ...comun, origin: { x: izq, y }, angle: 65, spread: 70, startVelocity: 36, particleCount: 34, shapes: ['square'], scalar: 0.7 });
+      void confetti({ ...comun, origin: { x: der, y }, angle: 115, spread: 70, startVelocity: 36, particleCount: 34, shapes: ['square'], scalar: 0.7 });
     }, retraso);
     return () => {
       window.clearTimeout(reloj);
@@ -177,18 +175,22 @@ export function useChispa(activa: boolean, ref?: RefObject<HTMLElement | null>, 
   }, [activa, reducido, ref, retraso]);
 }
 
-/** «Fianly × Leasefy»: los dos logos, cada uno en su ficha blanca. Sin logo conocido, el nombre escrito. */
+/**
+ * El sello de co-marca «Fianly | leasefy» (como en el manual, capítulo «Sellos y co-marca»): UNA placa blanca, el logo
+ * del aliado y el de Leasefy separados por una línea fina. Antes: dos fichas con un «×» en medio. Sin logo, el nombre.
+ */
 export function SelloDelAliado({ aliado, tamano = 'grande' }: { aliado: string; tamano?: 'grande' | 'chico' }) {
   const logo = logoDelAliado(aliado);
   const grande = tamano === 'grande';
-  // Las dos fichas del mismo tamaño: el logo de cada uno adentro, sin estirarse.
-  const ficha = cn(
-    'flex shrink-0 items-center justify-center rounded-2xl bg-white shadow-[0_10px_30px_rgba(4,16,48,0.28)] ring-1 ring-black/5',
-    grande ? 'h-24 w-36 px-4 py-3 sm:h-28 sm:w-44' : 'h-10 w-20 rounded-xl px-2 py-1.5',
-  );
   return (
-    <div className="flex items-center gap-3 sm:gap-4" data-testid="sello-del-aliado">
-      <span className={ficha}>
+    <div
+      className={cn(
+        'flex items-center bg-[#f7f6f2] shadow-[0_24px_48px_-16px_rgba(4,16,48,0.55)] ring-1 ring-black/5',
+        grande ? 'gap-5 rounded-[22px] px-6 py-4 sm:gap-6 sm:px-7 sm:py-5' : 'gap-2.5 rounded-xl px-3 py-1.5',
+      )}
+      data-testid="sello-del-aliado"
+    >
+      <span className={cn('flex items-center justify-center', grande ? 'h-12 w-28 sm:h-14 sm:w-32' : 'h-6 w-14')}>
         {logo ? (
           // eslint-disable-next-line @next/next/no-img-element -- logo estático de public/aliados
           <img src={logo.src} alt={aliado} className="max-h-full max-w-full object-contain" />
@@ -196,12 +198,8 @@ export function SelloDelAliado({ aliado, tamano = 'grande' }: { aliado: string; 
           <span className={cn('text-center font-medium leading-tight text-[#0a0f2c]', grande ? 'text-lg' : 'text-[11px]')}>{aliado}</span>
         )}
       </span>
-      <span aria-hidden="true" className={cn('font-light text-white/85', grande ? 'text-3xl' : 'text-base')}>
-        ×
-      </span>
-      <span className={ficha}>
-        <LeasefyLogotype size={grande ? 26 : 12} className="text-[#0a0f2c]" title="Leasefy" />
-      </span>
+      <span aria-hidden="true" className={cn('w-px self-stretch bg-[#1b2340]/15', grande ? 'my-1' : '')} />
+      <LeasefyLogotype size={grande ? 24 : 12} className="text-[#1a40ff]" title="Leasefy" />
     </div>
   );
 }
@@ -237,11 +235,12 @@ export const BENEFICIOS_DE_LEASEFY_COMPLETO: readonly BeneficioEn3D[] = [
 ];
 
 export function BeneficiosEn3D({ items = BENEFICIOS_DE_LEASEFY_COMPLETO, className }: { items?: readonly BeneficioEn3D[]; className?: string }) {
+  // 28-10 (Nico): sin las tarjetas con 3D; una lista limpia, con el chulo de la marca, en dos columnas.
   return (
-    <Stagger className={cn('grid gap-2 sm:grid-cols-2', className)}>
+    <Stagger className={cn('grid gap-x-6 gap-y-2.5 sm:grid-cols-2', className)}>
       {items.map((b) => (
-        <StaggerItem key={b.texto} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
-          <Ilustracion nombre={b.ilustracion} tamano={36} tono="auto" alt="" />
+        <StaggerItem key={b.texto} className="flex items-start gap-2.5">
+          <CheckCircle size={20} weight="fill" className="mt-px shrink-0 text-primary" aria-hidden="true" />
           <span className="text-body-sm leading-snug text-fg">{b.texto}</span>
         </StaggerItem>
       ))}
@@ -250,27 +249,22 @@ export function BeneficiosEn3D({ items = BENEFICIOS_DE_LEASEFY_COMPLETO, classNa
 }
 
 /**
- * La tarjeta del regalo del aliado arriba del registro y del publicador (`/publica?aliado=`). Nico, 28-10: «ese message
- * de arriba en azulito, qué cosa tan fea, para todos, haz algo mejor». Una tarjeta chica con la misma aurora del modal,
- * el logo del aliado y el 3D del regalo.
+ * La tarjeta del regalo del aliado arriba del registro y del publicador (`/publica?aliado=`). 28-10 (Nico: «más como
+ * nosotros»): blanco cálido con borde fino, una foto real chica, el sello del aliado y el texto en tinta. Sin aurora.
  */
 export function RegaloDelAliado({ aliado, className }: { aliado: string; className?: string }) {
   return (
-    <div
-      className={cn('relative isolate overflow-hidden rounded-2xl px-4 py-3.5 text-white shadow-[0_14px_40px_rgba(4,16,48,0.22)] sm:px-5', className)}
-      data-testid="regalo-del-aliado"
-    >
-      <AuroraDeMarca className="absolute inset-0 -z-10" />
-      <div className="flex items-center gap-3 sm:gap-4">
-        <ChipDelAliado aliado={aliado} texto={aliado} />
-        <p className="min-w-0 flex-1 text-body-sm leading-snug">
-          <span className="font-medium">Te regala un mes de Leasefy completo.</span>{' '}
-          <span className="text-white/75">Empieza al crear tu cuenta, sin tarjeta.</span>
+    <div className={cn('flex items-center gap-4 rounded-2xl border border-border bg-surface p-2.5 pr-4 shadow-[0_1px_2px_rgba(20,19,15,0.05)]', className)} data-testid="regalo-del-aliado">
+      {/* eslint-disable-next-line @next/next/no-img-element -- foto estática del banco */}
+      <img src={FOTOS_DE_LA_ESCENA[0]} alt="" aria-hidden="true" className="hidden h-16 w-24 shrink-0 rounded-xl object-cover sm:block" />
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-primary">Un regalo de {aliado}</p>
+        <p className="mt-1 text-body-sm leading-snug text-fg">
+          <span className="font-medium">Un mes de Leasefy completo.</span>{' '}
+          <span className="text-fg-muted">Empieza al crear tu cuenta, sin tarjeta.</span>
         </p>
-        <span aria-hidden="true" className="hidden shrink-0 drop-shadow-[0_8px_14px_rgba(4,16,48,0.4)] sm:block">
-          <Ilustracion nombre="novedad_regalo" tamano={48} tono="auto" alt="" />
-        </span>
       </div>
+      <SelloDelAliado aliado={aliado} tamano="chico" />
     </div>
   );
 }

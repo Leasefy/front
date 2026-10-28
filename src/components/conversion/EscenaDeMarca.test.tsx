@@ -43,8 +43,11 @@ describe('El aliado con su logo (Nico, 28-10: «que se vea súper top»)', () =>
 
   it('la tarjeta del regalo en publicar: el logo, el regalo y sin tarjeta de crédito', async () => {
     await montar(<RegaloDelAliado aliado="Fianly" />);
-    expect(document.querySelector('[data-testid="regalo-del-aliado"] img')?.getAttribute('src')).toBe('/aliados/fianly.webp');
-    expect(document.body.textContent).toContain('Te regala un mes de Leasefy completo.');
+    // 28-10: el sello de co-marca dentro de la tarjeta (el logo del aliado | leasefy) y una foto real del banco.
+    expect(document.querySelector('[data-testid="regalo-del-aliado"] [data-testid="sello-del-aliado"] img')?.getAttribute('src')).toBe('/aliados/fianly.webp');
+    expect(document.querySelector('[data-testid="regalo-del-aliado"] img')?.getAttribute('src')).toMatch(/^\/imagenes\/banco\//);
+    expect(document.body.textContent).toContain('Un regalo de Fianly');
+    expect(document.body.textContent).toContain('Un mes de Leasefy completo.');
     expect(document.body.textContent).toContain('sin tarjeta');
   });
 

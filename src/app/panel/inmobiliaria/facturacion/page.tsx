@@ -56,6 +56,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { AvisoDeFacturacionElectronica } from '@/components/facturacion/habilitacion/AvisoDeFacturacionElectronica';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
 import { ComoSeFactura } from '@/components/facturacion/ComoSeFactura';
@@ -238,6 +239,8 @@ function FacturacionContent() {
         }
         data-testid="facturacion-encabezado"
       />
+      {/* La guía para activar la facturación electrónica con Feel, hasta que termine (Nico, 28-10-2026): debajo del encabezado, es «lo que falta». */}
+      <AvisoDeFacturacionElectronica />
 
       {/* Lo que se deja listo UNA vez, antes del trabajo del mes. */}
       {grupo === 'nueva' ? (

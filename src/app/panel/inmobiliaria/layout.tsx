@@ -49,6 +49,7 @@ import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes
 import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
+import { TarjetaDeFacturacionElectronica } from '@/components/facturacion/habilitacion/TarjetaDeFacturacionElectronica';
 import { RecordatorioDeMigracion } from '@/components/migracion/RecordatorioDeMigracion';
 import { hexToHslTriplet } from '@/lib/utils/hex-to-hsl';
 
@@ -351,7 +352,13 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           // onInvite={() => router.push('/panel/inmobiliaria/configuracion/equipo')}
           // El recordatorio de migración: cómo va, «Migrar ahora» y una ✕
           // (Nico, 2026-09-07). Lee el estado del muro por contexto.
-          footerCards={<RecordatorioDeMigracion />}
+          footerCards={
+            <>
+              <RecordatorioDeMigracion />
+              {/* «Configura tu facturación electrónica» (Nico, 28-10-2026): fija, con «Cerrar»; vuelve a los 3 días. */}
+              <TarjetaDeFacturacionElectronica />
+            </>
+          }
           showUpgrade={showUpgradeCta}
           // 🔴 A la pasarela de verdad, no a Configuración. Apuntaba a la raíz
           // de `/configuracion`, que es el PERFIL de la inmobiliaria: quien

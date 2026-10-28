@@ -16,6 +16,7 @@ import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/caj
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { coleccionesApi, enlaceLocalDeLaColeccion, type InmuebleDeLaColeccion, type ResumenDeColeccion } from '@/lib/api/colecciones.service';
+import { comisionesCompartidasApi } from '@/lib/api/comisiones-compartidas.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useConsignaciones, useInmueblesSinConsignacion } from '@/lib/hooks/useInmobiliaria';
 import { celularParaMarcar } from '@/lib/tu-dia/tu-dia';
@@ -29,6 +30,8 @@ interface Elegible {
   titulo: string;
   donde: string;
   canon: number | null;
+  /** Otra inmobiliaria te lo compartió (comisión compartida aceptada): también lo muestras. */
+  compartidoPor?: string;
 }
 
 export function Colecciones() {
@@ -36,6 +39,17 @@ export function Colecciones() {
   const [error, setError] = useState<unknown>(null);
   const [nueva, setNueva] = useState(false);
   const [abierta, setAbierta] = useState<string | null>(null);
+  const [inicial, setInicial] = useState<string[]>([]);
+
+  // «Mandar en una colección» desde la comisión compartida: llega con ?nueva=1&inmueble=<id>.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('nueva') !== '1') return;
+    const inmueble = p.get('inmueble');
+    setInicial(inmueble ? [inmueble] : []);
+    setNueva(true);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, []);
 
   const leer = useCallback(async () => {
     setError(null);
@@ -103,13 +117,13 @@ export function Colecciones() {
         </ul>
       ) : null}
 
-      <NuevaColeccion abierta={nueva} alCerrar={() => setNueva(false)} alCrear={leer} />
+      <NuevaColeccion abierta={nueva} inicial={inicial} alCerrar={() => { setNueva(false); setInicial([]); }} alCrear={leer} />
       <DetalleDeLaColeccion id={abierta} alCerrar={() => setAbierta(null)} alArchivar={leer} />
     </div>
   );
 }
 
-function NuevaColeccion({ abierta, alCerrar, alCrear }: { abierta: boolean; alCerrar: () => void; alCrear: () => void }) {
+function NuevaColeccion({ abierta, inicial = [], alCerrar, alCrear }: { abierta: boolean; inicial?: string[]; alCerrar: () => void; alCrear: () => void }) {
   const { consignaciones } = useConsignaciones(undefined, { skip: !abierta });
   const { inmuebles: sinMandato } = useInmueblesSinConsignacion();
   const [paraQuien, setParaQuien] = useState('');
@@ -120,6 +134,30 @@ function NuevaColeccion({ abierta, alCerrar, alCrear }: { abierta: boolean; alCe
   const [guardando, setGuardando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
   const [creada, setCreada] = useState<{ token: string } | null>(null);
+  const [compartidos, setCompartidos] = useState<Elegible[]>([]);
+
+  // Los que otra inmobiliaria le compartió con la comisión aceptada (sin la migración, ninguno).
+  useEffect(() => {
+    if (!abierta) return;
+    let vivo = true;
+    comisionesCompartidasApi
+      .listar()
+      .then((r) => {
+        if (!vivo) return;
+        setCompartidos(
+          r.comisiones
+            .filter((c) => c.lado === 'trae' && c.estado === 'aceptada')
+            .map((c) => ({ id: c.inmueble.id, titulo: c.inmueble.titulo, donde: [c.inmueble.barrio, c.inmueble.ciudad].filter(Boolean).join(', '), canon: c.inmueble.canon, compartidoPor: c.otra.nombre })),
+        );
+      })
+      .catch(() => vivo && setCompartidos([]));
+    return () => {
+      vivo = false;
+    };
+  }, [abierta]);
+  useEffect(() => {
+    if (abierta && inicial.length > 0) setElegidos((l) => (l.length === 0 ? inicial.slice(0, 30) : l));
+  }, [abierta, inicial]);
 
   const todos: Elegible[] = useMemo(() => {
     const vistos = new Set<string>();
@@ -134,8 +172,14 @@ function NuevaColeccion({ abierta, alCerrar, alCrear }: { abierta: boolean; alCe
       vistos.add(i.propertyId);
       lista.push({ id: i.propertyId, titulo: i.propertyTitle, donde: [i.propertyZone, i.propertyCity].filter(Boolean).join(', '), canon: i.monthlyRent });
     }
-    return lista;
-  }, [consignaciones, sinMandato]);
+    for (const c of compartidos) {
+      if (vistos.has(c.id)) continue;
+      vistos.add(c.id);
+      lista.push(c);
+    }
+    // Lo que llegó elegido (desde la comisión compartida) va arriba.
+    return lista.sort((a, b) => Number(inicial.includes(b.id)) - Number(inicial.includes(a.id)));
+  }, [consignaciones, sinMandato, compartidos, inicial]);
   const visibles = useMemo(() => {
     const q = sinTildes(buscar.trim());
     return q ? todos.filter((i) => sinTildes(`${i.titulo} ${i.donde}`).includes(q)) : todos;
@@ -222,7 +266,10 @@ function NuevaColeccion({ abierta, alCerrar, alCrear }: { abierta: boolean; alCe
                         />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-body-sm font-medium text-fg">{i.titulo}</span>
-                          <span className="block truncate text-caption text-fg-subtle">{i.donde}</span>
+                          <span className="block truncate text-caption text-fg-subtle">
+                            {i.compartidoPor ? <span className="font-medium text-primary">Compartido por {i.compartidoPor} · </span> : null}
+                            {i.donde}
+                          </span>
                         </span>
                         {i.canon ? <span className="shrink-0 font-mono text-caption text-fg-muted">${i.canon.toLocaleString('es-CO')}</span> : null}
                       </label>

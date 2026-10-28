@@ -48,6 +48,7 @@ import {
   EnvelopeSimple,
   BookOpenText,
   FolderSimple,
+  Handshake,
   SunHorizon,
   Star,
 } from '@phosphor-icons/react';
@@ -451,6 +452,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           { labelKey: 'inmobiliaria.nav.colecciones', href: r('/pipeline/colecciones'), icon: FolderSimple, module: 'pipeline', scope: 'comercial' },
           // Reseñas (28-10-2026): sólo de clientes de Leasefy; se responden, no se borran.
           { labelKey: 'inmobiliaria.nav.resenas', href: r('/pipeline/resenas'), icon: Star, module: 'pipeline', scope: 'comercial' },
+          // Comisión compartida (28-10-2026): el que capta propone el reparto y el otro lo acepta; Leasefy no cobra.
+          { labelKey: 'inmobiliaria.nav.comisionCompartida', href: r('/pipeline/comisiones-compartidas'), icon: Handshake, module: 'pipeline', scope: 'comercial' },
           // 🔴 B-07 (18-09-2026): «informe por origen (leads y arriendos por
           // portal) para saber qué portal vale la pena pagar». Cuelga del
           // pipeline y NO de Reportes a propósito: la decide el comercial con

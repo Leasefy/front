@@ -1,5 +1,6 @@
 'use client';
 
+import { ResenasDelPerfil } from '@/components/resenas/ResenasDelPerfil';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -441,6 +442,7 @@ function Contenido({ pagina }: { pagina: Pagina }) {
         </p>
       </section>
 
+      <ResenasDelPerfil agencyId={pagina.id} nombre={pagina.nombre ?? 'esta inmobiliaria'} />
       {pagina.muestraVitrina && <VitrinaDeOtras paginaId={pagina.id} />}
 
       {/* ARCO-1 (Nico 19-10-2026): su formulario de Habeas Data. Cada

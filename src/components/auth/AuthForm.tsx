@@ -1,5 +1,6 @@
 'use client';
 
+import { CLAVE_DEL_PERFIL_QUE_PUBLICA, perfilQuePublicaDelDestino, recordarPerfilQuePublica } from '@/lib/publica/perfil-que-publica';
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -947,7 +948,16 @@ export function AuthForm({
       const correo = normalizarCorreo(data.email);
       redirectDeConfirmacion.current = emailRedirectTo;
       setCorreoYaRegistrado(null);
-      const { requiresConfirmation } = await signUpWithEmail(correo, data.password, emailRedirectTo, explicitRole ?? undefined);
+      // El perfil con que vino a publicar (el agente es de rol inmobiliaria): viaja en la cuenta (QA 27-10-2026).
+      const perfilQuePublica = perfilQuePublicaDelDestino(returnUrl);
+      if (perfilQuePublica) recordarPerfilQuePublica(perfilQuePublica);
+      const { requiresConfirmation } = await signUpWithEmail(
+        correo,
+        data.password,
+        emailRedirectTo,
+        explicitRole ?? undefined,
+        perfilQuePublica ? { [CLAVE_DEL_PERFIL_QUE_PUBLICA]: perfilQuePublica } : undefined,
+      );
       if (requiresConfirmation) {
         // El flujo termina en pantalla («Revisa tu correo»), no en un redirect:
         // acá sí se suelta el spinner.

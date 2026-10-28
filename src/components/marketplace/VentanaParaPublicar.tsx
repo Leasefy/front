@@ -1,5 +1,6 @@
 'use client';
 
+import { recordarPerfilQuePublica } from '@/lib/publica/perfil-que-publica';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Buildings, House, IdentificationBadge } from '@phosphor-icons/react';
 import { Ilustracion, type NombreIlustracion } from '@leasefy/cadence';
@@ -129,7 +130,10 @@ export function VentanaParaPublicar({
       <CrossFade swapKey={clave} direction={adelante ? 'forward' : 'backward'}>
         {paso.que === 'perfil' && (
           <EleccionDeQuienPublica
-            alElegir={(perfil) => setPaso({ que: 'cuenta', perfil })}
+            alElegir={(perfil) => {
+              recordarPerfilQuePublica(perfil);
+              setPaso({ que: 'cuenta', perfil });
+            }}
             alEntrar={() => setPaso({ que: 'entrar' })}
           />
         )}

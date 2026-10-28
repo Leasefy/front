@@ -1,5 +1,7 @@
 'use client';
 
+import { getSupabase } from '@/lib/supabase/client';
+import { perfilQuePublicaDeLaCuenta, perfilQuePublicaRecordado } from '@/lib/publica/perfil-que-publica';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -64,8 +66,14 @@ function Publica() {
 
   const delParametro = sp.get('perfil');
   const perfilDelEnlace: PerfilQuePublica | null = esPerfilQuePublica(delParametro) ? delParametro : null;
+  // QA 27-10-2026: el agente es de rol inmobiliaria; sin el perfil recordado (cuenta o navegador) se le mostraba
+  // «Tu inmobiliaria» al entrar con su clave.
+  const perfilDeLaCuenta = usePerfilQuePublicaDeLaCuenta(user?.id ?? null);
   const perfilPedido: PerfilQuePublica | null =
-    perfilDelEnlace ?? (perfilElegido === 'agency' || perfilElegido === 'landlord' ? perfilElegido : null);
+    perfilDelEnlace ??
+    perfilDeLaCuenta ??
+    (isAuthenticated ? perfilQuePublicaRecordado() : null) ??
+    (perfilElegido === 'agency' || perfilElegido === 'landlord' ? perfilElegido : null);
   // Viene de «Crear cuenta» con el perfil ya dicho (p. ej. /para/agentes → `?perfil=agente`): la ventana abre sola.
   const abiertaSola = useRef(false);
   // 27-10-2026 (Nico: «¿por qué colocaste esto y no mostraste el modal de una vez?»): sin sesión, la ventana de
@@ -103,6 +111,8 @@ function Publica() {
     const nombre = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
     contenido = (
       <RegistroRapido
+        // El perfil de la cuenta llega después (es una lectura): con él, el registro corto vuelve a empezar en el suyo.
+        key={perfilPedido ?? 'sin-perfil'}
         perfilInicial={perfilPedido}
         nombreConocido={nombre}
         alTerminar={async () => {
@@ -166,6 +176,23 @@ function Publica() {
       <main className="px-4 py-10 sm:px-6 sm:py-14">{contenido}</main>
     </div>
   );
+}
+
+/** El perfil con que vino a publicar, de los datos de su cuenta (`perfil_que_publica`). */
+function usePerfilQuePublicaDeLaCuenta(userId: string | null): PerfilQuePublica | null {
+  const [perfil, setPerfil] = useState<PerfilQuePublica | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    let vivo = true;
+    getSupabase()
+      ?.auth.getUser()
+      .then(({ data }) => vivo && setPerfil(perfilQuePublicaDeLaCuenta(data.user?.user_metadata)))
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [userId]);
+  return perfil;
 }
 
 /** El nombre del aliado del enlace, si el código existe y sigue vigente (y deja el código pendiente). */

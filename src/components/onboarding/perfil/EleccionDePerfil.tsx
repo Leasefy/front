@@ -62,6 +62,12 @@ export interface EleccionDePerfilProps {
    */
   abiertaAlInicio?: boolean
   /**
+   * 🔴 Nico, 27-10-2026: «Inmobiliaria» lleva al registro CORTO del publicador. El formulario largo al lado («Antes de
+   * comenzar»: razón social, NIT…) sólo lo abre la página del asistente (`/onboarding/inmobiliaria`), para quien ya lo
+   * empezó y lo retoma.
+   */
+  formularioDeLaInmobiliariaAlLado?: boolean
+  /**
    * Lo que va a la derecha cuando se elige «Inmobiliaria». Recibe cómo
    * cerrarse, cómo avisar que está «Abriendo tu registro…» (ahí las
    * tarjetas se esconden y la carga queda sola, centrada) y cómo avisar si
@@ -101,6 +107,7 @@ export interface EleccionDePerfilProps {
  */
 export function EleccionDePerfil({
   abiertaAlInicio = false,
+  formularioDeLaInmobiliariaAlLado = false,
   panelDeInmobiliaria,
   volverAlAsistente,
 }: EleccionDePerfilProps) {
@@ -152,7 +159,10 @@ export function EleccionDePerfil({
 
   const irAlPerfil = (opcion: OpcionDePerfil) => {
     void elegirPerfil(opcion.bandera).catch(() => undefined)
-    if (opcion.valor === 'inmobiliaria') {
+    // 🔴 Nico, 27-10-2026: la inmobiliaria nueva va al registro CORTO del publicador (nombre y WhatsApp), como el
+    // propietario y el agente; los datos de la empresa se piden al pagar. «Antes de comenzar» (razón social, NIT…)
+    // queda sólo para quien ya empezó el asistente largo y lo retoma.
+    if (opcion.valor === 'inmobiliaria' && (formularioDeLaInmobiliariaAlLado || registroAMedias)) {
       setAbierta(true)
       return
     }

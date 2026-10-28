@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Buildings, House, IdentificationBadge } from '@phosphor-icons/react';
+import { PhoneInput } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { AuthInput } from '@/components/auth/AuthInput';
@@ -139,17 +140,25 @@ export function RegistroRapido({
               data-testid="registro-nombre"
             />
           )}
-          <AuthInput
-            label="WhatsApp"
-            type="tel"
-            inputMode="tel"
-            placeholder="300 123 4567"
-            value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value)}
-            autoComplete="tel"
-            error={errores.whatsapp}
-            data-testid="registro-whatsapp"
-          />
+          {/* El indicativo va aparte del número, como en el resto de Leasefy (Nico, 27-10-2026). */}
+          <div className="space-y-1.5">
+            <label htmlFor="registro-whatsapp" className="block text-[13px] font-medium text-fg-muted">
+              WhatsApp
+            </label>
+            <PhoneInput
+              id="registro-whatsapp"
+              countryCode="CO"
+              autoComplete="tel"
+              inputMode="numeric"
+              placeholder="300 123 4567"
+              value={whatsapp}
+              onChange={(v) => setWhatsapp(v.replace(/\D/g, ''))}
+              invalid={Boolean(errores.whatsapp)}
+              aria-describedby={errores.whatsapp ? 'registro-whatsapp-error' : undefined}
+              data-testid="registro-whatsapp"
+            />
+            <ErrorDelCampo id="registro-whatsapp-error" mensaje={errores.whatsapp ?? null} className="mt-0" />
+          </div>
           <p className="-mt-1 text-[12.5px] text-fg-subtle">Ahí te escriben los interesados en tus inmuebles.</p>
           <ErrorDelCampo id="registro-rapido-error" mensaje={errores.general ?? null} />
           <Button type="submit" isLoading={enviando} className="h-12 w-full rounded-full text-[14px]" data-testid="registro-rapido-seguir">

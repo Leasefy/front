@@ -43,7 +43,7 @@ export function MesGratisPendiente({ inicio = '/panel/inmobiliaria/inmuebles' }:
       .then((acceso) => {
         olvidarAliadoPendiente();
         setActivado(acceso);
-        void refreshAgency();
+        void refreshAgency({ despuesDeUnCambio: true });
       })
       .catch((error: unknown) => {
         const code = error instanceof ApiError ? (error.code ?? null) : null;

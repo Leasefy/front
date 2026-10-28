@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { AgencyProfile } from '@/lib/types/inmobiliaria';
 import type { MedioDePago } from '@/lib/api/medios-de-pago.types';
 import {
-  cuentaDelAgente,
+  cuentaDondeRecibe,
   errorDeLaCedula,
   errorDeLaCuenta,
   errorDelCelular,
@@ -12,8 +12,8 @@ import {
   errorDelNombre,
   nitDeLaCedula,
   pasosQueFaltan,
-  tocaPedirLosPasos,
-} from './pasos-del-agente';
+  quienSeActiva,
+} from './pasos-para-activar';
 
 const agencia = (extra: Partial<AgencyProfile> = {}) => ({ id: 'a1', name: 'Laura Gómez', ...extra }) as AgencyProfile;
 
@@ -64,18 +64,30 @@ describe('los tres pasos del agente', () => {
   });
 
   it('la cuenta es una TRANSFERENCIA activa con número; Nequi, apagada o sin número no cuentan', () => {
-    expect(cuentaDelAgente([medio({ tipo: 'NEQUI' })])).toBeNull();
-    expect(cuentaDelAgente([medio({ activo: false })])).toBeNull();
-    expect(cuentaDelAgente([medio({ numeroDeCuenta: '  ' })])).toBeNull();
-    expect(cuentaDelAgente([medio({ tipo: 'EFECTIVO' }), medio({ id: 'm2' })])?.id).toBe('m2');
+    expect(cuentaDondeRecibe([medio({ tipo: 'NEQUI' })])).toBeNull();
+    expect(cuentaDondeRecibe([medio({ activo: false })])).toBeNull();
+    expect(cuentaDondeRecibe([medio({ numeroDeCuenta: '  ' })])).toBeNull();
+    expect(cuentaDondeRecibe([medio({ tipo: 'EFECTIVO' }), medio({ id: 'm2' })])?.id).toBe('m2');
   });
 
-  it('sólo se piden a la cuenta de agente, pagada, y a su administrador', () => {
-    expect(tocaPedirLosPasos({ cuentaDeAgente: true, rol: 'ADMIN', estado: 'pagado' })).toBe(true);
-    expect(tocaPedirLosPasos({ cuentaDeAgente: true, rol: 'ADMIN', estado: 'gratis' })).toBe(false);
-    expect(tocaPedirLosPasos({ cuentaDeAgente: true, rol: 'ADMIN', estado: 'prueba' })).toBe(false);
-    expect(tocaPedirLosPasos({ cuentaDeAgente: true, rol: 'AGENTE', estado: 'pagado' })).toBe(false);
-    expect(tocaPedirLosPasos({ cuentaDeAgente: false, rol: 'ADMIN', estado: 'pagado' })).toBe(false);
+  it('a la inmobiliaria le pide también la razón social; con la cuenta en modo comercial la factura no está lista', () => {
+    const a = agencia({ legalRepresentative: 'Laura Gómez', legalDocumentNumber: '1020304050', phone: '3001234567' });
+    expect(pasosQueFaltan(a, [medio()], 'inmobiliaria')).toContain('datos');
+    expect(pasosQueFaltan({ ...a, razonSocial: 'Arriendos S.A.S.' } as AgencyProfile, [medio()], 'inmobiliaria')).not.toContain('datos');
+    const facturaLista = { nit: '900123456-8', email: 'x@y.co', address: 'x', city: 'y', responsableIva: true };
+    expect(pasosQueFaltan(agencia(facturaLista), [medio()], 'agente', true)).toContain('factura');
+    expect(pasosQueFaltan(agencia(facturaLista), [medio()], 'agente', false)).not.toContain('factura');
+  });
+
+  it('se abre sola sólo al pagar; a pedido también en el mes gratis del aliado; sólo al administrador', () => {
+    expect(quienSeActiva({ cuentaDeAgente: true, rol: 'ADMIN', estado: 'pagado' })).toBe('agente');
+    expect(quienSeActiva({ vinoDelMarketplace: true, rol: 'ADMIN', estado: 'pagado' })).toBe('inmobiliaria');
+    expect(quienSeActiva({ vinoDelMarketplace: true, rol: 'ADMIN', estado: 'prueba' })).toBeNull();
+    expect(quienSeActiva({ vinoDelMarketplace: true, rol: 'ADMIN', estado: 'prueba' }, 'aPedido')).toBe('inmobiliaria');
+    expect(quienSeActiva({ cuentaDeAgente: true, rol: 'ADMIN', estado: 'gratis' }, 'aPedido')).toBeNull();
+    expect(quienSeActiva({ cuentaDeAgente: true, rol: 'AGENTE', estado: 'pagado' })).toBeNull();
+    // La inmobiliaria de siempre (no vino del marketplace) ya se registró con el asistente: nada que activar.
+    expect(quienSeActiva({ rol: 'ADMIN', estado: 'pagado' })).toBeNull();
   });
 });
 

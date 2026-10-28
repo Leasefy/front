@@ -746,8 +746,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *  button). Reuses an in-flight probe if one is already running
    *  (`probeAgencyMembership`'s own dedup); if the fresh result is still
    *  transient, arms one more guarded retry — mirrors the automatic path. */
-  const refreshAgency = useCallback(async () => {
+  const refreshAgency = useCallback(async (opciones?: { despuesDeUnCambio?: boolean }) => {
     console.warn('[Auth] agency manual refresh requested')
+    // 🔴 27-10-2026 (QA del mes gratis del aliado): un refresco pedido DESPUÉS de un cambio (el mes gratis, el pago,
+    // la activación) no puede quedarse con la respuesta de una pregunta que salió ANTES: entraba al panel en «plan
+    // gratis» con el mes recién regalado. Con `despuesDeUnCambio` se espera la que va en vuelo y se pregunta otra vez;
+    // sin él, se reusa la que va en vuelo (no se duplican pedidos).
+    if (opciones?.despuesDeUnCambio) {
+      const enVuelo = agencyProbeInFlightRef.current
+      if (enVuelo) await enVuelo.catch(() => undefined)
+    }
     const result = await probeAgencyMembership()
     if (result.transientFailure) {
       scheduleAgencySelfHeal()

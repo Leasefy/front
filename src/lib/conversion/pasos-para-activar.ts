@@ -1,34 +1,51 @@
 /**
- * Los tres pasos del agente inmobiliario al pagar (Nico, 27-10-2026: «sus datos, cuenta y factura»).
+ * Los tres pasos para ACTIVAR la cuenta que vino del marketplace, al pagar (Nico, 27-10-2026: «si paga le aparecen esos
+ * pasos según lo que eligió, propietario, inmobiliaria y agente inmobiliario»; «sus datos, cuenta y factura»).
  *
- *   1. «Tus datos»: nombre completo, cédula y celular.
- *   2. «Dónde recibes tu plata»: la cuenta donde le llegan sus comisiones (un medio de pago TRANSFERENCIA).
- *   3. «Para facturarte»: NIT del RUT, nombre en la factura, correo, dirección, ciudad y si cobra IVA.
+ *   1. «Tus datos» (agente: nombre, cédula y celular) / «Tu empresa» (inmobiliaria: razón social, representante legal,
+ *      su cédula y celular).
+ *   2. «Dónde recibes la plata»: la cuenta donde le llegan el arriendo y sus comisiones (un medio de pago TRANSFERENCIA).
+ *   3. «Tu factura»: NIT, correo, dirección, municipio, si cobra IVA y los Términos → ACTIVA la cuenta
+ *      (`activar-la-cuenta.ts`: lo mismo que el asistente largo, sin sus pantallas).
  *
- * No hay tabla nueva: los datos van a la inmobiliaria (`PUT /inmobiliaria/agency`) y la cuenta a sus medios de pago
- * (`/inmobiliaria/medios-de-pago`), que es lo que ya leen los contratos, las cuentas de cobro y la factura.
+ * No hay tabla nueva: los datos van a la inmobiliaria (`PUT /inmobiliaria/agency`), la cuenta a sus medios de pago
+ * (`/inmobiliaria/medios-de-pago`) y la activación por el alta de siempre (`POST /users/me/onboarding`).
+ * El propietario tiene los suyos (`pasos-del-propietario.ts`).
  */
 import type { AgencyProfile } from '@/lib/types/inmobiliaria';
 import type { MedioDePago } from '@/lib/api/medios-de-pago.types';
 import type { EstadoDelAcceso } from './acceso';
 import { digitoDeVerificacion } from '@/lib/onboarding/nit';
 
-export type PasoDelAgente = 'datos' | 'cuenta' | 'factura';
-export const PASOS_DEL_AGENTE: readonly PasoDelAgente[] = ['datos', 'cuenta', 'factura'];
+export type PasoParaActivar = 'datos' | 'cuenta' | 'factura';
+export const PASOS_PARA_ACTIVAR: readonly PasoParaActivar[] = ['datos', 'cuenta', 'factura'];
+
+/** Quién se activa: el agente (persona natural) o la inmobiliaria (empresa). */
+export type PerfilQueSeActiva = 'agente' | 'inmobiliaria';
 
 const lleno = (v: unknown) => typeof v === 'string' && v.trim() !== '';
 
 /** La cuenta donde recibe: el primer medio TRANSFERENCIA activo con número. */
-export function cuentaDelAgente(medios: readonly MedioDePago[] | null | undefined): MedioDePago | null {
+export function cuentaDondeRecibe(medios: readonly MedioDePago[] | null | undefined): MedioDePago | null {
   return (medios ?? []).find((m) => m.activo && m.tipo === 'TRANSFERENCIA' && lleno(m.numeroDeCuenta)) ?? null;
 }
 
-export function pasoListo(paso: PasoDelAgente, agency: AgencyProfile, medios: readonly MedioDePago[] | null | undefined): boolean {
-  if (paso === 'datos') return lleno(agency.legalRepresentative) && lleno(agency.legalDocumentNumber) && lleno(agency.phone);
-  if (paso === 'cuenta') return cuentaDelAgente(medios) !== null;
+export function pasoListo(
+  paso: PasoParaActivar,
+  agency: AgencyProfile,
+  medios: readonly MedioDePago[] | null | undefined,
+  perfil: PerfilQueSeActiva = 'agente',
+  modoComercial = false,
+): boolean {
+  if (paso === 'datos') {
+    const base = lleno(agency.legalRepresentative) && lleno(agency.legalDocumentNumber) && lleno(agency.phone);
+    return perfil === 'inmobiliaria' ? base && lleno(agency.razonSocial) : base;
+  }
+  if (paso === 'cuenta') return cuentaDondeRecibe(medios) !== null;
+  // La factura queda lista con sus datos Y la cuenta activa (fuera del modo comercial).
   return (
+    !modoComercial &&
     lleno(agency.nit) &&
-    lleno(agency.razonSocial) &&
     lleno(agency.email) &&
     lleno(agency.address) &&
     lleno(agency.city) &&
@@ -36,13 +53,33 @@ export function pasoListo(paso: PasoDelAgente, agency: AgencyProfile, medios: re
   );
 }
 
-export function pasosQueFaltan(agency: AgencyProfile, medios: readonly MedioDePago[] | null | undefined): PasoDelAgente[] {
-  return PASOS_DEL_AGENTE.filter((p) => !pasoListo(p, agency, medios));
+export function pasosQueFaltan(
+  agency: AgencyProfile,
+  medios: readonly MedioDePago[] | null | undefined,
+  perfil: PerfilQueSeActiva = 'agente',
+  modoComercial = false,
+): PasoParaActivar[] {
+  return PASOS_PARA_ACTIVAR.filter((p) => !pasoListo(p, agency, medios, perfil, modoComercial));
 }
 
-/** Sólo la cuenta de agente, ya pagada y su administrador (es quien paga y quien recibe). */
-export function tocaPedirLosPasos(o: { cuentaDeAgente?: boolean; rol?: string | null; estado?: EstadoDelAcceso | null }): boolean {
-  return o.cuentaDeAgente === true && o.rol === 'ADMIN' && o.estado === 'pagado';
+/**
+ * ¿A quién y cuándo? Sólo a las cuentas que vinieron del marketplace (el agente o la inmobiliaria del registro rápido;
+ * las de siempre ya se registraron con el asistente) y a su administrador (es quien paga y quien recibe).
+ *   · `sola`: se abre sola al pagar.
+ *   · `aPedido`: el botón «Activar mi cuenta» también la abre en el mes gratis del aliado (ve todo, y lo que usa a los
+ *     agentes pide activar).
+ * Devuelve el perfil, o `null` si no le toca.
+ */
+export function quienSeActiva(
+  o: { cuentaDeAgente?: boolean; vinoDelMarketplace?: boolean; rol?: string | null; estado?: EstadoDelAcceso | null },
+  como: 'sola' | 'aPedido' = 'sola',
+): PerfilQueSeActiva | null {
+  if (o.rol !== 'ADMIN') return null;
+  const estados: readonly (EstadoDelAcceso | null | undefined)[] = como === 'sola' ? ['pagado'] : ['pagado', 'prueba'];
+  if (!estados.includes(o.estado)) return null;
+  if (o.cuentaDeAgente === true) return 'agente';
+  if (o.vinoDelMarketplace === true) return 'inmobiliaria';
+  return null;
 }
 
 // ── Validaciones (las mismas reglas que el back, para frenar acá y no con un 400) ──────────────────────────────

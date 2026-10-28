@@ -359,7 +359,8 @@ export interface AuthContextType extends AuthState {
   /** Manually retry fetching the agency membership (e.g. an error card's
    *  "Intentar de nuevo" button). Also re-arms the automatic self-heal
    *  backstop in `AuthProvider` if it had already given up retrying. */
-  refreshAgency: () => Promise<void>
+  /** `despuesDeUnCambio`: no reusar una pregunta que salió antes del cambio (el mes gratis, el pago, la activación). */
+  refreshAgency: (opciones?: { despuesDeUnCambio?: boolean }) => Promise<void>
   /** Switch the active context for a DUAL-CONTEXT user. Persisted per-user;
    *  a no-op for single-context users. */
   setActiveContext: (context: ActiveContext) => void

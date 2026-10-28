@@ -37,11 +37,11 @@ import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
 import { MuroDeMigracion } from '@/components/migracion/MuroDeMigracion';
 import { CandadoDelModoComercial } from '@/components/inmobiliaria/modo-comercial/CandadoDelModoComercial';
-import { abiertaEnModoComercial, enModoComercial } from '@/lib/nav/modo-comercial';
+import { abiertaEnModoComercial, enModoComercial, pideActivar } from '@/lib/nav/modo-comercial';
 import { conCandadoDelPlan, faltaActivarParaVerTodo } from '@/lib/conversion/acceso';
 import { BarraDelMesGratis } from '@/components/inmobiliaria/plan/BarraDelMesGratis';
 import { ModalDelPlan } from '@/components/inmobiliaria/plan/ModalDelPlan';
-import { PasosDelAgente } from '@/components/inmobiliaria/plan/PasosDelAgente';
+import { PasosParaActivar } from '@/components/inmobiliaria/plan/PasosParaActivar';
 import { MesGratisPendiente } from '@/components/inmobiliaria/plan/MesGratisPendiente';
 import { AvisoModoSimulado } from '@/components/estado/AvisoModoSimulado';
 import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
@@ -291,7 +291,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     if (!conCandado && !faltaActivar) return filas;
     return filas
       .filter((f) => f.kind === 'section' || f.href !== '/panel/inmobiliaria')
-      .map((f) => (f.kind === 'section' || abiertaEnModoComercial(f.href) ? f : { ...f, tag: conCandado ? 'Demo' : 'Activar' }));
+      .map((f) => {
+        if (f.kind === 'section') return f;
+        // 🔴 Nico, 27-10-2026: en el mes gratis (o pagando) sin activar se ve todo; «Activar» sólo en agentes y plata.
+        if (conCandado) return abiertaEnModoComercial(f.href) ? f : { ...f, tag: 'Demo' };
+        return pideActivar(f.href) ? { ...f, tag: 'Activar' } : f;
+      });
   }, [ALL_NAV_ITEMS, ctxNav, conCandado, faltaActivar]);
 
   return (
@@ -431,8 +436,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
                 quedó pendiente al registrarse, el modal para pagar (fin del mes gratis, días que quedan, lo gratis). */}
             <MesGratisPendiente />
             <ModalDelPlan />
-            {/* 27-10-2026 (Nico): el agente que ya pagó termina su cuenta en tres pasos (datos, cuenta, factura). */}
-            <PasosDelAgente />
+            {/* 27-10-2026 (Nico): la inmobiliaria o el agente que vino del marketplace se ACTIVA en tres pasos al pagar
+                (sus datos, su cuenta, su factura), nunca en el asistente largo. */}
+            <PasosParaActivar />
           </main>
         </div>
 

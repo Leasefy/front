@@ -4,8 +4,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LockSimple, Megaphone, CheckCircle } from '@phosphor-icons/react';
-import { motionDuration, motionEase } from '@leasefy/cadence';
+import { Megaphone, CheckCircle } from '@phosphor-icons/react';
+import { Ilustracion, motionDuration, motionEase } from '@leasefy/cadence';
 
 import { useAuth } from '@/lib/auth/use-auth';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
-import { ComoTeActivas } from './ComoTeActivas';
+import { abrirLaActivacion } from '@/lib/conversion/abrir-la-activacion';
 import { moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
 import { demoDeLaInmobiliaria, demoDelAgente } from '@/lib/venta/demos-del-panel';
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
@@ -27,6 +27,7 @@ import {
   INICIO_DEL_MODO_COMERCIAL,
   RUTA_PARA_ACTIVAR,
   abiertaEnModoComercial,
+  pideActivar,
   enModoComercial,
 } from '@/lib/nav/modo-comercial';
 import { conCandadoDelPlan, faltaActivarParaVerTodo, type AccesoDeLaCuenta } from '@/lib/conversion/acceso';
@@ -70,7 +71,8 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  const abierta = abiertaEnModoComercial(pathname);
+  // 🔴 Nico, 27-10-2026: en el mes gratis (o pagando) sin activar VE TODO; sólo los agentes y la plata piden activar.
+  const abierta = faltaActivar ? !pideActivar(pathname) : abiertaEnModoComercial(pathname);
   // Con llaves: lo de adentro cambia de rama (abierta / activar / cerrada) y la bienvenida va al lado.
   return (
     <>
@@ -83,7 +85,8 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
           <ParteCerrada ruta={pathname} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} esAgente={agency?.cuentaDeAgente === true} />
         )}
       </div>
-      {comercial ? <BienvenidaComercial key="bienvenida" agencyId={agency?.id ?? null} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} /> : null}
+      {/* La bienvenida comercial («lo demás lo ves en demo») es para lo gratis: a quien ve todo no se le dice. */}
+      {comercial && conCandado ? <BienvenidaComercial key="bienvenida" agencyId={agency?.id ?? null} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} /> : null}
     </>
   );
 }
@@ -139,11 +142,12 @@ export function ActivarTuCuenta({ acceso = null }: { acceso?: AccesoDeLaCuenta |
     : acceso?.estado === 'pagado'
       ? 'Ya pagaste: falta activar tu cuenta'
       : 'Esto se abre al activar tu cuenta';
+  // 27-10-2026 (Nico): se activa en tres pasos cortos (tus datos, dónde recibes la plata y tu factura).
   const texto = enPrueba
-    ? 'Para usar esto, confirma los datos de tu empresa (NIT y razón social) y protege la cuenta con un segundo factor. Son 2 minutos y se abre todo mientras dure tu mes gratis.'
+    ? 'Para usar esto, activa tu cuenta en tres pasos: tus datos, dónde recibes la plata y tu factura. Son 2 minutos y se abre todo mientras dure tu mes gratis.'
     : acceso?.estado === 'pagado'
-      ? 'Confirma los datos de tu empresa (NIT y razón social) y protege la cuenta con un segundo factor: son 2 minutos y se abre todo.'
-      : 'Tu cuenta hoy es comercial: publicas, te llegan los interesados y agendas visitas. Al activarla te pedimos el NIT y la razón social, proteges la cuenta con un segundo factor y se abre todo. Por ahora es gratis.';
+      ? 'Activa tu cuenta en tres pasos: tus datos, dónde recibes la plata y tu factura. Son 2 minutos y se abre todo.'
+      : 'Tu cuenta hoy es comercial: publicas, te llegan los interesados y agendas visitas. Al pagar la activas en tres pasos y se abre todo.';
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
@@ -152,10 +156,8 @@ export function ActivarTuCuenta({ acceso = null }: { acceso?: AccesoDeLaCuenta |
       className="mx-auto my-10 max-w-[560px] rounded-lg border border-border bg-surface p-6 sm:p-8"
       data-testid="activar-tu-cuenta"
     >
-      <span className="inline-flex size-11 items-center justify-center rounded-full bg-primary-soft text-primary">
-        <LockSimple size={22} weight="bold" aria-hidden="true" />
-      </span>
-      <h1 className="mt-5 text-[24px] font-medium leading-tight tracking-[-0.02em] text-fg">{titulo}</h1>
+      <Ilustracion nombre="cerradura" tamano={88} tono="auto" alt="" />
+      <h1 className="mt-4 text-[24px] font-medium leading-tight tracking-[-0.02em] text-fg">{titulo}</h1>
       <p className="mt-2 text-[15px] text-fg-muted">{texto}</p>
       <ul className="mt-5 space-y-2">
         {LO_QUE_SE_ABRE.map((x) => (
@@ -165,9 +167,11 @@ export function ActivarTuCuenta({ acceso = null }: { acceso?: AccesoDeLaCuenta |
           </li>
         ))}
       </ul>
-      {/* Empresa o persona natural (el agente inmobiliario, Nico 27-10-2026), y después el asistente. */}
-      <ComoTeActivas destino={RUTA_PARA_ACTIVAR} />
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+      {/* 27-10-2026 (Nico): se activa en los tres pasos cortos (`PasosParaActivar`), nunca en el asistente largo. */}
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+        <Button className="h-11 rounded-full px-6" onClick={abrirLaActivacion} data-testid="activar-mi-cuenta">
+          Activar mi cuenta
+        </Button>
         <Button asChild variant="secondary" className="h-11 rounded-full px-6">
           <Link href={INICIO_DEL_MODO_COMERCIAL}>Volver a mis inmuebles</Link>
         </Button>

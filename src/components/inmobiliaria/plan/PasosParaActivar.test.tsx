@@ -12,6 +12,7 @@ import type { AgencyProfile } from '@/lib/types/inmobiliaria'
 let guardadas: unknown[] = []
 let fallarConCampos: null | { campo: string; mensaje: string } = null
 const crear = vi.fn()
+const activar = vi.fn()
 vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => ({ user: { firstName: 'Laura', lastName: 'Gómez', email: 'laura@correo.co' } }),
 }))
@@ -24,9 +25,7 @@ vi.mock('@/lib/api/inmobiliaria.service', async (original) => {
       updateAgency: (datos: unknown) => {
         if (fallarConCampos) {
           const f = fallarConCampos
-          return Promise.reject(
-            new ApiError(400, f.mensaje, 'VALIDACION', { campos: [{ campo: f.campo, regla: 'formato', mensaje: f.mensaje }] }),
-          )
+          return Promise.reject(new ApiError(400, f.mensaje, 'VALIDACION', { campos: [{ campo: f.campo, regla: 'formato', mensaje: f.mensaje }] }))
         }
         guardadas.push(datos)
         return Promise.resolve({})
@@ -38,8 +37,14 @@ vi.mock('@/lib/api/medios-de-pago.service', async (original) => {
   const real = await original<typeof import('@/lib/api/medios-de-pago.service')>()
   return { ...real, mediosDePagoApi: { ...real.mediosDePagoApi, crear: (v: unknown) => (crear(v), Promise.resolve({})) } }
 })
+vi.mock('@/lib/conversion/activar-la-cuenta', () => ({
+  activarLaCuenta: (d: unknown) => {
+    activar(d)
+    return Promise.resolve()
+  },
+}))
 
-import { VentanaDeLosPasos } from './PasosDelAgente'
+import { VentanaDeLosPasos } from './PasosParaActivar'
 
 let raiz: Root | null = null
 let caja: HTMLDivElement | null = null
@@ -76,35 +81,68 @@ async function enviar(formulario: string) {
   for (let i = 0; i < 6; i++) await act(async () => {})
 }
 
-const perfil = { id: 'a1', name: 'Laura Gómez' } as AgencyProfile
+const base = { id: 'a1', name: 'Laura Gómez' } as AgencyProfile
+const conDatos = {
+  ...base,
+  legalRepresentative: 'Laura Gómez',
+  legalDocumentNumber: '900123456',
+  phone: '3001234567',
+  razonSocial: 'Laura Gómez',
+  department: 'Antioquia',
+  city: 'Medellín',
+} as AgencyProfile
 const noHaceNada = async () => {}
+const ventana = (props: Partial<React.ComponentProps<typeof VentanaDeLosPasos>>) => (
+  <VentanaDeLosPasos
+    perfil="agente"
+    datos={base}
+    medios={[]}
+    modoComercial
+    faltanAlAbrir={['datos', 'cuenta', 'factura']}
+    alGuardar={noHaceNada}
+    alCerrar={noHaceNada}
+    {...props}
+  />
+)
 
-describe('Los tres pasos del agente al pagar', () => {
+describe('Los tres pasos para activar la cuenta al pagar', () => {
   beforeEach(() => {
     guardadas = []
     fallarConCampos = null
     crear.mockReset()
+    activar.mockReset()
   })
   afterEach(desmontar)
 
-  it('paso 1: guarda nombre, cédula y celular (también como WhatsApp) y pasa a la cuenta', async () => {
-    await montar(<VentanaDeLosPasos perfil={perfil} medios={[]} faltanAlAbrir={['datos', 'cuenta', 'factura']} alGuardar={noHaceNada} alCerrar={noHaceNada} />)
-    expect(porId('paso-del-agente-numero')?.textContent).toContain('Paso 1 de 3')
+  it('agente, paso 1: guarda su nombre (también como razón social), cédula y celular, y pasa a la cuenta', async () => {
+    await montar(ventana({}))
+    expect(porId('paso-para-activar-numero')?.textContent).toContain('Paso 1 de 3')
     // El nombre sale de la cuenta: no se lo pedimos dos veces.
-    expect(campo('agente-nombre').value).toBe('Laura Gómez')
-    await escribir('agente-cedula', '1.020.304.050')
-    await escribir('agente-celular', '3001234567')
+    expect(campo('activar-nombre').value).toBe('Laura Gómez')
+    expect(campo('activar-razon-social')).toBeNull()
+    await escribir('activar-cedula', '1.020.304.050')
+    await escribir('activar-celular', '3001234567')
     await enviar('paso-datos')
     expect(guardadas).toEqual([
-      { legalRepresentative: 'Laura Gómez', legalDocumentNumber: '1020304050', phone: '3001234567', whatsapp: '3001234567' },
+      { razonSocial: 'Laura Gómez', legalRepresentative: 'Laura Gómez', legalDocumentNumber: '1020304050', phone: '3001234567', whatsapp: '3001234567' },
     ])
-    expect(porId('paso-del-agente-numero')?.textContent).toContain('Paso 2 de 3')
+    expect(porId('paso-para-activar-numero')?.textContent).toContain('Paso 2 de 3')
+  })
+
+  it('inmobiliaria, paso 1: pide la razón social y el representante legal', async () => {
+    await montar(ventana({ perfil: 'inmobiliaria', datos: { ...base, name: 'Arriendos del Valle' } as AgencyProfile }))
+    expect(campo('activar-razon-social').value).toBe('Arriendos del Valle')
+    expect(document.body.textContent).toContain('Representante legal')
+    await escribir('activar-razon-social', '')
+    await enviar('paso-datos')
+    expect(guardadas).toEqual([])
+    expect(document.body.textContent).toContain('Escribe la razón social, como está en el RUT.')
   })
 
   it('paso 1: frena antes de mandar una cédula corta y un fijo como celular', async () => {
-    await montar(<VentanaDeLosPasos perfil={perfil} medios={[]} faltanAlAbrir={['datos']} alGuardar={noHaceNada} alCerrar={noHaceNada} />)
-    await escribir('agente-cedula', '123')
-    await escribir('agente-celular', '6041234567')
+    await montar(ventana({ faltanAlAbrir: ['datos'] }))
+    await escribir('activar-cedula', '123')
+    await escribir('activar-celular', '6041234567')
     await enviar('paso-datos')
     expect(guardadas).toEqual([])
     expect(document.body.textContent).toContain('La cédula tiene entre 6 y 10 dígitos.')
@@ -112,37 +150,60 @@ describe('Los tres pasos del agente al pagar', () => {
   })
 
   it('paso 2: sin banco no guarda la cuenta y lo dice', async () => {
-    await montar(<VentanaDeLosPasos perfil={perfil} medios={[]} faltanAlAbrir={['cuenta']} alGuardar={noHaceNada} alCerrar={noHaceNada} />)
-    await escribir('agente-numero', '00012345678')
+    await montar(ventana({ faltanAlAbrir: ['cuenta'] }))
+    await escribir('activar-numero', '00012345678')
     await enviar('paso-cuenta')
     expect(crear).not.toHaveBeenCalled()
     expect(document.body.textContent).toContain('Elige tu banco.')
   })
 
-  it('paso 3: el NIT sale de la cédula con su dígito; al guardar dice que la cuenta quedó lista', async () => {
-    const conDatos = { ...perfil, legalRepresentative: 'Laura Gómez', legalDocumentNumber: '900123456', phone: '3001234567' } as AgencyProfile
-    await montar(<VentanaDeLosPasos perfil={conDatos} medios={[]} faltanAlAbrir={['factura']} alGuardar={noHaceNada} alCerrar={noHaceNada} />)
-    expect(campo('agente-nit').value).toBe('900123456-8')
-    expect(campo('agente-correo').value).toBe('laura@correo.co')
-    await escribir('agente-direccion', 'Cra 43A # 1-50')
-    await escribir('agente-ciudad', 'Medellín')
+  it('paso 3 en modo comercial: sin aceptar los Términos no activa', async () => {
+    await montar(ventana({ datos: conDatos, faltanAlAbrir: ['factura'] }))
+    await escribir('activar-direccion', 'Carrera 43A # 1-50')
     await act(async () => {
-      porId('agente-iva-no')!.click()
+      porId('activar-iva-no')!.click()
+    })
+    await enviar('paso-factura')
+    expect(activar).not.toHaveBeenCalled()
+    expect(document.body.textContent).toContain('acepta los Términos')
+  })
+
+  it('🔴 paso 3 en modo comercial: el NIT sale de la cédula, NO se guarda suelto y viaja en la ACTIVACIÓN', async () => {
+    await montar(ventana({ datos: conDatos, faltanAlAbrir: ['factura'] }))
+    expect(campo('activar-nit').value).toBe('900123456-8')
+    expect(campo('activar-correo').value).toBe('laura@correo.co')
+    await escribir('activar-direccion', 'Carrera 43A # 1-50')
+    await act(async () => {
+      porId('activar-iva-no')!.click()
+      porId('activar-acepta')!.click()
     })
     await enviar('paso-factura')
     expect(guardadas).toEqual([
-      { nit: '900123456-8', razonSocial: 'Laura Gómez', email: 'laura@correo.co', address: 'Cra 43A # 1-50', city: 'Medellín', responsableIva: false },
+      { email: 'laura@correo.co', address: 'Carrera 43A # 1-50', city: 'Medellín', department: 'Antioquia', responsableIva: false },
     ])
-    expect(porId('pasos-del-agente-listos')).not.toBeNull()
+    expect(activar).toHaveBeenCalledWith(
+      expect.objectContaining({ nit: '900123456-8', razonSocial: 'Laura Gómez', celular: '3001234567', departamento: 'Antioquia', ciudad: 'Medellín' }),
+    )
+    expect(porId('pasos-para-activar-listos')).not.toBeNull()
+  })
+
+  it('paso 3 con la cuenta ya activa: guarda el NIT con lo demás y no activa otra vez', async () => {
+    await montar(ventana({ datos: conDatos, modoComercial: false, faltanAlAbrir: ['factura'] }))
+    await escribir('activar-direccion', 'Carrera 43A # 1-50')
+    await act(async () => {
+      porId('activar-iva-si')!.click()
+    })
+    await enviar('paso-factura')
+    expect(guardadas).toEqual([expect.objectContaining({ nit: '900123456-8', responsableIva: true })])
+    expect(activar).not.toHaveBeenCalled()
   })
 
   it('paso 3: el 400 del back con el NIT queda bajo el campo NIT, no en un aviso suelto', async () => {
     fallarConCampos = { campo: 'nit', mensaje: 'Otra cuenta ya tiene ese NIT.' }
-    const conDatos = { ...perfil, legalDocumentNumber: '900123456', address: 'x', city: 'y', responsableIva: false } as AgencyProfile
-    await montar(<VentanaDeLosPasos perfil={conDatos} medios={[]} faltanAlAbrir={['factura']} alGuardar={noHaceNada} alCerrar={noHaceNada} />)
+    await montar(ventana({ datos: { ...conDatos, address: 'x', responsableIva: false } as AgencyProfile, modoComercial: false, faltanAlAbrir: ['factura'] }))
     await enviar('paso-factura')
-    expect(document.getElementById('agente-nit-error')?.textContent).toContain('Otra cuenta ya tiene ese NIT.')
-    expect(porId('pasos-del-agente-aviso')).toBeNull()
-    expect(porId('pasos-del-agente-listos')).toBeNull()
+    expect(document.getElementById('activar-nit-error')?.textContent).toContain('Otra cuenta ya tiene ese NIT.')
+    expect(porId('pasos-para-activar-aviso')).toBeNull()
+    expect(porId('pasos-para-activar-listos')).toBeNull()
   })
 })

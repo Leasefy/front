@@ -16,10 +16,16 @@ import type { Agency } from '@/lib/auth/types';
 
 export const INICIO_DEL_MODO_COMERCIAL = '/panel/inmobiliaria/inmuebles';
 
-/** Lo que el asistente pide para activar (NIT, razón social; después el segundo factor). */
+/**
+ * El asistente largo (NIT, razón social; después el segundo factor). Desde el 27-10-2026 la cuenta del marketplace se
+ * activa en los tres pasos cortos (`PasosParaActivar`); esto queda para «¿Ya eres cliente?».
+ */
 export const RUTA_PARA_ACTIVAR = '/onboarding/inmobiliaria';
 
 const ABIERTAS: readonly string[] = [
+  // Pagar desde el panel (Nico, 27-10-2026): «Tu plan» y el pago SIEMPRE abiertos, o no hay cómo pagar.
+  '/panel/inmobiliaria/upgrade',
+  '/panel/inmobiliaria/checkout',
   '/panel/inmobiliaria/inmuebles',
   '/panel/inmobiliaria/pipeline',
   '/panel/inmobiliaria/postulaciones',
@@ -49,4 +55,33 @@ export function abiertaEnModoComercial(ruta: string): boolean {
 
 export function enModoComercial(agency: Pick<Agency, 'modoComercial'> | null | undefined): boolean {
   return agency?.modoComercial === true;
+}
+
+/**
+ * 🔴 Nico, 27-10-2026: el aliado en su mes gratis (y quien ya pagó) VE TODO aunque no haya activado la cuenta. Sin
+ * activar sólo piden «Activar mi cuenta» (los tres pasos cortos, 2 minutos):
+ *   · los agentes de IA y el chat: el micro no conoce la cuenta hasta activarla;
+ *   · lo que mueve plata (pagos, giros, facturación, contabilidad, nómina, conciliación): ahí entra el segundo factor.
+ * Lo demás (contratos, propietarios, inquilinos, mantenimientos, reportes…) se usa de una.
+ */
+const PIDEN_ACTIVAR: readonly string[] = [
+  '/panel/inmobiliaria/pagos',
+  '/panel/inmobiliaria/facturacion',
+  '/panel/inmobiliaria/contabilidad',
+  '/panel/inmobiliaria/nomina',
+  '/panel/inmobiliaria/conciliacion',
+  '/panel/inmobiliaria/retencion',
+  '/panel/inmobiliaria/reportes/ia',
+  '/panel/inmobiliaria/dispersiones',
+  '/panel/inmobiliaria/tesoreria',
+  ...CERRADAS_ADENTRO,
+];
+
+/** ¿Esta ruta pide activar la cuenta a quien ve todo (mes gratis o pagando) sin haberla activado? */
+export function pideActivar(ruta: string): boolean {
+  const limpia = ruta.split(/[?#]/)[0]!.replace(/\/+$/, '') || '/';
+  if (abiertaEnModoComercial(limpia)) return false;
+  // El inicio es el chat de los agentes.
+  if (limpia === '/panel/inmobiliaria') return true;
+  return PIDEN_ACTIVAR.some((p) => esOdebajo(limpia, p));
 }

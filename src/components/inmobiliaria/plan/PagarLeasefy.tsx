@@ -75,10 +75,11 @@ export function PagarLeasefy() {
   }, [cargar]);
 
   const checkout = useAgencyCheckout(() => {
-    void refreshAgency();
+    void refreshAgency({ despuesDeUnCambio: true });
     void refetch();
-    // El agente vuelve con sus tres pasos abiertos (datos, cuenta, factura): `PasosDelAgente` lee `bienvenida`.
-    router.push(agency?.cuentaDeAgente ? '/panel/inmobiliaria?bienvenida=agente' : '/panel/inmobiliaria');
+    // Quien vino del marketplace (agente o inmobiliaria) vuelve con sus tres pasos para activar abiertos
+    // (`PasosParaActivar` lee `bienvenida`); la inmobiliaria de siempre, al panel.
+    router.push(agency?.cuentaDeAgente || agency?.vinoDelMarketplace ? '/panel/inmobiliaria?bienvenida=activar' : '/panel/inmobiliaria');
   });
 
   if (error) return <FalloDeCarga error={error} queEs="tu plan" onReintentar={cargar} />;

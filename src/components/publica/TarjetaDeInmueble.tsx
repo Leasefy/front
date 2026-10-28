@@ -264,14 +264,39 @@ export function TarjetaDeInmueble({
           </div>
         </div>
 
-        {/* Arriendo o venta + tipo */}
+        {/* Para qué se publica (Nico, 28-10: con «Arriendo y venta») y, aparte, el tipo. */}
+        <div className="space-y-2">
+          <p className="text-[13px] font-medium text-fg-muted">Lo publicas para</p>
+          <div className="grid grid-cols-3 gap-1 rounded-full bg-surface-muted p-1" role="radiogroup" aria-label="Lo publicas para" data-testid={`operacion-${numero}`}>
+            {(
+              [
+                ['rent', 'Arriendo'],
+                ['sale', 'Venta'],
+                ['ambos', 'Arriendo y venta'],
+              ] as const
+            ).map(([op, nombre]) => (
+              <button
+                key={op}
+                type="button"
+                role="radio"
+                aria-checked={i.operacion === op}
+                disabled={bloqueada}
+                onClick={() => alCambiar({ operacion: op })}
+                className={cn(
+                  'h-10 rounded-full px-3 text-[14px] font-medium transition-[background-color,color,box-shadow] duration-fast',
+                  i.operacion === op ? 'bg-surface text-fg shadow-[0_1px_3px_rgba(20,19,15,0.12)]' : 'text-fg-muted hover:text-fg',
+                )}
+                data-testid={`operacion-${op}-${numero}`}
+              >
+                {nombre}
+              </button>
+            ))}
+          </div>
+          {i.operacion === 'ambos' && (
+            <p className="text-[12.5px] text-fg-subtle">Sale dos veces con las mismas fotos: en «Arrendar» con el canon y en «Comprar» con el precio de venta.</p>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
-          {(['rent', 'sale'] as const).map((op) => (
-            <Pastilla key={op} activa={i.operacion === op} onClick={() => alCambiar({ operacion: op })}>
-              {op === 'rent' ? 'Arriendo' : 'Venta'}
-            </Pastilla>
-          ))}
-          <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
           {TIPOS.map((t) => (
             <Pastilla key={t.valor} activa={i.tipo === t.valor} aviso={falta('tipo')} onClick={() => alCambiar({ tipo: t.valor })}>
               {t.nombre}
@@ -318,25 +343,23 @@ export function TarjetaDeInmueble({
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
           <Campo etiqueta={i.operacion === 'sale' ? 'Precio de venta' : 'Canon mensual'} aviso={falta('precio')} className="col-span-2 sm:col-span-1">
-            <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-mono text-[15px] text-fg-subtle">$</span>
-              <input
-                className={cn(CAMPO, 'pl-8 font-mono tabular-nums')}
-                inputMode="numeric"
-                value={i.precio ? i.precio.toLocaleString('es-CO') : ''}
-                onChange={(e) => {
-                  const n = Number(e.target.value.replace(/\D/g, ''));
-                  alCambiar({ precio: Number.isFinite(n) && n > 0 ? Math.min(n, 2_000_000_000) : null });
-                }}
-                placeholder={i.operacion === 'sale' ? '450.000.000' : '2.500.000'}
-                data-testid={`precio-${numero}`}
-              />
-            </div>
+            <CampoDePesos
+              valor={i.precio}
+              alCambiar={(v) => alCambiar({ precio: v })}
+              placeholder={i.operacion === 'sale' ? '450.000.000' : '2.500.000'}
+              testid={`precio-${numero}`}
+            />
           </Campo>
           <Numero etiqueta="Habitaciones" valor={i.habitaciones} alCambiar={(v) => alCambiar({ habitaciones: v })} max={20} />
           <Numero etiqueta="Baños" valor={i.banos} alCambiar={(v) => alCambiar({ banos: v })} max={20} />
           <Numero etiqueta="Área m²" valor={i.area} alCambiar={(v) => alCambiar({ area: v })} max={100000} />
         </div>
+
+        {i.operacion === 'ambos' && (
+          <Campo etiqueta="Precio de venta" aviso={falta('precioVenta')} className="sm:max-w-[280px]">
+            <CampoDePesos valor={i.precioVenta ?? null} alCambiar={(v) => alCambiar({ precioVenta: v })} placeholder="450.000.000" testid={`precio-venta-${numero}`} />
+          </Campo>
+        )}
 
         <Campo etiqueta="Descripción (opcional)">
           <textarea
@@ -444,9 +467,36 @@ export function LineaDeEstado({
         <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0" aria-hidden="true" /> {estado.motivo}
       </p>
     );
+  // Después de tocar «Publicar», lo que falta se ve como aviso, no como una línea gris (Nico, 28-10).
+  if (mostrarFaltantes && faltan.length > 0)
+    return (
+      <p className={cn('flex items-start gap-2 rounded-md bg-danger-soft px-3 py-2.5 text-[13.5px] font-medium text-danger', className)} role="alert" data-testid="tarjeta-le-falta">
+        <WarningCircle size={17} weight="fill" className="mt-px shrink-0" aria-hidden="true" /> {fraseDeLoQueFalta(faltan)}
+      </p>
+    );
   return (
-    <p className={cn('text-[13px]', faltan.length === 0 ? 'text-success' : mostrarFaltantes ? 'text-danger' : 'text-fg-subtle', className)}>
+    <p className={cn('text-[13px]', faltan.length === 0 ? 'text-success' : 'text-fg-subtle', className)}>
       {fraseDeLoQueFalta(faltan)}
     </p>
+  );
+}
+
+/** Pesos sin centavos, con los puntos de mil mientras se escribe (lo de siempre de la tarjeta, ahora para dos precios). */
+function CampoDePesos({ valor, alCambiar, placeholder, testid }: { valor: number | null; alCambiar: (v: number | null) => void; placeholder: string; testid: string }) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-mono text-[15px] text-fg-subtle">$</span>
+      <input
+        className={cn(CAMPO, 'pl-8 font-mono tabular-nums')}
+        inputMode="numeric"
+        value={valor ? valor.toLocaleString('es-CO') : ''}
+        onChange={(e) => {
+          const n = Number(e.target.value.replace(/\D/g, ''));
+          alCambiar(Number.isFinite(n) && n > 0 ? Math.min(n, 2_000_000_000) : null);
+        }}
+        placeholder={placeholder}
+        data-testid={testid}
+      />
+    </div>
   );
 }

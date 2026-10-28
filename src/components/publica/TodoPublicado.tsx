@@ -8,7 +8,7 @@ import { ArrowSquareOut, CaretDown, Check, CheckCircle, Copy, SpinnerGap, Whatsa
 import { motionDuration, motionEase } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
-import { tituloDe, type InmuebleRapido } from '@/lib/publica/borrador';
+import { tituloDe, precioEnFrase, type InmuebleRapido } from '@/lib/publica/borrador';
 import type { FotoGuardada } from '@/lib/publica/fotos-guardadas';
 import { cn } from '@/lib/utils';
 
@@ -151,10 +151,7 @@ export function TodoPublicado({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14.5px] font-medium text-fg">{tituloDe(i)}</span>
-                  <span className="block font-mono text-[12.5px] text-fg-subtle">
-                    $ {(i.precio ?? 0).toLocaleString('es-CO')}
-                    {i.operacion === 'rent' ? ' / mes' : ''}
-                  </span>
+                  <span className="block font-mono text-[12.5px] text-fg-subtle">{precioEnFrase(i)}</span>
                 </span>
                 {id && (
                   <Link href={`/propiedades/${id}`} target="_blank" className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-primary hover:underline">

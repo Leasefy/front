@@ -39,7 +39,7 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import type { AgencyProfile } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
-import { marcarActivacionEnCurso, useAlPedirLaActivacion } from '@/lib/conversion/abrir-la-activacion';
+import { marcarActivacionEnCurso, marcarRecienActivada, recienActivada, useAlPedirLaActivacion } from '@/lib/conversion/abrir-la-activacion';
 import { activarLaCuenta } from '@/lib/conversion/activar-la-cuenta';
 import {
   PASOS_PARA_ACTIVAR,
@@ -131,6 +131,11 @@ export function PasosParaActivar() {
   const datos = config?.agency ?? null;
   const [medios, setMedios] = useState<MedioDePago[] | null>(null);
   const [abierto, setAbierto] = useState(false);
+  // La cuenta quedó activa y la escena del segundo factor se llevó la ventana: al volver, la celebración primero.
+  const [celebrarAlVolver, setCelebrarAlVolver] = useState(false);
+  useEffect(() => {
+    if (recienActivada()) setCelebrarAlVolver(true);
+  }, []);
 
   const leerMedios = useCallback(async () => {
     try {
@@ -183,6 +188,19 @@ export function PasosParaActivar() {
   }
   if (!abierto && abiertaCon) setAbiertaCon(null);
 
+  if (celebrarAlVolver && !abierto) {
+    return (
+      <Dialog open onOpenChange={() => undefined}>
+        <DialogContent size="lg" className="overflow-hidden p-0" data-testid="pasos-para-activar" hideClose>
+          <DialogBody className="p-0 sm:p-0">
+            <div className="p-6 md:p-8">
+              <TodoListo perfil={agency?.cuentaDeAgente ? 'agente' : 'inmobiliaria'} recienActivada alCerrar={() => setCelebrarAlVolver(false)} reducido={false} />
+            </div>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+    );
+  }
   if (!abierto || !abiertaCon) return null;
   return (
     <VentanaDeLosPasos
@@ -357,6 +375,7 @@ export function VentanaDeLosPasos({ perfil, enPrueba = false, datos, medios, mod
                               // Recién activa: el back ya pide el segundo factor y volver a leer sería un 403.
                               // Se lee al terminar el paso 4.
                               setActivada(true);
+                              marcarRecienActivada(true);
                               terminar('factura');
                               return;
                             }
@@ -504,6 +523,7 @@ function TodoListo({
   }, [recienActivada, reducido]);
 
   const irAlPanel = () => {
+    marcarRecienActivada(false);
     if (recienActivada) {
       // La cuenta cambió entera (activa, con segundo factor): el panel arranca de cero, sin los 403 de antes.
       window.location.assign('/panel/inmobiliaria');

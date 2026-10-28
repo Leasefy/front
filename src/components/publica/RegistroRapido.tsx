@@ -12,6 +12,7 @@ import { motionSpring, usePrefersReducedMotion } from '@leasefy/cadence';
 import { CampoDeCelularDelMundo } from '@/components/ui/campo-de-celular-del-mundo';
 import { celularEnE164, errorDelCelular } from '@/lib/phone/paises-del-mundo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ApiError } from '@/lib/api/client';
 import { partirElNombre } from '@/app/onboarding/propietario/datos-del-propietario';
 import type { PerfilQuePublica } from '@/components/marketplace/VentanaParaPublicar';
 import { cn } from '@/lib/utils';
@@ -75,7 +76,13 @@ export function RegistroRapido({
       await alTerminar();
     } catch (err) {
       setEnviando(false);
-      setErrores({ general: mensajeParaLaPersona(err, { porDefecto: 'No pudimos guardar tus datos. Intenta de nuevo.', accion: 'guardar tus datos' }) });
+      // Un 401 es la sesión que se cerró (o que el back no pudo verificar): se dice así, nunca «No autorizado» (Nico 28-10).
+      const sinSesion = err instanceof ApiError && err.status === 401;
+      setErrores({
+        general: sinSesion
+          ? 'Tu sesión se cerró. Vuelve a entrar con tu correo y seguimos donde ibas.'
+          : mensajeParaLaPersona(err, { porDefecto: 'No pudimos guardar tus datos. Intenta de nuevo.', accion: 'guardar tus datos' }),
+      });
     }
   };
 
@@ -142,7 +149,7 @@ export function RegistroRapido({
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               maxLength={200}
-              icon="user"
+              autoComplete="name"
               error={errores.nombre}
               data-testid="registro-nombre"
             />

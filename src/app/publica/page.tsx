@@ -9,6 +9,7 @@ import { ArrowLeft } from '@phosphor-icons/react';
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
 import { RegaloDelAliado } from '@/components/conversion/EscenaDeMarca';
+import { PasosDePublicar, type MomentoDePublicar } from '@/components/publica/PasosDePublicar';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -89,6 +90,10 @@ function Publica() {
   // activa al entrar al panel (MesGratisPendiente), ya con su inmobiliaria creada.
   const aliado = useRegaloDelAliado(sp.get('aliado'));
 
+  // Los pasos de arriba (Nico, 28-10: «steps bonitos como los del onboarding viejo»): sólo en el registro corto y al publicar.
+  const [todoPublicado, setTodoPublicado] = useState(false);
+  let momento: MomentoDePublicar | null = null;
+
   let contenido: React.ReactNode;
   if (isLoading) {
     // Centrada (Nico, 27-10: «mira esta carga tan rara»: el logo quedaba arriba a la izquierda).
@@ -110,6 +115,7 @@ function Publica() {
     );
   } else if (!user.onboardingCompleted && !hasActiveAgencyMembership) {
     const nombre = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+    momento = 'datos';
     contenido = (
       <RegistroRapido
         // El perfil de la cuenta llega después (es una lectura): con él, el registro corto vuelve a empezar en el suyo.
@@ -141,9 +147,11 @@ function Publica() {
       </div>
     );
   } else {
+    momento = todoPublicado ? 'listo' : 'inmueble';
     contenido = (
       <PublicadorRapido
         usuario={user.id}
+        alCambiarDeMomento={setTodoPublicado}
         paginaPublica={paginaPublica}
         caminoInicial={caminoInicial}
         operacionInicial={operacionInicial}
@@ -171,6 +179,7 @@ function Publica() {
       </header>
       <main className="px-4 py-10 sm:px-6 sm:py-14">
         {aliado && <RegaloDelAliado aliado={aliado} className="mx-auto mb-8 max-w-[640px]" />}
+        {momento && <PasosDePublicar momento={momento} className="mb-10 sm:mb-12" />}
         {contenido}
       </main>
     </div>

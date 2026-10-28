@@ -97,8 +97,11 @@ export function PublicadorRapido({
   paginaPublica = null,
   caminoInicial = null,
   operacionInicial = null,
+  alCambiarDeMomento,
 }: {
   usuario: string;
+  /** Avisa cuando todo quedó publicado (para los pasos de arriba de la página). */
+  alCambiarDeMomento?: (todoPublicado: boolean) => void;
   /** Dónde sigue después de publicar (su cuenta). */
   alTerminar: { href: string; texto: string };
   /** La página de la inmobiliaria en el marketplace, para compartirlos todos de una. */
@@ -498,6 +501,11 @@ export function PublicadorRapido({
   const listos = porPublicar.filter((i) => !llega(i.clave) && (i.idCreado || loQueFalta(i, cuantasFotos(i.clave)).length === 0));
   const publicados = inmuebles.filter((i) => estados[i.clave]?.que === 'publicado');
   const todosPublicados = inmuebles.length > 0 && publicados.length === inmuebles.length;
+  const avisarMomento = useRef(alCambiarDeMomento);
+  avisarMomento.current = alCambiarDeMomento;
+  useEffect(() => {
+    avisarMomento.current?.(todosPublicados);
+  }, [todosPublicados]);
   const repetidas = useMemo(() => direccionesRepetidas(inmuebles), [inmuebles]);
   const numeroDe = useMemo(() => new Map(inmuebles.map((i, n) => [i.clave, n + 1])), [inmuebles]);
   const hayLlegando = Object.keys(llegando).length > 0;

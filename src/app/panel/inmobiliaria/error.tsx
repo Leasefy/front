@@ -12,7 +12,8 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowsClockwise, WarningOctagon } from '@phosphor-icons/react'
+import { ArrowsClockwise } from '@phosphor-icons/react'
+import { Ilustracion } from '@leasefy/cadence'
 
 export default function ErrorDelPanel({
   error,
@@ -35,13 +36,8 @@ export default function ErrorDelPanel({
         />
 
         <div className="relative mx-auto flex max-w-sm flex-col items-center text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-muted">
-            <WarningOctagon
-              weight="duotone"
-              className="h-5 w-5 text-fg-subtle"
-              aria-hidden="true"
-            />
-          </div>
+          {/* Nico, 27-10-2026: las pantallas del sistema con los 3D de Leasefy. */}
+          <Ilustracion nombre="aviso_importante" tamano={112} tono="auto" alt="" />
 
           <h2 className="mt-5 text-base font-semibold tracking-tight text-fg">
             Esta sección se rompió

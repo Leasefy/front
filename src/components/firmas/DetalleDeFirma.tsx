@@ -205,7 +205,7 @@ export function DetalleDeFirma({ id, donde, alCerrar, alCambiar, pago }: Props) 
             ) : null}
             {doc.estado === 'CANCELADO' ? (
               <p className="rounded-xl bg-surface-muted px-4 py-3 text-body-sm text-fg-muted">
-                Cancelado{doc.canceladoAt ? ` ${fechaYHora(doc.canceladoAt)}` : ''}. {doc.devuelto ? 'La firma volvió a tu bolsa.' : ''}
+                {`Cancelado${doc.canceladoAt ? ` ${fechaYHora(doc.canceladoAt)}` : ''}`.replace(/\.?$/, '.')} {doc.devuelto ? 'La firma volvió a tu bolsa.' : ''}
               </p>
             ) : null}
           </>

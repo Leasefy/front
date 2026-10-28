@@ -168,7 +168,7 @@ function Contenido({
         <Presence show className="flex items-start gap-2.5 rounded-md bg-success-soft px-4 py-3 text-body-sm text-fg" data-testid="ya-firmaste">
           <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
           <span>
-            Firmaste{firmante.firmadoAt ? ` el ${fechaYHora(firmante.firmadoAt)}` : ''}.{' '}
+            {`Firmaste${firmante.firmadoAt ? ` el ${fechaYHora(firmante.firmadoAt)}` : ''}`.replace(/\.?$/, '.')}{' '}
             {documento.estado === 'FIRMADO' ? 'Ya firmaron todos: descárgalo cuando quieras.' : 'Cuando firmen todos te llega el documento firmado al correo.'}
           </span>
         </Presence>

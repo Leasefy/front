@@ -263,6 +263,8 @@ function MantenimientosContent() {
       if (!ok) return;
       try {
         await mantenimientoApi.eliminar(s.id);
+        // Si se eliminó desde el detalle, el cajón se cierra: ya no hay qué mostrar.
+        setIsMantenimientoViewerOpen(false);
         toast.success('Arreglo eliminado', { description: s.title });
         await recargarMantenimientos();
       } catch (e) {
@@ -914,6 +916,8 @@ function MantenimientosContent() {
               }
             : undefined
         }
+        // Nico 28-10: eliminar también desde el detalle (el tablero abre éste).
+        onEliminar={puedeEliminar ? (s) => void eliminarArreglo(s) : undefined}
       />
 
       {/* Agregarle una cotización a una solicitud ya creada. Vive en la página

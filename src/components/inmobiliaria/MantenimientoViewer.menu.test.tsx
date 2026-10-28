@@ -281,3 +281,40 @@ describe('🔴 SO-14 — el cajón tiene la acción de cada paso', () => {
     expect(document.body.querySelector('[data-testid="calificar-proveedor-dialogo"]')).not.toBeNull();
   });
 });
+
+/**
+ * Nico, 28-10-2026: «dentro de mantenimientos no está la opción de eliminar… los admin sí podrían». El tablero abre
+ * este cajón, así que «Eliminar» vive acá también, en TODOS los estados (también cerrada o cancelada).
+ */
+describe('Eliminar desde el detalle (sólo el administrador)', () => {
+  function montarConEliminar(solicitud: SolicitudMantenimiento, onEliminar?: (s: SolicitudMantenimiento) => void) {
+    act(() => {
+      root.render(
+        <MantenimientoViewer solicitud={solicitud} isOpen onClose={vi.fn()} onEliminar={onEliminar} />,
+      );
+    });
+  }
+  const eliminar = () => document.body.querySelector<HTMLElement>('[data-testid="mantenimiento-detalle-eliminar"]');
+
+  it.each(['reported', 'in_progress', 'completed', 'cancelled'] as const)(
+    'con permiso, una solicitud %s ofrece «Eliminar» y avisa con ESA solicitud',
+    async (status) => {
+      const onEliminar = vi.fn();
+      const s = hacerSolicitud({ id: `sol-${status}`, status });
+      montarConEliminar(s, onEliminar);
+      expect(menu()).not.toBeNull();
+      await abrirMenu();
+      expect(eliminar()?.textContent).toContain('Eliminar');
+      await act(async () => {
+        eliminar()!.click();
+        await new Promise((r) => setTimeout(r, 0));
+      });
+      expect(onEliminar).toHaveBeenCalledWith(s);
+    },
+  );
+
+  it('sin permiso no aparece (y una cerrada sin nada que hacerle sigue sin menú)', () => {
+    montarConEliminar(hacerSolicitud({ status: 'completed' }));
+    expect(menu()).toBeNull();
+  });
+});

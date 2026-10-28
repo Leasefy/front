@@ -410,11 +410,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
                 sueltos quedaban como una lista sin llaves (aviso de React). */}
             <BarraDelMesGratis />
             <CandadoDelModoComercial>
-              <>
-                <SeccionesDelModulo />
-                <CabeceraDelAgente />
-                {children}
-              </>
+              {/* Con llaves: React 19 en dev avisaba «lista sin key» por estos tres (27-10-2026). */}
+              <div className="contents" key="pantalla">
+                <SeccionesDelModulo key="secciones" />
+                <CabeceraDelAgente key="cabecera" />
+                <div className="contents" key="contenido">{children}</div>
+              </div>
             </CandadoDelModoComercial>
             {/* Nico, 10-10-2026: el plan gratuito recibe una invitación por
                 función (solo invita, nunca cierra nada); sólo el administrador. */}

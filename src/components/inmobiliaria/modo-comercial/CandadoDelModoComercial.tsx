@@ -62,7 +62,7 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
     if (esElInicio) router.replace(INICIO_DEL_MODO_COMERCIAL);
   }, [esElInicio, router]);
 
-  if (!conCandado && !faltaActivar) return <>{children}</>;
+  if (!conCandado && !faltaActivar) return children;
   if (esElInicio) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -71,16 +71,19 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
     );
   }
   const abierta = abiertaEnModoComercial(pathname);
+  // Con llaves: lo de adentro cambia de rama (abierta / activar / cerrada) y la bienvenida va al lado.
   return (
     <>
-      {abierta ? (
-        children
-      ) : faltaActivar ? (
-        <ActivarTuCuenta acceso={agency?.acceso ?? null} />
-      ) : (
-        <ParteCerrada ruta={pathname} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} esAgente={agency?.cuentaDeAgente === true} />
-      )}
-      {comercial && <BienvenidaComercial agencyId={agency?.id ?? null} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} />}
+      <div key="contenido" className="contents">
+        {abierta ? (
+          children
+        ) : faltaActivar ? (
+          <ActivarTuCuenta acceso={agency?.acceso ?? null} />
+        ) : (
+          <ParteCerrada ruta={pathname} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} esAgente={agency?.cuentaDeAgente === true} />
+        )}
+      </div>
+      {comercial ? <BienvenidaComercial key="bienvenida" agencyId={agency?.id ?? null} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} /> : null}
     </>
   );
 }

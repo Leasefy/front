@@ -137,7 +137,7 @@ export function ModalDelPlan() {
     <Dialog open onOpenChange={(o) => !o && cerrar()}>
       <DialogContent size="lg" className="overflow-hidden p-0" data-testid={`modal-del-plan-${momento.tipo}`}>
         <div className="grid md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
-          <div className="relative flex items-center justify-center overflow-hidden bg-primary-soft px-6 py-12">
+          <div className="relative flex items-center justify-center overflow-hidden rounded-2xl bg-primary-soft px-6 py-12">
             {[18, 13, 8].map((rem, i) => (
               <motion.span
                 key={rem}

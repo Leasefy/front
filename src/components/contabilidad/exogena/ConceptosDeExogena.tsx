@@ -38,11 +38,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { codigoDelPucParaOrdenar } from '@/lib/contabilidad/codigo-del-puc-para-ordenar';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
   TableBodyAnimado,
@@ -122,8 +125,18 @@ export function ConceptosDeExogena({
     );
   }, [busqueda, conceptos]);
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Se ordena por lo GUARDADO
+  // (no por lo que se está escribiendo: la fila no salta mientras se edita), y la lista entera antes de la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(visibles, {
+    cuenta: (c) => codigoDelPucParaOrdenar(c.codigo),
+    formato: (c) => c.formato,
+    concepto: (c) => c.concepto,
+    fuente: (c) => (c.fuente === 'AGENCIA' ? 'Lo fijó el contador' : 'Propuesto por Leasefy'),
+  });
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: `${anio}|${busqueda}` });
+    useTablePagination(ordenadas, {
+      resetKey: `${anio}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
+    });
 
   const guardar = async () => {
     if (!conceptos) return;
@@ -250,6 +263,19 @@ export function ConceptosDeExogena({
               data-testid="buscar-concepto"
             />
           </div>
+          {conceptos.conceptos.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'cuenta', sentido: 'asc', etiqueta: 'Cuenta del PUC' },
+                { campo: 'formato', sentido: 'asc', etiqueta: 'Formato' },
+                { campo: 'concepto', sentido: 'asc', etiqueta: 'Concepto' },
+                { campo: 'fuente', sentido: 'desc', etiqueta: 'Propuestos primero' },
+              ]}
+            />
+          ) : null}
           <p className="pb-2 text-caption text-fg-muted" data-testid="cuantos-conceptos">
             {/* «1 cuentas» no: el plural se decide con el número, igual que en
                 el back. Y buscando se dice «de cuántas», para que no parezca
@@ -263,10 +289,10 @@ export function ConceptosDeExogena({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Cuenta del PUC</TableHead>
-                <TableHead>Formato</TableHead>
-                <TableHead>Concepto</TableHead>
-                <TableHead>De dónde sale</TableHead>
+                <EncabezadoOrdenable campo="cuenta" orden={orden} onOrdenar={ordenarPor}>Cuenta del PUC</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="formato" orden={orden} onOrdenar={ordenarPor}>Formato</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="concepto" orden={orden} onOrdenar={ordenarPor}>Concepto</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="fuente" orden={orden} onOrdenar={ordenarPor}>De dónde sale</EncabezadoOrdenable>
               </TableRow>
             </TableHeader>
             <TableBodyAnimado>

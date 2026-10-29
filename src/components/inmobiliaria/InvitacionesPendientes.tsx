@@ -57,6 +57,9 @@ import {
   type PersonaPendiente,
 } from '@/lib/api/invitaciones.service';
 import { CORREO_APAGADO_EN_PRUEBAS } from '@/lib/texto/correo-apagado'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 
 /** Cuántas filas se listan en el cajón. El total real va en la cabecera. */
 const A_LA_VISTA = 50;
@@ -191,6 +194,17 @@ export function InvitacionesPendientes({ version = 0 }: {
   }, [cargar, version]);
 
   const diasDeVigencia = personas.find((p) => p.diasDeVigencia)?.diasDeVigencia ?? DIAS_DE_VIGENCIA_POR_DEFECTO;
+
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de las salidas
+  // tempranas (es un hook). Ordena las que están en el cajón; sin orden elegido, las más recientes primero (el back).
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    personas,
+    {
+      persona: (p) => p.nombre ?? p.correo,
+      invitacion: (p) => p.creada,
+    },
+    { primero: { invitacion: 'desc' } },
+  );
 
   /**
    * Manda hasta agotar, llamando por tandas.
@@ -425,6 +439,20 @@ export function InvitacionesPendientes({ version = 0 }: {
         <CajonCuerpo>
           {/* Cargando → la lista: se cruzan (`popLayout`: la tabla entra YA y
               el esqueleto se va por encima). */}
+          {!cargando && personas.length > 1 ? (
+            <div className="mb-3 flex justify-end">
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full sm:w-56"
+                formas={[
+                  { campo: 'invitacion', sentido: 'desc', etiqueta: 'Cuenta más reciente' },
+                  { campo: 'invitacion', sentido: 'asc', etiqueta: 'Cuenta más antigua' },
+                  { campo: 'persona', sentido: 'asc', etiqueta: 'Persona (A–Z)' },
+                ]}
+              />
+            </div>
+          ) : null}
           <CrossFade swapKey={cargando ? 'cargando' : 'lista'} mode="popLayout">
             {cargando ? (
               <EsqueletoTabla columnas={3} filas={6} />
@@ -441,9 +469,18 @@ export function InvitacionesPendientes({ version = 0 }: {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="pl-6">Persona</TableHead>
+                      <EncabezadoOrdenable campo="persona" orden={orden} onOrdenar={ordenarPor} className="pl-6">
+                        Persona
+                      </EncabezadoOrdenable>
                       {/* A 390 px la columna no cabe: su dato baja bajo el nombre. */}
-                      <TableHead className="hidden sm:table-cell">Invitación</TableHead>
+                      <EncabezadoOrdenable
+                        campo="invitacion"
+                        orden={orden}
+                        onOrdenar={ordenarPor}
+                        className="hidden sm:table-cell"
+                      >
+                        Invitación
+                      </EncabezadoOrdenable>
                       <TableHead className="pr-6">
                         <span className="sr-only">Acción</span>
                       </TableHead>
@@ -459,14 +496,14 @@ export function InvitacionesPendientes({ version = 0 }: {
                         </TableCell>
                       </TableRowAnimada>
                     ) : (
-                      personas.map((p) => (
+                      ordenadas.map((p) => (
                         <TableRowAnimada key={p.id} data-testid="invitacion-fila">
                           <TableCell className="pl-6">
                             <span className="block text-sm font-medium text-fg">
                               {p.nombre ?? p.correo}
                             </span>
                             {p.nombre ? (
-                              <span className="block text-xs text-fg-muted">{p.correo}</span>
+                              <span className="block text-caption text-fg-muted">{p.correo}</span>
                             ) : null}
                             <div className="mt-1 text-sm text-fg-muted sm:hidden">
                               <EstadoDeLaInvitacion persona={p} />
@@ -498,7 +535,7 @@ export function InvitacionesPendientes({ version = 0 }: {
           </CrossFade>
 
           {total > personas.length ? (
-            <p className="mt-3 text-xs text-fg-muted">
+            <p className="mt-3 text-caption text-fg-muted">
               Se listan las {personas.length} más recientes. «Enviar a todos»
               las cubre todas, incluidas las {total - personas.length} que no
               están en pantalla.
@@ -577,7 +614,7 @@ function EstadoDeLaInvitacion({ persona: p, conIds = false }: { persona: Persona
           que esa no llegó: decirlo evita que alguien crea
           que el botón no hizo nada. */}
       {p.ultimoEnvio ? (
-        <span className="block text-xs">
+        <span className="block text-caption">
           Se intentó el {comoFecha(p.ultimoEnvio)}
         </span>
       ) : null}

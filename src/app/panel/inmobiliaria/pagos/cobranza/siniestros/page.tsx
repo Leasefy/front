@@ -41,6 +41,9 @@ import {
   useTablePagination,
   PAGE_SIZE_OPTIONS,
 } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import {
   useInsuranceClaims,
   type InsuranceClaimStatus,
@@ -115,7 +118,7 @@ function SiniestrosContent() {
     void refetch()
   }, [refetch])
 
-  const claims = data?.claims ?? []
+  const claims = useMemo(() => data?.claims ?? [], [data])
   // Revisora r25 (#3): buscar por deudor (nombre o documento) entre los cargados.
   const [buscar, setBuscar] = useState('')
   const q = buscar.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
@@ -137,6 +140,20 @@ function SiniestrosContent() {
    * Paginado de presentación. `resetKey` con los filtros: sin eso, filtrar
    * estando en la página 3 deja la tabla vacía y se lee como «no hay nada».
    */
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      deudor: (c) => c.debtorName ?? null,
+      saldo: (c) => c.outstandingCop,
+      aseguradora: (c) => c.aseguradora ?? null,
+      estado: (c) => c.status,
+      creado: (c) => c.createdAt,
+      radicado: (c) => c.filedAt ?? null,
+      aprobo: (c) => c.approvedByEmail ?? null,
+    },
+    { primero: { saldo: 'desc', creado: 'desc', radicado: 'desc' } },
+  )
   const {
     pageItems,
     total,
@@ -145,7 +162,7 @@ function SiniestrosContent() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(visibles, { resetKey: `${statusFilter ?? ''}|${q}` })
+  } = useTablePagination(ordenadas, { resetKey: `${statusFilter ?? ''}|${q}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
   const hasFilters = statusFilter !== undefined
 
   // Conteo y saldo por estado: se saben cuando la lista viene sin filtro (trae
@@ -323,6 +340,19 @@ function SiniestrosContent() {
             data-testid="siniestros-buscar"
           />
         </div>
+        {visibles.length > 1 ? (
+          <SelectorDeOrden
+            orden={orden}
+            onCambiar={setOrden}
+            className="w-full sm:w-52"
+            formas={[
+              { campo: 'creado', sentido: 'desc', etiqueta: isEs ? 'Más recientes' : 'Newest' },
+              { campo: 'saldo', sentido: 'desc', etiqueta: isEs ? 'Mayor saldo en mora' : 'Highest outstanding' },
+              { campo: 'deudor', sentido: 'asc', etiqueta: isEs ? 'Deudor (A–Z)' : 'Debtor (A–Z)' },
+              { campo: 'estado', sentido: 'asc', etiqueta: isEs ? 'Estado' : 'Status' },
+            ]}
+          />
+        ) : null}
       </div>
 
       {/* Error */}
@@ -341,25 +371,25 @@ function SiniestrosContent() {
               {/* Destinatario y monto primero: la tabla mostraba aseguradora,
                   estado y fechas, o sea que aprobar un siniestro era autorizar
                   un reclamo sin saber de quién ni por cuánto. */}
-              <TableHead>{isEs ? 'Deudor' : 'Debtor'}</TableHead>
-              <TableHead className="text-right">
+              <EncabezadoOrdenable campo="deudor" orden={orden} onOrdenar={ordenarPor}>{isEs ? 'Deudor' : 'Debtor'}</EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="saldo" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">
                 {isEs ? 'Saldo en mora' : 'Outstanding'}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="aseguradora" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.aseguradora')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.status')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="creado" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.createdAt')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="radicado" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.filedAt')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="aprobo" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.approvedBy')}
-              </TableHead>
+              </EncabezadoOrdenable>
             </TableRow>
           </TableHeader>
           {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}

@@ -45,8 +45,10 @@ import {
 } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import { SelectorDeFotosDelMantenimiento } from '@/components/inmobiliaria/mantenimiento/SelectorDeFotosDelMantenimiento';
 import { ProveedorDeLaSolicitud } from '@/components/inmobiliaria/mantenimiento/ProveedorDeLaSolicitud';
+import { SeccionQuienGestiona } from '@/components/inmobiliaria/mantenimiento/QuienGestiona';
 import type {
   Consignacion,
+  GestionadoPor,
   MantenimientoType,
   MantenimientoPriority,
   MantenimientoPaidBy,
@@ -73,6 +75,8 @@ export interface MantenimientoFormData {
   paidBy: MantenimientoPaidBy;
   /** Portofino 22-10: el proveedor con el que se va a trabajar. Opcional. */
   proveedorId?: string;
+  /** Portofino 29-10: quién gestiona la reparación. Ausente = la inmobiliaria. */
+  gestionadoPor?: GestionadoPor;
 }
 
 /**
@@ -86,6 +90,7 @@ export type CampoDelMantenimiento =
   | 'title'
   | 'description'
   | 'photoUrls'
+  | 'gestionadoPor'
   | 'paidBy'
   | 'proveedorId';
 
@@ -97,6 +102,7 @@ export const CAMPOS_DEL_MANTENIMIENTO: readonly CampoDelMantenimiento[] = [
   'title',
   'description',
   'photoUrls',
+  'gestionadoPor',
   'paidBy',
   'proveedorId',
 ];
@@ -596,6 +602,7 @@ export function MantenimientoForm({
     fotos: File[];
     paidBy: MantenimientoPaidBy;
     proveedorId: string | undefined;
+    gestionadoPor: GestionadoPor;
   }>({
     consignacionId: preselectedConsignacionId || '',
     type: '',
@@ -605,6 +612,8 @@ export function MantenimientoForm({
     fotos: [],
     paidBy: 'owner',
     proveedorId: undefined,
+    // Portofino 29-10: por defecto la gestiona la inmobiliaria (el flujo de siempre).
+    gestionadoPor: 'inmobiliaria',
   });
   // El aviso de prioridad alta se cierra con su altura: mientras se va, sigue
   // diciendo lo que decía (no salta al texto de la otra prioridad).
@@ -718,6 +727,8 @@ export function MantenimientoForm({
       fotos: formData.fotos.length > 0 ? formData.fotos : undefined,
       paidBy: formData.paidBy,
       ...(formData.proveedorId ? { proveedorId: formData.proveedorId } : {}),
+      // Sólo si no es la inmobiliaria: un back anterior sigue recibiendo lo de siempre.
+      ...(formData.gestionadoPor !== 'inmobiliaria' ? { gestionadoPor: formData.gestionadoPor } : {}),
     });
   };
 
@@ -879,7 +890,16 @@ export function MantenimientoForm({
         </div>
       </div>
 
+      {/* Portofino 29-10: quién gestiona la reparación. Con otro que la inmobiliaria no hay
+          cotizaciones, descuentos ni cobros: «quién paga» deja de aplicar y se pliega. */}
+      <SeccionQuienGestiona
+        valor={formData.gestionadoPor}
+        onCambiar={(g) => updateField('gestionadoPor', g)}
+        error={errors.gestionadoPor}
+      />
+
       {/* Section 3: Responsibility */}
+      <Collapse open={formData.gestionadoPor === 'inmobiliaria'}>
       <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
         <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           <Wallet className="h-4 w-4 text-fg-muted" />
@@ -895,6 +915,7 @@ export function MantenimientoForm({
           <ErrorDelCampo id="mantenimiento-paidBy-error" mensaje={errors.paidBy} />
         </div>
       </div>
+      </Collapse>
 
       {/* Section 4: Proveedor (opcional). Portofino 22-10: «al hacer la
           solicitud, elegir con qué proveedor vamos a trabajar». */}

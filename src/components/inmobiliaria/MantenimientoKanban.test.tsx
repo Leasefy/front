@@ -322,3 +322,62 @@ describe('MantenimientoKanban — el tablero vacío (M6)', () => {
     expect(container.querySelector('[data-testid="crear-el-primero"]')).toBeNull();
   });
 });
+
+describe('MantenimientoKanban — quién gestiona la reparación (Portofino, 29-10-2026)', () => {
+  const marca = (id: string) =>
+    tarjeta(id).querySelector<HTMLElement>('[data-testid="marca-de-la-gestion"]');
+
+  it('la que gestiona otro lleva su marca discreta; la de la inmobiliaria, ninguna', () => {
+    montar({
+      data: [
+        hacerSolicitud({ id: 'inmo' }),
+        hacerSolicitud({ id: 'prop', gestionadoPor: 'propietario' }),
+        hacerSolicitud({ id: 'admin', gestionadoPor: 'administracion' }),
+        hacerSolicitud({ id: 'inq', gestionadoPor: 'inquilino' }),
+      ],
+    });
+    expect(marca('inmo')).toBeNull();
+    expect(marca('prop')!.textContent).toBe('Gestiona: el propietario');
+    expect(marca('admin')!.textContent).toBe('Gestiona: la administración');
+    expect(marca('inq')!.textContent).toBe('Gestiona: el inquilino');
+  });
+
+  it('un back anterior sin el campo: todas son de la inmobiliaria', () => {
+    montar({ data: [hacerSolicitud({ id: 'vieja', gestionadoPor: undefined, seguimientoExterno: undefined })] });
+    expect(marca('vieja')).toBeNull();
+  });
+
+  it('«la hace el propietario» (22-10) lleva UNA sola marca, la misma, también con un back anterior', () => {
+    const laHace = {
+      loDecidio: 'PROPIETARIO' as const,
+      nota: null,
+      desde: '2026-10-27T10:00:00.000Z',
+      terminadaAt: null,
+      terminadaNota: null,
+    };
+    montar({
+      data: [
+        hacerSolicitud({ id: 'nuevo', gestionadoPor: 'propietario', laHaceElPropietario: laHace }),
+        hacerSolicitud({ id: 'viejo', laHaceElPropietario: laHace }),
+      ],
+    });
+    for (const id of ['nuevo', 'viejo']) {
+      expect(tarjeta(id).querySelectorAll('[data-testid="marca-de-la-gestion"]')).toHaveLength(1);
+      expect(marca(id)!.textContent).toBe('Gestiona: el propietario');
+      expect(tarjeta(id).textContent).not.toContain('La hace el propietario');
+    }
+  });
+
+  it('soltarla en «Aprobada» pasa primero por la página: si ella se encarga, no se mueve', async () => {
+    const alSoltar = vi.fn(() => true);
+    const { onStatusChange } = montar({
+      data: [hacerSolicitud({ gestionadoPor: 'propietario' })],
+      alSoltar,
+    });
+    await act(async () => {
+      await manejadores.onDragEnd?.({ active: { id: 'sol-1' }, over: { id: 'approved' } });
+    });
+    expect(alSoltar).toHaveBeenCalledWith(expect.objectContaining({ gestionadoPor: 'propietario' }), 'approved');
+    expect(onStatusChange).not.toHaveBeenCalled();
+  });
+});

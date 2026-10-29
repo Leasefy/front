@@ -34,6 +34,8 @@ import type {
   Dispersion,
   DispersionSummary,
   SolicitudMantenimiento,
+  GestionadoPor,
+  EtapaDelSeguimiento,
   MantenimientoQuote,
   NuevaCotizacion,
   Renovacion,
@@ -1815,6 +1817,39 @@ export const mantenimientoApi = {
   async update(id: string, data: Partial<SolicitudMantenimiento>): Promise<SolicitudMantenimiento> {
     return mantenimientoDelBack(
       await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, mantenimientoAlBack(data)),
+    );
+  },
+
+  /**
+   * Portofino 29-10-2026: cambiar quién GESTIONA la reparación
+   * (`PUT :id { gestionadoPor }`). A otro, sólo antes de aprobar una
+   * cotización (409 `GESTION_CON_COTIZACION_APROBADA`); volverla a la
+   * inmobiliaria cuando la hace el propietario es retomarla. Sin la migración
+   * del back, 503 `GESTIONADO_POR_SIN_MIGRAR` con su frase.
+   */
+  async cambiarGestion(id: string, gestionadoPor: GestionadoPor): Promise<SolicitudMantenimiento> {
+    return mantenimientoApi.update(id, { gestionadoPor });
+  },
+
+  /**
+   * Portofino 29-10-2026: un paso del seguimiento por avisos de una reparación
+   * que NO gestiona la inmobiliaria (`POST :id/seguimiento { etapa, nota? }`):
+   * `visita` no mueve la tarjeta, `en_arreglo` la pasa a «En arreglo» y
+   * `terminado` a «Completada», sin cotización, aprobación ni costo. Responde
+   * la solicitud completa. 400 `GESTIONADA_POR_LA_INMOBILIARIA` /
+   * `SOLICITUD_CANCELADA`; 503 `GESTIONADO_POR_SIN_MIGRAR`.
+   */
+  async registrarSeguimiento(
+    id: string,
+    etapa: EtapaDelSeguimiento,
+    nota?: string | null,
+  ): Promise<SolicitudMantenimiento> {
+    const limpia = nota?.trim();
+    return mantenimientoDelBack(
+      await apiClient.post<SolicitudMantenimiento>(
+        `${BASE}/mantenimiento/${encodeURIComponent(id)}/seguimiento`,
+        limpia ? { etapa, nota: limpia } : { etapa },
+      ),
     );
   },
 

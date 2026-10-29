@@ -1276,9 +1276,33 @@ export interface SolicitudMantenimiento {
    * aprobación está en `aprobacionDelPropietario.diferidaEn`.
    */
   diferida?: { PROPIETARIO?: LadoDiferido; INQUILINO?: LadoDiferido } | null;
+  /**
+   * Portofino 29-10-2026: quién GESTIONA la reparación (no quién la paga). Con
+   * otro que la inmobiliaria no hay cotizaciones, ni descuentos, ni cobros: se
+   * lleva el seguimiento por avisos. Ausente con un back anterior = la
+   * inmobiliaria; se lee con `gestionDeLaSolicitud` (`lib/mantenimiento/gestionado-por.ts`).
+   */
+  gestionadoPor?: GestionadoPor;
+  /** Los pasos de ese seguimiento (visita, en arreglo, terminado). Ausente con un back anterior = ninguno. */
+  seguimientoExterno?: PasoDelSeguimientoExterno[];
 
   createdAt: string;
   updatedAt: string;
+}
+
+/** Quién gestiona una reparación (Portofino, 29-10-2026). */
+export type GestionadoPor = 'inmobiliaria' | 'propietario' | 'administracion' | 'inquilino';
+
+/** En qué va una reparación que gestiona otro: `visita` no mueve la tarjeta; `en_arreglo` y `terminado` sí. */
+export type EtapaDelSeguimiento = 'visita' | 'en_arreglo' | 'terminado';
+
+/** Un paso del seguimiento por avisos, tal como lo manda el back. */
+export interface PasoDelSeguimientoExterno {
+  etapa: EtapaDelSeguimiento;
+  nota: string | null;
+  /** ISO-8601. */
+  fecha: string;
+  registradoPorUserId: string | null;
 }
 
 /** La reparación que hace el propietario por su cuenta (Portofino, 22-10-2026). */

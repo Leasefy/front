@@ -116,7 +116,7 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 23-10 tarde: 296 con el glow up de Mantenimiento (proveedor de la solicitud, quién la hace, importar proveedores).
 // 23-10 tarde: 291 con el glow up del portal del propietario (las que hago yo, terminaciones por decidir, descuento por partes).
 // 23-10 tarde: 283 con el glow up de Pagos del inquilino (pagar varios inmuebles y escoger de qué inmueble).
-const CUANTOS_HABIA = 226; // 29-10: bajó con el aviso y la nota del proveedor en «Agregar cotización» (Mantenimientos), y antes con las tablas que se ordenan (Invitaciones pendientes y Prioridad de pagos; antes 233 con la tarjeta de Estudios, 235 el 28-10 con Firmas y mejoras)
+const CUANTOS_HABIA = 222; // 29-10: bajó con la marca «Gestiona: …» y el proveedor de las tarjetas de Mantenimientos (tablero y lista; antes 226), con el aviso y la nota del proveedor en «Agregar cotización» (Mantenimientos), y antes con las tablas que se ordenan (Invitaciones pendientes y Prioridad de pagos; antes 233 con la tarjeta de Estudios, 235 el 28-10 con Firmas y mejoras)
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

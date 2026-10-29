@@ -186,6 +186,11 @@ function solicitudes(): SolicitudMantenimiento[] {
         terminadaAt: null,
         terminadaNota: null,
       },
+      // Portofino 29-10: la que hace el propietario se lee como gestionada por él, con su seguimiento por avisos.
+      gestionadoPor: 'propietario',
+      seguimientoExterno: [
+        { etapa: 'visita', nota: 'El maestro fue a mirarla; vuelve el sábado con la bisagra.', fecha: haceRato(2 * DIA), registradoPorUserId: null },
+      ],
     },
     {
       ...base(5, 'demo-mant-6', 12 * DIA),

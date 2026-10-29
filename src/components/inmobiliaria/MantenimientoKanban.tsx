@@ -35,11 +35,11 @@ import {
   Check,
   ListBullets,
   CalendarBlank,
-  UserCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { MarcaDeLaGestion } from '@/components/inmobiliaria/mantenimiento/QuienGestiona';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -269,24 +269,15 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
 
       {/* Portofino 22-10: con quién se trabaja. */}
       {solicitud.proveedor && (
-        <div className="text-xs text-fg-muted dark:text-fg-subtle mb-2 line-clamp-1" data-testid="tarjeta-proveedor">
+        <div className="text-caption text-fg-muted dark:text-fg-subtle mb-2 line-clamp-1" data-testid="tarjeta-proveedor">
           <Truck className="w-3 h-3 inline mr-1" aria-hidden="true" />
           {solicitud.proveedor.nombre}
         </div>
       )}
 
-      {/* Portofino 22-10: la arregla el propietario por su cuenta. */}
-      {solicitud.laHaceElPropietario && !solicitud.laHaceElPropietario.terminadaAt && (
-        <div className="mb-2">
-          <span
-            className="inline-flex items-center gap-1 rounded bg-warning-soft px-1.5 py-0.5 text-xs font-medium text-warning"
-            data-testid="tarjeta-la-hace-el-propietario"
-          >
-            <UserCircle className="w-3 h-3" aria-hidden="true" />
-            La hace el propietario
-          </span>
-        </div>
-      )}
+      {/* Portofino 29-10: quién la gestiona, si no es la inmobiliaria («Gestiona: el propietario»).
+          Reemplaza la marca de «La hace el propietario» (22-10), que es el mismo caso. */}
+      <MarcaDeLaGestion solicitud={solicitud} className="mb-2 flex max-w-full" />
 
       {/* Footer */}
       {/* SO-15: con cinco columnas la tarjeta es angosta: el pie se parte en

@@ -70,6 +70,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { MarcaDeLaGestion } from '@/components/inmobiliaria/mantenimiento/QuienGestiona';
+import { gestionDeLaSolicitud } from '@/lib/mantenimiento/gestionado-por';
 import { diasDeCalendarioDesde } from '@/lib/fechas/dias-de-calendario';
 
 // ============================================================================
@@ -406,14 +408,15 @@ function MantenimientoCard({
               <span className="text-sm">{t('inmobiliaria.mantenimiento.viewDetail')}</span>
             </DropdownListItem>
 
-            {solicitud.status === 'reported' && onAddQuote && (
+            {/* Portofino 29-10: la que gestiona otro no se cotiza. */}
+            {solicitud.status === 'reported' && onAddQuote && gestionDeLaSolicitud(solicitud) === 'inmobiliaria' && (
               <DropdownListItem className="gap-3 text-primary" onClick={() => onAddQuote()}>
                 <CurrencyCircleDollar className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.mantenimiento.addQuote')}</span>
               </DropdownListItem>
             )}
 
-            {solicitud.status === 'quoted' && solicitud.quotes.length > 0 && onApproveQuote && (
+            {solicitud.status === 'quoted' && solicitud.quotes.length > 0 && onApproveQuote && gestionDeLaSolicitud(solicitud) === 'inmobiliaria' && (
               <DropdownListItem className="gap-3 text-success" onClick={() => onApproveQuote(solicitud.quotes[0].id)}>
                 <Check className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.mantenimiento.approveQuote')}</span>
@@ -465,7 +468,7 @@ function MantenimientoCard({
         </div>
         {/* Portofino 22-10: con quién se trabaja. */}
         {solicitud.proveedor && (
-          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground" data-testid="lista-proveedor">
+          <div className="flex items-center gap-2 mt-1 text-caption text-muted-foreground" data-testid="lista-proveedor">
             <Truck className="w-3 h-3" aria-hidden="true" />
             <span className="line-clamp-1">{solicitud.proveedor.nombre}</span>
           </div>
@@ -486,16 +489,9 @@ function MantenimientoCard({
           {t(statusStyle.labelKey)}
         </span>
 
-        {/* Portofino 22-10: la arregla el propietario por su cuenta. */}
-        {solicitud.laHaceElPropietario && !solicitud.laHaceElPropietario.terminadaAt && (
-          <span
-            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning-soft text-warning"
-            data-testid="lista-la-hace-el-propietario"
-          >
-            <User className="w-3 h-3 mr-1" />
-            La hace el propietario
-          </span>
-        )}
+        {/* Portofino 29-10: quién la gestiona, si no es la inmobiliaria («Gestiona: el propietario»).
+            Reemplaza la marca de «La hace el propietario» (22-10), que es el mismo caso. */}
+        <MarcaDeLaGestion solicitud={solicitud} />
       </div>
 
       {/* Footer Info */}

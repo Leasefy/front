@@ -36,10 +36,12 @@ const h = vi.hoisted(() => ({
     updateStatus: vi.fn(),
     addQuote: vi.fn(),
     subirFoto: vi.fn(),
+    registrarSeguimiento: vi.fn(),
   },
   mantenimientos: [] as unknown[],
   ultimoForm: null as Props | null,
   ultimoViewer: null as Props | null,
+  ultimoKanban: null as Props | null,
 }))
 
 vi.mock('@/components/auth/PageGuard', () => ({
@@ -71,7 +73,10 @@ vi.mock('@/lib/hooks/useInmobiliaria', () => ({
 // qué les pasa la página.
 vi.mock('@/components/inmobiliaria', () => ({
   MantenimientoList: () => null,
-  MantenimientoKanban: () => null,
+  MantenimientoKanban: (props: Props) => {
+    h.ultimoKanban = props
+    return null
+  },
   AgregarCotizacionDialog: () => null,
   MantenimientoForm: (props: Props) => {
     h.ultimoForm = props
@@ -95,6 +100,7 @@ beforeEach(() => {
   h.mantenimientos = []
   h.ultimoForm = null
   h.ultimoViewer = null
+  h.ultimoKanban = null
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -513,5 +519,126 @@ describe('Las fotos de una solicitud nueva', () => {
     h.api.create.mockRejectedValue(falloNuestro())
     await crearCon([archivo('a.jpg')])
     expect(h.api.subirFoto).not.toHaveBeenCalled()
+  })
+})
+
+describe('Quién gestiona la reparación (Portofino, 29-10-2026)', () => {
+  const sol = (id: string, extra: Record<string, unknown> = {}) => ({
+    id,
+    status: 'reported',
+    priority: 'medium',
+    title: `Arreglo ${id}`,
+    quotes: [],
+    paidBy: 'owner',
+    ...extra,
+  })
+  const base = {
+    consignacionId: 'cons-1',
+    type: 'plumbing',
+    priority: 'medium',
+    title: 'Filtración por la fachada',
+    description: 'Entra agua por la ventana del estudio cuando llueve.',
+    paidBy: 'owner',
+  }
+  const visibles = () => (h.ultimoKanban!.data as Array<{ id: string }>).map((s) => s.id)
+
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('al crear, el campo viaja sólo si no la gestiona la inmobiliaria', async () => {
+    h.api.create.mockResolvedValue({ id: 'nueva' })
+    await render()
+    await abrirNuevaSolicitud()
+    await act(async () => {
+      await (h.ultimoForm!.onSubmit as (d: unknown) => Promise<void>)({ ...base, gestionadoPor: 'propietario' })
+    })
+    expect(h.api.create).toHaveBeenLastCalledWith(expect.objectContaining({ gestionadoPor: 'propietario' }))
+
+    await abrirNuevaSolicitud()
+    await act(async () => {
+      await (h.ultimoForm!.onSubmit as (d: unknown) => Promise<void>)({ ...base, gestionadoPor: 'inmobiliaria' })
+    })
+    expect(h.api.create.mock.calls.at(-1)![0]).not.toHaveProperty('gestionadoPor')
+  })
+
+  it('sin la migración del back (503) el aviso dice su frase y el formulario no se rompe', async () => {
+    const frase =
+      'Todavía no se puede dejar la gestión de una reparación al propietario, a la administración o al inquilino: falta una actualización de Leasefy en la base de datos. Mientras tanto la gestiona la inmobiliaria, como siempre.'
+    h.api.create.mockRejectedValue(
+      new ApiError(503, frase, 'GESTIONADO_POR_SIN_MIGRAR', { statusCode: 503, code: 'GESTIONADO_POR_SIN_MIGRAR', message: frase }),
+    )
+    await render()
+    await abrirNuevaSolicitud()
+    await act(async () => {
+      await (h.ultimoForm!.onSubmit as (d: unknown) => Promise<void>)({ ...base, gestionadoPor: 'administracion' })
+    })
+    // La frase del back, tal cual (el traductor le suma su coletilla de soporte, como a todo 5xx).
+    expect(h.toast.error).toHaveBeenCalledWith('No se pudo crear la solicitud', {
+      description: expect.stringContaining(frase),
+    })
+    // El cajón sigue abierto (va en un portal) con el formulario listo para cambiar la opción.
+    expect(document.body.querySelector('[data-testid="form-stub"]')).not.toBeNull()
+    expect(h.ultimoForm!.isSubmitting).toBe(false)
+  })
+
+  it('filtra por quién gestiona (desde la URL) y «Limpiar» lo quita', async () => {
+    h.mantenimientos = [sol('a'), sol('b', { gestionadoPor: 'propietario' }), sol('c', { gestionadoPor: 'administracion' })]
+    window.history.replaceState(null, '', '/panel/inmobiliaria/mantenimientos?gestiona=propietario')
+    await render()
+    expect(visibles()).toEqual(['b'])
+
+    await act(async () => {
+      container.querySelector<HTMLElement>('[data-testid="limpiar-filtro-de-gestion"]')!.click()
+    })
+    expect(visibles()).toEqual(['a', 'b', 'c'])
+    expect(window.location.search).toBe('')
+  })
+
+  it('filtrado a cero no dice «todavía no tienes»: ofrece quitar el filtro', async () => {
+    h.mantenimientos = [sol('a')]
+    window.history.replaceState(null, '', '/panel/inmobiliaria/mantenimientos?gestiona=inquilino')
+    await render()
+    expect(container.querySelector('[data-caso="filtros"]')).not.toBeNull()
+  })
+
+  it('soltar en «Aprobada» una que gestiona otro: no se mueve y dice por qué', async () => {
+    h.mantenimientos = [sol('b', { gestionadoPor: 'administracion' })]
+    await render()
+    let seEncargo: boolean | undefined
+    act(() => {
+      seEncargo = (h.ultimoKanban!.alSoltar as (s: unknown, d: string) => boolean)(h.mantenimientos[0], 'approved')
+    })
+    expect(seEncargo).toBe(true)
+    expect(h.toast.info).toHaveBeenCalledWith('Esta reparación no pasa por cotización ni aprobación', {
+      description: expect.stringContaining('La gestiona la administración'),
+    })
+    expect(h.api.updateStatus).not.toHaveBeenCalled()
+    expect(h.api.registrarSeguimiento).not.toHaveBeenCalled()
+  })
+
+  it('soltarla en «En arreglo» registra ese paso del seguimiento (sin pasar por la aprobación)', async () => {
+    h.api.registrarSeguimiento.mockResolvedValue({})
+    h.mantenimientos = [sol('b', { gestionadoPor: 'propietario' })]
+    await render()
+    let seEncargo: boolean | undefined
+    await act(async () => {
+      seEncargo = (h.ultimoKanban!.alSoltar as (s: unknown, d: string) => boolean)(h.mantenimientos[0], 'in_progress')
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(seEncargo).toBe(true)
+    expect(h.api.registrarSeguimiento).toHaveBeenCalledWith('b', 'en_arreglo')
+    expect(h.toast.success).toHaveBeenCalledWith('Listo: quedó registrado «En arreglo»', {
+      description: 'La tarjeta pasa a «En arreglo».',
+    })
+  })
+
+  it('el detalle recibe con qué cambiar la gestión sólo con permiso de editar', async () => {
+    await render()
+    expect(h.ultimoViewer!.onGestionCambio).toEqual(expect.any(Function))
+
+    h.canAccess.mockImplementation((_m: string, accion: string) => accion !== 'edit')
+    await render()
+    expect(h.ultimoViewer!.onGestionCambio).toBeUndefined()
   })
 })

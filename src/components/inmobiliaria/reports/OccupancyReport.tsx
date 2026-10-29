@@ -19,12 +19,14 @@ import {
   Table,
   TableHeader,
   TableBody,
-  TableHead,
   TableRow,
   TableCell,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { SIN_MEDIR, textoDeTasa } from '@/lib/tasas';
 import type { OccupancyData } from '@/lib/data/mock-reports';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
@@ -50,6 +52,20 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
    * El resumen, las zonas y la tendencia siguen calculándose sobre el conjunto
    * completo: sólo se pagina el detalle.
    */
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». El detalle ENTERO, antes de
+  // cortar la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    byProperty,
+    {
+      propiedad: (p) => p.title?.trim() || null,
+      zona: (p) => p.zone || null,
+      estado: (p) => (p.status === 'rented' ? 'Arrendado' : 'Vacante'),
+      diasVacante: (p) => p.daysVacant ?? null,
+      inquilino: (p) => p.tenant || null,
+      canon: (p) => p.rentAmount,
+    },
+    { primero: { diasVacante: 'desc', canon: 'desc' } },
+  );
   const {
     pageItems,
     total,
@@ -58,7 +74,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(byProperty);
+  } = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
 
   // La escala sale SÓLO de los meses que se midieron. Un `null` colado acá se
   // convertiría en 0 al comparar y aplastaría toda la serie contra el piso.
@@ -217,22 +233,35 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
 
       {/* Property Table */}
       <div className="rounded-lg border border-border bg-surface overflow-hidden">
-        <div className="p-4 border-b border-border">
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <House className="w-4 h-4 text-fg-muted" />
             Detalle por propiedad
           </h3>
+          {byProperty.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'diasVacante', sentido: 'desc', etiqueta: 'Más días vacante' },
+                { campo: 'estado', sentido: 'desc', etiqueta: 'Vacantes primero' },
+                { campo: 'canon', sentido: 'desc', etiqueta: 'Canon más alto' },
+                { campo: 'propiedad', sentido: 'asc', etiqueta: 'Propiedad (A–Z)' },
+              ]}
+            />
+          ) : null}
         </div>
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
               <TableRow className="border-b border-border-faint">
-                <TableHead className="text-left py-3 px-4">Propiedad</TableHead>
-                <TableHead className="text-left py-3 px-4">Zona</TableHead>
-                <TableHead className="text-left py-3 px-4">Estado</TableHead>
-                <TableHead className="text-right py-3 px-4">Dias vacante</TableHead>
-                <TableHead className="text-left py-3 px-4">Inquilino</TableHead>
-                <TableHead className="text-right py-3 px-4">Canon</TableHead>
+                <EncabezadoOrdenable campo="propiedad" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4">Propiedad</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="zona" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4">Zona</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4">Estado</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="diasVacante" orden={orden} onOrdenar={ordenarPor} className="text-right py-3 px-4" alineacion="derecha">Días vacante</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4">Inquilino</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="canon" orden={orden} onOrdenar={ordenarPor} className="text-right py-3 px-4" alineacion="derecha">Canon</EncabezadoOrdenable>
               </TableRow>
             </TableHeader>
             <TableBody>

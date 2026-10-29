@@ -103,6 +103,23 @@ describe('Operación → Servicios públicos', () => {
     expect($('abrir-c1')!.textContent).toContain('Revisar (1)');
   });
 
+  it('la cuenta de EPM del inmueble (Nico 29-10-2026): número y cuánto lleva sin el servicio', async () => {
+    api.tablero.mockResolvedValue(
+      tablero([
+        fila({
+          cuentas: [
+            { empresa: 'EPM', numero: '13249728', codigoDelInmueble: '47591', vigenciaMeses: 12, conCobertura: false, cobertura: '12 meses sin servicio de EPM' },
+          ],
+        }),
+        fila({ contractId: 'c2', contrato: '9' }),
+      ]),
+    );
+    await montar();
+    expect($('cuentas-c1')!.textContent).toContain('EPM · 13249728');
+    expect($('cuentas-c1')!.textContent).toContain('12 meses sin servicio de EPM');
+    expect($('cuentas-c2')).toBeNull();
+  });
+
   it('filtra por estado del mes y busca por cédula', async () => {
     api.tablero.mockResolvedValue(tablero([fila(), fila({ contractId: 'c2', contrato: '9', documentoDelInquilino: '1046', estadoDelMes: 'SIN_FACTURA', porRevisar: 0 })]));
     await montar();

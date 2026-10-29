@@ -57,6 +57,20 @@ export interface FilaDelTablero {
   ultimaFactura: FacturaDeServicio | null;
   /** 22-10-2026: lo que Mori recordó de la factura de este mes (un back viejo no lo manda). */
   recordatorios?: RecordatorioDeMori[];
+  /** Nico 29-10-2026: la cuenta de EPM (u otra empresa) del inmueble, si vino en la migración. Un back viejo no la manda. */
+  cuentas?: CuentaDeServiciosDelInmueble[];
+}
+
+export interface CuentaDeServiciosDelInmueble {
+  empresa: string;
+  numero: string;
+  /** El código del inmueble en el sistema anterior (el «ID» de Nuby). */
+  codigoDelInmueble: string | null;
+  vigenciaMeses: number | null;
+  /** `false` = lleva ese tiempo sin el servicio («SIN COBERTURA»). */
+  conCobertura: boolean | null;
+  /** «12 meses sin servicio de EPM», o `null`. */
+  cobertura: string | null;
 }
 
 /** Mori recuerda la factura (Portofino, Nico 22-10-2026). */

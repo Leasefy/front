@@ -43,6 +43,7 @@ import { FormularioDeFactura, type ErroresDeLaFactura } from '@/components/servi
 import { MoriRecuerdaLaFactura, fraseDeLosRecordatorios } from '@/components/servicios-publicos/MoriRecuerdaLaFactura';
 import {
   serviciosPublicosApi,
+  type CuentaDeServiciosDelInmueble,
   type EstadoDelMes,
   type FacturaDeServicio,
   type FacturaQueSeRegistra,
@@ -572,6 +573,7 @@ export function ServiciosPublicos() {
                                 <span className="font-mono">{f.contrato}</span> · {f.inquilino ?? 'Sin inquilino'}
                               </p>
                               <p className="truncate text-caption text-fg-muted">{f.inmueble}</p>
+                              <CuentasDelInmueble cuentas={f.cuentas} contractId={f.contractId} />
                               {fraseDeLosRecordatorios(f.recordatorios) && (
                                 <p className="text-caption text-fg-muted" data-testid={`recordado-${f.contractId}`}>
                                   {fraseDeLosRecordatorios(f.recordatorios)}
@@ -622,6 +624,7 @@ export function ServiciosPublicos() {
                               <span className="font-mono">{f.contrato}</span> · {f.inquilino ?? 'Sin inquilino'}
                             </p>
                             <p className="truncate text-caption text-fg-muted">{f.inmueble}</p>
+                            <CuentasDelInmueble cuentas={f.cuentas} contractId={f.contractId} />
                             {fraseDeLosRecordatorios(f.recordatorios) && (
                               <p className="text-caption text-fg-muted" data-testid={`recordado-${f.contractId}`}>
                                 {fraseDeLosRecordatorios(f.recordatorios)}
@@ -665,5 +668,27 @@ export function ServiciosPublicos() {
 
       <FacturasDelContrato fila={abierta} onCerrar={() => setAbierta(null)} onCambio={cargar} puedeEditar={puedeEditar} />
     </div>
+  );
+}
+
+/**
+ * La cuenta de servicios del inmueble (Nico 29-10-2026): «EPM · 13249728», y si lleva tiempo sin el servicio, cuánto
+ * («12 meses sin servicio de EPM»). Viene de la columna opcional de la migración de contratos.
+ */
+function CuentasDelInmueble({ cuentas, contractId }: { cuentas?: CuentaDeServiciosDelInmueble[]; contractId: string }) {
+  if (!cuentas || cuentas.length === 0) return null;
+  return (
+    <ul className="space-y-0.5" data-testid={`cuentas-${contractId}`}>
+      {cuentas.map((c) => (
+        <li key={`${c.empresa}-${c.numero}`} className="text-caption text-fg-muted">
+          <span className="font-mono tabular-nums">
+            {c.empresa} · {c.numero}
+          </span>
+          {c.cobertura ? (
+            <span className={c.conCobertura === false ? 'text-warning' : undefined}> · {c.cobertura}</span>
+          ) : null}
+        </li>
+      ))}
+    </ul>
   );
 }

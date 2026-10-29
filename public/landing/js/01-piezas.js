@@ -135,26 +135,7 @@ window.LF = (function () {
     });
   }
 
-  /* ── FotoEnEstrias (voltaje sobre papel) ── */
-  function pintarEstrias(cv, img, paso) {
-    var W = cv.width, H = cv.height, c = cv.getContext("2d");
-    var l = document.createElement("canvas"); l.width = W; l.height = H;
-    var lc = l.getContext("2d", { willReadFrequently: true });
-    var e = Math.max(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * e, h = img.naturalHeight * e;
-    lc.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
-    var dat; try { dat = lc.getImageData(0, 0, W, H).data; } catch (er) { return false; }
-    c.fillStyle = "#FBFAF8"; c.fillRect(0, 0, W, H); c.fillStyle = "#1A40FF";
-    var m = paso / 2;
-    for (var x = m; x < W; x += paso) for (var y = 0; y < H; y += 2) {
-      var s = 0, n = 0;
-      for (var dx = -m; dx < m; dx += 2) { var xi = Math.min(W - 1, Math.max(0, Math.round(x + dx))), i = (y * W + xi) * 4; s += 0.299 * dat[i] + 0.587 * dat[i + 1] + 0.114 * dat[i + 2]; n++; }
-      var luz = Math.pow(s / n / 255, 0.7), a = Math.max(0.7, (1 - luz) * paso * 0.62);
-      c.fillRect(x - a / 2, y, a, 2);
-    }
-    return true;
-  }
-
   /* el inglés de lo que escriben los scripts (ver idioma.js); sin el núcleo del idioma, el español tal cual */
   var t = window.LFI ? window.LFI.t : function (s) { return s; };
-  return { t: t, $: $, $$: $$, MOV: MOV, fmt: fmt, contar: contar, partir: partir, partirRelato: partirRelato, pos: pos, motivo: motivo, esferas: esferas, pintarEstrias: pintarEstrias };
+  return { t: t, $: $, $$: $$, MOV: MOV, fmt: fmt, contar: contar, partir: partir, partirRelato: partirRelato, pos: pos, motivo: motivo, esferas: esferas };
 })();

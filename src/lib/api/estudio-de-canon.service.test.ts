@@ -170,6 +170,14 @@ describe('estudioDeCanonApi.reintentar', () => {
     expect(err.code).toBe(code)
     expect(err.message).toMatch(copy)
   })
+  it('T-0198: 409 REINTENTO_MUY_PRONTO exposes the returned reintentarDesde', async () => {
+    const desde = '2026-10-29T15:10:00.000Z'
+    post.mockRejectedValue(new ApiError(409, 'raw', 'REINTENTO_MUY_PRONTO', { reintentarDesde: desde }))
+    const err = await estudioDeCanonApi.reintentar(ESTUDIO.id).catch((e) => e)
+    expect(err).toBeInstanceOf(EstudioDeCanonError)
+    expect(err.code).toBe('REINTENTO_MUY_PRONTO')
+    expect(err.reintentarDesde).toBe(desde)
+  })
   it('keeps "faltan" from DOCUMENTOS_FALTANTES', async () => {
     post.mockRejectedValue(new ApiError(400, 'x', 'DOCUMENTOS_FALTANTES', { faltan: ['extracto_bancario'] }))
     const err = await estudioDeCanonApi.reintentar(ESTUDIO.id).catch((e) => e)

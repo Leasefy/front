@@ -472,6 +472,104 @@ describe('<AprobacionPage> — procesando / resultado / fallo', () => {
     expect((q('[data-testid="reintentar-estudio"]') as HTMLButtonElement).disabled).toBe(false)
   })
 
+  describe('T-0198: enfriamiento del reintento', () => {
+    const AHORA = new Date('2026-10-29T15:00:00.000Z')
+    const DESDE = new Date(AHORA.getTime() + 10 * 60_000).toISOString()
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+      vi.setSystemTime(AHORA)
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function avanzar(ms: number) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ms)
+      })
+    }
+    async function montarConTiempoFalso() {
+      window.history.pushState({}, '', '/aprobacion')
+      await act(async () => {
+        root.render(<AprobacionPage />)
+      })
+      await avanzar(0)
+    }
+    const boton = () => q('[data-testid="reintentar-estudio"]') as HTMLButtonElement
+
+    it('SERVICIO_NO_DISPONIBLE: dice que hay problemas, no culpa un documento y bloquea "Reintentar" hasta la hora', async () => {
+      actual.mockResolvedValue(
+        estudio({
+          status: 'FAILED',
+          error: errorDelEstudio({
+            codigo: 'SERVICIO_NO_DISPONIBLE',
+            mensaje: 'Estamos teniendo problemas con el sistema. Intenta de nuevo en 10 minutos.',
+            documentoConError: 'cedula',
+            reintentarDesde: DESDE,
+          }),
+        }),
+      )
+      await montarConTiempoFalso()
+      expect(q('[data-testid="vista-fallido"]')!.textContent).toContain(
+        'Estamos teniendo problemas con el sistema. Intenta de nuevo en 10 minutos.',
+      )
+      expect(q('[data-testid="documento-con-error"]')).toBeNull()
+      expect(boton().disabled).toBe(true)
+      expect(q('[data-testid="reintentar-desde"]')!.textContent).toMatch(/Podrás intentarlo de nuevo a las \d{2}:\d{2}/)
+      expect(vi.getTimerCount()).toBe(1)
+
+      await avanzar(10 * 60_000 - 1)
+      expect(boton().disabled).toBe(true)
+      await avanzar(1)
+      expect(boton().disabled).toBe(false)
+      expect(q('[data-testid="reintentar-desde"]')).toBeNull()
+      // One timer, no polling: nothing else was scheduled and /actual was read once.
+      expect(vi.getTimerCount()).toBe(0)
+      expect(actual).toHaveBeenCalledTimes(1)
+    })
+
+    it('cualquier código con reintentarDesde futuro bloquea; con uno pasado o ausente no', async () => {
+      actual.mockResolvedValue(
+        estudio({ status: 'FAILED', error: errorDelEstudio({ codigo: 'ESTUDIO_FALLIDO', reintentarDesde: DESDE }) }),
+      )
+      await montarConTiempoFalso()
+      expect(boton().disabled).toBe(true)
+      act(() => root.unmount())
+      expect(vi.getTimerCount()).toBe(0)
+      root = createRoot(container)
+
+      actual.mockResolvedValue(
+        estudio({
+          status: 'FAILED',
+          error: errorDelEstudio({ reintentarDesde: new Date(AHORA.getTime() - 1000).toISOString() }),
+        }),
+      )
+      await montarConTiempoFalso()
+      expect(boton().disabled).toBe(false)
+      expect(q('[data-testid="reintentar-desde"]')).toBeNull()
+    })
+
+    it('409 REINTENTO_MUY_PRONTO: deja el botón apagado hasta el instante devuelto y luego lo reabre', async () => {
+      actual.mockResolvedValue(estudio({ status: 'FAILED', error: errorDelEstudio() }))
+      reintentar.mockRejectedValue(
+        new EstudioDeCanonError(409, 'Aún no puedes reintentar.', 'REINTENTO_MUY_PRONTO', undefined, DESDE),
+      )
+      await montarConTiempoFalso()
+      expect(boton().disabled).toBe(false)
+      await act(async () => {
+        boton().click()
+      })
+      await avanzar(0)
+      expect(boton().disabled).toBe(true)
+      expect(q('[data-testid="reintentar-desde"]')).not.toBeNull()
+      expect(reintentar).toHaveBeenCalledTimes(1)
+
+      await avanzar(10 * 60_000)
+      expect(boton().disabled).toBe(false)
+    })
+  })
+
   it('PROCESSING: dice que puede tardar unos minutos y que se puede volver o recargar', async () => {
     actual.mockResolvedValue(estudio({ status: 'PROCESSING' }))
     await montar()

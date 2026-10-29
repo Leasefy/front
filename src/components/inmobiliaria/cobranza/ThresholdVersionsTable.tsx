@@ -46,6 +46,8 @@ import {
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 /**
  * MORI-23 (QA-AGENTES 16-10): la tabla decía «16/10/2026, 11:02:31», «Por —»
@@ -98,9 +100,22 @@ export function ThresholdVersionsTable({
     0,
   )
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de paginar.
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    versions,
+    {
+      version: (v) => v.version,
+      creada: (v) => v.created_at,
+      por: (v) => (quienLaGuardo(v) === '—' ? null : quienLaGuardo(v)),
+      // De menor a mayor: los cambios y después las restauraciones («Volvió a la v…»).
+      tipo: (v) => (v.is_rollback_of_version != null ? 1 : 0),
+    },
+    { primero: { version: 'desc', creada: 'desc' } },
+  )
+
   // El historial es append-only: cada edición y cada rollback suman una fila.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(versions)
+    useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   const confirmRollback = async () => {
     if (rollbackConfirmVersion == null) return
@@ -156,18 +171,18 @@ export function ThresholdVersionsTable({
           <Table>
             <TableHeader className="bg-muted/10 border-b border-border">
               <TableRow>
-                <TableHead className="text-left px-3 py-2">
+                <EncabezadoOrdenable campo="version" orden={orden} onOrdenar={ordenarPor} className="text-left px-3 py-2">
                   {locale.startsWith('es') ? 'Versión' : 'Version'}
-                </TableHead>
-                <TableHead className="text-left px-3 py-2">
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="creada" orden={orden} onOrdenar={ordenarPor} className="text-left px-3 py-2">
                   {locale.startsWith('es') ? 'Creada' : 'Created'}
-                </TableHead>
-                <TableHead className="text-left px-3 py-2">
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="por" orden={orden} onOrdenar={ordenarPor} className="text-left px-3 py-2">
                   {locale.startsWith('es') ? 'Por' : 'By'}
-                </TableHead>
-                <TableHead className="text-left px-3 py-2">
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="tipo" orden={orden} onOrdenar={ordenarPor} className="text-left px-3 py-2">
                   {locale.startsWith('es') ? 'Tipo' : 'Type'}
-                </TableHead>
+                </EncabezadoOrdenable>
                 <TableHead className="text-right px-3 py-2" />
               </TableRow>
             </TableHeader>

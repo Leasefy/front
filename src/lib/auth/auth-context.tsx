@@ -1638,15 +1638,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       regreso && regreso !== '/'
         ? `?returnUrl=${encodeURIComponent(`/auth/post-login?returnUrl=${encodeURIComponent(regreso)}`)}`
         : ''
-    const { error } = await supabase.auth.signInWithOAuth({
+    // Desde la ventana «Publica gratis» que la landing abre en un marco (28-10-2026), Google no se puede mostrar ahí
+    // adentro (no se deja enmarcar): la que va a Google es la página entera. El código de la vuelta queda en la cookie
+    // de este mismo sitio, así que /auth/callback lo encuentra igual.
+    const enUnMarco = window.top !== window.self
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback${destino}`,
+        skipBrowserRedirect: enUnMarco,
       },
     })
     if (error) {
       throw error
     }
+    if (enUnMarco && data?.url) window.top?.location.assign(data.url)
   }, [])
 
   /**

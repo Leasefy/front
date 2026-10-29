@@ -125,6 +125,42 @@ describe('terminarSesion', () => {
     },
   )
 
+  // 28-10-2026 (Nico): la ventana «Publica gratis» se abre encima de la landing, en un marco. Una sesión vieja guardada
+  // llevaba EL MARCO a /auth y el login quedaba pintado encima de la home.
+  describe('en la ventana «Publica gratis» (/publica/ventana) la persona sigue de visitante', () => {
+    it.each(['/publica/ventana', '/publica/ventana/ir'])('no navega a /auth ni deja aviso (%s)', (ruta) => {
+      enRuta(ruta)
+      terminarSesion('expirada')
+      expect(replace).not.toHaveBeenCalled()
+      expect(tomarAvisoDeCierre()).toBeNull()
+    })
+
+    it('no le cierra la puerta a las peticiones: crear la cuenta ahí mismo tiene que poder salir', () => {
+      enRuta('/publica/ventana')
+      terminarSesion('expirada')
+      expect(sesionTerminada()).toBe(false)
+      expect(motivoDeSesionTerminada()).toBeNull()
+    })
+
+    it('borra la sesión local y avisa la limpieza UNA vez (el signOut de la limpieza vuelve a emitir SIGNED_OUT)', () => {
+      localStorage.setItem('sb-proj-auth-token', 'x')
+      const limpiar = vi.fn()
+      registrarCierreDeSesion(limpiar)
+      enRuta('/publica/ventana')
+      terminarSesion('expirada')
+      terminarSesion('expirada')
+      expect(localStorage.getItem('sb-proj-auth-token')).toBeNull()
+      expect(limpiar).toHaveBeenCalledTimes(1)
+    })
+
+    it('/publica (la página entera) sigue como siempre: allí sí se sale a /auth', () => {
+      enRuta('/publica', '?perfil=landlord')
+      terminarSesion('expirada')
+      expect(replace).toHaveBeenCalledTimes(1)
+      expect(sesionTerminada()).toBe(true)
+    })
+  })
+
   it('borra la sesión local ANTES de navegar', () => {
     localStorage.setItem('sb-proj-auth-token', 'x')
     let habiaTokenAlNavegar: string | null = 'todavía-no-se-llamó'

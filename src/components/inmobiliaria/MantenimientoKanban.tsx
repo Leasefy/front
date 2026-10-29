@@ -407,8 +407,42 @@ function KanbanColumnComponent({
   const Icon = column.icon;
   const { setNodeRef } = useDroppable({ id: column.id, data: { estado: column.id } });
 
+  /*
+   * Nico (Portofino, 29-10-2026): «abiertas las columnas que tienen al menos una
+   * solicitud y cerradas en vertical las que no tienen ninguna». La vacía es una
+   * franja angosta con el título de lado (en el celular, una barra baja con su
+   * cero) y sigue siendo una zona donde soltar: toda la franja es el destino.
+   */
+  if (plegada) {
+    const titulo = t(column.titleKey);
+    return (
+      <div
+        ref={setNodeRef}
+        data-testid={`columna-${column.id}`}
+        data-plegada="si"
+        title={`${titulo}: sin solicitudes`}
+        className={cn(
+          'flex shrink-0 grow-0 basis-full items-center gap-2 rounded-[18px] px-3.5 py-2.5 transition-[background-color,box-shadow] duration-base',
+          'sm:min-h-[12rem] sm:w-12 sm:basis-auto sm:flex-col sm:px-0 sm:py-3.5',
+          encima ? 'bg-primary-soft/50 ring-2 ring-primary/25' : 'bg-surface-muted/70'
+        )}
+      >
+        <span className="order-last ml-auto font-mono text-[12px] tabular-nums text-fg-subtle sm:order-first sm:ml-0">
+          0
+        </span>
+        <Icon className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+        <span className="whitespace-nowrap text-sm font-medium text-fg-muted sm:[writing-mode:vertical-rl]">
+          {titulo}
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col min-w-0" data-testid={`columna-${column.id}`} data-plegada={plegada ? 'si' : undefined}>
+    <div
+      className="flex min-w-0 shrink grow basis-60 flex-col sm:min-w-[15rem]"
+      data-testid={`columna-${column.id}`}
+    >
       {/* Column Header */}
       {/* Cadence 2 (glow up 21-10): la columna es un carril de arena, sin color por etapa (el
           color es de los estados que piden algo, no de las columnas); la cuenta en mono. */}
@@ -424,9 +458,9 @@ function KanbanColumnComponent({
       <div
         ref={setNodeRef}
         className={cn(
-          'relative flex-1 p-2 space-y-2 rounded-b-[18px] overflow-y-auto transition-[background-color,box-shadow] duration-base',
-          // Revisora r25: la columna vacía va plegada (angosta y baja); sigue recibiendo tarjetas.
-          plegada ? 'min-h-[56px]' : 'min-h-[200px] max-h-[calc(100vh-400px)]',
+          // Sin barra de lado: la tarjeta se lee completa y el pie se parte en renglones.
+          'relative flex-1 p-2 space-y-2 rounded-b-[18px] overflow-y-auto overflow-x-hidden transition-[background-color,box-shadow] duration-base',
+          'min-h-[200px] max-h-[calc(100vh-400px)]',
           encima ? 'bg-primary-soft/50 ring-2 ring-primary/25' : 'bg-surface-muted/70'
         )}
       >
@@ -639,15 +673,11 @@ export function MantenimientoKanban({
       {/* SO-15 (QA 04-10): las cinco columnas a la vista (a 1440 la de
           «Completada» quedaba fuera, a la derecha). En pantallas chicas se
           apilan; nunca hay que desplazar de lado para encontrar una tarjeta. */}
-      {/* Revisora r25: a 1440 las columnas vacías van angostas (11rem) y las que tienen trabajo se
-          reparten el resto; abajo de xl se apilan como siempre, las vacías bajas. */}
+      {/* Nico (Portofino, 29-10-2026): las columnas con solicitudes van ABIERTAS y anchas (nunca
+          menos de 15rem: la tarjeta se lee entera) y se reparten el ancho; las vacías, CERRADAS en
+          vertical. Si no caben en una fila, bajan a la siguiente: nunca se desplaza de lado (SO-15). */}
       <div
-        className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:[grid-template-columns:var(--columnas-del-tablero)]"
-        style={{
-          ['--columnas-del-tablero' as string]: KANBAN_COLUMNS.map((c) =>
-            groupedData[c.id].length > 0 ? 'minmax(0,1fr)' : 'minmax(0,11rem)',
-          ).join(' '),
-        }}
+        className="flex flex-wrap items-stretch gap-3 pb-4"
         data-testid="tablero-de-mantenimientos"
       >
         {KANBAN_COLUMNS.map((column) => (

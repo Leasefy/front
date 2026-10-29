@@ -336,6 +336,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
             <Input
               id="mantenimiento-buscar-inmueble"
               type="text"
+              aria-required="true"
               data-testid="mantenimiento-buscar-inmueble"
               placeholder={tr('Código, contrato, propietario o dirección')}
               value={searchQuery}

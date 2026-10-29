@@ -3,9 +3,7 @@
    entre las variaciones de ~/rent/propuestas-landing-29-10/variaciones):
 
    · héroe y cierre: «La ola en papel», tinta de voltaje sobre el papel. En el
-     héroe el cursor la revuelve y deja una estela que se disipa, y la tinta se
-     aviva cerca del puntero (Nico: «que se comporte mejor con el hover, algo
-     más wow»); en el celular, el toque y el scroll hacen lo mismo;
+     héroe la tinta responde al cursor (ver la tercera vuelta, abajo);
    · bloque oscuro de los planes: «Curvas de nivel»;
    · fotos: «Duotono que florece» (medianoche, voltaje y papel → color real).
 
@@ -14,15 +12,17 @@
    canvas. Con «reducir movimiento» queda un cuadro quieto; sin WebGL, el
    degradado de respaldo del CSS (`.sin-gl`).
 
-   Nico, 29-10 (segunda vuelta): «está muy mucho; haz algo más wow pero light».
-   La tinta sólo se aparta y se curva un poco al paso del cursor, en un radio
-   chico, con inercia y una estela corta que se disipa rápido; sin remolinos ni
-   cambios bruscos de color. En el celular, apenas un eco al tocar o al bajar.
+   Nico, 29-10 (tercera vuelta): «sigue siendo muy mala, búscate otra». Ya no
+   se deforma nada bajo el cursor (ni remolino ni estela): la tinta responde
+   ENTERA, como vista por una ventana. La bruma de atrás casi no se corre y las
+   cintas de adelante se corren más (profundidad, con inercia); la marea sube
+   apenas del lado donde está el cursor, lejos del texto; y al mover el mouse
+   la corriente fluye un poco más rápido y se calma sola al quedarse quieto.
+   En el celular lo mismo lo hace el scroll.
    ════════════════════════════════════════════════════════════════════ */
 (function () {
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var ESTELA = 12;
 
   var RUIDO = [
     "float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}",
@@ -32,27 +32,27 @@
 
   var VERT = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
 
-  /* la ola en papel: cintas de voltaje que suben desde abajo; `s` es la estela del cursor
-     (x, y en el espacio de la tinta y su fuerza), `pm` el puntero suavizado y `pv` cuánto está encima */
+  /* la ola en papel: cintas de voltaje que suben desde abajo.
+     `m` el cursor suavizado (profundidad), `fl` la fase de la corriente (se acelera al mover el mouse),
+     `lado` dónde está el cursor (0–1 a lo ancho), `pv` cuánto está encima y `sube` cuánto se bajó la página */
   var OLA = [
     "precision highp float;",
-    "uniform vec2 r; uniform float t; uniform vec2 m; uniform vec3 s[" + ESTELA + "]; uniform vec2 pm; uniform float pv;",
+    "uniform vec2 r; uniform float t; uniform vec2 m; uniform float fl; uniform float lado; uniform float pv; uniform float sube;",
     RUIDO,
     "void main(){",
-    "  vec2 uv=gl_FragCoord.xy/r; vec2 p=uv; p.x*=r.x/r.y; vec2 p0=p; float tt=t*.04; p+=m*.05;",
-    "  vec2 rev=vec2(0.); float aviva=0.;",
-    "  for(int i=0;i<" + ESTELA + ";i++){vec2 d=p0-s[i].xy; float k=s[i].z*exp(-dot(d,d)*42.); rev+=d*k*.42+vec2(-d.y,d.x)*k*.38; aviva+=k;}",
-    "  p+=rev;",
-    "  vec2 q=vec2(fbm(p*1.1+tt),fbm(p*1.1-tt+5.2));",
-    "  vec2 w=vec2(fbm(p*1.5+2.*q+vec2(1.7,9.2)+tt*1.3),fbm(p*1.5+2.*q+vec2(8.3,2.8)-tt));",
-    "  float f=fbm(p*1.3+2.2*w);",
-    "  float onda=sin((p.y*2.4+f*3.6+w.x*1.8-p.x*.6)*3.14159);",
+    "  vec2 uv=gl_FragCoord.xy/r; vec2 p=uv; p.x*=r.x/r.y; float tt=fl*.04;",
+    /* profundidad: la bruma (lejos) apenas se corre; las cintas (cerca) se corren más */
+    "  vec2 pf=p+m*.03; vec2 pc=p+m*.1+vec2(0.,sube*.14);",
+    "  vec2 q=vec2(fbm(pf*1.1+tt),fbm(pf*1.1-tt+5.2));",
+    "  vec2 w=vec2(fbm(pc*1.5+2.*q+vec2(1.7,9.2)+tt*1.3),fbm(pc*1.5+2.*q+vec2(8.3,2.8)-tt));",
+    "  float f=fbm(pc*1.3+2.2*w);",
+    "  float onda=sin((pc.y*2.4+f*3.6+w.x*1.8-pc.x*.6)*3.14159);",
     "  float cinta=smoothstep(.15,1.,onda)*smoothstep(.05,.85,f);",
     "  vec3 papel=vec3(.984,.980,.973); vec3 bruma=vec3(.87,.895,1.); vec3 volt=vec3(.102,.251,1.); vec3 noche=vec3(.086,.125,.361);",
-    "  vec2 dp=p0-pm; float cerca=exp(-dot(dp,dp)*30.)*pv;",
-    /* arriba vive el texto: ahí la tinta que despierta el cursor tiene tope, para que se siga leyendo */
-    "  float tope=mix(.7,.36,smoothstep(.42,.86,uv.y));",
-    "  float zona=max(smoothstep(.92,.04,uv.y),clamp(aviva*.22+cerca*.2,0.,1.)*tope);",
+    /* la marea sube apenas del lado del cursor, ancha y suave, y nunca en la franja del texto */
+    "  float dx=(uv.x-lado)*1.8;",
+    "  float marea=.08*pv*exp(-dx*dx)*smoothstep(.72,.18,uv.y);",
+    "  float zona=smoothstep(.92,.04,uv.y-marea);",
     "  vec3 col=mix(papel,bruma,smoothstep(.3,.9,f)*zona*.75);",
     "  col=mix(col,volt,cinta*.82*zona);",
     "  col=mix(col,noche,pow(cinta,3.)*.38*zona*smoothstep(.55,0.,uv.y));",
@@ -85,7 +85,7 @@
     "}"
   ].join("\n");
 
-  /* Un lienzo WebGL de un cuadro, con su tiempo, el mouse y (si es interactivo) la estela. */
+  /* Un lienzo WebGL de un cuadro, con su tiempo y el mouse; si es interactivo, la tinta responde entera. */
   function Campo(cv, frag, fijos, op) {
     op = op || {};
     var marco = cv.parentElement;
@@ -106,12 +106,12 @@
     var at = gl.getAttribLocation(pr, "a"); gl.enableVertexAttribArray(at); gl.vertexAttribPointer(at, 2, gl.FLOAT, false, 0, 0);
     var U = function (n) { return gl.getUniformLocation(pr, n); };
     Object.keys(fijos || {}).forEach(function (k) { var v = fijos[k]; if (v.length === 3) gl.uniform3f(U(k), v[0], v[1], v[2]); else gl.uniform1f(U(k), v); });
-    var ur = U("r"), ut = U("t"), um = U("m"), us = U("s"), upm = U("pm"), upv = U("pv");
-    var escala = op.escala || 0.6, t = op.inicio || 6, visible = false, corre = false, prev = 0;
+    var ur = U("r"), ut = U("t"), um = U("m"), ufl = U("fl"), ulado = U("lado"), upv = U("pv"), usube = U("sube");
+    var escala = op.escala || 0.6, t = op.inicio || 6, visible = false, corre = false, prev = 0, rect = null;
     var mx = 0, my = 0, fx = 0, fy = 0;
-    /* la estela: ESTELA puntos (x, y, fuerza); el más viejo se reemplaza */
-    var estela = new Float32Array(ESTELA * 3), k = 0, ux = -9, uy = -9;
-    var px = -9, py = -9, spx = -9, spy = -9, encima = 0, aviva = 0, rect = null, fuerzaDelPaso = 1;
+    /* fl: la fase de la corriente; impulso: lo que la acelera (el mouse o el scroll), y se apaga solo */
+    var fl = t, impulso = 0, empuje = 0;
+    var ladoObj = .5, lado = .5, encima = 0, pv = 0, subeObj = 0, sube = 0, lx = -1, ly = -1;
     var medir = function () {
       rect = cv.getBoundingClientRect();
       var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -120,39 +120,20 @@
     };
     var pintar = function () {
       gl.uniform2f(ur, cv.width, cv.height); gl.uniform1f(ut, t); gl.uniform2f(um, fx, fy);
-      if (us) gl.uniform3fv(us, estela);
-      if (upm) gl.uniform2f(upm, spx, spy);
-      if (upv) gl.uniform1f(upv, aviva);
+      if (ufl) gl.uniform1f(ufl, fl);
+      if (ulado) gl.uniform1f(ulado, lado);
+      if (upv) gl.uniform1f(upv, pv);
+      if (usube) gl.uniform1f(usube, sube);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    };
-    /* un punto del cursor en el espacio de la tinta (x en proporción del lienzo, y de abajo hacia arriba) */
-    var marcar = function (cx, cy, fuerza) {
-      if (!rect || !rect.width) return;
-      var x = (cx - rect.left) / rect.width, y = (cy - rect.top) / rect.height;
-      if (x < -.05 || x > 1.05 || y < -.05 || y > 1.05) { encima = 0; return; }
-      var asp = rect.width / rect.height;
-      px = x * asp; py = 1 - y; encima = 1; fuerzaDelPaso = Math.min(1, fuerza);
-      if (spx < -8) { spx = px; spy = py; ux = px; uy = py; }
     };
     var cuadro = function (now) {
       if (!visible) { corre = false; return; }
       var dt = Math.min(.05, (now - prev) / 1000 || .016); prev = now; t += dt;
-      fx += (mx - fx) * .03; fy += (my - fy) * .03;
-      if (op.interactivo) {
-        /* la estela se disipa sola; el puntero suavizado la sigue sin saltos */
-        /* estela corta: se disipa en menos de medio segundo */
-        for (var i = 0; i < ESTELA; i++) estela[i * 3 + 2] *= .9;
-        if (px > -8) {
-          /* el puntero suavizado (inercia) es el que deja la estela: nada salta */
-          spx += (px - spx) * .06; spy += (py - spy) * .06;
-          if (Math.hypot(spx - ux, spy - uy) > .018) {
-            ux = spx; uy = spy;
-            estela[k * 3] = spx; estela[k * 3 + 1] = spy; estela[k * 3 + 2] = fuerzaDelPaso;
-            k = (k + 1) % ESTELA;
-          }
-        }
-        aviva += (encima - aviva) * .04;
-      }
+      /* todo con inercia: nada salta */
+      fx += (mx - fx) * .035; fy += (my - fy) * .035;
+      impulso *= .94; empuje += (impulso - empuje) * .05;
+      fl += dt * (1 + 1.4 * empuje);
+      lado += (ladoObj - lado) * .04; pv += (encima - pv) * .03; sube += (subeObj - sube) * .08;
       pintar(); requestAnimationFrame(cuadro);
     };
     medir(); pintar();
@@ -160,23 +141,25 @@
     if (reducido) return;
     window.addEventListener("pointermove", function (e) {
       mx = e.clientX / window.innerWidth - .5; my = .5 - e.clientY / window.innerHeight;
-      if (op.interactivo && visible && e.pointerType !== "touch") { rect = cv.getBoundingClientRect(); marcar(e.clientX, e.clientY, 1); }
+      if (!op.interactivo || !visible || e.pointerType === "touch") return;
+      rect = cv.getBoundingClientRect();
+      var x = (e.clientX - rect.left) / rect.width, y = (e.clientY - rect.top) / rect.height;
+      encima = x >= 0 && x <= 1 && y >= 0 && y <= 1 ? 1 : 0;
+      if (encima) ladoObj = x;
+      /* la corriente se acelera con lo que se movió el mouse (relativo al ancho), con tope */
+      if (lx >= 0) impulso = Math.min(1, impulso + Math.hypot(e.clientX - lx, e.clientY - ly) / window.innerWidth * 2.2);
+      lx = e.clientX; ly = e.clientY;
     }, { passive: true });
     if (op.interactivo) {
-      document.documentElement.addEventListener("pointerleave", function () { encima = 0; });
-      /* celular: el dedo revuelve la tinta y el scroll también la mueve */
-      var toque = function (e) { if (!visible || !e.touches || !e.touches[0]) return; rect = cv.getBoundingClientRect(); marcar(e.touches[0].clientX, e.touches[0].clientY, .45); };
-      window.addEventListener("touchstart", toque, { passive: true });
-      window.addEventListener("touchmove", toque, { passive: true });
-      window.addEventListener("touchend", function () { encima = 0; }, { passive: true });
+      document.documentElement.addEventListener("pointerleave", function () { encima = 0; lx = -1; });
+      /* celular y scroll: la tinta sube con lo que se bajó el héroe y la corriente se acelera un poco */
       var ultimoY = window.scrollY;
       window.addEventListener("scroll", function () {
         var dy = window.scrollY - ultimoY; ultimoY = window.scrollY;
-        if (!visible || !dy) return;
+        if (!visible) return;
         rect = cv.getBoundingClientRect();
-        var x = rect.left + rect.width * (.5 + .34 * Math.sin(t * .7)), y = rect.top + rect.height * (.62 + .1 * Math.cos(t * .5));
-        marcar(x, y, Math.min(.35, Math.abs(dy) / 160));
-        encima = 0;
+        subeObj = Math.max(0, Math.min(1, -rect.top / Math.max(1, rect.height)));
+        impulso = Math.min(1, impulso + Math.abs(dy) / 900);
       }, { passive: true });
     }
     new IntersectionObserver(function (es) {

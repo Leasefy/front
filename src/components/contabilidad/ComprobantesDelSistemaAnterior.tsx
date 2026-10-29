@@ -73,7 +73,7 @@
  * acá (500). El aviso de recorte es el puente entre los dos.
  */
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { Receipt } from '@phosphor-icons/react'
 import { SegmentedControl } from '@leasefy/cadence'
@@ -85,11 +85,13 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
+import { useOrdenDeLaTabla, type OrdenDeLaTabla, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla'
 import {
   useTablePagination,
   PAGE_SIZE_OPTIONS,
@@ -155,6 +157,16 @@ const PESTANAS: { clase: ClaseDeComprobante; etiqueta: string; vacio: string }[]
 ]
 
 const SIN_NADA: ConteoPorClase = { ingreso: 0, egreso: 0, factura: 0, otro: 0 }
+
+type CampoDelComprobante = 'tipo' | 'numero' | 'fecha' | 'concepto' | 'monto'
+/** Cómo se ordena cada columna (Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas»). */
+const ORDEN_DE_COMPROBANTES: Record<CampoDelComprobante, (d: DocumentoMigradoVista) => ValorParaOrdenar> = {
+  tipo: (d) => d.tipo || null,
+  numero: (d) => (d.prefijo ? `${d.prefijo}-${d.consecutivo}` : String(d.consecutivo)),
+  fecha: (d) => d.fecha || null,
+  concepto: (d) => d.concepto || null,
+  monto: (d) => d.debitos,
+}
 
 /** Lo que se sabe de una pestaña: lo que vino, o por qué no vino todavía. */
 interface EstadoDePestana {
@@ -228,14 +240,20 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
   const totalGeneral = CLASES_DE_COMPROBANTE.reduce((suma, c) => suma + enPantalla[c], 0)
   const visibles = PESTANAS.filter((p) => p.clase !== 'otro' || enPantalla.otro > 0)
   const pestana = PESTANAS.find((p) => p.clase === clase) ?? PESTANAS[0]
-  const documentos = historia?.documentos ?? []
+  const documentos = useMemo(() => historia?.documentos ?? [], [historia])
   const recortado = Boolean(historia && historia.total > historia.mostrados)
 
   // `resetKey: clase` es lo que hace que cambiar de pestaña vuelva a la
   // página 1. Sin eso, mirar la página 4 de los egresos y saltar a Facturas
   // —que tiene 12— deja la tabla vacía sobre un resultado que sí tiene filas,
   // y se lee como «no hay facturas».
-  const pagina = useTablePagination(documentos, { resetKey: clase })
+  // La pestaña ENTERA se ordena antes de cortar la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(documentos, ORDEN_DE_COMPROBANTES, {
+    primero: { fecha: 'desc', monto: 'desc' },
+  })
+  const pagina = useTablePagination(ordenadas, {
+    resetKey: `${clase}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
+  })
 
   // 22-10 (revisión de la ficha): en la ficha del inmueble, sin comprobantes
   // migrados la sección no se pinta (era un vacío de 400 px en el Historial).
@@ -303,41 +321,56 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
               `SegmentedControl` del DS es `inline-flex` a secas, así que el
               contenedor lo pone aquí. Sin esto, en un teléfono «Otros» queda
               fuera de la pantalla y no hay forma de llegar a él. */}
-          <div className="max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <SegmentedControl<ClaseDeComprobante>
-              aria-label="Ingresos, egresos y facturas"
-              value={clase}
-              onChange={setClase}
-              options={visibles.map((p) => ({
-                value: p.clase,
-                ariaLabel: `${p.etiqueta}: ${enPantalla[p.clase].toLocaleString(localeDeLasCifras())}`,
-                label: (
-                  <span
-                    className="flex items-center gap-1.5 whitespace-nowrap"
-                    data-testid={`pestana-${p.clase}`}
-                  >
-                    {p.etiqueta}
-                    {/* Cada pestaña dice cuántos hay, y el número es del
-                        back: con el tope de 500 de por medio, contar las
-                        filas que se ven diría 500 para siempre.
-
-                        `opacity-60` y no una píldora con fondo: dentro de un
-                        segmentado el segmento activo es blanco y los demás
-                        dejan ver el riel gris, así que NINGÚN color de fondo
-                        fijo se ve en los dos estados —el que contrasta contra
-                        el blanco desaparece contra el gris—. Heredando el
-                        color del segmento, el número queda siempre un paso
-                        atrás del texto, activo o no, y en modo oscuro. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <SegmentedControl<ClaseDeComprobante>
+                aria-label="Ingresos, egresos y facturas"
+                value={clase}
+                onChange={setClase}
+                options={visibles.map((p) => ({
+                  value: p.clase,
+                  ariaLabel: `${p.etiqueta}: ${enPantalla[p.clase].toLocaleString(localeDeLasCifras())}`,
+                  label: (
                     <span
-                      className="tabular-nums opacity-60"
-                      data-testid={`conteo-${p.clase}`}
+                      className="flex items-center gap-1.5 whitespace-nowrap"
+                      data-testid={`pestana-${p.clase}`}
                     >
-                      {enPantalla[p.clase].toLocaleString(localeDeLasCifras())}
+                      {p.etiqueta}
+                      {/* Cada pestaña dice cuántos hay, y el número es del
+                          back: con el tope de 500 de por medio, contar las
+                          filas que se ven diría 500 para siempre.
+
+                          `opacity-60` y no una píldora con fondo: dentro de un
+                          segmentado el segmento activo es blanco y los demás
+                          dejan ver el riel gris, así que NINGÚN color de fondo
+                          fijo se ve en los dos estados —el que contrasta contra
+                          el blanco desaparece contra el gris—. Heredando el
+                          color del segmento, el número queda siempre un paso
+                          atrás del texto, activo o no, y en modo oscuro. */}
+                      <span
+                        className="tabular-nums opacity-60"
+                        data-testid={`conteo-${p.clase}`}
+                      >
+                        {enPantalla[p.clase].toLocaleString(localeDeLasCifras())}
+                      </span>
                     </span>
-                  </span>
-                ),
-              }))}
-            />
+                  ),
+                }))}
+              />
+            </div>
+            {documentos.length > 1 ? (
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full shrink-0 sm:w-52"
+                formas={[
+                  { campo: 'fecha', sentido: 'desc', etiqueta: 'Más recientes' },
+                  { campo: 'fecha', sentido: 'asc', etiqueta: 'Más antiguos' },
+                  { campo: 'monto', sentido: 'desc', etiqueta: 'Monto más alto' },
+                  { campo: 'monto', sentido: 'asc', etiqueta: 'Monto más bajo' },
+                ]}
+              />
+            ) : null}
           </div>
 
           <div className="space-y-3">
@@ -363,6 +396,8 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
               <TablaDeComprobantes
                 documentos={pagina.pageItems}
                 conTipo={clase === 'otro'}
+                orden={orden}
+                onOrdenar={ordenarPor}
                 pie={
                   pagina.shouldPaginate ? (
                     <div
@@ -401,7 +436,12 @@ function TablaDeComprobantes({
   conTipo = true,
   documentos,
   pie,
+  orden,
+  onOrdenar,
 }: {
+  /** El orden de la pestaña ENTERA: lo lleva quien pagina. */
+  orden: OrdenDeLaTabla<CampoDelComprobante> | null
+  onOrdenar: (campo: CampoDelComprobante) => void
   /** Sólo las filas de la página actual: el recorte lo hizo el paginador. */
   documentos: DocumentoMigradoVista[]
   /** El pie de paginación, dentro del mismo marco que la tabla. */
@@ -430,15 +470,17 @@ function TablaDeComprobantes({
       <Table className="max-md:block">
         <TableHeader className="max-md:hidden">
           <TableRow>
-            {conTipo ? <TableHead>Tipo</TableHead> : null}
-            <TableHead>Número</TableHead>
-            <TableHead>Fecha</TableHead>
-            <TableHead>Concepto</TableHead>
+            {conTipo ? <EncabezadoOrdenable campo="tipo" orden={orden} onOrdenar={onOrdenar}>Tipo</EncabezadoOrdenable> : null}
+            <EncabezadoOrdenable campo="numero" orden={orden} onOrdenar={onOrdenar}>Número</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="fecha" orden={orden} onOrdenar={onOrdenar}>Fecha</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="concepto" orden={orden} onOrdenar={onOrdenar}>Concepto</EncabezadoOrdenable>
             {/* «Monto» es el total de DÉBITOS del comprobante. El archivo
                 trae débitos y créditos por separado y en un comprobante
                 cuadrado son el mismo número; cuando no cuadran, la fila lo
                 dice en vez de elegir uno en silencio. */}
-            <TableHead className="text-right">Monto</TableHead>
+            <EncabezadoOrdenable campo="monto" orden={orden} onOrdenar={onOrdenar} className="text-right" alineacion="derecha">
+              Monto
+            </EncabezadoOrdenable>
           </TableRow>
         </TableHeader>
         <TableBody>

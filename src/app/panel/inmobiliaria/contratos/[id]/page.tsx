@@ -82,6 +82,8 @@ import { ProrrogaDelContrato } from '@/components/contratos/ProrrogaDelContrato'
 import { CondicionesDelContrato } from '@/components/contratos/CondicionesDelContrato';
 import { GarantiaDeServiciosDelContrato } from '@/components/contratos/GarantiaDeServiciosDelContrato';
 import { DocumentosDelContrato } from '@/components/contratos/DocumentosDelContrato';
+import { CambiarEstadoDelContrato } from '@/components/contratos/CambiarEstadoDelContrato';
+import { FechaRealDeEntrega } from '@/components/contratos/FechaRealDeEntrega';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
 import { BitacoraDelContrato } from '@/components/inmobiliaria/mandato/BitacoraDelContrato'
@@ -596,9 +598,22 @@ function ContratoDetalleContent() {
           seccion="Contratos"
           titulo={tituloDelContrato(contract)}
           junto={
-            <Badge variant={statusVariant} title={estadoDelChip.titulo} data-testid="estado-del-contrato">
-              {statusLabel}
-            </Badge>
+            <span className="inline-flex flex-wrap items-center gap-2">
+              <Badge variant={statusVariant} title={estadoDelChip.titulo} data-testid="estado-del-contrato">
+                {statusLabel}
+              </Badge>
+              {/* Nico 29-10: el estado se cambia aquí mismo (lo que permita el back). */}
+              {canEditContracts && !noFirma && (
+                <CambiarEstadoDelContrato
+                  contractId={contract.id}
+                  status={contract.status}
+                  onActivar={handleActivate}
+                  onCancelar={() => setIsCancelModalOpen(true)}
+                  onTerminar={() => setTerminarAbierto(true)}
+                  onCambiado={() => void refetch()}
+                />
+              )}
+            </span>
           }
           descripcion={
             // De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino.
@@ -661,6 +676,11 @@ function ContratoDetalleContent() {
       {/* Nico 14-10: el escenario del archivo que no se pudo usar se dice arriba
           (la tarjeta del escenario queda abajo, junto a Administración). */}
       <EscenarioDelArchivoPorRevisar contract={contract} />
+
+      {/* Nico 29-10: la fecha en que el inquilino entregó de verdad el inmueble. */}
+      {(contract.status === 'active' || contract.status === 'signed' || contract.status === 'expired') && (
+        <FechaRealDeEntrega contractId={contract.id} puedeEditar={canEditContracts} />
+      )}
 
       {/* Portofino 22-10: la terminación que espera el sí del propietario va
           arriba, antes de las pestañas: mientras espera, es lo primero que hay

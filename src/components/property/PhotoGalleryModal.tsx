@@ -3,6 +3,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { CaretLeft, CaretRight, X } from '@phosphor-icons/react';
+
+/*
+ * Nico 29-10-2026 (captura en el celular): «en responsive no tiene cómo salirse y ahí debería tener flecha para pasar de
+ * izquierda y derecha». La galería va por ENCIMA del encabezado del sitio (z-[70]: antes z-50, el encabezado le tapaba
+ * el botón de cerrar) y las flechas se ven también en el celular.
+ */
 import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useLenis } from '@/components/providers/SmoothScroll';
@@ -95,7 +101,7 @@ export function PhotoGalleryModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col bg-[#07080C] pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] text-[#F3F1ED]"
+      className="fixed inset-0 z-[70] flex flex-col bg-ink pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] text-[#F3F1ED]"
       data-lenis-prevent
       role="dialog"
       aria-modal="true"
@@ -111,7 +117,7 @@ export function PhotoGalleryModal({
         <p className="min-w-0 truncate text-[15px]">
           {propertyTitle}
           {hasMultiple && (
-            <span data-testid="gallery-counter" className="ml-2.5 font-mono tabular-nums text-[#8E93B0]">
+            <span data-testid="gallery-counter" className="ml-2.5 font-mono tabular-nums text-ink-fg/60">
               {activeIndex + 1} / {total}
             </span>
           )}
@@ -140,7 +146,7 @@ export function PhotoGalleryModal({
               goPrev();
             }}
             aria-label="Imagen anterior"
-            className="absolute left-[max(12px,2vw)] z-10 hidden h-12 w-12 rounded-full bg-white/[0.08] hover:bg-white/[0.16] min-[601px]:inline-flex"
+            className="absolute left-[max(12px,2vw)] z-10 inline-flex h-10 w-10 rounded-full bg-black/40 hover:bg-white/[0.16] min-[601px]:h-12 min-[601px]:w-12 min-[601px]:bg-white/[0.08]"
           />
         )}
 
@@ -169,7 +175,7 @@ export function PhotoGalleryModal({
               goNext();
             }}
             aria-label="Siguiente imagen"
-            className="absolute right-[max(12px,2vw)] z-10 hidden h-12 w-12 rounded-full bg-white/[0.08] hover:bg-white/[0.16] min-[601px]:inline-flex"
+            className="absolute right-[max(12px,2vw)] z-10 inline-flex h-10 w-10 rounded-full bg-black/40 hover:bg-white/[0.16] min-[601px]:h-12 min-[601px]:w-12 min-[601px]:bg-white/[0.08]"
           />
         )}
       </div>
@@ -191,7 +197,7 @@ export function PhotoGalleryModal({
                 className={cn(
                   'relative h-11 w-[58px] min-[601px]:h-14 min-[601px]:w-[76px] flex-shrink-0 rounded-[10px] overflow-hidden border-2 transition-[opacity,border-color] duration-fast',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-white',
-                  activeIndex === index ? 'border-[#4D6BFF] opacity-100' : 'border-transparent opacity-[0.42] hover:opacity-[0.85]'
+                  activeIndex === index ? 'border-primary opacity-100' : 'border-transparent opacity-[0.42] hover:opacity-[0.85]'
                 )}
               >
                 <Image src={image} alt={`Miniatura ${index + 1}`} fill className="object-cover" sizes="80px" />

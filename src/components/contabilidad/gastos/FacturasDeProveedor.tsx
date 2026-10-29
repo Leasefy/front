@@ -33,9 +33,10 @@
  * pantalla lo dice en vez de dejar intentar.
  */
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowsClockwise, FileText, Money, Plus, Prohibit } from '@phosphor-icons/react';
+import { SearchInput } from '@leasefy/cadence';
 
 import {
   AlertDialog,
@@ -58,6 +59,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import {
@@ -111,6 +114,10 @@ import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** El valor de «todas» en los `Select` del DS (Radix no acepta `''`). */
 const TODOS = '__todos__';
+/** Las filas de cada página al abrir (las opciones son las de todas las tablas: 10, 25 y 50). */
+const FILAS_POR_PAGINA = 25;
+/** La pausa del buscador antes de pedir (como en «Egresos elige la salida del extracto»). */
+const PAUSA_DEL_BUSCADOR_MS = 300;
 
 const TONO_DEL_ESTADO: Record<
   EstadoDeFacturaDeProveedor,
@@ -157,6 +164,28 @@ export function FacturasDeProveedor({
   const [hasta, setHasta] = useState('');
   const [estado, setEstado] = useState<EstadoDeFacturaDeProveedor | ''>(estadoInicial);
   const [rubroFiltro, setRubroFiltro] = useState('');
+  /*
+   * Nico (29-10): «Facturas de proveedor sólo muestra 50». El back entrega de a
+   * una página (tope 200); la lista ahora pagina y busca en el servidor. Lo
+   * escrito se manda con una pausa corta para no pedir con cada letra.
+   */
+  const [texto, setTexto] = useState('');
+  const [buscar, setBuscar] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setBuscar(texto.trim()), PAUSA_DEL_BUSCADOR_MS);
+    return () => clearTimeout(t);
+  }, [texto]);
+  const [filasPorPagina, setFilasPorPagina] = useState(FILAS_POR_PAGINA);
+  // Cambiar un filtro vuelve a la primera página (sin pedir dos veces: la página va atada al filtro).
+  const claveDelFiltro = [desde, hasta, estado, rubroFiltro, buscar, filasPorPagina].join('|');
+  const [paginaElegida, setPaginaElegida] = useState({ clave: claveDelFiltro, n: 1 });
+  const paginaActual = paginaElegida.clave === claveDelFiltro ? paginaElegida.n : 1;
+  const irALaPagina = useCallback(
+    (n: number) => setPaginaElegida({ clave: claveDelFiltro, n }),
+    [claveDelFiltro],
+  );
+  /** Sólo la respuesta del último pedido se pinta (pasar rápido de página no deja una vieja encima). */
+  const ultimoPedido = useRef(0);
 
   /** Lo que el formulario necesita, cargado una vez. Un fallo no tumba la lista. */
   const [cuentas, setCuentas] = useState<CuentaPuc[]>([]);
@@ -179,27 +208,36 @@ export function FacturasDeProveedor({
   const registro = usePuedeRegistrar();
 
   const cargar = useCallback(async () => {
+    const pedido = ++ultimoPedido.current;
     setCargando(true);
     setError(null);
     try {
-      setPagina(
-        await gastosApi.facturas.listar({
-          desde: desde || undefined,
-          hasta: hasta || undefined,
-          estado: estado || undefined,
-          rubro: rubroFiltro || undefined,
-        }),
-      );
+      const respuesta = await gastosApi.facturas.listar({
+        desde: desde || undefined,
+        hasta: hasta || undefined,
+        estado: estado || undefined,
+        rubro: rubroFiltro || undefined,
+        buscar: buscar || undefined,
+        limite: filasPorPagina,
+        desplazamiento: (paginaActual - 1) * filasPorPagina,
+      });
+      if (pedido === ultimoPedido.current) setPagina(respuesta);
     } catch (e) {
-      setError(e);
+      if (pedido === ultimoPedido.current) setError(e);
     } finally {
-      setCargando(false);
+      if (pedido === ultimoPedido.current) setCargando(false);
     }
-  }, [desde, hasta, estado, rubroFiltro]);
+  }, [desde, hasta, estado, rubroFiltro, buscar, paginaActual, filasPorPagina]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  // Si la página quedó vacía (se anuló la última de la última página), vuelve a la última que tiene.
+  useEffect(() => {
+    if (!pagina || pagina.facturas.length > 0 || pagina.total === 0 || paginaActual === 1) return;
+    irALaPagina(Math.max(1, Math.ceil(pagina.total / filasPorPagina)));
+  }, [pagina, paginaActual, filasPorPagina, irALaPagina]);
 
   /** Después de causar, anular, registrar o pagar: la lista y los conteos de la franja. */
   const [version, setVersion] = useState(0);
@@ -345,10 +383,12 @@ export function FacturasDeProveedor({
   };
 
   const totales = pagina?.totales;
-  const sinCausar = useMemo(
+  // Las que están en borrador en TODO el período (el conteo por estado), no sólo en esta página.
+  const sinCausarEnLaPagina = useMemo(
     () => (pagina?.facturas ?? []).filter((f) => f.estado === 'BORRADOR').length,
     [pagina],
   );
+  const sinCausar = conteos.BORRADOR ? conteos.BORRADOR.n : sinCausarEnLaPagina;
 
   if (cargando && !pagina) {
     return (
@@ -467,7 +507,7 @@ export function FacturasDeProveedor({
           totales, nota y lista— con el estado en un desplegable. Ahora es UNA tarjeta: arriba los
           estados con su plata (lo que está por causar y por pagar es lo que pide trabajo), cada
           uno filtra; debajo fechas y rubro; la lista; y los totales del filtro al pie. */}
-      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+      <section className="overflow-hidden rounded-lg border border-border bg-surface" aria-busy={cargando || undefined}>
         <div className="border-b border-border px-4 pt-4 pb-3 empty:hidden">
           <PestanasDeEstado
             etiqueta="Filtrar por estado"
@@ -494,6 +534,18 @@ export function FacturasDeProveedor({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
+        {/* Nico (29-10): con más de 50 facturas no se llegaba a las demás. El buscador va en la
+            barra de la tabla, como en las hermanas. */}
+        <SearchInput
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          onClear={() => setTexto('')}
+          placeholder="Proveedor, NIT, número o concepto"
+          aria-label="Buscar una factura"
+          inputSize="md"
+          className="w-full sm:w-72"
+          data-testid="facturas-buscar"
+        />
         {/* El período, con los mismos atajos del libro y los informes (antes, dos campos «Sin
             fecha» sin decir cuál era cuál). */}
         <div className="min-w-0">
@@ -530,7 +582,7 @@ export function FacturasDeProveedor({
 
         {pagina.facturas.length === 0 ? (
           <SinDatos
-            hayFiltros={Boolean(desde || hasta || estado || rubroFiltro)}
+            hayFiltros={Boolean(desde || hasta || estado || rubroFiltro || buscar)}
             queSon="facturas"
             ilustracion="billetera"
             titulo="Todavía no hay facturas de proveedor"
@@ -542,6 +594,8 @@ export function FacturasDeProveedor({
               setHasta('');
               setEstado('');
               setRubroFiltro('');
+              setTexto('');
+              setBuscar('');
             }}
           />
         ) : (
@@ -675,6 +729,19 @@ export function FacturasDeProveedor({
             </Table>
           </div>
         )}
+
+        {pagina.total > PAGE_SIZE_OPTIONS[0] ? (
+          <div className="border-t border-border px-4 py-3" data-testid="facturas-paginacion">
+            <TablePagination
+              total={pagina.total}
+              page={paginaActual}
+              pageSize={filasPorPagina}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={irALaPagina}
+              onPageSizeChange={setFilasPorPagina}
+            />
+          </div>
+        ) : null}
 
         {/* Los totales del filtro, al pie de la lista (antes, una tarjeta aparte arriba). */}
         {totales && pagina.total > 0 ? (

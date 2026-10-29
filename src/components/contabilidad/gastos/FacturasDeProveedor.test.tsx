@@ -455,3 +455,78 @@ describe('<FacturasDeProveedor> · causar con la regla de oro', () => {
     expect(await causar()).toBe('Esa fecha cae en un período que ya se cerró.');
   });
 });
+
+/*
+ * Nico (29-10-2026): «Facturas de proveedor sólo muestra 50». El back entrega una página; la lista
+ * pide de a 25, pagina y busca en el servidor.
+ */
+describe('<FacturasDeProveedor> · más de 50 facturas', () => {
+  /** Las llamadas de la LISTA (las de los conteos piden `limite: 1`). */
+  const pedidosDeLaLista = () =>
+    gastos.facturas.listar.mock.calls.map((c) => c[0]).filter((f) => f?.limite !== 1);
+
+  const muchas = (desplazamiento = 0) =>
+    pagina(
+      Array.from({ length: 25 }, (_, i) => factura({ id: `f${desplazamiento + i + 1}` })),
+      { total: 60, limite: 25, desplazamiento },
+    );
+
+  it('pide la primera página de a 25, no las 50 del back', async () => {
+    await pintar();
+    expect(pedidosDeLaLista()[0]).toMatchObject({ limite: 25, desplazamiento: 0 });
+  });
+
+  it('con 60 facturas pagina, y la siguiente página pide desde la 26', async () => {
+    gastos.facturas.listar.mockImplementation(async (f: { limite?: number; desplazamiento?: number }) =>
+      f?.limite === 1 ? pagina([factura()], { total: 60 }) : muchas(f?.desplazamiento ?? 0),
+    );
+    await pintar();
+    expect(q('facturas-paginacion')).not.toBeNull();
+    const siguiente = q('facturas-paginacion')!.querySelector('[aria-label="Página siguiente"]') as HTMLButtonElement;
+    await act(async () => {
+      siguiente.click();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(pedidosDeLaLista().at(-1)).toMatchObject({ limite: 25, desplazamiento: 25 });
+    expect(q('factura-f26')).not.toBeNull();
+  });
+
+  it('con pocas facturas no muestra la paginación', async () => {
+    await pintar();
+    expect(q('facturas-paginacion')).toBeNull();
+  });
+
+  it('el buscador pide al servidor después de una pausa, y vuelve a la primera página', async () => {
+    gastos.facturas.listar.mockImplementation(async (f: { limite?: number; desplazamiento?: number }) =>
+      f?.limite === 1 ? pagina([factura()], { total: 60 }) : muchas(f?.desplazamiento ?? 0),
+    );
+    await pintar();
+    const siguiente = q('facturas-paginacion')!.querySelector('[aria-label="Página siguiente"]') as HTMLButtonElement;
+    await act(async () => {
+      siguiente.click();
+    });
+    const campo = q('facturas-buscar') as HTMLInputElement;
+    const ponerValor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      ponerValor.call(campo, 'tornillo');
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(pedidosDeLaLista().some((f) => f.buscar)).toBe(false);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 350));
+    });
+    expect(pedidosDeLaLista().at(-1)).toMatchObject({ buscar: 'tornillo', desplazamiento: 0 });
+  });
+
+  it('el aviso del borrador cuenta TODAS las del período, no sólo las de la página', async () => {
+    gastos.facturas.listar.mockImplementation(async (f: { limite?: number; estado?: string }) =>
+      f?.limite === 1
+        ? pagina([factura()], { total: f.estado === 'BORRADOR' ? 37 : 0 })
+        : pagina([factura()], { total: 37 }),
+    );
+    await pintar();
+    expect(q('nota-sin-causar')!.textContent).toContain('37 facturas en borrador');
+  });
+});

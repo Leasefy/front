@@ -899,7 +899,7 @@ export function MantenimientoForm({
       {/* Section 4: Proveedor (opcional). Portofino 22-10: «al hacer la
           solicitud, elegir con qué proveedor vamos a trabajar». */}
       <div className="space-y-4 pt-6 border-t border-border-faint dark:border-border-strong" data-campo="proveedorId">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           <Truck className="h-4 w-4 text-fg-muted" />
           Proveedor <span className="font-normal text-fg-muted">(opcional)</span>
         </h3>

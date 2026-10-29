@@ -386,6 +386,11 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Contrato {n}': 'Lease {n}',
   'Propietario: {nombre}': 'Owner: {nombre}',
   'Inquilino: {nombre}': 'Tenant: {nombre}',
+  // Mantenimientos, buscar el proveedor (29-10)
+  'Nombre, oficio o documento': 'Name, trade or ID number',
+  'No encontramos ese proveedor entre los tuyos. Prueba con su nombre, su oficio o su documento, o regístralo.':
+    "We couldn't find that supplier among yours. Try their name, trade or ID number, or register them.",
+  'Registrar un proveedor nuevo': 'Register a new supplier',
   // Cobranza, portada (22-10)
   "Ocultar lo que hizo el agente": "Hide what the agent did",
   // Giros, lo que falta del mes (22-10)

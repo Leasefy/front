@@ -5,8 +5,11 @@
  * hay que hacer otra cosa ahí y que mejor quede debajo del logo, algo pequeño, como si fuera un home con widgets»).
  *
  * Reemplazan los testimonios de abajo a la izquierda. Debajo del logo, sobre el video, como la pantalla de inicio de
- * un teléfono: la hora de Colombia (de verdad) y tres widgets chicos de cómo se ve un día en Leasefy. Los tres llevan
- * datos de EJEMPLO y lo dicen arriba: nada se presenta como una cifra real.
+ * un teléfono: la hora de Colombia (de verdad) y las NOVEDADES de Leasefy.
+ *
+ * 🔴 Nico (29-10, al verlos): «aquí deben de ser widgets de cosas que no muestren información que está dentro de la
+ * inmobiliaria […] mejor quizás novedades». Esta pantalla es pública: nada de recaudo, inquilinos, contratos ni
+ * visitas, ni siquiera «de ejemplo». Sólo lo que Leasefy estrenó, y que existe de verdad.
  *
  * Mismo vidrio que tenían los testimonios (es lo que se lee sobre el video). Entran escalonados con la curva de
  * entrada de Cadence; con movimiento reducido aparecen quietos. Decorativos para el lector de pantalla salvo la hora.
@@ -14,7 +17,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { CalendarCheck, ChatCircleText, Signature } from '@phosphor-icons/react';
+import { ArrowsClockwise, LinkSimple, Receipt } from '@phosphor-icons/react';
 import { motionDuration, motionEase } from '@leasefy/cadence';
 
 const VIDRIO =
@@ -58,58 +61,42 @@ export function WidgetsDeInicio() {
       {/* Nico (29-10, captura): mientras carga, el rótulo salía SOLO y sin las tarjetas debajo. Entra con ellas. */}
       <motion.p
         {...entrada(1)}
-        className="mb-2 mt-4 pl-1 font-mono text-[10.5px] uppercase tracking-[0.14em] text-white/85 [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]"
-        aria-hidden="true"
+        id="novedades-de-leasefy"
+        className="mb-2 mt-4 inline-block rounded-full bg-black/35 px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.14em] text-white backdrop-blur-md"
       >
-        Tu día en Leasefy · ejemplo
+        Novedades de octubre
       </motion.p>
-      <div className="grid grid-cols-2 gap-2.5" aria-hidden="true">
-        <motion.div {...entrada(2)} className={`${VIDRIO} col-span-2 flex items-center gap-4 px-4 py-3.5`}>
-          <Anillo porcentaje={78} />
-          <div className="min-w-0">
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-white/55">Recaudo del mes</p>
-            <p className="mt-0.5 text-[13.5px] leading-snug text-white">
-              <span className="font-mono tabular-nums">41 de 52</span> arriendos pagos
-            </p>
-          </div>
-        </motion.div>
-        <motion.div {...entrada(3)} className={`${VIDRIO} px-4 py-3.5`}>
-          <ChatCircleText size={18} className="text-white/80" />
-          <p className="mt-2 text-[13px] leading-snug text-white">Mori le recordó a 6 inquilinos</p>
-        </motion.div>
-        <motion.div {...entrada(4)} className={`${VIDRIO} px-4 py-3.5`}>
-          <Signature size={18} className="text-white/80" />
-          <p className="mt-2 text-[13px] leading-snug text-white">3 contratos firmados hoy</p>
-        </motion.div>
-        <motion.div {...entrada(5)} className={`${VIDRIO} col-span-2 flex items-center gap-3 px-4 py-3`}>
-          <CalendarCheck size={18} className="shrink-0 text-white/80" />
-          <p className="text-[13px] leading-snug text-white">
-            Visita a las <span className="font-mono tabular-nums">3:00 p. m.</span> · Cl 10 # 34-21, Sabaneta
-          </p>
-        </motion.div>
-      </div>
+      <ul className="grid grid-cols-2 gap-2.5" aria-labelledby="novedades-de-leasefy">
+        {NOVEDADES.map((n, i) => (
+          <motion.li
+            key={n.titulo}
+            {...entrada(2 + i)}
+            className={`${VIDRIO} ${n.ancha ? 'col-span-2 flex items-start gap-3' : ''} px-4 py-3.5`}
+          >
+            <n.Icono size={18} className={`shrink-0 text-white/80 ${n.ancha ? 'mt-0.5' : ''}`} aria-hidden="true" />
+            <div className={n.ancha ? 'min-w-0' : 'mt-2'}>
+              <p className="text-[13.5px] leading-snug text-white">{n.titulo}</p>
+              {n.detalle ? <p className="mt-0.5 text-[13px] leading-snug text-white/65">{n.detalle}</p> : null}
+            </div>
+          </motion.li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-/** Un anillo de avance en voltaje (el del tablero), sin texto adentro. */
-function Anillo({ porcentaje }: { porcentaje: number }) {
-  const r = 17;
-  const largo = 2 * Math.PI * r;
-  return (
-    <svg viewBox="0 0 44 44" className="h-11 w-11 shrink-0 -rotate-90" aria-hidden="true">
-      <circle cx="22" cy="22" r={r} fill="none" stroke="currentColor" strokeWidth="5" className="text-white/15" />
-      <circle
-        cx="22"
-        cy="22"
-        r={r}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeDasharray={`${(largo * porcentaje) / 100} ${largo}`}
-        className="text-primary"
-      />
-    </svg>
-  );
-}
+/**
+ * Lo que Leasefy estrenó en octubre de 2026. Cada una es una función que existe (no se anuncia nada que no esté):
+ * crear el inmueble desde el enlace del aviso (27-10), Servi, que revisa las facturas de servicios públicos (29-10),
+ * y renovar la vivienda con el IPC y sus avisos (29-10).
+ */
+const NOVEDADES: { titulo: string; detalle?: string; Icono: typeof LinkSimple; ancha?: boolean }[] = [
+  {
+    titulo: 'Crea el inmueble con el enlace del aviso',
+    detalle: 'Trae los datos y las fotos de Fincaraíz, Metrocuadrado o Ciencuadras.',
+    Icono: LinkSimple,
+    ancha: true,
+  },
+  { titulo: 'Servi revisa tus facturas de servicios', Icono: Receipt },
+  { titulo: 'Renueva la vivienda con el IPC', Icono: ArrowsClockwise },
+];

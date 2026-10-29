@@ -5,11 +5,12 @@
  *   1. apagado, todo va al back como siempre;
  *   2. prendido y en una parte cerrada del panel, la lectura con dato de ejemplo no sale de la pestaña y ninguna
  *      escritura sale (403 MODO_DEMO con su frase);
- *   3. prendido pero en una parte abierta, nada cambia;
+ *   3. prendido pero en una parte abierta, nada cambia; en una cerrada, el micro tampoco se toca (salvo el chat de Ori);
  *   4. los datos de ejemplo de Servicios públicos respetan el mes pedido y traen la cuenta de EPM.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { agentFetch } from '@/lib/api/agent-fetch';
 import { apiClient } from '@/lib/api/client';
 import type { TableroDeServicios } from '@/lib/api/servicios-publicos.service';
 import { entrarAlModoDemo, estaEnModoDemo, salirDelModoDemo } from './modo-demo-estado';
@@ -34,6 +35,19 @@ describe('el modo demo', () => {
     expect(estaEnModoDemo()).toBe(true);
     salirDelModoDemo();
     expect(estaEnModoDemo()).toBe(false);
+  });
+
+  it('en una parte cerrada, el micro tampoco se toca: la lectura dice «no disponible» y la escritura se frena; el chat de Ori sigue', async () => {
+    entrarAlModoDemo();
+    const micro = 'http://localhost:4300/api/agency/a1';
+    const lectura = await agentFetch(`${micro}/ai-hub/agentes/pagos/overview`);
+    expect(lectura.status).toBe(404);
+    const escritura = await agentFetch(`${micro}/ai-hub/work-items/pagos/w1/acciones`, { method: 'POST', body: '{}' });
+    expect(escritura.status).toBe(403);
+    expect(await escritura.json()).toMatchObject({ code: 'MODO_DEMO' });
+    expect(pedir).not.toHaveBeenCalled();
+    await agentFetch(`${micro}/ai-hub/chat/stream`, { method: 'POST', body: '{}' });
+    expect(pedir).toHaveBeenCalledTimes(1);
   });
 
   it('en una parte cerrada: la lectura de ejemplo no sale y la escritura se frena con su frase', async () => {

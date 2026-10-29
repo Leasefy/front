@@ -1,8 +1,8 @@
 import { compartirGet, invalidar, recursoDe, descartarEnVuelo } from './refresco-de-datos'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
-import { CODIGO_DEL_MODO_DEMO, MENSAJE_DEL_MODO_DEMO, estaEnModoDemo } from '@/lib/demo/modo-demo-estado'
+import { CODIGO_DEL_MODO_DEMO, MENSAJE_DEL_MODO_DEMO } from '@/lib/demo/modo-demo-estado'
+import { enLaDemo } from '@/lib/demo/en-la-demo'
 import { lecturaDeLaDemo } from '@/lib/demo/datos-demo'
-import { abiertaEnModoComercial } from '@/lib/nav/modo-comercial'
 import {
   CODIGO_DEMASIADAS_SOLICITUDES,
   mensajeDeDemasiadasSolicitudes,
@@ -523,13 +523,6 @@ function getAuthHeaders(): Record<string, string> {
   Object.assign(headers, cabecerasDeLaCuenta())
 
   return headers
-}
-
-/** ¿Esta pestaña está mostrando una parte cerrada del panel en modo demo? */
-function enLaDemo(): boolean {
-  if (typeof window === 'undefined' || !estaEnModoDemo()) return false
-  const ruta = window.location.pathname
-  return ruta.startsWith('/panel/inmobiliaria') && !abiertaEnModoComercial(ruta)
 }
 
 async function request<T>(

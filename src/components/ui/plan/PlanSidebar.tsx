@@ -1183,9 +1183,10 @@ export function SidebarContent({
       )}
 
       {/* Footer — cadence §Navigation: invite card + upgrade CTA, then Help.
-          Collapsed rail shows only the Help icon. */}
+          Collapsed rail shows only the Help icon. El pie va sólido para que el menú no se vea por detrás, con la MISMA
+          arena de la barra (Nico, 29-10: en oscuro el papel de la página dejaba negros los lados de las tarjetas). */}
       {isCollapsed ? (
-        <div data-testid="pie-de-la-barra" className="shrink-0 bg-bg px-2 pb-3 space-y-1">
+        <div data-testid="pie-de-la-barra" className="shrink-0 bg-surface-muted px-2 pb-3 space-y-1">
           {ayudaHref && (
             <Link
               href={ayudaHref}
@@ -1199,7 +1200,7 @@ export function SidebarContent({
           <SidebarThemeToggle collapsed />
         </div>
       ) : (
-        <div data-testid="pie-de-la-barra" className="shrink-0 bg-bg px-3 pb-3 space-y-2.5">
+        <div data-testid="pie-de-la-barra" className="shrink-0 bg-surface-muted px-3 pb-3 space-y-2.5">
           {footerCards}
           {showInvite && !inviteDismissed && (
             <div className="relative group/invite">

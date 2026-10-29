@@ -31,3 +31,18 @@ export function fechaCortaDeFirma(iso: string | null): string {
   if (Number.isNaN(d.getTime())) return '—';
   return new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'short', year: 'numeric' }).format(d).replace('.', '');
 }
+
+/** La prueba de vida de una persona, en una frase para el panel. */
+export function textoDeLaPruebaDeVida(p: {
+  estado: 'EN_CURSO' | 'EN_REVISION' | 'APROBADA' | 'RECHAZADA';
+  proveedor: 'DIDIT' | 'SIMULADA';
+  puntaje: number | null;
+}): string {
+  if (p.estado === 'APROBADA') {
+    if (p.proveedor === 'SIMULADA') return 'Se tomó la foto (laboratorio)';
+    return `Pasó la prueba de vida${p.puntaje !== null ? ` · ${String(p.puntaje).replace('.', ',')} %` : ''}`;
+  }
+  if (p.estado === 'EN_REVISION') return 'Su prueba de vida está en revisión';
+  if (p.estado === 'RECHAZADA') return 'No pasó la prueba de vida: puede intentarlo de nuevo';
+  return 'Empezó la prueba de vida';
+}

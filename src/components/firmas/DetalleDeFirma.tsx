@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle, Clock, DownloadSimple, EnvelopeSimple, WhatsappLogo, XCircle } from '@phosphor-icons/react';
+import { ArrowSquareOut, Camera, CheckCircle, Clock, DownloadSimple, EnvelopeSimple, WhatsappLogo, XCircle } from '@phosphor-icons/react';
 import { CopyButton, StatusBadge } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
@@ -18,7 +18,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { firmasApi, type ComoPaga, type DetalleDelDocumento, type DondeFirma } from '@/lib/api/firmas.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { COLORES_DE_FIRMANTE } from '@/lib/firmas/reglas-de-firmas';
-import { ESTADO_DEL_DOCUMENTO, fechaYHora, FORMA_DE_PAGO } from './textos-de-firmas';
+import { ESTADO_DEL_DOCUMENTO, fechaYHora, FORMA_DE_PAGO, textoDeLaPruebaDeVida } from './textos-de-firmas';
 
 interface Props {
   id: string | null;
@@ -161,6 +161,12 @@ export function DetalleDeFirma({ id, donde, alCerrar, alCambiar, pago }: Props) 
                             <span className="text-fg-subtle">No firmó</span>
                           )}
                         </p>
+                        {f.pruebaDeVida ? (
+                          <p className="mt-1 flex items-center gap-1.5 text-caption text-fg-muted" data-testid={`prueba-de-vida-${i + 1}`}>
+                            <Camera size={15} className={f.pruebaDeVida.estado === 'APROBADA' ? 'text-success' : 'text-fg-subtle'} aria-hidden="true" />
+                            {textoDeLaPruebaDeVida(f.pruebaDeVida)}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                     {!f.firmado && doc.estado === 'ENVIADO' && enlace ? (
@@ -199,9 +205,22 @@ export function DetalleDeFirma({ id, donde, alCerrar, alCambiar, pago }: Props) 
               <p className="rounded-xl bg-surface-muted px-4 py-3 text-body-sm text-fg-muted">Quedó guardado sin enviar. Envíalo con el botón de abajo.</p>
             ) : null}
             {doc.estado === 'FIRMADO' ? (
-              <p className="rounded-xl bg-success-soft px-4 py-3 text-body-sm text-fg">
-                Firmaron todos. El PDF lleva las firmas y, al final, la hoja de firmas con la evidencia de cada una.
-              </p>
+              <div className="space-y-3 rounded-xl bg-success-soft px-4 py-3 text-body-sm text-fg">
+                <p>Firmaron todos. El PDF lleva las firmas y, al final, el certificado con la evidencia de cada una y un QR para verificarlo.</p>
+                {doc.codigo && doc.verificacion ? (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="verificacion-del-documento">
+                    <span className="text-fg-muted">
+                      Código <span className="font-mono tabular-nums text-fg">{doc.codigo}</span>
+                    </span>
+                    <Button size="sm" variant="ghost" hideArrow asChild>
+                      <a href={doc.verificacion} target="_blank" rel="noopener noreferrer">
+                        <ArrowSquareOut className="h-4 w-4" /> Ver la verificación
+                      </a>
+                    </Button>
+                    <CopyButton text={doc.verificacion} label="Copiar el enlace" copiedLabel="Copiado" size="sm" variant="ghost" />
+                  </div>
+                ) : null}
+              </div>
             ) : null}
             {doc.estado === 'CANCELADO' ? (
               <p className="rounded-xl bg-surface-muted px-4 py-3 text-body-sm text-fg-muted">

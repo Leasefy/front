@@ -207,7 +207,9 @@ function AgendaContent() {
    * visitas, las que nadie atiende todavía y sus tareas.
    */
   const esAsesor = canAccess('pipeline', 'edit') && !canAccess('operaciones', 'view');
-  const [pestana, setPestana] = useState<Pestana>('proximas');
+  // Abre en el calendario de la semana, no en la lista (Nico, 28-10-2026: «el calendario quede como predeterminado y no
+  // lista»). La lista sigue a un toque, con sus pestañas y su buscador.
+  const [pestana, setPestana] = useState<Pestana>('semana');
   const [soloLoMio, setSoloLoMio] = useState<boolean>(esAsesor);
   useEffect(() => setSoloLoMio(esAsesor), [esAsesor]);
   const [lunes, setLunes] = useState<Date>(() => lunesDe(new Date()));
@@ -232,6 +234,24 @@ function AgendaContent() {
       .catch(setError)
       .finally(() => setIsLoading(false));
   }, [page, pageSize, pestana, soloLoMio, lunes]);
+
+  /**
+   * En el calendario el back no manda los conteos de la lista: se piden aparte (una página de un evento) para avisar
+   * las atrasadas, que no caben en la semana. Lo pendiente primero (decisión 24 de Nico, 22-10) sin quitarle al
+   * calendario ser lo primero que se ve (28-10).
+   */
+  const [atrasadasDelCalendario, setAtrasadasDelCalendario] = useState(0);
+  useEffect(() => {
+    if (pestana !== 'semana') return;
+    let vivo = true;
+    agendaApi
+      .getAgenda({ vista: 'proximas', page: 1, pageSize: 1, mias: soloLoMio })
+      .then((r) => vivo && setAtrasadasDelCalendario(r?.porVista?.vencidas ?? 0))
+      .catch(() => vivo && setAtrasadasDelCalendario(0));
+    return () => {
+      vivo = false;
+    };
+  }, [pestana, soloLoMio]);
 
   /** Cambiar cuántas filas se ven vuelve a la primera página. */
   const cambiarTamano = useCallback((tamano: number) => {
@@ -438,7 +458,8 @@ function AgendaContent() {
    */
   const yaAbrioEnLoPendiente = useRef(false);
   useEffect(() => {
-    if (yaAbrioEnLoPendiente.current || !porVista) return;
+    // Sólo cuenta en la lista: en el calendario las atrasadas salen en su aviso.
+    if (yaAbrioEnLoPendiente.current || !porVista || pestana === 'semana') return;
     yaAbrioEnLoPendiente.current = true;
     if (pestana === 'proximas' && porVista.vencidas > 0) {
       setPestana('vencidas');
@@ -621,10 +642,28 @@ function AgendaContent() {
       {/* La tabla, sin título encima: no se nombran las tablas (Nico, 2026-09-03). */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
         {/* Revisora r24 (Agenda #2): la barra de la lista DENTRO de la tarjeta —los estados con su conteo, «Sólo lo
-            mío» y la vista (Lista · Semana)—, como en Contratos e Inquilinos. */}
+            mío» y la vista (Calendario · Lista)—, como en Contratos e Inquilinos. */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border px-4 py-3" data-testid="agenda-barra">
           {pestana === 'semana' ? (
-            <p className="text-body-sm text-fg-muted">La semana, día por día</p>
+            atrasadasDelCalendario > 0 ? (
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-fg-muted" data-testid="agenda-aviso-atrasadas">
+                <span className="size-1.5 shrink-0 rounded-full bg-warning" aria-hidden="true" />
+                {atrasadasDelCalendario === 1 ? 'Tienes 1 atrasada.' : `Tienes ${atrasadasDelCalendario} atrasadas.`}
+                <button
+                  type="button"
+                  className="text-primary underline-offset-4 hover:underline"
+                  onClick={() => {
+                    setPestana('vencidas');
+                    setPage(1);
+                  }}
+                  data-testid="agenda-ver-atrasadas"
+                >
+                  {atrasadasDelCalendario === 1 ? 'Verla' : 'Verlas'}
+                </button>
+              </p>
+            ) : (
+              <p className="text-body-sm text-fg-muted">La semana, día por día</p>
+            )
           ) : (
             <PestanasDeEstado<VistaDeAgenda>
               etiqueta="Qué ver"
@@ -678,8 +717,8 @@ function AgendaContent() {
                 setPage(1);
               }}
               options={[
+                { value: 'semana', label: <span data-testid="agenda-pestana-semana">Calendario</span>, ariaLabel: 'Calendario' },
                 { value: 'lista', label: <span data-testid="agenda-vista-lista">Lista</span>, ariaLabel: 'Lista' },
-                { value: 'semana', label: <span data-testid="agenda-pestana-semana">Semana</span>, ariaLabel: 'Semana' },
               ]}
             />
           </div>

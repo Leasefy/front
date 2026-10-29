@@ -416,6 +416,9 @@ section{position:relative;overflow-x:clip}
 .ficha-foto{position:relative;aspect-ratio:4/3;background:linear-gradient(180deg,#EEEBE5,#E4E0D8);display:grid;place-items:center}
 .ficha-foto img{width:72%}
 .foto-estrias{position:relative;overflow:hidden}
+/* La tarjeta de adelante del «Publica gratis» va con su foto tal cual, sin estrías (Nico 28-10: «la primer imagen que quede sin esas líneas»). */
+.foto-limpia{position:relative;overflow:hidden}
+.foto-limpia img{position:absolute;inset:0;width:100%!important;height:100%;object-fit:cover}
 .foto-estrias img{position:absolute;inset:0;width:100%!important;height:100%;object-fit:cover}
 .foto-estrias canvas{position:absolute;inset:0;width:100%;height:100%;transition:opacity .7s ease}
 .ficha:hover .foto-estrias canvas,.card-i:hover .foto-estrias canvas,.foto-estrias.ver canvas{opacity:0}
@@ -1214,7 +1217,7 @@ section{position:relative;overflow-x:clip}
       <img class="mos-3d" src="/landing/img/megafono-voltaje.webp" alt="" width="640" height="640" loading="lazy">
       <div class="ficha f-c"><div class="ficha-foto foto-estrias"><img src="/landing/img/fotos/00.webp" alt=""><canvas></canvas><span class="rec">RECIÉN PUBLICADO</span></div><div class="ficha-tx"><b>$ 6.800.000 <em>/mes</em></b><p>Casa · 4 hab · Rionegro</p><div class="ag"><span class="ini">TI</span>Tu Inmobiliaria · publicado gratis</div></div></div>
       <div class="ficha f-b"><div class="ficha-foto foto-estrias"><img src="/landing/img/fotos-co/torre-poblado.webp" alt=""><canvas></canvas><span class="rec">RECIÉN PUBLICADO</span></div><div class="ficha-tx"><b>$ 1.750.000 <em>/mes</em></b><p>Apartaestudio · 1 hab · Laureles</p><div class="ag"><span class="ini">TI</span>Tu Inmobiliaria · publicado gratis</div></div></div>
-      <div class="ficha f-a"><div class="ficha-foto foto-estrias"><img src="/landing/img/fotos/01.webp" alt=""><canvas></canvas><span class="rec">RECIÉN PUBLICADO</span></div><div class="ficha-tx"><b>$ 2.600.000 <em>/mes</em></b><p>Apartamento · 2 hab · 2 baños · 68 m² · Sabaneta</p><div class="ag"><span class="ini">TI</span>Tu Inmobiliaria · publicado gratis</div></div></div>
+      <div class="ficha f-a"><div class="ficha-foto foto-limpia"><img src="/landing/img/fotos/01.webp" alt=""><span class="rec">RECIÉN PUBLICADO</span></div><div class="ficha-tx"><b>$ 2.600.000 <em>/mes</em></b><p>Apartamento · 2 hab · 2 baños · 68 m² · Sabaneta</p><div class="ag"><span class="ini">TI</span>Tu Inmobiliaria · publicado gratis</div></div></div>
     </div>
   </div>
 </section>

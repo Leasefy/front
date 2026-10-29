@@ -98,11 +98,27 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-async function montar() {
+/**
+ * La agenda abre en el CALENDARIO (Nico, 28-10-2026). Casi todas estas pruebas son de la LISTA: `montar()` la abre con
+ * «Lista», como lo haría la persona; `montarEnElCalendario()` deja lo que se ve al entrar.
+ */
+async function montarEnElCalendario() {
   await act(async () => {
     root.render(React.createElement(AgendaPage))
   })
   // deja resolver la promesa del fetch
+  await act(async () => {
+    await Promise.resolve()
+  })
+}
+
+async function montar() {
+  await montarEnElCalendario()
+  const lista = container.querySelector<HTMLElement>('[data-testid="agenda-vista-lista"]')
+  const boton = (lista?.closest('button') ?? lista) as HTMLElement | null
+  await act(async () => {
+    boton?.click()
+  })
   await act(async () => {
     await Promise.resolve()
   })
@@ -626,3 +642,24 @@ describe('agenda — la paginación la resuelve el servidor', () => {
     expect(container.textContent).not.toContain('emptyTitle')
   })
 })
+
+describe('agenda — abre en el calendario (Nico, 28-10-2026)', () => {
+  it('entra en el calendario de la semana; con atrasadas lo avisa y «Verlas» abre la lista en Atrasadas', async () => {
+    getAgendaMock.mockResolvedValue({
+      ...CON_VISITA_PENDIENTE,
+      porVista: { proximas: 1, vencidas: 3, hechas: 0 },
+    })
+    await montarEnElCalendario()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(container.querySelector('[data-testid="agenda-semana"]')).not.toBeNull()
+    expect(getAgendaMock).toHaveBeenCalledWith(expect.objectContaining({ desde: expect.any(String), hasta: expect.any(String) }))
+    expect(container.querySelector('[data-testid="agenda-aviso-atrasadas"]')?.textContent).toContain('Tienes 3 atrasadas')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="agenda-ver-atrasadas"]') as HTMLButtonElement).click()
+    })
+    expect(getAgendaMock).toHaveBeenLastCalledWith(expect.objectContaining({ vista: 'vencidas' }))
+  })
+})
+

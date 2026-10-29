@@ -19,11 +19,16 @@
  * «mirá eso tan feo, que se deje de una manera más fácil subirlas y más
  * bonita». Ahora se sueltan/eligen/pegan en `SubidaDeFotos` y se suben al
  * tiro, con el avance a la vista; cada miniatura abre el visor.
+ *
+ * Nico, 28-10-2026: «que haya la posibilidad de seleccionar varias imágenes de un inmueble y poder borrar, porque solo
+ * deja borrar de a una». «Seleccionar» pone cada miniatura a marcar (tocarla la marca en vez de abrir el visor) y
+ * «Quitar N fotos» las borra después de confirmar, de a una (el back no tiene borrado en lote), con el avance a la
+ * vista. Si alguna no se quita, lo dice y las demás quedan quitadas.
  */
 
 import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Images, Star, Trash, UploadSimple } from '@phosphor-icons/react';
+import { Check, Images, Star, Trash, UploadSimple } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
@@ -208,6 +213,59 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
 
   const esLaPortada = porQuitar != null && imagenes[0]?.id === porQuitar.id;
 
+  // ── Varias a la vez ──
+  const [eligiendo, setEligiendo] = useState(false);
+  const [elegidas, setElegidas] = useState<Set<string>>(() => new Set());
+  const [preguntarPorVarias, setPreguntarPorVarias] = useState(false);
+  const [quitandoVarias, setQuitandoVarias] = useState<{ hechas: number; total: number } | null>(null);
+  const cuantasElegidas = elegidas.size;
+  const todasElegidas = imagenes.length > 0 && cuantasElegidas === imagenes.length;
+  const laPortadaEstaElegida = imagenes[0] != null && elegidas.has(imagenes[0].id);
+
+  const dejarDeElegir = () => {
+    setEligiendo(false);
+    setElegidas(new Set());
+  };
+  const alternar = (id: string) =>
+    setElegidas((prev) => {
+      const sig = new Set(prev);
+      if (sig.has(id)) sig.delete(id);
+      else sig.add(id);
+      return sig;
+    });
+
+  const quitarLasElegidas = async () => {
+    setPreguntarPorVarias(false);
+    const porBorrar = imagenes.filter((img) => elegidas.has(img.id));
+    if (porBorrar.length === 0) return;
+    setQuitandoVarias({ hechas: 0, total: porBorrar.length });
+    const quitadas: string[] = [];
+    let primerFallo: unknown = null;
+    for (const img of porBorrar) {
+      try {
+        await propertiesApi.deleteImage(propertyId, img.id);
+        quitadas.push(img.id);
+      } catch (e) {
+        primerFallo ??= e;
+      }
+      setQuitandoVarias({ hechas: quitadas.length, total: porBorrar.length });
+    }
+    setImagenes((prev) => prev.filter((x) => !quitadas.includes(x.id)));
+    setQuitandoVarias(null);
+    const fallaron = porBorrar.length - quitadas.length;
+    if (fallaron === 0) {
+      toast.success(quitadas.length === 1 ? 'Listo: quitaste 1 foto' : `Listo: quitaste ${quitadas.length} fotos`);
+      dejarDeElegir();
+    } else {
+      toast.error(fallaron === 1 ? 'Una foto no se quitó' : `${fallaron} fotos no se quitaron`, {
+        description: `${quitadas.length > 0 ? `Las otras ${quitadas.length} sí. ` : ''}${descripcionDelError(primerFallo)}`,
+      });
+      // Quedan marcadas sólo las que no se pudieron quitar, para volver a intentarlo.
+      setElegidas(new Set(porBorrar.filter((img) => !quitadas.includes(img.id)).map((img) => img.id)));
+    }
+    if (quitadas.length > 0) onCambio?.();
+  };
+
   return (
     <section
       className={cn(
@@ -250,11 +308,65 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
           <Images className="h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden="true" />
           <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Fotos</h3>
         </div>
-        <span className="font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle tabular-nums" data-testid="fotos-contador">
-          {subiendo
-            ? `Subiendo ${enCamino.filter((f) => f.estado !== 'fallo').length}…`
-            : `${imagenes.length} de ${PROPERTY_PHOTO_MAX_COUNT}`}
-        </span>
+        <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+          {eligiendo ? (
+            <>
+              <span className="text-caption text-fg-muted" aria-live="polite" data-testid="fotos-elegidas">
+                {quitandoVarias
+                  ? `Quitando ${quitandoVarias.hechas} de ${quitandoVarias.total}…`
+                  : cuantasElegidas === 0
+                    ? 'Toca las fotos que quieres quitar'
+                    : cuantasElegidas === 1
+                      ? '1 elegida'
+                      : `${cuantasElegidas} elegidas`}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                hideArrow
+                disabled={quitandoVarias !== null}
+                onClick={() => setElegidas(todasElegidas ? new Set() : new Set(imagenes.map((img) => img.id)))}
+                data-testid="fotos-elegir-todas"
+              >
+                {todasElegidas ? 'Quitar la selección' : 'Elegir todas'}
+              </Button>
+              <Button variant="ghost" size="sm" hideArrow disabled={quitandoVarias !== null} onClick={dejarDeElegir}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                hideArrow
+                disabled={cuantasElegidas === 0 || quitandoVarias !== null}
+                isLoading={quitandoVarias !== null}
+                onClick={() => setPreguntarPorVarias(true)}
+                data-testid="fotos-quitar-elegidas"
+              >
+                <Trash className="h-4 w-4" /> {cuantasElegidas === 1 ? 'Quitar 1 foto' : `Quitar ${cuantasElegidas} fotos`}
+              </Button>
+            </>
+          ) : (
+            <>
+              {imagenes.length >= 2 && !subiendo ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  hideArrow
+                  disabled={ocupada !== null}
+                  onClick={() => setEligiendo(true)}
+                  data-testid="fotos-seleccionar"
+                >
+                  Seleccionar
+                </Button>
+              ) : null}
+              <span className="font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle tabular-nums" data-testid="fotos-contador">
+                {subiendo
+                  ? `Subiendo ${enCamino.filter((f) => f.estado !== 'fallo').length}…`
+                  : `${imagenes.length} de ${PROPERTY_PHOTO_MAX_COUNT}`}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="relative space-y-5 px-6 py-5">
@@ -296,13 +408,22 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
           // portada se DESLIZAN a su nuevo lugar (`layout` de `Stagger`).
           <Stagger as="ul" className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4" data-testid="fotos-galeria">
             {imagenes.map((img, i) => (
-              <StaggerItem as="li" key={img.id} className="group relative overflow-hidden rounded-lg border border-border bg-surface-muted">
+              <StaggerItem
+                as="li"
+                key={img.id}
+                className={cn(
+                  'group relative overflow-hidden rounded-lg border border-border bg-surface-muted transition-shadow',
+                  eligiendo && elegidas.has(img.id) && 'ring-2 ring-primary ring-offset-2 ring-offset-surface',
+                )}
+              >
                 <button
                   type="button"
-                  onClick={() => onVer?.(i)}
+                  onClick={() => (eligiendo ? alternar(img.id) : onVer?.(i))}
                   className="block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                  aria-label={`Ver la foto ${i + 1} en grande`}
-                  data-testid={`foto-ver-${i}`}
+                  aria-label={eligiendo ? `${elegidas.has(img.id) ? 'Desmarcar' : 'Marcar'} la foto ${i + 1}` : `Ver la foto ${i + 1} en grande`}
+                  aria-pressed={eligiendo ? elegidas.has(img.id) : undefined}
+                  disabled={quitandoVarias !== null}
+                  data-testid={eligiendo ? `foto-marcar-${i}` : `foto-ver-${i}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img.url} alt={`Foto ${i + 1} del inmueble`} className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />
@@ -312,7 +433,18 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
                     <Star weight="fill" className="h-3 w-3" /> Portada
                   </span>
                 )}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [&>*]:pointer-events-auto">
+                {eligiendo ? (
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'pointer-events-none absolute right-2 top-2 flex size-6 items-center justify-center rounded-full border-2 transition-colors',
+                      elegidas.has(img.id) ? 'border-primary bg-primary text-primary-fg' : 'border-surface bg-surface/70',
+                    )}
+                  >
+                    {elegidas.has(img.id) ? <Check className="h-3.5 w-3.5" weight="bold" /> : null}
+                  </span>
+                ) : null}
+                <div className={cn(eligiendo && 'hidden', 'pointer-events-none absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [&>*]:pointer-events-auto')}>
                   {i !== 0 && (
                     <Button
                       variant="ghost"
@@ -360,7 +492,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
                 </div>
               </StaggerItem>
             ))}
-            {cupo > 0 && (
+            {cupo > 0 && !eligiendo && (
               <StaggerItem as="li" key="subir">
                 <SubidaDeFotos variante="ficha" cupo={cupo} maximo={PROPERTY_PHOTO_MAX_COUNT} onArchivos={(a) => void subir(a)} disabled={subiendo} aceptarPegado />
               </StaggerItem>
@@ -386,6 +518,24 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
           </p>
         )}
       </div>
+      <AlertDialog open={preguntarPorVarias} onOpenChange={(abierto) => { if (!abierto) setPreguntarPorVarias(false); }}>
+        <AlertDialogContent variant="destructive" data-testid="quitar-fotos-dialogo">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{cuantasElegidas === 1 ? '¿Quitar 1 foto?' : `¿Quitar ${cuantasElegidas} fotos?`}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se borran del inmueble y no se pueden deshacer.
+              {laPortadaEstaElegida && !todasElegidas ? ' La primera que quede pasa a ser la portada.' : ''}
+              {todasElegidas ? ' El inmueble queda sin fotos.' : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void quitarLasElegidas()} data-testid="quitar-fotos-confirmar">
+              {cuantasElegidas === 1 ? 'Quitar 1 foto' : `Quitar ${cuantasElegidas} fotos`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={porQuitar !== null} onOpenChange={(abierto) => { if (!abierto) setPorQuitar(null); }}>
         <AlertDialogContent variant="destructive" data-testid="quitar-foto-dialogo">
           <AlertDialogHeader>

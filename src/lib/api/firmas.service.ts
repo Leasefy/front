@@ -32,6 +32,19 @@ export interface FirmanteDelDocumento {
   invitacion: 'ENVIADA' | 'FALLO' | 'SIN_CORREO' | null;
   firmado: boolean;
   firmadoAt: string | null;
+  /** La prueba de vida antes de firmar (Didit); `null` si no la ha hecho o no se pide. */
+  pruebaDeVida: { estado: EstadoDeLaPruebaDeVida; proveedor: 'DIDIT' | 'SIMULADA'; puntaje: number | null } | null;
+}
+
+export type EstadoDeLaPruebaDeVida = 'EN_CURSO' | 'EN_REVISION' | 'APROBADA' | 'RECHAZADA';
+
+/** Lo que quien firma ve de su prueba de vida. */
+export interface PruebaDeVidaDelFirmante {
+  requerida: boolean;
+  modo: 'DIDIT' | 'SIMULADA' | null;
+  estado: 'PENDIENTE' | EstadoDeLaPruebaDeVida;
+  intentosQuedan: number;
+  motivo: string | null;
 }
 
 export interface DocumentoParaFirmar {
@@ -48,6 +61,9 @@ export interface DocumentoParaFirmar {
   firmadoAt: string | null;
   canceladoAt: string | null;
   creadoPor: { id: string; nombre: string | null };
+  /** El código corto de la hoja de firmas («K7Q2M-X9P4T») y la página pública que lo verifica. */
+  codigo: string | null;
+  verificacion: string | null;
   firmaron: number;
   total: number;
   firmantes: FirmanteDelDocumento[];
@@ -133,7 +149,36 @@ export interface FirmaPublica {
   quienEnvia: string;
   firmantes: Array<{ nombre: string; firmado: boolean; esUsted: boolean }>;
   canales: { correo: string | null; whatsapp: string | null };
+  pruebaDeVida: PruebaDeVidaDelFirmante;
+  /** Cuando ya firmaron todos: el código y la página que lo verifica. */
+  verificacion: { codigo: string; url: string } | null;
 }
+
+/** Lo que responde la página pública que verifica un documento (`/verificar-firma/[codigo]`). */
+export type DocumentoVerificado =
+  | { encontrado: false }
+  | {
+      encontrado: true;
+      codigo: string;
+      titulo: string;
+      estado: EstadoDelDocumento;
+      quienEnvia: string;
+      paginas: number;
+      enviadoAt: string | null;
+      firmadoAt: string | null;
+      canceladoAt: string | null;
+      huellas: { original: string; firmado: string | null; sellado: string | null };
+      sellado: { at: string } | null;
+      firmantes: Array<{
+        nombre: string;
+        firmado: boolean;
+        firmadoAt: string | null;
+        conCodigo: boolean;
+        canales: string[];
+        pruebaDeVida: { proveedor: 'DIDIT' | 'SIMULADA'; puntaje: number | null } | null;
+        huella: string | null;
+      }>;
+    };
 
 export type DondeFirma = 'inmobiliaria' | 'propietario';
 
@@ -166,4 +211,17 @@ export const firmaPublicaApi = {
     sinSesion<VerifyOtpResponse>('POST', `/publico/firmas/${encodeURIComponent(token)}/otp/verify`, { code }),
   firmar: (token: string, dto: { signatureData: string; acceptedTerms: boolean; otpVerificationToken: string }) =>
     sinSesion<FirmaPublica>('POST', `/publico/firmas/${encodeURIComponent(token)}/firmar`, dto),
+  /** Abre la prueba de vida de Didit: `url` es a donde va la persona (vuelve sola a su enlace). */
+  iniciarPruebaDeVida: (token: string) =>
+    sinSesion<{ url: string | null; pruebaDeVida: PruebaDeVidaDelFirmante }>(
+      'POST',
+      `/publico/firmas/${encodeURIComponent(token)}/prueba-de-vida`,
+      {},
+    ),
+  comprobarPruebaDeVida: (token: string) =>
+    sinSesion<PruebaDeVidaDelFirmante>('POST', `/publico/firmas/${encodeURIComponent(token)}/prueba-de-vida/comprobar`, {}),
+  /** Sólo el laboratorio: la foto de la cámara del navegador. */
+  pruebaDeVidaSimulada: (token: string, foto: string) =>
+    sinSesion<PruebaDeVidaDelFirmante>('POST', `/publico/firmas/${encodeURIComponent(token)}/prueba-de-vida/simulada`, { foto }),
+  verificar: (codigo: string) => sinSesion<DocumentoVerificado>('GET', `/publico/verificar-firma/${encodeURIComponent(codigo)}`),
 };

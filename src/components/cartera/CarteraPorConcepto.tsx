@@ -119,6 +119,8 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { useCarteraDeInquilinos } from '@/lib/hooks/use-cartera'
 import { refDesdeLaClave } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
@@ -282,8 +284,25 @@ export function CarteraPorConcepto() {
     faltanReglasDeMora((datos?.inquilinos ?? []).flatMap((i) => i.filas))
 
   const hayFiltros = busqueda.trim().length > 0 || cajon !== 'TODAS'
-  const paginado = useTablePagination(inquilinos, {
-    resetKey: `${busqueda}|${cajon}`,
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Cada concepto ordena por
+  // su saldo; «Debe», por el total.
+  const columnasDelOrden = useMemo(() => {
+    const porConcepto: Record<string, (i: (typeof inquilinos)[number]) => ValorParaOrdenar> = {}
+    for (const c of conceptos) porConcepto[c] = (i) => i.totales.saldoPorConcepto?.[c] ?? null
+    return {
+      ...porConcepto,
+      inquilino: (i: (typeof inquilinos)[number]) => i.nombre ?? null,
+      sinDesglose: (i: (typeof inquilinos)[number]) => i.totales.sinDesgloseCop ?? null,
+      debe: (i: (typeof inquilinos)[number]) => i.totales.saldoCop,
+    }
+  }, [conceptos])
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla<(typeof inquilinos)[number], string>(
+    inquilinos,
+    columnasDelOrden,
+    { primero: { debe: 'desc', sinDesglose: 'desc', ...Object.fromEntries(conceptos.map((c) => [c, 'desc' as const])) } },
+  )
+  const paginado = useTablePagination(ordenadas, {
+    resetKey: `${busqueda}|${cajon}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
   })
 
   // La columna sólo existe si alguien la necesita: es la diferencia que no
@@ -527,21 +546,21 @@ export function CarteraPorConcepto() {
                     que Nico señaló. */}
                 {/* Ronda 30 (revisora r27): anchos mínimos más justos para que la tabla quepa a 1440 y la columna
                     fija «Debe» no tape «Sin desglose». */}
-                <TableHead className="min-w-[12rem] whitespace-nowrap">Inquilino</TableHead>
+                <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={ordenarPor} className="min-w-[12rem] whitespace-nowrap">Inquilino</EncabezadoOrdenable>
                 {conceptos.map((c) => (
-                  <TableHead key={c} className="whitespace-nowrap text-right">
+                  <EncabezadoOrdenable key={c} campo={c} orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
                     {NOMBRE_DEL_CONCEPTO[c]}
-                  </TableHead>
+                  </EncabezadoOrdenable>
                 ))}
                 {haySinDesglose ? (
-                  <TableHead className="min-w-[7.5rem] whitespace-nowrap pr-6 text-right">Sin desglose</TableHead>
+                  <EncabezadoOrdenable campo="sinDesglose" orden={orden} onOrdenar={ordenarPor} className="min-w-[7.5rem] whitespace-nowrap pr-6 text-right" alineacion="derecha">Sin desglose</EncabezadoOrdenable>
                 ) : null}
                 <TableHead className="whitespace-nowrap text-right" title={t(CLAVE_DE_MORA.explicacion)}>
                   {t(CLAVE_DE_MORA.columnaMoraLiquidadaHoy)}
                 </TableHead>
-                <TableHead className={cn('whitespace-nowrap text-right', FIJA, 'bg-bg dark:bg-surface-muted')}>
+                <EncabezadoOrdenable campo="debe" orden={orden} onOrdenar={ordenarPor} className={cn('whitespace-nowrap text-right', FIJA, 'bg-bg dark:bg-surface-muted')} alineacion="derecha">
                   Debe
-                </TableHead>
+                </EncabezadoOrdenable>
                 {/* La del kebab. Sin rótulo: «Acciones» gasta ancho para decir
                     lo que el icono ya dice. */}
                 <TableHead className="w-10" />
@@ -696,7 +715,7 @@ function PestanaDeLaCartera({
       </span>
       <span
         className={cn(
-          'font-mono text-base font-semibold tabular-nums',
+          'font-mono text-base font-medium tabular-nums',
           tono === 'danger'
             ? 'text-danger'
             : tono === 'warning'
@@ -1025,7 +1044,7 @@ function TotalesEnPie({
           <Peso valor={totales.sinDesgloseCop} />
         </TableCell>
       ) : null}
-      <TableCell className="text-right font-semibold" data-testid="intereses-en-pie">
+      <TableCell className="text-right font-medium" data-testid="intereses-en-pie">
         <Interes valor={interes} />
       </TableCell>
       <TableCell className={cn('text-right font-semibold text-fg', FIJA, 'bg-bg dark:bg-surface-muted')}>

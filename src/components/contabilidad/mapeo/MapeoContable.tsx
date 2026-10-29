@@ -38,7 +38,6 @@ import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import {
   Table,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
   TableBodyAnimado,
@@ -55,6 +54,9 @@ import {
   type MapeoContable as Mapeo,
 } from '@/lib/api/contabilidad.service';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
 import { ExplicacionDelEvento } from './ExplicacionDelEvento';
 import {
@@ -213,8 +215,19 @@ export function MapeoContable({
         : todos.filter((e) => (vista === 'sin-cuenta' ? !e.cuenta : Boolean(e.cuenta))),
     [todos, vista],
   );
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin tocar nada, el orden
+  // del catálogo; «Cuenta del PUC» ordena por el código (sin cuenta, al final).
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(eventos, {
+    evento: (e) => e.nombre,
+    lado: (e) => NOMBRE_DEL_LADO[e.lado],
+    cuenta: (e) => e.cuenta?.codigo ?? null,
+    propuesta: (e) => e.propuesta?.codigo ?? e.codigoPropuesto,
+  });
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(eventos, { resetKey: vista, initialPageSize: 25 }); // ronda 30: los 13 eventos en una página
+    useTablePagination(ordenadas, {
+      resetKey: `${vista}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
+      initialPageSize: 25, // ronda 30: los 13 eventos en una página
+    });
 
   const marcar = (evento: EventoContable, activo: boolean) =>
     setGuardando((prev) => {
@@ -537,27 +550,44 @@ export function MapeoContable({
       ) : null}
 
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
-        {sinCuenta.length > 0 ? (
-          <div className="border-b border-border px-4 py-3 empty:hidden">
-            <PestanasDeEstado
-              etiqueta="Qué eventos ver"
-              valor={vista}
-              onCambio={setVista}
-              pestanas={[
-                { valor: 'todos', etiqueta: 'Todos', cuantos: todos.length, fija: true },
-                { valor: 'sin-cuenta', etiqueta: 'Sin cuenta', cuantos: sinCuenta.length, tono: 'aviso' },
-                { valor: 'con-cuenta', etiqueta: 'Con cuenta', cuantos: todos.length - sinCuenta.length },
-              ]}
-            />
+        {sinCuenta.length > 0 || todos.length > 1 ? (
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center">
+            {sinCuenta.length > 0 ? (
+              <PestanasDeEstado
+                etiqueta="Qué eventos ver"
+                valor={vista}
+                onCambio={setVista}
+                pestanas={[
+                  { valor: 'todos', etiqueta: 'Todos', cuantos: todos.length, fija: true },
+                  { valor: 'sin-cuenta', etiqueta: 'Sin cuenta', cuantos: sinCuenta.length, tono: 'aviso' },
+                  { valor: 'con-cuenta', etiqueta: 'Con cuenta', cuantos: todos.length - sinCuenta.length },
+                ]}
+              />
+            ) : null}
+            {todos.length > 1 ? (
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full sm:ml-auto sm:w-56"
+                formas={[
+                  { campo: 'evento', sentido: 'asc', etiqueta: 'Evento (A–Z)' },
+                  { campo: 'cuenta', sentido: 'asc', etiqueta: 'Cuenta del PUC (por código)' },
+                  { campo: 'lado', sentido: 'desc', etiqueta: 'Débito primero' },
+                  { campo: 'lado', sentido: 'asc', etiqueta: 'Crédito primero' },
+                ]}
+              />
+            ) : null}
           </div>
         ) : null}
         <Table className="max-md:block">
           <TableHeader className="max-md:hidden">
             <TableRow>
-              <TableHead>Evento</TableHead>
-              <TableHead>Lado</TableHead>
-              <TableHead className="min-w-[280px]">Cuenta del PUC</TableHead>
-              {hayPropuestas ? <TableHead>Propuesta</TableHead> : null}
+              <EncabezadoOrdenable campo="evento" orden={orden} onOrdenar={ordenarPor}>Evento</EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="lado" orden={orden} onOrdenar={ordenarPor}>Lado</EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="cuenta" orden={orden} onOrdenar={ordenarPor} className="min-w-[280px]">Cuenta del PUC</EncabezadoOrdenable>
+              {hayPropuestas ? (
+                <EncabezadoOrdenable campo="propuesta" orden={orden} onOrdenar={ordenarPor}>Propuesta</EncabezadoOrdenable>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBodyAnimado className="max-md:block">

@@ -81,3 +81,28 @@ describe('las demos de la inmobiliaria', () => {
     expect(demoDeLaInmobiliaria(null).titulo).toBe('Tu inmobiliaria en piloto automático');
   });
 });
+
+/**
+ * Nico 28-10-2026: «revisa que cada sección tenga su demo correcta, Nómina está mal». Cada parte cerrada del panel de
+ * la inmobiliaria tiene SU demo: ninguna cae en la general.
+ */
+describe('cada sección cerrada tiene su demo', () => {
+  it.each([
+    ['nomina', /nómina/i],
+    ['contabilidad', /contabilidad/i],
+    ['facturacion', /facturación/i],
+    ['mantenimientos', /reparaciones/i],
+    ['proveedores', /reparaciones/i],
+    ['servicios-publicos', /servicios públicos/i],
+    ['solicitudes', /solicitudes/i],
+    ['reportes', /cifras/i],
+    ['documentos', /documentos/i],
+    ['listas-restrictivas', /listas restrictivas/i],
+  ])('«%s»', async (clave, tema) => {
+    const { demoDeLaInmobiliaria } = await import('./demos-del-panel')
+    const demo = demoDeLaInmobiliaria(clave)
+    expect(demo.titulo).not.toBe(demoDeLaInmobiliaria(null).titulo)
+    expect(`${demo.titulo} ${demo.promesa}`).toMatch(tema)
+    expect(demo.capturas.length).toBeGreaterThan(0)
+  })
+})

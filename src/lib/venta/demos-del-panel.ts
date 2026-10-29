@@ -75,6 +75,61 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     puntos: ['Firma electrónica con código', 'Renovación con IPC', 'Todo el contrato en un lugar'],
     capturas: [cap('erp-renovaciones', 'Renovaciones de contratos'), TABLERO],
   },
+  // Nico 28-10-2026 («revisa que cada sección tenga su demo correcta, Nómina está mal»): las que caían en la general.
+  nomina: {
+    titulo: 'La nómina de tu inmobiliaria, sin otro programa',
+    promesa: 'Liquida la nómina de tu equipo y transmite la nómina electrónica a la DIAN desde Leasefy.',
+    puntos: ['Liquidación del mes con prestaciones', 'Nómina electrónica ante la DIAN', 'Desprendible para cada persona'],
+    capturas: [TABLERO],
+  },
+  contabilidad: {
+    titulo: 'La contabilidad se lleva sola',
+    promesa: 'Cada recibo, giro y factura deja su asiento: el libro, la exógena y los certificados salen de ahí.',
+    puntos: ['Asientos automáticos de la operación', 'Información exógena para la DIAN', 'Certificados de retención del año'],
+    capturas: [cap('erp-recaudo', 'Recaudo del mes con su asiento'), TABLERO],
+  },
+  facturacion: {
+    titulo: 'Facturación electrónica de tu inmobiliaria',
+    promesa: 'Factura el canon y tu comisión ante la DIAN con tu resolución, sin salir de Leasefy.',
+    puntos: ['Facturas y notas ante la DIAN', 'Tu resolución y tu numeración', 'Documento soporte de proveedores'],
+    capturas: [cap('erp-recaudo', 'Recaudo del mes listo para facturar'), TABLERO],
+  },
+  mantenimientos: {
+    titulo: 'Las reparaciones, de la solicitud al pago',
+    promesa: 'El inquilino reporta, el proveedor cotiza, el propietario aprueba y se descuenta en su giro.',
+    puntos: ['Solicitudes con fotos', 'Cotizaciones y aprobación del propietario', 'La reparación diferida en cuotas'],
+    capturas: [TABLERO],
+  },
+  'servicios-publicos': {
+    titulo: 'Los servicios públicos al día',
+    promesa: 'El inquilino sube la factura pagada cada mes y tú ves de una quién está al día.',
+    puntos: ['La factura del mes desde su portal', 'Recordatorios antes de que venza', 'La entrada y la salida liquidadas'],
+    capturas: [TABLERO],
+  },
+  solicitudes: {
+    titulo: 'Las solicitudes, respondidas a tiempo',
+    promesa: 'Cada petición, queja o reclamo con su número, su plazo de ley y su respuesta por escrito.',
+    puntos: ['Plazos en días hábiles', 'Respuestas sugeridas', 'Todo queda registrado'],
+    capturas: [TABLERO],
+  },
+  reportes: {
+    titulo: 'Tu inmobiliaria en cifras',
+    promesa: 'Ocupación, cartera, recaudo y renovaciones: lo que necesitas para decidir, al día.',
+    puntos: ['Ocupación del portafolio', 'Cartera por edades', 'Recaudo y giros del mes'],
+    capturas: [TABLERO, cap('cob-cartera', 'Cartera por edades')],
+  },
+  documentos: {
+    titulo: 'Los documentos de cada contrato, en un lugar',
+    promesa: 'Plantillas legales, actas de entrega y todo lo firmado, organizado por inmueble y contrato.',
+    puntos: ['Plantillas con la ley 820', 'Actas con fotos y firma', 'Todo encontrado en segundos'],
+    capturas: [cap('erp-renovaciones', 'Contratos y documentos')],
+  },
+  'listas-restrictivas': {
+    titulo: 'Sabes con quién haces negocio',
+    promesa: 'Consulta a inquilinos y propietarios en listas restrictivas antes de firmar.',
+    puntos: ['Consulta en listas', 'Soporte para tu SARLAFT', 'Queda en la ficha de cada persona'],
+    capturas: [cap('inq-detalle', 'Ficha de la persona con su consulta')],
+  },
   pagos: {
     titulo: 'Recaudo y giros a propietarios',
     promesa: 'Lo que entra se aplica solo y lo que sale a cada propietario se paga en un archivo del banco.',
@@ -93,10 +148,12 @@ const GENERAL: DemoDelModulo = {
 /** Claves del panel que comparten demo. */
 const ALIAS: Record<string, string> = {
   'agente-de-pagos': 'pagos',
-  facturacion: 'pagos',
   juridico: 'cobranza',
   inquilinos: 'estudio',
   propietarios: 'pagos',
+  proveedores: 'mantenimientos',
+  'desempeno-ia': 'reportes',
+  'calidad-publicaciones': 'matching',
 };
 
 export function demoDeLaInmobiliaria(claveDelModulo: string | null | undefined): DemoDelModulo {
@@ -214,7 +271,10 @@ const GENERAL_DEL_AGENTE: DemoDelModulo = {
   capturas: [TABLERO, cap('cob-whatsapp', 'Cobranza por WhatsApp'), cap('erp-dispersiones', 'Giros a propietarios')],
 };
 
+/** El agente no tiene facturación propia: su demo de pagos la cubre (la inmobiliaria sí tiene la suya desde el 29-10). */
+const ALIAS_DEL_AGENTE: Record<string, string> = { ...ALIAS, facturacion: 'pagos' };
+
 export function demoDelAgente(claveDelModulo: string | null | undefined): DemoDelModulo {
   if (!claveDelModulo) return GENERAL_DEL_AGENTE;
-  return DEL_AGENTE[claveDelModulo] ?? DEL_AGENTE[ALIAS[claveDelModulo] ?? ''] ?? GENERAL_DEL_AGENTE;
+  return DEL_AGENTE[claveDelModulo] ?? DEL_AGENTE[ALIAS_DEL_AGENTE[claveDelModulo] ?? ''] ?? GENERAL_DEL_AGENTE;
 }

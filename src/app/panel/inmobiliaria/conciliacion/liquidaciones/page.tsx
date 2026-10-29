@@ -63,6 +63,9 @@ import {
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
@@ -142,6 +145,22 @@ const COLUMNAS = [
   'Estado',
   'Acciones',
 ] as const
+
+/** Por qué se ordena cada columna (la de las acciones no se ordena). */
+const CAMPO_DE_LA_COLUMNA: Record<
+  (typeof COLUMNAS)[number],
+  'propietario' | 'periodo' | 'canon' | 'comision' | 'otros' | 'neto' | 'estado' | null
+> = {
+  Propietario: 'propietario',
+  Periodo: 'periodo',
+  Canon: 'canon',
+  Comisión: 'comision',
+  Otros: 'otros',
+  Neto: 'neto',
+  Estado: 'estado',
+  Acciones: null,
+}
+const CIFRAS = new Set<string>(['Canon', 'Comisión', 'Otros', 'Neto'])
 
 function SettlementRow({
   item,
@@ -297,8 +316,22 @@ function ConciliacionLiquidaciones() {
 
   // El recorte es de presentación: el filtro por estado ya viajó al backend,
   // así que el `resetKey` es el propio filtro — cambiarlo vuelve a la página 1.
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    items,
+    {
+      propietario: (i) => i.ownerName,
+      periodo: (i) => i.period,
+      canon: (i) => i.grossCop,
+      comision: (i) => i.commissionCop,
+      otros: (i) => i.otherDeductionsCop,
+      neto: (i) => i.netCop,
+      estado: (i) => i.status,
+    },
+    { primero: { periodo: 'desc', canon: 'desc', comision: 'desc', otros: 'desc', neto: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(items, { resetKey: statusFilter })
+    useTablePagination(ordenadas, { resetKey: `${statusFilter}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   const previewNet = useMemo(
     () => toIntCop(form.grossCop) - toIntCop(form.commissionCop) - toIntCop(form.otherDeductionsCop),
@@ -463,7 +496,7 @@ function ConciliacionLiquidaciones() {
         {/* Filtros — dentro de la tarjeta, encima de la tabla. */}
         {/* Revisora r25 (#3): el estado en pestañas con su conteo DENTRO de la tarjeta (antes chips sin
             número). El micro filtra por estado y cuenta sólo lo que se pide: el número va en la abierta. */}
-        <div className="border-b border-border p-4 empty:hidden">
+        <div className="flex flex-col gap-3 border-b border-border p-4 empty:hidden lg:flex-row lg:items-center lg:justify-between">
           <PestanasDeEstado
             etiqueta="Filtrar por estado"
             valor={statusFilter}
@@ -482,6 +515,19 @@ function ConciliacionLiquidaciones() {
               testid: `liquidaciones-estado-${f.value}`,
             }))}
           />
+          {items.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full shrink-0 sm:w-56"
+              formas={[
+                { campo: 'periodo', sentido: 'desc', etiqueta: 'Período más reciente' },
+                { campo: 'neto', sentido: 'desc', etiqueta: 'Más neto a girar' },
+                { campo: 'canon', sentido: 'desc', etiqueta: 'Canon más alto' },
+                { campo: 'propietario', sentido: 'asc', etiqueta: 'Propietario (A–Z)' },
+              ]}
+            />
+          ) : null}
         </div>
 
         {/* Carga y fallo por fuera del cuerpo; el vacío va DENTRO, para que los
@@ -502,11 +548,25 @@ function ConciliacionLiquidaciones() {
           <Table>
             <TableHeader>
               <TableRow>
-                {COLUMNAS.map((c) => (
-                  <TableHead key={c} className="whitespace-nowrap">
-                    {c}
-                  </TableHead>
-                ))}
+                {COLUMNAS.map((c) => {
+                  const campo = CAMPO_DE_LA_COLUMNA[c]
+                  return campo ? (
+                    <EncabezadoOrdenable
+                      key={c}
+                      campo={campo}
+                      orden={orden}
+                      onOrdenar={ordenarPor}
+                      className="whitespace-nowrap"
+                      alineacion={CIFRAS.has(c) ? 'derecha' : 'izquierda'}
+                    >
+                      {c}
+                    </EncabezadoOrdenable>
+                  ) : (
+                    <TableHead key={c} className="whitespace-nowrap">
+                      {c}
+                    </TableHead>
+                  )
+                })}
               </TableRow>
             </TableHeader>
             <TableBody data-testid="liquidaciones-list">

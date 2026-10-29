@@ -382,6 +382,19 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
     },
     { primero: { valor: 'desc' } },
   );
+  // Los que no entran y los que se cierran en $0, también por columna (son listas de propietarios).
+  const excluidosDelLote = useMemo(() => vista?.excluidos ?? [], [vista]);
+  const ordenDeExcluidos = useOrdenDeLaTabla(
+    excluidosDelLote,
+    { propietario: (e) => e.nombre, valor: (e) => e.valorCop, motivo: (e) => e.motivo },
+    { primero: { valor: 'desc' } },
+  );
+  const compensadosDelLote = useMemo(() => vista?.compensados ?? [], [vista]);
+  const ordenDeCompensados = useOrdenDeLaTabla(
+    compensadosDelLote,
+    { propietario: (c) => c.nombre, pasa: (c) => c.saldoEnContraCop },
+    { primero: { pasa: 'desc' } },
+  );
   const pagos = useTablePagination(ordenDePagos.ordenadas, {
     resetKey: `${id}|${vistaDePagos}|${ordenDePagos.orden?.campo ?? ''}|${ordenDePagos.orden?.sentido ?? ''}`,
   });
@@ -744,13 +757,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Propietario</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead>Por qué no entra</TableHead>
+                  <EncabezadoOrdenable campo="propietario" orden={ordenDeExcluidos.orden} onOrdenar={ordenDeExcluidos.ordenarPor}>Propietario</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="valor" orden={ordenDeExcluidos.orden} onOrdenar={ordenDeExcluidos.ordenarPor} className="text-right" alineacion="derecha">Valor</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="motivo" orden={ordenDeExcluidos.orden} onOrdenar={ordenDeExcluidos.ordenarPor}>Por qué no entra</EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {excluidos.map((e) => (
+                {ordenDeExcluidos.ordenadas.map((e) => (
                   <TableRow key={`${e.propietarioId}-${e.nombre}`}>
                     <TableCell className="font-medium text-fg">{e.nombre}</TableCell>
                     <TableCell className="text-right font-mono tabular-nums">
@@ -781,13 +794,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Propietario</TableHead>
+                  <EncabezadoOrdenable campo="propietario" orden={ordenDeCompensados.orden} onOrdenar={ordenDeCompensados.ordenarPor}>Propietario</EncabezadoOrdenable>
                   <TableHead className="text-right">Se gira</TableHead>
-                  <TableHead className="text-right">Pasa al mes siguiente</TableHead>
+                  <EncabezadoOrdenable campo="pasa" orden={ordenDeCompensados.orden} onOrdenar={ordenDeCompensados.ordenarPor} className="text-right" alineacion="derecha">Pasa al mes siguiente</EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {compensados.map((c) => (
+                {ordenDeCompensados.ordenadas.map((c) => (
                   <TableRow key={c.dispersionId}>
                     <TableCell className="font-medium text-fg">{c.nombre}</TableCell>
                     <TableCell className="text-right font-mono tabular-nums">{formatCurrency(0)}</TableCell>

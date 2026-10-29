@@ -46,6 +46,8 @@ import {
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import {
@@ -99,7 +101,7 @@ export function CertificacionDelMandatario({
     void cargar()
   }, [cargar])
 
-  const todas = datos?.certificaciones ?? []
+  const todas = useMemo(() => datos?.certificaciones ?? [], [datos])
   const visibles = useMemo(() => {
     const t = busqueda.trim().toLowerCase()
     if (t === '') return todas
@@ -110,7 +112,21 @@ export function CertificacionDelMandatario({
         c.enPalabras.toLowerCase().includes(t),
     )
   }, [todas, busqueda])
-  const paginado = useTablePagination(visibles, { resetKey: busqueda })
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    visibles,
+    {
+      propietario: (c) => c.propietarioNombre,
+      periodo: (c) => c.periodoDesde,
+      facturas: (c) => c.facturasContadas,
+      base: (c) => c.baseCop,
+      iva: (c) => c.ivaCop,
+      retenciones: (c) => (c.retefuenteCop ?? 0) + (c.reteicaCop ?? 0) + (c.reteivaCop ?? 0),
+      total: (c) => c.totalCop,
+    },
+    { primero: { periodo: 'desc', facturas: 'desc', base: 'desc', iva: 'desc', retenciones: 'desc', total: 'desc' } },
+  )
+  const paginado = useTablePagination(ordenadas, { resetKey: `${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   const sinMigracion = datos !== null && !datos.disponible
 
@@ -192,17 +208,17 @@ export function CertificacionDelMandatario({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="whitespace-nowrap">Propietario</TableHead>
-                  <TableHead className="whitespace-nowrap">Período</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">
+                  <EncabezadoOrdenable campo="propietario" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Propietario</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="periodo" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Período</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="facturas" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
                     Facturas
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Base</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">IVA</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="base" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Base</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="iva" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">IVA</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="retenciones" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
                     Retenciones
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Total</TableHead>
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="total" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Total</EncabezadoOrdenable>
                   <TableHead className="whitespace-nowrap">
                     <span className="sr-only">Documento</span>
                   </TableHead>

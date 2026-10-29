@@ -729,6 +729,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   // Ordenar las tablas (29-10, grupo B).
   'Monto más alto': 'Highest amount',
   'Por caso': 'By case',
+  'Más urgentes': 'Most urgent',
+  'Los que más esperan': 'Waiting longest',
+  'Caso (A–Z)': 'Case (A–Z)',
   // components/inmobiliaria/estudios/AsegurabilidadManualDeLaPostulacion.tsx (28-10-2026)
   'Asegurabilidad con tus aseguradoras': 'Insurability with your insurers',
   'El estudio cuesta': 'The screening costs',

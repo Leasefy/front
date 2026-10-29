@@ -46,7 +46,7 @@ import type { CarteraSiniestro, CarteraSiniestros } from '@/lib/types/inmobiliar
 import { nombreDelMes } from '@/lib/utils/mes'
 import { CLAVE_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
 import { useI18n } from '@/lib/i18n'
-import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { useOrdenDeLaTabla, type OrdenDeLaTabla, type SentidoDelOrden, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla'
 import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 /**
@@ -81,7 +81,26 @@ export interface TablaDeSiniestrosProps {
   onLimpiarFiltros?: () => void
   /** Filtros y página: al cambiar, el cuerpo entra de nuevo (filas escalonadas). */
   clave?: string
+  /**
+   * El orden lo puede llevar quien pagina (Cartera completa ordena la lista ENTERA antes de cortar la página). Sin
+   * esto, la tabla ordena lo que recibe.
+   */
+  orden?: OrdenDeLaTabla<CampoDeSiniestro> | null
+  onOrdenar?: (campo: CampoDeSiniestro) => void
 }
+
+export type CampoDeSiniestro = 'inquilino' | 'inmueble' | 'propietario' | 'periodo' | 'desde' | 'saldo'
+
+/** Cómo se ordena cada columna (Nico 28-10: «ordenamiento general y por columnas»). */
+export const ORDEN_DE_SINIESTROS: Record<CampoDeSiniestro, (i: CarteraSiniestro) => ValorParaOrdenar> = {
+  inquilino: (i) => i.tenantName ?? null,
+  inmueble: (i) => i.propertyTitle ?? i.propertyAddress ?? null,
+  propietario: (i) => i.propietarioName ?? null,
+  periodo: (i) => i.month ?? null,
+  desde: (i) => i.siniestroDesde ?? null,
+  saldo: (i) => i.pendingAmount,
+}
+export const PRIMERO_DE_SINIESTROS: Partial<Record<CampoDeSiniestro, SentidoDelOrden>> = { periodo: 'desc', saldo: 'desc' }
 
 const COLUMNAS = 7
 
@@ -91,21 +110,15 @@ export function TablaDeSiniestros({
   hayFiltros = false,
   onLimpiarFiltros,
   clave,
+  orden: ordenExterno,
+  onOrdenar,
 }: TablaDeSiniestrosProps) {
   const { t } = useI18n()
-  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
-  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
-    items,
-    {
-      inquilino: (i) => i.tenantName ?? null,
-      inmueble: (i) => i.propertyTitle ?? i.propertyAddress ?? null,
-      propietario: (i) => i.propietarioName ?? null,
-      periodo: (i) => i.month ?? null,
-      desde: (i) => i.siniestroDesde ?? null,
-      saldo: (i) => i.pendingAmount,
-    },
-    { primero: { periodo: 'desc', saldo: 'desc' } },
-  )
+  const propio = useOrdenDeLaTabla(items, ORDEN_DE_SINIESTROS, { primero: PRIMERO_DE_SINIESTROS })
+  const deAfuera = onOrdenar !== undefined
+  const ordenadas = deAfuera ? items : propio.ordenadas
+  const orden = deAfuera ? (ordenExterno ?? null) : propio.orden
+  const ordenarPor = onOrdenar ?? propio.ordenarPor
   return (
     <Table data-testid="siniestros-tabla">
       <TableHeader>

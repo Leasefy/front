@@ -221,8 +221,8 @@ function Documento({ d }: { d: Encontrado }) {
                       ) : null}
                       {f.pruebaDeVida ? (
                         <Insignia>
-                          {f.pruebaDeVida.proveedor === 'SIMULADA'
-                            ? 'Foto (laboratorio)'
+                          {f.pruebaDeVida.proveedor === 'LEASEFY'
+                            ? 'Foto al firmar'
                             : `Prueba de vida${f.pruebaDeVida.puntaje !== null ? ` · ${porcentaje(f.pruebaDeVida.puntaje)}` : ''}`}
                         </Insignia>
                       ) : null}

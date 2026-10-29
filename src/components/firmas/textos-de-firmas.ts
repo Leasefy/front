@@ -32,14 +32,14 @@ export function fechaCortaDeFirma(iso: string | null): string {
   return new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'short', year: 'numeric' }).format(d).replace('.', '');
 }
 
-/** La prueba de vida de una persona, en una frase para el panel. */
+/** La foto de una persona (o su prueba de vida, con Didit), en una frase para el panel. */
 export function textoDeLaPruebaDeVida(p: {
   estado: 'EN_CURSO' | 'EN_REVISION' | 'APROBADA' | 'RECHAZADA';
-  proveedor: 'DIDIT' | 'SIMULADA';
+  proveedor: 'DIDIT' | 'LEASEFY';
   puntaje: number | null;
 }): string {
   if (p.estado === 'APROBADA') {
-    if (p.proveedor === 'SIMULADA') return 'Se tomó la foto (laboratorio)';
+    if (p.proveedor === 'LEASEFY') return 'Se tomó la foto al firmar';
     return `Pasó la prueba de vida${p.puntaje !== null ? ` · ${String(p.puntaje).replace('.', ',')} %` : ''}`;
   }
   if (p.estado === 'EN_REVISION') return 'Su prueba de vida está en revisión';

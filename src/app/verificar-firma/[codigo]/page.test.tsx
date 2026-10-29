@@ -132,20 +132,23 @@ describe('/verificar-firma/[codigo]', () => {
     verificar.mockResolvedValue(firmado({ huellas: { original: 'a'.repeat(64), firmado: h, sellado: null } }));
     await montar();
     const input = document.querySelector<HTMLInputElement>('[data-testid="archivo-a-comparar"]')!;
-    const elegir = async (bytes: Uint8Array<ArrayBuffer>) => {
+    const resultado = () => document.querySelector('[data-testid="resultado-de-la-comparacion"]')?.textContent ?? '';
+    // La huella la saca el navegador (crypto.subtle) a su ritmo: se espera a ver el resultado, no un número de vueltas.
+    const elegir = async (bytes: Uint8Array<ArrayBuffer>, espera: string) => {
       const archivo = new File([bytes], 'contrato.pdf', { type: 'application/pdf' });
       Object.defineProperty(input, 'files', { configurable: true, value: [archivo] });
       await act(async () => input.dispatchEvent(new Event('change', { bubbles: true })));
-      for (let i = 0; i < 6; i++) await act(async () => {});
+      const fin = Date.now() + 3000;
+      while (!resultado().includes(espera) && Date.now() < fin) {
+        await act(async () => {
+          await new Promise((r) => setTimeout(r, 20));
+        });
+      }
     };
-    await elegir(contenido);
-    expect(document.querySelector('[data-testid="resultado-de-la-comparacion"]')?.textContent).toContain(
-      'Es exactamente el documento firmado',
-    );
-    await elegir(new TextEncoder().encode('otra cosa') as Uint8Array<ArrayBuffer>);
-    expect(document.querySelector('[data-testid="resultado-de-la-comparacion"]')?.textContent).toContain(
-      'Este archivo no es el que se firmó',
-    );
+    await elegir(contenido, 'Es exactamente el documento firmado');
+    expect(resultado()).toContain('Es exactamente el documento firmado');
+    await elegir(new TextEncoder().encode('otra cosa') as Uint8Array<ArrayBuffer>, 'Este archivo no es el que se firmó');
+    expect(resultado()).toContain('Este archivo no es el que se firmó');
   });
 
   it('si el back no responde, lo dice con reintentar', async () => {

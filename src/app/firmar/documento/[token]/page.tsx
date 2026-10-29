@@ -7,10 +7,10 @@
  *
  * 404 `ENLACE_DE_FIRMA_INVALIDO` → «enlace no válido»; 410 `ENLACE_DE_FIRMA_VENCIDO` → «pide uno nuevo».
  *
- * Con la prueba de vida prendida (Nico, 28-10-2026: «la firma debe llevar la foto con prueba de vida»), antes del código
- * va la selfie de Didit (`PruebaDeVida`): dos pasos, «Tu foto» y «Tu código y tu firma». Didit devuelve a la persona a
- * este mismo enlace con `?vida=1` y aquí se pregunta el resultado. Ya firmado por todos, el código del documento y la
- * página que lo verifica.
+ * Antes del código va la foto (Nico, 28-10-2026: «la firma debe llevar la foto»; ese día eligió «cámara propia + revisar
+ * la cara», sin Didit): dos pasos, «Tu foto» y «Tu código y tu firma» (`PruebaDeVida`). Si algún día se prende Didit, su
+ * prueba devuelve a la persona a este mismo enlace con `?vida=1` y aquí se pregunta el resultado. Ya firmado por todos, el
+ * código del documento y la página que lo verifica.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -251,7 +251,7 @@ function Contenido({
               />
               <Presence show className="flex items-center gap-2 text-body-sm text-fg" data-testid="prueba-de-vida-aprobada">
                 <SealCheck className="h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
-                Confirmamos que eres tú. Ahora pide tu código y firma.
+                {vida?.modo === 'DIDIT' ? 'Confirmamos que eres tú.' : 'Tu foto quedó lista.'} Ahora pide tu código y firma.
               </Presence>
             </>
           ) : null}

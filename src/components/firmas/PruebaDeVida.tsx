@@ -1,18 +1,18 @@
 'use client';
 
 /**
- * EL PASO DE LA FOTO antes de firmar (Nico, 28-10-2026): «vamos a hacer lo de la foto a la hora de hacer la firma, con
- * didit… porque la firma debe llevar la foto con prueba de vida».
+ * EL PASO DE LA FOTO antes de firmar (Nico, 28-10-2026): «la firma debe llevar la foto». Ese mismo día: «¿crees que sea
+ * necesario Didit? porque solo necesitamos la foto y no prueba de vida» → «cámara propia + revisar la cara».
  *
- * Quien firma llega desde su enlace, lee el documento y, antes del código, se toma una selfie en vivo:
- *   · con Didit (lo normal): «Tomarme la foto» lo lleva a la prueba de Didit y Didit lo trae de vuelta a su enlace con
- *     `?vida=1`; aquí se pregunta el resultado unos segundos hasta que llega;
- *   · en el laboratorio (`SIMULADA`): la cámara del navegador, sin Didit.
- * Si no pasa, dice por qué en palabras y deja intentarlo otra vez (con cuántos intentos le quedan). Aprobada, la página
- * muestra el código y la firma. El back es quien decide: aquí sólo se pinta lo que dice.
+ * Quien firma llega desde su enlace, lee el documento y, antes del código, se toma una foto:
+ *   · `FOTO` (lo normal): nuestra cámara, con la cara revisada en el navegador (`CamaraDelFirmante`);
+ *   · `DIDIT` (sólo si algún día se ponen sus llaves): «Tomarme la foto» lo lleva a la prueba de vida de Didit y Didit lo
+ *     trae de vuelta a su enlace con `?vida=1`; aquí se pregunta el resultado unos segundos hasta que llega. Si no pasa,
+ *     dice por qué y deja intentarlo otra vez (con cuántos intentos le quedan).
+ * Lista la foto, la página muestra el código y la firma. El back es quien decide: aquí sólo se pinta lo que dice.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowsClockwise, Camera, WarningCircle } from '@phosphor-icons/react';
 import { Ilustracion } from '@leasefy/cadence';
 
@@ -20,6 +20,9 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { firmaPublicaApi, type PruebaDeVidaDelFirmante } from '@/lib/api/firmas.service';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+
+import { CajaDelPaso } from './CajaDelPaso';
+import { CamaraDelFirmante } from './CamaraDelFirmante';
 
 /** Cada cuánto y cuántas veces se pregunta el resultado al volver de Didit (≈ 40 s). */
 const CADA_MS = 2500;
@@ -93,8 +96,8 @@ export function PruebaDeVida({ token, prueba, quienEnvia, volvioDeDidit, onCambi
     };
   }, [esperoSola, token, onCambio]);
 
-  if (prueba.modo === 'SIMULADA') {
-    return <CamaraDelLaboratorio token={token} onCambio={onCambio} />;
+  if (prueba.modo === 'FOTO') {
+    return <CamaraDelFirmante token={token} onCambio={onCambio} />;
   }
 
   const sinIntentos = prueba.intentosQuedan === 0;
@@ -188,132 +191,6 @@ export function PruebaDeVida({ token, prueba, quienEnvia, volvioDeDidit, onCambi
         <p className="text-caption text-fg-subtle">
           Necesitas la cámara del celular o del computador y buena luz. Leasefy guarda la foto sólo como evidencia de esta firma.
         </p>
-      </div>
-    </CajaDelPaso>
-  );
-}
-
-function CajaDelPaso({ children, testId }: { children: React.ReactNode; testId: string }) {
-  return (
-    <section
-      className="flex flex-col gap-4 rounded-md border border-border bg-surface px-4 py-5 sm:flex-row sm:items-start sm:gap-5 sm:px-5"
-      data-testid={testId}
-      aria-label="Prueba de vida"
-    >
-      {children}
-    </section>
-  );
-}
-
-/**
- * El laboratorio sin Didit (`FIRMAS_PRUEBA_DE_VIDA_SIMULADA=true`, nunca en producción): la cámara del navegador toma
- * la foto y el back la guarda marcada «simulada».
- */
-function CamaraDelLaboratorio({ token, onCambio }: { token: string; onCambio: (p: PruebaDeVidaDelFirmante) => void }) {
-  const video = useRef<HTMLVideoElement>(null);
-  const flujo = useRef<MediaStream | null>(null);
-  const [encendida, setEncendida] = useState(false);
-  const [foto, setFoto] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
-
-  const apagar = () => {
-    flujo.current?.getTracks().forEach((t) => t.stop());
-    flujo.current = null;
-    setEncendida(false);
-  };
-  useEffect(() => apagar, []);
-
-  const encender = async () => {
-    setError(null);
-    setFoto(null);
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-      flujo.current = s;
-      setEncendida(true);
-      requestAnimationFrame(() => {
-        if (video.current) {
-          video.current.srcObject = s;
-          void video.current.play().catch(() => undefined);
-        }
-      });
-    } catch {
-      setError('Dale permiso a la cámara en tu navegador para tomarte la foto.');
-    }
-  };
-
-  const tomar = () => {
-    const v = video.current;
-    if (!v || !v.videoWidth) return;
-    const lienzo = document.createElement('canvas');
-    const ancho = Math.min(720, v.videoWidth);
-    lienzo.width = ancho;
-    lienzo.height = Math.round((v.videoHeight / v.videoWidth) * ancho);
-    lienzo.getContext('2d')?.drawImage(v, 0, 0, lienzo.width, lienzo.height);
-    setFoto(lienzo.toDataURL('image/jpeg', 0.85));
-    apagar();
-  };
-
-  const usar = async () => {
-    if (!foto) return;
-    setEnviando(true);
-    try {
-      onCambio(await firmaPublicaApi.pruebaDeVidaSimulada(token, foto));
-    } catch (err) {
-      toast.error('No pudimos guardar la foto.', { description: mensajeDelFallo(err, 'Tómala de nuevo.') });
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  return (
-    <CajaDelPaso testId="prueba-de-vida-simulada">
-      <div className="w-full space-y-4">
-        <div className="space-y-1.5">
-          <p className="font-mono text-label uppercase text-fg-subtle">Laboratorio · sin Didit</p>
-          <h2 className="text-h3 text-fg">Confirma que eres tú</h2>
-          <p className="text-body-sm text-fg-muted">Tómate una foto con la cámara. En producción esta prueba la hace Didit.</p>
-        </div>
-        <div className="relative aspect-[4/3] w-full max-w-sm overflow-hidden rounded-md bg-surface-muted">
-          {foto ? (
-            // eslint-disable-next-line @next/next/no-img-element -- la foto recién tomada, en memoria
-            <img src={foto} alt="Tu foto" className="h-full w-full object-cover" />
-          ) : (
-            <video
-              ref={video}
-              muted
-              playsInline
-              className={encendida ? 'h-full w-full -scale-x-100 object-cover' : 'hidden'}
-              aria-label="Lo que ve la cámara"
-            />
-          )}
-          {!foto && !encendida ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Ilustracion nombre="camara" tono="grafito" tamano={72} />
-            </div>
-          ) : null}
-        </div>
-        {error ? <p className="text-body-sm text-danger">{error}</p> : null}
-        <div className="flex flex-col gap-2 sm:flex-row">
-          {foto ? (
-            <>
-              <Button onClick={() => void usar()} isLoading={enviando} data-testid="usar-la-foto">
-                Usar esta foto
-              </Button>
-              <Button variant="ghost" onClick={() => void encender()} disabled={enviando}>
-                Tomarla de nuevo
-              </Button>
-            </>
-          ) : encendida ? (
-            <Button onClick={tomar} data-testid="tomar-la-foto">
-              <Camera className="mr-1.5 h-4 w-4" aria-hidden="true" /> Tomar la foto
-            </Button>
-          ) : (
-            <Button onClick={() => void encender()} data-testid="encender-la-camara">
-              <Camera className="mr-1.5 h-4 w-4" aria-hidden="true" /> Encender la cámara
-            </Button>
-          )}
-        </div>
       </div>
     </CajaDelPaso>
   );

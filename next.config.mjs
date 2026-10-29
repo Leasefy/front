@@ -174,6 +174,25 @@ const nextConfig = {
     ],
   },
   async headers() {
+    // La cámara, apagada en todo el sitio salvo en `/firmar/…`: la foto del firmante antes de firmar (Nico,
+    // 28-10-2026: «cámara propia + revisar la cara»). Ahí `camera=(self)`; sin eso el navegador la niega sin preguntar.
+    const permisosDelNavegador = ({ camara }) =>
+      [
+        camara ? "camera=(self)" : "camera=()",
+        "microphone=(self)",
+        "geolocation=()",
+        "browsing-topics=()",
+        "payment=()",
+        "usb=()",
+        "serial=()",
+        "bluetooth=()",
+        "hid=()",
+        "midi=()",
+        "display-capture=()",
+        "magnetometer=()",
+        "gyroscope=()",
+        "accelerometer=()",
+      ].join(", ");
     const securityHeaders = [
       // `SAMEORIGIN` y no `DENY` (23-09): coherente con `frame-ancestors 'self'`
       // de la CSP (que es la que mandan los navegadores modernos; ésta queda
@@ -189,22 +208,7 @@ const nextConfig = {
         // micrófono. Con `microphone=()` el navegador negaba el permiso sin
         // preguntar y los dos botones fallaban en silencio. Lo demás, apagado:
         // nadie de adentro lo usa y un iframe de terceros no lo necesita.
-        value: [
-          "camera=()",
-          "microphone=(self)",
-          "geolocation=()",
-          "browsing-topics=()",
-          "payment=()",
-          "usb=()",
-          "serial=()",
-          "bluetooth=()",
-          "hid=()",
-          "midi=()",
-          "display-capture=()",
-          "magnetometer=()",
-          "gyroscope=()",
-          "accelerometer=()",
-        ].join(", "),
+        value: permisosDelNavegador({ camara: false }),
       },
       // Aísla la ventana de las que abre otro sitio: una página ajena que nos
       // abra con `window.open` no conserva una referencia a la nuestra (tab-
@@ -236,6 +240,11 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      {
+        // Va DESPUÉS de `/:path*`: con la misma cabecera, Next se queda con la última que calza.
+        source: "/firmar/:path*",
+        headers: [{ key: "Permissions-Policy", value: permisosDelNavegador({ camara: true }) }],
       },
       {
         // Las rutas propias (`/api/docs/*` sirve documentos de postulaciones

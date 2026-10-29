@@ -32,16 +32,18 @@ export interface FirmanteDelDocumento {
   invitacion: 'ENVIADA' | 'FALLO' | 'SIN_CORREO' | null;
   firmado: boolean;
   firmadoAt: string | null;
-  /** La prueba de vida antes de firmar (Didit); `null` si no la ha hecho o no se pide. */
-  pruebaDeVida: { estado: EstadoDeLaPruebaDeVida; proveedor: 'DIDIT' | 'SIMULADA'; puntaje: number | null } | null;
+  /** La foto antes de firmar (`LEASEFY`: nuestra cámara; `DIDIT`: con prueba de vida); `null` si no la tiene o no se pide. */
+  pruebaDeVida: { estado: EstadoDeLaPruebaDeVida; proveedor: ProveedorDeLaFoto; puntaje: number | null } | null;
 }
 
 export type EstadoDeLaPruebaDeVida = 'EN_CURSO' | 'EN_REVISION' | 'APROBADA' | 'RECHAZADA';
+/** `LEASEFY`: la foto de nuestra cámara, el modo de siempre (Nico, 28-10-2026). `DIDIT`: con prueba de vida, si se prende. */
+export type ProveedorDeLaFoto = 'DIDIT' | 'LEASEFY';
 
-/** Lo que quien firma ve de su prueba de vida. */
+/** Lo que quien firma ve de su foto. `modo` `FOTO`: nuestra cámara; `DIDIT`: la prueba de vida; `null`: no se pide. */
 export interface PruebaDeVidaDelFirmante {
   requerida: boolean;
-  modo: 'DIDIT' | 'SIMULADA' | null;
+  modo: 'DIDIT' | 'FOTO' | null;
   estado: 'PENDIENTE' | EstadoDeLaPruebaDeVida;
   intentosQuedan: number;
   motivo: string | null;
@@ -175,7 +177,7 @@ export type DocumentoVerificado =
         firmadoAt: string | null;
         conCodigo: boolean;
         canales: string[];
-        pruebaDeVida: { proveedor: 'DIDIT' | 'SIMULADA'; puntaje: number | null } | null;
+        pruebaDeVida: { proveedor: ProveedorDeLaFoto; puntaje: number | null } | null;
         huella: string | null;
       }>;
     };
@@ -220,8 +222,8 @@ export const firmaPublicaApi = {
     ),
   comprobarPruebaDeVida: (token: string) =>
     sinSesion<PruebaDeVidaDelFirmante>('POST', `/publico/firmas/${encodeURIComponent(token)}/prueba-de-vida/comprobar`, {}),
-  /** Sólo el laboratorio: la foto de la cámara del navegador. */
-  pruebaDeVidaSimulada: (token: string, foto: string) =>
-    sinSesion<PruebaDeVidaDelFirmante>('POST', `/publico/firmas/${encodeURIComponent(token)}/prueba-de-vida/simulada`, { foto }),
+  /** La foto de nuestra cámara (`data:image/jpeg;base64,…`); `caraRevisada` si el navegador vio una cara de frente. */
+  subirFoto: (token: string, foto: string, caraRevisada: boolean) =>
+    sinSesion<PruebaDeVidaDelFirmante>('POST', `/publico/firmas/${encodeURIComponent(token)}/foto`, { foto, caraRevisada }),
   verificar: (codigo: string) => sinSesion<DocumentoVerificado>('GET', `/publico/verificar-firma/${encodeURIComponent(codigo)}`),
 };

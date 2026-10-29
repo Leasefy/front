@@ -15,7 +15,7 @@ const api = vi.hoisted(() => ({
   firmar: vi.fn(),
   iniciarPruebaDeVida: vi.fn(),
   comprobarPruebaDeVida: vi.fn(),
-  pruebaDeVidaSimulada: vi.fn(),
+  subirFoto: vi.fn(),
 }));
 vi.mock('@/lib/api/firmas.service', () => ({ firmaPublicaApi: api }));
 vi.mock('next/navigation', () => ({ useParams: () => ({ token: 'abc.def' }) }));
@@ -34,6 +34,10 @@ const datos = (o: Partial<FirmaPublica> = {}): FirmaPublica => ({
   pruebaDeVida: { requerida: false, modo: null, estado: 'PENDIENTE', intentosQuedan: 5, motivo: null },
   verificacion: null,
   ...o,
+});
+
+const conFoto = (o: Partial<FirmaPublica['pruebaDeVida']> = {}): Partial<FirmaPublica> => ({
+  pruebaDeVida: { requerida: true, modo: 'FOTO', estado: 'PENDIENTE', intentosQuedan: 5, motivo: null, ...o },
 });
 
 const conDidit = (o: Partial<FirmaPublica['pruebaDeVida']> = {}): Partial<FirmaPublica> => ({
@@ -90,7 +94,21 @@ describe('/firmar/documento/[token]', () => {
     expect(document.querySelector('[data-testid="enlace-vencido"]')).toBeTruthy();
   });
 
-  it('con la prueba de vida pedida: primero la foto, sin el formulario de firma; «Tomarme la foto» lleva a Didit', async () => {
+  it('lo de siempre: la foto con nuestra cámara antes del código; ya tomada, «Tu foto quedó lista» y la firma', async () => {
+    api.obtener.mockResolvedValue(datos(conFoto()));
+    await montar();
+    expect(document.querySelector('[data-testid="foto-del-firmante"]')?.textContent).toContain('Tómate una foto');
+    expect(boton('abrir-la-camara')).toBeTruthy();
+    expect(document.body.textContent).not.toContain('Firmante');
+    act(() => raiz?.unmount());
+    document.body.innerHTML = '';
+    api.obtener.mockResolvedValue(datos(conFoto({ estado: 'APROBADA' })));
+    await montar();
+    expect(document.querySelector('[data-testid="prueba-de-vida-aprobada"]')?.textContent).toContain('Tu foto quedó lista');
+    expect(document.body.textContent).toContain('Firmante');
+  });
+
+  it('con Didit prendido: primero la foto, sin el formulario de firma; «Tomarme la foto» lleva a Didit', async () => {
     api.obtener.mockResolvedValue(datos(conDidit()));
     api.iniciarPruebaDeVida.mockResolvedValue({ url: 'https://verify.didit.example/ses-1', pruebaDeVida: conDidit({ estado: 'EN_CURSO' }).pruebaDeVida });
     const ir = vi.fn();

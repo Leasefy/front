@@ -106,7 +106,7 @@ function RenovacionesContent() {
       <EncabezadoDePantalla
         seccion="Operación"
         titulo={t('inmobiliaria.nav.renovaciones')}
-        descripcion="Las renovaciones abiertas y en qué paso va cada una: propuesta, respuesta del inquilino y firma."
+        descripcion="Las renovaciones abiertas: vivienda se renueva con su incremento; los locales comerciales van por propuesta, respuesta y firma."
         ayuda={
           <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: renovaciones" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">
@@ -115,8 +115,13 @@ function RenovacionesContent() {
                 renovación se firma o se cierra, aunque el vencimiento se aleje.
               </p>
               <p>
-                Toca una renovación para abrir su cajón: ahí se manda la propuesta, se registra la respuesta del
-                inquilino y se sube el contrato firmado.
+                Toca una renovación para abrir su cajón. En vivienda urbana la renovación se da (Ley 820): eliges
+                hasta cuándo, el incremento sólo sube cuando se cumple un año de contrato y «Renovar contrato» les
+                avisa al inquilino y al propietario.
+              </p>
+              <p>
+                En un local comercial se manda la propuesta, se registra la respuesta del inquilino y se sube el
+                contrato firmado.
               </p>
             </div>
           </ParaEntenderMas>
@@ -187,16 +192,34 @@ function RenovacionesContent() {
             await recargarRenovaciones();
             toast.success('Propuesta enviada');
           }}
-          onSaveDraft={async ({ proposedRent, negotiatedAdminFee, ipcRate }) => {
+          onSaveDraft={async ({ proposedRent, negotiatedAdminFee, ipcRate, newLeaseStartDate, newLeaseEndDate }) => {
             exigirValoresQueCaben({ proposedRent, negotiatedAdminFee });
             await renovacionesApi.updateStage(selectedRenovacion.id, {
               status: 'pending',
               proposedRent,
               ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
               ...(ipcRate != null ? { ipcRate } : {}),
+              // La fecha de la renovación puesta a mano (Nico, 29-10-2026).
+              ...(newLeaseStartDate ? { newLeaseStartDate } : {}),
+              ...(newLeaseEndDate ? { newLeaseEndDate } : {}),
             });
             await recargarRenovaciones();
             toast.success('Borrador guardado');
+          }}
+          onRenovar={async (datos) => {
+            // Vivienda (Nico, 29-10-2026): renueva, genera el incremento y avisa a las dos partes.
+            exigirValoresQueCaben({ negotiatedRent: datos.canon, negotiatedAdminFee: datos.negotiatedAdminFee });
+            const { avisoEnviado } = await renovacionesApi.renovar(selectedRenovacion.id, datos);
+            await recargarRenovaciones();
+            if (avisoEnviado) {
+              toast.success('Contrato renovado', {
+                description: 'Les avisamos al inquilino y al propietario con el canon nuevo y la fecha.',
+              });
+            } else {
+              toast.warning('Contrato renovado, pero el aviso no salió', {
+                description: 'Avísales tú al inquilino y al propietario del canon nuevo.',
+              });
+            }
           }}
           onUploadDocument={async (file) => {
             // C28: rechazar es lo que lo deja quieto en el paso de la firma.

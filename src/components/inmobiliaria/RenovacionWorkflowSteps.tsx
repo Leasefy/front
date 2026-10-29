@@ -70,7 +70,7 @@ import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
  * Los campos del cajón donde puede ir un error (02-10-2026): los de la
  * propuesta, el contrato firmado, la nota del riel y el motivo de no renovar.
  */
-export type CampoDelCajon = 'canon' | 'ipc' | 'admin' | 'mensaje' | 'archivo' | 'nota' | 'motivo';
+export type CampoDelCajon = 'canon' | 'ipc' | 'admin' | 'mensaje' | 'archivo' | 'nota' | 'motivo' | 'desde' | 'hasta';
 
 /** Lo que el campo nombra en `aria-describedby` cuando tiene error. */
 function ariaDelError(id: string, error?: string | null) {
@@ -106,7 +106,7 @@ function Campo({
 
 function Rotulo({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-caption font-medium uppercase tracking-wide text-fg-muted">{children}</h3>
+    <h3 className="font-mono text-caption uppercase tracking-wide text-fg-muted">{children}</h3>
   );
 }
 

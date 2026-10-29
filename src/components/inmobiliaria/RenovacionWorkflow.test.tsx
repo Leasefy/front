@@ -328,6 +328,74 @@ describe('la propuesta', () => {
   });
 });
 
+describe('vivienda urbana: «Renovar contrato» (Nico, 29-10-2026)', () => {
+  const regla = {
+    esComercial: false,
+    usoInmueble: 'VIVIENDA' as const,
+    periodicidadDelContrato: 6,
+    mesesDeLaRenovacion: 6,
+    cumpleElAnio: true,
+    aniosDeContrato: 1,
+    nuevoInicio: '2026-10-02',
+    nuevoFin: '2027-04-01',
+    fechasPuestasAMano: false,
+    ipc: { rate: 5.1, anio: 2025 },
+    canonConIncremento: 1_629_050,
+  };
+  const vivienda = { ...base, usoInmueble: 'VIVIENDA' as const, prorrogaMeses: 6, reglaDeLaRenovacion: regla };
+  async function montarVivienda(props: Props = {}, renovacion: Renovacion = vivienda) {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(<CuerpoDeRenovacion renovacion={renovacion} hoy={HOY} {...props} />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  it('no muestra los pasos ni «Enviar propuesta»: un solo paso con la vigencia, el incremento y «Renovar contrato»', async () => {
+    await montarVivienda();
+    expect(porTestId('renovacion-pasos')).toBeNull();
+    expect(porTestId('renovacion-enviar')).toBeNull();
+    expect(porTestId('paso-renovar-vivienda')).not.toBeNull();
+    expect(porTestId('renovacion-renovar')?.textContent).toContain('Renovar contrato');
+    expect(porTestId<HTMLInputElement>('renovacion-canon')?.value).toContain('1.629.050');
+    expect(porTestId('renovacion-del-incremento')?.textContent).toContain('sube con el IPC de 2025 (5,1 %)');
+    expect(porTestId('renovacion-cada-cuanto')?.textContent).toContain('se renueva cada 6 meses');
+  });
+
+  it('«Renovar contrato» manda el canon de la regla, sin fechas si nadie las cambió, y muestra la renovación hecha', async () => {
+    const onRenovar = vi.fn().mockResolvedValue(undefined);
+    await montarVivienda({ onRenovar });
+    await clic(porTestId('renovacion-renovar'));
+    expect(onRenovar).toHaveBeenCalledWith({ canon: 1_629_050 });
+    expect(porTestId('paso-completada')).not.toBeNull();
+  });
+
+  it('sobre el tope legal no deja renovar y lo dice bajo el canon', async () => {
+    const onRenovar = vi.fn();
+    await montarVivienda({ onRenovar });
+    await escribir(porTestId<HTMLInputElement>('renovacion-canon'), '1700000');
+    expect(texto()).toContain('Como mucho');
+    expect(porTestId<HTMLButtonElement>('renovacion-renovar')?.disabled).toBe(true);
+  });
+
+  it('sin cumplir el año renueva con el mismo canon; un local comercial sigue con la propuesta', async () => {
+    await montarVivienda({}, {
+      ...vivienda,
+      reglaDeLaRenovacion: { ...regla, cumpleElAnio: false, canonConIncremento: 1_550_000 },
+    });
+    expect(porTestId('renovacion-del-incremento')?.textContent).toContain('No cumple un año de contrato');
+    act(() => root!.unmount());
+    container?.remove();
+    await montarVivienda({}, { ...vivienda, reglaDeLaRenovacion: { ...regla, esComercial: true } });
+    expect(porTestId('renovacion-pasos')).not.toBeNull();
+    expect(porTestId('renovacion-enviar')).not.toBeNull();
+  });
+});
+
 describe('no renovar', () => {
   it('pide un motivo y lo manda', async () => {
     const onTerminate = vi.fn().mockResolvedValue(undefined);

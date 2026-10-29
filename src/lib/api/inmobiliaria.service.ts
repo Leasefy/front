@@ -2172,6 +2172,9 @@ export const renovacionesApi = {
       ipcRate?: number;
       historyNote?: string;
       notificationMessage?: string;
+      /** La fecha de la renovación puesta a mano (`YYYY-MM-DD`), Nico 29-10-2026. */
+      newLeaseStartDate?: string;
+      newLeaseEndDate?: string;
     },
   ): Promise<void> {
     const { status, ...rest } = payload;
@@ -2179,6 +2182,25 @@ export const renovacionesApi = {
       status: RENOVACION_STATUS_TO_BACKEND[status] ?? status,
       ...rest,
     });
+  },
+
+  /**
+   * «Renovar contrato» — VIVIENDA URBANA (Nico, 29-10-2026): renueva, genera
+   * el incremento (IPC del año anterior si cumple un año de contrato) y avisa
+   * al inquilino y al propietario. `avisoEnviado: false` = renovó pero el
+   * aviso no salió.
+   */
+  async renovar(
+    id: string,
+    payload: {
+      canon?: number;
+      negotiatedAdminFee?: number;
+      newLeaseStartDate?: string;
+      newLeaseEndDate?: string;
+    },
+  ): Promise<{ avisoEnviado: boolean }> {
+    const r = await apiClient.post<{ avisoEnviado?: boolean }>(`${BASE}/renovaciones/${id}/renovar`, payload);
+    return { avisoEnviado: r?.avisoEnviado !== false };
   },
 
   /** Upload the renewal document (multipart). Returns the stored name/path. */

@@ -42,6 +42,7 @@ import type { CodeudorDto } from '@/lib/api/pagare.types';
 import { codeudoresApi } from '@/lib/api/pagare.service';
 import { documentosDelContratoApi } from '@/lib/api/documentos-del-contrato.service';
 import { contratoAlCrearApi } from '@/lib/api/contrato-al-crear.service';
+import { cicloDeVidaApi } from '@/lib/api/ciclo-de-vida.service';
 import { useBorradorDelContratoNuevo } from '@/lib/contratos/useBorradorDelContratoNuevo';
 import { primerCanon } from '@/lib/contratos/primer-canon';
 import { avanceDelContrato } from '@/lib/contratos/avance-del-contrato';
@@ -842,6 +843,12 @@ function NuevoContratoContent() {
    * crear. Un codeudor empezado a medias frena el botón: o se completa o se quita.
    */
   const [codeudores, setCodeudores] = useState<CodeudorDto[]>([]);
+  /**
+   * Portofino (29-10-2026): «hay contratos de 12 meses que después del año se
+   * renuevan cada 6 meses; otros cada 12; otros son a 6». Vacío = por el mismo
+   * término (Ley 820). Se guarda en `prorrogaMeses` al terminar de crear.
+   */
+  const [renuevaCada, setRenuevaCada] = useState<'' | '6' | '12'>('');
   const [documentosAdicionales, setDocumentosAdicionales] = useState<DocumentoAlCrear[]>([]);
   const codeudoresListos = codeudores.every((c) => codeudorVacio(c) || codeudorCompleto(c));
 
@@ -928,6 +935,13 @@ function NuevoContratoContent() {
     } catch (err) {
       activo = false;
       pendientes.push(`no se pudo activar (${mensajeParaLaPersona(err)}); cámbiale el estado desde el contrato`);
+    }
+    if (renuevaCada && usoDelContrato !== 'COMERCIAL') {
+      try {
+        await cicloDeVidaApi.fijarMesesDeProrroga(contractId, Number(renuevaCada));
+      } catch {
+        pendientes.push('no se guardó cada cuánto se renueva; ponlo en el contrato');
+      }
     }
     const aGuardar = codeudores.filter((c) => !codeudorVacio(c));
     const codeudoresFallidos = (
@@ -1545,6 +1559,24 @@ function NuevoContratoContent() {
                   </Select>
                 </Field>
               )
+            )}
+            {usoDelContrato !== 'COMERCIAL' && (
+              <Field
+                id="contrato-renueva-cada"
+                label="Se renueva cada"
+                hint="El incremento sólo sube cuando se cumple cada año de contrato. Se puede cambiar en el contrato."
+              >
+                <Select value={renuevaCada || 'TERMINO'} onValueChange={(v) => setRenuevaCada(v === 'TERMINO' ? '' : (v as '6' | '12'))}>
+                  <SelectTrigger id="contrato-renueva-cada" data-testid="contrato-renueva-cada">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[400]">
+                    <SelectItem value="TERMINO">Por el mismo término del contrato</SelectItem>
+                    <SelectItem value="6">6 meses</SelectItem>
+                    <SelectItem value="12">12 meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
             )}
             {pideDeposito && (
               <Field id={idDelCampoDelContrato('deposit')} label="Depósito (COP)" error={errorDe('deposit')} hint="Sólo en comercial: en vivienda la ley no lo permite.">

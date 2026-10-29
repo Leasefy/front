@@ -35,8 +35,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowsClockwise, FileText, Money, Plus, Prohibit } from '@phosphor-icons/react';
-import { SearchInput } from '@leasefy/cadence';
+import { DotsThreeVertical, FileText, Plus, Prohibit } from '@phosphor-icons/react';
+import { IconButton, SearchInput } from '@leasefy/cadence';
 
 import {
   AlertDialog,
@@ -49,6 +49,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -615,7 +622,7 @@ export function FacturasDeProveedor({
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Se le paga</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Acciones</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBodyAnimado className="max-md:block">
@@ -637,8 +644,9 @@ export function FacturasDeProveedor({
                         </p>
                       </TableCell>
                       {/* CB-17: la tabla no cabía a 1440 (las acciones se cortaban):
-                          columnas de texto más angostas y la fecha corta de la casa. */}
-                      <TableCell className="max-w-[14rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
+                          columnas de texto más angostas y la fecha corta de la casa.
+                          29-10: 12rem (con 14rem se pasaba 18 px a 1440 con datos de Portofino). */}
+                      <TableCell className="max-w-[12rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="truncate text-sm text-fg" title={f.proveedorNombre}>
                           {f.proveedorNombre}
                         </p>
@@ -650,7 +658,7 @@ export function FacturasDeProveedor({
                       <TableCell className="whitespace-nowrap text-caption text-fg-muted max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-right">
                         {fechaCorta(diaDe(f.fecha))}
                       </TableCell>
-                      <TableCell className="max-w-[14rem] max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
+                      <TableCell className="max-w-[12rem] max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="truncate text-sm text-fg" title={f.concepto}>
                           {f.concepto}
                         </p>
@@ -689,41 +697,69 @@ export function FacturasDeProveedor({
                         ) : null}
                       </TableCell>
                       <TableCell className="max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
-                        <div className="flex flex-wrap gap-2">
-                          <AccionConMotivo
-                            puede={p.causar.puede}
-                            motivo={p.causar.motivo}
-                            ocupado={causando === f.id}
-                            textoOcupado="Causando…"
-                            onClick={() => void causar(f)}
-                            testId={`causar-${f.id}`}
-                          >
-                            <ArrowsClockwise className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                            Causar
-                          </AccionConMotivo>
-                          <AccionConMotivo
-                            puede={p.anular.puede}
-                            motivo={p.anular.motivo}
-                            onClick={() => {
-                              setAnulando(f);
-                              setMotivo('');
-                            }}
-                            testId={`anular-${f.id}`}
-                          >
-                            <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                            Anular
-                          </AccionConMotivo>
-                          {/* 🔴 CB-R21: pagar la causada crea SU egreso (Egresos → lote → doble firma). */}
-                          {sePuedePagar(f) ? (
+                        {/* Revisión en pantalla 29-10 (datos de Portofino): «Causar» y «Anular» iban apilados con el
+                            mismo peso; la fila medía 107 px y la tabla no cabía a 1440. A la vista, sólo lo que sigue
+                            para ESA factura (causar el borrador o pagar la causada); anular, que reversa, va en el «⋯»
+                            con su motivo cuando no se puede, como en Recibos de caja. */}
+                        <div className="flex items-center justify-end gap-1 max-md:-ml-2 max-md:justify-start">
+                          {f.estado === 'BORRADOR' ? (
+                            <AccionConMotivo
+                              puede={p.causar.puede}
+                              motivo={p.causar.motivo}
+                              motivoVisible={false}
+                              ocupado={causando === f.id}
+                              textoOcupado="Causando…"
+                              onClick={() => void causar(f)}
+                              testId={`causar-${f.id}`}
+                            >
+                              Causar
+                            </AccionConMotivo>
+                          ) : sePuedePagar(f) ? (
+                            /* 🔴 CB-R21: pagar la causada crea SU egreso (Egresos → lote → doble firma). */
                             <AccionConMotivo
                               puede={registro.puede}
                               motivo={registro.motivo}
+                              motivoVisible={false}
                               onClick={() => setPagando(f)}
                               testId={`pagar-${f.id}`}
                             >
-                              <Money className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                               Pagar
                             </AccionConMotivo>
+                          ) : null}
+                          {f.estado !== 'ANULADA' ? (
+                            <DropdownList>
+                              <DropdownListTrigger asChild>
+                                <IconButton
+                                  variant="ghost"
+                                  size="sm"
+                                  aria-label={`Más acciones de la factura ${f.prefijoDelProveedor ? `${f.prefijoDelProveedor}-` : ''}${f.numeroDelProveedor}`}
+                                  data-testid={`acciones-de-${f.id}`}
+                                  icon={<DotsThreeVertical className="h-4 w-4" weight="bold" />}
+                                />
+                              </DropdownListTrigger>
+                              <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
+                                <DropdownListItem
+                                  disabled={!p.anular.puede}
+                                  onSelect={() => {
+                                    setAnulando(f);
+                                    setMotivo('');
+                                  }}
+                                  className="text-danger"
+                                  data-testid={`anular-${f.id}`}
+                                >
+                                  <Prohibit className="h-4 w-4" aria-hidden="true" />
+                                  Anular la factura
+                                </DropdownListItem>
+                                {!p.anular.puede && p.anular.motivo ? (
+                                  <p
+                                    className="max-w-[18rem] px-3 pb-2 pt-1 text-caption text-fg-muted"
+                                    data-testid={`anular-${f.id}-motivo`}
+                                  >
+                                    {p.anular.motivo}
+                                  </p>
+                                ) : null}
+                              </DropdownListContent>
+                            </DropdownList>
                           ) : null}
                         </div>
                       </TableCell>

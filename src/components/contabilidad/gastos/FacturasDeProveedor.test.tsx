@@ -152,6 +152,18 @@ const pagina = (
 let container: HTMLDivElement;
 let root: Root | null = null;
 const q = (t: string) => document.querySelector(`[data-testid="${t}"]`) as HTMLElement | null;
+/** Abre el «⋯» de la fila: anular vive ahí desde la revisión en pantalla del 29-10. */
+async function abrirAcciones(id: string) {
+  const disparador = q(`acciones-de-${id}`);
+  expect(disparador).not.toBeNull();
+  await act(async () => {
+    disparador!.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }),
+    );
+  });
+}
+/** Una opción del menú apagada (Radix la marca con `data-disabled`). */
+const apagada = (el: HTMLElement | null) => Boolean(el?.hasAttribute('data-disabled'));
 
 beforeEach(() => {
   gastos.facturas.listar.mockReset().mockResolvedValue(pagina([factura()]));
@@ -243,31 +255,37 @@ describe('<FacturasDeProveedor>', () => {
     expect(nota).toContain('no aparece en el P&G ni en la exógena');
   });
 
-  it('un borrador se puede causar y anular', async () => {
+  it('un borrador se causa a la vista y se anula desde el «⋯»', async () => {
     await pintar();
     expect((q('causar-f1') as HTMLButtonElement).disabled).toBe(false);
-    expect((q('anular-f1') as HTMLButtonElement).disabled).toBe(false);
+    expect(q('anular-f1')).toBeNull(); // anular no está al mismo peso que causar
+    await abrirAcciones('f1');
+    expect(apagada(q('anular-f1'))).toBe(false);
   });
 
-  it('una CAUSADA no se vuelve a causar, y el motivo nombra su asiento', async () => {
+  it('una CAUSADA no ofrece causar otra vez: ofrece pagarla, y su asiento queda a la vista', async () => {
     gastos.facturas.listar.mockResolvedValue(
       pagina([factura({ estado: 'CAUSADA', asientoId: 'a1', asientoNumero: 412 })]),
     );
 
     await pintar();
 
-    expect((q('causar-f1') as HTMLButtonElement).disabled).toBe(true);
-    expect(q('causar-f1-motivo')!.textContent).toContain('412');
-    expect((q('anular-f1') as HTMLButtonElement).disabled).toBe(false);
+    expect(q('causar-f1')).toBeNull();
+    expect(q('pagar-f1')).not.toBeNull();
+    expect(document.body.textContent).toContain('Asiento N.º 412');
+    await abrirAcciones('f1');
+    expect(apagada(q('anular-f1'))).toBe(false);
   });
 
-  it('🔴 una PAGADA no se anula: el motivo manda a anular el egreso', async () => {
+  it('🔴 una PAGADA no se anula: el «⋯» lo dice y manda a anular el egreso', async () => {
     gastos.facturas.listar.mockResolvedValue(pagina([factura({ estado: 'PAGADA' })]));
 
     await pintar();
 
-    const boton = q('anular-f1') as HTMLButtonElement;
-    expect(boton.disabled).toBe(true);
+    expect(q('causar-f1')).toBeNull();
+    expect(q('pagar-f1')).toBeNull();
+    await abrirAcciones('f1');
+    expect(apagada(q('anular-f1'))).toBe(true);
     const motivo = q('anular-f1-motivo')!.textContent!;
     expect(motivo).toContain('la plata salió del banco');
     expect(motivo).toContain('egreso');
@@ -278,8 +296,8 @@ describe('<FacturasDeProveedor>', () => {
 
     await pintar();
 
-    expect((q('causar-f1') as HTMLButtonElement).disabled).toBe(true);
-    expect((q('anular-f1') as HTMLButtonElement).disabled).toBe(true);
+    expect(q('causar-f1')).toBeNull();
+    expect(q('acciones-de-f1')).toBeNull();
   });
 
   it('🔴 después de causar muestra EL ASIENTO que quedó, con sus líneas', async () => {
@@ -364,8 +382,9 @@ describe('<FacturasDeProveedor>', () => {
   it('🔴 anular pide motivo en el diálogo del sistema de diseño, y no deja mandar vacío', async () => {
     await pintar();
 
+    await abrirAcciones('f1');
     await act(async () => {
-      (q('anular-f1') as HTMLButtonElement).click();
+      (q('anular-f1') as HTMLElement).click();
       await Promise.resolve();
     });
 
@@ -385,7 +404,8 @@ describe('<FacturasDeProveedor>', () => {
     expect((q('abrir-formulario-de-factura') as HTMLButtonElement).disabled).toBe(true);
     expect(q('abrir-formulario-de-factura-motivo')!.textContent).toContain('el contador');
     expect((q('causar-f1') as HTMLButtonElement).disabled).toBe(true);
-    expect((q('anular-f1') as HTMLButtonElement).disabled).toBe(true);
+    await abrirAcciones('f1');
+    expect(apagada(q('anular-f1'))).toBe(true);
   });
 
   it('una lista vacía dice qué hacer, no se queda en blanco', async () => {

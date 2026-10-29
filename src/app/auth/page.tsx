@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useRef } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { X } from '@phosphor-icons/react';
 
@@ -9,9 +9,8 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
-import { TestimoniosFlotantes } from '@/components/auth/TestimoniosFlotantes';
+import { WidgetsDeInicio } from '@/components/auth/WidgetsDeInicio';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
-import { BordeDeCorriente, type ManejoDeLaCorriente } from '@/components/auth/BordeDeCorriente';
 
 function AuthFormFallback() {
   return (
@@ -33,8 +32,8 @@ function AuthFormFallback() {
  * El video ocupa TODA la pantalla y el formulario flota encima, en una
  * tarjeta a la derecha (Nico, 2026-09-03). Arriba a la izquierda va el
  * logotipo de la landing (el símbolo `#lfLogo`, a 32 px como en su header),
- * en blanco; abajo a la izquierda, los testimonios que rotan en su tarjeta
- * de vidrio (`TestimoniosFlotantes`). Antes era un panel partido —52 %,
+ * en blanco, y debajo los widgets chicos «como un home» (`WidgetsDeInicio`,
+ * Nico 29-10-2026; antes, abajo, los testimonios de `TestimoniosFlotantes`). Antes era un panel partido —52 %,
  * después «el ancho natural»— y en cualquier pantalla 16:9 el video terminaba
  * recortado, porque un 16:9 a toda la altura nunca cabe al lado de una
  * columna de formulario. A pantalla completa se ve entero, sin «zoom».
@@ -45,8 +44,6 @@ function AuthFormFallback() {
  * pantalla, a todo el ancho, como siempre.
  */
 export default function AuthPage() {
-  /** La corriente del borde responde a la tarjeta: cada tecla, una chispa; al enviar, se enciende (Nico 28-10). */
-  const corriente = useRef<ManejoDeLaCorriente>(null);
   return (
     <ForceLightMode>
       <div className="relative min-h-screen bg-background" data-lenis-prevent>
@@ -79,7 +76,8 @@ export default function AuthPage() {
               <use href="#lfLogo" />
             </svg>
           </Link>
-          <TestimoniosFlotantes />
+          {/* Nico 29-10-2026: los testimonios de abajo se fueron; debajo del logo, widgets chicos «como un home». */}
+          <WidgetsDeInicio />
         </div>
 
         {/* ── La tarjeta del formulario ──────────────────────────────────── */}
@@ -90,8 +88,6 @@ export default function AuthPage() {
             className="relative flex w-full flex-col px-6 py-6 sm:px-10 sm:py-8 motion-safe:animate-[tarjeta-de-entrada_500ms_cubic-bezier(0.22,1,0.36,1)_120ms_both] lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-[28px] lg:bg-surface lg:p-10 lg:shadow-flotante"
             data-lenis-prevent
             data-testid="auth-tarjeta"
-            onInput={() => corriente.current?.pulso()}
-            onSubmitCapture={() => corriente.current?.oleada()}
           >
             {/*
              * Una ✕ de cerrar, no un «← Inicio».
@@ -136,12 +132,8 @@ export default function AuthPage() {
               </Suspense>
             </div>
 
-            {/* La corriente de voltaje de la landing en el borde de abajo (glow up, Nico 24-10): la firma de la marca
-                dentro de la tarjeta —nada encima del video—; en el celular, al pie de la pantalla. Desde el 28-10 está
-                viva: fluye, cada tecla manda una chispa y al entrar se enciende entera. */}
-            <div className="-mx-6 -mb-6 mt-6 sm:-mx-10 sm:-mb-8 lg:-mx-10 lg:-mb-10 lg:mt-8">
-              <BordeDeCorriente ref={corriente} className="h-16" />
-            </div>
+            {/* Nico 29-10-2026: «esos dots de ahí abajo por sí solos no son wow y hasta los quitaría»: sin la
+                corriente de píxeles del borde (`BordeDeCorriente` queda en su archivo por si vuelve). */}
           </div>
         </div>
       </div>

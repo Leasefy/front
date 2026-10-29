@@ -46,6 +46,8 @@ import type { CarteraSiniestro, CarteraSiniestros } from '@/lib/types/inmobiliar
 import { nombreDelMes } from '@/lib/utils/mes'
 import { CLAVE_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
 import { useI18n } from '@/lib/i18n'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 /**
  * 🔴 `timeZone: 'UTC'` no es un detalle: `siniestroDesde` viaja como
@@ -91,16 +93,29 @@ export function TablaDeSiniestros({
   clave,
 }: TablaDeSiniestrosProps) {
   const { t } = useI18n()
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    items,
+    {
+      inquilino: (i) => i.tenantName ?? null,
+      inmueble: (i) => i.propertyTitle ?? i.propertyAddress ?? null,
+      propietario: (i) => i.propietarioName ?? null,
+      periodo: (i) => i.month ?? null,
+      desde: (i) => i.siniestroDesde ?? null,
+      saldo: (i) => i.pendingAmount,
+    },
+    { primero: { periodo: 'desc', saldo: 'desc' } },
+  )
   return (
     <Table data-testid="siniestros-tabla">
       <TableHeader>
         <TableRow>
-          <TableHead className="whitespace-nowrap">Inquilino</TableHead>
-          <TableHead className="whitespace-nowrap">Inmueble</TableHead>
-          <TableHead className="whitespace-nowrap">Propietario</TableHead>
-          <TableHead className="whitespace-nowrap">Período</TableHead>
-          <TableHead className="whitespace-nowrap">En siniestro desde</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Saldo</TableHead>
+          <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Inquilino</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="inmueble" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Inmueble</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="propietario" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Propietario</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="periodo" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Período</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="desde" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">En siniestro desde</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="saldo" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Saldo</EncabezadoOrdenable>
           <TableHead className="w-16" />
         </TableRow>
       </TableHeader>
@@ -119,7 +134,7 @@ export function TablaDeSiniestros({
             </TableCell>
           </TableRowAnimada>
         ) : (
-          items.map((i) => {
+          ordenadas.map((i) => {
             const desde = fechaCorta(i.siniestroDesde)
             return (
               <TableRowAnimada
@@ -195,7 +210,7 @@ export function EnSiniestro({ siniestros }: { siniestros: CarteraSiniestros }) {
             En siniestro
           </p>
           <p
-            className="text-2xl font-semibold tabular-nums text-danger"
+            className="text-2xl font-medium tabular-nums text-danger"
             data-testid="siniestro-total"
           >
             {formatCurrency(totalCop)}

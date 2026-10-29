@@ -25,6 +25,8 @@ export interface FacturaDeServicio {
   id: string;
   contractId: string;
   servicio: Servicio;
+  /** Todos los que trae la factura (un back anterior no lo manda). */
+  servicios?: Servicio[];
   nombreDelServicio: string;
   empresa: string | null;
   periodoDesde: string;
@@ -112,6 +114,8 @@ export interface LiquidacionDeEntrada {
 export interface FacturaQueSeRegistra {
   tipo: TipoDeFactura;
   servicio: Servicio;
+  /** Varios en una factura (el primero es `servicio`); un back anterior sólo lee `servicio`. */
+  servicios?: Servicio[];
   empresa?: string;
   periodoDesde: string;
   periodoHasta: string;
@@ -139,6 +143,7 @@ function formulario(d: FacturaQueSeRegistra): FormData {
   const f = new FormData();
   f.append('tipo', d.tipo);
   f.append('servicio', d.servicio);
+  if (d.servicios && d.servicios.length > 1) f.append('servicios', d.servicios.join(','));
   f.append('periodoDesde', d.periodoDesde);
   f.append('periodoHasta', d.periodoHasta);
   f.append('valorCop', String(d.valorCop));

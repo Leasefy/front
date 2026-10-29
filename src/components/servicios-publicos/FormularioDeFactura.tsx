@@ -13,18 +13,19 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { Check } from '@phosphor-icons/react';
 import { Presence, RadioCard, RadioCardGroup } from '@leasefy/cadence';
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MoneyInput } from '@/components/ui/money-input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { ZonaDeArchivo } from '@/components/migracion/ZonaDeArchivo';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
 import { formatCurrency } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import {
   SERVICIOS,
   type FacturaQueSeRegistra,
@@ -66,11 +67,13 @@ interface Props {
 /** `null` = le falta algo para poder mandarla. */
 function armar(e: Estado): FacturaQueSeRegistra | null {
   const valor = Number(e.valor);
-  if (!e.servicio || !e.desde || !e.hasta || !(valor > 0)) return null;
+  if (e.servicios.length === 0 || !e.desde || !e.hasta || !(valor > 0)) return null;
   if (e.tipo === 'ENTRADA' && !e.pagadaPor) return null;
   return {
     tipo: e.tipo,
-    servicio: e.servicio,
+    // Varios en una factura (Portofino 28-10): el primero va como `servicio` (así lo lee un back anterior).
+    servicio: e.servicios[0],
+    servicios: e.servicios.length > 1 ? e.servicios : undefined,
     empresa: e.empresa,
     periodoDesde: e.desde,
     periodoHasta: e.hasta,
@@ -86,7 +89,8 @@ function armar(e: Estado): FacturaQueSeRegistra | null {
 
 interface Estado {
   tipo: TipoDeFactura;
-  servicio: Servicio | '';
+  /** Los que trae la factura, en el orden en que se marcaron (una de EPM trae energía, agua, gas y aseo). */
+  servicios: Servicio[];
   empresa: string;
   desde: string;
   hasta: string;
@@ -102,7 +106,7 @@ interface Estado {
 export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, revisarEntrada, onCambio }: Props) {
   const [e, setE] = useState<Estado>({
     tipo: 'MENSUAL',
-    servicio: '',
+    servicios: [],
     empresa: '',
     desde: '',
     hasta: '',
@@ -117,6 +121,8 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
   const [cuenta, setCuenta] = useState<LiquidacionDeEntrada | null>(null);
   const [problemaDeLaCuenta, setProblemaDeLaCuenta] = useState<string | null>(null);
   const cambiar = <K extends keyof Estado>(k: K, v: Estado[K]) => setE((x) => ({ ...x, [k]: v }));
+  const alternarServicio = (s: Servicio) =>
+    setE((x) => ({ ...x, servicios: x.servicios.includes(s) ? x.servicios.filter((y) => y !== s) : [...x.servicios, s] }));
 
   const datos = useMemo(() => armar(e), [e]);
   useEffect(() => onCambio(datos), [datos, onCambio]);
@@ -164,24 +170,37 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
       </fieldset>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="factura-servicio" required>
-            Servicio
-          </Label>
-          <Select value={e.servicio} onValueChange={(v) => cambiar('servicio', v as Servicio)}>
-            <SelectTrigger id="factura-servicio" aria-required="true" aria-invalid={!!errores.servicio} data-testid="factura-servicio">
-              <SelectValue placeholder="Escoge el servicio" />
-            </SelectTrigger>
-            <SelectContent>
-              {SERVICIOS.map((s) => (
-                <SelectItem key={s.valor} value={s.valor}>
+        <fieldset className="space-y-2 sm:col-span-2" aria-describedby={errores.servicio ? 'factura-servicio-error' : 'factura-servicio-pista'}>
+          <legend className="text-body-sm text-fg">
+            Servicios que trae la factura <span className="text-danger" aria-hidden="true">*</span>
+          </legend>
+          <div className="flex flex-wrap gap-2" data-testid="factura-servicio">
+            {SERVICIOS.map((s) => {
+              const marcado = e.servicios.includes(s.valor);
+              return (
+                <button
+                  key={s.valor}
+                  type="button"
+                  aria-pressed={marcado}
+                  onClick={() => alternarServicio(s.valor)}
+                  data-testid={`factura-servicio-${s.valor}`}
+                  className={cn(
+                    'inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-body-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    marcado ? 'border-primary bg-primary-soft text-fg' : 'border-border bg-surface text-fg-muted hover:border-border-strong hover:text-fg',
+                  )}
+                >
+                  {marcado ? <Check className="h-3.5 w-3.5 text-primary" weight="bold" aria-hidden="true" /> : null}
                   {s.rotulo}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <ErrorDelCampo id="factura-servicio-error" mensaje={errores.servicio} />
-        </div>
+                </button>
+              );
+            })}
+          </div>
+          <ErrorDelCampo
+            id="factura-servicio-error"
+            mensaje={errores.servicio}
+            pista="Marca todos los que vienen en la misma factura (en una de EPM: energía, acueducto, gas y aseo) y escribe el valor total."
+          />
+        </fieldset>
         <div className="space-y-1.5">
           <Label htmlFor="factura-empresa">Empresa</Label>
           <Input
@@ -208,7 +227,7 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="factura-valor" required>
-            Valor de la factura
+            Valor total de la factura
           </Label>
           <MoneyInput
             id="factura-valor"

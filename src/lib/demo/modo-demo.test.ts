@@ -65,7 +65,7 @@ describe('el modo demo', () => {
     expect(lecturaDeLaDemo('/contracts/demo-sp-2/servicios-publicos')).toMatchObject({ contractId: 'demo-sp-2' });
     expect(lecturaDeLaDemo('/inmobiliaria/contratos')).toBeUndefined();
     expect(hayDatosDeEjemplo('servicios-publicos')).toBe(true);
-    expect(hayDatosDeEjemplo('nomina')).toBe(false);
+    expect(hayDatosDeEjemplo('agenda')).toBe(false);
   });
 });
 

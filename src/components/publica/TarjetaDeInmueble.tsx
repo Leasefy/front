@@ -8,6 +8,7 @@ import { AddressAutocomplete } from '@/components/publicar/AddressAutocomplete';
 import { MAX_FOTOS, TIPOS, fraseDeLoQueFalta, loQueFalta, tituloDe, type InmuebleRapido } from '@/lib/publica/borrador';
 import type { FotoGuardada } from '@/lib/publica/fotos-guardadas';
 import { cn } from '@/lib/utils';
+import { SelectorDeCaracteristicas } from '@/components/property/SelectorDeCaracteristicas';
 
 export type EstadoDeLaTarjeta =
   | { que: 'borrador' }
@@ -372,6 +373,14 @@ export function TarjetaDeInmueble({
           {i.descripcion.trim().length > 0 && i.descripcion.trim().length < 20 && (
             <p className="mt-1 text-[12.5px] text-fg-subtle">Escribe al menos 20 letras para que salga en el aviso.</p>
           )}
+        </Campo>
+        {/* Nico 29-10-2026: «te falta todo lo de características completas… todas opcionales, pero que se le muestren». */}
+        <Campo etiqueta="Características (opcionales)">
+          <SelectorDeCaracteristicas
+            value={i.caracteristicas ?? []}
+            onChange={(v) => alCambiar({ caracteristicas: v })}
+            testId={`caracteristicas-${numero}`}
+          />
         </Campo>
       </fieldset>
 

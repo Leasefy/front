@@ -726,7 +726,7 @@ export function MantenimientoForm({
       description: formData.description,
       fotos: formData.fotos.length > 0 ? formData.fotos : undefined,
       paidBy: formData.paidBy,
-      ...(formData.proveedorId ? { proveedorId: formData.proveedorId } : {}),
+      ...(formData.proveedorId && formData.gestionadoPor === 'inmobiliaria' ? { proveedorId: formData.proveedorId } : {}),
       // Sólo si no es la inmobiliaria: un back anterior sigue recibiendo lo de siempre.
       ...(formData.gestionadoPor !== 'inmobiliaria' ? { gestionadoPor: formData.gestionadoPor } : {}),
     });
@@ -918,7 +918,9 @@ export function MantenimientoForm({
       </Collapse>
 
       {/* Section 4: Proveedor (opcional). Portofino 22-10: «al hacer la
-          solicitud, elegir con qué proveedor vamos a trabajar». */}
+          solicitud, elegir con qué proveedor vamos a trabajar». Portofino 29-10:
+          sólo cuando la gestiona la inmobiliaria (si no, no hay cotización suya). */}
+      <Collapse open={formData.gestionadoPor === 'inmobiliaria'}>
       <div className="space-y-4 pt-6 border-t border-border-faint dark:border-border-strong" data-campo="proveedorId">
         <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           <Truck className="h-4 w-4 text-fg-muted" />
@@ -931,6 +933,7 @@ export function MantenimientoForm({
           error={errors.proveedorId}
         />
       </div>
+      </Collapse>
 
       </div>
       </CajonCuerpo>

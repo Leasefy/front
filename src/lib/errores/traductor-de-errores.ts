@@ -289,7 +289,15 @@ export function mensajeDeUnFalloNuestro(fallo: FalloLeido, accion?: string): str
 /** La coletilla de soporte de un 5xx: la `referencia` (o un `code` propio). */
 export function conReferencia(texto: string, fallo: FalloLeido): string {
   if (fallo.tipo !== 'nuestro') return texto
-  const ref = fallo.referencia ?? (fallo.code && fallo.code !== 'ERROR_INTERNO' ? fallo.code : undefined)
+  /*
+   * Mantenimientos (29-10-2026): un 503 porque falta una actualización de la base
+   * (`…_SIN_MIGRAR`, `…_SIN_MIGRACION`, `FALTA_UNA_MIGRACION`) ya dice qué pasa y
+   * no es un fallo que se repita al azar: sin `referencia` del back, el código no
+   * se muestra (ningún código a la vista).
+   */
+  const esDeMigracion = Boolean(fallo.code && /(_SIN_MIGRAR|_SIN_MIGRACION|^FALTA_UNA_MIGRACION)$/.test(fallo.code))
+  const ref =
+    fallo.referencia ?? (fallo.code && fallo.code !== 'ERROR_INTERNO' && !esDeMigracion ? fallo.code : undefined)
   return ref ? `${texto} Si sigue pasando, escríbenos con la referencia ${ref}.` : texto
 }
 

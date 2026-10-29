@@ -44,6 +44,9 @@ import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types'
 import type { CobroStatus } from '@/lib/types/inmobiliaria'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import { nombreDelMes } from '@/lib/utils/mes'
 import { cn } from '@/lib/utils'
 import { Collapse } from '@leasefy/cadence'
@@ -124,6 +127,23 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
     else if (cobros !== null) onResumen?.(resumen)
   }, [cobros, error, resumen, onResumen])
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin orden elegido, el del
+  // back; el elegido ordena TODOS los períodos antes de cortar la página.
+  const lista = useMemo(() => cobros ?? [], [cobros])
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    lista,
+    {
+      periodo: (c) => c.month,
+      vence: (c) => c.dueDate ?? null,
+      total: (c) => c.totalWithFees,
+      pagado: (c) => c.paidAmount,
+      saldo: (c) => (c.anteriorALaCartera ? null : c.pendingAmount),
+      estado: (c) =>
+        c.anteriorALaCartera ? 'Antes de la cartera' : (ESTADO[c.status]?.etiqueta ?? c.status),
+    },
+    { primero: { periodo: 'desc', total: 'desc', pagado: 'desc', saldo: 'desc' } },
+  )
+
   // Paginación — un período por mes: a los dos años de contrato son 24 filas,
   // y cada una se despliega. El resumen del encabezado sigue contando TODOS
   // los períodos (`resumen.total`), no los de la página.
@@ -135,7 +155,7 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(cobros ?? [])
+  } = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   const volverA = `/panel/inmobiliaria/contratos/${contract.id}`
 
@@ -156,14 +176,29 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
             </span>
           ) : null}
         </div>
-        {/* «Cobros» ya no es un módulo (2026-09-16): los cobros emitidos son
-            una pestaña de Pagos → Cartera, y de ahí se emiten. */}
-        <Button asChild variant="ghost" size="sm" hideArrow>
-          <Link href={CARTERA_COBROS_EMITIDOS} data-testid="ir-a-cartera">
-            Ver en Cartera
-            <ArrowSquareOut className="ml-1 h-3.5 w-3.5" />
-          </Link>
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {lista.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-52"
+              formas={[
+                { campo: 'periodo', sentido: 'desc', etiqueta: 'Más recientes' },
+                { campo: 'periodo', sentido: 'asc', etiqueta: 'Más antiguos' },
+                { campo: 'saldo', sentido: 'desc', etiqueta: 'Saldo más alto' },
+                { campo: 'estado', sentido: 'asc', etiqueta: 'Estado' },
+              ]}
+            />
+          ) : null}
+          {/* «Cobros» ya no es un módulo (2026-09-16): los cobros emitidos son
+              una pestaña de Pagos → Cartera, y de ahí se emiten. */}
+          <Button asChild variant="ghost" size="sm" hideArrow>
+            <Link href={CARTERA_COBROS_EMITIDOS} data-testid="ir-a-cartera">
+              Ver en Cartera
+              <ArrowSquareOut className="ml-1 h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {error ? (
@@ -208,12 +243,12 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>Período</TableHead>
-                <TableHead>Vence</TableHead>
-                <TableHead numeric>Total</TableHead>
-                <TableHead numeric>Pagado</TableHead>
-                <TableHead numeric>Saldo</TableHead>
-                <TableHead>Estado</TableHead>
+                <EncabezadoOrdenable campo="periodo" orden={orden} onOrdenar={ordenarPor}>Período</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="vence" orden={orden} onOrdenar={ordenarPor}>Vence</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="total" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Total</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="pagado" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Pagado</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="saldo" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Saldo</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>

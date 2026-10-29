@@ -5,6 +5,9 @@
  * inquilino sube cada mes la factura pagada» y reporta ahí los «ajustes de
  * conceptos facturados» de EPM (lo de antes de su llegada se le descuenta al
  * propietario). La inmobiliaria la revisa en Operación.
+ *
+ * Portofino 29-10-2026: cada factura dice su CORTE (el consumo que cobra) y el mes en que se facturó; lo que trae y
+ * no es del inquilino (acuerdos de pago, revisiones periódicas…) se le dice: se le descuenta al propietario.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -20,7 +23,12 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { formatCurrency } from '@/lib/format';
 import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import { fechaCorta } from '@/components/contratos/BandejaDeCartasDelIncremento';
+import { CorteDeLaFactura } from '@/components/servicios-publicos/FacturaDelContrato';
+import {
+  NOMBRE_DEL_CONCEPTO_DEL_PROPIETARIO,
+  conceptosDelPropietarioDe,
+  totalDelPropietario,
+} from '@/lib/servicios-publicos/corte-de-la-factura';
 import { FormularioDeFactura, type ErroresDeLaFactura } from '@/components/servicios-publicos/FormularioDeFactura';
 import {
   serviciosPublicosApi,
@@ -36,6 +44,19 @@ const ESTADO: Record<FacturaDeServicio['estado'], { rotulo: string; tono: 'succe
   LIQUIDADA: { rotulo: 'Aplicada', tono: 'success' },
   RECHAZADA: { rotulo: 'Rechazada', tono: 'critical' },
 };
+
+/** Lo que trae la factura y no es del inquilino: se le dice, con su valor, y a quién le toca. */
+function LoQueNoEsTuyo({ factura }: { factura: FacturaDeServicio }) {
+  const conceptos = conceptosDelPropietarioDe(factura);
+  if (conceptos.length === 0) return null;
+  const nombres = [...new Set(conceptos.map((c) => NOMBRE_DEL_CONCEPTO_DEL_PROPIETARIO[c.tipo].toLowerCase()))].join(', ');
+  return (
+    <p className="text-caption text-fg-muted" data-testid={`no-es-tuyo-${factura.id}`}>
+      Trae <span className="font-mono tabular-nums text-fg">{formatCurrency(totalDelPropietario(conceptos))}</span> que no son tuyos ({nombres}): se le
+      descuentan al propietario.
+    </p>
+  );
+}
 
 export default function ServiciosPublicosDelInquilino() {
   const [datos, setDatos] = useState<ServiciosDelPortal | null>(null);
@@ -157,10 +178,8 @@ export default function ServiciosPublicosDelInquilino() {
                               {f.tipo === 'AJUSTE' ? ' · ajuste' : ''} ·{' '}
                               <span className="font-mono tabular-nums">{formatCurrency(f.valorCop)}</span>
                             </p>
-                            <p className="text-caption text-fg-muted">
-                              Del <span className="font-mono">{fechaCorta(f.periodoDesde)}</span> al{' '}
-                              <span className="font-mono">{fechaCorta(f.periodoHasta)}</span>
-                            </p>
+                            <CorteDeLaFactura factura={f} />
+                            <LoQueNoEsTuyo factura={f} />
                             {f.motivoDeLaRevision && <p className="text-caption text-danger">{f.motivoDeLaRevision}</p>}
                           </div>
                           <div className="flex items-center gap-2">

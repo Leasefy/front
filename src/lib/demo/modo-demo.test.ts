@@ -74,9 +74,19 @@ describe('el modo demo', () => {
   it('los datos de Servicios públicos: el mes pedido, sus estados y la cuenta de EPM; sólo esa sección los tiene', () => {
     const t = lecturaDeLaDemo('/inmobiliaria/servicios-publicos?mes=2026-09') as TableroDeServicios;
     expect(t.mes).toBe('2026-09');
-    expect(new Set(t.contratos.map((c) => c.estadoDelMes))).toEqual(new Set(['AL_DIA', 'POR_REVISAR', 'SIN_FACTURA', 'RECHAZADA']));
+    expect(new Set(t.contratos.map((c) => c.estadoDelMes))).toEqual(new Set(['AL_DIA', 'POR_REVISAR', 'SIN_FACTURA', 'RECHAZADA', 'SIN_INICIAR']));
+    expect(t.resumen.sinIniciar).toBe(1);
+    // Portofino 29-10-2026: la factura cuenta por el corte (del 16 de agosto al 15 de septiembre = septiembre).
+    expect(t.contratos.find((c) => c.estadoDelMes === 'AL_DIA')?.ultimaFactura?.corte).toEqual({ desde: '2026-08-16', hasta: '2026-09-15', dias: 31 });
     expect(t.contratos.some((c) => c.cuentas?.some((x) => x.cobertura === '12 meses sin servicio de EPM'))).toBe(true);
     expect(lecturaDeLaDemo('/contracts/demo-sp-2/servicios-publicos')).toMatchObject({ contractId: 'demo-sp-2' });
+    // Las liquidaciones de entrada y de entrega también tienen su ejemplo (la pestaña no le pega al back con un id falso).
+    const salida = lecturaDeLaDemo('/contracts/demo-sp-2/servicios-publicos/liquidacion-de-salida?fechaEntrega=2026-10-29') as { filas: unknown[]; totalCop: number };
+    expect(salida.filas.length).toBeGreaterThan(1);
+    expect(salida.totalCop).toBeGreaterThan(0);
+    expect(
+      lecturaDeLaDemo('/inmobiliaria/servicios-publicos/liquidacion-de-entrada?periodoDesde=2026-08-15&periodoHasta=2026-09-15&valorCop=115260&entrega=2026-09-08'),
+    ).toMatchObject({ diasDelCorte: 32, anterior: { dias: 24, valorCop: 86_445 }, nuevo: { dias: 8, valorCop: 28_815 } });
     expect(lecturaDeLaDemo('/inmobiliaria/contratos')).toBeUndefined();
     expect(hayDatosDeEjemplo('servicios-publicos')).toBe(true);
     expect(hayDatosDeEjemplo('agenda')).toBe(false);

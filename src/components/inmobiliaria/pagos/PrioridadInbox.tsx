@@ -33,6 +33,9 @@ import { TableBodyAnimado, TableRowAnimada } from '@/components/ui/table'
 import { CrossFade } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import type { Severidad, WorkItem, WorkItemAction } from '@/lib/api/work-item'
 
 // ── Prioridad: colapsa las 4 severidades en 3 niveles con tono token ─────────
@@ -117,7 +120,7 @@ function InboxRow({
       <TableCell className="py-3 pr-4">
         <p className="text-sm font-medium text-fg leading-snug">{item.titulo}</p>
         {item.subject?.masked && (
-          <p className="text-xs text-fg-muted mt-0.5">{item.subject.masked}</p>
+          <p className="text-caption text-fg-muted mt-0.5">{item.subject.masked}</p>
         )}
       </TableCell>
 
@@ -125,7 +128,7 @@ function InboxRow({
       <TableCell className="py-3 pr-4">
         <p className="text-sm text-fg leading-snug">{item.accionSugerida.label}</p>
         {item.accionSugerida.razon && (
-          <p className="text-xs text-fg-muted mt-0.5 leading-snug">{item.accionSugerida.razon}</p>
+          <p className="text-caption text-fg-muted mt-0.5 leading-snug">{item.accionSugerida.razon}</p>
         )}
       </TableCell>
 
@@ -160,6 +163,19 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
     [items],
   )
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin orden elegido sigue el de
+  // la casa (la prioridad más alta primero); el elegido ordena la cola ENTERA antes de cortar la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    sorted,
+    {
+      prioridad: (i) => PRIORIDAD_RANK[SEVERIDAD_A_PRIORIDAD[i.severidad] ?? 'media'],
+      caso: (i) => i.titulo,
+      motivo: (i) => i.accionSugerida?.label ?? null,
+      fecha: (i) => i.createdAt,
+    },
+    { primero: { prioridad: 'desc', fecha: 'desc' } },
+  )
+
   /**
    * Paginado de presentación: misma cola que `PagoFallidoTabla`
    * (`useAgentWorkItems('pagos')`, sin page/pageSize en el endpoint).
@@ -175,7 +191,7 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(sorted)
+  } = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   /*
    * Movimiento (ola 2, 03-10-2026): cargando → vacío / la cola se cruzan, y
@@ -198,12 +214,27 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
       />
       ) : (
     <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      {sorted.length > 1 ? (
+        <div className="flex justify-end border-b border-border px-4 py-3">
+          <SelectorDeOrden
+            orden={orden}
+            onCambiar={setOrden}
+            className="w-full sm:w-56"
+            formas={[
+              { campo: 'prioridad', sentido: 'desc', etiqueta: 'Más urgentes' },
+              { campo: 'fecha', sentido: 'desc', etiqueta: 'Más recientes' },
+              { campo: 'fecha', sentido: 'asc', etiqueta: 'Más antiguos' },
+              { campo: 'caso', sentido: 'asc', etiqueta: 'Caso (A–Z)' },
+            ]}
+          />
+        </div>
+      ) : null}
       <Table className="min-w-[640px]">
         <TableHeader>
           <TableRow>
-            <TableHead className="px-4">Prioridad</TableHead>
-            <TableHead className="pr-4">Caso</TableHead>
-            <TableHead className="pr-4">Motivo</TableHead>
+            <EncabezadoOrdenable campo="prioridad" orden={orden} onOrdenar={ordenarPor} className="px-4">Prioridad</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="caso" orden={orden} onOrdenar={ordenarPor} className="pr-4">Caso</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="motivo" orden={orden} onOrdenar={ordenarPor} className="pr-4">Motivo</EncabezadoOrdenable>
             <TableHead className="px-4 text-right">Acción</TableHead>
           </TableRow>
         </TableHeader>

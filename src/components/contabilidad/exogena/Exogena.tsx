@@ -70,10 +70,11 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { useOrdenDeLaTabla, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
@@ -86,6 +87,7 @@ import {
   NOMBRE_DEL_ESTADO_DE_FORMATO,
   PENDIENTES_DEL_CONTADOR,
   exogenaApi,
+  type FilaDeExogena,
   type FormatoArmado,
   type FormatoDeExogena,
   type ResumenDeExogena,
@@ -114,6 +116,15 @@ const FILAS_EN_PANTALLA = 50;
 
 type ParteDeLaExogena = 'formatos' | 'configuracion';
 
+/**
+ * El valor de una celda del formato para ordenarla: el back manda cifras y documentos a veces como texto
+ * («1500000», «-23000»); como número se ordenan por su valor y no letra por letra.
+ */
+function valorDeLaCelda(valor: string | number | null | undefined): ValorParaOrdenar {
+  if (typeof valor === 'string' && /^-?\d+(\.\d+)?$/.test(valor.trim())) return Number(valor);
+  return valor ?? null;
+}
+
 export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
   const anios = useMemo(() => aniosDeExogena(new Date().getFullYear()), []);
   const [anio, setAnio] = useState(() => anioInicial ?? anios[0]);
@@ -125,6 +136,25 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
 
   /** El formato abierto, con sus filas. `null` = sólo la lista. */
   const [abierto, setAbierto] = useState<FormatoArmado | null>(null);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Las columnas son las del
+  // CSV (cambian por formato): cada una ordena por su posición. Se ordenan TODAS las filas antes de cortar las 50.
+  const filasDelFormato = useMemo(() => abierto?.filas ?? [], [abierto]);
+  const columnasParaOrdenar = useMemo(
+    () =>
+      Object.fromEntries(
+        (abierto?.columnas ?? []).map((_, j) => [
+          `columna-${j}`,
+          (fila: FilaDeExogena) => valorDeLaCelda(Object.values(fila)[j]),
+        ]),
+      ) as Record<string, (fila: FilaDeExogena) => ValorParaOrdenar>,
+    [abierto],
+  );
+  const {
+    ordenadas: filasOrdenadas,
+    orden: ordenDeLasFilas,
+    ordenarPor: ordenarLasFilasPor,
+    setOrden: setOrdenDeLasFilas,
+  } = useOrdenDeLaTabla(filasDelFormato, columnasParaOrdenar);
   const [ocupado, setOcupado] = useState<string | null>(null);
 
   const [aprobando, setAprobando] = useState<FormatoDeExogena | null>(null);
@@ -160,6 +190,8 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
     setOcupado(formato);
     try {
       setAbierto(await exogenaApi.formato(formato, anio));
+      // Otro formato, otras columnas: el orden del anterior no le sirve.
+      setOrdenDeLasFilas(null);
       // Las filas se leen en la página, a lo ancho: el cajón se cierra y la vista baja a ellas.
       setVisto(null);
       requestAnimationFrame(() => filasRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
@@ -609,15 +641,21 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                   {/* El orden de columnas es el del CSV, tal como lo manda el
                       back: si aquí fuera otro, el archivo y la pantalla dirían
                       cosas distintas de la misma fila. */}
-                  {abierto.columnas.map((c) => (
-                    <TableHead key={c} className="whitespace-nowrap">
+                  {abierto.columnas.map((c, j) => (
+                    <EncabezadoOrdenable
+                      key={c}
+                      campo={`columna-${j}`}
+                      orden={ordenDeLasFilas}
+                      onOrdenar={ordenarLasFilasPor}
+                      className="whitespace-nowrap"
+                    >
                       {c}
-                    </TableHead>
+                    </EncabezadoOrdenable>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {abierto.filas.slice(0, FILAS_EN_PANTALLA).map((fila, i) => (
+                {filasOrdenadas.slice(0, FILAS_EN_PANTALLA).map((fila, i) => (
                   <TableRow key={i}>
                     {abierto.columnas.map((_, j) => {
                       const valores = Object.values(fila);

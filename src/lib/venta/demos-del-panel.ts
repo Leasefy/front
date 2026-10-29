@@ -92,7 +92,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     titulo: 'La nómina de tu inmobiliaria, sin otro programa',
     promesa: 'Liquida la nómina de tu equipo y transmite la nómina electrónica a la DIAN desde Leasefy.',
     puntos: ['Liquidación del mes con prestaciones', 'Nómina electrónica ante la DIAN', 'Desprendible para cada persona'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-nomina', 'Nómina con datos de ejemplo')],
+    video: video('nomina', 'Recorrido por Nómina con datos de ejemplo: el costo del mes, las personas y la liquidación del período'),
   },
   contabilidad: {
     titulo: 'La contabilidad se lleva sola',

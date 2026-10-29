@@ -9,6 +9,11 @@
  * desde la próxima cuota. El total se reparte en partes iguales y cada mes se
  * puede cambiar; la suma tiene que dar el total. Un mes ya pagado se puede
  * elegir: su valor pasa a la próxima cuota sin pagar (lo dice al lado).
+ *
+ * Nico 28-10: «que le dé la sugerencia a cuántos meses según la cotización se le
+ * va a descontar… tener en cuenta el valor del canon». Si `cargar` trae el canon
+ * y el tope del mes (las reparaciones), se sugiere en cuántos meses diferirla
+ * para que ningún mes pase del tope; la persona igual elige los que quiera.
  */
 
 import { useEffect, useId, useMemo, useState } from 'react'
@@ -22,6 +27,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { contractsApi, type ConceptoDelContrato, type MesParaUnConcepto } from '@/lib/api/contracts.service'
+import { sugerenciaDeMeses } from '@/lib/contratos/sugerencia-de-meses'
 import {
   calendarioDeMeses,
   enPartesIguales,
@@ -53,7 +59,14 @@ export function MesesDelConcepto({
    * Portofino 22-10: otra fuente de los meses (la reparación diferida los pide
    * por la solicitud: el contrato vigente lo resuelve el back).
    */
-  cargar?: () => Promise<{ disponible: boolean; meses: MesParaUnConcepto[]; motivo?: string }>
+  cargar?: () => Promise<{
+    disponible: boolean
+    meses: MesParaUnConcepto[]
+    motivo?: string
+    /** El canon del contrato y el tope del mes (% del canon): con los dos se sugiere en cuántos meses. */
+    canonCop?: number | null
+    topeDelMesPct?: number
+  }>
   /** Lo que se dice si el back todavía no tiene dónde guardar los meses. */
   sinMigracion?: string
   paga: ConceptoDelContrato['paga']
@@ -69,6 +82,7 @@ export function MesesDelConcepto({
   const [falla, setFalla] = useState<string | null>(null)
   const [cuantos, setCuantos] = useState('')
   const [motivoSinMeses, setMotivoSinMeses] = useState<string | null>(null)
+  const [tope, setTope] = useState<{ canonCop: number | null; pct: number | null }>({ canonCop: null, pct: null })
   const idDelCampo = useId()
 
   useEffect(() => {
@@ -81,11 +95,12 @@ export function MesesDelConcepto({
       return
     }
     pedir()
-      .then((r: { disponible: boolean; meses: MesParaUnConcepto[]; motivo?: string }) => {
+      .then((r: { disponible: boolean; meses: MesParaUnConcepto[]; motivo?: string; canonCop?: number | null; topeDelMesPct?: number }) => {
         if (!vigente) return
         setMeses(r.meses)
         setDisponible(r.disponible)
         setMotivoSinMeses(r.motivo ?? null)
+        setTope({ canonCop: r.canonCop ?? null, pct: r.topeDelMesPct ?? null })
       })
       .catch((e: unknown) => {
         if (!vigente) return
@@ -116,12 +131,29 @@ export function MesesDelConcepto({
   const alternar = (mes: string) =>
     repartir(elegidos.has(mes) ? [...elegidos].filter((m) => m !== mes) : [...elegidos, mes])
 
-  const diferir = () => {
-    const n = Math.trunc(Number(cuantos)) // redondeo: no es plata (cuántos meses)
-    if (!meses || !(n > 0)) return
-    const desde = meses.findIndex((m) => m.sePuede)
-    if (desde < 0) return
+  /** Los meses desde la próxima cuota sin pagar: de ahí se difiere. */
+  const desde = (meses ?? []).findIndex((m) => m.sePuede)
+  const diferirEn = (n: number) => {
+    if (!meses || !(n > 0) || desde < 0) return
     repartir(meses.slice(desde, desde + n).map((m) => m.mes))
+  }
+  const diferir = () => diferirEn(Math.trunc(Number(cuantos))) // redondeo: no es plata (cuántos meses)
+
+  const sugerencia = useMemo(
+    () =>
+      sugerenciaDeMeses({
+        totalCop: total,
+        canonCop: tope.canonCop,
+        topePct: tope.pct,
+        mesesQueQuedan: desde < 0 ? 0 : (meses ?? []).length - desde,
+        conCentavos,
+      }),
+    [total, tope, desde, meses, conCentavos],
+  )
+  const usarLaSugerencia = () => {
+    if (!sugerencia) return
+    setCuantos(String(sugerencia.meses))
+    diferirEn(sugerencia.meses)
   }
 
   const cambiarValor = (mes: string, v: string) =>
@@ -147,6 +179,31 @@ export function MesesDelConcepto({
 
   return (
     <div className="space-y-3" data-testid="meses-del-concepto">
+      {sugerencia ? (
+        <p className="text-caption text-fg-muted" data-testid="sugerencia-de-meses">
+          {sugerencia.alcanza ? (
+            <>
+              Sugerido: <span className="text-fg">{sugerencia.meses === 1 ? '1 mes' : `${sugerencia.meses} meses`}</span> de hasta{' '}
+              <span className="font-mono tabular-nums text-fg">{formatCurrency(sugerencia.cuotaMasAltaCop)}</span>, para no pasar del{' '}
+              {String(tope.pct).replace('.', ',')} % del canon (<span className="font-mono tabular-nums">{formatCurrency(tope.canonCop ?? 0)}</span>).{' '}
+            </>
+          ) : (
+            <>
+              Para no pasar del {String(tope.pct).replace('.', ',')} % del canon harían falta {sugerencia.necesarios} meses, y el
+              contrato tiene {sugerencia.meses} por delante: en {sugerencia.meses === 1 ? 'ese mes' : `esos ${sugerencia.meses}`} cada
+              uno queda en <span className="font-mono tabular-nums text-fg">{formatCurrency(sugerencia.cuotaMasAltaCop)}</span>.{' '}
+            </>
+          )}
+          <button
+            type="button"
+            className="text-primary underline-offset-4 hover:underline"
+            onClick={usarLaSugerencia}
+            data-testid="usar-la-sugerencia"
+          >
+            Diferir en {sugerencia.meses === 1 ? '1 mes' : `${sugerencia.meses} meses`}
+          </button>
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
           <label htmlFor={`${idDelCampo}-diferir-en`} className="text-caption text-fg-muted">

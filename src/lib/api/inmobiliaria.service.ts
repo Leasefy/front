@@ -2013,7 +2013,15 @@ export const mantenimientoApi = {
   async mesesParaDiferir(
     id: string,
     lado: 'PROPIETARIO' | 'INQUILINO',
-  ): Promise<{ disponible: boolean; contractId: string | null; meses: MesParaUnConcepto[]; motivo?: string }> {
+  ): Promise<{
+    disponible: boolean;
+    contractId: string | null;
+    meses: MesParaUnConcepto[];
+    motivo?: string;
+    /** Nico 28-10: el canon y el tope del mes (% del canon) para sugerir en cuántos meses. Un back anterior no los manda. */
+    canonCop?: number | null;
+    topeDelMesPct?: number;
+  }> {
     return apiClient.get(`${BASE}/mantenimiento/${id}/meses-para-diferir?lado=${lado}`);
   },
 

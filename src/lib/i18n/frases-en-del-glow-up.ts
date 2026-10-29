@@ -793,6 +793,10 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   // Ordenar las tablas (29-10): grupo A.
   'Valor: mayor primero': 'Amount: highest first',
   'Pendientes primero': 'Pending first',
+  'Aseguradora (A–Z)': 'Insurer (A–Z)',
+  'Activas para ti primero': 'Enabled for you first',
+  'Por tu prioridad': 'By your priority',
+  'Con fallas primero': 'Failing first',
   // Ordenar las tablas (28-10-2026)
   'Más recientes': 'Newest',
   'Más antiguas': 'Oldest',

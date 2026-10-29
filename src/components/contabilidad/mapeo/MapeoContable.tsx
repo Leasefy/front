@@ -55,6 +55,7 @@ import {
 } from '@/lib/api/contabilidad.service';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { codigoDelPucParaOrdenar } from '@/lib/contabilidad/codigo-del-puc-para-ordenar';
 import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
@@ -216,12 +217,12 @@ export function MapeoContable({
     [todos, vista],
   );
   // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin tocar nada, el orden
-  // del catálogo; «Cuenta del PUC» ordena por el código (sin cuenta, al final).
+  // del catálogo; «Cuenta del PUC» ordena como el plan (sin cuenta, al final).
   const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(eventos, {
     evento: (e) => e.nombre,
     lado: (e) => NOMBRE_DEL_LADO[e.lado],
-    cuenta: (e) => e.cuenta?.codigo ?? null,
-    propuesta: (e) => e.propuesta?.codigo ?? e.codigoPropuesto,
+    cuenta: (e) => codigoDelPucParaOrdenar(e.cuenta?.codigo),
+    propuesta: (e) => codigoDelPucParaOrdenar(e.propuesta?.codigo ?? e.codigoPropuesto),
   });
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(ordenadas, {

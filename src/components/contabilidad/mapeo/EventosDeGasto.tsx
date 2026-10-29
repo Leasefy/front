@@ -54,6 +54,7 @@ import { TituloDeBloque } from '@/components/finanzas/piezas';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { codigoDelPucParaOrdenar } from '@/lib/contabilidad/codigo-del-puc-para-ordenar';
 import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 
 export interface EventosDeGastoProps {
@@ -124,12 +125,12 @@ export function EventosDeGasto({
 
   // Ronda 30 (regla de Nico: toda tabla con su pie de paginación, aunque sean los siete eventos).
   // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Como en los asientos
-  // automáticos: sin tocar nada, el orden del catálogo; «Cuenta del PUC» por el código (sin cuenta, al final).
+  // automáticos: sin tocar nada, el orden del catálogo; «Cuenta del PUC» como el plan (sin cuenta, al final).
   const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(lista, {
     evento: (e) => e.nombre,
     lado: (e) => NOMBRE_DEL_LADO[e.lado],
-    cuenta: (e) => e.cuenta?.codigo ?? null,
-    propuesta: (e) => e.propuesta?.codigo ?? e.codigoPropuesto,
+    cuenta: (e) => codigoDelPucParaOrdenar(e.cuenta?.codigo),
+    propuesta: (e) => codigoDelPucParaOrdenar(e.propuesta?.codigo ?? e.codigoPropuesto),
   });
   const pag = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
   const hayPropuestaDistinta = lista.some((e) => Boolean(e.propuesta) && !(e.cuenta && !propuestaQueSirve(e, e.cuenta.id)));

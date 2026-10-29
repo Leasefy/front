@@ -82,6 +82,25 @@ vi.mock('@/components/ui/button', () => ({
 vi.mock('@/components/ui/input', () => ({
   Input: (props: Record<string, unknown>) => <input {...(props as object)} />,
 }))
+// El «Ordenar por» arrastra el índice de `@/components/ui` (todo cadence), que aquí está a mano: un doble con lo
+// que importa, que aparece y que elige el orden.
+vi.mock('@/components/ui/selector-de-orden', () => ({
+  SelectorDeOrden: ({
+    formas,
+    onCambiar,
+  }: {
+    formas: { campo: string; sentido: 'asc' | 'desc'; etiqueta: string }[]
+    onCambiar: (o: { campo: string; sentido: 'asc' | 'desc' }) => void
+  }) => (
+    <div data-testid="ordenar-por">
+      {formas.map((f) => (
+        <button key={`${f.campo}:${f.sentido}`} type="button" onClick={() => onCambiar(f)}>
+          {f.etiqueta}
+        </button>
+      ))}
+    </div>
+  ),
+}))
 
 import { PilotoCatalogo } from './PilotoCatalogo'
 import type { PilotoCatalogoResponse, ProcesoDelCatalogo } from '@/lib/api/piloto'
@@ -270,6 +289,30 @@ describe('la tabla es una tabla del panel', () => {
   it('mientras carga muestra el esqueleto de tabla, no una lista vacía', () => {
     render({ data: null, isLoading: true })
     expect(container.querySelector('[data-testid="esqueleto"]')).not.toBeNull()
+  })
+})
+
+describe('Nico 28-10: la tabla se ordena por columnas y con «Ordenar por»', () => {
+  it('tocar «Proceso» ordena de la A a la Z, y otra vez al revés', () => {
+    render()
+    clic('[data-testid="ordenar-proceso"]')
+    expect(claves()).toEqual(['retencion.barrido', 'cobros.generacion', 'migracion.terceros', 'cobranza.preparar'])
+    clic('[data-testid="ordenar-proceso"]')
+    expect(claves()).toEqual(['cobranza.preparar', 'migracion.terceros', 'cobros.generacion', 'retencion.barrido'])
+  })
+
+  it('«Señal más reciente» pone primero el que dejó huella; los que no, al final', () => {
+    render()
+    const boton = Array.from(container.querySelectorAll('[data-testid="ordenar-por"] button')).find(
+      (b) => b.textContent === 'Señal más reciente',
+    ) as HTMLElement
+    act(() => {
+      boton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(claves()[0]).toBe('cobros.generacion')
+    expect(container.querySelector('[data-testid="ordenar-ultima"]')!.closest('th')!.getAttribute('aria-sort')).toBe(
+      'descending',
+    )
   })
 })
 

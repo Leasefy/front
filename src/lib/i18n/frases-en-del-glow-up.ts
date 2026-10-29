@@ -797,6 +797,10 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Activas para ti primero': 'Enabled for you first',
   'Por tu prioridad': 'By your priority',
   'Con fallas primero': 'Failing first',
+  'Señal más reciente': 'Latest signal',
+  'Señal más antigua': 'Oldest signal',
+  'Proceso (A–Z)': 'Process (A–Z)',
+  'Quién lo corre (A–Z)': 'Who runs it (A–Z)',
   // Ordenar las tablas (28-10-2026)
   'Más recientes': 'Newest',
   'Más antiguas': 'Oldest',

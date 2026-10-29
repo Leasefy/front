@@ -30,6 +30,10 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { useTr } from '@/lib/i18n/use-tr'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -101,6 +105,7 @@ export function conteosDelCatalogo(
 
 export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch }: PilotoCatalogoProps) {
   const { t } = useI18n()
+  const tr = useTr()
   const k = (s: string) => `inmobiliaria.piloto.catalogo.${s}`
 
   const [busqueda, setBusqueda] = useState('')
@@ -116,8 +121,20 @@ export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch
   const conteos = useMemo(() => conteosDelCatalogo(procesos, { area, modo, busqueda }), [procesos, area, modo, busqueda])
 
   const hayFiltros = area !== 'todas' || modo !== 'todos' || busqueda.trim() !== ''
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de paginar. El que no
+  // dejó señal («No disponible») va al final en los dos sentidos.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      proceso: (p) => p.nombre,
+      quien: (p) => p.quien.etiqueta,
+      cuando: (p) => p.disparador,
+      ultima: (p) => p.ultima?.at,
+    },
+    { primero: { ultima: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: `${area}|${modo}|${busqueda}` })
+    useTablePagination(ordenadas, { resetKey: `${area}|${modo}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   return (
     <div className="space-y-3" data-testid="piloto-catalogo">
@@ -138,6 +155,19 @@ export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch
               data-testid="catalogo-buscar"
             />
           </div>
+          {procesos.length > 1 && (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'ultima', sentido: 'desc', etiqueta: tr('Señal más reciente') },
+                { campo: 'ultima', sentido: 'asc', etiqueta: tr('Señal más antigua') },
+                { campo: 'proceso', sentido: 'asc', etiqueta: tr('Proceso (A–Z)') },
+                { campo: 'quien', sentido: 'asc', etiqueta: tr('Quién lo corre (A–Z)') },
+              ]}
+            />
+          )}
           {data && (
             <p className="text-caption text-fg-muted sm:ml-auto">
               {t(k('resumen'), {
@@ -221,9 +251,9 @@ export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch
               <TableHeader>
                 <TableRow>
                   {COLUMNAS.map((c) => (
-                    <TableHead key={c} className="whitespace-nowrap">
+                    <EncabezadoOrdenable key={c} campo={c} orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
                       {t(k(`col.${c}`))}
-                    </TableHead>
+                    </EncabezadoOrdenable>
                   ))}
                   <TableHead className="w-10">
                     <span className="sr-only">{t(k('col.abrir'))}</span>

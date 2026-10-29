@@ -55,11 +55,16 @@ export function WidgetsDeInicio() {
         <p className="mt-1.5 text-[13px] text-white/70">{dia ? `${dia} · Colombia` : ' '}</p>
       </motion.div>
 
-      <p className="mb-2 mt-4 pl-1 font-mono text-[10.5px] uppercase tracking-[0.14em] text-white/85 [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]" aria-hidden="true">
+      {/* Nico (29-10, captura): mientras carga, el rótulo salía SOLO y sin las tarjetas debajo. Entra con ellas. */}
+      <motion.p
+        {...entrada(1)}
+        className="mb-2 mt-4 pl-1 font-mono text-[10.5px] uppercase tracking-[0.14em] text-white/85 [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]"
+        aria-hidden="true"
+      >
         Tu día en Leasefy · ejemplo
-      </p>
+      </motion.p>
       <div className="grid grid-cols-2 gap-2.5" aria-hidden="true">
-        <motion.div {...entrada(1)} className={`${VIDRIO} col-span-2 flex items-center gap-4 px-4 py-3.5`}>
+        <motion.div {...entrada(2)} className={`${VIDRIO} col-span-2 flex items-center gap-4 px-4 py-3.5`}>
           <Anillo porcentaje={78} />
           <div className="min-w-0">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-white/55">Recaudo del mes</p>
@@ -68,15 +73,15 @@ export function WidgetsDeInicio() {
             </p>
           </div>
         </motion.div>
-        <motion.div {...entrada(2)} className={`${VIDRIO} px-4 py-3.5`}>
+        <motion.div {...entrada(3)} className={`${VIDRIO} px-4 py-3.5`}>
           <ChatCircleText size={18} className="text-white/80" />
           <p className="mt-2 text-[13px] leading-snug text-white">Mori le recordó a 6 inquilinos</p>
         </motion.div>
-        <motion.div {...entrada(3)} className={`${VIDRIO} px-4 py-3.5`}>
+        <motion.div {...entrada(4)} className={`${VIDRIO} px-4 py-3.5`}>
           <Signature size={18} className="text-white/80" />
           <p className="mt-2 text-[13px] leading-snug text-white">3 contratos firmados hoy</p>
         </motion.div>
-        <motion.div {...entrada(4)} className={`${VIDRIO} col-span-2 flex items-center gap-3 px-4 py-3`}>
+        <motion.div {...entrada(5)} className={`${VIDRIO} col-span-2 flex items-center gap-3 px-4 py-3`}>
           <CalendarCheck size={18} className="shrink-0 text-white/80" />
           <p className="text-[13px] leading-snug text-white">
             Visita a las <span className="font-mono tabular-nums">3:00 p. m.</span> · Cl 10 # 34-21, Sabaneta

@@ -357,12 +357,16 @@ export function InventarioItemDialog({
               )}
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
+                  {/* Revisión 29-10: en un computador `capture` no abre la cámara y
+                      «Tomar foto» hacía lo mismo que «Adjuntar imagen». Sólo donde se
+                      toca con el dedo (celular, tableta). */}
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     hideArrow
                     onClick={() => entradaDeFoto.current?.click()}
+                    className="[@media(pointer:fine)]:hidden"
                     data-testid="inventario-foto-tomar"
                   >
                     <Camera className="h-4 w-4" aria-hidden />

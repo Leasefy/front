@@ -110,7 +110,10 @@ export function RiesgoEnLaRenovacion({
             ? vivienda
               ? `En vivienda la renovación se da: lo que se negocia es el valor del incremento (y la comisión). Señales del ERP; en riesgo desde ${riesgo.umbral}/100${riesgo.medidoEn ? ` (medido ${fechaYHora(riesgo.medidoEn)})` : ''}.`
               : `Con las señales del ERP (mora de las cuotas, PQRS, reparaciones, convivencia, fin, incremento, giros). En riesgo desde ${riesgo.umbral}/100${riesgo.medidoEn ? ` (medido ${fechaYHora(riesgo.medidoEn)})` : ''}.`
-            : 'No se pudo medir ahora (Vinci apagado o sin respuesta). La renovación sigue igual.'}
+            : vivienda
+              ? // Revisión 29-10 (micro apagado): decir QUÉ falta, sin inventarlo.
+                'No se pudo medir ahora: Vinci no respondió, así que aquí no se ve cómo paga, sus reparaciones ni sus llamados de convivencia. Puedes renovar igual.'
+              : 'No se pudo medir ahora (Vinci apagado o sin respuesta). La renovación sigue igual.'}
         </p>
       </div>
       {riesgo?.factores ? <FactoresDeLaRenovacion factores={riesgo.factores} /> : null}

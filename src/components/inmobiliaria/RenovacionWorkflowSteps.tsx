@@ -23,6 +23,7 @@ import {
   XCircle,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
+import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -260,7 +261,7 @@ export function PasoPropuesta({
               areas={AREAS_DE_LA_RENOVACION}
               value={newRent > 0 ? newRent : ''}
               onChange={(crudo) => onNewRentChange(Number(crudo) || 0)}
-              placeholder={formatCurrency(renovacion.currentRent)}
+              placeholder={formatNumber(renovacion.currentRent) /* el campo ya trae su «$»: decía «$ $ 1.788.400» */}
               className="h-12 text-lg font-medium"
             />
           </Campo>

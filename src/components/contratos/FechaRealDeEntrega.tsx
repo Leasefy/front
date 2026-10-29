@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
-import { fechaLegible } from '@/components/estado-de-cuenta/filas';
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 import { contratoAlCrearApi } from '@/lib/api/contrato-al-crear.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
@@ -42,7 +42,7 @@ export function FechaRealDeEntrega({ contractId, puedeEditar }: { contractId: st
       const r = await contratoAlCrearApi.guardarEntregaReal(contractId, nueva);
       setFecha(r.fecha);
       setEditando(false);
-      toast.success(nueva ? 'Fecha de entrega guardada.' : 'Fecha de entrega quitada.');
+      toast.success(nueva ? `Listo: entregó el inmueble el ${fechaLarga(nueva)}.` : 'Fecha de entrega quitada.');
     } catch (err) {
       toast.error('No se pudo guardar la fecha de entrega.', { description: mensajeParaLaPersona(err) });
     } finally {
@@ -50,22 +50,37 @@ export function FechaRealDeEntrega({ contractId, puedeEditar }: { contractId: st
     }
   };
 
+  /*
+   * Revisión con datos de Portofino (29-10, tarde): en un contrato recién
+   * creado «Todavía no se ha entregado» se leía como la entrega AL inquilino.
+   * Ahora dice que es la devolución, va en una línea (es un dato de consulta,
+   * no la tarea de la pantalla), la fecha en frase y los botones pequeños.
+   */
   return (
-    <section className="rounded-lg border border-border bg-card p-4 space-y-3" data-testid="fecha-real-de-entrega">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="space-y-1">
-          <p className="text-sm text-fg">Entrega real del inmueble</p>
-          <p className="text-sm text-muted-foreground">
-            {!disponible
-              ? 'Falta una actualización de Leasefy para guardar esta fecha.'
-              : fecha
-                ? `El inquilino lo entregó el ${fechaLegible(fecha)}.`
-                : 'Todavía no se ha entregado. Anota el día en que el inquilino lo entregó de verdad.'}
-          </p>
-        </div>
+    <section className="space-y-3 rounded-lg border border-border bg-card px-4 py-3" data-testid="fecha-real-de-entrega">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="min-w-0 flex-1 text-sm text-fg-muted">
+          <span className="text-fg">Entrega real del inmueble</span>
+          {' · '}
+          {!disponible
+            ? 'Falta una actualización de Leasefy para guardar esta fecha.'
+            : fecha
+              ? `El inquilino lo entregó el ${fechaLarga(fecha)}.`
+              : 'Cuando el inquilino lo devuelva, anota el día real (aunque el contrato termine otro día).'}
+        </p>
         {puedeEditar && disponible && !editando && (
-          <Button type="button" variant="secondary" hideArrow onClick={() => { setValor(fecha ?? ''); setEditando(true); }}>
-            {fecha ? 'Cambiar fecha' : 'Anotar la entrega'}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            hideArrow
+            onClick={() => {
+              setValor(fecha ?? '');
+              setEditando(true);
+            }}
+            data-testid="anotar-la-entrega"
+          >
+            {fecha ? 'Cambiar la fecha' : 'Anotar la entrega'}
           </Button>
         )}
       </div>
@@ -74,17 +89,19 @@ export function FechaRealDeEntrega({ contractId, puedeEditar }: { contractId: st
           <div className="sm:w-56">
             <CampoDeDia id={`entrega-real-${contractId}`} value={valor} onChange={setValor} />
           </div>
-          <Button type="button" hideArrow disabled={!valor || guardando} onClick={() => void guardar(valor)}>
-            Guardar
-          </Button>
-          {fecha && (
-            <Button type="button" variant="ghost" hideArrow disabled={guardando} onClick={() => void guardar(null)}>
-              Quitar la fecha
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" hideArrow isLoading={guardando} disabled={!valor || guardando} onClick={() => void guardar(valor)}>
+              Guardar la fecha
             </Button>
-          )}
-          <Button type="button" variant="ghost" hideArrow disabled={guardando} onClick={() => setEditando(false)}>
-            Cancelar
-          </Button>
+            {fecha && (
+              <Button type="button" variant="ghost" size="sm" hideArrow disabled={guardando} onClick={() => void guardar(null)}>
+                Quitar la fecha
+              </Button>
+            )}
+            <Button type="button" variant="ghost" size="sm" hideArrow disabled={guardando} onClick={() => setEditando(false)}>
+              Cancelar
+            </Button>
+          </div>
         </div>
       )}
     </section>

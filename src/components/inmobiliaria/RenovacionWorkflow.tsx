@@ -238,7 +238,17 @@ export function CuerpoDeRenovacion({
 
   // Vivienda (Nico, 29-10-2026): sin propuesta ni firma; lo dice la regla del back.
   const regla = renovacion.reglaDeLaRenovacion ?? null;
-  const esVivienda = Boolean(regla && !regla.esComercial);
+  const reglaDeVivienda = Boolean(regla && !regla.esComercial);
+  /*
+   * 🔴 Revisión con datos de Portofino (29-10-2026): al renovar, la página
+   * vuelve a leer la lista y la renovación ya completada llega SIN su regla;
+   * el cajón dejaba de saber que era de vivienda y caía en «Propuesta ·
+   * Aceptación · Firma» de un local, con «Marcar como enviada». Una vez de
+   * vivienda, de vivienda hasta cerrar el cajón.
+   */
+  const [fueDeVivienda, setFueDeVivienda] = useState(reglaDeVivienda);
+  if (reglaDeVivienda && !fueDeVivienda) setFueDeVivienda(true);
+  const esVivienda = reglaDeVivienda || fueDeVivienda;
   const [renovado, setRenovado] = useState(false);
   const [desde, setDesde] = useState<string>(regla?.nuevoInicio ?? '');
   const [hasta, setHasta] = useState<string>(regla?.nuevoFin ?? '');
@@ -674,52 +684,50 @@ export function CuerpoDeRenovacion({
           >
             {terminada ? (
               <PasoNoRenovada renovacion={renovacion} motivo={motivoDeCierre} />
+            ) : esVivienda && (renovado || completada) ? (
+              <PasoCompletada
+                renovacion={
+                  renovado ? { ...renovacion, negotiatedRent: newRent, newLeaseEndDate: hasta } : renovacion
+                }
+                onAbrirDocumento={abrirDocumento}
+              />
             ) : esVivienda && regla ? (
-              renovado || completada ? (
-                <PasoCompletada
-                  renovacion={
-                    renovado ? { ...renovacion, negotiatedRent: newRent, newLeaseEndDate: hasta } : renovacion
-                  }
-                  onAbrirDocumento={abrirDocumento}
-                />
-              ) : (
-                <PasoRenovarVivienda
-                  renovacion={renovacion}
-                  regla={regla}
-                  canon={newRent}
-                  admin={newAdminFee}
-                  desde={desde}
-                  hasta={hasta}
-                  errores={{
-                    canon: topeDelCanon ?? topeDeVivienda ?? errores.canon,
-                    admin: topeDeLaAdministracion ?? errores.admin,
-                    desde: fechasMalas.desde ?? errores.desde,
-                    hasta: fechasMalas.hasta ?? errores.hasta,
-                  }}
-                  onCanon={(v) => {
-                    setNewRent(v);
-                    borrarError('canon');
-                  }}
-                  onAdmin={(v) => {
-                    setNewAdminFee(v);
-                    borrarError('admin');
-                  }}
-                  onDesde={(v) => {
-                    setDesde(v);
-                    borrarError('desde');
-                  }}
-                  onHasta={(v) => {
-                    setHasta(v);
-                    borrarError('hasta');
-                  }}
-                  onFechasDeLaRegla={() => {
-                    setDesde(regla.nuevoInicio);
-                    setHasta(regla.nuevoFin);
-                    borrarError('desde');
-                    borrarError('hasta');
-                  }}
-                />
-              )
+              <PasoRenovarVivienda
+                renovacion={renovacion}
+                regla={regla}
+                canon={newRent}
+                admin={newAdminFee}
+                desde={desde}
+                hasta={hasta}
+                errores={{
+                  canon: topeDelCanon ?? topeDeVivienda ?? errores.canon,
+                  admin: topeDeLaAdministracion ?? errores.admin,
+                  desde: fechasMalas.desde ?? errores.desde,
+                  hasta: fechasMalas.hasta ?? errores.hasta,
+                }}
+                onCanon={(v) => {
+                  setNewRent(v);
+                  borrarError('canon');
+                }}
+                onAdmin={(v) => {
+                  setNewAdminFee(v);
+                  borrarError('admin');
+                }}
+                onDesde={(v) => {
+                  setDesde(v);
+                  borrarError('desde');
+                }}
+                onHasta={(v) => {
+                  setHasta(v);
+                  borrarError('hasta');
+                }}
+                onFechasDeLaRegla={() => {
+                  setDesde(regla.nuevoInicio);
+                  setHasta(regla.nuevoFin);
+                  borrarError('desde');
+                  borrarError('hasta');
+                }}
+              />
             ) : paso === 0 ? (
               <PasoPropuesta
                 renovacion={renovacion}

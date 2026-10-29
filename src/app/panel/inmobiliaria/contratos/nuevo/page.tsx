@@ -192,6 +192,7 @@ const FALTA = {
 } as const;
 /** Los del bloque «partes»: sus errores salen cuando se toca el bloque (como siempre). */
 const DE_LAS_PARTES: ReadonlySet<string> = new Set(['propertyId', 'tenantId', 'nombre', 'documento', 'correo']);
+const DEL_INQUILINO: ReadonlySet<string> = new Set(['tenantId', 'nombre', 'documento', 'correo']);
 
 /** «a», «a y b», «a, b y c». */
 function enLista(cosas: readonly string[]): string {
@@ -276,6 +277,14 @@ function NuevoContratoContent() {
   // Los «falta esto» del bloque manual recién después de tocarlo: una pantalla
   // que abre en rojo antes de que la persona haga nada regaña por adelantado.
   const [partesTocadas, setPartesTocadas] = useState(false);
+  /*
+   * Revisión con datos de Portofino (29-10): al elegir el INMUEBLE el
+   * inquilino ya salía en rojo («Elige al inquilino.») sin haberlo tocado.
+   * Los del inquilino esperan a que se toque el inquilino; mientras tanto el
+   * resumen dice que falta.
+   */
+  const [inquilinoTocado, setInquilinoTocado] = useState(false);
+  const errorDeLaParteVisible = (clave: string) => partesTocadas && (!DEL_INQUILINO.has(clave) || inquilinoTocado);
   /*
    * T-0145 — lo que la agencia corrigió de la identificación del arrendatario
    * en la sección de la plantilla. Sólo guarda lo EDITADO: lo que no se tocó
@@ -926,7 +935,10 @@ function NuevoContratoContent() {
    * los codeudores y los documentos adicionales. Lo que falle se dice, y el
    * contrato igual queda creado.
    */
-  const terminarDeCrear = async (contractId: string) => {
+  const terminarDeCrear = async (
+    contractId: string,
+    inquilino?: { userId: string | null; invitado: boolean },
+  ) => {
     const pendientes: string[] = [];
     let porEmpezar = false;
     let activo = true;
@@ -954,10 +966,35 @@ function NuevoContratoContent() {
     if (documentosFallidos > 0) pendientes.push(`${documentosFallidos === 1 ? 'un documento no se subió' : `${documentosFallidos} documentos no se subieron`}`);
     borradorDelContrato.descartar();
     const titulo = !activo ? 'Contrato creado.' : porEmpezar ? 'Contrato creado. Se activa solo el día que empieza.' : 'Contrato creado y activo.';
+    /*
+     * Revisión con datos de Portofino (29-10, tarde): el aviso dice lo que
+     * pasó DE VERDAD (antes nombraba codeudores y documentos aunque no hubiera
+     * ninguno) y vuelve a decir qué pasó con la cuenta del inquilino, que se
+     * había perdido al pasar a «creado y activo».
+     */
+    const codeudoresGuardados = aGuardar.length - codeudoresFallidos;
+    const documentosGuardados = documentosAdicionales.length - documentosFallidos;
+    const guardados = [
+      codeudoresGuardados > 0 ? (codeudoresGuardados === 1 ? 'el codeudor' : `${codeudoresGuardados} codeudores`) : null,
+      documentosGuardados > 0 ? (documentosGuardados === 1 ? 'un documento' : `${documentosGuardados} documentos`) : null,
+    ].filter((x): x is string => x !== null);
+    const quedaron = codeudoresGuardados + documentosGuardados === 1 ? 'Quedó' : 'Quedaron';
+    const delInquilino = inquilino?.invitado
+      ? 'Le mandamos al inquilino la invitación al portal.'
+      : inquilino && inquilino.userId === null
+        ? 'El inquilino todavía no tiene cuenta: invítalo al portal desde el contrato.'
+        : null;
+    const detalle = [
+      activo ? 'Ya quedan sus cuotas y cobros.' : null,
+      guardados.length > 0 ? `${quedaron} ${guardados.join(' y ')} en el contrato.` : null,
+      delInquilino,
+    ]
+      .filter(Boolean)
+      .join(' ');
     if (pendientes.length > 0) {
-      toast.warning(titulo, { description: `Ojo: ${pendientes.join('; ')}. Lo puedes completar desde el contrato.` });
+      toast.warning(titulo, { description: `Ojo: ${pendientes.join('; ')}. Lo puedes completar desde el contrato.${delInquilino ? ` ${delInquilino}` : ''}` });
     } else {
-      toast.success(titulo, { description: 'Ya quedan sus cuotas y cobros. Los codeudores y documentos están en el contrato.' });
+      toast.success(titulo, detalle ? { description: detalle } : undefined);
     }
     router.push(`/panel/inmobiliaria/contratos/${contractId}`);
   };
@@ -1056,7 +1093,7 @@ function NuevoContratoContent() {
                 },
               }),
         });
-        await terminarDeCrear(creado.contract.id);
+        await terminarDeCrear(creado.contract.id, creado.inquilino);
         return;
       }
 
@@ -1154,7 +1191,7 @@ function NuevoContratoContent() {
   const loQueFalta = (Object.keys(FALTA) as Array<keyof typeof FALTA>).filter((clave) => {
     if (!validation[clave]) return false;
     if (clave === 'contratoArmado') return true;
-    if (DE_LAS_PARTES.has(clave)) return !partesTocadas;
+    if (DE_LAS_PARTES.has(clave)) return !errorDeLaParteVisible(clave);
     return vacio(clave as CampoDelContrato) && !camposDejados.has(idDelCampoDelContrato(clave as CampoDelContrato));
   });
 
@@ -1226,6 +1263,19 @@ function NuevoContratoContent() {
     ...(errorDeInmueble ? [errorDeInmueble.mensaje] : []),
     ...(errorSinCanon !== null || inmuebleManualSinCanon || (!esManual && property?.canonPorConfirmar)
       ? ['El inmueble tiene el canon por confirmar.']
+      : []),
+    // Revisión 29-10: con un codeudor a medias el botón se apagaba sin decir por qué aquí.
+    ...(!codeudoresListos
+      ? [
+          {
+            texto: 'Hay un codeudor a medias: complétalo o quítalo.',
+            accion: {
+              label: 'Ir al codeudor',
+              onClick: () =>
+                document.querySelector('[data-testid="nuevo-contrato-codeudores"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+            },
+          },
+        ]
       : []),
   ];
 
@@ -1343,10 +1393,25 @@ function NuevoContratoContent() {
             inmueblePedido={inmueblePedido}
             valor={partes}
             onCambio={(v, opciones) => {
-              if (!opciones?.automatico) setPartesTocadas(true);
+              if (!opciones?.automatico) {
+                setPartesTocadas(true);
+                // Cambiar entre «Ya es inquilino» y «Nuevo» no cuenta: los campos llegan vacíos.
+                if (v.inquilino !== partes.inquilino && v.inquilino.modo === partes.inquilino.modo) setInquilinoTocado(true);
+              }
               if (v.propertyId !== partes.propertyId) {
                 setErrorDeInmueble(null);
                 setErrorSinCanon(null);
+              }
+              /*
+               * Revisión 29-10: volver a tocar el inmueble elegido lo QUITA
+               * (Combobox de Cadence); el encabezado y el resumen seguían
+               * diciendo el inmueble anterior.
+               */
+              if (!v.propertyId && partes.propertyId) {
+                setInmuebleElegido(null);
+                setTipoDelInmuebleElegido(null);
+                setConsignacionElegida(null);
+                setInmuebleManualSinCanon(null);
               }
               // Otro inquilino: lo corregido a mano era de la persona anterior.
               const antes = partes.inquilino.modo === 'existente' ? partes.inquilino.tenantId : '';
@@ -1355,7 +1420,7 @@ function NuevoContratoContent() {
               setPartes(v);
             }}
             errores={{
-              ...(partesTocadas ? validation : {}),
+              ...Object.fromEntries(Object.entries(validation).filter(([clave]) => errorDeLaParteVisible(clave))),
               ...erroresDelServidor,
               ...(errorDeInmueble ? { propertyId: errorDeInmueble.mensaje } : {}),
             }}
@@ -1931,6 +1996,17 @@ function NuevoContratoContent() {
               Crear contrato
             </Button>
           </div>
+          {/* Nico 29-10: «si sale, se guarda como borrador». Que se sepa antes de salir. */}
+          <Presence
+            show={conBorrador && borradorTieneAlgo}
+            initial={false}
+            distance="xs"
+            as="p"
+            className="text-caption text-fg-muted sm:text-right"
+            data-testid="contrato-se-guarda-solo"
+          >
+            Lo que llenas se guarda solo: si sales, lo retomas al volver.
+          </Presence>
         </ResumenDelContratoNuevo>
         </div>
       </form>

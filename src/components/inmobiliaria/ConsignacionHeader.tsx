@@ -309,7 +309,8 @@ export function ConsignacionHeader({
                   icon={<DotsThree className="h-5 w-5" weight="bold" />}
                 />
               </DropdownListTrigger>
-              <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
+              {/* Revisión 29-10 a 390: con el «…» a la izquierda el menú quedaba pegado al borde de la pantalla. */}
+              <DropdownListContent align="end" collisionPadding={16} className={ANCHO_DEL_MENU_DE_ACCIONES}>
                 <OpcionesDelInmueble
                   acciones={accionesDelInmueble(
                     {

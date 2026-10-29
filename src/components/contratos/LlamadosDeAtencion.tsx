@@ -8,10 +8,11 @@
  * error se ANULA con su motivo (deja de contar, no se borra).
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Presence } from '@leasefy/cadence';
+import { Chip, Presence } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
@@ -91,16 +92,19 @@ export function LlamadosDeAtencion({ contractId, puedeEditar }: { contractId: st
           </p>
         </div>
         {puedeEditar && datos?.disponible && (
-          <Button type="button" variant="secondary" hideArrow onClick={() => setAbierto(true)} data-testid="registrar-llamado">
+          <Button type="button" variant="outline" size="sm" hideArrow onClick={() => setAbierto(true)} data-testid="registrar-llamado">
             Registrar un llamado
           </Button>
         )}
       </div>
 
       {!datos ? (
-        <p className="text-sm text-fg-muted" role="status">
-          Cargando los llamados…
-        </p>
+        // Revisión 29-10: un esqueleto con la forma de la lista, no un texto suelto.
+        <div className="space-y-3" role="status" aria-label="Cargando los llamados" aria-busy="true">
+          <Skeleton className="h-4 w-2/5" />
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-4 w-3/5" />
+        </div>
       ) : !datos.disponible ? (
         <p className="text-sm text-fg-muted" data-testid="llamados-sin-actualizacion">
           Falta una actualización de Leasefy para guardar los llamados de atención. Ya la estamos aplicando.
@@ -150,7 +154,8 @@ export function LlamadosDeAtencion({ contractId, puedeEditar }: { contractId: st
                   <p className="text-sm text-fg-muted whitespace-pre-line break-words">{l.quePaso}</p>
                   {l.registradoPor && <p className="text-caption text-fg-muted">Lo anotó {l.registradoPor}.</p>}
                   <Presence show={anulando === l.id} initial={false} distance="xs">
-                    <div className="mt-2 space-y-2 rounded-md border border-border p-3">
+                    {/* Sin caja dentro de la tarjeta: una línea a la izquierda agrupa el motivo con su llamado. */}
+                    <div className="mt-2 space-y-2 border-l-2 border-border pl-3">
                       <Label htmlFor={`anular-${l.id}`}>¿Por qué lo anulas?</Label>
                       <Textarea
                         id={`anular-${l.id}`}
@@ -255,21 +260,20 @@ function CajonDelLlamado({
           <Label id="llamado-motivo" required>
             ¿Por qué fue?
           </Label>
+          {/* Revisión 29-10 con datos: con `secondary`/`outline` el elegido no se distinguía de los demás. */}
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="llamado-motivo" aria-describedby="llamado-motivo-error">
             {MOTIVOS.map((m) => (
-              <Button
+              <Chip
                 key={m.valor}
-                type="button"
-                size="sm"
-                hideArrow
-                variant={llamado.motivo === m.valor ? 'secondary' : 'outline'}
                 role="radio"
                 aria-checked={llamado.motivo === m.valor}
+                selected={llamado.motivo === m.valor}
+                className="h-9 px-3.5"
                 onClick={() => elegir('motivo', m.valor as MotivoDeConvivencia)}
                 data-testid={`llamado-motivo-${m.valor}`}
               >
                 {m.nombre}
-              </Button>
+              </Chip>
             ))}
           </div>
           <ErrorDelCampo id="llamado-motivo-error" mensaje={visibles.motivo} />
@@ -305,18 +309,17 @@ function CajonDelLlamado({
           <Label id="llamado-quien">¿Quién lo reportó? (opcional)</Label>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="llamado-quien">
             {QUIENES.map((q) => (
-              <Button
+              <Chip
                 key={q.valor}
-                type="button"
-                size="sm"
-                hideArrow
-                variant={llamado.loReporto === q.valor ? 'secondary' : 'outline'}
                 role="radio"
                 aria-checked={llamado.loReporto === q.valor}
+                selected={llamado.loReporto === q.valor}
+                className="h-9 px-3.5"
                 onClick={() => elegir('loReporto', llamado.loReporto === q.valor ? null : (q.valor as QuienLoReporto))}
+                data-testid={`llamado-quien-${q.valor}`}
               >
                 {q.nombre}
-              </Button>
+              </Chip>
             ))}
           </div>
         </div>
@@ -325,8 +328,8 @@ function CajonDelLlamado({
         <Button type="button" variant="ghost" hideArrow onClick={onCerrar} disabled={guardando}>
           Cancelar
         </Button>
-        <Button type="button" hideArrow onClick={() => void registrar()} disabled={guardando} data-testid="guardar-llamado">
-          {guardando ? 'Registrando…' : 'Registrar el llamado'}
+        <Button type="button" hideArrow onClick={() => void registrar()} isLoading={guardando} disabled={guardando} data-testid="guardar-llamado">
+          Registrar el llamado
         </Button>
       </CajonPie>
     </Cajon>

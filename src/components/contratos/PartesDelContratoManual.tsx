@@ -104,7 +104,8 @@ export function validarPartes(partes: PartesManuales): Record<string, string> {
     // Nico (03-10-2026, CR-14): el borrador nace SIN la cuenta del inquilino
     // nuevo, así que su correo es OBLIGATORIO —para que siempre se lo pueda
     // invitar al portal y firme—. El back también lo exige (400).
-    if (!q.correo.trim()) errores.correo = 'Escribe el correo: es obligatorio para invitarlo al portal y que firme.'
+    // Nico 29-10: el contrato que se crea aquí ya viene firmado; el correo es para invitarlo al portal.
+    if (!q.correo.trim()) errores.correo = 'Escribe el correo: es obligatorio para invitarlo al portal.'
     else if (!CORREO.test(q.correo.trim())) errores.correo = 'Escribe un correo válido: ahí le llega la invitación.'
   }
   return errores
@@ -439,8 +440,9 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             </div>
             <p className="flex items-start gap-2 rounded-md bg-surface-muted p-3 text-caption text-fg-muted">
               <UserPlus className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              Si el documento ya es de un inquilino de la inmobiliaria se usa su cuenta. Si no, le llega
-              al correo una invitación para crear la suya y firmar el contrato.
+              {/* Nico 29-10: el contrato ya viene firmado; aquí no se habla de firmar (antes: «…y firmar el contrato»). */}
+              Si el documento ya es de un inquilino de la inmobiliaria se usa su cuenta. Si no, queda como
+              inquilino nuevo y la invitación al portal le llega a este correo.
             </p>
           </div>
         )}

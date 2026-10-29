@@ -106,7 +106,7 @@ function RenovacionesContent() {
       <EncabezadoDePantalla
         seccion="Operación"
         titulo={t('inmobiliaria.nav.renovaciones')}
-        descripcion="Las renovaciones abiertas: vivienda se renueva con su incremento; los locales comerciales van por propuesta, respuesta y firma."
+        descripcion="Vivienda se renueva con su incremento; un local comercial, por propuesta, respuesta y firma."
         ayuda={
           <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: renovaciones" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">

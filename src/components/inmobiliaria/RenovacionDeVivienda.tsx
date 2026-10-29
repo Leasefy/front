@@ -28,7 +28,7 @@ import { MoneyInput } from '@/components/ui/money-input';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha';
 import { RiesgoEnLaRenovacion } from '@/components/retencion/RiesgoEnLaRenovacion';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatNumber } from '@/lib/format';
 import type { ReglaDeLaRenovacion, Renovacion } from '@/lib/types/inmobiliaria';
 import { AREAS_DE_LA_RENOVACION, canalDeEnvio } from '@/lib/renovaciones/reglas';
 
@@ -174,21 +174,22 @@ export function PasoRenovarVivienda({
             <ErrorDelCampo id="renovacion-hasta-error" mensaje={errores.hasta} className="mt-0" />
           </div>
         </div>
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-fg-muted" data-testid="renovacion-cada-cuanto">
-          <CalendarBlank className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>
-            {cadaCuanto} {fechasDeLaRegla ? 'Leasefy calculó las fechas; cámbialas si hace falta.' : 'Pusiste las fechas a mano.'}
+        {/* Revisión 29-10: el ícono quedaba solo en su renglón (el texto, largo, saltaba abajo). */}
+        <p className="flex items-start gap-2 text-caption text-fg-muted" data-testid="renovacion-cada-cuanto">
+          <CalendarBlank className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="min-w-0">
+            {cadaCuanto} {fechasDeLaRegla ? 'Leasefy calculó las fechas; cámbialas si hace falta.' : 'Pusiste las fechas a mano.'}{' '}
+            {!fechasDeLaRegla ? (
+              <button
+                type="button"
+                onClick={onFechasDeLaRegla}
+                className="font-medium text-primary underline-offset-2 hover:underline"
+                data-testid="renovacion-fechas-de-la-regla"
+              >
+                Volver a las de Leasefy ({fechaDeLaRenovacion(regla.nuevoFin)})
+              </button>
+            ) : null}
           </span>
-          {!fechasDeLaRegla ? (
-            <button
-              type="button"
-              onClick={onFechasDeLaRegla}
-              className="font-medium text-primary underline-offset-2 hover:underline"
-              data-testid="renovacion-fechas-de-la-regla"
-            >
-              Volver a las de Leasefy ({fechaDeLaRenovacion(regla.nuevoFin)})
-            </button>
-          ) : null}
         </p>
       </div>
 
@@ -213,7 +214,7 @@ export function PasoRenovarVivienda({
               areas={AREAS_DE_LA_RENOVACION}
               value={canon > 0 ? canon : ''}
               onChange={(crudo) => onCanon(Number(crudo) || 0)}
-              placeholder={formatCurrency(renovacion.currentRent)}
+              placeholder={formatNumber(renovacion.currentRent)}
               className="h-12 text-lg font-medium"
             />
             <ErrorDelCampo
@@ -229,7 +230,7 @@ export function PasoRenovarVivienda({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="renovacion-admin" className="text-sm font-medium text-fg">
-              Administración
+              Administración del conjunto
             </Label>
             <MoneyInput
               id="renovacion-admin"
@@ -239,10 +240,16 @@ export function PasoRenovarVivienda({
               areas={AREAS_DE_LA_RENOVACION}
               value={admin > 0 ? admin : ''}
               onChange={(crudo) => onAdmin(Number(crudo) || 0)}
-              placeholder={formatCurrency(renovacion.currentAdminFee ?? 0)}
+              placeholder={renovacion.currentAdminFee ? formatNumber(renovacion.currentAdminFee) : 'Sin administración'}
               className="h-12"
             />
-            <ErrorDelCampo id="renovacion-admin-error" mensaje={errores.admin} className="mt-0" />
+            {/* Revisión 29-10: el campo ya trae su «$»; el ejemplo decía «$ $ 0». */}
+            <ErrorDelCampo
+              id="renovacion-admin-error"
+              mensaje={errores.admin}
+              pista="Vacío si el inmueble no paga administración."
+              className="mt-0"
+            />
           </div>
         </div>
       </div>

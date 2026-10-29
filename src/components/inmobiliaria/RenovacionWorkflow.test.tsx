@@ -374,6 +374,25 @@ describe('vivienda urbana: «Renovar contrato» (Nico, 29-10-2026)', () => {
     expect(porTestId('paso-completada')).not.toBeNull();
   });
 
+  it('🔴 al renovar, la página relee la lista y la renovación llega completada SIN regla: sigue la renovación hecha, no la propuesta de un local', async () => {
+    // Revisión con datos de Portofino (29-10-2026): el cajón caía en «Propuesta · Aceptación · Firma».
+    const onRenovar = vi.fn().mockResolvedValue(undefined);
+    await montarVivienda({ onRenovar });
+    await clic(porTestId('renovacion-renovar'));
+    await act(async () => {
+      root!.render(
+        <CuerpoDeRenovacion
+          renovacion={{ ...vivienda, status: 'completed', negotiatedRent: 1_629_050, reglaDeLaRenovacion: undefined }}
+          hoy={HOY}
+          onRenovar={onRenovar}
+        />,
+      );
+    });
+    expect(porTestId('paso-completada')).not.toBeNull();
+    expect(porTestId('renovacion-pasos')).toBeNull();
+    expect(porTestId('renovacion-enviar')).toBeNull();
+  });
+
   it('sobre el tope legal no deja renovar y lo dice bajo el canon', async () => {
     const onRenovar = vi.fn();
     await montarVivienda({ onRenovar });

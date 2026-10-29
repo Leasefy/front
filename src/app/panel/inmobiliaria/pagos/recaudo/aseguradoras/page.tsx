@@ -14,7 +14,7 @@
 
 import { SinDatos } from '@/components/estado/SinDatos';
 import { ShieldCheck } from '@phosphor-icons/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
@@ -24,6 +24,9 @@ import { Input } from '@/components/ui';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -125,6 +128,14 @@ function Contenido() {
     }
   };
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const lista = useMemo(() => aseguradoras ?? [], [aseguradoras]);
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(lista, {
+    nombre: (a) => a.nombre,
+    nit: (a) => a.nit,
+    estado: (a) => (a.activa ? 'Activa' : 'Inactiva'),
+  });
+
   const abrirElRegistro = () => {
     setErrores({});
     setRegistrando(true);
@@ -192,18 +203,32 @@ function Contenido() {
           />
         }
       >
+        {lista.length > 1 ? (
+          <div className="mb-3 flex justify-end">
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-52"
+              formas={[
+                { campo: 'nombre', sentido: 'asc', etiqueta: 'Aseguradora (A–Z)' },
+                { campo: 'estado', sentido: 'asc', etiqueta: 'Activas primero' },
+                { campo: 'nit', sentido: 'asc', etiqueta: 'NIT' },
+              ]}
+            />
+          </div>
+        ) : null}
         <div className="overflow-hidden rounded-lg border border-border bg-surface">
           <Table data-testid="aseguradoras">
             <TableHeader>
               <TableRow>
-                <TableHead>Aseguradora</TableHead>
-                <TableHead>NIT</TableHead>
-                <TableHead>Estado</TableHead>
+                <EncabezadoOrdenable campo="nombre" orden={orden} onOrdenar={ordenarPor}>Aseguradora</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="nit" orden={orden} onOrdenar={ordenarPor}>NIT</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
                 <TableHead className="w-32" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(aseguradoras ?? []).map((a) => (
+              {ordenadas.map((a) => (
                 <TableRow key={a.id} data-testid={`aseguradora-${a.id}`}>
                   <TableCell className="font-medium text-fg">{a.nombre}</TableCell>
                   <TableCell className="font-mono tabular-nums">{a.nit}</TableCell>

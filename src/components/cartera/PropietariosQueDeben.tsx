@@ -27,7 +27,9 @@
  */
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { Receipt } from '@phosphor-icons/react'
 
 import {
@@ -88,6 +90,19 @@ export function PropietariosQueDeben() {
     void cargar()
   }, [cargar])
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de las salidas: es un hook.
+  const lista = useMemo(() => deudas?.propietarios ?? [], [deudas])
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    lista,
+    {
+      propietario: (p) => p.nombre || null,
+      debe: (p) => p.debeCop,
+      masViejo: (p) => p.porEdades?.diasDelMasViejo ?? null,
+      cuenta: (p) => p.ultimaCuentaDeCobro?.numero ?? null,
+    },
+    { primero: { debe: 'desc', masViejo: 'desc', cuenta: 'desc' } },
+  )
+
   if (cargando && !deudas) return null
   if (!error && (!deudas || deudas.propietarios.length === 0)) return null
 
@@ -97,7 +112,7 @@ export function PropietariosQueDeben() {
       data-testid="propietarios-que-deben"
     >
       <div className="space-y-1 border-b border-border px-4 py-3">
-        <h2 className="flex items-center gap-2 text-base font-semibold text-fg">
+        <h2 className="flex items-center gap-2 text-base font-medium text-fg">
           <Receipt className="h-4 w-4 text-warning" aria-hidden="true" />
           {t(k('titulo'))}
         </h2>
@@ -122,7 +137,7 @@ export function PropietariosQueDeben() {
                   <p className="text-caption text-fg-muted">{NOMBRE_DE_EDAD[edad]}</p>
                   <p
                     className={cn(
-                      'mt-1 font-mono text-lg font-semibold tabular-nums',
+                      'mt-1 font-mono text-lg font-medium tabular-nums',
                       TONO[edad],
                     )}
                   >
@@ -138,19 +153,19 @@ export function PropietariosQueDeben() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t(k('colPropietario'))}</TableHead>
-                  <TableHead className="text-right">{t(k('colDebe'))}</TableHead>
+                  <EncabezadoOrdenable campo="propietario" orden={orden} onOrdenar={ordenarPor}>{t(k('colPropietario'))}</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="debe" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">{t(k('colDebe'))}</EncabezadoOrdenable>
                   {EDADES.map((edad) => (
                     <TableHead key={edad} className="whitespace-nowrap text-right">
                       {NOMBRE_DE_EDAD[edad]}
                     </TableHead>
                   ))}
-                  <TableHead className="text-right">{t(k('colMasViejo'))}</TableHead>
-                  <TableHead>{t(k('colCuenta'))}</TableHead>
+                  <EncabezadoOrdenable campo="masViejo" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">{t(k('colMasViejo'))}</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="cuenta" orden={orden} onOrdenar={ordenarPor}>{t(k('colCuenta'))}</EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {deudas.propietarios.map((p) => (
+                {ordenadas.map((p) => (
                   <TableRow key={p.propietarioId} data-testid="propietario-que-debe">
                     <TableCell>
                       <Link
@@ -202,14 +217,14 @@ export function PropietariosQueDeben() {
                     categoría sin nombre, y aquí la plata es de un tercero. */}
                 <TableRow data-testid="total-que-deben">
                   <TableCell className="font-medium text-fg">{t(k('total'))}</TableCell>
-                  <TableCell className="text-right font-mono font-semibold tabular-nums text-fg">
+                  <TableCell className="text-right font-mono font-medium tabular-nums text-fg">
                     {formatCurrency(deudas.totalCop)}
                   </TableCell>
                   {EDADES.map((edad) => (
                     <TableCell
                       key={edad}
                       data-testid={`total-tramo-${edad}`}
-                      className="text-right font-mono font-semibold tabular-nums text-fg"
+                      className="text-right font-mono font-medium tabular-nums text-fg"
                     >
                       {formatCurrency(enElTramo(deudas.porEdades, edad))}
                     </TableCell>

@@ -61,7 +61,7 @@ describe('FormularioDeFactura — varios servicios', () => {
 });
 
 describe('FormularioDeFactura — el corte y el mes en que se facturó', () => {
-  async function llenar(onCambio: ReturnType<typeof vi.fn>) {
+  async function llenar(onCambio: Parameters<typeof FormularioDeFactura>[0]['onCambio']) {
     const caja = document.createElement('div');
     document.body.appendChild(caja);
     raiz = createRoot(caja);

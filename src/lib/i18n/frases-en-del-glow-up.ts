@@ -801,4 +801,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Documento (A–Z)': 'Document (A–Z)',
   'Inquilino (A–Z)': 'Tenant (A–Z)',
   Estado: 'Status',
+  'Vence primero': 'Due first',
+  'Titular (A–Z)': 'Data subject (A–Z)',
 }

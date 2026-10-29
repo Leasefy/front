@@ -14,6 +14,9 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import Link from 'next/link'
 import {
   ArrowClockwise,
@@ -282,11 +285,27 @@ function BandejaArco() {
    * Página efectiva, acotada al total actual: cambiar de pestaña o el polling
    * cada minuto pueden achicar la lista sin que el usuario toque el paginador.
    */
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Cambiar el orden vuelve a la 1.
+  const { ordenadas, orden, ordenarPor: ordenarPorColumna, setOrden: elegirOrden } = useOrdenDeLaTabla(
+    filteredRows,
+    {
+      titular: (r) => r.requesterName,
+      tipo: (r) => r.type,
+      estado: (r) => r.status,
+      plazo: (r) => (r.isClosed ? null : r.slaRemainingDays),
+      llego: (r) => r.submittedAt,
+    },
+    { primero: { llego: 'desc' } },
+  )
+  const ordenarPor = (campo: 'titular' | 'tipo' | 'estado' | 'plazo' | 'llego') => {
+    ordenarPorColumna(campo)
+    setPage(1)
+  }
+  const totalPages = Math.max(1, Math.ceil(ordenadas.length / pageSize))
   const safePage = Math.min(page, totalPages)
   const visibleRows = useMemo(
-    () => filteredRows.slice((safePage - 1) * pageSize, safePage * pageSize),
-    [filteredRows, safePage, pageSize],
+    () => ordenadas.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [ordenadas, safePage, pageSize],
   )
 
   const updatedAgo = formatUpdatedAgo(t, lastUpdatedAt)
@@ -442,6 +461,21 @@ function BandejaArco() {
                 data-testid="arco-buscar"
               />
             </div>
+            {requests.length > 1 ? (
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={(o) => {
+                  elegirOrden(o)
+                  setPage(1)
+                }}
+                className="w-full sm:w-52"
+                formas={[
+                  { campo: 'plazo', sentido: 'asc', etiqueta: tr('Vence primero') },
+                  { campo: 'llego', sentido: 'desc', etiqueta: tr('Más recientes') },
+                  { campo: 'titular', sentido: 'asc', etiqueta: tr('Titular (A–Z)') },
+                ]}
+              />
+            ) : null}
             <fieldset className="flex flex-wrap items-center gap-2">
               <legend className="sr-only">{tr('Tipo de solicitud')}</legend>
               {ARCO_TYPES.map((tp) => (
@@ -474,11 +508,11 @@ function BandejaArco() {
               <Table className="min-w-full max-md:block">
                 <TableHeader className="max-md:hidden">
                   <TableRow>
-                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.requester`)}</TableHead>
-                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.type`)}</TableHead>
-                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.status`)}</TableHead>
-                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.sla`)}</TableHead>
-                    <TableHead className="px-4 py-2.5">{t(`${NS}.table.submitted`)}</TableHead>
+                    <EncabezadoOrdenable campo="titular" orden={orden} onOrdenar={ordenarPor} className="px-4 py-2.5">{t(`${NS}.table.requester`)}</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="tipo" orden={orden} onOrdenar={ordenarPor} className="px-4 py-2.5">{t(`${NS}.table.type`)}</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="px-4 py-2.5">{t(`${NS}.table.status`)}</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="plazo" orden={orden} onOrdenar={ordenarPor} className="px-4 py-2.5">{t(`${NS}.table.sla`)}</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="llego" orden={orden} onOrdenar={ordenarPor} className="px-4 py-2.5">{t(`${NS}.table.submitted`)}</EncabezadoOrdenable>
                   </TableRow>
                 </TableHeader>
                 {/* Cambiar de pestaña, filtrar o paginar: las filas entran escalonadas (techo 320 ms). */}

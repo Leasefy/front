@@ -4,7 +4,7 @@
  * en frío.
  */
 
-import { Bank, DeviceMobile, DotsThree, Link as LinkIcon, Money, Wallet } from '@phosphor-icons/react';
+import { Bank, DeviceMobile, DotsThree, Key, Link as LinkIcon, Money, Wallet } from '@phosphor-icons/react';
 import type {
   MedioDePago,
   NuevoMedioDePago,
@@ -19,6 +19,7 @@ export const NOMBRE_DEL_TIPO: Record<TipoDeMedioDePago, string> = {
   DAVIPLATA: 'Daviplata',
   ENLACE_DE_PAGO: 'Enlace de pago',
   OTRO: 'Otro',
+  BRE_B: 'Llave Bre-B',
 };
 
 export const ICONO_DEL_TIPO: Record<TipoDeMedioDePago, typeof Bank> = {
@@ -29,10 +30,12 @@ export const ICONO_DEL_TIPO: Record<TipoDeMedioDePago, typeof Bank> = {
   DAVIPLATA: DeviceMobile,
   ENLACE_DE_PAGO: LinkIcon,
   OTRO: DotsThree,
+  BRE_B: Key,
 };
 
 export const TIPOS: readonly TipoDeMedioDePago[] = [
   'TRANSFERENCIA',
+  'BRE_B',
   'EFECTIVO',
   'NEQUI',
   'DAVIPLATA',
@@ -64,6 +67,7 @@ export const CAMPOS_DEL_TIPO: Record<
   DAVIPLATA: { muestra: ['numeroDeCuenta', 'titular'], exige: ['numeroDeCuenta'] },
   ENLACE_DE_PAGO: { muestra: ['enlace'], exige: ['enlace'] },
   OTRO: { muestra: ['enlace'], exige: [] },
+  BRE_B: { muestra: ['numeroDeCuenta', 'titular'], exige: ['numeroDeCuenta'] },
 };
 
 export const ETIQUETA_DEL_CAMPO: Record<CampoDelMedio, string> = {
@@ -78,6 +82,7 @@ export const ETIQUETA_DEL_CAMPO: Record<CampoDelMedio, string> = {
 /** Para Nequi y Daviplata el «número de cuenta» es el celular. */
 export function etiquetaDelCampo(campo: CampoDelMedio, tipo: TipoDeMedioDePago): string {
   if (campo === 'numeroDeCuenta' && (tipo === 'NEQUI' || tipo === 'DAVIPLATA')) return 'Celular';
+  if (campo === 'numeroDeCuenta' && tipo === 'BRE_B') return 'Llave';
   return ETIQUETA_DEL_CAMPO[campo];
 }
 
@@ -127,6 +132,9 @@ export function faltantesDe(m: DatosQueSeExigen): FaltanteDelMedio[] {
     case 'DAVIPLATA':
       if (vacio(m.numeroDeCuenta)) out.push(falta('numeroDeCuenta', 'El número de celular'));
       return out;
+    case 'BRE_B':
+      if (vacio(m.numeroDeCuenta)) out.push(falta('numeroDeCuenta', 'La llave'));
+      return out;
     case 'ENLACE_DE_PAGO':
       if (vacio(m.enlace)) out.push(falta('enlace', 'El enlace'));
       else if (!https(m.enlace!)) {
@@ -163,6 +171,11 @@ export function describirMedio(m: Pick<MedioDePago, 'tipo' | 'banco' | 'tipoDeCu
     case 'DAVIPLATA':
       partes.push(NOMBRE_DEL_TIPO[m.tipo]);
       if (m.numeroDeCuenta) partes.push(enmascarar(m.numeroDeCuenta)!);
+      if (m.titular) partes.push(m.titular);
+      break;
+    case 'BRE_B':
+      partes.push('Llave Bre-B');
+      if (m.numeroDeCuenta) partes.push(m.numeroDeCuenta);
       if (m.titular) partes.push(m.titular);
       break;
     case 'ENLACE_DE_PAGO':

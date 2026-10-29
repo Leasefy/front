@@ -9,7 +9,9 @@ export type TipoDeMedioDePago =
   | 'NEQUI'
   | 'DAVIPLATA'
   | 'ENLACE_DE_PAGO'
-  | 'OTRO';
+  | 'OTRO'
+  /** Nico 29-10-2026: la llave Bre-B (va en `numeroDeCuenta`). */
+  | 'BRE_B';
 
 export type TipoDeCuenta = 'AHORROS' | 'CORRIENTE';
 

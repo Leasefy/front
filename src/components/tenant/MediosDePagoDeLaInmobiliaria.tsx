@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { ArrowSquareOut, Bank, Check, Copy, DeviceMobile, DotsThree, Link as LinkIcon, Money, Wallet } from '@phosphor-icons/react';
+import { ArrowSquareOut, Bank, Check, Copy, DeviceMobile, DotsThree, Key, Link as LinkIcon, Money, Wallet } from '@phosphor-icons/react';
 import { Collapse } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { useMediosDePagoParaInquilino } from '@/lib/hooks/use-medios-de-pago';
@@ -22,6 +22,7 @@ const ICONO: Record<TipoDeMedioDePago, typeof Bank> = {
   DAVIPLATA: DeviceMobile,
   ENLACE_DE_PAGO: LinkIcon,
   OTRO: DotsThree,
+  BRE_B: Key,
 };
 
 function tipoDeCuentaLegible(t: string | null): string | null {

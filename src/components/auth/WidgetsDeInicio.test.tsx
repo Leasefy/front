@@ -83,3 +83,12 @@ describe('WidgetsDeInicio', () => {
     expect(texto).not.toMatch(/\$|recaudo|pagos|inquilinos|firmados|visita|Cl \d|# \d|ejemplo/i);
   });
 });
+
+describe('WidgetsDeInicio · se pueden abrir', () => {
+  it('🔴 cada widget recibe el cursor y el clic aunque su capa no los reciba (pointer-events-auto)', async () => {
+    await pintar(DATOS);
+    for (const id of ['widget-blog', 'widget-noticias', 'widget-novedades']) {
+      expect(q(id)!.className).toContain('pointer-events-auto');
+    }
+  });
+});

@@ -23,7 +23,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion, useReducedMotion, type MotionProps } from 'framer-motion';
-import { ArrowUpRight } from '@phosphor-icons/react';
+import { ArrowRight, ArrowUpRight } from '@phosphor-icons/react';
 import { Ilustracion, motionDuration, motionEase, type NombreIlustracion } from '@leasefy/cadence';
 import type { LoDelInicio } from '@/lib/inicio/lo-del-inicio';
 import { haceCuanto } from '@/lib/inicio/noticias-proptech';
@@ -156,16 +156,19 @@ export function WidgetsDeInicio() {
             pausado={encima === 'blog'}
             onEncima={alPasarEncima('blog')}
             testId="widget-blog"
+            cta="Leer el artículo"
           >
             <div className="flex items-center gap-3.5 pr-4">
-              <Image
-                src={articulo.imagen}
-                alt=""
-                width={64}
-                height={64}
-                sizes="64px"
-                className="size-16 shrink-0 rounded-[14px] object-cover ring-1 ring-white/15"
-              />
+              <span className="size-16 shrink-0 overflow-hidden rounded-[14px] ring-1 ring-white/15">
+                <Image
+                  src={articulo.imagen}
+                  alt=""
+                  width={64}
+                  height={64}
+                  sizes="64px"
+                  className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                />
+              </span>
               <div className="min-w-0">
                 <p className={`${ROTULO} truncate`}>Blog · {articulo.categoria}</p>
                 <p className="mt-1 line-clamp-2 text-[14.5px] leading-snug text-white">{articulo.titulo}</p>
@@ -188,6 +191,7 @@ export function WidgetsDeInicio() {
             pausado={encima === 'noticias'}
             onEncima={alPasarEncima('noticias')}
             testId="widget-noticias"
+            cta={noticia ? 'Leer la noticia' : 'Ver las noticias'}
           >
             <div className="flex min-h-[136px] flex-col">
               <p className={`${ROTULO} pr-5`}>Proptech</p>
@@ -217,13 +221,14 @@ export function WidgetsDeInicio() {
           pausado={encima === 'novedades'}
           onEncima={alPasarEncima('novedades')}
           testId="widget-novedades"
+          cta="Ver la novedad"
         >
           <div className="flex min-h-[136px] flex-col gap-2.5">
             <Ilustracion
               nombre={novedad.ilustracion}
               tamano={44}
               loading="eager"
-              className="pointer-events-none -ml-1 -mt-1 drop-shadow-[0_8px_12px_rgba(0,0,0,0.3)]"
+              className="pointer-events-none -ml-1 -mt-1 drop-shadow-[0_8px_12px_rgba(0,0,0,0.3)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-hover:-rotate-6 motion-reduce:transition-none motion-reduce:group-hover:transform-none"
             />
             <div>
               <p className={ROTULO}>Novedad</p>
@@ -239,6 +244,9 @@ export function WidgetsDeInicio() {
 /**
  * Un widget que es un enlace: su contenido cambia con un fundido corto y una línea abajo se llena hasta el próximo.
  * Con el cursor o el foco encima se detiene (la línea se vacía) y retoma al salir.
+ *
+ * 🔴 `pointer-events-auto`: la capa del logo y los widgets (`auth/page.tsx`) no recibe eventos para no taparle el
+ * clic a la tarjeta del formulario; sin esto, el cursor y el clic pasaban de largo y el widget no se podía abrir.
  */
 function Widget({
   className = '',
@@ -251,6 +259,7 @@ function Widget({
   pausado,
   onEncima,
   testId,
+  cta,
   children,
 }: {
   className?: string;
@@ -263,6 +272,8 @@ function Widget({
   pausado: boolean;
   onEncima: (si: boolean) => void;
   testId: string;
+  /** Lo que pasa al dar clic, en palabras («Leer el artículo»): aparece al pasar el cursor o con el foco. */
+  cta: string;
   children: ReactNode;
 }) {
   const sinMovimiento = useReducedMotion();
@@ -277,7 +288,7 @@ function Widget({
       onMouseLeave={() => onEncima(false)}
       onFocus={() => onEncima(true)}
       onBlur={() => onEncima(false)}
-      className={`${VIDRIO} group block p-4 pb-5 outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${className}`}
+      className={`${VIDRIO} group pointer-events-auto block p-4 pb-8 outline-none transition-shadow duration-200 hover:shadow-[0_28px_60px_-22px_rgba(0,0,0,0.8)] hover:ring-white/35 focus-visible:ring-2 focus-visible:ring-white/70 ${className}`}
       data-testid={testId}
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -291,9 +302,30 @@ function Widget({
           {children}
         </motion.div>
       </AnimatePresence>
-      <ArrowUpRight className="absolute right-3 top-3 size-4 text-white/45 transition-colors group-hover:text-white" aria-hidden="true" />
+      {/* Al pasar el cursor (Nico, 29-10: «que se vea que hay algo ahí, o que se puede clicar»): el vidrio se ilumina,
+          la flecha se vuelve un botón blanco y la acción aparece en palabras donde estaba la línea de avance. */}
+      <span
+        className="pointer-events-none absolute inset-0 -z-10 bg-white/[0.08] opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+        aria-hidden="true"
+      />
+      <span
+        className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full text-white/50 transition duration-200 group-hover:bg-white group-hover:text-ink group-focus-visible:bg-white group-focus-visible:text-ink"
+        aria-hidden="true"
+      >
+        <ArrowUpRight className="size-4 transition-transform duration-200 group-hover:-translate-y-px group-hover:translate-x-px motion-reduce:transition-none" />
+      </span>
+      <span
+        className="pointer-events-none absolute inset-x-4 bottom-2.5 flex translate-y-1 items-center gap-1 text-[12.5px] text-white opacity-0 transition duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none"
+        aria-hidden="true"
+      >
+        {cta}
+        <ArrowRight className="size-3.5" />
+      </span>
       {rota ? (
-        <span className="absolute inset-x-4 bottom-2 h-0.5 overflow-hidden rounded-full bg-white/15" aria-hidden="true">
+        <span
+          className="absolute inset-x-4 bottom-3.5 h-0.5 overflow-hidden rounded-full bg-white/15 transition-opacity duration-200 group-hover:opacity-0 group-focus-visible:opacity-0"
+          aria-hidden="true"
+        >
           <motion.span
             key={`${clave}-${pausado}`}
             className="block h-full origin-left rounded-full bg-white/70"

@@ -49,7 +49,8 @@ vi.mock('@/lib/api/client', async () => {
   }
 })
 
-const { actual, crear, subirDocumento, iniciar } = vi.hoisted(() => ({
+const { actual, crear, subirDocumento, iniciar, reintentar } = vi.hoisted(() => ({
+  reintentar: vi.fn(),
   actual: vi.fn(),
   crear: vi.fn(),
   subirDocumento: vi.fn(),
@@ -59,7 +60,7 @@ vi.mock('@/lib/api/estudio-de-canon.service', async () => {
   const real = await vi.importActual<typeof import('@/lib/api/estudio-de-canon.service')>(
     '@/lib/api/estudio-de-canon.service',
   )
-  return { ...real, estudioDeCanonApi: { actual, crear, subirDocumento, iniciar } }
+  return { ...real, estudioDeCanonApi: { actual, crear, subirDocumento, iniciar, reintentar } }
 })
 
 import AprobacionPage from './page'
@@ -80,6 +81,17 @@ function estudio(parcial: Partial<EstudioDeCanon> = {}): EstudioDeCanon {
     faltan: ['cedula', 'extracto_bancario'],
     resultado: null,
     error: null,
+    ...parcial,
+  }
+}
+
+function errorDelEstudio(parcial: Partial<NonNullable<EstudioDeCanon['error']>> = {}): NonNullable<EstudioDeCanon['error']> {
+  return {
+    codigo: 'ESTUDIO_FALLIDO',
+    mensaje: 'No pudimos terminar.',
+    documentoConError: null,
+    accion: 'REINTENTAR',
+    reintentosRestantes: 3,
     ...parcial,
   }
 }
@@ -117,7 +129,7 @@ beforeEach(() => {
   root = createRoot(container)
   mockUser = { role: 'tenant' }
   mockSesion = { isAuthenticated: true, needsOnboarding: false, perfilElegido: null }
-  for (const m of [pushMock, replaceMock, pedirLaCuentaMock, ventanaDeCuentaOpcionesMock, actual, crear, subirDocumento, iniciar]) {
+  for (const m of [pushMock, replaceMock, pedirLaCuentaMock, ventanaDeCuentaOpcionesMock, actual, crear, subirDocumento, iniciar, reintentar]) {
     m.mockReset()
   }
   actual.mockResolvedValue(null)
@@ -361,17 +373,111 @@ describe('<AprobacionPage> — procesando / resultado / fallo', () => {
     expect(container.querySelector('#consent')).not.toBeNull()
   })
 
-  it('FAILED: muestra el mensaje del back y "Intentar de nuevo" vuelve a empezar', async () => {
+  it('FAILED: muestra el mensaje del back y ofrece reintentar con los mismos documentos', async () => {
     actual.mockResolvedValue(
-      estudio({ status: 'FAILED', error: { codigo: 'EXTRACTO_ILEGIBLE', mensaje: 'No pudimos leer tu extracto bancario.' } }),
+      estudio({ status: 'FAILED', error: errorDelEstudio({ codigo: 'ESTUDIO_NO_ARRANCO', mensaje: 'No pudimos iniciar el estudio de tus documentos. Intenta de nuevo.' }) }),
     )
     await montar()
-    expect(q('[data-testid="vista-fallido"]')?.textContent).toContain('No pudimos leer tu extracto bancario.')
+    expect(q('[data-testid="vista-fallido"]')?.textContent).toContain('No pudimos iniciar el estudio')
+    expect(q('[data-testid="documento-con-error"]')).toBeNull()
+    expect(q('[data-testid="reintentar-estudio"]')?.textContent).toContain('mismos documentos')
+    expect(q('[data-testid="reintentos-restantes"]')?.textContent).toBe('Te quedan 3 reintentos.')
+  })
+
+  it('FAILED con documento culpable: lo marca, deja reemplazarlo y reintenta con el archivo nuevo', async () => {
+    const fallido = estudio({
+      status: 'FAILED',
+      documentos: [{ tipo: 'cedula' }, { tipo: 'extracto_bancario' }],
+      faltan: [],
+      error: errorDelEstudio({
+        codigo: 'CEDULA_ILEGIBLE',
+        mensaje: 'No pudimos leer tu cédula.',
+        documentoConError: 'cedula',
+        accion: 'REEMPLAZAR_DOCUMENTO',
+        reintentosRestantes: 2,
+      }),
+    })
+    actual.mockResolvedValue(fallido)
+    subirDocumento.mockResolvedValue(fallido)
+    reintentar.mockResolvedValue({ ...fallido, status: 'PROCESSING', error: null })
+    await montar()
+    expect(q('[data-testid="documento-con-error"]')?.textContent).toContain('Este archivo es el que dio el problema')
+    expect(q('[data-testid="casilla-cedula"]')).not.toBeNull()
+    expect(q('[data-testid="casilla-extracto_bancario"]')).toBeNull()
+    expect(q('[data-testid="reintentos-restantes"]')?.textContent).toBe('Te quedan 2 reintentos.')
+
+    await elegirArchivo('cedula', pdf('cedula-nueva.pdf'))
+    expect(subirDocumento).toHaveBeenCalledWith(fallido.id, 'cedula', expect.any(File))
+    expect(reintentar).not.toHaveBeenCalled() // uploading does not restart anything
+    expect(q('[data-testid="reintentar-estudio"]')?.textContent).toContain('archivo nuevo')
+
     await act(async () => {
-      q('[data-testid="intentar-de-nuevo"]')!.click()
+      q('[data-testid="reintentar-estudio"]')!.click()
+    })
+    await flush()
+    expect(reintentar).toHaveBeenCalledWith(fallido.id)
+    expect(q('[data-testid="vista-procesando"]')).not.toBeNull()
+  })
+
+  it('FAILED sin reintentos: no ofrece reintentar, ofrece empezar un estudio nuevo', async () => {
+    actual.mockResolvedValue(
+      estudio({ status: 'FAILED', error: errorDelEstudio({ reintentosRestantes: 0 }) }),
+    )
+    await montar()
+    expect(q('[data-testid="reintentar-estudio"]')).toBeNull()
+    expect(q('[data-testid="sin-reintentos"]')).not.toBeNull()
+    await act(async () => {
+      q('[data-testid="empezar-estudio-nuevo"]')!.click()
     })
     expect(container.querySelector('#consent')).not.toBeNull()
     expect(q('[data-testid="vista-fallido"]')).toBeNull()
+  })
+
+  it('409 ESTUDIO_SIN_REINTENTOS al reintentar: pasa a "empezar un estudio nuevo"', async () => {
+    actual.mockResolvedValue(estudio({ status: 'FAILED', error: errorDelEstudio() }))
+    reintentar.mockRejectedValue(
+      new EstudioDeCanonError(409, 'Ya usaste todos los reintentos de este estudio.', 'ESTUDIO_SIN_REINTENTOS'),
+    )
+    await montar()
+    await act(async () => {
+      q('[data-testid="reintentar-estudio"]')!.click()
+    })
+    await flush()
+    expect(q('[data-testid="reintentar-estudio"]')).toBeNull()
+    expect(q('[data-testid="empezar-estudio-nuevo"]')).not.toBeNull()
+  })
+
+  it('409 ESTUDIO_NO_REINTENTABLE al reintentar: vuelve a leer el estudio', async () => {
+    actual.mockResolvedValue(estudio({ status: 'FAILED', error: errorDelEstudio() }))
+    reintentar.mockRejectedValue(new EstudioDeCanonError(409, 'ya no se puede', 'ESTUDIO_NO_REINTENTABLE'))
+    await montar()
+    expect(actual).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      q('[data-testid="reintentar-estudio"]')!.click()
+    })
+    await flush()
+    expect(actual).toHaveBeenCalledTimes(2)
+    expect(q('[data-testid="error-general"]')?.textContent).toContain('ya no se puede')
+  })
+
+  it('503 al reintentar: dice el error y deja volver a apretar', async () => {
+    actual.mockResolvedValue(estudio({ status: 'FAILED', error: errorDelEstudio() }))
+    reintentar.mockRejectedValue(new EstudioDeCanonError(503, 'El servicio no está disponible. Reintenta en un momento.', 'SERVICIO_NO_DISPONIBLE'))
+    await montar()
+    await act(async () => {
+      q('[data-testid="reintentar-estudio"]')!.click()
+    })
+    await flush()
+    expect(q('[data-testid="error-general"]')?.textContent).toContain('Reintenta')
+    expect((q('[data-testid="reintentar-estudio"]') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('PROCESSING: dice que puede tardar unos minutos y que se puede volver o recargar', async () => {
+    actual.mockResolvedValue(estudio({ status: 'PROCESSING' }))
+    await montar()
+    const t = q('[data-testid="vista-procesando"]')?.textContent ?? ''
+    expect(t).toContain('unos minutos')
+    expect(t).toMatch(/recargar/i)
   })
 })
 
@@ -404,7 +510,7 @@ describe('<AprobacionPage> — reglas de producto', () => {
         autorizar: null,
         documentos: estudio(),
         procesando: estudio({ status: 'PROCESSING' }),
-        fallido: estudio({ status: 'FAILED', error: { codigo: 'ESTUDIO_FALLIDO', mensaje: 'No pudimos terminar.' } }),
+        fallido: estudio({ status: 'FAILED', error: errorDelEstudio({ codigo: 'ESTUDIO_FALLIDO', mensaje: 'No pudimos terminar.' }) }),
       }
       actual.mockResolvedValue(estados[vista])
       await montar()

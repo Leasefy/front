@@ -10,7 +10,9 @@
  *   1 · autorizar    consent `calificacion-leasefy-v1` (required) → POST /estudio
  *   2 · documentos   cédula + extracto (required), nómina / certificación (optional)
  *                    → POST /estudio/:id/documentos, then POST /estudio/:id/iniciar
- *   3 · procesando   polling GET /estudio/actual every 3 s (30-90 s)
+ *   3 · procesando   GET /estudio/actual on load, then every 2 min while PROCESSING (T-0195)
+ *   ✗ FAILED         says which document failed; retry with the same documents or replace
+ *                    that one (POST .../documentos) and POST .../reintentar (T-0195)
  *   ✓ COMPLETED      → /inquilino/aprobacion (the result)
  *
  * The route is public, but the study needs a tenant session: without one the
@@ -98,6 +100,9 @@ export default function AprobacionPage() {
   const [verTexto, setVerTexto] = useState(false)
   const [empezando, setEmpezando] = useState(false)
   const [iniciando, setIniciando] = useState(false)
+  const [reintentando, setReintentando] = useState(false)
+  /** Slots whose file was replaced after the failure (the retry then says "con el archivo nuevo"). */
+  const [reemplazados, setReemplazados] = useState<Partial<Record<TipoDeDocumento, boolean>>>({})
   const [subiendo, setSubiendo] = useState<Partial<Record<TipoDeDocumento, boolean>>>({})
   const [errores, setErrores] = useState<Partial<Record<TipoDeDocumento, string>>>({})
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null)
@@ -177,6 +182,13 @@ export default function AprobacionPage() {
     setConsiente(false)
     setErrores({})
     setErrorGeneral(null)
+    setReemplazados({})
+  }
+
+  /** The back says the retry budget is spent: the screen offers a new study instead. */
+  function sinReintentos() {
+    if (!visible?.error) return
+    setEstudio({ ...visible, error: { ...visible.error, reintentosRestantes: 0 } })
   }
 
   function mostrarError(err: unknown, tipo?: TipoDeDocumento) {
@@ -187,9 +199,14 @@ export default function AprobacionPage() {
       setErrorGeneral(mensaje)
       return
     }
-    if (e?.code === 'ESTUDIO_YA_INICIADO') {
+    if (e?.code === 'ESTUDIO_YA_INICIADO' || e?.code === 'ESTUDIO_NO_REINTENTABLE') {
       setErrorGeneral(mensaje)
       refetch()
+      return
+    }
+    if (e?.code === 'ESTUDIO_SIN_REINTENTOS') {
+      sinReintentos()
+      setErrorGeneral(mensaje)
       return
     }
     if (tipo) setErrores((prev) => ({ ...prev, [tipo]: mensaje }))
@@ -222,6 +239,7 @@ export default function AprobacionPage() {
     setSubiendo((prev) => ({ ...prev, [tipo]: true }))
     try {
       setEstudio(await estudioDeCanonApi.subirDocumento(visible.id, tipo, file))
+      if (visible.status === 'FAILED') setReemplazados((prev) => ({ ...prev, [tipo]: true }))
     } catch (err) {
       mostrarError(err, tipo)
     } finally {
@@ -252,6 +270,25 @@ export default function AprobacionPage() {
     }
   }
 
+  async function reintentar() {
+    if (!visible) return
+    setErrorGeneral(null)
+    setReintentando(true)
+    try {
+      setEstudio(await estudioDeCanonApi.reintentar(visible.id))
+      setReemplazados({})
+      setErrores({})
+    } catch (err) {
+      if (err instanceof EstudioDeCanonError && err.code === 'DOCUMENTOS_FALTANTES') {
+        setErrorGeneral(err.message)
+      } else {
+        mostrarError(err)
+      }
+    } finally {
+      setReintentando(false)
+    }
+  }
+
   function salirDelFlujo() {
     setConfirmandoSalida(false)
     if (arriendo?.propertyId) {
@@ -263,6 +300,10 @@ export default function AprobacionPage() {
 
   const pasoActual: 1 | 2 | 3 = vista === 'documentos' ? 2 : vista === 'procesando' || vista === 'fallido' ? 3 : 1
   const subiendoAlgo = Object.values(subiendo).some(Boolean)
+  const documentoConError = visible?.error?.documentoConError ?? null
+  const reintentosRestantes = visible?.error?.reintentosRestantes ?? 1
+  const sinMasReintentos = reintentosRestantes <= 0
+  const documentoReemplazado = documentoConError !== null && Boolean(reemplazados[documentoConError])
   const puedeIniciar = Boolean(visible) && !hayAlgoQueSubir(visible?.documentos ?? []) && !subiendoAlgo
 
   return (
@@ -499,8 +540,9 @@ export default function AprobacionPage() {
             <ArrowsClockwise className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
             <h1 className="font-heading text-2xl font-[420] text-fg text-balance">Estamos leyendo tus documentos</h1>
             <p className="max-w-prose text-sm text-fg-muted">
-              Suele tomar entre uno y dos minutos. Puedes quedarte en esta pantalla: apenas termine te mostramos tu
-              resultado. Si prefieres, puedes salir y volver más tarde; tu resultado queda en Mi tope.
+              Puede tardar unos minutos. No tienes que quedarte aquí: puedes cerrar esta pantalla y volver más tarde, o
+              recargar la página para ver si ya terminó. Revisamos el avance cada dos minutos y tu resultado queda en Mi
+              tope.
             </p>
             <div>
               <Button asChild variant="secondary" hideArrow>
@@ -520,11 +562,67 @@ export default function AprobacionPage() {
             <p className="max-w-prose text-sm text-fg-muted" role="alert">
               {visible.error?.mensaje || 'No pudimos leer tus documentos.'}
             </p>
-            <div>
-              <Button type="button" size="lg" onClick={reiniciar} data-testid="intentar-de-nuevo">
-                Intentar de nuevo
-              </Button>
-            </div>
+
+            {documentoConError && (
+              <div className="flex flex-col gap-2" data-testid="documento-con-error">
+                <p className="text-caption text-fg-muted">
+                  Este archivo es el que dio el problema. Puedes cambiarlo por uno mejor o reintentar con el mismo.
+                </p>
+                {DOCUMENTOS.filter((d) => d.tipo === documentoConError).map((d) => (
+                  <CasillaDeDocumento
+                    key={d.tipo}
+                    tipo={d.tipo}
+                    titulo={d.titulo}
+                    ayuda={d.ayuda}
+                    obligatorio={d.obligatorio}
+                    subido={visible.documentos.some((x) => x.tipo === d.tipo)}
+                    subiendo={Boolean(subiendo[d.tipo])}
+                    error={errores[d.tipo]}
+                    disabled={reintentando || sinMasReintentos}
+                    onElegir={(file) => void subir(d.tipo, file)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {errorGeneral && <ErrorGeneral mensaje={errorGeneral} />}
+
+            {sinMasReintentos ? (
+              <div className="flex flex-col gap-3" data-testid="sin-reintentos">
+                <p className="max-w-prose text-sm text-fg-muted">
+                  Ya usaste todos los reintentos de este estudio. Empieza uno nuevo para volver a intentarlo.
+                </p>
+                <div>
+                  <Button type="button" size="lg" onClick={reiniciar} data-testid="empezar-estudio-nuevo">
+                    Empezar un estudio nuevo
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div>
+                  <Button
+                    type="button"
+                    size="lg"
+                    isLoading={reintentando}
+                    disabled={reintentando || subiendoAlgo}
+                    onClick={() => void reintentar()}
+                    data-testid="reintentar-estudio"
+                  >
+                    {reintentando
+                      ? 'Reintentando…'
+                      : documentoReemplazado
+                        ? 'Reintentar con el archivo nuevo'
+                        : 'Reintentar con los mismos documentos'}
+                  </Button>
+                </div>
+                <p className="text-caption text-fg-muted" data-testid="reintentos-restantes">
+                  {reintentosRestantes === 1
+                    ? 'Te queda 1 reintento.'
+                    : `Te quedan ${reintentosRestantes} reintentos.`}
+                </p>
+              </div>
+            )}
           </section>
         )}
       </main>

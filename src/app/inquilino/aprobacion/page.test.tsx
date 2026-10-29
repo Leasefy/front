@@ -198,9 +198,9 @@ describe('/inquilino/aprobacion — el resultado del estudio', () => {
   })
 
   describe('en proceso / borrador / fallido', () => {
-    it('en proceso: tranquiliza y dice que se actualiza sola', () => {
+    it('en proceso: tranquiliza y dice que puede volver o recargar', () => {
       montar({ estudio: estudio({ status: 'PROCESSING', resultado: null, venceEl: null }) })
-      expect(q('[data-testid="estudio-en-proceso"]')?.textContent).toMatch(/se actualiza sola/i)
+      expect(q('[data-testid="estudio-en-proceso"]')?.textContent).toMatch(/recargar la página/i)
     })
 
     it('borrador: ofrece continuar el estudio', () => {
@@ -215,7 +215,13 @@ describe('/inquilino/aprobacion — el resultado del estudio', () => {
           status: 'FAILED',
           resultado: null,
           venceEl: null,
-          error: { codigo: 'EXTRACTO_ILEGIBLE', mensaje: 'No pudimos leer tu extracto bancario.' },
+          error: {
+            codigo: 'EXTRACTO_ILEGIBLE',
+            mensaje: 'No pudimos leer tu extracto bancario.',
+            documentoConError: 'extracto_bancario',
+            accion: 'REEMPLAZAR_DOCUMENTO',
+            reintentosRestantes: 3,
+          },
         }),
       })
       expect(q('[data-testid="estudio-fallido"]')?.textContent).toContain('No pudimos leer tu extracto bancario.')
@@ -240,7 +246,7 @@ describe('/inquilino/aprobacion — el resultado del estudio', () => {
       ['vencido', { venceEl: futuro(-3) }],
       ['en proceso', { status: 'PROCESSING', resultado: null }],
       ['borrador', { status: 'DRAFT', resultado: null }],
-      ['fallido', { status: 'FAILED', resultado: null, error: { codigo: 'ESTUDIO_FALLIDO', mensaje: 'No pudimos terminar.' } }],
+      ['fallido', { status: 'FAILED', resultado: null, error: { codigo: 'ESTUDIO_FALLIDO', mensaje: 'No pudimos terminar.', documentoConError: null, accion: 'REINTENTAR', reintentosRestantes: 3 } }],
     ]
     it.each(estados)('«%s» no habla de aseguradoras, aseguradoras con nombre, pagos ni depósitos', (_nombre, parcial) => {
       montar({ estudio: parcial === null ? null : estudio(parcial) })

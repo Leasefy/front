@@ -102,11 +102,52 @@ describe('parseEstudio', () => {
   it('ignores a result that is not an object and a non-FAILED error', () => {
     expect(parseEstudio({ ...BASE, status: 'COMPLETED', resultado: 'x' })!.resultado).toBeNull()
     const f = parseEstudio({ ...BASE, status: 'FAILED', error: { codigo: 'TIMEOUT', mensaje: 'Tardó' } })
-    expect(f!.error).toEqual({ codigo: 'TIMEOUT', mensaje: 'Tardó' })
+    expect(f!.error).toEqual({
+      codigo: 'TIMEOUT',
+      mensaje: 'Tardó',
+      documentoConError: null,
+      accion: 'REINTENTAR',
+      reintentosRestantes: 1,
+    })
     expect(parseEstudio({ ...BASE, status: 'FAILED', error: { foo: 1 } })!.error).toEqual({
       codigo: 'ESTUDIO_FALLIDO',
       mensaje: '',
+      documentoConError: null,
+      accion: 'REINTENTAR',
+      reintentosRestantes: 1,
     })
+  })
+
+  it('reads the T-0195 failure fields (document to blame, action, retries left)', () => {
+    const f = parseEstudio({
+      ...BASE,
+      status: 'FAILED',
+      error: {
+        codigo: 'CEDULA_ILEGIBLE',
+        mensaje: 'No pudimos leer tu cédula.',
+        documentoConError: 'cedula',
+        accion: 'REEMPLAZAR_DOCUMENTO',
+        reintentosRestantes: 2,
+      },
+    })
+    expect(f!.error).toEqual({
+      codigo: 'CEDULA_ILEGIBLE',
+      mensaje: 'No pudimos leer tu cédula.',
+      documentoConError: 'cedula',
+      accion: 'REEMPLAZAR_DOCUMENTO',
+      reintentosRestantes: 2,
+    })
+  })
+
+  it('degrades unknown values: bad document -> null, bad action -> REINTENTAR, bad count -> 1, 0 stays 0', () => {
+    const malo = parseEstudio({
+      ...BASE,
+      status: 'FAILED',
+      error: { codigo: 'X', mensaje: 'm', documentoConError: 'nomina', accion: 'OTRA', reintentosRestantes: -1 },
+    })
+    expect(malo!.error).toMatchObject({ documentoConError: null, accion: 'REINTENTAR', reintentosRestantes: 1 })
+    const cero = parseEstudio({ ...BASE, status: 'FAILED', error: { codigo: 'X', mensaje: 'm', reintentosRestantes: 0 } })
+    expect(cero!.error!.reintentosRestantes).toBe(0)
   })
 })
 

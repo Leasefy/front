@@ -1,8 +1,9 @@
 /**
  * use-estudio-de-canon.test.ts
  *
- * Contract §3.1 A: poll GET /estudio/actual every 3 s while PROCESSING, stop on
- * COMPLETED / FAILED, and never lose the study (nor flip it to FAILED) because
+ * T-0195 contract §3.4: fetch GET /estudio/actual on mount, re-fetch every
+ * 120 s ONLY while PROCESSING, make no further calls once COMPLETED / FAILED,
+ * clean up on unmount, and never lose the study (nor flip it to FAILED) because
  * a single poll failed.
  */
 
@@ -73,8 +74,8 @@ afterEach(() => {
 })
 
 describe('useEstudioDeCanon', () => {
-  it('polls every 3 seconds', () => {
-    expect(INTERVALO_DE_CONSULTA_MS).toBe(3000)
+  it('polls every 120 seconds (owner rule: no constant polling)', () => {
+    expect(INTERVALO_DE_CONSULTA_MS).toBe(120_000)
   })
 
   it('loads the current study once and does not poll a DRAFT', async () => {
@@ -103,12 +104,14 @@ describe('useEstudioDeCanon', () => {
     const h = renderHook()
     await avanzar(0)
     expect(actual).toHaveBeenCalledTimes(1)
-    await avanzar(3000)
+    await avanzar(119_000)
+    expect(actual).toHaveBeenCalledTimes(1)
+    await avanzar(1000)
     expect(actual).toHaveBeenCalledTimes(2)
-    await avanzar(3000)
+    await avanzar(120_000)
     expect(actual).toHaveBeenCalledTimes(3)
     expect(h.get().estudio?.status).toBe('COMPLETED')
-    await avanzar(12_000)
+    await avanzar(600_000)
     expect(actual).toHaveBeenCalledTimes(3)
   })
 
@@ -116,7 +119,8 @@ describe('useEstudioDeCanon', () => {
     actual.mockResolvedValue(estudio('PROCESSING'))
     const h = renderHook()
     await avanzar(0)
-    await avanzar(3000)
+    await avanzar(120_000)
+    expect(actual).toHaveBeenCalledTimes(2)
     expect(h.get().isLoading).toBe(false)
   })
 
@@ -127,10 +131,11 @@ describe('useEstudioDeCanon', () => {
       .mockResolvedValueOnce(estudio('COMPLETED'))
     const h = renderHook()
     await avanzar(0)
-    await avanzar(3000)
+    await avanzar(120_000)
     expect(h.get().estudio?.status).toBe('PROCESSING')
     expect(h.get().error).toBeNull()
-    await avanzar(3000)
+    await avanzar(120_000)
+    expect(actual).toHaveBeenCalledTimes(3)
     expect(h.get().estudio?.status).toBe('COMPLETED')
   })
 
@@ -155,7 +160,89 @@ describe('useEstudioDeCanon', () => {
     await avanzar(0)
     act(() => h.get().setEstudio(estudio('PROCESSING')))
     actual.mockResolvedValue(estudio('COMPLETED'))
-    await avanzar(3000)
+    await avanzar(120_000)
     expect(h.get().estudio?.status).toBe('COMPLETED')
+  })
+
+  it('stops for good on FAILED: no calls at all until the user acts', async () => {
+    actual.mockResolvedValue(estudio('FAILED'))
+    renderHook()
+    await avanzar(0)
+    await avanzar(1_000_000)
+    expect(actual).toHaveBeenCalledTimes(1)
+  })
+
+  it('restarts the 120 s cadence when a PROCESSING study is pushed after FAILED (reintentar)', async () => {
+    actual.mockResolvedValue(estudio('FAILED'))
+    const h = renderHook()
+    await avanzar(0)
+    act(() => h.get().setEstudio(estudio('PROCESSING')))
+    actual.mockResolvedValue(estudio('COMPLETED'))
+    await avanzar(119_000)
+    expect(actual).toHaveBeenCalledTimes(1)
+    await avanzar(1000)
+    expect(actual).toHaveBeenCalledTimes(2)
+    expect(h.get().estudio?.status).toBe('COMPLETED')
+  })
+
+  it('never overlaps requests: a tick is skipped while one is still in flight', async () => {
+    let resolver: (e: EstudioDeCanon) => void = () => {}
+    actual.mockResolvedValueOnce(estudio('PROCESSING'))
+    actual.mockImplementationOnce(() => new Promise<EstudioDeCanon>((r) => (resolver = r)))
+    const h = renderHook()
+    await avanzar(0)
+    await avanzar(120_000)
+    expect(actual).toHaveBeenCalledTimes(2)
+    await avanzar(120_000)
+    expect(actual).toHaveBeenCalledTimes(2)
+    await act(async () => resolver(estudio('PROCESSING')))
+    expect(h.get().estudio?.status).toBe('PROCESSING')
+  })
+
+  it('clears its timer on unmount: no calls after the screen is gone', async () => {
+    actual.mockResolvedValue(estudio('PROCESSING'))
+    renderHook()
+    await avanzar(0)
+    act(() => root.unmount())
+    await avanzar(600_000)
+    expect(actual).toHaveBeenCalledTimes(1)
+    root = createRoot(container) // afterEach unmounts again
+  })
+
+  it('skips a tick while the tab is hidden and catches up when it becomes visible after 120 s', async () => {
+    actual.mockResolvedValue(estudio('PROCESSING'))
+    renderHook()
+    await avanzar(0)
+    const oculto = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    await avanzar(240_000)
+    expect(actual).toHaveBeenCalledTimes(1)
+    oculto.mockReturnValue(false)
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(actual).toHaveBeenCalledTimes(2)
+    oculto.mockRestore()
+  })
+
+  it('does not refetch on visibilitychange when the last fetch is recent', async () => {
+    actual.mockResolvedValue(estudio('PROCESSING'))
+    renderHook()
+    await avanzar(0)
+    await avanzar(30_000)
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(actual).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not refetch on visibilitychange when the study is not PROCESSING', async () => {
+    actual.mockResolvedValue(estudio('FAILED'))
+    renderHook()
+    await avanzar(0)
+    await avanzar(500_000)
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(actual).toHaveBeenCalledTimes(1)
   })
 })

@@ -328,7 +328,10 @@ function ProcesoView({ tf }: { tf: Tf }) {
       <Hourglass className="h-6 w-6 text-primary" aria-hidden="true" />
       <h2 className="text-h3 text-fg">{tf(`${NS}.proceso.title`, 'Estamos leyendo tus documentos')}</h2>
       <p className="max-w-lg text-sm leading-relaxed text-fg-muted">
-        {tf(`${NS}.proceso.desc`, 'Suele tomar entre uno y dos minutos. Esta pantalla se actualiza sola cuando termine.')}
+        {tf(
+          `${NS}.proceso.desc`,
+          'Puede tardar unos minutos. Puedes cerrar esta pantalla y volver más tarde, o recargar la página para ver si ya terminó. Revisamos el avance cada dos minutos.',
+        )}
       </p>
     </section>
   )
@@ -360,7 +363,7 @@ function FalloView({ tf, estudio }: { tf: Tf; estudio: EstudioDeCanon }) {
       </p>
       <div className="pt-2">
         <Button asChild size="lg">
-          <Link href="/aprobacion">{tf(`${NS}.fallo.cta`, 'Intentar de nuevo')}</Link>
+          <Link href="/aprobacion">{tf(`${NS}.fallo.cta`, 'Revisar y reintentar')}</Link>
         </Button>
       </div>
     </section>

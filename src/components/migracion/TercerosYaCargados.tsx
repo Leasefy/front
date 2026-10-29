@@ -230,7 +230,12 @@ function InquilinosYaCargados({ onSubirOtro, subiendoOtro, onEstado }: PropsDeLo
   const [porPagina, setPorPagina] = useState(POR_PAGINA);
   const [abierto, setAbierto] = useState<Inquilino | null>(null);
 
-  const visibles = inquilinos.slice((pagina - 1) * porPagina, pagina * porPagina);
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    inquilinos,
+    { inquilino: (p) => p.nombre, documento: (p) => p.documento ?? null, contratos: (p) => p.arriendos.length },
+    { primero: { contratos: 'desc' } },
+  );
+  const visibles = ordenadas.slice((pagina - 1) * porPagina, pagina * porPagina);
   const incompletos = useMemo(
     () => inquilinos.filter((p) => (p.datosPendientes?.length ?? 0) > 0).length,
     [inquilinos],
@@ -288,9 +293,9 @@ function InquilinosYaCargados({ onSubirOtro, subiendoOtro, onEstado }: PropsDeLo
             <Table data-testid="ya-cargados-tabla">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-6">Inquilino</TableHead>
-                  <TableHead>Documento</TableHead>
-                  <TableHead className="pr-6">Contratos</TableHead>
+                  <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={ordenarPor} className="pl-6">Inquilino</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="documento" orden={orden} onOrdenar={ordenarPor}>Documento</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="contratos" orden={orden} onOrdenar={ordenarPor} className="pr-6">Contratos</EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody>

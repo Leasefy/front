@@ -96,7 +96,8 @@ export function OrigenesClient() {
   const errorDelCliente = revisarPlazoParaResponder(horas)
   const errorDelPlazo = errorDelCliente ?? falloAlGuardar ?? undefined
 
-  const renglones = informe.datos?.renglones ?? []
+  // Una sola lista por lectura: con `?? []` suelto, el orden y los «mejor/peor» se recalculaban en cada pintada.
+  const renglones = useMemo(() => informe.datos?.renglones ?? [], [informe.datos])
   const totales = informe.datos?.totales
   const vacio = renglones.length === 0
 

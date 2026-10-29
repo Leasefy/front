@@ -778,4 +778,10 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Subir otro comprobante': 'Upload another receipt',
   'Subir el comprobante': 'Upload the receipt',
   'PDF o foto, hasta 10 MB.': 'PDF or photo, up to 10 MB.',
+  // Ordenar las tablas (28-10-2026)
+  'Más recientes': 'Newest',
+  'Más antiguas': 'Oldest',
+  'Mayor puntaje': 'Highest score',
+  'Interesado (A–Z)': 'Applicant (A–Z)',
+  'Inmueble (A–Z)': 'Property (A–Z)',
 }

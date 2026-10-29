@@ -245,9 +245,16 @@
  * mouse, enfocar o tocar «Publicar gratis», escondido; el clic sólo lo muestra. Al cerrar se esconde y se queda cargado:
  * la segunda vez abre al instante. Y si el marco termina en otra página (no debería), nunca se pinta encima: abierta, la
  * página entera sigue a /publica; escondida, se descarta.
+ *
+ * Nunca girando para siempre (Nico 28-10-2026 en producción: «sigue sin funcionar… se queda cargando»). La causa fue
+ * `X-Frame-Options: DENY` de vercel.json (ya es SAMEORIGIN, con su guardián en src/lib/publica/): el navegador no
+ * pintaba el marco y la salida de arriba se caía, porque leer `href` de un marco bloqueado lanza un error. Ahora: un
+ * marco que no es la ventana apaga el marco para el resto de la visita y «Publicar gratis» va derecho a /publica; y si
+ * tras el clic la ventana no aparece en PLAZO, también se va a /publica.
  */
 (function () {
   var RUTA = "/publica/ventana";
+  var PLAZO = 8000;     /* ms entre el clic y la ventana a la vista; pasado eso, la página entera */
   var raiz = document.documentElement;
   var capa = null;      /* el velo con el marco: se arma una vez y se reusa */
   var marco = null;
@@ -256,22 +263,39 @@
   var esperando = false; /* hubo clic y la ventana todavía no se ve */
   var abierta = false;  /* el velo está a la vista */
   var volverA = null;   /* el enlace que la abrió: al cerrar, el foco vuelve ahí */
+  var sinMarco = false; /* el marco no sirvió: en esta visita «Publicar gratis» es un enlace normal a /publica */
+  var reloj = null;     /* el PLAZO del clic en curso */
 
   function enviar(tipo) {
     try { marco.contentWindow.postMessage({ tipo: tipo }, location.origin); } catch (_) { /* marco que se fue */ }
   }
+  function pararElReloj() {
+    if (reloj) { clearTimeout(reloj); reloj = null; }
+  }
+  function irALaPagina() {
+    sinMarco = true;
+    pararElReloj();
+    location.assign("/publica");
+  }
   function descartar() {
+    pararElReloj();
     if (capa && capa.parentNode) capa.parentNode.removeChild(capa);
     capa = marco = carga = null;
     cargada = esperando = abierta = false;
     raiz.style.overflow = "";
   }
   function revisarElMarco() {
-    var donde = null;
-    try { donde = marco.contentWindow.location; } catch (_) { /* de otro origen: tampoco es la ventana */ }
-    if (donde && (donde.href === "about:blank" || donde.pathname.indexOf(RUTA) === 0)) return;
-    if (abierta) location.assign("/publica");
-    else descartar();
+    var esLaVentana = false;
+    /* Todo adentro del try: de un marco bloqueado o de otro origen se puede tomar `location`, pero leer `href` o
+       `pathname` lanza un error. */
+    try {
+      var donde = marco.contentWindow.location;
+      esLaVentana = donde.href === "about:blank" || donde.pathname.indexOf(RUTA) === 0;
+    } catch (_) { /* bloqueado o de otro origen: no es la ventana */ }
+    if (esLaVentana) return;
+    if (abierta) { irALaPagina(); return; }
+    sinMarco = true;
+    descartar();
   }
   function preparar() {
     if (capa || !document.body) return;
@@ -316,10 +340,16 @@
     carga.style.display = "";
     requestAnimationFrame(function () { if (abierta) capa.style.opacity = "1"; });
     raiz.style.overflow = "hidden";
+    pararElReloj();
+    reloj = setTimeout(function () {
+      reloj = null;
+      if (abierta && esperando) irALaPagina();
+    }, PLAZO);
     if (cargada) enviar("leasefy:abrir-ventana");
   }
   function cerrar() {
     if (!abierta) return;
+    pararElReloj();
     abierta = false;
     esperando = false;
     capa.style.opacity = "0";
@@ -342,6 +372,7 @@
     } else if (tipo === "leasefy:ventana-lista") {
       if (!abierta) return;
       esperando = false;
+      pararElReloj();
       marco.style.opacity = "1";
       carga.style.display = "none";
     } else if (tipo === "leasefy:ventana-cerrada") {
@@ -361,7 +392,7 @@
     return a;
   }
   function precargar(e) {
-    if (!capa && enlaceDePublicar(e.target)) preparar();
+    if (!capa && !sinMarco && enlaceDePublicar(e.target)) preparar();
   }
   document.addEventListener("pointerover", precargar, { passive: true });
   document.addEventListener("focusin", precargar);
@@ -371,8 +402,13 @@
     /* Con sesión también (Nico 28-10: «si le doy a publicar gratis debo de abrirle el modal, por si quiero crear otra
        cuenta»): la ventana pregunta si sigue con esa cuenta o usa otra; retomar lo que dejó es «Ir al panel». */
     var a = enlaceDePublicar(e.target);
-    if (!a) return;
+    if (!a || sinMarco) return;
     e.preventDefault();
     abrir(a);
   }, true);
+  /* Al volver con «Atrás» después de irse a /publica, el navegador puede devolver la página tal cual quedó (bfcache):
+     sin esto se vería otra vez el velo girando. */
+  window.addEventListener("pageshow", function (e) {
+    if (e.persisted && abierta) descartar();
+  });
 })();

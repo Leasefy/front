@@ -866,3 +866,31 @@ TDD, testing, estándares, living-docs). Cargá la skill que aplique antes de to
 | Plan gating de IA | solo planes Flex | Los agentes IA son el diferenciador del plan Flex |
 | Colores UI agentes | neutro/sobrio | Sin colores estridentes |
 | Login bootstrap (T-0082) | un solo `GET /users/me/bootstrap` compone 5 llamadas; los 5 endpoints originales quedan como fallback por sección, nunca se retiran | Cortar el fan-out de requests post-login sin introducir una caché ni romper la degradación fina que ya existía por endpoint |
+
+## Estudio gratis de documentos — «¿hasta cuánto me arriendan?» (T-0193)
+
+Reemplaza el estudio de pago con Fianly/Wompi. Contrato congelado en
+`.orchestration/tasks/T-0193-tenant-canon-estimate-bureau/contract.md`; el back es WU-1.
+Gratis, sin aseguradoras, sin depósito (Ley 820 art. 16).
+
+- **`/aprobacion`** (pública, pero el estudio exige sesión de inquilino; sin ella abre la cuenta encima):
+  asistente `autorizar` (casilla `calificacion-leasefy-v1`, obligatoria, se manda `autorizo: true`) →
+  `documentos` (cédula y extracto obligatorios; nómina y certificación laboral opcionales; cada archivo se
+  sube al elegirlo) → `procesando` → resultado. `?repetir=1` abre un estudio nuevo aunque el último esté
+  COMPLETED (lo usa la pantalla de resultado cuando venció o no hubo ingreso verificado).
+- **`/inquilino/aprobacion`**: el resultado. `canonMaximoCop` tal cual lo manda el back, enmarcado como «el
+  rango donde tienes mejores posibilidades de que te acepten» (una guía, no una promesa). `null` = «no
+  pudimos verificar tu ingreso», NUNCA `$0` ni un número calculado acá. Una condición con «depósito» se
+  filtra aunque llegue.
+- **Capa de datos**: `estudio-de-canon.types.ts` (parser defensivo), `estudio-de-canon.service.ts`
+  (`crear` / `subirDocumento` multipart / `iniciar` / `actual`; todo fallo es un `EstudioDeCanonError` con el
+  `code` estable del back y copy en español), `use-estudio-de-canon.ts` (sondeo cada 3 s SOLO mientras
+  PROCESSING; un tick fallido no pierde el estudio ni lo marca FAILED), `aprobacion-from-estudio.ts`
+  (`mapEstudioToAprobacion`: el shape `Aprobacion` de `use-aprobacion` no cambió, sólo su fuente).
+- **Retirado**: `AseguradorasConPrima`, `EstadoPagoAprobacion`, `ValidacionPorWhatsapp`,
+  `use-prescoring-current`, `prescoring.types`, `aprobacion-from-prescoring`, `estudio-solicitud.service`,
+  `validacion-del-estudio.service`, `borrador-del-estudio`. El back responde `410 PRESCORING_DESACTIVADO` a
+  `POST /pre-scoring` con `PRESCORING_FIANLY_ENABLED` apagado.
+- **Pendiente al integrar el back (WU-1)**: regenerar `rutas-del-back.json` con
+  `node scripts/rutas-del-back.mjs <back>` y borrar las tres filas `estudioDeCanonApi.*` de
+  `rutas-que-el-back-no-tiene.guardian.test.ts`.

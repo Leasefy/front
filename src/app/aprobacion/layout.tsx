@@ -5,7 +5,7 @@ import { I18nProvider } from '@/lib/i18n'
 export const metadata: Metadata = {
   title: 'Aprobación de arriendo | Leasefy',
   description:
-    'Descubre en segundos hasta cuánto te podemos arrendar. Consultamos varias aseguradoras a la vez.',
+    'Descubre gratis el rango de arriendo donde tienes mejores posibilidades de que te acepten. Lo calculamos con tus documentos.',
 }
 
 /**

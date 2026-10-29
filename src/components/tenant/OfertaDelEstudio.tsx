@@ -28,14 +28,14 @@ const COPY: Record<
     titulo: 'Tu estudio de arrendamiento te ayuda',
     texto:
       'Puedes postularte sin cuenta y sin estudio. Si ya te estudiamos, entra con tu cuenta: con tu estudio la inmobiliaria responde más rápido.',
-    cta: 'Conocer hasta cuánto me respaldan',
+    cta: 'Conocer hasta cuánto me arriendan',
     href: '/aprobacion',
     alEnviar: 'Te postulas sin estudio de arrendamiento: la inmobiliaria lo verá así.',
   },
   sin_estudio: {
     titulo: 'Tu estudio de arrendamiento te ayuda',
     texto:
-      'No es obligatorio para postularte. Con tu estudio la inmobiliaria responde más rápido: sabe de entrada hasta cuánto te respaldan las aseguradoras.',
+      'No es obligatorio para postularte. Con tu estudio la inmobiliaria responde más rápido: sabe de entrada el rango de arriendo que puedes asumir.',
     cta: 'Hacer mi estudio',
     href: '/aprobacion',
     alEnviar: 'Te postulas sin estudio de arrendamiento: la inmobiliaria lo verá así.',
@@ -51,18 +51,18 @@ const COPY: Record<
   en_curso: {
     titulo: 'Tu estudio de arrendamiento está en curso',
     texto:
-      'Puedes postularte ya. Cuando las aseguradoras respondan, la inmobiliaria verá el resultado en tu postulación.',
+      'Puedes postularte ya. Cuando terminemos de leer tus documentos, la inmobiliaria verá el resultado en tu postulación.',
     cta: 'Ver el estado',
     href: '/inquilino/aprobacion',
     alEnviar: 'Te postulas con el estudio en curso: la inmobiliaria verá el resultado cuando llegue.',
   },
   sin_respaldo: {
-    titulo: 'Con tu estudio de hoy las aseguradoras no te respaldan',
+    titulo: 'Con tu estudio de hoy no pudimos verificar tu ingreso',
     texto:
       'Puedes postularte igual: la inmobiliaria decide. Si quieres reforzar tu postulación, suma a otra persona (un codeudor).',
     cta: 'Ver qué puedo hacer',
     href: '/inquilino/aprobacion',
-    alEnviar: 'La inmobiliaria verá que las aseguradoras no te respaldan con el estudio de hoy.',
+    alEnviar: 'La inmobiliaria verá que no pudimos verificar tu ingreso con el estudio de hoy.',
   },
 }
 

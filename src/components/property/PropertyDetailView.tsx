@@ -370,7 +370,7 @@ export function PropertyDetailView({
                 )}
 
               {/* «¿Te podemos arrendar este inmueble?» (Nico, 2026-09-14): el
-                  estimado gratis por ingreso y la puerta al estudio con Fianly.
+                  estimado gratis por ingreso y la puerta al estudio gratis de documentos.
                   Sólo en arriendo con canon, y no a quien ya tiene aprobación
                   vigente: ése ya sabe su tope (lo cubre el aviso de arriba). Tampoco
                   en un inmueble arrendado: el listado ya no lo muestra, y a quien

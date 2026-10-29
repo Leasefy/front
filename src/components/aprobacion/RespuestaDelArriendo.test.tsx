@@ -58,4 +58,14 @@ describe('<RespuestaDelArriendo> — paso 3', () => {
     montar('aprobado', 2_000_000);
     expect(hay('respuesta-del-arriendo')).toBeNull();
   });
+
+  it.each(['aprobado', 'rechazado', 'en_proceso'])('«%s» no habla de aseguradoras ni de pagos', (estado) => {
+    montar(estado, estado === 'aprobado' ? 900_000 : null);
+    expect(c!.textContent ?? '').not.toMatch(/asegurador|sura|fianly|fianli|wompi|dep[oó]sito/i);
+  });
+
+  it('aprobado y el canon cabe: el texto habla del rango de la persona', () => {
+    montar('aprobado', 2_000_000);
+    expect(hay('respuesta-aprobado')?.textContent).toMatch(/rango/i);
+  });
 });

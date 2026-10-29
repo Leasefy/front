@@ -1,15 +1,14 @@
 /**
- * Los seis estados de "Mi aprobación" (Slice 2 — fuente `usePreScoringCurrent`).
+ * "Mi tope de arriendo" — the result of the free document study (T-0193).
  *
- * Lo que se protege acá no es el markup, son las reglas de la experiencia:
- *  · sin tope NUNCA se pinta un número (mandaría a alguien a postularse a algo
- *    que no puede pagar)
- *  · el aprobado muestra la prima por aseguradora y el badge Demo cuando
- *    corresponde
- *  · el rechazo tiene salidas, no es un callejón
- *  · "en proceso" distingue consultando de esperando autorización
- *  · el vacío enseña el camino ANTES de pedir datos
- *  · expirado y error son estados nuevos, cada uno con su salida
+ * What is protected here is not markup, it is the rules of the experience:
+ *  · the figure is the back's `canonMaximoCop`, verbatim, framed as "the range
+ *    where you have better chances of being accepted" — never as insurer backing
+ *  · no verified income → never a number, never "$0"
+ *  · a deposit condition is never shown (Ley 820 art. 16)
+ *  · no insurer / payment wording in any state
+ *  · empty state teaches the path BEFORE asking for data
+ *  · expired and failed studies each have their own way out
  */
 
 import * as React from 'react'
@@ -21,12 +20,10 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { hookMock } = vi.hoisted(() => ({
-  hookMock: vi.fn(),
-}))
+const { hookMock } = vi.hoisted(() => ({ hookMock: vi.fn() }))
 
-vi.mock('@/lib/hooks/use-prescoring-current', () => ({
-  usePreScoringCurrent: () => hookMock(),
+vi.mock('@/lib/hooks/use-estudio-de-canon', () => ({
+  useEstudioDeCanon: () => hookMock(),
 }))
 
 vi.mock('@/lib/i18n', () => ({
@@ -35,310 +32,225 @@ vi.mock('@/lib/i18n', () => ({
 }))
 
 import AprobacionPage from './page'
-// `prescoring.types` NO está mockeado — solo el hook `usePreScoringCurrent`
-// lo está. Se usa el `mapEstadoPreScoring` real para que el mock del hook no
-// se desincronice del mapeo real (ya cubierto exhaustivamente en
-// `prescoring.types.test.ts`; acá no se vuelve a testear, solo se reusa).
-import { mapEstadoPreScoring, type PreScoringCurrent } from '@/lib/api/prescoring.types'
+import type { EstudioDeCanon, ResultadoDelEstudio } from '@/lib/api/estudio-de-canon.types'
 
 let container: HTMLDivElement
 let root: Root
 
-function montar(current: PreScoringCurrent | null, overrides: Partial<{ isLoading: boolean; error: string | null }> = {}) {
-  hookMock.mockReturnValue({
-    current,
-    isLoading: overrides.isLoading ?? false,
-    error: overrides.error ?? null,
-    refetch: vi.fn(),
-    estado: mapEstadoPreScoring(current),
-  })
+const RESULTADO: ResultadoDelEstudio = {
+  canonMaximoCop: 2_450_000,
+  ingresoVerificadoCop: 7_500_000,
+  letra: 'B',
+  puntaje: 71,
+  veredicto: 'FACIL',
+  condiciones: [],
+  explicacion: ['Tu ingreso se verificó con tu extracto.'],
+  revisiones: [],
+  conHistorial: false,
 }
 
-function texto(): string {
-  return container.textContent ?? ''
+function futuro(dias: number): string {
+  return new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString()
 }
 
-beforeEach(() => {
-  container = document.createElement('div')
-  document.body.appendChild(container)
-  root = createRoot(container)
-})
+function estudio(parcial: Partial<EstudioDeCanon>): EstudioDeCanon {
+  return {
+    id: 'e1',
+    status: 'COMPLETED',
+    creadoEl: null,
+    terminadoEl: null,
+    venceEl: futuro(150),
+    documentos: [],
+    faltan: [],
+    resultado: RESULTADO,
+    error: null,
+    ...parcial,
+  }
+}
 
-afterEach(async () => {
-  await act(async () => root.unmount())
-  container.remove()
-})
-
-function render() {
+function montar(
+  estado: Partial<{ estudio: EstudioDeCanon | null; isLoading: boolean; error: string | null }> = {},
+) {
+  hookMock.mockReturnValue({ estudio: null, isLoading: false, error: null, refetch: vi.fn(), setEstudio: vi.fn(), ...estado })
   act(() => {
     root.render(<AprobacionPage />)
   })
 }
 
-describe('aprobado', () => {
-  it('muestra el tope como número formateado', () => {
-    montar({
-      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
-      evaluation: {
-        status: 'completed',
-        result: {
-          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: 45000, stubMode: false, motivoRechazo: null }],
-          fianly: { maxEntrenchmentValue: 2_800_000 },
-          bureau: { minimumScore: null, monthlyCapacity: null },
-        },
-      },
-    })
-    render()
-    expect(texto()).toContain('Estás aprobado hasta')
-    expect(texto()).toMatch(/2\.800\.000/)
-  })
+const q = (sel: string) => container.querySelector(sel) as HTMLElement | null
+const texto = () => container.textContent ?? ''
+const hrefs = () => Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
 
-  it('SIN tope no inventa un número: lo dice', () => {
-    montar({
-      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
-      evaluation: {
-        status: 'completed',
-        result: {
-          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: null, stubMode: false, motivoRechazo: null }],
-          fianly: { maxEntrenchmentValue: null },
-          bureau: { minimumScore: null, monthlyCapacity: null },
-        },
-      },
-    })
-    render()
-    expect(texto()).toContain('Estás aprobado')
-    expect(texto()).not.toContain('Estás aprobado hasta')
-    expect(texto()).toContain('Estamos terminando de calcular')
-    expect(texto()).not.toMatch(/\$\s*0(?!\d)/)
-  })
-
-  it('muestra la prima mensual por aseguradora', () => {
-    montar({
-      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
-      evaluation: {
-        status: 'completed',
-        result: {
-          carriers: [
-            { name: 'Fianly', productType: null, viable: true, primaMensualCop: 52000, stubMode: false, motivoRechazo: null },
-            { name: 'Sura', productType: null, viable: false, primaMensualCop: null, stubMode: false, motivoRechazo: 'Score de buró insuficiente' },
-          ],
-          fianly: { maxEntrenchmentValue: 2_800_000 },
-          bureau: { minimumScore: null, monthlyCapacity: null },
-        },
-      },
-    })
-    render()
-    const t = texto()
-    expect(t).toContain('Fianly')
-    expect(t).toMatch(/52\.000/)
-    expect(t).toContain('Sura')
-    expect(t).toContain('Score de buró insuficiente')
-  })
-
-  it('muestra el badge Demo cuando alguna aseguradora corre en modo demo', () => {
-    montar({
-      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
-      evaluation: {
-        status: 'completed',
-        result: {
-          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: 30000, stubMode: true, motivoRechazo: null }],
-          fianly: { maxEntrenchmentValue: 2_400_000 },
-          bureau: { minimumScore: null, monthlyCapacity: null },
-        },
-      },
-    })
-    render()
-    expect(container.querySelector('[data-testid="badge-demo"]')).not.toBeNull()
-  })
-
-  it('muestra el score de buró y la capacidad mensual cuando vienen', () => {
-    montar({
-      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
-      evaluation: {
-        status: 'completed',
-        result: {
-          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: 30000, stubMode: false, motivoRechazo: null }],
-          fianly: { maxEntrenchmentValue: 2_400_000 },
-          bureau: { minimumScore: 650, monthlyCapacity: 3_000_000 },
-        },
-      },
-    })
-    render()
-    const t = texto()
-    expect(t).toContain('Puntaje del buró')
-    expect(t).toMatch(/650/)
-    expect(t).toContain('Capacidad de pago mensual')
-    expect(t).toMatch(/3\.000\.000/)
-  })
-
-  it('sin datos de buró no muestra la sección', () => {
-    montar({
-      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
-      evaluation: {
-        status: 'completed',
-        result: {
-          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: 30000, stubMode: false, motivoRechazo: null }],
-          fianly: { maxEntrenchmentValue: 2_400_000 },
-          bureau: { minimumScore: null, monthlyCapacity: null },
-        },
-      },
-    })
-    render()
-    expect(texto()).not.toContain('Puntaje del buró')
-  })
+beforeEach(() => {
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+  hookMock.mockReset()
+  window.sessionStorage.clear()
 })
 
-describe('rechazado — tiene salidas, no es un callejón', () => {
-  const RECHAZADO: PreScoringCurrent = {
-    order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
-    evaluation: {
-      status: 'completed',
-      result: {
-        carriers: [{ name: 'Sura', productType: null, viable: false, primaMensualCop: null, stubMode: false, motivoRechazo: 'Score bajo' }],
-        fianly: { maxEntrenchmentValue: null },
-        bureau: { minimumScore: null, monthlyCapacity: null },
-      },
-    },
-  }
-
-  it('ofrece la salida del familiar o amigo', () => {
-    montar(RECHAZADO)
-    render()
-    expect(texto()).toContain('Alguien puede postularse por ti')
-    expect(texto()).toContain('más de la mitad de los arriendos en Colombia')
-  })
-
-  it('deja claro que no es definitivo', () => {
-    montar(RECHAZADO)
-    render()
-    expect(texto()).toContain('Vuelve a intentarlo más adelante')
-  })
-
-  it('no muestra el tope cuando fue rechazado', () => {
-    montar(RECHAZADO)
-    render()
-    expect(texto()).not.toMatch(/2\.800\.000/)
-  })
-
-  it('🔴 se dice en tono informativo, no de error: no es definitivo y hay salidas', () => {
-    montar(RECHAZADO)
-    render()
-    const medallon = document.querySelector('[data-testid="rechazado-medallon"]')
-    expect(medallon?.getAttribute('data-tono')).toBe('info')
-    // Ronda 30 (Cadence 2, sin íconos en círculos de color): el tono va en el ícono, no en un círculo de fondo.
-    expect(medallon?.querySelector('svg')?.getAttribute('class') ?? '').toContain('text-info')
-    expect(medallon?.innerHTML).not.toContain('danger')
-  })
+afterEach(() => {
+  act(() => root.unmount())
+  container.remove()
 })
 
-describe('en proceso', () => {
-  it('antes del WhatsApp: dice que prepara la validación', () => {
-    montar({
-      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
-      evaluation: { status: 'started', result: null },
+describe('/inquilino/aprobacion — el resultado del estudio', () => {
+  it('cargando: esqueleto con aria-busy', () => {
+    montar({ isLoading: true })
+    expect(q('[data-testid="aprobacion-cargando"]')?.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('error de red: pantalla de fallo con reintento, no un vacío', () => {
+    montar({ error: 'Sin conexión' })
+    expect(q('[data-testid="estudio-vacio"]')).toBeNull()
+    expect(texto()).toContain('Sin conexión')
+  })
+
+  describe('listo', () => {
+    it('muestra el tope del back tal cual, enmarcado como rango y no como respaldo', () => {
+      montar({ estudio: estudio({}) })
+      const resultado = q('[data-testid="resultado-del-estudio"]')!
+      expect(resultado.textContent).toMatch(/2\.450\.000/)
+      expect(resultado.textContent).toMatch(/mejores posibilidades de que te acepten/i)
+      expect(resultado.textContent).toMatch(/gu[ií]a, no una promesa/i)
     })
-    render()
-    const t = texto()
-    expect(t).toContain('Estamos preparando tu validación')
-    expect(t).not.toContain('Valida tu identidad por WhatsApp')
-  })
 
-  it('esperando la validación: pide validar por WhatsApp, con «Ya la validé» y el reenvío', () => {
-    montar({
-      order: { status: 'PAID', paymentStatus: 'APPROVED', expiresAt: null },
-      evaluation: { status: 'awaiting_authorization', result: null },
+    it('muestra la letra y el puntaje del buró con salida a Mi calificación', () => {
+      montar({ estudio: estudio({}) })
+      expect(q('[data-testid="calificacion-del-estudio"]')?.textContent).toContain('B · 71/100')
+      expect(hrefs()).toContain('/inquilino/calificacion')
     })
-    render()
-    const t = texto()
-    expect(t).toContain('Valida tu identidad por WhatsApp')
-    expect(t).toContain('Ya la validé, continuar')
-    expect(t).toContain('Reenviar la validación')
-    expect(t).not.toContain('Estamos preparando tu validación')
-  })
 
-  it('muestra la ventana de la orden cuando viene expiresAt', () => {
-    const enDias = (n: number) => {
-      const d = new Date()
-      d.setDate(d.getDate() + n)
-      return d.toISOString()
-    }
-    montar({
-      order: { status: 'PAID', paymentStatus: 'APPROVED', expiresAt: enDias(2) },
-      evaluation: { status: 'started', result: null },
+    it('las condiciones del buró se listan', () => {
+      montar({ estudio: estudio({ resultado: { ...RESULTADO, condiciones: ['Un codeudor con ingresos comprobables'] } }) })
+      expect(q('[data-testid="condiciones-del-estudio"]')?.textContent).toContain('Un codeudor con ingresos comprobables')
     })
-    render()
-    expect(texto()).toContain('Vence en 2 días')
-  })
-})
 
-describe('sin estudio — enseña el camino antes de pedir datos', () => {
-  it('muestra los tres pasos', () => {
-    montar({ order: { status: 'PENDING_PAYMENT', paymentStatus: null, expiresAt: null }, evaluation: null })
-    render()
-    const t = texto()
-    expect(t).toContain('Te estudiamos')
-    expect(t).toContain('Eliges')
-    expect(t).toContain('Te postulas')
+    it('un depósito NUNCA se muestra como condición (Ley 820 art. 16)', () => {
+      montar({
+        estudio: estudio({
+          resultado: { ...RESULTADO, condiciones: ['Depósito adicional de un mes', 'Un fiador'] },
+        }),
+      })
+      const condiciones = q('[data-testid="condiciones-del-estudio"]')!.textContent ?? ''
+      expect(condiciones).toContain('Un fiador')
+      expect(texto()).not.toMatch(/dep[oó]sito/i)
+    })
+
+    it('sin condiciones, la sección no aparece', () => {
+      montar({ estudio: estudio({}) })
+      expect(q('[data-testid="condiciones-del-estudio"]')).toBeNull()
+    })
+
+    it('las revisiones (identidad / documento alterado) se dicen, no se esconden', () => {
+      montar({
+        estudio: estudio({
+          resultado: { ...RESULTADO, revisiones: [{ codigo: 'IDENTIDAD', texto: 'El nombre del extracto no coincide con tu cédula.' }] },
+        }),
+      })
+      expect(q('[data-testid="revisiones-del-estudio"]')?.textContent).toContain('no coincide con tu cédula')
+    })
+
+    it('la explicación del buró se ofrece como detalle', () => {
+      montar({ estudio: estudio({}) })
+      expect(q('[data-testid="explicacion-del-estudio"]')?.textContent).toContain('Tu ingreso se verificó')
+    })
+
+    it('muestra hasta cuándo vale el estudio y no pinta la línea si venceEl es null', () => {
+      montar({ estudio: estudio({ venceEl: futuro(150) }) })
+      expect(q('[data-testid="vigencia-del-estudio"]')?.textContent).toMatch(/Vigente hasta/)
+      act(() => root.unmount())
+      root = createRoot(container)
+      montar({ estudio: estudio({ venceEl: null }) })
+      expect(q('[data-testid="vigencia-del-estudio"]')).toBeNull()
+    })
+
+    it('lleva al catálogo filtrado y a las postulaciones', () => {
+      montar({ estudio: estudio({}) })
+      expect(hrefs()).toEqual(expect.arrayContaining(['/inquilino/para-ti', '/inquilino/aplicaciones']))
+    })
   })
 
-  it('sin order (nunca se consultó) también cae aquí', () => {
-    montar(null)
-    render()
-    expect(texto()).toContain('Todavía no conoces tu tope')
+  describe('sin ingreso verificado', () => {
+    it('canonMaximoCop null: dice que no se pudo verificar y NO pinta ningún número', () => {
+      montar({ estudio: estudio({ resultado: { ...RESULTADO, canonMaximoCop: null, veredicto: 'REVISAR' } }) })
+      expect(q('[data-testid="estudio-sin-ingreso"]')).not.toBeNull()
+      expect(q('[data-testid="resultado-del-estudio"]')).toBeNull()
+      expect(texto()).toMatch(/no pudimos verificar tu ingreso/i)
+      expect(texto()).not.toMatch(/\$\s?0\b/)
+      expect(hrefs()).toContain('/aprobacion?repetir=1')
+    })
+
+    it('un estudio terminado sin resultado tampoco inventa un número', () => {
+      montar({ estudio: estudio({ resultado: null }) })
+      expect(q('[data-testid="estudio-sin-ingreso"]')).not.toBeNull()
+    })
   })
 
-  it('el CTA por defecto va al flujo vigente de /aprobacion', () => {
-    montar(null)
-    render()
-    const link = container.querySelector('a[href="/aprobacion"]')
-    expect(link).not.toBeNull()
-  })
-})
-
-describe('expirado', () => {
-  it('ofrece volver a intentarlo', () => {
-    montar({ order: { status: 'EXPIRED', paymentStatus: null, expiresAt: '2020-01-01T00:00:00Z' }, evaluation: null })
-    render()
-    const t = texto()
-    expect(t).toContain('venció')
-    const link = container.querySelector('a[href="/aprobacion"]')
-    expect(link).not.toBeNull()
-  })
-})
-
-describe('error', () => {
-  it('ofrece reintentar cuando el estudio falló del lado del backend', () => {
-    montar({ order: { status: 'ERROR', paymentStatus: 'APPROVED', expiresAt: null }, evaluation: null })
-    render()
-    expect(container.querySelector('[data-testid="reintentar-estudio"]')).not.toBeNull()
+  describe('vencido', () => {
+    it('pasada la vigencia no se presenta el tope como vigente y ofrece repetir', () => {
+      montar({ estudio: estudio({ venceEl: futuro(-3) }) })
+      expect(q('[data-testid="estudio-vencido"]')).not.toBeNull()
+      expect(q('[data-testid="resultado-del-estudio"]')).toBeNull()
+      expect(texto()).not.toMatch(/2\.450\.000/)
+      expect(hrefs()).toContain('/aprobacion?repetir=1')
+    })
   })
 
-  it('un fallo de RED al cargar (no del estudio) muestra FalloDeCarga y ofrece reintentar', () => {
-    montar(null, { error: 'agente caído' })
-    render()
-    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
-    expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull()
-  })
-})
+  describe('en proceso / borrador / fallido', () => {
+    it('en proceso: tranquiliza y dice que se actualiza sola', () => {
+      montar({ estudio: estudio({ status: 'PROCESSING', resultado: null, venceEl: null }) })
+      expect(q('[data-testid="estudio-en-proceso"]')?.textContent).toMatch(/se actualiza sola/i)
+    })
 
-describe('cargando', () => {
-  it('muestra el spinner mientras isLoading', () => {
-    montar(null, { isLoading: true })
-    render()
-    expect(texto()).toContain('Cargando tu aprobación')
-  })
-})
+    it('borrador: ofrece continuar el estudio', () => {
+      montar({ estudio: estudio({ status: 'DRAFT', resultado: null, venceEl: null }) })
+      expect(q('[data-testid="estudio-borrador"]')).not.toBeNull()
+      expect(hrefs()).toContain('/aprobacion')
+    })
 
-describe('vacío en móvil (T-0173)', () => {
-  it('el CTA puede partirse en dos líneas: no ensancha la página a 360/412 px', () => {
-    montar(null)
-    render()
-    const cta = Array.from(container.querySelectorAll('a')).find((a) =>
-      a.getAttribute('href') === '/aprobacion',
-    ) as HTMLAnchorElement
-    expect(cta).toBeTruthy()
-    expect(cta.className).toContain('whitespace-normal')
-    // Nico's CTA is `w-full sm:w-auto` on phones: it fills the card instead of widening the page.
-    expect(cta.className).toContain('w-full')
+    it('fallido: muestra el mensaje del back y ofrece intentar de nuevo', () => {
+      montar({
+        estudio: estudio({
+          status: 'FAILED',
+          resultado: null,
+          venceEl: null,
+          error: { codigo: 'EXTRACTO_ILEGIBLE', mensaje: 'No pudimos leer tu extracto bancario.' },
+        }),
+      })
+      expect(q('[data-testid="estudio-fallido"]')?.textContent).toContain('No pudimos leer tu extracto bancario.')
+      expect(hrefs()).toContain('/aprobacion')
+    })
+  })
+
+  describe('sin estudio', () => {
+    it('enseña el camino ANTES de pedir datos y lleva a /aprobacion', () => {
+      montar({ estudio: null })
+      expect(q('[data-testid="estudio-vacio"]')).not.toBeNull()
+      expect(texto()).toMatch(/Subes tus documentos/)
+      expect(hrefs()).toContain('/aprobacion')
+    })
+  })
+
+  describe('reglas de producto', () => {
+    const estados: Array<[string, Partial<EstudioDeCanon> | null]> = [
+      ['sin estudio', null],
+      ['listo', {}],
+      ['sin ingreso', { resultado: { ...RESULTADO, canonMaximoCop: null } }],
+      ['vencido', { venceEl: futuro(-3) }],
+      ['en proceso', { status: 'PROCESSING', resultado: null }],
+      ['borrador', { status: 'DRAFT', resultado: null }],
+      ['fallido', { status: 'FAILED', resultado: null, error: { codigo: 'ESTUDIO_FALLIDO', mensaje: 'No pudimos terminar.' } }],
+    ]
+    it.each(estados)('«%s» no habla de aseguradoras, aseguradoras con nombre, pagos ni depósitos', (_nombre, parcial) => {
+      montar({ estudio: parcial === null ? null : estudio(parcial) })
+      expect(texto()).not.toMatch(/asegurador|sura\b|mapfre|fianly|fianli|wompi|dep[oó]sito|asegurabilidad/i)
+    })
+
+    it('no queda ninguna pieza del flujo de pago o de la validación por WhatsApp', () => {
+      montar({ estudio: estudio({ status: 'PROCESSING', resultado: null }) })
+      expect(q('[data-testid="validacion-por-whatsapp"]')).toBeNull()
+      expect(texto()).not.toMatch(/whatsapp/i)
+    })
   })
 })

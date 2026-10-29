@@ -7,7 +7,7 @@
  * tiene) y toca «Verificar». Mientras escribe no se le dice nada. Al verificar:
  * - si no le alcanza (ingreso < 1,5 × canon), se lo decimos acá con lo que le
  *   falta — no tiene sentido pedirle cédula, autorización y pago;
- * - si le alcanza, sigue al paso 2: el formulario del estudio con Fianly
+ * - si le alcanza, sigue al paso 2: el estudio gratis de tus documentos
  *   (`/aprobacion?paso=2…`), ya prellenado con el canon, la ciudad y el tipo.
  *
  * Es un estimado (ver `estimado-de-arriendo.ts`) y lo dice.
@@ -56,7 +56,7 @@ function Fila({ etiqueta, valor, fuerte }: { etiqueta: string; valor: string; fu
  */
 const PASOS_EN_LA_NOCHE = [
   { titulo: 'Te alcanza', detalle: 'Tu ingreso frente al canon' },
-  { titulo: 'Validamos tus datos', detalle: 'Consultamos a las aseguradoras' },
+  { titulo: 'Estudiamos tus documentos', detalle: 'Cédula y extracto bancario' },
   { titulo: 'Tu respuesta', detalle: 'Si te lo arrendamos y cómo seguir' },
 ];
 

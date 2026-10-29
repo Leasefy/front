@@ -25,7 +25,6 @@ const RAIZ = join(__dirname, '../..')
 const FUENTES = [
   'components/tenant/QueSignificaPostularse.tsx',
   'components/tenant/TopeAprobadoBanner.tsx',
-  'components/tenant/ResultadoAprobacion.tsx',
   'components/tenant/CrearCuentaDesdeAprobacion.tsx',
   'app/inquilino/aprobacion/page.tsx',
 ]

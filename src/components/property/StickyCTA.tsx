@@ -747,8 +747,8 @@ export function StickyCTA({
                 {/*
                   «Sin codeudor» estaba fijo en toda propiedad, y es una promesa
                   sobre el trato que el propio producto desmiente: una aprobación
-                  condicionada «normalmente pide un codeudor o un depósito
-                  adicional» (ResultadoAprobacion). Se lo prometíamos justo a
+                  condicionada «puede pedir un codeudor» (el estudio de
+                  documentos, T-0193). Se lo prometíamos justo a
                   quien iba a tener que conseguirlo.
 
                   Ahora sale de SU aprobación, la misma que usa la puerta de

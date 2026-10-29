@@ -746,10 +746,11 @@ describe('Egresos · una sola cosa', () => {
     expect(tarjeta).not.toBeNull();
     // La tabla vive en la MISMA tarjeta que las pestañas.
     expect(tarjeta!.querySelector('table')).not.toBeNull();
-    // Y la explicación de la pestaña activa está en esa cabecera, no aparte.
-    expect(pestana.closest('div')!.parentElement!.textContent).toContain(
-      'No es el giro al propietario',
-    );
+    // Y la explicación de la pestaña activa está en esa cabecera, no aparte (la cabecera es el primer bloque de la
+    // tarjeta: las pestañas van en un renglón con «Ordenar por», Nico 28-10).
+    const cabecera = pestana.closest('section.rounded-lg > div')!;
+    expect(cabecera.textContent).toContain('No es el giro al propietario');
+    expect(cabecera.querySelector('table')).toBeNull();
   });
 });
 

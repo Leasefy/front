@@ -274,7 +274,7 @@ export function LiquidacionDeSalida({ contractId, activa, puedeCargar, onCargada
                   const etiqueta = `corte del ${diaCorto(f.corteDesde)} al ${diaCorto(f.corteHasta)}`;
                   return (
                     <li key={f.clave} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 px-4 py-3 md:grid-cols-[minmax(0,1fr)_5.5rem_10rem_auto] md:items-start" data-testid={`salida-fila-${f.corteDesde}`}>
-                      <div className="min-w-0 space-y-0.5">
+                      <div className="col-start-1 row-start-1 min-w-0 space-y-0.5">
                         <p className="text-body-sm text-fg">
                           Factura de {nombreDelMesCorto(f.mesFacturado, f.mesFacturado.slice(0, 4) !== fechaEntrega.slice(0, 4))}
                           {variosServicios ? <span className="text-fg-muted"> · {f.nombreDelServicio}</span> : null}
@@ -305,7 +305,7 @@ export function LiquidacionDeSalida({ contractId, activa, puedeCargar, onCargada
                         type="button"
                         onClick={() => setFilas((xs) => xs.filter((x) => x.clave !== f.clave))}
                         aria-label={`Quitar el ${etiqueta}`}
-                        className="row-start-1 inline-flex h-9 w-9 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:col-start-4 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
+                        className="col-start-2 row-start-1 inline-flex h-9 w-9 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:col-start-4 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
                         data-testid={`salida-quitar-${f.corteDesde}`}
                       >
                         <X className="h-4 w-4" aria-hidden="true" />
@@ -456,7 +456,7 @@ export function LiquidacionDeSalida({ contractId, activa, puedeCargar, onCargada
             ) : puedeCargar ? (
               <div className="space-y-2">
                 <Button
-                  className="w-full sm:w-auto"
+                  className="h-auto min-h-11 w-full whitespace-normal py-2.5 text-center leading-snug sm:w-auto"
                   hideArrow
                   disabled={problemas.length > 0 || total.totalCop <= 0 || enviando || leyendo || !fechaEntrega}
                   isLoading={enviando}

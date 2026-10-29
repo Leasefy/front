@@ -173,7 +173,7 @@ export function HojaDeLaEntrada({ hoja }: { hoja: LiquidacionDeEntradaEnHoja }) 
           <thead>
             <tr className="text-left">
               <th scope="col" className="px-4 py-2 text-label font-normal text-fg-subtle">Quién</th>
-              <th scope="col" className="px-2 py-2 text-label font-normal text-fg-subtle">Del – al</th>
+              <th scope="col" className="hidden px-2 py-2 text-label font-normal text-fg-subtle sm:table-cell">Del – al</th>
               <th scope="col" className="px-2 py-2 text-right text-label font-normal text-fg-subtle">Días</th>
               <th scope="col" className="px-4 py-2 text-right text-label font-normal text-fg-subtle">Valor</th>
             </tr>
@@ -184,8 +184,13 @@ export function HojaDeLaEntrada({ hoja }: { hoja: LiquidacionDeEntradaEnHoja }) 
                 <td className="px-4 py-3 align-top">
                   <p className="text-fg">{f.quien}</p>
                   <p className="text-caption text-fg-muted">{f.detalle}</p>
+                  {f.dias > 0 && (
+                    <p className="whitespace-nowrap pt-0.5 font-mono text-caption tabular-nums text-fg sm:hidden">
+                      {diaCorto(f.desde)} – {diaCorto(f.hasta)}
+                    </p>
+                  )}
                 </td>
-                <td className="px-2 py-3 align-top font-mono tabular-nums text-fg">
+                <td className="hidden whitespace-nowrap px-2 py-3 align-top font-mono tabular-nums text-fg sm:table-cell">
                   {f.dias > 0 ? `${diaCorto(f.desde)} – ${diaCorto(f.hasta)}` : '—'}
                 </td>
                 <td className="px-2 py-3 text-right align-top font-mono tabular-nums text-fg">{f.dias}</td>
@@ -198,7 +203,7 @@ export function HojaDeLaEntrada({ hoja }: { hoja: LiquidacionDeEntradaEnHoja }) 
               <th scope="row" className="px-4 py-3 text-left font-normal text-fg-muted">
                 Total
               </th>
-              <td />
+              <td className="hidden sm:table-cell" />
               <td className="px-2 py-3 text-right font-mono tabular-nums text-fg">{hoja.diasDelCorte}</td>
               <td className="px-4 py-3 text-right font-mono tabular-nums text-fg">{formatCurrency(hoja.totalCop)}</td>
             </tr>

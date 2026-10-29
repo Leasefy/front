@@ -310,12 +310,12 @@ export function ServiciosPublicos() {
             </div>
             <div className="flex flex-col gap-2 md:flex-row md:items-center">
               {/* El ancho va en una caja: la clase de SearchInput le cae al campo, no a su envoltorio. */}
-              <div className="w-full md:w-72">
+              <div className="w-full md:w-80">
                 <SearchInput
                   value={busqueda}
                   onChange={(x) => setBusqueda(x.target.value)}
                   onClear={() => setBusqueda('')}
-                  placeholder="Contrato, inquilino, cédula, inmueble o cuenta"
+                  placeholder="Contrato, inquilino, inmueble o cuenta"
                   aria-label="Buscar contratos"
                   inputSize="md"
                   data-testid="buscar-servicios"
@@ -595,7 +595,7 @@ function QuienEs({ fila, vista, agrupada }: { fila: FilaDelTablero; vista: Vista
 function FilaDelContrato({ fila: f, vista, agrupada, onAbrir }: { fila: FilaDelTablero; vista: Vista; agrupada: boolean; onAbrir: (f: FilaDelTablero) => void }) {
   return (
     <TableRow className="cursor-pointer" onClick={() => onAbrir(f)} data-testid={`servicios-${f.contractId}`}>
-      <TableCell className={cn('max-w-[320px] py-4', agrupada ? 'pl-9 pr-5' : 'px-5')}>
+      <TableCell className={cn('max-w-[320px] py-4 align-top', agrupada ? 'pl-9 pr-5' : 'px-5')}>
         <QuienEs fila={f} vista={vista} agrupada={agrupada} />
       </TableCell>
       <TableCell className="py-4 align-top">

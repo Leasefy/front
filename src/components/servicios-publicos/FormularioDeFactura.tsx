@@ -251,23 +251,25 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
         <div className="space-y-1.5">
           <Label htmlFor="factura-mes-facturado">Mes en que se facturó</Label>
           <div className="flex items-center gap-2">
-            <CampoDeMes
-              id="factura-mes-facturado"
-              value={e.mesFacturado}
-              onChange={(v) => {
-                setMesTocado(true);
-                cambiar('mesFacturado', v);
-              }}
-              invalido={!!errorDelMes}
-              describedBy="factura-mes-facturado-error"
-              placeholder={e.hasta ? `${conMayuscula(nombreDelMesCorto(mesSiguiente(e.hasta.slice(0, 7)), true))} (estimado)` : 'Opcional'}
-              testid="factura-mes-facturado"
-            />
+            <div className="min-w-0 flex-1">
+              <CampoDeMes
+                id="factura-mes-facturado"
+                value={e.mesFacturado}
+                onChange={(v) => {
+                  setMesTocado(true);
+                  cambiar('mesFacturado', v);
+                }}
+                invalido={!!errorDelMes}
+                describedBy="factura-mes-facturado-error"
+                placeholder={e.hasta ? `${conMayuscula(nombreDelMesCorto(mesSiguiente(e.hasta.slice(0, 7)), true))} (estimado)` : 'Opcional'}
+                testid="factura-mes-facturado"
+              />
+            </div>
             {e.mesFacturado && (
               <button
                 type="button"
                 onClick={() => cambiar('mesFacturado', '')}
-                className="shrink-0 rounded-sm px-1 text-body-sm text-fg-muted underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="shrink-0 rounded-sm px-1 text-body-sm text-fg-muted underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:min-h-11"
                 data-testid="quitar-mes-facturado"
               >
                 Quitar

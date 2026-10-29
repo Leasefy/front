@@ -144,7 +144,7 @@ export function CajonDelContrato({ fila, onCerrar, onCambio, puedeEditar, puedeC
               : undefined
           }
         >
-          <TabsList variant="segmented" className="mt-1 justify-start">
+          <TabsList variant="segmented" className="mt-1 w-fit justify-start self-start">
             <TabsTrigger value="facturas" data-testid="pestana-facturas" className="whitespace-nowrap">
               Facturas
               {porRevisar > 0 ? <span className="ml-1.5 font-mono tabular-nums text-fg-muted">{porRevisar}</span> : null}

@@ -230,6 +230,14 @@ describe('soltar la tarjeta en otra columna', () => {
     expect(columna.className).not.toContain('min-w-[280px]');
   });
 
+  it('29-10: sin barras de scroll dentro de la columna, y la que baja sola de fila no se estira a todo el tablero', () => {
+    montar({ data: Array.from({ length: 8 }, (_, i) => hacerSolicitud({ id: `s-${i}` })) });
+    const abierta = container.querySelector<HTMLElement>('[data-testid="columna-reported"]')!;
+    const contenido = abierta.querySelector<HTMLElement>('[data-testid^="mantenimiento-tarjeta-"]')!.closest('.rounded-b-\\[18px\\]')!;
+    expect(contenido.className).not.toMatch(/overflow-(y|x)-(auto|scroll|hidden)|max-h-/);
+    expect(abierta.className).toContain('sm:max-w-[21rem]');
+  });
+
   it('pide el cambio de estado con la columna donde se soltó', async () => {
     const { onStatusChange } = montar();
     await soltar('sol-1', 'quoted');

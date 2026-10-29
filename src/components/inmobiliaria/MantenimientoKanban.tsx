@@ -431,7 +431,9 @@ function KanbanColumnComponent({
 
   return (
     <div
-      className="flex min-w-0 shrink grow basis-60 flex-col sm:min-w-[15rem]"
+      // 29-10: con tope de ancho (21rem) desde `sm`: la que baja sola a la fila de abajo ya no se estira a todo el
+      // tablero (a 1440, «Cerradas» quedaba con una tarjeta de 1.000 px); en la fila llena se reparten el ancho igual.
+      className="flex min-w-0 shrink grow basis-60 flex-col sm:min-w-[15rem] sm:max-w-[21rem]"
       data-testid={`columna-${column.id}`}
     >
       {/* Column Header */}
@@ -449,9 +451,11 @@ function KanbanColumnComponent({
       <div
         ref={setNodeRef}
         className={cn(
-          // Sin barra de lado: la tarjeta se lee completa y el pie se parte en renglones.
-          'relative flex-1 p-2 space-y-2 rounded-b-[18px] overflow-y-auto overflow-x-hidden transition-[background-color,box-shadow] duration-base',
-          'min-h-[200px] max-h-[calc(100vh-400px)]',
+          // Sin barras de scroll dentro (29-10): ni de lado (la tarjeta se lee completa y el pie se parte en renglones)
+          // ni hacia abajo — la columna crece con sus tarjetas y baja la página (antes, con un tope de alto y su
+          // propia barra, desde la cuarta tarjeta había que desplazar dentro de la columna).
+          'relative flex-1 p-2 space-y-2 rounded-b-[18px] transition-[background-color,box-shadow] duration-base',
+          'min-h-[200px]',
           encima ? 'bg-primary-soft/50 ring-2 ring-primary/25' : 'bg-surface-muted/70'
         )}
       >

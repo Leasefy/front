@@ -12,6 +12,7 @@ import {
   modoDeLaPolitica,
   nuevoNonce,
   politicaDeContenido,
+  politicaDeLaHome,
   type EntornoDeLaPolitica,
 } from './politica-de-contenido'
 
@@ -101,6 +102,15 @@ describe('politicaDeContenido', () => {
     const p = politicaDeContenido('n', { ...PROD, NEXT_PUBLIC_AGENT_URL: "javascript:alert(1); script-src *" })
     expect(p).not.toContain('javascript:')
     expect(p).not.toContain('script-src *')
+  })
+})
+
+describe('politicaDeLaHome', () => {
+  // 28-10-2026: «Publicar gratis» abre /publica/ventana encima, en un marco del mismo sitio. Sólo ése.
+  it('deja abrir la ventana de publicar (un marco del mismo sitio) y nada de afuera', () => {
+    const p = politicaDeLaHome({ desarrollo: false, soloReporte: false })
+    expect(directiva(p, 'frame-src')).toEqual(["'self'"])
+    expect(directiva(p, 'frame-ancestors')).toEqual(["'self'"])
   })
 })
 

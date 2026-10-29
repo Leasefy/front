@@ -328,7 +328,9 @@ export function politicaDeLaHome(env: Pick<EntornoDeLaPolitica, 'desarrollo' | '
     ['media-src', ["'self'"]],
     ['connect-src', ["'self'"]],
     ['worker-src', ["'self'", 'blob:']],
-    ['frame-src', ["'none'"]],
+    // «Publicar gratis» abre encima la ventana de /publica/ventana en un marco del MISMO sitio (Nico, 28-10-2026: «el
+    // modal debe aparecer ahí mismo»). Con 'none', el día que esta política sea obligatoria la ventana no abriría.
+    ['frame-src', ["'self'"]],
     ['frame-ancestors', ["'self'"]],
     ['object-src', ["'none'"]],
     ['base-uri', ["'self'"]],

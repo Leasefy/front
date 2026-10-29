@@ -214,10 +214,32 @@ export interface CasoEnLaRenovacion {
   ofertaSugerida: OfertaSugerida | null;
 }
 
+/**
+ * Los TRES factores con los que la inmobiliaria decide «renueva o no renueva»
+ * (Portofino, 29-10-2026: «si está pagando bien o no, si tiene muchas
+ * solicitudes de reparaciones y llamados de atención por convivencia»). Los
+ * calcula Vinci (`vinci/factores.ts` del micro), con su frase.
+ */
+export interface FactoresDeLaRenovacion {
+  pago: {
+    estado: 'al_dia' | 'paga_tarde' | 'en_mora';
+    diasDeMora: number;
+    vencidoCop: number;
+    pagadasTarde: number | null;
+    texto: string;
+  };
+  reparaciones: { total: number; abiertas: number; desde: string | null; texto: string };
+  /** `llamados: null` = sin dato. */
+  convivencia: { llamados: number | null; texto: string };
+  uso: 'VIVIENDA' | 'COMERCIAL' | null;
+}
+
 /** `null` en una población = Vinci lo leyó y NO tiene señales. */
 export interface RiesgoDeRetencion {
   inquilino: CasoEnLaRenovacion | null;
   propietario: CasoEnLaRenovacion | null;
+  /** Cómo paga, reparaciones y convivencia. Ausente/`null` = un back o un micro anterior. */
+  factores?: FactoresDeLaRenovacion | null;
   umbral: number;
   medidoEn: string | null;
 }

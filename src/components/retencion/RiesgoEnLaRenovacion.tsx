@@ -13,8 +13,9 @@
  * (Vinci apagado o sin respuesta): se dice, no se inventa.
  */
 import Link from 'next/link'
+import { Cifra, FranjaDeCifras } from '@leasefy/cadence'
 import { DesgloseDelPuntaje, POR_QUE_EN_COBRANZA, PuntajeDeVinci, fechaYHora } from '@/components/retencion/vinci'
-import type { CasoEnLaRenovacion, RiesgoDeRetencion } from '@/lib/types/retencion'
+import type { CasoEnLaRenovacion, FactoresDeLaRenovacion, RiesgoDeRetencion } from '@/lib/types/retencion'
 import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 
 function Caso({ titulo, caso }: { titulo: string; caso: CasoEnLaRenovacion | null }) {
@@ -42,13 +43,56 @@ function Caso({ titulo, caso }: { titulo: string; caso: CasoEnLaRenovacion | nul
   )
 }
 
+/**
+ * 🔴 Los tres factores de «renueva o no renueva», cada uno con su número.
+ * Portofino (29-10-2026): «si está pagando bien o no, si tiene muchas
+ * solicitudes de reparaciones y llamados de atención por convivencia. Esos
+ * serían los factores». Se ve también lo bueno (el que paga al día), no sólo
+ * lo que suma riesgo; lo que no se pudo medir dice «Sin dato».
+ */
+export function FactoresDeLaRenovacion({ factores }: { factores: FactoresDeLaRenovacion }) {
+  const { pago, reparaciones, convivencia } = factores
+  return (
+    <FranjaDeCifras aria-label="Cómo va el inquilino" data-testid="renovacion-factores">
+      <Cifra
+        etiqueta="Cómo paga"
+        valor={pago.estado === 'en_mora' ? `${pago.diasDeMora} días de mora` : 'Al día'}
+        tono={pago.estado === 'en_mora' ? 'peligro' : pago.estado === 'paga_tarde' ? 'aviso' : 'exito'}
+        detalle={pago.texto}
+        data-testid="factor-pago"
+      />
+      <Cifra
+        etiqueta="Reparaciones"
+        valor={reparaciones.total}
+        tono={reparaciones.total >= 4 ? 'peligro' : reparaciones.total >= 2 ? 'aviso' : undefined}
+        detalle={reparaciones.texto}
+        data-testid="factor-reparaciones"
+      />
+      <Cifra
+        etiqueta="Llamados de convivencia"
+        valor={convivencia.llamados ?? 'Sin dato'}
+        tono={convivencia.llamados != null && convivencia.llamados >= 2 ? 'peligro' : convivencia.llamados === 1 ? 'aviso' : undefined}
+        detalle={convivencia.texto}
+        data-testid="factor-convivencia"
+      />
+    </FranjaDeCifras>
+  )
+}
+
 export function RiesgoEnLaRenovacion({
   riesgo,
   contractId,
+  vivienda = false,
 }: {
   /** `undefined` = back anterior (no lo trae); `null` = no se pudo medir. */
   riesgo: RiesgoDeRetencion | null | undefined
   contractId?: string | null
+  /**
+   * 🔴 Vivienda urbana (Portofino, 29-10-2026): «la renovación igual se da; lo
+   * que entra a negociación es el valor del incremento». El bloque no pregunta
+   * si renueva: dice qué se negocia.
+   */
+  vivienda?: boolean
 }) {
   if (riesgo === undefined) return null
   return (
@@ -58,16 +102,21 @@ export function RiesgoEnLaRenovacion({
       data-testid="renovacion-riesgo-vinci"
     >
       <div>
-        <p className="text-sm font-medium text-fg">Riesgo de que se vaya · Vinci</p>
+        <p className="text-sm font-medium text-fg">
+          {vivienda ? 'Cómo va el inquilino · Vinci' : 'Riesgo de que se vaya · Vinci'}
+        </p>
         <p className="text-caption text-fg-muted">
           {riesgo
-            ? `Con las señales del ERP (mora de las cuotas, PQRS, mantenimientos, fin, incremento, giros). En riesgo desde ${riesgo.umbral}/100${riesgo.medidoEn ? ` (medido ${fechaYHora(riesgo.medidoEn)})` : ''}.`
+            ? vivienda
+              ? `En vivienda la renovación se da: lo que se negocia es el valor del incremento (y la comisión). Señales del ERP; en riesgo desde ${riesgo.umbral}/100${riesgo.medidoEn ? ` (medido ${fechaYHora(riesgo.medidoEn)})` : ''}.`
+              : `Con las señales del ERP (mora de las cuotas, PQRS, reparaciones, convivencia, fin, incremento, giros). En riesgo desde ${riesgo.umbral}/100${riesgo.medidoEn ? ` (medido ${fechaYHora(riesgo.medidoEn)})` : ''}.`
             : 'No se pudo medir ahora (Vinci apagado o sin respuesta). La renovación sigue igual.'}
         </p>
       </div>
+      {riesgo?.factores ? <FactoresDeLaRenovacion factores={riesgo.factores} /> : null}
       {riesgo ? (
         <div className="grid gap-5 sm:grid-cols-2">
-          <Caso titulo="El inquilino (¿renueva?)" caso={riesgo.inquilino} />
+          <Caso titulo={vivienda ? 'El inquilino (¿cuánto incremento?)' : 'El inquilino (¿renueva?)'} caso={riesgo.inquilino} />
           <Caso titulo="El propietario (¿saca el inmueble?)" caso={riesgo.propietario} />
         </div>
       ) : null}

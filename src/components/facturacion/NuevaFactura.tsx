@@ -128,6 +128,9 @@ import {
   PAGE_SIZE_OPTIONS,
   useTablePagination,
 } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
@@ -156,6 +159,7 @@ import {
   escenarioSinConfirmar,
   estaAnulada,
   estadoDeLaFila,
+  type EstadoDeLaFila,
   llevaIntereses,
   moraDelMes,
   motivoCorto,
@@ -202,6 +206,16 @@ function conceptosLegibles(factura: FacturaDelMes): string {
   if (nombres.length === 0) return '—'
   if (nombres.length <= 2) return nombres.join(' · ')
   return `${nombres.slice(0, 2).join(' · ')} +${nombres.length - 2}`
+}
+
+/** Al ordenar por estado, lo que se puede emitir hoy va primero y lo ya cerrado al final. */
+const TURNO_DEL_ESTADO: Record<EstadoDeLaFila, number> = {
+  'por-emitir': 0,
+  'sin-escenario': 1,
+  'todavia-no': 2,
+  'espera-el-giro': 3,
+  emitida: 4,
+  anulada: 5,
 }
 
 /** El recargo de mora que lleva la fila. `0` si no lleva. */
@@ -783,9 +797,21 @@ function TablaDeFacturas({
     return base.filter((f) => normalizar(textoBuscableDe(f)).includes(q))
   }, [filas, sinEscenario, verSoloSinEscenario, busqueda])
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Se ordena la lista
+  // entera ANTES de cortar la página; sin orden elegido queda la del listado (el titular primero).
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      cliente: (f) => aQuienSeFactura(f),
+      concepto: (f) => conceptosLegibles(f),
+      valor: (f) => f.totalCop,
+      estado: (f) => TURNO_DEL_ESTADO[estadoDeLaFila(f)],
+    },
+    { primero: { valor: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, {
-      resetKey: `${testid}|${filas.length}|${busqueda}|${verSoloSinEscenario}`,
+    useTablePagination(ordenadas, {
+      resetKey: `${testid}|${filas.length}|${busqueda}|${verSoloSinEscenario}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
     })
 
   /*
@@ -976,6 +1002,7 @@ function TablaDeFacturas({
             data-testid={`facturacion-${testid}-buscar`}
           />
         </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <p
           className="text-caption text-fg-muted tabular-nums"
           data-testid={`facturacion-${testid}-alcance`}
@@ -995,6 +1022,24 @@ function TablaDeFacturas({
             </>
           )}
         </p>
+        {filas.length > 1 ? (
+          <SelectorDeOrden
+            orden={orden}
+            onCambiar={setOrden}
+            className="w-full sm:w-56"
+            formas={[
+              { campo: 'estado', sentido: 'asc', etiqueta: 'Por emitir primero' },
+              { campo: 'valor', sentido: 'desc', etiqueta: 'Valor: mayor primero' },
+              { campo: 'valor', sentido: 'asc', etiqueta: 'Valor: menor primero' },
+              {
+                campo: 'cliente',
+                sentido: 'asc',
+                etiqueta: titulo === 'Inquilinos' ? 'Inquilino (A–Z)' : 'Cliente (A–Z)',
+              },
+            ]}
+          />
+        ) : null}
+        </div>
       </div>
 
       {esCelular ? (
@@ -1102,14 +1147,20 @@ function TablaDeFacturas({
                     contrato va debajo del cliente; el inmueble y el período,
                     debajo del concepto; base, IVA y retención, debajo del total.
                     Así cabe entera a 1.440 px y nada queda fuera de vista. */}
-                <TableHead className="whitespace-nowrap">{titulo === 'Inquilinos' ? 'Inquilino' : 'Cliente'}</TableHead>
-                <TableHead className="whitespace-nowrap">Concepto</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Valor</TableHead>
+                <EncabezadoOrdenable campo="cliente" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
+                  {titulo === 'Inquilinos' ? 'Inquilino' : 'Cliente'}
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="concepto" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
+                  Concepto
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="valor" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
+                  Valor
+                </EncabezadoOrdenable>
                 {/* 🔴 19-09: la acción de la fila («Generar esta») tiene que estar
                     siempre donde se la busca: la columna se ancla a la derecha. */}
-                <TableHead className="sticky right-0 z-20 whitespace-nowrap bg-bg">
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="sticky right-0 z-20 whitespace-nowrap bg-bg">
                   Estado
-                </TableHead>
+                </EncabezadoOrdenable>
               </TableRow>
             </TableHeader>
             <TableBody>

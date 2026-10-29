@@ -82,6 +82,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -336,7 +339,20 @@ function TesoreriaContent() {
         (x.propietarioBankAccount ?? '').toLowerCase().includes(q),
     );
   }, [propietarios, busqueda]);
-  const paginado = useTablePagination(visibles, { resetKey: `${month}|${busqueda}` });
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      colPropietario: (x) => x.propietarioName,
+      colCanon: (x) => x.totalCollected,
+      colComision: (x) => x.totalCommission,
+      colNeto: (x) => x.conDeducciones?.aGirarCop ?? x.netToPropietario,
+    },
+    { primero: { colCanon: 'desc', colComision: 'desc', colNeto: 'desc' } },
+  );
+  const paginado = useTablePagination(ordenadas, {
+    resetKey: `${month}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
+  });
   // Revisora r24 (Giros #5): «Ajustes» sólo si alguna fila del mes tiene (en todas «—» no decía nada).
   const hayAjustes = visibles.some(
     (p) => p.totalConceptosAFavor > 0 || p.totalConceptosACargo > 0 || (p.conDeducciones?.deduccionesCop ?? 0) > 0,
@@ -627,6 +643,17 @@ function TesoreriaContent() {
                       data-testid="buscar-liquidacion"
                     />
                   </div>
+                  <SelectorDeOrden
+                    orden={orden}
+                    onCambiar={setOrden}
+                    className="w-full sm:w-56"
+                    formas={[
+                      { campo: 'colNeto', sentido: 'desc', etiqueta: 'Más a girar' },
+                      { campo: 'colCanon', sentido: 'desc', etiqueta: 'Canon más alto' },
+                      { campo: 'colComision', sentido: 'desc', etiqueta: 'Más comisión' },
+                      { campo: 'colPropietario', sentido: 'asc', etiqueta: 'Propietario (A–Z)' },
+                    ]}
+                  />
                   <p className="text-caption text-fg-muted" data-testid="alcance-de-liquidaciones">
                     {/* Cuenta entero y sin separador de miles: el mismo `{n}` de antes. Sin el mes (r22, VOZ §4: ya está
                         arriba, y salía «de Octubre» con mayúscula a media frase). */}
@@ -695,21 +722,32 @@ function TesoreriaContent() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {COLUMNS.filter((c) => c !== 'colAjustes' || hayAjustes).map((c) => (
-                          <TableHead
-                            key={c}
-                            className={cn(
+                        {COLUMNS.filter((c) => c !== 'colAjustes' || hayAjustes).map((c) => {
+                          const clase = cn(
                               'whitespace-nowrap',
                               // El nombre no se parte en tres renglones (PG-15: dos sí,
                               // para que la tabla quepa a 1440 px).
                               c === 'colPropietario' && 'min-w-[11rem]',
                               // Ronda 30 (revisora r27, §2): las cifras a la derecha.
                               (c === 'colCanon' || c === 'colComision' || c === 'colAjustes' || c === 'colNeto') && 'text-right',
-                            )}
-                          >
-                            {t(k(c))}
-                          </TableHead>
-                        ))}
+                            );
+                          return c === 'colPropietario' || c === 'colCanon' || c === 'colComision' || c === 'colNeto' ? (
+                            <EncabezadoOrdenable
+                              key={c}
+                              campo={c as 'colPropietario' | 'colCanon' | 'colComision' | 'colNeto'}
+                              orden={orden}
+                              onOrdenar={ordenarPor}
+                              className={clase}
+                              alineacion={c === 'colPropietario' ? 'izquierda' : 'derecha'}
+                            >
+                              {t(k(c))}
+                            </EncabezadoOrdenable>
+                          ) : (
+                            <TableHead key={c} className={clase}>
+                              {t(k(c))}
+                            </TableHead>
+                          );
+                        })}
                         {/* La del kebab. Sin rótulo: el icono ya lo dice. */}
                         <TableHead className="w-10" />
                       </TableRow>

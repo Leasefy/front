@@ -301,9 +301,10 @@ describe('L2 — el mes se elige', () => {
     preview.mockResolvedValue(vistaPrevia());
     await montar();
 
-    const opciones = Array.from(host.querySelectorAll('[data-opcion]')).map(
-      (b) => b.getAttribute('data-opcion') as string,
-    );
+    // Sólo las del selector del mes (28-10: la página también tiene «Ordenar por»).
+    const opciones = Array.from(host.querySelectorAll('[data-opcion]'))
+      .map((b) => b.getAttribute('data-opcion') as string)
+      .filter((v) => /^\d{4}-\d{2}$/.test(v));
     const hoy = new Date();
     const masTres = new Date(hoy.getFullYear(), hoy.getMonth() + 3, 1);
     const mesMasTres = `${masTres.getFullYear()}-${String(masTres.getMonth() + 1).padStart(2, '0')}`;

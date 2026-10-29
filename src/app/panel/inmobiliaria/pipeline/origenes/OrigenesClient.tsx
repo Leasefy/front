@@ -58,7 +58,10 @@ import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableFooter, TableHeader, TableRow } from '@/components/ui/table'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
 
 /** El primer día del mes en curso, en `YYYY-MM-DD`. */
 function primeroDelMes(): string {
@@ -107,6 +110,19 @@ export function OrigenesClient() {
         .filter((r) => r.leads > 0 && r.cerrados === 0)
         .sort((a, b) => b.leads - a.leads)[0] ?? null,
     [renglones],
+  )
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Llega como la manda el back.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    renglones,
+    {
+      origen: (r) => r.nombre,
+      cerrados: (r) => r.cerrados,
+      leads: (r) => r.leads,
+      conversion: (r) => (r.leads === 0 ? null : r.conversion),
+      abiertos: (r) => r.abiertos,
+      perdidos: (r) => r.perdidos,
+    },
+    { primero: { cerrados: 'desc', leads: 'desc', conversion: 'desc', abiertos: 'desc', perdidos: 'desc' } },
   )
 
   async function guardarPlazo() {
@@ -235,25 +251,40 @@ export function OrigenesClient() {
                   ) : null}
                 </div>
               ) : null}
+              {renglones.length > 1 ? (
+                <div className="mb-3 flex justify-end">
+                  <SelectorDeOrden
+                    orden={orden}
+                    onCambiar={setOrden}
+                    className="w-full sm:w-56"
+                    formas={[
+                      { campo: 'cerrados', sentido: 'desc', etiqueta: 'Más arriendos cerrados' },
+                      { campo: 'leads', sentido: 'desc', etiqueta: 'Más interesados' },
+                      { campo: 'conversion', sentido: 'desc', etiqueta: 'Mejor conversión' },
+                      { campo: 'origen', sentido: 'asc', etiqueta: 'Origen (A–Z)' },
+                    ]}
+                  />
+                </div>
+              ) : null}
               {esCelular ? (
-                <PortalesEnTarjetas renglones={renglones} />
+                <PortalesEnTarjetas renglones={ordenadas} />
               ) : (
               // Revisora r22 (Orígenes #2): el `Table` de Cadence (cabeceras en mono MAYÚSCULA, como todas) y el
               // total también en mono, en vez de un <table> hecho a mano.
               <Table data-testid="tabla-por-origen">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Origen</TableHead>
+                    <EncabezadoOrdenable campo="origen" orden={orden} onOrdenar={ordenarPor}>Origen</EncabezadoOrdenable>
                     {/* 🔴 «Cerrados» primero: es la columna que decide. */}
-                    <TableHead className="text-right">Arriendos cerrados</TableHead>
-                    <TableHead className="text-right">Interesados</TableHead>
-                    <TableHead className="text-right">Conversión</TableHead>
-                    <TableHead className="text-right">Abiertos</TableHead>
-                    <TableHead className="text-right">Perdidos</TableHead>
+                    <EncabezadoOrdenable campo="cerrados" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Arriendos cerrados</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="leads" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Interesados</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="conversion" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Conversión</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="abiertos" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Abiertos</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="perdidos" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Perdidos</EncabezadoOrdenable>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {renglones.map((r) => (
+                  {ordenadas.map((r) => (
                     <TableRow key={r.origen} data-testid={`fila-${r.origen}`}>
                       {/* Ronda 21: un portal sin interesados sale en CERO (decisión), pero atenuado; y en
                           vez de «0 %», la conversión dice «sin interesados» (un 0 % sin nadie no es un dato). */}

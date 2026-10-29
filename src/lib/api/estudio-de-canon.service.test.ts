@@ -151,3 +151,34 @@ describe('estudioDeCanonApi.iniciar', () => {
     expect(err.message).toMatch(/reintenta/i)
   })
 })
+
+describe('estudioDeCanonApi.reintentar', () => {
+  it('POSTs /reintentar with an empty body and returns PROCESSING', async () => {
+    post.mockResolvedValue({ ...ESTUDIO, status: 'PROCESSING' })
+    const e = await estudioDeCanonApi.reintentar(ESTUDIO.id)
+    expect(post).toHaveBeenCalledWith(`/calificacion-leasefy/estudio/${ESTUDIO.id}/reintentar`)
+    expect(e.status).toBe('PROCESSING')
+  })
+  it.each([
+    ['ESTUDIO_SIN_REINTENTOS', /reintentos/i],
+    ['ESTUDIO_NO_REINTENTABLE', /ya no se puede reintentar/i],
+    ['ESTUDIO_NO_ENCONTRADO', /No encontramos/i],
+  ])('409/404 %s keeps its stable code and has tenant-facing copy', async (code, copy) => {
+    post.mockRejectedValue(new ApiError(409, 'raw back message', code))
+    const err = await estudioDeCanonApi.reintentar(ESTUDIO.id).catch((e) => e)
+    expect(err).toBeInstanceOf(EstudioDeCanonError)
+    expect(err.code).toBe(code)
+    expect(err.message).toMatch(copy)
+  })
+  it('keeps "faltan" from DOCUMENTOS_FALTANTES', async () => {
+    post.mockRejectedValue(new ApiError(400, 'x', 'DOCUMENTOS_FALTANTES', { faltan: ['extracto_bancario'] }))
+    const err = await estudioDeCanonApi.reintentar(ESTUDIO.id).catch((e) => e)
+    expect(err.faltan).toEqual(['extracto_bancario'])
+  })
+  it('maps the 503 so the person can press again', async () => {
+    post.mockRejectedValue(new ApiError(503, 'x', 'SERVICIO_NO_DISPONIBLE'))
+    const err = await estudioDeCanonApi.reintentar(ESTUDIO.id).catch((e) => e)
+    expect(err.status).toBe(503)
+    expect(err.message).toMatch(/reintenta/i)
+  })
+})

@@ -39,7 +39,7 @@ describe('mapEstudioToAprobacion', () => {
   it('maps DRAFT and FAILED to sin_estudio', () => {
     expect(mapEstudioToAprobacion(estudio({ status: 'DRAFT' }))).toEqual(SIN_APROBACION)
     expect(
-      mapEstudioToAprobacion(estudio({ status: 'FAILED', error: { codigo: 'TIMEOUT', mensaje: 'x' } })),
+      mapEstudioToAprobacion(estudio({ status: 'FAILED', error: { codigo: 'TIMEOUT', mensaje: 'x', documentoConError: null, accion: 'REINTENTAR', reintentosRestantes: 3 } })),
     ).toEqual(SIN_APROBACION)
   })
 

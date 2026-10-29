@@ -884,8 +884,9 @@ Gratis, sin aseguradoras, sin depósito (Ley 820 art. 16).
   filtra aunque llegue.
 - **Capa de datos**: `estudio-de-canon.types.ts` (parser defensivo), `estudio-de-canon.service.ts`
   (`crear` / `subirDocumento` multipart / `iniciar` / `actual`; todo fallo es un `EstudioDeCanonError` con el
-  `code` estable del back y copy en español), `use-estudio-de-canon.ts` (sondeo cada 3 s SOLO mientras
-  PROCESSING; un tick fallido no pierde el estudio ni lo marca FAILED), `aprobacion-from-estudio.ts`
+  `code` estable del back y copy en español), `use-estudio-de-canon.ts` (T-0195: un GET al montar/recargar y, SOLO
+  mientras PROCESSING, uno cada 120 s; COMPLETED/FAILED no hacen más llamadas; se salta el tick con la pestaña oculta;
+  un tick fallido no pierde el estudio ni lo marca FAILED), `aprobacion-from-estudio.ts`
   (`mapEstudioToAprobacion`: el shape `Aprobacion` de `use-aprobacion` no cambió, sólo su fuente).
 - **Retirado**: `AseguradorasConPrima`, `EstadoPagoAprobacion`, `ValidacionPorWhatsapp`,
   `use-prescoring-current`, `prescoring.types`, `aprobacion-from-prescoring`, `estudio-solicitud.service`,
@@ -894,3 +895,17 @@ Gratis, sin aseguradoras, sin depósito (Ley 820 art. 16).
 - **Pendiente al integrar el back (WU-1)**: regenerar `rutas-del-back.json` con
   `node scripts/rutas-del-back.mjs <back>` y borrar las tres filas `estudioDeCanonApi.*` de
   `rutas-que-el-back-no-tiene.guardian.test.ts`.
+
+### Falla y reintento del estudio (T-0195)
+
+Contrato congelado en `.orchestration/tasks/T-0195-tenant-study-failure-retry/contract.md`; back+agent son WU-1.
+
+- `Estudio.error` trae `documentoConError` (`cedula` | `extracto_bancario` | null), `accion` (`REINTENTAR` |
+  `REEMPLAZAR_DOCUMENTO`) y `reintentosRestantes`; el parser degrada lo desconocido (ausente = sin documento,
+  `REINTENTAR`, 1 reintento).
+- `/aprobacion` en FAILED: dice qué documento dio el problema y deja cambiarlo (`subirDocumento`, que NO reinicia nada);
+  «Reintentar con los mismos documentos / con el archivo nuevo» = `estudioDeCanonApi.reintentar`
+  (`POST /estudio/:id/reintentar`). `ESTUDIO_SIN_REINTENTOS` o `reintentosRestantes === 0` ofrecen «Empezar un estudio
+  nuevo»; `ESTUDIO_NO_REINTENTABLE` vuelve a leer el estudio.
+- La ruta nueva se declaró a mano en `rutas-del-back.json` (sin el back a la mano); regenerar con
+  `node scripts/rutas-del-back.mjs <back>` al integrar.

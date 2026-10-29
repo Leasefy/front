@@ -5,6 +5,7 @@
  *   POST /calificacion-leasefy/estudio                 { autorizo: true }
  *   POST /calificacion-leasefy/estudio/:id/documentos  multipart { file, tipo }
  *   POST /calificacion-leasefy/estudio/:id/iniciar
+ *   POST /calificacion-leasefy/estudio/:id/reintentar  (T-0195, FAILED → PROCESSING)
  *   GET  /calificacion-leasefy/estudio/actual          → { estudio | null }
  *
  * Every failure becomes an `EstudioDeCanonError` whose `message` is already
@@ -120,6 +121,17 @@ export const estudioDeCanonApi = {
   iniciar(estudioId: string): Promise<EstudioDeCanon> {
     return envuelto(async () =>
       estudioONada(await apiClient.post<unknown>(`${BASE}/${encodeURIComponent(estudioId)}/iniciar`)),
+    )
+  },
+
+  /**
+   * Retries a FAILED study with its stored documents (T-0195). Idempotent when it is
+   * already PROCESSING. 409 `ESTUDIO_SIN_REINTENTOS` = budget used, `ESTUDIO_NO_REINTENTABLE`
+   * = not FAILED any more.
+   */
+  reintentar(estudioId: string): Promise<EstudioDeCanon> {
+    return envuelto(async () =>
+      estudioONada(await apiClient.post<unknown>(`${BASE}/${encodeURIComponent(estudioId)}/reintentar`)),
     )
   },
 }

@@ -34,6 +34,23 @@ export interface ResultadoDelEstudio {
   conHistorial: boolean
 }
 
+/** Documents the back can blame for a failure (T-0195 §3.2). */
+export type DocumentoConError = 'cedula' | 'extracto_bancario'
+export type AccionDelError = 'REINTENTAR' | 'REEMPLAZAR_DOCUMENTO'
+
+/** Retries a study may use (T-0195 `MAX_REINTENTOS_POR_ESTUDIO`); only the fallback when the back omits the count. */
+export const REINTENTOS_RESTANTES_POR_DEFECTO = 1
+
+export interface ErrorDelEstudio {
+  codigo: string
+  mensaje: string
+  /** The slot the problem was in; `null` = no document is blamed. */
+  documentoConError: DocumentoConError | null
+  accion: AccionDelError
+  /** `>= 0`. 0 means "empezar un estudio nuevo". */
+  reintentosRestantes: number
+}
+
 export interface EstudioDeCanon {
   id: string
   status: EstadoDelEstudio
@@ -43,7 +60,7 @@ export interface EstudioDeCanon {
   documentos: { tipo: TipoDeDocumento }[]
   faltan: TipoObligatorio[]
   resultado: ResultadoDelEstudio | null
-  error: { codigo: string; mensaje: string } | null
+  error: ErrorDelEstudio | null
 }
 
 const ESTADOS: readonly EstadoDelEstudio[] = ['DRAFT', 'PROCESSING', 'COMPLETED', 'FAILED']
@@ -126,9 +143,17 @@ export function parseEstudio(raw: unknown): EstudioDeCanon | null {
   let error: EstudioDeCanon['error'] = null
   if (status === 'FAILED') {
     const e = esObjeto(raw.error) ? raw.error : {}
+    const restantes = e.reintentosRestantes
+    const documento = e.documentoConError
     error = {
       codigo: textoONull(e.codigo) ?? 'ESTUDIO_FALLIDO',
       mensaje: typeof e.mensaje === 'string' ? e.mensaje : '',
+      documentoConError: documento === 'cedula' || documento === 'extracto_bancario' ? documento : null,
+      accion: e.accion === 'REEMPLAZAR_DOCUMENTO' ? 'REEMPLAZAR_DOCUMENTO' : 'REINTENTAR',
+      reintentosRestantes:
+        typeof restantes === 'number' && Number.isFinite(restantes) && restantes >= 0
+          ? Math.floor(restantes)
+          : REINTENTOS_RESTANTES_POR_DEFECTO,
     }
   }
 
@@ -162,6 +187,10 @@ const MENSAJES: Record<string, string> = {
   AUTORIZACION_REQUERIDA: 'Para empezar necesitamos tu autorización. Márcala y vuelve a intentarlo.',
   ESTUDIO_NO_ENCONTRADO: 'No encontramos ese estudio. Puedes empezar uno nuevo.',
   ESTUDIO_YA_INICIADO: 'Este estudio ya inició. Estamos mostrándote su estado actual.',
+  ESTUDIO_NO_REINTENTABLE: 'Este estudio ya no se puede reintentar. Estamos mostrándote su estado actual.',
+  ESTUDIO_SIN_REINTENTOS:
+    'Ya usaste todos los reintentos de este estudio. Puedes empezar uno nuevo con tus documentos.',
+  ESTUDIO_NO_ARRANCO: 'No pudimos iniciar el estudio de tus documentos. Inténtalo de nuevo.',
   DOCUMENTOS_FALTANTES: 'Faltan documentos: sube tu cédula y tu extracto bancario para continuar.',
   EXTRACTO_ILEGIBLE:
     'No pudimos leer tu extracto bancario. Sube uno más reciente y nítido, en PDF o foto bien iluminada.',

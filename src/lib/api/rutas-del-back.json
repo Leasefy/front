@@ -957,6 +957,7 @@
     "POST /calificacion-leasefy/estudio",
     "POST /calificacion-leasefy/estudio/:id/documentos",
     "POST /calificacion-leasefy/estudio/:id/iniciar",
+    "POST /calificacion-leasefy/estudio/:id/reintentar",
     "POST /calificacion-leasefy/evaluaciones/:id/respuesta",
     "POST /cartera/payment-plans/:planId/accept",
     "POST /cartera/payment-plans/:planId/otp/send",

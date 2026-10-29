@@ -375,6 +375,17 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Preparar visitas": "Prepare visits",
   "Lo que le falta a cada visita para poder hacerse. El calendario completo está en Agenda.": "What each visit still needs before it can happen. The full calendar is in Agenda.",
   "Ver la agenda": "View the agenda",
+  // Mantenimientos, buscar el inmueble de la solicitud (29-10)
+  'Crear el inmueble': 'Create the property',
+  'Código, contrato, propietario o dirección': 'Code, lease, owner or address',
+  'Búscalo por el código del inmueble, el número del contrato, el propietario, el inquilino o la dirección.':
+    'Search by property code, lease number, owner, tenant or address.',
+  'No encontramos ese inmueble.': "We couldn't find that property.",
+  'La solicitud se hace sobre un inmueble que ya está en Leasefy. Prueba con su código, el número del contrato o el nombre del propietario; si todavía no está, créalo primero.':
+    "The request has to be for a property that's already in Leasefy. Try its code, the lease number or the owner's name; if it isn't there yet, create it first.",
+  'Contrato {n}': 'Lease {n}',
+  'Propietario: {nombre}': 'Owner: {nombre}',
+  'Inquilino: {nombre}': 'Tenant: {nombre}',
   // Cobranza, portada (22-10)
   "Ocultar lo que hizo el agente": "Hide what the agent did",
   // Giros, lo que falta del mes (22-10)

@@ -17,9 +17,21 @@ import {
   MagnifyingGlass,
   Wallet,
   Truck,
+  Plus,
+  UserCircle,
 } from '@phosphor-icons/react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr, type Tr } from '@/lib/i18n/use-tr';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { conRegreso } from '@/lib/nav/ruta-de-regreso';
+import {
+  buscarElInmueble,
+  contratosParaBuscar,
+  propietariosDelInmueble,
+  type ContratoParaBuscar,
+} from '@/lib/mantenimiento/buscar-el-inmueble';
 import { Button, Input, Textarea } from '@/components/ui';
 import { Collapse, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
@@ -161,11 +173,48 @@ interface PropertySelectorProps {
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
+/** Portofino 29-10: si el inmueble no está, se crea primero en el portafolio y se vuelve acá. */
+const CREAR_EL_INMUEBLE = conRegreso('/panel/inmobiliaria/inmuebles/nuevo', '/panel/inmobiliaria/mantenimientos');
+
+/** «Crear el inmueble»: la salida cuando el inmueble todavía no está en Leasefy. */
+function CrearElInmueble({ tr }: { tr: Tr }) {
+  return (
+    <Button asChild variant="outline" size="sm" hideArrow className="shrink-0" data-testid="mantenimiento-crear-inmueble">
+      <Link href={CREAR_EL_INMUEBLE}>
+        <Plus className="h-4 w-4" aria-hidden="true" />
+        {tr('Crear el inmueble')}
+      </Link>
+    </Button>
+  );
+}
+
 function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertySelectorProps) {
+  const tr = useTr();
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   /** Envuelve AL BUSCADOR Y A LA LISTA: un clic acá adentro no cierra nada. */
   const contenedorRef = useRef<HTMLDivElement>(null);
+  /*
+    Portofino 29-10: también por el número del contrato. Los contratos se leen
+    UNA vez, al abrir el buscador, y sólo si la persona puede verlos (si no, el
+    back respondería 403): sin ellos se busca igual por todo lo demás.
+  */
+  const permisos = usePermissionsContextSafe();
+  const puedeVerContratos = permisos ? permisos.canAccess('contratos', 'view') : true;
+  const [contratos, setContratos] = useState<ContratoParaBuscar[]>([]);
+  const contratosPedidos = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen || contratosPedidos.current || !puedeVerContratos) return;
+    contratosPedidos.current = true;
+    let vivo = true;
+    void contratosParaBuscar().then((lista) => {
+      if (vivo) setContratos(lista);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [isOpen, puedeVerContratos]);
 
   /*
     🔴 Antes el cierre lo hacía un `<div className="fixed inset-0">` invisible
@@ -199,72 +248,64 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
     };
   }, [isOpen]);
 
-  const filteredConsignaciones = useMemo(() => {
-    if (!searchQuery.trim()) return consignaciones;
-    const query = searchQuery.toLowerCase();
-    return consignaciones.filter(
-      (c) =>
-        c.propertyTitle.toLowerCase().includes(query) ||
-        c.propertyAddress.toLowerCase().includes(query) ||
-        c.propertyZone?.toLowerCase().includes(query)
-    );
-  }, [consignaciones, searchQuery]);
+  // Las mismas reglas del buscador del panel (Ctrl K): código, contrato,
+  // propietario, inquilino, dirección, celular, sin tildes.
+  const encontrados = useMemo(
+    () => buscarElInmueble(consignaciones, searchQuery, contratos),
+    [consignaciones, searchQuery, contratos],
+  );
 
   const selectedConsignacion = consignaciones.find((c) => c.id === selectedId);
 
-  // Sin inmuebles arrendados no hay nada que buscar: el buscador abría un
-  // desplegable con «No se encontraron propiedades» encima de la sección
-  // siguiente (Nico, 2026-09-03). Se dice de frente y sin desplegable.
+  // Sin inmuebles no hay nada que buscar: el buscador abría un desplegable con
+  // «No se encontraron propiedades» encima de la sección siguiente (Nico,
+  // 2026-09-03). Se dice de frente, sin desplegable y con la salida de crearlo.
   if (consignaciones.length === 0) {
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.mantenimiento.property')} <span className="text-danger">*</span>
         </label>
-        <p
-          className="rounded-lg border border-dashed border-border bg-surface-muted px-4 py-3 text-sm text-fg-muted"
+        <div
+          className="flex flex-col gap-3 rounded-lg border border-dashed border-border bg-surface-muted px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           data-testid="mantenimiento-sin-inmuebles"
         >
-          {t('inmobiliaria.mantenimiento.noRentedProperties')}
-        </p>
+          <p className="text-sm text-fg-muted">{t('inmobiliaria.mantenimiento.noRentedProperties')}</p>
+          <CrearElInmueble tr={tr} />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+      <label htmlFor="mantenimiento-buscar-inmueble" className="block text-sm font-medium text-fg dark:text-fg-subtle">
         {t('inmobiliaria.mantenimiento.property')} <span className="text-danger">*</span>
       </label>
 
       {selectedConsignacion ? (
-        <div className="p-4 rounded-lg border border-primary/30 bg-primary-soft">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
+        <div className="p-4 rounded-lg border border-primary/30 bg-primary-soft" data-testid="mantenimiento-inmueble-elegido">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
               {selectedConsignacion.propertyThumbnail ? (
                 <img
                   src={selectedConsignacion.propertyThumbnail}
                   alt={selectedConsignacion.propertyTitle}
-                  className="w-16 h-12 rounded-md object-cover"
+                  className="w-16 h-12 rounded-md object-cover shrink-0"
                 />
               ) : (
-                <div className="w-16 h-12 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
+                <div className="w-16 h-12 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
                   <HouseLine className="w-6 h-6 text-fg-subtle" />
                 </div>
               )}
-              <div>
+              <div className="min-w-0">
                 <p className="font-medium text-fg">
                   {selectedConsignacion.propertyTitle}
                 </p>
                 <p className="text-sm text-fg-muted dark:text-fg-subtle">
                   {selectedConsignacion.propertyAddress}
                 </p>
-                {selectedConsignacion.currentTenantName && (
-                  <div className="flex items-center gap-1 mt-1 text-sm text-fg-muted dark:text-fg-subtle">
-                    <User className="w-3 h-3" />
-                    <span>{selectedConsignacion.currentTenantName}</span>
-                  </div>
-                )}
+                <DatosDelInmueble consignacion={selectedConsignacion} tr={tr} />
               </div>
             </div>
             <Button
@@ -287,24 +328,33 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
           <div className="relative">
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
             <Input
+              id="mantenimiento-buscar-inmueble"
               type="text"
-              placeholder={t('inmobiliaria.mantenimiento.searchProperty')}
+              data-testid="mantenimiento-buscar-inmueble"
+              placeholder={tr('Código, contrato, propietario o dirección')}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsOpen(true);
+              }}
               onFocus={() => setIsOpen(true)}
+              autoComplete="off"
               className="w-full pl-10"
             />
           </div>
+          <p className="mt-1.5 text-caption text-fg-muted">
+            {tr('Búscalo por el código del inmueble, el número del contrato, el propietario, el inquilino o la dirección.')}
+          </p>
 
           {/* Los resultados bajan apenas desde el buscador y se van rápido. */}
           <Presence
             show={isOpen}
             direction="down"
             distance="xs"
-            className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
+            className="absolute z-10 w-full mt-2 max-h-72 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg shadow-flotante"
           >
-                {filteredConsignaciones.length > 0 ? (
-                  filteredConsignaciones.map((consignacion) => (
+                {encontrados.length > 0 ? (
+                  encontrados.map(({ consignacion, contrato }) => (
                     // allowlist: search-result list-row (property thumbnail + 2-line text as ONE
                     // click target) — rich list-row; Button can't host the fill-image row (list-row precedent).
                     <button
@@ -335,12 +385,19 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                         <p className="text-sm text-fg-muted dark:text-fg-subtle truncate">
                           {consignacion.propertyAddress}
                         </p>
+                        <DatosDelInmueble consignacion={consignacion} contrato={contrato} tr={tr} />
                       </div>
                     </button>
                   ))
                 ) : (
-                  <div className="p-4 text-center text-fg-muted dark:text-fg-subtle">
-                    {t('inmobiliaria.mantenimiento.noPropertiesFound')}
+                  <div className="space-y-3 p-4" data-testid="mantenimiento-inmueble-no-encontrado">
+                    <div className="space-y-1">
+                      <p className="text-sm text-fg">{tr('No encontramos ese inmueble.')}</p>
+                      <p className="text-caption text-fg-muted">
+                        {tr('La solicitud se hace sobre un inmueble que ya está en Leasefy. Prueba con su código, el número del contrato o el nombre del propietario; si todavía no está, créalo primero.')}
+                      </p>
+                    </div>
+                    <CrearElInmueble tr={tr} />
                   </div>
                 )}
           </Presence>
@@ -348,6 +405,37 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
       )}
     </div>
   );
+}
+
+/**
+ * La línea que deja reconocer el inmueble sin abrirlo: su código, el contrato
+ * que coincidió con lo buscado, el propietario y quién vive ahí.
+ */
+function DatosDelInmueble({ consignacion, contrato = null, tr }: { consignacion: Consignacion; contrato?: string | null; tr: Tr }) {
+  const propietario = propietariosDelInmueble(consignacion)[0]?.nombre ?? null;
+  const inquilino = consignacion.inquilino?.nombre ?? consignacion.currentTenantName ?? null;
+  const partes = [
+    consignacion.propertyCode != null ? <span key="codigo" className="font-mono">#{consignacion.propertyCode}</span> : null,
+    contrato ? (
+      <span key="contrato" className="font-mono text-fg" data-testid="mantenimiento-inmueble-contrato">
+        {tr('Contrato {n}', { n: contrato })}
+      </span>
+    ) : null,
+    propietario ? (
+      <span key="propietario" className="inline-flex min-w-0 items-center gap-1">
+        <UserCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span className="truncate">{tr('Propietario: {nombre}', { nombre: propietario })}</span>
+      </span>
+    ) : null,
+    inquilino ? (
+      <span key="inquilino" className="inline-flex min-w-0 items-center gap-1">
+        <User className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span className="truncate">{tr('Inquilino: {nombre}', { nombre: inquilino })}</span>
+      </span>
+    ) : null,
+  ].filter(Boolean);
+  if (partes.length === 0) return null;
+  return <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-fg-muted">{partes}</p>;
 }
 
 // ============================================================================

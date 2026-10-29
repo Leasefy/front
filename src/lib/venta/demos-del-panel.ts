@@ -138,7 +138,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     titulo: 'Los documentos de cada contrato, en un lugar',
     promesa: 'Plantillas legales, actas de entrega y todo lo firmado, organizado por inmueble y contrato.',
     puntos: ['Plantillas con la ley 820', 'Actas con fotos y firma', 'Todo encontrado en segundos'],
-    capturas: [cap('erp-renovaciones', 'Contratos y documentos')],
+    capturas: [cap('demo-documentos', 'Documentos con datos de ejemplo')],
+    video: video('documentos', 'Recorrido por Documentos con datos de ejemplo: lo generado, la búsqueda, las actas de entrega y las plantillas'),
   },
   'listas-restrictivas': {
     titulo: 'Sabes con quién haces negocio',

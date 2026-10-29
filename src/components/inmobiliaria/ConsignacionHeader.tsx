@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  OpcionesDelInmueble,
+  accionesDelInmueble,
+  type ManejadoresDelInmueble,
+  type PermisosDelInmueble,
+} from '@/components/inmobiliaria/inmuebles/OpcionesDelInmueble';
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
@@ -11,7 +17,6 @@ import {
   Briefcase,
   MapPin,
   PencilSimple,
-  Eye,
   DotsThree,
   CaretDown,
   XCircle,
@@ -22,7 +27,6 @@ import {
   Car,
   Mountains,
   Prohibit,
-  CalendarPlus,
   ArrowUUpLeft,
 } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
@@ -96,6 +100,12 @@ interface ConsignacionHeaderProps {
   vacanciaLarga?: boolean;
   /** «Agendar visita» en el menú ⋯ (sólo cuando se puede: inmueble disponible). */
   onAgendarVisita?: () => void;
+  /**
+   * Las demás acciones del menú de la fila en Inmuebles («Copiar ficha»,
+   * candidatos, sin señal…), con sus permisos ya resueltos por la ficha: salen
+   * de la MISMA definición (`accionesDelInmueble`, Nico 29-10-2026).
+   */
+  masAcciones?: { manejadores: ManejadoresDelInmueble; permisos: PermisosDelInmueble };
   /** El precio de venta del inmueble (`property.salePrice`): en una venta es la cifra protagonista. */
   precioDeVenta?: number | null;
   /*
@@ -203,6 +213,7 @@ export function ConsignacionHeader({
   franja,
   vacanciaLarga = false,
   onAgendarVisita,
+  masAcciones,
   precioDeVenta = null,
 }: ConsignacionHeaderProps) {
   const { t, formatDate } = useI18n();
@@ -299,18 +310,17 @@ export function ConsignacionHeader({
                 />
               </DropdownListTrigger>
               <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
-                {onAgendarVisita ? (
-                  <DropdownListItem onSelect={() => onAgendarVisita()} data-testid="menu-agendar-visita">
-                    <CalendarPlus className="h-4 w-4" />
-                    Agendar visita
-                  </DropdownListItem>
-                ) : null}
-                {canViewPortal ? (
-                  <DropdownListItem onSelect={() => onViewPortal?.()} data-testid="menu-ver-aviso">
-                    <Eye className="h-4 w-4" />
-                    {t('inmobiliaria.consignaciones.header.viewOnPortal')}
-                  </DropdownListItem>
-                ) : null}
+                <OpcionesDelInmueble
+                  acciones={accionesDelInmueble(
+                    {
+                      ...masAcciones?.manejadores,
+                      onAgendarVisita,
+                      onVerAviso: canViewPortal ? () => onViewPortal?.() : undefined,
+                    },
+                    // Sin permisos dados, lo de siempre: agendar y ver el aviso (ya decididos por la ficha).
+                    masAcciones?.permisos ?? { puedePedirCita: true, puedeVerPortafolio: false, puedeEditar: false, puedeRetirar: false },
+                  )}
+                />
                 <DropdownListItem onSelect={() => onTerminate?.()} className="text-danger focus:text-danger">
                   <XCircle className="h-4 w-4" />
                   {t('inmobiliaria.consignaciones.header.terminateConsignment')}

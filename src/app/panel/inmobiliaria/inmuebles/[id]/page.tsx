@@ -1,4 +1,5 @@
 'use client';
+import { useCopiarLaFicha } from '@/lib/inmuebles/use-copiar-la-ficha';
 import { AvisoDelMandatoQueVence } from '@/components/comercial/SituacionComercial';
 import { useVacanciaYMandatos } from '@/lib/comercial/use-vacancia-y-mandatos';
 import { esVacanciaLarga } from '@/lib/comercial/comercial';
@@ -271,6 +272,8 @@ function ConsignacionDetailContent() {
   // sus acciones (iniciar, cancelar, reenviar) con `portafolio:edit`.
   const { canAccess, agencyRole } = usePermissions();
   const puedeEditarPortafolio = canAccess('portafolio', 'edit');
+  // «Copiar ficha» desde el menú de los tres puntos, el mismo de la fila en Inmuebles.
+  const copiarLaFicha = useCopiarLaFicha();
   // P-03 (seguimiento): elegir el principal en un empate lo hacen el administrador o el contador.
   const puedeElegirPrincipal = agencyRole === 'ADMIN' || agencyRole === 'CONTADOR';
   /** Se está mostrando lo guardado porque el back no contestó. */
@@ -708,6 +711,20 @@ function ConsignacionDetailContent() {
           ) : null
         }
         onAgendarVisita={!terminada && !contratoVigente && consignacion.propertyId ? () => setShowCitaModal(true) : undefined}
+        // 🔴 Nico, 29-10-2026: el menú de la ficha con las mismas acciones (y permisos) que la fila en Inmuebles.
+        masAcciones={{
+          manejadores: {
+            onCandidatos: () => router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}/candidatos`),
+            onCopiarFicha: consignacion.propertyId ? () => void copiarLaFicha(consignacion.propertyId as string) : undefined,
+            onPrepararSinSenal: () => void copiaLocal.preparar(),
+          },
+          permisos: {
+            puedePedirCita: canAccess('operaciones', 'edit'),
+            puedeVerPortafolio: canAccess('portafolio', 'view'),
+            puedeEditar: puedeEditarPortafolio,
+            puedeRetirar: canAccess('portafolio', 'delete'),
+          },
+        }}
         // 22-10 (revisión): con el mandato terminado no hay inquilino ni asesor que mostrar;
         // la portada ya dice cuándo terminó.
         franja={terminada ? undefined :

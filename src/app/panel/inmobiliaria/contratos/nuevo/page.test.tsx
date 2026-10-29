@@ -49,6 +49,8 @@ vi.mock('@/lib/api/client', async () => {
 // inmueble se pregunta si su inventario permite iniciar. Acá no se exige
 // (como sin la migración del back), salvo en la prueba del bloqueo.
 const paraIniciar = vi.fn()
+// Nico 29-10: el borrador automático vive en el navegador; cada prueba arranca sin uno.
+beforeEach(() => window.localStorage.clear())
 vi.mock('@/lib/api/inventario-del-inmueble.service', () => ({
   inventarioDelInmuebleApi: { paraIniciar: (id: string) => paraIniciar(id) },
 }))

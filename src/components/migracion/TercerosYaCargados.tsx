@@ -24,6 +24,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import { UploadSimple } from '@phosphor-icons/react';
 import { SearchInput } from '@leasefy/cadence';
 
@@ -120,7 +122,14 @@ function PropietariosYaCargados({ onSubirOtro, subiendoOtro, onEstado }: PropsDe
     () => propietarios.filter((p) => (p.datosPendientes?.length ?? 0) > 0).length,
     [propietarios],
   );
-  const visibles = filtrados.slice((pagina - 1) * porPagina, pagina * porPagina);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(filtrados, {
+    propietario: (p) => p.name,
+    documento: (p) => p.documentNumber ?? null,
+    cuenta: (p) => cuentaCorta(p),
+    codigo: (p) => p.externalId ?? null,
+  });
+  const visibles = ordenadas.slice((pagina - 1) * porPagina, pagina * porPagina);
 
   useAvisarEstado(onEstado, isLoading, Boolean(errorCrudo), propietarios.length);
 
@@ -166,10 +175,10 @@ function PropietariosYaCargados({ onSubirOtro, subiendoOtro, onEstado }: PropsDe
             <Table data-testid="ya-cargados-tabla">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-6">Propietario</TableHead>
-                  <TableHead>Documento</TableHead>
-                  <TableHead>Cuenta para girarle</TableHead>
-                  <TableHead className="pr-6">Código en tu sistema</TableHead>
+                  <EncabezadoOrdenable campo="propietario" orden={orden} onOrdenar={ordenarPor} className="pl-6">Propietario</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="documento" orden={orden} onOrdenar={ordenarPor}>Documento</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="cuenta" orden={orden} onOrdenar={ordenarPor}>Cuenta para girarle</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="codigo" orden={orden} onOrdenar={ordenarPor} className="pr-6">Código en tu sistema</EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody>

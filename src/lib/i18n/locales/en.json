@@ -10728,7 +10728,7 @@
       "horariosGuardados": "Visit hours saved",
       "horarioAgenteTitle": "Visit hours",
       "horarioAgenteDesc": "One schedule for all of this agent's properties.",
-      "horarioAgenteGuardado": "Schedule applied to {count} properties",
+      "horarioAgenteGuardado": "Schedule applied to {{count}} properties",
       "horarioAgenteError": "Could not save the schedule",
       "citaTitle": "Schedule a visit",
       "citaProperty": "Property",

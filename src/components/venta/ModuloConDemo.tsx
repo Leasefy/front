@@ -28,6 +28,7 @@ export function ModuloConDemo({
   queVio,
   yaEsCliente,
   pagar,
+  verConDatosDemo,
 }: {
   demo: DemoDelModulo;
   quien: QuienCompra;
@@ -44,6 +45,8 @@ export function ModuloConDemo({
    * al lado. `detalle` es el precio con SUS inmuebles («$99.000 al mes más IVA»).
    */
   pagar?: { href: string; texto: string; detalle?: string | null };
+  /** Nico 29-10-2026: «Ver con datos demo» — la sección de verdad con datos de ejemplo (sólo donde ya los hay). */
+  verConDatosDemo?: () => void;
 }) {
   const [verDemo, setVerDemo] = useState(false);
   const whatsapp = enlaceDeWhatsApp({ quien, nombre, empresa, queVio });
@@ -99,6 +102,17 @@ export function ModuloConDemo({
               <PlayCircle size={18} className="mr-2" aria-hidden="true" />
               Ver demo
             </Button>
+            {verConDatosDemo && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-[15px] sm:w-auto"
+                onClick={verConDatosDemo}
+                data-testid="ver-con-datos-demo"
+              >
+                Ver con datos demo
+              </Button>
+            )}
           </div>
           <p className="mt-4 text-[13px] text-fg-subtle">
             {pagar

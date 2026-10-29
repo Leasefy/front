@@ -13,6 +13,9 @@ import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { BeneficiosEn3D, EscenaDeMarca, type BeneficioEn3D } from '@/components/conversion/EscenaDeMarca';
 import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
+import { FranjaDeLaDemo } from '@/components/venta/FranjaDeLaDemo';
+import { hayDatosDeEjemplo } from '@/lib/demo/datos-demo';
+import { entrarAlModoDemo, useModoDemo } from '@/lib/demo/modo-demo';
 import { abrirLaActivacion } from '@/lib/conversion/abrir-la-activacion';
 import { moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
 import { demoDeLaInmobiliaria, demoDelAgente } from '@/lib/venta/demos-del-panel';
@@ -45,6 +48,7 @@ const LO_QUE_SE_ABRE = [
 export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
   const { agency, user } = useAuth();
   const pathname = usePathname() ?? '';
+  const enDemo = useModoDemo();
   const router = useRouter();
   const comercial = enModoComercial(agency);
   // 27-10-2026 (Nico): en lo gratis lleva candado también la ya activada a la que se le acabó el mes gratis; en el
@@ -73,6 +77,12 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
       <div key="contenido" className="contents">
         {abierta ? (
           children
+        ) : !faltaActivar && enDemo && hayDatosDeEjemplo(moduloDeLaRuta(pathname)?.key) ? (
+          // Nico 29-10-2026: «Ver con datos demo» pinta la sección de verdad con datos de ejemplo (sólo en lo cerrado).
+          <>
+            <FranjaDeLaDemo queEs={NOMBRES[moduloDeLaRuta(pathname)?.key ?? ''] ?? null} />
+            {children}
+          </>
         ) : faltaActivar ? (
           <ActivarTuCuenta acceso={agency?.acceso ?? null} />
         ) : (
@@ -103,6 +113,7 @@ function ParteCerrada({ ruta, nombre, empresa, esAgente = false }: { ruta: strin
       yaEsCliente={{ href: RUTA_PARA_ACTIVAR, texto: '¿Ya eres cliente? Activa tu cuenta' }}
       // 27-10-2026 (Nico: «pagar desde el panel»): el llamado principal es abrir todo pagando; WhatsApp al lado.
       pagar={{ href: '/panel/inmobiliaria/upgrade', texto: 'Abrir todo Leasefy', detalle: 'Desde $99.000 al mes más IVA' }}
+      verConDatosDemo={hayDatosDeEjemplo(modulo?.key) ? entrarAlModoDemo : undefined}
     />
   );
 }
@@ -126,6 +137,7 @@ const NOMBRES: Record<string, string> = {
   reportes: 'los reportes',
   mantenimientos: 'los mantenimientos',
   documentos: 'los documentos',
+  'servicios-publicos': 'los servicios públicos',
 };
 
 /** Lo que ve quien entra a una parte cerrada (antes del 20-10: activar gratis). */

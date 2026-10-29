@@ -1,5 +1,8 @@
 import { compartirGet, invalidar, recursoDe, descartarEnVuelo } from './refresco-de-datos'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
+import { CODIGO_DEL_MODO_DEMO, MENSAJE_DEL_MODO_DEMO, estaEnModoDemo } from '@/lib/demo/modo-demo-estado'
+import { lecturaDeLaDemo } from '@/lib/demo/datos-demo'
+import { abiertaEnModoComercial } from '@/lib/nav/modo-comercial'
 import {
   CODIGO_DEMASIADAS_SOLICITUDES,
   mensajeDeDemasiadasSolicitudes,
@@ -522,6 +525,13 @@ function getAuthHeaders(): Record<string, string> {
   return headers
 }
 
+/** ¿Esta pestaña está mostrando una parte cerrada del panel en modo demo? */
+function enLaDemo(): boolean {
+  if (typeof window === 'undefined' || !estaEnModoDemo()) return false
+  const ruta = window.location.pathname
+  return ruta.startsWith('/panel/inmobiliaria') && !abiertaEnModoComercial(ruta)
+}
+
 async function request<T>(
   method: string,
   path: string,
@@ -533,6 +543,17 @@ async function request<T>(
   cabecerasExtra?: Record<string, string>,
 ): Promise<T> {
   const url = `${BACKEND_URL}${path}`
+
+  // El modo demo (Nico 29-10-2026: «Ver con datos demo», sólo en lo cerrado): en una parte cerrada del panel, las
+  // lecturas con dato de ejemplo salen de `lib/demo/datos-demo` y ninguna escritura sale de la pestaña.
+  if (enLaDemo()) {
+    if (method === 'GET') {
+      const deEjemplo = lecturaDeLaDemo(path)
+      if (deEjemplo !== undefined) return deEjemplo as T
+    } else {
+      throw new ApiError(403, MENSAJE_DEL_MODO_DEMO, CODIGO_DEL_MODO_DEMO)
+    }
+  }
 
   // Con la sesión ya declarada muerta no hay nada que pedir: la app está
   // navegando a /auth y cada petición que igual saliera sumaría un 401 más

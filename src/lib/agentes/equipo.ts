@@ -56,6 +56,8 @@ export type IdDeAgente =
   | 'avaluos'
   | 'mantenimiento'
   | 'inspeccion'
+  // Nico 29-10-2026: Servi, el agente de servicios públicos.
+  | 'servicios'
   | 'documentos'
   | 'reportes'
   | 'comunicacion'
@@ -453,6 +455,25 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     fuentes: [
       'back: src/inmobiliaria/actas/vidi/vidi-del-piloto.service.ts (agendar entrada y salida, comparar y proponer descuentos con clic)',
       'src/mastra/agents/inspeccion/agent.ts (visión y firma; INSPECCION_ENABLED, apagado)',
+    ],
+  },
+  {
+    id: 'servicios',
+    nombrePropio: 'Servi',
+    frente: 'mantenimiento',
+    orbe: orbe('dusk', 'servicios'),
+    // Nico 29-10-2026: lee en el micro la factura que sube el inquilino; las manos viven en el back.
+    autonomia: 'servicios',
+    despachos: ['servicios'],
+    hace: ['lee', 'compara', 'propone', 'ajustes', 'corte'],
+    noHace: [{ clave: 'rechaza' }, { clave: 'escribe', loHace: 'cobranza' }],
+    herramientas: ['vision', 'bandeja', 'whatsapp', 'correo'],
+    trabajaCon: ['cobranza', 'propietarios'],
+    reportaA: 'orquestador',
+    fuentes: [
+      'src/mastra/agents/servicios-publicos/lector-de-facturas.ts (lee la factura; el modelo sólo lee)',
+      'src/servicios-publicos/agente/revision.ts (cuadra o no: la cuenta del inmueble, el período, pagada y el valor)',
+      'back: src/inmobiliaria/servicios-publicos/servi/servi-del-piloto.service.ts (aprobar, rechazar con Mori, ajuste al propietario, riesgo de corte)',
     ],
   },
   {

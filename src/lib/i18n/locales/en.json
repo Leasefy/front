@@ -1432,6 +1432,7 @@
           "sinLectura": "I couldn't read your agents' status right now. These are the ones the Autopilot can have:"
         },
         "agente": {
+          "servicios": "Reads each utility bill the tenant uploads and proposes «up to date» or a rejection with its reason; also the adjustments to deduct from the owner and the service-cut warning. Rejecting and deducting are always your call.",
           "cobranza": "Calls and writes by WhatsApp and email to tenants with pending payments, within the hours the law allows.",
           "cotizador": "Checks a candidate with the insurers when you ask.",
           "conciliacion": "Matches bank deposits with your charges and issues the receipt for exact matches. Anything doubtful goes to the Inbox.",
@@ -8797,6 +8798,7 @@
           "system": "System"
         },
         "agente": {
+          "servicios": "Utilities",
           "cobranza": "Collections",
           "cotizador": "Insurability",
           "conciliacion": "Reconciliation",
@@ -14066,6 +14068,7 @@
     "porVencer": "Not yet due"
   },
   "agentes": {
+    "servicios": {"rol": "Utilities", "historia": "Checks the utility bill each tenant uploads against the property account and proposes what to do with it.", "hace": {"lee": "Reads the bill the tenant uploads, as a photo or PDF", "compara": "Compares it with the property account (EPM, Enel, Vanti or whichever it has), the period, that it says paid and the amount", "propone": "Proposes «up to date» or a rejection with its reason, ready for one click", "ajustes": "Finds billed-concept adjustments and proposes deducting them from the owner", "corte": "Warns about a service cut when a tenant has gone two months without an up-to-date bill"}, "noHace": {"rechaza": "Never rejects a bill or deducts from the owner without a person clicking", "escribe": "Does not message the tenant: Mori does that on WhatsApp"}},
     "equipo": {
       "titulo": "Your agency's team",
       "resumen": "{{agentes}} agents across {{frentes}} areas",

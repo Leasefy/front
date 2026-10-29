@@ -25,6 +25,9 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -381,8 +384,17 @@ export function ServiciosPublicos() {
     setBusqueda('');
   };
 
-  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(visibles, {
-    resetKey: `${mes}|${estado}|${busqueda}`,
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin elegir, el orden de
+  // trabajo de siempre (lo que pide revisión primero).
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(visibles, {
+    contrato: (f) => f.contrato,
+    inquilino: (f) => f.inquilino,
+    estado: (f) => ['POR_REVISAR', 'RECHAZADA', 'SIN_FACTURA', 'AL_DIA'].indexOf(f.estadoDelMes),
+    factura: (f) => f.ultimaFactura?.periodoHasta ?? null,
+    valor: (f) => f.ultimaFactura?.valorCop ?? null,
+  });
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(ordenadas, {
+    resetKey: `${mes}|${estado}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
   });
 
   /*
@@ -460,6 +472,18 @@ export function ServiciosPublicos() {
                 </SelectContent>
               </Select>
             </div>
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full md:w-52"
+              formas={[
+                { campo: 'estado', sentido: 'asc', etiqueta: 'Lo que pide revisión' },
+                { campo: 'contrato', sentido: 'asc', etiqueta: 'Contrato (A–Z)' },
+                { campo: 'inquilino', sentido: 'asc', etiqueta: 'Inquilino (A–Z)' },
+                { campo: 'factura', sentido: 'desc', etiqueta: 'Factura más reciente' },
+                { campo: 'valor', sentido: 'desc', etiqueta: 'Valor más alto' },
+              ]}
+            />
             {/* El ancho va en una caja: la clase de SearchInput le cae al campo, no a su envoltorio. */}
             <div className="w-full md:w-80">
               <SearchInput
@@ -529,9 +553,9 @@ export function ServiciosPublicos() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-5">Contrato</TableHead>
-                        <TableHead>En {nombreDelMes(mes).split(' de ')[0]}</TableHead>
-                        <TableHead>Última factura</TableHead>
+                        <EncabezadoOrdenable campo="contrato" orden={orden} onOrdenar={ordenarPor} className="px-5">Contrato</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>En {nombreDelMes(mes).split(' de ')[0]}</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="factura" orden={orden} onOrdenar={ordenarPor}>Última factura</EncabezadoOrdenable>
                         <TableHead>Entrada</TableHead>
                         <TableHead className="pr-5 text-right">
                           <span className="sr-only">Acción</span>

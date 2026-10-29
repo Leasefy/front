@@ -79,7 +79,7 @@
     aviso.classList.toggle("ver", y > finHero && !enFondo && !(r && r.top < innerHeight && r.bottom > 0));
   }
   window.addEventListener("scroll", alScroll, { passive: true });
-  window.addEventListener("resize", function () { anclas = null; alScroll(); });
+  LF.alCambiarDeTamano(function () { anclas = null; alScroll(); });
   window.addEventListener("load", function () { anclas = null; alScroll(); });
   alScroll();
 
@@ -109,6 +109,8 @@
 
   /* ── scroll suave con Lenis, atado a ScrollTrigger ── */
   gsap.registerPlugin(ScrollTrigger);
+  /* la barra del navegador del celular no recalcula el scroll (ver LF.alCambiarDeTamano) */
+  ScrollTrigger.config({ ignoreMobileResize: true });
   var lenis = null;
   if (window.Lenis) {
     lenis = new Lenis({ lerp: .05, wheelMultiplier: .9, smoothWheel: true });

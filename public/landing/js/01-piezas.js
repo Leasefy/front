@@ -8,6 +8,22 @@ window.LF = (function () {
   var MOV = root.classList.contains("mov") && !!window.gsap && !!window.ScrollTrigger;
   if (!MOV) { root.classList.remove("mov"); root.classList.add("quieto"); }
 
+  /* Nico 29-10 (video en el celular: «titilea de feo cuando hace scroll»): en el celular la barra del navegador
+     aparece y se esconde al bajar, y cada vez el navegador avisa un «resize» de sólo el alto. Los lienzos se
+     borraban y se volvían a medir, y las animaciones del scroll se recalculaban: la página saltaba. Aquí, en un
+     aparato táctil, un cambio de SÓLO el alto no rearma nada; uno de ancho (girar el celular) sí. */
+  var tactil = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  var anchoVisto = window.innerWidth, altoVisto = window.innerHeight;
+  var alRedimensionar = [];
+  window.addEventListener("resize", function () {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (tactil && w === anchoVisto) { altoVisto = h; return; }
+    if (w === anchoVisto && h === altoVisto) return;
+    anchoVisto = w; altoVisto = h;
+    alRedimensionar.forEach(function (fn) { fn(); });
+  });
+  function alCambiarDeTamano(fn) { alRedimensionar.push(fn); }
+
   /* plata en pesos: $ 52.580.500,50 */
   function fmt(n, d) {
     if (d === undefined) d = 2;
@@ -137,5 +153,5 @@ window.LF = (function () {
 
   /* el inglés de lo que escriben los scripts (ver idioma.js); sin el núcleo del idioma, el español tal cual */
   var t = window.LFI ? window.LFI.t : function (s) { return s; };
-  return { t: t, $: $, $$: $$, MOV: MOV, fmt: fmt, contar: contar, partir: partir, partirRelato: partirRelato, pos: pos, motivo: motivo, esferas: esferas };
+  return { t: t, $: $, $$: $$, MOV: MOV, tactil: tactil, alCambiarDeTamano: alCambiarDeTamano, fmt: fmt, contar: contar, partir: partir, partirRelato: partirRelato, pos: pos, motivo: motivo, esferas: esferas };
 })();

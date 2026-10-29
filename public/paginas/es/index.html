@@ -665,6 +665,12 @@ canvas.campo{position:absolute!important;display:block!important;pointer-events:
   #escLap{width:min(100%,calc(54vh * 1.3))}
   .esc-3d{width:96px;right:2%;bottom:4%}
   .paso{min-height:62vh;justify-content:flex-start;padding-top:8vh}
+  /* Nico 29-10 (video en el celular): el texto pasaba bajo el celular fijo con un corte seco y se prendía y
+     apagaba al cambiar de paso. En el celular el texto va entero y el borde del escenario se desvanece. */
+  .mov .paso{opacity:1;transition:none}
+  /* cada paso ocupa justo lo que se ve debajo del celular fijo: sin huecos en blanco entre un texto y el otro */
+  .paso{min-height:calc(100vh - var(--hdr) - 54vh);min-height:calc(100svh - var(--hdr) - 54vh);justify-content:center;padding:28px 0}
+  .escenario::after{content:"";position:absolute;left:0;right:0;top:100%;height:32px;background:linear-gradient(var(--bg),transparent);pointer-events:none}
 }
 
 

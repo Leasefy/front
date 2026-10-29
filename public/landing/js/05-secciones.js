@@ -140,7 +140,7 @@
       lOn[i].style.strokeDasharray = n ? pat.join(" ") + " 0 " + (L + 24) : "0 " + (L + 24);
     };
     var activa = function (i) { capas.dataset.activa = i; items.forEach(function (li, j) { li.classList.toggle("on", j === i); }); };
-    window.addEventListener("resize", trazarRed); trazarRed();
+    LF.alCambiarDeTamano(trazarRed); trazarRed();
     ScrollTrigger.addEventListener("refresh", trazarRed);
     gsap.timeline({ scrollTrigger: { trigger: capas, start: "top 78%", end: "bottom 50%", scrub: .6,
       onUpdate: function (s) {
@@ -205,9 +205,14 @@
     var antes = actual; actual = i;
     pasos.forEach(function (p, j) { p.classList.toggle("on", j === i); });
     gsap.fromTo(chip, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .35, onStart: function () { chip.textContent = LF.t(pasos[i].dataset.chip); } });
+    /* en el celular la figura 3D sólo cambia con un fundido: entrar girando en cada paso se veía como un parpadeo */
+    var suave = !LF.desk();
     tres.forEach(function (im, j) {
-      if (j === i) gsap.fromTo(im, { opacity: 0, y: 40, rotate: -10, scale: .8 }, { opacity: 1, y: 0, rotate: 0, scale: 1, duration: .8, ease: "expo.out" });
-      else if (j === antes) gsap.to(im, { opacity: 0, y: -30, rotate: 8, duration: .4 });
+      if (j === i) {
+        if (suave) gsap.fromTo(im, { opacity: 0 }, { opacity: 1, y: 0, rotate: 0, scale: 1, duration: .45, ease: "power1.out" });
+        else gsap.fromTo(im, { opacity: 0, y: 40, rotate: -10, scale: .8 }, { opacity: 1, y: 0, rotate: 0, scale: 1, duration: .8, ease: "expo.out" });
+      }
+      else if (j === antes) gsap.to(im, suave ? { opacity: 0, duration: .35 } : { opacity: 0, y: -30, rotate: 8, duration: .4 });
       else gsap.set(im, { opacity: 0 });
     });
     var quiereLaptop = i >= 4;
@@ -282,7 +287,7 @@
       });
     };
     reservar();
-    window.addEventListener("resize", reservar);
+    LF.alCambiarDeTamano(reservar);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(reservar);
     var rt = gsap.timeline({ scrollTrigger: { trigger: "#retVis", start: "top 75%", end: "bottom 30%", scrub: .6,
       onUpdate: function (s) {
@@ -344,7 +349,7 @@
       else w = centros[3] + (anchoRuta - centros[3]) * Math.min(1, (seg - 3) / .6);
       lleno.style.width = Math.max(0, w) + "px";
     };
-    window.addEventListener("resize", function () { centros = []; });
+    LF.alCambiarDeTamano(function () { centros = []; });
     /* el mismo vaivén del dedo (ver «cómo funciona»): cada paso cambia con holgura, no justo en el borde */
     var elegirE = function (s) {
       var seg = s.progress * 3.6, largo = (s.end - s.start) / 3.6, h = largo > 0 ? LF.holgura() / largo : 0, i = fAct;

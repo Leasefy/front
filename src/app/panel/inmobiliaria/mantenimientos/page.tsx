@@ -657,10 +657,18 @@ function MantenimientosContent() {
         noApruebaCostos &&
         (destino === 'approved' || (destino === 'completed' && solicitud.approvedAmount != null))
       ) {
-        toast.info('Esto lo hace el administrador o el coordinador', {
+        /*
+         * 🔴 Nico (Portofino, 29-10-2026): salía este aviso y AUN ASÍ la tarjeta se
+         * movía, porque `false` le dice al tablero «sigue tú» y el tablero llamaba
+         * al cambio de estado (a «Cerrada», el back no lo frena por esa ruta). Con
+         * `true` la página se encargó: la tarjeta vuelve a su columna y el aviso
+         * dice por qué. Misma regla que el back
+         * (`los-auxiliares-no-firman-ni-aprueban.ts`).
+         */
+        toast.info('Tu rol no puede mover esta solicitud ahí', {
           description: MOTIVO_EL_AUXILIAR_NO_APRUEBA_COSTOS,
         });
-        return false;
+        return true;
       }
       if (destino === 'completed') {
         if (solicitud.aprobacionDelPropietario?.estado === 'PENDIENTE') return false;

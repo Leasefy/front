@@ -7,6 +7,7 @@
  */
 import { CONTRATOS_DEMO } from './contratos';
 import { DOCUMENTOS_DEMO } from './documentos';
+import { FACTURACION_DEMO } from './facturacion';
 import { MANTENIMIENTOS_DEMO } from './mantenimientos';
 import { REPORTES_DEMO } from './reportes';
 import { SERVICIOS_PUBLICOS_DEMO } from './servicios-publicos';
@@ -25,10 +26,11 @@ const LECTURAS: readonly LecturaDeLaDemo[] = [
   ...MANTENIMIENTOS_DEMO,
   ...REPORTES_DEMO,
   ...DOCUMENTOS_DEMO,
+  ...FACTURACION_DEMO,
 ];
 
 /** Las secciones del panel (su clave en `arquitectura-del-panel.ts`) que ya tienen datos de ejemplo. */
-const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos', 'reportes', 'documentos']);
+const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos', 'reportes', 'documentos', 'facturacion']);
 
 export function hayDatosDeEjemplo(claveDelModulo: string | null | undefined): boolean {
   return Boolean(claveDelModulo && SECCIONES_CON_DATOS_DE_EJEMPLO.has(claveDelModulo));

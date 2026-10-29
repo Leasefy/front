@@ -104,7 +104,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     titulo: 'Facturación electrónica de tu inmobiliaria',
     promesa: 'Factura el canon y tu comisión ante la DIAN con tu resolución, sin salir de Leasefy.',
     puntos: ['Facturas y notas ante la DIAN', 'Tu resolución y tu numeración', 'Documento soporte de proveedores'],
-    capturas: [cap('erp-recaudo', 'Recaudo del mes listo para facturar'), TABLERO],
+    capturas: [cap('demo-facturacion', 'Facturación con datos de ejemplo')],
+    video: video('facturacion', 'Recorrido por Facturación con datos de ejemplo: lo que hay por facturar a inquilinos y propietarios, lo emitido y la numeración'),
   },
   mantenimientos: {
     titulo: 'Las reparaciones, de la solicitud al pago',

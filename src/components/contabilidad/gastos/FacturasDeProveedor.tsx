@@ -261,6 +261,8 @@ export function FacturasDeProveedor({
           hasta: hasta || undefined,
           estado: e,
           rubro: rubroFiltro || undefined,
+          // Lo buscado también: si no, «Por causar 3» no cuadra con la lista que se ve.
+          buscar: buscar || undefined,
           limite: 1,
         }),
       ),
@@ -278,7 +280,7 @@ export function FacturasDeProveedor({
     return () => {
       vivo = false;
     };
-  }, [desde, hasta, rubroFiltro, version]);
+  }, [desde, hasta, rubroFiltro, buscar, version]);
 
   /*
    * Lo del formulario, en cuatro pedidos independientes. Si los proveedores no
@@ -535,17 +537,20 @@ export function FacturasDeProveedor({
 
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
         {/* Nico (29-10): con más de 50 facturas no se llegaba a las demás. El buscador va en la
-            barra de la tabla, como en las hermanas. */}
-        <SearchInput
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          onClear={() => setTexto('')}
-          placeholder="Proveedor, NIT, número o concepto"
-          aria-label="Buscar una factura"
-          inputSize="md"
-          className="w-full sm:w-72"
-          data-testid="facturas-buscar"
-        />
+            barra de la tabla, como en las hermanas. El ancho va en esta caja: el `className` del
+            SearchInput es del campo y su envoltura es `w-full` (la «×» se iba al otro extremo). */}
+        <div className="w-full sm:w-80">
+          <SearchInput
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onClear={() => setTexto('')}
+            placeholder="Proveedor, NIT, número o concepto"
+            aria-label="Buscar una factura"
+            inputSize="md"
+            className="w-full"
+            data-testid="facturas-buscar"
+          />
+        </div>
         {/* El período, con los mismos atajos del libro y los informes (antes, dos campos «Sin
             fecha» sin decir cuál era cuál). */}
         <div className="min-w-0">

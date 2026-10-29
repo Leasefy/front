@@ -518,6 +518,9 @@ describe('<FacturasDeProveedor> · más de 50 facturas', () => {
       await new Promise((r) => setTimeout(r, 350));
     });
     expect(pedidosDeLaLista().at(-1)).toMatchObject({ buscar: 'tornillo', desplazamiento: 0 });
+    // Las pestañas cuentan lo mismo que se ve: sus conteos también llevan lo buscado.
+    const conteos = gastos.facturas.listar.mock.calls.map((c) => c[0]).filter((f) => f?.limite === 1);
+    expect(conteos.some((f) => f.estado === 'BORRADOR' && f.buscar === 'tornillo')).toBe(true);
   });
 
   it('el aviso del borrador cuenta TODAS las del período, no sólo las de la página', async () => {

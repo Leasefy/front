@@ -99,7 +99,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     titulo: 'La contabilidad se lleva sola',
     promesa: 'Cada recibo, giro y factura deja su asiento: el libro, la exógena y los certificados salen de ahí.',
     puntos: ['Asientos automáticos de la operación', 'Información exógena para la DIAN', 'Certificados de retención del año'],
-    capturas: [cap('erp-recaudo', 'Recaudo del mes con su asiento'), TABLERO],
+    capturas: [cap('demo-contabilidad', 'Contabilidad con datos de ejemplo')],
+    video: video('contabilidad', 'Recorrido por Contabilidad con datos de ejemplo: el cierre del mes, los asientos y el balance de prueba que cuadra'),
   },
   facturacion: {
     titulo: 'Facturación electrónica de tu inmobiliaria',

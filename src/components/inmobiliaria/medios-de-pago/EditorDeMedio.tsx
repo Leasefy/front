@@ -39,10 +39,12 @@ import {
   ICONO_DEL_TIPO,
   NOMBRE_DEL_TIPO,
   TIPOS,
+  admiteQr,
   etiquetaDelCampo,
   faltantesDe,
   type CampoDelMedio,
 } from './legible';
+import { QrDelMedio } from './QrDelMedio';
 
 export interface EditorDeMedioProps {
   abierto: boolean;
@@ -52,6 +54,9 @@ export interface EditorDeMedioProps {
   onCerrar: () => void;
   /** Tiene que relanzar el error: el 400 del back se muestra acá adentro. */
   onGuardar: (valores: NuevoMedioDePago) => Promise<unknown>;
+  /** El QR del banco se guarda en el momento (Nico 29-10-2026); la lista se entera por aquí. */
+  onQrCambiado?: (medio: MedioDePago) => void;
+  puedeEditar?: boolean;
 }
 
 /** Los campos del formulario que pueden traer su propio error. */
@@ -97,8 +102,18 @@ function desdeMedio(m: MedioDePago): NuevoMedioDePago {
   };
 }
 
-export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: EditorDeMedioProps) {
+export function EditorDeMedio({
+  abierto,
+  medio,
+  inicial,
+  onCerrar,
+  onGuardar,
+  onQrCambiado,
+  puedeEditar = true,
+}: EditorDeMedioProps) {
   const [valores, setValores] = useState<NuevoMedioDePago>(VACIO);
+  // El QR vive aparte del formulario: se sube y se quita en el momento, sin «Guardar cambios».
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [tocado, setTocado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [errorDelBack, setErrorDelBack] = useState<string | null>(null);
@@ -109,6 +124,7 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
   useEffect(() => {
     if (!abierto) return;
     setValores(medio ? desdeMedio(medio) : { ...VACIO, ...(inicial ?? {}) });
+    setQrUrl(medio?.qrUrl ?? null);
     setTocado(false);
     setErrorDelBack(null);
     setErrores({});
@@ -282,6 +298,21 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
             />
             <ErrorDelCampo id="medio-instrucciones-error" mensaje={errores.instrucciones} className="mt-0" />
           </div>
+
+          <Presence show={admiteQr(valores.tipo)} direction="down">
+            <QrDelMedio
+              medio={medio && admiteQr(medio.tipo) ? medio : null}
+              porQueTodaviaNo={
+                medio ? 'Guarda el medio con este tipo y vuelve a abrirlo para subir el QR que te dio tu banco.' : undefined
+              }
+              qrUrl={medio && admiteQr(medio.tipo) ? qrUrl : null}
+              puedeEditar={puedeEditar}
+              onCambio={(actualizado) => {
+                setQrUrl(actualizado.qrUrl ?? null);
+                onQrCambiado?.(actualizado);
+              }}
+            />
+          </Presence>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm">

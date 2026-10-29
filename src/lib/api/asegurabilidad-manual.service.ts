@@ -74,6 +74,8 @@ export interface AprobacionDeLaInmobiliaria {
     titular: string | null;
     instrucciones: string | null;
     enlace: string | null;
+    /** Nico 29-10-2026: el QR del banco para escanear y pagar. Un back viejo no lo manda. */
+    qrUrl?: string | null;
   } | null;
   pagadaHasta: string | null;
   comprobante: { estado: EstadoDelComprobante; subidoAt: string | null; motivo: string | null } | null;

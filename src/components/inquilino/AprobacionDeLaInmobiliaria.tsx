@@ -12,6 +12,7 @@ import { CheckCircle, UploadSimple, WarningCircle } from '@phosphor-icons/react'
 import { CopyButton, Presence } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
+import { QrParaPagar } from '@/components/tenant/QrParaPagar';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatCurrency } from '@/lib/format';
@@ -121,6 +122,7 @@ export function AprobacionDeLaInmobiliaria({ applicationId }: { applicationId: s
               {datos.cuenta.instrucciones ? <p className="text-caption text-fg-muted sm:col-span-2">{datos.cuenta.instrucciones}</p> : null}
             </dl>
           ) : null}
+          {datos.cuenta?.qrUrl ? <QrParaPagar url={datos.cuenta.qrUrl} nombre={quien} /> : null}
 
           <Presence show={c?.estado === 'RECHAZADO'} direction="down">
             <p className="flex items-start gap-2 text-body-sm text-fg" data-testid="comprobante-rechazado">

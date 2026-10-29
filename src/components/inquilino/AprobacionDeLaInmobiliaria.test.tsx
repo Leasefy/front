@@ -100,6 +100,13 @@ describe('AprobacionDeLaInmobiliaria', () => {
     expect(caja).toMatch(/Tope aprobado: \$\s?3\.000\.000/);
   });
 
+  it('con el QR del banco de la cuenta, lo muestra para escanear (Nico 29-10-2026)', async () => {
+    api.ver.mockResolvedValue(datos({ cuenta: { ...datos().cuenta!, qrUrl: 'https://almacen.example/qr.png?firmada' } }));
+    await montar();
+    expect(document.querySelector('[data-testid="qr-para-pagar"] img')?.getAttribute('src')).toContain('firmada');
+    expect(texto().toLowerCase()).not.toContain('estudio');
+  });
+
   it('sin nada que pedir ni resultado, no se pinta', async () => {
     api.ver.mockResolvedValue(datos({ pide: false }));
     await montar();

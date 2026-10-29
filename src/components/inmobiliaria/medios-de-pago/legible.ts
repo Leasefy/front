@@ -44,6 +44,17 @@ export const TIPOS: readonly TipoDeMedioDePago[] = [
   'OTRO',
 ];
 
+/**
+ * Los medios que se pagan escaneando un QR del banco (Nico 29-10-2026: «demos opción también con llave de Bre-B y
+ * QR»). Espejo de `TIPOS_CON_QR` del back (`medios-de-pago/qr-del-medio.ts`): el efectivo, el PSE y el enlace de pago
+ * no llevan QR.
+ */
+export const TIPOS_CON_QR: readonly TipoDeMedioDePago[] = ['TRANSFERENCIA', 'BRE_B', 'NEQUI', 'DAVIPLATA', 'OTRO'];
+
+export function admiteQr(tipo: TipoDeMedioDePago): boolean {
+  return TIPOS_CON_QR.includes(tipo);
+}
+
 export type CampoDelMedio =
   | 'banco'
   | 'tipoDeCuenta'

@@ -281,6 +281,17 @@ const DECLARADAS: readonly string[] = [
   'tenant-acuerdos.listMine',
   'tenant-acuerdos.requestPremoraPlan',
 
+  // ── T-0193 tenant-canon-estimate-bureau — contract.md FROZEN, back en
+  // paralelo (WU-1). El estudio gratis de documentos: `crear`, `actual` e
+  // `iniciar` pasan por `apiClient`; la subida del archivo usa multipart con
+  // `fetchConSesion` y este barrido no la ve. Wire en
+  // `.orchestration/tasks/T-0193-tenant-canon-estimate-bureau/contract.md`
+  // §3.1 A. Cuando WU-1 integre: `node scripts/rutas-del-back.mjs` y BORRAR
+  // estas tres filas.
+  'estudioDeCanonApi.actual',
+  'estudioDeCanonApi.crear',
+  'estudioDeCanonApi.iniciar',
+
   // ── T-0109 firma-electronica-reforzada — contract.md FROZEN, back en
   // paralelo (WU-1..WU-4 no existen todavía). El wire está congelado en
   // `.orchestration/tasks/T-0109-firma-electronica-reforzada/contract.md`;

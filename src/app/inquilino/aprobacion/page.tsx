@@ -3,76 +3,70 @@
 /**
  * /inquilino/aprobacion — "Mi tope de arriendo".
  *
- * La pantalla del premio: es acá donde el inquilino ve **hasta cuánto** lo
- * respaldan las aseguradoras, y desde acá salta al catálogo ya filtrado.
+ * T-0193: the answer to "¿hasta cuánto me arriendan?" is the free document
+ * study (`GET /calificacion-leasefy/estudio/actual`), scored by Leasefy's
+ * bureau. The figure is `resultado.canonMaximoCop`, shown verbatim as "the rent
+ * range where you have better chances of being accepted" — a guide, never a
+ * promise, never a guarantee. No insurers, no payment, no deposit (Ley 820
+ * art. 16: a deposit condition is filtered out defensively).
  *
- * Seis estados, cada uno con un trabajo distinto:
- *  · sin_estudio → enseñar el camino ANTES de pedir el primer dato
- *  · en_proceso  → tranquilizar y liberar, o pedir la autorización que falta
- *  · aprobado    → el número como héroe + quién respalda, con su prima
- *  · rechazado   → no es un callejón: por qué, qué hacer, y la salida real
- *  · expirado    → la ventana venció; se puede volver a intentar
- *  · error       → el estudio falló; reintentar es legítimo
+ * States, each with its own job:
+ *  · sin estudio   → show the path BEFORE asking for anything
+ *  · borrador      → an unfinished study: continue it
+ *  · en proceso    → reassure; the hook polls every 3 s and this updates itself
+ *  · listo         → the number as hero + letter, conditions, how it was computed
+ *  · sin ingreso   → the study finished but no income could be verified: never $0
+ *  · vencido       → past `venceEl`; repeat the study
+ *  · fallido       → the back's user-facing message + retry
  *
- * Slice 2 (2026-08-12): la fuente pasó de `useAprobacion` (`/api/tenant/
- * aprobacion`, del agente) a `usePreScoringCurrent` (`GET /pre-scoring/
- * current`, del back principal — contrato firme). `useAprobacion` sigue
- * viva para el banner del home (`TopeAprobadoBanner`) y el catálogo: esta
- * página no la toca, así que ese recorrido no se ve afectado.
- *
- * Vocabulario en `docs/VOCABULARIO.md` — acá nunca se dice "asegurabilidad"
- * ni "estudio": se dice **aprobación** y **tope aprobado**.
+ * Vocabulary in `docs/VOCABULARIO.md`: "aprobación" / "tope", never
+ * "asegurabilidad".
  */
 
-import { MasDetalles } from '@/components/pantalla/MasDetalles';
-import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
-import { StatusBadge } from '@leasefy/cadence';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useCallback } from 'react'
-
-import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
-import { AseguradorasConPrima } from '@/components/tenant/AseguradorasConPrima'
-import { RespuestaDelArriendo } from '@/components/aprobacion/RespuestaDelArriendo'
-import { ValidacionPorWhatsapp } from '@/components/aprobacion/ValidacionPorWhatsapp'
 import Link from 'next/link'
-import {
-  ArrowsClockwise,
-  Clock,
-  EnvelopeSimple,
-  Hourglass,
-  Info,
-  WarningOctagon,
-} from '@phosphor-icons/react'
+import { useCallback } from 'react'
+import { Clock, Hourglass, WarningOctagon } from '@phosphor-icons/react'
+import { StatusBadge } from '@leasefy/cadence'
 
-import { Button } from '@/components/ui/button'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { RespuestaDelArriendo } from '@/components/aprobacion/RespuestaDelArriendo'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
-import { useI18n } from '@/lib/i18n'
-import { formatCurrency } from '@/lib/format'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { mapEstudioToAprobacion } from '@/lib/api/aprobacion-from-estudio'
 import { diasParaVencer, estadoVigencia, type EstadoVigencia } from '@/lib/api/aprobacion.service'
-import type { PreScoringEvaluation } from '@/lib/api/prescoring.types'
+import type { EstudioDeCanon, ResultadoDelEstudio } from '@/lib/api/estudio-de-canon.types'
+import { formatCurrency } from '@/lib/format'
+import { useEstudioDeCanon } from '@/lib/hooks/use-estudio-de-canon'
+import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 const NS = 'inquilino.aprobacion'
 
+type Tf = (key: string, fallback: string) => string
+
+/** Starts a NEW study (a finished one is not re-opened by `/aprobacion`). */
+const REPETIR = '/aprobacion?repetir=1'
+
 export default function AprobacionPage() {
   const { t, locale } = useI18n()
-  /** Traduce con respaldo: si falta la clave, se lee el texto igual. */
-  const tf = useCallback(
-    (key: string, fallback: string): string => {
+  /** Translates with a fallback: if the key is missing, the Spanish text is read anyway. */
+  const tf: Tf = useCallback(
+    (key, fallback) => {
       const v = t(key)
       return !v || v === key ? fallback : v
     },
     [t],
   )
 
-  const { current, estado, isLoading, error, refetch } = usePreScoringCurrent()
+  const { estudio, isLoading, error, refetch } = useEstudioDeCanon()
 
   if (isLoading) {
-    // Glow up 22-10: el esqueleto con la forma de la pantalla (encabezado y la cifra), no un spinner centrado.
     return (
       <div className="space-y-6 p-6 lg:p-8" aria-busy="true" data-testid="aprobacion-cargando">
-        <span className="sr-only">{tf(`${NS}.cargando`, 'Cargando tu aprobación...')}</span>
+        <span className="sr-only">{tf(`${NS}.cargando`, 'Cargando tu tope...')}</span>
         <div className="space-y-2">
           <Skeleton className="h-3 w-28" />
           <Skeleton className="h-8 w-60" />
@@ -87,170 +81,153 @@ export default function AprobacionPage() {
     )
   }
 
-  // Un fallo de red es distinto de "todavía no hay nada" (sin_estudio): las
-  // dos cosas llevan a acciones distintas, y `usePreScoringCurrent` ya las
-  // separa (un 404 no llega acá — se resuelve como `sin_estudio`).
+  // A network failure is different from "no study yet": different actions.
   if (error) {
     return (
       <div className="py-12">
-        <FalloDeCarga error={error} queEs="tu aprobación" onReintentar={refetch} />
+        <FalloDeCarga error={error} queEs="tu tope" onReintentar={refetch} />
       </div>
     )
   }
+
+  const vencido = estadoVigencia(diasParaVencer(estudio?.venceEl ?? null)) === 'vencida'
+  const aprobacion = mapEstudioToAprobacion(estudio)
+  const tope = aprobacion.topeAprobadoCop
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
         seccion={tf('nav.buscarArriendo', 'Buscar arriendo')}
         titulo={tf(`${NS}.titulo`, 'Mi tope de arriendo')}
-        descripcion={tf(`${NS}.subtitulo`, 'Hasta cuánto te respaldan las aseguradoras.')}
+        descripcion={tf(`${NS}.subtitulo`, 'El rango de arriendo donde tienes mejores posibilidades de que te acepten.')}
       />
 
       {/* Paso 3 de 3 cuando llegó desde «¿Te podemos arrendar este inmueble?». */}
-      <RespuestaDelArriendo
-        estado={estado}
-        tope={current?.evaluation?.result?.fianly.maxEntrenchmentValue ?? null}
-      />
+      <RespuestaDelArriendo estado={vencido ? 'sin_estudio' : aprobacion.estado} tope={vencido ? null : tope} />
 
-      {estado === 'aprobado' && (
-        <AprobadoView evaluation={current?.evaluation ?? null} tf={tf} locale={locale} />
+      {!estudio && <SinEstudioView tf={tf} />}
+      {estudio?.status === 'DRAFT' && <BorradorView tf={tf} />}
+      {estudio?.status === 'PROCESSING' && <ProcesoView tf={tf} />}
+      {estudio?.status === 'FAILED' && <FalloView tf={tf} estudio={estudio} />}
+      {estudio?.status === 'COMPLETED' && vencido && <VencidoView tf={tf} />}
+      {estudio?.status === 'COMPLETED' && !vencido && estudio.resultado && estudio.resultado.canonMaximoCop !== null && (
+        <ResultadoView tf={tf} locale={locale} estudio={estudio} resultado={estudio.resultado} tope={estudio.resultado.canonMaximoCop} />
       )}
-      {estado === 'rechazado' && <RechazadoView evaluation={current?.evaluation ?? null} tf={tf} />}
-      {estado === 'en_proceso' && (
-        <EnProcesoView
-          tf={tf}
-          evaluation={current?.evaluation ?? null}
-          expiresAt={current?.order?.expiresAt ?? null}
-          onActualizar={refetch}
-        />
+      {estudio?.status === 'COMPLETED' && !vencido && (!estudio.resultado || estudio.resultado.canonMaximoCop === null) && (
+        <SinIngresoView tf={tf} resultado={estudio.resultado} />
       )}
-      {estado === 'sin_estudio' && <SinEstudioView tf={tf} />}
-      {estado === 'expirado' && <ExpiradoView tf={tf} />}
-      {estado === 'error' && <ErrorEstudioView tf={tf} onReintentar={refetch} />}
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Aprobado — el número manda
+// Listo — el número manda
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AprobadoView({
-  evaluation,
+function ResultadoView({
   tf,
   locale,
+  estudio,
+  resultado,
+  tope,
 }: {
-  evaluation: PreScoringEvaluation | null
-  tf: (k: string, f: string) => string
+  tf: Tf
   locale: 'es' | 'en'
+  estudio: EstudioDeCanon
+  resultado: ResultadoDelEstudio
+  tope: number
 }) {
-  const result = evaluation?.result ?? null
-  const tope = result?.fianly.maxEntrenchmentValue ?? null
-  const tieneTope = tope !== null
-  const carriers = result?.carriers ?? []
-  const bureau = result?.bureau ?? null
-  const tieneDatosDeBuro = bureau !== null && (bureau.minimumScore !== null || bureau.monthlyCapacity !== null)
+  // Ley 820 art. 16: a deposit is never a condition the UI shows. The back never
+  // sends one; this is the last line of defence.
+  const condiciones = resultado.condiciones.filter((c) => !/dep[oó]sito/i.test(c))
 
   return (
-    <div className="space-y-6">
-      {/* GLOW UP (22-10): LA RESPUESTA en una CifraHeroe con su estado (punto y palabra) y los datos del buró en
-          una línea al pie, en vez de dos tarjetas con borde dentro de la tarjeta. */}
-      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-6">
-        <StatusBadge tone="success">{tf(`${NS}.aprobado.badge`, 'Aprobado')}</StatusBadge>
+    <section className="space-y-6 rounded-lg border border-border bg-surface p-5 sm:p-8" data-testid="resultado-del-estudio">
+      <StatusBadge tone="success">{tf(`${NS}.resultado.badge`, 'Estudio listo')}</StatusBadge>
 
-        {tieneTope ? (
-          <CifraHeroe
-            rotulo={tf(`${NS}.aprobado.label`, 'Estás aprobado hasta')}
-            cifra={formatCurrency(tope, locale)}
-            contexto={locale === 'es' ? 'de canon al mes' : 'monthly rent'}
-            pie={
-              <span className="block space-y-2">
-                <span className="block max-w-lg leading-relaxed">
-                  {tf(
-                    `${NS}.aprobado.ayuda`,
-                    'Puedes postularte a cualquier inmueble con un canon hasta ese valor. Y a todos los que quieras: con esta aprobación no vuelves a pagar.',
-                  )}
-                </span>
-                {tieneDatosDeBuro && (
-                  <span className="flex flex-wrap gap-x-4 gap-y-1" data-testid="datos-del-buro">
-                    {bureau!.minimumScore !== null && (
-                      <span>
-                        {tf(`${NS}.aprobado.scoreBuro`, 'Puntaje del buró')}{' '}
-                        <span className="font-mono tabular-nums text-fg">{bureau!.minimumScore}</span>
-                      </span>
-                    )}
-                    {bureau!.monthlyCapacity !== null && (
-                      <span>
-                        {tf(`${NS}.aprobado.capacidadMensual`, 'Capacidad de pago mensual')}{' '}
-                        <span className="font-mono tabular-nums text-fg">{formatCurrency(bureau!.monthlyCapacity, locale)}</span>
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-            }
-          />
-        ) : (
-          /* Aprobado pero sin el número: se dice que falta. Nunca se inventa. */
-          <div className="space-y-2">
-            <p className="text-h3 font-light text-fg">
-              {tf(`${NS}.aprobado.sinTope.title`, 'Estás aprobado')}
-            </p>
-            <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
+      <CifraHeroe
+        rotulo={tf(`${NS}.resultado.label`, 'El rango donde tienes mejores posibilidades de que te acepten')}
+        cifra={`${tf(`${NS}.resultado.hasta`, 'Hasta')} ${formatCurrency(tope, locale)}`}
+        contexto={tf(`${NS}.resultado.contexto`, 'de canon al mes')}
+        pie={
+          <span className="block space-y-2">
+            <span className="block max-w-lg leading-relaxed">
               {tf(
-                `${NS}.aprobado.sinTope.ayuda`,
-                'Estamos terminando de calcular hasta cuánto podemos respaldarte. Te avisamos apenas esté listo.',
+                `${NS}.resultado.ayuda`,
+                'Es una guía, no una promesa: la inmobiliaria decide con cada postulación. Te mostramos primero los inmuebles que caben en este rango.',
               )}
-            </p>
-            {tieneDatosDeBuro && (
-              <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted" data-testid="datos-del-buro">
-                {bureau!.minimumScore !== null && (
-                  <span>
-                    {tf(`${NS}.aprobado.scoreBuro`, 'Puntaje del buró')}{' '}
-                    <span className="font-mono tabular-nums text-fg">{bureau!.minimumScore}</span>
+            </span>
+            {resultado.letra && (
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="calificacion-del-estudio">
+                <span>
+                  {tf(`${NS}.resultado.calificacion`, 'Tu Calificación Leasefy')}{' '}
+                  <span className="font-mono tabular-nums text-fg">
+                    {resultado.letra}
+                    {resultado.puntaje !== null ? ` · ${resultado.puntaje}/100` : ''}
                   </span>
-                )}
-                {bureau!.monthlyCapacity !== null && (
-                  <span>
-                    {tf(`${NS}.aprobado.capacidadMensual`, 'Capacidad de pago mensual')}{' '}
-                    <span className="font-mono tabular-nums text-fg">{formatCurrency(bureau!.monthlyCapacity, locale)}</span>
-                  </span>
-                )}
-              </p>
+                </span>
+                <Link href="/inquilino/calificacion" className="underline hover:no-underline">
+                  {tf(`${NS}.resultado.verCalificacion`, 'Ver el detalle')}
+                </Link>
+              </span>
             )}
-          </div>
-        )}
+          </span>
+        }
+      />
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button asChild>
-            <Link href="/inquilino/para-ti">
-              {tf(`${NS}.aprobado.cta`, 'Ver mis inmuebles')}
-            </Link>
-          </Button>
-          <Button asChild variant="secondary">
-            <Link href="/inquilino/aplicaciones">
-              {tf(`${NS}.aprobado.ctaSecundaria`, 'Mis postulaciones')}
-            </Link>
-          </Button>
+      <VigenciaPill tf={tf} locale={locale} venceEl={estudio.venceEl} />
+
+      {condiciones.length > 0 && (
+        <div className="space-y-2" data-testid="condiciones-del-estudio">
+          <h2 className="text-sm font-medium text-fg">
+            {tf(`${NS}.resultado.condiciones`, 'Para arrendar en este rango podrían pedirte')}
+          </h2>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-fg-muted">
+            {condiciones.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
         </div>
-      </section>
+      )}
 
-      <AseguradorasConPrima carriers={carriers} locale={locale} />
-    </div>
+      {resultado.revisiones.length > 0 && (
+        <div className="space-y-2" data-testid="revisiones-del-estudio">
+          <h2 className="text-sm font-medium text-fg">{tf(`${NS}.resultado.revisiones`, 'Lo que estamos revisando')}</h2>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-fg-muted">
+            {resultado.revisiones.map((r) => (
+              <li key={r.codigo}>{r.texto}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {resultado.explicacion.length > 0 && (
+        <MasDetalles etiqueta={tf(`${NS}.resultado.explicacion`, 'Cómo lo calculamos')} montadoSiempre>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-fg-muted" data-testid="explicacion-del-estudio">
+            {resultado.explicacion.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        </MasDetalles>
+      )}
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button asChild>
+          <Link href="/inquilino/para-ti">{tf(`${NS}.resultado.cta`, 'Ver mis inmuebles')}</Link>
+        </Button>
+        <Button asChild variant="secondary">
+          <Link href="/inquilino/aplicaciones">{tf(`${NS}.resultado.ctaSecundaria`, 'Mis postulaciones')}</Link>
+        </Button>
+      </div>
+    </section>
   )
 }
 
-/** La vigencia corriendo — reusada tanto para el tope como para la ventana de pago. */
-function VigenciaPill({
-  vigenteHasta,
-  tf,
-}: {
-  vigenteHasta: string | null
-  tf: (k: string, f: string) => string
-}) {
-  const dias = diasParaVencer(vigenteHasta)
+/** The validity line. `venceEl` null → nothing rendered (contract §3.2). */
+function VigenciaPill({ tf, locale, venceEl }: { tf: Tf; locale: 'es' | 'en'; venceEl: string | null }) {
+  const dias = diasParaVencer(venceEl)
   const estado: EstadoVigencia | null = estadoVigencia(dias)
-  if (dias === null || estado === null) return null
+  if (dias === null || estado === null || !venceEl) return null
 
   const tono: Record<EstadoVigencia, string> = {
     vigente: 'bg-surface-muted text-fg-muted',
@@ -259,140 +236,133 @@ function VigenciaPill({
   }
 
   let texto: string
-  if (dias > 1) texto = tf(`${NS}.vigencia.dias`, `Vence en ${dias} días`).replace('{n}', String(dias))
+  if (dias > 3) {
+    const fecha = new Date(venceEl).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    texto = tf(`${NS}.vigencia.hasta`, 'Vigente hasta {fecha}').replace('{fecha}', fecha)
+  } else if (dias > 1) texto = tf(`${NS}.vigencia.dias`, 'Vence en {n} días').replace('{n}', String(dias))
   else if (dias === 1) texto = tf(`${NS}.vigencia.manana`, 'Vence mañana')
   else if (dias === 0) texto = tf(`${NS}.vigencia.hoy`, 'Vence hoy')
   else if (dias === -1) texto = tf(`${NS}.vigencia.ayer`, 'Venció ayer')
-  else
-    texto = tf(`${NS}.vigencia.vencida`, `Venció hace ${Math.abs(dias)} días`).replace(
-      '{n}',
-      String(Math.abs(dias)),
-    )
+  else texto = tf(`${NS}.vigencia.vencida`, 'Venció hace {n} días').replace('{n}', String(Math.abs(dias)))
 
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium',
-        tono[estado],
-      )}
-    >
-      <Hourglass className="w-3.5 h-3.5" aria-hidden="true" />
-      {texto}
-    </span>
+    <p>
+      <span
+        className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium', tono[estado])}
+        data-testid="vigencia-del-estudio"
+      >
+        <Hourglass className="h-3.5 w-3.5" aria-hidden="true" />
+        {texto}
+      </span>
+    </p>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Rechazado — una pantalla con trabajo, no un callejón
+// Terminó sin ingreso verificado — nunca $0, nunca un número inventado
 // ─────────────────────────────────────────────────────────────────────────────
 
-function RechazadoView({
-  evaluation,
-  tf,
-}: {
-  evaluation: PreScoringEvaluation | null
-  tf: (k: string, f: string) => string
-}) {
-  const carriers = evaluation?.result?.carriers ?? []
-
-  const salidas = [
-    {
-      id: 'perfil',
-      title: tf(`${NS}.rechazado.perfil.title`, 'Mejora tu perfil crediticio'),
-      desc: tf(
-        `${NS}.rechazado.perfil.desc`,
-        'Ponerte al día con tus obligaciones y bajar tu nivel de endeudamiento cambia el resultado más rápido de lo que parece.',
-      ),
-    },
-    {
-      id: 'reintentar',
-      title: tf(`${NS}.rechazado.reintentar.title`, 'Vuelve a intentarlo más adelante'),
-      desc: tf(
-        `${NS}.rechazado.reintentar.desc`,
-        'Esto no es definitivo. Las aseguradoras vuelven a mirar tu situación cada vez que te estudias.',
-      ),
-    },
-    {
-      id: 'tercero',
-      title: tf(`${NS}.rechazado.tercero.title`, 'Alguien puede postularse por ti'),
-      desc: tf(
-        `${NS}.rechazado.tercero.desc`,
-        'Quien firma no tiene que ser quien vive en el inmueble. Un familiar o un amigo puede postularse y tú vives ahí: es legal y es como funciona más de la mitad de los arriendos en Colombia.',
-      ),
-    },
-  ]
-
+function SinIngresoView({ tf, resultado }: { tf: Tf; resultado: ResultadoDelEstudio | null }) {
+  const revisiones = resultado?.revisiones ?? []
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-3">
-        {/* Informativo, no error (Nico, 02-10): es un «no», pero el texto dice
-            que no es definitivo y que hay salidas; un medallón rojo con una ✕
-            lo contradecía. El mismo tono que el modal de `PostularButton`. */}
-        {/* Ronda 30 (Cadence 2): el ícono solo, sin círculo de color; la tarjeta ya no lleva sombra. */}
-        <div
-          className="flex items-center"
-          data-testid="rechazado-medallon"
-          data-tono="info"
-        >
-          <Info className="w-6 h-6 text-info" weight="bold" aria-hidden="true" />
-        </div>
-        <h2 className="text-h2 text-fg">
-          {tf(`${NS}.rechazado.title`, 'Por ahora no podemos aprobarte')}
-        </h2>
-        <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
-          {carriers.length > 0
-            ? `Ninguna de las ${carriers.length} aseguradoras que consultamos respaldó tu solicitud esta vez.`
-            : tf(
-                `${NS}.rechazado.desc`,
-                'Las aseguradoras que consultamos no respaldaron tu solicitud esta vez.',
-              )}
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-fg">
-          {tf(`${NS}.rechazado.salidas`, 'Qué puedes hacer')}
-        </h2>
-        <ul className="space-y-3">
-          {salidas.map((s) => (
-            <li key={s.id} className="rounded-lg border border-border bg-surface p-5">
-              <p className="text-sm font-medium text-fg">{s.title}</p>
-              <p className="text-sm text-fg-muted mt-1 leading-relaxed">{s.desc}</p>
-            </li>
+    <section className="space-y-3 rounded-lg border border-border bg-surface p-5 sm:p-8" data-testid="estudio-sin-ingreso">
+      <WarningOctagon className="h-6 w-6 text-warning" aria-hidden="true" />
+      <h2 className="text-h3 text-fg">{tf(`${NS}.sinIngreso.title`, 'No pudimos verificar tu ingreso')}</h2>
+      <p className="max-w-lg text-sm leading-relaxed text-fg-muted">
+        {tf(
+          `${NS}.sinIngreso.desc`,
+          'Con los documentos que subiste no alcanzamos a confirmar cuánto ganas, así que no podemos mostrarte un rango. Puedes subir otros documentos, como un extracto más reciente, un desprendible de nómina o una certificación laboral.',
+        )}
+      </p>
+      {revisiones.length > 0 && (
+        <ul className="list-disc space-y-1 pl-5 text-sm text-fg-muted">
+          {revisiones.map((r) => (
+            <li key={r.codigo}>{r.texto}</li>
           ))}
         </ul>
-      </section>
-    </div>
+      )}
+      <div className="pt-2">
+        <Button asChild size="lg">
+          <Link href={REPETIR}>{tf(`${NS}.sinIngreso.cta`, 'Subir otros documentos')}</Link>
+        </Button>
+      </div>
+    </section>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// En proceso — tranquilizar y liberar, o pedir la autorización que falta
+// Vencido — la vigencia pasó, se puede repetir
 // ─────────────────────────────────────────────────────────────────────────────
 
-function EnProcesoView({
-  tf,
-  evaluation,
-  expiresAt,
-  onActualizar,
-}: {
-  tf: (k: string, f: string) => string
-  evaluation: PreScoringEvaluation | null
-  expiresAt: string | null
-  onActualizar: () => void
-}) {
-  // Pagó y el estudio espera: o todavía no sale el WhatsApp de Fianly, o salió
-  // y falta que valide su identidad. Es la MISMA espera que vio al pagar, con
-  // «Ya la validé» y el reenvío (Nico, 15-09): quien cerró la página y vuelve
-  // desde un recordatorio sigue exactamente donde quedó.
+function VencidoView({ tf }: { tf: Tf }) {
   return (
-    <section className="rounded-lg border border-border bg-surface p-6 space-y-4 md:p-8">
-      <ValidacionPorWhatsapp evaluationStatus={evaluation?.status ?? null} onActualizar={onActualizar} />
-      {expiresAt && (
-        <div className="pt-1">
-          <VigenciaPill vigenteHasta={expiresAt} tf={tf} />
-        </div>
-      )}
+    <section className="space-y-3 rounded-lg border border-border bg-surface p-5 sm:p-8" data-testid="estudio-vencido">
+      <Clock className="h-6 w-6 text-warning" aria-hidden="true" />
+      <h2 className="text-h3 text-fg">{tf(`${NS}.vencido.title`, 'Tu estudio venció')}</h2>
+      <p className="max-w-lg text-sm leading-relaxed text-fg-muted">
+        {tf(
+          `${NS}.vencido.desc`,
+          'Tu situación cambia con el tiempo, así que el estudio vale por seis meses. Vuelve a subir tus documentos y recalculamos tu rango, gratis.',
+        )}
+      </p>
+      <div className="pt-2">
+        <Button asChild size="lg">
+          <Link href={REPETIR}>{tf(`${NS}.vencido.cta`, 'Hacer un estudio nuevo')}</Link>
+        </Button>
+      </div>
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// En proceso, borrador, fallido
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ProcesoView({ tf }: { tf: Tf }) {
+  return (
+    <section
+      className="space-y-3 rounded-lg border border-border bg-surface p-5 sm:p-8"
+      data-testid="estudio-en-proceso"
+      aria-live="polite"
+    >
+      <Hourglass className="h-6 w-6 text-primary" aria-hidden="true" />
+      <h2 className="text-h3 text-fg">{tf(`${NS}.proceso.title`, 'Estamos leyendo tus documentos')}</h2>
+      <p className="max-w-lg text-sm leading-relaxed text-fg-muted">
+        {tf(`${NS}.proceso.desc`, 'Suele tomar entre uno y dos minutos. Esta pantalla se actualiza sola cuando termine.')}
+      </p>
+    </section>
+  )
+}
+
+function BorradorView({ tf }: { tf: Tf }) {
+  return (
+    <section className="space-y-3 rounded-lg border border-border bg-surface p-5 sm:p-8" data-testid="estudio-borrador">
+      <h2 className="text-h3 text-fg">{tf(`${NS}.borrador.title`, 'Tienes un estudio sin terminar')}</h2>
+      <p className="max-w-lg text-sm leading-relaxed text-fg-muted">
+        {tf(`${NS}.borrador.desc`, 'Sube tu cédula y tu extracto bancario para conocer tu tope.')}
+      </p>
+      <div className="pt-2">
+        <Button asChild size="lg">
+          <Link href="/aprobacion">{tf(`${NS}.borrador.cta`, 'Continuar mi estudio')}</Link>
+        </Button>
+      </div>
+    </section>
+  )
+}
+
+function FalloView({ tf, estudio }: { tf: Tf; estudio: EstudioDeCanon }) {
+  return (
+    <section className="space-y-3 rounded-lg border border-border bg-surface p-5 sm:p-8" data-testid="estudio-fallido">
+      <WarningOctagon className="h-6 w-6 text-danger" aria-hidden="true" />
+      <h2 className="text-h3 text-fg">{tf(`${NS}.fallo.title`, 'No pudimos terminar tu estudio')}</h2>
+      <p className="max-w-lg text-sm leading-relaxed text-fg-muted">
+        {estudio.error?.mensaje || tf(`${NS}.fallo.desc`, 'No pudimos leer tus documentos.')}
+      </p>
+      <div className="pt-2">
+        <Button asChild size="lg">
+          <Link href="/aprobacion">{tf(`${NS}.fallo.cta`, 'Intentar de nuevo')}</Link>
+        </Button>
+      </div>
     </section>
   )
 }
@@ -401,22 +371,22 @@ function EnProcesoView({
 // Sin estudio — mostrar el camino antes de pedir el primer dato
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
+function SinEstudioView({ tf }: { tf: Tf }) {
   const pasos = [
     {
       n: '01',
-      title: tf(`${NS}.pasos.uno.title`, 'Te estudiamos'),
+      title: tf(`${NS}.pasos.uno.title`, 'Subes tus documentos'),
       desc: tf(
         `${NS}.pasos.uno.desc`,
-        'Consultamos a todas las aseguradoras con las que trabajamos, no solo a una. Así tienes más chances de salir aprobado.',
+        'Tu cédula y tu extracto bancario. Si tienes desprendible de nómina o certificación laboral, mejor. Es gratis.',
       ),
     },
     {
       n: '02',
-      title: tf(`${NS}.pasos.dos.title`, 'Eliges'),
+      title: tf(`${NS}.pasos.dos.title`, 'Calculamos tu rango'),
       desc: tf(
         `${NS}.pasos.dos.desc`,
-        'Te mostramos los inmuebles que van con tu tope aprobado, para que no pierdas tiempo con los que no aplican.',
+        'Leemos tus documentos y te decimos hasta cuánto arriendo tienes mejores posibilidades de que te acepten.',
       ),
     },
     {
@@ -424,43 +394,33 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
       title: tf(`${NS}.pasos.tres.title`, 'Te postulas'),
       desc: tf(
         `${NS}.pasos.tres.desc`,
-        'Te postulas a los que quieras con el mismo estudio, sin volver a pagar.',
+        'Te postulas a los inmuebles que quieras con el mismo estudio, sin volver a subir nada.',
       ),
     },
   ]
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-3">
+    <div className="space-y-6" data-testid="estudio-vacio">
+      <section className="space-y-3 rounded-lg border border-border bg-surface p-5 sm:p-8">
         {/* h2 y no h1: el h1 de la página es "Mi tope de arriendo". */}
-        <h2 className="text-h3 text-fg">
-          {tf(`${NS}.vacio.title`, 'Todavía no conoces tu tope')}
-        </h2>
-        <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
+        <h2 className="text-h3 text-fg">{tf(`${NS}.vacio.title`, 'Todavía no conoces tu tope')}</h2>
+        <p className="max-w-lg text-sm leading-relaxed text-fg-muted">
           {tf(
             `${NS}.vacio.desc`,
-            'Con tu tope sabes hasta cuánto puedes arrendar, y te postulas a todos los inmuebles que quieras con el mismo estudio.',
+            'Con tu tope sabes en qué rango de arriendo tienes mejores posibilidades de que te acepten, y te postulas a todos los inmuebles que quieras con el mismo estudio.',
           )}
         </p>
         <div className="pt-2">
-          {/* `/aprobacion` es la entrada del flujo vigente (Wompi, Slice 1). */}
-          {/* A 390 el botón va a lo ancho y parte el texto: no se sale de la
-              tarjeta (revisora r25, R1). */}
-          <Button asChild size="lg" className="w-full sm:w-auto whitespace-normal h-auto min-h-12 py-3 text-center">
-            <Link href="/aprobacion">
-              {tf(`${NS}.vacio.cta`, 'Conocer mi tope')}
-            </Link>
+          {/* A 390 el botón va a lo ancho y parte el texto: no se sale de la tarjeta. */}
+          <Button asChild size="lg" className="h-auto min-h-12 w-full whitespace-normal py-3 text-center sm:w-auto">
+            <Link href="/aprobacion">{tf(`${NS}.vacio.cta`, 'Conocer mi tope')}</Link>
           </Button>
         </div>
       </section>
 
-      {/* El camino completo ANTES de pedir el primer dato: así "postular" deja
-          de parecer un compromiso ciego. */}
-      {/* Revisora r27 (Mi tope, UI): a 390 las tres tarjetas medían ≈550 px de consulta: ahí van plegadas. */}
+      {/* El camino completo ANTES de pedir el primer dato. A 390 las tres tarjetas van plegadas. */}
       <section className="hidden space-y-3 sm:block">
-        <h2 className="text-body-sm font-medium text-fg">
-          {tf(`${NS}.vacio.comoFunciona`, 'Cómo funciona')}
-        </h2>
+        <h2 className="text-body-sm font-medium text-fg">{tf(`${NS}.vacio.comoFunciona`, 'Cómo funciona')}</h2>
         <PasosDeMiTope pasos={pasos} />
       </section>
       <MasDetalles className="sm:hidden" etiqueta={tf(`${NS}.vacio.comoFunciona`, 'Cómo funciona')} montadoSiempre>
@@ -481,66 +441,5 @@ function PasosDeMiTope({ pasos }: { pasos: ReadonlyArray<{ n: string; title: str
         </li>
       ))}
     </ol>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Expirado — la ventana venció, pero se puede volver a intentar
-// ─────────────────────────────────────────────────────────────────────────────
-
-function ExpiradoView({ tf }: { tf: (k: string, f: string) => string }) {
-  return (
-    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-3">
-      <Clock className="w-6 h-6 text-warning" aria-hidden="true" />
-      <h2 className="text-h3 text-fg">
-        {tf(`${NS}.expirado.title`, 'Tu tiempo para completar la aprobación venció')}
-      </h2>
-      <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
-        {tf(
-          `${NS}.expirado.desc`,
-          'Tenías una ventana de tiempo para terminar el estudio y ya pasó. Puedes volver a intentarlo cuando quieras.',
-        )}
-      </p>
-      <div className="pt-2">
-        <Button asChild size="lg">
-          <Link href="/aprobacion">{tf(`${NS}.expirado.cta`, 'Volver a intentarlo')}</Link>
-        </Button>
-      </div>
-    </section>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Error — el estudio falló, reintentar es legítimo
-// ─────────────────────────────────────────────────────────────────────────────
-
-function ErrorEstudioView({
-  tf,
-  onReintentar,
-}: {
-  tf: (k: string, f: string) => string
-  onReintentar: () => void
-}) {
-  return (
-    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-3">
-      <WarningOctagon className="w-6 h-6 text-danger" aria-hidden="true" />
-      <h2 className="text-h3 text-fg">
-        {tf(`${NS}.error.title`, 'Algo falló al hacer tu estudio')}
-      </h2>
-      <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
-        {tf(
-          `${NS}.error.desc`,
-          'No pudimos completar la consulta a las aseguradoras. Puedes revisar si ya se resolvió o volver a intentarlo desde cero.',
-        )}
-      </p>
-      <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <Button onClick={onReintentar} data-testid="reintentar-estudio">
-          {tf(`${NS}.error.reintentar`, 'Revisar de nuevo')}
-        </Button>
-        <Button asChild variant="secondary">
-          <Link href="/aprobacion">{tf(`${NS}.error.reintentarDeCero`, 'Empezar de nuevo')}</Link>
-        </Button>
-      </div>
-    </section>
   )
 }

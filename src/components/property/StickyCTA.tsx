@@ -769,7 +769,7 @@ export function StickyCTA({
                         <>
                           Tu aprobación quedó{' '}
                           <span className="font-medium text-foreground">con condiciones</span> — la
-                          aseguradora puede pedirte codeudor
+                          inmobiliaria puede pedirte codeudor
                         </>
                       )}
                     </p>

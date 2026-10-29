@@ -12875,76 +12875,82 @@
   "inquilino": {
     "aprobacion": {
       "eyebrow": "My rental cap",
-      "cargando": "Loading your approval...",
+      "titulo": "My rental cap",
+      "subtitulo": "The rent range where you have the best chances of being accepted.",
+      "cargando": "Loading your cap...",
       "error": {
-        "title": "We could not load your approval"
+        "title": "We could not load your cap"
       },
-      "aprobado": {
-        "badge": "Approved",
-        "label": "You're approved up to",
-        "ayuda": "You can apply to any property with rent up to that amount — and to as many as you want, without paying again.",
-        "sinTope": {
-          "title": "You're approved",
-          "ayuda": "We're still calculating how much we can back you for. We'll let you know as soon as it's ready."
-        },
+      "resultado": {
+        "badge": "Study ready",
+        "label": "The range where you have the best chances of being accepted",
+        "hasta": "Up to",
+        "contexto": "monthly rent",
+        "ayuda": "It is a guide, not a promise: the agency decides on each application. We show you the properties that fit this range first.",
+        "calificacion": "Your Leasefy Rating",
+        "verCalificacion": "See the detail",
+        "condiciones": "To rent in this range you might be asked for",
+        "explicacion": "How we calculated it",
+        "revisiones": "What we are reviewing",
         "cta": "See my properties",
         "ctaSecundaria": "My applications"
       },
-      "aseguradoras": {
-        "title": "We checked several insurers"
+      "sinIngreso": {
+        "title": "We could not verify your income",
+        "desc": "With the documents you uploaded we could not confirm how much you earn, so we cannot show you a range. You can upload other documents, such as a more recent statement, a payslip or an employment letter.",
+        "cta": "Upload other documents"
       },
       "vigencia": {
+        "hasta": "Valid until {fecha}",
         "dias": "Expires in {n} days",
         "manana": "Expires tomorrow",
         "hoy": "Expires today",
         "ayer": "Expired yesterday",
         "vencida": "Expired {n} days ago"
       },
-      "rechazado": {
-        "title": "We can't approve you right now",
-        "desc": "The insurers we checked didn't back your request this time.",
-        "salidas": "What you can do",
-        "perfil": {
-          "title": "Improve your credit profile",
-          "desc": "Catching up on your obligations and lowering your debt load changes the outcome faster than you might think."
-        },
-        "reintentar": {
-          "title": "Try again later",
-          "desc": "This isn't final. Insurers look at your situation again every time you get assessed."
-        },
-        "tercero": {
-          "title": "Someone can apply for you",
-          "desc": "Whoever signs doesn't have to be whoever lives there. A relative or friend can apply and you live in the property: it's legal, and it's how more than half of rentals work in Colombia."
-        }
+      "vencido": {
+        "title": "Your study has expired",
+        "desc": "Your situation changes over time, so a study is valid for six months. Upload your documents again and we will recalculate your range, for free.",
+        "cta": "Start a new study"
       },
       "proceso": {
-        "title": "We're checking with the insurers",
-        "desc": "We're asking every insurer we work with, not just one. This can take a few minutes."
+        "title": "We are reading your documents",
+        "desc": "It usually takes one to two minutes. This screen updates by itself when it is done."
+      },
+      "borrador": {
+        "title": "You have an unfinished study",
+        "desc": "Upload your ID and your bank statement to find out your cap.",
+        "cta": "Continue my study"
+      },
+      "fallo": {
+        "title": "We could not finish your study",
+        "desc": "We could not read your documents.",
+        "cta": "Try again"
       },
       "vacio": {
-        "title": "You don't know your limit yet",
-        "desc": "With your limit you know how much you can rent for, and you apply to as many properties as you want with the same assessment.",
-        "cta": "Find out my limit",
+        "title": "You do not know your cap yet",
+        "desc": "With your cap you know the rent range where you have the best chances of being accepted, and you can apply to as many properties as you like with the same study.",
+        "cta": "Find out my cap",
         "comoFunciona": "How it works"
       },
       "pasos": {
         "uno": {
-          "title": "We assess you",
-          "desc": "We check with every insurer we work with, not just one. That gives you a better chance of being approved."
+          "title": "You upload your documents",
+          "desc": "Your ID and your bank statement. A payslip or employment letter helps too. It is free."
         },
         "dos": {
-          "title": "You choose",
-          "desc": "We show you the properties that fit your approved cap, so you don't waste time on ones that don't."
+          "title": "We calculate your range",
+          "desc": "We read your documents and tell you up to how much rent you have the best chances of being accepted."
         },
         "tres": {
           "title": "You apply",
-          "desc": "You apply to as many as you want with the same assessment, without paying again."
+          "desc": "You apply to the properties you want with the same study, without uploading anything again."
         }
       }
     },
     "postularse": {
       "titulo": "What happens when you apply",
-      "intro": "These properties are within what the insurers approved for you, so you can take them. Applying is the first step of a process, not the end.",
+      "intro": "These properties are within your rent range, so you can take them. Applying is the first step of a process, not the end.",
       "pasos": {
         "postulas": {
           "titulo": "You apply",
@@ -12992,8 +12998,8 @@
       },
       "porMes": "/mo",
       "proceso": {
-        "titulo": "We are checking with the insurers",
-        "texto": "We will let you know as soon as we know how much we can back you for."
+        "titulo": "We are reading your documents",
+        "texto": "We will let you know as soon as we know the rent range where you have the best chances."
       },
       "rechazado": {
         "titulo": "We cannot approve you right now",

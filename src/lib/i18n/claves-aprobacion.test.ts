@@ -27,6 +27,7 @@ const FUENTES = [
   'components/tenant/TopeAprobadoBanner.tsx',
   'components/tenant/ResultadoAprobacion.tsx',
   'components/tenant/CrearCuentaDesdeAprobacion.tsx',
+  'app/inquilino/aprobacion/page.tsx',
 ]
 
 /**

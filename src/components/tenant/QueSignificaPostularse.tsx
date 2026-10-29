@@ -73,7 +73,7 @@ export function QueSignificaPostularse({ className }: { className?: string }) {
       <p className="text-sm text-fg-muted mt-1 leading-relaxed">
         {tf(
           `${NS}.intro`,
-          'Estas propiedades están dentro de lo que las aseguradoras te aprobaron, así que puedes tomarlas. Postularte es el primer paso de un proceso, no el final.',
+          'Estas propiedades están dentro de tu rango de arriendo, así que puedes tomarlas. Postularte es el primer paso de un proceso, no el final.',
         )}
       </p>
 

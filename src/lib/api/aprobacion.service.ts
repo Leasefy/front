@@ -1,19 +1,21 @@
 /**
  * aprobacion.service.ts — la aprobación del inquilino (paso 4 del recorrido).
  *
- * Una persona se estudia UNA vez, sin propiedad, y las aseguradoras responden
- * dos cosas: si la respaldan y **hasta cuánto**. Ese tope es el dato del que
+ * Una persona se estudia UNA vez, sin propiedad, y el estudio responde el
+ * rango de arriendo donde tiene mejores posibilidades de que la acepten. Ese
+ * tope es el dato del que
  * cuelga el resto del recorrido — el catálogo se filtra con él y con él se
- * postula a varias propiedades sin volver a pagar.
+ * postula a varias propiedades sin volver a subir nada.
  *
  * Vocabulario: al inquilino esto se le llama **aprobación**, nunca
  * "asegurabilidad" ni "estudio" (ver `docs/VOCABULARIO.md`).
  *
- * Fuente real: el pre-scoring del back principal (`GET /pre-scoring/current`,
- * Slice 2), traducido a este shape por `aprobacion-from-prescoring.ts` y
- * consumido en `use-aprobacion.ts`. Este archivo NO pega a ningún backend —
- * solo define el shape, sus parseos defensivos y las reglas de negocio que
- * operan sobre él (vigencia, referencia de canon, etc.).
+ * Fuente real (T-0193): el estudio gratis de documentos del back principal
+ * (`GET /calificacion-leasefy/estudio/actual`), traducido a este shape por
+ * `aprobacion-from-estudio.ts` y consumido en `use-aprobacion.ts`. Este archivo
+ * NO pega a ningún backend — solo define el shape, sus parseos defensivos y las
+ * reglas de negocio que operan sobre él (vigencia, referencia de canon, etc.).
+ * `aseguradoras` se conserva por compatibilidad del shape y hoy va siempre vacío.
  *
  * ⚠️ Regla: `topeAprobadoCop` puede venir en `null`. La UI **dice que falta**,
  * nunca inventa un número — un tope falso manda a alguien a postularse a algo

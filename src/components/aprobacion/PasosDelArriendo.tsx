@@ -3,26 +3,26 @@
 /**
  * Los tres pasos para arrendar desde el marketplace, con el `Stepper` de la casa
  * (@leasefy/cadence, el mismo del onboarding y los asistentes).
- * 1 · Te alcanza · 2 · Validamos tus datos · 3 · Tu respuesta (Nico, 14-09).
+ * 1 · Te alcanza · 2 · Estudiamos tus documentos · 3 · Tu respuesta (Nico, 14-09).
  *
  * `variante="estudio"`: los pasos del estudio solo, para quien llega a
  * «Hacer mi estudio» sin pasar por un inmueble (Juan, Portofino, 15-10-2026:
- * «no muestra el paso a paso del estudio»). 1 · Tus datos · 2 · El pago ·
- * 3 · Tu respuesta. La cuenta se pide en el 2, encima, sin salir.
+ * «no muestra el paso a paso del estudio»). 1 · Tu autorización · 2 · Tus documentos ·
+ * 3 · Tu respuesta. La cuenta se pide encima, sin salir.
  */
 
 import { Stepper } from '@leasefy/cadence';
 
 const PASOS_DEL_ARRIENDO = [
   { id: 'alcanza', label: 'Te alcanza', description: 'Tu ingreso frente al canon' },
-  { id: 'datos', label: 'Validamos tus datos', description: 'Consultamos a las aseguradoras' },
+  { id: 'datos', label: 'Estudiamos tus documentos', description: 'Cédula y extracto bancario' },
   { id: 'respuesta', label: 'Tu respuesta', description: 'Si te lo arrendamos y cómo seguir' },
 ];
 
 const PASOS_DEL_ESTUDIO = [
-  { id: 'datos', label: 'Tus datos', description: 'Nombre, cédula, celular y correo' },
-  { id: 'pago', label: 'El pago', description: 'Una sola vez, te sirve para todos' },
-  { id: 'respuesta', label: 'Tu respuesta', description: 'Hasta cuánto te respaldan' },
+  { id: 'autorizacion', label: 'Tu autorización', description: 'Para revisar tus documentos' },
+  { id: 'documentos', label: 'Tus documentos', description: 'Cédula y extracto bancario' },
+  { id: 'respuesta', label: 'Tu tope', description: 'El rango donde tienes mejores posibilidades' },
 ];
 
 export function PasosDelArriendo({

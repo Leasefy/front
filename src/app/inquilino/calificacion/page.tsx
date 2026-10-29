@@ -342,7 +342,7 @@ export default function MiCalificacionPage({
         <EmptyState
           icon={Certificate}
           title={tr('Todavía no tienes calificación')}
-          description={tr('Se arma con tu estudio y tus pagos en Leasefy.')}
+          description={tr('Se arma con tus documentos y tus pagos en Leasefy.')}
           action={{ label: tr('Conocer mi tope'), href: '/inquilino/aprobacion' }}
         />
       )}

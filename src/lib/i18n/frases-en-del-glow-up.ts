@@ -796,4 +796,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Mayor puntaje': 'Highest score',
   'Interesado (A–Z)': 'Applicant (A–Z)',
   'Inmueble (A–Z)': 'Property (A–Z)',
+  // Ordenar las tablas (29-10): Documentos.
+  'Más antiguos': 'Oldest',
+  'Documento (A–Z)': 'Document (A–Z)',
+  'Inquilino (A–Z)': 'Tenant (A–Z)',
+  Estado: 'Status',
 }

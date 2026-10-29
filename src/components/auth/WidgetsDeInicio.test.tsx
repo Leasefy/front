@@ -25,7 +25,7 @@ describe('WidgetsDeInicio', () => {
     const texto = caja.textContent ?? '';
     expect(texto).toMatch(/6:51/);
     expect(texto).toContain('Jueves, 29 de octubre · Colombia'.replace(',', '') === texto ? '' : 'Colombia');
-    expect(texto.toLowerCase()).toContain('novedades de octubre');
+    expect(texto.toLowerCase()).toContain('nuevo en leasefy · octubre');
     expect(caja.querySelectorAll('li')).toHaveLength(3);
     // 🔴 Nada que parezca de una inmobiliaria: ni plata, ni personas, ni contratos, ni visitas, ni direcciones.
     expect(texto).not.toMatch(/\$|recaudo|pagos|inquilinos|firmados|visita|Cl \d|# \d|ejemplo/i);

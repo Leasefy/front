@@ -732,6 +732,8 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Más urgentes': 'Most urgent',
   'Los que más esperan': 'Waiting longest',
   'Caso (A–Z)': 'Case (A–Z)',
+  'Canon más alto': 'Highest rent',
+  'Canon más bajo': 'Lowest rent',
   // components/inmobiliaria/estudios/AsegurabilidadManualDeLaPostulacion.tsx (28-10-2026)
   'Asegurabilidad con tus aseguradoras': 'Insurability with your insurers',
   'El estudio cuesta': 'The screening costs',

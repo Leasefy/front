@@ -154,7 +154,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     titulo: 'Recaudo y giros a propietarios',
     promesa: 'Lo que entra se aplica solo y lo que sale a cada propietario se paga en un archivo del banco.',
     puntos: ['Recaudo por referencia', 'Giros con su liquidación', 'Extracto para cada propietario'],
-    capturas: [cap('erp-recaudo', 'Recaudo del mes'), cap('erp-dispersiones', 'Giros a propietarios')],
+    capturas: [cap('demo-pagos', 'Pagos con datos de ejemplo'), cap('erp-dispersiones', 'Giros a propietarios')],
+    video: video('pagos', 'Recorrido por Pagos con datos de ejemplo: la deuda del mes, cuota por cuota, por vencer, en plazo, en cartera y pagada'),
   },
 };
 

@@ -84,6 +84,7 @@ import { GarantiaDeServiciosDelContrato } from '@/components/contratos/GarantiaD
 import { DocumentosDelContrato } from '@/components/contratos/DocumentosDelContrato';
 import { CambiarEstadoDelContrato } from '@/components/contratos/CambiarEstadoDelContrato';
 import { FechaRealDeEntrega } from '@/components/contratos/FechaRealDeEntrega';
+import { LlamadosDeAtencion } from '@/components/contratos/LlamadosDeAtencion';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
 import { BitacoraDelContrato } from '@/components/inmobiliaria/mandato/BitacoraDelContrato'
@@ -1003,6 +1004,16 @@ function ContratoDetalleContent() {
               </>
             ),
           },
+          // Nico 29-10: los llamados de atención por convivencia (Vinci los cuenta en la renovación).
+          ...(esPreFirma
+            ? []
+            : [
+                {
+                  id: 'convivencia',
+                  etiqueta: 'Convivencia',
+                  contenido: <LlamadosDeAtencion contractId={contract.id} puedeEditar={canEditContracts} />,
+                },
+              ]),
           ...(esPreFirma ? [] : [pestanaDocumentos]),
           {
             id: 'historial',

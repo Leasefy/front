@@ -790,6 +790,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Tarjeta, PSE o Nequi. Se confirma solo.': 'Card, PSE or Nequi. It confirms itself.',
   'Pagado en línea': 'Paid online',
   'Leasefy te lo gira con tu liquidación.': 'Leasefy transfers it to you with your settlement.',
+  // Ordenar las tablas (29-10): grupo A.
+  'Valor: mayor primero': 'Amount: highest first',
+  'Pendientes primero': 'Pending first',
   // Ordenar las tablas (28-10-2026)
   'Más recientes': 'Newest',
   'Más antiguas': 'Oldest',

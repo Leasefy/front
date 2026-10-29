@@ -17,7 +17,7 @@
  * le gira.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
@@ -39,6 +39,10 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { deduccionesApi } from '@/lib/api/deducciones.service';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type {
   DeduccionDelListado,
@@ -65,6 +69,15 @@ const TONO: Record<EstadoDeLaDeduccion, 'warning' | 'default' | 'success' | 'sec
   PROYECTADA: 'default',
 };
 
+/** Al ordenar por estado: lo que todavía se va a descontar primero, lo anulado al final. */
+const TURNO_DEL_ESTADO: Record<EstadoDeLaDeduccion, number> = {
+  PENDIENTE: 0,
+  EN_LIQUIDACION: 1,
+  PROYECTADA: 2,
+  APLICADA: 3,
+  ANULADA: 4,
+};
+
 export function DeduccionesDelPropietario({
   propietarioId,
   inmuebles,
@@ -73,6 +86,7 @@ export function DeduccionesDelPropietario({
   inmuebles: InmuebleParaElDescuento[];
 }) {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const k = (s: string) => `inmobiliaria.deducciones.${s}`;
   const { canAccess } = usePermissions();
   const puedeRegistrar = canAccess('dispersiones', 'create');
@@ -113,9 +127,21 @@ export function DeduccionesDelPropietario({
     return t(k(`estado.${d.estado}`));
   };
 
-  const deducciones = listado?.deducciones ?? [];
+  const deducciones = useMemo(() => listado?.deducciones ?? [], [listado]);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de paginar.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    deducciones,
+    {
+      fecha: (d) => d.fecha,
+      concepto: (d) => `${t(k(`origen.${d.origen}`))} ${d.motivo}`,
+      valor: (d) => d.valorCop,
+      estado: (d) => TURNO_DEL_ESTADO[d.estado],
+      soporte: (d) => (d.tieneSoporte ? 1 : 0),
+    },
+    { primero: { fecha: 'desc', valor: 'desc' } },
+  );
   // Ronda 30 (regla de Nico: tablas con paginación).
-  const pag = useTablePagination(deducciones, {});
+  const pag = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
 
   return (
     <section className="space-y-4" data-testid="deducciones-del-propietario">
@@ -170,16 +196,33 @@ export function DeduccionesDelPropietario({
             </div>
           }
         >
+          {deducciones.length > 1 && (
+            <div className="flex justify-end border-b border-border px-4 py-3">
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full sm:w-56"
+                formas={[
+                  { campo: 'fecha', sentido: 'desc', etiqueta: tr('Más recientes') },
+                  { campo: 'fecha', sentido: 'asc', etiqueta: tr('Más antiguas') },
+                  { campo: 'valor', sentido: 'desc', etiqueta: tr('Valor: mayor primero') },
+                  { campo: 'estado', sentido: 'asc', etiqueta: tr('Pendientes primero') },
+                ]}
+              />
+            </div>
+          )}
           {deducciones.length > 0 && (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t(k('colFecha'))}</TableHead>
-                    <TableHead>{t(k('colConcepto'))}</TableHead>
-                    <TableHead className="text-right">{t(k('colValor'))}</TableHead>
-                    <TableHead>{t(k('colEstado'))}</TableHead>
-                    <TableHead>{t(k('colSoporte'))}</TableHead>
+                    <EncabezadoOrdenable campo="fecha" orden={orden} onOrdenar={ordenarPor}>{t(k('colFecha'))}</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="concepto" orden={orden} onOrdenar={ordenarPor}>{t(k('colConcepto'))}</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="valor" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">
+                      {t(k('colValor'))}
+                    </EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>{t(k('colEstado'))}</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="soporte" orden={orden} onOrdenar={ordenarPor}>{t(k('colSoporte'))}</EncabezadoOrdenable>
                     {puedeAnular && <TableHead />}
                   </TableRow>
                 </TableHeader>

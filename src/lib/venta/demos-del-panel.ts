@@ -130,8 +130,9 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
   reportes: {
     titulo: 'Tu inmobiliaria en cifras',
     promesa: 'Ocupación, cartera, recaudo y renovaciones: lo que necesitas para decidir, al día.',
-    puntos: ['Ocupación del portafolio', 'Cartera por edades', 'Recaudo y giros del mes'],
-    capturas: [TABLERO, cap('cob-cartera', 'Cartera por edades')],
+    puntos: ['Recaudo y ocupación del mes', 'Lo que deja cada inmueble', 'Cartera por edades'],
+    capturas: [cap('demo-reportes', 'Reportes con datos de ejemplo')],
+    video: video('reportes', 'Recorrido por Reportes con datos de ejemplo: el resumen del mes, la rentabilidad por inmueble y la ocupación por zona'),
   },
   documentos: {
     titulo: 'Los documentos de cada contrato, en un lugar',

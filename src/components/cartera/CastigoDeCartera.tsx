@@ -26,7 +26,9 @@
  * navegador es exactamente cómo dos pantallas terminan dando dos números.
  */
 
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import {
   ArrowCounterClockwise,
   CheckCircle,
@@ -139,7 +141,7 @@ function Cifra({
     <Card className="p-4">
       <p className="text-caption text-fg-muted">{rotulo}</p>
       <p
-        className={`mt-1 font-mono text-2xl font-semibold tabular-nums ${
+        className={`mt-1 font-mono text-2xl font-medium tabular-nums ${
           seSabe ? (tono ?? 'text-fg') : 'text-fg-subtle'
         }`}
         data-testid={testid}
@@ -177,6 +179,18 @@ export function CastigoDeCartera() {
   const yo = useContext(AuthContext)?.user?.id ?? null
 
   const [lista, setLista] = useState<ListaDeCastigos | null>(null)
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const castigos = useMemo(() => lista?.castigos ?? [], [lista])
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    castigos,
+    {
+      estado: (c) => c.estado,
+      motivo: (c) => c.motivo ?? null,
+      capital: (c) => c.capitalCop,
+      recuperado: (c) => c.recuperadoCop ?? null,
+    },
+    { primero: { capital: 'desc', recuperado: 'desc' } },
+  )
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
   /** El castigo al que se le está escribiendo un motivo, y para qué. */
@@ -360,10 +374,10 @@ export function CastigoDeCartera() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Motivo</TableHead>
-                    <TableHead className="text-right">Capital</TableHead>
-                    <TableHead className="text-right">Recuperado</TableHead>
+                    <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="motivo" orden={orden} onOrdenar={ordenarPor}>Motivo</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="capital" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Capital</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="recuperado" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Recuperado</EncabezadoOrdenable>
                     <TableHead>Firmas</TableHead>
                     <TableHead className="w-44" />
                   </TableRow>
@@ -381,7 +395,7 @@ export function CastigoDeCartera() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    lista.castigos.map((c) => (
+                    ordenadas.map((c) => (
                       <TableRow key={c.id} data-testid="castigo-fila" data-castigo-id={c.id}>
                         <TableCell>
                           <Badge variant={TONO_DEL_ESTADO[c.estado]}>

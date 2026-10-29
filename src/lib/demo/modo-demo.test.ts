@@ -87,3 +87,26 @@ describe('los datos de ejemplo de Solicitudes', () => {
     expect(hayDatosDeEjemplo('solicitudes')).toBe(true);
   });
 });
+
+describe('los datos de ejemplo de Mantenimientos', () => {
+  it('ocho solicitudes en la forma del back, filtrables por estado, y la bandeja con el propietario cuenta las mismas', () => {
+    const todas = lecturaDeLaDemo('/inmobiliaria/mantenimiento') as Array<{ id: string; status: string; priority: string }>;
+    expect(todas).toHaveLength(8);
+    expect(todas.find((s) => s.id === 'demo-mant-1')).toMatchObject({ status: 'REPORTED', priority: 'EMERGENCY' });
+    const enCurso = lecturaDeLaDemo('/inmobiliaria/mantenimiento?status=IN_PROGRESS') as unknown[];
+    expect(enCurso).toHaveLength(1);
+    const bandeja = lecturaDeLaDemo('/inmobiliaria/mantenimiento/con-el-propietario') as {
+      grupo: string;
+      conteos: Record<string, number>;
+      filas: Array<{ solicitudId: string }>;
+    };
+    expect(bandeja.grupo).toBe('ESPERANDO');
+    expect(bandeja.conteos).toEqual({ ESPERANDO: 1, RECHAZADAS: 0, LA_HACE_EL: 1 });
+    expect(bandeja.filas.map((f) => f.solicitudId)).toEqual(['demo-mant-3']);
+    const laHaceEl = lecturaDeLaDemo('/inmobiliaria/mantenimiento/con-el-propietario?grupo=LA_HACE_EL') as { filas: Array<{ solicitudId: string }> };
+    expect(laHaceEl.filas.map((f) => f.solicitudId)).toEqual(['demo-mant-8']);
+    expect(lecturaDeLaDemo('/inmobiliaria/mantenimiento/demo-mant-4')).toMatchObject({ status: 'MAINT_APPROVED', approvedAmount: 650_000 });
+    expect((lecturaDeLaDemo('/inmobiliaria/consignaciones') as unknown[]).length).toBe(8);
+    expect(hayDatosDeEjemplo('mantenimientos')).toBe(true);
+  });
+});

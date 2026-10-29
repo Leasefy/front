@@ -110,7 +110,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     titulo: 'Las reparaciones, de la solicitud al pago',
     promesa: 'El inquilino reporta, el proveedor cotiza, el propietario aprueba y se descuenta en su giro.',
     puntos: ['Solicitudes con fotos', 'Cotizaciones y aprobación del propietario', 'La reparación diferida en cuotas'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-mantenimientos', 'Mantenimientos con datos de ejemplo')],
+    video: video('mantenimientos', 'Recorrido por Mantenimientos con datos de ejemplo: el tablero, una reparación que espera al propietario y la lista'),
   },
   'servicios-publicos': {
     titulo: 'Los servicios públicos al día',

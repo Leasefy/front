@@ -6,6 +6,7 @@
  * Una lectura que no está aquí sigue al back como siempre (la pantalla muestra lo suyo, vacío si no tiene nada).
  */
 import { CONTRATOS_DEMO } from './contratos';
+import { MANTENIMIENTOS_DEMO } from './mantenimientos';
 import { SERVICIOS_PUBLICOS_DEMO } from './servicios-publicos';
 import { SOLICITUDES_DEMO } from './solicitudes';
 
@@ -15,10 +16,15 @@ export interface LecturaDeLaDemo {
   respuesta: (camino: string) => unknown;
 }
 
-const LECTURAS: readonly LecturaDeLaDemo[] = [...SERVICIOS_PUBLICOS_DEMO, ...CONTRATOS_DEMO, ...SOLICITUDES_DEMO];
+const LECTURAS: readonly LecturaDeLaDemo[] = [
+  ...SERVICIOS_PUBLICOS_DEMO,
+  ...CONTRATOS_DEMO,
+  ...SOLICITUDES_DEMO,
+  ...MANTENIMIENTOS_DEMO,
+];
 
 /** Las secciones del panel (su clave en `arquitectura-del-panel.ts`) que ya tienen datos de ejemplo. */
-const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos', 'solicitudes']);
+const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos']);
 
 export function hayDatosDeEjemplo(claveDelModulo: string | null | undefined): boolean {
   return Boolean(claveDelModulo && SECCIONES_CON_DATOS_DE_EJEMPLO.has(claveDelModulo));

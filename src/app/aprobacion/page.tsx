@@ -54,6 +54,7 @@ import { rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding'
 import { useAuth } from '@/lib/auth/use-auth'
 import { formatCurrency } from '@/lib/format'
 import { useEstudioDeCanon } from '@/lib/hooks/use-estudio-de-canon'
+import { useReintentarDesde } from '@/lib/hooks/use-reintentar-desde'
 import { vieneDelPaso1 } from './form-logic'
 
 const DOCUMENTOS: ReadonlyArray<{
@@ -101,6 +102,8 @@ export default function AprobacionPage() {
   const [empezando, setEmpezando] = useState(false)
   const [iniciando, setIniciando] = useState(false)
   const [reintentando, setReintentando] = useState(false)
+  /** T-0198: instant from a 409 `REINTENTO_MUY_PRONTO`; wins over the study's own `reintentarDesde`. */
+  const [esperaDelBack, setEsperaDelBack] = useState<string | null>(null)
   /** Slots whose file was replaced after the failure (the retry then says "con el archivo nuevo"). */
   const [reemplazados, setReemplazados] = useState<Partial<Record<TipoDeDocumento, boolean>>>({})
   const [subiendo, setSubiendo] = useState<Partial<Record<TipoDeDocumento, boolean>>>({})
@@ -183,12 +186,18 @@ export default function AprobacionPage() {
     setErrores({})
     setErrorGeneral(null)
     setReemplazados({})
+    setEsperaDelBack(null)
   }
 
   /** The back says the retry budget is spent: the screen offers a new study instead. */
   function sinReintentos() {
     if (!visible?.error) return
     setEstudio({ ...visible, error: { ...visible.error, reintentosRestantes: 0 } })
+  }
+
+  /** The back says "too soon": keep the button disabled until the instant it returned. */
+  function muyPronto(desde: string | null | undefined) {
+    if (desde) setEsperaDelBack(desde)
   }
 
   function mostrarError(err: unknown, tipo?: TipoDeDocumento) {
@@ -202,6 +211,11 @@ export default function AprobacionPage() {
     if (e?.code === 'ESTUDIO_YA_INICIADO' || e?.code === 'ESTUDIO_NO_REINTENTABLE') {
       setErrorGeneral(mensaje)
       refetch()
+      return
+    }
+    if (e?.code === 'REINTENTO_MUY_PRONTO') {
+      muyPronto(e.reintentarDesde)
+      setErrorGeneral(mensaje)
       return
     }
     if (e?.code === 'ESTUDIO_SIN_REINTENTOS') {
@@ -276,6 +290,7 @@ export default function AprobacionPage() {
     setReintentando(true)
     try {
       setEstudio(await estudioDeCanonApi.reintentar(visible.id))
+      setEsperaDelBack(null)
       setReemplazados({})
       setErrores({})
     } catch (err) {
@@ -303,6 +318,10 @@ export default function AprobacionPage() {
   const documentoConError = visible?.error?.documentoConError ?? null
   const reintentosRestantes = visible?.error?.reintentosRestantes ?? 1
   const sinMasReintentos = reintentosRestantes <= 0
+  const sinServicio = visible?.error?.codigo === 'SERVICIO_NO_DISPONIBLE'
+  const { bloqueado: enEspera, hora: horaDeEspera } = useReintentarDesde(
+    esperaDelBack ?? visible?.error?.reintentarDesde,
+  )
   const documentoReemplazado = documentoConError !== null && Boolean(reemplazados[documentoConError])
   const puedeIniciar = Boolean(visible) && !hayAlgoQueSubir(visible?.documentos ?? []) && !subiendoAlgo
 
@@ -558,12 +577,14 @@ export default function AprobacionPage() {
             data-testid="vista-fallido"
           >
             <WarningCircle weight="fill" className="h-6 w-6 text-warning" aria-hidden="true" />
-            <h1 className="font-heading text-2xl font-[420] text-fg text-balance">No pudimos terminar tu estudio</h1>
+            <h1 className="font-heading text-2xl font-[420] text-fg text-balance">
+              {sinServicio ? 'Estamos teniendo problemas' : 'No pudimos terminar tu estudio'}
+            </h1>
             <p className="max-w-prose text-sm text-fg-muted" role="alert">
               {visible.error?.mensaje || 'No pudimos leer tus documentos.'}
             </p>
 
-            {documentoConError && (
+            {documentoConError && !sinServicio && (
               <div className="flex flex-col gap-2" data-testid="documento-con-error">
                 <p className="text-caption text-fg-muted">
                   Este archivo es el que dio el problema. Puedes cambiarlo por uno mejor o reintentar con el mismo.
@@ -605,7 +626,7 @@ export default function AprobacionPage() {
                     type="button"
                     size="lg"
                     isLoading={reintentando}
-                    disabled={reintentando || subiendoAlgo}
+                    disabled={reintentando || subiendoAlgo || enEspera}
                     onClick={() => void reintentar()}
                     data-testid="reintentar-estudio"
                   >
@@ -616,6 +637,11 @@ export default function AprobacionPage() {
                         : 'Reintentar con los mismos documentos'}
                   </Button>
                 </div>
+                {enEspera && horaDeEspera && (
+                  <p className="text-caption text-fg-muted" role="status" data-testid="reintentar-desde">
+                    Podrás intentarlo de nuevo a las {horaDeEspera}.
+                  </p>
+                )}
                 <p className="text-caption text-fg-muted" data-testid="reintentos-restantes">
                   {reintentosRestantes === 1
                     ? 'Te queda 1 reintento.'

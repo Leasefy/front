@@ -139,6 +139,25 @@ describe('parseEstudio', () => {
     })
   })
 
+  it('T-0198: reads reintentarDesde, drops a bad one, and keeps SERVICIO_NO_DISPONIBLE free of document blame', () => {
+    const desde = '2026-10-29T15:10:00.000Z'
+    const f = parseEstudio({
+      ...BASE,
+      status: 'FAILED',
+      error: { codigo: 'SERVICIO_NO_DISPONIBLE', mensaje: '', documentoConError: 'cedula', reintentarDesde: desde },
+    })
+    expect(f!.error).toMatchObject({
+      codigo: 'SERVICIO_NO_DISPONIBLE',
+      mensaje: 'Estamos teniendo problemas con el sistema. Intenta de nuevo en 10 minutos.',
+      documentoConError: null,
+      reintentarDesde: desde,
+    })
+    const malo = parseEstudio({ ...BASE, status: 'FAILED', error: { codigo: 'ESTUDIO_FALLIDO', reintentarDesde: 'ayer' } })
+    expect(malo!.error).not.toHaveProperty('reintentarDesde')
+    const conOtro = parseEstudio({ ...BASE, status: 'FAILED', error: { codigo: 'ESTUDIO_FALLIDO', mensaje: 'm', reintentarDesde: desde } })
+    expect(conOtro!.error!.reintentarDesde).toBe(desde)
+  })
+
   it('degrades unknown values: bad document -> null, bad action -> REINTENTAR, bad count -> 1, 0 stays 0', () => {
     const malo = parseEstudio({
       ...BASE,

@@ -15,6 +15,7 @@
 
 import { ApiError, apiClient, errorDeDemasiadasSolicitudes, fetchConSesion } from '@/lib/api/client'
 import {
+  instanteONull,
   mensajeDelErrorDelEstudio,
   parseEstudio,
   parseEstudioActual,
@@ -34,6 +35,8 @@ export class EstudioDeCanonError extends Error {
     public code?: string,
     /** Required documents the back says are missing (DOCUMENTOS_FALTANTES). */
     public faltan?: TipoObligatorio[],
+    /** ISO instant of the next allowed retry (409 `REINTENTO_MUY_PRONTO`, T-0198). */
+    public reintentarDesde?: string | null,
   ) {
     super(message)
     this.name = 'EstudioDeCanonError'
@@ -54,6 +57,7 @@ function aErrorDelEstudio(err: unknown): EstudioDeCanonError {
       mensajeDelErrorDelEstudio(err.code, err.status < 500 ? err.message : undefined),
       err.code,
       faltanDelCuerpo(err.detalle),
+      err.code === 'REINTENTO_MUY_PRONTO' ? instanteONull(err.detalle?.reintentarDesde) : undefined,
     )
   }
   return new EstudioDeCanonError(0, mensajeDelErrorDelEstudio(undefined))
@@ -127,7 +131,7 @@ export const estudioDeCanonApi = {
   /**
    * Retries a FAILED study with its stored documents (T-0195). Idempotent when it is
    * already PROCESSING. 409 `ESTUDIO_SIN_REINTENTOS` = budget used, `ESTUDIO_NO_REINTENTABLE`
-   * = not FAILED any more.
+   * = not FAILED any more. 409 `REINTENTO_MUY_PRONTO` (T-0198) carries `reintentarDesde`.
    */
   reintentar(estudioId: string): Promise<EstudioDeCanon> {
     return envuelto(async () =>

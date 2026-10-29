@@ -49,6 +49,17 @@ export interface ErrorDelEstudio {
   accion: AccionDelError
   /** `>= 0`. 0 means "empezar un estudio nuevo". */
   reintentosRestantes: number
+  /** T-0198: ISO instant before which the back refuses a retry. Absent/null = retry allowed now. */
+  reintentarDesde?: string | null
+}
+
+/** T-0198: copy for a provider outage (`SERVICIO_NO_DISPONIBLE` inside `Estudio.error`); the back's message wins. */
+export const MENSAJE_SERVICIO_NO_DISPONIBLE_DEL_ESTUDIO =
+  'Estamos teniendo problemas con el sistema. Intenta de nuevo en 10 minutos.'
+
+/** A parseable ISO instant, or `null`. */
+export function instanteONull(v: unknown): string | null {
+  return typeof v === 'string' && Number.isFinite(Date.parse(v)) ? v : null
 }
 
 export interface EstudioDeCanon {
@@ -145,15 +156,21 @@ export function parseEstudio(raw: unknown): EstudioDeCanon | null {
     const e = esObjeto(raw.error) ? raw.error : {}
     const restantes = e.reintentosRestantes
     const documento = e.documentoConError
+    const codigo = textoONull(e.codigo) ?? 'ESTUDIO_FALLIDO'
+    const sinServicio = codigo === 'SERVICIO_NO_DISPONIBLE'
+    const mensaje = typeof e.mensaje === 'string' ? e.mensaje : ''
     error = {
-      codigo: textoONull(e.codigo) ?? 'ESTUDIO_FALLIDO',
-      mensaje: typeof e.mensaje === 'string' ? e.mensaje : '',
-      documentoConError: documento === 'cedula' || documento === 'extracto_bancario' ? documento : null,
+      codigo,
+      mensaje: sinServicio && !mensaje.trim() ? MENSAJE_SERVICIO_NO_DISPONIBLE_DEL_ESTUDIO : mensaje,
+      // A provider outage never blames a document.
+      documentoConError: !sinServicio && (documento === 'cedula' || documento === 'extracto_bancario') ? documento : null,
       accion: e.accion === 'REEMPLAZAR_DOCUMENTO' ? 'REEMPLAZAR_DOCUMENTO' : 'REINTENTAR',
       reintentosRestantes:
         typeof restantes === 'number' && Number.isFinite(restantes) && restantes >= 0
           ? Math.floor(restantes)
           : REINTENTOS_RESTANTES_POR_DEFECTO,
+      // Omitted (not null) when absent: absent and null mean the same, "retry allowed now".
+      ...(instanteONull(e.reintentarDesde) ? { reintentarDesde: instanteONull(e.reintentarDesde) } : {}),
     }
   }
 
@@ -190,6 +207,7 @@ const MENSAJES: Record<string, string> = {
   ESTUDIO_NO_REINTENTABLE: 'Este estudio ya no se puede reintentar. Estamos mostrándote su estado actual.',
   ESTUDIO_SIN_REINTENTOS:
     'Ya usaste todos los reintentos de este estudio. Puedes empezar uno nuevo con tus documentos.',
+  REINTENTO_MUY_PRONTO: 'Aún no puedes reintentar. Intenta de nuevo en unos minutos.',
   ESTUDIO_NO_ARRANCO: 'No pudimos iniciar el estudio de tus documentos. Inténtalo de nuevo.',
   DOCUMENTOS_FALTANTES: 'Faltan documentos: sube tu cédula y tu extracto bancario para continuar.',
   EXTRACTO_ILEGIBLE:

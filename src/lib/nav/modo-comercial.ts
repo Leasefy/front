@@ -34,6 +34,9 @@ const ABIERTAS: readonly string[] = [
   '/panel/inmobiliaria/configuracion/tu-pagina',
   // Firmas (28-10-2026): todas las cuentas, también las gratis.
   '/panel/inmobiliaria/firmas',
+  // Nico 29-10-2026 (reunión con Juan, el CRM gratis): «los inquilinos deben estar gratis también para los que entren por
+  // el marketplace sin la demo».
+  '/panel/inmobiliaria/inquilinos',
 ];
 
 /** Dentro de lo abierto, lo que hacen los agentes de IA. */

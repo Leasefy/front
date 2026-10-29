@@ -1,7 +1,7 @@
 /**
  * Qué ve cada cuenta (Nico, 27-10-2026) — espejo del back `inmobiliaria/conversion/acceso-de-la-cuenta.ts`.
  *   · `pagado` y `prueba` (el mes gratis de un aliado): ve todo.
- *   · `gratis`: vino del marketplace y no paga: marketplace + Arrendamientos; lo demás con candado e invitación a pagar.
+ *   · `gratis`: vino del marketplace y no paga: marketplace + Arrendamientos + Inquilinos (29-10); lo demás con candado.
  *   · `cliente`: la inmobiliaria de siempre: ve todo, nada le cambia.
  * Sin `acceso` (back viejo o sin poder saberlo) manda el modo comercial, como antes.
  */

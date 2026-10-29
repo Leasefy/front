@@ -52,6 +52,8 @@ const paraIniciar = vi.fn()
 vi.mock('@/lib/api/inventario-del-inmueble.service', () => ({
   inventarioDelInmuebleApi: { paraIniciar: (id: string) => paraIniciar(id) },
 }))
+// El cajón del inventario (29-10) tiene su propia prueba; aquí sólo estorba.
+vi.mock('@/components/inmobiliaria/inventario/CajonDelInventario', () => ({ CajonDelInventario: () => null }))
 vi.mock('@/components/inmobiliaria/inventario/BloqueoPorInventario', () => ({
   BloqueoPorInventario: ({ bloqueo }: { bloqueo: { consignacionId: string | null } }) =>
     React.createElement('div', { 'data-testid': 'bloqueo-por-inventario' }, `inventario:${bloqueo.consignacionId}`),

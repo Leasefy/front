@@ -31,7 +31,7 @@ import {
   hace,
   todayISO,
 } from './fechas-y-topes';
-import { ResumenDelContratoNuevo } from '@/components/contratos/ResumenDelContratoNuevo';
+import { ResumenDelContratoNuevo, type ResumenDelContratoNuevoProps } from '@/components/contratos/ResumenDelContratoNuevo';
 import { primerCanon } from '@/lib/contratos/primer-canon';
 import { avanceDelContrato } from '@/lib/contratos/avance-del-contrato';
 import { ritmoDePago } from '@/lib/contratos/ritmo-de-pago';
@@ -120,6 +120,7 @@ import type {
   UsoDelInmueble,
 } from '@/lib/api/contratos-plantilla.service';
 import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
+import { CajonDelInventario } from '@/components/inmobiliaria/inventario/CajonDelInventario';
 import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.service';
 import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar';
 import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
@@ -334,6 +335,10 @@ function NuevoContratoContent() {
    * 409 del back al crear, que es quien decide.
    */
   const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
+  // 🔴 Nico, 29-10-2026: el inventario se hace en un cajón encima del formulario
+  // (salir a la ficha borraba lo que se llevaba). Al cerrarlo se vuelve a preguntar.
+  const [inventarioAbierto, setInventarioAbierto] = useState(false);
+  const [vueltasDelInventario, setVueltasDelInventario] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   /*
    * QA-CONT-95 C-09 (ronda 3): el archivo rechazado (.docx, PDF de más de
@@ -841,7 +846,7 @@ function NuevoContratoContent() {
     return () => {
       vivo = false;
     };
-  }, [inmuebleParaIniciar]);
+  }, [inmuebleParaIniciar, vueltasDelInventario]);
 
   // Submit
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1096,9 +1101,26 @@ function NuevoContratoContent() {
           ? 'Generado con IA · listo'
           : 'Plantilla de ley · lista'
         : null;
-  const bloqueosDelResumen: string[] = [
+  const bloqueosDelResumen: ResumenDelContratoNuevoProps['bloqueos'] = [
     // El motivo completo, con su enlace, está en el aviso debajo del inmueble.
-    ...(bloqueoDeInventario ? ['El inventario del inmueble no está completo y al día.'] : []),
+    ...(bloqueoDeInventario
+      ? [
+          {
+            texto: 'Sin el inventario del inmueble completo y al día no puedes crear el contrato.',
+            accion: bloqueoDeInventario.consignacionId
+              ? {
+                  label:
+                    bloqueoDeInventario.motivo === 'SOLO_BORRADOR'
+                      ? 'Completar el inventario'
+                      : bloqueoDeInventario.motivo === 'ANTERIOR_AL_FIN_DEL_CONTRATO'
+                        ? 'Actualizar el inventario'
+                        : 'Hacer el inventario',
+                  onClick: () => setInventarioAbierto(true),
+                }
+              : undefined,
+          },
+        ]
+      : []),
     ...(errorDeInmueble ? [errorDeInmueble.mensaje] : []),
     ...(errorSinCanon !== null || inmuebleManualSinCanon || (!esManual && property?.canonPorConfirmar)
       ? ['El inmueble tiene el canon por confirmar.']
@@ -1249,10 +1271,15 @@ function NuevoContratoContent() {
           inmueble (`para-iniciar`); el 409 del back al crear cae aquí mismo.
           Entran y salen (no saltan).
         */}
-        <Presence show={bloqueoDeInventario !== null} initial={false} distance="xs">
+        {/* 🔴 Nico, 29-10-2026: el aviso PERSIGUE a la persona mientras baja
+            (se les olvidaba que sin inventario no se crea), y su botón abre el
+            inventario en un cajón, sin salir del formulario. */}
+        <Presence show={bloqueoDeInventario !== null} initial={false} distance="xs" className="sticky top-20 z-20">
           {bloqueoDeInventario && (
             <BloqueoPorInventario
               bloqueo={bloqueoDeInventario}
+              onAbrir={() => setInventarioAbierto(true)}
+              className="shadow-flotante"
               // Para volver acá con lo elegido cuando el inventario quede listo.
               volverA={
                 esManual
@@ -1774,6 +1801,17 @@ function NuevoContratoContent() {
         </ResumenDelContratoNuevo>
         </div>
       </form>
+      {/* Montado sólo cuando hay un inventario que hacer (el bloqueo trae su consignación). */}
+      {bloqueoDeInventario?.consignacionId ? (
+        <CajonDelInventario
+          abierto={inventarioAbierto}
+          consignacionId={bloqueoDeInventario.consignacionId}
+          onCerrar={() => {
+            setInventarioAbierto(false);
+            setVueltasDelInventario((n) => n + 1);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

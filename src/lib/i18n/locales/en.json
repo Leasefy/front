@@ -960,6 +960,8 @@
       "vacioTexto": "It's the list of what's in the property and its condition. Make it and complete it: without it you can't start a lease.",
       "empezar": "Start the inventory",
       "volverAlContrato": "Back to the lease",
+      "cajonDescripcion": "What is in the property and its condition. Add it and complete it right here: what you have of the contract is kept.",
+      "cajonAyuda": "Closing it takes you back to the contract just as you left it.",
       "volverListo": "Done: the inventory is complete. You can continue with the lease.",
       "volverPendiente": "You came from creating a lease: once you complete the inventory, come back to continue."
     },

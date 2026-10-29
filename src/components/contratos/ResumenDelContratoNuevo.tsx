@@ -19,6 +19,7 @@ import { plataQueLlega } from '@/lib/plata/plata-que-llega';
 import type { ReactNode } from 'react';
 import { AnimatedNumber, Presence } from '@leasefy/cadence';
 import { WarningCircle } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import type { PrimerCanon } from '@/lib/contratos/primer-canon';
@@ -46,10 +47,19 @@ export interface ResumenDelContratoNuevoProps {
    * Lo que impide crear y no es un campo vacío (inventario, canon por
    * confirmar, inmueble ocupado), en una línea cada uno.
    */
-  bloqueos: string[];
+  bloqueos: Array<string | BloqueoDelResumen>;
   /** «Para crearlo falta…», el error del envío y los botones. */
   children?: ReactNode;
   className?: string;
+}
+
+/**
+ * Un bloqueo con su salida al lado (Nico, 29-10-2026: el inventario «se les
+ * olvida» al bajar): el botón es secundario, no compite con «Crear contrato».
+ */
+export interface BloqueoDelResumen {
+  texto: string;
+  accion?: { label: string; onClick: () => void };
 }
 
 const SIN_ELEGIR = 'Sin elegir';
@@ -161,12 +171,22 @@ export function ResumenDelContratoNuevo({
       {/* Lo que no deja crear, aunque el formulario esté completo. Entra y sale. */}
       <Presence show={bloqueos.length > 0} initial={false} distance="xs" className="mt-3" data-testid="resumen-bloqueos">
         <ul className="space-y-1.5">
-          {bloqueos.map((b) => (
-            <li key={b} className="flex items-start gap-2 text-caption text-warning">
-              <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="text-fg">{b}</span>
-            </li>
-          ))}
+          {bloqueos.map((b) => {
+            const { texto, accion } = typeof b === 'string' ? { texto: b, accion: undefined } : b;
+            return (
+              <li key={texto} className="flex items-start gap-2 text-caption text-warning">
+                <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 space-y-2">
+                  <span className="block text-fg">{texto}</span>
+                  {accion ? (
+                    <Button type="button" variant="outline" size="sm" hideArrow onClick={accion.onClick} data-testid="resumen-bloqueo-accion">
+                      {accion.label}
+                    </Button>
+                  ) : null}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </Presence>
 

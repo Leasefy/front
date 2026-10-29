@@ -960,6 +960,8 @@
       "vacioTexto": "Es la lista de lo que hay en el inmueble y en qué estado está. Hazlo antes del próximo contrato: sin él no se puede iniciar uno.",
       "empezar": "Empezar el inventario",
       "volverAlContrato": "Volver al contrato",
+      "cajonDescripcion": "Lo que hay en el inmueble y en qué estado está. Agrégalo y complétalo aquí mismo: lo que llevas del contrato no se pierde.",
+      "cajonAyuda": "Al cerrarlo vuelves al contrato tal como lo dejaste.",
       "volverListo": "Listo: el inventario está completo. Ya puedes seguir con el contrato.",
       "volverPendiente": "Vienes de crear un contrato: cuando completes el inventario, vuelve para seguir."
     },

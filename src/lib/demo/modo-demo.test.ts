@@ -68,3 +68,13 @@ describe('el modo demo', () => {
     expect(hayDatosDeEjemplo('nomina')).toBe(false);
   });
 });
+
+describe('los datos de ejemplo de Contratos', () => {
+  it('siete contratos inventados, el detalle de cada uno, y la sección cuenta como «con datos»', () => {
+    const lista = lecturaDeLaDemo('/contracts') as Array<{ id: string; status: string; tenantName: string }>;
+    expect(lista).toHaveLength(7);
+    expect(lista.filter((c) => c.status === 'ACTIVE')).toHaveLength(5);
+    expect(lecturaDeLaDemo('/contracts/demo-ct-3')).toMatchObject({ tenantName: 'Comercializadora El Poblado SAS' });
+    expect(hayDatosDeEjemplo('contratos')).toBe(true);
+  });
+});
